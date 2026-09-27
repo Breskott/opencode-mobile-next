@@ -2109,15 +2109,15 @@
           "destructive": false
         },
         {
-          "id": "guide-connection-help",
-          "type": "list-tile",
-          "label": "Connection help",
-          "key": null,
+          "id": "guide-add-server",
+          "type": "button",
+          "label": "Add server",
+          "key": "guide-add-server",
           "line": 73,
           "action": "navigate",
-          "target": "connection-help",
-          "targetWidget": "ConnectionHelpScreen",
-          "effect": "Pushes const ConnectionHelpScreen().",
+          "target": "profile-editor",
+          "targetWidget": "_ProfileEditorScreen",
+          "effect": "Opens '/servers' with ServersRouteRequest.add(): Add server itself, the same flow as the Servers page (P3.9).",
           "gates": [],
           "destructive": false
         },

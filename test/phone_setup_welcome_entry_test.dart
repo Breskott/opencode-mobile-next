@@ -10,7 +10,6 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_progress_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
-import 'package:opencode_mobile/ui/widgets/first_run_choice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_setup_engine.dart';
@@ -103,7 +102,7 @@ void main() {
       findsNothing,
     );
     expect(
-      find.descendant(of: _welcome, matching: find.byType(FirstRunChoice)),
+      find.descendant(of: _welcome, matching: _welcomeChoice),
       findsNWidgets(3),
     );
   });
@@ -130,7 +129,7 @@ void main() {
       ),
     );
     expect(
-      find.descendant(of: _welcome, matching: find.byType(FirstRunChoice)),
+      find.descendant(of: _welcome, matching: _welcomeChoice),
       findsNWidgets(3),
     );
     expect(find.text('Show progress'), findsOneWidget);
@@ -259,7 +258,7 @@ void main() {
     // The question and its choices are there at once; the setup line is
     // not, because the job has not been read.
     expect(
-      find.descendant(of: _welcome, matching: find.byType(FirstRunChoice)),
+      find.descendant(of: _welcome, matching: _welcomeChoice),
       findsNWidgets(3),
     );
     expect(
@@ -357,3 +356,10 @@ class _FailingEngine extends FakeSetupEngine {
     throw StateError('no space');
   }
 }
+
+/// One of the welcome's answers (its rows are keyed `welcome-choice-*`).
+final _welcomeChoice = find.byWidgetPredicate(
+  (w) =>
+      w.key is ValueKey<String> &&
+      (w.key! as ValueKey<String>).value.startsWith('welcome-choice-'),
+);

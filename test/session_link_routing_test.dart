@@ -269,7 +269,7 @@ void main() {
   });
 
   testWidgets(
-    'an unknown server shows the honest state with a way to Servers',
+    'an unknown server asks to add it, and Add server opens the flow',
     (tester) async {
       final controller = await _controller();
       addTearDown(controller.dispose);
@@ -290,10 +290,11 @@ void main() {
         find.byKey(const Key('session-link-server-missing')),
         findsOneWidget,
       );
+      expect(find.text('Add this server?'), findsOneWidget);
       expect(
         find.text(
-          'This server is not saved on this phone. Add it under '
-          'Servers, then scan the code again.',
+          'The conversation is on a server this phone has not saved. Add it '
+          'here, then scan the code again.',
         ),
         findsOneWidget,
       );
@@ -304,9 +305,11 @@ void main() {
       expect(controller.status, StreamStatus.connected);
       expect(identical(controller.api, api), isTrue);
 
-      await tester.tap(find.text('Open Servers'));
+      await tester.tap(find.byKey(const Key('session-link-add-server')));
       await tester.pumpAndSettle();
-      expect(find.byType(ServersScreen), findsOneWidget);
+      // Add server itself (P3.9), over Servers, not the list to find it on.
+      expect(find.byType(ServersScreen, skipOffstage: false), findsOneWidget);
+      expect(find.byKey(const ValueKey('server-kind-step')), findsOneWidget);
       expect(
         find.byKey(const Key('session-link-server-missing')),
         findsNothing,

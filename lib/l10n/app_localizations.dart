@@ -3044,149 +3044,11 @@ abstract class AppLocalizations {
   /// **'Other pending sign-ins belong to another server or project. Return to their original source to manage them.'**
   String get pendingAuthOtherSource;
 
-  /// No description provided for @connectionHelpTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Connection help'**
-  String get connectionHelpTitle;
-
-  /// No description provided for @connectionHelpEntrySubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Explain an address locally, without connecting'**
-  String get connectionHelpEntrySubtitle;
-
   /// No description provided for @connectionHelpGuideTip.
   ///
   /// In en, this message translates to:
-  /// **'Keep the server off the public internet. Use private HTTPS or an encrypted tunnel ending on the device running this app. Localhost on your computer is not localhost on your phone. Open Connection help above for steps and examples.'**
+  /// **'Keep the server off the public internet. Reach it over Tailscale\'s private HTTPS, or an encrypted tunnel ending on the device running this app. Localhost on your computer is not localhost on your phone.'**
   String get connectionHelpGuideTip;
-
-  /// No description provided for @connectionHelpPrivacy.
-  ///
-  /// In en, this message translates to:
-  /// **'This checks address rules only, not connectivity. Nothing is sent or saved. Input is hidden and cleared after checking. Paste only an address, not a password or pairing code.'**
-  String get connectionHelpPrivacy;
-
-  /// No description provided for @connectionHelpAddress.
-  ///
-  /// In en, this message translates to:
-  /// **'Server address'**
-  String get connectionHelpAddress;
-
-  /// No description provided for @connectionHelpCheck.
-  ///
-  /// In en, this message translates to:
-  /// **'Explain address'**
-  String get connectionHelpCheck;
-
-  /// No description provided for @connectionHelpEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a server address to explain.'**
-  String get connectionHelpEmpty;
-
-  /// No description provided for @connectionHelpMalformed.
-  ///
-  /// In en, this message translates to:
-  /// **'This address could not be understood. Use a complete origin such as https://server.example, with no path, credentials or query.'**
-  String get connectionHelpMalformed;
-
-  /// No description provided for @connectionHelpCredentials.
-  ///
-  /// In en, this message translates to:
-  /// **'Credentials do not belong in a URL. Remove them and enter the server username and password separately in Servers. The pasted value has been cleared.'**
-  String get connectionHelpCredentials;
-
-  /// No description provided for @connectionHelpQuery.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove query parameters and fragments. They can contain secrets; enter only the server origin. The pasted value has been cleared.'**
-  String get connectionHelpQuery;
-
-  /// No description provided for @connectionHelpPath.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove the path. This app needs the server origin, not a page or API route.'**
-  String get connectionHelpPath;
-
-  /// No description provided for @connectionHelpScheme.
-  ///
-  /// In en, this message translates to:
-  /// **'Use HTTPS for a remote server, or HTTP only for this device\'s supported loopback addresses.'**
-  String get connectionHelpScheme;
-
-  /// No description provided for @connectionHelpRemoteHttp.
-  ///
-  /// In en, this message translates to:
-  /// **'Remote HTTP is blocked, including LAN and 100.64.0.0/10 addresses. A VPN does not change this rule. Set up private HTTPS or an encrypted tunnel ending on this device.'**
-  String get connectionHelpRemoteHttp;
-
-  /// No description provided for @connectionHelpHttps.
-  ///
-  /// In en, this message translates to:
-  /// **'This address passes the HTTPS address rules. That does not verify its certificate, reachability, sign-in or privacy. A bare remote address is interpreted as HTTPS.'**
-  String get connectionHelpHttps;
-
-  /// No description provided for @connectionHelpLoopback.
-  ///
-  /// In en, this message translates to:
-  /// **'This address passes the loopback address rules. Localhost means this device, not another computer. A server or tunnel must be listening here; this check does not verify that.'**
-  String get connectionHelpLoopback;
-
-  /// No description provided for @connectionHelpPrivateTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Private HTTPS or reverse proxy'**
-  String get connectionHelpPrivateTitle;
-
-  /// No description provided for @connectionHelpPrivateSteps.
-  ///
-  /// In en, this message translates to:
-  /// **'1. Keep the server on its host\'s loopback with authentication enabled.\n2. Connect both devices to your private network and restrict access to intended users.\n3. Configure private HTTPS, such as Tailscale Serve, or a reverse proxy with a trusted certificate forwarding to the server. Support streaming and WebSockets.\n4. Add the HTTPS origin in Servers with sign-in in separate fields.\nTailscale Funnel exposes the service publicly; it is not a private-network fix. This app cannot infer VPN presence. The example below is a placeholder.'**
-  String get connectionHelpPrivateSteps;
-
-  /// No description provided for @connectionHelpTunnelTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Localhost on the wrong device?'**
-  String get connectionHelpTunnelTitle;
-
-  /// No description provided for @connectionHelpTunnelSteps.
-  ///
-  /// In en, this message translates to:
-  /// **'Localhost, 127.0.0.1 and [::1] refer to the device running this app. For a server on another computer, use private HTTPS or an encrypted tunnel ending here. If an SSH client is available on this device, adapt the example below, verify the host key and keep it running. Replace user@host with your SSH destination. Running it on another computer does not forward this device\'s port. Keep server authentication enabled.'**
-  String get connectionHelpTunnelSteps;
-
-  /// No description provided for @connectionHelpVerifyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Verify connectivity separately'**
-  String get connectionHelpVerifyTitle;
-
-  /// No description provided for @connectionHelpVerifySteps.
-  ///
-  /// In en, this message translates to:
-  /// **'On this device, check private-network membership, DNS, firewall access and certificate trust using your network tools. Check server and proxy configuration on the host, then use Servers to connect. Never disable TLS verification or share passwords, pairing codes or unredacted logs. Access to this server is shell access.'**
-  String get connectionHelpVerifySteps;
-
-  /// No description provided for @connectionHelpCopyExample.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy example'**
-  String get connectionHelpCopyExample;
-
-  /// No description provided for @connectionHelpCopied.
-  ///
-  /// In en, this message translates to:
-  /// **'Example copied'**
-  String get connectionHelpCopied;
-
-  /// No description provided for @connectionHelpCopyFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not copy the example. Select the example text to copy it manually.'**
-  String get connectionHelpCopyFailed;
 
   /// No description provided for @voiceConversationTitle.
   ///
@@ -8647,12 +8509,6 @@ abstract class AppLocalizations {
   /// **'Ask your agent to delegate work in the background. Results return to this conversation automatically.'**
   String get workBackgroundAutomatic;
 
-  /// Opens the existing-server editor for someone looking for OpenCode 2; does not force the protocol.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect OpenCode 2'**
-  String get oc2DiscoveryConnect;
-
   /// No description provided for @oc2DiscoveryEditorTitle.
   ///
   /// In en, this message translates to:
@@ -8670,12 +8526,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OpenCode 1 or 2'**
   String get oc2DiscoveryTypes;
-
-  /// No description provided for @oc2DiscoveryAutodetect.
-  ///
-  /// In en, this message translates to:
-  /// **'Detects OpenCode 1 or 2 automatically.'**
-  String get oc2DiscoveryAutodetect;
 
   /// No description provided for @oc2DiscoveryPhone.
   ///
@@ -20501,14 +20351,8 @@ abstract class AppLocalizations {
   /// Banner shown when a scanned session link names a server this phone does not have
   ///
   /// In en, this message translates to:
-  /// **'This server is not saved on this phone. Add it under Servers, then scan the code again.'**
+  /// **'The conversation is on a server this phone has not saved. Add it here, then scan the code again.'**
   String get handoffUiLinkServerMissing;
-
-  /// Banner action opening the servers screen
-  ///
-  /// In en, this message translates to:
-  /// **'Open Servers'**
-  String get handoffUiLinkOpenServers;
 
   /// Banner action closing the notice without navigating
   ///
@@ -25976,7 +25820,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverConnectionHelpAliases.
   ///
   /// In en, this message translates to:
-  /// **'connection help cannot connect troubleshooting network refused timeout'**
+  /// **'add server computer connect pair pairing code connection help cannot connect troubleshooting network refused timeout'**
   String get discoverConnectionHelpAliases;
 
   /// Files list: tooltip and accessibility label of the trailing button on a file or folder row. It opens the same actions as a long press or right click on the row.
@@ -26555,41 +26399,17 @@ abstract class AppLocalizations {
   /// **'Just show me'**
   String get firstRunJustShowMe;
 
-  /// First run, computer path: the question above the three agent choices.
-  ///
-  /// In en, this message translates to:
-  /// **'Which agent first?'**
-  String get firstRunWhichAgent;
-
   /// Agent choice title; a product name, not translated.
   ///
   /// In en, this message translates to:
   /// **'OpenCode'**
   String get firstRunAgentOpenCode;
 
-  /// Agent choice title for the Paseo backend; product names are not translated.
-  ///
-  /// In en, this message translates to:
-  /// **'Claude Code, Codex, Pi and more'**
-  String get firstRunAgentClaudeOrPi;
-
-  /// Agent choice: one line under 'Claude Code or Pi'.
-  ///
-  /// In en, this message translates to:
-  /// **'One connection to the Paseo daemon drives every agent installed there. Experimental.'**
-  String get firstRunAgentClaudeOrPiDetail;
-
   /// Agent choice title; a product name, not translated.
   ///
   /// In en, this message translates to:
   /// **'Codex'**
   String get firstRunAgentCodex;
-
-  /// Agent choice: one line under 'Codex'.
-  ///
-  /// In en, this message translates to:
-  /// **'Directly, through Codex app-server. Experimental.'**
-  String get firstRunAgentCodexDetail;
 
   /// Connect screen on the first-run computer path: caption above the one command to run.
   ///
@@ -30136,6 +29956,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Checking {host}…'**
   String addServerCheckingHost(String host);
+
+  /// Add server, ready step: line under the linked drawing.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to {host}'**
+  String addServerConnectedHost(String host);
+
+  /// Add server: notice when a connection check or pairing has run for 8 seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{host} has not answered yet. A slow network can take a while.'**
+  String addServerCheckSlow(String host);
+
+  /// Add server: action on the slow-check notice; the answer, when it comes, is ignored.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop checking'**
+  String get addServerCheckCancel;
+
+  /// Add server: under an http:// address on the network, which is refused. Never suggests a public relay.
+  ///
+  /// In en, this message translates to:
+  /// **'A computer on your network needs an https:// address. Tailscale gives it a private one that only your devices can reach.'**
+  String get addServerRemoteHttpAdvice;
+
+  /// Add server: action that opens the Tailscale step from the http:// advice.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Tailscale'**
+  String get addServerUseTailscale;
+
+  /// Add server: what a screen reader calls the step bar.
+  ///
+  /// In en, this message translates to:
+  /// **'Add server progress'**
+  String get addServerStepsLabel;
+
+  /// Add server, step 1: choose what runs on the computer.
+  ///
+  /// In en, this message translates to:
+  /// **'What runs there'**
+  String get addServerStepKind;
+
+  /// Add server, Tailscale step: the app and the VPN on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Tailscale on this phone'**
+  String get addServerStepTailscale;
+
+  /// Add server, connect step for OpenCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair or enter the address'**
+  String get addServerStepPair;
+
+  /// Add server, connect step for Codex and Paseo.
+  ///
+  /// In en, this message translates to:
+  /// **'Address and sign-in'**
+  String get addServerStepAddress;
+
+  /// Add server: the step while the connection is checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking'**
+  String get addServerStepCheck;
+
+  /// Add server: the last step, connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get addServerStepReady;
+
+  /// Add server, ready step: heading.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is connected'**
+  String addServerReadyTitle(String name);
+
+  /// Add server, ready step: what happens next.
+  ///
+  /// In en, this message translates to:
+  /// **'Its conversations open next. Start one, or pick up one already there.'**
+  String get addServerReadyBody;
+
+  /// Add server, ready step: the primary; opens the server's conversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}'**
+  String addServerReadyOpen(String name);
+
+  /// Session link for a server this phone has not saved: sheet title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add this server?'**
+  String get handoffUiLinkAddTitle;
+
+  /// Session link sheet: opens Add server.
+  ///
+  /// In en, this message translates to:
+  /// **'Add server'**
+  String get handoffUiLinkAddServer;
 
   /// Add server: line under the drawing while the saved server connects.
   ///

@@ -8,7 +8,6 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/camera.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/connection_help_screen.dart';
 import 'package:opencode_mobile/ui/screens/host_management_screen.dart';
 import 'package:opencode_mobile/ui/screens/pairing_scanner_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
@@ -43,7 +42,6 @@ void main() {
   setUpAll(loadCaptureFonts);
   for (final rtl in [false, true]) {
     for (final page in [
-      'help',
       'tailscale',
       'host',
       'scanner',
@@ -88,7 +86,6 @@ void main() {
         final outputScroll = ScrollController();
         final boundary = GlobalKey();
         final home = switch (page) {
-          'help' => const ConnectionHelpScreen(),
           'tailscale' => const TailscaleSetupScreen(
             initialAddress: 'https://workstation.example.ts.net',
           ),
@@ -158,7 +155,7 @@ void main() {
           for (final field in tester.widgetList<TextField>(
             find.byType(TextField),
           )) {
-            if (page == 'help' || page == 'tailscale') {
+            if (page == 'tailscale') {
               expect(field.textDirection, TextDirection.ltr);
             }
           }

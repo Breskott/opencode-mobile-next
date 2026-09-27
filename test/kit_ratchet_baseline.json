@@ -1,16 +1,12 @@
 {
   "G1": {
     "lib/main.dart": {
-      "MaterialBanner(": 2,
+      "MaterialBanner(": 1,
       "SnackBar(": 6,
       "showSnackBar(": 6
     },
     "lib/ui/screens/chat_screen.dart": {
       "showModalBottomSheet(": 3
-    },
-    "lib/ui/screens/connection_help_screen.dart": {
-      "SnackBar(": 1,
-      "showSnackBar(": 1
     },
     "lib/ui/screens/legacy_drafts_screen.dart": {
       "SnackBar(": 1,
@@ -67,12 +63,6 @@
       "AppBarTheme": 1,
       "InputDecorationTheme": 1
     },
-    "lib/ui/screens/agent_choice_screen.dart": {
-      "AppBar": 1,
-      "Scaffold": 1,
-      "SingleChildScrollView": 1,
-      "Text": 3
-    },
     "lib/ui/screens/attention_overview_screen.dart": {
       "AppBar": 1,
       "Card": 1,
@@ -96,17 +86,6 @@
       "Text": 9,
       "TextButton": 3,
       "Tooltip": 4
-    },
-    "lib/ui/screens/connection_help_screen.dart": {
-      "AppBar": 1,
-      "FilledButton": 1,
-      "Icon": 1,
-      "IconButton": 1,
-      "Scaffold": 1,
-      "SelectableText": 1,
-      "SnackBar": 1,
-      "Text": 11,
-      "TextField": 1
     },
     "lib/ui/screens/context_capsule_screen.dart": {
       "AppBar": 1,
@@ -294,9 +273,6 @@
       "Curves.": 2,
       "duration: Duration(": 1
     },
-    "lib/ui/screens/connection_help_screen.dart": {
-      "Clipboard.setData(": 1
-    },
     "lib/ui/screens/legacy_drafts_screen.dart": {
       "Clipboard.setData(": 1,
       "showConfirmSheet(": 1
@@ -345,19 +321,12 @@
     "lib/ui/kit/glass/kit_glass.dart": {
       "Colors.*": 2
     },
-    "lib/ui/screens/agent_choice_screen.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 2
-    },
     "lib/ui/screens/attention_overview_screen.dart": {
       ".textTheme": 2
     },
     "lib/ui/screens/chat_screen.dart": {
       ".colorScheme": 1,
       ".textTheme": 2
-    },
-    "lib/ui/screens/connection_help_screen.dart": {
-      ".textTheme": 4
     },
     "lib/ui/screens/context_capsule_screen.dart": {
       ".colorScheme": 3,
@@ -500,10 +469,6 @@
     "lib/ui/kit/terminal_key_bar.dart": {
       "EdgeInsets numeric": 1
     },
-    "lib/ui/screens/agent_choice_screen.dart": {
-      "EdgeInsets numeric": 1,
-      "SizedBox numeric": 2
-    },
     "lib/ui/screens/attention_overview_screen.dart": {
       "EdgeInsets numeric": 4,
       "SizedBox numeric": 7
@@ -515,10 +480,6 @@
       "disableAnimationsOf": 1,
       "icon size not 20/22/24": 2,
       "text scale clamp": 1
-    },
-    "lib/ui/screens/connection_help_screen.dart": {
-      "EdgeInsets numeric": 2,
-      "SizedBox numeric": 9
     },
     "lib/ui/screens/context_capsule_screen.dart": {
       "EdgeInsets numeric": 5,

@@ -24,8 +24,6 @@ import 'package:opencode_mobile/state/provider_quota_overview.dart';
 import 'package:opencode_mobile/state/usage_overview.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/agent_account_screen.dart';
-import 'package:opencode_mobile/ui/screens/agent_choice_screen.dart';
-import 'package:opencode_mobile/ui/screens/connection_help_screen.dart';
 import 'package:opencode_mobile/ui/screens/external_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/host_management_screen.dart';
@@ -59,7 +57,7 @@ Widget _rawApp(Widget home, {bool light = false}) => MaterialApp(
 final _demoTime = DateTime.utc(2026, 9, 20, 12);
 
 // ---------------------------------------------------------------------------
-// servers / servers-welcome / agent-choice
+// servers / servers-welcome
 // ---------------------------------------------------------------------------
 
 List<ServerProfile> _demoServers({bool passwordReentry = false}) => [
@@ -500,12 +498,6 @@ final gServersArea = CensusArea(
       kit.expectVisible(find.byKey(const ValueKey('welcome-choice-computer')));
     }),
 
-    // -- agent-choice ------------------------------------------------------
-    CensusShot('agent-choice', (kit) async {
-      await kit.pumpRaw(_rawApp(AgentChoiceScreen(onChoose: (_) async {})));
-      kit.expectVisible(find.byKey(const ValueKey('agent-choice-screen')));
-    }),
-
     // -- servers-remove-server-sheet ---------------------------------------
     CensusShot('servers-remove-server-sheet', (kit) async {
       final controller = await _serversController(kit);
@@ -605,21 +597,6 @@ final gServersArea = CensusArea(
       kit.expectVisible(
         find.byKey(const ValueKey('pairing-scanner-no-camera')),
       );
-    }),
-
-    // -- connection-help -----------------------------------------------------
-    CensusShot('connection-help', state: 'empty', (kit) async {
-      await kit.pumpRaw(_rawApp(const ConnectionHelpScreen()));
-      kit.expectText('Connection help');
-    }),
-    CensusShot('connection-help', state: 'explained', (kit) async {
-      await kit.pumpRaw(_rawApp(const ConnectionHelpScreen()));
-      await kit.enterText(
-        find.byType(TextField),
-        'https://user:pass@server.example',
-      );
-      await kit.tapText('Explain address');
-      kit.expectTextContaining('Credentials do not belong in a URL');
     }),
 
     // -- tailscale-setup -------------------------------------------------

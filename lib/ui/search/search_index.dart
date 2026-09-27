@@ -20,7 +20,6 @@ import '../screens/about_screen.dart';
 import '../screens/agent_account_screen.dart';
 import '../screens/app_diagnostics_screen.dart';
 import '../screens/capabilities_screen.dart';
-import '../screens/connection_help_screen.dart';
 import '../screens/demo_screen.dart';
 import '../screens/external_agents_screen.dart';
 import '../screens/global_sessions_screen.dart';
@@ -35,6 +34,7 @@ import '../screens/server_capabilities_screen.dart';
 import '../screens/session_import_screen.dart';
 import '../screens/settings/plugins_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/servers_screen.dart' show ServersRouteRequest;
 import '../screens/tailscale_setup_screen.dart';
 import '../screens/team/team_home_screen.dart';
 import '../screens/team/team_intro_screen.dart';
@@ -1084,14 +1084,20 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       ),
     ),
     SearchEntry(
-      id: 'inside-guide-connection-help',
+      id: 'settings-add-server',
       kind: SearchEntryKind.insideSettings,
-      icon: AppIconography.supportQuestion,
-      title: l10n.connectionHelpTitle,
-      parent: l10n.onboardingSetupGuide,
+      parent: l10n.activitySavedServers,
+      icon: AppIconography.add,
+      title: l10n.e7SetupAddServer,
+      // Connection help folded into Add server (P3.9): its checks explain
+      // an address where it is typed.
       keywords: l10n.discoverConnectionHelpAliases,
-      pages: const ['connection-help'],
-      open: _screen((_) => const ConnectionHelpScreen()),
+      // Add server is the Servers page's action; its form stays excluded
+      // from title search (many titles, one form).
+      pages: const ['servers'],
+      open: (context, _) => Navigator.of(
+        context,
+      ).pushNamed('/servers', arguments: const ServersRouteRequest.add()),
     ),
 
     // ---- Places ------------------------------------------------------
