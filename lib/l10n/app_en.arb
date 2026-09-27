@@ -26571,5 +26571,227 @@
   "teamHostFormSaveAnyway": "Save without an answer",
   "@teamHostFormSaveAnyway": {
     "description": "Saves an AI Team host address that did not answer, for a computer that is asleep (shared-team-1)."
+  },
+  "teamAgentScreenPause": "Pause {agent}",
+  "@teamAgentScreenPause": {
+    "description": "Agent page action: pause this agent's session. {agent} is the agent's short name.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentScreenPaused": "Paused {agent}",
+  "@teamAgentScreenPaused": {
+    "description": "Agent page undo bar after pausing an agent. {agent} is the agent's short name.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentScreenResume": "Start {agent} again",
+  "@teamAgentScreenResume": {
+    "description": "Agent page: on a stopped or crashed agent, starts it again. {agent} is the agent's short name.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentScreenNudge": "Nudge {agent}",
+  "@teamAgentScreenNudge": {
+    "description": "Agent page action: wake a stalled agent. {agent} is the agent's short name.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentScreenRestart": "Restart {agent}",
+  "@teamAgentScreenRestart": {
+    "description": "Agent page action and restart confirmation button. {agent} is the agent's short name.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentScreenStop": "Stop {agent}",
+  "@teamAgentScreenStop": {
+    "description": "Agent page action and stop confirmation button. {agent} is the agent's short name.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentScreenStopBody": "{agent} stops working on “{task}” now. The task stays on the host, and you can start {agent} again from this page.",
+  "@teamAgentScreenStopBody": {
+    "description": "Stop confirmation body naming the task the agent works on.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      },
+      "task": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentScreenStoppedTitle": "{agent} is stopped",
+  "@teamAgentScreenStoppedTitle": {
+    "description": "Agent page notice title for a stopped agent.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentScreenStoppedBody": "Its work stays where it is. Start it again when you want it back.",
+  "@teamAgentScreenStoppedBody": {
+    "description": "Agent page notice body for a stopped agent."
+  },
+  "teamAgentScreenCrashedTitle": "{agent} stopped unexpectedly",
+  "@teamAgentScreenCrashedTitle": {
+    "description": "Agent page notice title for a crashed agent.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentScreenCrashedBody": "Its session ended on its own. Start it again to pick its work up from the host.",
+  "@teamAgentScreenCrashedBody": {
+    "description": "Agent page notice body for a crashed agent."
+  },
+  "teamAgentScreenRecyclingBody": "It starts a fresh session soon and picks its work up from the host.",
+  "@teamAgentScreenRecyclingBody": {
+    "description": "Agent page notice body under 'Recycling soon': what happens when the context is nearly full."
+  },
+  "teamAgentScreenModelFrom": "{model} from {provider}",
+  "@teamAgentScreenModelFrom": {
+    "description": "Agent page status row: the model in plain words, e.g. 'gpt-x from openai'.",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      },
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentScreenGateIfIgnored": "{agent} waits until you answer",
+  "@teamAgentScreenGateIfIgnored": {
+    "description": "Agent page needs-you row: what happens if the person does not answer.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentScreenControlsElsewhere": "This phone can't pause, stop or message {agent} on this host yet. Run the team's host front on the computer to control it from here.",
+  "@teamAgentScreenControlsElsewhere": {
+    "description": "Agent page: explains why no controls are shown, with a How button.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentScreenMessageLabel": "Your message",
+  "@teamAgentScreenMessageLabel": {
+    "description": "Message-an-agent sheet: the field's label."
+  },
+  "gateSheetDestructiveBody": "The host marks this action as destructive. Approving it can't be undone from the phone.",
+  "@gateSheetDestructiveBody": {
+    "description": "Gate sheet: notice on a destructive confirmation."
+  },
+  "gateSheetAnswerLabel": "Your answer",
+  "@gateSheetAnswerLabel": {
+    "description": "Gate sheet free-text question: the field's label."
+  },
+  "gateSheetAfterAnswer": "The team carries on as soon as the host confirms your answer.",
+  "@gateSheetAfterAnswer": {
+    "description": "Gate sheet: what the team does after an answer."
+  },
+  "gateSheetFixIt": "Ask the team to fix it",
+  "@gateSheetFixIt": {
+    "description": "Gate sheet, failed run: primary action that sends the error to the worker and asks it to fix the cause."
+  },
+  "gateSheetFixItDetail": "Sends the error to {agent} and asks it to find the cause and carry on.",
+  "@gateSheetFixItDetail": {
+    "description": "Gate sheet, failed run: what 'Ask the team to fix it' does.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetFixRequest": "The task “{task}” failed with this error:\n{error}\nPlease find the cause, fix it and carry on.",
+  "@gateSheetFixRequest": {
+    "description": "Gate sheet, failed run: the message sent to the worker by 'Ask the team to fix it'.",
+    "placeholders": {
+      "task": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetOpenAgent": "Open {agent}",
+  "@gateSheetOpenAgent": {
+    "description": "Gate sheet, failed run: opens the worker's page. {agent} is its short name.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "teamIntroSetUpPhone": "Set up AI Team on this phone",
+  "@teamIntroSetUpPhone": {
+    "description": "AI Team intro: primary on a phone server."
+  },
+  "teamIntroSetUpOn": "Set up AI Team on {server}",
+  "@teamIntroSetUpOn": {
+    "description": "AI Team intro: primary on a computer where Gas City was not found. {server} is the server's name.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "teamIntroTurnOn": "Turn on AI Team on {server}",
+  "@teamIntroTurnOn": {
+    "description": "AI Team intro: primary when Gas City was found on the computer. {server} is the server's name.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "teamIntroCostTitle": "Before you set it up",
+  "@teamIntroCostTitle": {
+    "description": "AI Team intro: title of the cost notice on a phone."
+  },
+  "teamIntroCostTime": "About 8–10 minutes the first time",
+  "@teamIntroCostTime": {
+    "description": "AI Team intro cost item: how long the first setup takes on a phone."
+  },
+  "teamIntroCostMemory": "About 550 MB of memory for each worker",
+  "@teamIntroCostMemory": {
+    "description": "AI Team intro cost item: memory each worker uses on a phone."
+  },
+  "teamAgentScreenLabelId": "Agent id",
+  "@teamAgentScreenLabelId": {
+    "description": "Agent page technical details: the label of the agent's id."
+  },
+  "teamAgentScreenMessageFirst": "Type a message first",
+  "@teamAgentScreenMessageFirst": {
+    "description": "Message-an-agent sheet: why Send is off while the field is empty."
+  },
+  "gateSheetSendNeedsText": "Type an answer first",
+  "@gateSheetSendNeedsText": {
+    "description": "Gate sheet free-text question: why Send is off while the field is empty."
   }
 }

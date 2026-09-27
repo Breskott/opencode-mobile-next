@@ -16,10 +16,15 @@
 ///   ([TeamDiscovery]). Found: Turn on. Not found: Set it up shows the host
 ///   guide and looks again when it closes; Enter its address is the manual
 ///   form ([showTeamHostSheet]).
+///
+/// Built from kit parts only (screen-team-1): the top bar, the drawing,
+/// two row panels (how it works, what it needs), the cost before the
+/// set-up primary ([KitNotice.cost]: the time the first setup takes and
+/// the memory each worker uses on a phone, KIT-37), and every action named
+/// after what it sets up ("Set up AI Team on this phone").
 library;
 
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -49,11 +54,10 @@ Future<void> openTeamIntro(
   ConnectionController controller, {
   TeamHostProbe? probe,
   TermuxTeamRuntime? runtime,
-}) => Navigator.of(context).push(
-  MaterialPageRoute<void>(
-    builder: (_) =>
-        TeamIntroScreen(controller: controller, probe: probe, runtime: runtime),
-  ),
+}) => pushKitPage<void>(
+  context,
+  (_) =>
+      TeamIntroScreen(controller: controller, probe: probe, runtime: runtime),
 );
 
 class TeamIntroScreen extends StatefulWidget {
@@ -167,9 +171,13 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
     }
   }
 
-  void _openPlugins() => Navigator.of(context).pushReplacement(
-    MaterialPageRoute<void>(
-      builder: (_) => PluginsSettingsScreen(
+  /// Settings › Plugins, whose AI Team section opens phone setup's Add
+  /// tools › AI Team when the team is not installed yet, then turns it on
+  /// for the project.
+  void _openPlugins() => unawaited(
+    replaceWithKitPage<void, void>(
+      context,
+      (_) => PluginsSettingsScreen(
         controller: widget.controller,
         probe: widget.probe,
         teamRuntime: widget.runtime,
@@ -224,7 +232,7 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     final profile = _profile;
     final kind = _kind;
     final name = profile?.name ?? '';
@@ -237,14 +245,14 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
       case TeamServerKind.inApp:
         primary = KitAction(
           key: const ValueKey('team-intro-set-up'),
-          label: l10n.teamDiscoverSetUp,
+          label: l10n.teamIntroSetUpPhone,
           onPressed: _openPlugins,
         );
       case TeamServerKind.termux:
         if (_termuxSupported == true) {
           primary = KitAction(
             key: const ValueKey('team-intro-set-up'),
-            label: l10n.teamDiscoverSetUp,
+            label: l10n.teamIntroSetUpPhone,
             working: _busy,
             onPressed: _busy ? null : _openTermuxSetup,
           );
@@ -253,14 +261,14 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
         if (_discovery?.result != null) {
           primary = KitAction(
             key: const ValueKey('team-intro-turn-on'),
-            label: l10n.teamUiDiscoveryTurnOn,
+            label: l10n.teamIntroTurnOn(name),
             working: _busy,
             onPressed: _busy ? null : _turnOn,
           );
         } else {
           primary = KitAction(
             key: const ValueKey('team-intro-set-up'),
-            label: l10n.teamDiscoverSetUp,
+            label: l10n.teamIntroSetUpOn(name),
             onPressed: _busy ? null : _showGuide,
           );
           secondary = KitAction(
@@ -271,49 +279,49 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
         }
     }
     final actions = KitActionBlock(primary: primary, secondary: secondary);
+    final inset = EdgeInsetsDirectional.symmetric(
+      horizontal: tokens.gutter,
+      vertical: tokens.space2,
+    );
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.teamUiHomeTitle)),
-      body: KitScreen(
-        loading: _looking,
-        loadingLabel: l10n.teamDiscoverLooking(name),
-        body: LayoutBuilder(
-          builder: (context, constraints) => ListView(
-            key: const ValueKey('team-intro'),
-            padding: EdgeInsets.only(
-              top: 8,
-              bottom: actions.isEmpty ? KitScreen.endPadding(context) : 16,
+    return KitScreen(
+      topBar: KitTopBar(title: l10n.teamUiHomeTitle),
+      width: KitScreenWidth.reading,
+      loading: _looking,
+      loadingLabel: l10n.teamDiscoverLooking(name),
+      body: ListView(
+        key: const ValueKey('team-intro'),
+        padding: EdgeInsetsDirectional.only(
+          top: tokens.space2,
+          bottom: actions.isEmpty
+              ? KitScreen.endPadding(context)
+              : tokens.space4,
+        ),
+        children: [
+          const Center(
+            child: KitIllustration(
+              key: ValueKey('team-intro-drawing'),
+              scene: TeamDiscoverRelayScene(),
             ),
+          ),
+          Padding(
+            padding: inset,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                KitText(l10n.teamDiscoverEntryTitle, role: KitTextRole.title),
+                SizedBox(height: tokens.space2),
+                KitText(
+                  l10n.teamDiscoverIntroBody,
+                  tone: KitTextTone.secondary,
+                ),
+              ],
+            ),
+          ),
+          KitRowGroup(
+            margin: _groupMargin(context),
+            label: l10n.teamDiscoverHowHeading,
             children: [
-              Center(
-                child: KitIllustration(
-                  key: const ValueKey('team-intro-drawing'),
-                  scene: const TeamDiscoverRelayScene(),
-                  width: math.min(300, constraints.maxWidth - 32),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      l10n.teamDiscoverEntryTitle,
-                      style: theme.textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.teamDiscoverIntroBody,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.mutedOf(theme),
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SectionLabel(l10n.teamDiscoverHowHeading),
               for (final (icon, title, body) in [
                 (
                   AppIconography.checklist,
@@ -336,61 +344,86 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
                   l10n.teamDiscoverStepMergeBody,
                 ),
               ])
-                _Fact(icon: icon, title: title, body: body),
-              if (kind != null) ...[
-                SectionLabel(
-                  kind == TeamServerKind.computer
-                      ? l10n.teamDiscoverNeedsServer(name)
-                      : l10n.teamDiscoverNeedsPhone,
-                  key: const ValueKey('team-intro-needs'),
-                ),
-                ..._needs(context, l10n, kind, name),
-              ],
+                _fact(context, icon, title, body),
             ],
           ),
-        ),
-        bottom: actions.isEmpty ? null : actions,
+          if (kind != null) ..._needs(context, l10n, kind, name, inset),
+        ],
       ),
+      bottom: actions.isEmpty ? null : actions,
     );
   }
 
+  /// What it needs on this kind of server, then its cost before the
+  /// primary (KIT-37).
   List<Widget> _needs(
     BuildContext context,
     AppLocalizations l10n,
     TeamServerKind kind,
     String name,
+    EdgeInsetsGeometry inset,
   ) {
+    final label = kind == TeamServerKind.computer
+        ? l10n.teamDiscoverNeedsServer(name)
+        : l10n.teamDiscoverNeedsPhone;
+    Widget group(List<Widget> rows) => KitRowGroup(
+      margin: _groupMargin(context),
+      key: const ValueKey('team-intro-needs'),
+      label: label,
+      children: rows,
+    );
+    // The phone's own cost: the time the first setup takes (measured
+    // 8–10 min) and the memory each worker holds (about 550 MB).
+    Widget phoneCost(String download) => Padding(
+      padding: inset,
+      child: KitNotice.cost(
+        [download, l10n.teamIntroCostTime, l10n.teamIntroCostMemory],
+        key: const ValueKey('team-intro-cost'),
+        title: l10n.teamIntroCostTitle,
+      ),
+    );
     switch (kind) {
       case TeamServerKind.inApp:
+        final download = l10n.teamDiscoverDownloadTitle(
+          setupSizeText(l10n, AiTeamPins.deviceDownloadBytes),
+        );
         return [
-          _Fact(
-            icon: AppIconography.download,
-            title: l10n.teamDiscoverDownloadTitle(
-              setupSizeText(l10n, AiTeamPins.deviceDownloadBytes),
+          group([
+            _fact(
+              context,
+              AppIconography.download,
+              download,
+              l10n.teamDiscoverInAppDownloadBody,
             ),
-            body: l10n.teamDiscoverInAppDownloadBody,
-          ),
-          _Fact(
-            icon: AppIconography.batteryWarning,
-            title: l10n.teamDiscoverBatteryTitle,
-            body: l10n.teamDiscoverInAppBatteryBody,
-          ),
-          _Fact(
-            icon: AppIconography.projects,
-            title: l10n.teamDiscoverProjectTitle,
-            body: l10n.teamDiscoverProjectBody,
-          ),
+            _fact(
+              context,
+              AppIconography.batteryWarning,
+              l10n.teamDiscoverBatteryTitle,
+              l10n.teamDiscoverInAppBatteryBody,
+            ),
+            _fact(
+              context,
+              AppIconography.projects,
+              l10n.teamDiscoverProjectTitle,
+              l10n.teamDiscoverProjectBody,
+            ),
+          ]),
+          phoneCost(download),
         ];
       case TeamServerKind.termux:
         final supported = _termuxSupported;
-        if (supported == null) return const [KitSkeletonRows(count: 2)];
+        if (supported == null) {
+          return [
+            group(const [KitSkeletonRows(count: 2)]),
+          ];
+        }
         if (!supported) {
+          // Explain instead of vanish (P7.4): why, and the computer route.
           return [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: inset,
               child: KitNotice(
                 key: const ValueKey('team-intro-unsupported'),
-                tone: AppStatusTone.attention,
                 icon: AppIconography.phone,
                 title: l10n.teamDiscoverUnsupportedTitle,
                 message: l10n.teamDiscoverUnsupportedBody,
@@ -398,42 +431,52 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
                   KitAction(
                     key: const ValueKey('team-intro-on-computer'),
                     label: l10n.teamDiscoverOnComputer,
-                    onPressed: () => showTeamHostGuideSheet(context),
+                    onPressed: () => unawaited(showTeamHostGuideSheet(context)),
                   ),
                 ],
               ),
             ),
           ];
         }
+        final download = l10n.teamDiscoverDownloadTitle(
+          setupSizeText(l10n, (_termuxMb ?? 0) * 1000000),
+        );
         return [
-          _Fact(
-            icon: AppIconography.download,
-            title: l10n.teamDiscoverDownloadTitle(
-              setupSizeText(l10n, (_termuxMb ?? 0) * 1000000),
+          group([
+            _fact(
+              context,
+              AppIconography.download,
+              download,
+              l10n.teamDiscoverTermuxDownloadBody,
             ),
-            body: l10n.teamDiscoverTermuxDownloadBody,
-          ),
-          _Fact(
-            icon: AppIconography.batteryWarning,
-            title: l10n.teamDiscoverBatteryTitle,
-            body: l10n.teamDiscoverTermuxBatteryBody,
-          ),
+            _fact(
+              context,
+              AppIconography.batteryWarning,
+              l10n.teamDiscoverBatteryTitle,
+              l10n.teamDiscoverTermuxBatteryBody,
+            ),
+          ]),
+          phoneCost(download),
         ];
       case TeamServerKind.computer:
         return [
-          _Fact(
-            icon: AppIconography.computer,
-            title: l10n.teamDiscoverComputerTitle(name),
-            body: l10n.teamDiscoverComputerBody,
-          ),
-          _Fact(
-            icon: AppIconography.speed,
-            title: l10n.teamDiscoverSpeedTitle,
-            body: l10n.teamDiscoverSpeedBody,
-          ),
+          group([
+            _fact(
+              context,
+              AppIconography.computer,
+              l10n.teamDiscoverComputerTitle(name),
+              l10n.teamDiscoverComputerBody,
+            ),
+            _fact(
+              context,
+              AppIconography.speed,
+              l10n.teamDiscoverSpeedTitle,
+              l10n.teamDiscoverSpeedBody,
+            ),
+          ]),
           if (_discovery?.result != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              padding: inset,
               child: KitNotice(
                 key: const ValueKey('team-intro-found'),
                 tone: AppStatusTone.ok,
@@ -445,19 +488,27 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
         ];
     }
   }
-}
 
-/// One line of the intro: an icon, a short title and what it means. Not a
-/// door (nothing to open), so no chevron.
-class _Fact extends StatelessWidget {
-  const _Fact({required this.icon, required this.title, required this.body});
+  /// A panel's place in the list: the gutter at the sides, a section step
+  /// above its label.
+  static EdgeInsetsDirectional _groupMargin(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    return EdgeInsetsDirectional.fromSTEB(
+      tokens.gutter,
+      tokens.space3,
+      tokens.gutter,
+      tokens.space1,
+    );
+  }
 
-  final IconData icon;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) => MergeSemantics(
+  /// One line of the intro: an icon, a short title and what it means. Not
+  /// a door (nothing to open), so no chevron.
+  Widget _fact(
+    BuildContext context,
+    IconData icon,
+    String title,
+    String body,
+  ) => MergeSemantics(
     child: KitRow(
       leading: KitRow.icon(context, icon),
       title: title,
