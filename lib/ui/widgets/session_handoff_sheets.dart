@@ -21,11 +21,6 @@ AppLocalizations _l10n(BuildContext context) =>
 /// exact `--help` output.
 const sessionResumeVerifiedVersions = 'opencode 1.18.25, opencode2 beta-19242';
 
-/// What [showContinueOnComputerSheet] (and [ContinueOnComputerSheet]) used
-/// to pop with for "Export conversation". Export now lives only in the
-/// conversation menu (one entry point); kept for hosts that still check it.
-const continueOnComputerExport = 'export';
-
 /// What they pop with when the person picks "Reload conversation" on the
 /// unavailable state (only offered when the host passes `offerReload`).
 const continueOnComputerReload = 'reload';
@@ -35,12 +30,10 @@ const continueOnComputerReload = 'reload';
 /// Resolves to [continueOnComputerReload] when the person asks to reload a
 /// conversation whose folder the server did not report, and null when they
 /// close it. The sheet itself never connects or sends anything; copying
-/// only writes the clipboard. [exportAvailable] is ignored: Export lives in
-/// the conversation menu.
+/// only writes the clipboard. Export lives in the conversation menu.
 Future<String?> showContinueOnComputerSheet(
   BuildContext context, {
   required SessionResumeCommand command,
-  required bool exportAvailable,
   bool offerReload = false,
 }) {
   final l10n = _l10n(context);
@@ -74,14 +67,10 @@ class ContinueOnComputerSheet extends StatelessWidget {
   const ContinueOnComputerSheet({
     super.key,
     required this.command,
-    required this.exportAvailable,
     this.offerReload = false,
   });
 
   final SessionResumeCommand command;
-
-  /// Ignored: Export lives in the conversation menu (one entry point).
-  final bool exportAvailable;
 
   /// Offer "Reload conversation" when the server did not report a folder;
   /// the host reloads the conversation and opens the sheet again.

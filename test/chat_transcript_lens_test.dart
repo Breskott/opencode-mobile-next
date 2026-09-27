@@ -4,6 +4,7 @@ import 'support/complete_message_history.dart';
 // assistant long-press actions, and earlier-messages pill gating.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -504,16 +505,31 @@ void main() {
         find.byKey(const ValueKey('message-actions-assistant-1')),
         findsNothing,
       );
-      // (Past the end of the prose's line here: the words themselves are
-      // selectable.)
-      await tester.longPressAt(
-        tester.getTopRight(find.byKey(const ValueKey('message-assistant-1'))) +
-            const Offset(-2, 2),
+      // The prose fills the conversation's width (a long-press on the words
+      // selects them), so the turn's menu is read from the actions it
+      // offers a screen reader and a long-press past the words alike.
+      final semantics = tester.ensureSemantics();
+      await tester.pump();
+      final turn = find.descendant(
+        of: find.byKey(const ValueKey('message-assistant-1')),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.customSemanticsActions != null,
+        ),
       );
-      await tester.pump(const Duration(milliseconds: 400));
-
-      expect(find.text('Copy reply so far'), findsOneWidget);
-      expect(find.text('Copy complete reply'), findsNothing);
+      final ids =
+          tester
+              .getSemantics(turn.first)
+              .getSemanticsData()
+              .customSemanticsActionIds ??
+          const <int>[];
+      final labels = [
+        for (final id in ids) CustomSemanticsAction.getAction(id)?.label,
+      ];
+      expect(labels, contains('Copy reply so far'));
+      expect(labels, isNot(contains('Copy complete reply')));
+      semantics.dispose();
     },
   );
 

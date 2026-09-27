@@ -30679,5 +30679,13 @@
   "newConversationCloudDetail": "A cloud machine for this project",
   "@newConversationCloudDetail": {
     "description": "New conversation chooser: what a cloud machine row is"
+  },
+  "chatUiExportThisConversation": "Export this conversation",
+  "@chatUiExportThisConversation": {
+    "description": "Conversation menu row: save this conversation as a file (JSON where the server exports, Markdown otherwise)"
+  },
+  "chatDraftCopy": "Copy draft",
+  "@chatDraftCopy": {
+    "description": "Chat, draft not saved: copies the unsaved draft text"
   }
 }

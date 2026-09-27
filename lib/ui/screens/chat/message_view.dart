@@ -5,39 +5,6 @@ part of '../chat_screen.dart';
 // KIT-41). This file decides what a server message is (a prompt, a step, a
 // notice) and which part draws it; the parts draw.
 
-/// A floating affordance shown when the transcript is scrolled away from the
-/// newest message; tapping returns to the live end of the conversation.
-class _JumpToLatestButton extends StatelessWidget {
-  const _JumpToLatestButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => KitJumpPill(
-    pillKey: const ValueKey('jump-to-latest'),
-    label: KitJumpPill.latestLabel(context),
-    onPressed: onTap,
-    visible: true,
-  );
-}
-
-/// A floating chip over long transcripts naming how much history sits above,
-/// opening the timeline for direct navigation.
-class _EarlierMessagesPill extends StatelessWidget {
-  const _EarlierMessagesPill({required this.count, required this.onTap});
-
-  final int count;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => KitJumpPill.older(
-    pillKey: const ValueKey('earlier-messages-pill'),
-    label: _chatL10n(context).chatUiEarlierMessageCount(count),
-    onPressed: onTap,
-    visible: true,
-  );
-}
-
 /// Finds the mapper's v2-only variant tag on a message, if any: a part whose
 /// `type` starts with `v2:` (see `mapApi2Message`). v1 servers never emit
 /// these, and `Part.isRenderable` is false for them, so the v1 rendering

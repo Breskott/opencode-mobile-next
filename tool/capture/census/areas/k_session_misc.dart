@@ -589,7 +589,6 @@ final kSessionMiscArea = CensusArea(
               sessionID: checkoutSessionID,
               directory: projectDirectory,
             ),
-            exportAvailable: true,
           ),
         ),
       );
@@ -614,7 +613,6 @@ final kSessionMiscArea = CensusArea(
               sessionID: checkoutSessionID,
               directory: null,
             ),
-            exportAvailable: true,
           ),
         ),
       );
