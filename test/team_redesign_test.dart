@@ -8,7 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamConversationScreen;
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 
 import 'support/team_golden_fixture.dart';
@@ -72,8 +73,9 @@ Future<OrchestrationController> _pump(
 Widget _home(OrchestrationController controller) =>
     TeamHomeScreen(controller: controller, now: () => teamSceneClock);
 
-Widget _run(OrchestrationController controller) => RunScreen(
-  controller: controller,
+/// A task is its conversation (P3.5: the run page is retired).
+Widget _run(OrchestrationController controller) => TeamConversationScreen(
+  team: controller,
   runId: teamSceneRunId,
   now: () => teamSceneClock,
 );
@@ -83,16 +85,20 @@ void main() {
 
   for (final onPhone in [false, true]) {
     final where = onPhone ? 'on this phone' : 'on a computer';
-    testWidgets('no engine words on the home, its rows or the '
-        'run\'s Overview and Steps ($where)', (tester) async {
+    testWidgets('no engine words on the home, its rows, the task\'s '
+        'conversation or its Task details ($where)', (tester) async {
       await _pump(tester, _home, onPhone: onPhone);
       expect(_engineWordsIn(find.byType(TeamHomeScreen)), isEmpty);
 
       await _pump(tester, _run, onPhone: onPhone);
-      expect(_engineWordsIn(find.byType(RunScreen)), isEmpty);
-      await tester.tap(_key('team-run-tab-work'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(_engineWordsIn(find.byType(TeamConversationScreen)), isEmpty);
+      await tester.tap(_key('team-conversation-menu'));
       await tester.pumpAndSettle();
-      expect(_engineWordsIn(find.byType(RunScreen)), isEmpty);
+      await tester.tap(_key('team-conversation-details'));
+      await tester.pumpAndSettle();
+      // The sheet, its Technical details still folded.
+      expect(_engineWordsIn(_key('team-task-details')), isEmpty);
       expect(tester.takeException(), isNull);
     });
   }

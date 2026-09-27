@@ -88,18 +88,48 @@ class KitSince extends StatefulWidget {
 
   /// "Waiting 4 min" / "Waiting less than a minute", on whole minutes of
   /// [elapsed].
-  static String waitingLabel(BuildContext context, Duration elapsed) =>
-      lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).kitSinceWaitingFor(elapsed.inMinutes);
+  static String waitingLabel(BuildContext context, Duration elapsed) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return elapsed.inHours < 1
+        ? l10n.kitSinceWaitingFor(elapsed.inMinutes)
+        : l10n.kitSinceWaitingForLong(durationLabel(context, elapsed));
+  }
 
   /// The age alone, for a host that places it mid-line: "4 min" / "less
-  /// than a minute". [KitNeedsYou] and [KitRequestCard]'s caption compose
-  /// "waiting {age}" with it, so the kit words an age in one place.
+  /// than a minute" / "2 h 5 min". [KitNeedsYou] and [KitRequestCard]'s
+  /// caption compose "waiting {age}" with it, so the kit words an age in
+  /// one place.
   static String ageLabel(BuildContext context, Duration elapsed) =>
-      lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).kitSinceAge(elapsed.inMinutes);
+      elapsed.inHours < 1
+      ? lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).kitSinceAge(elapsed.inMinutes)
+      : durationLabel(context, elapsed);
+
+  /// A span in the largest units that read at a glance: "less than a
+  /// minute", "45 min", "3 h 20 min", "1 d 21 h". Never a count of
+  /// thousands of minutes.
+  static String durationLabel(BuildContext context, Duration elapsed) =>
+      durationWords(
+        lookupAppLocalizations(Localizations.localeOf(context)),
+        elapsed,
+      );
+
+  /// [durationLabel] without a context.
+  static String durationWords(AppLocalizations l10n, Duration elapsed) {
+    final span = elapsed.isNegative ? Duration.zero : elapsed;
+    if (span.inHours < 1) return l10n.kitSinceAge(span.inMinutes);
+    if (span.inDays < 1) {
+      final minutes = span.inMinutes % 60;
+      return minutes == 0
+          ? l10n.kitDurationHours(span.inHours)
+          : l10n.kitDurationHoursMinutes(span.inHours, minutes);
+    }
+    final hours = span.inHours % 24;
+    return hours == 0
+        ? l10n.kitDurationDays(span.inDays)
+        : l10n.kitDurationDaysHours(span.inDays, hours);
+  }
 
   /// The phase of a wait that began at [since], at [now] (default
   /// `clock.now()`). For controllers and tests that need the rule without a

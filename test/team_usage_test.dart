@@ -1,7 +1,8 @@
 // TEAM-113: usage surfaces. The shared formatter returns null when the
 // host reported neither cost nor tokens, writes tokens compactly and puts
-// "est." after every cost; the run Overview's "Team today" line (under
-// its Details row since the 2026-09-24 redesign) and the
+// "est." after every cost; Task details' "Team today" line (slice-P3.5:
+// the retired run Overview's figure moved there, on the sheet itself) and
+// the
 // agent Runtime's "Tokens / context / cost" line show over the fixture's
 // `/usage` and are absent when usage is empty or the capability is off;
 // the Gas City read capabilities now include `usage`.
@@ -20,7 +21,7 @@ import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
 import 'package:opencode_mobile/ui/widgets/team_vocabulary.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -396,59 +397,42 @@ void main() {
     String text(WidgetTester tester, Finder finder) =>
         _textOf(tester, finder).data!;
 
-    /// The redesigned Overview keeps the counts, the usage and the
-    /// policy under one collapsed "Details" row; open it.
-    Future<void> openDetails(WidgetTester tester) async {
-      await tester.tap(find.text('Details'));
-      await tester.pumpAndSettle();
-      expect(key('team-run-summary-body'), findsOneWidget);
-    }
+    Widget details(OrchestrationController controller) => Scaffold(
+      body: SingleChildScrollView(
+        child: TeamTaskDetails(
+          controller: controller,
+          runId: 'oc-xru',
+          now: () => clock,
+        ),
+      ),
+    );
 
-    Future<void> pumpRun(
+    Future<void> pumpDetails(
       WidgetTester tester,
       OrchestrationController controller, {
       Locale locale = const Locale('en'),
-    }) async {
-      await pump(
-        tester,
-        RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        locale: locale,
-      );
-      await openDetails(tester);
-    }
+    }) => pump(tester, details(controller), locale: locale);
 
-    group('run Overview Details usage', () {
-      testWidgets('under the step counts with the fixture usage', (
+    final usageKey = key('team-task-details-usage');
+
+    group('Task details usage', () {
+      testWidgets('on the sheet under the steps, with the fixture usage', (
         tester,
       ) async {
         final (controller, _) = await boot(fixtureUsage: true);
-        await pump(
-          tester,
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        );
-        // Collapsed on open: the figure is one tap away, not on the page.
-        expect(key('team-run-usage'), findsNothing);
-        await openDetails(tester);
+        await pumpDetails(tester, controller);
         // The recorded `/usage` counted nothing yet but reported it: an
         // honest zero, still estimated.
         expect(controller.snapshot.usage, isNotNull);
         expect(controller.snapshot.usage!.isEstimated, isTrue);
-        expect(key('team-run-usage'), findsOneWidget);
-        expect(
-          text(tester, key('team-run-usage')),
-          r'Team today · $0.00 est. · 0 tokens',
-        );
+        expect(usageKey, findsOneWidget);
+        expect(text(tester, usageKey), r'Team today · $0.00 est. · 0 tokens');
         expect(find.text('Usage'), findsOneWidget);
         expect(
-          tester.getTopLeft(key('team-run-usage')).dy,
-          greaterThan(tester.getBottomLeft(key('team-run-counts')).dy - 1),
-        );
-        expect(
-          find.descendant(
-            of: key('team-run-summary-body'),
-            matching: key('team-run-usage'),
+          tester.getTopLeft(usageKey).dy,
+          greaterThan(
+            tester.getBottomLeft(key('team-task-details-steps')).dy - 1,
           ),
-          findsOneWidget,
         );
       });
 
@@ -456,27 +440,27 @@ void main() {
         tester,
       ) async {
         final (controller, _) = await boot();
-        await pumpRun(tester, controller);
+        await pumpDetails(tester, controller);
         expect(
-          text(tester, key('team-run-usage')),
+          text(tester, usageKey),
           r'Team today · $0.42 est. · 12.4k tokens',
         );
       });
 
       testWidgets('is absent when /usage returned nothing', (tester) async {
         final (controller, _) = await boot(usage: null);
-        await pumpRun(tester, controller);
+        await pumpDetails(tester, controller);
         expect(controller.snapshot.usage, isNull);
-        expect(key('team-run-counts'), findsOneWidget);
-        expect(key('team-run-usage'), findsNothing);
+        expect(key('team-task-details-body'), findsOneWidget);
+        expect(usageKey, findsNothing);
         expect(find.textContaining('est.'), findsNothing);
       });
 
       testWidgets('is absent when usage carries only counts', (tester) async {
         final (controller, _) = await boot(usage: _countsOnly);
-        await pumpRun(tester, controller);
-        expect(key('team-run-counts'), findsOneWidget);
-        expect(key('team-run-usage'), findsNothing);
+        await pumpDetails(tester, controller);
+        expect(key('team-task-details-body'), findsOneWidget);
+        expect(usageKey, findsNothing);
         expect(find.textContaining('est.'), findsNothing);
       });
 
@@ -492,10 +476,10 @@ void main() {
             gatesBeads: true,
           ),
         );
-        await pumpRun(tester, controller);
+        await pumpDetails(tester, controller);
         expect(controller.capabilities.usage, isFalse);
-        expect(key('team-run-counts'), findsOneWidget);
-        expect(key('team-run-usage'), findsNothing);
+        expect(key('team-task-details-body'), findsOneWidget);
+        expect(usageKey, findsNothing);
       });
 
       testWidgets('prefers a per-run figure when the run carries one', (
@@ -512,8 +496,8 @@ void main() {
             },
           ),
         );
-        await pumpRun(tester, controller);
-        expect(text(tester, key('team-run-usage')), r'$0.07 est. · 950 tokens');
+        await pumpDetails(tester, controller);
+        expect(text(tester, usageKey), r'$0.07 est. · 950 tokens');
         expect(find.textContaining('Team today'), findsNothing);
       });
 
@@ -521,26 +505,17 @@ void main() {
         tester,
       ) async {
         final (controller, _) = await boot();
-        await pump(
-          tester,
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-          locale: const Locale('ar'),
-        );
-        await tester.tap(find.text(ar.teamUiRunDetails));
-        await tester.pumpAndSettle();
-        final label = text(tester, key('team-run-usage'));
+        await pumpDetails(tester, controller, locale: const Locale('ar'));
+        final label = text(tester, usageKey);
         expect(label, ar.teamUiUsageChip(teamUsageLabel(ar, _richUsage)!));
         expect(label, contains(r'$0.42'));
         expect(label, isNot(matches(arabicIndicDigits)));
-        expect(
-          Directionality.of(tester.element(key('team-run-usage'))),
-          TextDirection.rtl,
-        );
+        expect(Directionality.of(tester.element(usageKey)), TextDirection.rtl);
         // The line sits at the start edge: on the right in RTL, aligned
-        // with the counts above it.
-        final usage = tester.getRect(key('team-run-usage'));
-        final counts = tester.getRect(key('team-run-counts'));
-        expect(usage.right, moreOrLessEquals(counts.right, epsilon: 1));
+        // with its label above it.
+        final usage = tester.getRect(usageKey);
+        final heading = tester.getRect(find.text(ar.teamUiRunDetailsUsage));
+        expect(usage.right, moreOrLessEquals(heading.right, epsilon: 1));
         expect(tester.takeException(), isNull);
       });
     });

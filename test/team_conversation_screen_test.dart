@@ -14,7 +14,6 @@ import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 
 import 'support/team_chat_fixture.dart';
 
@@ -356,28 +355,6 @@ void main() {
       _words(tester, _key('team-conversation-agent-my-app/gastown.furiosa')),
       contains('furiosa · Worker'),
     );
-  });
-
-  testWidgets('the task Overview opens the task as a conversation', (
-    tester,
-  ) async {
-    phoneViewport(tester);
-    final (team, _) = await bootTeam(work: [_routed, _queued]);
-    final connection = await teamConnection(
-      api: TeamChatApi(const {}),
-      repository: TeamChatRepository(const []),
-    );
-    await tester.pumpWidget(
-      teamChatApp(
-        connection,
-        RunScreen(controller: team, runId: 'ma-convoy-1', now: () => teamClock),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Open conversation'));
-    await tester.pumpAndSettle();
-    expect(find.byType(TeamConversationScreen), findsOneWidget);
-    expect(_key('team-conversation-lead'), findsOneWidget);
   });
 
   // The chat's rule (the turn model in chat/message_view.dart): lines share

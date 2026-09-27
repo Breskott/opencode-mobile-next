@@ -2,10 +2,10 @@
 // model decodes the front's `/front/policy` document leniently; the Gas
 // City control adapter reads the route (with `?rig=`) and answers null
 // for a front without it or a bare supervisor; the controller caches the
-// policy with the projects scope and drops it on stop; the run Overview
-// shows the read-only "Supervision · …" line and boundary chips under its
-// collapsed Details row, after the step counts (the 2026-09-24 redesign
-// moved them there from under the state header); the Start-a-run sheet
+// policy with the projects scope and drops it on stop; Task details
+// (slice-P3.5: the retired run Overview's facts) shows the read-only
+// "Supervision · …" line and boundary chips after the steps, above its
+// Technical details fold; the Start-a-run sheet
 // shows the Boundaries row; both are absent (no widget) when the gateway has no
 // policy side. Also 320 dp / 2.5× LTR + RTL.
 
@@ -26,7 +26,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart' show KitChip, KitText;
 import 'package:opencode_mobile/ui/screens/team/policy_block.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team/start_run_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -376,7 +376,15 @@ void main() {
   }) async {
     await tester.pumpWidget(
       app(
-        RunScreen(controller: controller, runId: _runId, now: () => clock),
+        Scaffold(
+          body: SingleChildScrollView(
+            child: TeamTaskDetails(
+              controller: controller,
+              runId: _runId,
+              now: () => clock,
+            ),
+          ),
+        ),
         locale: locale,
         scale: scale,
       ),
@@ -564,50 +572,15 @@ void main() {
     });
   });
 
-  group('run Overview Details', () {
-    /// The redesigned Overview (2026-09-24) keeps the counts, the usage
-    /// and the host's policy under one collapsed "Details" row; open it.
-    Future<void> openDetails(
-      WidgetTester tester, {
-      String label = 'Details',
-    }) async {
-      final row = find.text(label);
-      await tester.scrollUntilVisible(
-        row,
-        120,
-        scrollable: find
-            .descendant(
-              of: key('team-run-overview'),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(row);
-      await tester.pumpAndSettle();
-      expect(key('team-run-summary-body'), findsOneWidget);
-    }
-
+  group('Task details', () {
     testWidgets('shows the supervision line, the rig, the boundary chips '
-        'and the read-only helper under Details, after the step counts', (
-      tester,
-    ) async {
+        'and the read-only helper after the steps', (tester) async {
       await size(tester, const Size(800, 2400));
       final controller = await boot(_PolicyGateway());
       await pumpRun(tester, controller);
 
-      // Collapsed on open: the policy is one tap away, not dropped.
-      expect(key('team-run-policy'), findsNothing);
-      await openDetails(tester);
-
+      // On the sheet itself, not behind a fold.
       expect(key('team-run-policy'), findsOneWidget);
-      expect(
-        find.descendant(
-          of: key('team-run-summary-body'),
-          matching: key('team-run-policy'),
-        ),
-        findsOneWidget,
-      );
       expect(
         textOf(tester, key('team-run-policy-supervision')),
         'Supervision · High',
@@ -651,15 +624,21 @@ void main() {
       expect(chips, hasLength(3));
       expect(chips.every((chip) => chip.onRemove == null), isTrue);
 
-      // Order: the objective (title and status line) → Details → its step
-      // counts → the policy.
+      // Order: the status line → the steps → the policy → Technical
+      // details.
       expect(
-        tester.getTopLeft(key('team-run-objective')).dy,
-        lessThan(tester.getTopLeft(key('team-run-summary')).dy),
+        tester.getBottomLeft(key('team-task-details-status')).dy,
+        lessThanOrEqualTo(tester.getTopLeft(block).dy),
       );
       expect(
-        tester.getBottomLeft(key('team-run-counts')).dy,
+        tester.getBottomLeft(key('team-task-details-steps')).dy,
         lessThanOrEqualTo(tester.getTopLeft(block).dy),
+      );
+      expect(
+        tester.getBottomLeft(block).dy,
+        lessThanOrEqualTo(
+          tester.getTopLeft(key('team-task-details-technical')).dy,
+        ),
       );
     });
 
@@ -673,7 +652,6 @@ void main() {
         );
       final controller = await boot(gateway);
       await pumpRun(tester, controller);
-      await openDetails(tester);
       expect(
         textOf(tester, key('team-run-policy-supervision')),
         'Supervision · Autonomous',
@@ -689,24 +667,18 @@ void main() {
       await size(tester, const Size(800, 2400));
       final controller = await boot(_Gateway());
       await pumpRun(tester, controller);
-      await openDetails(tester);
       expect(key('team-run-policy'), findsNothing);
       expect(find.byType(TeamPolicyBlock), findsNothing);
       expect(find.textContaining('Supervision'), findsNothing);
-      // Details itself still opens with the step counts.
-      expect(key('team-run-counts'), findsOneWidget);
+      // The sheet itself is still there.
+      expect(key('team-task-details-body'), findsOneWidget);
     });
 
-    testWidgets('Arabic, 320 dp at 2.5×, RTL: the Overview, the line and '
+    testWidgets('Arabic, 320 dp at 2.5×, RTL: Task details, the line and '
         'every chip render without overflow', (tester) async {
       await size(tester, const Size(320, 1600), ratio: 1);
       final controller = await boot(_PolicyGateway());
       await pumpRun(tester, controller, locale: const Locale('ar'), scale: 2.5);
-      expect(tester.takeException(), isNull);
-      await openDetails(
-        tester,
-        label: lookupAppLocalizations(const Locale('ar')).teamUiRunDetails,
-      );
       expect(tester.takeException(), isNull);
       expect(key('team-run-policy'), findsOneWidget);
       expect(

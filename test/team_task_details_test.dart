@@ -1,13 +1,15 @@
-// TEAM-109: the run detail over the fixture gateway. The Overview (as
-// redesigned 2026-09-24) answers the five questions top to bottom — the
-// title and status line, the four-stage line, the single most urgent
-// needs-you item (answered in place, or where to answer it when the app can
-// only watch), the steps with their blocked causes, and counts and usage
-// under Details; a formula run's stages are its steps; the Timeline is scoped to the run, newest
-// first, filters reduce its rows and events that arrive while scrolled
-// away wait behind a jump-to-latest pill; the missing, stale, loading and
-// error states; from the home's run row the screen is the task
-// conversation's Task details (P0.3: the row opens the conversation).
+// slice-P3.5: Task details, the sheet behind "Task details" in a team
+// task's conversation menu, over the fixture gateway. It holds every fact
+// the retired run page (TEAM-109, its Overview, Work, Agents and Timeline
+// tabs) showed that the conversation does not: the state word, steps done
+// and elapsed time (TEAM-117: timed from the hand-off to merge), the
+// four-stage line, the steps as the dependency graph in rows (each opens
+// its Work sheet), a formula run's own stages, and one Technical details
+// fold with the host's term, ids, raw fields and what the host reported
+// about the task (scoped to it, newest first). The Now line, the agents,
+// the questions waiting on the person, Stop and its receipt, the merge
+// section and Refresh are the conversation's (team_conversation_screen_test,
+// slice_p3_5_test).
 
 import 'dart:async';
 import 'dart:convert';
@@ -25,11 +27,9 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
-import 'package:opencode_mobile/ui/widgets/team_cycle_strip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/team_chat_fixture.dart';
@@ -245,7 +245,7 @@ void main() {
     home: home,
   );
 
-  Future<void> pumpRun(
+  Future<void> pumpDetails(
     WidgetTester tester,
     OrchestrationController controller,
     String runId, {
@@ -258,20 +258,20 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       app(
-        RunScreen(controller: controller, runId: runId, now: () => clock),
+        Scaffold(
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: TeamTaskDetails(
+              controller: controller,
+              runId: runId,
+              now: () => clock,
+            ),
+          ),
+        ),
         locale: locale,
       ),
     );
     await tester.pump();
-  }
-
-  /// The tab bar scrolls sideways when the tabs outgrow the width.
-  Future<void> tab(WidgetTester tester, String name) async {
-    final target = find.byKey(ValueKey('team-run-tab-$name'));
-    await tester.ensureVisible(target);
-    await tester.pumpAndSettle();
-    await tester.tap(target);
-    await tester.pumpAndSettle();
   }
 
   Future<void> push(
@@ -500,101 +500,53 @@ void main() {
       ..gatesOverride = const [];
   }
 
-  /// The fixture's capabilities without `controlRespond`: the app can
-  /// watch the team's questions but not answer them.
-  const watchOnly = OrchestrationCapabilities(
-    projects: true,
-    runs: true,
-    runSteps: true,
-    workGraph: true,
-    workReady: true,
-    agents: true,
-    agentOutput: true,
-    sessionLink: true,
-    gatesInteractions: true,
-    gatesBeads: true,
-    usage: true,
-    eventStream: true,
-    eventReplay: true,
-  );
-
-  /// The supporting line of a KitRow (a Text.rich) by its key.
-  String line(WidgetTester tester, String name) =>
-      _textOf(tester, key(name)).textSpan!.toPlainText();
-
-  /// Counts, usage and the host's policy sit under the Overview's
-  /// collapsed Details row (the 2026-09-24 redesign); open it.
-  Future<void> openDetails(WidgetTester tester) async {
-    await tester.tap(key('team-run-summary'));
-    await tester.pumpAndSettle();
-    expect(key('team-run-summary-body'), findsOneWidget);
-  }
-
-  /// Technical details, from the app bar's overflow.
+  /// The one Technical details fold, opened.
   Future<Finder> openTechnical(WidgetTester tester) async {
-    await tester.tap(key('team-run-more'));
+    final fold = key('team-task-details-technical');
+    await tester.ensureVisible(fold);
     await tester.pumpAndSettle();
-    await tester.tap(key('team-run-details'));
+    await tester.tap(
+      find.descendant(of: fold, matching: find.text('Technical details')),
+    );
     await tester.pumpAndSettle();
-    return key('team-run-details-sheet');
+    return fold;
   }
 
-  group('overview', () {
-    testWidgets('the fixture convoy: title, status line, stage, step, '
-        'details; the Gas City term only in Technical details', (tester) async {
+  group('where the task stands', () {
+    testWidgets('the fixture convoy: state, elapsed, stage, its one step, '
+        'the Gas City term only in Technical details', (tester) async {
       final handle = tester.ensureSemantics();
       final (controller, _) = await boot();
-      await pumpRun(tester, controller, 'oc-xru');
-      expect(key('team-run-data'), findsOneWidget);
-      // TEAM-115: the batch is named by its work and, with nobody
-      // holding the bead, is waiting for a worker; the host's own
-      // `sling-` title is in Technical details only.
+      await pumpDetails(tester, controller, 'oc-xru');
+      expect(key('team-task-details-body'), findsOneWidget);
+      // TEAM-115: nobody holds the bead, so it is waiting for a worker; the
+      // host's own `sling-` title is in Technical details only.
       expect(
-        _textOf(tester, key('team-run-objective-title')).data,
-        'Add subtract function to calc.py',
+        _textOf(tester, key('team-task-details-state')).data,
+        'Waiting for a worker',
       );
       expect(find.text('sling-oc-loy'), findsNothing);
       expect(find.text('Task · convoy', findRichText: true), findsNothing);
-      expect(
-        _textOf(tester, key('team-run-state')).data,
-        'Waiting for a worker',
-      );
-      expect(find.text('Planning'), findsNothing);
       // Created 2026-09-10T18:44:53Z, the clock is 12:30 the next day.
-      expect(_textOf(tester, key('team-run-elapsed')).data, '17 h 45 min');
+      expect(
+        _textOf(tester, key('team-task-details-elapsed')).data,
+        '17 h 45 min',
+      );
       // One step: no "0 of 1" on the status line; the step is a row.
-      expect(key('team-run-progress-label'), findsNothing);
-      expect(key('team-run-step-oc-loy'), findsOneWidget);
+      expect(key('team-task-details-progress'), findsNothing);
+      expect(key('team-task-details-step-oc-loy'), findsOneWidget);
       expect(find.bySemanticsLabel('Stage 1 of 4: Waiting'), findsOneWidget);
-      // The counts are under Details.
-      expect(key('team-run-counts'), findsNothing);
-      await openDetails(tester);
-      expect(
-        _textOf(tester, key('team-run-counts')).data,
-        '0 done · 0 working · 0 held up',
-      );
-      expect(key('team-run-stages'), findsNothing);
-      // Why it waits, in one sentence, from the step's dispatch strip.
-      expect(
-        tester.widget<KitNotice>(key('team-run-stall')).message,
-        teamCycleStallSentence(
-          lookupAppLocalizations(const Locale('en')),
-          controller.cycleFor('oc-loy').stallReason!,
-        ),
-      );
-      expect(key('team-run-needs-you'), findsNothing);
-      expect(key('team-run-stale'), findsNothing);
-      expect(key('team-run-work-placeholder'), findsNothing);
-      final sheet = await openTechnical(tester);
+      expect(key('team-task-details-stages'), findsNothing);
+      final fold = await openTechnical(tester);
       expect(
         find.descendant(
-          of: sheet,
+          of: fold,
           matching: find.text('Task · convoy', findRichText: true),
         ),
         findsOneWidget,
       );
       expect(
-        find.descendant(of: sheet, matching: find.text('sling-oc-loy')),
+        find.descendant(of: fold, matching: find.text('sling-oc-loy')),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
@@ -612,33 +564,17 @@ void main() {
       final (controller, _) = await boot(
         configure: (g) => handedToRefineryShape(g, updatedAt: handedAt),
       );
-      await pumpRun(tester, controller, 'oc-xru');
-      expect(_textOf(tester, key('team-run-state')).data, 'Reviewing');
+      await pumpDetails(tester, controller, 'oc-xru');
+      expect(_textOf(tester, key('team-task-details-state')).data, 'Reviewing');
       expect(
-        _textOf(tester, key('team-run-elapsed')).data,
+        _textOf(tester, key('team-task-details-elapsed')).data,
         '20 h 19 min since hand-off',
       );
       expect(find.bySemanticsLabel('Stage 3 of 4: Reviewing'), findsOneWidget);
       expect(find.text('Waiting for a worker'), findsNothing);
-      // Why it waits, in one sentence (the step's sheet has the strip).
-      expect(
-        tester.widget<KitNotice>(key('team-run-stall')).message,
-        'Waiting for the merge agent',
-      );
       final cycle = controller.cycleFor('oc-loy');
       expect(cycle.reachedAt[DispatchStep.handedToMerge], handedAt);
       expect(cycle.stallReason, DispatchStall.mergeWaiting);
-      await openDetails(tester);
-      expect(
-        _textOf(tester, key('team-run-counts')).data,
-        '0 done · 0 working · 0 held up',
-      );
-      // Technical details agree with the header.
-      final sheet = await openTechnical(tester);
-      expect(
-        find.descendant(of: sheet, matching: find.text('Reviewing')),
-        findsOneWidget,
-      );
       expect(tester.takeException(), isNull);
       handle.dispose();
     });
@@ -646,11 +582,11 @@ void main() {
     testWidgets('TEAM-117: the recorded bead has no update time: the '
         'hand-off is counted from its creation, steps untimed', (tester) async {
       final (controller, _) = await boot(configure: handedToRefineryShape);
-      await pumpRun(tester, controller, 'oc-xru');
-      expect(_textOf(tester, key('team-run-state')).data, 'Reviewing');
+      await pumpDetails(tester, controller, 'oc-xru');
+      expect(_textOf(tester, key('team-task-details-state')).data, 'Reviewing');
       // Created 2026-09-10T18:44:45Z, the clock is 12:30 the next day.
       expect(
-        _textOf(tester, key('team-run-elapsed')).data,
+        _textOf(tester, key('team-task-details-elapsed')).data,
         '17 h 45 min since hand-off',
       );
       final cycle = controller.cycleFor('oc-loy');
@@ -658,25 +594,18 @@ void main() {
       expect(cycle.reachedAt[DispatchStep.handedToMerge], isNull);
       expect(cycle.since, isNull);
       expect(cycle.stallReason, DispatchStall.mergeWaiting);
-      expect(
-        tester.widget<KitNotice>(key('team-run-stall')).message,
-        'Waiting for the merge agent',
-      );
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('answers the five questions top to bottom', (tester) async {
+    testWidgets('top to bottom: status, stage, steps, then Technical '
+        'details', (tester) async {
       final (controller, _) = await boot(configure: richShape);
-      await pumpRun(tester, controller, 'oc-xru');
-      // What it is and how it is doing; where it is; what needs me; why it
-      // is held up (on its step); then Details with the counts.
+      await pumpDetails(tester, controller, 'oc-xru');
       const order = [
-        'team-run-objective',
-        'team-run-stage-line',
-        'team-run-needs-you',
-        'team-run-steps',
-        'team-run-blocked-w3',
-        'team-run-summary',
+        'team-task-details-status',
+        'team-task-details-stage',
+        'team-task-details-steps',
+        'team-task-details-technical',
       ];
       for (final name in order) {
         expect(key(name), findsOneWidget, reason: name);
@@ -688,74 +617,85 @@ void main() {
           reason: '${order[i - 1]} above ${order[i]}',
         );
       }
+      expect(_textOf(tester, key('team-task-details-state')).data, 'Blocked');
+      expect(_textOf(tester, key('team-task-details-elapsed')).data, '34 min');
       expect(
-        _textOf(tester, key('team-run-objective-title')).data,
-        'Offline-first sessions',
-      );
-      expect(_textOf(tester, key('team-run-state')).data, 'Blocked');
-      expect(_textOf(tester, key('team-run-elapsed')).data, '34 min');
-      expect(
-        _textOf(tester, key('team-run-progress-label')).data,
+        _textOf(tester, key('team-task-details-progress')).data,
         '1 of 4 steps done',
       );
-      await openDetails(tester);
-      expect(
-        _textOf(tester, key('team-run-counts')).data,
-        '1 done · 1 working · 1 held up',
-      );
-      expect(
-        top(tester, key('team-run-summary')),
-        lessThan(top(tester, key('team-run-counts'))),
-      );
-      expect(key('team-run-stages'), findsNothing);
+      // What the conversation says is not repeated: no question, no title.
+      expect(find.text('Which persistence strategy?'), findsNothing);
+      expect(find.text('Offline-first sessions'), findsNothing);
+      expect(key('team-task-details-stages'), findsNothing);
       expect(tester.takeException(), isNull);
     });
+  });
 
-    testWidgets('names the blocked cause the host gave', (tester) async {
+  group('steps', () {
+    testWidgets('every step of the task is a row with its state; another '
+        "task's work is not", (tester) async {
       final (controller, _) = await boot(configure: richShape);
-      await pumpRun(tester, controller, 'oc-xru');
-      // On the held-up step's own row: its title, then the state word and
-      // the host's reason.
+      await pumpDetails(tester, controller, 'oc-xru');
+      for (final (id, title) in const [
+        ('w1', 'Storage layer'),
+        ('w2', 'Sync engine'),
+        ('w3', 'Conflict policy'),
+        ('w4', 'Release notes'),
+      ]) {
+        expect(
+          find.descendant(
+            of: key('team-task-details-step-$id'),
+            matching: find.textContaining(title, findRichText: true),
+          ),
+          findsWidgets,
+          reason: id,
+        );
+      }
+      expect(key('team-task-details-step-w9'), findsNothing);
       expect(
         find.descendant(
-          of: key('team-run-step-w3'),
-          matching: find.text('Conflict policy'),
+          of: key('team-task-details-step-w3'),
+          matching: find.textContaining('Blocked', findRichText: true),
         ),
-        findsOneWidget,
+        findsWidgets,
       );
-      expect(
-        line(tester, 'team-run-blocked-w3'),
-        'Blocked · Tests failed: 2 of 18',
-      );
-      expect(key('team-run-blocked-w2'), findsNothing);
-      expect(key('team-run-step-line-w2'), findsOneWidget);
     });
 
-    testWidgets('the blocked shape: cause from the open dependency', (
+    testWidgets('the blocked shape: the step names what it needs', (
       tester,
     ) async {
       final (controller, _) = await boot(configure: blockedShape);
-      await pumpRun(tester, controller, 'oc-xru');
-      expect(_textOf(tester, key('team-run-state')).data, 'Blocked');
+      await pumpDetails(tester, controller, 'oc-xru');
+      expect(_textOf(tester, key('team-task-details-state')).data, 'Blocked');
       expect(
-        _textOf(tester, key('team-run-progress-label')).data,
+        _textOf(tester, key('team-task-details-progress')).data,
         '1 of 3 steps done',
       );
       expect(
         find.descendant(
-          of: key('team-run-step-oc-loy'),
-          matching: find.text('Add subtract function to calc.py'),
+          of: key('team-task-details-step-oc-loy'),
+          matching: find.textContaining(
+            'needs Agree the calc.py API',
+            findRichText: true,
+          ),
         ),
-        findsOneWidget,
+        findsWidgets,
       );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a step opens its Work sheet', (tester) async {
+      final (controller, _) = await boot(configure: richShape);
+      await pumpDetails(tester, controller, 'oc-xru');
+      await tester.tap(key('team-task-details-step-w3'));
+      await tester.pumpAndSettle();
+      expect(key('team-work-sheet'), findsOneWidget);
       expect(
-        line(tester, 'team-run-blocked-oc-loy'),
-        'Blocked · waiting on one other step',
-      );
-      await openDetails(tester);
-      expect(
-        _textOf(tester, key('team-run-counts')).data,
-        '1 done · 0 working · 1 held up',
+        find.descendant(
+          of: key('team-work-sheet'),
+          matching: find.text('Conflict policy'),
+        ),
+        findsWidgets,
       );
       expect(tester.takeException(), isNull);
     });
@@ -764,15 +704,18 @@ void main() {
       tester,
     ) async {
       final (controller, _) = await boot(configure: richShape);
-      await pumpRun(tester, controller, 'run-ship');
-      expect(_textOf(tester, key('team-run-state')).data, 'Working');
-      expect(_textOf(tester, key('team-run-elapsed')).data, '2 h 5 min');
+      await pumpDetails(tester, controller, 'run-ship');
+      expect(_textOf(tester, key('team-task-details-state')).data, 'Working');
+      expect(
+        _textOf(tester, key('team-task-details-elapsed')).data,
+        '2 h 5 min',
+      );
       // It tracks no work: nothing counted on the status line.
-      expect(key('team-run-progress-label'), findsNothing);
-      expect(key('team-run-stages'), findsOneWidget);
+      expect(key('team-task-details-progress'), findsNothing);
+      expect(key('team-task-details-stages'), findsOneWidget);
       expect(
         find.descendant(
-          of: key('team-run-stages'),
+          of: key('team-task-details-stages'),
           matching: find.text('Steps'),
         ),
         findsOneWidget,
@@ -782,7 +725,7 @@ void main() {
         ('Implementation', 'Working'),
         ('Testing', 'Planning'),
       ].indexed) {
-        final row = key('team-run-stage-$index');
+        final row = key('team-task-details-stage-$index');
         expect(
           find.descendant(of: row, matching: find.text(title)),
           findsOneWidget,
@@ -796,189 +739,76 @@ void main() {
           reason: title,
         );
       }
-      expect(key('team-run-steps'), findsNothing);
-      expect(key('team-run-needs-you'), findsNothing);
-      expect(key('team-run-stall'), findsNothing);
+      expect(key('team-task-details-steps'), findsNothing);
       // The formula's term and name are in Technical details.
       expect(find.text('Task · formula', findRichText: true), findsNothing);
-      final sheet = await openTechnical(tester);
+      final fold = await openTechnical(tester);
       expect(
         find.descendant(
-          of: sheet,
+          of: fold,
           matching: find.text('Task · formula', findRichText: true),
         ),
         findsOneWidget,
       );
       expect(
-        find.descendant(of: sheet, matching: find.text('ship')),
+        find.descendant(of: fold, matching: find.text('ship')),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('the most urgent needs-you item, answered in place', (
+    testWidgets('the agents are the conversation\'s, not repeated here', (
       tester,
     ) async {
       final (controller, _) = await boot(configure: richShape);
-      await pumpRun(tester, controller, 'oc-xru');
-      final card = key('team-run-needs-you');
-      expect(card, findsOneWidget);
-      // The decision outranks the gate bead; the other run's gate is absent.
-      // The one request card (slice-P4.1c): the reason leads its caption
-      // and the question is its title.
-      expect(
-        find.descendant(
-          of: card,
-          matching: find.textContaining(
-            'Needs your decision',
-            findRichText: true,
-          ),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: key('team-run-needs-you-question'),
-          matching: find.text('Which persistence strategy?'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.text('This choice controls how the tests store data.'),
-        findsOneWidget,
-      );
-      expect(find.text('Approve the schema'), findsNothing);
-      expect(find.text('Another run asks'), findsNothing);
-      // The host lets the phone answer: the choices are here, no
-      // "answer on the computer" line.
-      for (final choice in const ['SQLite', 'Filesystem']) {
-        expect(
-          find.descendant(of: card, matching: find.text(choice)),
-          findsOneWidget,
-        );
-      }
-      expect(find.textContaining('can only watch'), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('a host the app can only watch says where to answer', (
-      tester,
-    ) async {
-      final (controller, _) = await boot(
-        configure: (g) {
-          richShape(g);
-          g.capabilitiesOverride = watchOnly;
-        },
-      );
-      await pumpRun(tester, controller, 'oc-xru');
-      final card = key('team-run-needs-you');
-      // Where to answer is the card's detail line (slice-P4.1c).
-      expect(
-        find.descendant(
-          of: card,
-          matching: find.textContaining(
-            'Answer this on the computer. The phone can only watch for now.',
-          ),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: key('team-run-needs-you-question'),
-          matching: find.text('Which persistence strategy?'),
-        ),
-        findsOneWidget,
-      );
-      // Nothing to press but More (the Gate sheet), no choices to pick.
-      expect(
-        find.descendant(of: card, matching: find.text('SQLite')),
-        findsNothing,
-      );
-      expect(key('team-run-needs-you-send'), findsNothing);
-      expect(key('team-run-needs-you-answer'), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('a phone host says where to answer', (tester) async {
-      final (controller, _) = await boot(
-        configure: (g) {
-          richShape(g);
-          g.capabilitiesOverride = watchOnly;
-        },
-        hostMode: OrchestrationHostMode.phone,
-      );
-      await pumpRun(tester, controller, 'oc-xru');
-      expect(
-        find.textContaining(
-          'Answer this in the host on this phone. The app can only watch '
-          'for now.',
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('Details opens the technical sheet with the ids', (
-      tester,
-    ) async {
-      final (controller, _) = await boot(configure: richShape);
-      await pumpRun(tester, controller, 'oc-xru');
-      await tester.tap(key('team-run-more'));
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-run-details'));
-      await tester.pumpAndSettle();
-      final sheet = key('team-run-details-sheet');
-      expect(sheet, findsOneWidget);
-      expect(find.text('Technical details'), findsOneWidget);
-      expect(
-        find.descendant(of: sheet, matching: find.text('oc-xru')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: sheet, matching: find.text('w1, w2, w3, w4')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: sheet, matching: find.text('convoy')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: sheet, matching: find.text('issue_type')),
-        findsOneWidget,
-      );
-      // The convoy's own title is here, under "Provider title" (TEAM-115).
-      expect(
-        find.descendant(of: sheet, matching: find.text('Provider title')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: sheet, matching: find.text('sling-oc-loy')),
-        findsOneWidget,
-      );
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('Work and Agents tabs are real', (tester) async {
-      final (controller, _) = await boot(configure: richShape);
-      await pumpRun(tester, controller, 'oc-xru');
-      await tab(tester, 'work');
-      expect(key('team-run-work-placeholder'), findsNothing);
-      expect(key('team-run-work'), findsOneWidget);
-      await tab(tester, 'agents');
-      expect(key('team-run-agents-placeholder'), findsNothing);
-      expect(find.text('Coming with the next update'), findsNothing);
+      await pumpDetails(tester, controller, 'oc-xru');
+      expect(find.text('wolf'), findsNothing);
+      expect(find.text('fox'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });
 
-  group('timeline', () {
-    testWidgets('lists this run’s events newest first; filters reduce', (
+  group('Technical details', () {
+    testWidgets('holds the ids, the tracked work and every raw field', (
+      tester,
+    ) async {
+      final (controller, _) = await boot(configure: richShape);
+      await pumpDetails(tester, controller, 'oc-xru');
+      final fold = await openTechnical(tester);
+      expect(
+        find.descendant(of: fold, matching: find.text('oc-xru')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: fold, matching: find.text('w1, w2, w3, w4')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: fold, matching: find.text('convoy')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: fold, matching: find.text('issue_type')),
+        findsOneWidget,
+      );
+      // The convoy's own title is here, under "Provider title" (TEAM-115).
+      expect(
+        find.descendant(of: fold, matching: find.text('Provider title')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: fold, matching: find.text('sling-oc-loy')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets("what the host reported: this task's events, newest first", (
       tester,
     ) async {
       final (controller, gateway) = await boot(configure: richShape);
-      await pumpRun(tester, controller, 'oc-xru');
-      await tab(tester, 'timeline');
-      expect(key('team-run-timeline-empty'), findsOneWidget);
-      expect(find.text('Nothing has happened yet'), findsOneWidget);
+      await pumpDetails(tester, controller, 'oc-xru');
+      expect(key('team-task-details-reported'), findsNothing);
 
       await push(
         tester,
@@ -1005,7 +835,7 @@ void main() {
         gateway,
         GateChanged(gateId: 'g1', seq: s(3), raw: ts(7)),
       );
-      // Not this run's: another bead, a controller order, another run.
+      // Not this task's: another bead, a controller order, another run.
       await push(
         tester,
         gateway,
@@ -1057,19 +887,27 @@ void main() {
         ),
       );
 
-      expect(key('team-run-timeline-empty'), findsNothing);
+      final fold = await openTechnical(tester);
+      expect(
+        find.descendant(
+          of: fold,
+          matching: find.text('What the host reported'),
+        ),
+        findsOneWidget,
+      );
+      Finder event(int n) => key('team-task-details-event-${s(n)}');
       for (final seq in [1, 2, 3, 7, 8]) {
-        expect(key('team-run-event-${s(seq)}'), findsOneWidget, reason: '$seq');
+        expect(event(seq), findsOneWidget, reason: '$seq');
       }
       for (final seq in [4, 5, 6]) {
-        expect(key('team-run-event-${s(seq)}'), findsNothing, reason: '$seq');
+        expect(event(seq), findsNothing, reason: '$seq');
       }
       // Newest first.
       final order = [8, 7, 3, 2, 1];
       for (var i = 1; i < order.length; i++) {
         expect(
-          top(tester, key('team-run-event-${s(order[i - 1])}')),
-          lessThan(top(tester, key('team-run-event-${s(order[i])}'))),
+          top(tester, event(order[i - 1])),
+          lessThan(top(tester, event(order[i]))),
         );
       }
       expect(find.text('Sync engine updated'), findsOneWidget);
@@ -1082,7 +920,7 @@ void main() {
       expect(find.text('nudge sent for w3'), findsOneWidget);
       final time =
           MaterialLocalizations.of(
-            tester.element(find.byType(RunScreen)),
+            tester.element(find.byType(TeamTaskDetails)),
           ).formatTimeOfDay(
             TimeOfDay.fromDateTime(
               clock.subtract(const Duration(minutes: 9)).toLocal(),
@@ -1090,259 +928,37 @@ void main() {
             alwaysUse24HourFormat: true,
           );
       expect(find.text(time), findsOneWidget);
-
-      await tester.tap(key('team-run-timeline-filter-work'));
-      await tester.pumpAndSettle();
-      expect(key('team-run-event-${s(1)}'), findsOneWidget);
-      expect(key('team-run-event-${s(7)}'), findsOneWidget);
-      expect(key('team-run-event-${s(2)}'), findsNothing);
-      expect(key('team-run-event-${s(3)}'), findsNothing);
-      expect(key('team-run-event-${s(8)}'), findsNothing);
-
-      await tester.tap(key('team-run-timeline-filter-agents'));
-      await tester.pumpAndSettle();
-      expect(key('team-run-event-${s(2)}'), findsOneWidget);
-      expect(key('team-run-event-${s(1)}'), findsNothing);
-
-      await tester.tap(key('team-run-timeline-filter-decisions'));
-      await tester.pumpAndSettle();
-      expect(key('team-run-event-${s(3)}'), findsOneWidget);
-      expect(key('team-run-event-${s(2)}'), findsNothing);
-
-      await tester.tap(key('team-run-timeline-filter-all'));
-      await tester.pumpAndSettle();
-      for (final seq in [1, 2, 3, 7, 8]) {
-        expect(key('team-run-event-${s(seq)}'), findsOneWidget, reason: '$seq');
-      }
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('a filter that hides every row says so', (tester) async {
-      final (controller, gateway) = await boot(configure: richShape);
-      await pumpRun(tester, controller, 'oc-xru');
-      await tab(tester, 'timeline');
-      await push(
-        tester,
-        gateway,
-        BeadChanged(beadId: 'w2', change: BeadChange.updated, seq: s(1)),
-      );
-      await tester.tap(key('team-run-timeline-filter-decisions'));
-      await tester.pumpAndSettle();
-      expect(key('team-run-timeline-empty-filtered'), findsOneWidget);
-      expect(find.text('No events of this kind yet'), findsOneWidget);
-      expect(key('team-run-timeline-empty'), findsNothing);
-    });
-
-    testWidgets('events that arrive while scrolled wait behind the pill', (
-      tester,
-    ) async {
-      final (controller, gateway) = await boot(configure: richShape);
-      await pumpRun(tester, controller, 'oc-xru', size: const Size(400, 600));
-      await tab(tester, 'timeline');
-      for (var seq = 1; seq <= 30; seq++) {
-        gateway.stream.add(
-          BeadChanged(beadId: 'w2', change: BeadChange.updated, seq: s(seq)),
-        );
-      }
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pumpAndSettle();
-      expect(key('team-run-event-${s(30)}'), findsOneWidget);
-      expect(key('team-run-timeline-jump'), findsNothing);
-
-      final list = key('team-run-timeline');
-      await tester.drag(list, const Offset(0, -400));
-      await tester.pumpAndSettle();
-      final scroll = tester.state<ScrollableState>(
-        find.descendant(of: list, matching: find.byType(Scrollable)),
-      );
-      expect(scroll.position.pixels, greaterThan(24));
-      expect(key('team-run-timeline-jump'), findsNothing);
-
-      // The new event holds back; the rows do not move.
-      final before = scroll.position.pixels;
-      await push(
-        tester,
-        gateway,
-        BeadChanged(beadId: 'w3', change: BeadChange.closed, seq: s(31)),
-      );
-      expect(key('team-run-timeline-jump'), findsOneWidget);
-      expect(find.text('1 new · Jump to latest'), findsOneWidget);
-      expect(key('team-run-event-${s(31)}'), findsNothing);
-      expect(scroll.position.pixels, before);
-      await push(
-        tester,
-        gateway,
-        BeadChanged(beadId: 'w4', change: BeadChange.updated, seq: s(32)),
-      );
-      expect(find.text('2 new · Jump to latest'), findsOneWidget);
-
-      await tester.tap(key('team-run-timeline-jump'));
-      await tester.pumpAndSettle();
-      expect(scroll.position.pixels, 0);
-      expect(key('team-run-timeline-jump'), findsNothing);
-      expect(key('team-run-event-${s(32)}'), findsOneWidget);
-      expect(find.text('Release notes updated'), findsOneWidget);
-      expect(
-        top(tester, key('team-run-event-${s(32)}')),
-        lessThan(top(tester, key('team-run-event-${s(31)}'))),
-      );
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('scrolling back to the top releases the held rows', (
-      tester,
-    ) async {
-      final (controller, gateway) = await boot(configure: richShape);
-      await pumpRun(tester, controller, 'oc-xru', size: const Size(400, 600));
-      await tab(tester, 'timeline');
-      for (var seq = 1; seq <= 30; seq++) {
-        gateway.stream.add(
-          BeadChanged(beadId: 'w2', change: BeadChange.updated, seq: s(seq)),
-        );
-      }
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pumpAndSettle();
-      final list = key('team-run-timeline');
-      await tester.drag(list, const Offset(0, -400));
-      await tester.pumpAndSettle();
-      await push(
-        tester,
-        gateway,
-        BeadChanged(beadId: 'w3', change: BeadChange.closed, seq: s(31)),
-      );
-      expect(key('team-run-timeline-jump'), findsOneWidget);
-      await tester.drag(list, const Offset(0, 1200));
-      await tester.pumpAndSettle();
-      expect(key('team-run-timeline-jump'), findsNothing);
-      expect(key('team-run-event-${s(31)}'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
 
-  group('states', () {
-    testWidgets('a run the host no longer lists, with Back', (tester) async {
+  group('states and doors', () {
+    testWidgets('a task the host no longer lists says so', (tester) async {
       final (controller, _) = await boot();
-      tester.view.physicalSize = const Size(800, 1600);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(
-        app(
-          Builder(
-            builder: (context) => Scaffold(
-              key: const ValueKey('launcher'),
-              body: TextButton(
-                key: const ValueKey('open'),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => RunScreen(
-                      controller: controller,
-                      runId: 'gone',
-                      now: () => clock,
-                    ),
-                  ),
-                ),
-                child: const Text('open'),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(key('open'));
-      await tester.pumpAndSettle();
-      expect(key('team-run-missing'), findsOneWidget);
+      await pumpDetails(tester, controller, 'gone');
+      expect(key('team-task-details-missing'), findsOneWidget);
       expect(find.text('This task is no longer on the host'), findsOneWidget);
-      expect(key('team-run-data'), findsNothing);
-      expect(key('team-run-details'), findsNothing);
-      await tester.tap(find.widgetWithText(FilledButton, 'Back'));
-      await tester.pumpAndSettle();
-      expect(key('team-run-missing'), findsNothing);
-      expect(key('launcher'), findsOneWidget);
+      expect(key('team-task-details-body'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a run that disappears on refresh turns into the state', (
+    testWidgets('a task that disappears on refresh turns into the state', (
       tester,
     ) async {
       final (controller, gateway) = await boot(configure: richShape);
-      await pumpRun(tester, controller, 'oc-xru');
-      expect(key('team-run-data'), findsOneWidget);
+      await pumpDetails(tester, controller, 'oc-xru');
+      expect(key('team-task-details-body'), findsOneWidget);
       gateway.runsOverride = const [];
-      await tester.tap(key('team-run-refresh'));
+      await controller.refresh();
       await tester.pumpAndSettle();
-      expect(key('team-run-missing'), findsOneWidget);
-      expect(key('team-run-data'), findsNothing);
+      expect(key('team-task-details-missing'), findsOneWidget);
+      expect(key('team-task-details-body'), findsNothing);
     });
 
-    testWidgets('stale shows the card’s line; Refresh clears it', (
-      tester,
-    ) async {
-      final (controller, gateway) = await boot(configure: richShape);
-      final refreshedAt = controller.lastRefreshedAt!;
-      await pumpRun(tester, controller, 'oc-xru');
-      expect(key('team-run-stale'), findsNothing);
-
-      clock = clock.add(const Duration(seconds: 61));
-      await pumpRun(tester, controller, 'oc-xru');
-      expect(key('team-run-stale'), findsOneWidget);
-      final time =
-          MaterialLocalizations.of(
-            tester.element(find.byType(RunScreen)),
-          ).formatTimeOfDay(
-            TimeOfDay.fromDateTime(refreshedAt.toLocal()),
-            alwaysUse24HourFormat: true,
-          );
-      expect(
-        find.text('Showing data from $time · host unreachable'),
-        findsOneWidget,
-      );
-      final before = gateway.count('runs');
-      await tester.tap(key('team-run-refresh'));
-      await tester.pumpAndSettle();
-      expect(gateway.count('runs'), before + 1);
-      expect(key('team-run-stale'), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('before the probe answers: loading', (tester) async {
-      final (controller, _) = await boot(started: false);
-      await pumpRun(tester, controller, 'oc-xru');
-      expect(key('team-run-loading'), findsOneWidget);
-      expect(key('team-run-data'), findsNothing);
-      expect(key('team-run-missing'), findsNothing);
-    });
-
-    testWidgets('a failed probe shows honest copy and Retry recovers', (
-      tester,
-    ) async {
-      ProbeVerdict verdict = const ProbeUnreachable(error: 'refused');
-      final (controller, gateway) = await boot(probe: (_) async => verdict);
-      expect(controller.phase, OrchestrationPhase.failed);
-      await pumpRun(tester, controller, 'oc-xru');
-      expect(key('team-run-error'), findsOneWidget);
-      expect(
-        find.text(
-          'The team host can’t be reached. AI Team works over your Tailscale '
-          'network or on this device.',
-        ),
-        findsOneWidget,
-      );
-      verdict = ProbeFound(host: gateway.host!, city: 'bright-lights');
-      await tester.tap(key('team-run-refresh'));
-      await tester.pumpAndSettle();
-      expect(controller.phase, OrchestrationPhase.ready);
-      expect(key('team-run-data'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
-    // P0.3 (docs/ux-system/programmes.json, "A team task opens one page from
-    // every door"): the home's row opens the task's conversation, and this
-    // screen is that conversation's Task details. The row's landing itself
-    // is team_one_page_test.dart's; this is the way on to the run detail.
-    testWidgets('the home’s run row opens the task, whose Task details '
-        'pushes the run detail', (tester) async {
+    // P0.3 and P3.5: the home's row opens the task's conversation, whose
+    // menu opens Task details as a sheet (no run page anywhere).
+    testWidgets('the home’s run row opens the task, whose menu opens Task '
+        'details', (tester) async {
       final (controller, _) = await boot();
       tester.view.physicalSize = const Size(800, 2400);
       tester.view.devicePixelRatio = 1;
@@ -1367,17 +983,15 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(key('team-conversation-details'));
       await tester.pumpAndSettle();
-      expect(key('team-run'), findsOneWidget);
-      // The task it opened, by its title; the Gas City term is in
-      // Technical details.
+      expect(key('team-task-details'), findsOneWidget);
       expect(
-        _textOf(tester, key('team-run-objective-title')).data,
-        'Add subtract function to calc.py',
+        _textOf(tester, key('team-task-details-state')).data,
+        'Waiting for a worker',
       );
-      final sheet = await openTechnical(tester);
+      final fold = await openTechnical(tester);
       expect(
         find.descendant(
-          of: sheet,
+          of: fold,
           matching: find.text('Task · convoy', findRichText: true),
         ),
         findsOneWidget,
@@ -1388,59 +1002,49 @@ void main() {
     testWidgets('reads in Arabic with the term and ids LTR', (tester) async {
       final ar = lookupAppLocalizations(const Locale('ar'));
       final (controller, _) = await boot(configure: richShape);
-      await pumpRun(tester, controller, 'oc-xru', locale: const Locale('ar'));
+      await pumpDetails(
+        tester,
+        controller,
+        'oc-xru',
+        locale: const Locale('ar'),
+      );
       expect(
-        _textOf(tester, key('team-run-progress-label')).data,
+        _textOf(tester, key('team-task-details-progress')).data,
         ar.teamUiTaskSteps(1, 4),
       );
       expect(
-        find.descendant(
-          of: key('team-run-needs-you'),
-          matching: find.textContaining(
-            ar.kitNeedsYouReasonDecision,
-            findRichText: true,
-          ),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        Directionality.of(tester.element(key('team-run-objective'))),
+        Directionality.of(tester.element(key('team-task-details-status'))),
         TextDirection.rtl,
-      );
-      await openDetails(tester);
-      expect(
-        _textOf(tester, key('team-run-counts')).data,
-        ar.teamUiRunDetailsCounts(1, 1, 1),
       );
       expect(
         find.text(ar.teamUiRunTermBatch, findRichText: true),
         findsNothing,
       );
-      await tester.tap(key('team-run-more'));
+      final fold = key('team-task-details-technical');
+      await tester.ensureVisible(fold);
       await tester.pumpAndSettle();
-      await tester.tap(key('team-run-details'));
+      await tester.tap(
+        find.descendant(
+          of: fold,
+          matching: find.text(ar.teamUiTechnicalDetails),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(
         find.descendant(
-          of: key('team-run-details-sheet'),
+          of: fold,
           matching: find.text(ar.teamUiRunTermBatch, findRichText: true),
         ),
         findsOneWidget,
       );
-      final id = find.descendant(
-        of: key('team-run-details-sheet'),
-        matching: find.text('oc-xru'),
-      );
+      final id = key('team-task-details-id');
       expect(id, findsOneWidget);
-      // find.text lands on the EditableText inside the SelectableText.
-      expect(tester.widget<EditableText>(id).textDirection, TextDirection.ltr);
+      expect(Directionality.of(tester.element(id)), TextDirection.ltr);
       expect(tester.takeException(), isNull);
     });
   });
 }
 
-/// The [Text] a keyed text draws: the widget itself, or the one inside a
-/// KitText (its key sits on the KitText).
 Text _textOf(WidgetTester tester, Finder finder) {
   final widget = tester.widget(finder);
   if (widget is Text) return widget;

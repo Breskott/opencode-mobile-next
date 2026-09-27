@@ -1,9 +1,9 @@
-// TEAM-109: the run detail at 320dp × 2.5x text, LTR and RTL, English and
-// Arabic: the two-line app bar, the redesigned Overview (status line,
-// stage line, needs you, steps, Details opened), the Technical
-// details sheet, the Timeline with its filter chips and the jump-to-latest
-// pill, and the missing-run state all fit, and nothing overflows or
-// scrolls sideways.
+// TEAM-109 after slice-P3.5: Task details (the retired run page's facts)
+// at 320dp × 2.5x text, LTR and RTL, English and Arabic: the status line,
+// the stage line, the step rows, the team's usage, the Technical details
+// fold with its LTR ids and what the host reported, and the missing-task
+// state all fit, and nothing overflows or scrolls sideways. (The run
+// page's tabs, Timeline filter chips and jump-to-latest pill are gone.)
 
 import 'dart:async';
 import 'dart:io';
@@ -17,7 +17,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Directory _findFixtureRoot() {
@@ -269,7 +269,7 @@ void main() {
         home: home,
       );
 
-  Future<void> pumpRun(
+  Future<void> pumpDetails(
     WidgetTester tester,
     OrchestrationController controller,
     String runId,
@@ -282,57 +282,50 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       app(
-        RunScreen(controller: controller, runId: runId, now: () => clock),
+        Scaffold(
+          body: SingleChildScrollView(
+            key: const ValueKey('details-scroll'),
+            child: TeamTaskDetails(
+              controller: controller,
+              runId: runId,
+              now: () => clock,
+            ),
+          ),
+        ),
         direction,
         locale,
       ),
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect(tester.getSize(find.byKey(const ValueKey('team-run'))).width, 320);
   }
 
-  /// Lists build lazily: scroll [list] until [target] exists and is on
-  /// screen (tappable when [tap]; a block taller than the viewport only
-  /// needs to be in view).
-  Future<void> revealIn(
+  /// Scrolls the details until [target] is on screen and within the width
+  /// (tappable when [tap]; a block taller than the viewport only needs to
+  /// be in view).
+  Future<void> reveal(
     WidgetTester tester,
-    String list,
     Finder target, {
-    bool up = false,
-    bool tap = true,
+    bool tap = false,
   }) async {
     await tester.scrollUntilVisible(
       target,
-      up ? -120 : 120,
+      120,
       scrollable: find
           .descendant(
-            of: find.byKey(ValueKey(list)),
+            of: find.byKey(const ValueKey('details-scroll')),
             matching: find.byType(Scrollable),
           )
           .first,
     );
     await tester.pumpAndSettle();
-    if (tap) {
-      expect(target.hitTestable(), findsOneWidget);
-      return;
-    }
+    if (tap) expect(target.hitTestable(), findsOneWidget);
     expect(target, findsOneWidget);
     final rect = tester.getRect(target);
     expect(rect.top, lessThan(740));
     expect(rect.bottom, greaterThan(0));
     expect(rect.left, greaterThanOrEqualTo(0));
     expect(rect.right, lessThanOrEqualTo(320));
-  }
-
-  /// The tab bar scrolls sideways at this text size.
-  Future<void> tab(WidgetTester tester, String name) async {
-    final target = find.byKey(ValueKey('team-run-tab-$name'));
-    await tester.ensureVisible(target);
-    await tester.pumpAndSettle();
-    await tester.tap(target);
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
   }
 
   Future<void> push(
@@ -347,188 +340,93 @@ void main() {
     expect(tester.takeException(), isNull);
   }
 
+  Finder key(String name) => find.byKey(ValueKey(name));
+
   for (final direction in TextDirection.values) {
     for (final locale in const [Locale('en'), Locale('ar')]) {
       final tag = '${direction.name} ${locale.languageCode}';
 
-      testWidgets('320dp 2.5x $tag: the Overview and its details fit', (
-        tester,
-      ) async {
-        final (controller, _) = await boot(configure: busyShape);
-        await pumpRun(tester, controller, 'oc-xru', direction, locale);
-        expect(find.byKey(const ValueKey('team-run-data')), findsOneWidget);
-        final l10n = lookupAppLocalizations(locale);
-
-        // The redesigned Overview, top to bottom: the title and status
-        // line, the four-stage line, what needs the person, the steps
-        // (the blocked one first, with the host's reason), then Details.
-        for (final name in const [
-          'team-run-objective',
-          'team-run-stage-line',
-          'team-run-needs-you',
-          'team-run-blocked-w3',
-        ]) {
-          await revealIn(
-            tester,
-            'team-run-overview',
-            find.byKey(ValueKey(name)),
-            tap: false,
-          );
-        }
-        final summary = find.byKey(const ValueKey('team-run-summary'));
-        await revealIn(tester, 'team-run-overview', summary);
-        expect(tester.takeException(), isNull);
-        // Details opens under its row: the counts and the team's usage.
-        await tester.tap(summary);
-        await tester.pumpAndSettle();
-        for (final name in const ['team-run-counts', 'team-run-usage']) {
-          await revealIn(
-            tester,
-            'team-run-overview',
-            find.byKey(ValueKey(name)),
-            tap: false,
-          );
-        }
-        expect(tester.takeException(), isNull);
-
-        // Technical details: the Gas City term is here, not on the page;
-        // the sheet scrolls; ids stay LTR.
-        expect(
-          find.text(l10n.teamUiRunTermBatch, findRichText: true),
-          findsNothing,
-        );
-        await tester.tap(find.byKey(const ValueKey('team-run-more')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const ValueKey('team-run-details')));
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        final sheet = find.byKey(const ValueKey('team-run-details-sheet'));
-        expect(sheet, findsOneWidget);
-        expect(
-          find.descendant(
-            of: sheet,
-            matching: find.text(l10n.teamUiRunTermBatch, findRichText: true),
-          ),
-          findsOneWidget,
-        );
-        final id = find.descendant(of: sheet, matching: find.text('oc-xru'));
-        await tester.scrollUntilVisible(
-          id,
-          120,
-          scrollable: find
-              .descendant(of: sheet, matching: find.byType(Scrollable))
-              .first,
-        );
-        await tester.pumpAndSettle();
-        expect(
-          tester.widget<EditableText>(id).textDirection,
-          TextDirection.ltr,
-        );
-        tester.state<NavigatorState>(find.byType(Navigator)).pop();
-        await tester.pumpAndSettle();
-        expect(sheet, findsNothing);
-        expect(tester.takeException(), isNull);
-      });
-
-      testWidgets('320dp 2.5x $tag: the Timeline, its chips and pill fit', (
+      testWidgets('320dp 2.5x $tag: Task details and its fold fit', (
         tester,
       ) async {
         final (controller, gateway) = await boot(configure: busyShape);
-        await pumpRun(tester, controller, 'oc-xru', direction, locale);
-        await tab(tester, 'timeline');
-        expect(
-          find.byKey(const ValueKey('team-run-timeline-empty')),
-          findsOneWidget,
-        );
-        for (var seq = 1; seq <= 12; seq++) {
-          gateway.stream.add(
-            seq.isEven
-                ? BeadChanged(
-                    beadId: 'w3',
-                    change: BeadChange.updated,
-                    seq: 5000 + seq,
-                    raw: {'ts': clock.toIso8601String()},
-                  )
-                : SessionChanged(
-                    sessionId: 's-wolf',
-                    change: SessionChange.woke,
-                    seq: 5000 + seq,
-                  ),
-          );
-        }
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        await push(tester, gateway, const GateChanged(gateId: 'g1', seq: 5013));
-        expect(
-          find.byKey(const ValueKey('team-run-event-5013')),
-          findsOneWidget,
-        );
-
-        // The filter chips wrap; Decisions leaves the one gate row.
-        final decisions = find.byKey(
-          const ValueKey('team-run-timeline-filter-decisions'),
-        );
-        await revealIn(tester, 'team-run-timeline', decisions, up: true);
-        await tester.tap(decisions);
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        expect(
-          find.byKey(const ValueKey('team-run-event-5013')),
-          findsOneWidget,
-        );
-        expect(find.byKey(const ValueKey('team-run-event-5012')), findsNothing);
-        final all = find.byKey(const ValueKey('team-run-timeline-filter-all'));
-        await tester.tap(all);
-        await tester.pumpAndSettle();
-
-        // Scrolled away, a new event waits behind the pill; the pill is a
-        // full target and jumps back.
-        final list = find.byKey(const ValueKey('team-run-timeline'));
-        await revealIn(
+        await pumpDetails(tester, controller, 'oc-xru', direction, locale);
+        final l10n = lookupAppLocalizations(locale);
+        await push(
           tester,
-          'team-run-timeline',
-          find.byKey(const ValueKey('team-run-event-5001')),
+          gateway,
+          BeadChanged(
+            beadId: 'w3',
+            change: BeadChange.updated,
+            seq: 5001,
+            raw: {'ts': clock.toIso8601String()},
+          ),
         );
         await push(
           tester,
           gateway,
-          const BeadChanged(beadId: 'w2', change: BeadChange.closed, seq: 5014),
+          const SessionChanged(
+            sessionId: 's-wolf',
+            change: SessionChange.woke,
+            seq: 5002,
+          ),
         );
-        final pill = find.byKey(const ValueKey('team-run-timeline-jump'));
-        expect(pill.hitTestable(), findsOneWidget);
-        expect(tester.getSize(pill).height, greaterThanOrEqualTo(48));
-        expect(tester.getSize(pill).width, lessThanOrEqualTo(320));
-        await tester.tap(pill);
+        expect(key('team-task-details-body'), findsOneWidget);
+
+        // Top to bottom: the status line, the four-stage line, the step
+        // rows (full targets), the team's usage.
+        for (final name in const [
+          'team-task-details-status',
+          'team-task-details-stage',
+        ]) {
+          await reveal(tester, key(name));
+        }
+        for (final id in const ['w1', 'w2', 'w3']) {
+          final row = key('team-task-details-step-$id');
+          await reveal(tester, row, tap: true);
+          expect(tester.getSize(row).height, greaterThanOrEqualTo(48));
+        }
+        await reveal(tester, key('team-task-details-usage'));
+        expect(tester.takeException(), isNull);
+
+        // Technical details: the Gas City term is there, not above it;
+        // ids stay LTR; what the host reported fits.
+        expect(
+          find.text(l10n.teamUiRunTermBatch, findRichText: true),
+          findsNothing,
+        );
+        final fold = key('team-task-details-technical');
+        await reveal(tester, fold);
+        await tester.tap(
+          find.descendant(
+            of: fold,
+            matching: find.text(l10n.teamUiTechnicalDetails),
+          ),
+        );
         await tester.pumpAndSettle();
-        expect(pill, findsNothing);
-        expect(
-          find.byKey(const ValueKey('team-run-event-5014')),
-          findsOneWidget,
+        expect(tester.takeException(), isNull);
+        await reveal(
+          tester,
+          find.descendant(
+            of: fold,
+            matching: find.text(l10n.teamUiRunTermBatch, findRichText: true),
+          ),
         );
-        expect(
-          tester
-              .state<ScrollableState>(
-                find.descendant(of: list, matching: find.byType(Scrollable)),
-              )
-              .position
-              .pixels,
-          0,
-        );
+        final id = key('team-task-details-id');
+        await reveal(tester, id);
+        expect(Directionality.of(tester.element(id)), TextDirection.ltr);
+        for (final seq in const [5001, 5002]) {
+          await reveal(tester, key('team-task-details-event-$seq'));
+        }
         expect(tester.takeException(), isNull);
       });
 
-      testWidgets('320dp 2.5x $tag: the missing-run state fits', (
+      testWidgets('320dp 2.5x $tag: the missing-task state fits', (
         tester,
       ) async {
         final (controller, _) = await boot(configure: busyShape);
-        await pumpRun(tester, controller, 'gone', direction, locale);
-        expect(find.byKey(const ValueKey('team-run-missing')), findsOneWidget);
-        final back = find.byType(FilledButton);
-        await tester.scrollUntilVisible(back, 120);
-        await tester.pumpAndSettle();
-        expect(back.hitTestable(), findsOneWidget);
+        await pumpDetails(tester, controller, 'gone', direction, locale);
+        await reveal(tester, key('team-task-details-missing'));
         expect(tester.takeException(), isNull);
       });
     }

@@ -21,7 +21,8 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team/merge_section.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamConversationScreen;
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _runId = 'oc-xru';
@@ -367,7 +368,13 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       app(
-        RunScreen(controller: controller, runId: _runId, now: () => clock),
+        // P3.5: the task is its conversation; the merge section follows
+        // the task's turn there.
+        TeamConversationScreen(
+          team: controller,
+          runId: _runId,
+          now: () => clock,
+        ),
         locale: locale,
       ),
     );
@@ -425,27 +432,26 @@ void main() {
     });
 
     testWidgets('present once every item is done or review-ready, in the '
-        'Overview before the steps and Details', (tester) async {
+        'conversation after the task\'s turn', (tester) async {
       final (controller, gateway) = await boot();
       await pumpRun(tester, controller);
       expect(key('team-merge-section'), findsOneWidget);
       expect(gateway.readinessReads, 1);
-      // The redesigned Overview: what needs the person, then the merge,
-      // then the steps; the numbers stay last, under Details.
-      final overview = find.byKey(const ValueKey('team-run-overview'));
-      final list = tester.widget<ListView>(overview);
+      // The task's turn first, then the merge: the section closes the
+      // transcript (P3.5: the run Overview is retired).
+      final list = tester.widget<ListView>(key('team-conversation-list'));
       final children =
           (list.childrenDelegate as SliverChildListDelegate).children;
       bool holdsMerge(Widget w) =>
           w is TeamMergeSection ||
           (w is Padding && w.child is TeamMergeSection);
       final merge = children.indexWhere(holdsMerge);
-      final details = children.indexWhere(
-        (c) => c.key == const ValueKey('team-run-summary'),
-      );
       expect(merge, isNonNegative);
-      expect(details, children.length - 1, reason: 'Details stays last');
-      expect(merge, lessThan(details));
+      expect(merge, children.length - 1, reason: 'the merge closes it');
+      expect(
+        tester.getTopLeft(key('team-merge-section')).dy,
+        greaterThan(tester.getTopLeft(key('team-conversation-turn')).dy),
+      );
     });
 
     testWidgets('Refresh reads the readiness again', (tester) async {
@@ -1064,12 +1070,11 @@ void main() {
           pixelRatio: 2.5,
           locale: locale,
         );
-        final overview = find.byKey(const ValueKey('team-run-overview'));
         await tester.scrollUntilVisible(
           key('team-merge-section'),
           200,
           scrollable: find.descendant(
-            of: overview,
+            of: key('team-conversation-list'),
             matching: find.byType(Scrollable),
           ),
         );

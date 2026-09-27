@@ -1,8 +1,8 @@
 /// Retired by kit-KitWorkGraph: the Work tab's Graph view now lives at
 /// `package:opencode_mobile/ui/kit/kit_work_graph.dart` as `KitWorkGraph`.
 ///
-/// This file stays only as the forwarder `run_screen.dart:1316` (today's
-/// only caller) still uses: [WorkGraph], [WorkGraphNode] (with `.of`),
+/// This file stays as the forwarder the retired run page used; Task
+/// details maps its steps through [WorkGraphNode.of] and `toKit`: [WorkGraph], [WorkGraphNode] (with `.of`),
 /// [WorkGraphLayout] (thin now — it maps straight onto
 /// [KitWorkGraphGeometry.layers], so its output is unchanged for the same
 /// node size), [WorkGraphEdge] and [WorkGraphPainter] keep their
@@ -214,8 +214,7 @@ class WorkGraphLayout {
 /// (`KitWorkGraph(layout: KitWorkGraphLayout.layers)`).
 ///
 /// The graph view: pinch-zoom, drag-pan, Fit, node tap. Forwards to
-/// [KitWorkGraph] so today's only caller (`run_screen.dart:1316`) behaves
-/// as before, keeping the `team-work-graph-*` keys (TEST-5).
+/// [KitWorkGraph] as the retired run page's Graph view did, keeping the `team-work-graph-*` keys (TEST-5).
 class WorkGraph extends StatefulWidget {
   const WorkGraph({
     super.key,

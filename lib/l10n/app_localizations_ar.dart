@@ -12882,9 +12882,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get teamUiRunDetails => 'التفاصيل';
-
-  @override
   String teamUiRunElapsedDays(int count) {
     return '$count ي';
   }
@@ -12926,9 +12923,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiRunLabelStarted => 'بدأ';
 
   @override
-  String get teamUiRunLabelState => 'الحالة';
-
-  @override
   String get teamUiRunLabelTrackedWork => 'العمل المتتبَّع';
 
   @override
@@ -12940,9 +12934,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiRunMissingTitle => 'لم تعد هذه المهمة موجودة على المضيف';
-
-  @override
-  String get teamUiRunNeedsYou => 'يحتاجك';
 
   @override
   String teamUiRunNeedsYouFrom(String name) {
@@ -12972,15 +12963,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiRunTabComingSoon => 'يأتي مع التحديث التالي';
 
   @override
-  String get teamUiRunTabOverview => 'نظرة عامة';
-
-  @override
-  String get teamUiRunTabTimeline => 'الخط الزمني';
-
-  @override
-  String get teamUiRunTabWork => 'الخطوات';
-
-  @override
   String get teamUiRunTermBatch => 'مهمة · convoy';
 
   @override
@@ -13000,31 +12982,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get teamUiRunTimelineEmpty => 'لم يحدث شيء بعد';
-
-  @override
-  String get teamUiRunTimelineEmptyFiltered => 'لا أحداث من هذا النوع بعد';
-
-  @override
-  String get teamUiRunTimelineEmptyFilteredHint => 'جرّب عامل تصفية آخر.';
-
-  @override
-  String get teamUiRunTimelineEmptyHint =>
-      'تظهر الأحداث هنا بينما يعمل الفريق على هذه المهمة.';
-
-  @override
-  String get teamUiRunTimelineFilterAgents => 'الوكلاء';
-
-  @override
-  String get teamUiRunTimelineFilterAll => 'الكل';
-
-  @override
-  String get teamUiRunTimelineFilterDecisions => 'القرارات';
-
-  @override
-  String get teamUiRunTimelineFilterWork => 'العمل';
-
-  @override
   String teamUiRunTimelineGateOpened(String title) {
     return 'يحتاجك: $title';
   }
@@ -13032,21 +12989,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String teamUiRunTimelineGateResolved(String title) {
     return 'أُجيب: $title';
-  }
-
-  @override
-  String teamUiRunTimelineJump(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count حدث جديد · الانتقال إلى الأحدث',
-      many: '$count حدثًا جديدًا · الانتقال إلى الأحدث',
-      few: '$count أحداث جديدة · الانتقال إلى الأحدث',
-      two: 'حدثان جديدان · الانتقال إلى الأحدث',
-      one: 'حدث جديد · الانتقال إلى الأحدث',
-      zero: 'الانتقال إلى الأحدث',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -13163,13 +13105,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamUiAgentRecyclingSoon =>
       'إعادة التدوير قريبًا · السياق شبه ممتلئ';
-
-  @override
-  String get teamUiAgentRunEmpty => 'لا وكلاء في هذا التشغيل';
-
-  @override
-  String get teamUiAgentRunEmptyHint =>
-      'يظهر الوكلاء هنا أثناء عملهم على عناصر هذا التشغيل.';
 
   @override
   String get teamUiAgentSectionActivity => 'النشاط';
@@ -13332,37 +13267,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiAgentWorkUnblocked => 'لا شيء يعطّله';
 
   @override
-  String get teamUiWorkEmpty => 'لا توجد عناصر عمل بعد';
-
-  @override
-  String get teamUiWorkEmptyHint => 'يظهر العمل هنا حين يكون للتشغيل عناصر.';
-
-  @override
   String get teamUiWorkGraphFit => 'ملاءمة';
 
   @override
   String teamUiWorkGraphNodeSemantics(String title, String state) {
     return '$title، $state';
-  }
-
-  @override
-  String teamUiWorkGraphSemantics(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'رسم الاعتماديات لـ $count عنصر عمل',
-      many: 'رسم الاعتماديات لـ $count عنصر عمل',
-      few: 'رسم الاعتماديات لـ $count عناصر عمل',
-      two: 'رسم الاعتماديات لعنصري عمل',
-      one: 'رسم الاعتماديات لعنصر عمل واحد',
-      zero: 'رسم الاعتماديات بلا عناصر',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String teamUiWorkGroupHeader(String state, int count) {
-    return '$state · $count';
   }
 
   @override
@@ -13403,11 +13312,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiWorkOwnerNone => 'غير مُسنَد';
-
-  @override
-  String teamUiWorkOwnerSemantics(String name) {
-    return 'المالك: $name';
-  }
 
   @override
   String get teamUiWorkSheetBlocking => 'يعطّل';
@@ -13507,27 +13411,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String teamUiWorkTerm(String id) {
     return 'عمل · bead $id';
-  }
-
-  @override
-  String get teamUiWorkViewGraph => 'رسم';
-
-  @override
-  String get teamUiWorkViewList => 'قائمة';
-
-  @override
-  String teamUiWorkWaitsOn(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'ينتظر $count خطوة',
-      many: 'ينتظر $count خطوة',
-      few: 'ينتظر $count خطوات',
-      two: 'ينتظر خطوتين',
-      one: 'ينتظر خطوة واحدة',
-      zero: 'لا ينتظر شيئًا',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -13939,23 +13822,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiControlCancelRun => 'إيقاف التشغيل';
-
-  @override
-  String get teamUiControlCloseBatch => 'إغلاق الدفعة';
-
-  @override
-  String get teamUiControlCancelRunConfirmTitle => 'إيقاف هذا التشغيل؟';
-
-  @override
-  String get teamUiControlCancelRunConfirmBody =>
-      'تتوقف الخطوات الجارية؛ ويبقى العمل المكتمل. لا يمكن التراجع عن هذا من الهاتف.';
-
-  @override
-  String get teamUiControlCloseBatchConfirmTitle => 'إغلاق هذه الدفعة؟';
-
-  @override
-  String get teamUiControlCloseBatchConfirmBody =>
-      'تُغلق الدفعة على المضيف. تبقى عناصر عملها المفتوحة مفتوحة لدفعة أخرى.';
 
   @override
   String get teamUiStartRunFab => 'كلّف الفريق بمهمة';
@@ -17708,25 +17574,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiRunStepsHeading => 'الخطوات';
 
   @override
-  String teamUiRunStepsAll(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'عرض كل الخطوات ($count)',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String teamUiRunDetailsCounts(int done, int working, int blocked) {
-    return '$done مكتملة · $working قيد العمل · $blocked معطّلة';
-  }
-
-  @override
   String get teamUiRunDetailsUsage => 'الاستخدام';
-
-  @override
-  String get teamUiRunDetailsStepsLabel => 'الخطوات';
 
   @override
   String get teamUiRunDetailsElapsed => 'الوقت';
@@ -18542,9 +18390,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamChatComposerCannot => 'لا يمكن مراسلة هذا الفريق من هنا.';
 
   @override
-  String get teamOpenTaskConversationHint => 'المهمة وعمالها، في المحادثة';
-
-  @override
   String get teamBoardTitle => 'اللوحة';
 
   @override
@@ -18788,18 +18633,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamBoardPriorityTitle => 'الأولوية';
-
-  @override
-  String get teamBoardAddTooltip => 'أضف إلى قائمة الانتظار';
-
-  @override
-  String get teamBoardAddHint => 'ماذا ينبغي أن يفعل الفريق؟';
-
-  @override
-  String get teamBoardAddButton => 'أضف إلى قائمة الانتظار';
-
-  @override
-  String get teamBoardAddNote => 'تنتظر في قائمة الانتظار حتى تبدأها.';
 
   @override
   String get teamBoardAddFailed => 'تعذّرت الإضافة. رفض مضيف الفريق الطلب.';
@@ -20493,22 +20326,6 @@ class AppLocalizationsAr extends AppLocalizations {
       one: '1 minute',
     );
     return '$_temp0';
-  }
-
-  @override
-  String kitToolForMinutes(int count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$countString min',
-      one: '1 min',
-      zero: 'under a minute',
-    );
-    return 'for $_temp0';
   }
 
   @override
@@ -22365,9 +22182,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamNowWakeRefusedNoReason => 'The host didn\'t say why.';
-
-  @override
-  String get teamBoardMoveSheetAddEmpty => 'Say what the team should do first.';
 
   @override
   String get teamCycleStripNoAgentYet => 'No agent has taken this step yet.';
@@ -26516,4 +26330,100 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get termuxProcsCpuTime => 'Processor time';
+
+  @override
+  String kitDurationHours(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String kitDurationHoursMinutes(int hours, int minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
+  String kitDurationDays(int days) {
+    return '$days d';
+  }
+
+  @override
+  String kitDurationDaysHours(int days, int hours) {
+    return '$days d $hours h';
+  }
+
+  @override
+  String kitToolFor(String duration) {
+    return 'for $duration';
+  }
+
+  @override
+  String kitSinceWaitingForLong(String duration) {
+    return 'Waiting $duration';
+  }
+
+  @override
+  String get teamChatLeadRoutedIt => 'Sent it to the workers';
+
+  @override
+  String get teamChatLeadStartingIt => 'Started a worker on it';
+
+  @override
+  String teamChatLeadClaimedIt(String name) {
+    return '$name took it';
+  }
+
+  @override
+  String get teamChatLeadClaimedWorkerIt => 'A worker took it';
+
+  @override
+  String get teamChatLeadPushedIt => 'Its changes are on a branch';
+
+  @override
+  String get teamChatLeadReviewIt => 'Handed it to review';
+
+  @override
+  String get teamChatLeadMergedIt => 'Merged it';
+
+  @override
+  String get teamChatLeadStepFailedIt => 'It failed';
+
+  @override
+  String get teamChatLeadStepCancelledIt => 'It was cancelled';
+
+  @override
+  String teamChatNowWorkingIt(String name, String elapsed) {
+    return '$name is working on it · $elapsed';
+  }
+
+  @override
+  String teamChatNowNoProgress(String elapsed) {
+    return 'No progress for $elapsed';
+  }
+
+  @override
+  String teamChatNoProgressBody(String name, String time) {
+    return '$name hasn\'t moved this task since $time. Nudge it to carry on, restart it, or report the problem.';
+  }
+
+  @override
+  String teamChatNoProgressBodyNoControls(String name, String time) {
+    return '$name hasn\'t moved this task since $time. This host can\'t nudge or restart it from here; report the problem or check the team\'s computer.';
+  }
+
+  @override
+  String get teamChatNoProgressReport => 'Report the problem';
+
+  @override
+  String teamChatNoProgressReportTitle(String elapsed) {
+    return 'An AI Team task made no progress for $elapsed';
+  }
+
+  @override
+  String get teamTaskDetailsReported => 'What the host reported';
+
+  @override
+  String get kitToolOpenDetails => 'Open its details';
+
+  @override
+  String get teamStartRunKeepInBacklog => 'Keep in backlog';
 }

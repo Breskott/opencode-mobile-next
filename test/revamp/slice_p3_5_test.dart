@@ -1,0 +1,535 @@
+// slice-P3.5 (Retire RunScreen) and the owner's team conversation reports
+// on build 2055:
+// - a task with no progress for 45 h says "No progress for 1 d 21 h" with
+//   the next step (nudge, restart, report), and a long run reads in hours
+//   and days, never "2,715 min";
+// - the task's words are said once (the prompt): the lead says "it", and a
+//   step that is the task itself is not listed again;
+// - the agent strip sits in the header, above the transcript, never over
+//   it; the composer's band is solid to the window's bottom edge;
+// - Task details (the conversation's menu) holds every fact of the retired
+//   run page; the transcript's steps open their Work sheet; Refresh is in
+//   the menu;
+// - the board's + is the one "Give the team a task" sheet, with Keep in
+//   backlog.
+import 'package:clock/clock.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api/models.dart' show ModelRef;
+import 'package:opencode_mobile/domain/orchestration_gateway.dart';
+import 'package:opencode_mobile/domain/server_gateway.dart';
+import 'package:opencode_mobile/l10n/app_localizations_en.dart';
+import 'package:opencode_mobile/state/orchestration.dart';
+import 'package:opencode_mobile/ui/screens/chat_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/team_board_screen.dart';
+
+import '../support/team_chat_fixture.dart';
+import 'chat_3_support.dart';
+
+final _en = AppLocalizationsEn();
+
+Finder _key(String name) => find.byKey(ValueKey(name));
+
+/// 45 h before the pinned clock (19:55 on the 25th).
+final _stalledAt = teamClock.subtract(const Duration(hours: 45));
+
+final _task = OrchestrationRun(
+  id: 'ma-convoy-1',
+  title: 'Add a dark mode toggle',
+  state: RunState.working,
+  rawState: 'open',
+  kind: RunKind.batch,
+  projectId: 'my-app',
+  stepCount: 1,
+  completedSteps: 0,
+  startedAt: _stalledAt.subtract(const Duration(minutes: 5)),
+  updatedAt: _stalledAt,
+  raw: const {'id': 'ma-convoy-1', 'issue_type': 'convoy'},
+);
+
+/// The task's one step, which is the task itself (Gas City names the
+/// convoy's only bead as the task).
+final _soleStep = WorkItem(
+  id: 'ma-1',
+  title: 'Add a dark mode toggle',
+  state: WorkState.working,
+  rawState: 'in_progress',
+  runId: 'ma-convoy-1',
+  projectId: 'my-app',
+  assignee: 'my-app/gastown.furiosa',
+  createdAt: _stalledAt.subtract(const Duration(minutes: 5)),
+  updatedAt: _stalledAt,
+  raw: const {
+    'id': 'ma-1',
+    'metadata': {'gc.routed_to': 'my-app/gastown.polecat'},
+  },
+);
+
+/// furiosa's session runs, and has done nothing for 45 h.
+final _quietFuriosa = OrchestrationAgent(
+  id: 'my-app/gastown.furiosa',
+  name: 'my-app/gastown.furiosa',
+  state: AgentState.working,
+  rawState: 'active',
+  sessionId: 'ma-wisp-7',
+  sessionName: 'my-app--gastown__polecat-ma-wisp-7',
+  pool: 'my-app/gastown.polecat',
+  provider: 'opencode',
+  harness: 'OpenCode',
+  currentWorkId: 'ma-1',
+  workDir: teamPolecatDir,
+  sessionStartedAt: _stalledAt,
+  lastActivity: _stalledAt,
+  sessionState: 'active',
+  sessionRunning: true,
+);
+
+/// Every test reads the pinned clock (KitSince ticks from `clock`).
+void _test(String name, Future<void> Function(WidgetTester tester) body) =>
+    testWidgets(
+      name,
+      (tester) => withClock(Clock.fixed(teamClock), () => body(tester)),
+    );
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  Future<(OrchestrationController, TeamChatGateway)> pump(
+    WidgetTester tester, {
+    List<OrchestrationRun>? runs,
+    List<WorkItem>? work,
+    List<OrchestrationAgent>? agents,
+    OrchestrationCapabilities capabilities =
+        OrchestrationCapabilities.gascityLoopback,
+  }) async {
+    phoneViewport(tester);
+    final (team, gateway) = await bootTeam(
+      runs: runs,
+      work: work,
+      agents: agents,
+      capabilities: capabilities,
+    );
+    final connection = await teamConnection(
+      api: TeamChatApi(const {}),
+      repository: TeamChatRepository(const []),
+    );
+    await tester.pumpWidget(
+      teamChatApp(
+        connection,
+        TeamControllerScope(
+          team: team,
+          child: TeamConversationScreen(
+            team: team,
+            runId: 'ma-convoy-1',
+            now: () => teamClock,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    return (team, gateway);
+  }
+
+  Future<(OrchestrationController, TeamChatGateway)> pumpStalled(
+    WidgetTester tester, {
+    OrchestrationCapabilities capabilities =
+        OrchestrationCapabilities.gascityLoopback,
+  }) => pump(
+    tester,
+    runs: [_task],
+    work: [_soleStep],
+    agents: [_quietFuriosa],
+    capabilities: capabilities,
+  );
+
+  /// The transcript scrolled to its end, clear of the composer.
+  Future<void> toEnd(WidgetTester tester) async {
+    await tester.drag(_key('team-conversation-list'), const Offset(0, -2000));
+    await tester.pumpAndSettle();
+  }
+
+  String nowLine(WidgetTester tester) => tester
+      .widget<RichText>(
+        find
+            .descendant(
+              of: _key('team-conversation-now-text'),
+              matching: find.byType(RichText),
+            )
+            .first,
+      )
+      .text
+      .toPlainText();
+
+  group('a task with no progress (owner report, 45 h)', () {
+    _test('the Now line says so plainly, in days and hours', (tester) async {
+      await pumpStalled(tester);
+      expect(nowLine(tester), 'No progress for 1 d 21 h');
+      expect(find.textContaining('check the agent'), findsNothing);
+      // Never thousands of minutes anywhere on the page.
+      expect(find.textContaining(RegExp(r'\d,\d{3} min')), findsNothing);
+      expect(find.textContaining('2700 min'), findsNothing);
+    });
+
+    _test('the worker line reads its run time in days and hours', (
+      tester,
+    ) async {
+      await pumpStalled(tester);
+      expect(
+        find.descendant(
+          of: _key('team-conversation-agent-my-app/gastown.furiosa'),
+          matching: find.textContaining('Running for 1 d 21 h'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    _test('the notice offers the next step: nudge, restart, report', (
+      tester,
+    ) async {
+      final (_, gateway) = await pumpStalled(tester);
+      expect(_key('team-conversation-no-progress'), findsOneWidget);
+      expect(
+        find.textContaining("furiosa hasn't moved this task since"),
+        findsOneWidget,
+      );
+      expect(find.text('Nudge furiosa'), findsOneWidget);
+      expect(find.text('Restart furiosa'), findsOneWidget);
+      expect(find.text(_en.teamChatNoProgressReport), findsOneWidget);
+
+      await toEnd(tester);
+      await tester.tap(_key('team-conversation-no-progress-nudge'));
+      await tester.pumpAndSettle();
+      expect(gateway.controls, [
+        ('my-app/gastown.furiosa', AgentControlAction.nudge),
+      ]);
+      expect(_key('team-conversation-no-progress-receipt'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 61));
+    });
+
+    _test('restart asks first; backing out sends nothing', (tester) async {
+      final (_, gateway) = await pumpStalled(tester);
+      await toEnd(tester);
+      await tester.tap(_key('team-conversation-no-progress-restart'));
+      await tester.pumpAndSettle();
+      expect(_key('team-conversation-restart-confirm'), findsOneWidget);
+      await tester.tapAt(const Offset(200, 40));
+      await tester.pumpAndSettle();
+      expect(gateway.controls, isEmpty);
+
+      await toEnd(tester);
+      await tester.tap(_key('team-conversation-no-progress-restart'));
+      await tester.pumpAndSettle();
+      await tester.tap(_key('team-conversation-restart-confirm-action'));
+      await tester.pumpAndSettle();
+      expect(gateway.controls, [
+        ('my-app/gastown.furiosa', AgentControlAction.restart),
+      ]);
+      await tester.pump(const Duration(seconds: 61));
+    });
+
+    _test('a host without agent controls offers the report only', (
+      tester,
+    ) async {
+      await pumpStalled(
+        tester,
+        capabilities: const OrchestrationCapabilities(
+          projects: true,
+          runs: true,
+          runSteps: true,
+          workGraph: true,
+          agents: true,
+          agentOutput: true,
+          gatesInteractions: true,
+          gatesBeads: true,
+          eventStream: true,
+          controlRespond: true,
+          controlMessage: true,
+          phoneHost: true,
+        ),
+      );
+      expect(find.text('Nudge furiosa'), findsNothing);
+      expect(find.text('Restart furiosa'), findsNothing);
+      expect(find.text(_en.teamChatNoProgressReport), findsOneWidget);
+    });
+
+    _test('a task that moves says nothing of the kind', (tester) async {
+      await pump(tester);
+      expect(_key('team-conversation-no-progress'), findsNothing);
+      expect(nowLine(tester), isNot(contains('No progress')));
+    });
+  });
+
+  group('the task is said once (owner rule: nothing shown twice)', () {
+    _test('the lead refers back to the prompt; the step and worker '
+        'rows do not repeat it', (tester) async {
+      await pumpStalled(tester);
+      // The prompt says it.
+      expect(
+        find.descendant(
+          of: _key('team-conversation-prompt'),
+          matching: find.textContaining('Add a dark mode toggle'),
+        ),
+        findsOneWidget,
+      );
+      // The lead's reply refers back to it.
+      final lead = _key('team-conversation-lead');
+      expect(
+        find.descendant(
+          of: lead,
+          matching: find.textContaining('Add a dark mode toggle'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: lead,
+          matching: find.textContaining('Started a worker on it'),
+        ),
+        findsOneWidget,
+      );
+      // The one step is the task: no steps fold, and the worker's line
+      // does not carry the task's words again.
+      expect(_key('team-conversation-steps'), findsNothing);
+      expect(
+        find.descendant(
+          of: _key('team-conversation-agent-my-app/gastown.furiosa'),
+          matching: find.textContaining('Add a dark mode toggle'),
+        ),
+        findsNothing,
+      );
+      // In the transcript the words show once: the prompt.
+      expect(
+        find.descendant(
+          of: _key('team-conversation-list'),
+          matching: find.textContaining('Add a dark mode toggle'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    _test('a step that is not the task keeps its own words', (tester) async {
+      await pump(tester);
+      expect(_key('team-conversation-steps'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: _key('team-conversation-steps'),
+          matching: find.text('Remember the choice'),
+        ),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('nothing covers the transcript', () {
+    _test('the agent strip ends above the transcript', (tester) async {
+      await pump(tester);
+      final strip = tester.getRect(_key('team-conversation-family'));
+      final list = tester.getRect(_key('team-conversation-list'));
+      expect(strip.bottom, lessThanOrEqualTo(list.top));
+      // The first line of the transcript starts below the strip too.
+      final prompt = tester.getRect(_key('team-conversation-prompt'));
+      expect(prompt.top, greaterThan(strip.bottom));
+    });
+
+    _test('the composer band is solid to the bottom edge', (tester) async {
+      await pump(tester);
+      final band = tester.getRect(_key('kit-composer-band'));
+      expect(band.bottom, 915);
+      expect(band.left, 0);
+      expect(band.right, 412);
+      final composer = tester.getRect(_key('team-conversation-composer'));
+      expect(band.top, lessThanOrEqualTo(composer.top));
+    });
+  });
+
+  group('RunScreen retired (P3.5)', () {
+    _test('Task details is a sheet with every former run fact', (tester) async {
+      await pump(tester);
+      await tester.tap(_key('team-conversation-menu'));
+      await tester.pumpAndSettle();
+      await tester.tap(_key('team-conversation-details'));
+      await tester.pumpAndSettle();
+
+      expect(_key('team-task-details'), findsOneWidget);
+      expect(_key('team-run'), findsNothing);
+      // Where it stands: state word, steps done, for how long.
+      expect(_key('team-task-details-state'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: _key('team-task-details-progress'),
+          matching: find.text('0 of 2 steps done'),
+        ),
+        findsOneWidget,
+      );
+      expect(_key('team-task-details-elapsed'), findsOneWidget);
+      // The stage line and the steps (as the graph's rows); the agents are
+      // the conversation's strip and lines, not repeated here.
+      expect(_key('team-task-details-stage'), findsOneWidget);
+      expect(_key('team-task-details-step-ma-1'), findsOneWidget);
+      expect(_key('team-task-details-step-ma-2'), findsOneWidget);
+      expect(_key('team-task-details-agents'), findsNothing);
+      // What the team spent today, and the one technical fold with the ids.
+      expect(_key('team-task-details-usage'), findsOneWidget);
+      await tester.ensureVisible(_key('team-task-details-technical'));
+      await tester.tap(
+        find.descendant(
+          of: _key('team-task-details-technical'),
+          matching: find.text(_en.teamUiTechnicalDetails),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(_key('team-task-details-id'), findsOneWidget);
+
+      // A step opens its Work sheet.
+      await tester.ensureVisible(_key('team-task-details-step-ma-2'));
+      await tester.tap(_key('team-task-details-step-ma-2'));
+      await tester.pumpAndSettle();
+      expect(_key('team-work-sheet'), findsOneWidget);
+    });
+
+    _test('a step in the transcript opens its Work sheet', (tester) async {
+      await pump(tester);
+      await tester.tap(_key('team-conversation-step-ma-2'));
+      await tester.pumpAndSettle();
+      expect(_key('team-work-sheet'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: _key('team-work-sheet'),
+          matching: find.text('Remember the choice'),
+        ),
+        findsWidgets,
+      );
+    });
+
+    _test('Refresh is in the conversation menu', (tester) async {
+      await pump(tester);
+      await tester.tap(_key('team-conversation-menu'));
+      await tester.pumpAndSettle();
+      expect(_key('team-conversation-refresh'), findsOneWidget);
+      await tester.tap(_key('team-conversation-refresh'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group("the board's + is the one Give the team a task sheet", () {
+    Future<(OrchestrationController, TeamChatGateway)> pumpBoard(
+      WidgetTester tester,
+    ) async {
+      phoneViewport(tester);
+      final (team, gateway) = await bootTeam(
+        capabilities: OrchestrationCapabilities.gascityLoopback,
+        agents: [
+          teamFuriosa(),
+          // The planner is off on the phone: the direct form.
+          const OrchestrationAgent(
+            id: 'gastown.mayor',
+            name: 'gastown.mayor',
+            state: AgentState.stopped,
+            suspended: true,
+          ),
+        ],
+      );
+      final connection = await teamConnection(
+        api: TeamChatApi(const {}),
+        repository: TeamChatRepository(const []),
+      );
+      await tester.pumpWidget(
+        teamChatApp(
+          connection,
+          TeamControllerScope(
+            team: team,
+            child: TeamBoardScreen(
+              controller: team,
+              projectId: 'my-app',
+              now: () => teamClock,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return (team, gateway);
+    }
+
+    _test('Keep in backlog makes the task, given to no one', (tester) async {
+      final (_, gateway) = await pumpBoard(tester);
+      final add = find.byWidgetPredicate(
+        (w) =>
+            w.key == const ValueKey('team-board-add') ||
+            w.key == const ValueKey('team-board-empty-add'),
+      );
+      expect(add, findsWidgets);
+      await tester.tap(add.first);
+      await tester.pumpAndSettle();
+      expect(_key('team-start-run-sheet'), findsOneWidget);
+      expect(find.text(_en.teamUiStartRunTitle), findsWidgets);
+      expect(_key('team-board-add-sheet'), findsNothing);
+      await tester.enterText(
+        _key('team-start-run-direct-title'),
+        'Add a changelog',
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(_key('team-start-run-backlog'));
+      await tester.tap(_key('team-start-run-backlog'));
+      await tester.pumpAndSettle();
+      expect(gateway.created.single.$1, 'Add a changelog');
+      // No conversation opened; the board stays.
+      expect(_key('team-start-run-sheet'), findsNothing);
+      expect(find.byType(TeamConversationScreen), findsNothing);
+      expect(_key('team-board'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 61));
+    });
+  });
+
+  // P6.6a's call sites in the chat (docs/qa/slice-P6.6a-2026-09-27): the
+  // model the app picked by itself is said once per server, where it is
+  // used, with the way to change it.
+  group('the default model is said once where it is used (P6.6a)', () {
+    CatalogModel model(String provider, String id, String name) => CatalogModel(
+      id: id,
+      providerID: provider,
+      name: name,
+      enabled: true,
+      status: 'active',
+      contextLimit: 200000,
+      outputLimit: 8000,
+      reasoning: true,
+      attachments: true,
+      tools: true,
+      variants: const [],
+    );
+
+    testWidgets('once per server, with Choose another model', (tester) async {
+      chat3MockSecureStorage();
+      final conn = await chat3Controller();
+      addTearDown(conn.dispose);
+      conn
+        ..catalog = CatalogSnapshot(
+          providers: const [],
+          models: [
+            model('anthropic', 'sonnet', 'Claude Sonnet 4'),
+            model('openai', 'gpt', 'GPT-6'),
+          ],
+          agents: const [],
+        )
+        ..selectedModel = ModelRef(providerID: 'anthropic', modelID: 'sonnet');
+      await pumpChat3(tester, conn);
+      await tester.pumpAndSettle();
+      expect(_key('chat-default-model-notice'), findsOneWidget);
+      expect(
+        find.textContaining("this server's default model"),
+        findsOneWidget,
+      );
+      expect(find.text(_en.defaultModelChange), findsOneWidget);
+      await tester.tap(_key('chat-default-model-dismiss'));
+      await tester.pumpAndSettle();
+      expect(_key('chat-default-model-notice'), findsNothing);
+
+      // Back in the conversation later: said already on this server.
+      await tester.pumpWidget(const SizedBox());
+      await pumpChat3(tester, conn);
+      await tester.pumpAndSettle();
+      expect(_key('chat-default-model-notice'), findsNothing);
+    });
+  });
+}

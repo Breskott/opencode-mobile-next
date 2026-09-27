@@ -28,7 +28,6 @@ import 'package:opencode_mobile/state/team_planning.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
     show TeamConversationScreen;
@@ -394,6 +393,15 @@ void main() {
     await tester.pump();
   }
 
+  /// The task's conversation, where the run page's controls moved.
+  Widget conversation(OrchestrationController controller, String runId) =>
+      TeamConversationScreen(
+        key: ValueKey('conversation-$runId'),
+        team: controller,
+        runId: runId,
+        now: () => clock,
+      );
+
   Future<void> settle(WidgetTester tester) async {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 30));
@@ -428,18 +436,14 @@ void main() {
       await settle(tester);
       expect(key('team-home-start-run'), findsNothing);
 
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        ),
-      );
+      // The task's conversation (RunScreen retired, P3.5): its menu holds
+      // Task details, and a read-only host adds no Stop task.
+      await tester.pumpWidget(app(conversation(controller, 'oc-xru')));
       await settle(tester);
-      // Design standard §1: one icon action plus the overflow; Technical
-      // details lives in the overflow, and a read-only host adds nothing.
-      await tester.tap(key('team-run-more'));
+      await tester.tap(key('team-conversation-menu'));
       await tester.pumpAndSettle();
-      expect(key('team-run-details'), findsOneWidget);
-      expect(key('team-run-cancel'), findsNothing);
+      expect(key('team-conversation-details'), findsOneWidget);
+      expect(key('team-conversation-stop'), findsNothing);
     });
 
     testWidgets('front host: every control, never Open session', (
@@ -627,57 +631,44 @@ void main() {
       await drain(tester);
     });
 
-    testWidgets('Cancel run: overflow → confirmation → cancelRun', (
-      tester,
-    ) async {
+    // RunScreen's Cancel run / Close batch is retired (P3.5): the task's
+    // conversation owns Stop task, confirmed, with its receipt.
+    testWidgets('Stop task: menu → confirmation → cancelRun', (tester) async {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot();
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        ),
-      );
+      await tester.pumpWidget(app(conversation(controller, 'oc-xru')));
       await settle(tester);
-      await tester.tap(key('team-run-more'));
+      await tester.tap(key('team-conversation-menu'));
       await tester.pumpAndSettle();
-      expect(find.text('Stop run'), findsOneWidget);
-      await tester.tap(find.text('Stop run'));
+      await tester.tap(key('team-conversation-stop'));
       await tester.pumpAndSettle();
-      expect(key('team-run-cancel-confirm'), findsOneWidget);
+      expect(key('team-conversation-stop-confirm'), findsOneWidget);
       expect(gateway.calls, isEmpty);
-      await tester.tap(key('team-run-cancel-confirm-action'));
+      await tester.tap(key('team-conversation-stop-confirm-action'));
       await tester.pumpAndSettle();
       expect(gateway.calls.single.verb, 'cancelRun');
       expect(gateway.calls.single.target, 'oc-xru');
-      expect(key('team-run-receipt'), findsOneWidget);
-      expect(find.textContaining('Stop run · Sending…'), findsOneWidget);
-      // The chip sits under the status, before the four stages.
-      final chipY = tester.getTopLeft(key('team-run-receipt')).dy;
-      expect(chipY, greaterThan(tester.getTopLeft(key('team-run-state')).dy));
-      expect(chipY, lessThan(tester.getTopLeft(key('team-run-stage-line')).dy));
+      expect(key('team-conversation-stop-receipt'), findsOneWidget);
+      expect(find.textContaining('Stop task · Sending…'), findsOneWidget);
       await drain(tester);
     });
 
-    testWidgets('Cancel run: backing out sends nothing', (tester) async {
+    testWidgets('Stop task: backing out sends nothing', (tester) async {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot();
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        ),
-      );
+      await tester.pumpWidget(app(conversation(controller, 'oc-xru')));
       await settle(tester);
-      await tester.tap(key('team-run-more'));
+      await tester.tap(key('team-conversation-menu'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Stop run'));
+      await tester.tap(key('team-conversation-stop'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Keep going'));
+      await tester.tap(find.text('Keep running'));
       await tester.pumpAndSettle();
       expect(gateway.calls, isEmpty);
-      expect(key('team-run-receipt'), findsNothing);
+      expect(key('team-conversation-stop-receipt'), findsNothing);
     });
 
-    testWidgets('a batch offers Close batch; a finished run offers nothing', (
+    testWidgets('a batch offers Stop task; a finished task offers nothing', (
       tester,
     ) async {
       await size(tester, const Size(400, 900));
@@ -687,30 +678,21 @@ void main() {
           run(id: 'oc-done', state: RunState.completed),
         ],
       );
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        ),
-      );
+      await tester.pumpWidget(app(conversation(controller, 'oc-xru')));
       await settle(tester);
-      await tester.tap(key('team-run-more'));
+      await tester.tap(key('team-conversation-menu'));
       await tester.pumpAndSettle();
-      expect(find.text('Close batch'), findsOneWidget);
-      expect(find.text('Stop run'), findsNothing);
+      expect(key('team-conversation-stop'), findsOneWidget);
       await tester.tapAt(Offset.zero);
       await tester.pumpAndSettle();
 
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-done', now: () => clock),
-        ),
-      );
+      await tester.pumpWidget(app(conversation(controller, 'oc-done')));
       await settle(tester);
-      // The overflow holds Technical details only: nothing to stop.
-      await tester.tap(key('team-run-more'));
+      // The menu holds Refresh and Task details only: nothing to stop.
+      await tester.tap(key('team-conversation-menu'));
       await tester.pumpAndSettle();
-      expect(key('team-run-details'), findsOneWidget);
-      expect(key('team-run-cancel'), findsNothing);
+      expect(key('team-conversation-details'), findsOneWidget);
+      expect(key('team-conversation-stop'), findsNothing);
     });
   });
 

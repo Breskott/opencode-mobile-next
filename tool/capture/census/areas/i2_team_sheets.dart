@@ -17,7 +17,9 @@ import 'package:opencode_mobile/termux/team_runtime.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/gate_sheet.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/chat_screen.dart'
+    show TeamConversationScreen;
+import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/work_sheet.dart';
 import 'package:opencode_mobile/state/phone_host.dart' show PhoneHostKind;
@@ -66,14 +68,14 @@ void _review(CensusTeamGateway g, {bool ready = true}) {
     ..readiness[teamReviewRunId] = teamReadiness(ready: ready);
 }
 
-/// The review-ready run's Overview, scrolled to the Merge section.
+/// The review-ready task's conversation, scrolled to the Merge section.
 Future<void> _merge(CensusKit kit, {bool ready = true}) async {
   final (team, _) = await _team(
     kit,
     configure: (g) => _review(g, ready: ready),
   );
   await kit.pumpApp(
-    RunScreen(controller: team, runId: teamReviewRunId, now: teamNow),
+    TeamConversationScreen(team: team, runId: teamReviewRunId, now: teamNow),
   );
   final section = find.byKey(const ValueKey('team-merge-section'));
   await kit.scrollTo(section);
@@ -85,7 +87,7 @@ Future<void> _merge(CensusKit kit, {bool ready = true}) async {
 Future<void> _openWork(CensusKit kit, String workId) async {
   final (team, _) = await _team(kit, configure: _review);
   await kit.pumpApp(
-    RunScreen(controller: team, runId: teamRunId, now: teamNow),
+    TeamConversationScreen(team: team, runId: teamRunId, now: teamNow),
   );
   await kit.present(
     (context) => showWorkSheet(context, team, workId, now: teamNow),
@@ -397,7 +399,7 @@ final i2TeamSheetsArea = CensusArea(
     CensusShot('work-sheet', state: 'working', (kit) async {
       await _openWork(kit, 'w-sync');
       kit.expectVisible(find.byKey(const ValueKey('team-work-sheet')));
-    }, note: 'Over the run screen.'),
+    }, note: 'Over the task\'s conversation.'),
     CensusShot('work-sheet', state: 'blocked', (kit) async {
       await _openWork(kit, 'w-conflict');
       kit.expectVisible(find.byKey(const ValueKey('team-work-sheet')));
@@ -413,12 +415,15 @@ final i2TeamSheetsArea = CensusArea(
     CensusShot('embedded-work-graph', (kit) async {
       final (team, _) = await _team(kit);
       await kit.pumpApp(
-        RunScreen(controller: team, runId: teamRunId, now: teamNow),
+        TeamConversationScreen(team: team, runId: teamRunId, now: teamNow),
       );
-      await kit.tapKey('team-run-tab-work');
-      await kit.tapKey('team-run-work-view-graph');
-      kit.expectVisible(find.byKey(const ValueKey('team-work-graph-viewer')));
-    }, note: 'Host: the run Work tab, Graph view.'),
+      await kit.present(
+        (context) =>
+            showTeamTaskDetails(context, team, teamRunId, now: teamNow),
+        settleFor: const Duration(seconds: 2),
+      );
+      kit.expectVisible(find.byKey(const ValueKey('team-task-details-graph')));
+    }, note: 'Host: Task details, the steps as the graph in rows.'),
 
     // -- Start a run ---------------------------------------------------------------
     CensusShot('start-run-sheet', state: 'empty', (kit) async {

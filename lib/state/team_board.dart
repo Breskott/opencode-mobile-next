@@ -231,12 +231,9 @@ TeamBoard buildTeamBoard(
   ];
   final byId = {for (final item in visible) item.id: item};
   final agentOn = <String, String>{
-    for (final agent in snapshot.agents)
-      ?agent.currentWorkId: agent.name,
+    for (final agent in snapshot.agents) ?agent.currentWorkId: agent.name,
   };
-  final gated = <String>{
-    for (final gate in snapshot.gates) ?gate.workId,
-  };
+  final gated = <String>{for (final gate in snapshot.gates) ?gate.workId};
   final children = <String, List<WorkItem>>{};
   for (final item in visible) {
     final parent = item.parentId;
@@ -466,26 +463,6 @@ class TeamBoardEdits {
       await controller.refresh();
     } on Object {
       // The move went; a failed refresh shows as the screen's status line.
-    }
-    return const TeamBoardEditResult(ok: true);
-  }
-
-  /// Adds a task to the backlog of [projectId] (not given to anyone).
-  Future<TeamBoardEditResult> addToBacklog(
-    String title, {
-    String? projectId,
-  }) async {
-    final record = await controller.createWork(
-      title: title,
-      projectId: projectId,
-    );
-    if (record.status == MutationStatus.rejected) {
-      return TeamBoardEditResult(ok: false, message: record.receipt?.message);
-    }
-    try {
-      await controller.refresh();
-    } on Object {
-      // Shown by the status line.
     }
     return const TeamBoardEditResult(ok: true);
   }

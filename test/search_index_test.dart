@@ -66,12 +66,7 @@ const _excluded = <String, String>{
       "'View board' row",
   'team-conversation':
       'one AI Team task\'s conversation; opened from the '
-      "run's Overview, the board or the Work tab",
-  'team-run': 'one AI Team run',
-  'team-run-agents-tab': 'a tab of one AI Team run',
-  'team-run-overview-tab': 'a tab of one AI Team run',
-  'team-run-work-tab': 'a tab of one AI Team run',
-  'team-run-timeline-tab': 'a tab of one AI Team run',
+      'team page, the board or the Work tab',
   'phone-setup-progress':
       'a step of phone setup; opened from On this phone '
       'or a setup notification',

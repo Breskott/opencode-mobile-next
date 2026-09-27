@@ -56,20 +56,41 @@ const teamStartRunObjectiveDraft = 'team.objective';
 const teamStartRunTaskDraft = 'team.task';
 const teamStartRunDetailsDraft = 'team.taskDetails';
 
+/// What the sheet did: the host's record, and whether the task was kept in
+/// the backlog (made, given to no one) rather than started.
+@immutable
+class StartRunResult {
+  const StartRunResult(this.record, {this.backlog = false});
+
+  final MutationRecord record;
+  final bool backlog;
+}
+
 /// Opens the sheet; resolves with the message record once sent (the
 /// `createWork` record for a direct task), null when the person backed
 /// out or the planner was off with no direct path.
-Future<MutationRecord?> showStartRunSheet(
+///
+/// [offerBacklog] (the board, P3.5: its add sheet is this one sheet) adds
+/// **Keep in backlog** beside the send where the host creates work: the
+/// task is made and waits in the Backlog, given to no one. [projectId] is
+/// the project chosen at first (the board's filter).
+Future<StartRunResult?> showStartRunSheet(
   BuildContext context,
-  OrchestrationController controller,
-) {
+  OrchestrationController controller, {
+  bool offerBacklog = false,
+  String? projectId,
+}) {
   final l10n = _copy(context);
-  return showKitSheet<MutationRecord>(
+  return showKitSheet<StartRunResult>(
     context,
     title: l10n.teamUiStartRunTitle,
     icon: AppIconography.agent,
     sheetKey: const ValueKey('team-start-run-sheet'),
-    body: (_) => StartRunSheet(controller: controller),
+    body: (_) => StartRunSheet(
+      controller: controller,
+      offerBacklog: offerBacklog,
+      projectId: projectId,
+    ),
   );
 }
 
@@ -98,9 +119,20 @@ const _anyProject = '';
 /// The sheet's body: the planner form, the direct task, or why neither.
 /// Its actions sit at its end, so it also works on its own in a page.
 class StartRunSheet extends StatefulWidget {
-  const StartRunSheet({super.key, required this.controller});
+  const StartRunSheet({
+    super.key,
+    required this.controller,
+    this.offerBacklog = false,
+    this.projectId,
+  });
 
   final OrchestrationController controller;
+
+  /// Offer "Keep in backlog" (where the host creates work).
+  final bool offerBacklog;
+
+  /// The project chosen at first.
+  final String? projectId;
 
   @override
   State<StartRunSheet> createState() => _StartRunSheetState();
@@ -110,8 +142,12 @@ class _StartRunSheetState extends State<StartRunSheet> {
   final _objective = TextEditingController();
   final _task = TextEditingController();
   final _details = TextEditingController();
-  String? _projectId;
-  String? _directProjectId;
+  late String? _projectId = widget.projectId;
+  late String? _directProjectId = widget.projectId;
+
+  /// Keep in backlog was refused: the host's words ('' when it gave none;
+  /// never shown as copy — the notice says it in plain words).
+  String? _backlogError;
 
   /// This server's level (Settings › What runs by itself); a pick here is
   /// for this one task and never changes that setting.
@@ -181,11 +217,80 @@ class _StartRunSheetState extends State<StartRunSheet> {
     ]);
   }
 
-  void _close(MutationRecord record) {
+  void _close(MutationRecord record, {bool backlog = false}) {
     unawaited(_clearDrafts());
     final navigator = Navigator.of(context);
-    if (navigator.canPop()) navigator.pop(record);
+    if (navigator.canPop()) {
+      navigator.pop(StartRunResult(record, backlog: backlog));
+    }
   }
+
+  /// Keep in backlog is offered: asked for, and the host creates work.
+  bool get _backlog =>
+      widget.offerBacklog && widget.controller.capabilities.controlCreateWork;
+
+  /// Keep in backlog: the task is made in [projectId] and given to no one;
+  /// it waits in the board's Backlog. A refusal keeps the sheet open with
+  /// the host's words and everything typed.
+  Future<void> _keepInBacklog({
+    required TextEditingController title,
+    required String? projectId,
+    String? details,
+    required VoidCallback onEmpty,
+  }) async {
+    final words = title.text.trim();
+    if (words.isEmpty) {
+      onEmpty();
+      return;
+    }
+    if (_sending) return;
+    setState(() {
+      _sending = true;
+      _backlogError = null;
+    });
+    try {
+      final controller = widget.controller;
+      final record = await controller.createWork(
+        title: words,
+        description: details == null || details.trim().isEmpty
+            ? null
+            : details.trim(),
+        projectId: projectId,
+      );
+      if (!mounted) return;
+      if (record.status == MutationStatus.rejected) {
+        setState(() => _backlogError = record.receipt?.message?.trim() ?? '');
+        return;
+      }
+      unawaited(controller.refresh().catchError((Object _) {}));
+      _close(record, backlog: true);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  /// The refusal of Keep in backlog, when any.
+  List<Widget> _backlogRefusal(AppLocalizations l10n, KitTokens tokens) {
+    final error = _backlogError;
+    if (error == null) return const [];
+    return [
+      SizedBox(height: tokens.space3),
+      KitNotice(
+        key: const ValueKey('team-start-run-backlog-error'),
+        tone: AppStatusTone.failure,
+        icon: AppIconography.error,
+        message: l10n.teamBoardAddFailed,
+      ),
+    ];
+  }
+
+  /// "Keep in backlog", the sheet's other way (P3.5).
+  KitAction _backlogAction(VoidCallback onPressed) => KitAction(
+    key: const ValueKey('team-start-run-backlog'),
+    label: _copy(context).teamStartRunKeepInBacklog,
+    icon: AppIconography.archive,
+    onPressed: _sending ? null : onPressed,
+  );
 
   Future<void> _send(OrchestrationAgent planner) async {
     final objective = _objective.text.trim();
@@ -420,8 +525,10 @@ class _StartRunSheetState extends State<StartRunSheet> {
             message: l10n.teamStartRunRefusedKept,
           ),
         ],
+        ..._backlogRefusal(l10n, tokens),
         SizedBox(height: tokens.space5),
-        // The form's one primary; Sending shows on it (STATE-10).
+        // The form's one primary; Sending shows on it (STATE-10). The
+        // board adds Keep in backlog: the task waits, given to no one.
         KitActionBlock(
           primary: KitAction(
             key: const ValueKey('team-start-run-send'),
@@ -430,6 +537,17 @@ class _StartRunSheetState extends State<StartRunSheet> {
             working: _sending,
             onPressed: _sending ? null : () => _send(planner),
           ),
+          secondary: _backlog
+              ? _backlogAction(
+                  () => unawaited(
+                    _keepInBacklog(
+                      title: _objective,
+                      projectId: _projectId,
+                      onEmpty: () => setState(() => _showEmpty = true),
+                    ),
+                  ),
+                )
+              : null,
         ),
         SizedBox(height: tokens.space3),
         KitDetailsFold(
@@ -519,9 +637,10 @@ class _StartRunSheetState extends State<StartRunSheet> {
                 : l10n.teamUiStartRunDirectRefused(error),
           ),
         ],
+        ..._backlogRefusal(l10n, tokens),
         SizedBox(height: tokens.space5),
         // Send is the sheet's one primary; the host guide is the rare
-        // other path (design standard §2).
+        // other path (design standard §2). The board adds Keep in backlog.
         KitActionBlock(
           primary: KitAction(
             key: const ValueKey('team-start-run-direct-send'),
@@ -530,6 +649,18 @@ class _StartRunSheetState extends State<StartRunSheet> {
             working: _sending,
             onPressed: _sending ? null : _sendDirect,
           ),
+          secondary: _backlog
+              ? _backlogAction(
+                  () => unawaited(
+                    _keepInBacklog(
+                      title: _task,
+                      details: _details.text,
+                      projectId: _directProject,
+                      onEmpty: () => setState(() => _showTaskEmpty = true),
+                    ),
+                  ),
+                )
+              : null,
           tertiary: [
             KitAction(
               key: const ValueKey('team-start-run-host-guide'),

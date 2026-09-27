@@ -125,11 +125,6 @@ const _migrated = <String, List<String>>{
     'team_home_not_answering',
     'team_home_starting',
   ],
-  'lib/ui/screens/team/run_screen.dart': [
-    'team_run_overview',
-    'team_run_work',
-    'team_run_merged',
-  ],
   'lib/ui/screens/team/start_run_sheet.dart': ['team_start_run'],
   'lib/ui/screens/team/agent_screen.dart': [
     'team_agent',
@@ -330,7 +325,7 @@ final _forbidden = <String, KitPattern>{
 
 const _baselinePath = 'test/design_standard_baseline.json';
 
-/// The 59 labels (path, or path#Class) migrated before [_g3xSince]: the
+/// The 58 labels (path, or path#Class) migrated before [_g3xSince]: the
 /// only ones the baseline may hold. Never grows; a label leaves only when its
 /// file is deleted (TEST-10). Every other migrated entry is absolute.
 const _grandfathered = <String>{
@@ -364,7 +359,6 @@ const _grandfathered = <String>{
   'lib/ui/screens/team/agent_screen.dart',
   'lib/ui/screens/team/gate_sheet.dart',
   'lib/ui/screens/team/merge_section.dart',
-  'lib/ui/screens/team/run_screen.dart',
   'lib/ui/screens/team/start_run_sheet.dart',
   'lib/ui/screens/team/team_agents_screen.dart',
   'lib/ui/screens/team/team_home_screen.dart',
@@ -603,7 +597,7 @@ void main() {
   test('G3x: the baseline only shrinks and names only migrated entries', () {
     expect(
       _grandfathered.length,
-      lessThanOrEqualTo(59),
+      lessThanOrEqualTo(58),
       reason: '_grandfathered never grows',
     );
     final problems = <String>[];

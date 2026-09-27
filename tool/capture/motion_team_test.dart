@@ -14,7 +14,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/chat_screen.dart'
+    show TeamConversationScreen;
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 
 import '../../test/support/team_golden_fixture.dart';
@@ -64,13 +65,13 @@ void main() {
         final controller = await teamSceneController(shot.scene);
         DateTime now() => teamSceneClock;
         final Widget home = switch (shot) {
-          _Shot.runMerged => RunScreen(
-            controller: controller,
+          _Shot.runMerged => TeamConversationScreen(
+            team: controller,
             runId: teamSceneMergedRunId,
             now: now,
           ),
-          _Shot.runNeedsYou => RunScreen(
-            controller: controller,
+          _Shot.runNeedsYou => TeamConversationScreen(
+            team: controller,
             runId: teamSceneRunId,
             now: now,
           ),

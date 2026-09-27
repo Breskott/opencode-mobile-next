@@ -20551,12 +20551,6 @@ abstract class AppLocalizations {
   /// **'Working {count}'**
   String teamUiRunChipWorking(int count);
 
-  /// Run detail app bar action opening Technical details
-  ///
-  /// In en, this message translates to:
-  /// **'Details'**
-  String get teamUiRunDetails;
-
   /// Run detail elapsed time in days
   ///
   /// In en, this message translates to:
@@ -20623,12 +20617,6 @@ abstract class AppLocalizations {
   /// **'Started'**
   String get teamUiRunLabelStarted;
 
-  /// Run Technical details label
-  ///
-  /// In en, this message translates to:
-  /// **'State'**
-  String get teamUiRunLabelState;
-
   /// Run Technical details label for the ids of the work items in the run
   ///
   /// In en, this message translates to:
@@ -20652,12 +20640,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This task is no longer on the host'**
   String get teamUiRunMissingTitle;
-
-  /// Run detail inline card label when no agent is named
-  ///
-  /// In en, this message translates to:
-  /// **'Needs you'**
-  String get teamUiRunNeedsYou;
 
   /// Run detail inline card label; name is the agent
   ///
@@ -20700,24 +20682,6 @@ abstract class AppLocalizations {
   /// **'Coming with the next update'**
   String get teamUiRunTabComingSoon;
 
-  /// Run detail tab
-  ///
-  /// In en, this message translates to:
-  /// **'Overview'**
-  String get teamUiRunTabOverview;
-
-  /// Run detail tab
-  ///
-  /// In en, this message translates to:
-  /// **'Timeline'**
-  String get teamUiRunTabTimeline;
-
-  /// Run detail tab
-  ///
-  /// In en, this message translates to:
-  /// **'Steps'**
-  String get teamUiRunTabWork;
-
   /// Run detail app bar term for a batch run; convoy is the Gas City term
   ///
   /// In en, this message translates to:
@@ -20748,54 +20712,6 @@ abstract class AppLocalizations {
   /// **'{name} started'**
   String teamUiRunTimelineAgentWoke(String name);
 
-  /// Run timeline empty state title
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing has happened yet'**
-  String get teamUiRunTimelineEmpty;
-
-  /// Run timeline empty state title when a filter hides every row
-  ///
-  /// In en, this message translates to:
-  /// **'No events of this kind yet'**
-  String get teamUiRunTimelineEmptyFiltered;
-
-  /// Run timeline empty state hint when a filter hides every row
-  ///
-  /// In en, this message translates to:
-  /// **'Try another filter.'**
-  String get teamUiRunTimelineEmptyFilteredHint;
-
-  /// Run timeline empty state hint
-  ///
-  /// In en, this message translates to:
-  /// **'Events appear here as the team works on this task.'**
-  String get teamUiRunTimelineEmptyHint;
-
-  /// Run timeline filter chip
-  ///
-  /// In en, this message translates to:
-  /// **'Agents'**
-  String get teamUiRunTimelineFilterAgents;
-
-  /// Run timeline filter chip
-  ///
-  /// In en, this message translates to:
-  /// **'All'**
-  String get teamUiRunTimelineFilterAll;
-
-  /// Run timeline filter chip
-  ///
-  /// In en, this message translates to:
-  /// **'Decisions'**
-  String get teamUiRunTimelineFilterDecisions;
-
-  /// Run timeline filter chip
-  ///
-  /// In en, this message translates to:
-  /// **'Work'**
-  String get teamUiRunTimelineFilterWork;
-
   /// Run timeline row for a gate that opened
   ///
   /// In en, this message translates to:
@@ -20807,12 +20723,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Answered: {title}'**
   String teamUiRunTimelineGateResolved(String title);
-
-  /// Run timeline pill shown when events arrived while scrolled away
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 new · Jump to latest} other{{count} new · Jump to latest}}'**
-  String teamUiRunTimelineJump(int count);
 
   /// Run timeline row for a run state change; state is the run state word
   ///
@@ -21012,18 +20922,6 @@ abstract class AppLocalizations {
   /// **'Recycling soon · context nearly full'**
   String get teamUiAgentRecyclingSoon;
 
-  /// Run Agents tab empty state title
-  ///
-  /// In en, this message translates to:
-  /// **'No agents on this run'**
-  String get teamUiAgentRunEmpty;
-
-  /// Run Agents tab empty state hint
-  ///
-  /// In en, this message translates to:
-  /// **'Agents appear here while they work on this run\'s items.'**
-  String get teamUiAgentRunEmptyHint;
-
   /// Agent detail section heading
   ///
   /// In en, this message translates to:
@@ -21144,18 +21042,6 @@ abstract class AppLocalizations {
   /// **'Nothing blocking it'**
   String get teamUiAgentWorkUnblocked;
 
-  /// Work tab empty state title
-  ///
-  /// In en, this message translates to:
-  /// **'No work items yet'**
-  String get teamUiWorkEmpty;
-
-  /// Work tab empty state hint
-  ///
-  /// In en, this message translates to:
-  /// **'Work appears here once the run has items.'**
-  String get teamUiWorkEmptyHint;
-
   /// Tooltip of the graph button that brings the whole graph into view
   ///
   /// In en, this message translates to:
@@ -21167,18 +21053,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{title}, {state}'**
   String teamUiWorkGraphNodeSemantics(String title, String state);
-
-  /// Screen reader label of the Work graph
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Dependency graph of 1 work item} other{Dependency graph of {count} work items}}'**
-  String teamUiWorkGraphSemantics(int count);
-
-  /// Work list group header: the state word and how many items are in it
-  ///
-  /// In en, this message translates to:
-  /// **'{state} · {count}'**
-  String teamUiWorkGroupHeader(String state, int count);
 
   /// Work technical details label
   ///
@@ -21257,12 +21131,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unassigned'**
   String get teamUiWorkOwnerNone;
-
-  /// Screen reader label of the owner glyph on a work row
-  ///
-  /// In en, this message translates to:
-  /// **'Owner: {name}'**
-  String teamUiWorkOwnerSemantics(String name);
 
   /// Work sheet heading over the items that wait on this one
   ///
@@ -21455,24 +21323,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Work · bead {id}'**
   String teamUiWorkTerm(String id);
-
-  /// Work tab view toggle
-  ///
-  /// In en, this message translates to:
-  /// **'Graph'**
-  String get teamUiWorkViewGraph;
-
-  /// Work tab view toggle
-  ///
-  /// In en, this message translates to:
-  /// **'List'**
-  String get teamUiWorkViewList;
-
-  /// Work row detail: how many open items this one still needs
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Waits on 1 step} other{Waits on {count} steps}}'**
-  String teamUiWorkWaitsOn(int count);
 
   /// Run Overview usage chip: Gas City usage is city-level (today), never per run; {usage} is the est. cost and compact tokens
   ///
@@ -22175,36 +22025,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop run'**
   String get teamUiControlCancelRun;
-
-  /// Overflow item and control name: close a batch (Gas City convoy), two-step
-  ///
-  /// In en, this message translates to:
-  /// **'Close batch'**
-  String get teamUiControlCloseBatch;
-
-  /// Title of the two-step Cancel run confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'Stop this run?'**
-  String get teamUiControlCancelRunConfirmTitle;
-
-  /// Body of the Cancel run confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'Running steps stop; finished work stays. The phone cannot undo this.'**
-  String get teamUiControlCancelRunConfirmBody;
-
-  /// Title of the two-step Close batch confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'Close this batch?'**
-  String get teamUiControlCloseBatchConfirmTitle;
-
-  /// Body of the Close batch confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'The batch closes on the host. Its open work items stay open for another batch.'**
-  String get teamUiControlCloseBatchConfirmBody;
 
   /// Label of the floating action button on the AI Team home (02-ux §3, §7)
   ///
@@ -28199,29 +28019,11 @@ abstract class AppLocalizations {
   /// **'Steps'**
   String get teamUiRunStepsHeading;
 
-  /// Row under the first steps on the Overview that opens the Steps tab
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, other{See all {count} steps}}'**
-  String teamUiRunStepsAll(int count);
-
-  /// The step counts under the Details row of an AI Team task
-  ///
-  /// In en, this message translates to:
-  /// **'{done} done · {working} working · {blocked} held up'**
-  String teamUiRunDetailsCounts(int done, int working, int blocked);
-
   /// Label of the cost and tokens under the Details row of an AI Team task
   ///
   /// In en, this message translates to:
   /// **'Usage'**
   String get teamUiRunDetailsUsage;
-
-  /// Label of the step counts under the Details row of an AI Team task
-  ///
-  /// In en, this message translates to:
-  /// **'Steps'**
-  String get teamUiRunDetailsStepsLabel;
 
   /// Label of how long the task has run, under the Details row
   ///
@@ -29543,12 +29345,6 @@ abstract class AppLocalizations {
   /// **'This team can\'t be messaged from here.'**
   String get teamChatComposerCannot;
 
-  /// AI Team task page, supporting line of Open conversation: opens the task as a conversation
-  ///
-  /// In en, this message translates to:
-  /// **'The task and its workers, in the chat'**
-  String get teamOpenTaskConversationHint;
-
   /// AI Team board: top bar title
   ///
   /// In en, this message translates to:
@@ -29950,30 +29746,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Priority'**
   String get teamBoardPriorityTitle;
-
-  /// Board: top bar action that adds a task to the backlog
-  ///
-  /// In en, this message translates to:
-  /// **'Add to backlog'**
-  String get teamBoardAddTooltip;
-
-  /// Board: add-to-backlog field hint
-  ///
-  /// In en, this message translates to:
-  /// **'What should the team do?'**
-  String get teamBoardAddHint;
-
-  /// Board: add-to-backlog primary button
-  ///
-  /// In en, this message translates to:
-  /// **'Add to backlog'**
-  String get teamBoardAddButton;
-
-  /// Board: add-to-backlog sheet, what happens next
-  ///
-  /// In en, this message translates to:
-  /// **'It waits in the Backlog until you start it.'**
-  String get teamBoardAddNote;
 
   /// Board: add-to-backlog refused
   ///
@@ -32092,12 +31864,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
   String kitToolTookMinutes(int count);
-
-  /// KitToolRow agent form: how long a running sub-agent or worker has run, after its state word ("Running for 3 min")
-  ///
-  /// In en, this message translates to:
-  /// **'for {count, plural, =0{under a minute} =1{1 min} other{{count} min}}'**
-  String kitToolForMinutes(int count);
 
   /// KitToolRow agent form: the screen reader hint of a sub-agent or worker row that opens its conversation
   ///
@@ -35084,12 +34850,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The host didn\'t say why.'**
   String get teamNowWakeRefusedNoReason;
-
-  /// Error under the Add to backlog field when it is empty (shared-team-1).
-  ///
-  /// In en, this message translates to:
-  /// **'Say what the team should do first.'**
-  String get teamBoardMoveSheetAddEmpty;
 
   /// Why Open agent output is unavailable on the dispatch strip (shared-team-1).
   ///
@@ -41276,6 +41036,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Processor time'**
   String get termuxProcsCpuTime;
+
+  /// Kit durations: a whole number of hours ("3 h"); used from an hour up, so a long wait never reads "2,715 min"
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h'**
+  String kitDurationHours(int hours);
+
+  /// Kit durations: hours and minutes ("1 h 20 min")
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min'**
+  String kitDurationHoursMinutes(int hours, int minutes);
+
+  /// Kit durations: whole days ("2 d")
+  ///
+  /// In en, this message translates to:
+  /// **'{days} d'**
+  String kitDurationDays(int days);
+
+  /// Kit durations: days and hours ("1 d 21 h")
+  ///
+  /// In en, this message translates to:
+  /// **'{days} d {hours} h'**
+  String kitDurationDaysHours(int days, int hours);
+
+  /// KitToolRow agent form: how long a running sub-agent or worker has run, after its state word ("Running for 3 min", "Running for 1 d 21 h"); duration is a kit duration
+  ///
+  /// In en, this message translates to:
+  /// **'for {duration}'**
+  String kitToolFor(String duration);
+
+  /// KitSince: a slow wait of an hour or more ("Waiting 2 h 5 min"); duration is a kit duration
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting {duration}'**
+  String kitSinceWaitingForLong(String duration);
+
+  /// Team conversation, the lead's line: the task (said once in the person's prompt above) was sent to the workers; "it" refers back to the prompt so the task's text is not repeated
+  ///
+  /// In en, this message translates to:
+  /// **'Sent it to the workers'**
+  String get teamChatLeadRoutedIt;
+
+  /// Team conversation, the lead's line: a worker is starting on the task named in the prompt above (refers back, never repeats the task's text)
+  ///
+  /// In en, this message translates to:
+  /// **'Started a worker on it'**
+  String get teamChatLeadStartingIt;
+
+  /// Team conversation, the lead's line: the named worker took the task named in the prompt above
+  ///
+  /// In en, this message translates to:
+  /// **'{name} took it'**
+  String teamChatLeadClaimedIt(String name);
+
+  /// Team conversation, the lead's line: an unnamed worker took the task named in the prompt above
+  ///
+  /// In en, this message translates to:
+  /// **'A worker took it'**
+  String get teamChatLeadClaimedWorkerIt;
+
+  /// Team conversation, the lead's line: the changes for the task named in the prompt above are on a branch
+  ///
+  /// In en, this message translates to:
+  /// **'Its changes are on a branch'**
+  String get teamChatLeadPushedIt;
+
+  /// Team conversation, the lead's line: the task named in the prompt above went to review
+  ///
+  /// In en, this message translates to:
+  /// **'Handed it to review'**
+  String get teamChatLeadReviewIt;
+
+  /// Team conversation, the lead's line: the task named in the prompt above was merged
+  ///
+  /// In en, this message translates to:
+  /// **'Merged it'**
+  String get teamChatLeadMergedIt;
+
+  /// Team conversation, the lead's line: the task named in the prompt above failed
+  ///
+  /// In en, this message translates to:
+  /// **'It failed'**
+  String get teamChatLeadStepFailedIt;
+
+  /// Team conversation, the lead's line: the task named in the prompt above was cancelled
+  ///
+  /// In en, this message translates to:
+  /// **'It was cancelled'**
+  String get teamChatLeadStepCancelledIt;
+
+  /// Team conversation, the Now line: the named worker is working on the task named in the prompt, for how long (a kit duration)
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is working on it · {elapsed}'**
+  String teamChatNowWorkingIt(String name, String elapsed);
+
+  /// Team conversation, the Now line: the worker has changed nothing on the task for a long time (no step moved, no output); elapsed is a kit duration such as "1 d 21 h"
+  ///
+  /// In en, this message translates to:
+  /// **'No progress for {elapsed}'**
+  String teamChatNowNoProgress(String elapsed);
+
+  /// Team conversation: under a stalled task, what happened and the ways forward; time is a clock time or date
+  ///
+  /// In en, this message translates to:
+  /// **'{name} hasn\'t moved this task since {time}. Nudge it to carry on, restart it, or report the problem.'**
+  String teamChatNoProgressBody(String name, String time);
+
+  /// Team conversation: under a stalled task on a host without agent controls, what happened and the way forward
+  ///
+  /// In en, this message translates to:
+  /// **'{name} hasn\'t moved this task since {time}. This host can\'t nudge or restart it from here; report the problem or check the team\'s computer.'**
+  String teamChatNoProgressBodyNoControls(String name, String time);
+
+  /// Team conversation, a stalled task: opens Report a problem with the stall attached
+  ///
+  /// In en, this message translates to:
+  /// **'Report the problem'**
+  String get teamChatNoProgressReport;
+
+  /// Report a problem: the attached problem's title for a stalled team task
+  ///
+  /// In en, this message translates to:
+  /// **'An AI Team task made no progress for {elapsed}'**
+  String teamChatNoProgressReportTitle(String elapsed);
+
+  /// Task details, inside Technical details: the heading over the task's event log as the team's host reported it (newest first)
+  ///
+  /// In en, this message translates to:
+  /// **'What the host reported'**
+  String get teamTaskDetailsReported;
+
+  /// KitToolRow: the screen reader hint of a step row that opens its details (an AI Team step opens its Work sheet)
+  ///
+  /// In en, this message translates to:
+  /// **'Open its details'**
+  String get kitToolOpenDetails;
+
+  /// Give the team a task (from the board): makes the task and leaves it in the Backlog, given to no one, instead of starting it now
+  ///
+  /// In en, this message translates to:
+  /// **'Keep in backlog'**
+  String get teamStartRunKeepInBacklog;
 }
 
 class _AppLocalizationsDelegate

@@ -33,6 +33,7 @@ import '../../state/profiles.dart' show ServerBackend;
 import '../../state/conversation_nudges.dart';
 import '../../state/nudges.dart';
 import '../../state/review_handoff.dart';
+import '../../state/interaction_defaults.dart' show DefaultKind, DefaultReason;
 import '../../state/migration_runner.dart' show DraftMigrationBlocker;
 import '../../state/prompt_shelf.dart';
 import '../../state/session_drafts.dart';
@@ -54,6 +55,7 @@ import '../desktop/shortcuts.dart';
 import '../search/search_index.dart';
 import '../widgets/connection_status_banner.dart';
 import '../widgets/safety_confirms.dart';
+import '../widgets/default_notices.dart';
 import '../widgets/diff_view.dart';
 import '../widgets/file_preview.dart';
 import '../widgets/first_reply_notify_card.dart';
@@ -89,8 +91,10 @@ import '../widgets/team_vocabulary.dart';
 import 'team/agent_output_screen.dart' show AgentOutputScreen;
 import 'team/gate_sheet.dart' show showGateSheet;
 import 'team/merge_section.dart' show TeamMergeSection;
-import 'team/run_screen.dart' show RunScreen;
+import 'team/task_details_sheet.dart' show showTeamTaskDetails;
 import 'team/team_home_screen.dart' show TeamHomeScreen;
+import 'team/work_sheet.dart' show showWorkSheet;
+import '../widgets/team_moments.dart' show TeamMergedCelebration;
 import 'team/team_needs_you.dart'
     show TeamNeedsYouCard, teamGateWho, teamOpenGates;
 import 'team_conversation/team_conversation.dart' show TeamConversation;
@@ -389,6 +393,14 @@ class _ChatScreenState extends State<ChatScreen>
   // only reports facts and renders the slot. See chat/nudge_slot.dart.
   ConversationNudgeWatcher? _nudgeWatcher;
   bool _nudgeObserveQueued = false;
+
+  /// P6.6a: the model the app picked by itself, said once per server
+  /// where it is used (the composer); null once dismissed or not to say.
+  String? _modelDefaultSaid;
+  bool _modelDefaultClaimed = false;
+
+  /// setState for the library's extensions (a protected member).
+  void _setChatState(VoidCallback change) => setState(change);
   void _nudgesChanged() {
     if (mounted) setState(() {});
   }
@@ -6134,6 +6146,8 @@ class _ChatScreenState extends State<ChatScreen>
     final prompt = await Navigator.of(context).push<String>(
       KitPageRoute<String>(
         builder: (_) => ReviewWorkspace(
+          // P6.6a: the view picked for the person is said once per server.
+          profileId: _conn.profile?.id,
           handoff: _handoff, // UX-103 review handoff
           cacheKey:
               '${_conn.profile?.id}|${_conn.directory}|${widget.sessionID}',

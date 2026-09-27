@@ -39,7 +39,6 @@ import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/gate_sheet.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
     show TeamConversationScreen;
@@ -1581,7 +1580,7 @@ void main() {
             .runId,
         'oc-done',
       );
-      expect(find.byType(RunScreen), findsNothing);
+      expect(find.byKey(const ValueKey('team-run')), findsNothing);
       expect(gateway.calls, isEmpty);
       expect(tester.takeException(), isNull);
     });
