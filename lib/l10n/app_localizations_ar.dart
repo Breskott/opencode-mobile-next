@@ -26399,4 +26399,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get handoffUiLinkAddServer => 'Add server';
+
+  @override
+  String get failedJobReport => 'Report this failure';
+
+  @override
+  String get reportProblemJobLog => 'Log of the failed job';
+
+  @override
+  String get reportProblemJobLogNone =>
+      'No log was kept for this job, so none is attached.';
 }
