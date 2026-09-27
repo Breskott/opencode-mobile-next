@@ -25920,5 +25920,177 @@
   "filesCopyName": "Copy name",
   "@filesCopyName": {
     "description": "Files: row menu item that copies the file or folder name."
+  },
+  "globalSessionsMoveTitle": "Move to {project}?",
+  "@globalSessionsMoveTitle": {
+    "description": "All conversations: title of the Continue here question, naming the project it moves into.",
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSessionsMoveBody": "“{title}” moves from {from} to {to} through the server’s sync system.",
+  "@globalSessionsMoveBody": {
+    "description": "All conversations: body of the Continue here question, naming both projects.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSessionsMoveWhileWorking": "It is working now. Moving it may interrupt the current step.",
+  "@globalSessionsMoveWhileWorking": {
+    "description": "All conversations: consequence line when the conversation being moved is working."
+  },
+  "globalSessionsMoveBack": "To move it back, open {project} and choose Continue here in All conversations.",
+  "@globalSessionsMoveBack": {
+    "description": "All conversations: how to undo the move, naming the project it came from.",
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSessionsFilterLabel": "Show",
+  "@globalSessionsFilterLabel": {
+    "description": "All conversations: accessible name of the Active / Archived choice."
+  },
+  "globalSessionsFilterActive": "Active",
+  "@globalSessionsFilterActive": {
+    "description": "All conversations: segment that shows conversations that are not archived."
+  },
+  "globalSessionsArchivedNoMatchMessage": "No archived conversation has that title. Try a shorter search.",
+  "@globalSessionsArchivedNoMatchMessage": {
+    "description": "All conversations: body when a search on the Archived filter finds nothing."
+  },
+  "globalSessionsArchivedEmptyTitle": "No archived conversations",
+  "@globalSessionsArchivedEmptyTitle": {
+    "description": "All conversations: title when the Archived filter has nothing."
+  },
+  "globalSessionsArchivedEmptyMessage": "Conversations you archive in Work appear here.",
+  "@globalSessionsArchivedEmptyMessage": {
+    "description": "All conversations: body when the Archived filter has nothing."
+  },
+  "globalSessionsShowActive": "Show active conversations",
+  "@globalSessionsShowActive": {
+    "description": "All conversations: action on the empty Archived filter that goes back to Active."
+  },
+  "globalSessionsProjectInUse": "{project} · In use",
+  "@globalSessionsProjectInUse": {
+    "description": "All conversations: section name of the project Work has open now.",
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSessionsCopyFolder": "Copy folder path",
+  "@globalSessionsCopyFolder": {
+    "description": "All conversations: row menu item that copies the conversation’s folder path."
+  },
+  "worktreesStartConversation": "New conversation here",
+  "@worktreesStartConversation": {
+    "description": "Worktrees: row menu item and ready notice action that starts a conversation in that worktree."
+  },
+  "worktreesCreateHelper": "OpenCode makes a separate branch and folder and runs the project’s startup tasks. Spaces become dashes.",
+  "@worktreesCreateHelper": {
+    "description": "Worktrees: helper under the name field of New worktree."
+  },
+  "worktreesFolder": "Folder",
+  "@worktreesFolder": {
+    "description": "Worktrees: label of the worktree folder path under Details."
+  },
+  "worktreesMainCopy": "Main copy",
+  "@worktreesMainCopy": {
+    "description": "Worktrees: supporting line of the project’s own folder row."
+  },
+  "worktreesCopyFolder": "Copy folder path",
+  "@worktreesCopyFolder": {
+    "description": "Worktrees: row menu item that copies the folder path."
+  },
+  "worktreesLoadFailedTitle": "Couldn't load worktrees",
+  "@worktreesLoadFailedTitle": {
+    "description": "Worktrees: title when the worktree list failed to load."
+  },
+  "worktreesSetupFailedWord": "Setup failed",
+  "@worktreesSetupFailedWord": {
+    "description": "Worktrees: state word that leads a worktree row whose setup failed."
+  },
+  "importNeedsFile": "Choose a JSON file first.",
+  "@importNeedsFile": {
+    "description": "Import conversation: why Import is not available yet."
+  },
+  "importNeedsDestination": "Choose where to import it first.",
+  "@importNeedsDestination": {
+    "description": "Import conversation: why Import is not available yet."
+  },
+  "importFileLabel": "File",
+  "@importFileLabel": {
+    "description": "Import conversation: section name of the chosen file, and its label under Details."
+  },
+  "importPreviewLabel": "Conversation",
+  "@importPreviewLabel": {
+    "description": "Import conversation: section name of the file’s preview."
+  },
+  "importMessages": "{count, plural, one {1 message} other {{count} messages}}",
+  "@importMessages": {
+    "description": "Import conversation: how many messages the file holds.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importNoDestinationsTitle": "No projects to import into",
+  "@importNoDestinationsTitle": {
+    "description": "Import conversation: title in the destination chooser when there is nowhere to import."
+  },
+  "importOnServer": "On {server}",
+  "@importOnServer": {
+    "description": "Import conversation: supporting line of the destination row, naming the server.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "importChangeDestinationShort": "Change",
+  "@importChangeDestinationShort": {
+    "description": "Import conversation: trailing word of the destination row that opens the chooser."
+  },
+  "importConversationId": "Conversation ID",
+  "@importConversationId": {
+    "description": "Import conversation: label of the conversation id under Details."
+  },
+  "importParentId": "Parent conversation ID",
+  "@importParentId": {
+    "description": "Import conversation: label of the parent conversation id under Details."
+  },
+  "importFolder": "Folder",
+  "@importFolder": {
+    "description": "Import conversation: label of the destination folder path under Details."
+  },
+  "importEnvironmentId": "Cloud environment ID",
+  "@importEnvironmentId": {
+    "description": "Import conversation: label of the destination environment id under Details."
+  },
+  "globalSessionsSummaryCount": "{count, plural, one {1 conversation} other {{count} conversations}} in {folders, plural, one {one project} other {{folders} projects}}",
+  "@globalSessionsSummaryCount": {
+    "description": "All conversations: how many conversations are loaded and in how many projects, once every page is in.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "folders": {
+        "type": "int"
+      }
+    }
   }
 }

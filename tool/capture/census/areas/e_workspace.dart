@@ -679,11 +679,8 @@ final eWorkspaceArea = CensusArea(
         kit,
         (conn) => WorktreesScreen(controller: conn, project: eProject),
       );
-      await kit.tap(
-        find.descendant(
-          of: find.byKey(const ValueKey('worktree-$eWorktreeRoot/dark-mode')),
-          matching: find.byTooltip('Worktree actions'),
-        ),
+      await kit.longPress(
+        find.byKey(const ValueKey('worktree-$eWorktreeRoot/dark-mode')),
       );
       await kit.tap(find.text('Reset').last);
       kit.expectVisible(find.byKey(const ValueKey('confirm-reset-worktree')));
@@ -693,11 +690,8 @@ final eWorkspaceArea = CensusArea(
         kit,
         (conn) => WorktreesScreen(controller: conn, project: eProject),
       );
-      await kit.tap(
-        find.descendant(
-          of: find.byKey(const ValueKey('worktree-$eWorktreeRoot/dark-mode')),
-          matching: find.byTooltip('Worktree actions'),
-        ),
+      await kit.longPress(
+        find.byKey(const ValueKey('worktree-$eWorktreeRoot/dark-mode')),
       );
       await kit.tap(find.text('Delete').last);
       kit.expectVisible(find.byKey(const ValueKey('confirm-remove-worktree')));
@@ -732,9 +726,13 @@ final eWorkspaceArea = CensusArea(
     }),
     CensusShot('global-sessions-continue-here-sheet', (kit) async {
       await _overWork(kit, (conn) => GlobalSessionsScreen(controller: conn));
-      await kit.tapKey('global-session-actions-ses_sandbox');
+      await kit.longPress(
+        find.byKey(const ValueKey('global-session-ses_sandbox')),
+      );
       await kit.tap(find.text('Continue here').last);
-      kit.expectText('Continue this conversation here?');
+      kit.expectVisible(
+        find.byKey(const ValueKey('global-sessions-move-confirm')),
+      );
     }, note: 'A conversation in the perf-lab cloud environment.'),
 
     // -- From the chat ----------------------------------------------------------

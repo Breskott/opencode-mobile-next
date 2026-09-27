@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 
 import '../../api2/transport.dart';
 import '../../domain/server_gateway.dart';
+import '../../domain/team_directories.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../app_iconography.dart';
-import '../../domain/team_directories.dart';
+import '../app_theme.dart';
+import '../kit/kit.dart';
 
 class SessionImportFile {
   final String name;
@@ -35,6 +36,25 @@ Future<SessionImportFile?> _pickImportFile() async {
         );
 }
 
+/// One place a conversation can be imported into, named for the person.
+class _Destination {
+  const _Destination({required this.label, required this.destination});
+
+  final String label;
+  final SessionImportDestination destination;
+
+  bool matches(SessionImportDestination other) =>
+      destination.directory == other.directory &&
+      destination.workspaceID == other.workspaceID;
+}
+
+/// Import conversation (docs/ux-system/map/all.json `session-import`,
+/// proposal "fix"): choose a JSON export, review it (its title and message
+/// count; the ids under Details), see where it goes as one row (the
+/// project's name, with a current mark in the chooser and no Change when
+/// there is only one place), then one pinned primary. An unreadable file
+/// and a failed import say so where the file is, and the file stays
+/// chosen.
 class SessionImportScreen extends StatefulWidget {
   const SessionImportScreen({
     super.key,
@@ -53,6 +73,12 @@ class _SessionImportScreenState extends State<SessionImportScreen> {
   late int _location;
   late String _serverName;
   SessionImportDestination? _destination;
+
+  /// The destination's project name; null shows the folder's own name.
+  String? _destinationLabel;
+
+  /// The places the chooser offered last; null until it has loaded once.
+  List<_Destination>? _choices;
   SessionImportDocument? _document;
   String? _fileName;
   String? _error;
@@ -108,6 +134,8 @@ class _SessionImportScreenState extends State<SessionImportScreen> {
     _pickGeneration += 1;
     _captureControllerScope();
     _destination = null;
+    _destinationLabel = null;
+    _choices = null;
     _document = null;
     _fileName = null;
     _error = null;
@@ -144,11 +172,12 @@ class _SessionImportScreenState extends State<SessionImportScreen> {
     try {
       final project = await repository?.loadCurrentProject();
       if (_isCurrent(scope) && project?.directory.isNotEmpty == true) {
-        setState(
-          () => _destination = SessionImportDestination(
+        setState(() {
+          _destination = SessionImportDestination(
             directory: project!.directory,
-          ),
-        );
+          );
+          _destinationLabel = project.name.trim().isEmpty ? null : project.name;
+        });
       }
     } catch (_) {
       // The explicit destination chooser remains available after a failed probe.
@@ -216,11 +245,11 @@ class _SessionImportScreenState extends State<SessionImportScreen> {
           ? await repository.listWorkspaces()
           : <WorkspaceInfo>[];
       if (!_isCurrent(scope)) return;
-      final choices = <({String label, SessionImportDestination destination})>[
+      final choices = <_Destination>[
         for (final project in projects) ...[
           if (project.directory.isNotEmpty &&
               !isAiTeamDirectory(project.directory))
-            (
+            _Destination(
               label: project.name,
               destination: SessionImportDestination(
                 directory: project.directory,
@@ -230,14 +259,14 @@ class _SessionImportScreenState extends State<SessionImportScreen> {
             if (path.isNotEmpty &&
                 path != project.directory &&
                 !isAiTeamDirectory(path))
-              (
+              _Destination(
                 label: project.name,
                 destination: SessionImportDestination(directory: path),
               ),
         ],
         for (final workspace in workspaces)
           if (workspace.directory?.isNotEmpty == true)
-            (
+            _Destination(
               label: workspace.name,
               destination: SessionImportDestination(
                 directory: workspace.directory!,
@@ -245,46 +274,57 @@ class _SessionImportScreenState extends State<SessionImportScreen> {
               ),
             ),
       ];
-      // Loading has finished; the modal now owns interaction. Do not keep an
-      // indeterminate preparation indicator animating behind the choices.
+      // Loading has finished; the sheet now owns interaction. Do not keep
+      // the loading bar running behind the choices.
       if (!mounted) return;
-      setState(() => _choosing = false);
-      final result = await showModalBottomSheet<SessionImportDestination>(
-        context: context,
-        showDragHandle: true,
-        isScrollControlled: true,
-        builder: (context) => SafeArea(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height * .75,
-            ),
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                ListTile(title: Text(_l10n.importDestination)),
-                if (choices.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(_l10n.importNoDestinations),
-                  ),
-                for (final choice in choices)
-                  ListTile(
-                    leading: Icon(
-                      choice.destination.workspaceID == null
-                          ? AppIconography.files
-                          : AppIconography.cloud,
+      setState(() {
+        _choosing = false;
+        _choices = choices;
+      });
+      final current = _destination;
+      final selected = current == null
+          ? null
+          : choices.indexWhere((choice) => choice.matches(current));
+      final result = await showKitSheet<_Destination>(
+        context,
+        title: _l10n.importDestination,
+        icon: AppIconography.folders,
+        sheetKey: const ValueKey('import-destination-sheet'),
+        body: (sheet) => choices.isEmpty
+            ? KitStateView(
+                size: KitStateSize.inline,
+                icon: AppIconography.folders,
+                title: _l10n.importNoDestinationsTitle,
+                body: _l10n.importNoDestinations,
+              )
+            : KitChoiceList<int>.single(
+                semanticsLabel: _l10n.importDestination,
+                selected: selected == null || selected < 0 ? null : selected,
+                choices: [
+                  for (final (index, choice) in choices.indexed)
+                    KitChoice(
+                      key: ValueKey(
+                        'import-destination-${choice.destination.directory}',
+                      ),
+                      value: index,
+                      title: choice.label,
+                      supporting: KitBidi.ltr(choice.destination.directory),
+                      leading: KitRow.icon(
+                        sheet,
+                        choice.destination.workspaceID == null
+                            ? AppIconography.files
+                            : AppIconography.cloud,
+                      ),
                     ),
-                    title: Text(choice.label),
-                    subtitle: Text(choice.destination.directory),
-                    onTap: () => Navigator.pop(context, choice.destination),
-                  ),
-              ],
-            ),
-          ),
-        ),
+                ],
+                onSelected: (index) => Navigator.of(sheet).pop(choices[index]),
+              ),
       );
       if (_isCurrent(scope) && result != null) {
-        setState(() => _destination = result);
+        setState(() {
+          _destination = result.destination;
+          _destinationLabel = result.label;
+        });
       }
     } catch (_) {
       if (_isCurrent(scope)) {
@@ -387,160 +427,235 @@ class _SessionImportScreenState extends State<SessionImportScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _l10n;
-    final document = _document;
-    return PopScope(
-      canPop: !_importing && !_opening,
-      child: Scaffold(
-        appBar: AppBar(title: Text(l10n.importTitle)),
-        bottomNavigationBar: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (!_current) Text(l10n.importChanged),
-                if (_error != null) ...[
-                  Semantics(
-                    liveRegion: true,
-                    child: Text(
-                      _error!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (_imported != null) ...[
-                  Semantics(
-                    liveRegion: true,
-                    child: Text(l10n.importSucceeded),
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: !_busy && _current ? _open : null,
-                    child: Text(l10n.importOpen),
-                  ),
-                ] else if (_busy) ...[
-                  const LinearProgressIndicator(),
-                  const SizedBox(height: 12),
-                  Text(_importing ? l10n.importSending : l10n.importReading),
-                ] else
-                  FilledButton.icon(
-                    onPressed:
-                        _current &&
-                            _supported &&
-                            document != null &&
-                            _destination != null
-                        ? _import
-                        : null,
-                    icon: const Icon(AppIconography.download),
-                    label: Text(l10n.importAction),
-                  ),
-              ],
-            ),
-          ),
+  static String _basename(String path) {
+    final parts = path
+        .replaceAll('\\', '/')
+        .split('/')
+        .where((part) => part.isNotEmpty)
+        .toList();
+    return parts.isEmpty ? path : parts.last;
+  }
+
+  /// The pinned primary: Import, then Open once it is in. A disabled
+  /// Import says what is missing.
+  Widget _primary(AppLocalizations l10n) {
+    if (_imported != null) {
+      return KitActionBlock(
+        primary: KitAction(
+          key: const ValueKey('import-open'),
+          label: l10n.importOpen,
+          icon: AppIconography.externalLink,
+          working: _opening,
+          onPressed: !_busy && _current ? _open : null,
+          disabledReason: _current ? null : l10n.importChanged,
         ),
-        body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: ListView(
-                key: const ValueKey('import-review-scroll'),
-                padding: const EdgeInsets.all(20),
-                children: [
-                  Text(
-                    l10n.importDescription,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  const SizedBox(height: 20),
-                  OutlinedButton.icon(
-                    onPressed: !_busy && _current && _supported ? _pick : null,
-                    icon: const Icon(AppIconography.fileUpload),
-                    label: Text(
-                      _fileName == null
-                          ? l10n.importChoose
-                          : l10n.importChooseAnother,
-                    ),
-                  ),
-                  if (_fileName != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text(_fileName!),
-                    ),
-                  if (document != null) ...[
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              document.title?.isNotEmpty == true
-                                  ? document.title!
-                                  : l10n.importUntitled,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              l10n.importMessageCount(document.messageCount),
-                            ),
-                            SelectableText(document.id),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (document.hasRedactions) _notice(l10n.importRedacted),
-                    if (document.parentID != null)
-                      _notice(l10n.importParent(document.parentID!)),
-                    if (document.archived) _notice(l10n.importArchived),
-                  ],
-                  const SizedBox(height: 20),
-                  Text(
-                    l10n.importDestination,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  if (_serverName.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(_serverName),
-                    ),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(AppIconography.files),
-                    title: Text(
-                      _destination?.directory ?? l10n.importChooseDestination,
-                    ),
-                    subtitle: _destination?.workspaceID == null
-                        ? null
-                        : Text(_destination!.workspaceID!),
-                  ),
-                  if (_imported == null)
-                    TextButton(
-                      onPressed: !_busy && _current ? _chooseDestination : null,
-                      child: Text(l10n.importChangeDestination),
-                    ),
-                  const SizedBox(height: 8),
-                  Text(l10n.importPreserves),
-                  if (!_supported) _notice(l10n.importUnsupported),
-                ],
-              ),
-            ),
-          ),
-        ),
+      );
+    }
+    final missing = !_current
+        ? l10n.importChanged
+        : !_supported
+        ? l10n.importUnsupported
+        : _document == null
+        ? l10n.importNeedsFile
+        : _destination == null
+        ? l10n.importNeedsDestination
+        : null;
+    return KitActionBlock(
+      primary: KitAction(
+        key: const ValueKey('import-action'),
+        label: l10n.importAction,
+        icon: AppIconography.download,
+        working: _importing,
+        onPressed: missing == null && !_busy ? _import : null,
+        disabledReason: _busy ? null : missing,
       ),
     );
   }
 
-  Widget _notice(String text) => Padding(
-    padding: const EdgeInsets.only(top: 12),
-    child: Text(
-      text,
-      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-    ),
-  );
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _l10n;
+    final tokens = KitTokens.of(context);
+    final document = _document;
+    final destination = _destination;
+    final error = _error;
+    final choices = _choices;
+    // One place to go: nothing to change (session-import-destination-sheet).
+    final canChange =
+        _imported == null &&
+        !(choices != null &&
+            choices.length <= 1 &&
+            destination != null &&
+            (choices.isEmpty || choices.single.matches(destination)));
+    final gap = SizedBox(height: tokens.sectionGap);
+    final rails = EdgeInsets.symmetric(horizontal: tokens.gutter);
+    return PopScope(
+      canPop: !_importing && !_opening,
+      child: KitScreen(
+        width: KitScreenWidth.reading,
+        topBar: KitTopBar(title: l10n.importTitle),
+        loading: _busy,
+        loadingLabel: _importing ? l10n.importSending : l10n.importReading,
+        bottom: _primary(l10n),
+        body: ListView(
+          key: const ValueKey('import-review-scroll'),
+          padding: EdgeInsetsDirectional.only(
+            top: tokens.space2,
+            bottom: KitScreen.endPadding(context),
+          ),
+          children: [
+            // A changed connection or a server without import is said
+            // once, under the disabled primary (STATE-8).
+            Padding(
+              padding: rails,
+              child: KitText(
+                l10n.importDescription,
+                role: KitTextRole.body,
+                tone: KitTextTone.secondary,
+              ),
+            ),
+            gap,
+            // 1. The file.
+            KitRowGroup(
+              label: l10n.importFileLabel,
+              children: [
+                KitRow(
+                  key: const ValueKey('import-choose-file'),
+                  leading: KitRow.icon(context, AppIconography.fileUpload),
+                  title: _fileName ?? l10n.importChoose,
+                  supporting: _fileName == null
+                      ? null
+                      : TextSpan(text: l10n.importChooseAnother),
+                  trailing: const KitChevron(),
+                  onTap: !_busy && _current && _supported ? _pick : null,
+                ),
+              ],
+            ),
+            // An unreadable file or a failed import, said where the file
+            // is; the file stays chosen.
+            if (error != null)
+              Padding(
+                padding: rails.add(
+                  EdgeInsetsDirectional.only(top: tokens.space3),
+                ),
+                child: KitNotice(
+                  key: const ValueKey('import-error'),
+                  message: error,
+                  tone: AppStatusTone.failure,
+                  icon: AppIconography.error,
+                ),
+              ),
+            // 2. What the file holds: its title and size only.
+            if (document != null) ...[
+              gap,
+              KitRowGroup(
+                label: l10n.importPreviewLabel,
+                children: [
+                  KitRow(
+                    key: const ValueKey('import-preview-row'),
+                    leading: KitRow.icon(context, AppIconography.chat),
+                    title: document.title?.isNotEmpty == true
+                        ? document.title!
+                        : l10n.importUntitled,
+                    titleMaxLines: 2,
+                    supporting: TextSpan(
+                      text: l10n.importMessages(document.messageCount),
+                    ),
+                  ),
+                ],
+              ),
+              for (final note in [
+                if (document.hasRedactions) l10n.importRedacted,
+                if (document.parentID != null)
+                  l10n.importParent(document.parentID!),
+                if (document.archived) l10n.importArchived,
+              ])
+                Padding(
+                  padding: rails.add(
+                    EdgeInsetsDirectional.only(top: tokens.space3),
+                  ),
+                  child: KitNotice(
+                    message: note,
+                    icon: AppIconography.info,
+                    liveRegion: false,
+                  ),
+                ),
+            ],
+            gap,
+            // 3. Where it goes, as one row.
+            KitRowGroup(
+              label: l10n.importDestination,
+              children: [
+                KitRow(
+                  key: const ValueKey('import-destination'),
+                  leading: KitRowIcon(
+                    destination?.workspaceID == null
+                        ? AppIconography.files
+                        : AppIconography.cloud,
+                  ),
+                  title: destination == null
+                      ? l10n.importChooseDestination
+                      : (_destinationLabel ?? _basename(destination.directory)),
+                  titleMaxLines: 2,
+                  supporting: _serverName.isEmpty
+                      ? null
+                      : TextSpan(text: l10n.importOnServer(_serverName)),
+                  trailing: canChange
+                      ? KitRowValue(l10n.importChangeDestinationShort)
+                      : null,
+                  onTap: canChange && !_busy && _current
+                      ? _chooseDestination
+                      : null,
+                ),
+              ],
+            ),
+            if (_imported != null)
+              Padding(
+                padding: rails.add(
+                  EdgeInsetsDirectional.only(top: tokens.space3),
+                ),
+                child: KitNotice(
+                  key: const ValueKey('import-succeeded'),
+                  message: l10n.importSucceeded,
+                  tone: AppStatusTone.ok,
+                  icon: AppIconography.checkCircle,
+                ),
+              ),
+            gap,
+            Padding(
+              padding: rails,
+              child: KitText(
+                l10n.importPreserves,
+                role: KitTextRole.secondary,
+                tone: KitTextTone.secondary,
+              ),
+            ),
+            // 4. The technical values, last and folded.
+            Padding(
+              padding: rails.add(
+                EdgeInsetsDirectional.only(top: tokens.space3),
+              ),
+              child: KitDetailsFold(
+                values: [
+                  if (_fileName != null)
+                    KitTechnicalValue(l10n.importFileLabel, _fileName!),
+                  if (document != null)
+                    KitTechnicalValue(l10n.importConversationId, document.id),
+                  if (document?.parentID != null)
+                    KitTechnicalValue(l10n.importParentId, document!.parentID!),
+                  if (destination != null)
+                    KitTechnicalValue(l10n.importFolder, destination.directory),
+                  if (destination?.workspaceID != null)
+                    KitTechnicalValue(
+                      l10n.importEnvironmentId,
+                      destination!.workspaceID!,
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

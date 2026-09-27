@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/global_sessions_screen.dart';
@@ -154,7 +155,10 @@ Widget _app(
   double textScale = 1,
   bool rtl = false,
   Map<String, WidgetBuilder> routes = const {},
+  bool archived = false,
 }) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
   routes: routes,
   home: Builder(
     builder: (context) => MediaQuery(
@@ -163,7 +167,7 @@ Widget _app(
       ).copyWith(textScaler: TextScaler.linear(textScale)),
       child: Directionality(
         textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
-        child: GlobalSessionsScreen(controller: controller),
+        child: GlobalSessionsScreen(controller: controller, archived: archived),
       ),
     ),
   ),
@@ -269,12 +273,8 @@ void main() {
         await tester.pumpWidget(_app(controller, textScale: 2.5, rtl: rtl));
         await tester.pumpAndSettle();
         final chip = find.byKey(const ValueKey('include-archived-sessions'));
-        final text = find.descendant(of: chip, matching: find.byType(Text));
+        final text = find.descendant(of: chip, matching: find.text('Archived'));
         expect(tester.getRect(chip).contains(tester.getCenter(text)), isTrue);
-        expect(
-          tester.widget<Text>(find.text('/work/checkout')).textDirection,
-          TextDirection.ltr,
-        );
         expect(tester.takeException(), isNull);
         await tester.tap(chip);
         await tester.pumpAndSettle();
@@ -309,13 +309,26 @@ void main() {
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
 
-    List<String> visibleOrder() => tester
-        .widgetList<Text>(find.byType(Text))
-        .map((text) => text.data ?? '')
-        .where(
-          (text) => text.startsWith('Session ') || text.startsWith('/work'),
-        )
-        .toList();
+    // Rows and project sections in reading order, top to bottom.
+    List<String> visibleOrder() {
+      final marks = <(double, String)>[
+        for (final dir in ['/work/alpha', '/work/beta'])
+          if (find
+              .byKey(ValueKey('global-session-group-$dir'))
+              .evaluate()
+              .isNotEmpty)
+            (
+              tester
+                  .getTopLeft(find.byKey(ValueKey('global-session-group-$dir')))
+                  .dy,
+              dir,
+            ),
+        for (final text in tester.widgetList<Text>(find.byType(Text)))
+          if ((text.data ?? '').startsWith('Session '))
+            (tester.getTopLeft(find.byWidget(text)).dy, text.data!),
+      ]..sort((a, b) => a.$1.compareTo(b.$1));
+      return [for (final mark in marks) mark.$2];
+    }
 
     expect(visibleOrder(), [
       '/work/beta',
@@ -324,9 +337,8 @@ void main() {
       'Session 3',
       'Session 1',
     ]);
-    // The card header and the folder chip name the project; rows no longer
-    // repeat it.
-    expect(find.text('Project 2'), findsNWidgets(2));
+    // The section names the project; rows no longer repeat it.
+    expect(find.text('Project 2'), findsOneWidget);
     expect(find.textContaining('Project 2 ·'), findsNothing);
     // A partial inventory counts what is loaded without claiming a total.
     expect(find.text('3 loaded conversations · 2 projects'), findsOneWidget);
@@ -375,19 +387,22 @@ void main() {
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
 
-    // Card header and folder chip each show the disambiguated label.
-    expect(find.text('Code/TradeNet'), findsNWidgets(2));
-    expect(find.text('Worktrees/TradeNet'), findsNWidgets(2));
+    // Each section shows the disambiguated label.
+    expect(find.text('Code/TradeNet'), findsOneWidget);
+    expect(find.text('Worktrees/TradeNet'), findsOneWidget);
     expect(find.text('TradeNet'), findsNothing);
 
-    // A folder chip narrows the list to that folder only.
-    final worktreeChip = find.byKey(
-      const ValueKey('global-session-folder-/home/dev/Worktrees/TradeNet'),
-    );
-    await tester.ensureVisible(worktreeChip);
-    await tester.pumpAndSettle();
-    await tester.tap(worktreeChip);
-    await tester.pumpAndSettle();
+    // The project filter narrows the list to that folder only.
+    Future<void> pick(String directory) async {
+      await tester.tap(find.byKey(const ValueKey('global-session-filters')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(ValueKey('global-session-folder-$directory')).last,
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await pick('/home/dev/Worktrees/TradeNet');
     expect(find.text('Worktree'), findsOneWidget);
     expect(find.text('Main checkout'), findsNothing);
     expect(
@@ -395,8 +410,8 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.byKey(const ValueKey('global-session-folder-all')));
-    await tester.pumpAndSettle();
+    // Choosing it again shows every project.
+    await pick('/home/dev/Worktrees/TradeNet');
     expect(find.text('Main checkout'), findsOneWidget);
   });
 
@@ -606,7 +621,8 @@ void main() {
 
     expect(repository.calls.last.includeArchived, isTrue);
     expect(find.text('Session 2'), findsOneWidget);
-    expect(find.textContaining('Archived'), findsOneWidget);
+    // The row leads with its state word (STATE-9).
+    expect(find.textContaining('Archived ·'), findsOneWidget);
   });
 
   testWidgets(
@@ -668,6 +684,9 @@ void main() {
 
     expect(repository.calls, hasLength(2));
     expect(repository.calls.last.cursor, 'opaque/next+token=');
+    // The count sits at the top of the list.
+    await tester.drag(list, const Offset(0, 10000));
+    await tester.pumpAndSettle();
     expect(find.textContaining('51 conversations'), findsOneWidget);
   });
 
@@ -695,9 +714,7 @@ void main() {
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
 
-    final row = find.bySemanticsLabel(
-      RegExp(r'Open Global project session\. runtime-probe'),
-    );
+    final row = find.bySemanticsLabel(RegExp(r'Global project session'));
     expect(row, findsOneWidget);
     expect(
       tester
@@ -878,14 +895,14 @@ void main() {
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
 
-    // Continue here lives in each row's overflow menu, never as a row icon.
+    // Continue here lives in each row's menu, never as a row icon.
     expect(find.byIcon(AppIconography.inbox), findsNothing);
     for (final (id, offered) in const [
       ('ses_1', false),
       ('ses_2', false),
       ('ses_3', true),
     ]) {
-      await tester.tap(find.byKey(ValueKey('global-session-actions-$id')));
+      await tester.longPress(find.byKey(ValueKey('global-session-$id')));
       await tester.pumpAndSettle();
       expect(find.text('Open'), findsOneWidget, reason: id);
       expect(
@@ -921,10 +938,20 @@ void main() {
     await tester.pumpAndSettle();
 
     await _continueHere(tester, 'ses_2');
-    expect(find.text('Continue this conversation here?'), findsOneWidget);
+    expect(find.text('Move to active?'), findsOneWidget);
+    expect(
+      find.textContaining('moves from Project 2 to active'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('To move it back, open Project 2'),
+      findsOneWidget,
+    );
     expect(repository.stealCalls, isEmpty);
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Continue here'));
+    await tester.tap(
+      find.byKey(const ValueKey('global-sessions-move-confirm')),
+    );
     await tester.pumpAndSettle();
 
     expect(repository.stealCalls, ['ses_2']);
@@ -953,7 +980,7 @@ void main() {
     expect(find.textContaining('2026-09-09T10:24'), findsNothing);
     await _continueHere(tester, 'ses_2');
     expect(
-      find.textContaining('“New conversation” will belong'),
+      find.textContaining('“New conversation” moves from'),
       findsOneWidget,
     );
     expect(find.textContaining('2026-09-09T10:24'), findsNothing);
@@ -976,15 +1003,17 @@ void main() {
     await tester.pumpAndSettle();
 
     await _continueHere(tester, 'ses_2');
-    await tester.tap(find.widgetWithText(FilledButton, 'Continue here'));
+    await tester.tap(
+      find.byKey(const ValueKey('global-sessions-move-confirm')),
+    );
     await tester.pumpAndSettle();
 
-    expect(find.text('Sync is unavailable'), findsOneWidget);
+    // The question stays open with Try again; nothing claims it moved and
+    // the list is kept (DATA-14).
+    expect(repository.stealCalls, ['ses_2']);
+    expect(find.text('Move to active?'), findsOneWidget);
+    expect(find.text('stolen chat opened'), findsNothing);
     expect(find.byKey(const ValueKey('global-session-ses_2')), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('global-session-actions-ses_2')),
-      findsOneWidget,
-    );
   });
 
   testWidgets('steal flow fits a 320dp phone at 2x text', (tester) async {
@@ -1002,14 +1031,116 @@ void main() {
     await tester.pumpAndSettle();
 
     await _continueHere(tester, 'ses_2');
-    expect(find.text('Continue this conversation here?'), findsOneWidget);
+    expect(find.text('Move to active?'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Archived is a filter: only archived rows, paged until found', (
+    tester,
+  ) async {
+    // The server has no archived-only query: the filter asks for archived
+    // ones too and pages on by itself while none have arrived.
+    final repository = _FinderRepository.pages(
+      (query) async => switch ((query.includeArchived, query.cursor)) {
+        (false, _) => ServerPage(items: [_result(1), _result(2)]),
+        (true, null) => ServerPage(
+          items: [_result(1), _result(2)],
+          nextCursor: 'more',
+        ),
+        (true, _) => ServerPage(
+          items: [_result(3, archived: true, title: 'Old spike')],
+        ),
+      },
+    );
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    expect(find.text('Session 1'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('include-archived-sessions')));
+    await tester.pumpAndSettle();
+
+    expect(repository.calls.map((q) => (q.includeArchived, q.cursor)), [
+      (false, null),
+      (true, null),
+      (true, 'more'),
+    ]);
+    expect(find.text('Old spike'), findsOneWidget);
+    expect(find.text('Session 1'), findsNothing);
+    expect(find.text('Session 2'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('global-sessions-active')));
+    await tester.pumpAndSettle();
+    expect(repository.calls.last.includeArchived, isFalse);
+    expect(find.text('Session 1'), findsOneWidget);
+  });
+
+  testWidgets('an empty Archived filter says so and leads back to Active', (
+    tester,
+  ) async {
+    final repository = _FinderRepository((query) async => [_result(1)]);
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    // Work's Archived row opens the page on this filter.
+    await tester.pumpWidget(_app(controller, archived: true));
+    await tester.pumpAndSettle();
+
+    expect(repository.calls.single.includeArchived, isTrue);
+    expect(find.text('No archived conversations'), findsOneWidget);
+    expect(find.text('Session 1'), findsNothing);
+    await tester.tap(find.text('Show active conversations'));
+    await tester.pumpAndSettle();
+    expect(repository.calls.last.includeArchived, isFalse);
+    expect(find.text('Session 1'), findsOneWidget);
+  });
+
+  testWidgets('the project Work has open is named In use', (tester) async {
+    final repository = _FinderRepository(
+      (_) async => [
+        _result(1, directory: '/work/active'),
+        _result(2, directory: '/work/other'),
+      ],
+    );
+    final controller = await _controller(repository);
+    controller.directory = '/work/active';
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Project 1 · In use'), findsOneWidget);
+    expect(find.text('Project 2'), findsOneWidget);
+  });
+
+  testWidgets('moving a working conversation warns before it moves', (
+    tester,
+  ) async {
+    final repository = _FinderRepository(
+      (query) async => [
+        _result(2, directory: '/work/other', workspace: 'ws-remote'),
+      ],
+    );
+    final controller = await _controller(repository);
+    controller.directory = '/work/active';
+    controller.busySessions.add('ses_2');
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    await tester.longPress(find.byKey(const ValueKey('global-session-ses_2')));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.tap(find.byKey(const ValueKey('steal-session-ses_2')));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.textContaining('It is working now'), findsOneWidget);
+    expect(repository.stealCalls, isEmpty);
   });
 }
 
-/// Opens the row's overflow menu and picks Continue here.
+/// Opens the row's menu (long-press, KIT-28) and picks Continue here.
 Future<void> _continueHere(WidgetTester tester, String id) async {
-  await tester.tap(find.byKey(ValueKey('global-session-actions-$id')));
+  await tester.longPress(find.byKey(ValueKey('global-session-$id')));
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(ValueKey('steal-session-$id')));
   await tester.pumpAndSettle();
