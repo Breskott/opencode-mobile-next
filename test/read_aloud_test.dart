@@ -333,11 +333,13 @@ void main() {
       await tester.ensureVisible(
         find.byKey(const Key('composer-tools-advanced')),
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('composer-tools-advanced')));
       await tester.pumpAndSettle();
       await tester.ensureVisible(
         find.byKey(const Key('composer-tool-conversation')),
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('composer-tool-conversation')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -349,6 +351,12 @@ void main() {
       await tester.tap(find.byKey(const Key('stop-voice-recording')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
+      await tester.ensureVisible(find.byKey(const Key('insert-voice-draft')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('insert-voice-draft')).hitTestable(),
+        findsOneWidget,
+      );
       await tester.tap(find.byKey(const Key('insert-voice-draft')));
       await tester.pumpAndSettle();
       expect(

@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart' show PromptDelivery;
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
@@ -207,8 +208,10 @@ void main() {
 
   testWidgets('model setup renders at 320dp with 2x text', (tester) async {
     final semantics = tester.ensureSemantics();
-    await tester.binding.setSurfaceSize(const Size(320, 640));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final manager = await readyVoiceModelManager();
     addTearDown(manager.dispose);
     await tester.pumpWidget(
@@ -238,9 +241,14 @@ void main() {
     expect(find.text('Audio never leaves this phone.'), findsOneWidget);
     expect(find.text('High accuracy'), findsOneWidget);
     final modelTarget = find.byKey(const Key('voice-model-base'));
-    final modelNode = tester.getSemantics(modelTarget);
+    await tester.ensureVisible(modelTarget);
+    await tester.pumpAndSettle();
+    final modelNode = tester.getSemantics(
+      find.descendant(of: modelTarget, matching: find.text('Balanced')),
+    );
     expect(tester.getSize(modelTarget).height, greaterThanOrEqualTo(48));
-    expect(modelNode.flagsCollection.isButton, isTrue);
+    expect(modelNode.flagsCollection.isInMutuallyExclusiveGroup, isTrue);
+    expect(modelNode.flagsCollection.isSelected, Tristate.isTrue);
     expect(modelNode.flagsCollection.isEnabled, Tristate.isTrue);
 
     final redownloadTarget = find.byKey(const Key('voice-redownload-base'));
@@ -314,8 +322,10 @@ void main() {
   testWidgets('voice draft actions stack at 320dp with 2x text', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(320, 640));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final voice = await _voice();
     addTearDown(voice.controller.dispose);
     await tester.pumpWidget(
@@ -339,18 +349,23 @@ void main() {
     );
     await tester.tap(find.text('Open voice'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.ensureVisible(find.byKey(const Key('stop-voice-recording')));
+    await tester.pump(const Duration(milliseconds: 400));
     await tester.tap(find.byKey(const Key('stop-voice-recording')));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     final cancel = find.byKey(const Key('voice-composer-cancel'));
     final insert = find.byKey(const Key('insert-voice-draft'));
     expect(tester.getSize(cancel).height, greaterThanOrEqualTo(48));
     expect(tester.getSize(insert).height, greaterThanOrEqualTo(48));
-    expect(tester.getTopLeft(cancel).dx, tester.getTopLeft(insert).dx);
+    for (final action in [cancel, insert]) {
+      expect(tester.getRect(action).left, greaterThanOrEqualTo(0));
+      expect(tester.getRect(action).right, lessThanOrEqualTo(320));
+    }
     expect(
-      tester.getTopLeft(insert).dy,
-      greaterThan(tester.getTopLeft(cancel).dy),
+      tester.getBottomLeft(insert).dy,
+      lessThanOrEqualTo(tester.getTopLeft(cancel).dy),
     );
     expect(tester.takeException(), isNull);
   });
@@ -396,15 +411,29 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: VoiceNoticesView())),
+      const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: VoiceNoticesView()),
+      ),
     );
     await tester.pumpAndSettle();
 
     expect(find.textContaining('ONNX Runtime'), findsOneWidget);
+    await tester.tap(find.text('ONNX Runtime'));
+    await tester.pumpAndSettle();
     expect(
       find.textContaining('Copyright (c) Microsoft Corporation'),
       findsOneWidget,
     );
+    Navigator.of(
+      tester.element(
+        find.textContaining('Copyright (c) Microsoft Corporation'),
+      ),
+    ).pop();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Whisper speech models'));
+    await tester.pumpAndSettle();
     expect(find.textContaining('Copyright (c) 2022 OpenAI'), findsOneWidget);
   });
 }

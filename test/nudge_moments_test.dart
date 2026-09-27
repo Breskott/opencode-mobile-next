@@ -204,9 +204,15 @@ const _catalog = CatalogSnapshot(
   agents: [],
 );
 
-Finder _nudge(NudgeId id) => find.byKey(ValueKey('nudge-${id.wire}'));
-Finder _action(NudgeId id) => find.byKey(ValueKey('nudge-${id.wire}-action'));
-Finder _dismiss(NudgeId id) => find.byKey(ValueKey('nudge-${id.wire}-dismiss'));
+Finder _nudge(NudgeId id) => find.byKey(
+  ValueKey('nudge-${id == NudgeId.pinConversations ? id.name : id.wire}'),
+);
+Finder _action(NudgeId id) => id == NudgeId.pinConversations
+    ? find.descendant(of: _nudge(id), matching: find.text('Got it'))
+    : find.byKey(ValueKey('nudge-${id.wire}-action'));
+Finder _dismiss(NudgeId id) => id == NudgeId.pinConversations
+    ? find.descendant(of: _nudge(id), matching: find.byTooltip('Hide tip'))
+    : find.byKey(ValueKey('nudge-${id.wire}-dismiss'));
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -737,17 +743,17 @@ void main() {
         expect(sentence.maxLines, isNull);
         expect(sentence.overflow, isNull);
 
-        // Both controls share one row, so a slot that scrolls to its end
-        // shows them together.
+        // R6 places the close beside the first line and the action below
+        // a wrapped sentence. Each remains reachable in the scrollable slot.
         expect(
-          (tester.getCenter(_action(NudgeId.approvals)).dy -
-                  tester.getCenter(_dismiss(NudgeId.approvals)).dy)
-              .abs(),
-          lessThan(1),
+          tester.getCenter(_action(NudgeId.approvals)).dy,
+          greaterThan(tester.getCenter(_dismiss(NudgeId.approvals)).dy),
         );
         await tester.ensureVisible(_action(NudgeId.approvals));
         await tester.pumpAndSettle();
         await tester.tap(_action(NudgeId.approvals));
+        await tester.ensureVisible(_dismiss(NudgeId.approvals));
+        await tester.pumpAndSettle();
         await tester.tap(_dismiss(NudgeId.approvals));
         expect((actions, dismissals), (1, 1));
       });
@@ -796,10 +802,15 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         expect(_nudge(NudgeId.compact), findsOneWidget);
-        // The slot never takes more than a third of the conversation, and
-        // its controls are on screen without scrolling.
+        // The slot ends on the action. R6 keeps the close beside the first
+        // line, so large text may need scrolling to reach it.
         expect(_action(NudgeId.compact).hitTestable(), findsOneWidget);
+        await tester.ensureVisible(_dismiss(NudgeId.compact));
+        await tester.pumpAndSettle();
         expect(_dismiss(NudgeId.compact).hitTestable(), findsOneWidget);
+        await tester.ensureVisible(_action(NudgeId.compact));
+        await tester.pumpAndSettle();
+        expect(_action(NudgeId.compact).hitTestable(), findsOneWidget);
         await tester.tap(_action(NudgeId.compact));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);

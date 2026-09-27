@@ -74,3 +74,10 @@ Transcript search **9/9**, Codex chat capabilities **9/9**, transcript placement
 ### Verified repair checkpoint 3
 
 Offline queue **57/57**, pending sends **16/16**, stable chat layout **10/10**, desktop context menus **5/5**, desktop selection **2/2**. These retain queue refusal/durable deletion/payload assertions, explicit default delivery and remembered choice, keyboard/draft/focus bounds, actual file opening and clipboard behavior, and desktop-wide versus phone reply-local selection. Fixtures now wait for the documented Undo window and finish menu/scroll animations before interacting; no warnings or timers are suppressed.
+
+- **Completed context with unknown limit is treated as loading:** `lib/ui/screens/session_context_screen.dart:604` supplies null usage with a known 1,000-token value label. `lib/ui/kit/kit_progress_row.dart:156`, `:171` and `:423` classify null as loading and omit that known value. The live-events native context-destination assertion is retained.
+- **Voice permission arrival creates two primary actions:** `lib/ui/screens/chat_screen.dart:7070` renders permission attention (`chat/permission_sheet.dart:168` → `kit_request_card.dart:1019` Allow), alongside voice controls at `chat_screen.dart:7203` (`chat/voice_conversation.dart:483` Listen). A permission while waiting for a spoken reply trips `kit_screen.dart:652`; `voice_reply_pipeline_test.dart` “late reply stays silent after approval” remains enabled.
+
+### Verified repair checkpoint 4
+
+Voice composer **6/6**, read-aloud **8/8**, nudges **18 pass / 2 product failures**. The compact voice fixtures now set the actual logical view size, check radio semantics at the merged accessible label, follow primary-first action layout, and open each bundled license viewer with localization delegates. Nudges still assert both reachable actions at 2.5× and preserve no-overflow checks. No consent, speech dispatch or background-revocation expectation was removed.
