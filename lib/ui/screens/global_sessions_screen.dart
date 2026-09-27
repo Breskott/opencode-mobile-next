@@ -959,11 +959,11 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
             ),
           if (_footer(l10n) case final footer?)
             Padding(
-              padding: rails.add(
-                EdgeInsetsDirectional.only(
-                  top: visible.isEmpty ? 0 : tokens.sectionGap,
-                ),
-              ),
+              padding: visible.isEmpty
+                  ? rails
+                  : rails.add(
+                      EdgeInsetsDirectional.only(top: tokens.sectionGap),
+                    ),
               child: footer,
             ),
         ],
