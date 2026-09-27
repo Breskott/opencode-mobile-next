@@ -66,3 +66,23 @@ Updated `AiTeamPins.dolt`, both hash/size records and the verification-date comm
 Command: `flutter test --no-pub --concurrency=1 test/aiteam_component_test.dart test/builtin_team_test.dart test/builtin_team_hot_test.dart` — **37 passed**.
 
 Device checks owed: actual arm64/proot binary startup, fresh city and copied existing-store reopen, interrupted initialization/restart, claim→close→merge, and database integrity after stop. No Beads/Gas City/schema upgrade is part of this patch.
+
+## 7. Termux Ubuntu Base 24.04.5
+
+Fetched Canonical's [live SHA256SUMS](https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/SHA256SUMS) on 2026-09-27 (HTTP 200, Last-Modified 2026-09-10 16:44:42 GMT), independently of the earlier review. Updated the three Termux archive names, their checksums and the interrupted-install marker. Built-in Kotlin already has the same .5 arm64/amd64 hashes and remains unchanged.
+
+| Image architecture | Verified SHA-256 |
+|---|---|
+| arm64 | `a91d5a93010193712d346d761372b7c9db6dfcf093893161c64ca107f05914f2` |
+| armhf | `4fcee4d278f1c5232e085a021a85e4c6cef3853557a88d98ff380b5e5d5841bb` |
+| amd64 | `e77b6f10c2590cef872b33ee9f635a0e3fd1f57fb074c0e52b5c7f56147a0c86` |
+
+Command: `flutter test --no-pub --concurrency=1 test/termux_scripts_test.dart test/builtin_linux_test.dart` — initially **61 passed, 1 failed**. The manager-script checksum guard passes at base and correctly detects the intentional OpenCode/Ubuntu pin changes. Reviewed the script diff and updated only the guard's expected hash/comment; script length remains 51,360. Reran only `--plain-name 'shared OpenCode setup script the Termux manager script changes only on purpose'`: **1 passed**. No broad rerun or unrelated failure fix.
+
+Device checks owed: checksum refusal, interrupted extraction recovery, existing-rootfs/project preservation, fresh setup, DNS/CA/apt, node/npm and every local runtime on arm64. A new-image pin does not patch existing userlands; no existing rootfs was modified in this batch.
+
+## Final local checks and limits
+
+Pinned `flutter analyze`: **No issues found** (22.9 seconds). `dart format --language-version=3.10 --output=none --set-exit-if-changed` on all seven changed Dart files: zero formatting changes. `git diff --check`: clean. Verified all requested target versions and checksums/sizes directly against source; root lock changes are limited to mobile_scanner, Dio, flutter_secure_storage and its platform interface. Generated Dart sources are unchanged.
+
+Known pre-existing failures remain: two scanner permission-denial assertions and one local-agent restart-confirmation assertion, each reproduced at original base. One existing shellcheck test skipped because the binary is unavailable. No requested named test file was missing. No full-suite, device/emulator, live-server, native release build, signing or publication claim is made. The temporary baseline worktree and downloaded Dolt archives are removed after verification; raw command logs were kept outside the repository, with the results and artifact provenance recorded here.

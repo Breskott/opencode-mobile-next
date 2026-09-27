@@ -1579,16 +1579,16 @@ install_ubuntu_base() {
   local filename checksum
   case "$(uname -m)" in
     aarch64|arm64)
-      filename='ubuntu-base-24.04.4-base-arm64.tar.gz'
-      checksum='04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2'
+      filename='ubuntu-base-24.04.5-base-arm64.tar.gz'
+      checksum='a91d5a93010193712d346d761372b7c9db6dfcf093893161c64ca107f05914f2'
       ;;
     arm|armv7l|armv8l)
-      filename='ubuntu-base-24.04.4-base-armhf.tar.gz'
-      checksum='991520b47f6586f38a78505cf016e300b6191bb8ff86a0723481ec23a37ab7f4'
+      filename='ubuntu-base-24.04.5-base-armhf.tar.gz'
+      checksum='4fcee4d278f1c5232e085a021a85e4c6cef3853557a88d98ff380b5e5d5841bb'
       ;;
     x86_64|amd64)
-      filename='ubuntu-base-24.04.4-base-amd64.tar.gz'
-      checksum='c1e67ef7b17a6300e136118bd1dc04725009cb376c1aad10abcf8cd453628d58'
+      filename='ubuntu-base-24.04.5-base-amd64.tar.gz'
+      checksum='e77b6f10c2590cef872b33ee9f635a0e3fd1f57fb074c0e52b5c7f56147a0c86'
       ;;
     *) fail_setup "Unsupported CPU architecture: $(uname -m)" "$CURRENT_PORT" ;;
   esac
@@ -1608,7 +1608,7 @@ install_ubuntu_base() {
       return
     fi
   fi
-  printf 'source=canonical-ubuntu-base-24.04.4\n' > "$UBUNTU_INSTALL_MARKER"
+  printf 'source=canonical-ubuntu-base-24.04.5\n' > "$UBUNTU_INSTALL_MARKER"
   proot-distro install "$archive" --name "$PROOT_NAME"
   rm -f "$archive"
   ubuntu_usable || fail_setup 'Ubuntu Base extraction did not create a usable container' "$CURRENT_PORT"
