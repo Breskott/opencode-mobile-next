@@ -161,6 +161,9 @@ class ServerSwitcherSheet extends StatelessWidget {
       onAction: (action, bytesUsed) => navigator.pop(
         ServerSwitcherPhoneAction(action, profile.id, bytesUsed),
       ),
+      // "Disconnect from This phone" lives in the card's own menu, so the
+      // sheet needs no separate Disconnect row for the phone server.
+      onDisconnect: profile.id == current?.id ? () => unawaited(leave()) : null,
     );
 
     final connectedID = controller.api == null ? null : current?.id;
@@ -231,14 +234,6 @@ class ServerSwitcherSheet extends StatelessWidget {
         trailing: const KitChevron(),
         onTap: () => navigator.pop(const ServerSwitcherOpenServers()),
       ),
-      // Last and apart: the one row here that interrupts work.
-      if (currentIsPhone)
-        KitRow(
-          key: const ValueKey('server-switcher-disconnect'),
-          leading: KitRow.icon(context, AppIconography.unlink),
-          title: l10n.e7SettingsUi8,
-          onTap: () => unawaited(leave()),
-        ),
     ];
 
     return Column(
