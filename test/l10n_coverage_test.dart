@@ -83,10 +83,7 @@ Map<String, int> scan() {
 
 // Recorded 2026-09-03. Only decrease these numbers.
 const _baseline = <String, int>{
-  'lib/ui/screens/app_diagnostics_screen.dart': 1,
   'lib/ui/screens/chat_screen.dart': 1,
-  'lib/ui/screens/session_context_screen.dart': 1,
-  'lib/voice/voice_ui.dart': 1,
 };
 
 void main() {

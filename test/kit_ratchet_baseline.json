@@ -60,57 +60,14 @@
       "SnackBar(": 1,
       "showSnackBar(": 1
     },
-    "lib/ui/screens/external_agents_screen.dart": {
-      "AlertDialog(": 1,
-      "SnackBar(": 1,
-      "showConfirmSheet(": 4,
-      "showDialog(": 1,
-      "showSnackBar(": 1
-    },
     "lib/ui/screens/legacy_drafts_screen.dart": {
       "SnackBar(": 1,
       "showConfirmSheet(": 1,
       "showModalBottomSheet(": 1,
       "showSnackBar(": 1
     },
-    "lib/ui/screens/library/command_auth_sheet.dart": {
-      "showConfirmSheet(": 1
-    },
-    "lib/ui/screens/library/credential_sheet.dart": {
-      "AlertDialog(": 1,
-      "showConfirmSheet(": 1,
-      "showDialog(": 1
-    },
-    "lib/ui/screens/library/pending_auth_recovery.dart": {
-      "SnackBar(": 1,
-      "showConfirmSheet(": 2,
-      "showDialog(": 1,
-      "showSnackBar(": 1
-    },
-    "lib/ui/screens/library/references_screen.dart": {
-      "SnackBar(": 1,
-      "showSnackBar(": 1
-    },
-    "lib/ui/screens/library/skills_screen.dart": {
-      "showModalBottomSheet(": 2
-    },
     "lib/ui/screens/project_folder_actions.dart": {
       "showModalBottomSheet(": 2
-    },
-    "lib/ui/screens/running_work_sheet.dart": {
-      "SnackBar(": 3,
-      "showModalBottomSheet(": 2,
-      "showSnackBar(": 3
-    },
-    "lib/ui/screens/session_destination_sheet.dart": {
-      "SnackBar(": 2,
-      "showModalBottomSheet(": 2,
-      "showSnackBar(": 2
-    },
-    "lib/ui/screens/settings/plugins_screen.dart": {
-      "SnackBar(": 2,
-      "showModalBottomSheet(": 1,
-      "showSnackBar(": 2
     },
     "lib/ui/screens/settings/server_plugins_section.dart": {
       "AlertDialog(": 1,
@@ -132,11 +89,6 @@
       "showConfirmSheet(": 6,
       "showSnackBar(": 6
     },
-    "lib/ui/screens/tools_screen.dart": {
-      "SnackBar(": 1,
-      "showModalBottomSheet(": 1,
-      "showSnackBar(": 1
-    },
     "lib/ui/widgets/completion_digest.dart": {
       "SnackBar(": 2,
       "showSnackBar(": 2
@@ -144,10 +96,6 @@
     "lib/ui/widgets/local_agent_onboarding.dart": {
       "SnackBar(": 1,
       "showModalBottomSheet(": 1,
-      "showSnackBar(": 1
-    },
-    "lib/ui/widgets/mobile_task_view.dart": {
-      "SnackBar(": 1,
       "showSnackBar(": 1
     },
     "lib/ui/widgets/session_handoff.dart": {
@@ -163,9 +111,6 @@
     }
   },
   "G15": {
-    "lib/ui/screens/session_context_screen.dart": {
-      "width-literal": 2
-    },
     "lib/ui/screens/termux_setup_screen.dart": {
       "width-literal": 2
     }
@@ -177,21 +122,6 @@
     "lib/ui/app_theme.dart": {
       "AppBarTheme": 1,
       "InputDecorationTheme": 1
-    },
-    "lib/ui/screens/active_context_screen.dart": {
-      "AppBar": 2,
-      "ChoiceChip": 2,
-      "Divider": 2,
-      "Icon": 5,
-      "IconButton": 3,
-      "LinearProgressIndicator": 1,
-      "ListTile": 1,
-      "MaterialPageRoute": 1,
-      "Scaffold": 2,
-      "SelectableText": 2,
-      "SingleChildScrollView": 1,
-      "Text": 14,
-      "TextField": 1
     },
     "lib/ui/screens/agent_choice_screen.dart": {
       "AppBar": 1,
@@ -208,15 +138,6 @@
       "OutlinedButton": 1,
       "Scaffold": 1,
       "Text": 10
-    },
-    "lib/ui/screens/capabilities_screen.dart": {
-      "AppBar": 1,
-      "DefaultTabController": 1,
-      "Scaffold": 1,
-      "Tab": 1,
-      "TabBar": 1,
-      "TabBarView": 1,
-      "Text": 1
     },
     "lib/ui/screens/chat/approvals_sheet.dart": {
       "ActionChip": 1,
@@ -451,33 +372,6 @@
       "TextButton": 4,
       "TextField": 2
     },
-    "lib/ui/screens/demo_screen.dart": {
-      "Icon": 3,
-      "IconButton": 2,
-      "Scaffold": 1,
-      "SingleChildScrollView": 1,
-      "Text": 5,
-      "TextButton": 1
-    },
-    "lib/ui/screens/external_agents_screen.dart": {
-      "AlertDialog": 1,
-      "AppBar": 4,
-      "Card": 5,
-      "Container": 1,
-      "FilledButton": 6,
-      "Icon": 10,
-      "LinearProgressIndicator": 2,
-      "ListTile": 2,
-      "MaterialPageRoute": 4,
-      "OutlinedButton": 4,
-      "Scaffold": 4,
-      "SelectableText": 2,
-      "SingleChildScrollView": 1,
-      "SnackBar": 1,
-      "Text": 48,
-      "TextButton": 5,
-      "TextField": 4
-    },
     "lib/ui/screens/legacy_drafts_screen.dart": {
       "AppBar": 1,
       "FilledButton": 1,
@@ -492,69 +386,6 @@
       "Text": 10,
       "TextField": 1
     },
-    "lib/ui/screens/library/command_auth_sheet.dart": {
-      "FilledButton": 2,
-      "LinearProgressIndicator": 1,
-      "Text": 15,
-      "TextButton": 1
-    },
-    "lib/ui/screens/library/commands_screen.dart": {
-      "AppBar": 1,
-      "Divider": 1,
-      "Icon": 3,
-      "ListTile": 1,
-      "Scaffold": 1,
-      "Text": 3,
-      "TextField": 1
-    },
-    "lib/ui/screens/library/credential_sheet.dart": {
-      "AlertDialog": 1,
-      "Card": 1,
-      "FilledButton": 1,
-      "Icon": 2,
-      "LinearProgressIndicator": 1,
-      "ListTile": 1,
-      "SelectableText": 1,
-      "Text": 17,
-      "TextButton": 5,
-      "TextField": 1
-    },
-    "lib/ui/screens/library/pending_auth_recovery.dart": {
-      "FilledButton": 1,
-      "LinearProgressIndicator": 1,
-      "SnackBar": 1,
-      "Text": 15,
-      "TextButton": 4
-    },
-    "lib/ui/screens/library/references_screen.dart": {
-      "AppBar": 1,
-      "Divider": 1,
-      "Icon": 2,
-      "ListTile": 1,
-      "Scaffold": 1,
-      "SnackBar": 1,
-      "Text": 4
-    },
-    "lib/ui/screens/library/skill_activation.dart": {
-      "CheckboxListTile": 1,
-      "CircularProgressIndicator": 1,
-      "Divider": 2,
-      "FilledButton": 1,
-      "Icon": 2,
-      "IconButton": 1,
-      "ListTile": 1,
-      "SingleChildScrollView": 1,
-      "Text": 7
-    },
-    "lib/ui/screens/library/skills_screen.dart": {
-      "AppBar": 1,
-      "Divider": 2,
-      "Icon": 2,
-      "ListTile": 1,
-      "Scaffold": 1,
-      "SelectableText": 1,
-      "Text": 4
-    },
     "lib/ui/screens/manage_project_screen.dart": {
       "AppBar": 1,
       "Divider": 1,
@@ -564,120 +395,8 @@
       "Scaffold": 1,
       "Text": 13
     },
-    "lib/ui/screens/mcp_setup_screen.dart": {
-      "AppBar": 1,
-      "CircularProgressIndicator": 1,
-      "Divider": 1,
-      "FilledButton": 1,
-      "Form": 1,
-      "Icon": 7,
-      "IconButton": 1,
-      "OutlinedButton": 1,
-      "Scaffold": 1,
-      "SegmentedButton": 2,
-      "SwitchListTile": 1,
-      "Text": 18,
-      "TextFormField": 7
-    },
     "lib/ui/screens/phone_setup/phone_setup_routes.dart": {
       "MaterialPageRoute": 3
-    },
-    "lib/ui/screens/running_work_sheet.dart": {
-      "AppBar": 1,
-      "CircularProgressIndicator": 1,
-      "Container": 2,
-      "FilledButton": 1,
-      "Icon": 10,
-      "IconButton": 4,
-      "InkWell": 1,
-      "LinearProgressIndicator": 1,
-      "ListTile": 1,
-      "MaterialPageRoute": 1,
-      "NotificationListener": 1,
-      "OutlinedButton": 1,
-      "Scaffold": 1,
-      "SelectableText": 2,
-      "SnackBar": 3,
-      "SwitchListTile": 1,
-      "Text": 25,
-      "TextButton": 4
-    },
-    "lib/ui/screens/session_context_screen.dart": {
-      "AppBar": 1,
-      "CircularProgressIndicator": 1,
-      "ClipRRect": 1,
-      "ColoredBox": 1,
-      "Container": 4,
-      "Icon": 4,
-      "IconButton": 1,
-      "ListTile": 1,
-      "MaterialPageRoute": 1,
-      "Scaffold": 1,
-      "Text": 19,
-      "TextButton": 2
-    },
-    "lib/ui/screens/session_destination_sheet.dart": {
-      "AppBar": 2,
-      "FractionallySizedBox": 2,
-      "Icon": 7,
-      "IconButton": 2,
-      "LinearProgressIndicator": 2,
-      "ListTile": 2,
-      "PreferredSize": 2,
-      "Scaffold": 2,
-      "SnackBar": 2,
-      "Text": 16,
-      "TextField": 1
-    },
-    "lib/ui/screens/session_export_screen.dart": {
-      "AppBar": 1,
-      "Card": 1,
-      "FilledButton": 1,
-      "Icon": 3,
-      "LinearProgressIndicator": 1,
-      "ListTile": 1,
-      "Scaffold": 1,
-      "SwitchListTile": 1,
-      "Text": 13,
-      "TextButton": 1
-    },
-    "lib/ui/screens/session_note_screen.dart": {
-      "AppBar": 1,
-      "CircularProgressIndicator": 1,
-      "FilledButton": 1,
-      "Icon": 1,
-      "LinearProgressIndicator": 1,
-      "Scaffold": 1,
-      "SelectableText": 1,
-      "SingleChildScrollView": 1,
-      "Text": 8,
-      "TextButton": 2,
-      "TextField": 1
-    },
-    "lib/ui/screens/session_relations_screen.dart": {
-      "AppBar": 1,
-      "CircularProgressIndicator": 1,
-      "Divider": 2,
-      "Icon": 3,
-      "IconButton": 1,
-      "ListTile": 1,
-      "PopupMenuButton": 1,
-      "PopupMenuItem": 2,
-      "Scaffold": 1,
-      "Text": 9
-    },
-    "lib/ui/screens/settings/plugins_screen.dart": {
-      "AppBar": 1,
-      "ExpansionTile": 1,
-      "FilledButton": 2,
-      "Icon": 3,
-      "OutlinedButton": 1,
-      "Scaffold": 1,
-      "SingleChildScrollView": 1,
-      "SnackBar": 2,
-      "Text": 20,
-      "TextButton": 2,
-      "Theme": 1
     },
     "lib/ui/screens/settings/server_plugins_section.dart": {
       "AlertDialog": 1,
@@ -743,38 +462,6 @@
       "SnackBar": 6,
       "Text": 54
     },
-    "lib/ui/screens/tools_screen.dart": {
-      "AppBar": 1,
-      "Divider": 5,
-      "FractionallySizedBox": 1,
-      "Icon": 7,
-      "IconButton": 4,
-      "InkWell": 2,
-      "Scaffold": 1,
-      "SelectableText": 2,
-      "SingleChildScrollView": 2,
-      "SnackBar": 1,
-      "Text": 12,
-      "TextButton": 1,
-      "TextField": 1
-    },
-    "lib/ui/screens/web_sources_screen.dart": {
-      "AppBar": 1,
-      "CheckboxListTile": 1,
-      "Divider": 2,
-      "DropdownButtonFormField": 1,
-      "DropdownMenuItem": 1,
-      "ExpansionTile": 1,
-      "FilledButton": 2,
-      "Icon": 7,
-      "LinearProgressIndicator": 1,
-      "OutlinedButton": 1,
-      "Scaffold": 1,
-      "SelectableText": 1,
-      "Text": 26,
-      "TextButton": 5,
-      "TextField": 4
-    },
     "lib/ui/widgets/completion_digest.dart": {
       "Icon": 2,
       "SnackBar": 2,
@@ -803,16 +490,6 @@
       "Text": 36,
       "TextButton": 2,
       "TextField": 1
-    },
-    "lib/ui/widgets/mobile_task_view.dart": {
-      "ClipRRect": 1,
-      "FilledButton": 1,
-      "Icon": 4,
-      "LinearProgressIndicator": 1,
-      "OutlinedButton": 1,
-      "SnackBar": 1,
-      "Text": 9,
-      "TextButton": 1
     },
     "lib/ui/widgets/model_shortcuts.dart": {
       "Icon": 1,
@@ -852,32 +529,6 @@
       "SnackBar": 1,
       "Text": 28,
       "TextField": 1
-    },
-    "lib/ui/widgets/tool_card.dart": {
-      "AnimatedContainer": 1,
-      "AnimatedRotation": 1,
-      "CircularProgressIndicator": 4,
-      "ClipRRect": 2,
-      "ClipRect": 1,
-      "ColoredBox": 1,
-      "Container": 15,
-      "DecoratedBox": 1,
-      "Icon": 17,
-      "IconButton": 1,
-      "Image": 1,
-      "InkWell": 3,
-      "IntrinsicWidth": 1,
-      "Material": 1,
-      "Positioned": 1,
-      "SelectableText": 3,
-      "ShaderMask": 1,
-      "SingleChildScrollView": 1,
-      "Text": 32,
-      "TextButton": 3
-    },
-    "lib/ui/widgets/transcript_highlight.dart": {
-      "Container": 1,
-      "Text": 2
     }
   },
   "G2": {
@@ -919,10 +570,6 @@
     },
     "lib/ui/kit/scenes/team_scenes.dart": {
       "Curves. in kit": 13
-    },
-    "lib/ui/screens/active_context_screen.dart": {
-      "Clipboard.setData(": 1,
-      "ProductErrorState(": 1
     },
     "lib/ui/screens/attention_overview_screen.dart": {
       "ProductEmptyState(": 1
@@ -970,55 +617,12 @@
     "lib/ui/screens/connection_help_screen.dart": {
       "Clipboard.setData(": 1
     },
-    "lib/ui/screens/external_agents_screen.dart": {
-      "showConfirmSheet(": 4
-    },
     "lib/ui/screens/legacy_drafts_screen.dart": {
       "Clipboard.setData(": 1,
       "showConfirmSheet(": 1
     },
-    "lib/ui/screens/library/command_auth_sheet.dart": {
-      "showConfirmSheet(": 1
-    },
-    "lib/ui/screens/library/commands_screen.dart": {
-      "ProductEmptyState(": 1,
-      "ProductErrorState(": 1
-    },
-    "lib/ui/screens/library/credential_sheet.dart": {
-      "showConfirmSheet(": 1
-    },
     "lib/ui/screens/library/integrations_screen.dart": {
       "launchUrl(": 1
-    },
-    "lib/ui/screens/library/pending_auth_recovery.dart": {
-      "showConfirmSheet(": 2
-    },
-    "lib/ui/screens/library/references_screen.dart": {
-      "Clipboard.setData(": 1,
-      "ProductEmptyState(": 1,
-      "ProductErrorState(": 1,
-      "duration: Duration(": 1
-    },
-    "lib/ui/screens/library/skills_screen.dart": {
-      "ProductEmptyState(": 1,
-      "ProductErrorState(": 1
-    },
-    "lib/ui/screens/mcp_setup_screen.dart": {
-      "KitSecretField(": 1
-    },
-    "lib/ui/screens/running_work_sheet.dart": {
-      "Clipboard.setData(": 1
-    },
-    "lib/ui/screens/session_context_screen.dart": {
-      "ProductEmptyState(": 1,
-      "ProductErrorState(": 1
-    },
-    "lib/ui/screens/session_destination_sheet.dart": {
-      "ProductErrorState(": 2
-    },
-    "lib/ui/screens/session_relations_screen.dart": {
-      "ProductEmptyState(": 1,
-      "ProductErrorState(": 1
     },
     "lib/ui/screens/settings/server_plugins_section.dart": {
       "showConfirmSheet(": 1
@@ -1036,18 +640,10 @@
       "launchUrl(": 1,
       "showConfirmSheet(": 6
     },
-    "lib/ui/screens/tools_screen.dart": {
-      "Clipboard.setData(": 1,
-      "ProductEmptyState(": 2,
-      "ProductErrorState(": 1
-    },
     "lib/ui/widgets/completion_digest.dart": {
       "Clipboard.setData(": 1
     },
     "lib/ui/widgets/local_agent_onboarding.dart": {
-      "Clipboard.setData(": 1
-    },
-    "lib/ui/widgets/mobile_task_view.dart": {
       "Clipboard.setData(": 1
     },
     "lib/ui/widgets/session_handoff.dart": {
@@ -1058,23 +654,11 @@
     }
   },
   "G7": {
-    "lib/ui/screens/active_context_screen.dart": {
-      "EdgeInsets.only(left|right:)": 1
-    },
     "lib/ui/screens/chat_screen.dart": {
       "Positioned(left|right:)": 1
     },
-    "lib/ui/screens/demo_screen.dart": {
-      "EdgeInsets.fromLTRB asymmetric": 1
-    },
-    "lib/ui/screens/session_context_screen.dart": {
-      "EdgeInsets.fromLTRB asymmetric": 1
-    },
     "lib/ui/screens/settings/server_plugins_section.dart": {
       "EdgeInsets.fromLTRB asymmetric": 1
-    },
-    "lib/ui/screens/web_sources_screen.dart": {
-      "Alignment.centerLeft": 1
     }
   },
   "G15x": {},
@@ -1088,10 +672,6 @@
     },
     "lib/ui/kit/glass/kit_glass.dart": {
       "Colors.*": 2
-    },
-    "lib/ui/screens/active_context_screen.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 3
     },
     "lib/ui/screens/agent_choice_screen.dart": {
       ".colorScheme": 1,
@@ -1173,65 +753,8 @@
       ".colorScheme": 3,
       ".textTheme": 1
     },
-    "lib/ui/screens/demo_screen.dart": {
-      ".textTheme": 2
-    },
-    "lib/ui/screens/external_agents_screen.dart": {
-      ".colorScheme": 3,
-      ".textTheme": 12
-    },
     "lib/ui/screens/legacy_drafts_screen.dart": {
       ".textTheme": 1
-    },
-    "lib/ui/screens/library/command_auth_sheet.dart": {
-      ".textTheme": 1
-    },
-    "lib/ui/screens/library/credential_sheet.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 2
-    },
-    "lib/ui/screens/library/pending_auth_recovery.dart": {
-      ".textTheme": 1
-    },
-    "lib/ui/screens/library/skill_activation.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 1
-    },
-    "lib/ui/screens/library/skills_screen.dart": {
-      ".textTheme": 1
-    },
-    "lib/ui/screens/mcp_setup_screen.dart": {
-      ".colorScheme": 3,
-      ".textTheme": 5
-    },
-    "lib/ui/screens/running_work_sheet.dart": {
-      ".colorScheme": 4,
-      ".textTheme": 9
-    },
-    "lib/ui/screens/session_context_screen.dart": {
-      ".colorScheme": 4,
-      ".textTheme": 11
-    },
-    "lib/ui/screens/session_destination_sheet.dart": {
-      ".colorScheme": 2,
-      ".textTheme": 2
-    },
-    "lib/ui/screens/session_export_screen.dart": {
-      ".colorScheme": 3,
-      ".textTheme": 1
-    },
-    "lib/ui/screens/session_note_screen.dart": {
-      ".colorScheme": 2,
-      ".textTheme": 1
-    },
-    "lib/ui/screens/session_relations_screen.dart": {
-      ".colorScheme": 3,
-      ".textTheme": 3
-    },
-    "lib/ui/screens/settings/plugins_screen.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 12,
-      "attention roles": 2
     },
     "lib/ui/screens/settings/server_plugins_section.dart": {
       ".colorScheme": 4,
@@ -1255,13 +778,6 @@
       "Colors.*": 4,
       "attention roles": 3
     },
-    "lib/ui/screens/tools_screen.dart": {
-      ".colorScheme": 2,
-      ".textTheme": 3
-    },
-    "lib/ui/screens/web_sources_screen.dart": {
-      ".textTheme": 2
-    },
     "lib/ui/widgets/app_exit_notice.dart": {
       "attention roles": 1
     },
@@ -1272,10 +788,6 @@
       ".colorScheme": 7,
       ".textTheme": 18,
       "attention roles": 3
-    },
-    "lib/ui/widgets/mobile_task_view.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 4
     },
     "lib/ui/widgets/saved_server_connection_card.dart": {
       "attention roles": 2
@@ -1307,14 +819,6 @@
     },
     "lib/ui/widgets/thermal_notice.dart": {
       "attention roles": 1
-    },
-    "lib/ui/widgets/tool_card.dart": {
-      ".colorScheme": 31,
-      ".textTheme": 33,
-      "Colors.*": 6
-    },
-    "lib/ui/widgets/transcript_highlight.dart": {
-      ".colorScheme": 2
     }
   },
   "G21": {
@@ -1391,11 +895,6 @@
     },
     "lib/ui/kit/terminal_key_bar.dart": {
       "EdgeInsets numeric": 1
-    },
-    "lib/ui/screens/active_context_screen.dart": {
-      "EdgeInsets numeric": 10,
-      "SizedBox numeric": 2,
-      "TextStyle(": 1
     },
     "lib/ui/screens/agent_choice_screen.dart": {
       "EdgeInsets numeric": 1,
@@ -1514,50 +1013,9 @@
       "TextStyle(": 2,
       "icon size not 20/22/24": 4
     },
-    "lib/ui/screens/demo_screen.dart": {
-      "EdgeInsets numeric": 3,
-      "SizedBox numeric": 2,
-      "disableAnimationsOf": 2
-    },
-    "lib/ui/screens/external_agents_screen.dart": {
-      "BorderRadius.circular(<n>": 1,
-      "EdgeInsets numeric": 14,
-      "SizedBox numeric": 31,
-      "TextStyle(": 1,
-      "icon size not 20/22/24": 2
-    },
     "lib/ui/screens/legacy_drafts_screen.dart": {
       "EdgeInsets numeric": 3,
       "SizedBox numeric": 3
-    },
-    "lib/ui/screens/library/command_auth_sheet.dart": {
-      "EdgeInsets numeric": 1,
-      "SizedBox numeric": 1
-    },
-    "lib/ui/screens/library/commands_screen.dart": {
-      "EdgeInsets numeric": 1
-    },
-    "lib/ui/screens/library/credential_sheet.dart": {
-      "EdgeInsets numeric": 2,
-      "SizedBox numeric": 2,
-      "TextStyle(": 2
-    },
-    "lib/ui/screens/library/pending_auth_recovery.dart": {
-      "EdgeInsets numeric": 2
-    },
-    "lib/ui/screens/library/references_screen.dart": {
-      "TextStyle(": 1,
-      "fontSize:": 1
-    },
-    "lib/ui/screens/library/skill_activation.dart": {
-      "EdgeInsets numeric": 2,
-      "SizedBox numeric": 1,
-      "TextStyle(": 1
-    },
-    "lib/ui/screens/library/skills_screen.dart": {
-      "EdgeInsets numeric": 2,
-      "TextStyle(": 1,
-      "fontSize:": 1
     },
     "lib/ui/screens/manage_project_screen.dart": {
       "EdgeInsets numeric": 1
@@ -1565,49 +1023,8 @@
     "lib/ui/screens/managed_workspaces_screen.dart": {
       "EdgeInsets numeric": 1
     },
-    "lib/ui/screens/mcp_setup_screen.dart": {
-      "EdgeInsets numeric": 6,
-      "SizedBox numeric": 17
-    },
     "lib/ui/screens/project_health_screen.dart": {
       "EdgeInsets numeric": 1
-    },
-    "lib/ui/screens/running_work_sheet.dart": {
-      "BorderRadius.circular(<n>": 1,
-      "EdgeInsets numeric": 10,
-      "SizedBox numeric": 10,
-      "fontSize:": 1,
-      "icon size not 20/22/24": 2
-    },
-    "lib/ui/screens/session_context_screen.dart": {
-      "BorderRadius.circular(<n>": 2,
-      "EdgeInsets numeric": 12,
-      "SizedBox numeric": 10,
-      "icon size not 20/22/24": 1
-    },
-    "lib/ui/screens/session_destination_sheet.dart": {
-      "EdgeInsets numeric": 8,
-      "TextStyle(": 1
-    },
-    "lib/ui/screens/session_export_screen.dart": {
-      "EdgeInsets numeric": 2,
-      "SizedBox numeric": 6,
-      "TextStyle(": 2
-    },
-    "lib/ui/screens/session_note_screen.dart": {
-      "EdgeInsets numeric": 1,
-      "SizedBox numeric": 5,
-      "TextStyle(": 2
-    },
-    "lib/ui/screens/session_relations_screen.dart": {
-      "EdgeInsets numeric": 4,
-      "SizedBox numeric": 2,
-      "TextStyle(": 1
-    },
-    "lib/ui/screens/settings/plugins_screen.dart": {
-      "EdgeInsets numeric": 8,
-      "SizedBox numeric": 13,
-      "icon size not 20/22/24": 2
     },
     "lib/ui/screens/settings/server_plugins_section.dart": {
       ".toUpperCase()": 2,
@@ -1642,16 +1059,6 @@
       "fontSize:": 2,
       "icon size not 20/22/24": 2
     },
-    "lib/ui/screens/tools_screen.dart": {
-      "EdgeInsets numeric": 8,
-      "SizedBox numeric": 8,
-      "TextStyle(": 5,
-      "fontSize:": 1
-    },
-    "lib/ui/screens/web_sources_screen.dart": {
-      "EdgeInsets numeric": 3,
-      "SizedBox numeric": 4
-    },
     "lib/ui/widgets/app_exit_notice.dart": {
       "EdgeInsets numeric": 1
     },
@@ -1665,13 +1072,6 @@
       "EdgeInsets numeric": 9,
       "SizedBox numeric": 28,
       "icon size not 20/22/24": 5
-    },
-    "lib/ui/widgets/mobile_task_view.dart": {
-      "BorderRadius.circular(<n>": 1,
-      "EdgeInsets numeric": 1,
-      "SizedBox numeric": 4,
-      "TextStyle(": 1,
-      "icon size not 20/22/24": 4
     },
     "lib/ui/widgets/session_handoff.dart": {
       "SizedBox numeric": 2
@@ -1694,24 +1094,6 @@
     },
     "lib/ui/widgets/thermal_notice.dart": {
       "EdgeInsets numeric": 1
-    },
-    "lib/ui/widgets/tool_card.dart": {
-      "Border.all(": 6,
-      "BorderRadius.circular(<n>": 16,
-      "BorderSide(width: not KitTokens": 3,
-      "EdgeInsets numeric": 28,
-      "Image.asset|network|memory|file(": 1,
-      "SizedBox numeric": 31,
-      "TextStyle(": 2,
-      "disableAnimationsOf": 2,
-      "gradient(": 2,
-      "icon size not 20/22/24": 16
-    },
-    "lib/ui/widgets/transcript_highlight.dart": {
-      "BorderRadius.circular(<n>": 1,
-      "EdgeInsets numeric": 2,
-      "SizedBox numeric": 1,
-      "TextStyle(": 4
     }
   },
   "G48": {
