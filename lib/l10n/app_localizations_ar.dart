@@ -22597,4 +22597,17 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String teamMergeConfirmTask(String title) {
+    return 'Task: $title';
+  }
+
+  @override
+  String get teamMergeFailedNext =>
+      'Nothing was merged. Fix what the host says, then try again, or review the changes.';
+
+  @override
+  String get teamStartRunRefusedKept =>
+      'Your task is still here. Edit it and send it again.';
 }

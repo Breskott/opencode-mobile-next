@@ -35404,6 +35404,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{Delete} one{Delete 1 draft} other{Delete {count} drafts}}'**
   String privacyDeleteDraftsCount(int count);
+
+  /// AI Team merge confirmation: one consequence line naming the task whose changes are merged. {title} is the task's own title.
+  ///
+  /// In en, this message translates to:
+  /// **'Task: {title}'**
+  String teamMergeConfirmTask(String title);
+
+  /// AI Team merge section: under a refused merge, what happened and the next step.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was merged. Fix what the host says, then try again, or review the changes.'**
+  String get teamMergeFailedNext;
+
+  /// AI Team start-a-task sheet: under the planner's refusal, says the typed task is kept so the person can edit and resend it.
+  ///
+  /// In en, this message translates to:
+  /// **'Your task is still here. Edit it and send it again.'**
+  String get teamStartRunRefusedKept;
 }
 
 class _AppLocalizationsDelegate

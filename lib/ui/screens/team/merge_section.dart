@@ -5,21 +5,26 @@
 /// implements [OrchestrationMergeGateway]).
 ///
 /// ```
-/// READY TO MERGE · merge request gc-mr-14
-/// ✓ 18/18 work items   ✓ Tests   ✓ Build   ✓ Review   ✓ No conflicts
+/// Ready to merge
+/// merge request gc-mr-14
+/// ✓ Work items · 18/18   ✓ Tests   ✓ Build   ✓ Review   ✓ No conflicts
 /// ✓ Acceptance criteria
 /// 14 files · +841 / −203
-/// [ Review changes ]   [ Approve request ]   [ Merge ]
+/// [ Approve request ]  (then)  [ Merge ]
+/// Review changes
 /// ```
 ///
-/// The readiness lines come from the front's `/merge-readiness`; any
-/// missing line disables Merge and says why. **Approve request** needs
-/// one confirmation. **Merge** is two-step: the first tap arms the button
-/// ("Confirm merge"), the second opens the destructive sheet "Merge into
-/// main? This cannot be undone from the phone". The host's boundaries
-/// ("Never merge without approval") are shown when they block, never
-/// silently applied. Force-merge, branch reset and worktree deletion do
-/// not exist here, on the host front, or anywhere on the phone.
+/// The readiness lines come from the front's `/merge-readiness` as one
+/// [KitChecklist]; any missing line disables Merge and says why. The next
+/// step is the one primary: **Approve request** while the request waits
+/// for an approval (approving is reversible on the host, so it goes at
+/// once and its receipt shows under the buttons), then **Merge**, which
+/// asks once ([showKitConfirm], destructive) naming the task, the files
+/// and the branch. A refused merge says why with its next step (Try again,
+/// Review changes). The host's boundaries ("Never merge without approval")
+/// are shown when they block, never silently applied. Force-merge, branch
+/// reset and worktree deletion do not exist here, on the host front, or
+/// anywhere on the phone.
 library;
 
 import 'dart:async';
@@ -31,15 +36,11 @@ import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
-import '../../widgets/confirm_sheet.dart';
 import '../../widgets/team_vocabulary.dart';
 import 'work_sheet.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
-
-/// How long the Merge button stays armed after the first tap.
-const teamMergeArmWindow = Duration(seconds: 8);
 
 /// Readiness line keys the section knows a label for, in the §8a order.
 const teamMergeKnownLines = [
@@ -124,8 +125,6 @@ class TeamMergeSection extends StatefulWidget {
 }
 
 class _TeamMergeSectionState extends State<TeamMergeSection> {
-  bool _armed = false;
-  Timer? _disarm;
   bool _requested = false;
 
   OrchestrationController get _controller => widget.controller;
@@ -137,12 +136,6 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
     if (old.run.id != widget.run.id || old.controller != widget.controller) {
       _requested = false;
     }
-  }
-
-  @override
-  void dispose() {
-    _disarm?.cancel();
-    super.dispose();
   }
 
   /// Asks the controller for the readiness once the frame is built (the
@@ -160,35 +153,30 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
     });
   }
 
-  void _arm() {
-    _disarm?.cancel();
-    setState(() => _armed = true);
-    _disarm = Timer(teamMergeArmWindow, () {
-      if (mounted) setState(() => _armed = false);
-    });
-  }
+  // revamp: remove (slice-P6.4) for team-merge-approve-sheet: approving is
+  // reversible on the host, so it goes at once with its receipt.
+  Future<void> _approve(MergeRequestInfo request) =>
+      _controller.approveMergeRequest(request.id, runId: _run.id);
 
-  void _disarmNow() {
-    _disarm?.cancel();
-    _disarm = null;
-    if (_armed && mounted) setState(() => _armed = false);
-  }
-
+  /// The only merge confirmation: what is merged, into which branch.
   Future<void> _onMergeTap(MergeReadiness readiness) async {
-    if (!_armed) {
-      _arm();
-      return;
-    }
-    _disarmNow();
     final l10n = _copy(context);
     final branch = readiness.targetBranch ?? 'main';
-    final confirmed = await showConfirmSheet(
+    final confirmed = await showKitConfirm(
       context,
+      kind: KitConfirmKind.destructive,
       icon: AppIconography.branch,
       title: l10n.teamUiMergeConfirmTitle(branch),
-      message: l10n.teamUiMergeConfirmMessage,
+      body: l10n.teamUiMergeConfirmMessage,
       confirmLabel: l10n.teamUiMergeConfirmAction(branch),
-      destructive: true,
+      consequences: [
+        l10n.teamMergeConfirmTask(_run.title),
+        l10n.teamUiMergeFiles(
+          readiness.files,
+          readiness.additions,
+          readiness.deletions,
+        ),
+      ],
       sheetKey: const ValueKey('team-merge-confirm-sheet'),
       confirmKey: const ValueKey('team-merge-confirm'),
     );
@@ -196,33 +184,27 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
     await _controller.mergeRun(_run.id);
   }
 
-  Future<void> _onApproveTap(MergeRequestInfo request) async {
-    final l10n = _copy(context);
-    final confirmed = await showConfirmSheet(
-      context,
-      icon: AppIconography.check,
-      title: l10n.teamUiMergeApproveTitle,
-      message: l10n.teamUiMergeApproveMessage,
-      confirmLabel: l10n.teamUiMergeApprove,
-      sheetKey: const ValueKey('team-merge-approve-sheet'),
-      confirmKey: const ValueKey('team-merge-approve-confirm'),
-    );
-    if (!confirmed || !mounted) return;
-    await _controller.approveMergeRequest(request.id, runId: _run.id);
-  }
-
   void _openChanges(MergeReadiness? readiness) {
+    final l10n = _copy(context);
     final controller = _controller;
     final runId = _run.id;
     final now = widget.now;
     final parent = context;
     unawaited(
-      showModalBottomSheet<void>(
-        context: context,
-        showDragHandle: true,
-        useSafeArea: true,
-        isScrollControlled: true,
-        builder: (sheetContext) => _ChangesSheet(
+      showKitSheet<void>(
+        context,
+        title: l10n.teamUiMergeChangesTitle,
+        subtitle: readiness == null
+            ? null
+            : l10n.teamUiMergeFiles(
+                readiness.files,
+                readiness.additions,
+                readiness.deletions,
+              ),
+        icon: AppIconography.file,
+        height: KitSheetHeight.half,
+        sheetKey: const ValueKey('team-merge-changes'),
+        body: (sheetContext) => _Changes(
           controller: controller,
           runId: runId,
           readiness: readiness,
@@ -244,8 +226,7 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
       }
       _request();
       final l10n = _copy(context);
-      final theme = Theme.of(context);
-      final muted = AppTheme.mutedOf(theme);
+      final tokens = KitTokens.of(context);
       final readiness = _controller.mergeReadinessFor(_run.id);
       final error = _controller.mergeReadinessError(_run.id);
       final loading = _controller.mergeReadinessLoading(_run.id);
@@ -265,10 +246,7 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
           mergeRecord?.status == MutationStatus.confirmed;
       final tone = merged || readiness?.ready == true
           ? AppStatusTone.ok
-          : readiness == null
-          ? AppStatusTone.neutral
-          : AppStatusTone.attention;
-      final color = AppTheme.statusColor(theme, tone);
+          : AppStatusTone.neutral;
       final stale = _controller.isStale;
       final mergeBusy = mergeRecord != null && mergeRecord.isSent;
       final approveBusy = approveRecord != null && approveRecord.isSent;
@@ -288,21 +266,53 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
           : readiness?.ready == true
           ? l10n.teamUiMergeTitleReady
           : l10n.teamUiMergeTitleNotReady;
+      final requestLabel = request == null
+          ? null
+          : l10n.teamUiMergeRequest(request.id);
+
+      final merge = KitAction(
+        key: const ValueKey('team-merge-merge'),
+        label: l10n.teamUiMergeMerge,
+        icon: AppIconography.branch,
+        working: mergeBusy,
+        onPressed: canMerge ? () => unawaited(_onMergeTap(readiness)) : null,
+      );
+      final approve = request == null
+          ? null
+          : KitAction(
+              key: const ValueKey('team-merge-approve'),
+              label: l10n.teamUiMergeApprove,
+              icon: AppIconography.check,
+              working: approveBusy,
+              onPressed: canApprove ? () => unawaited(_approve(request)) : null,
+            );
+      // The next step is the one primary: Approve while the request waits
+      // for it, then Merge.
+      final approveFirst = approve != null && !approved && !merged;
 
       return Padding(
-        padding: const EdgeInsets.only(top: 20),
+        padding: EdgeInsetsDirectional.only(top: tokens.space5),
         child: KitPanel(
           key: const ValueKey('team-merge-section'),
           tone: tone,
+          icon: AppIconography.branch,
+          title: title,
+          titleKey: const ValueKey('team-merge-title'),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _Header(title: title, requestId: request?.id, color: color),
-              const SizedBox(height: 8),
+              if (requestLabel != null)
+                KitText(
+                  requestLabel,
+                  key: const ValueKey('team-merge-request'),
+                  role: KitTextRole.secondary,
+                  tone: KitTextTone.secondary,
+                ),
+              SizedBox(height: tokens.space2),
               if (readiness != null) ...[
                 _Lines(readiness: readiness),
-                const SizedBox(height: 8),
-                Text(
+                SizedBox(height: tokens.space2),
+                KitText(
                   merged && readiness.alreadyMerged
                       ? l10n.teamUiMergeAlready(readiness.targetBranch ?? '')
                       : l10n.teamUiMergeFiles(
@@ -311,44 +321,32 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
                           readiness.deletions,
                         ),
                   key: const ValueKey('team-merge-files'),
-                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  role: KitTextRole.secondary,
+                  tone: KitTextTone.secondary,
                 ),
-              ] else if (loading) ...[
-                Text(
+              ] else if (loading)
+                KitText(
                   l10n.teamUiMergeLoading,
                   key: const ValueKey('team-merge-loading'),
-                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                ),
-              ] else ...[
-                Text(
+                  role: KitTextRole.secondary,
+                  tone: KitTextTone.secondary,
+                )
+              else
+                KitText(
                   error == null
                       ? l10n.teamUiMergeNoRoles
                       : l10n.teamUiMergeUnavailable('$error'),
                   key: const ValueKey('team-merge-unavailable'),
-                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  role: KitTextRole.secondary,
+                  tone: KitTextTone.secondary,
                 ),
-              ],
-              const SizedBox(height: 16),
-              // One block (§2): Merge is the primary (armed two-step),
-              // Approve the secondary, Review changes the tertiary. A
-              // button that is off has its reason in the notes under it.
+              SizedBox(height: tokens.space4),
+              // One block (§2): the next step is the primary, the other
+              // the secondary, Review changes the tertiary. A button that
+              // is off has its reason in the notes under it.
               KitActionBlock(
-                primary: KitAction(
-                  key: const ValueKey('team-merge-merge'),
-                  label: _armed
-                      ? l10n.teamUiMergeConfirmStep
-                      : l10n.teamUiMergeMerge,
-                  onPressed: canMerge
-                      ? () => unawaited(_onMergeTap(readiness))
-                      : null,
-                ),
-                secondary: KitAction(
-                  key: const ValueKey('team-merge-approve'),
-                  label: l10n.teamUiMergeApprove,
-                  onPressed: canApprove
-                      ? () => unawaited(_onApproveTap(request))
-                      : null,
-                ),
+                primary: approveFirst ? approve : merge,
+                secondary: approveFirst ? merge : null,
                 tertiary: [
                   KitAction(
                     key: const ValueKey('team-merge-review'),
@@ -359,12 +357,10 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
               ),
               ..._notes(
                 l10n,
-                theme,
+                tokens,
                 readiness: readiness,
                 request: request,
-                approved: approved,
                 merged: merged,
-                canMerge: canMerge,
                 mergeRecord: mergeRecord,
                 approveRecord: approveRecord,
               ),
@@ -376,34 +372,27 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
   );
 
   /// The helper lines under the buttons: why Merge is off, the boundary
-  /// that blocks, the armed hint, the approval, and the receipts.
+  /// that blocks, the approval, and the receipts; a refused merge is a
+  /// notice with its next step.
   List<Widget> _notes(
     AppLocalizations l10n,
-    ThemeData theme, {
+    KitTokens tokens, {
     required MergeReadiness? readiness,
     required MergeRequestInfo? request,
-    required bool approved,
     required bool merged,
-    required bool canMerge,
     required MutationRecord? mergeRecord,
     required MutationRecord? approveRecord,
   }) {
-    final muted = AppTheme.mutedOf(theme);
-    final attention = AppTheme.statusColor(theme, AppStatusTone.attention);
-    final failure = AppTheme.statusColor(theme, AppStatusTone.failure);
-    final ok = AppTheme.statusColor(theme, AppStatusTone.ok);
     final notes = <Widget>[];
-    void note(String text, {Key? key, Color? color}) {
+    void note(String text, {Key? key, KitTextTone? tone}) {
       notes.add(
         Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Text(
+          padding: EdgeInsetsDirectional.only(top: tokens.space2),
+          child: KitText(
             text,
             key: key,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: color ?? muted,
-              height: 1.35,
-            ),
+            role: KitTextRole.secondary,
+            tone: tone ?? KitTextTone.secondary,
           ),
         ),
       );
@@ -419,29 +408,22 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
             missing.pending ? l10n.teamUiMergePending : (missing.detail ?? ''),
           ),
           key: const ValueKey('team-merge-disabled-reason'),
-          color: attention,
+          tone: missing.pending ? KitTextTone.secondary : KitTextTone.danger,
         );
       } else if (blocking != null) {
         note(
           l10n.teamUiMergeBoundary(blocking.text),
           key: const ValueKey('team-merge-boundary'),
-          color: attention,
+          tone: KitTextTone.danger,
         );
       }
-    }
-    if (_armed && canMerge) {
-      note(
-        l10n.teamUiMergeArmedHint,
-        key: const ValueKey('team-merge-armed-hint'),
-        color: attention,
-      );
     }
     final approvedBy = request?.approvedBy;
     if (approvedBy != null && approvedBy.isNotEmpty) {
       note(
         l10n.teamUiMergeApprovedBy(approvedBy),
         key: const ValueKey('team-merge-approved-by'),
-        color: ok,
+        tone: KitTextTone.success,
       );
     }
     if (approveRecord != null) {
@@ -456,35 +438,57 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
       note(
         text,
         key: const ValueKey('team-merge-approve-receipt'),
-        color: approveRecord.status == MutationStatus.rejected
-            ? failure
-            : approveRecord.status == MutationStatus.confirmed
-            ? ok
-            : muted,
+        tone: switch (approveRecord.status) {
+          MutationStatus.rejected => KitTextTone.danger,
+          MutationStatus.confirmed => KitTextTone.success,
+          _ => KitTextTone.secondary,
+        },
       );
     }
     if (mergeRecord != null) {
-      final boundary = _boundaryOf(mergeRecord);
+      if (mergeRecord.status == MutationStatus.rejected) {
+        // Refused: why, and what to do next (the section stays; Merge is
+        // on again once the host allows it).
+        final boundary = _boundaryOf(mergeRecord);
+        notes.add(
+          Padding(
+            padding: EdgeInsetsDirectional.only(top: tokens.space3),
+            child: KitNotice(
+              key: const ValueKey('team-merge-receipt'),
+              tone: AppStatusTone.failure,
+              icon: AppIconography.error,
+              title: boundary != null
+                  ? l10n.teamUiMergeBoundary(boundary)
+                  : l10n.teamUiMergeRefused(mergeRecord.receipt?.message ?? ''),
+              message: l10n.teamMergeFailedNext,
+              actions: [
+                if (readiness != null && readiness.canMerge)
+                  KitAction(
+                    key: const ValueKey('team-merge-retry'),
+                    label: l10n.teamUiCardRetry,
+                    icon: AppIcons.retry,
+                    onPressed: () => unawaited(_onMergeTap(readiness)),
+                  ),
+              ],
+            ),
+          ),
+        );
+        return notes;
+      }
       final text = switch (mergeRecord.status) {
-        MutationStatus.sent => l10n.teamUiMergeSent,
         MutationStatus.confirmed => l10n.teamUiMergeMerged(
           _branchOf(mergeRecord) ?? readiness?.targetBranch ?? '',
           _shortCommit(_commitOf(mergeRecord) ?? readiness?.mergeCommit),
         ),
-        MutationStatus.rejected =>
-          boundary != null
-              ? l10n.teamUiMergeBoundary(boundary)
-              : l10n.teamUiMergeRefused(mergeRecord.receipt?.message ?? ''),
         MutationStatus.unconfirmed => l10n.teamUiReceiptUnconfirmed,
+        _ => l10n.teamUiMergeSent,
       };
       note(
         text,
         key: const ValueKey('team-merge-receipt'),
-        color: mergeRecord.status == MutationStatus.rejected
-            ? failure
-            : mergeRecord.status == MutationStatus.confirmed
-            ? ok
-            : muted,
+        tone: mergeRecord.status == MutationStatus.confirmed
+            ? KitTextTone.success
+            : KitTextTone.secondary,
       );
     } else if (merged && readiness?.mergeCommit != null) {
       note(
@@ -493,7 +497,7 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
           _shortCommit(readiness?.mergeCommit),
         ),
         key: const ValueKey('team-merge-receipt'),
-        color: ok,
+        tone: KitTextTone.success,
       );
     }
     return notes;
@@ -540,57 +544,8 @@ String _shortCommit(String? sha) {
   return sha.length > 7 ? sha.substring(0, 7) : sha;
 }
 
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.title,
-    required this.requestId,
-    required this.color,
-  });
-
-  final String title;
-  final String? requestId;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    final id = requestId;
-    final request = id == null ? null : l10n.teamUiMergeRequest(id);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 1),
-          child: Icon(AppIconography.branch, size: 18, color: color),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 6,
-            children: [
-              Text(
-                title,
-                key: const ValueKey('team-merge-title'),
-                style: theme.textTheme.labelLarge?.copyWith(color: color),
-              ),
-              if (request != null)
-                Text(
-                  '· $request',
-                  key: const ValueKey('team-merge-request'),
-                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// The readiness lines as ✓ / ✗ chips; a failing line carries its detail.
+/// The readiness lines as one checklist: done, still running on the host,
+/// or failed with its detail.
 class _Lines extends StatelessWidget {
   const _Lines({required this.readiness});
 
@@ -599,70 +554,25 @@ class _Lines extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    return Wrap(
-      key: const ValueKey('team-merge-lines'),
-      spacing: 14,
-      runSpacing: 6,
-      children: [
+    return KitChecklist(
+      checklistKey: const ValueKey('team-merge-lines'),
+      steps: [
         for (final line in readiness.lines)
-          Builder(
-            builder: (context) {
-              final tone = line.ok
-                  ? AppStatusTone.ok
-                  : line.pending
-                  ? AppStatusTone.progress
-                  : AppStatusTone.failure;
-              final color = AppTheme.statusColor(theme, tone);
-              final label = teamMergeLineLabel(l10n, line.key);
-              final detail = line.pending
-                  ? l10n.teamUiMergePending
-                  : line.detail;
-              final showDetail =
-                  detail != null &&
-                  detail.isNotEmpty &&
-                  (!line.ok || line.key == 'work');
-              return Row(
-                key: ValueKey('team-merge-line-${line.key}'),
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Icon(
-                      line.ok
-                          ? AppIconography.check
-                          : line.pending
-                          ? AppIconography.sync
-                          : AppIconography.close,
-                      size: 16,
-                      color: color,
-                      semanticLabel: line.ok ? '✓' : '✗',
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text.rich(
-                      TextSpan(
-                        text: label,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: line.ok ? null : color,
-                        ),
-                        children: [
-                          if (showDetail)
-                            TextSpan(
-                              text: ' · $detail',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: line.ok ? muted : color,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              );
+          KitStep(
+            key: ValueKey('team-merge-line-${line.key}'),
+            title: teamMergeLineLabel(l10n, line.key),
+            state: line.ok
+                ? KitMarkState.done
+                : line.pending
+                ? KitMarkState.working
+                : KitMarkState.failed,
+            supporting: switch (line.pending
+                ? l10n.teamUiMergePending
+                : line.detail) {
+              final detail?
+                  when detail.isNotEmpty && (!line.ok || line.key == 'work') =>
+                detail,
+              _ => null,
             },
           ),
       ],
@@ -672,8 +582,8 @@ class _Lines extends StatelessWidget {
 
 /// Review changes: the changed files with their +/− counts (no full
 /// diff on the phone) and the run's work items, each opening its sheet.
-class _ChangesSheet extends StatelessWidget {
-  const _ChangesSheet({
+class _Changes extends StatelessWidget {
+  const _Changes({
     required this.controller,
     required this.runId,
     required this.readiness,
@@ -688,121 +598,89 @@ class _ChangesSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
+    final tokens = KitTokens.of(context);
     final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    final ok = AppTheme.statusColor(theme, AppStatusTone.ok);
-    final failure = AppTheme.statusColor(theme, AppStatusTone.failure);
     final changes = readiness?.changes ?? const <MergeChange>[];
     final work = [
       for (final item in controller.snapshot.work)
         if (item.runId == runId) item,
     ]..sort((a, b) => teamWorkStateRank(a.state) - teamWorkStateRank(b.state));
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: .6,
-      minChildSize: .3,
-      maxChildSize: .95,
-      builder: (context, scroll) => ListView(
-        key: const ValueKey('team-merge-changes'),
-        controller: scroll,
-        // 16 dp rails (§1); the work rows carry their own.
-        padding: EdgeInsets.fromLTRB(
-          0,
-          4,
-          0,
-          16 + MediaQuery.paddingOf(context).bottom,
-        ),
-        children: [
-          for (final child in [
-            Text(
-              l10n.teamUiMergeChangesTitle,
-              style: theme.textTheme.titleLarge,
-            ),
-            if (readiness != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                l10n.teamUiMergeFiles(
-                  readiness!.files,
-                  readiness!.additions,
-                  readiness!.deletions,
-                ),
-                style: theme.textTheme.bodySmall?.copyWith(color: muted),
-              ),
-            ],
-            const SizedBox(height: 12),
-            if (changes.isEmpty)
-              Text(
-                l10n.teamUiMergeChangesEmpty,
-                key: const ValueKey('team-merge-changes-empty'),
-                style: theme.textTheme.bodyMedium?.copyWith(color: muted),
-              )
-            else
-              for (final change in changes)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(AppIconography.file, size: 16, color: muted),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          change.path,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontFamily: AppTheme.monoFamily,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '+${change.additions}',
-                              style: TextStyle(color: ok),
-                            ),
-                            const TextSpan(text: ' / '),
-                            TextSpan(
-                              text: '−${change.deletions}',
-                              style: TextStyle(color: failure),
-                            ),
-                          ],
-                        ),
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-          ])
+    final added = KitText.styleOf(
+      context,
+      KitTextRole.secondary,
+      tone: KitTextTone.success,
+    );
+    final removed = KitText.styleOf(
+      context,
+      KitTextRole.secondary,
+      tone: KitTextTone.danger,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (changes.isEmpty)
+          KitText(
+            l10n.teamUiMergeChangesEmpty,
+            key: const ValueKey('team-merge-changes-empty'),
+            tone: KitTextTone.secondary,
+          )
+        else
+          for (final change in changes)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: child,
-            ),
-          if (work.isNotEmpty) ...[
-            SectionLabel(l10n.teamUiMergeChangesWork),
-            for (final item in work)
-              KitRow(
-                key: ValueKey('team-merge-work-${item.id}'),
-                leading: KitRow.icon(
-                  context,
-                  teamWorkGlyph(item.state).$1,
-                  color: AppTheme.statusColor(
-                    theme,
-                    teamWorkGlyph(item.state).$2,
+              padding: EdgeInsetsDirectional.symmetric(vertical: tokens.space1),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const KitIcon(
+                    AppIconography.file,
+                    size: KitIconSize.small,
+                    tone: KitTextTone.secondary,
                   ),
-                ),
-                title: item.title,
-                supporting: TextSpan(text: teamWorkStateWord(l10n, item.state)),
-                trailing: Icon(
-                  AppIconography.chevronRight,
-                  size: 18,
-                  color: muted,
-                ),
-                onTap: () => onOpenWork(item.id),
+                  SizedBox(width: tokens.space2),
+                  Expanded(child: KitText.mono(change.path)),
+                  SizedBox(width: tokens.space2),
+                  KitText.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: '+${change.additions}', style: added),
+                        const TextSpan(text: ' / '),
+                        TextSpan(text: '−${change.deletions}', style: removed),
+                      ],
+                    ),
+                    role: KitTextRole.secondary,
+                    tabular: true,
+                  ),
+                ],
               ),
-          ],
+            ),
+        if (work.isNotEmpty) ...[
+          SizedBox(height: tokens.sectionGap),
+          KitRowGroup(
+            label: l10n.teamUiMergeChangesWork,
+            margin: EdgeInsets.zero,
+            children: [
+              for (final item in work)
+                KitRow(
+                  key: ValueKey('team-merge-work-${item.id}'),
+                  leading: KitRow.icon(
+                    context,
+                    teamWorkGlyph(item.state).$1,
+                    color: AppTheme.statusColor(
+                      theme,
+                      teamWorkGlyph(item.state).$2,
+                    ),
+                  ),
+                  title: item.title,
+                  supporting: TextSpan(
+                    text: teamWorkStateWord(l10n, item.state),
+                  ),
+                  trailing: const KitChevron(),
+                  onTap: () => onOpenWork(item.id),
+                ),
+            ],
+          ),
         ],
-      ),
+      ],
     );
   }
 }

@@ -11,6 +11,7 @@ import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/team_board.dart';
+import 'package:opencode_mobile/ui/kit/kit_board_lane.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 
 import 'support/team_board_fixture.dart';
@@ -193,7 +194,7 @@ void main() {
       ]) {
         expect(
           find.descendant(
-            of: find.byKey(ValueKey('team-board-tab-count-${column.name}')),
+            of: find.byKey(ValueKey('team-board-tab-${column.name}')),
             matching: find.text('$count'),
           ),
           findsOneWidget,
@@ -201,10 +202,8 @@ void main() {
         );
       }
       // The Working tab says something there needs the person.
-      expect(
-        find.byKey(const ValueKey('team-board-tab-needs-you-working')),
-        findsOneWidget,
-      );
+      final lanes = tester.widget<KitBoardLanes>(find.byType(KitBoardLanes));
+      expect([for (final c in lanes.columns) c.needsYou], [0, 0, 1, 0, 0]);
       expect(_card('bd-schema'), findsOneWidget);
       expect(find.text('Needs you'), findsWidgets);
       for (final title in boardBookkeepingTitles) {
@@ -257,13 +256,16 @@ void main() {
       // Shown in Ready, saying it is on its way, until the host shows it.
       expect(
         find.descendant(
-          of: find.byKey(const ValueKey('team-board-tab-count-ready')),
+          of: find.byKey(const ValueKey('team-board-tab-ready')),
           matching: find.text('3'),
         ),
         findsOneWidget,
       );
       await _showColumn(tester, TeamBoardColumn.ready);
-      expect(find.text('Moving to Ready…'), findsOneWidget);
+      expect(
+        find.textContaining('Moving to Ready', findRichText: true),
+        findsWidgets,
+      );
       await _unmount(tester);
     });
 
@@ -336,7 +338,7 @@ void main() {
       expect(find.textContaining('Moving to'), findsNothing);
       expect(
         find.descendant(
-          of: find.byKey(const ValueKey('team-board-tab-count-ready')),
+          of: find.byKey(const ValueKey('team-board-tab-ready')),
           matching: find.text('2'),
         ),
         findsOneWidget,
@@ -435,10 +437,18 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(find.byKey(const ValueKey('team-home-board')));
+    // On a phone the top bar shows one action; the board waits in its
+    // overflow (KitTopBar compact).
+    await tester.tap(find.byKey(const ValueKey('team-home-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text(
+        lookupAppLocalizations(const Locale('en')).teamBoardOpenTooltip,
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('team-board')), findsOneWidget);
-    await tester.pageBack();
+    tester.state<NavigatorState>(find.byType(Navigator)).pop();
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('team-home-board-row')),
