@@ -19,6 +19,7 @@ import '../screens/agent_account_screen.dart';
 import '../screens/app_diagnostics_screen.dart';
 import '../screens/capabilities_screen.dart';
 import '../screens/connection_help_screen.dart';
+import '../screens/demo_screen.dart';
 import '../screens/external_agents_screen.dart';
 import '../screens/global_sessions_screen.dart';
 import '../screens/guide_screen.dart';
@@ -310,11 +311,11 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       title: l10n.activitySavedServers,
       // The screen's own heading is the product name over "Servers".
       keywords:
-          '${l10n.settingsHubSearchSavedServersAliases} ${l10n.attentionTitle} '
+          '${l10n.settingsHubSearchSavedServersAliases} '
           '${l10n.openCodeConnectionLabel} — ${l10n.e7SetupServers}',
-      // The servers screen also holds the scanner, the editor and the
-      // all-servers attention sheet; this row is the one door to them.
-      pages: const ['servers', 'attention-overview'],
+      // The servers screen also holds the scanner and the editor; this row
+      // is the one door to them. Each server row says what it needs.
+      pages: const ['servers'],
       open: (context, _) => Navigator.of(context).pushNamed('/servers'),
     ),
     SearchEntry(
@@ -478,9 +479,11 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       keywords:
           '${l10n.settingsHubSearchModelsAliases} '
           '${l10n.e7LibraryModelsAndAgents}',
-      pages: const ['catalog'],
+      // The model picker is the catalogue: the same list, where choosing
+      // one is what a person came for.
+      pages: const ['model-picker-sheet'],
       gate: _catalog,
-      open: _screen((scope) => CatalogScreen(controller: scope.controller)),
+      open: (context, _) async => showModelPicker(context),
     ),
     SearchEntry(
       id: 'settings-providers',
@@ -621,6 +624,18 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       pages: const ['guide'],
       open: _screen((_) => GuideScreen(embedded: false)),
     ),
+    // The demo is the first-run welcome's "Just show me"; once a server is
+    // saved, Help is where it stays reachable.
+    SearchEntry(
+      id: 'settings-try-demo',
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubHelpRow,
+      icon: AppIconography.play,
+      title: l10n.settingsTryDemo,
+      keywords: '${l10n.demoScreenTitle} ${l10n.demoScreenSimulated}',
+      pages: const ['demo'],
+      open: _screen((_) => const DemoScreen()),
+    ),
     SearchEntry(
       id: 'settings-server-capabilities',
       kind: SearchEntryKind.insideSettings,
@@ -700,7 +715,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-privacy-data-use',
       kind: SearchEntryKind.insideSettings,
-      parent: l10n.settingsHubPrivacyRow,
+      // About's first tab, not Settings › Privacy.
+      parent: l10n.aboutTitle,
       icon: Icons.privacy_tip_outlined,
       title: l10n.e7SettingsUi92,
       keywords:
@@ -1044,9 +1060,11 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       id: 'inside-servers-monitor',
       kind: SearchEntryKind.insideSettings,
       icon: AppIconography.notificationImportant,
-      title: l10n.monitorTitle,
+      title: l10n.monitorBackgroundChecks,
+      // A row of the Servers page (the hub's "Saved servers"), after the
+      // server list.
       parent: l10n.activitySavedServers,
-      keywords: l10n.discoverMonitorAliases,
+      keywords: '${l10n.discoverMonitorAliases} ${l10n.monitorTitle}',
       pages: const ['profile-monitor'],
       gate: (scope) =>
           !scope.controller.isIsolated &&
@@ -1192,12 +1210,31 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
         (scope) => GlobalSessionsScreen(controller: scope.controller),
       ),
     ),
+    // Archived conversations are a filter of All conversations (P3.12);
+    // this opens it with that filter on.
+    SearchEntry(
+      id: 'archived-conversations',
+      kind: SearchEntryKind.destination,
+      icon: AppIconography.archive,
+      title: l10n.searchArchivedConversations,
+      parent: l10n.globalSessionsTitle,
+      keywords: l10n.globalSessionsArchivedShort,
+      pages: const ['global-sessions'],
+      gate: (scope) =>
+          scope.controller.isConnected &&
+          scope.capabilities.globalSessionSearch,
+      open: _screen(
+        (scope) =>
+            GlobalSessionsScreen(controller: scope.controller, archived: true),
+      ),
+    ),
     SearchEntry(
       id: 'ai-team',
       kind: SearchEntryKind.destination,
       icon: AppIconography.agent,
       title: l10n.teamUiHomeTitle,
-      parent: l10n.shellTabWork,
+      // Settings › AI Team, no longer a Work section.
+      parent: l10n.librarySettingsTitle,
       keywords: l10n.discoverTeamAliases,
       pages: const [
         'team-home',

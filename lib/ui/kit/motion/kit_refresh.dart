@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show CustomSemanticsAction;
+import 'package:flutter/services.dart';
 
 import '../kit_illustration.dart';
 import '../kit_motion.dart';
@@ -20,6 +22,10 @@ import '../scenes/portal_scene.dart';
 ///
 /// Reduced motion: the disc still follows the pull (it is the person's own
 /// finger) but nothing loops while the refresh runs, and it leaves at once.
+///
+/// Pulling needs a finger. A screen reader offers the same refresh as a
+/// "Refresh" action on the list, and a keyboard as Ctrl+R (Cmd+R) or F5
+/// while focus is inside it; both run [onRefresh] with the same drawing.
 class KitRefresh extends StatefulWidget {
   const KitRefresh({
     super.key,
@@ -62,6 +68,13 @@ class _KitRefreshState extends State<KitRefresh> with TickerProviderStateMixin {
   );
   _Phase _phase = _Phase.idle;
   double _dragOffset = 0;
+  final _indicator = GlobalKey<RefreshIndicatorState>();
+
+  /// The refresh a pull would start, for a keyboard or a screen reader.
+  void _refreshNow() {
+    if (_phase == _Phase.refreshing) return;
+    _indicator.currentState?.show();
+  }
 
   // Flutter's RefreshIndicator arms at two thirds of a quarter of the
   // viewport; the drawing completes there too.
@@ -158,11 +171,15 @@ class _KitRefreshState extends State<KitRefresh> with TickerProviderStateMixin {
         ),
       ),
     );
-    return NotificationListener<ScrollNotification>(
+    final label = MaterialLocalizations.of(
+      context,
+    ).refreshIndicatorSemanticLabel;
+    final list = NotificationListener<ScrollNotification>(
       onNotification: _onScroll,
       child: Stack(
         children: [
           RefreshIndicator.noSpinner(
+            key: _indicator,
             onRefresh: widget.onRefresh,
             onStatusChange: _onStatus,
             notificationPredicate: widget.notificationPredicate,
@@ -178,16 +195,26 @@ class _KitRefreshState extends State<KitRefresh> with TickerProviderStateMixin {
                   widget.displacement +
                   KitRefresh.discSize * 2,
               child: refreshing
-                  ? Semantics(
-                      liveRegion: true,
-                      label: MaterialLocalizations.of(
-                        context,
-                      ).refreshIndicatorSemanticLabel,
-                      child: indicator,
-                    )
+                  ? Semantics(liveRegion: true, label: label, child: indicator)
                   : indicator,
             ),
         ],
+      ),
+    );
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyR, control: true):
+            _refreshNow,
+        const SingleActivator(LogicalKeyboardKey.keyR, meta: true): _refreshNow,
+        const SingleActivator(LogicalKeyboardKey.f5): _refreshNow,
+      },
+      child: Semantics(
+        container: true,
+        explicitChildNodes: true,
+        customSemanticsActions: {
+          CustomSemanticsAction(label: label): _refreshNow,
+        },
+        child: list,
       ),
     );
   }

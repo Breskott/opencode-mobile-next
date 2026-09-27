@@ -125,8 +125,9 @@ class QuotaMonitorSection extends StatelessWidget {
   }
 }
 
-/// A monitored source's own controls: the percentage used that alerts, and
-/// Stop monitoring, named with the provider and server it acts on. Used in a
+/// A monitored source's own controls: the percentage used that alerts,
+/// Check now and Stop monitoring, the last two named with the provider and
+/// server they act on. Used in a
 /// source's panel and, for the source the Remaining page shows, inside that
 /// account's block ([grouped]: the rows in their own panel, with icons).
 class QuotaMonitorControls extends StatefulWidget {
@@ -145,6 +146,18 @@ class QuotaMonitorControls extends StatefulWidget {
 
 class _QuotaMonitorControlsState extends State<QuotaMonitorControls> {
   bool saving = false;
+
+  /// Check now is reading this source; the row says so until it returns.
+  bool checking = false;
+
+  Future<void> _checkNow() async {
+    setState(() => checking = true);
+    try {
+      await widget.controller.quotaMonitor.refreshSource(widget.target);
+    } finally {
+      if (mounted) setState(() => checking = false);
+    }
+  }
 
   /// The last change failed to save: shown in place, under the rows, until
   /// the next change succeeds (never a passing toast, G1).
@@ -199,6 +212,7 @@ class _QuotaMonitorControlsState extends State<QuotaMonitorControls> {
       among: widget.controller.store.profiles,
     );
     final id = '${target.profileID}-${target.provider.name}';
+    final provider = quotaProviderLabel(l10n, target.provider);
     final rows = <Widget>[
       Builder(
         builder: (rowContext) => KitRow(
@@ -230,16 +244,30 @@ class _QuotaMonitorControlsState extends State<QuotaMonitorControls> {
                 ),
         ),
       ),
+      // Reads this one source again now, instead of waiting for the next
+      // cycle, which checks at most three sources at a time.
+      KitRow(
+        key: ValueKey('quota-check-now-$id'),
+        padding: padding,
+        leading: grouped ? KitRow.icon(context, AppIconography.retry) : null,
+        title: l10n.quotaMonitorCheckNow(provider, server),
+        titleMaxLines: 2,
+        supporting: checking ? TextSpan(text: l10n.quotaMonitorChecking) : null,
+        enabled: !saving && !checking,
+        disabledReason: checking
+            ? l10n.quotaMonitorChecking
+            : saving
+            ? l10n.quotaMonitorSaving
+            : null,
+        onTap: saving || checking ? null : _checkNow,
+      ),
       KitRow(
         key: ValueKey('quota-stop-monitoring-$id'),
         padding: padding,
         leading: grouped
             ? KitRow.icon(context, AppIconography.stopCircle)
             : null,
-        title: l10n.quotaMonitorDisable(
-          quotaProviderLabel(l10n, target.provider),
-          server,
-        ),
+        title: l10n.quotaMonitorDisable(provider, server),
         titleMaxLines: 2,
         enabled: !saving,
         disabledReason: saving ? l10n.quotaMonitorSaving : null,

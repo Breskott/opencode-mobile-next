@@ -18,10 +18,8 @@ import '../widgets/provider_logo.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/product_states.dart';
 import '../widgets/run_command_dialog.dart';
-import '../widgets/pickers.dart';
 import 'mcp_setup_screen.dart';
 
-part 'library/catalog_screen.dart';
 part 'library/integrations_screen.dart';
 part 'library/integration_tiles.dart';
 part 'library/credential_sheet.dart';

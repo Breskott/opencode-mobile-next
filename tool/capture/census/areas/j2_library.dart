@@ -330,18 +330,6 @@ Future<CaptureController> _libraryController(CensusKit kit) async {
   return kit.connected(api: _LibraryApi(), repository: _LibraryRepository());
 }
 
-Future<CaptureController> _catalogController(CensusKit kit) async {
-  final controller = await kit.connected();
-  controller.catalog = sampleCatalog();
-  final model = controller.catalog!.models.first;
-  controller.selectedModel = ModelRef(
-    providerID: model.providerID,
-    modelID: model.id,
-  );
-  controller.selectedAgent = 'build';
-  return controller;
-}
-
 Future<CaptureController> _integrationsHost(
   CensusKit kit, {
   IntegrationsMode mode = IntegrationsMode.all,
@@ -365,16 +353,6 @@ Future<CaptureController> _integrationsHost(
 final j2LibraryArea = CensusArea(
   'j2-library',
   shots: [
-    // ---- Catalog -------------------------------------------------------------
-    CensusShot('catalog', (kit) async {
-      final controller = await _catalogController(kit);
-      await kit.pumpApp(
-        CatalogScreen(controller: controller),
-        controller: controller,
-      );
-      kit.expectText('Models and agents');
-    }),
-
     // ---- Commands --------------------------------------------------------
     CensusShot('commands', (kit) async {
       final controller = await _libraryController(kit);

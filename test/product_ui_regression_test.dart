@@ -16,7 +16,7 @@ import 'package:opencode_mobile/state/review_handoff.dart';
 import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
 import 'package:opencode_mobile/ui/kit/kit_code_block.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
-import 'package:opencode_mobile/ui/screens/library_screen.dart';
+import 'package:opencode_mobile/ui/widgets/pickers.dart' show ModelCatalogView;
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/terminal_screen.dart';
@@ -1607,7 +1607,11 @@ void main() {
     controller.catalogDetailed = true;
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      MaterialApp(home: CatalogScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: ModelCatalogView(controller: controller)),
+      ),
     );
     await tester.pumpAndSettle();
     await tester.drag(find.byType(ListView), const Offset(0, -500));

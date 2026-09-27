@@ -138,7 +138,7 @@ class ProfileMonitorScreen extends StatelessWidget {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     return KitScreen(
       topBar: KitTopBar(
-        title: l10n.monitorTitle,
+        title: l10n.monitorBackgroundChecks,
         actions: [
           KitAction(
             label: l10n.monitorRefresh,
@@ -202,18 +202,12 @@ class ProfileMonitorScreen extends StatelessWidget {
   }
 }
 
+/// What other saved servers wait on, as the Inbox's rows: only the rows,
+/// no summary row (owner rule R4: the counts sit on the server switcher and
+/// the Background checks page, not as a settings row among requests).
 class ProfileMonitorInbox extends StatelessWidget {
-  const ProfileMonitorInbox({
-    super.key,
-    required this.controller,
-    this.compact = false,
-  });
+  const ProfileMonitorInbox({super.key, required this.controller});
   final ConnectionController controller;
-
-  /// The Inbox's form: only the rows, no summary row (owner rule R4: the
-  /// counts sit on the server switcher and the monitor screen, not as a
-  /// settings row among requests).
-  final bool compact;
 
   /// What other saved servers wait on, as rows for one list (owner rule
   /// R1): [requests] each lead with the needs-you mark, the server that
@@ -268,37 +262,10 @@ class ProfileMonitorInbox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (controller.isIsolated) return const SizedBox.shrink();
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final tokens = KitTokens.of(context);
     final rows = rowsFor(controller);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (!compact) ...[
-          KitRow(
-            leading: KitRow.icon(context, AppIconography.server),
-            title: l10n.monitorTitle,
-            supporting: TextSpan(
-              text: l10n.monitorPendingSummary(
-                controller.unifiedAttentionCount,
-                controller.unknownAttentionProfileCount,
-              ),
-            ),
-            supportingMaxLines: 2,
-            trailing: const _Chevron(),
-            onTap: () => pushKitPage<void>(
-              context,
-              (_) => ProfileMonitorScreen(controller: controller),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
-            child: KitText(l10n.monitorScope, role: KitTextRole.secondary),
-          ),
-        ],
-        ...rows.requests,
-        ...rows.checkIns,
-      ],
+      children: [...rows.requests, ...rows.checkIns],
     );
   }
 }

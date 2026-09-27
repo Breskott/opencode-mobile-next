@@ -26139,4 +26139,29 @@ class AppLocalizationsAr extends AppLocalizations {
   String termuxStorageCleanBuildCaches(String size) {
     return 'Clean build caches ($size)';
   }
+
+  @override
+  String get monitorBackgroundChecks => 'Background checks';
+
+  @override
+  String monitorRowLastChecked(String when) {
+    return 'Last checked $when';
+  }
+
+  @override
+  String get monitorRowNotChecked => 'Not checked yet';
+
+  @override
+  String get monitorRowOff => 'Off for every server';
+
+  @override
+  String get settingsTryDemo => 'Try the demo';
+
+  @override
+  String quotaMonitorCheckNow(String provider, String server) {
+    return 'Check $provider on $server now';
+  }
+
+  @override
+  String get searchArchivedConversations => 'Archived conversations';
 }

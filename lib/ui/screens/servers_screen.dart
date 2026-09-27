@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/product_repository.dart' show ProductException;
 import '../../api/server_probe.dart';
 import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
+import '../../feedback/bug_report.dart' show openBugReport;
 import '../../domain/profile_monitor.dart' show ProfileAttentionSnapshot;
 import '../../l10n/app_localizations.dart';
 import '../widgets/setup_ui_messages.dart';
@@ -28,6 +29,7 @@ import '../widgets/product_states.dart' show productErrorText;
 import '../widgets/team_host_form.dart';
 import '../widgets/local_agent_server_entry.dart';
 import '../widgets/phone_server_card.dart';
+import '../widgets/relative_time.dart';
 import '../widgets/termux_running_server_entry.dart';
 import '../widgets/safety_confirms.dart';
 import '../../state/local_server_controls.dart';
@@ -35,11 +37,13 @@ import 'agent_choice_screen.dart';
 import 'phone_setup/phone_setup_routes.dart';
 import 'phone_setup/phone_setup_welcome_entry.dart';
 import 'demo_screen.dart';
+import 'guide_screen.dart' show GuideScreen;
 import 'agent_account_screen.dart';
 import 'pairing_scanner_screen.dart';
 import 'tailscale_setup_screen.dart';
 import '../../state/tailscale_address.dart';
 import 'external_agents_screen.dart';
+import 'profile_monitor_screen.dart' show ProfileMonitorScreen;
 
 /// What the servers list learns back from the editor's save: whether the
 /// profile reached the store, and the product-facing failure to show inline
@@ -679,8 +683,12 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     final copy = lookupAppLocalizations(Localizations.localeOf(context));
     final hasServers = store.profiles.isNotEmpty;
     // A root page (§1.18): the product mark and name, and About. Which
-    // server needs the person is said on its own row (R1), and the guide
-    // lives in Settings › Help (R3), so neither is a second door here.
+    // server needs the person is said on its own row (R1).
+    //
+    // With no server connected this is the whole app (no shell, so no
+    // Settings): Report a bug and the Setup guide, which otherwise live in
+    // Settings, sit in its menu. Opened from Settings, Settings has them.
+    final isRoot = !(ModalRoute.of(context)?.canPop ?? false);
     final topBar = KitTopBar(
       title: copy.openCodeConnectionLabel,
       brand: true,
@@ -691,6 +699,28 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           icon: AppIconography.info,
           onPressed: () => Navigator.pushNamed(context, '/about'),
         ),
+      ],
+      menuKey: const ValueKey('servers-menu'),
+      menu: [
+        if (isRoot) ...[
+          KitMenuItem(
+            key: const ValueKey('servers-report-bug'),
+            label: copy.e7LibraryReportABug,
+            icon: AppIconography.bug,
+            onSelected: () => unawaited(openBugReport(context)),
+          ),
+          KitMenuItem(
+            key: const ValueKey('servers-setup-guide'),
+            label: copy.onboardingSetupGuide,
+            icon: AppIconography.guide,
+            onSelected: () => unawaited(
+              pushKitPage<void>(
+                context,
+                (_) => const GuideScreen(embedded: false),
+              ),
+            ),
+          ),
+        ],
       ],
     );
     if (!hasServers) {
@@ -873,8 +903,64 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
               );
             },
           ),
+          // After the list, one row for the checks that watch every saved
+          // server in the background: when they last ran, and the page with
+          // each server's last and next check and "check now". An isolated
+          // profile never reads other servers, so it has none.
+          if (monitor != null) ...[
+            SizedBox(height: tokens.sectionGap),
+            ListenableBuilder(
+              listenable: Listenable.merge([accountConnection, monitor]),
+              builder: (context, _) => KitRowGroup(
+                children: [
+                  KitRow(
+                    key: const ValueKey('servers-background-checks'),
+                    leading: KitRow.icon(context, AppIconography.clock),
+                    title: copy.monitorBackgroundChecks,
+                    supporting: TextSpan(
+                      text: _backgroundChecksLine(copy, accountConnection),
+                    ),
+                    trailing: const KitChevron(),
+                    onTap: () => pushKitPage<void>(
+                      context,
+                      (_) =>
+                          ProfileMonitorScreen(controller: accountConnection),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  /// The Background checks row's line: off when no saved server is
+  /// monitored, else when the most recent check finished.
+  String _backgroundChecksLine(
+    AppLocalizations copy,
+    ConnectionController connection,
+  ) {
+    final monitor = connection.profileMonitor;
+    final monitored = [
+      for (final profile in connection.store.profiles)
+        if (connection.isProfileReadable(profile.id) &&
+            monitor.supportsProfile(profile) &&
+            monitor.rulesFor(profile.id).enabled)
+          profile,
+    ];
+    if (monitored.isEmpty) return copy.monitorRowOff;
+    DateTime? latest;
+    for (final profile in monitored) {
+      final checked = monitor.snapshotFor(profile.id).checkedAt;
+      if (checked != null && (latest == null || checked.isAfter(latest))) {
+        latest = checked;
+      }
+    }
+    if (latest == null) return copy.monitorRowNotChecked;
+    return copy.monitorRowLastChecked(
+      relativeTimeLabel(latest.millisecondsSinceEpoch, l10n: copy),
     );
   }
 

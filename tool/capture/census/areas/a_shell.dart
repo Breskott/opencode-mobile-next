@@ -25,7 +25,6 @@ import 'package:opencode_mobile/ui/app_iconography.dart';
 import 'package:opencode_mobile/ui/desktop/context_menu.dart';
 import 'package:opencode_mobile/ui/desktop/shortcuts.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
-import 'package:opencode_mobile/ui/screens/attention_overview_screen.dart';
 import 'package:opencode_mobile/ui/screens/capabilities_screen.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/demo_screen.dart';
@@ -199,40 +198,6 @@ class _NoSessionApi extends CaptureApi {
   @override
   Future<Session> createSession() async =>
       throw ApiException('Cannot reach http://192.168.1.20:4096: timed out');
-}
-
-Future<CaptureController> _monitored(CensusKit kit) async {
-  final prefs = await kit.prefs();
-  final store = SeededProfileStore(
-    prefs: prefs,
-    seeded: [
-      ServerProfile(
-        id: 'laptop',
-        name: 'Laptop',
-        baseUrl: 'http://192.168.1.20:4096',
-      ),
-      ServerProfile(
-        id: 'office',
-        name: 'Office build box',
-        baseUrl: 'http://10.0.4.12:4096',
-      ),
-      ServerProfile(
-        id: 'phone',
-        name: 'This phone',
-        baseUrl: 'http://127.0.0.1:4096',
-      ),
-    ],
-  );
-  final api = CaptureApi();
-  final controller = CaptureController(store)
-    ..api = api
-    ..repository = CaptureRepository()
-    ..status = StreamStatus.connected
-    ..directory = projectDirectory
-    ..sessionsById = Map.of(api.sessionsById)
-    ..busySessions = Set.of(api.busy);
-  kit.onDispose(controller.dispose);
-  return controller;
 }
 
 // ---------------------------------------------------------------------------
@@ -626,15 +591,6 @@ final aShellArea = CensusArea(
         controller: controller,
       );
       kit.expectTextContaining('Review the current diff');
-    }),
-    CensusShot('attention-overview', (kit) async {
-      final controller = await _monitored(kit);
-      await kit.pumpApp(
-        AttentionOverviewScreen(controller: controller),
-        controller: controller,
-        store: controller.store,
-      );
-      kit.expectText('Office build box');
     }),
   ],
   notRendered: {
