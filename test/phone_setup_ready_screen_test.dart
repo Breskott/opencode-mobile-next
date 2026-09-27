@@ -203,7 +203,7 @@ void main() {
     expect(find.text('OpenCode is ready'), findsOneWidget);
     expect(find.text('Name your first project'), findsOneWidget);
     expect(find.text('Letters, numbers, - _ .'), findsOneWidget);
-    expect(tester.widget<TextField>(field()).controller!.text, 'my-app');
+    expect(tester.widget<TextFormField>(field()).controller!.text, 'my-app');
     expect(find.text('Open a folder instead'), findsOneWidget);
     // The words the design rules out.
     for (final banned in ['Ubuntu', '127.0.0.1', 'built-in', 'server']) {
@@ -425,7 +425,14 @@ void main() {
         expect(Directionality.of(tester.element(field())), TextDirection.rtl);
         // The folder name still reads left to right.
         expect(
-          tester.widget<TextField>(field()).textDirection,
+          tester
+              .widget<EditableText>(
+                find.descendant(
+                  of: field(),
+                  matching: find.byType(EditableText),
+                ),
+              )
+              .textDirection,
           TextDirection.ltr,
         );
       }

@@ -359,7 +359,7 @@ class _KitSwitchRowBodyState extends State<_KitSwitchRowBody> {
                   color: tokens.roles.text3,
                 ),
                 SizedBox(width: tokens.space1),
-                Text(row.locked!, style: tokens.rowValue),
+                Flexible(child: Text(row.locked!, style: tokens.rowValue)),
               ],
             ),
           ),

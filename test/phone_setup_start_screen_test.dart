@@ -926,8 +926,9 @@ void main() {
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('phone-setup-customize-done')),
         120,
+        // The kit sheet owns scrolling around its framed content.
         scrollable: find
-            .descendant(
+            .ancestor(
               of: find.byKey(const ValueKey('phone-setup-customize-sheet')),
               matching: find.byType(Scrollable),
             )
@@ -1059,13 +1060,13 @@ void main() {
         await tester.pump();
         await tester.pump();
         final fades = tester
-            .widgetList<Opacity>(
+            .widgetList<FadeTransition>(
               find.ancestor(
                 of: find.byKey(const ValueKey('phone-setup-start-primary')),
-                matching: find.byType(Opacity),
+                matching: find.byType(FadeTransition),
               ),
             )
-            .map((opacity) => opacity.opacity);
+            .map((fade) => fade.opacity.value);
         if (reduceMotion) {
           expect(fades.every((value) => value == 1), isTrue);
         } else {
