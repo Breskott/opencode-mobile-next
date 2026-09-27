@@ -34,6 +34,7 @@ import '../../state/profiles.dart' show ServerBackend;
 import '../../state/conversation_nudges.dart';
 import '../../state/nudges.dart';
 import '../../state/review_handoff.dart';
+import '../../state/migration_runner.dart' show DraftMigrationBlocker;
 import '../../state/prompt_shelf.dart';
 import '../../state/session_drafts.dart';
 import '../../state/session_auto_approval.dart';
@@ -107,7 +108,6 @@ import 'files_screen.dart';
 import 'global_sessions_screen.dart';
 import 'home_screen.dart';
 import 'library_screen.dart';
-import 'legacy_drafts_screen.dart';
 import 'project_health_screen.dart';
 import 'review_workspace.dart';
 import 'session_context_screen.dart';
@@ -1133,51 +1133,39 @@ class _ChatScreenState extends State<ChatScreen>
         locationRevision: location,
       );
       if (!mounted || !unchanged()) return;
-      final unavailable = recovered.unavailable;
-      if (unavailable.isNotEmpty) {
-        final accepted = await showKitConfirm(
-          context,
-          icon: AppIconography.attach,
-          title: _chatL10n(context).promptAttachmentsUnavailable,
-          body: _chatL10n(
-            context,
-          ).promptAttachmentsUnavailableDetail(unavailable.join(', ')),
-          confirmLabel: _chatL10n(context).promptRestoreAvailable,
-        );
-        if (!mounted || !accepted || !unchanged()) return;
-      }
-      if (!current.isEmpty) {
-        final accepted = await showKitConfirm(
-          context,
-          icon: AppIconography.package,
-          title: _chatL10n(context).promptRestoreTitle,
-          body: _chatL10n(context).promptRestorePreserve,
-          confirmLabel: _chatL10n(context).promptRestore,
-        );
-        if (!mounted || !accepted || !unchanged()) return;
-      }
-      if (!current.isEmpty) {
+      // Restoring acts at once, with Undo (P3.2): no question first. The
+      // draft it replaces is what Undo brings back; it is also kept in Saved
+      // prompts until then, so closing the app mid-way loses nothing. While
+      // arrow keys browse sent prompts, the draft is the one put aside.
+      final historyOriginal = _promptHistory.original;
+      final previousValue = historyOriginal ?? _composer.value;
+      final previousAttachments = List<PromptAttachment>.of(_attachments);
+      final previousReferences = List<ReviewReference>.of(_stagedReferences);
+      final previous = StashedPrompt(
+        id: current.id,
+        text: previousValue.text,
+        createdAt: current.createdAt,
+        directory: current.directory,
+        workspace: current.workspace,
+        attachments: previousAttachments,
+        references: previousReferences,
+      );
+      String? keptID;
+      if (!previous.isEmpty) {
         if (_conn.promptStash.length >= PromptShelfStore.capacity) {
           _showComposerNote(_chatL10n(context).promptStashFull);
           return;
         }
-        await _conn.savePromptStash(current, locationRevision: location);
+        await _conn.savePromptStash(previous, locationRevision: location);
+        keptID = previous.id;
       }
       if (!mounted || !unchanged()) return;
-      // Keep the source entry until all content is applied. A failed removal
-      // leaves a recoverable copy, never a missing prompt.
-      setState(() {
-        _composer.value = TextEditingValue(
-          text: selected.text,
-          selection: TextSelection.collapsed(offset: selected.text.length),
-        );
-        _attachments.clear();
-        _attachments.addAll(recovered.attachments);
-        _handoff.store.clear(session);
-        for (final reference in selected.references) {
+      if (historyOriginal != null) _promptHistory.restore();
+      void stageAll(Iterable<ReviewReference> references, String prefix) {
+        for (final reference in references) {
           _handoff.stage(
             ReviewReference(
-              id: _handoff.nextID('stash-${selected.id}'),
+              id: _handoff.nextID(prefix),
               kind: reference.kind,
               path: reference.path,
               scope: reference.scope,
@@ -1190,33 +1178,60 @@ class _ChatScreenState extends State<ChatScreen>
             ),
           );
         }
+      }
+
+      setState(() {
+        _composer.value = TextEditingValue(
+          text: selected.text,
+          selection: TextSelection.collapsed(offset: selected.text.length),
+        );
+        _attachments.clear();
+        _attachments.addAll(recovered.attachments);
+        _handoff.store.clear(session);
+        stageAll(selected.references, 'stash-${selected.id}');
       });
       final restored = _snapshotPrompt();
       final restoredRevision = _promptContentRevision;
-      final persisted = await _persistDraft();
-      if (!currentScope() ||
+      await _persistDraft();
+      if (!mounted ||
+          !currentScope() ||
           restoredRevision != _promptContentRevision ||
           !_promptUnchanged(restored, location)) {
         return;
       }
-      final keepCopy =
-          !persisted ||
-          unavailable.isNotEmpty ||
-          selected.references.isNotEmpty ||
-          _promptHistory.original != null;
-      if (!keepCopy) {
-        await _conn.removePromptStash(selected.id, locationRevision: location);
-      }
-      if (mounted && currentScope() && _promptUnchanged(restored, location)) {
-        _showComposerNote(
-          keepCopy
-              ? _chatL10n(context).promptRestoredCopyKept
-              : selected.locationBound
-              ? _chatL10n(context).promptRestoredReferences
-              : _chatL10n(context).promptRestored,
-        );
-        _focus.requestFocus();
-      }
+      _focus.requestFocus();
+      final unavailable = recovered.unavailable;
+      showKitUndo(
+        context,
+        key: const Key('prompt-restored-undo'),
+        message: unavailable.isEmpty
+            ? l10n.promptRestored
+            : l10n.promptRestoredWithout(unavailable.join(', ')),
+        onUndo: () async {
+          // Only over the restored prompt itself: newer typing wins.
+          if (!currentScope() || !_promptUnchanged(restored, location)) {
+            throw StateError('The draft changed after the restore');
+          }
+          setState(() {
+            _composer.value = previousValue;
+            _attachments
+              ..clear()
+              ..addAll(previousAttachments);
+            _handoff.store.clear(session);
+            stageAll(previousReferences, 'draft');
+          });
+          if (!await _persistDraft()) {
+            throw StateError('The draft could not be saved');
+          }
+          // The draft is back in the composer; its safety copy may go. If
+          // that fails, a spare copy in Saved prompts is harmless.
+          if (keptID != null) {
+            try {
+              await _conn.removePromptStash(keptID, locationRevision: location);
+            } catch (_) {}
+          }
+        },
+      );
     } catch (_) {
       if (mounted && currentScope()) {
         _showActionError(_chatL10n(context).promptStashRestoreFailed);
@@ -3202,34 +3217,6 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
-  Future<void> _recoverLegacyDraft() async {
-    if (_promptShelfBusy) return;
-    final location = _conn.locationRevision;
-    setState(() => _promptShelfOperationBusy = true);
-    try {
-      final text = await Navigator.of(context).push<String>(
-        KitPageRoute(builder: (_) => LegacyDraftsScreen(controller: _conn)),
-      );
-      if (!mounted || text == null) return;
-      if (location != _conn.locationRevision) {
-        _showActionError(_chatL10n(context).legacyDraftLocationChanged);
-        return;
-      }
-      _restoreHistoryDraft();
-      final combined = _composer.text.isEmpty
-          ? text
-          : '${_composer.text}\n\n$text';
-      _composer.value = TextEditingValue(
-        text: combined,
-        selection: TextSelection.collapsed(offset: combined.length),
-      );
-      await _persistDraft();
-      if (mounted) _focus.requestFocus();
-    } finally {
-      if (mounted) setState(() => _promptShelfOperationBusy = false);
-    }
-  }
-
   void _onPhotosChanged() {
     if (mounted) setState(() {});
   }
@@ -3276,20 +3263,20 @@ class _ChatScreenState extends State<ChatScreen>
       _showActionError(_chatL10n(context).photoDraftFull);
       return;
     }
+    // A photo still waiting from an earlier pick joins its own
+    // conversation's draft first (P3.2): no question about it. This
+    // conversation's photo goes into this composer; another one's into that
+    // conversation's saved draft. One that cannot move yet keeps waiting.
     if (_conn.promptPhotos.pending case final pending?) {
-      final discard = await showKitConfirm(
-        context,
-        kind: KitConfirmKind.discard,
-        icon: AppIconography.camera,
-        title: _chatL10n(context).photoPendingTitle,
-        body: _chatL10n(context).photoPendingOther,
-        confirmLabel: _chatL10n(context).photoDiscard,
-      );
-      if (!mounted || !discard) return;
-      try {
-        await _conn.promptPhotos.discard(pending.id);
-      } catch (error) {
-        if (mounted) _showActionError(_photoError(error));
+      if (pending.profileID == _draftProfileID &&
+          pending.sessionID == widget.sessionID) {
+        await _applyPendingPhoto(pending);
+      } else {
+        await _conn.recoverPendingPhoto();
+      }
+      if (!mounted) return;
+      if (_conn.promptPhotos.pending != null) {
+        _showActionError(_chatL10n(context).photoPendingOther);
         return;
       }
     }
@@ -7321,10 +7308,6 @@ class _ChatScreenState extends State<ChatScreen>
       onStashPrompt: _conn.canUsePromptShelf && !_sending && !_promptShelfBusy
           ? _stashCurrentPrompt
           : null,
-      onLegacyDrafts:
-          _conn.store.profiles.length < 2 || _conn.legacySessionDrafts.isEmpty
-          ? null
-          : _recoverLegacyDraft,
       onOpenStash: _conn.canUsePromptShelf && !_sending && !_promptShelfBusy
           ? _openPromptStash
           : null,

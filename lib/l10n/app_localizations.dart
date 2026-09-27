@@ -2318,29 +2318,11 @@ abstract class AppLocalizations {
   /// **'Search saved prompts'**
   String get promptStashSearch;
 
-  /// Filtered saved-prompts empty state, distinct from an empty stash
-  ///
-  /// In en, this message translates to:
-  /// **'No saved prompts match your search. Clear or change the search to see more.'**
-  String get promptStashNoMatches;
-
   /// No description provided for @promptStashDeleteFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not delete this saved prompt. Try again.'**
   String get promptStashDeleteFailed;
-
-  /// No description provided for @promptRestoreTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Restore saved prompt?'**
-  String get promptRestoreTitle;
-
-  /// No description provided for @promptRestorePreserve.
-  ///
-  /// In en, this message translates to:
-  /// **'Your current prompt will be saved to the stash first, including its attachments and references.'**
-  String get promptRestorePreserve;
 
   /// No description provided for @promptStashDelete.
   ///
@@ -2354,18 +2336,6 @@ abstract class AppLocalizations {
   /// **'Your stash has 50 prompts. Delete a saved prompt to make room; your current prompt is unchanged.'**
   String get promptStashFull;
 
-  /// No description provided for @promptStashListDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Saved on this device for this server. Restoring a prompt also saves any current prompt for later.'**
-  String get promptStashListDescription;
-
-  /// No description provided for @promptStashDeleteTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete saved prompt?'**
-  String get promptStashDeleteTitle;
-
   /// No description provided for @promptStashAttachments.
   ///
   /// In en, this message translates to:
@@ -2378,35 +2348,11 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 reference} other{{count} references}}'**
   String promptStashReferences(int count);
 
-  /// No description provided for @promptRestoredCopyKept.
-  ///
-  /// In en, this message translates to:
-  /// **'Available content restored. A saved copy remains in your stash. Review attachments and references before sending.'**
-  String get promptRestoredCopyKept;
-
-  /// No description provided for @promptAttachmentsUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Some attachments cannot be restored'**
-  String get promptAttachmentsUnavailable;
-
-  /// No description provided for @promptRestore.
-  ///
-  /// In en, this message translates to:
-  /// **'Restore'**
-  String get promptRestore;
-
   /// No description provided for @promptHistorySaveFailed.
   ///
   /// In en, this message translates to:
   /// **'Prompt sent, but its history could not be saved on this device.'**
   String get promptHistorySaveFailed;
-
-  /// No description provided for @promptAttachmentsUnavailableDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Missing, damaged or temporary attachments: {names}. Restore the available content and reattach these files before sending. The saved copy will stay in your stash.'**
-  String promptAttachmentsUnavailableDetail(String names);
 
   /// No description provided for @promptStashMigrationPending.
   ///
@@ -3710,23 +3656,11 @@ abstract class AppLocalizations {
   /// **'Could not finish restoring the prompt. Saved copies remain available; check the composer before trying again.'**
   String get promptStashRestoreFailed;
 
-  /// No description provided for @promptStashEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing saved yet. Use Stash current prompt in Prompt tools to keep a prompt for later.'**
-  String get promptStashEmpty;
-
   /// No description provided for @promptStashContextOnly.
   ///
   /// In en, this message translates to:
   /// **'Attachments and references'**
   String get promptStashContextOnly;
-
-  /// No description provided for @promptRestoredReferences.
-  ///
-  /// In en, this message translates to:
-  /// **'Prompt restored. Saved references are snapshots; their server files may have changed.'**
-  String get promptRestoredReferences;
 
   /// No description provided for @promptDefaultLocation.
   ///
@@ -3752,35 +3686,17 @@ abstract class AppLocalizations {
   /// **'Could not read saved prompts. Their stored data has been kept.'**
   String get promptStashReadFailed;
 
-  /// No description provided for @promptStashDeleteDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'This removes the saved text, attachments and references from this device.'**
-  String get promptStashDeleteDetail;
-
   /// No description provided for @promptStashDescription.
   ///
   /// In en, this message translates to:
   /// **'Save text, attachments and references for later'**
   String get promptStashDescription;
 
-  /// No description provided for @promptRestoreAvailable.
+  /// Undo bar after a saved prompt replaced the draft; Undo puts the previous draft back.
   ///
   /// In en, this message translates to:
-  /// **'Restore available content'**
-  String get promptRestoreAvailable;
-
-  /// No description provided for @promptRestored.
-  ///
-  /// In en, this message translates to:
-  /// **'Prompt restored. Review it before sending.'**
+  /// **'Saved prompt restored'**
   String get promptRestored;
-
-  /// No description provided for @promptStashAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Stash current prompt'**
-  String get promptStashAction;
 
   /// No description provided for @promptStashLocation.
   ///
@@ -4277,7 +4193,7 @@ abstract class AppLocalizations {
   /// No description provided for @photoPendingOther.
   ///
   /// In en, this message translates to:
-  /// **'A photo is waiting in its original conversation. Keep it there, or discard it before choosing another photo.'**
+  /// **'A photo is still waiting for another conversation. Add or discard it there, then try again.'**
   String get photoPendingOther;
 
   /// No description provided for @photoUnavailable.
@@ -4321,78 +4237,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove an attachment first. A draft holds up to 5 files and 20 MB in total.'**
   String get photoDraftFull;
-
-  /// No description provided for @legacyDraftsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Older drafts'**
-  String get legacyDraftsTitle;
-
-  /// No description provided for @legacyDraftsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Review drafts saved before server tracking'**
-  String get legacyDraftsDescription;
-
-  /// No description provided for @legacyDraftsExplanation.
-  ///
-  /// In en, this message translates to:
-  /// **'These drafts have no recorded server. Review their text before using it in this conversation.'**
-  String get legacyDraftsExplanation;
-
-  /// No description provided for @legacyDraftInsertExplanation.
-  ///
-  /// In en, this message translates to:
-  /// **'Insert adds this text after your current draft. The original saved copy stays here until you delete it.'**
-  String get legacyDraftInsertExplanation;
-
-  /// No description provided for @legacyDraftTextOnly.
-  ///
-  /// In en, this message translates to:
-  /// **'Only text can be inserted here. Any saved attachments remain with the older draft.'**
-  String get legacyDraftTextOnly;
-
-  /// No description provided for @legacyDraftDelete.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete saved copy'**
-  String get legacyDraftDelete;
-
-  /// No description provided for @legacyDraftDeleteExplanation.
-  ///
-  /// In en, this message translates to:
-  /// **'Permanently remove this older draft and its saved attachments from this device?'**
-  String get legacyDraftDeleteExplanation;
-
-  /// No description provided for @legacyDraftDeleteFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'The draft changed or could not be removed. Reopen it and retry.'**
-  String get legacyDraftDeleteFailed;
-
-  /// No description provided for @legacyDraftInsert.
-  ///
-  /// In en, this message translates to:
-  /// **'Insert into draft'**
-  String get legacyDraftInsert;
-
-  /// No description provided for @legacyDraftSearch.
-  ///
-  /// In en, this message translates to:
-  /// **'Search older drafts'**
-  String get legacyDraftSearch;
-
-  /// No description provided for @legacyDraftsEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No older drafts found'**
-  String get legacyDraftsEmpty;
-
-  /// No description provided for @legacyDraftLocationChanged.
-  ///
-  /// In en, this message translates to:
-  /// **'The project changed. Reopen Older drafts to choose where to insert the text.'**
-  String get legacyDraftLocationChanged;
 
   /// Read-only subscription quota screen title
   ///
@@ -41276,6 +41120,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{The hidden prompt is deleted} =1{The hidden prompt and the message after it are deleted} other{The hidden prompt and the {count} messages after it are deleted}}'**
   String reviewRevertKeepConsequenceCount(int count);
+
+  /// Undo bar after a saved prompt was restored but some of its attachment files could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored without {names}; attach them again before sending'**
+  String promptRestoredWithout(String names);
+
+  /// Saved prompts sheet: drafts saved before drafts named their server could not move into Saved prompts yet (with Try again).
+  ///
+  /// In en, this message translates to:
+  /// **'Some older drafts have not moved here yet. They are kept on this device.'**
+  String get promptStashOlderDraftsWaiting;
+
+  /// Saved prompts sheet: the older drafts cannot move in because Saved prompts is full (with Try again).
+  ///
+  /// In en, this message translates to:
+  /// **'Older drafts are waiting to move here. Delete saved prompts to make room.'**
+  String get promptStashOlderDraftsFull;
 }
 
 class _AppLocalizationsDelegate

@@ -12,12 +12,6 @@
       "SnackBar(": 1,
       "showSnackBar(": 1
     },
-    "lib/ui/screens/legacy_drafts_screen.dart": {
-      "SnackBar(": 1,
-      "showConfirmSheet(": 1,
-      "showModalBottomSheet(": 1,
-      "showSnackBar(": 1
-    },
     "lib/ui/screens/project_folder_actions.dart": {
       "showModalBottomSheet(": 2
     },
@@ -57,8 +51,7 @@
       "showSnackBar(": 1
     }
   },
-  "G15": {
-  },
+  "G15": {},
   "G16": {
     "lib/main.dart": {
       "MaterialPageRoute": 9
@@ -109,20 +102,6 @@
       "Text": 15,
       "TextButton": 4,
       "TextField": 2
-    },
-    "lib/ui/screens/legacy_drafts_screen.dart": {
-      "AppBar": 1,
-      "FilledButton": 1,
-      "Icon": 4,
-      "IconButton": 1,
-      "ListTile": 1,
-      "OutlinedButton": 1,
-      "Scaffold": 1,
-      "SelectableText": 1,
-      "SingleChildScrollView": 1,
-      "SnackBar": 1,
-      "Text": 10,
-      "TextField": 1
     },
     "lib/ui/screens/manage_project_screen.dart": {
       "AppBar": 1,
@@ -280,10 +259,6 @@
     "lib/ui/screens/connection_help_screen.dart": {
       "Clipboard.setData(": 1
     },
-    "lib/ui/screens/legacy_drafts_screen.dart": {
-      "Clipboard.setData(": 1,
-      "showConfirmSheet(": 1
-    },
     "lib/ui/screens/library/integrations_screen.dart": {
       "launchUrl(": 1
     },
@@ -311,8 +286,7 @@
       "Clipboard.setData(": 1
     }
   },
-  "G7": {
-  },
+  "G7": {},
   "G15x": {},
   "G17": {
     "lib/diagnostics/app_diagnostics.dart": {
@@ -337,9 +311,6 @@
     },
     "lib/ui/screens/context_capsule_screen.dart": {
       ".colorScheme": 3,
-      ".textTheme": 1
-    },
-    "lib/ui/screens/legacy_drafts_screen.dart": {
       ".textTheme": 1
     },
     "lib/ui/screens/settings/server_plugins_section.dart": {
@@ -493,10 +464,6 @@
       "SizedBox numeric": 6,
       "TextStyle(": 2,
       "icon size not 20/22/24": 4
-    },
-    "lib/ui/screens/legacy_drafts_screen.dart": {
-      "EdgeInsets numeric": 3,
-      "SizedBox numeric": 3
     },
     "lib/ui/screens/manage_project_screen.dart": {
       "EdgeInsets numeric": 1

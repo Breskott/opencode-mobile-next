@@ -136,8 +136,13 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
         bootstrap.store,
         diagnostics: widget.diagnostics,
       );
+      // Before any conversation reads its draft: the older drafts move into
+      // Saved prompts, then a photo the camera handed back after Android
+      // stopped the app joins its own conversation's draft (P3.2). Both keep
+      // their source on failure and retry on the next start.
+      await controller.migrateOlderDrafts();
       if (platformCapabilities.supportsPromptPhotos) {
-        await controller.promptPhotos.recoverLostData();
+        await controller.recoverPendingPhoto();
       }
       // Before anything can alert: quiet hours and Wi-Fi only become one
       // shared definition. Idempotent, and a failure leaves the legacy

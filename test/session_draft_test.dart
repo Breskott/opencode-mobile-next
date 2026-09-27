@@ -13,8 +13,10 @@ import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/state/migration_runner.dart';
 import 'package:opencode_mobile/state/session_drafts.dart';
 import 'package:opencode_mobile/state/draft_attachments.dart';
+import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
@@ -629,98 +631,122 @@ void main() {
     expect(reloaded['session-1']?.updatedAt, 5);
   });
 
-  test(
-    'legacy removal is acknowledged and cannot remove a server-owned draft',
-    () async {
-      late _DraftStorage disk;
-      final c = await _controller(
-        _FakeApi(),
-        twoProfiles: true,
-        configureStorage: (value) => disk = value,
-      );
-      addTearDown(c.dispose);
-      const legacy = SessionDraft(
-        sessionID: 'old',
-        text: 'Older thought',
-        updatedAt: 10,
-      );
-      const owned = SessionDraft(
-        sessionID: 'owned',
-        profileID: 'profile-1',
-        text: 'Keep owned',
-        updatedAt: 12,
-      );
-      await c.store.prefs.setString(
-        'oc.sessionDrafts',
-        jsonEncode([legacy.toJson(), owned.toJson()]),
-      );
-      expect(c.legacySessionDrafts.single.text, 'Older thought');
-      expect(c.sessionDraft('old'), isNull);
-      expect(await c.removeLegacySessionDraft(owned), isFalse);
-      disk.refuse = true;
-      expect(await c.removeLegacySessionDraft(legacy), isFalse);
-      expect(c.legacySessionDrafts, hasLength(1));
-      disk.refuse = false;
-      expect(await c.removeLegacySessionDraft(legacy), isTrue);
-      expect(c.legacySessionDrafts, isEmpty);
-      expect(c.sessionDraft('owned'), 'Keep owned');
-      expect(await c.removeLegacySessionDraft(legacy), isFalse);
-    },
-  );
-
-  testWidgets('older draft review appends text and retains the saved source', (
-    tester,
-  ) async {
-    final c = await _controller(_FakeApi(), twoProfiles: true);
+  test('older drafts move into Saved prompts once; a refused write keeps them '
+      'and says so; server-owned drafts stay', () async {
+    late _DraftStorage disk;
+    final c = await _controller(
+      _FakeApi(),
+      twoProfiles: true,
+      configureStorage: (value) => disk = value,
+    );
     addTearDown(c.dispose);
+    const legacy = SessionDraft(
+      sessionID: 'old',
+      text: 'Older thought',
+      updatedAt: 10,
+    );
+    const owned = SessionDraft(
+      sessionID: 'owned',
+      profileID: 'profile-1',
+      text: 'Keep owned',
+      updatedAt: 12,
+    );
     await c.store.prefs.setString(
       'oc.sessionDrafts',
-      jsonEncode([
-        const SessionDraft(
-          sessionID: 'old',
-          text: 'مرحبا old idea 🌍',
-          updatedAt: 10,
-        ).toJson(),
-        const SessionDraft(
-          sessionID: 'session-1',
-          profileID: 'profile-1',
-          text: 'Current thought',
-          updatedAt: 11,
-        ).toJson(),
-      ]),
+      jsonEncode([legacy.toJson(), owned.toJson()]),
     );
-    await _pumpChat(tester, c);
-    await tester.tap(find.byKey(const Key('composer-tools-button')));
-    await tester.pumpAndSettle();
-    await Scrollable.ensureVisible(
-      tester.element(find.byKey(const Key('composer-tools-prompts'))),
-      alignment: .5,
+    expect(c.sessionDraft('old'), isNull);
+    disk.refuse = true;
+    final refused = await c.migrateOlderDrafts();
+    expect(refused.complete, isFalse);
+    expect(c.olderDraftsBlocker, DraftMigrationBlocker.storage);
+    expect(
+      c.store.prefs.getString('oc.sessionDrafts'),
+      contains('Older thought'),
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('composer-tools-prompts')));
-    await tester.pumpAndSettle();
-    await Scrollable.ensureVisible(
-      tester.element(find.byKey(const Key('composer-tool-legacy-drafts'))),
-      alignment: .5,
+    disk.refuse = false;
+    final done = await c.migrateOlderDrafts();
+    expect((done.complete, done.migrated), (true, 1));
+    expect(c.olderDraftsBlocker, isNull);
+    expect(c.promptStash.single.text, 'Older thought');
+    expect(c.sessionDraft('owned'), 'Keep owned');
+    expect(
+      c.store.prefs.getString('oc.sessionDrafts'),
+      isNot(contains('Older thought')),
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('composer-tool-legacy-drafts')));
-    await tester.pumpAndSettle();
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const Key('legacy-drafts-search')),
-      'old idea',
-    );
-    await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('legacy-draft-old')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Insert into draft'));
-    await tester.pumpAndSettle();
-    await tester.pumpAndSettle();
-    expect(c.sessionDraft('session-1'), 'Current thought\n\nمرحبا old idea 🌍');
-    expect(c.legacySessionDrafts.single.text, 'مرحبا old idea 🌍');
-    expect(tester.takeException(), isNull);
+    expect((await c.migrateOlderDrafts()).alreadyComplete, isTrue);
+    expect(c.promptStash, hasLength(1));
   });
+
+  testWidgets(
+    'an older draft shows up in Saved prompts and restores at once with Undo',
+    (tester) async {
+      final c = await _controller(_FakeApi(), twoProfiles: true);
+      addTearDown(c.dispose);
+      await c.store.prefs.setString(
+        'oc.sessionDrafts',
+        jsonEncode([
+          const SessionDraft(
+            sessionID: 'old',
+            text: 'مرحبا old idea 🌍',
+            updatedAt: 10,
+          ).toJson(),
+          const SessionDraft(
+            sessionID: 'session-1',
+            profileID: 'profile-1',
+            text: 'Current thought',
+            updatedAt: 11,
+          ).toJson(),
+        ]),
+      );
+      await _pumpChat(tester, c);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('composer-tools-button')));
+      await tester.pumpAndSettle();
+      await Scrollable.ensureVisible(
+        tester.element(find.byKey(const Key('composer-tools-prompts'))),
+        alignment: .5,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('composer-tools-prompts')));
+      await tester.pumpAndSettle();
+      // The older drafts page is gone; its drafts live in Saved prompts.
+      expect(find.text('Older drafts'), findsNothing);
+      await Scrollable.ensureVisible(
+        tester.element(find.byKey(const Key('composer-tool-saved'))),
+        alignment: .5,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('composer-tool-saved')));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text('مرحبا old idea 🌍'), findsOneWidget);
+      await tester.tap(find.text('مرحبا old idea 🌍'));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      // No question first: the draft is replaced now, with Undo.
+      expect(find.text('Restore saved prompt?'), findsNothing);
+      expect(c.sessionDraft('session-1'), 'مرحبا old idea 🌍');
+      expect(find.text('Saved prompt restored'), findsOneWidget);
+      // The replaced draft is safe in Saved prompts until Undo.
+      expect(
+        c.promptStash.map((p) => p.text),
+        containsAll(['Current thought', 'مرحبا old idea 🌍']),
+      );
+      await tester.tap(find.text('Undo'));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(c.sessionDraft('session-1'), 'Current thought');
+      // Undo takes the safety copy away again; the saved source stays.
+      expect(c.promptStash.single.text, 'مرحبا old idea 🌍');
+      expect(tester.takeException(), isNull);
+      KitUndo.commitPending();
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 
   test(
     'a full store refuses new drafts without evicting unsent work',

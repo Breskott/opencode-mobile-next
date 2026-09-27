@@ -622,24 +622,12 @@
   "@promptStashSearch": {
     "description": "Search local saved prompt text, attachment names, references and locations without loading attachment payloads"
   },
-  "promptStashNoMatches": "No saved prompts match your search. Clear or change the search to see more.",
-  "@promptStashNoMatches": {
-    "description": "Filtered saved-prompts empty state, distinct from an empty stash"
-  },
   "promptStashDeleteFailed": "Could not delete this saved prompt. Try again.",
-  "promptRestoreTitle": "Restore saved prompt?",
-  "promptRestorePreserve": "Your current prompt will be saved to the stash first, including its attachments and references.",
   "promptStashDelete": "Delete",
   "promptStashFull": "Your stash has 50 prompts. Delete a saved prompt to make room; your current prompt is unchanged.",
-  "promptStashListDescription": "Saved on this device for this server. Restoring a prompt also saves any current prompt for later.",
-  "promptStashDeleteTitle": "Delete saved prompt?",
   "promptStashAttachments": "{count, plural, =1{1 attachment} other{{count} attachments}}",
   "promptStashReferences": "{count, plural, =1{1 reference} other{{count} references}}",
-  "promptRestoredCopyKept": "Available content restored. A saved copy remains in your stash. Review attachments and references before sending.",
-  "promptAttachmentsUnavailable": "Some attachments cannot be restored",
-  "promptRestore": "Restore",
   "promptHistorySaveFailed": "Prompt sent, but its history could not be saved on this device.",
-  "promptAttachmentsUnavailableDetail": "Missing, damaged or temporary attachments: {names}. Restore the available content and reattach these files before sending. The saved copy will stay in your stash.",
   "promptStashMigrationPending": "Some saved attachments could not be moved to local attachment storage yet. Your saved content has been kept. Free device storage and retry.",
   "commonRetry": "Try again",
   "shareWaitingForServer": "Connect to a server and the shared text opens in a new conversation.",
@@ -1144,9 +1132,7 @@
     "description": "Warns against acting on MCP data from a previous profile or location"
   },
   "promptStashRestoreFailed": "Could not finish restoring the prompt. Saved copies remain available; check the composer before trying again.",
-  "promptStashEmpty": "Nothing saved yet. Use Stash current prompt in Prompt tools to keep a prompt for later.",
   "promptStashContextOnly": "Attachments and references",
-  "promptRestoredReferences": "Prompt restored. Saved references are snapshots; their server files may have changed.",
   "promptDefaultLocation": "the server default directory",
   "promptStashed": "Prompt saved to your stash.",
   "promptStashedDraftPending": "Prompt saved to your stash. The composer draft still needs to be saved; try again from the draft warning.",
@@ -1154,23 +1140,13 @@
     "description": "Stash save succeeded but persisting the cleared or restored composer draft failed; the saved stash remains available"
   },
   "promptStashReadFailed": "Could not read saved prompts. Their stored data has been kept.",
-  "promptStashDeleteDetail": "This removes the saved text, attachments and references from this device.",
   "promptStashDescription": "Save text, attachments and references for later",
-  "promptRestoreAvailable": "Restore available content",
-  "promptRestored": "Prompt restored. Review it before sending.",
-  "promptStashAction": "Stash current prompt",
+  "promptRestored": "Saved prompt restored",
   "promptStashLocation": "This prompt refers to files in {directory}. Switch to its original project before restoring it.",
   "promptStashScopeChanged": "The server or project changed. Close and reopen Saved prompts.",
   "@promptStashLocation": {
     "placeholders": {
       "directory": {
-        "type": "String"
-      }
-    }
-  },
-  "@promptAttachmentsUnavailableDetail": {
-    "placeholders": {
-      "names": {
         "type": "String"
       }
     }
@@ -1330,7 +1306,7 @@
   "photoCameraAction": "Take photo",
   "photoTooLarge": "Choose a photo smaller than 10 MB.",
   "photoStorageFailed": "The photo could not be saved on this device. Free some space and retry.",
-  "photoPendingOther": "A photo is waiting in its original conversation. Keep it there, or discard it before choosing another photo.",
+  "photoPendingOther": "A photo is still waiting for another conversation. Add or discard it there, then try again.",
   "photoUnavailable": "The photo could not be opened. Try adding it again from Photo library or Take photo.",
   "photoPermissionDenied": "Photo access was denied. Allow camera or photo access in Android app settings, then try again.",
   "photoPendingTitle": "Pending photo",
@@ -1338,18 +1314,6 @@
   "photoAddToDraft": "Add recovered photo to draft",
   "photoOtherLocation": "Return to the photo's original server and project before adding it.",
   "photoDraftFull": "Remove an attachment first. A draft holds up to 5 files and 20 MB in total.",
-  "legacyDraftsTitle": "Older drafts",
-  "legacyDraftsDescription": "Review drafts saved before server tracking",
-  "legacyDraftsExplanation": "These drafts have no recorded server. Review their text before using it in this conversation.",
-  "legacyDraftInsertExplanation": "Insert adds this text after your current draft. The original saved copy stays here until you delete it.",
-  "legacyDraftTextOnly": "Only text can be inserted here. Any saved attachments remain with the older draft.",
-  "legacyDraftDelete": "Delete saved copy",
-  "legacyDraftDeleteExplanation": "Permanently remove this older draft and its saved attachments from this device?",
-  "legacyDraftDeleteFailed": "The draft changed or could not be removed. Reopen it and retry.",
-  "legacyDraftInsert": "Insert into draft",
-  "legacyDraftSearch": "Search older drafts",
-  "legacyDraftsEmpty": "No older drafts found",
-  "legacyDraftLocationChanged": "The project changed. Reopen Older drafts to choose where to insert the text.",
   "quotaTitle": "Remaining usage",
   "@quotaTitle": {
     "description": "Read-only subscription quota screen title"
@@ -30711,5 +30675,25 @@
         "type": "int"
       }
     }
+  },
+  "@promptRestored": {
+    "description": "Undo bar after a saved prompt replaced the draft; Undo puts the previous draft back."
+  },
+  "promptRestoredWithout": "Restored without {names}; attach them again before sending",
+  "@promptRestoredWithout": {
+    "description": "Undo bar after a saved prompt was restored but some of its attachment files could not be read.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "promptStashOlderDraftsWaiting": "Some older drafts have not moved here yet. They are kept on this device.",
+  "@promptStashOlderDraftsWaiting": {
+    "description": "Saved prompts sheet: drafts saved before drafts named their server could not move into Saved prompts yet (with Try again)."
+  },
+  "promptStashOlderDraftsFull": "Older drafts are waiting to move here. Delete saved prompts to make room.",
+  "@promptStashOlderDraftsFull": {
+    "description": "Saved prompts sheet: the older drafts cannot move in because Saved prompts is full (with Try again)."
   }
 }
