@@ -38748,7 +38748,7 @@ abstract class AppLocalizations {
   /// Active context: plain one-paragraph intro above the list.
   ///
   /// In en, this message translates to:
-  /// **'What the model reads on its next turn: the messages this server keeps for the conversation after its latest summary. Counts are messages, not tokens.'**
+  /// **'What the model reads on its next turn, after the latest summary.'**
   String get activeContextIntro;
 
   /// Active context: body of the empty state.
@@ -38858,12 +38858,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'To remove the note, use Delete saved note.'**
   String get sessionNoteEmptyUseDelete;
-
-  /// Note for the agent: why Save is unavailable when nothing changed.
-  ///
-  /// In en, this message translates to:
-  /// **'Change the note to save it.'**
-  String get sessionNoteUnchanged;
 
   /// Subagents page title.
   ///
@@ -41102,6 +41096,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This server doesn\'t list the tools its agent can use.'**
   String get kitCapFlagToolInventoryWhy;
+
+  /// Offline demo: status-line action that starts the simulated conversation again.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset demo'**
+  String get demoScreenReset;
+
+  /// Offline demo: the top bar close button that leaves the demo.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave demo'**
+  String get demoScreenLeave;
+
+  /// Offline demo: supporting line under "Simulated · nothing is saved".
+  ///
+  /// In en, this message translates to:
+  /// **'Everything here is simulated on this device. No server, provider, or files are accessed.'**
+  String get demoScreenDisclosure;
+
+  /// Available on this server: intro when the server lacks something; says once where missing features work.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out. Missing features work on other OpenCode servers.'**
+  String capabilityScreenIntroWithGaps(String server);
+
+  /// Active context: title of one message page, by its role.
+  ///
+  /// In en, this message translates to:
+  /// **'{role, select, user{User message} assistant{Assistant message} system{System message} synthetic{Synthetic message} skill{Skill message} shell{Shell message} compaction{Summary message} change{Conversation change} other{Message}}'**
+  String activeContextMessageTitle(String role);
 }
 
 class _AppLocalizationsDelegate

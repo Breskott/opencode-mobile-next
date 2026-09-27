@@ -120,7 +120,15 @@ Future<void> _isolatedJourney(
       expect(find.byType(ChatScreen), findsOneWidget);
       expect(_demoController(tester), isNot(same(realConnection)));
       expect(_demoController(tester).isIsolated, isTrue);
-      if (keyboard == 0) expect(find.text(DemoCopy.disclosure), findsOneWidget);
+      if (keyboard == 0) {
+        expect(
+          find.text(
+            'Everything here is simulated on this device. No server, '
+            'provider, or files are accessed.',
+          ),
+          findsOneWidget,
+        );
+      }
       await body();
       await tester.pumpWidget(const SizedBox.shrink());
       await _pump(tester);
@@ -214,7 +222,7 @@ void main() {
           );
           expect(find.text('Set up your own server'), findsNothing);
           expect(tester.getRect(send).bottom, lessThanOrEqualTo(420));
-          await tester.tap(find.byTooltip(DemoCopy.exit));
+          await tester.tap(find.byTooltip('Leave demo'));
           await _pump(tester);
           expect(find.text('Open demo'), findsOneWidget);
           expect(tester.takeException(), isNull);
@@ -292,7 +300,7 @@ void main() {
           await tester.tap(
             allow
                 ? find.text('Set up your own server')
-                : find.byTooltip(DemoCopy.exit),
+                : find.byTooltip('Leave demo'),
           );
           await _pump(tester);
           expect(find.text('Open demo'), findsOneWidget);
@@ -311,7 +319,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
         expect(first.hasPendingTimer, isTrue);
-        await tester.tap(find.byTooltip(DemoCopy.reset));
+        await tester.tap(find.byKey(const Key('demo-reset')));
         await _pump(tester);
         expect(first.isClosed, isTrue);
         expect(first.hasPendingTimer, isFalse);
@@ -329,7 +337,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
         expect(second.hasPendingTimer, isTrue);
-        await tester.tap(find.byTooltip(DemoCopy.exit));
+        await tester.tap(find.byTooltip('Leave demo'));
         await _pump(tester);
         expect(second.isClosed, isTrue);
         expect(second.hasPendingTimer, isFalse);

@@ -271,13 +271,13 @@ class AgentAccountPanel extends StatelessWidget {
               ),
             ],
             SizedBox(height: tokens.space4),
+            // Each note once: the sign-in note is already the signed-out
+            // body and the unsupported detail the unavailable body, so
+            // neither repeats here.
             KitDetailsFold(
               notes: [
                 l.agentAccountHostNote,
-                if (controller.canSignIn) l.agentAccountSignInNote,
                 if (signedIn) l.agentAccountUsageNote,
-                if (status == AccountPanelStatus.unavailable)
-                  l.agentAccountUnsupportedDetail,
               ],
             ),
           ],

@@ -555,13 +555,19 @@ void main() {
         stagedRevert: SessionRevert(messageID: 'msg_02'),
       );
       await _open(tester, c);
-      expect(find.text('1 message'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('active-context-msg_01')),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey('active-context-msg_02')), findsNothing);
       c.sessionsById['ses_test'] = Session(id: 'ses_test');
       c.history++;
       c.notifyListeners();
       await tester.pumpAndSettle();
-      expect(find.text('3 messages'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('active-context-msg_03')),
+        findsOneWidget,
+      );
       expect(repo.calls, 2);
     },
   );

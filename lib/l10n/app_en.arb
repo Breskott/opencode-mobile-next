@@ -28407,7 +28407,7 @@
   "@activeContextFailedTitle": {
     "description": "Active context: title of the load failure state."
   },
-  "activeContextIntro": "What the model reads on its next turn: the messages this server keeps for the conversation after its latest summary. Counts are messages, not tokens.",
+  "activeContextIntro": "What the model reads on its next turn, after the latest summary.",
   "@activeContextIntro": {
     "description": "Active context: plain one-paragraph intro above the list."
   },
@@ -28515,10 +28515,6 @@
   "sessionNoteEmptyUseDelete": "To remove the note, use Delete saved note.",
   "@sessionNoteEmptyUseDelete": {
     "description": "Note for the agent: why Save is unavailable when the saved note was cleared in the field."
-  },
-  "sessionNoteUnchanged": "Change the note to save it.",
-  "@sessionNoteUnchanged": {
-    "description": "Note for the agent: why Save is unavailable when nothing changed."
   },
   "sessionRelationsTitle": "Subagents",
   "@sessionRelationsTitle": {
@@ -30569,5 +30565,35 @@
   "kitCapFlagToolInventoryWhy": "This server doesn't list the tools its agent can use.",
   "@kitCapFlagToolInventoryWhy": {
     "description": "KitCapabilityExplainer: why the capability \"flag:toolInventory\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "demoScreenReset": "Reset demo",
+  "@demoScreenReset": {
+    "description": "Offline demo: status-line action that starts the simulated conversation again."
+  },
+  "demoScreenLeave": "Leave demo",
+  "@demoScreenLeave": {
+    "description": "Offline demo: the top bar close button that leaves the demo."
+  },
+  "demoScreenDisclosure": "Everything here is simulated on this device. No server, provider, or files are accessed.",
+  "@demoScreenDisclosure": {
+    "description": "Offline demo: supporting line under \"Simulated · nothing is saved\"."
+  },
+  "capabilityScreenIntroWithGaps": "{server} decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out. Missing features work on other OpenCode servers.",
+  "@capabilityScreenIntroWithGaps": {
+    "description": "Available on this server: intro when the server lacks something; says once where missing features work.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "activeContextMessageTitle": "{role, select, user{User message} assistant{Assistant message} system{System message} synthetic{Synthetic message} skill{Skill message} shell{Shell message} compaction{Summary message} change{Conversation change} other{Message}}",
+  "@activeContextMessageTitle": {
+    "description": "Active context: title of one message page, by its role.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
   }
 }
