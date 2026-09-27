@@ -3,16 +3,34 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../api/product_repository.dart';
+import '../../domain/team_directories.dart';
 import '../../domain/workspace_paths.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../widgets/product_states.dart';
-import 'project_folder_actions.dart';
 import '../app_iconography.dart';
-import '../../domain/team_directories.dart';
-import '../kit/motion/kit_animated_rows.dart';
+import '../app_theme.dart' show AppStatusTone;
+import '../kit/kit_bidi.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_dialog.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_progress.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_row_parts.dart';
+import '../kit/kit_screen.dart';
+import '../kit/kit_search_field.dart';
+import '../kit/kit_state_view.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_top_bar.dart';
 import '../kit/motion/kit_refresh.dart';
+import '../widgets/product_states.dart' show productErrorText;
+import 'project_folder_actions.dart';
 
+/// Projects (map pages `projects`, `projects-rename-dialog`): the server's
+/// open project folders as one row list. A row opens its project; its menu
+/// (long-press, right-click) renames it. The current project carries the
+/// current mark and the word "Current", never colour alone. A server that
+/// cannot switch projects gets the same title and says it works in one
+/// folder.
 class ProjectsScreen extends StatefulWidget {
   final ConnectionController controller;
   final String? selectedProjectID;
@@ -32,8 +50,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   List<WorkspaceProject>? _projects;
   String? _error;
   String? _busyProjectID;
+  String? _switchError;
   bool _loading = false;
   int _loadGeneration = 0;
+
+  AppLocalizations get _l10n =>
+      lookupAppLocalizations(Localizations.localeOf(context));
 
   @override
   void initState() {
@@ -55,9 +77,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     if (repository == null) {
       setState(() {
         _loading = false;
-        _error = lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7ProjectProjectsReconnect;
+        _error = _l10n.e7ProjectProjectsReconnect;
       });
       return;
     }
@@ -90,9 +110,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       )
       .toList(growable: false);
 
+  String get _query => _search.text.trim();
+
   List<WorkspaceProject> get _visibleProjects {
     final projects = _usableProjects;
-    final query = _search.text.trim().toLowerCase();
+    final query = _query.toLowerCase();
     if (query.isEmpty) return projects;
     return projects
         .where(
@@ -112,15 +134,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       Navigator.of(context).pop(false);
       return;
     }
-    setState(() => _busyProjectID = project.id);
+    setState(() {
+      _busyProjectID = project.id;
+      _switchError = null;
+    });
     await widget.controller.selectLocation(directory: project.directory);
     if (!mounted) return;
-    setState(() => _busyProjectID = null);
     final error = widget.controller.locationError;
-    if (error != null) {
-      _showMessage(error);
-      return;
-    }
+    setState(() {
+      _busyProjectID = null;
+      _switchError = error;
+    });
+    if (error != null) return;
     Navigator.of(context).pop(true);
   }
 
@@ -142,30 +167,42 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     if (path != null && mounted) Navigator.of(context).pop(true);
   }
 
+  /// Rename runs inside the dialog: while it works the dialog says so, and
+  /// a failure stays in the dialog under the field with the typed name kept
+  /// (map `projects-rename-dialog`: "rename fails").
   Future<void> _rename(WorkspaceProject project) async {
     if (!widget.controller.capabilities.projectManagement) return;
     if (_busyProjectID != null) return;
-    final next = await showDialog<String>(
-      context: context,
-      builder: (_) => _RenameProjectDialog(project: project),
+    final l10n = _l10n;
+    await showKitInputDialog(
+      context,
+      title: l10n.e7ProjectProjectRenameTitle,
+      label: l10n.e7ProjectProjectNameLabel,
+      confirmLabel: l10n.e7ProjectProjectSave,
+      initial: project.name,
+      helper: l10n.e7ProjectProjectNameHint,
+      fieldKey: const ValueKey('project-name-input'),
+      confirmKey: const ValueKey('confirm-rename-project'),
+      onSubmit: (next) => _applyRename(project, next),
     );
-    if (next == null || !mounted) return;
+  }
+
+  /// Returns null when the name is saved (or nothing changed), the reason
+  /// otherwise.
+  Future<String?> _applyRename(WorkspaceProject project, String next) async {
+    final l10n = _l10n;
     final folderName = _basename(project.directory);
     final normalized = next.trim();
     final serverName = normalized.isEmpty || normalized == folderName
         ? ''
         : normalized;
-    if (normalized == project.name && serverName.isNotEmpty) return;
-
+    if (normalized == project.name && serverName.isNotEmpty) return null;
     setState(() => _busyProjectID = project.id);
     try {
       final repository = await widget.controller.prepareActionRepository();
-      if (!mounted) return;
       if (repository == null) {
-        throw ProductException(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7ProjectProjectsReconnect,
+        return l10n.e7ProjectProjectRenameFailed(
+          l10n.e7ProjectProjectsReconnect,
         );
       }
       final updated = await repository.renameProject(
@@ -173,26 +210,17 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         projectDirectory: project.directory,
         name: serverName,
       );
-      if (!mounted) return;
-      setState(() {
-        _projects = [
-          for (final item in _projects ?? const <WorkspaceProject>[])
-            if (item.id == updated.id) updated else item,
-        ]..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      });
-      _showMessage(
-        lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7ProjectProjectRenamed(updated.name),
-      );
-    } catch (error) {
       if (mounted) {
-        _showMessage(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7ProjectProjectRenameFailed(productErrorText(error)),
-        );
+        setState(() {
+          _projects = [
+            for (final item in _projects ?? const <WorkspaceProject>[])
+              if (item.id == updated.id) updated else item,
+          ]..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        });
       }
+      return null;
+    } catch (error) {
+      return l10n.e7ProjectProjectRenameFailed(productErrorText(error));
     } finally {
       if (mounted) setState(() => _busyProjectID = null);
     }
@@ -207,173 +235,199 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     return parts.isEmpty ? path : parts.last;
   }
 
-  void _showMessage(String message) => ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(message)));
-
   @override
   Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final l10n = _l10n;
     if (!widget.controller.capabilities.projectManagement) {
-      final directory = widget.controller.directory;
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).projectContextTitle,
-          ),
-        ),
-        body: ListView(
-          key: const ValueKey('projects-context-list'),
-          padding: const EdgeInsets.only(bottom: 32),
-          children: [
-            ListTile(
-              key: const ValueKey('projects-configured-folder'),
-              leading: const Icon(AppIconography.files),
-              title: Text(
-                lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).projectConfiguredFolder,
-              ),
-              subtitle: Text(
-                directory == null || directory.isEmpty
-                    ? l10n.e7ProjectProjectDefaultDirectory
-                    : directory,
-                textDirection: directory == null || directory.isEmpty
-                    ? null
-                    : TextDirection.ltr,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            ProductEmptyState(
-              icon: AppIconography.folderOpen,
-              title: l10n.e7ProjectProjectSwitchUnavailable,
-              message: l10n.e7ProjectProjectSwitchUnavailableDetail,
-            ),
-          ],
-        ),
-      );
+      return _oneFolder(context, l10n);
     }
     final projects = _projects;
+    final usable = _usableProjects;
     final visible = _visibleProjects;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.e7ProjectProjectsTitle),
+    final query = _query;
+    final switchError = _switchError;
+    final busy = _loading || _busyProjectID != null;
+    return KitScreen(
+      width: KitScreenWidth.list,
+      topBar: KitTopBar(
+        title: l10n.e7ProjectProjectsTitle,
         actions: [
-          IconButton(
-            tooltip: l10n.e7ProjectProjectsRefresh,
-            onPressed: _loading || _busyProjectID != null ? null : _load,
-            icon: const Icon(AppIconography.retry),
+          KitAction(
+            label: l10n.e7ProjectProjectsRefresh,
+            icon: AppIconography.retry,
+            onPressed: busy ? null : _load,
           ),
         ],
       ),
+      search: KitSearchField(
+        label: l10n.e7ProjectProjectsSearch,
+        controller: _search,
+        onChanged: (_) {},
+        resultCount: query.isEmpty || projects == null ? null : visible.length,
+        fieldKey: const ValueKey('project-search'),
+      ),
+      loading: busy,
+      loadingLabel: l10n.e7ProjectProjectsRefresh,
       body: KitRefresh(
         onRefresh: _load,
         child: ListView(
           key: const ValueKey('projects-list'),
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 32),
+          padding: KitScreen.padding(context),
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: TextField(
-                key: const ValueKey('project-search'),
-                controller: _search,
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  hintText: l10n.e7ProjectProjectsSearch,
-                  prefixIcon: const Icon(AppIconography.search),
-                  suffixIcon: _search.text.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: l10n.e7ProjectProjectsClearSearch,
-                          onPressed: _search.clear,
-                          icon: const Icon(AppIconography.close),
-                        ),
-                ),
+            if (switchError != null)
+              KitNotice(
+                key: const ValueKey('projects-switch-error'),
+                message: switchError,
+                tone: AppStatusTone.failure,
+                icon: AppIconography.error,
+                onDismiss: () => setState(() => _switchError = null),
               ),
-            ),
-            if (ProjectFolderActions.canCreate(widget.controller))
-              ListTile(
-                key: const ValueKey('projects-create-folder'),
-                leading: const Icon(AppIconography.folderAdd),
-                title: Text(l10n.projectFolderCreate),
-                subtitle: Text(
-                  l10n.projectFolderCreateSubtitle(managedProjectsDirectory),
+            KitRowGroup(
+              children: [
+                if (ProjectFolderActions.canCreate(widget.controller))
+                  KitRow(
+                    key: const ValueKey('projects-create-folder'),
+                    leading: const KitRowIcon(AppIconography.folderAdd),
+                    title: l10n.projectFolderCreate,
+                    supporting: TextSpan(
+                      text: l10n.projectFolderCreateSubtitle(
+                        KitBidi.ltr(managedProjectsDirectory),
+                      ),
+                    ),
+                    trailing: const KitChevron(),
+                    onTap: _createFolder,
+                  ),
+                KitRow(
+                  key: const ValueKey('projects-open-folder'),
+                  leading: const KitRowIcon(AppIconography.folderOpen),
+                  title: l10n.projectFolderOpen,
+                  supporting: TextSpan(text: l10n.projectFolderOpenSubtitle),
+                  trailing: const KitChevron(),
+                  onTap: _openFolder,
                 ),
-                onTap: _createFolder,
-              ),
-            ListTile(
-              key: const ValueKey('projects-open-folder'),
-              leading: const Icon(AppIconography.folderOpen),
-              title: Text(l10n.projectFolderOpen),
-              subtitle: Text(l10n.projectFolderOpenSubtitle),
-              onTap: _openFolder,
-            ),
-            SectionLabel(
-              l10n.e7ProjectProjectsOpened,
-              trailing: Text(
-                l10n.e7ProjectProjectsCount(
-                  visible.length,
-                  _usableProjects.length,
-                ),
-              ),
+              ],
             ),
             if (_loading && projects == null)
-              const LinearProgressIndicator(minHeight: 2),
-            if (_error != null && projects == null)
-              ProductErrorState(message: _error!, onRetry: _load)
-            else if (projects != null && _usableProjects.isEmpty)
+              const KitSkeletonRows()
+            else if (_error != null && projects == null)
+              KitStateView.error(
+                title: l10n.e7ProjectProjectsRefreshFailed,
+                body: _error,
+                size: KitStateSize.inline,
+                retry: KitAction(
+                  label: l10n.workspaceRetryProjects,
+                  onPressed: _load,
+                ),
+              )
+            else if (projects != null && usable.isEmpty)
               // Coherent with the Workspace chooser: the server's home folder
               // is never a project, so a fresh server starts with a new or
               // typed folder.
-              ProductEmptyState(
-                icon: Icons.folder_off_outlined,
+              KitStateView(
+                icon: AppIconography.folders,
                 title: l10n.e7ProjectProjectsEmpty,
-                message: l10n.e7ProjectProjectsEmptyDetail,
+                body: l10n.e7ProjectProjectsEmptyDetail,
+                size: KitStateSize.inline,
               )
-            else if (visible.isEmpty)
-              ProductEmptyState(
-                icon: Icons.search_off_rounded,
-                title: l10n.e7ProjectProjectsNoMatch,
-                message: l10n.e7ProjectProjectsNoMatchDetail,
-              )
-            else
-              // A project made or removed while the list is open unfolds in
-              // or folds away (design standard §10). Typing a search shows
-              // its matches at once: the rows restart with each query.
-              KitAnimatedRows(
-                key: ValueKey('projects-rows-${_search.text.trim()}'),
+            else if (visible.isEmpty && query.isNotEmpty)
+              KitSearchNoMatch(query: query, onClear: _search.clear)
+            else if (visible.isNotEmpty)
+              KitRowGroup(
+                label: l10n.e7ProjectProjectsOpened,
                 children: [
                   for (final project in visible)
-                    KeyedSubtree(
-                      key: ValueKey('project-row-${project.id}'),
-                      child: _ProjectTile(
-                        project: project,
-                        active: project.id == widget.selectedProjectID,
-                        busy: _busyProjectID == project.id,
-                        onOpen: () => _select(project),
-                        onRename: () => _rename(project),
-                      ),
-                    ),
+                    _projectRow(context, l10n, project),
                 ],
               ),
             if (_error != null && projects != null)
-              ListTile(
+              KitNotice.error(
                 key: const ValueKey('project-refresh-error'),
-                leading: const Icon(AppIconography.error),
-                title: Text(l10n.e7ProjectProjectsRefreshFailed),
-                subtitle: Text(_error!),
-                trailing: IconButton(
-                  tooltip: l10n.workspaceRetryProjects,
+                title: l10n.e7ProjectProjectsRefreshFailed,
+                message: _error!,
+                retry: KitAction(
+                  label: l10n.workspaceRetryProjects,
                   onPressed: _load,
-                  icon: const Icon(AppIconography.retry),
                 ),
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _projectRow(
+    BuildContext context,
+    AppLocalizations l10n,
+    WorkspaceProject project,
+  ) {
+    final active = project.id == widget.selectedProjectID;
+    final busy = _busyProjectID == project.id;
+    final worktrees = project.worktrees.length;
+    return KitRow(
+      key: ValueKey('project-${project.id}'),
+      leading: KitRowIcon(AppIconography.files, current: active),
+      title: project.name,
+      supporting: TextSpan(
+        children: [
+          if (active) kitCurrentSpan(context, l10n.e7SharedCurrent),
+          TextSpan(text: KitBidi.ltr(project.directory)),
+          if (worktrees > 0)
+            TextSpan(text: ' · ${l10n.e7ProjectProjectWorktrees(worktrees)}'),
+        ],
+      ),
+      trailing: active ? null : const KitChevron(),
+      enabled: !busy,
+      selected: active,
+      onTap: () => _select(project),
+      menuLabel: project.name,
+      menu: [
+        KitMenuItem(
+          key: ValueKey('rename-project-${project.id}'),
+          label: l10n.e7ProjectProjectRenameAction(project.name),
+          icon: AppIconography.edit,
+          enabled: _busyProjectID == null,
+          onSelected: () => unawaited(_rename(project)),
+        ),
+      ],
+    );
+  }
+
+  /// A server that works in one folder (Codex, Paseo): the same title, the
+  /// folder it uses, and what to do instead of switching.
+  Widget _oneFolder(BuildContext context, AppLocalizations l10n) {
+    final directory = widget.controller.directory;
+    final hasDirectory = directory != null && directory.isNotEmpty;
+    return KitScreen(
+      width: KitScreenWidth.reading,
+      topBar: KitTopBar(title: l10n.e7ProjectProjectsTitle),
+      body: ListView(
+        key: const ValueKey('projects-context-list'),
+        padding: KitScreen.padding(context),
+        children: [
+          KitStateView(
+            icon: AppIconography.folderOpen,
+            title: l10n.projectsOneFolderTitle,
+            body: l10n.e7ProjectProjectSwitchUnavailableDetail,
+            size: KitStateSize.inline,
+          ),
+          KitRowGroup(
+            children: [
+              KitRow(
+                key: const ValueKey('projects-configured-folder'),
+                leading: const KitRowIcon(AppIconography.files),
+                title: l10n.projectConfiguredFolder,
+                supporting: hasDirectory
+                    ? null
+                    : TextSpan(text: l10n.e7ProjectProjectDefaultDirectory),
+                below: hasDirectory
+                    ? KitText.mono(directory, selectable: true)
+                    : null,
+                supportingMaxLines: 2,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -383,138 +437,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     _search
       ..removeListener(_searchChanged)
       ..dispose();
-    super.dispose();
-  }
-}
-
-class _ProjectTile extends StatelessWidget {
-  final WorkspaceProject project;
-  final bool active;
-  final bool busy;
-  final VoidCallback onOpen;
-  final VoidCallback onRename;
-
-  const _ProjectTile({
-    required this.project,
-    required this.active,
-    required this.busy,
-    required this.onOpen,
-    required this.onRename,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final worktreeCount = project.worktrees.length;
-    return ListTile(
-      key: ValueKey('project-${project.id}'),
-      selected: active,
-      enabled: !busy,
-      leading: busy
-          ? const SizedBox.square(
-              dimension: 22,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Icon(active ? AppIconography.files : AppIconography.files),
-      title: Text(project.name),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            project.directory,
-            textDirection: TextDirection.ltr,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (worktreeCount > 0)
-            Text(l10n.e7ProjectProjectWorktrees(worktreeCount)),
-        ],
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            key: ValueKey('rename-project-${project.id}'),
-            tooltip: l10n.e7ProjectProjectRenameAction(project.name),
-            onPressed: busy ? null : onRename,
-            icon: const Icon(AppIconography.edit),
-          ),
-          Icon(
-            active ? AppIconography.checkCircle : AppIconography.chevronRight,
-          ),
-        ],
-      ),
-      onTap: onOpen,
-    );
-  }
-}
-
-class _RenameProjectDialog extends StatefulWidget {
-  final WorkspaceProject project;
-
-  const _RenameProjectDialog({required this.project});
-
-  @override
-  State<_RenameProjectDialog> createState() => _RenameProjectDialogState();
-}
-
-class _RenameProjectDialogState extends State<_RenameProjectDialog> {
-  late final TextEditingController _controller = TextEditingController(
-    text: widget.project.name,
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return AlertDialog(
-      title: Text(l10n.e7ProjectProjectRenameTitle),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              key: const ValueKey('project-name-input'),
-              controller: _controller,
-              autofocus: true,
-              textInputAction: TextInputAction.done,
-              decoration: InputDecoration(
-                labelText: l10n.e7ProjectProjectNameLabel,
-              ),
-              onSubmitted: (_) => _submit(),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              widget.project.directory,
-              textDirection: TextDirection.ltr,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 8),
-            Text(l10n.e7ProjectProjectNameHint),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-        ),
-        FilledButton(
-          key: const ValueKey('confirm-rename-project'),
-          onPressed: _submit,
-          child: Text(l10n.e7ProjectProjectSave),
-        ),
-      ],
-    );
-  }
-
-  void _submit() => Navigator.pop(context, _controller.text);
-
-  @override
-  void dispose() {
-    _controller.dispose();
     super.dispose();
   }
 }
