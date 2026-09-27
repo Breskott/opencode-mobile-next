@@ -41216,6 +41216,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A cloud machine for this project'**
   String get newConversationCloudDetail;
+
+  /// Conversation menu row: save this conversation as a file (JSON where the server exports, Markdown otherwise)
+  ///
+  /// In en, this message translates to:
+  /// **'Export this conversation'**
+  String get chatUiExportThisConversation;
+
+  /// Chat, draft not saved: copies the unsaved draft text
+  ///
+  /// In en, this message translates to:
+  /// **'Copy draft'**
+  String get chatDraftCopy;
 }
 
 class _AppLocalizationsDelegate

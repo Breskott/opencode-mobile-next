@@ -26396,4 +26396,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get newConversationCloudDetail => 'A cloud machine for this project';
+
+  @override
+  String get chatUiExportThisConversation => 'Export this conversation';
+
+  @override
+  String get chatDraftCopy => 'Copy draft';
 }
