@@ -9,6 +9,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/ui/widgets/diff_view.dart';
 
+// DiffView is a forwarding wrapper over KitDiffView (kit-KitDiffView,
+// KIT-43): these tests prove the wrapper's frame, keys ('diff-…'), FileDiff
+// conversion and copy still work; the renderer's own contract is
+// test/kit/kit_diff_view_test.dart.
+
 Future<void> _pump(WidgetTester tester, List<FileDiff> diffs) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -22,8 +27,8 @@ Future<void> _pump(WidgetTester tester, List<FileDiff> diffs) async {
 }
 
 void main() {
-  testWidgets('patch view shows a sticky file header, gutter numbers and '
-      'a count-only gap between hunks', (tester) async {
+  testWidgets('patch view shows the file header, both line numbers, hunk '
+      'ranges and a count-only gap between hunks', (tester) async {
     await _pump(tester, [
       FileDiff(
         file: 'lib/ui/widgets/markdown.dart',
@@ -45,22 +50,30 @@ void main() {
     ]);
 
     expect(find.byKey(const Key('diff-view')), findsOneWidget);
-    expect(find.text('markdown.dart'), findsOneWidget);
-    expect(find.text('Review'), findsOneWidget);
-    expect(find.textContaining('lib/ui/widgets/'), findsOneWidget);
-    expect(find.text('+2'), findsOneWidget);
-    expect(find.text('−1'), findsOneWidget);
-    // Removed lines number by the old file, added by the new file.
-    expect(find.text('11'), findsNWidgets(2));
-    expect(find.text('12'), findsOneWidget);
-    expect(find.text('old eleven'), findsOneWidget);
-    expect(find.text('new twelve'), findsOneWidget);
-    // The patch does not carry the skipped lines, so the gap only reports.
     expect(
-      find.text('47 unchanged lines not included in patch'),
+      find.byKey(const Key('diff-file-header-lib/ui/widgets/markdown.dart')),
       findsOneWidget,
     );
-    expect(find.text('Expand'), findsNothing);
+    expect(find.textContaining('markdown.dart'), findsOneWidget);
+    expect(find.text('Review'), findsOneWidget);
+    expect(find.textContaining('lib/ui/widgets/'), findsOneWidget);
+    expect(find.text('+2 −1'), findsOneWidget);
+    // Unified shows the old and the new number: old 11 (removed) and new 11
+    // (added); new 12 (added) and old 12 (kept "context twelve").
+    expect(find.text('11'), findsNWidgets(2));
+    expect(find.text('12'), findsNWidgets(2));
+    expect(find.text('old eleven'), findsOneWidget);
+    expect(find.text('new twelve'), findsOneWidget);
+    expect(find.text('Lines 10–13'), findsOneWidget);
+    // The patch does not carry the skipped lines, so the gap only reports.
+    expect(find.text('47 unchanged lines'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('diff-gap-7')),
+        matching: find.byType(InkWell),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('before/after pairs collapse context and expand 20 lines per '
@@ -80,7 +93,7 @@ void main() {
     // Three lines of context stay on each side; the rest folds.
     expect(find.text('line 30'), findsOneWidget);
     expect(find.text('line 27'), findsNothing);
-    expect(find.text('Show 20 previous lines (27 hidden)'), findsOneWidget);
+    expect(find.text('Show 20 unchanged lines'), findsWidgets);
     expect(
       tester.getSize(find.byKey(const Key('diff-gap-0'))).height,
       greaterThanOrEqualTo(48),
@@ -88,14 +101,13 @@ void main() {
 
     await tester.tap(find.byKey(const Key('diff-gap-0')));
     await tester.pumpAndSettle();
-    // Chevron-up reveals the 20 lines just above the hunk.
-    expect(find.text('Show 7 previous lines (7 hidden)'), findsOneWidget);
+    // The first gap reveals the 20 lines just above the change.
+    expect(find.text('Show 7 unchanged lines'), findsOneWidget);
     expect(find.text('line 8'), findsOneWidget);
     expect(find.text('line 7'), findsNothing);
-    await tester.tap(find.text('Hide revealed context').first);
+    await tester.tap(find.byKey(const Key('diff-collapse-0')));
     await tester.pumpAndSettle();
     expect(find.text('line 8'), findsNothing);
-    expect(find.text('Show 20 previous lines (27 hidden)'), findsOneWidget);
     expect(find.text('changed line 31'), findsOneWidget);
   });
 
@@ -110,11 +122,11 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(400, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await _pump(tester, [diff]);
-    expect(find.byKey(const Key('diff-view-horizontal')), findsNothing);
+    expect(find.byKey(const Key('diff-horizontal')), findsNothing);
 
     await tester.binding.setSurfaceSize(const Size(900, 800));
     await _pump(tester, [diff]);
-    expect(find.byKey(const Key('diff-view-horizontal')), findsOneWidget);
+    expect(find.byKey(const Key('diff-horizontal')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
   testWidgets('change identity is visible and spoken without color', (
@@ -127,8 +139,8 @@ void main() {
     ]);
     expect(find.text('+'), findsOneWidget);
     expect(find.text('−'), findsOneWidget);
-    expect(find.bySemanticsLabel('Added, line 1: new value'), findsOneWidget);
-    expect(find.bySemanticsLabel('Removed, line 1: old value'), findsOneWidget);
+    expect(find.bySemanticsLabel('Line 1 added: new value'), findsOneWidget);
+    expect(find.bySemanticsLabel('Line 1 removed: old value'), findsOneWidget);
     semantics.dispose();
   });
 
@@ -158,20 +170,12 @@ void main() {
       tester.getSize(find.byKey(const Key('diff-file-header-$file'))).height,
       greaterThan(44),
     );
-    expect(find.byTooltip(file), findsOneWidget);
-    final changed = find
-        .ancestor(of: find.text(longLine), matching: find.byType(Container))
-        .first;
-    final decoration =
-        tester.widget<Container>(changed).decoration! as BoxDecoration;
-    expect((decoration.border! as Border).left.width, 3);
-    expect(tester.getSize(changed).height, greaterThan(60));
+    expect(tester.getSize(find.text(longLine)).height, greaterThan(60));
     expect(find.text('+'), findsOneWidget);
   });
 
-  testWidgets('copy confirms the copied object and close returns to caller', (
-    tester,
-  ) async {
+  testWidgets('copy is verbatim, from More, with no SnackBar; close returns '
+      'to the caller', (tester) async {
     String? copied;
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
       SystemChannels.platform,
@@ -204,14 +208,35 @@ void main() {
     );
     await tester.tap(find.text('Review changes'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Copy updated file'));
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy updated file'));
     await tester.pumpAndSettle();
     expect(copied, 'new');
-    expect(find.text('Updated file copied'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
     await tester.tap(find.byType(CloseButton));
     await tester.pumpAndSettle();
     expect(find.text('Review changes'), findsOneWidget);
     expect(find.byType(DiffView), findsNothing);
+  });
+
+  testWidgets('allowCopy: false offers no copy', (tester) async {
+    await _pump(tester, [
+      FileDiff(file: 'a.dart', before: 'old', after: 'new'),
+    ]);
+    expect(find.byTooltip('More'), findsOneWidget);
+    await _pump(tester, []);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: DiffView.single(
+          FileDiff(file: 'a.dart', before: 'old', after: 'new'),
+          allowCopy: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('More'), findsNothing);
+    expect(find.byKey(const Key('diff-file-header-a.dart')), findsOneWidget);
   });
   testWidgets('review capture at normal and large text', (tester) async {
     await tester.binding.setSurfaceSize(const Size(400, 850));
@@ -269,10 +294,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(find.text('welcome_message.dart'), findsOneWidget);
+      expect(find.textContaining('welcome_message.dart'), findsOneWidget);
       expect(find.text('Review'), findsOneWidget);
-      expect(find.text('+1'), findsOneWidget);
-      expect(find.text('−1'), findsOneWidget);
+      expect(find.text('+1 −1'), findsOneWidget);
       if (captureDir != null) {
         final boundary = tester.renderObject<RenderRepaintBoundary>(
           find.byKey(const Key('review-capture')),

@@ -23706,5 +23706,183 @@
   "folderBrowserFirstProject": "Name your first project",
   "@folderBrowserFirstProject": {
     "description": "Folder browser: the empty projects folder's first step; puts the cursor in the project name field"
+  },
+  "kitDiffFiles": "{count, plural, =1{1 file} other{{count} files}}",
+  "@kitDiffFiles": {
+    "description": "KitDiffView: how many files a diff covers, on the file picker row",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDiffChangeOf": "Change {index} of {count}",
+  "@kitDiffChangeOf": {
+    "description": "KitDiffView: the change navigator's label, also announced when moving to a change",
+    "placeholders": {
+      "index": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitDiffPreviousChange": "Previous change",
+  "@kitDiffPreviousChange": {
+    "description": "KitDiffView: tooltip of the navigator's up arrow"
+  },
+  "kitDiffNextChange": "Next change",
+  "@kitDiffNextChange": {
+    "description": "KitDiffView: tooltip of the navigator's down arrow"
+  },
+  "kitDiffLines": "Lines {start}–{end}",
+  "@kitDiffLines": {
+    "description": "KitDiffView: a hunk header (@@ … @@) read as the line range it covers in the new file",
+    "placeholders": {
+      "start": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "end": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitDiffShowUnchanged": "{count, plural, =1{Show 1 unchanged line} other{Show {count} unchanged lines}}",
+  "@kitDiffShowUnchanged": {
+    "description": "KitDiffView: a folded run of unchanged lines; tapping reveals this many more",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDiffHideUnchanged": "Hide unchanged lines",
+  "@kitDiffHideUnchanged": {
+    "description": "KitDiffView: folds the unchanged lines revealed from a gap again"
+  },
+  "kitDiffUnchangedCount": "{count, plural, other{{count} unchanged lines}}",
+  "@kitDiffUnchangedCount": {
+    "description": "KitDiffView: a gap the patch does not carry, so it cannot be expanded; only its size is stated",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDiffNoChanges": "No changes",
+  "@kitDiffNoChanges": {
+    "description": "KitDiffView: the empty state when there are no changed files"
+  },
+  "kitDiffBinary": "Binary file · not shown",
+  "@kitDiffBinary": {
+    "description": "KitDiffView: a binary file's body; its lines are not shown"
+  },
+  "kitDiffRenamed": "Renamed from {path}",
+  "@kitDiffRenamed": {
+    "description": "KitDiffView: the file header's supporting line for a renamed file; path is the old path",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "kitDiffAddedFile": "New file",
+  "@kitDiffAddedFile": {
+    "description": "KitDiffView: the status word of a file the change creates"
+  },
+  "kitDiffDeletedFile": "Deleted",
+  "@kitDiffDeletedFile": {
+    "description": "KitDiffView: the status word of a file the change deletes"
+  },
+  "kitDiffTooBig": "Showing {shown} of {total} lines",
+  "@kitDiffTooBig": {
+    "description": "KitDiffView: a preview capped at a number of lines",
+    "placeholders": {
+      "shown": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitDiffOpenAll": "Open all",
+  "@kitDiffOpenAll": {
+    "description": "KitDiffView: opens the whole diff from a capped preview"
+  },
+  "kitDiffLineAdded": "Line {number} added",
+  "@kitDiffLineAdded": {
+    "description": "KitDiffView: screen-reader label of an added line, followed by its text",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDiffLineRemoved": "Line {number} removed",
+  "@kitDiffLineRemoved": {
+    "description": "KitDiffView: screen-reader label of a removed line, followed by its text",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDiffComment": "Comment",
+  "@kitDiffComment": {
+    "description": "KitDiffView: the selection bar's primary; comments on the selected lines"
+  },
+  "kitDiffAddToPrompt": "Add to prompt",
+  "@kitDiffAddToPrompt": {
+    "description": "KitDiffView: puts the selected lines into the message being written"
+  },
+  "kitDiffCopyLines": "Copy lines",
+  "@kitDiffCopyLines": {
+    "description": "KitDiffView: copies the selected lines, exactly as they are"
+  },
+  "kitDiffClearSelection": "Clear selection",
+  "@kitDiffClearSelection": {
+    "description": "KitDiffView: tooltip of the button that clears the selected lines"
+  },
+  "kitDiffSelected": "{count, plural, =1{1 line selected} other{{count} lines selected}}",
+  "@kitDiffSelected": {
+    "description": "KitDiffView: the selection bar's count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDiffCounts": "{added} added, {removed} removed",
+  "@kitDiffCounts": {
+    "description": "KitDiffView: a file's +n −n counts, spoken in full to a screen reader",
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDiffLoadFailed": "Couldn't load the changes",
+  "@kitDiffLoadFailed": {
+    "description": "KitDiffView: the error state's title when the diff could not be loaded"
+  },
+  "kitDiffLine": "Line {number}",
+  "@kitDiffLine": {
+    "description": "KitDiffView: screen-reader label of an unchanged line, followed by its text",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
   }
 }
