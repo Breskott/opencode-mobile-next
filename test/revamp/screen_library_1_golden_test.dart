@@ -383,18 +383,5 @@ void main() {
         );
       });
     });
-
-    group('catalog ($tone)', () {
-      testWidgets('no provider', (tester) async {
-        final controller = await _server();
-        addTearDown(controller.dispose);
-        await _shot(
-          tester,
-          'library_catalog_no_provider',
-          light: light,
-          home: CatalogScreen(controller: controller),
-        );
-      });
-    });
   }
 }

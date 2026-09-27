@@ -326,20 +326,21 @@ void main() {
     final (controller, _) = await boot();
     await pumpHost(tester, controller, 'oc-loy');
     expect(key('team-work-sheet-oc-loy'), findsOneWidget);
-    // The sheet's own title and its Gas City term.
+    // The sheet's own title; the host's term and id wait under Technical
+    // details, never in the subtitle.
     expect(
       inSheet(find.text('Add subtract function to calc.py')),
       findsOneWidget,
     );
     expect(
       inSheet(find.text('Work · bead oc-loy', findRichText: true)),
-      findsOneWidget,
+      findsNothing,
     );
-    expect(textOf(tester, 'team-work-sheet-state'), 'Blocked');
+    // The cycle strip carries the state; no second state line.
+    expect(key('team-work-sheet-state'), findsNothing);
+    // The owner by the agent's own name, not the host's handle.
     final owner = tester.widget<KitText>(key('team-work-sheet-owner'));
-    expect(owner.text, 'ocproof/gastown.refinery');
-    // A name the app did not write: mono, laid out left to right.
-    expect(owner.role, KitTextRole.mono);
+    expect(owner.text, 'refinery');
 
     // The description renders as markdown.
     expect(key('team-work-sheet-description'), findsOneWidget);
@@ -425,7 +426,6 @@ void main() {
     expect(key('team-work-sheet-oc-loy'), findsNothing);
     expect(key('team-work-sheet-oc-dep'), findsOneWidget);
     expect(inSheet(find.text('Agree the calc.py API')), findsOneWidget);
-    expect(textOf(tester, 'team-work-sheet-state'), 'Queued');
     expect(textOf(tester, 'team-work-sheet-owner'), 'Unassigned');
     // oc-dep has no dependencies; oc-loy waits on it.
     expect(key('team-work-dependency-oc-loy'), findsNothing);
@@ -545,7 +545,6 @@ void main() {
       ),
     );
     await pumpHost(tester, controller, 'oc-loy');
-    expect(textOf(tester, 'team-work-sheet-state'), 'Done');
     final output = key('team-work-sheet-output');
     await reveal(tester, output);
     // Output is a kit code block: mono, left to right, copyable.

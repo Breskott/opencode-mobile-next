@@ -16,7 +16,7 @@ import 'package:opencode_mobile/state/review_handoff.dart';
 import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
 import 'package:opencode_mobile/ui/kit/kit_code_block.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
-import 'package:opencode_mobile/ui/screens/library_screen.dart';
+import 'package:opencode_mobile/ui/widgets/pickers.dart' show ModelCatalogView;
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/terminal_screen.dart';
@@ -1556,12 +1556,19 @@ void main() {
     await tester.tap(find.text('Run a shell command'));
     await tester.pumpAndSettle();
 
-    // The tile now opens the shared permission sheet; its triad is stacked
-    // full-width, so a 280dp screen must still render all three actions.
-    expect(find.byKey(const Key('permission-sheet')), findsOneWidget);
-    expect(find.byKey(const Key('permission-allow-once')), findsOneWidget);
+    // The tile opens the shared request sheet: its pinned Allow once and
+    // Reject and the "Always allow" switch must all render at 280dp.
+    final sheet = find.byKey(const Key('permission-sheet'));
+    expect(sheet, findsOneWidget);
+    expect(
+      find.descendant(of: sheet, matching: find.text('Allow once')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text('Reject')),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('permission-allow-always')), findsOneWidget);
-    expect(find.byKey(const Key('permission-reject')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -1600,7 +1607,11 @@ void main() {
     controller.catalogDetailed = true;
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      MaterialApp(home: CatalogScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: ModelCatalogView(controller: controller)),
+      ),
     );
     await tester.pumpAndSettle();
     await tester.drag(find.byType(ListView), const Offset(0, -500));

@@ -312,10 +312,10 @@
           "label": "Models & agents",
           "key": "settings-models",
           "line": 354,
-          "action": "navigate",
-          "target": "catalog",
-          "targetWidget": "CatalogScreen",
-          "effect": "Pushes CatalogScreen(controller) via _open. Subtitle shows the default model label (defaultModelLabel).",
+          "action": "open-sheet",
+          "target": "model-picker-sheet",
+          "targetWidget": "showModelPicker",
+          "effect": "Search result (Models & agents): opens the model picker sheet, which is the catalogue.",
           "gates": [
             "capabilities.serverCatalog",
             "row hidden when it does not match the search query (_HubRow.matches(_query))"

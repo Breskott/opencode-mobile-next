@@ -365,9 +365,13 @@ enum _Status { checking, notSetUp, stopped, starting, stopping, running }
 ///
 /// Kit only (shared-phone-1): a [KitRow] (the phone tile, filled when it is
 /// the server in use, and "Connected · " leading its line; the state word
-/// at its end), a [KitActionBlock] with at most one primary, and the rarer
-/// acts in the row's menu ([KitRowMenu] and long-press). Each act names
-/// what it acts on ("Start OpenCode", "Disconnect from This phone").
+/// at its end), and every other act in the row's menu ([KitRowMenu] and
+/// long-press), the same shape as [LocalServerRow]. The row's tap connects
+/// when it can, so no button repeats it; a filled button shows only for
+/// what the server needs before it can be used (Set up, Start OpenCode,
+/// Continue setup, Show progress), aligned with the row's words. Each act
+/// names what it acts on ("Stop OpenCode on this phone", "Disconnect from
+/// this phone").
 ///
 /// States: checking, not set up, stopped, starting, stopping, running,
 /// setting up, removing, failed (the failure in words under the row).
@@ -600,6 +604,14 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       l10n,
       among: widget.connection.store.profiles,
     );
+    // Inside a sentence the default name is lower case ("Disconnect from
+    // this phone"); a name the person gave stays as it is.
+    final sentenceName = name.startsWith(l10n.phoneServerCardTitle)
+        ? name.replaceFirst(
+            l10n.phoneServerCardTitle,
+            l10n.phoneServerNameInSentence,
+          )
+        : name;
 
     // The status word says what is going on, so no button stands in for it
     // (standard §2): while it starts, stops or goes away there is simply no
@@ -625,18 +637,17 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
         : runtime == TermuxRuntime.openCode2
         ? l10n.setupRuntimeTwo
         : l10n.setupRuntimeOne;
-    final bytes = _status?.bytesUsed;
-    // Storage is measured in the background: nothing until a real figure.
-    final detail = bytes != null && bytes > 0
-        ? '$what · ${formatPhoneStorage(bytes)}'
-        : what;
+    // What it runs, never its storage: the line must fit, and the size is
+    // said where it matters (removing it frees the space).
+    final detail = what;
 
     final running = state == _Status.running;
     final installed = state != _Status.notSetUp && state != _Status.checking;
     final canOpen = running && !widget.connected && widget.onOpen != null;
     final hasEngine = _engine() != null;
 
-    // One filled button at most: the one thing this server needs now.
+    // One filled button at most, and only for what the server needs before
+    // it can be used: the row's own tap connects a running one.
     final KitAction? primary = locked
         ? null
         : settingUp
@@ -657,12 +668,6 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
             label: l10n.phoneServerCardStartOpenCode,
             onPressed: _start,
           )
-        : canOpen
-        ? KitAction(
-            key: const ValueKey('phone-server-open'),
-            label: l10n.phoneServerCardConnect(name),
-            onPressed: widget.onOpen,
-          )
         : null;
     // A setup that stopped part way leads when nothing else does.
     final continueSetup = canContinue && !settingUp
@@ -673,21 +678,6 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
           )
         : null;
     final lead = primary ?? (locked ? null : continueSetup);
-    final tertiary = <KitAction>[
-      if (running && !locked && !settingUp)
-        KitAction(
-          key: const ValueKey('phone-server-stop'),
-          label: l10n.phoneServerCardStopOpenCode,
-          onPressed: _stop,
-        ),
-      if (continueSetup != null && lead != continueSetup) continueSetup,
-      if (installed)
-        KitAction(
-          key: const ValueKey('phone-server-show-log'),
-          label: l10n.phoneServerCardShowServerLog,
-          onPressed: _showLog,
-        ),
-    ];
 
     // The terminal needs Ubuntu, not the server: it stays in the menu while
     // the server starts or stops, which is when a server that does not
@@ -702,6 +692,20 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
           label: l10n.thisPhoneManage,
           icon: AppIconography.phone,
           onSelected: () => choose(PhoneServerAction.manage),
+        ),
+      // A setup that stopped part way, when a filled button leads already.
+      if (!terminalOnly && continueSetup != null && lead != continueSetup)
+        KitMenuItem(
+          key: const ValueKey('phone-server-continue'),
+          label: l10n.phoneServerCardContinueSetup,
+          onSelected: () => PhoneServerCardRoutes.openProgress(context),
+        ),
+      if (!terminalOnly && installed)
+        KitMenuItem(
+          key: const ValueKey('phone-server-show-log'),
+          label: l10n.phoneServerCardShowServerLog,
+          icon: AppIconography.text,
+          onSelected: () => unawaited(_showLog()),
         ),
       if (installed)
         KitMenuItem(
@@ -737,9 +741,18 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       if (widget.connected && widget.onDisconnect != null && !_removing)
         KitMenuItem(
           key: const ValueKey('phone-server-disconnect'),
-          label: l10n.phoneServerCardDisconnect(name),
+          label: l10n.phoneServerCardDisconnect(sentenceName),
           icon: AppIconography.unlink,
           onSelected: widget.onDisconnect!,
+        ),
+      // Stopping keeps the saved server; it leaves the menu's end to the
+      // one act that deletes.
+      if (running && !locked && !settingUp)
+        KitMenuItem(
+          key: const ValueKey('phone-server-stop'),
+          label: l10n.phoneServerCardStopOpenCode,
+          icon: AppIconography.stopCircle,
+          onSelected: () => unawaited(_stop()),
         ),
       if (!terminalOnly)
         KitMenuItem(
@@ -762,6 +775,9 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       tone: running && !working ? KitTextTone.success : KitTextTone.secondary,
       maxLines: 2,
     );
+    // The one button sits with the row's words, inside the row: no hairline
+    // divides it from the server it acts on.
+    final actions = KitActionBlock(primary: lead);
     final failure = _failure;
     final below = <Widget>[
       if (large) status,
@@ -775,6 +791,11 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
           tone: KitTextTone.primary,
           maxLines: 4,
           overflow: TextOverflow.ellipsis,
+        ),
+      if (!actions.isEmpty)
+        Padding(
+          padding: EdgeInsetsDirectional.only(top: tokens.space1),
+          child: actions,
         ),
     ];
     final trailing = <Widget>[
@@ -829,23 +850,10 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       ),
     );
 
-    final actions = KitActionBlock(primary: lead, tertiary: tertiary);
     return KitRowGroup(
       key: const ValueKey('phone-server-card'),
       margin: EdgeInsets.zero,
-      children: [
-        row,
-        if (!actions.isEmpty)
-          Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(
-              tokens.space4,
-              tokens.space2,
-              tokens.space4,
-              tokens.space3,
-            ),
-            child: actions,
-          ),
-      ],
+      children: [row],
     );
   }
 }

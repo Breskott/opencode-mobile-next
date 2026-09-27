@@ -23,6 +23,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitChip, KitText;
 import 'package:opencode_mobile/ui/screens/team/policy_block.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/start_run_sheet.dart';
@@ -404,6 +405,14 @@ void main() {
 
   Finder key(String name) => find.byKey(ValueKey(name));
 
+  // The words of a Text or a KitText.
+  String? textOf(WidgetTester tester, Finder finder) =>
+      switch (tester.widget(finder)) {
+        final Text text => text.data,
+        final KitText text => text.text,
+        final other => fail('not text: $other'),
+      };
+
   group('model', () {
     test('decodes the front document leniently', () {
       final policy = OrchestrationPolicy.fromJson(_policyJson)!;
@@ -599,13 +608,10 @@ void main() {
         findsOneWidget,
       );
       expect(
-        tester.widget<Text>(key('team-run-policy-supervision')).data,
+        textOf(tester, key('team-run-policy-supervision')),
         'Supervision · High',
       );
-      expect(
-        tester.widget<Text>(key('team-run-policy-rig')).data,
-        'for ocproof',
-      );
+      expect(textOf(tester, key('team-run-policy-rig')), 'for ocproof');
       for (final entry in const {
         'require_approval': 'Never merge without approval',
         'require_tests': 'Require tests before merge',
@@ -620,7 +626,7 @@ void main() {
       }
       expect(key('team-run-policy-boundary-none'), findsNothing);
       expect(
-        tester.widget<Text>(key('team-run-policy-from-host')).data,
+        textOf(tester, key('team-run-policy-from-host')),
         'Set on the host · read-only here',
       );
 
@@ -638,11 +644,11 @@ void main() {
         find.descendant(of: block, matching: find.byType(TextField)),
         findsNothing,
       );
-      final chips = tester.widgetList<Chip>(
-        find.descendant(of: block, matching: find.byType(Chip)),
+      final chips = tester.widgetList<KitChip>(
+        find.descendant(of: block, matching: find.byType(KitChip)),
       );
       expect(chips, hasLength(3));
-      expect(chips.every((chip) => chip.onDeleted == null), isTrue);
+      expect(chips.every((chip) => chip.onRemove == null), isTrue);
 
       // Order: the objective (title and status line) → Details → its step
       // counts → the policy.
@@ -668,12 +674,12 @@ void main() {
       await pumpRun(tester, controller);
       await openDetails(tester);
       expect(
-        tester.widget<Text>(key('team-run-policy-supervision')).data,
+        textOf(tester, key('team-run-policy-supervision')),
         'Supervision · Autonomous',
       );
       expect(key('team-run-policy-rig'), findsNothing);
       expect(key('team-run-policy-boundary-none'), findsOneWidget);
-      expect(find.byType(Chip), findsNothing);
+      expect(find.byType(KitChip), findsNothing);
     });
 
     testWidgets('absent without a policy side (no front route)', (
@@ -703,7 +709,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(key('team-run-policy'), findsOneWidget);
       expect(
-        tester.widget<Text>(key('team-run-policy-supervision')).data,
+        textOf(tester, key('team-run-policy-supervision')),
         'الإشراف · عالٍ',
       );
       expect(key('team-run-policy-boundary-require_approval'), findsOneWidget);
@@ -722,7 +728,7 @@ void main() {
       await size(tester, const Size(800, 2400));
       final controller = await boot(_PolicyGateway());
       await pumpSheet(tester, controller);
-      expect(key('team-start-run-sheet'), findsOneWidget);
+      expect(find.byType(StartRunSheet), findsOneWidget);
       expect(key('team-start-run-boundaries'), findsOneWidget);
       expect(find.text('Boundaries'), findsOneWidget);
       expect(key('team-start-run-boundary-require_approval'), findsOneWidget);
@@ -731,7 +737,7 @@ void main() {
       expect(find.text('Never merge without approval'), findsOneWidget);
       expect(find.text('Require tests before merge'), findsOneWidget);
       expect(
-        tester.widget<Text>(key('team-start-run-boundaries-from-host')).data,
+        textOf(tester, key('team-start-run-boundaries-from-host')),
         'Set on the host · read-only here',
       );
       final row = key('team-start-run-boundaries');
@@ -743,8 +749,13 @@ void main() {
         find.descendant(of: row, matching: find.byType(Checkbox)),
         findsNothing,
       );
-      // The row sits after the planner and before Send.
-      final planner = tester.getBottomLeft(key('team-start-run-planner'));
+      // The row sits after the choices and before Send; no read-only
+      // Planner row sits among them (the primary names the planner).
+      expect(key('team-start-run-planner'), findsNothing);
+      expect(find.text('Send to the Mayor'), findsOneWidget);
+      final planner = tester.getBottomLeft(
+        key('team-start-run-supervision-balanced'),
+      );
       final boundaries = tester.getTopLeft(row);
       final send = tester.getTopLeft(key('team-start-run-send'));
       expect(boundaries.dy, greaterThanOrEqualTo(planner.dy));
@@ -758,7 +769,7 @@ void main() {
       await size(tester, const Size(800, 2400));
       final controller = await boot(_Gateway());
       await pumpSheet(tester, controller);
-      expect(key('team-start-run-sheet'), findsOneWidget);
+      expect(find.byType(StartRunSheet), findsOneWidget);
       expect(key('team-start-run-boundaries'), findsNothing);
       expect(find.text('Boundaries'), findsNothing);
       expect(find.byType(TeamBoundariesRow), findsNothing);

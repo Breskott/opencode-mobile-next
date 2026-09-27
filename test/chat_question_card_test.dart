@@ -8,8 +8,8 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_request_card.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
-import 'package:opencode_mobile/ui/widgets/question_options.dart';
 import 'package:opencode_mobile/ui/widgets/tool_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -118,6 +118,8 @@ EventEnvelope _permission() => EventEnvelope(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  // chat-5: the question is the one request card (KitRequestCard.ask), with
+  // the options in place for one answer and "Answer" for anything longer.
   testWidgets('a pending question renders inline with its choices', (
     tester,
   ) async {
@@ -131,27 +133,21 @@ void main() {
       find.byKey(const ValueKey('question-card-question-1')),
       findsOneWidget,
     );
+    final card = tester.widget<KitRequestCard>(find.byType(KitRequestCard));
+    expect(card.kind, KitRequestKind.question);
     expect(find.text('Pick a target'), findsOneWidget);
     expect(find.text('Where should this deploy?'), findsOneWidget);
     expect(find.text('Staging'), findsOneWidget);
     expect(find.text('Test environment'), findsOneWidget);
     expect(find.text('Production'), findsOneWidget);
-    expect(find.byType(QuestionOptionRow), findsNWidgets(2));
-    // The free-text field rides along when the prompt accepts custom text.
-    expect(
-      find.byKey(const ValueKey('question-card-custom-0')),
-      findsOneWidget,
-    );
-    // Single-select: a tap is the answer, so no Send button competes with it.
-    expect(find.byKey(const Key('question-card-send')), findsNothing);
+    // A typed answer rides along when the prompt accepts custom text.
+    expect(find.text('Something else'), findsOneWidget);
     expect(find.byKey(const Key('question-card-more')), findsOneWidget);
 
     // Every option row keeps the 48 dp touch target.
-    for (final element in find.byType(QuestionOptionRow).evaluate()) {
-      expect(
-        tester.getSize(find.byWidget(element.widget)).height,
-        greaterThanOrEqualTo(48),
-      );
+    for (final index in [0, 1]) {
+      final row = find.byKey(ValueKey('question-card-option-$index'));
+      expect(tester.getSize(row).height, greaterThanOrEqualTo(48));
     }
   });
 
@@ -164,7 +160,7 @@ void main() {
     controller.handleEventForTesting(_question());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('question-option-Staging')));
+    await tester.tap(find.text('Staging'));
     await tester.pumpAndSettle();
 
     expect(repository.answered.single.$1, 'question-1');
@@ -179,22 +175,25 @@ void main() {
     );
   });
 
-  testWidgets('a typed custom answer sends through the Send button', (
-    tester,
-  ) async {
+  testWidgets('a typed answer sends from Something else', (tester) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final repository = _QuestionRepository();
     final controller = await _pumpChat(tester, repository);
 
     controller.handleEventForTesting(_question());
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.byKey(const ValueKey('question-card-custom-0')),
-      'Canary',
-    );
+    await tester.ensureVisible(find.text('Something else'));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('question-card-send')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('question-card-send')));
+    await tester.tap(find.text('Something else'));
+    await tester.pumpAndSettle();
+    final field = find.byKey(const Key('question-card-custom-0'));
+    await tester.ensureVisible(field);
+    await tester.enterText(field, 'Canary');
+    // A multiline answer sends from the field's own Send button.
+    await tester.tap(find.byTooltip('Send answer'));
     await tester.pumpAndSettle();
 
     expect(repository.answered.single.$2, [
@@ -202,31 +201,28 @@ void main() {
     ]);
   });
 
-  testWidgets('multi-select collects choices behind Send', (tester) async {
+  testWidgets('multi-select answers in the request sheet with Send', (
+    tester,
+  ) async {
     final repository = _QuestionRepository();
     final controller = await _pumpChat(tester, repository);
 
-    controller.handleEventForTesting(_question(multiple: true));
+    controller.handleEventForTesting(_question(multiple: true, custom: false));
     await tester.pumpAndSettle();
 
-    final send = find.byKey(const Key('question-card-send'));
-    expect(send, findsOneWidget);
-    // A kit button (design standard §2): the FilledButton is inside it.
-    final sendButton = find.descendant(
-      of: send,
-      matching: find.byType(FilledButton),
-    );
-    expect(tester.widget<FilledButton>(sendButton).onPressed, isNull);
+    await tester.tap(find.text('Answer'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('question-sheet')), findsOneWidget);
+    expect(find.text('Choose at least one answer.'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('question-option-Staging')));
+    await tester.tap(find.text('Staging').last);
+    await tester.pump();
+    await tester.tap(find.text('Production').last);
     await tester.pump();
     // Nothing is sent by a tap on a multi-select prompt.
     expect(repository.answered, isEmpty);
-    await tester.tap(find.byKey(const ValueKey('question-option-Production')));
-    await tester.pump();
-    expect(tester.widget<FilledButton>(sendButton).onPressed, isNotNull);
 
-    await tester.tap(send);
+    await tester.tap(find.text('Send').last);
     await tester.pumpAndSettle();
 
     expect(repository.answered.single.$2, [
@@ -243,16 +239,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('question-card-answer')), findsOneWidget);
-    expect(find.byType(QuestionOptionRow), findsNothing);
     expect(find.text('Where should this deploy?'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('question-card-answer')));
     await tester.pumpAndSettle();
 
-    // The Activity sheet, with the same option rows.
+    // The full question sheet, as a form's Answer opens the form.
     expect(find.text('OpenCode needs input'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Send answers'), findsOneWidget);
-    expect(find.byType(QuestionOptionRow), findsNWidgets(2));
   });
 
   testWidgets('more than two prompts also collapse to the Answer button', (
@@ -268,17 +261,19 @@ void main() {
     expect(find.textContaining('3 questions'), findsOneWidget);
   });
 
-  testWidgets('More opens the full sheet', (tester) async {
+  testWidgets('Details opens the one request sheet', (tester) async {
     final repository = _QuestionRepository();
     final controller = await _pumpChat(tester, repository);
 
     controller.handleEventForTesting(_question());
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.byKey(const Key('question-card-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('question-card-more')));
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(FilledButton, 'Send answers'), findsOneWidget);
+    expect(find.byKey(const Key('question-sheet')), findsOneWidget);
   });
 
   testWidgets('a pending permission outranks the question card', (
@@ -298,9 +293,7 @@ void main() {
     );
   });
 
-  testWidgets('a failed answer keeps the card and reports the error', (
-    tester,
-  ) async {
+  testWidgets('a failed answer keeps the card and says why', (tester) async {
     final repository = _QuestionRepository()
       ..answerError = ApiException('server refused the answer');
     final controller = await _pumpChat(tester, repository);
@@ -308,7 +301,7 @@ void main() {
     controller.handleEventForTesting(_question());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('question-option-Staging')));
+    await tester.tap(find.text('Staging'));
     await tester.pumpAndSettle();
 
     expect(controller.questions, contains('question-1'));
@@ -316,6 +309,7 @@ void main() {
       find.byKey(const ValueKey('question-card-question-1')),
       findsOneWidget,
     );
+    expect(find.textContaining('Not accepted'), findsOneWidget);
   });
 
   group('transcript tool card', () {

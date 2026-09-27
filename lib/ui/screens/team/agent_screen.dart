@@ -7,21 +7,25 @@
 /// in one list ordered by urgency:
 ///
 /// 1. The top bar ([KitTopBar]) names the agent by role and name ("Worker ·
-///    fox") with what it works on as the subtitle ("On “Sync engine”").
-///    Refresh is its one icon; Live output joins the overflow when it is
-///    not the primary.
+///    fox") with what it works on and what holds it up as the subtitle
+///    ("On “Sync engine” · nothing blocking it"). Refresh is its one icon;
+///    Live output joins the overflow when it is not the primary.
 /// 2. A question waiting on the person, as the pointing [KitNeedsYou.row]
 ///    that opens the Gate sheet, when there is one.
 /// 3. What went wrong, when something did: the worker didn't start, it
 ///    stopped or crashed (with "Start fox again"), its context is nearly
 ///    full ("Recycling soon").
 /// 4. The status panel: the state from the agent's **session** with its
-///    mark and word, context use and session age; the newest step and when
-///    it was last active; the model in plain words; the current task and
-///    what blocks it; the team's usage today.
-/// 5. The newest control receipt, and why the primary is Live output when
-///    no conversation can be matched on the connected server.
-/// 6. Technical details, one [KitDetailsFold], last and collapsed.
+///    mark and word, context use and session age; the newest step in plain
+///    words ("Ran the tests") and when it was last active; the model in
+///    plain words; "Not working on anything" when it has no task. The
+///    team's usage is not this agent's and stays on the team's pages.
+/// 5. The newest control receipt.
+/// 6. Technical details, one [KitDetailsFold], last and collapsed: the raw
+///    last command among them.
+///
+/// Why the primary is Live output (no conversation matched on the
+/// connected server) is the one-line note under the pinned actions.
 ///
 /// The pinned actions ([KitActionBlock]): **Open conversation** (or **Live
 /// output**) is the primary, **Message fox** the secondary. The fallbacks
@@ -210,19 +214,47 @@ class _AgentScreenState extends State<AgentScreen> {
     );
   }
 
-  /// The newest tool call in the agent's live output, its first line: what
-  /// it is doing now or did last.
-  String? _lastStep() {
+  /// The newest tool call in the agent's live output: what it is doing now
+  /// or did last.
+  AgentStep? _lastStep() {
     final blocks = parseAgentTranscript(_tail.text);
     for (final block in blocks.reversed) {
       if (block is AgentStepGroup && block.steps.isNotEmpty) {
-        final command = block.steps.last.command.trim();
-        final line = command.split('\n').first.trim();
-        return line.isEmpty ? null : line;
+        return block.steps.last;
       }
     }
     return null;
   }
+
+  /// A step in plain words ("Ran the tests"); the raw command waits under
+  /// Technical details.
+  static String _stepWords(AppLocalizations l10n, AgentStep step) =>
+      switch (step.kind) {
+        AgentStepKind.command => l10n.teamAgentStepCommand,
+        AgentStepKind.test => l10n.teamAgentStepTest,
+        AgentStepKind.read => l10n.teamAgentStepRead,
+        AgentStepKind.edit => l10n.teamAgentStepEdit,
+        AgentStepKind.search => l10n.teamAgentStepSearch,
+        AgentStepKind.other =>
+          step.tool.trim().isEmpty
+              ? l10n.teamAgentStepCommand
+              : l10n.teamAgentStepTool(step.tool.trim()),
+      };
+
+  /// The raw command of [step], its first line, for Technical details.
+  static String? _stepCommand(AgentStep? step) {
+    final line = step?.command.trim().split('\n').first.trim();
+    return line == null || line.isEmpty ? null : line;
+  }
+
+  /// What holds the agent's task up, as the end of the top bar's subtitle:
+  /// "nothing blocking it", "blocked", "waiting on 2 other steps".
+  static String _workHold(AppLocalizations l10n, WorkItem work) =>
+      work.isBlocked
+      ? l10n.teamAgentWorkBlockedShort
+      : work.dependsOn.isNotEmpty
+      ? l10n.teamUiRunBlockedByDeps(work.dependsOn.length)
+      : l10n.teamAgentWorkUnblockedShort;
 
   /// The newest control record for this agent, by any of its ids.
   MutationRecord? _receipt(OrchestrationAgent agent) {
@@ -413,7 +445,13 @@ class _AgentScreenState extends State<AgentScreen> {
         width: KitScreenWidth.reading,
         topBar: KitTopBar(
           title: agent == null ? widget.agentId : teamAgentTitle(l10n, agent),
-          subtitle: work == null ? null : l10n.teamAgentWorksOn(work.title),
+          // What it works on and what holds it up, said once here.
+          subtitle: work == null
+              ? null
+              : [
+                  l10n.teamAgentWorksOn(work.title),
+                  _workHold(l10n, work),
+                ].join(teamUsageSeparator),
           titleKey: const ValueKey('team-agent-title'),
           actions: [
             KitAction(
@@ -460,10 +498,37 @@ class _AgentScreenState extends State<AgentScreen> {
                     ),
                   )
                 : _list(context, agent, work)),
-        bottom: ready ? _actions(context, agent) : null,
+        bottom: ready ? _bottom(context, agent, miss) : null,
       );
     },
   );
+
+  /// The pinned actions, and under them, when the primary is Live output,
+  /// why: no conversation matched on the connected server.
+  Widget _bottom(
+    BuildContext context,
+    OrchestrationAgent agent,
+    TeamAgentConversationMiss? miss,
+  ) {
+    final actions = _actions(context, agent);
+    if (miss == null) return actions;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        actions,
+        SizedBox(height: KitTokens.of(context).space2),
+        KitText(
+          teamAgentConversationMissNote(context, miss),
+          key: const ValueKey('team-agent-conversation-miss'),
+          role: KitTextRole.secondary,
+          tone: KitTextTone.secondary,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
 
   /// The pinned block: the conversation (or Live output), then Message.
   /// Absent controls are absent; the list explains why when the host takes
@@ -559,11 +624,9 @@ class _AgentScreenState extends State<AgentScreen> {
     final l10n = _copy(context);
     final tokens = KitTokens.of(context);
     final caps = _controller.capabilities;
-    final snapshot = _controller.snapshot;
     final state = teamSessionState(agent);
     final gate = _gateOf(agent, work);
     final receipt = _receipt(agent);
-    final miss = _lookup?.miss;
     final percent = agent.contextPercent;
     final inset = EdgeInsetsDirectional.symmetric(
       horizontal: tokens.gutter,
@@ -641,8 +704,7 @@ class _AgentScreenState extends State<AgentScreen> {
             ),
           // 3. Where it stands.
           _status(context, agent, work),
-          if (caps.usage) ?_usage(context, agent, snapshot.usage),
-          // 4. The newest control and why the primary is Live output.
+          // 4. The newest control.
           if (receipt != null)
             pad(
               KitReceipt(
@@ -677,21 +739,17 @@ class _AgentScreenState extends State<AgentScreen> {
                 ],
               ),
             ),
-          if (miss != null)
-            pad(
-              KitText(
-                teamAgentConversationMissNote(context, miss),
-                key: const ValueKey('team-agent-conversation-miss'),
-                role: KitTextRole.secondary,
-                tone: KitTextTone.secondary,
-              ),
-            ),
           // 5. The technical truth, last.
           pad(
             KitDetailsFold(
               label: l10n.teamUiTechnicalDetails,
               foldKey: const ValueKey('team-agent-technical'),
-              values: _technical(l10n, agent, work),
+              values: _technical(
+                l10n,
+                agent,
+                work,
+                lastCommand: _stepCommand(_lastStep()),
+              ),
             ),
           ),
         ],
@@ -738,7 +796,8 @@ class _AgentScreenState extends State<AgentScreen> {
   }
 
   /// The status panel: state with context and age, the newest step, the
-  /// model in plain words, the current task.
+  /// model in plain words, and "Not working on anything" when it has no
+  /// task (the task itself is the top bar's subtitle).
   Widget _status(
     BuildContext context,
     OrchestrationAgent agent,
@@ -782,7 +841,7 @@ class _AgentScreenState extends State<AgentScreen> {
             leading: KitRow.icon(context, AppIconography.terminal),
             title: step == null
                 ? l10n.teamAgentLastActive(elapsed(lastActive!))
-                : l10n.teamAgentLastStep(step),
+                : l10n.teamAgentLastStep(_stepWords(l10n, step)),
             supporting: step != null && lastActive != null
                 ? TextSpan(text: l10n.teamAgentLastActive(elapsed(lastActive)))
                 : null,
@@ -799,58 +858,7 @@ class _AgentScreenState extends State<AgentScreen> {
             key: const ValueKey('team-agent-no-work'),
             leading: KitRow.icon(context, AppIconography.checklist),
             title: l10n.teamUiHomeAgentNoWork,
-          )
-        else
-          KitRow(
-            key: const ValueKey('team-agent-work-chip'),
-            leading: KitRow.icon(context, AppIconography.checklist),
-            title: work.title,
-            titleMaxLines: 2,
-            supporting: TextSpan(
-              text: work.isBlocked
-                  ? l10n.teamUiAgentWorkBlocked
-                  : work.dependsOn.isNotEmpty
-                  ? l10n.teamUiRunBlockedByDeps(work.dependsOn.length)
-                  : l10n.teamUiAgentWorkUnblocked,
-            ),
-            supportingKey: const ValueKey('team-agent-work-chip-dependency'),
           ),
-      ],
-    );
-  }
-
-  /// "Tokens / context / cost": the team's tokens today, this agent's
-  /// context and the team's estimated cost, with the hint that tokens and
-  /// cost are team-wide estimates. Null when the host reported neither.
-  Widget? _usage(
-    BuildContext context,
-    OrchestrationAgent agent,
-    OrchestrationUsage? usage,
-  ) {
-    final l10n = _copy(context);
-    final tokens = teamUsageTokensLabel(l10n, usage);
-    final cost = teamUsageCostLabel(l10n, usage);
-    if (tokens == null && cost == null) return null;
-    final percent = agent.contextPercent;
-    final value = [
-      ?tokens,
-      if (percent != null) l10n.teamUiAgentContextShort(percent),
-      ?cost,
-    ].join(teamUsageSeparator);
-    return KitRowGroup(
-      margin: _groupMargin(context),
-      key: const ValueKey('team-agent-usage-row'),
-      label: l10n.teamUiUsageRuntimeLabel,
-      children: [
-        KitRow(
-          key: const ValueKey('team-agent-usage'),
-          leading: KitRow.icon(context, AppIconography.usage),
-          title: value,
-          titleKey: const ValueKey('team-agent-usage-value'),
-          supporting: TextSpan(text: l10n.teamUiUsageRuntimeHint),
-          supportingKey: const ValueKey('team-agent-usage-hint'),
-          supportingMaxLines: 3,
-        ),
       ],
     );
   }
@@ -898,8 +906,9 @@ class _AgentScreenState extends State<AgentScreen> {
   static List<KitTechnicalValue> _technical(
     AppLocalizations l10n,
     OrchestrationAgent agent,
-    WorkItem? work,
-  ) {
+    WorkItem? work, {
+    String? lastCommand,
+  }) {
     bool has(String? value) => value != null && value.trim().isNotEmpty;
     final values = <KitTechnicalValue>[
       KitTechnicalValue(l10n.teamAgentScreenLabelId, agent.id),
@@ -918,6 +927,12 @@ class _AgentScreenState extends State<AgentScreen> {
       if (has(agent.branch))
         KitTechnicalValue(l10n.teamUiAgentLabelBranch, agent.branch!),
       if (work != null) KitTechnicalValue(l10n.teamUiGateLabelWorkId, work.id),
+      if (lastCommand != null)
+        KitTechnicalValue(
+          l10n.teamAgentLastCommandLabel,
+          lastCommand,
+          key: const ValueKey('team-agent-last-command'),
+        ),
       if (has(agent.rawState))
         KitTechnicalValue(l10n.teamUiRunLabelRawState, agent.rawState!),
       if (has(agent.pool))

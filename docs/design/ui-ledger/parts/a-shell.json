@@ -2541,57 +2541,6 @@
           "destructive": false
         }
       ]
-    },
-    {
-      "id": "attention-overview",
-      "title": "Server attention",
-      "kind": "screen",
-      "file": "lib/ui/screens/attention_overview_screen.dart",
-      "widget": "AttentionOverviewScreen",
-      "presentedBy": [],
-      "line": 12,
-      "purpose": "Local per-saved-server overview (selected/inactive, data source, pending/running/unread counts or 'unknown'); never switches profiles itself.",
-      "reachedFrom": [
-        {
-          "page": "?",
-          "element": null,
-          "widget": "ServersScreen app-bar icon 'Server attention'",
-          "file": "lib/ui/screens/servers_screen.dart",
-          "line": 396
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "attention-overview-monitor-settings",
-          "type": "icon-button",
-          "label": "Monitoring settings",
-          "key": null,
-          "line": 34,
-          "action": "navigate",
-          "target": "profile-monitor",
-          "targetWidget": "ProfileMonitorScreen",
-          "effect": "Pushes ProfileMonitorScreen(controller).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "attention-overview-open-profile",
-          "type": "button",
-          "label": "Open server / Choose server…",
-          "key": null,
-          "line": 141,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Per profile card: when the profile is still readable and saved calls host onOpenProfile(profileID); ServersScreen's host pops this route with the id and runs its own safe switch flow. Disabled (with 'navigation unavailable' text) when onOpenProfile == null.",
-          "gates": [
-            "onOpenProfile != null",
-            "controller.isProfileReadable(item.profileID)"
-          ],
-          "destructive": false
-        }
-      ]
     }
   ],
   "notPages": [

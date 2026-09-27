@@ -409,7 +409,14 @@ void main() {
         find.text('Continue any time from On this phone.'),
         findsOneWidget,
       );
-      expect(find.text('Stop setup'), findsOneWidget);
+      // The page's own action and the sheet's confirm say the same act.
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('phone-setup-progress-stop-confirm')),
+          matching: find.text('Stop setup'),
+        ),
+        findsOneWidget,
+      );
       await tester.tap(find.text('Keep going'));
       await _settle(tester);
       expect(h.engine.cancels, 0);

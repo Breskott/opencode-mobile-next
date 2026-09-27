@@ -2,10 +2,10 @@ part of '../settings_screen.dart';
 
 /// Settings › Help: the rarer reference and support rows the hub used to
 /// list one by one (owner rule R4, canvas Settings.png): the setup guide,
-/// what this server offers, keyboard shortcuts, the one-time tips, app
-/// diagnostics and the voice notices. Each row is its search entry, so
-/// search and this page cannot disagree; a row whose entry is gated out is
-/// absent.
+/// the offline demo, what this server offers, keyboard shortcuts, the
+/// one-time tips, app diagnostics and the voice notices. Each row is its
+/// search entry, so search and this page cannot disagree; a row whose entry
+/// is gated out is absent.
 class SettingsHelpScreen extends StatefulWidget {
   const SettingsHelpScreen({super.key, required this.controller});
 
@@ -54,6 +54,9 @@ class _SettingsHelpScreenState extends State<SettingsHelpScreen> {
 
     final rows = [
       row('settings-setup-guide', subtitle: copy.e7SettingsUi91),
+      // The first-run welcome's demo, still one tap away once a server is
+      // saved.
+      row('settings-try-demo', subtitle: copy.demoScreenSimulated),
       // The explanation for every row the connected server hides.
       row(
         'settings-server-capabilities',

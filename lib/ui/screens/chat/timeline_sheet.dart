@@ -12,25 +12,6 @@ class _TimelineSelection {
   final String query;
 }
 
-class _SessionSheetRow extends StatelessWidget {
-  const _SessionSheetRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-    leading: Icon(icon),
-    title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-    onTap: () => Navigator.pop(context, value),
-  );
-}
-
 class _TimelineSheet extends StatefulWidget {
   const _TimelineSheet({
     required this.messages,

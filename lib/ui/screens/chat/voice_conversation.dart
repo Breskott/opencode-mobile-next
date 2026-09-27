@@ -374,8 +374,16 @@ extension _ChatVoiceConversation on _ChatScreenState {
       _readAloud?.speaking == true &&
       (_readAloud?.activeID?.startsWith(_voiceReplyUtterancePrefix) ?? false);
 
+  // revamp: redesign (slice-P10.3) — voice as a composer mode (the mic in
+  // the send slot, a listen → send → speak loop without the sheet) is that
+  // slice's work; this is today's controls rebuilt from kit parts.
+
+  /// The voice conversation's controls, in place of the attention slot:
+  /// what the mode is doing now, "Speak replies", the reply's state in
+  /// words, Listen as the one primary, and the ways out.
   Widget _voiceConversationControls() {
     final l10n = _chatL10n(context);
+    final tokens = KitTokens.of(context);
     final waiting = _voiceReplyWatch != null;
     final speaking = _speakingVoiceReply;
     final latest = _latestAssistantMessage;
@@ -400,118 +408,98 @@ extension _ChatVoiceConversation on _ChatScreenState {
         (_voiceReplyState == _VoiceReplyState.reviewNeeded ||
             _voiceReplyState == _VoiceReplyState.interrupted ||
             _voiceReplyState == _VoiceReplyState.failed);
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsetsDirectional.fromSTEB(12, 4, 12, 8),
-      decoration: BoxDecoration(
-        color: colors.surfaceContainer,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colors.outlineVariant),
+    final canSend = _conversationCanSend;
+    final paused = !canSend && !waiting && !speaking;
+    final listenReady = !_voiceOpening && !_sending && canSend;
+    return Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(
+        tokens.space3,
+        tokens.space1,
+        tokens.space3,
+        tokens.space2,
       ),
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * .36,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
-        child: Scrollbar(
-          controller: _voiceControlsScroll,
-          thumbVisibility: true,
-          child: SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * .36,
+        ),
+        child: KitSurface(
+          outlined: true,
+          padding: KitSurfacePadding.none,
+          child: KitScrollbar(
             controller: _voiceControlsScroll,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: ListView(
+              controller: _voiceControlsScroll,
+              shrinkWrap: true,
+              padding: EdgeInsets.all(tokens.space4),
               children: [
                 Semantics(
                   liveRegion: true,
-                  label: _conversationCanSend
+                  label: canSend
                       ? l10n.voiceConversationTitle
                       : _conversationPauseCopy,
                   excludeSemantics: true,
-                  child: Text(
-                    _conversationCanSend
-                        ? l10n.voiceConversationTitle
-                        : waiting || speaking
-                        ? l10n.voiceConversationTitle
-                        : l10n.voiceConversationPausedTitle,
-                    style: Theme.of(context).textTheme.titleSmall,
+                  child: KitText(
+                    paused
+                        ? l10n.voiceConversationPausedTitle
+                        : l10n.voiceConversationTitle,
+                    role: KitTextRole.headline,
                   ),
                 ),
-                if (platformCapabilities.supportsReadAloud)
-                  SwitchListTile(
-                    key: const Key('voice-speak-replies'),
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    title: Text(l10n.voiceConversationSpeakReplies),
-                    subtitle: Text(l10n.voiceConversationSpeakRepliesDetail),
+                if (paused) ...[
+                  SizedBox(height: tokens.space1),
+                  KitText(
+                    _conversationPauseCopy,
+                    role: KitTextRole.secondary,
+                    tone: KitTextTone.secondary,
+                  ),
+                ],
+                if (platformCapabilities.supportsReadAloud) ...[
+                  SizedBox(height: tokens.space2),
+                  KitSwitchRow(
+                    switchKey: const Key('voice-speak-replies'),
+                    title: l10n.voiceConversationSpeakReplies,
+                    supporting: l10n.voiceConversationSpeakRepliesDetail,
                     value: _voiceSpeakReplies,
                     onChanged: _readAloudRequestBusy && !_voiceSpeakReplies
                         ? null
                         : (value) => unawaited(_setVoiceSpeakReplies(value)),
+                    disabledReason: l10n.voiceConversationSpeakRepliesBusy,
                   ),
-                if (replyLine != null)
-                  Semantics(
-                    liveRegion: true,
-                    child: Padding(
-                      key: const Key('voice-reply-status'),
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          if (waiting || speaking) ...[
-                            const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          Expanded(
-                            child: Text(
-                              replyLine,
-                              style: TextStyle(
-                                color:
-                                    _voiceReplyState == _VoiceReplyState.failed
-                                    ? colors.error
-                                    : colors.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                ],
+                if (replyLine != null) ...[
+                  SizedBox(height: tokens.space2),
+                  KitNotice(
+                    key: const Key('voice-reply-status'),
+                    message: replyLine,
+                    tone: waiting || speaking
+                        ? AppStatusTone.progress
+                        : _voiceReplyState == _VoiceReplyState.failed
+                        ? AppStatusTone.failure
+                        : AppStatusTone.neutral,
                   ),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                      ),
-                      onPressed:
-                          _voiceOpening || _sending || !_conversationCanSend
-                          ? null
-                          : _openVoice,
-                      icon: const Icon(AppIconography.mic),
-                      label: Text(l10n.voiceConversationListen),
-                    ),
+                ],
+                SizedBox(height: tokens.space3),
+                KitActionBlock(
+                  primary: KitAction(
+                    key: const Key('voice-listen'),
+                    icon: AppIconography.mic,
+                    label: l10n.voiceConversationListen,
+                    onPressed: listenReady ? _openVoice : null,
+                    disabledReason: listenReady ? null : _conversationPauseCopy,
+                  ),
+                  tertiary: [
                     if (speaking || waiting)
-                      TextButton.icon(
+                      KitAction(
                         key: const Key('voice-reply-stop'),
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(48, 48),
-                        ),
+                        icon: AppIconography.stop,
+                        label: l10n.voiceConversationStopReading,
                         onPressed: () => unawaited(_stopReading()),
-                        icon: const Icon(AppIconography.stop),
-                        label: Text(l10n.voiceConversationStopReply),
                       ),
                     if (offerRead)
-                      TextButton.icon(
+                      KitAction(
                         key: const Key('voice-reply-read'),
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(48, 48),
-                        ),
+                        icon: AppIconography.volume,
+                        label: l10n.voiceConversationReadReply,
                         onPressed: _readAloudRequestBusy
                             ? null
                             : () {
@@ -521,16 +509,12 @@ extension _ChatVoiceConversation on _ChatScreenState {
                                 );
                                 unawaited(_readReply(latest));
                               },
-                        icon: const Icon(AppIconography.volume),
-                        label: Text(l10n.voiceConversationReadReply),
                       ),
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                      ),
+                    KitAction(
+                      key: const Key('voice-exit'),
+                      icon: AppIconography.close,
+                      label: l10n.voiceConversationExit,
                       onPressed: _interruptVoiceConversation,
-                      icon: const Icon(AppIconography.close),
-                      label: Text(l10n.voiceConversationExit),
                     ),
                   ],
                 ),

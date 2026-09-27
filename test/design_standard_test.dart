@@ -161,12 +161,9 @@ const _migrated = <String, List<String>>{
     'team_run_overview',
   ],
   // Finding the AI Team while it is off (docs/qa/team-discover-2026-09-25):
-  // the Work tab's entry and folded row, and the intro
+  // Work without the offer (it moved to Settings › AI Team), and the intro
   // (test/goldens/team_discover_golden_test.dart).
-  'lib/ui/widgets/team_discover.dart': [
-    'team_discover_work',
-    'team_discover_work_folded',
-  ],
+  'lib/ui/widgets/team_discover.dart': ['team_discover_work'],
   'lib/ui/screens/team/team_intro_screen.dart': [
     'team_intro_phone',
     'team_intro_computer',

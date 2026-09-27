@@ -18,7 +18,6 @@ import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
-import 'package:opencode_mobile/ui/widgets/team_discover.dart';
 import 'package:opencode_mobile/termux/team_runtime.dart';
 import 'package:opencode_mobile/ui/widgets/builtin_team_section.dart';
 import 'package:opencode_mobile/ui/widgets/team_host_form.dart';
@@ -134,20 +133,6 @@ void main() {
       await _golden(
         tester,
         'team_discover_work',
-        light: light,
-        controller: controller,
-      );
-    });
-
-    testWidgets('work · AI Team off, folded · $mode', (tester) async {
-      final controller = await workController(
-        sessions: _sessions(),
-        busy: {'busy'},
-      );
-      await TeamDiscoverMemory.fold(controller.store.prefs);
-      await _golden(
-        tester,
-        'team_discover_work_folded',
         light: light,
         controller: controller,
       );

@@ -116,17 +116,59 @@ EventEnvelope _ask(String id, String session) => EventEnvelope(
 Future<void> _openApprovals(WidgetTester tester) async {
   await tester.tap(find.byKey(const ValueKey('session-actions-button')));
   await tester.pumpAndSettle();
+  // The session menu is a lazy list: rows below the fold are built as it
+  // scrolls.
+  final menu = find
+      .descendant(
+        of: find.byKey(const Key('session-menu-sheet')),
+        matching: find.byType(Scrollable),
+      )
+      .first;
   final actions = find.text('Conversation actions');
-  await tester.ensureVisible(actions);
+  await tester.scrollUntilVisible(actions, 100, scrollable: menu);
   await tester.pumpAndSettle();
   await tester.tap(actions);
   await tester.pumpAndSettle();
   final approvals = find.text('Approvals');
-  await tester.ensureVisible(approvals);
+  await tester.scrollUntilVisible(approvals, 100, scrollable: menu);
   await tester.pumpAndSettle();
   await tester.tap(approvals);
   await tester.pumpAndSettle();
   expect(find.byKey(const Key('session-approvals-sheet')), findsOneWidget);
+}
+
+/// The approvals sheet has only the kit sheet's own Close. At 2.5x text the
+/// header scrolls away with the body, so scroll back to the top first.
+Future<void> _closeSheet(WidgetTester tester) async {
+  final body = find
+      .ancestor(
+        of: find.byKey(const Key('session-approvals-sheet')),
+        matching: find.byType(Scrollable),
+      )
+      .first;
+  tester.state<ScrollableState>(body).position.jumpTo(0);
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('kit-sheet-close')));
+  await tester.pumpAndSettle();
+}
+
+/// The chip's full wording is its spoken label (it has no tooltip).
+Finder _spoken(String pattern) => find.bySemanticsLabel(RegExp(pattern));
+
+/// Taps the approvals chip at its leading glyph: at 2.5x the chip can be
+/// wider than the sideways-scrolling strip, so its centre may be clipped.
+/// The glyph itself takes no pointer; the chip under it does.
+Future<void> _tapChip(WidgetTester tester) async {
+  final glyph = find
+      .descendant(
+        of: find.byKey(const Key('auto-approval-indicator')),
+        matching: find.byType(Icon),
+      )
+      .first;
+  await tester.ensureVisible(glyph);
+  await tester.pumpAndSettle();
+  await tester.tap(glyph, warnIfMissed: false);
+  await tester.pumpAndSettle();
 }
 
 Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
@@ -159,18 +201,25 @@ void main() {
         await _captureScreen(tester, 'sheet-ask-${direction.name}');
         // Inheritance cannot be switched on while asking.
         final inherit = find.byKey(const Key('approvals-inherit-switch'));
-        expect(tester.widget<SwitchListTile>(inherit).onChanged, isNull);
+        expect(tester.widget<Switch>(inherit).onChanged, isNull);
         expect(
           find.text('Available once automatic approval is on.'),
           findsOneWidget,
         );
 
+        // A risky switch: turning it on first states what it covers.
         await _tapVisible(
           tester,
           find.text('Approve automatically while connected'),
         );
+        expect(controller.autoApprovalFor('parent').automatic, isFalse);
+        expect(
+          find.textContaining('Nothing is saved as always allowed'),
+          findsOneWidget,
+        );
+        await _tapVisible(tester, find.text('Turn on'));
         expect(controller.autoApprovalFor('parent').automatic, isTrue);
-        expect(tester.widget<SwitchListTile>(inherit).onChanged, isNotNull);
+        expect(tester.widget<Switch>(inherit).onChanged, isNotNull);
         await _tapVisible(tester, find.text('Subagents inherit this'));
         expect(
           controller.autoApprovalFor('parent').setting.inheritToChildren,
@@ -184,7 +233,7 @@ void main() {
           findsOneWidget,
         );
         await _captureScreen(tester, 'sheet-auto-${direction.name}');
-        await _tapVisible(tester, find.byKey(const Key('approvals-done')));
+        await _closeSheet(tester);
         expect(find.byKey(const Key('session-approvals-sheet')), findsNothing);
 
         // The indicator is on while the setting is on.
@@ -197,15 +246,13 @@ void main() {
         await tester.pumpAndSettle();
         expect(api.replies, [('req-1', 'once')]);
         expect(find.byKey(const Key('permission-card-review')), findsNothing);
-        expect(
-          find.byTooltip(RegExp('Auto-approved · Run a shell command')),
-          findsOneWidget,
-        );
+        expect(_spoken('Auto-approved · Run a shell command'), findsOneWidget);
         await _captureScreen(tester, 'indicator-${direction.name}');
 
         // Tapping the indicator reopens the sheet, which lists the record;
-        // Ask switches approval off again.
-        await _tapVisible(tester, indicator);
+        // turning the switch off stops approval again. At 2.5x the chip can
+        // be wider than the sideways-scrolling strip.
+        await _tapChip(tester);
         expect(
           find.byKey(const Key('session-approvals-sheet')),
           findsOneWidget,
@@ -214,18 +261,17 @@ void main() {
           find.text('1 request approved automatically on this server'),
           findsOneWidget,
         );
-        // Named on the chip (its tooltip) and listed in the sheet's record.
-        expect(
-          find.byTooltip(RegExp('Auto-approved · Run a shell command')),
-          findsOneWidget,
-        );
+        // Named on the chip (its spoken label) and listed in the sheet's
+        // record.
         expect(
           find.textContaining('Auto-approved · Run a shell command'),
           findsOneWidget,
         );
         await _captureScreen(tester, 'sheet-record-${direction.name}');
-        await _tapVisible(tester, find.text('Ask each time'));
-        await _tapVisible(tester, find.byKey(const Key('approvals-done')));
+        // Turning the switch off asks nothing: every request waits again.
+        await _tapVisible(tester, find.byKey(const Key('approvals-mode-auto')));
+        expect(controller.autoApprovalFor('parent').automatic, isFalse);
+        await _closeSheet(tester);
         expect(find.byKey(const Key('auto-approval-indicator')), findsNothing);
         controller.handleEventForTesting(_ask('req-2', 'parent'));
         await tester.pumpAndSettle();
@@ -254,24 +300,15 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.textContaining('Auto-approve'), findsOneWidget);
-        expect(
-          find.byTooltip(RegExp('Inherited from parent conversation')),
-          findsOneWidget,
-        );
+        expect(_spoken('Inherited from parent conversation'), findsOneWidget);
         await _captureScreen(tester, 'child-indicator-${direction.name}');
 
-        await _tapVisible(
-          tester,
-          find.byKey(const Key('auto-approval-indicator')),
-        );
+        await _tapChip(tester);
         expect(
           find.byKey(const Key('approvals-inherited-note')),
           findsOneWidget,
         );
-        expect(
-          find.byTooltip(RegExp('Inherited from parent conversation')),
-          findsWidgets,
-        );
+        expect(find.text('Inherited from parent conversation'), findsOneWidget);
         expect(find.byKey(const Key('approvals-follow-parent')), findsNothing);
         await _captureScreen(tester, 'child-sheet-${direction.name}');
 
@@ -285,8 +322,8 @@ void main() {
           findsOneWidget,
         );
 
-        // Choosing Ask on the override stops inherited approval here only.
-        await _tapVisible(tester, find.text('Ask each time'));
+        // Turning it off on the override stops inherited approval here only.
+        await _tapVisible(tester, find.byKey(const Key('approvals-mode-auto')));
         expect(controller.autoApprovalFor('child').automatic, isFalse);
         expect(controller.autoApprovalFor('parent').automatic, isTrue);
 
@@ -300,7 +337,7 @@ void main() {
           find.byKey(const Key('approvals-inherited-note')),
           findsOneWidget,
         );
-        await _tapVisible(tester, find.byKey(const Key('approvals-done')));
+        await _closeSheet(tester);
 
         controller.handleEventForTesting(_ask('req-child', 'child'));
         await tester.pumpAndSettle();
@@ -333,7 +370,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byKey(const Key('auto-approval-indicator')), findsOneWidget);
     expect(find.text('Auto-approve paused'), findsOneWidget);
-    expect(find.byTooltip(RegExp('Not connected')), findsOneWidget);
+    expect(_spoken('This phone is not connected'), findsOneWidget);
     expect(tester.takeException(), isNull);
     // A request arriving now waits for a person: covered by the controller
     // test. (A permission card next to the reconnecting banner at 320dp/2.5x
@@ -393,31 +430,22 @@ void main() {
     await tester.pumpAndSettle();
     await _openApprovals(tester);
 
-    // At 2.5x text the tile is taller than the sheet's viewport, so its
-    // centre can be off screen; its title line is not.
-    Future<void> tapEverything() async {
-      final tile = find.byKey(const Key('approvals-everything-switch'));
-      await tester.ensureVisible(tile);
-      await tester.pumpAndSettle();
-      await tester.tapAt(tester.getTopLeft(tile) + const Offset(30, 24));
-      await tester.pumpAndSettle();
-    }
-
-    // Declining the confirmation changes nothing.
-    await tapEverything();
-    expect(
-      find.byKey(const Key('approvals-everything-confirm')),
-      findsOneWidget,
+    Future<void> tapEverything() => _tapVisible(
+      tester,
+      find.byKey(const Key('approvals-everything-switch')),
     );
-    await _tapVisible(tester, find.text('Cancel'));
+
+    // Turning it on first states its scope; Not now changes nothing.
+    await tapEverything();
+    expect(find.byKey(const ValueKey('kit-switch-risk-step')), findsOneWidget);
+    expect(find.textContaining('without asking you'), findsOneWidget);
+    await _tapVisible(tester, find.text('Not now'));
+    expect(find.byKey(const ValueKey('kit-switch-risk-step')), findsNothing);
     expect(controller.approvesEverything, isFalse);
 
-    // Confirming turns it on for conversations that never had a setting.
+    // Turn on applies it to conversations that never had a setting.
     await tapEverything();
-    await _tapVisible(
-      tester,
-      find.byKey(const Key('approvals-everything-confirm-action')),
-    );
+    await _tapVisible(tester, find.text('Turn on'));
     expect(controller.approvesEverything, isTrue);
     expect(controller.autoApprovalFor('parent').automatic, isTrue);
     expect(controller.autoApprovalFor('never-seen').automatic, isTrue);

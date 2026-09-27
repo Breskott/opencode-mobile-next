@@ -119,7 +119,7 @@ void main() {
               'All clear',
               'All clear here',
               'Status incomplete',
-              'Saved-server attention',
+              'Background checks',
               'Saved servers',
               'Edit a file',
               'Completion digests',

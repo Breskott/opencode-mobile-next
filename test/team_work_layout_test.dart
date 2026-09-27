@@ -429,7 +429,7 @@ void main() {
         expect(sheet, findsOneWidget);
         expect(tester.getSize(sheet).width, lessThanOrEqualTo(320));
         expect(key('team-work-sheet-title'), findsOneWidget);
-        expect(key('team-work-sheet-state'), findsOneWidget);
+        expect(key('team-work-sheet-state'), findsNothing);
         expect(key('team-work-sheet-owner'), findsOneWidget);
 
         // Dependency chip, branch and worktree in LTR mono, created stamp.

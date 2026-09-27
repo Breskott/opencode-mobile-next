@@ -13,7 +13,6 @@ import 'package:opencode_mobile/state/profile_monitor.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/provider_quota_monitor.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/screens/attention_overview_screen.dart';
 import 'package:opencode_mobile/ui/screens/profile_monitor_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -437,15 +436,9 @@ void main() {
     tester,
   ) async {
     final controller = await _controller();
-    await tester.pumpWidget(
-      _app(AttentionOverviewScreen(controller: controller)),
-    );
+    await tester.pumpWidget(_app(ProfileMonitorScreen(controller: controller)));
     await tester.pump();
-    // The old entry point still opens the list...
-    await tester.tap(find.byType(IconButton).first);
-    await tester.pumpAndSettle();
-    expect(find.byType(ProfileMonitorScreen), findsOneWidget);
-    // ...which no longer holds settings of its own.
+    // The list holds no settings of its own.
     expect(find.byType(Switch), findsNothing);
     expect(find.text(_en.monitorQuiet), findsNothing);
 

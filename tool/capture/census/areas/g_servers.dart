@@ -1017,7 +1017,7 @@ final gServersArea = CensusArea(
         controller: s.controller,
         store: s.store,
       );
-      kit.expectText('Saved-server attention');
+      kit.expectText('Background checks');
     }),
 
     // -- profile-monitor-switch-server-dialog --------------------------------

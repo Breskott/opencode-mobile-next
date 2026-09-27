@@ -32,7 +32,6 @@ const _excluded = <String, String>{
   'root-connecting': 'shown automatically while a saved server connects',
   'bootstrap-gate': 'startup failure screen; nothing is connected yet',
   'servers-welcome': 'first run only, before any server exists',
-  'demo': 'offered on the first-run welcome only; owned by phase 3b',
   // Need a conversation: the conversation menu and its command launcher are
   // their search (phase 4 adds them to this index through the registry).
   'chat': 'a conversation; opened from Work, Inbox or All conversations',
@@ -292,6 +291,24 @@ void main() {
       for (final entry in ar) {
         expect(entry.matches(entry.title), isTrue, reason: 'ar ${entry.id}');
       }
+    });
+
+    test('each result names the page that holds it (reachability audit)', () {
+      final byId = {for (final entry in entries) entry.id: entry};
+      expect(byId['settings-privacy-data-use']!.parent, _en.aboutTitle);
+      expect(byId['ai-team']!.parent, _en.librarySettingsTitle);
+      expect(
+        byId['inside-servers-monitor']!.title,
+        _en.monitorBackgroundChecks,
+      );
+      expect(byId['settings-try-demo']!.parent, _en.settingsHubHelpRow);
+      expect(byId['settings-try-demo']!.matches('demo'), isTrue);
+      expect(byId['archived-conversations']!.matches('archived'), isTrue);
+      expect(byId['archived-conversations']!.pages, ['global-sessions']);
+      expect(byId['settings-models']!.pages, ['model-picker-sheet']);
+      final servers = byId['settings-saved-servers']!;
+      expect(servers.pages, ['servers']);
+      expect(servers.keywords, isNot(contains(_en.attentionTitle)));
     });
   });
 
