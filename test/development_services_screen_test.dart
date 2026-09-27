@@ -7,7 +7,7 @@ import 'package:opencode_mobile/state/development_service_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 import 'package:opencode_mobile/ui/screens/development_services_screen.dart';
-import 'package:opencode_mobile/ui/screens/manage_project_screen.dart';
+import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/development_service_fakes.dart';
@@ -397,14 +397,13 @@ void main() {
     await done(tester);
   });
 
-  testWidgets('Manage project opens the development services destination', (
+  // Manage project merged into the Project tab (slice-P3.11a).
+  testWidgets('the Project tab opens the development services destination', (
     tester,
   ) async {
     final connection = await connectionFor(ServiceRepository());
     addTearDown(connection.dispose);
-    await tester.pumpWidget(
-      app(ManageProjectScreen(controller: connection, project: null)),
-    );
+    await tester.pumpWidget(app(ProjectHub(controller: connection)));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Development services'));
     await tester.pumpAndSettle();

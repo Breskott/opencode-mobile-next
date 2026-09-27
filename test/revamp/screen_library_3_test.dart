@@ -57,34 +57,41 @@ void main() {
   tearDownAll(() => ProviderLogo.imageProviderOverride = null);
 
   group('server sign-in', () {
-    testWidgets('asks in place, then starts and offers Check and Cancel', (
-      tester,
-    ) async {
+    // The separate "Start sign-in on the server?" confirm merged into the
+    // sheet (slice-P3.11a): the sheet's intro says what Start does and
+    // whom it trusts, and Start acts.
+    testWidgets('the sheet is the question: Start starts, Cancel is at hand, '
+        'and after 8 s it offers to check the named provider', (tester) async {
       final c = await library3Server();
       addTearDown(c.dispose);
       await _providers(tester, c);
       await tester.tap(find.byKey(const ValueKey('connect-provider-cloud')));
       await tester.pumpAndSettle();
       expect(find.text('Cloud CLI'), findsOneWidget);
+      expect(
+        find.textContaining('Start it only if you trust the server'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byKey(const ValueKey('command-auth-start')));
       await tester.pumpAndSettle();
-      expect(find.text('Start sign-in on the server?'), findsOneWidget);
-      expect(c.started, isEmpty);
-
-      await tester.tap(find.text('Start server sign-in').last);
-      await tester.pumpAndSettle();
+      expect(find.text('Start sign-in on the server?'), findsNothing);
       expect(c.started, ['cloud/login']);
       expect(find.textContaining('Sign-in is pending on the server'), findsOne);
-      expect(find.byKey(const ValueKey('command-auth-check')), findsOneWidget);
       expect(find.byKey(const ValueKey('command-auth-cancel')), findsOneWidget);
       expect(find.byKey(const ValueKey('command-auth-start')), findsNothing);
+      // The server gets time to answer before the sheet offers the check.
+      expect(find.byKey(const ValueKey('command-auth-check')), findsNothing);
+      await tester.pump(const Duration(seconds: 8));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('command-auth-check')), findsOneWidget);
+      expect(find.text('Check Cloud sign-in now'), findsOneWidget);
     });
   });
 
   group('manage accounts', () {
-    testWidgets('one row per account, no mark while the active one is '
-        'unknown, and the server environment row', (tester) async {
+    testWidgets('one caption, one row per account, no mark while the active '
+        'one is unknown, and the server environment row', (tester) async {
       final c = await library3Server();
       addTearDown(c.dispose);
       await _providers(tester, c);
@@ -93,7 +100,9 @@ void main() {
       expect(find.byKey(const ValueKey('credential-cred-1')), findsOneWidget);
       expect(find.byKey(const ValueKey('credential-cred-2')), findsOneWidget);
       expect(find.text('Active'), findsNothing);
-      expect(find.textContaining('Active account unknown'), findsOneWidget);
+      // One caption; the unknown active account is no paragraph of its own.
+      expect(find.text('Keys stay on your server.'), findsOneWidget);
+      expect(find.textContaining('Active account unknown'), findsNothing);
       expect(find.text('ANTHROPIC_API_KEY'), findsOneWidget);
       expect(
         find.text(
@@ -134,7 +143,8 @@ void main() {
       await _manageAccounts(tester);
       await _accountMenu(tester, 'cred-1', 'Remove Work');
 
-      expect(find.text('Remove Work?'), findsOneWidget);
+      expect(find.text('Remove the Anthropic account “Work”?'), findsOneWidget);
+      expect(find.text('Remove “Work”'), findsOneWidget);
       expect(
         find.text(
           'Removes Work from this server. Projects that use it will need '
@@ -279,6 +289,38 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(c.forgotten, 1);
+    });
+
+    // One forget-auth sheet (slice-P3.11a): a start the server never
+    // confirmed is forgotten through the same question as a saved one.
+    testWidgets('an unconfirmed start is forgotten through the same '
+        'question', (tester) async {
+      final c = await library3Server()
+        ..uncertain = const [
+          (integrationID: 'openai', kind: PendingAuthKind.command),
+        ];
+      addTearDown(c.dispose);
+      await _providers(tester, c);
+
+      await tester.tap(find.byKey(const ValueKey('pending-auth-openai')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('uncertain-auth-forget')));
+      await tester.pumpAndSettle();
+      expect(find.text('Forget this sign-in on this phone?'), findsNothing);
+      expect(find.textContaining('Forget the '), findsOneWidget);
+      expect(
+        find.text(
+          'The app stops tracking it on this device. Nothing is cancelled on '
+          'the server; an unfinished sign-in there expires on its own.',
+        ),
+        findsOneWidget,
+      );
+      expect(c.uncertainForgotten, 0);
+      await tester.tap(
+        find.byKey(const ValueKey('pending-auth-forget-confirm')),
+      );
+      await tester.pumpAndSettle();
+      expect(c.uncertainForgotten, 1);
     });
   });
 

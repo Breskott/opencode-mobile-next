@@ -14,6 +14,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
+import 'package:opencode_mobile/ui/screens/managed_workspaces_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
 import 'package:opencode_mobile/ui/screens/review_workspace.dart';
@@ -142,8 +143,32 @@ void main() {
 
   group('rows follow the connected server', () {
     final expected = <String, (ServerCapabilities, List<ProjectTool>)>{
-      'OpenCode 1': (ServerCapabilities.allV1, everyTool),
-      'OpenCode 2': (api2ServerCapabilities, everyTool),
+      // Development services and cloud environments came over from the
+      // retired Manage project page (slice-P3.11a), each on its own gate.
+      'OpenCode 1': (
+        ServerCapabilities.allV1,
+        const [
+          ProjectTool.files,
+          ProjectTool.changes,
+          ProjectTool.terminal,
+          ProjectTool.health,
+          ProjectTool.worktrees,
+          ProjectTool.workspaces,
+          ProjectTool.search,
+        ],
+      ),
+      'OpenCode 2': (
+        api2ServerCapabilities,
+        const [
+          ProjectTool.files,
+          ProjectTool.changes,
+          ProjectTool.terminal,
+          ProjectTool.health,
+          ProjectTool.worktrees,
+          ProjectTool.services,
+          ProjectTool.search,
+        ],
+      ),
       'Codex': (codexServerCapabilities, const []),
       'Paseo': (paseoServerCapabilities, const []),
       'files only': (
@@ -156,7 +181,11 @@ void main() {
       ),
       'project management only': (
         const ServerCapabilities(fileBrowsing: false, terminal: false),
-        const [ProjectTool.health, ProjectTool.worktrees],
+        const [
+          ProjectTool.health,
+          ProjectTool.worktrees,
+          ProjectTool.workspaces,
+        ],
       ),
     };
 
@@ -167,6 +196,8 @@ void main() {
         ProjectTool.terminal,
         ProjectTool.health,
         ProjectTool.worktrees,
+        ProjectTool.services,
+        ProjectTool.workspaces,
         ProjectTool.search,
       ]);
       for (final entry in expected.entries) {
@@ -212,10 +243,25 @@ void main() {
           'Project',
         );
         for (final tool in everyTool) {
+          // Terminal stays listed, dimmed with its reason, on a server
+          // without one (slice-P3.11a).
           expect(
             _tool(tool),
-            tools.contains(tool) ? findsOneWidget : findsNothing,
+            tools.contains(tool) || tool == ProjectTool.terminal
+                ? findsOneWidget
+                : findsNothing,
             reason: '${entry.key}: ${tool.name}',
+          );
+        }
+        if (!tools.contains(ProjectTool.terminal)) {
+          expect(
+            find.descendant(
+              of: _tool(ProjectTool.terminal),
+              matching: find.text(
+                "This server doesn't open a terminal for you.",
+              ),
+            ),
+            findsOneWidget,
           );
         }
         // Top to bottom in the declared order.
@@ -301,6 +347,7 @@ void main() {
       await opens(ProjectTool.changes, ReviewWorkspace);
       await opens(ProjectTool.health, ProjectHealthScreen);
       await opens(ProjectTool.worktrees, WorktreesScreen);
+      await opens(ProjectTool.workspaces, ManagedWorkspacesScreen);
     });
   });
 

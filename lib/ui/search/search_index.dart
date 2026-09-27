@@ -1394,6 +1394,30 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       gate: (scope) => _hasProjectTool(scope, ProjectTool.worktrees),
       open: _projectTool(ProjectTool.worktrees),
     ),
+    // Development services and cloud environments moved to the Project tab
+    // with the retired Manage project page (slice-P3.11a).
+    SearchEntry(
+      id: 'project-services',
+      kind: SearchEntryKind.destination,
+      icon: AppIconography.processor,
+      title: l10n.servicesTitle,
+      parent: l10n.shellTabProject,
+      keywords: l10n.discoverServicesAliases,
+      pages: const ['development-services'],
+      gate: (scope) => _hasProjectTool(scope, ProjectTool.services),
+      open: _projectTool(ProjectTool.services),
+    ),
+    SearchEntry(
+      id: 'project-workspaces',
+      kind: SearchEntryKind.destination,
+      icon: AppIconography.cloud,
+      title: l10n.e7LibraryManagedWorkspaces,
+      parent: l10n.shellTabProject,
+      keywords: l10n.discoverCloudEnvironmentsAliases,
+      pages: const ['managed-workspaces'],
+      gate: (scope) => _hasProjectTool(scope, ProjectTool.workspaces),
+      open: _projectTool(ProjectTool.workspaces),
+    ),
     SearchEntry(
       id: 'project-search',
       kind: SearchEntryKind.destination,

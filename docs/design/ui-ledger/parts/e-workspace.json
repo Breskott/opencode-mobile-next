@@ -114,10 +114,10 @@
           "label": "<directory basename> / Active session directory · {directory}",
           "key": "active-session-directory",
           "line": 449,
-          "action": "open-dialog",
-          "target": "workspace-directory-details-dialog",
-          "targetWidget": "_showDirectoryDetails",
-          "effect": "_showDirectoryDetails(_selectedDirectory) shows the full path in a dialog.",
+          "action": "open-sheet",
+          "target": "workspace-context-sheet",
+          "targetWidget": "_openContextSheet",
+          "effect": "_openContextSheet(folder: <this folder>): the project sheet with its Details fold open on the folder (the folder dialog merged here, slice-P3.11a).",
           "gates": [
             "widget.controller.capabilities.projectManagement && _hasExternalSessionDirectory (selected directory is neither the project root nor a listed worktree)"
           ],
@@ -129,10 +129,10 @@
           "label": "<directory basename> / <directory>",
           "key": "restricted-directory-context",
           "line": 469,
-          "action": "open-dialog",
-          "target": "workspace-directory-details-dialog",
-          "targetWidget": "_showDirectoryDetails",
-          "effect": "_showDirectoryDetails(controller.directory) shows the full path in a dialog.",
+          "action": "open-sheet",
+          "target": "workspace-context-sheet",
+          "targetWidget": "_openContextSheet",
+          "effect": "_openContextSheet(folder: <this folder>): the project sheet with its Details fold open on the folder (the folder dialog merged here, slice-P3.11a).",
           "gates": [
             "!capabilities.projectManagement && widget.controller.directory?.isNotEmpty == true"
           ],
@@ -243,13 +243,13 @@
         {
           "id": "workspace-session-menu-details",
           "type": "menu-item",
-          "label": "Details",
+          "label": "Conversation context",
           "key": null,
           "line": 1530,
-          "action": "open-sheet",
-          "target": "workspace-session-details-sheet",
-          "targetWidget": "_sessionAction",
-          "effect": "_sessionAction('details') opens the session details sheet.",
+          "action": "navigate",
+          "target": "session-context",
+          "targetWidget": "SessionContextScreen",
+          "effect": "_openSessionContext(session): pushes SessionContextScreen; its Details hold the folder and shared link (the details sheet merged here, slice-P3.11a).",
           "gates": [],
           "destructive": false
         },
@@ -359,13 +359,13 @@
         {
           "id": "workspace-session-context-details",
           "type": "menu-item",
-          "label": "Details",
+          "label": "Conversation context",
           "key": null,
           "line": 1573,
-          "action": "open-sheet",
-          "target": "workspace-session-details-sheet",
-          "targetWidget": "_sessionAction",
-          "effect": "onAction('details', session).",
+          "action": "navigate",
+          "target": "session-context",
+          "targetWidget": "SessionContextScreen",
+          "effect": "_openSessionContext(session): pushes SessionContextScreen; its Details hold the folder and shared link (the details sheet merged here, slice-P3.11a).",
           "gates": [
             "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
           ],
@@ -672,7 +672,7 @@
       "file": "lib/ui/screens/workspace_screen.dart",
       "widget": "_WorkspaceFolderChooser",
       "presentedBy": [],
-      "line": 2233,
+      "line": 2123,
       "purpose": "Blocking state of the Workspace tab while the connection has no usable project folder: create, open or browse a folder, or search all sessions.",
       "reachedFrom": [
         {
@@ -694,7 +694,7 @@
           "type": "button",
           "label": "Create a new folder",
           "key": "workspace-create-folder",
-          "line": 2281,
+          "line": 2152,
           "action": "open-dialog",
           "target": "project-folder-new-dialog",
           "targetWidget": "ProjectFolderActions.createFolder",
@@ -709,7 +709,7 @@
           "type": "button",
           "label": "Open a project folder",
           "key": "workspace-open-folder",
-          "line": 2288,
+          "line": 2158,
           "action": "open-dialog",
           "target": "project-folder-open-dialog",
           "targetWidget": "ProjectFolderActions.openFolder",
@@ -722,7 +722,7 @@
           "type": "button",
           "label": "Choose from opened projects",
           "key": "workspace-browse-projects",
-          "line": 2295,
+          "line": 2164,
           "action": "navigate",
           "target": "projects",
           "targetWidget": "ProjectsScreen",
@@ -735,7 +735,7 @@
           "type": "list-tile",
           "label": "Details",
           "key": null,
-          "line": 2300,
+          "line": 2197,
           "action": "other",
           "target": null,
           "targetWidget": null,
@@ -750,7 +750,7 @@
           "type": "button",
           "label": "Retry projects",
           "key": null,
-          "line": 2317,
+          "line": 2191,
           "action": "other",
           "target": null,
           "targetWidget": null,
@@ -765,7 +765,7 @@
           "type": "button",
           "label": "Search all sessions",
           "key": "workspace-chooser-search-all",
-          "line": 2326,
+          "line": 2171,
           "action": "navigate",
           "target": "global-sessions",
           "targetWidget": "GlobalSessionsScreen",
@@ -773,42 +773,6 @@
           "gates": [
             "capabilities.globalSessionSearch"
           ],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "workspace-directory-details-dialog",
-      "title": "<directory basename>",
-      "kind": "dialog",
-      "file": "lib/ui/screens/workspace_screen.dart",
-      "widget": "_showDirectoryDetails",
-      "presentedBy": [],
-      "line": 834,
-      "purpose": "Shows the full selectable path of the active directory.",
-      "reachedFrom": [
-        {
-          "page": "workspace",
-          "element": "workspace-active-session-directory"
-        },
-        {
-          "page": "workspace",
-          "element": "workspace-restricted-directory"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "workspace-directory-details-dialog-close",
-          "type": "button",
-          "label": "Close",
-          "key": null,
-          "line": 843,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop().",
-          "gates": [],
           "destructive": false
         }
       ]
@@ -848,21 +812,6 @@
           "destructive": false
         },
         {
-          "id": "workspace-context-sheet-manage-project",
-          "type": "list-tile",
-          "label": "Manage project",
-          "key": "manage-project-entry",
-          "line": 967,
-          "action": "navigate",
-          "target": "manage-project",
-          "targetWidget": "ManageProjectScreen",
-          "effect": "Pops with _ContextChoice.manageProject(); _openManageProject() pushes ManageProjectScreen(project: _selectedProject) and reloads on return.",
-          "gates": [
-            "ManageProjectScreen.isAvailable(capabilities) (always true)"
-          ],
-          "destructive": false
-        },
-        {
           "id": "workspace-context-sheet-local",
           "type": "list-tile",
           "label": "This computer",
@@ -893,28 +842,6 @@
           "destructive": false
         }
       ]
-    },
-    {
-      "id": "workspace-session-details-sheet",
-      "title": "<session title>",
-      "kind": "sheet",
-      "file": "lib/ui/screens/workspace_screen.dart",
-      "widget": "_sessionAction",
-      "presentedBy": [],
-      "line": 1044,
-      "purpose": "Read-only session details: title, directory, cost/diff usage labels and shared URL (selectable text only).",
-      "reachedFrom": [
-        {
-          "page": "workspace",
-          "element": "workspace-session-menu-details"
-        },
-        {
-          "page": "workspace",
-          "element": "workspace-session-context-details"
-        }
-      ],
-      "gates": [],
-      "elements": []
     },
     {
       "id": "workspace-rename-session-dialog",
@@ -1099,10 +1026,6 @@
         {
           "page": "workspace-context-sheet",
           "element": "workspace-context-sheet-switch-project"
-        },
-        {
-          "page": "manage-project",
-          "element": "manage-project-switch-project"
         }
       ],
       "gates": [
@@ -1308,115 +1231,6 @@
           "targetWidget": null,
           "effect": "_submit() pops with the text; ProjectsScreen._rename calls repository.renameProject(projectID, projectDirectory, name) (empty name resets to the folder name).",
           "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "manage-project",
-      "title": "Manage project",
-      "kind": "screen",
-      "file": "lib/ui/screens/manage_project_screen.dart",
-      "widget": "ManageProjectScreen",
-      "presentedBy": [],
-      "line": 18,
-      "purpose": "Hub for low-frequency project surfaces: development services, switch project, worktrees, managed workspaces and project health.",
-      "reachedFrom": [
-        {
-          "page": "workspace-context-sheet",
-          "element": "workspace-context-sheet-manage-project"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "manage-project-back",
-          "type": "gesture",
-          "label": "[system back]",
-          "key": null,
-          "line": 47,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "PopScope pops with _changed so Workspace reloads.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "manage-project-services",
-          "type": "list-tile",
-          "label": "Development services",
-          "key": null,
-          "line": 92,
-          "action": "navigate",
-          "target": "development-services",
-          "targetWidget": "DevelopmentServicesScreen",
-          "effect": "Pushes DevelopmentServicesScreen(controller).",
-          "gates": [
-            "enabled only when widget.controller.directory?.isNotEmpty == true"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "manage-project-switch-project",
-          "type": "list-tile",
-          "label": "Switch project",
-          "key": "switch-project-entry",
-          "line": 117,
-          "action": "navigate",
-          "target": "projects",
-          "targetWidget": "ProjectsScreen",
-          "effect": "_switchProject() pushes ProjectsScreen; when it returns true this screen pops(true).",
-          "gates": [
-            "capabilities.projectManagement"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "manage-project-worktrees",
-          "type": "list-tile",
-          "label": "Worktrees",
-          "key": "worktrees-entry",
-          "line": 142,
-          "action": "navigate",
-          "target": "worktrees",
-          "targetWidget": "WorktreesScreen",
-          "effect": "_openWorktrees() pushes WorktreesScreen(controller, project).",
-          "gates": [
-            "capabilities.projectManagement",
-            "enabled only when project != null"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "manage-project-managed-workspaces",
-          "type": "list-tile",
-          "label": "Managed workspaces",
-          "key": "managed-workspaces-entry",
-          "line": 166,
-          "action": "navigate",
-          "target": "managed-workspaces",
-          "targetWidget": "ManagedWorkspacesScreen",
-          "effect": "_openManagedWorkspaces() pushes ManagedWorkspacesScreen(controller, project).",
-          "gates": [
-            "capabilities.managedWorkspaces",
-            "enabled only when project != null"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "manage-project-health",
-          "type": "list-tile",
-          "label": "Project health",
-          "key": "project-health-entry",
-          "line": 183,
-          "action": "navigate",
-          "target": "project-health",
-          "targetWidget": "ProjectHealthScreen",
-          "effect": "_openProjectHealth(): controller.prepareActionRepository() then pushes ProjectHealthScreen(repository, repositoryResolver, capabilities).",
-          "gates": [
-            "capabilities.projectManagement"
-          ],
           "destructive": false
         }
       ]
@@ -1714,10 +1528,6 @@
       "purpose": "Read-only health of the open project: version control branch and changed files, language services and formatters, with Git initialization.",
       "reachedFrom": [
         {
-          "page": "manage-project",
-          "element": "manage-project-health"
-        },
-        {
           "page": "?",
           "element": null,
           "widget": "ChatScreen",
@@ -1886,8 +1696,8 @@
       "purpose": "List, discover, create, open and remove adapter-backed managed workspaces (cloud environments) for the project.",
       "reachedFrom": [
         {
-          "page": "manage-project",
-          "element": "manage-project-managed-workspaces"
+          "page": "project-hub",
+          "element": "project-hub-workspaces"
         }
       ],
       "gates": [
@@ -2234,12 +2044,7 @@
       "presentedBy": [],
       "line": 32,
       "purpose": "List the project's main copy and its worktrees with each row's state word; open, start a conversation in, create (pinned primary), reset and delete them.",
-      "reachedFrom": [
-        {
-          "page": "manage-project",
-          "element": "manage-project-worktrees"
-        }
-      ],
+      "reachedFrom": [],
       "gates": [
         "widget.controller.capabilities.projectManagement",
         "project != null"
@@ -2898,13 +2703,13 @@
         {
           "id": "global-sessions-row-menu-handoff",
           "type": "menu-item",
-          "label": "Copy handoff",
+          "label": "Continue on computer",
           "key": null,
           "line": 1077,
           "action": "open-sheet",
-          "target": "session-handoff",
-          "targetWidget": "showSessionHandoff",
-          "effect": "onHandoff -> _open(result, handoff: true): switches location, then showSessionHandoff(context, controller, sessionID, projectID). Also a CustomSemanticsAction (979).",
+          "target": "continue-on-computer-sheet",
+          "targetWidget": "showContinueOnComputerSheet",
+          "effect": "showSessionHandoff re-reads the session and opens the continue-on-computer sheet with its resume command (the handoff dialog merged into it, slice-P3.11a).",
           "gates": [
             "guarded(): refuses with e7WorkspaceLocationChangedReturn when SessionNavigationScope no longer matches the controller"
           ],

@@ -812,13 +812,8 @@
   "runResultsOpenConversation": "Open conversation",
   "attentionDisclosure": "A local overview, not live monitoring across servers. Cached signals may be incomplete or out of date. Open a server to check its current activity.",
   "attentionNavigationUnavailable": "Opening servers is unavailable here. Return to Home to choose a server and view Inbox.",
-  "handoffTitle": "Copy handoff reference?",
-  "handoffDisclosure": "Metadata only, not a command or link. On your other device, connect to the same server and locate this project and conversation. Nothing is published or sent.\n\nThe clipboard will contain conversation and project identifiers. Other apps may read it; share only with people you trust.",
-  "handoffCopy": "Copy reference",
-  "handoffCopied": "Conversation metadata reference copied",
-  "handoffCopyFailed": "Could not copy the handoff. Try again.",
   "sessionOpenRelated": "Open related",
-  "sessionCopyHandoff": "Copy handoff",
+  "sessionCopyHandoff": "Continue on computer",
   "sessionActions": "Conversation actions",
   "attentionTitle": "Server attention",
   "webSourcesTitle": "Add web source",
@@ -890,14 +885,6 @@
   "@commandAuthMethodHint": {
     "description": "Command authentication runs server-side; do not imply an app shell or browser flow"
   },
-  "commandAuthConfirmTitle": "Start sign-in on the server?",
-  "@commandAuthConfirmTitle": {
-    "description": "Explicit consent before executing a server-side authentication method"
-  },
-  "commandAuthConfirmDetail": "OpenCode will execute this provider's declared sign-in method on the selected server. Continue only if you trust that server and provider. The app does not run or copy a shell command on your phone.",
-  "@commandAuthConfirmDetail": {
-    "description": "Trust boundary of executable provider authentication"
-  },
   "commandAuthStart": "Start server sign-in",
   "@commandAuthStart": {
     "description": "Launch a command authentication attempt after confirmation"
@@ -905,10 +892,6 @@
   "commandAuthPending": "Sign-in is pending on the server. Finish any server-side interaction, then check its status. Closing this sheet does not cancel it.",
   "@commandAuthPending": {
     "description": "Pending status without fabricated instructions or automatic cancellation"
-  },
-  "commandAuthCheck": "Check sign-in",
-  "@commandAuthCheck": {
-    "description": "Read the pinned command-auth attempt status"
   },
   "commandAuthCancel": "Cancel sign-in",
   "@commandAuthCancel": {
@@ -990,21 +973,9 @@
   "@credentialManage": {
     "description": "Open individual saved provider credential management"
   },
-  "credentialMetadataOnly": "Only saved account labels are shown. API keys and login tokens stay on your server.",
+  "credentialMetadataOnly": "Keys stay on your server.",
   "@credentialMetadataOnly": {
     "description": "Describes the metadata-only credential list"
-  },
-  "credentialActiveUnknown": "Active account unknown. The saved-account list does not report which account is active.",
-  "@credentialActiveUnknown": {
-    "description": "Cold start or stream gap cannot establish an active credential"
-  },
-  "credentialNoneActive": "The server reported no active saved account.",
-  "@credentialNoneActive": {
-    "description": "An explicit nullable credential-switched event reported no active credential"
-  },
-  "credentialActiveObserved": "The Active badge reflects the latest server event.",
-  "@credentialActiveObserved": {
-    "description": "Distinguishes event-confirmed activation from a successful command response"
   },
   "credentialActiveUpdated": "Active account updated from the server.",
   "@credentialActiveUpdated": {
@@ -1033,15 +1004,6 @@
   "credentialSave": "Save label",
   "@credentialSave": {
     "description": "Submit only the edited credential label"
-  },
-  "credentialRemoveTitle": "Remove {label}?",
-  "@credentialRemoveTitle": {
-    "description": "Destructive confirmation naming the saved provider credential",
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
   },
   "credentialRemoveDetail": "Remove this saved sign-in from the server. Other projects using it may be affected. This does not edit environment configuration; the server determines which account, if any, becomes active afterward.",
   "@credentialRemoveDetail": {
@@ -1629,9 +1591,6 @@
   "setupInstallStart": "Install & start",
   "setupCheckAgain": "Try again",
   "uncertainAuthDetail": "The server may have started this sign-in without confirming it. Check on the server before you start again.",
-  "uncertainAuthForgetTitle": "Forget this sign-in on this phone?",
-  "uncertainAuthForgetDetail": "This clears only the local retry block. It does not cancel sign-in on the server. Check the server first to avoid running a second sign-in. No new sign-in will start.",
-  "uncertainAuthForget": "Forget this sign-in",
   "uncertainAuthCloseHint": "Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.",
   "pluginsDescription": "Plugins reported for this project on the server. Inspect status and source here; manage plugins on the server.",
   "pluginsUnsupported": "This server does not support plugin inspection.",
@@ -1653,11 +1612,7 @@
   "pluginsFailureDetail": "Failure details are hidden because they may contain credentials.",
   "demoReviewChanges": "Review changes",
   "demoSetUpServer": "Set up your own server",
-  "handoffCommandTitle": "Continue on computer",
-  "handoffCommandDisclosure": "Run this command in a POSIX shell on a computer with OpenCode installed and access to this server. Set OPENCODE_SERVER_PASSWORD privately on that computer if the server requires it. The clipboard will contain the server address, username, project directory and conversation ID, but no password.",
   "handoffCopyCommand": "Copy command",
-  "handoffCommandCopied": "Resume command copied",
-  "handoffCommandUnavailable": "A resume command is unavailable for this server or cloud environment. Continuing on another computer needs a supported OpenCode command and a reachable HTTPS server; a localhost address points to each device itself. You can still copy the conversation metadata below.",
   "quotaMiniMax": "MiniMax",
   "quotaMiniMaxAccount": "MiniMax subscription windows",
   "quotaMiniMaxSourceBound": "Tied to the collector's configured MiniMax Subscription Key. The quota response does not independently identify the account. Only reported general-pool percentages are shown; other limits may apply.",
@@ -1923,11 +1878,8 @@
   "mobileTaskPriorityMedium": "Medium priority",
   "mobileTaskPriorityLow": "Low priority",
   "quotaMonitorTitle": "Quota monitoring",
-  "quotaMonitorConsentTitle": "Monitor this provider source?",
-  "quotaMonitorConsent": "Keep checking {provider} on {server} in the background and alert me when use reaches:",
   "quotaMonitorRuntime": "Sources are checked in rotation, at most three per cycle; larger lists take several cycles. Background reads require the existing live service to be active; Android may stop it. Displayed readings expire when the collector says they do. Device alerts record past threshold readings, not current remaining allowance. This page never switches your active server.",
   "quotaMonitorEmpty": "No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.",
-  "quotaMonitorEnable": "Enable quota monitoring",
   "quotaMonitorDisabled": "Monitoring is off.",
   "quotaMonitorWaiting": "Waiting for a fresh reading.",
   "quotaMonitorChecking": "Checking the trusted collector…",
@@ -2737,8 +2689,7 @@
   "workspaceIsolatedTask": "Isolated task",
   "workspaceAllSessions": "All conversations",
   "workspaceDismissNotice": "Dismiss",
-  "workspaceManageProject": "Manage project",
-  "workspaceManageProjectHint": "Switch project, worktrees, and project health",
+  "workspaceManageProjectHint": "Switch project, where it runs, and its folder",
   "workspaceManage": "Manage",
   "reviewCopiedFile": "Updated file copied",
   "reviewCopiedPatch": "Patch copied",
@@ -8997,49 +8948,21 @@
   "@e7LibraryNoProjectFolderIsOpenChooseOne": {
     "description": "Library and project tools UI: No project folder is open. Choose one from Workspace."
   },
-  "e7LibraryProject": "Project",
-  "@e7LibraryProject": {
-    "description": "Library and project tools UI: Project"
-  },
   "e7LibrarySwitchProject": "Switch project",
   "@e7LibrarySwitchProject": {
     "description": "Library and project tools UI: Switch project"
-  },
-  "e7LibraryChooseAnotherProjectOpenedByThisServer": "Choose another project opened by this server",
-  "@e7LibraryChooseAnotherProjectOpenedByThisServer": {
-    "description": "Library and project tools UI: Choose another project opened by this server"
-  },
-  "e7LibraryCoding": "Coding",
-  "@e7LibraryCoding": {
-    "description": "Library and project tools UI: Coding"
   },
   "e7LibraryWorktrees": "Worktrees",
   "@e7LibraryWorktrees": {
     "description": "Library and project tools UI: Worktrees"
   },
-  "e7LibraryChooseAProjectFirst": "Choose a project first",
-  "@e7LibraryChooseAProjectFirst": {
-    "description": "Library and project tools UI: Choose a project first"
-  },
-  "e7LibraryCreateAndManageIsolatedGitBranches": "Create and manage isolated Git branches",
-  "@e7LibraryCreateAndManageIsolatedGitBranches": {
-    "description": "Library and project tools UI: Create and manage isolated Git branches"
-  },
   "e7LibraryManagedWorkspaces": "Cloud environments",
   "@e7LibraryManagedWorkspaces": {
     "description": "Library and project tools UI: Managed workspaces"
   },
-  "e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked": "Create, discover, open, and remove adapter-backed environments",
-  "@e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked": {
-    "description": "Library and project tools UI: Create, discover, open, and remove adapter-backed environments"
-  },
   "e7LibraryProjectHealth": "Project health",
   "@e7LibraryProjectHealth": {
     "description": "Library and project tools UI: Project health"
-  },
-  "e7LibraryBranchChangedFilesLanguageServicesAndFormatters": "Branch, changed files, language services, and formatters",
-  "@e7LibraryBranchChangedFilesLanguageServicesAndFormatters": {
-    "description": "Library and project tools UI: Branch, changed files, language services, and formatters"
   },
   "e7LibraryOpenCodeIsReconnecting": "OpenCode is reconnecting.",
   "@e7LibraryOpenCodeIsReconnecting": {
@@ -24598,7 +24521,7 @@
   "@workspaceChooserEnterPath": {
     "description": "Folder chooser: open an existing folder by typing its path"
   },
-  "workspaceChooserRecentProjects": "Recent projects",
+  "workspaceChooserRecentProjects": "Open a project you used before",
   "@workspaceChooserRecentProjects": {
     "description": "Folder chooser: pick one of the projects already opened on this server"
   },
@@ -28340,7 +28263,7 @@
       }
     }
   },
-  "sessionRelationsCopyHandoff": "Copy handoff for {title}",
+  "sessionRelationsCopyHandoff": "Continue {title} on computer",
   "@sessionRelationsCopyHandoff": {
     "description": "Subagents row menu: copies the handoff for the conversation.",
     "placeholders": {
@@ -29659,12 +29582,6 @@
   "@uncertainAuthDetail": {
     "description": "Sign-in sheet: a start the server may have taken without confirming it."
   },
-  "@uncertainAuthForgetTitle": {
-    "description": "Confirm title before clearing an unconfirmed sign-in start on this phone."
-  },
-  "@uncertainAuthForget": {
-    "description": "Confirm button that clears an unconfirmed sign-in start on this phone."
-  },
   "integrationsSignInWaiting": "Sign-in waiting",
   "@integrationsSignInWaiting": {
     "description": "Providers: the state word of a provider whose sign-in waits on the person (needs-you row)."
@@ -29829,21 +29746,6 @@
         "type": "String"
       }
     }
-  },
-  "@quotaMonitorConsent": {
-    "description": "One-line explanation on the monitoring sheet that leads straight into the percentage choice, e.g. 'Keep checking Codex on Workstation in the background and alert me when use reaches:'",
-    "placeholders": {
-      "provider": {
-        "type": "String"
-      },
-      "server": {
-        "type": "String"
-      }
-    }
-  },
-  "quotaMonitorConsentDetails": "This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.",
-  "@quotaMonitorConsentDetails": {
-    "description": "Full terms of quota monitoring, under Details on the monitoring sheet"
   },
   "thisPhoneHostInApp": "In the app",
   "@thisPhoneHostInApp": {
@@ -30685,5 +30587,90 @@
   "sessionsListChanged": "The conversation list changed on the server. Refresh it to see older conversations.",
   "@sessionsListChanged": {
     "description": "The end of a conversation list: the server's list moved while paging, so it must start again from the newest page."
+  },
+  "handoffUiComputerUnsupported": "This server can’t give a command that continues a conversation on a computer.",
+  "@handoffUiComputerUnsupported": {
+    "description": "Continue on computer from a conversation list, on a server without CLI session resume"
+  },
+  "handoffUiComputerChanged": "This conversation moved or its server changed. Go back and try again.",
+  "@handoffUiComputerChanged": {
+    "description": "Continue on computer from a conversation list: the session could not be read again or changed place"
+  },
+  "commandAuthSheetIntro": "Runs this sign-in on your server, not on this phone. Start it only if you trust the server and {provider}. You may need to finish steps on the server.",
+  "@commandAuthSheetIntro": {
+    "description": "Server sign-in sheet: what Start does and whom it trusts (the confirm merged into the sheet)",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "commandAuthCheckNamed": "Check {provider} sign-in now",
+  "@commandAuthCheckNamed": {
+    "description": "Server sign-in sheet: offered once the server has had a few seconds to finish the sign-in",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "credentialRemoveAccountTitle": "Remove the {provider} account “{name}”?",
+  "@credentialRemoveAccountTitle": {
+    "description": "Accounts sheet: remove confirm title naming the provider and the account",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "credentialRemoveConfirmNamed": "Remove “{name}”",
+  "@credentialRemoveConfirmNamed": {
+    "description": "Accounts sheet: remove confirm button naming the account",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaMonitorOffer": "Alert me about {provider} on {server}",
+  "@quotaMonitorOffer": {
+    "description": "Remaining: the row that turns on background monitoring for the account shown",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaMonitorOfferDetail": "Keeps checking in the background, including after a restart, and alerts when use reaches {percent}. You can change the percentage once it’s on.",
+  "@quotaMonitorOfferDetail": {
+    "description": "Remaining: what the monitoring row does, with its starting percentage",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "workspaceChooserBody": "Conversations run inside a folder on {server}.",
+  "@workspaceChooserBody": {
+    "description": "Work, no project folder yet: why a folder is needed, naming the server",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverServicesAliases": "services dev server preview logs run commands processes",
+  "@discoverServicesAliases": {
+    "description": "Search keywords for Development services (space separated)"
+  },
+  "discoverCloudEnvironmentsAliases": "cloud environments managed workspaces remote sandbox",
+  "@discoverCloudEnvironmentsAliases": {
+    "description": "Search keywords for Cloud environments (space separated)"
   }
 }

@@ -946,7 +946,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
           onOpen: () => unawaited(_openUncertainSignIn(entry, name)),
           menu: _signInMenu(
             _uncertainSignInActions(),
-            (_) => _forgetUncertain(entry),
+            (_) => _forgetUncertain(entry, name),
           ),
         ),
       );
@@ -1162,14 +1162,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         controller.isProfileReadable(entry.profileID) &&
         (route?.isCurrent ?? true);
     if (choice == _SignInChoice.forget) {
-      final confirmed = await showKitConfirm(
-        context,
-        icon: AppIconography.delete,
-        title: l10n.pendingAuthRecoveryForgetTitle(name),
-        body: l10n.pendingAuthRecoveryForgetBody,
-        confirmLabel: l10n.pendingAuthForget,
-        confirmKey: const ValueKey('pending-auth-forget-confirm'),
-      );
+      final confirmed = await _confirmForgetSignIn(name);
       if (!confirmed || !current()) return;
       try {
         await controller.forgetIntegrationAuth(
@@ -1250,23 +1243,34 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
       actions: _uncertainSignInActions(),
     );
     if (choice == null || !mounted) return;
-    await _forgetUncertain(entry);
+    await _forgetUncertain(entry, name);
+  }
+
+  /// The one "forget this sign-in" question (slice-P3.11a: the uncertain
+  /// start's own sheet merged into it), for a saved sign-in and for a
+  /// start the server never confirmed alike: forgetting only stops this
+  /// device tracking it.
+  Future<bool> _confirmForgetSignIn(String name) {
+    final l10n = _l10n;
+    return showKitConfirm(
+      context,
+      icon: AppIconography.delete,
+      title: l10n.pendingAuthRecoveryForgetTitle(name),
+      body: l10n.pendingAuthRecoveryForgetBody,
+      confirmLabel: l10n.pendingAuthForget,
+      confirmKey: const ValueKey('pending-auth-forget-confirm'),
+    );
   }
 
   Future<void> _forgetUncertain(
     ({String integrationID, PendingAuthKind kind}) entry,
+    String name,
   ) async {
     final controller = widget.controller;
     final l10n = _l10n;
     final source = _authSourceFor(controller);
     final location = controller.locationRevision;
-    final confirmed = await showKitConfirm(
-      context,
-      icon: AppIconography.delete,
-      title: l10n.uncertainAuthForgetTitle,
-      body: l10n.uncertainAuthForgetDetail,
-      confirmLabel: l10n.uncertainAuthForget,
-    );
+    final confirmed = await _confirmForgetSignIn(name);
     if (!confirmed || !mounted || source != _authSourceFor(controller)) {
       return;
     }
@@ -1712,6 +1716,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
           controller: widget.controller,
           integration: integration,
           method: method,
+          name: name,
         ),
       );
       if (mounted && source == _mcpSource) await _retryIntegrations();

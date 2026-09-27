@@ -1192,10 +1192,10 @@
           "label": "Dismiss",
           "key": null,
           "line": 1279,
-          "action": "open-dialog",
-          "target": "question-sheet-dismiss-dialog",
-          "targetWidget": "_reject",
-          "effect": "_reject(): opens the dismiss confirmation dialog.",
+          "action": "open-sheet",
+          "target": "confirm-sheet",
+          "targetWidget": "showKitConfirm",
+          "effect": "_reject(): showKitConfirm (destructive, 'Dismiss this request?'); on confirm controller.rejectQuestion(question.id, expectedRequest: request) and routes.close().",
           "gates": [
             "!_busy"
           ],
@@ -1210,56 +1210,11 @@
           "action": "submit",
           "target": null,
           "targetWidget": null,
-          "effect": "_submit(): controller.answerQuestion(question.id, answers, expectedRequest: request) then routes.close().",
+          "effect": "_submit(): controller.answerQuestion(question.id, answers, expectedRequest: request) then routes.close(). Pinned to the sheet foot through showKitSheet primaryListenable (slice-P3.11a); enables once every prompt is answered.",
           "gates": [
             "_complete && !_busy"
           ],
           "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "question-sheet-dismiss-dialog",
-      "title": "Dismiss this request?",
-      "kind": "dialog",
-      "file": "lib/ui/screens/activity_screen.dart",
-      "widget": "_reject",
-      "presentedBy": [],
-      "line": 1129,
-      "purpose": "Confirms rejecting a pending question ('OpenCode will continue without answers to these questions.').",
-      "reachedFrom": [
-        {
-          "page": "question-sheet",
-          "element": "question-sheet-dismiss"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "question-sheet-dismiss-dialog-cancel",
-          "type": "button",
-          "label": "Cancel",
-          "key": null,
-          "line": 1137,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop(context, false).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "question-sheet-dismiss-dialog-confirm",
-          "type": "button",
-          "label": "Dismiss",
-          "key": null,
-          "line": 1141,
-          "action": "mutate",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop(context, true) then controller.rejectQuestion(question.id, expectedRequest: request) and routes.close().",
-          "gates": [],
-          "destructive": true
         }
       ]
     },

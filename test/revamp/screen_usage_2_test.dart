@@ -144,19 +144,15 @@ void main() {
       expect(find.text(_en.quotaBudgetClearAll), findsNothing);
 
       await _scrollTo(tester, _key('quota-enable-monitoring'));
-      await tester.tap(_key('quota-enable-monitoring'));
-      await tester.pumpAndSettle();
-      // One line that leads into the choice names the provider and server.
+      // The row names the provider and server it turns on; it acts at
+      // once, starting at 90% (the enrol sheet merged into the page).
       expect(
-        find.text(_en.quotaMonitorConsent(_en.quotaCodex, 'Studio')),
+        find.text(_en.quotaMonitorOffer(_en.quotaCodex, 'Studio')),
         findsOneWidget,
       );
-      await tester.ensureVisible(find.text('90%').last);
+      await tester.tap(_key('quota-enable-monitoring'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('90%').last);
-      await tester.pumpAndSettle();
-      await tester.tap(_key('quota-enroll-confirm'));
-      await tester.pumpAndSettle();
+      expect(_key('quota-enroll-sheet'), findsNothing);
       // The save touches the device alert (a platform call) before it
       // notifies; let that real async work finish.
       await tester.runAsync(
@@ -196,24 +192,20 @@ void main() {
       expect(_key('quota-enable-monitoring'), findsOneWidget);
     });
 
-    testWidgets('monitoring is enabled from a sheet with the chosen '
-        'percentage, and stopping the collector returns to setup', (
-      tester,
-    ) async {
+    testWidgets('monitoring is turned on in place at 90%, and stopping the '
+        'collector returns to setup', (tester) async {
       final h = await _pumpQuota(tester);
       await _consentAndRead(tester, h);
 
       await _scrollTo(tester, _key('quota-enable-monitoring'));
       await tester.tap(_key('quota-enable-monitoring'));
       await tester.pumpAndSettle();
-      expect(_key('quota-enroll-sheet'), findsOneWidget);
+      expect(_key('quota-enroll-sheet'), findsNothing);
       expect(find.byType(AlertDialog), findsNothing);
       expect(find.byType(DropdownButton<double>), findsNothing);
-      await tester.ensureVisible(find.text('75%').last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('75%').last);
-      await tester.pumpAndSettle();
-      await tester.tap(_key('quota-enroll-confirm'));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
       await tester.pumpAndSettle();
       final stored =
           jsonDecode(
@@ -223,7 +215,7 @@ void main() {
               )
               as Map<String, dynamic>;
       final rules = (stored['rules'] as Map<String, dynamic>)['codex'] as Map;
-      expect(rules['threshold'], 75);
+      expect(rules['threshold'], 90);
       expect(_key('quota-monitor-save-failed'), findsNothing);
 
       await _scrollTo(tester, _key('quota-stop'));

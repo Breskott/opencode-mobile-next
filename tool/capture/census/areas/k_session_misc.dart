@@ -340,8 +340,9 @@ final kSessionMiscArea = CensusArea(
       kit.expectText('Subagent conversations');
     }),
 
-    // -- session-handoff-dialog ------------------------------------------------------
-    CensusShot('session-handoff-dialog', state: 'available', (kit) async {
+    // -- continue-on-computer-sheet from a conversation list (the handoff
+    // dialog merged into it, slice-P3.11a) --------------------------------------
+    CensusShot('continue-on-computer-sheet', state: 'from-list', (kit) async {
       final controller = await kit.connected(repository: _HandoffRepository());
       await kit.pumpApp(
         _backdrop('Fix flaky checkout test'),
@@ -357,7 +358,9 @@ final kSessionMiscArea = CensusArea(
       );
       kit.expectText('Continue on computer');
     }),
-    CensusShot('session-handoff-dialog', state: 'unavailable', (kit) async {
+    CensusShot('continue-on-computer-sheet', state: 'from-list-unavailable', (
+      kit,
+    ) async {
       final controller = await kit.connected(
         repository: _HandoffRepository(workspaceID: 'wrk_managed'),
       );
@@ -373,7 +376,7 @@ final kSessionMiscArea = CensusArea(
           projectID: 'project_shopfront',
         ),
       );
-      kit.expectText('Copy handoff reference?');
+      kit.expectText('Continue on computer');
     }),
 
     // -- session-export ---------------------------------------------------------------

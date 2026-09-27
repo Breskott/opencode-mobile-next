@@ -84,6 +84,7 @@ class Library3Controller extends ConnectionController {
   final renamed = <String>[];
   final removed = <String>[];
   int forgotten = 0;
+  int uncertainForgotten = 0;
   bool renameFails = false;
   List<PendingAuthAttempt> pending = const [];
   List<({String integrationID, PendingAuthKind kind})> uncertain = const [];
@@ -157,6 +158,13 @@ class Library3Controller extends ConnectionController {
     PendingAuthAttempt entry, {
     required int locationRevision,
   }) async => forgotten++;
+
+  @override
+  void forgetUncertainIntegrationAuth(
+    String integrationID,
+    PendingAuthKind kind, {
+    required int locationRevision,
+  }) => uncertainForgotten++;
 }
 
 const library3Providers = [

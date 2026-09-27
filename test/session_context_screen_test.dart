@@ -558,4 +558,56 @@ void main() {
       findsNothing,
     );
   });
+
+  // The Work row's details sheet merged into Conversation context
+  // (slice-P3.11a): the folder and shared link sit under its Details,
+  // copyable, whether or not the conversation has used context yet.
+  for (final withMessages in [false, true]) {
+    testWidgets('the folder and shared link are under Details '
+        '${withMessages ? 'beside the figures' : 'before any reply'}', (
+      tester,
+    ) async {
+      final api = _ContextApi()
+        ..messagesResult = withMessages ? _messages() : const [];
+      final controller = await _controller(api);
+      addTearDown(controller.dispose);
+      controller.sessionsById['session-1'] = Session(
+        id: 'session-1',
+        title: 'Fix login',
+        directory: '/work/shopfront',
+        shareUrl: 'https://opncd.ai/share/k3v9Qd2m',
+      );
+      await tester.pumpWidget(
+        _app(
+          SessionContextScreen(controller: controller, sessionID: 'session-1'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final details = find.byKey(const ValueKey('session-context-details'));
+      await tester.scrollUntilVisible(
+        details,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      final toggle = find.descendant(
+        of: details,
+        matching: find.byKey(const ValueKey('kit-details-toggle')),
+      );
+      await tester.ensureVisible(toggle);
+      await tester.pumpAndSettle();
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('session-context-folder')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('session-context-share')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('/work/shopfront'), findsWidgets);
+      expect(find.textContaining('opncd.ai/share/k3v9Qd2m'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+  }
 }
