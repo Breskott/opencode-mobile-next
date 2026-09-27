@@ -36842,6 +36842,984 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save without an answer'**
   String get teamHostFormSaveAnyway;
+
+  /// Agent page action: pause this agent's session. {agent} is the agent's short name.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause {agent}'**
+  String teamAgentScreenPause(String agent);
+
+  /// Agent page undo bar after pausing an agent. {agent} is the agent's short name.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused {agent}'**
+  String teamAgentScreenPaused(String agent);
+
+  /// Agent page: on a stopped or crashed agent, starts it again. {agent} is the agent's short name.
+  ///
+  /// In en, this message translates to:
+  /// **'Start {agent} again'**
+  String teamAgentScreenResume(String agent);
+
+  /// Agent page action: wake a stalled agent. {agent} is the agent's short name.
+  ///
+  /// In en, this message translates to:
+  /// **'Nudge {agent}'**
+  String teamAgentScreenNudge(String agent);
+
+  /// Agent page action and restart confirmation button. {agent} is the agent's short name.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart {agent}'**
+  String teamAgentScreenRestart(String agent);
+
+  /// Agent page action and stop confirmation button. {agent} is the agent's short name.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {agent}'**
+  String teamAgentScreenStop(String agent);
+
+  /// Stop confirmation body naming the task the agent works on.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} stops working on “{task}” now. The task stays on the host, and you can start {agent} again from this page.'**
+  String teamAgentScreenStopBody(String agent, String task);
+
+  /// Agent page notice title for a stopped agent.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} is stopped'**
+  String teamAgentScreenStoppedTitle(String agent);
+
+  /// Agent page notice body for a stopped agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Its work stays where it is. Start it again when you want it back.'**
+  String get teamAgentScreenStoppedBody;
+
+  /// Agent page notice title for a crashed agent.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} stopped unexpectedly'**
+  String teamAgentScreenCrashedTitle(String agent);
+
+  /// Agent page notice body for a crashed agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Its session ended on its own. Start it again to pick its work up from the host.'**
+  String get teamAgentScreenCrashedBody;
+
+  /// Agent page notice body under 'Recycling soon': what happens when the context is nearly full.
+  ///
+  /// In en, this message translates to:
+  /// **'It starts a fresh session soon and picks its work up from the host.'**
+  String get teamAgentScreenRecyclingBody;
+
+  /// Agent page status row: the model in plain words, e.g. 'gpt-x from openai'.
+  ///
+  /// In en, this message translates to:
+  /// **'{model} from {provider}'**
+  String teamAgentScreenModelFrom(String model, String provider);
+
+  /// Agent page needs-you row: what happens if the person does not answer.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} waits until you answer'**
+  String teamAgentScreenGateIfIgnored(String agent);
+
+  /// Agent page: explains why no controls are shown, with a How button.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone can\'t pause, stop or message {agent} on this host yet. Run the team\'s host front on the computer to control it from here.'**
+  String teamAgentScreenControlsElsewhere(String agent);
+
+  /// Message-an-agent sheet: the field's label.
+  ///
+  /// In en, this message translates to:
+  /// **'Your message'**
+  String get teamAgentScreenMessageLabel;
+
+  /// Gate sheet: notice on a destructive confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'The host marks this action as destructive. Approving it can\'t be undone from the phone.'**
+  String get gateSheetDestructiveBody;
+
+  /// Gate sheet free-text question: the field's label.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer'**
+  String get gateSheetAnswerLabel;
+
+  /// Gate sheet: what the team does after an answer.
+  ///
+  /// In en, this message translates to:
+  /// **'The team carries on as soon as the host confirms your answer.'**
+  String get gateSheetAfterAnswer;
+
+  /// Gate sheet, failed run: primary action that sends the error to the worker and asks it to fix the cause.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the team to fix it'**
+  String get gateSheetFixIt;
+
+  /// Gate sheet, failed run: what 'Ask the team to fix it' does.
+  ///
+  /// In en, this message translates to:
+  /// **'Sends the error to {agent} and asks it to find the cause and carry on.'**
+  String gateSheetFixItDetail(String agent);
+
+  /// Gate sheet, failed run: the message sent to the worker by 'Ask the team to fix it'.
+  ///
+  /// In en, this message translates to:
+  /// **'The task “{task}” failed with this error:\n{error}\nPlease find the cause, fix it and carry on.'**
+  String gateSheetFixRequest(String task, String error);
+
+  /// Gate sheet, failed run: opens the worker's page. {agent} is its short name.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {agent}'**
+  String gateSheetOpenAgent(String agent);
+
+  /// AI Team intro: primary on a phone server.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up AI Team on this phone'**
+  String get teamIntroSetUpPhone;
+
+  /// AI Team intro: primary on a computer where Gas City was not found. {server} is the server's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up AI Team on {server}'**
+  String teamIntroSetUpOn(String server);
+
+  /// AI Team intro: primary when Gas City was found on the computer. {server} is the server's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on AI Team on {server}'**
+  String teamIntroTurnOn(String server);
+
+  /// AI Team intro: title of the cost notice on a phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Before you set it up'**
+  String get teamIntroCostTitle;
+
+  /// AI Team intro cost item: how long the first setup takes on a phone.
+  ///
+  /// In en, this message translates to:
+  /// **'About 8–10 minutes the first time'**
+  String get teamIntroCostTime;
+
+  /// AI Team intro cost item: memory each worker uses on a phone.
+  ///
+  /// In en, this message translates to:
+  /// **'About 550 MB of memory for each worker'**
+  String get teamIntroCostMemory;
+
+  /// Agent page technical details: the label of the agent's id.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent id'**
+  String get teamAgentScreenLabelId;
+
+  /// Message-an-agent sheet: why Send is off while the field is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a message first'**
+  String get teamAgentScreenMessageFirst;
+
+  /// Gate sheet free-text question: why Send is off while the field is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Type an answer first'**
+  String get gateSheetSendNeedsText;
+
+  /// AI Team agents list top bar: when the list was last checked, after where the team runs. {age} is a short age such as 'less than a minute' or '4 min'.
+  ///
+  /// In en, this message translates to:
+  /// **'checked {age} ago'**
+  String teamAgentsChecked(String age);
+
+  /// AI Team agents list: state word of an agent stopped on the host that wakes by itself when there is work.
+  ///
+  /// In en, this message translates to:
+  /// **'Asleep'**
+  String get teamAgentsAsleep;
+
+  /// AI Team agents list: after 'Asleep', says the agent needs nothing from the person.
+  ///
+  /// In en, this message translates to:
+  /// **'wakes when there is work'**
+  String get teamAgentsAsleepHint;
+
+  /// AI Team agents list: state word of an agent switched off on the host on purpose (suspended).
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get teamAgentsPaused;
+
+  /// AI Team agents list: after 'Paused', says nothing will start this agent by itself.
+  ///
+  /// In en, this message translates to:
+  /// **'switched off until someone wakes it'**
+  String get teamAgentsPausedHint;
+
+  /// AI Team agents list: button in a paused agent's row that asks the host to resume that agent. {name} is the agent's name or role, e.g. 'Wake furiosa'.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake {name}'**
+  String teamAgentsWake(String name);
+
+  /// AI Team work sheet title when the item the person opened is no longer listed by the host.
+  ///
+  /// In en, this message translates to:
+  /// **'Work item gone'**
+  String get teamWorkSheetMissingTitle;
+
+  /// AI Team work sheet: under 'This work item is no longer on the host.', says what may have happened and what to do.
+  ///
+  /// In en, this message translates to:
+  /// **'It may have been finished or removed. Close this sheet to see the task as it is now.'**
+  String get teamWorkSheetMissingBody;
+
+  /// AI Team work sheet: supporting line of a dependency row whose item the host no longer lists (the row cannot be opened).
+  ///
+  /// In en, this message translates to:
+  /// **'No longer listed'**
+  String get teamWorkSheetNotOnHost;
+
+  /// AI Team work sheet: button that opens the conversation (OpenCode session) linked to this work item.
+  ///
+  /// In en, this message translates to:
+  /// **'Open this step\'s conversation'**
+  String get teamWorkSheetOpenStepConversation;
+
+  /// AI Team work sheet: button that opens the conversation of the agent working on this item. {name} is the agent's name or role, e.g. 'furiosa'.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}\'s conversation'**
+  String teamWorkSheetOpenAgentConversation(String name);
+
+  /// Usage (Spent): label above the Today / 30 days / This year / All time choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Time range'**
+  String get usageRangeLabel;
+
+  /// Usage (Spent): the Details fold at the end holding what the figures include and exclude.
+  ///
+  /// In en, this message translates to:
+  /// **'About these numbers'**
+  String get usageAboutNumbers;
+
+  /// Usage budget dialog: helper under the amount field for a USD budget, saying the currency and the effect.
+  ///
+  /// In en, this message translates to:
+  /// **'In US dollars for this range. You’re told when the report reaches it; nothing is stopped.'**
+  String get usageBudgetHelperUsd;
+
+  /// Usage budget dialog: helper under the amount field for a token budget, saying the unit and the effect.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole tokens for this range. You’re told when the report reaches it; nothing is stopped.'**
+  String get usageBudgetHelperTokens;
+
+  /// Usage: the destructive confirm button that removes every saved consumption budget for this server.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear budgets'**
+  String get usageBudgetClearConfirm;
+
+  /// Usage budgets: trailing value on a budget row with no budget saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get usageBudgetNotSet;
+
+  /// Usage budgets: why a budget row cannot be opened right now (usage still loading, failed, or a save is running).
+  ///
+  /// In en, this message translates to:
+  /// **'Available once usage has loaded.'**
+  String get usageBudgetWaitReason;
+
+  /// Usage budgets: title of the row showing spend against a saved USD budget.
+  ///
+  /// In en, this message translates to:
+  /// **'USD budget'**
+  String get usageBudgetUsdTitle;
+
+  /// Usage budgets: title of the row showing tokens against a saved token budget.
+  ///
+  /// In en, this message translates to:
+  /// **'Token budget'**
+  String get usageBudgetTokensTitle;
+
+  /// Codex account: title of the state shown when the connection moved to another server after the page opened.
+  ///
+  /// In en, this message translates to:
+  /// **'This server changed'**
+  String get agentAccountScopeLostTitle;
+
+  /// Codex account: button on the server-changed state that returns to the Servers page.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Servers'**
+  String get agentAccountBackToServers;
+
+  /// Codex account: body of the state shown when the server is not connected yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to this server to see its Codex account.'**
+  String get agentAccountNotConnected;
+
+  /// Codex account: row title whose value is the sign-in method (ChatGPT, API key...).
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in with'**
+  String get agentAccountSignInMethod;
+
+  /// Codex account: row title whose value is the account plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get agentAccountPlanTitle;
+
+  /// Codex account: label of the button that copies the one-time device sign-in code.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy sign-in code'**
+  String get agentAccountCopyCode;
+
+  /// Codex account: notice under the rate limits when a window is at 100 %; {reset} is when it resets, e.g. "Resets in 3 h (Sep 20, 6:00 PM)".
+  ///
+  /// In en, this message translates to:
+  /// **'You’ve reached a Codex limit. {reset}'**
+  String agentAccountLimitReached(String reset);
+
+  /// Codex account: a rate window whose reset time has passed.
+  ///
+  /// In en, this message translates to:
+  /// **'Resets any moment'**
+  String get agentAccountResetDue;
+
+  /// Codex account: time until a rate window resets, in days.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, one{Resets in 1 day} other{Resets in {days} days}}'**
+  String agentAccountResetInDays(int days);
+
+  /// Codex account: time until a rate window resets, in hours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours, plural, one{Resets in 1 h} other{Resets in {hours} h}}'**
+  String agentAccountResetInHours(int hours);
+
+  /// Codex account: time until a rate window resets, in minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, one{Resets in 1 min} other{Resets in {minutes} min}}'**
+  String agentAccountResetInMinutes(int minutes);
+
+  /// Codex account: relative reset time followed by the exact date and time.
+  ///
+  /// In en, this message translates to:
+  /// **'{relative} ({time})'**
+  String agentAccountResetWhen(String relative, String time);
+
+  /// Review changes page (review_workspace.dart): the accessible name of the view picker (This conversation / Uncommitted / Whole branch).
+  ///
+  /// In en, this message translates to:
+  /// **'Changes to show'**
+  String get reviewWorkspaceScopes;
+
+  /// Review changes page (review_workspace.dart): title of the notice when a refresh failed and the earlier changes stay on screen; the reason follows.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh the changes'**
+  String get reviewWorkspaceRefreshFailed;
+
+  /// Review changes page (review_workspace.dart): title shown when the first read of the changes takes longer than 8 seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Still reading the changes'**
+  String get reviewWorkspaceSlowTitle;
+
+  /// Review changes page (review_workspace.dart): body under the slow-read title: why it takes a while.
+  ///
+  /// In en, this message translates to:
+  /// **'The server runs git to compare the files. A big project can take a minute.'**
+  String get reviewWorkspaceSlowBody;
+
+  /// Review changes page (review_workspace.dart): finished moment: every changed file has been on screen and notes are waiting on the prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve seen every file'**
+  String get reviewWorkspaceAllViewedTitle;
+
+  /// Review changes page (review_workspace.dart): under the finished-moment title: how many review notes wait on the conversation prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 note is on the prompt, ready to send from the conversation.} other{{count} notes are on the prompt, ready to send from the conversation.}}'**
+  String reviewWorkspaceAllViewedMessage(int count);
+
+  /// Review changes page (review_workspace.dart): action in the finished moment: returns to the conversation whose prompt holds the review notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the conversation'**
+  String get reviewWorkspaceBackToChat;
+
+  /// Review changes page (review_workspace.dart): file menu item and comment sheet title; {file} is the file name, shown left to right.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment on {file}'**
+  String reviewWorkspaceCommentOnFile(String file);
+
+  /// Review changes page (review_workspace.dart): file menu item: puts a reference to the whole changed file on the conversation prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {file} to the prompt'**
+  String reviewWorkspaceAddFileToPrompt(String file);
+
+  /// Review changes page (review_workspace.dart): comment sheet's primary: puts the typed comment on the conversation prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Add comment to prompt'**
+  String get reviewWorkspaceAddComment;
+
+  /// Review changes page (review_workspace.dart): why the comment sheet's primary is disabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a comment first.'**
+  String get reviewWorkspaceCommentEmpty;
+
+  /// Review changes page (review_workspace.dart): label above the comment field.
+  ///
+  /// In en, this message translates to:
+  /// **'Your comment'**
+  String get reviewWorkspaceCommentLabel;
+
+  /// Review changes page (review_workspace.dart): example text inside the empty comment field; agent-neutral (works for every server).
+  ///
+  /// In en, this message translates to:
+  /// **'What should the agent check or change?'**
+  String get reviewWorkspaceCommentHint;
+
+  /// Review changes page (review_workspace.dart): helper under the comment field: typed text survives closing the sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Kept if you close this, until you add it.'**
+  String get reviewWorkspaceCommentHelper;
+
+  /// Models page (catalog): top bar title. Agents live under the picker's Options.
+  ///
+  /// In en, this message translates to:
+  /// **'Models'**
+  String get catalogScreenTitle;
+
+  /// Models page: the loading bar's accessible label while the catalog loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading models'**
+  String get catalogScreenLoading;
+
+  /// Models page: notice while the server is unreachable and no catalog has loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t reach the server right now. Models appear once it answers.'**
+  String get catalogScreenOffline;
+
+  /// Models page: notice while the server is unreachable; the shown list is the last one received.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t reach the server right now. This is the list it last sent.'**
+  String get catalogScreenOfflineStale;
+
+  /// Models page: notice body under the no-provider title.
+  ///
+  /// In en, this message translates to:
+  /// **'Only signed-in providers\' models are listed. Connect one to choose a model.'**
+  String get catalogScreenNoProviderBody;
+
+  /// Models page: notice action that opens the Providers page.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a provider'**
+  String get catalogScreenConnectProvider;
+
+  /// Integrations page in MCP mode: top bar title.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP servers'**
+  String get integrationsMcpTitle;
+
+  /// Integrations page: section label above the MCP server rows; the term is explained in place.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP servers'**
+  String get integrationsMcpServersLabel;
+
+  /// Integrations page: count at the end of the Providers section label.
+  ///
+  /// In en, this message translates to:
+  /// **'{connected} of {total} connected'**
+  String integrationsProvidersSummary(int connected, int total);
+
+  /// Integrations page: provider row supporting line, how many models the provider serves.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 model} other{{count} models}}'**
+  String integrationsModelCount(int count);
+
+  /// Integrations page: accessible name of a provider row's menu.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} actions'**
+  String integrationsProviderActions(String name);
+
+  /// Integrations page: provider row menu item and sheet title for the saved accounts of this provider.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage {name} accounts'**
+  String integrationsManageAccounts(String name);
+
+  /// Integrations page: why the Manage accounts menu item is unavailable on this server.
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t list saved accounts from the app.'**
+  String get integrationsManageAccountsUnavailable;
+
+  /// Integrations page: provider row menu item and sheet title; runs the provider's sign-in command on the server.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to {name} on the server'**
+  String integrationsServerSignIn(String name);
+
+  /// Integrations page: why the server sign-in menu item is unavailable on this server.
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t run a sign-in command from the app.'**
+  String get integrationsServerSignInUnavailable;
+
+  /// Integrations page: menu item and confirm button that disconnect a provider or an MCP server.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect {name}'**
+  String integrationsDisconnectNamed(String name);
+
+  /// Integrations page: disconnect-provider confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Removes the {name} key from this server. A reply already running finishes first.'**
+  String integrationsDisconnectBody(String name);
+
+  /// Integrations page: connect-method sheet subtitle under 'Connect {provider}'.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how to connect'**
+  String get integrationsConnectMethodSubtitle;
+
+  /// Integrations page: helper under the API key field in the connect dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'The key is stored on this server. The app never shows it again.'**
+  String get integrationsKeyHelper;
+
+  /// Integrations page: reason under the disabled Connect button while the key field is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the key first.'**
+  String get integrationsKeyEmpty;
+
+  /// Integrations page: error under the key field when connecting failed. Never quotes the server reply.
+  ///
+  /// In en, this message translates to:
+  /// **'The server didn\'t accept this key. Check it and try again.'**
+  String get integrationsKeyRejected;
+
+  /// Integrations page: authorization launch confirmation title, host first.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in at {host}?'**
+  String integrationsSignInAtHost(String host);
+
+  /// Integrations page: authorization launch confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve access in your browser, then come back to this app.'**
+  String get integrationsSignInBody;
+
+  /// Integrations page: authorization launch confirmation, the server's instructions (may contain a one-time device code).
+  ///
+  /// In en, this message translates to:
+  /// **'The server says: {instructions}'**
+  String integrationsSignInInstructions(String instructions);
+
+  /// Integrations page: the one dialog that takes a sign-in code for a provider or an MCP server.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish signing in'**
+  String get integrationsFinishSignInTitle;
+
+  /// Integrations page: primary button of the finish-signing-in dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish signing in'**
+  String get integrationsFinishSignInAction;
+
+  /// Integrations page: reason under the disabled primary while the code field is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the code first.'**
+  String get integrationsFinishSignInEmpty;
+
+  /// Integrations page: helper under the MCP sign-in code field.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the address your browser ended on after you approved access, or the code it showed.'**
+  String get integrationsFinishSignInMcpHelper;
+
+  /// Integrations page: helper under the provider sign-in code field when the server sent no instructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the code the sign-in page showed after you approved access.'**
+  String get integrationsFinishSignInProviderHelper;
+
+  /// Integrations page: primary of the sign-in questions sheet; names its result.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name} sign-in'**
+  String integrationsOAuthInputsContinue(String name);
+
+  /// Integrations page: action on a pending sign-in notice.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel sign-in'**
+  String get integrationsCancelSignIn;
+
+  /// Integrations page: note on a pending provider sign-in when the server cannot recover it.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep this screen open until you finish: this server can\'t resume a sign-in after you leave.'**
+  String get integrationsPendingNotRecoverable;
+
+  /// Integrations page: accessible name of an MCP server row's menu.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} actions'**
+  String integrationsMcpActions(String name);
+
+  /// Integrations page: MCP server row action when the server needs sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to {name}'**
+  String integrationsMcpSignIn(String name);
+
+  /// Integrations page: MCP server row action after its connection failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect {name}'**
+  String integrationsMcpReconnect(String name);
+
+  /// Integrations page: pending MCP sign-in notice title.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in to {name}'**
+  String integrationsMcpSigningIn(String name);
+
+  /// Integrations page: MCP row supporting line when the server needs sign-in the app cannot run.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in on the server\'s computer; this server can\'t do it from the app.'**
+  String get integrationsMcpSignInOnServer;
+
+  /// Integrations page: MCP server row menu item; runtime removal.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name} until restart'**
+  String integrationsMcpRemoveUntilRestart(String name);
+
+  /// Integrations page: why Remove is unavailable on this server.
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t remove MCP servers from the app. Edit its configuration on the computer.'**
+  String get integrationsMcpRemoveUnavailable;
+
+  /// Integrations page: remove-MCP confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name} until restart?'**
+  String integrationsMcpRemoveTitle(String name);
+
+  /// Integrations page: remove-MCP confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Its tools stop working in this project now. If it\'s in the server\'s configuration, it comes back when the server restarts.'**
+  String get integrationsMcpRemoveBody;
+
+  /// Integrations page: remove-MCP confirmation button.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove until restart'**
+  String get integrationsMcpRemoveConfirm;
+
+  /// Integrations page: resource row menu item that copies the resource's address.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy address'**
+  String get integrationsCopyResourceAddress;
+
+  /// Terminal page: the name of the choice between this phone and the OpenCode server.
+  ///
+  /// In en, this message translates to:
+  /// **'Where the shell runs'**
+  String get terminalScreenSourceLabel;
+
+  /// Rename terminal dialog: the field label for the terminal's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get terminalScreenNameLabel;
+
+  /// Rename terminal dialog: the button that saves the new name.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get terminalScreenRenameConfirm;
+
+  /// Rename terminal dialog: why Rename is disabled while the name is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a name.'**
+  String get terminalScreenNameEmpty;
+
+  /// Stop terminal question: title naming the terminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {name}?'**
+  String terminalScreenStopTitle(String name);
+
+  /// Stop terminal question: what stopping does and that it cannot be undone.
+  ///
+  /// In en, this message translates to:
+  /// **'The program and everything it started stop, and the terminal goes away. Its output can\'t be brought back.'**
+  String get terminalScreenStopBody;
+
+  /// Remove ended terminal question: title naming the terminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String terminalScreenRemoveTitle(String name);
+
+  /// Remove ended terminal question: what removing does.
+  ///
+  /// In en, this message translates to:
+  /// **'The terminal and its output go away. This can\'t be undone.'**
+  String get terminalScreenRemoveBody;
+
+  /// Stop terminal question: the confirm button.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop terminal'**
+  String get terminalScreenStopConfirm;
+
+  /// Remove terminal question: the confirm button.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove terminal'**
+  String get terminalScreenRemoveConfirm;
+
+  /// Terminal list: notice title when starting a new terminal failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t start a terminal'**
+  String get terminalScreenCreateFailed;
+
+  /// Terminal list: the action under the list that removes every ended terminal.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Remove 1 ended terminal} other{Remove {count} ended terminals}}'**
+  String terminalScreenRemoveEnded(int count);
+
+  /// Remove ended terminals question: title.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Remove 1 ended terminal?} other{Remove {count} ended terminals?}}'**
+  String terminalScreenRemoveEndedTitle(int count);
+
+  /// Remove ended terminals question: what is lost and what is kept.
+  ///
+  /// In en, this message translates to:
+  /// **'Their output goes away too. Running terminals stay.'**
+  String get terminalScreenRemoveEndedBody;
+
+  /// Terminal page, server without terminals: switches to the shell on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this phone\'s terminal'**
+  String get terminalScreenUsePhone;
+
+  /// Terminal list row: the state word and the program it runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Running · {command}'**
+  String terminalScreenRowRunning(String command);
+
+  /// Terminal list row: an ended terminal with its exit code and program.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended · code {code} · {command}'**
+  String terminalScreenRowEnded(String code, String command);
+
+  /// Terminal list row: an ended terminal whose exit code is unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended · {command}'**
+  String terminalScreenRowEndedNoCode(String command);
+
+  /// Terminal list row: the name of the row's menu for screen readers.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions for {name}'**
+  String terminalScreenMenuLabel(String name);
+
+  /// Terminal row menu: opens the terminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}'**
+  String terminalScreenOpen(String name);
+
+  /// Terminal row and page menu: renames the terminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename {name}'**
+  String terminalScreenRename(String name);
+
+  /// Terminal row and page menu: stops a running terminal (asks first).
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {name}'**
+  String terminalScreenStop(String name);
+
+  /// Terminal row and page menu: removes an ended terminal (asks first).
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}'**
+  String terminalScreenRemove(String name);
+
+  /// Terminal list: the wait while the server lists its terminals.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading terminals'**
+  String get terminalScreenLoading;
+
+  /// Terminal page status line: the connection is paused until the app is back.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused while the app is in the background'**
+  String get terminalScreenPaused;
+
+  /// Terminal page status line and loading bar while it connects.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to the terminal'**
+  String get terminalScreenConnecting;
+
+  /// Terminal page top bar: copies the selection, or all output when nothing is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy output'**
+  String get terminalScreenCopy;
+
+  /// Terminal page menu: pastes the clipboard into the terminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste into {name}'**
+  String terminalScreenPaste(String name);
+
+  /// Terminal page menu: opens the command, folder and process id.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal details'**
+  String get terminalScreenDetails;
+
+  /// Terminal details sheet title.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} details'**
+  String terminalScreenDetailsTitle(String name);
+
+  /// Terminal details: label of the command the terminal runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get terminalScreenDetailCommand;
+
+  /// Terminal details: label of the folder the terminal started in.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder'**
+  String get terminalScreenDetailFolder;
+
+  /// Terminal details: label of the process id.
+  ///
+  /// In en, this message translates to:
+  /// **'Process id'**
+  String get terminalScreenDetailPid;
+
+  /// Terminal details: label of the exit code of an ended terminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit code'**
+  String get terminalScreenDetailExit;
+
+  /// Phone terminal: the stop question naming the shell.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {name}?'**
+  String localTerminalStopNamedTitle(String name);
+
+  /// Phone terminal menu: pastes the clipboard into the shell.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste into {name}'**
+  String localTerminalPasteNamed(String name);
+
+  /// Phone terminal top bar: copies the selected text.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy selection'**
+  String get localTerminalCopySelection;
+
+  /// Settings, Default shell row when the server offers one shell: nothing to choose.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · the only shell this server offers'**
+  String defaultShellOnlyOne(String name);
+
+  /// Settings, Default shell row after a failed save.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t change the shell. {error} Tap to try again.'**
+  String defaultShellSaveFailed(String error);
+
+  /// Terminal page menu: switches to the screen-reader friendly transcript with a labelled command field.
+  ///
+  /// In en, this message translates to:
+  /// **'Show as readable text'**
+  String get terminalScreenReadableMode;
+
+  /// Terminal page menu: switches back from the readable text to the live terminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Show as live terminal'**
+  String get terminalScreenLiveMode;
+
+  /// Phone terminal before Linux is installed: opens phone setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up Linux on this phone'**
+  String get localTerminalSetUpLinux;
 }
 
 class _AppLocalizationsDelegate

@@ -23493,4 +23493,691 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamHostFormSaveAnyway => 'Save without an answer';
+
+  @override
+  String teamAgentScreenPause(String agent) {
+    return 'Pause $agent';
+  }
+
+  @override
+  String teamAgentScreenPaused(String agent) {
+    return 'Paused $agent';
+  }
+
+  @override
+  String teamAgentScreenResume(String agent) {
+    return 'Start $agent again';
+  }
+
+  @override
+  String teamAgentScreenNudge(String agent) {
+    return 'Nudge $agent';
+  }
+
+  @override
+  String teamAgentScreenRestart(String agent) {
+    return 'Restart $agent';
+  }
+
+  @override
+  String teamAgentScreenStop(String agent) {
+    return 'Stop $agent';
+  }
+
+  @override
+  String teamAgentScreenStopBody(String agent, String task) {
+    return '$agent stops working on “$task” now. The task stays on the host, and you can start $agent again from this page.';
+  }
+
+  @override
+  String teamAgentScreenStoppedTitle(String agent) {
+    return '$agent is stopped';
+  }
+
+  @override
+  String get teamAgentScreenStoppedBody =>
+      'Its work stays where it is. Start it again when you want it back.';
+
+  @override
+  String teamAgentScreenCrashedTitle(String agent) {
+    return '$agent stopped unexpectedly';
+  }
+
+  @override
+  String get teamAgentScreenCrashedBody =>
+      'Its session ended on its own. Start it again to pick its work up from the host.';
+
+  @override
+  String get teamAgentScreenRecyclingBody =>
+      'It starts a fresh session soon and picks its work up from the host.';
+
+  @override
+  String teamAgentScreenModelFrom(String model, String provider) {
+    return '$model from $provider';
+  }
+
+  @override
+  String teamAgentScreenGateIfIgnored(String agent) {
+    return '$agent waits until you answer';
+  }
+
+  @override
+  String teamAgentScreenControlsElsewhere(String agent) {
+    return 'This phone can\'t pause, stop or message $agent on this host yet. Run the team\'s host front on the computer to control it from here.';
+  }
+
+  @override
+  String get teamAgentScreenMessageLabel => 'Your message';
+
+  @override
+  String get gateSheetDestructiveBody =>
+      'The host marks this action as destructive. Approving it can\'t be undone from the phone.';
+
+  @override
+  String get gateSheetAnswerLabel => 'Your answer';
+
+  @override
+  String get gateSheetAfterAnswer =>
+      'The team carries on as soon as the host confirms your answer.';
+
+  @override
+  String get gateSheetFixIt => 'Ask the team to fix it';
+
+  @override
+  String gateSheetFixItDetail(String agent) {
+    return 'Sends the error to $agent and asks it to find the cause and carry on.';
+  }
+
+  @override
+  String gateSheetFixRequest(String task, String error) {
+    return 'The task “$task” failed with this error:\n$error\nPlease find the cause, fix it and carry on.';
+  }
+
+  @override
+  String gateSheetOpenAgent(String agent) {
+    return 'Open $agent';
+  }
+
+  @override
+  String get teamIntroSetUpPhone => 'Set up AI Team on this phone';
+
+  @override
+  String teamIntroSetUpOn(String server) {
+    return 'Set up AI Team on $server';
+  }
+
+  @override
+  String teamIntroTurnOn(String server) {
+    return 'Turn on AI Team on $server';
+  }
+
+  @override
+  String get teamIntroCostTitle => 'Before you set it up';
+
+  @override
+  String get teamIntroCostTime => 'About 8–10 minutes the first time';
+
+  @override
+  String get teamIntroCostMemory => 'About 550 MB of memory for each worker';
+
+  @override
+  String get teamAgentScreenLabelId => 'Agent id';
+
+  @override
+  String get teamAgentScreenMessageFirst => 'Type a message first';
+
+  @override
+  String get gateSheetSendNeedsText => 'Type an answer first';
+
+  @override
+  String teamAgentsChecked(String age) {
+    return 'checked $age ago';
+  }
+
+  @override
+  String get teamAgentsAsleep => 'Asleep';
+
+  @override
+  String get teamAgentsAsleepHint => 'wakes when there is work';
+
+  @override
+  String get teamAgentsPaused => 'Paused';
+
+  @override
+  String get teamAgentsPausedHint => 'switched off until someone wakes it';
+
+  @override
+  String teamAgentsWake(String name) {
+    return 'Wake $name';
+  }
+
+  @override
+  String get teamWorkSheetMissingTitle => 'Work item gone';
+
+  @override
+  String get teamWorkSheetMissingBody =>
+      'It may have been finished or removed. Close this sheet to see the task as it is now.';
+
+  @override
+  String get teamWorkSheetNotOnHost => 'No longer listed';
+
+  @override
+  String get teamWorkSheetOpenStepConversation =>
+      'Open this step\'s conversation';
+
+  @override
+  String teamWorkSheetOpenAgentConversation(String name) {
+    return 'Open $name\'s conversation';
+  }
+
+  @override
+  String get usageRangeLabel => 'Time range';
+
+  @override
+  String get usageAboutNumbers => 'About these numbers';
+
+  @override
+  String get usageBudgetHelperUsd =>
+      'In US dollars for this range. You’re told when the report reaches it; nothing is stopped.';
+
+  @override
+  String get usageBudgetHelperTokens =>
+      'Whole tokens for this range. You’re told when the report reaches it; nothing is stopped.';
+
+  @override
+  String get usageBudgetClearConfirm => 'Clear budgets';
+
+  @override
+  String get usageBudgetNotSet => 'Not set';
+
+  @override
+  String get usageBudgetWaitReason => 'Available once usage has loaded.';
+
+  @override
+  String get usageBudgetUsdTitle => 'USD budget';
+
+  @override
+  String get usageBudgetTokensTitle => 'Token budget';
+
+  @override
+  String get agentAccountScopeLostTitle => 'This server changed';
+
+  @override
+  String get agentAccountBackToServers => 'Back to Servers';
+
+  @override
+  String get agentAccountNotConnected =>
+      'Connect to this server to see its Codex account.';
+
+  @override
+  String get agentAccountSignInMethod => 'Signed in with';
+
+  @override
+  String get agentAccountPlanTitle => 'Plan';
+
+  @override
+  String get agentAccountCopyCode => 'Copy sign-in code';
+
+  @override
+  String agentAccountLimitReached(String reset) {
+    return 'You’ve reached a Codex limit. $reset';
+  }
+
+  @override
+  String get agentAccountResetDue => 'Resets any moment';
+
+  @override
+  String agentAccountResetInDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Resets in $days days',
+      one: 'Resets in 1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentAccountResetInHours(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'Resets in $hours h',
+      one: 'Resets in 1 h',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentAccountResetInMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'Resets in $minutes min',
+      one: 'Resets in 1 min',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentAccountResetWhen(String relative, String time) {
+    return '$relative ($time)';
+  }
+
+  @override
+  String get reviewWorkspaceScopes => 'Changes to show';
+
+  @override
+  String get reviewWorkspaceRefreshFailed => 'Couldn\'t refresh the changes';
+
+  @override
+  String get reviewWorkspaceSlowTitle => 'Still reading the changes';
+
+  @override
+  String get reviewWorkspaceSlowBody =>
+      'The server runs git to compare the files. A big project can take a minute.';
+
+  @override
+  String get reviewWorkspaceAllViewedTitle => 'You\'ve seen every file';
+
+  @override
+  String reviewWorkspaceAllViewedMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count notes are on the prompt, ready to send from the conversation.',
+      one: '1 note is on the prompt, ready to send from the conversation.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reviewWorkspaceBackToChat => 'Back to the conversation';
+
+  @override
+  String reviewWorkspaceCommentOnFile(String file) {
+    return 'Comment on $file';
+  }
+
+  @override
+  String reviewWorkspaceAddFileToPrompt(String file) {
+    return 'Add $file to the prompt';
+  }
+
+  @override
+  String get reviewWorkspaceAddComment => 'Add comment to prompt';
+
+  @override
+  String get reviewWorkspaceCommentEmpty => 'Type a comment first.';
+
+  @override
+  String get reviewWorkspaceCommentLabel => 'Your comment';
+
+  @override
+  String get reviewWorkspaceCommentHint =>
+      'What should the agent check or change?';
+
+  @override
+  String get reviewWorkspaceCommentHelper =>
+      'Kept if you close this, until you add it.';
+
+  @override
+  String get catalogScreenTitle => 'Models';
+
+  @override
+  String get catalogScreenLoading => 'Loading models';
+
+  @override
+  String get catalogScreenOffline =>
+      'Can\'t reach the server right now. Models appear once it answers.';
+
+  @override
+  String get catalogScreenOfflineStale =>
+      'Can\'t reach the server right now. This is the list it last sent.';
+
+  @override
+  String get catalogScreenNoProviderBody =>
+      'Only signed-in providers\' models are listed. Connect one to choose a model.';
+
+  @override
+  String get catalogScreenConnectProvider => 'Connect a provider';
+
+  @override
+  String get integrationsMcpTitle => 'MCP servers';
+
+  @override
+  String get integrationsMcpServersLabel => 'MCP servers';
+
+  @override
+  String integrationsProvidersSummary(int connected, int total) {
+    return '$connected of $total connected';
+  }
+
+  @override
+  String integrationsModelCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count models',
+      one: '1 model',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String integrationsProviderActions(String name) {
+    return '$name actions';
+  }
+
+  @override
+  String integrationsManageAccounts(String name) {
+    return 'Manage $name accounts';
+  }
+
+  @override
+  String get integrationsManageAccountsUnavailable =>
+      'This server can\'t list saved accounts from the app.';
+
+  @override
+  String integrationsServerSignIn(String name) {
+    return 'Sign in to $name on the server';
+  }
+
+  @override
+  String get integrationsServerSignInUnavailable =>
+      'This server can\'t run a sign-in command from the app.';
+
+  @override
+  String integrationsDisconnectNamed(String name) {
+    return 'Disconnect $name';
+  }
+
+  @override
+  String integrationsDisconnectBody(String name) {
+    return 'Removes the $name key from this server. A reply already running finishes first.';
+  }
+
+  @override
+  String get integrationsConnectMethodSubtitle => 'Choose how to connect';
+
+  @override
+  String get integrationsKeyHelper =>
+      'The key is stored on this server. The app never shows it again.';
+
+  @override
+  String get integrationsKeyEmpty => 'Paste the key first.';
+
+  @override
+  String get integrationsKeyRejected =>
+      'The server didn\'t accept this key. Check it and try again.';
+
+  @override
+  String integrationsSignInAtHost(String host) {
+    return 'Sign in at $host?';
+  }
+
+  @override
+  String get integrationsSignInBody =>
+      'Approve access in your browser, then come back to this app.';
+
+  @override
+  String integrationsSignInInstructions(String instructions) {
+    return 'The server says: $instructions';
+  }
+
+  @override
+  String get integrationsFinishSignInTitle => 'Finish signing in';
+
+  @override
+  String get integrationsFinishSignInAction => 'Finish signing in';
+
+  @override
+  String get integrationsFinishSignInEmpty => 'Paste the code first.';
+
+  @override
+  String get integrationsFinishSignInMcpHelper =>
+      'Paste the address your browser ended on after you approved access, or the code it showed.';
+
+  @override
+  String get integrationsFinishSignInProviderHelper =>
+      'Paste the code the sign-in page showed after you approved access.';
+
+  @override
+  String integrationsOAuthInputsContinue(String name) {
+    return 'Open $name sign-in';
+  }
+
+  @override
+  String get integrationsCancelSignIn => 'Cancel sign-in';
+
+  @override
+  String get integrationsPendingNotRecoverable =>
+      'Keep this screen open until you finish: this server can\'t resume a sign-in after you leave.';
+
+  @override
+  String integrationsMcpActions(String name) {
+    return '$name actions';
+  }
+
+  @override
+  String integrationsMcpSignIn(String name) {
+    return 'Sign in to $name';
+  }
+
+  @override
+  String integrationsMcpReconnect(String name) {
+    return 'Reconnect $name';
+  }
+
+  @override
+  String integrationsMcpSigningIn(String name) {
+    return 'Signing in to $name';
+  }
+
+  @override
+  String get integrationsMcpSignInOnServer =>
+      'Sign in on the server\'s computer; this server can\'t do it from the app.';
+
+  @override
+  String integrationsMcpRemoveUntilRestart(String name) {
+    return 'Remove $name until restart';
+  }
+
+  @override
+  String get integrationsMcpRemoveUnavailable =>
+      'This server can\'t remove MCP servers from the app. Edit its configuration on the computer.';
+
+  @override
+  String integrationsMcpRemoveTitle(String name) {
+    return 'Remove $name until restart?';
+  }
+
+  @override
+  String get integrationsMcpRemoveBody =>
+      'Its tools stop working in this project now. If it\'s in the server\'s configuration, it comes back when the server restarts.';
+
+  @override
+  String get integrationsMcpRemoveConfirm => 'Remove until restart';
+
+  @override
+  String get integrationsCopyResourceAddress => 'Copy address';
+
+  @override
+  String get terminalScreenSourceLabel => 'Where the shell runs';
+
+  @override
+  String get terminalScreenNameLabel => 'Name';
+
+  @override
+  String get terminalScreenRenameConfirm => 'Rename';
+
+  @override
+  String get terminalScreenNameEmpty => 'Type a name.';
+
+  @override
+  String terminalScreenStopTitle(String name) {
+    return 'Stop $name?';
+  }
+
+  @override
+  String get terminalScreenStopBody =>
+      'The program and everything it started stop, and the terminal goes away. Its output can\'t be brought back.';
+
+  @override
+  String terminalScreenRemoveTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get terminalScreenRemoveBody =>
+      'The terminal and its output go away. This can\'t be undone.';
+
+  @override
+  String get terminalScreenStopConfirm => 'Stop terminal';
+
+  @override
+  String get terminalScreenRemoveConfirm => 'Remove terminal';
+
+  @override
+  String get terminalScreenCreateFailed => 'Couldn\'t start a terminal';
+
+  @override
+  String terminalScreenRemoveEnded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count ended terminals',
+      one: 'Remove 1 ended terminal',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String terminalScreenRemoveEndedTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count ended terminals?',
+      one: 'Remove 1 ended terminal?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get terminalScreenRemoveEndedBody =>
+      'Their output goes away too. Running terminals stay.';
+
+  @override
+  String get terminalScreenUsePhone => 'Use this phone\'s terminal';
+
+  @override
+  String terminalScreenRowRunning(String command) {
+    return 'Running · $command';
+  }
+
+  @override
+  String terminalScreenRowEnded(String code, String command) {
+    return 'Ended · code $code · $command';
+  }
+
+  @override
+  String terminalScreenRowEndedNoCode(String command) {
+    return 'Ended · $command';
+  }
+
+  @override
+  String terminalScreenMenuLabel(String name) {
+    return 'Actions for $name';
+  }
+
+  @override
+  String terminalScreenOpen(String name) {
+    return 'Open $name';
+  }
+
+  @override
+  String terminalScreenRename(String name) {
+    return 'Rename $name';
+  }
+
+  @override
+  String terminalScreenStop(String name) {
+    return 'Stop $name';
+  }
+
+  @override
+  String terminalScreenRemove(String name) {
+    return 'Remove $name';
+  }
+
+  @override
+  String get terminalScreenLoading => 'Loading terminals';
+
+  @override
+  String get terminalScreenPaused =>
+      'Paused while the app is in the background';
+
+  @override
+  String get terminalScreenConnecting => 'Connecting to the terminal';
+
+  @override
+  String get terminalScreenCopy => 'Copy output';
+
+  @override
+  String terminalScreenPaste(String name) {
+    return 'Paste into $name';
+  }
+
+  @override
+  String get terminalScreenDetails => 'Terminal details';
+
+  @override
+  String terminalScreenDetailsTitle(String name) {
+    return '$name details';
+  }
+
+  @override
+  String get terminalScreenDetailCommand => 'Command';
+
+  @override
+  String get terminalScreenDetailFolder => 'Folder';
+
+  @override
+  String get terminalScreenDetailPid => 'Process id';
+
+  @override
+  String get terminalScreenDetailExit => 'Exit code';
+
+  @override
+  String localTerminalStopNamedTitle(String name) {
+    return 'Stop $name?';
+  }
+
+  @override
+  String localTerminalPasteNamed(String name) {
+    return 'Paste into $name';
+  }
+
+  @override
+  String get localTerminalCopySelection => 'Copy selection';
+
+  @override
+  String defaultShellOnlyOne(String name) {
+    return '$name · the only shell this server offers';
+  }
+
+  @override
+  String defaultShellSaveFailed(String error) {
+    return 'Couldn\'t change the shell. $error Tap to try again.';
+  }
+
+  @override
+  String get terminalScreenReadableMode => 'Show as readable text';
+
+  @override
+  String get terminalScreenLiveMode => 'Show as live terminal';
+
+  @override
+  String get localTerminalSetUpLinux => 'Set up Linux on this phone';
 }
