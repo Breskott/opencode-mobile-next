@@ -51,3 +51,18 @@ Updated all four active literals: enum, default version, setup fallback and swit
 Command: `flutter test --no-pub --concurrency=1 test/termux_scripts_test.dart test/termux_runtime_switch_test.dart test/managed_runtime_switch_preflight_test.dart` — **78 passed**. The setup-script fixture was updated but its additional test file was not separately run, following the requested named-test scope. In `packages/opencode_sdk/`, `dart analyze` remains **clean** and `dart test --concurrency=1` gives **47 passed** for the review's SDK checks.
 
 Device checks owed: fresh install and explicit update of an existing install, observed installed version, authenticated chat/SSE reconnect, provider variants and image attachments, Gas City ACP load/resume/fork. Switching to an already-installed runtime does not itself update it.
+
+## 6. Dolt 2.3.5
+
+Downloaded both [arm64](https://github.com/dolthub/dolt/releases/download/v2.3.5/dolt-linux-arm64.tar.gz) and [amd64](https://github.com/dolthub/dolt/releases/download/v2.3.5/dolt-linux-amd64.tar.gz) release archives on 2026-09-27 **before editing pins**. Stream-computed SHA-256 and byte counts matched GitHub's release-asset digest/size; inspected each archive for `dolt-linux-<arch>/bin/dolt`. Both archive downloads were deleted after verification.
+
+| Architecture | Measured bytes | Measured SHA-256 |
+|---|---:|---|
+| arm64 | 40,789,338 | `9ce70fc81e50139e97758ef7f4dc57e9583e4e5ef05ad75d7535c30caa161387` |
+| amd64 | 44,023,897 | `c49d4c3e004cf1581ba0d4a00c5023a26f84eb2ec15d5fe876eed36d5343f463` |
+
+Updated `AiTeamPins.dolt`, both hash/size records and the verification-date comment. Both built-in and Termux flows use these shared upstream Linux pins. Old native manifests are historical and explicitly unread by the current flows; they were not relabeled with Linux artifact hashes. Aligned the Termux AI Team script fixture's version responses; that extra fixture file was not separately run under the requested named-test scope.
+
+Command: `flutter test --no-pub --concurrency=1 test/aiteam_component_test.dart test/builtin_team_test.dart test/builtin_team_hot_test.dart` — **37 passed**.
+
+Device checks owed: actual arm64/proot binary startup, fresh city and copied existing-store reopen, interrupted initialization/restart, claim→close→merge, and database integrity after stop. No Beads/Gas City/schema upgrade is part of this patch.

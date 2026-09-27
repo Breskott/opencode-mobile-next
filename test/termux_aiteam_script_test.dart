@@ -113,7 +113,7 @@ const _bdSigsysStub = '#!/bin/bash\nexit 159\n';
 
 const _doltStub = r'''#!/bin/bash
 case "${1:-}" in
-  version) echo 'dolt version 2.3.3' ;;
+  version) echo 'dolt version 2.3.5' ;;
   config) echo "dolt $*" >> /root/dolt-calls.log ;;
 esac
 ''';
@@ -634,7 +634,7 @@ void main() {
       final status = await fx.status();
       expect(status.phase, TeamRuntimePhase.installed, reason: fx.log);
       expect(status.installed, isTrue);
-      expect(status.versions, {'gc': '1.4.1', 'bd': '1.2.2', 'dolt': '2.3.3'});
+      expect(status.versions, {'gc': '1.4.1', 'bd': '1.2.2', 'dolt': '2.3.5'});
       expect(fx.served, [
         'gascity_1.4.1_linux_arm64.tar.gz@0',
         'beads_1.2.2_linux_arm64.tar.gz@0',
