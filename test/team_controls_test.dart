@@ -5,7 +5,7 @@
 // that follows the record (Sent → Confirmed / Unconfirmed); Stop, Restart
 // and Cancel run are two-step (the first tap opens the confirmation, the
 // second sends, backing out sends nothing); Message sends the text;
-// Reassign picks a ready item and sends assignWork; Start a run sends the
+// Manual reassign is absent (the dispatcher owns it); Start a run sends the
 // objective and the supervision line to the Mayor, shows "Planning…
 // (Mayor)" on the home, resolves when a run carrying the objective
 // appears, and a suspended Mayor shows the host-off copy without sending.
@@ -26,6 +26,7 @@ import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/team_planning.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
@@ -370,27 +371,20 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
   }
 
-  /// The agent controls follow the one button hierarchy (design standard
-  /// §2): past two text buttons the rest sit under the block's More menu.
+  /// Controls moved into the top bar in screen-team-1 (2026-09-27).
   Future<void> openMore(WidgetTester tester) async {
-    await tester.tap(key('kit-actions-more'));
+    await tester.tap(key('team-agent-more'));
     await tester.pumpAndSettle();
   }
 
-  Future<void> scrollToControls(WidgetTester tester) async {
-    await tester.scrollUntilVisible(
-      key('team-agent-controls'),
-      300,
-      scrollable: find.descendant(
-        of: key('team-agent-list'),
-        matching: find.byType(Scrollable),
-      ),
-    );
-    // The block opens with the primary (Open conversation or Live
-    // output); bring its controls into view too.
-    final message = key('team-agent-control-message');
-    if (message.evaluate().isNotEmpty) await tester.ensureVisible(message);
-    await tester.pump();
+  Future<void> tapVisible(WidgetTester tester, Finder target) async {
+    // Let a newly focused field finish its caret reveal before scrolling
+    // to the next action; otherwise it scrolls back after ensureVisible.
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(target);
+    await tester.pumpAndSettle();
+    expect(target.hitTestable(), findsOneWidget);
+    await tester.tap(target);
   }
 
   /// The task's conversation, where the run page's controls moved.
@@ -452,23 +446,16 @@ void main() {
       await size(tester, const Size(400, 900));
       final (controller, _) = await boot();
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
       await openMore(tester);
-      for (final id in [
-        'message',
-        'nudge',
-        'pause',
-        'stop',
-        'restart',
-        'reassign',
-      ]) {
+      for (final id in ['message', 'nudge', 'pause', 'stop', 'restart']) {
         expect(key('team-agent-control-$id'), findsOneWidget, reason: id);
       }
       expect(key('team-agent-control-resume'), findsNothing);
       expect(find.text('Open session'), findsNothing);
       expect(find.text('Open worktree'), findsNothing);
-      expect(find.text('Message'), findsOneWidget);
-      expect(find.text('Reassign work…'), findsOneWidget);
+      expect(find.text('Message fox'), findsOneWidget);
+      expect(key('team-agent-control-reassign'), findsNothing);
+      expect(find.text('Reassign work…'), findsNothing);
     });
 
     testWidgets('only the granted controls exist', (tester) async {
@@ -482,7 +469,6 @@ void main() {
         ),
       );
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
       expect(key('team-agent-control-message'), findsOneWidget);
       expect(key('team-agent-control-nudge'), findsNothing);
       expect(key('team-agent-control-stop'), findsNothing);
@@ -495,7 +481,6 @@ void main() {
         configure: (g) => g.agentList = [fox(state: AgentState.stopped)],
       );
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
       expect(key('team-agent-control-resume'), findsOneWidget);
       expect(key('team-agent-control-pause'), findsNothing);
       await openMore(tester);
@@ -513,7 +498,7 @@ void main() {
         timeout: const Duration(seconds: 30),
       );
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
+      await openMore(tester);
       await tester.tap(key('team-agent-control-nudge'));
       await settle(tester);
       expect(gateway.calls, hasLength(1));
@@ -544,14 +529,14 @@ void main() {
         timeout: const Duration(milliseconds: 100),
       );
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
+      await openMore(tester);
       await tester.tap(key('team-agent-control-nudge'));
       await settle(tester);
       expect(find.textContaining('Nudge · Sending…'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 200));
       await settle(tester);
       expect(find.textContaining('Not confirmed yet'), findsOneWidget);
-      expect(key('team-receipt-retry'), findsOneWidget);
+      expect(key('team-agent-receipt-retry'), findsOneWidget);
       expect(gateway.calls, hasLength(1));
     });
 
@@ -565,7 +550,7 @@ void main() {
                 MutationReceipt.rejected(call.requestId, 'session is gone'),
       );
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
+      await openMore(tester);
       await tester.tap(key('team-agent-control-pause'));
       await settle(tester);
       expect(gateway.calls.single.arg, AgentControlAction.pause);
@@ -575,6 +560,43 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('session is gone'), findsOneWidget);
+      expect(key('team-agent-pause-undo'), findsNothing);
+    });
+    testWidgets('an unconfirmed pause never claims the agent paused', (
+      tester,
+    ) async {
+      await size(tester, const Size(400, 900));
+      final (controller, gateway) = await boot(
+        configure: (g) => g.answer = (call) async => MutationReceipt(
+          id: call.requestId,
+          status: MutationReceiptStatus.pending,
+          retryable: true,
+        ),
+      );
+      await pumpAgent(tester, controller);
+      await openMore(tester);
+      await tester.tap(key('team-agent-control-pause'));
+      await settle(tester);
+      expect(gateway.calls, hasLength(1));
+      expect(gateway.calls.single.verb, 'controlAgent');
+      expect(gateway.calls.single.target, 'fox');
+      expect(gateway.calls.single.arg, AgentControlAction.pause);
+      expect(
+        controller
+            .latestMutation(kind: MutationKind.controlAgent, targetId: 'fox')
+            ?.status,
+        MutationStatus.unconfirmed,
+      );
+      expect(find.textContaining('Not confirmed yet'), findsOneWidget);
+      expect(key('team-agent-receipt-retry'), findsOneWidget);
+      expect(key('team-agent-pause-undo'), findsNothing);
+      expect(find.text('Paused fox'), findsNothing);
+      await drain(tester);
+      expect(
+        gateway.calls,
+        hasLength(1),
+        reason: 'never automatically retried',
+      );
     });
   });
 
@@ -583,12 +605,11 @@ void main() {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot();
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
       await openMore(tester);
       await tester.tap(key('team-agent-control-stop'));
       await tester.pumpAndSettle();
       expect(key('team-agent-stop-confirm'), findsOneWidget);
-      expect(find.text('Stop fox?'), findsOneWidget);
+      expect(find.text('Stop Worker · fox?'), findsOneWidget);
       expect(gateway.calls, isEmpty);
       await tester.tap(key('team-agent-stop-confirm-action'));
       await tester.pumpAndSettle();
@@ -601,11 +622,10 @@ void main() {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot();
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
       await openMore(tester);
       await tester.tap(key('team-agent-control-stop'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Keep going'));
+      await tester.tap(find.text('Keep running'));
       await tester.pumpAndSettle();
       expect(key('team-agent-stop-confirm'), findsNothing);
       expect(gateway.calls, isEmpty);
@@ -618,11 +638,10 @@ void main() {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot();
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
       await openMore(tester);
       await tester.tap(key('team-agent-control-restart'));
       await tester.pumpAndSettle();
-      expect(find.text('Restart fox?'), findsOneWidget);
+      expect(find.text('Restart Worker · fox?'), findsOneWidget);
       expect(gateway.calls, isEmpty);
       await tester.tap(key('team-agent-restart-confirm-action'));
       await tester.pumpAndSettle();
@@ -701,14 +720,19 @@ void main() {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot();
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
       await tester.tap(key('team-agent-control-message'));
       await tester.pumpAndSettle();
       expect(key('team-agent-message-sheet'), findsOneWidget);
-      expect(find.text('Message fox'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: key('team-agent-message-sheet'),
+          matching: find.text('Message fox'),
+        ),
+        findsOneWidget,
+      );
       // Empty text cannot be sent.
       expect(
-        tester.widget<IconButton>(key('team-agent-message-send')).onPressed,
+        tester.widget<KitButton>(key('team-agent-message-send')).onPressed,
         isNull,
       );
       await tester.enterText(
@@ -725,45 +749,32 @@ void main() {
       await drain(tester);
     });
 
-    testWidgets('Reassign: the picker lists ready work and sends assign', (
-      tester,
-    ) async {
-      await size(tester, const Size(400, 900));
-      final (controller, gateway) = await boot();
-      await pumpAgent(tester, controller);
-      await scrollToControls(tester);
-      await openMore(tester);
-      await tester.tap(key('team-agent-control-reassign'));
-      await tester.pumpAndSettle();
-      expect(key('team-agent-reassign-sheet'), findsOneWidget);
-      expect(key('team-agent-reassign-w4'), findsOneWidget);
-      expect(key('team-agent-reassign-w5'), findsNothing);
-      expect(key('team-agent-reassign-w2'), findsNothing);
-      await tester.tap(key('team-agent-reassign-w4'));
-      await tester.pumpAndSettle();
-      expect(gateway.calls.single.verb, 'assign');
-      expect(gateway.calls.single.target, 'w4');
-      expect(gateway.calls.single.arg, 'fox');
-      expect(key('team-agent-assign-receipt'), findsOneWidget);
-      expect(find.textContaining('Reassign work… · Sending…'), findsOneWidget);
-      await drain(tester);
-    });
-
-    testWidgets('Reassign: nothing ready says so', (tester) async {
-      await size(tester, const Size(400, 900));
-      final (controller, gateway) = await boot(
-        configure: (g) => g.workList = const [
-          WorkItem(id: 'w2', title: 'Sync engine', state: WorkState.working),
-        ],
-      );
-      await pumpAgent(tester, controller);
-      await scrollToControls(tester);
-      await openMore(tester);
-      await tester.tap(key('team-agent-control-reassign'));
-      await tester.pumpAndSettle();
-      expect(key('team-agent-reassign-empty'), findsOneWidget);
-      expect(gateway.calls, isEmpty);
-    });
+    for (final readyWork in [true, false]) {
+      testWidgets('manual reassign is absent with ready work: $readyWork', (
+        tester,
+      ) async {
+        await size(tester, const Size(400, 900));
+        final (controller, gateway) = await boot(
+          configure: readyWork
+              ? null
+              : (g) => g.workList = const [
+                  WorkItem(
+                    id: 'w2',
+                    title: 'Sync engine',
+                    state: WorkState.working,
+                  ),
+                ],
+        );
+        await pumpAgent(tester, controller);
+        await openMore(tester);
+        // screen-team-1 removed manual reassignment: the dispatcher owns
+        // routing. The menu must not offer a dead or hidden assign path.
+        expect(key('team-agent-control-reassign'), findsNothing);
+        expect(find.text('Reassign work…'), findsNothing);
+        expect(key('team-agent-reassign-sheet'), findsNothing);
+        expect(gateway.calls, isEmpty);
+      });
+    }
   });
 
   group('start a run', () {
@@ -831,12 +842,15 @@ void main() {
         await tester.tap(key('team-home-start-run'));
         await tester.pumpAndSettle();
         expect(key('team-start-run-sheet'), findsOneWidget);
-        expect(find.text('Mayor'), findsOneWidget);
+        expect(find.text('Send to the Mayor'), findsOneWidget);
+        expect(find.text('gastown.mayor'), findsNothing);
+        await tapVisible(tester, key('team-start-run-technical'));
+        await tester.pumpAndSettle();
         expect(find.text('gastown.mayor'), findsOneWidget);
         expect(find.text('Boundaries'), findsNothing);
 
         // Empty objective: validation, nothing sent.
-        await tester.tap(key('team-start-run-send'));
+        await tapVisible(tester, key('team-start-run-send'));
         await tester.pumpAndSettle();
         expect(find.text('Write an objective first.'), findsOneWidget);
         expect(gateway.calls, isEmpty);
@@ -845,9 +859,9 @@ void main() {
           key('team-start-run-objective'),
           'Ship offline-first sessions with conflict resolution',
         );
-        await tester.tap(key('team-start-run-supervision-autonomous'));
+        await tapVisible(tester, key('team-start-run-supervision-autonomous'));
         await tester.pump();
-        await tester.tap(key('team-start-run-send'));
+        await tapVisible(tester, key('team-start-run-send'));
         await tester.pumpAndSettle();
 
         expect(gateway.calls, hasLength(1));
@@ -912,11 +926,11 @@ void main() {
       await tester.tap(key('team-home-start-run'));
       await tester.pumpAndSettle();
       await tester.enterText(key('team-start-run-objective'), 'Add dark mode');
-      await tester.tap(key('team-start-run-project'));
+      await tapVisible(tester, key('team-start-run-project'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('ocproof').last);
       await tester.pumpAndSettle();
-      await tester.tap(key('team-start-run-send'));
+      await tapVisible(tester, key('team-start-run-send'));
       await tester.pumpAndSettle();
       final text = gateway.calls.single.arg! as String;
       expect(text, contains('Project: ocproof'));
@@ -1114,7 +1128,7 @@ void main() {
       await tester.tap(key('team-home-start-run'));
       await tester.pumpAndSettle();
       await tester.enterText(key('team-start-run-objective'), 'Add dark mode');
-      await tester.tap(key('team-start-run-send'));
+      await tapVisible(tester, key('team-start-run-send'));
       await tester.pumpAndSettle();
       expect(gateway.calls.map((c) => c.verb), ['controlAgent', 'message']);
       expect(gateway.calls.first.arg, AgentControlAction.start);
@@ -1131,7 +1145,7 @@ void main() {
       await tester.tap(key('team-home-start-run'));
       await tester.pumpAndSettle();
       await tester.enterText(key('team-start-run-objective'), 'Add dark mode');
-      await tester.tap(key('team-start-run-send'));
+      await tapVisible(tester, key('team-start-run-send'));
       await tester.pumpAndSettle();
       expect(find.byType(TeamConversationScreen), findsOneWidget);
       await tester.pageBack();
@@ -1151,7 +1165,9 @@ void main() {
       await drain(tester);
     });
 
-    testWidgets('a refused objective says why', (tester) async {
+    testWidgets('a refused objective stays on the sheet and says why', (
+      tester,
+    ) async {
       await size(tester, const Size(400, 900));
       final (controller, _) = await boot(
         configure: (g) => g.answer = (call) async =>
@@ -1161,10 +1177,16 @@ void main() {
       await tester.tap(key('team-home-start-run'));
       await tester.pumpAndSettle();
       await tester.enterText(key('team-start-run-objective'), 'Add dark mode');
-      await tester.tap(key('team-start-run-send'));
+      await tapVisible(tester, key('team-start-run-send'));
       await tester.pumpAndSettle();
+      expect(key('team-start-run-sheet'), findsOneWidget);
       expect(
-        find.text('The host refused the objective: identity not allowed'),
+        find.descendant(
+          of: key('team-start-run-refused'),
+          matching: find.text(
+            'The host refused the objective: identity not allowed',
+          ),
+        ),
         findsOneWidget,
       );
     });
@@ -1251,12 +1273,14 @@ void main() {
             direction: direction,
             scale: 2.5,
           );
-          await scrollToControls(tester);
+          await openMore(tester);
           expect(key('team-agent-control-nudge'), findsOneWidget);
           expect(tester.takeException(), isNull);
           // Buttons are at least 48dp tall.
           final nudge = tester.getSize(key('team-agent-control-nudge'));
           expect(nudge.height, greaterThanOrEqualTo(48));
+          await tester.tapAt(Offset.zero);
+          await tester.pumpAndSettle();
           await tester.tap(key('team-agent-control-message'));
           await tester.pumpAndSettle();
           expect(key('team-agent-message-sheet'), findsOneWidget);
@@ -1290,8 +1314,12 @@ void main() {
           expect(key('team-start-run-send'), findsOneWidget);
           expect(tester.takeException(), isNull);
           if (direction == TextDirection.rtl) {
+            await tapVisible(tester, key('team-start-run-technical'));
+            await tester.pumpAndSettle();
             expect(
-              tester.widget<Text>(find.text('gastown.mayor')).textDirection,
+              tester
+                  .widget<EditableText>(find.text('gastown.mayor'))
+                  .textDirection,
               TextDirection.ltr,
             );
           }
