@@ -183,15 +183,20 @@ Widget _app(
 );
 
 /// The user-facing notice that a shortcut could not be honoured. The router
-/// owns the wording and the surface (snack bar or banner); this only checks
+/// owns the wording and the surface (its status line); this only checks
 /// that something was shown at all.
-bool _noticeShown() =>
-    find.byType(SnackBar).evaluate().isNotEmpty ||
-    find.byType(MaterialBanner).evaluate().isNotEmpty;
+bool _noticeShown() => _appNotice.evaluate().isNotEmpty;
 
-/// Lets any snack bar timer run out before the tree is torn down.
+/// Lets a one-shot notice's timer run out before the tree is torn down.
 Future<void> _drainNotices(WidgetTester tester) =>
-    tester.pump(const Duration(seconds: 5));
+    tester.pump(const Duration(seconds: 9));
+
+/// The app's own status line (main.dart's notice, KitStatusLine keys
+/// `kit-status-app:*`), which replaced the snack bars and the banner.
+final _appNotice = find.byWidgetPredicate((widget) {
+  final key = widget.key;
+  return key is ValueKey && '${key.value}'.startsWith('kit-status-app:');
+});
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

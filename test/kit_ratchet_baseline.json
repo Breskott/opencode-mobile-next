@@ -1,10 +1,5 @@
 {
   "G1": {
-    "lib/main.dart": {
-      "MaterialBanner(": 1,
-      "SnackBar(": 6,
-      "showSnackBar(": 6
-    },
     "lib/ui/screens/chat_screen.dart": {
       "showModalBottomSheet(": 3
     },
@@ -40,9 +35,6 @@
     }
   },
   "G16": {
-    "lib/main.dart": {
-      "MaterialPageRoute": 9
-    },
     "lib/ui/app_theme.dart": {
       "AppBarTheme": 1,
       "InputDecorationTheme": 1
@@ -152,10 +144,6 @@
   "G17": {
     "lib/diagnostics/app_diagnostics.dart": {
       "Color(0x": 2
-    },
-    "lib/main.dart": {
-      ".colorScheme": 2,
-      ".textTheme": 2
     },
     "lib/ui/kit/glass/kit_glass.dart": {
       "Colors.*": 2
@@ -283,9 +271,6 @@
       ".toUpperCase()": 1
     },
     "lib/main.dart": {
-      "EdgeInsets numeric": 1,
-      "SizedBox numeric": 4,
-      "icon size not 20/22/24": 1,
       "text scale clamp": 1
     },
     "lib/ui/kit/glass/kit_glass.dart": {

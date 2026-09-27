@@ -225,7 +225,14 @@ Widget _app(ConnectionController controller, SessionLinkIntent intent) =>
     );
 
 Future<void> _drainNotices(WidgetTester tester) =>
-    tester.pump(const Duration(seconds: 5));
+    tester.pump(const Duration(seconds: 9));
+
+/// The app's own status line (main.dart's notice, KitStatusLine keys
+/// `kit-status-app:*`), which replaced the snack bars and the banner.
+final _appNotice = find.byWidgetPredicate((widget) {
+  final key = widget.key;
+  return key is ValueKey && '${key.value}'.startsWith('kit-status-app:');
+});
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -257,7 +264,7 @@ void main() {
     expect(api.prompted, 0);
     expect(intent.pending.value, isNull);
     expect(find.byType(ServersScreen), findsNothing);
-    expect(find.byType(MaterialBanner), findsNothing);
+    expect(_appNotice, findsNothing);
     expect(controller.profile?.id, 'server-1');
 
     // Nothing re-fires the same link on later controller changes.
@@ -402,7 +409,7 @@ void main() {
     expect(apis.single.created, 0);
     expect(apis.single.prompted, 0);
     expect(intent.pending.value, isNull);
-    expect(find.byType(MaterialBanner), findsNothing);
+    expect(_appNotice, findsNothing);
     expect(find.byType(ServersScreen), findsNothing);
     // The live connection's polling fallback is a periodic timer; retire it
     // before the tree is torn down.
@@ -435,7 +442,7 @@ void main() {
 
     expect(find.byType(ChatScreen), findsNothing);
     expect(find.byType(ServersScreen), findsOneWidget);
-    expect(find.byType(SnackBar), findsOneWidget);
+    expect(_appNotice, findsOneWidget);
     expect(intent.pending.value, isNull);
     expect(apis, isEmpty);
     await _drainNotices(tester);
@@ -466,7 +473,7 @@ void main() {
 
     expect(find.byType(ChatScreen), findsNothing);
     expect(find.byType(ServersScreen), findsOneWidget);
-    expect(find.byType(SnackBar), findsOneWidget);
+    expect(_appNotice, findsOneWidget);
     expect(intent.pending.value, isNull);
     expect(api.created, 0);
     expect(api.prompted, 0);
@@ -494,8 +501,8 @@ void main() {
 
     expect(find.byType(ChatScreen), findsNothing);
     expect(find.byType(ServersScreen), findsNothing);
-    expect(find.byType(MaterialBanner), findsNothing);
-    expect(find.byType(SnackBar), findsNothing);
+    expect(_appNotice, findsNothing);
+
     expect(api.created, 0);
     expect(api.prompted, 0);
   });

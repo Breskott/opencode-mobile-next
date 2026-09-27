@@ -111,7 +111,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('OpenCode could not start'), findsOneWidget);
+    expect(find.text("Can't read saved servers"), findsOneWidget);
+    // Words, not the exception: its text is folded under Details.
+    expect(find.textContaining('preferences unavailable'), findsNothing);
+    await tester.ensureVisible(find.byKey(const ValueKey('kit-state-details')));
+    await tester.tap(find.byKey(const ValueKey('kit-state-details')));
+    await tester.pumpAndSettle();
     expect(find.textContaining('preferences unavailable'), findsOneWidget);
     expect(diagnostics.count, 1);
 
