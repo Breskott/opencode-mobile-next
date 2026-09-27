@@ -719,11 +719,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get revertReview => 'Review';
 
   @override
-  String get revertFromHere => 'Revert from this prompt';
+  String get revertFromHere => 'Undo from here';
 
   @override
   String get revertUndoDescription =>
-      'Stage a revert and review the affected files';
+      'Undo the last prompt and everything after it';
 
   @override
   String get revertClearShortDescription =>
@@ -8427,10 +8427,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiMessageTimestampsShown => 'Message timestamps shown';
 
   @override
-  String get chatUiMessagesAndFileChangesAfterTheMost =>
-      'Messages and file changes after the most recent prompt will be rolled back.';
-
-  @override
   String get chatUiMobileActionsAndCommandsFromThisServer =>
       'Mobile actions and commands from this server';
 
@@ -8637,13 +8633,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiRetryServerCommands => 'Try again';
 
   @override
-  String get chatUiRevert => 'Revert';
-
-  @override
-  String get chatUiRevertFromThisPrompt => 'Revert from this prompt?';
-
-  @override
-  String get chatUiRevertLastPrompt => 'Revert last prompt';
+  String get chatUiRevertLastPrompt => 'Undo last prompt';
 
   @override
   String get chatUiReviewCommentAddedToThePrompt =>
@@ -8656,10 +8646,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatUiReviewTheActualDiffForThisSession =>
       'Review the actual diff for this conversation';
-
-  @override
-  String get chatUiRollBackMessagesAndFileChangesAfter =>
-      'Roll back messages and file changes after the prompt';
 
   @override
   String get chatUiRunOnYourComputer => 'Run on your computer';
@@ -23881,6 +23867,68 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$count files are replaced, with any edits made since',
       one: '1 file is replaced, with any edits made since',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get undoFromHereNowAction => 'Undo now';
+
+  @override
+  String undoFromHereBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This prompt and the $count messages after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.',
+      one:
+          'This prompt and the message after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.',
+      zero:
+          'This prompt is removed, and files go back to how they were before it. You can put it back until you send another prompt.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get undoFromHereBodyUnknown =>
+      'This prompt and everything after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.';
+
+  @override
+  String get undoFromHereFilesLabel => 'Files the agent edited after it';
+
+  @override
+  String get undoFromHereNoEdits =>
+      'The agent reported no file edits after this prompt.';
+
+  @override
+  String get undoneStatus => 'Undone from a prompt';
+
+  @override
+  String get undonePutBack => 'Put back';
+
+  @override
+  String reviewRevertScreenIntroCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This prompt and the $count messages after it are hidden. Nothing is final until you choose below.',
+      one:
+          'This prompt and the message after it are hidden. Nothing is final until you choose below.',
+      zero:
+          'This prompt is hidden; nothing came after it. Nothing is final until you choose below.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reviewRevertKeepConsequenceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'The hidden prompt and the $count messages after it are deleted',
+      one: 'The hidden prompt and the message after it are deleted',
+      zero: 'The hidden prompt is deleted',
     );
     return '$_temp0';
   }
