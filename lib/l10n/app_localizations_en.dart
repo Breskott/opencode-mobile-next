@@ -17729,9 +17729,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneSetupStartAddTitle => 'Add tools';
 
   @override
-  String get phoneSetupStartRequiredWhy => 'Needed for the agent to run';
-
-  @override
   String get phoneSetupStartInstalled => 'Installed';
 
   @override
@@ -25622,12 +25619,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get thisPhoneAddTools => 'Add tools';
 
   @override
-  String get thisPhoneAddToolsInApp => 'Python, Node.js, AI Team and more';
-
-  @override
-  String get thisPhoneAddToolsTermux => 'AI Team and Claude Code';
-
-  @override
   String get thisPhoneInstalled => 'Installed';
 
   @override
@@ -26122,4 +26113,12 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get thisPhoneAddToolsDetail =>
+      'Python, AI Team, voice typing and more';
+
+  @override
+  String get phoneSetupTermuxOtherRuntime =>
+      'Termux already runs the other OpenCode. Switch it on This phone, then continue setup.';
 }
