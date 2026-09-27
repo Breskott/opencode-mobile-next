@@ -3,7 +3,8 @@ part of '../settings_screen.dart';
 /// Settings › Help: the rarer reference and support rows the hub used to
 /// list one by one (owner rule R4, canvas Settings.png): the setup guide,
 /// the offline demo, what this server offers, keyboard shortcuts, the
-/// one-time tips, app diagnostics and the voice notices. Each row is its
+/// one-time tips and the voice notices (app diagnostics became Report a
+/// problem, the hub's own row). Each row is its
 /// search entry, so search and this page cannot disagree; a row whose entry
 /// is gated out is absent.
 class SettingsHelpScreen extends StatefulWidget {
@@ -75,22 +76,6 @@ class _SettingsHelpScreenState extends State<SettingsHelpScreen> {
               : copy.discoverShowTipsSubtitle,
           chevron: false,
           onTap: _showTipsAgain,
-        ),
-      if (entries['app-diagnostics-entry'] case final diagnostics?)
-        ListenableBuilder(
-          listenable: controller.diagnostics,
-          builder: (context, _) {
-            final count = controller.diagnostics.count;
-            return _CategoryRow(
-              rowKey: 'app-diagnostics-entry',
-              icon: AppIconography.activity,
-              title: copy.e7SettingsUi88,
-              subtitle: count == 0
-                  ? copy.e7SettingsUi89
-                  : copy.e7SettingsDiagnosticCount(count),
-              onTap: () => _open(diagnostics, scope),
-            );
-          },
         ),
       // The voice notices cover models this build can neither download
       // nor run off Android.

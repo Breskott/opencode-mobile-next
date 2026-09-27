@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../api/product_repository.dart';
 import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
-import '../../feedback/bug_report.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
@@ -694,29 +693,22 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       group: SettingsGroup.help,
       icon: AppIconography.support,
       title: l10n.settingsHubHelpRow,
-      keywords:
-          '${l10n.settingsHubHelpSubtitle} ${l10n.onboardingSetupGuide} '
-          '${l10n.e7SettingsUi88}',
+      keywords: '${l10n.settingsHubHelpSubtitle} ${l10n.onboardingSetupGuide}',
       open: _screen(
         (scope) => SettingsHelpScreen(controller: scope.controller),
       ),
     ),
+    // Report a problem (P8.2): the one row for the GitHub form and the
+    // diagnostics, which used to be two paths.
     SearchEntry(
       id: 'library-report-bug',
       kind: SearchEntryKind.hubRow,
       group: SettingsGroup.help,
       icon: AppIconography.bug,
       title: l10n.e7LibraryReportABug,
-      keywords: l10n.settingsHubSearchBugAliases,
-      open: (context, _) => openBugReport(context),
-    ),
-    SearchEntry(
-      id: 'app-diagnostics-entry',
-      kind: SearchEntryKind.insideSettings,
-      parent: l10n.settingsHubHelpRow,
-      icon: AppIconography.activity,
-      title: l10n.e7SettingsUi88,
-      keywords: l10n.settingsHubSearchDiagnosticsAliases,
+      keywords:
+          '${l10n.settingsHubSearchBugAliases} ${l10n.e7SettingsUi88} '
+          '${l10n.settingsHubSearchDiagnosticsAliases}',
       pages: const ['app-diagnostics'],
       open: _screen(
         (scope) => AppDiagnosticsScreen(controller: scope.controller),

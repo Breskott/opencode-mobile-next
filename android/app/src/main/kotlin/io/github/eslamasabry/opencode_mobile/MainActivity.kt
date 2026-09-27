@@ -132,6 +132,12 @@ class MainActivity : FlutterActivity() {
                             pendingSharedText = null
                             result.success(text)
                         }
+                        "shareText" -> result.success(
+                            shareTextOut(
+                                call.argument<String>("text"),
+                                call.argument<String>("subject"),
+                            ),
+                        )
                         else -> result.notImplemented()
                     }
                 }
@@ -660,6 +666,30 @@ class MainActivity : FlutterActivity() {
         if (action !in LAUNCH_ACTIONS) return false
         pendingLaunchAction = action
         return true
+    }
+
+    /// Shares [text] out through the system chooser (Report a problem's
+    /// Share). This app is left out of the targets: sharing the report to
+    /// ourselves would start a session with it. True once the chooser opened.
+    private fun shareTextOut(text: String?, subject: String?): Boolean {
+        if (text.isNullOrEmpty()) return false
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+            if (!subject.isNullOrEmpty()) putExtra(Intent.EXTRA_SUBJECT, subject)
+        }
+        val chooser = Intent.createChooser(send, null).apply {
+            putExtra(
+                Intent.EXTRA_EXCLUDE_COMPONENTS,
+                arrayOf(ComponentName(this@MainActivity, MainActivity::class.java)),
+            )
+        }
+        return try {
+            startActivity(chooser)
+            true
+        } catch (error: ActivityNotFoundException) {
+            false
+        }
     }
 
     /// Text shared from another app through the system share sheet. Only

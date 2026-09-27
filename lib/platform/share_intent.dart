@@ -71,3 +71,33 @@ class ShareIntent {
     pending.dispose();
   }
 }
+
+/// Text shared out of the app through the system share sheet (Android's
+/// chooser, this app itself left out). Off Android it is unsupported and
+/// callers hide the action (STATE-13: never a dead button).
+abstract final class ShareOut {
+  static const MethodChannel _channel = MethodChannel('oc/share');
+
+  static bool get supported => ShareIntent.supported;
+
+  /// Opens the share sheet with [text]; true once it opened. A missing or
+  /// failing platform side answers false, never throws.
+  static Future<bool> text(
+    String text, {
+    String? subject,
+    @visibleForTesting MethodChannel? channel,
+  }) async {
+    if (text.isEmpty) return false;
+    try {
+      final opened = await (channel ?? _channel).invokeMethod<bool>(
+        'shareText',
+        {'text': text, 'subject': ?subject},
+      );
+      return opened ?? false;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    }
+  }
+}

@@ -279,7 +279,7 @@ void main() {
       _en.capabilityScreenTitle: ['search-result-settings-server-capabilities'],
       'not available': ['search-result-settings-server-capabilities'],
       _en.e7LibraryReportABug: ['library-report-bug'],
-      _en.e7SettingsUi88: ['search-result-app-diagnostics-entry'],
+      _en.e7SettingsUi88: ['library-report-bug'],
       _en.e7SettingsUi92: ['search-result-settings-privacy-data-use'],
       _en.e7SettingsUi94: ['search-result-settings-voice-notices'],
       _en.e7SettingsUi96: ['settings-about-notices'],
@@ -324,7 +324,7 @@ void main() {
       'read state': ['settings-category-privacy'],
       'guide': ['search-result-settings-setup-guide'],
       'bug': ['library-report-bug'],
-      'diagnostics': ['search-result-app-diagnostics-entry'],
+      'diagnostics': ['library-report-bug'],
       'version': ['settings-about-notices'],
       'licenses': [
         'search-result-settings-voice-notices',
@@ -420,14 +420,14 @@ void main() {
     expect(nudges.offer(NudgeId.compact, scope: 'ses_1'), isTrue);
   });
 
-  testWidgets('Help holds the guide, capabilities, diagnostics and notices', (
+  testWidgets('Help holds the guide, capabilities, tips and notices', (
     tester,
   ) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
-    // The last panel is three rows (canvas): Report a bug, Help, About.
+    // The last panel is three rows (canvas): Report a problem, Help, About.
     final last = _row('settings-group-help');
     for (final key in [
       'library-report-bug',
@@ -460,10 +460,11 @@ void main() {
       'settings-try-demo',
       'settings-server-capabilities',
       'settings-show-tips-again',
-      'app-diagnostics-entry',
     ]) {
       expect(_row(key), findsOneWidget, reason: key);
     }
+    // App diagnostics merged into the hub's Report a problem row (P8.2).
+    expect(_row('app-diagnostics-entry'), findsNothing);
     expect(
       find.descendant(
         of: _row('settings-try-demo'),

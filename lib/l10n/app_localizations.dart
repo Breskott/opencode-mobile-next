@@ -6463,12 +6463,6 @@ abstract class AppLocalizations {
   /// **'Choose a server to see what needs your attention.'**
   String get launchUiActivityNoServer;
 
-  /// Queued draft bubble label while the offline flush is dispatching it
-  ///
-  /// In en, this message translates to:
-  /// **'Sending…'**
-  String get queuedSending;
-
   /// Queued draft bubble label for a send that left the device without a confirmed outcome; never resent automatically
   ///
   /// In en, this message translates to:
@@ -10954,12 +10948,6 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'No captured errors'**
-  String get e7SettingsUi89;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Connect a computer or run OpenCode on this phone'**
   String get e7SettingsUi91;
 
@@ -11099,12 +11087,6 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 handled error kept in memory} other{{count} handled errors kept in memory}}'**
-  String e7SettingsDiagnosticCount(int count);
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'OpenCode {version} is installed, but this server process is still running {current}. Restart that process on the server host; mobile will reconnect and confirm the running version.'**
   String e7SettingsRestartBody(String version, String current);
 
@@ -11165,12 +11147,6 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Diagnostics copied'**
-  String get e7SettingsDetailUi0;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Diagnostics sent to OpenCode'**
   String get e7SettingsDetailUi2;
 
@@ -11195,18 +11171,6 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Private until you send it'**
-  String get e7SettingsDetailUi7;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Handled app errors are redacted and kept only in memory. Your messages and file contents are not collected. Nothing is sent automatically.'**
-  String get e7SettingsDetailUi8;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Send'**
   String get e7SettingsDetailUi10;
 
@@ -11215,12 +11179,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This server doesn\'t accept client logs'**
   String get e7SettingsDetailUi12;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'No captured app errors'**
-  String get e7SettingsDetailUi13;
 
   /// Settings and appearance user interface.
   ///
@@ -11311,18 +11269,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OpenCode Mobile is an independent community project. It is not built, maintained, endorsed by, or affiliated with the official OpenCode team.'**
   String get e7SettingsNonAffiliation;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not send diagnostics: {error}'**
-  String e7SettingsDiagnosticSendError(String error);
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 handled error} other{{count} handled errors}}'**
-  String e7SettingsDiagnosticTotal(int count);
 
   /// Settings and appearance user interface.
   ///
@@ -15628,7 +15574,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: Report a bug
   ///
   /// In en, this message translates to:
-  /// **'Report a bug'**
+  /// **'Report a problem'**
   String get e7LibraryReportABug;
 
   /// Library and project tools UI: Keyboard shortcuts
@@ -25598,7 +25544,7 @@ abstract class AppLocalizations {
   /// Search aliases for the Report a bug row; preserve English terms.
   ///
   /// In en, this message translates to:
-  /// **'bug feedback issue support report'**
+  /// **'bug feedback issue support report problem crash diagnostics errors log github'**
   String get settingsHubSearchBugAliases;
 
   /// Search aliases for the App diagnostics row; preserve English terms.
@@ -37893,24 +37839,6 @@ abstract class AppLocalizations {
   /// **'Clear timings'**
   String get perfTraceClearTimings;
 
-  /// screen-system-1: App diagnostics primary: sends the captured errors to the connected server's own log.
-  ///
-  /// In en, this message translates to:
-  /// **'Send to {server}\'s log'**
-  String appDiagnosticsSendTo(String server);
-
-  /// screen-system-1: App diagnostics: says where Send goes, under the Send button.
-  ///
-  /// In en, this message translates to:
-  /// **'Adds these errors to the log of {server}. The app\'s makers don\'t receive them.'**
-  String appDiagnosticsSendWhere(String server);
-
-  /// screen-system-1: App diagnostics: notice after a successful send.
-  ///
-  /// In en, this message translates to:
-  /// **'Sent to {server}\'s log'**
-  String appDiagnosticsSentTo(String server);
-
   /// screen-system-1: App diagnostics secondary: copies the redacted error report.
   ///
   /// In en, this message translates to:
@@ -37932,7 +37860,7 @@ abstract class AppLocalizations {
   /// screen-system-1: Confirmation body before clearing the captured errors.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{The error recorded since the app opened is removed from this phone. This can\'t be undone.} other{The {count} errors recorded since the app opened are removed from this phone. This can\'t be undone.}}'**
+  /// **'{count, plural, =1{The error kept on this phone is removed, also from the saved report. This can\'t be undone.} other{The {count} errors kept on this phone are removed, also from the saved report. This can\'t be undone.}}'**
   String appDiagnosticsClearBody(int count);
 
   /// screen-system-1: Confirm button that clears the captured errors.
@@ -37940,12 +37868,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{Clear 1 error} other{Clear {count} errors}}'**
   String appDiagnosticsClearConfirm(int count);
-
-  /// screen-system-1: App diagnostics empty state body.
-  ///
-  /// In en, this message translates to:
-  /// **'Errors the app handles appear here until it closes. After a crash or a restart this list starts empty.'**
-  String get appDiagnosticsEmptyBody;
 
   /// screen-system-1: Available on this server: state word of a feature this server and device have.
   ///
@@ -38258,24 +38180,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open release page'**
   String get desktopReleaseOpenPage;
-
-  /// Report a bug sheet, shown when no browser opened the bug form: the link was copied instead.
-  ///
-  /// In en, this message translates to:
-  /// **'Your browser didn\'t open, so the link to the bug form is copied. Paste it into a browser to file the report.'**
-  String get bugReportBrowserDidNotOpen;
-
-  /// Report a bug sheet action: copies the bug form link again.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy bug form link'**
-  String get bugReportCopyLinkAgain;
-
-  /// Screen-reader announcement after the bug form link was copied.
-  ///
-  /// In en, this message translates to:
-  /// **'Bug form link copied'**
-  String get bugReportLinkCopied;
 
   /// Title of the sheet listing the agents and commands a conversation started (was 'Tasks', which also meant to-dos and team tasks).
   ///
@@ -40509,18 +40413,6 @@ abstract class AppLocalizations {
   /// **'Timing report actions'**
   String get perfTraceActions;
 
-  /// App diagnostics: copies the listed handled errors as text
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Copy 1 error} other{Copy {count} errors}}'**
-  String appDiagnosticsCopyCount(int count);
-
-  /// App diagnostics: name of the menu on the handled errors list header
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Actions for 1 error} other{Actions for {count} errors}}'**
-  String appDiagnosticsActions(int count);
-
   /// Voice model setup: a speech model pack that is not on the phone yet, with its download size, e.g. 'Not downloaded · 153 MB'
   ///
   /// In en, this message translates to:
@@ -41216,6 +41108,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A cloud machine for this project'**
   String get newConversationCloudDetail;
+
+  /// slice-P8.2 Report a problem: the line under the page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Say what went wrong. You see the whole report before anything leaves this phone.'**
+  String get reportProblemIntro;
+
+  /// slice-P8.2 Report a problem: the description field label.
+  ///
+  /// In en, this message translates to:
+  /// **'What happened?'**
+  String get reportProblemDescribeLabel;
+
+  /// slice-P8.2 Report a problem: the description field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'What you did, what you expected, what you got instead'**
+  String get reportProblemDescribeHint;
+
+  /// slice-P8.2 Report a problem: the description field error when Review is tapped with nothing to report.
+  ///
+  /// In en, this message translates to:
+  /// **'Say what happened first'**
+  String get reportProblemDescribeFirst;
+
+  /// slice-P8.2 Report a problem: the error the page was opened from.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached: {title}'**
+  String reportProblemAttached(String title);
+
+  /// slice-P8.2 Report a problem: the switch that adds the recent events.
+  ///
+  /// In en, this message translates to:
+  /// **'Include recent diagnostics'**
+  String get reportProblemIncludeDiagnostics;
+
+  /// slice-P8.2 Report a problem: what the switch adds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 event from this phone} other{{count} events from this phone}}, with keys, passwords and server addresses removed'**
+  String reportProblemIncludeDiagnosticsBody(int count);
+
+  /// slice-P8.2 Report a problem: the primary button and the preview sheet title.
+  ///
+  /// In en, this message translates to:
+  /// **'Review report'**
+  String get reportProblemReview;
+
+  /// slice-P8.2 Report a problem: what comes after Review.
+  ///
+  /// In en, this message translates to:
+  /// **'Then open it on GitHub, copy it or share it. Screenshots can be added on the GitHub form.'**
+  String get reportProblemReviewHint;
+
+  /// slice-P8.2 Report a problem: the recent errors list label.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 recent error} other{{count} recent errors}}'**
+  String reportProblemErrorsLabel(int count);
+
+  /// slice-P8.2 Report a problem: the saved report could not be deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t clear the saved report. Try again.'**
+  String get reportProblemClearFailed;
+
+  /// slice-P8.2 Report a problem: the preview sheet subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This is exactly what is sent'**
+  String get reportProblemPreviewSubtitle;
+
+  /// slice-P8.2 Report a problem: the preview sheet notice above the report.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub issues are public. Nothing is filed until you submit the form there.'**
+  String get reportProblemPublicNotice;
+
+  /// slice-P8.2 Report a problem: the preview sheet primary: opens the prefilled issue form.
+  ///
+  /// In en, this message translates to:
+  /// **'Open GitHub form'**
+  String get reportProblemOpenGitHub;
+
+  /// slice-P8.2 Report a problem: the prefill link cannot carry the diagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'The diagnostics are too long for the link. Opening the form copies them, so paste them into its Diagnostics field.'**
+  String get reportProblemLinkCopiesDiagnostics;
+
+  /// slice-P8.2 Report a problem: the prefill link cannot carry the report.
+  ///
+  /// In en, this message translates to:
+  /// **'The report is too long for the link. Opening the form copies it, so paste it into the form.'**
+  String get reportProblemLinkCopiesWhole;
+
+  /// slice-P8.2 Report a problem: the preview sheet Copy action.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy report'**
+  String get reportProblemCopy;
+
+  /// slice-P8.2 Report a problem: the announcement after Copy report.
+  ///
+  /// In en, this message translates to:
+  /// **'Report copied'**
+  String get reportProblemCopied;
+
+  /// slice-P8.2 Report a problem: the announcement when opening the form copied the diagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics copied: paste them into the form'**
+  String get reportProblemDiagnosticsCopied;
+
+  /// slice-P8.2 Report a problem: the preview sheet Share action.
+  ///
+  /// In en, this message translates to:
+  /// **'Share report'**
+  String get reportProblemShare;
+
+  /// slice-P8.2 Report a problem: the announcement when the share sheet failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing didn\'t open, so the report is copied'**
+  String get reportProblemShareFallback;
+
+  /// slice-P8.2 Report a problem: the Settings row badge semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 error kept} other{{count} errors kept}}'**
+  String reportProblemErrorBadge(int count);
 }
 
 class _AppLocalizationsDelegate

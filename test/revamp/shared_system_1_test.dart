@@ -28,7 +28,7 @@ Widget _app(Widget child, {Map<String, WidgetBuilder> routes = const {}}) =>
 void main() {
   group('ProductErrorState is a KitStateView', () {
     testWidgets('an unexpected error: a title, the cause, Try again and '
-        'Report a bug', (tester) async {
+        'Report a problem', (tester) async {
       var retried = 0;
       await tester.pumpWidget(
         _app(
@@ -41,7 +41,7 @@ void main() {
       expect(find.byType(KitStateView), findsOneWidget);
       expect(find.text("Couldn't load this"), findsOneWidget);
       expect(find.text('The file list is not available.'), findsOneWidget);
-      expect(find.text('Report a bug'), findsOneWidget);
+      expect(find.text('Report a problem'), findsOneWidget);
       expect(find.text('Switch server'), findsNothing);
       await tester.tap(find.text('Try again'));
       expect(retried, 1);
@@ -61,7 +61,7 @@ void main() {
         ),
       );
       expect(find.text("Can't reach the server"), findsOneWidget);
-      expect(find.text('Report a bug'), findsNothing);
+      expect(find.text('Report a problem'), findsNothing);
       await tester.tap(find.text('Switch server'));
       await tester.pumpAndSettle();
       expect(find.text('Server list'), findsOneWidget);
