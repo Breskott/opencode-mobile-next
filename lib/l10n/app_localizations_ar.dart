@@ -1341,10 +1341,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'اتصل بخادم لفتح النص المشترك في محادثة جديدة.';
 
   @override
-  String get shareSessionFailed =>
-      'احتُفظ بالنص المشترك. تعذّر فتح محادثة. أعد المحاولة عندما يكون الاتصال جاهزًا.';
-
-  @override
   String get webSourcesDisclosure =>
       'لا يتاح البحث في الويب عبر بوابة التطبيق لهذا الخادم. الصق رابطًا عامًا، ويمكنك إضافة مقتطف تريد تضمينه. لن تُجلب أي صفحة، ولن يُرسل شيء إلى النموذج هنا.';
 
@@ -3476,11 +3472,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر الاتصال بالخادم المحفوظ. اختر خادمًا أو أصلح اتصاله، ثم ابدأ محادثة جديدة.';
 
   @override
-  String launchShortcutNewTaskFailed(String error) {
-    return 'تعذّر بدء محادثة جديدة. $error';
-  }
-
-  @override
   String get launchUiPinnedUntitled => 'محادثة بلا عنوان';
 
   @override
@@ -4816,16 +4807,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7ConnectionFailure9 => 'تعذّر الوصول إلى نقطة اتصال Codex';
 
   @override
-  String e7ConnectionFailure10(String hostLabel, int port) {
-    return 'يشير $hostLabel:$port إلى خدمة استقبال اتصالات Codex محلية، لكن لم تصل أي استجابة.';
-  }
-
-  @override
-  String e7ConnectionFailure11(String hostLabel, int port) {
-    return 'لم تصل أي استجابة من نقطة اتصال Codex البعيدة $hostLabel:$port.';
-  }
-
-  @override
   String get e7ConnectionFailure12 =>
       'شغّل خدمة استقبال اتصالات Codex على هذا الجهاز.';
 
@@ -4875,11 +4856,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7ConnectionFailure24 => 'لا خدمة تستقبل الاتصالات على هذا الجهاز';
 
   @override
-  String e7ConnectionFailure25(String hostLabel, int port) {
-    return 'يعني $hostLabel:$port أن الخادم يفترض أن يعمل على هذا الجهاز، أو يُتاح عبر نفق ينتهي هنا. لم يستجب أي منهما.';
-  }
-
-  @override
   String get e7ConnectionFailure26 =>
       'هل تشغّل OpenCode في Termux؟ افتح Termux وتأكّد من أن الخادم ما زال قيد التشغيل.';
 
@@ -4895,11 +4871,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7ConnectionFailure29 => 'لم يستجب الخادم في الوقت المحدد';
 
   @override
-  String e7ConnectionFailure30(String hostLabel) {
-    return 'توجد خدمة على $hostLabel، لكنها لم تستجب. تكون المشكلة عادةً في الشبكة بين الجهازين، لا في الخادم.';
-  }
-
-  @override
   String get e7ConnectionFailure31 =>
       'هل أنت متصل بالشبكة نفسها أو بشبكة VPN نفسها (مثل Tailscale) التي يتصل بها الكمبيوتر؟';
 
@@ -4910,11 +4881,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7ConnectionFailure33 => 'تعذّر الوصول إلى الخادم';
-
-  @override
-  String e7ConnectionFailure34(String hostLabel, int port) {
-    return 'لم تصل أي استجابة من $hostLabel:$port. إما أن الخادم متوقف، أو أن هذا الجهاز لا يستطيع الوصول إلى ذلك العنوان.';
-  }
 
   @override
   String get e7ConnectionFailure35 =>
@@ -4944,11 +4910,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7ConnectionFailure42 => 'تعذّر الاتصال';
-
-  @override
-  String e7ConnectionFailure43(String hostLabel) {
-    return 'فشل الاتصال بـ $hostLabel. التفاصيل أدناه.';
-  }
 
   @override
   String get e7ConnectionFailure44 =>
@@ -5601,18 +5562,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر حفظ اللغة. لا يزال اختيارك السابق مفعّلًا. اختر لغة للمحاولة مجددًا.';
 
   @override
-  String get e7LocaleUiStarting => 'جارٍ بدء OpenCode…';
-
-  @override
-  String get e7LocaleUiStartFailed => 'تعذّر بدء OpenCode';
-
-  @override
-  String get e7LocaleUiUnknownStartupError => 'خطأ غير معروف عند بدء التشغيل';
-
-  @override
-  String get e7LocaleUiRetry => 'إعادة المحاولة';
-
-  @override
   String get e7LocaleUiNewSession => 'محادثة جديدة';
 
   @override
@@ -5698,9 +5647,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7LocaleUiContextKeys => 'نقرة بالزر الأيمن / Shift + F10 / Menu';
-
-  @override
-  String get e7LocaleUiShareScopeChanged => 'تغيّر نطاق المحادثة المشتركة';
 
   @override
   String get e7LocaleUiConnectionChanged => 'تغيّر الخادم.';
@@ -17496,9 +17442,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'سيتوقف أي دور قيد التشغيل للوكيل. تبقى محادثاتك محفوظة.';
 
   @override
-  String get workChooseAnotherServer => 'اختيار خادم آخر';
-
-  @override
   String get workStale => 'قد لا يكون هذا محدّثًا';
 
   @override
@@ -26638,4 +26581,73 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get consentNeedsYouAllow => 'Turn on notifications';
+
+  @override
+  String get bootstrapOpeningTitle => 'Opening…';
+
+  @override
+  String get bootstrapOpeningBody => 'Reading your saved servers.';
+
+  @override
+  String get bootstrapFailedTitle => 'Can\'t read saved servers';
+
+  @override
+  String get bootstrapFailedBody =>
+      'If your phone just restarted, unlock it, then try again.';
+
+  @override
+  String get shareFailedLine =>
+      'Shared text saved · couldn\'t open a conversation';
+
+  @override
+  String get shareFailedAgainLine =>
+      'Still couldn\'t open a conversation · shared text saved';
+
+  @override
+  String get shareFailedCopy => 'Copy shared text';
+
+  @override
+  String get shareFailedDiscard => 'Discard shared text';
+
+  @override
+  String get shareDiscarded => 'Shared text discarded';
+
+  @override
+  String get shareConnectionChanged =>
+      'The server or project changed while it opened. Try again.';
+
+  @override
+  String get appNewConversationFailed => 'Couldn\'t start a new conversation';
+
+  @override
+  String get rootPhoneServerStartFailed =>
+      'OpenCode on this phone didn\'t start';
+
+  @override
+  String get connectionFailureLocalCodexBody =>
+      'A local Codex listener should answer on this phone, but nothing did.';
+
+  @override
+  String get connectionFailureRemoteCodexBody =>
+      'Nothing answered at the Codex endpoint.';
+
+  @override
+  String get connectionFailureLoopbackBody =>
+      'This address means the server runs on this phone, or is reached through a tunnel that ends here. Neither answered.';
+
+  @override
+  String get connectionFailureTimedOutBody =>
+      'Something is at that address, but it did not reply. Usually the network in between, not the server.';
+
+  @override
+  String get connectionFailureNothingAnsweredBody =>
+      'Nothing answered. Either the server is not running, or this phone cannot reach its address.';
+
+  @override
+  String get connectionFailureUnknownBody =>
+      'The connection failed. What went wrong is under Details.';
+
+  @override
+  String get connectionFailureTailnetCheck =>
+      'This is a Tailscale address: is Tailscale on, on this phone and on the server?';
 }
