@@ -1,8 +1,50 @@
+/// The Language row and sheet (map page `language-sheet`): the app's
+/// language as one check-mark choice on the kit sheet, like the other
+/// settings choices. A tap chooses and closes; a refused save keeps the sheet
+/// open with the old choice and says so.
+///
+/// Arabic is offered honestly (COPY-29, target-ia cross-cutting): its choice
+/// says "Partly translated (N %)", N being [arabicTranslatedPercent].
+library;
+
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
+import '../app_iconography.dart';
+import '../app_theme.dart' show AppStatusTone;
+import '../kit/kit_choice_list.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_row_parts.dart' show KitChevron;
+import '../kit/kit_sheet.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
 
+/// How much of the app reads in Arabic, in whole per cent: the Arabic
+/// catalogue's entries over every string a person can see (the English
+/// catalogue plus the literals `test/l10n_coverage_test.dart` still counts
+/// in the code). `test/revamp/shared_settings_1_test.dart` recomputes it
+/// from the files and fails when this drifts by more than 3 points; update
+/// the number it prints then.
+const int arabicTranslatedPercent = 90;
+
+/// Opens the Language sheet.
+Future<void> showLanguageSheet(
+  BuildContext context, {
+  required ConnectionController controller,
+}) {
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  return showKitSheet<void>(
+    context,
+    title: l10n.e7LocaleUiLanguage,
+    sheetKey: const ValueKey('language-sheet'),
+    body: (_) => _LanguageSheet(controller: controller),
+  );
+}
+
+/// The settings row that opens the Language sheet, showing the choice in
+/// use.
 class LanguageSettingsTile extends StatelessWidget {
   const LanguageSettingsTile({super.key, required this.controller});
 
@@ -13,30 +55,25 @@ class LanguageSettingsTile extends StatelessWidget {
     valueListenable: controller.appLocale,
     builder: (context, locale, _) {
       final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-      return ListTile(
-        leading: const Icon(Icons.language_rounded),
-        title: Text(l10n.e7LocaleUiLanguage),
-        subtitle: Text(_localeLabel(l10n, locale)),
-        trailing: const Icon(Icons.chevron_right_rounded),
-        minVerticalPadding: 12,
-        onTap: () => showModalBottomSheet<void>(
-          context: context,
-          useSafeArea: true,
-          isScrollControlled: true,
-          enableDrag: false,
-          builder: (_) => _LanguageSheet(controller: controller),
-        ),
+      return KitRow(
+        leading: KitRow.icon(context, AppIconography.globe),
+        title: l10n.e7LocaleUiLanguage,
+        supporting: TextSpan(text: _localeLabel(l10n, _code(locale))),
+        trailing: const KitChevron(),
+        onTap: () => showLanguageSheet(context, controller: controller),
       );
     },
   );
 }
 
-String _localeLabel(AppLocalizations l10n, Locale? locale) =>
-    switch (locale?.languageCode) {
-      'ar' => l10n.e7LocaleUiArabic,
-      'en' => l10n.e7LocaleUiEnglish,
-      _ => l10n.e7LocaleUiSystem,
-    };
+/// '' follows the system; otherwise a language code.
+String _code(Locale? locale) => locale?.languageCode ?? '';
+
+String _localeLabel(AppLocalizations l10n, String code) => switch (code) {
+  'ar' => l10n.e7LocaleUiArabic,
+  'en' => l10n.e7LocaleUiEnglish,
+  _ => l10n.e7LocaleUiSystem,
+};
 
 class _LanguageSheet extends StatefulWidget {
   const _LanguageSheet({required this.controller});
@@ -50,15 +87,19 @@ class _LanguageSheetState extends State<_LanguageSheet> {
   bool _saving = false;
   bool _failed = false;
 
-  Future<void> _select(Locale? locale) async {
+  Future<void> _select(String code) async {
     if (_saving) return;
+    if (code == _code(widget.controller.appLocale.value)) {
+      KitSheet.close<void>(context);
+      return;
+    }
     setState(() {
       _saving = true;
       _failed = false;
     });
     try {
-      await widget.controller.setAppLocale(locale);
-      if (mounted) Navigator.of(context).pop();
+      await widget.controller.setAppLocale(code.isEmpty ? null : Locale(code));
+      if (mounted) KitSheet.close<void>(context);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -71,75 +112,52 @@ class _LanguageSheetState extends State<_LanguageSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
     return PopScope(
       canPop: !_saving,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * .85,
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.e7LocaleUiLanguage,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          KitText(l10n.e7LocaleUiDescription, role: KitTextRole.secondary),
+          SizedBox(height: tokens.space3),
+          KitChoiceList<String>.single(
+            semanticsLabel: l10n.e7LocaleUiLanguage,
+            choices: [
+              for (final code in const ['', 'en', 'ar'])
+                KitChoice(
+                  value: code,
+                  key: ValueKey(
+                    'language-choice-${code.isEmpty ? 'system' : code}',
                   ),
-                  IconButton(
-                    onPressed: _saving ? null : () => Navigator.pop(context),
-                    tooltip: l10n.e7LocaleUiClose,
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(0, 8, 0, 12),
-                child: Text(l10n.e7LocaleUiDescription),
-              ),
-              for (final locale in <Locale?>[
-                null,
-                const Locale('en'),
-                const Locale('ar'),
-              ])
-                ListTile(
-                  minVerticalPadding: 16,
-                  title: Text(_localeLabel(l10n, locale)),
-                  selected: widget.controller.appLocale.value == locale,
-                  trailing: widget.controller.appLocale.value == locale
-                      ? const Icon(Icons.check_rounded)
+                  title: _localeLabel(l10n, code),
+                  supporting: code == 'ar'
+                      ? l10n.languagePickerPartlyTranslated(
+                          arabicTranslatedPercent,
+                        )
                       : null,
-                  enabled: !_saving,
-                  onTap: () => _select(locale),
-                ),
-              if (_saving)
-                Semantics(
-                  liveRegion: true,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(l10n.e7LocaleUiSaving),
-                  ),
-                ),
-              if (_failed)
-                Semantics(
-                  liveRegion: true,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      l10n.e7LocaleUiSaveFailed,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ),
                 ),
             ],
+            selected: _code(widget.controller.appLocale.value),
+            onSelected: _select,
           ),
-        ),
+          if (_saving) ...[
+            SizedBox(height: tokens.space2),
+            KitNotice(
+              key: const ValueKey('language-saving'),
+              message: l10n.e7LocaleUiSaving,
+              tone: AppStatusTone.progress,
+            ),
+          ],
+          if (_failed) ...[
+            SizedBox(height: tokens.space2),
+            KitNotice(
+              key: const ValueKey('language-save-failed'),
+              message: l10n.e7LocaleUiSaveFailed,
+              tone: AppStatusTone.failure,
+            ),
+          ],
+        ],
       ),
     );
   }

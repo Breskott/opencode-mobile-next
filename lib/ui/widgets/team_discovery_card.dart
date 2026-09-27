@@ -1,8 +1,9 @@
 /// The one-time discovery offer of 02-ux §1.2: when the connected server
 /// has no AI Team config and its own host answers like a Gas City on port
 /// 8373 (the host front, which gives controls) or 8372 (the bare
-/// supervisor, read-only), a quiet card asks "… also runs an AI team. Turn
-/// it on?". The front port is tried first and preferred. Never a
+/// supervisor, read-only), a quiet kit panel asks "… also runs an AI team.
+/// Turn it on?", says what was found, and stacks Turn on over Not now on a
+/// phone. The front port is tried first and preferred. Never a
 /// modal; "Not now" is remembered per server through
 /// [OrchestrationStore.dismissDiscovery]. Absent from the tree in every
 /// other state, so a screen can place it unconditionally (TEAM-107 puts it
@@ -18,6 +19,11 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/profiles.dart';
 import '../app_theme.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_surface.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
 import 'team_host_form.dart';
 
 /// What discovery found for a profile, shared with the Plugins row so it can
@@ -127,17 +133,25 @@ class TeamDiscovery extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Saves the found host on the profile and starts the plugin.
+  /// Saves the found host on the profile and starts the plugin. A failed
+  /// save leaves the profile as it was and rethrows.
   Future<void> turnOn() async {
     final profile = controller.profile;
     final result = _result;
     if (profile == null || result == null) return;
+    final previous = profile.orchestration;
     profile.orchestration = teamConfigFromVerdict(
       result.found,
       url: result.found.front ? result.found.host.url : result.url,
       city: result.found.city ?? '',
     );
-    await controller.store.upsert(profile);
+    try {
+      await controller.store.upsert(profile);
+    } catch (_) {
+      // Nothing changed: the offer stays and says the save failed.
+      profile.orchestration = previous;
+      rethrow;
+    }
     controller.syncOrchestration();
     _reset();
   }
@@ -165,6 +179,8 @@ class TeamDiscoveryCard extends StatefulWidget {
 class _TeamDiscoveryCardState extends State<TeamDiscoveryCard> {
   late TeamDiscovery _discovery;
   bool _owned = false;
+  bool _turningOn = false;
+  bool _failed = false;
 
   @override
   void initState() {
@@ -216,6 +232,21 @@ class _TeamDiscoveryCardState extends State<TeamDiscoveryCard> {
     super.dispose();
   }
 
+  Future<void> _turnOn() async {
+    if (_turningOn) return;
+    setState(() {
+      _turningOn = true;
+      _failed = false;
+    });
+    try {
+      await _discovery.turnOn();
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    } finally {
+      if (mounted) setState(() => _turningOn = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final result = _discovery.result;
@@ -224,53 +255,47 @@ class _TeamDiscoveryCardState extends State<TeamDiscoveryCard> {
       return const SizedBox.shrink();
     }
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    return Card(
-      key: const ValueKey('team-discovery-card'),
-      margin: const EdgeInsets.fromLTRB(4, 4, 4, 12),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+    final tokens = KitTokens.of(context);
+    return Padding(
+      padding: EdgeInsetsDirectional.only(bottom: tokens.space3),
+      child: KitSurface.panel(
+        key: const ValueKey('team-discovery-card'),
+        icon: AppIconography.extensions,
+        title: l10n.teamUiDiscoveryTitle(profile.name),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  AppIconography.extensions,
-                  size: 22,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    l10n.teamUiDiscoveryTitle(profile.name),
-                    style: theme.textTheme.titleMedium?.copyWith(height: 1.3),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
+            KitText(
               teamFoundCopy(l10n, result.found),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-              ),
+              role: KitTextRole.secondary,
             ),
-            const SizedBox(height: 6),
-            Wrap(
-              alignment: WrapAlignment.end,
-              spacing: 4,
-              children: [
-                TextButton(
+            if (_failed) ...[
+              SizedBox(height: tokens.space2),
+              KitNotice(
+                key: const ValueKey('team-discovery-failed'),
+                message: l10n.teamDiscoveryCardTurnOnFailed,
+                tone: AppStatusTone.failure,
+              ),
+            ],
+            SizedBox(height: tokens.space3),
+            KitActionBlock(
+              primary: KitAction(
+                key: const ValueKey('team-discovery-turn-on'),
+                label: l10n.teamUiDiscoveryTurnOn,
+                working: _turningOn,
+                onPressed: _turnOn,
+              ),
+              tertiary: [
+                KitAction(
                   key: const ValueKey('team-discovery-not-now'),
-                  onPressed: () => unawaited(_discovery.dismiss()),
-                  child: Text(l10n.teamUiDiscoveryNotNow),
-                ),
-                FilledButton(
-                  key: const ValueKey('team-discovery-turn-on'),
-                  onPressed: () => unawaited(_discovery.turnOn()),
-                  child: Text(l10n.teamUiDiscoveryTurnOn),
+                  label: l10n.teamUiDiscoveryNotNow,
+                  onPressed: _turningOn
+                      ? null
+                      : () => unawaited(_discovery.dismiss()),
+                  disabledReason: _turningOn
+                      ? l10n.teamDiscoveryCardTurningOn
+                      : null,
                 ),
               ],
             ),
