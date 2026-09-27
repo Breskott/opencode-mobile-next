@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/development_service.dart';
 import '../../domain/server_gateway.dart';
+import '../../feedback/bug_report.dart' show openFailedJobReport;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/development_service_store.dart';
@@ -397,6 +398,21 @@ class _DevelopmentServicesScreenState extends State<DevelopmentServicesScreen>
     }
   }
 
+  /// Reads the log again, so the report carries this run's current tail
+  /// and not an older read, then opens Report a problem with it. A failed
+  /// read keeps the sheet open with its error and Refresh.
+  /// [sheet] is the logs sheet's context; the page opens from this
+  /// screen's once the sheet is closed.
+  Future<void> _report(BuildContext sheet, DevelopmentService service) async {
+    await _model.readLogs(service.id);
+    if (!_current || _model.error != null || !sheet.mounted) return;
+    final report = _model.failedReport(service.id);
+    if (report == null) return;
+    Navigator.of(sheet).pop();
+    if (!mounted) return;
+    unawaited(openFailedJobReport(context, report));
+  }
+
   Widget _logBody(
     BuildContext context,
     DevelopmentService service,
@@ -439,6 +455,18 @@ class _DevelopmentServicesScreenState extends State<DevelopmentServicesScreen>
           ended: stopped ? KitLogEnd(exitCode: _model.exitCode(service)) : null,
           emptyText: l.servicesLogEmpty,
           onRefresh: stopped ? null : () => _model.readLogs(service.id),
+          // A failed run (nonzero exit, timeout, killed) is reported from
+          // the log it failed with (P8.4).
+          headerAction: _model.failedReport(service.id) == null
+              ? null
+              : KitAction(
+                  key: ValueKey('development-service-report-${service.id}'),
+                  label: l.failedJobReport,
+                  icon: AppIconography.bug,
+                  onPressed: _model.busy
+                      ? null
+                      : () => _report(context, service),
+                ),
         ),
       ],
     );

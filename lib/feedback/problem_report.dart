@@ -223,6 +223,18 @@ class ProblemReport {
       ..write('Platform: $platform');
 
     final lines = <String>[];
+    // A failed job's log (P8.4) leads the diagnostics: it is part of the
+    // attached failure, so the "recent diagnostics" choice does not drop it.
+    if (error?.log case final log?) {
+      final excerpt = problemReportScrub(log.trimRight());
+      lines
+        ..add(
+          excerpt.isEmpty
+              ? 'Failed job log: none was kept'
+              : 'Failed job log (last lines)',
+        )
+        ..addAll([if (excerpt.isNotEmpty) excerpt, '']);
+    }
     var errors = 0;
     var timings = 0;
     for (final event in events) {
@@ -267,8 +279,9 @@ class ProblemReport {
   /// "1.0.44+50": the form's "App version" field.
   final String version;
 
-  /// The recent events, newest first; empty when none are included: the
-  /// form's "Diagnostics or logs" field.
+  /// A failed job's log (when one is attached), then the recent events,
+  /// newest first; empty when neither is included: the form's
+  /// "Diagnostics or logs" field.
   final String diagnostics;
 
   /// The whole report, as previewed, copied and shared. A title taken from

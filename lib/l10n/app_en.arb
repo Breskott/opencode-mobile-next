@@ -30751,5 +30751,17 @@
   "handoffUiLinkAddServer": "Add server",
   "@handoffUiLinkAddServer": {
     "description": "Session link sheet: opens Add server."
+  },
+  "failedJobReport": "Report this failure",
+  "@failedJobReport": {
+    "description": "P8.4: action on a failed job (setup step, AI Team start, failed team run, failed dev service) that opens Report a problem with the job's log attached"
+  },
+  "reportProblemJobLog": "Log of the failed job",
+  "@reportProblemJobLog": {
+    "description": "P8.4: title of the log panel on Report a problem when a failed job's log is attached"
+  },
+  "reportProblemJobLogNone": "No log was kept for this job, so none is attached.",
+  "@reportProblemJobLogNone": {
+    "description": "P8.4: Report a problem, a failed job is attached but no log could be kept for it"
   }
 }
