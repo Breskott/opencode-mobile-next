@@ -236,7 +236,7 @@
     "templates": {
       "path": "../tool/sdk/templates",
       "algorithm": "sha256(relative-path-nul-bytes-v1)",
-      "sha256": "f4476a028e784978c223a64a936149cef9dd5e6cf434ab2aea3aab1bdd3975c3"
+      "sha256": "adab6661a9f44a536786ea4014bfbbc634e2d555028d9500b4b14cabca555e58"
     },
     "testTemplates": {
       "paths": [

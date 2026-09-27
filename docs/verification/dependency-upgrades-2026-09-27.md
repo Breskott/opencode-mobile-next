@@ -23,3 +23,15 @@ Command: `flutter test --no-pub --concurrency=1 test/local_agent_runtime_test.da
 Result: **80 passed, 1 skipped, 1 failed**. Shellcheck is unavailable (existing optional skip). The onboarding restart/stop confirmation test expects the interruption warning to be absent; the warning is present. The exact same test fails at base `e7762e60` with Paseo 0.9.1. No new failure identified; existing UI/test left unchanged.
 
 Device checks owed: explicit install/repair, node-pty loading, authenticated hello, Claude create/send/stream/approve/cancel, history/reconnect, repeated connection teardown and idle CPU/RSS, restart/reboot/stale-PID recovery. Capture the Claude version because repair also updates unpinned Claude Code.
+
+## 3. Dio 5.11.1 through the SDK generator
+
+Changed the pubspec/README generator templates. Used pinned `dart pub get` in a temporary directory containing the SDK manifest and lock; its only resolved-package change was Dio. Copied that **solver-produced** lock back as generator input, then ran `bash tool/sdk/generate.sh`. No generated source or generated pubspec was hand-edited.
+
+The first generation stopped before publishing because the reviewed template edit invalidated the recorded source hash. The independent verifier passes at the original base. Recomputed hashes with `verify_artifacts_independent.dart --print-source-hashes`: only `templates` changed, so only that manifest hash was refreshed. Generation then passed its contract/matrix/hash verifiers, 47 internal SDK tests, analyzer and compiled smoke. Generated API/model/runtime Dart hashes remain identical; no Dart source diff or formatter change was introduced.
+
+Explicit checks in the published `packages/opencode_sdk/`: `dart analyze` **clean**; `dart test --concurrency=1` **47 passed**. Root `flutter pub get` changed only the Dio lock entry for this item.
+
+App command: `flutter test --no-pub --concurrency=1 test/api2_transport_test.dart test/api2_sse_test.dart test/connection_sse_test.dart test/server_probe_test.dart` — **67 passed**. All named files existed.
+
+Device checks owed: sustained paused/large SSE responses, cancellation/reconnect and bounded RSS/socket backpressure across OpenCode/Gas City/quota streams; retain auth-header and diagnostic redaction behavior. Ordinary transport fixtures do not establish the memory improvement on a phone.
