@@ -248,6 +248,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final switchError = _switchError;
     final busy = _loading || _busyProjectID != null;
     return KitScreen(
+      width: KitScreenWidth.list,
       topBar: KitTopBar(
         title: l10n.e7ProjectProjectsTitle,
         actions: [
@@ -398,6 +399,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final directory = widget.controller.directory;
     final hasDirectory = directory != null && directory.isNotEmpty;
     return KitScreen(
+      width: KitScreenWidth.reading,
       topBar: KitTopBar(title: l10n.e7ProjectProjectsTitle),
       body: ListView(
         key: const ValueKey('projects-context-list'),

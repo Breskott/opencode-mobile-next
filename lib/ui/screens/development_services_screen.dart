@@ -452,6 +452,7 @@ class _DevelopmentServicesScreenState extends State<DevelopmentServicesScreen>
     final current = _current;
     final services = current ? _model.services : const <DevelopmentService>[];
     return KitScreen(
+      width: KitScreenWidth.list,
       topBar: KitTopBar(
         title: l.servicesTitle,
         actions: [
