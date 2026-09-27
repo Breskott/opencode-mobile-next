@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 
 import '../tool/capture/fixtures.dart'
@@ -37,15 +38,15 @@ void main() {
       expect(find.text('Find in conversation'), findsOneWidget);
       expect(find.text('Timeline'), findsOneWidget);
       expect(find.text('Retry last prompt'), findsNothing);
-      expect(find.byType(SwitchListTile), findsNothing);
+      expect(find.byType(KitSwitchRow), findsNothing);
       await tester.tap(find.text('Display and context'));
       await tester.pumpAndSettle();
-      expect(find.byType(SwitchListTile), findsNWidgets(2));
+      expect(find.byType(KitSwitchRow), findsNWidgets(2));
       await tester.tap(find.byKey(const ValueKey('session-view-thinking')));
       await tester.pumpAndSettle();
       expect(
         tester
-            .widget<SwitchListTile>(
+            .widget<KitSwitchRow>(
               find.byKey(const ValueKey('session-view-thinking')),
             )
             .value,

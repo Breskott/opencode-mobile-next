@@ -260,6 +260,7 @@ void main() {
                 : 'Close model selector',
           );
           await tester.ensureVisible(close);
+          await tester.pumpAndSettle();
           await tester.tap(close);
           expect(closed, isTrue);
         },
