@@ -69,6 +69,9 @@ const ServerCapabilities api2ServerCapabilities = ServerCapabilities(
   legacyQuestionRequests: false,
   forms: true,
   inbox: true,
+  // AI setup inspection; reversible config writes remain unavailable.
+  setupConfigRead: true,
+  setupMcpInventory: true,
 );
 
 // ---------------- Health / sessions ----------------

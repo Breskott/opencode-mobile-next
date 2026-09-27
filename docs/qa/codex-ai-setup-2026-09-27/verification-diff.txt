@@ -1,0 +1,3 @@
+git diff --check: PASS
+Markdown relative links in contract and QA records: PASS
+No UI, native Kotlin, generated SDK, main.dart, connection.dart or product_repository.dart changes.
