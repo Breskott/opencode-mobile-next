@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/server_gateway.dart';
@@ -244,19 +246,57 @@ abstract final class InteractionDefaults {
   );
 }
 
-/// One instance per active profile. Existing settings remain their owners'
-/// responsibility: only the last project and notice IDs are persisted here.
-/// No cached reads; ProfileStore's deletion sweep removes these keys.
+/// One shared writer per preference store and profile. The profile deletion
+/// sweep stops admission and drains this owner before discovering its keys.
 class InteractionDefaultsStore {
-  InteractionDefaultsStore(this.preferences, {required this.profileID}) {
+  factory InteractionDefaultsStore(
+    SharedPreferences preferences, {
+    required String profileID,
+  }) {
     if (profileID.isEmpty || KitRedact.containsSecret(profileID)) {
       throw ArgumentError('A non-secret profile identifier is required');
     }
+    final owners = _shared[preferences] ??= {};
+    return owners[profileID] ??= InteractionDefaultsStore._(
+      preferences,
+      profileID,
+    );
+  }
+
+  InteractionDefaultsStore._(this.preferences, this.profileID);
+
+  static final _shared = Expando<Map<String, InteractionDefaultsStore>>();
+
+  /// Keeps the closed owner registered: a new screen must not reopen admission
+  /// between the preference sweep and the profile row's removal.
+  static Future<void> closeProfile(SharedPreferences preferences, String id) {
+    final owner = InteractionDefaultsStore(preferences, profileID: id);
+    owner._closed = true;
+    return owner.drain();
   }
 
   final SharedPreferences preferences;
   final String profileID;
   Future<void> _pending = Future<void>.value();
+  bool _closed = false;
+
+  bool get _present {
+    try {
+      final raw = preferences.getString('oc.profiles');
+      if (raw == null) return false;
+      final profiles = jsonDecode(raw);
+      return profiles is List &&
+          profiles.any((p) => p is Map && p['id'] == profileID);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _checkAdmission() {
+    if (_closed || !_present)
+      throw StateError('Server defaults are unavailable');
+  }
+
   String get _projectKey => 'oc.defaultProject.$profileID';
   String get _noticesKey => 'oc.defaultNotices.$profileID';
 
@@ -312,7 +352,16 @@ class InteractionDefaultsStore {
   }
 
   Future<T> _serialize<T>(Future<T> Function() action) {
-    final result = _pending.then((_) => action());
+    // Check both at admission and when queued work actually starts.
+    try {
+      _checkAdmission();
+    } catch (error, stack) {
+      return Future<T>.error(error, stack);
+    }
+    final result = _pending.then((_) {
+      _checkAdmission();
+      return action();
+    });
     _pending = result.then<void>((_) {}, onError: (Object _) {});
     return result;
   }

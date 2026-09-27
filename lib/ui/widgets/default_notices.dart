@@ -26,6 +26,7 @@ Future<String?> claimDefaultNotice<T>({
     return _saidThisRun.add(kind) ? choice.label : null;
   }
   try {
+    // The factory shares the same admission/drain owner with profile deletion.
     final store = InteractionDefaultsStore(
       prefs ?? await SharedPreferences.getInstance(),
       profileID: profileId,

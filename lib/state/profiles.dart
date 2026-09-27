@@ -18,6 +18,7 @@ import '../platform/platform_capabilities.dart';
 // A plain value type (no widgets): the person's effect choices.
 import 'effects.dart' show KitEffects, KitMotionLevel;
 import 'model_library.dart';
+import 'interaction_defaults.dart';
 
 export '../api/server_probe.dart' show ServerFlavor;
 export '../domain/loopback_host.dart' show isLoopbackHost;
@@ -905,6 +906,10 @@ class ProfileStore {
   /// server had been removed. The caller decides what to do about a
   /// non-empty result; this method only refuses to lie about it.
   Future<Set<String>> removeScopedPreferences(String profileId) async {
+    if (profileId.isEmpty) return const {};
+    // This method already runs inside the controller's deletion transaction.
+    // Drain before key discovery so a late platform write cannot resurrect data.
+    await InteractionDefaultsStore.closeProfile(prefs, profileId);
     final failed = <String>{};
     for (final key in profileScopedPreferenceKeys(profileId)) {
       try {
