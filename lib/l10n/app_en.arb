@@ -28139,5 +28139,62 @@
   "bugReportLinkCopied": "Bug form link copied",
   "@bugReportLinkCopied": {
     "description": "Screen-reader announcement after the bug form link was copied."
+  },
+  "toolCardDelegatedTo": "Delegated to {agent}",
+  "@toolCardDelegatedTo": {
+    "description": "Chat tool step: a sub-agent the reply started, named by the agent the work was handed to (for example 'Delegated to explore'). Matches the AI Team worker line.",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "toolCardExitPassed": "Passed · exit code 0",
+  "@toolCardExitPassed": {
+    "description": "Chat shell step, caption over the command output: the command finished successfully (exit code 0), said in words first."
+  },
+  "toolCardExitFailed": "Failed · exit code {code}",
+  "@toolCardExitFailed": {
+    "description": "Chat shell step, caption over the command output: the command reported a failure with this non-zero exit code.",
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "toolCardRunCommandAgain": "Run this command again",
+  "@toolCardRunCommandAgain": {
+    "description": "Chat shell step, opened: button that runs the same command again in this conversation."
+  },
+  "toolCardCopyCommand": "Copy command",
+  "@toolCardCopyCommand": {
+    "description": "Chat shell step, opened: copy button on the command block."
+  },
+  "toolCardLoadImageAgain": "Load {name} again",
+  "@toolCardLoadImageAgain": {
+    "description": "Chat tool step: button on an image the tool produced whose preview failed to load; tries loading that image again.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "toolCardChangesIn": "Changes in {file}",
+  "@toolCardChangesIn": {
+    "description": "Title of the read-only diff page opened from a chat edit step: the file name, or a file count such as '3 files'.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "mobileTasksShowAll": "Show all {count} tasks",
+  "@mobileTasksShowAll": {
+    "description": "Agent plan inside a chat Work step: unfolds a long plan that shows only a window of tasks around the current one.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

@@ -24334,4 +24334,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bugReportLinkCopied => 'Bug form link copied';
+
+  @override
+  String toolCardDelegatedTo(String agent) {
+    return 'Delegated to $agent';
+  }
+
+  @override
+  String get toolCardExitPassed => 'Passed · exit code 0';
+
+  @override
+  String toolCardExitFailed(int code) {
+    return 'Failed · exit code $code';
+  }
+
+  @override
+  String get toolCardRunCommandAgain => 'Run this command again';
+
+  @override
+  String get toolCardCopyCommand => 'Copy command';
+
+  @override
+  String toolCardLoadImageAgain(String name) {
+    return 'Load $name again';
+  }
+
+  @override
+  String toolCardChangesIn(String file) {
+    return 'Changes in $file';
+  }
+
+  @override
+  String mobileTasksShowAll(int count) {
+    return 'Show all $count tasks';
+  }
 }
