@@ -22,6 +22,8 @@
 /// | [KitRequestCard] | §2, §3 a request the person answers (permission, question) |
 /// | [KitRow], [KitRowGroup], [KitRowValue], [SectionLabel] | §6 rows, rows grouped on one panel, a row's current value, and sections |
 /// | [KitRowIcon], [KitRowMenu], [KitChevron], [KitSwitchRow], [KitExpandRow] | §6 a row's current mark, overflow menu, chevron, switch and unfolding group |
+/// | [KitSectionLabel] | §5 a section's name above its content, on the one inset every label shares, with the section gap above |
+/// | [KitSliverRowGroup] | §4, §5 rows on one panel in a lazy list (a list's head and its rows as one panel) |
 /// | [KitPanel] | §3 a block of content the person works with |
 /// | [KitStatusMark] | §6 a step's leading state mark (waiting, working, done, failed) |
 /// | [KitTaskMark] | §6 a task's leading mark: a step's four, needs you, stopped |
@@ -76,6 +78,8 @@ export 'kit_progress.dart';
 export 'kit_request_card.dart';
 export 'kit_row.dart';
 export 'kit_row_parts.dart';
+export 'kit_section_label.dart';
+export 'kit_sliver_row_group.dart';
 export 'kit_screen.dart';
 export 'kit_secret_field.dart';
 export 'kit_sheet.dart';

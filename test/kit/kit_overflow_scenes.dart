@@ -1280,6 +1280,43 @@ final kitOverflowScenes = <KitOverflowScene>[
       ),
     ),
   ),
+  // kit_section_label.dart (slice-R4)
+  KitOverflowScene(
+    const ['KitSectionLabel'],
+    'default',
+    build: (_, c) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KitSectionLabel(
+          'Model context protocol servers on this workstation',
+          explanation:
+              'Tools the agent can call, served by programs this server runs.',
+          trailing: const KitText(
+            '3 connected',
+            role: KitTextRole.caption,
+            tone: KitTextTone.secondary,
+          ),
+        ),
+        _row(c),
+      ],
+    ),
+  ),
+  // kit_sliver_row_group.dart (slice-R4)
+  KitOverflowScene(
+    const ['KitSliverRowGroup'],
+    'default',
+    host: KitOverflowHost.fill,
+    build: (_, c) => CustomScrollView(
+      slivers: [
+        KitSliverRowGroup(
+          label: 'Recent conversations in this project',
+          itemCount: 3,
+          itemBuilder: (_, _) => _row(c),
+          children: [_row(c)],
+        ),
+      ],
+    ),
+  ),
 ];
 
 /// A valid 1x1 opaque PNG (the fixture kit_image_test.dart uses).
