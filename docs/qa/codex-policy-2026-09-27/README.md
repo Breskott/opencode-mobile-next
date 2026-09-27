@@ -146,3 +146,131 @@ Implemented/enabled: the local executor gates and confirmed-act producers above.
 Verified: focused behavior, with the seven reproduced base failures explicitly
 retained. UI switch exposure and the app-exit notice copy are Claude's hook-up
 work. Committed locally only; no push, PR, CI run, deployment or release.
+
+## Fixed F2/F3
+
+Follow-up base: `42d3932d` on `codex/policy`, after the policy work was merged
+into `feat/phone-setup-v2`. Findings:
+[branch audit F2/F3](../codex-audit-2026-09-27/README.md#f2--p2-an-aborted-profile-removal-already-erased-activity-history-and-undo).
+Finish line: an aborted removal retains activity and usable Undo, and unreadable
+queued work never loses its server through a missing confirmation snapshot.
+Non-goals: queue repair tooling, a destructive unreadable-data override, screen
+redesign, native changes, other audit findings, publishing or pushing.
+
+### Deletion and owner contract
+
+`ConnectionController.deleteProfileAndLocalData` remains the only cascade owner.
+It closes admission and invalidates old auth/credential/MCP callback scopes
+synchronously, then uses the existing profile-deletion and queue write lanes.
+Activity `prepareForDeletion()` and policy `pauseForDeletion()` retain their
+shared instances, stored data and inverse callbacks. Already admitted writes and
+Undo finish before acquiring the queue lane, so an inverse which uses that lane
+does not deadlock. New activity mutations pause until commit or cancellation.
+
+Inside the queue lane, the controller independently verifies readability on
+**every** removal, including calls with no plan and `keepQueuedPrompts: false`.
+Keeping prompts requires a non-null, current plan from
+`inspectQueuedPromptsForRemoval`. Preservation finishes before destructive
+cleanup. A repaired persisted queue is read afresh instead of trusting an empty
+cache from a prior failed decode. New prompts for the removing server cannot
+arrive after source cleanup; other servers remain usable.
+
+The first scoped-key sweep excludes `oc.automaticActivity.<profileId>` and
+`oc.automation.<profileId>`. These are erased only after the profile-row/Keystore
+commit, with refused final cleanup reported as incomplete. Queue/stash failures,
+stale plans, and refused profile writes retain history and Undo. `cancelDeletion`
+reopens the **same** activity and policy owners; monitor and auth admission also
+resume. Monitor callback epochs stay invalid, and quota credential-consent
+retirement survives cancellation. Shelf Undo revisions remain separate from
+stale external-request revisions. No new durable key or stored-format migration.
+
+This preserves the cascade's existing partial-cleanup semantics after queue
+preservation succeeds: a later refusal may leave safely kept drafts and already
+cleared local settings. It does not promise to roll back every storage operation.
+Phone recovery is disabled only after queue preflight/preservation succeeds; a
+later partial cleanup can leave that choice disabled.
+
+### UI hook-up contract for Claude
+
+- Servers must inspect first. An inspection failure shows
+  `serversRemoveQueuedUnreadable(name)` using `KitNotice` and redacted
+  `productErrorDetails(error)` in `KitDetailsFold`; it opens no confirmation and
+  calls no deletion method. The server and source blob remain available.
+- Pass the exact plan to `deleteProfileAndLocalData`, with the person's Keep or
+  Delete choice. A readable zero-count plan is valid; `null` is not an empty plan.
+- `QueuedPromptRemovalException.unreadable` is distinct from `changed` and a
+  failed preservation write. An unreadable race after confirmation uses the same
+  recoverable notice. Retry means inspect again, then confirm again.
+- Respect `DeleteProfileResult.removedProfile` and `partialDeletionMessage`.
+  Post-commit cleanup refusal must not be presented as complete erasure.
+- No destructive fallback was added. A future unreadable-data discard requires a
+  separately explained, explicit decision and a separately reviewed API.
+
+English copy is in `app_en.arb`; `flutter gen-l10n` regenerated the localization
+outputs (Arabic currently falls back to English for this new string). Screens
+only arrange existing kit parts. To satisfy the requested inherited gates, three
+existing team copy strings now use Server / a four-word title. The raw-error
+scan's existing transcript-export exception now matches the already-redacted
+`put` helper; its allowlist did not grow and no chat screen was edited.
+
+### Follow-up verification
+
+All checks use the pinned SDK above, `dart format --language-version=3.10`, and
+serial heavy invocations through `OC_TEST_SLOTS=1 tool/qa/machine_lock.sh`.
+Coordinator alone ran Flutter checks; bounded workers owned activity/policy,
+Servers copy/tests, and deletion regressions. Connection remained single-owner.
+
+Fail-before evidence: the initial owner/UI run failed on missing reversible
+owner methods and the unreadable-queue confirmation being shown. The controller
+red run had **32 passed, 14 failed**: nine new F2/F3 regressions plus four activity
+preparation cases and one policy pause case. These tests were written and run
+before their production fixes.
+
+- `flutter pub get`: passed; no dependency-file changes.
+- `flutter analyze --no-pub`: **No issues found** (30.8s).
+- Format check: **18 Dart files, zero changes**, language version 3.10.
+- The focused 12-file run passed **284 tests in 11 unchanged files**, including
+  `automatic_activity`, `automation_policy`, `profile_deletion`, both monitors,
+  queue preservation, and all required gates: `kit_ratchet`, `redaction`,
+  `kit/kit_redact`, `ui_glossary`, and `no_raw_error_text`.
+- The remaining file, `queued_prompt_removal_wiring_test.dart`, passed **all 17
+  tests** on its focused rerun. An initial new assertion incorrectly assumed
+  insertion order for a timestamp-sorted queue; its corrected assertion checks
+  membership. Production behavior did not change for that correction.
+- `test/revamp/queued_prompt_removal_test.dart --plain-name behaviour`: **7 passed**.
+- Three focused cross-profile queue/count/banner checks: **3 passed**.
+- Expanded checking also found **nine unrelated existing failures**. An unchanged
+  detached checkout of `42d3932d` reproduced all nine: five older queue widgets,
+  two sign-in widgets, and two Saved prompts goldens (obsolete subtitle copy).
+  Base run: **61 passed, 9 failed**. No baselines were regenerated or failures
+  suppressed. The temporary validation worktree was removed afterward.
+- `git diff --check`: passed. No full repository suite, device/emulator run,
+  native build, signing, push, release or deployment was performed.
+
+The new regression cases cover stale confirmation, failed preservation, scoped
+setting refusal, profile-row refusal, malformed JSON, wrong preference type,
+missing Keep snapshot, storage repair/retry, late queue admission, committed
+cleanup refusal, admitted activity writes/Undo, and quota consent retirement.
+
+Evidence: [failing-before cases](f23-red-tests.txt),
+[base failure comparison](f23-base-failures.txt),
+[final source/test hashes](f23-source-sha256.txt).
+Commands, using the pinned SDK and the machine lock:
+
+```sh
+flutter test --no-pub --concurrency=1 \
+  test/queued_prompt_removal_wiring_test.dart test/automatic_activity_test.dart \
+  test/automation_policy_test.dart test/profile_deletion_test.dart \
+  test/profile_monitor_test.dart test/provider_quota_monitor_test.dart \
+  test/queued_prompt_removal_test.dart test/kit_ratchet_test.dart \
+  test/redaction_test.dart test/kit/kit_redact_test.dart \
+  test/ui_glossary_test.dart test/no_raw_error_text_test.dart
+flutter test --no-pub --concurrency=1 test/queued_prompt_removal_wiring_test.dart
+flutter test --no-pub --concurrency=1 \
+  test/revamp/queued_prompt_removal_test.dart --plain-name behaviour
+flutter analyze --no-pub
+```
+
+Implemented and verified: F2/F3 controller and Servers behavior, with the required
+gates passing. The separate base failures above remain outside these fixes.
+Local commit only; no push.

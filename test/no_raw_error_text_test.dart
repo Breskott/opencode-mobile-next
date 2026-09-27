@@ -67,12 +67,10 @@ const _allowed = <String, Map<String, String>>{
   'widgets/phone_server_card.dart': {
     'log = error.message;': 'shown in the server log panel, not as words',
   },
-  // Pending: another agent owns these files right now (see
-  // docs/qa/no-raw-errors-2026-09-27/README.md). Remove each entry with its
-  // fix.
+  // Transcript export, separately redacted by its local put helper.
   'screens/chat_screen.dart': {
-    "out.write('> \${_chatL10n(context).chatUiError}: \$error\\n');":
-        'transcript export text, not UI copy (chat lane to review)',
+    "put('> \${l10n.chatUiError}: \$error\\n');":
+        'transcript export text, masked by put through KitRedact; not UI copy',
   },
 };
 

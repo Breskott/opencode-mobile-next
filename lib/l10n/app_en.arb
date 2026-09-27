@@ -30210,6 +30210,15 @@
       }
     }
   },
+  "serversRemoveQueuedUnreadable": "The queued prompts for {name} cannot be read. The server and its queued prompts were kept. Try removing it again after the queue can be read.",
+  "@serversRemoveQueuedUnreadable": {
+    "description": "Removing a server stopped because its queued prompts could not be inspected. The server and source data remain available; technical information is under Details.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "settingsHubGroupAgent": "Agent",
   "@settingsHubGroupAgent": {
     "description": "Settings hub group label: the agent's model, providers, tools and AI Team."
@@ -31526,7 +31535,7 @@
       }
     }
   },
-  "teamChatNoProgressBodyNoControls": "{name} hasn't moved this task since {time}. This host can't nudge or restart it from here; report the problem or check the team's computer.",
+  "teamChatNoProgressBodyNoControls": "{name} hasn't moved this task since {time}. This server can't nudge or restart it from here; report the problem or check the team's computer.",
   "@teamChatNoProgressBodyNoControls": {
     "description": "Team conversation: under a stalled task on a host without agent controls, what happened and the way forward",
     "placeholders": {
@@ -31542,7 +31551,7 @@
   "@teamChatNoProgressReport": {
     "description": "Team conversation, a stalled task: opens Report a problem with the stall attached"
   },
-  "teamChatNoProgressReportTitle": "An AI Team task made no progress for {elapsed}",
+  "teamChatNoProgressReportTitle": "No progress for {elapsed}",
   "@teamChatNoProgressReportTitle": {
     "description": "Report a problem: the attached problem's title for a stalled team task",
     "placeholders": {
@@ -31551,7 +31560,7 @@
       }
     }
   },
-  "teamTaskDetailsReported": "What the host reported",
+  "teamTaskDetailsReported": "What the server reported",
   "@teamTaskDetailsReported": {
     "description": "Task details, inside Technical details: the heading over the task's event log as the team's host reported it (newest first)"
   },

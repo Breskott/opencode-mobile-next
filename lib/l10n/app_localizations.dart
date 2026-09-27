@@ -40077,6 +40077,12 @@ abstract class AppLocalizations {
   /// **'Could not move the queued prompts for {name} to Saved prompts, so nothing was removed. Delete some saved prompts or free up storage, then try again.'**
   String serversRemoveQueuedNotKept(String name);
 
+  /// Removing a server stopped because its queued prompts could not be inspected. The server and source data remain available; technical information is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'The queued prompts for {name} cannot be read. The server and its queued prompts were kept. Try removing it again after the queue can be read.'**
+  String serversRemoveQueuedUnreadable(String name);
+
   /// Settings hub group label: the agent's model, providers, tools and AI Team.
   ///
   /// In en, this message translates to:
@@ -41574,7 +41580,7 @@ abstract class AppLocalizations {
   /// Team conversation: under a stalled task on a host without agent controls, what happened and the way forward
   ///
   /// In en, this message translates to:
-  /// **'{name} hasn\'t moved this task since {time}. This host can\'t nudge or restart it from here; report the problem or check the team\'s computer.'**
+  /// **'{name} hasn\'t moved this task since {time}. This server can\'t nudge or restart it from here; report the problem or check the team\'s computer.'**
   String teamChatNoProgressBodyNoControls(String name, String time);
 
   /// Team conversation, a stalled task: opens Report a problem with the stall attached
@@ -41586,13 +41592,13 @@ abstract class AppLocalizations {
   /// Report a problem: the attached problem's title for a stalled team task
   ///
   /// In en, this message translates to:
-  /// **'An AI Team task made no progress for {elapsed}'**
+  /// **'No progress for {elapsed}'**
   String teamChatNoProgressReportTitle(String elapsed);
 
   /// Task details, inside Technical details: the heading over the task's event log as the team's host reported it (newest first)
   ///
   /// In en, this message translates to:
-  /// **'What the host reported'**
+  /// **'What the server reported'**
   String get teamTaskDetailsReported;
 
   /// KitToolRow: the screen reader hint of a step row that opens its details (an AI Team step opens its Work sheet)

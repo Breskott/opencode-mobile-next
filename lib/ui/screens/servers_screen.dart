@@ -28,7 +28,8 @@ import '../kit/kit.dart';
 import '../kit/scenes/servers_link_scene.dart';
 import '../kit/scenes/servers_welcome_scene.dart';
 import '../setup_commands.dart';
-import '../widgets/product_states.dart' show productErrorText;
+import '../widgets/product_states.dart'
+    show productErrorDetails, productErrorText;
 import '../widgets/team_host_form.dart';
 import '../widgets/local_agent_server_entry.dart';
 import '../widgets/phone_server_card.dart';
@@ -154,6 +155,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   /// rows in the same verdict style the editor uses — never a red snackbar
   /// carrying a raw exception.
   String? _listFailure;
+  String? _listFailureDetails;
 
   /// Bumped after Termux setup returns so the running-server entry re-reads
   /// the phone instead of trusting what it saw before the user left.
@@ -226,9 +228,12 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
 
   /// A removal that did not finish, said where the list is: the same inline
   /// notice a failed connect uses, never a snackbar (KIT-34, STATE-3).
-  void _showFailure(String message) {
+  void _showFailure(String message, {String? details}) {
     if (!mounted) return;
-    setState(() => _listFailure = message);
+    setState(() {
+      _listFailure = message;
+      _listFailureDetails = details;
+    });
   }
 
   /// This phone for the Termux server: its status, versions, tools and log.
@@ -394,6 +399,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     setState(() {
       _busy = true;
       _listFailure = null;
+      _listFailureDetails = null;
     });
     final conn = ref.read(connProvider);
     Object? failure;
@@ -499,6 +505,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     setState(() {
       _busy = true;
       _listFailure = null;
+      _listFailureDetails = null;
     });
     try {
       await store.upsert(result);
@@ -588,11 +595,15 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         ref.read(bootstrapProvider).store.activeId == p.id &&
         connection.api != null;
     // Counted now and acted on exactly: a changed queue stops the removal.
-    QueuedPromptRemovalPlan? queued;
+    final QueuedPromptRemovalPlan queued;
     try {
       queued = connection.inspectQueuedPromptsForRemoval(p.id);
-    } catch (_) {
-      queued = null;
+    } catch (error) {
+      _showFailure(
+        copy.serversRemoveQueuedUnreadable(p.name),
+        details: productErrorDetails(error),
+      );
+      return;
     }
     var deleteQueued = false;
     final ok = await showKitConfirm(
@@ -609,7 +620,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         queued: queued,
         active: active,
       ),
-      alternative: queued != null && queued.count > 0
+      alternative: queued.count > 0
           ? KitAction(
               key: ValueKey('remove-server-delete-queued-${p.id}'),
               label: copy.serversRemoveDeleteQueued(queued.count),
@@ -627,6 +638,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     setState(() {
       _busy = true;
       _listFailure = null;
+      _listFailureDetails = null;
     });
     try {
       // The cascade verifies every store it writes and reports what refused.
@@ -648,9 +660,12 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       }
     } on QueuedPromptRemovalException catch (error) {
       _showFailure(
-        error.changed
+        error.unreadable
+            ? copy.serversRemoveQueuedUnreadable(p.name)
+            : error.changed
             ? copy.serversRemoveQueuedChanged(p.name)
             : copy.serversRemoveQueuedNotKept(p.name),
+        details: error.unreadable ? productErrorDetails(error) : null,
       );
     } catch (error) {
       if (removed) {
@@ -818,11 +833,21 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
             key: const ValueKey('server-connect-failure-slot'),
             child: switch (_listFailure) {
               final failure? => _Rails(
-                child: KitNotice(
-                  key: const ValueKey('server-connect-failure'),
-                  tone: AppStatusTone.failure,
-                  message: failure,
-                  onDismiss: () => setState(() => _listFailure = null),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    KitNotice(
+                      key: const ValueKey('server-connect-failure'),
+                      tone: AppStatusTone.failure,
+                      message: failure,
+                      onDismiss: () => setState(() {
+                        _listFailure = null;
+                        _listFailureDetails = null;
+                      }),
+                    ),
+                    if (_listFailureDetails != null)
+                      KitDetailsFold(text: _listFailureDetails),
+                  ],
                 ),
               ),
               null => null,

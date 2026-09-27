@@ -1,0 +1,13 @@
+Unchanged base comparison: 42d3932d (detached temporary validation worktree).
+Pinned Flutter, serial; test/offline_queue_test.dart, test/integration_auth_recovery_test.dart, test/revamp/queued_prompt_removal_test.dart.
+61 passed, 9 failed. The same existing widget/golden failures were seen during expanded follow-up checking.
+
+00:02 +19 -1: test/offline_queue_test.dart: sending while disconnected queues a visible draft [E]
+00:03 +19 -2: test/offline_queue_test.dart: selection failure restores an undispatched draft without queuing [E]
+00:06 +36 -3: test/offline_queue_test.dart: unconfirmed sends editing an unconfirmed send restores text and attachments to the composer without sending [E]
+00:07 +37 -4: test/offline_queue_test.dart: unconfirmed sends editing an unconfirmed send whose removal is refused leaves it queued and the composer untouched [E]
+00:07 +37 -5: test/offline_queue_test.dart: unconfirmed sends discarding an unconfirmed send honors a refused deletion [E]
+00:16 +54 -6: test/integration_auth_recovery_test.dart: unknown start can be explicitly forgotten without another request [E]
+00:16 +54 -7: test/integration_auth_recovery_test.dart: recoverable browser sign-in shows its device code before launch [E]
+00:23 +60 -8: test/revamp/queued_prompt_removal_test.dart: goldens kept prompts in Saved prompts [E]
+00:24 +61 -9: test/revamp/queued_prompt_removal_test.dart: goldens kept prompts in Saved prompts wide [E]

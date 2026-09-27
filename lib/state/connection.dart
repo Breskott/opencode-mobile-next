@@ -4608,6 +4608,8 @@ class ConnectionController extends ChangeNotifier {
   int get readPrivacyRevision => _readPrivacyRevision;
   final _viewOperations = <Object, Future<void>>{};
   final _deletingReadProfiles = <String>{};
+  final _closedQueueProfiles = <String>{};
+  final _profileDeletionRevisions = <String, int>{};
   final _profileDeletions = <String, Future<DeleteProfileResult>>{};
   Future<void> _profileDeletionChanges = Future.value();
   bool _readProfileAvailable(String id) =>
@@ -5762,7 +5764,10 @@ class ConnectionController extends ChangeNotifier {
   Future<bool> queuePrompt(QueuedPrompt prompt) =>
       _serializeQueueChange(() async {
         final target = store.profiles.where((p) => p.id == prompt.profileID);
-        if (target.any((p) => p.usesAgentSocket)) return false;
+        if (_closedQueueProfiles.contains(prompt.profileID) ||
+            target.any((p) => p.usesAgentSocket)) {
+          return false;
+        }
         if (prompt.payloadBytes > OfflineQueueStore.maxEntryBytes) return false;
         final eviction = OfflineQueueStore.enforceLimits([..._queue, prompt]);
         // The new entry losing its own eviction pass means the queue could not
@@ -6097,12 +6102,10 @@ class ConnectionController extends ChangeNotifier {
     // Close admission synchronously, before any drain can yield. An epoch also
     // rejects old callbacks after a failed deletion makes the profile usable.
     _deletingReadProfiles.add(profileId);
-    _profileMonitor?.removeProfile(profileId);
-    _quotaMonitor?.removeProfile(profileId);
-    final recoveryDisabled = ManagedServerRecovery.disableForProfile(
-      store.prefs,
-      profileId,
-    ).then<Object?>((_) => null, onError: (Object error) => error);
+    _profileDeletionRevisions[profileId] =
+        (_profileDeletionRevisions[profileId] ?? 0) + 1;
+    _profileMonitor?.removeProfile(profileId, retainIdentity: true);
+    _quotaMonitor?.removeProfile(profileId, retainIdentity: true);
     _pendingAuth.block(profileId);
     _integrationCommandAttempts.removeWhere(
       (key, _) => _authKeyProfile(key) == profileId,
@@ -6111,22 +6114,22 @@ class ConnectionController extends ChangeNotifier {
     _authRecoveryActions.removeWhere(
       (key) => _authKeyProfile(key) == profileId,
     );
-    _promptShelfDeletionRevisions[profileId] =
-        (_promptShelfDeletionRevisions[profileId] ?? 0) + 1;
-    // Outstanding saved-prompt Undo handles refuse from here on; a deleted
-    // server's prompts never come back.
-    if (_savedPrompts?.profileID == profileId) {
-      _savedPrompts!.dispose();
-      _savedPrompts = null;
-    }
+    final activity = _automaticActivityFor(profileId);
+    final policy = AutomationPolicyController.forProfile(
+      store.prefs,
+      profileId,
+    );
     final operation = _profileDeletionChanges
         .then((_) async {
-          final recoveryError = await recoveryDisabled;
-          if (recoveryError != null) {
-            throw StateError(
-              'Could not disable server recovery before deletion',
-            );
-          }
+          // Drain admitted Undo before entering the queue lane: an inverse may
+          // itself need that lane. Preparation retains history and callbacks.
+          await Future.wait([
+            if (activity != null) activity.prepareForDeletion(),
+            policy.pauseForDeletion(),
+          ]);
+          // Admitted activity inverses have finished; from here no new prompt
+          // may join this profile while the removal is in progress.
+          _closedQueueProfiles.add(profileId);
           await _profileMonitor?.drain(profileId);
           await _quotaMonitor?.drain(profileId);
           return _deleteProfileAndLocalData(
@@ -6137,6 +6140,19 @@ class ConnectionController extends ChangeNotifier {
         })
         .whenComplete(() {
           _deletingReadProfiles.remove(profileId);
+          if (store.profiles.any((p) => p.id == profileId)) {
+            _closedQueueProfiles.remove(profileId);
+            activity?.cancelDeletion();
+            policy.cancelDeletion();
+            _profileMonitor?.cancelDeletion(profileId);
+            _quotaMonitor?.cancelDeletion(profileId);
+            _pendingAuth.cancelDeletion(profileId);
+            if (_orchestration?.profileId == profileId &&
+                _orchestration?.phase == OrchestrationPhase.stopped) {
+              _syncOrchestration(null);
+              _syncOrchestration(profile);
+            }
+          }
           _profileDeletions.remove(profileId);
         });
     _profileDeletions[profileId] = operation;
@@ -6178,31 +6194,15 @@ class ConnectionController extends ChangeNotifier {
       await sessionAutoApproval.drain(profileId);
     } catch (_) {}
     try {
-      // Stop accepting edits and drain a write in flight, so the sweep below
-      // removes `oc.automation.<id>` for good.
-      await AutomationPolicyController.closeProfile(store.prefs, profileId);
-    } catch (_) {}
-    try {
-      // The in-flow consents (P6.7) drain the same way, so the sweep below
-      // removes `oc.inFlowConsent.<id>` and `oc.permissionConsent.<id>`.
-      await ConsentOwners.closeProfile(store.prefs, profileId);
-    } catch (_) {}
-    try {
-      // The While you were away history closes and drains its writes (and
-      // any Undo in flight) first, so a late write cannot bring back
-      // `oc.automaticActivity.<id>` after the sweep below.
-      await AutomaticActivityController.closeProfile(store.prefs, profileId);
-    } catch (_) {}
-    try {
       await _promptShelf.drain(profileId);
     } catch (_) {}
-    try {
-      // The plugin's sibling stops first so no refetch can rewrite the
-      // `oc.orchestration.<id>.` keys the scoped sweep below discovers.
-      if (_orchestration?.profileId == profileId) await _orchestration!.stop();
-      await _orchestrationStore.drain(profileId);
-    } catch (_) {}
     final scopedKeys = store.profileScopedPreferenceKeys(profileId);
+    // Retain these owners through a failed row/Keystore commit as well as
+    // through queue preflight. ProfileStore sweeps them after the row commits.
+    final retainedKeys = {
+      'oc.automaticActivity.$profileId',
+      AutomationPolicyController.keyFor(profileId),
+    };
     final failures = <String>[];
 
     // Snapshot writes stay suspended for the whole transaction: any
@@ -6218,6 +6218,19 @@ class ConnectionController extends ChangeNotifier {
       //    prompt is on the wire.
       var clearedQueued = 0;
       await _serializeQueueChange(() async {
+        // Unknown is never empty, including callers without a confirmation.
+        if (!_queueStore.readable) {
+          throw const QueuedPromptRemovalException(
+            changed: false,
+            unreadable: true,
+          );
+        }
+        if (keepQueuedPrompts && queuedPrompts == null) {
+          throw const QueuedPromptRemovalException(changed: true);
+        }
+        // A repaired source may differ from a previously unreadable cache.
+        // Every controller queue writer has drained before this fresh read.
+        _offlineQueue = _queueStore.load();
         if (queuedPrompts != null) {
           // The person confirmed a count: act on exactly that, or on nothing.
           final live = [
@@ -6239,10 +6252,33 @@ class ConnectionController extends ChangeNotifier {
             try {
               await _keptQueued.keepAsDrafts(queuedPrompts);
             } on StateError {
-              throw const QueuedPromptRemovalException(changed: false);
+              throw QueuedPromptRemovalException(
+                changed: false,
+                unreadable: !_queueStore.readable,
+              );
             }
           }
         }
+        // Queue validation and preservation succeeded within this lane.
+        // Only now invalidate destructive owners and begin cleanup.
+        await ManagedServerRecovery.disableForProfile(store.prefs, profileId);
+        _promptShelfDeletionRevisions[profileId] =
+            (_promptShelfDeletionRevisions[profileId] ?? 0) + 1;
+        // Outstanding saved-prompt Undo handles refuse from here on; a deleted
+        // server's prompts never come back.
+        if (_savedPrompts?.profileID == profileId) {
+          _savedPrompts!.dispose();
+          _savedPrompts = null;
+        }
+        await ConsentOwners.closeProfile(store.prefs, profileId);
+        try {
+          // The plugin's sibling stops first so no refetch can rewrite the
+          // `oc.orchestration.<id>.` keys the scoped sweep below discovers.
+          if (_orchestration?.profileId == profileId) {
+            await _orchestration!.stop();
+          }
+          await _orchestrationStore.drain(profileId);
+        } catch (_) {}
         final keptQueue = [
           for (final entry in _queue)
             if (entry.profileID != profileId) entry,
@@ -6310,7 +6346,10 @@ class ConnectionController extends ChangeNotifier {
       final clearedStash = await _promptShelf.clearForProfile(profileId);
       if (!clearedStash) failures.add('stashed prompts and attachments');
       final unclearedKeys = clearedStash
-          ? await store.removeScopedPreferences(profileId)
+          ? await store.removeScopedPreferences(
+              profileId,
+              excluding: retainedKeys,
+            )
           : scopedKeys;
       if (clearedStash && unclearedKeys.isNotEmpty) {
         failures.add(
@@ -6324,7 +6363,9 @@ class ConnectionController extends ChangeNotifier {
       //    told a deletion happened that did not.
       if (failures.isNotEmpty) {
         return DeleteProfileResult(
-          removedPreferenceKeys: scopedKeys.difference(unclearedKeys),
+          removedPreferenceKeys: scopedKeys
+              .difference(unclearedKeys)
+              .difference(retainedKeys),
           removedQueuedPrompts: clearedQueued,
           removedDrafts: clearedDrafts,
           clearedWidgetSnapshot: widgetOutcome == WidgetSnapshotClear.cleared,
@@ -6336,6 +6377,30 @@ class ConnectionController extends ChangeNotifier {
         );
       }
       await store.remove(profileId);
+      _profileMonitor?.removeProfile(profileId);
+      _quotaMonitor?.removeProfile(profileId);
+      final unclearedCommittedKeys = <String>{};
+      await AutomationPolicyController.closeProfile(store.prefs, profileId);
+      final policyKey = AutomationPolicyController.keyFor(profileId);
+      if (scopedKeys.contains(policyKey)) {
+        try {
+          if (!await store.prefs.remove(policyKey)) {
+            unclearedCommittedKeys.add(policyKey);
+          }
+        } catch (_) {
+          unclearedCommittedKeys.add(policyKey);
+        }
+        if (unclearedCommittedKeys.contains(policyKey)) {
+          failures.add('automation settings');
+        }
+      }
+      if (!await AutomaticActivityController.closeProfile(
+        store.prefs,
+        profileId,
+      )) {
+        failures.add('automatic activity');
+        unclearedCommittedKeys.add('oc.automaticActivity.$profileId');
+      }
       // The plugin's Keystore entries go with the password, never before
       // the row: a kept server keeps its secrets.
       try {
@@ -6343,7 +6408,8 @@ class ConnectionController extends ChangeNotifier {
       } catch (_) {}
 
       return DeleteProfileResult(
-        removedPreferenceKeys: scopedKeys,
+        removedPreferenceKeys: scopedKeys.difference(unclearedCommittedKeys),
+        failures: List.unmodifiable(failures),
         removedQueuedPrompts: clearedQueued,
         removedDrafts: clearedDrafts,
         clearedWidgetSnapshot: widgetOutcome == WidgetSnapshotClear.cleared,
@@ -6840,7 +6906,7 @@ class ConnectionController extends ChangeNotifier {
     final origin = owner.baseUrl;
     final originalDirectory = directory;
     final originalWorkspace = workspace;
-    final deletion = _promptShelfDeletionRevisions[owner.id] ?? 0;
+    final deletion = _profileDeletionRevisions[owner.id] ?? 0;
     final deadline = DateTime.now()
         .add(PendingAuthStore.retention)
         .millisecondsSinceEpoch;
@@ -6866,7 +6932,7 @@ class ConnectionController extends ChangeNotifier {
       // the currently selected one. Deletion closes admission before any await.
       if (_disposed ||
           !isProfileReadable(owner.id) ||
-          (_promptShelfDeletionRevisions[owner.id] ?? 0) != deletion) {
+          (_profileDeletionRevisions[owner.id] ?? 0) != deletion) {
         return false;
       }
       final expiry = launch.expiresAt;
@@ -7123,7 +7189,7 @@ class ConnectionController extends ChangeNotifier {
     final origin = saved.baseUrl;
     final connectedOrigin = connected.baseUrl;
     final location = (directory, workspace);
-    final deletion = _promptShelfDeletionRevisions[owner] ?? 0;
+    final deletion = _profileDeletionRevisions[owner] ?? 0;
     final identity = (saved.username, saved.flavor);
     final connectedIdentity = (connected.username, connected.flavor);
     void check() {
@@ -7142,7 +7208,7 @@ class ConnectionController extends ChangeNotifier {
           validateServerProfileUrl(origin) != null ||
           locationRevision != expectedLocationRevision ||
           (directory, workspace) != location ||
-          (_promptShelfDeletionRevisions[owner] ?? 0) != deletion) {
+          (_profileDeletionRevisions[owner] ?? 0) != deletion) {
         throw StateError('The command sign-in location changed.');
       }
     }
@@ -7480,7 +7546,7 @@ class ConnectionController extends ChangeNotifier {
     final savedOrigin = saved.baseUrl;
     final connectedOrigin = connected.baseUrl;
     final location = (directory, workspace);
-    final deletion = _promptShelfDeletionRevisions[owner] ?? 0;
+    final deletion = _profileDeletionRevisions[owner] ?? 0;
     void checkScope() {
       if (!isProfileReadable(owner) ||
           store.activeId != owner ||
@@ -7492,7 +7558,7 @@ class ConnectionController extends ChangeNotifier {
           savedOrigin != connectedOrigin ||
           this.locationRevision != locationRevision ||
           (directory, workspace) != location ||
-          (_promptShelfDeletionRevisions[owner] ?? 0) != deletion) {
+          (_profileDeletionRevisions[owner] ?? 0) != deletion) {
         throw StateError(
           'The credential location changed. Refresh and try again.',
         );
@@ -7607,7 +7673,7 @@ class ConnectionController extends ChangeNotifier {
     final savedOrigin = saved.baseUrl;
     final connectedOrigin = connected.baseUrl;
     final location = (directory, workspace);
-    final deletion = _promptShelfDeletionRevisions[owner] ?? 0;
+    final deletion = _profileDeletionRevisions[owner] ?? 0;
     bool currentScope() =>
         isProfileReadable(owner) &&
         store.activeId == owner &&
@@ -7619,7 +7685,7 @@ class ConnectionController extends ChangeNotifier {
         savedOrigin == connectedOrigin &&
         this.locationRevision == locationRevision &&
         (directory, workspace) == location &&
-        (_promptShelfDeletionRevisions[owner] ?? 0) == deletion;
+        (_profileDeletionRevisions[owner] ?? 0) == deletion;
     void checkScope() {
       if (!currentScope()) {
         throw StateError('The MCP location changed. Refresh and try again.');

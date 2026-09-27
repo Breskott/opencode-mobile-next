@@ -898,9 +898,13 @@ class ProfileStore {
   /// model, agent, and location on the device while the user was told the
   /// server had been removed. The caller decides what to do about a
   /// non-empty result; this method only refuses to lie about it.
-  Future<Set<String>> removeScopedPreferences(String profileId) async {
+  Future<Set<String>> removeScopedPreferences(
+    String profileId, {
+    Set<String> excluding = const {},
+  }) async {
     final failed = <String>{};
     for (final key in profileScopedPreferenceKeys(profileId)) {
+      if (excluding.contains(key)) continue;
       try {
         if (!await prefs.remove(key)) failed.add(key);
       } catch (_) {
@@ -919,7 +923,7 @@ class ProfileStore {
   /// the keys are orphaned regardless, so a failure there cannot resurrect a
   /// deleted server. [ConnectionController.deleteProfileAndLocalData] sweeps
   /// them *before* calling this and verifies the result, so on that path the
-  /// sweep below finds nothing left to do.
+  /// sweep below finds only owners intentionally retained until this commit.
   ///
   /// This clears only what [ProfileStore] owns. Queued prompts, drafts, and
   /// the home-screen widget snapshot live in shared blobs; the full cascade
