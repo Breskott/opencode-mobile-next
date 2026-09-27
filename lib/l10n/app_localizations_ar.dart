@@ -21505,4 +21505,26 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get shortcutsPaletteSearch => 'Search commands and settings';
+
+  @override
+  String get shortcutsHelpAnywhere => 'Anywhere';
+
+  @override
+  String get shortcutsHelpConversation => 'In a conversation';
+
+  @override
+  String get homeShellProjectUnavailable => 'Project isn\'t available';
+
+  @override
+  String homeShellProjectUnavailableReason(String server) {
+    return '$server doesn\'t offer files, changes or code search. Connect to an OpenCode server to use them.';
+  }
+
+  @override
+  String homeShellProjectUnavailableShort(String server) {
+    return '$server has no project tools.';
+  }
 }

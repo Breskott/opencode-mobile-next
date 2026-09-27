@@ -10390,7 +10390,7 @@ abstract class AppLocalizations {
   /// App shell command menu or routing: FindSurface
   ///
   /// In en, this message translates to:
-  /// **'Find in this surface'**
+  /// **'Find on this screen'**
   String get e7LocaleUiFindSurface;
 
   /// App shell command menu or routing: Destinations
@@ -33688,6 +33688,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{rows, plural, =1{Table, 1 row} other{Table, {rows} rows}}'**
   String kitMarkdownTable(int rows);
+
+  /// Command launcher: the search field's label and hint
+  ///
+  /// In en, this message translates to:
+  /// **'Search commands and settings'**
+  String get shortcutsPaletteSearch;
+
+  /// Keyboard shortcuts sheet: section of shortcuts that work on every screen
+  ///
+  /// In en, this message translates to:
+  /// **'Anywhere'**
+  String get shortcutsHelpAnywhere;
+
+  /// Keyboard shortcuts sheet: section of shortcuts that work inside a conversation
+  ///
+  /// In en, this message translates to:
+  /// **'In a conversation'**
+  String get shortcutsHelpConversation;
+
+  /// Shell: title of the row and sheet explaining why the Project tab is missing on this server
+  ///
+  /// In en, this message translates to:
+  /// **'Project isn\'t available'**
+  String get homeShellProjectUnavailable;
+
+  /// Shell: why the Project tab is missing; {server} is the server's display name
+  ///
+  /// In en, this message translates to:
+  /// **'{server} doesn\'t offer files, changes or code search. Connect to an OpenCode server to use them.'**
+  String homeShellProjectUnavailableReason(String server);
+
+  /// Shell: the one-line reason on the row shown after the Project tab went away (a server switch); {server} is the server's display name
+  ///
+  /// In en, this message translates to:
+  /// **'{server} has no project tools.'**
+  String homeShellProjectUnavailableShort(String server);
 }
 
 class _AppLocalizationsDelegate

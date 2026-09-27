@@ -13,14 +13,23 @@ import '../../state/first_run.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import '../desktop/shortcuts.dart';
-import '../kit/kit_motion.dart';
-import '../kit/kit_tokens.dart';
+import '../kit/glass/kit_glass.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_nav.dart';
+import '../kit/kit_page_route.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_screen.dart';
+import '../kit/kit_shape.dart';
+import '../kit/kit_sheet.dart';
+import '../kit/kit_status_line.dart';
+import '../kit/kit_surface.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_top_bar.dart';
 import '../kit/motion/kit_reveal.dart';
 import '../kit/motion/kit_tab_switcher.dart';
 import '../navigation/chat_route.dart';
 import '../widgets/app_exit_notice.dart';
 import '../widgets/connection_status_banner.dart';
-import '../widgets/glass_surface.dart';
 import '../widgets/phone_server_card.dart';
 import '../widgets/phone_server_restart.dart';
 import '../widgets/server_switcher_sheet.dart';
@@ -33,6 +42,12 @@ import 'terminal_screen.dart';
 import 'workspace_screen.dart';
 
 /// Main mobile product shell for a connected OpenCode server.
+///
+/// Built from kit parts only (kit-v2 §9): [KitNav] draws the destinations
+/// as the floating glass dock (compact), the glass rail (medium) or the PC
+/// sidebar (expanded and large), switching at the KitLayout window classes;
+/// the content is one [KitScreen] whose bar is the glass [KitShellControls]
+/// (server pill with its status word, and search) on compact and medium.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key, this.initialTab});
 
@@ -53,6 +68,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   static const _inboxTab = 1;
   static const _projectTab = 2;
   static const _settingsTab = 3;
+
+  /// How long "Press back again to exit" stays and a second back exits.
+  static const _backExitWindow = Duration(seconds: 2);
+
+  /// How often first run looks again while a sheet is over the shell.
+  static const _firstRunRetryEvery = Duration(milliseconds: 300);
 
   late int _tab;
 
@@ -78,6 +99,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// Re-checks while a project sheet or screen is still on top of the shell:
   /// a conversation pushed under it would be closed along with it.
   Timer? _firstRunRetry;
+
+  /// The person was on Project when the server stopped offering it (a switch
+  /// to a server without project tools). The shell says why the tab went
+  /// and how to get it back until they pick a tab (STATE-12), instead of
+  /// the tab silently vanishing.
+  bool _projectWentAway = false;
+
+  /// The first back on Work: the shell's status slot says a second one
+  /// exits, for [_backExitWindow].
+  DateTime? _lastBackAt;
+  Timer? _backExitHint;
 
   @override
   void initState() {
@@ -108,32 +140,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   /// The shell's own share of the shortcut layer: primary destinations, and
   /// routing Find to the one destination that has a find field.
+  ///
+  /// A shortcut or search result that leads to Project on a server without
+  /// project tools explains why and offers the way back (switching to a
+  /// server that has them) instead of doing nothing or landing on Work.
   @override
   bool onAppShortcut(Intent intent) {
+    final capabilities = ref.read(connProvider).capabilities;
     switch (intent) {
       case SelectDestinationIntent(:final index) when index >= 0 && index <= 3:
-        final conn = ref.read(connProvider);
-        final next = _safeTab(index, conn.capabilities);
-        _selectTab(next);
+        if (index == _projectTab && !ProjectHub.isAvailable(capabilities)) {
+          unawaited(_explainProjectUnavailable());
+          return true;
+        }
+        _selectTab(_safeTab(index, capabilities));
         return true;
       case FindInSurfaceIntent()
-          when _tab == _projectTab &&
-              ref.read(connProvider).capabilities.fileBrowsing:
+          when _tab == _projectTab && capabilities.fileBrowsing:
         _findInFiles.value++;
         return true;
       // A search result that means Files or its search: both live inside the
       // Project tab, so the tab is selected first.
       case OpenProjectToolIntent(:final tool)
-          when ref.read(connProvider).capabilities.fileBrowsing &&
-              (tool == ProjectTool.files || tool == ProjectTool.search):
+          when tool == ProjectTool.files || tool == ProjectTool.search:
+        if (!capabilities.fileBrowsing) {
+          unawaited(_explainProjectUnavailable());
+          return true;
+        }
         _selectTab(_projectTab);
         (tool == ProjectTool.files ? _openFiles : _findInFiles).value++;
         return true;
-      case OpenTerminalIntent()
-          when ref.read(connProvider).capabilities.terminal:
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => TerminalPage(controller: ref.read(connProvider)),
+      case OpenTerminalIntent() when capabilities.terminal:
+        unawaited(
+          pushKitPage<void>(
+            context,
+            (_) => TerminalPage(controller: ref.read(connProvider)),
           ),
         );
         return true;
@@ -170,7 +211,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (conn.api == null || conn.workspaceChoiceRequired) return;
     if (!(ModalRoute.of(context)?.isCurrent ?? true)) {
       _firstRunRetry ??= Timer.periodic(
-        const Duration(milliseconds: 300),
+        _firstRunRetryEvery,
         (_) => _continueFirstRun(),
       );
       return;
@@ -211,8 +252,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       _firstRunRetry = null;
     }
     _choosingColdStartTab = false;
+    if (_projectWentAway) setState(() => _projectWentAway = false);
     if (_tab == next) return;
-    _lastBackAt = null;
+    _clearBackExit();
     setState(() => _tab = next);
   }
 
@@ -222,7 +264,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _chooseColdStartTab(conn);
     _continueFirstRun();
     final next = _safeTab(_tab, conn.capabilities);
-    setState(() => _tab = next);
+    final wentAway = _tab == _projectTab && next != _projectTab;
+    setState(() {
+      if (wentAway) _projectWentAway = true;
+      // The tools came back (switched to a server that has them).
+      if (ProjectHub.isAvailable(conn.capabilities)) _projectWentAway = false;
+      _tab = next;
+    });
   }
 
   static int _safeTab(int requested, ServerCapabilities capabilities) {
@@ -238,22 +286,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ref.read(connProvider).removeListener(_onConnChanged);
     } catch (_) {}
     _firstRunRetry?.cancel();
+    _backExitHint?.cancel();
     _findInFiles.dispose();
     _openFiles.dispose();
     super.dispose();
   }
 
+  String _serverName(ConnectionController conn) => serverDisplayName(
+    conn.profile,
+    _l10n(context),
+    among: conn.store.profiles,
+  );
+
   @override
   Widget build(BuildContext context) {
     final conn = ref.watch(connProvider);
+    final l10n = _l10n(context);
     final activeTab = _safeTab(_tab, conn.capabilities);
-    final showDock =
-        MediaQuery.sizeOf(context).width < 760 &&
-        MediaQuery.viewInsetsOf(context).bottom == 0;
+    final sidebar = KitNav.layoutOf(context) == KitNavLayout.sidebar;
 
     // One tab per noun (UX plan 5.1): Work, Inbox, Project, Settings. The
     // Inbox carries the product's single pending badge. Project is absent
-    // only when the server offers none of its tools (Codex, Paseo today).
+    // only when the server offers none of its tools (Codex, Paseo today);
+    // reaching for it then explains why ([_explainProjectUnavailable]).
     final hasProjectTools = ProjectHub.isAvailable(conn.capabilities);
     final phoneServer = phoneServerRestartFor(
       connection: conn,
@@ -278,147 +333,195 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         const SizedBox.shrink(),
       SettingsScreen(controller: conn, embedded: true),
     ];
-    final pending = conn.unifiedAttentionCount;
-    final destinations = <({int id, NavigationDestination destination})>[
+    final destinations = <({int id, KitNavDestination destination})>[
       (
         id: _workTab,
-        destination: NavigationDestination(
-          icon: AppGlyph(AppIconography.workspace),
-          selectedIcon: AppGlyph(AppIconography.workspaceSelected),
-          label: _l10n(context).shellTabWork,
+        destination: KitNavDestination(
+          key: const ValueKey('home-shell-tab-work'),
+          label: l10n.shellTabWork,
+          icon: AppIconography.workspace,
+          selectedIcon: AppIconography.workspaceSelected,
         ),
       ),
       (
         id: _inboxTab,
-        destination: NavigationDestination(
-          icon: _ActivityIcon(pending: pending, icon: AppIconography.activity),
-          selectedIcon: _ActivityIcon(
-            pending: pending,
-            icon: AppIconography.activitySelected,
-          ),
-          label: _l10n(context).shellTabInbox,
+        destination: KitNavDestination(
+          key: const ValueKey('home-shell-tab-inbox'),
+          label: l10n.shellTabInbox,
+          icon: AppIconography.activity,
+          selectedIcon: AppIconography.activitySelected,
+          needsYou: conn.unifiedAttentionCount,
         ),
       ),
       if (hasProjectTools)
         (
           id: _projectTab,
-          destination: NavigationDestination(
-            icon: AppGlyph(AppIconography.files),
-            selectedIcon: AppGlyph(AppIconography.filesSelected),
-            label: _l10n(context).shellTabProject,
+          destination: KitNavDestination(
+            key: const ValueKey('home-shell-tab-project'),
+            label: l10n.shellTabProject,
+            icon: AppIconography.files,
+            selectedIcon: AppIconography.filesSelected,
           ),
         ),
       (
         id: _settingsTab,
-        destination: NavigationDestination(
-          icon: Icon(AppIconography.settings),
-          selectedIcon: Icon(AppIconography.settings),
-          label: _l10n(context).librarySettingsTitle,
+        destination: KitNavDestination(
+          key: const ValueKey('home-shell-tab-settings'),
+          label: l10n.librarySettingsTitle,
+          icon: AppIconography.settings,
         ),
       ),
     ];
-    final selectedDestination = destinations.indexWhere(
-      (entry) => entry.id == activeTab,
+    final selected = destinations.indexWhere((entry) => entry.id == activeTab);
+
+    final perform = AppShortcutScope.performOf(context);
+    final (statusWord, statusTone) = _serverStatus(conn.status, l10n);
+    final controls = KitShellControls(
+      server: _serverName(conn),
+      serverStatus: statusWord,
+      serverTone: statusTone,
+      onServer: () => unawaited(_openServerSwitcher(conn)),
+      // The same launcher as Ctrl/Cmd+K (commands and settings search).
+      onSearch: perform == null
+          ? null
+          : () => perform(const OpenCommandPaletteIntent()),
+      layout: sidebar
+          ? KitShellControlsLayout.sidebar
+          : KitShellControlsLayout.bar,
+      serverKey: const ValueKey('server-switcher-button'),
+      searchKey: const ValueKey('home-shell-search'),
+    );
+
+    final content = KitScreen(
+      // Compact and medium: the glass top controls; the dock or rail names
+      // the tab. The PC sidebar holds the controls, so the content pane
+      // names its destination instead.
+      topBar: sidebar
+          ? KitTopBar(
+              title: _titles[activeTab],
+              titleKey: const ValueKey('current-tab-title'),
+              exit: KitTopBarExit.none,
+            )
+          : KitTopBar.shell(controls: controls),
+      status: _backExitHint == null
+          ? null
+          : KitStatus(
+              kind: KitStatusKind.info,
+              id: 'home-shell-back-exit',
+              icon: AppIconography.back,
+              message: l10n.e7WorkspaceBackExit,
+            ),
+      header: [
+        // Work says it itself, in its one status line and only once
+        // reconnecting has taken a while (work-tab cleanup item 3); a
+        // rejected password keeps the banner and its fix. It unfolds and
+        // folds (§10) rather than pushing the tab down in one frame.
+        KitReveal(
+          child:
+              conn.status != StreamStatus.connected &&
+                  (activeTab != _workTab || conn.passwordRejected)
+              ? ConnectionStatusBanner(controller: conn)
+              : null,
+        ),
+        // Once after Android closed the app while the phone's OpenCode ran
+        // in it (force stop, memory): what stopped and that it is coming
+        // back.
+        const AppExitNoticeLine(),
+        // The phone is hot: the AI Team paused, then resumed.
+        const ThermalNoticeLine(),
+        KitReveal(
+          child: _projectWentAway && !hasProjectTools
+              ? KitRowGroup(
+                  key: const ValueKey('home-shell-project-unavailable'),
+                  children: [_projectUnavailableRow(conn)],
+                )
+              : null,
+        ),
+      ],
+      body: KitTabSwitcher(
+        index: activeTab,
+        reduceMotion: KitGlass.reduceEffects(context),
+        children: tabs,
+      ),
     );
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: _onRootPop,
-      child: Scaffold(
-        // Scaffold publishes the measured dock height as body bottom padding.
-        // Root lists consume it as scroll space, so content can pass beneath
-        // the frosted surface while final rows and fixed actions remain usable.
-        extendBody: showDock,
-        appBar: AppBar(
-          title: _WorkspaceAppBarTitle(
-            onOpenSwitcher: () => unawaited(_openServerSwitcher(conn)),
-            profileName: serverDisplayName(
-              conn.profile,
-              _l10n(context),
-              among: conn.store.profiles,
-            ),
-            tabTitle: _titles[activeTab],
-            status: conn.status,
-            compact: MediaQuery.sizeOf(context).width < 600,
-          ),
-          // No overflow menu: Disconnect moved into the server switcher
-          // (and stays in Settings), the model lives on the composer, and
-          // pull-to-refresh covers the two tabs that list conversations.
+      child: KitSurface(
+        level: KitSurfaceLevel.ground,
+        shape: KitShape.square,
+        padding: KitSurfacePadding.none,
+        clip: false,
+        child: KitNav(
+          navKey: const ValueKey('home-shell-nav'),
+          destinations: [for (final entry in destinations) entry.destination],
+          selected: selected < 0 ? 0 : selected,
+          onSelected: (index) => _selectTab(destinations[index].id),
+          sidebarHeader: sidebar ? controls : null,
+          child: content,
         ),
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            final content = Column(
-              children: [
-                // Work says it itself, in its one status line and only
-                // once reconnecting has taken a while (work-tab cleanup item
-                // 3); a rejected password keeps the banner and its fix.
-                // It unfolds and folds (§10) rather than pushing the tab
-                // down in one frame.
-                KitReveal(
-                  child:
-                      conn.status != StreamStatus.connected &&
-                          (activeTab != _workTab || conn.passwordRejected)
-                      ? ConnectionStatusBanner(controller: conn)
-                      : null,
-                ),
-                // Once after Android closed the app while the phone's
-                // OpenCode ran in it (force stop, memory): what stopped and
-                // that it is coming back.
-                const AppExitNoticeLine(),
-                // The phone is hot: the AI Team paused, then resumed.
-                const ThermalNoticeLine(),
-                Expanded(
-                  child: KitTabSwitcher(
-                    index: activeTab,
-                    reduceMotion: GlassSurface.reduceEffects(context),
-                    children: tabs,
-                  ),
-                ),
-              ],
-            );
-            if (constraints.maxWidth < 760) return content;
-            return Row(
-              children: [
-                NavigationRail(
-                  selectedIndex: selectedDestination,
-                  extended: constraints.maxWidth >= 1040,
-                  onDestinationSelected: (index) =>
-                      _selectTab(destinations[index].id),
-                  destinations: [
-                    for (final entry in destinations)
-                      NavigationRailDestination(
-                        icon: entry.destination.icon,
-                        selectedIcon: entry.destination.selectedIcon,
-                        label: Text(entry.destination.label),
-                      ),
-                  ],
-                ),
-                const VerticalDivider(width: 1),
-                Expanded(child: content),
-              ],
-            );
-          },
-        ),
-        bottomNavigationBar: showDock
-            ? SafeArea(
-                top: false,
-                minimum: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-                child: GlassSurface(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) => _ShellNavigation(
-                      width: constraints.maxWidth,
-                      destinations: [
-                        for (final entry in destinations) entry.destination,
-                      ],
-                      selectedIndex: selectedDestination,
-                      onSelected: (index) => _selectTab(destinations[index].id),
-                    ),
-                  ),
-                ),
-              )
-            : null,
       ),
     );
+  }
+
+  /// The status word beside the server name, always visible (STATE-9), and
+  /// its tone.
+  static (String, AppStatusTone) _serverStatus(
+    StreamStatus status,
+    AppLocalizations l10n,
+  ) => switch (status) {
+    StreamStatus.connected => (l10n.e7WorkspaceConnected, AppStatusTone.ok),
+    StreamStatus.connecting => (
+      l10n.e7WorkspaceConnecting,
+      AppStatusTone.progress,
+    ),
+    StreamStatus.reconnecting => (l10n.mcpReconnecting, AppStatusTone.progress),
+    StreamStatus.disconnected => (
+      l10n.e7WorkspaceOffline,
+      AppStatusTone.failure,
+    ),
+  };
+
+  /// Why Project is missing on this server, with the flow that brings it
+  /// back: switching to a server that offers project tools.
+  Widget _projectUnavailableRow(ConnectionController conn) {
+    final l10n = _l10n(context);
+    return KitRow.unavailable(
+      title: l10n.homeShellProjectUnavailable,
+      reason: l10n.homeShellProjectUnavailableShort(_serverName(conn)),
+      leading: KitRow.icon(context, AppIconography.files),
+      enable: KitAction(
+        key: const ValueKey('home-shell-project-switch-server'),
+        label: l10n.serverSwitcherOpen,
+        icon: AppIconography.swap,
+        onPressed: () => unawaited(_openServerSwitcher(conn)),
+      ),
+    );
+  }
+
+  /// A shortcut or search result asked for Project on a server without
+  /// project tools: say why, and offer the server switcher.
+  Future<void> _explainProjectUnavailable() async {
+    final conn = ref.read(connProvider);
+    final l10n = _l10n(context);
+    final switchServer = await showKitSheet<bool>(
+      context,
+      sheetKey: const ValueKey('home-shell-project-unavailable-sheet'),
+      title: l10n.homeShellProjectUnavailable,
+      icon: AppIconography.files,
+      body: (_) => KitText(
+        l10n.homeShellProjectUnavailableReason(_serverName(conn)),
+        tone: KitTextTone.secondary,
+      ),
+      primary: KitAction(
+        key: const ValueKey('home-shell-project-switch-server'),
+        label: l10n.serverSwitcherOpen,
+        icon: AppIconography.swap,
+        onPressed: () => Navigator.of(context).pop(true),
+      ),
+    );
+    if (switchServer == true && mounted) await _openServerSwitcher(conn);
   }
 
   /// The switcher only chooses. Connecting, credentials, adding and
@@ -464,13 +567,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
+  void _clearBackExit() {
+    _lastBackAt = null;
+    if (_backExitHint == null) return;
+    _backExitHint!.cancel();
+    _backExitHint = null;
+    if (mounted) setState(() {});
+  }
+
   /// Project first unwinds Files and returns to its hub, then destinations
   /// return home.
   /// Only Work uses the double-back exit guard.
   void _onRootPop(bool didPop, Object? result) {
     if (didPop) return;
     if (_tab == _projectTab && _projectBack.handleBack()) {
-      _lastBackAt = null;
+      _clearBackExit();
       return;
     }
     if (_tab != _workTab) {
@@ -478,23 +589,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       return;
     }
     final now = DateTime.now();
-    if (_lastBackAt != null &&
-        now.difference(_lastBackAt!) < const Duration(seconds: 2)) {
+    if (_lastBackAt != null && now.difference(_lastBackAt!) < _backExitWindow) {
       SystemNavigator.pop();
       return;
     }
     _lastBackAt = now;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(_l10n(context).e7WorkspaceBackExit),
-          duration: Duration(seconds: 2),
-        ),
-      );
+    // The shell's one status line says it, and folds away with the window.
+    _backExitHint?.cancel();
+    setState(() {
+      _backExitHint = Timer(_backExitWindow, () {
+        if (!mounted) return;
+        setState(() => _backExitHint = null);
+      });
+    });
   }
-
-  DateTime? _lastBackAt;
 
   List<String> get _titles => [
     _l10n(context).shellTabWork,
@@ -502,358 +610,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _l10n(context).shellTabProject,
     _l10n(context).librarySettingsTitle,
   ];
-}
-
-/// Label metrics depend on typography and available width, not connection
-/// traffic or which destination happens to be selected.
-class _ShellNavigation extends StatefulWidget {
-  const _ShellNavigation({
-    required this.width,
-    required this.destinations,
-    required this.selectedIndex,
-    required this.onSelected,
-  });
-
-  final double width;
-  final List<NavigationDestination> destinations;
-  final int selectedIndex;
-  final ValueChanged<int> onSelected;
-
-  @override
-  State<_ShellNavigation> createState() => _ShellNavigationState();
-}
-
-class _ShellNavigationState extends State<_ShellNavigation> {
-  Object? _metricsKey;
-  double _maxScale = 1;
-  double _labelHeight = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final navigation = theme.navigationBarTheme;
-    // Resolve partial theme styles before both measuring and painting labels;
-    // otherwise Text inherits body metrics while TextPainter measures defaults.
-    final labelBase = theme.textTheme.labelSmall!;
-    final normal = labelBase
-        .merge(navigation.labelTextStyle?.resolve({}))
-        .copyWith(color: GlassSurface.foregroundColor(theme));
-    final selected = labelBase
-        .merge(navigation.labelTextStyle?.resolve({WidgetState.selected}))
-        .copyWith(color: GlassSurface.foregroundColor(theme));
-    final direction = Directionality.of(context);
-    final key = (
-      widget.width,
-      widget.destinations
-          .map((destination) => destination.label)
-          .join('\u0000'),
-      normal,
-      selected,
-      direction,
-    );
-    if (_metricsKey != key) {
-      _metricsKey = key;
-      _maxScale = 2;
-      _labelHeight = 0;
-      for (final destination in widget.destinations) {
-        for (final style in [normal, selected]) {
-          final painter = TextPainter(
-            text: TextSpan(text: destination.label, style: style),
-            textDirection: direction,
-          )..layout();
-          final fit =
-              (widget.width / widget.destinations.length - 8) / painter.width;
-          if (fit < _maxScale) _maxScale = fit;
-          if (painter.height > _labelHeight) _labelHeight = painter.height;
-          painter.dispose();
-        }
-      }
-      _maxScale = _maxScale.clamp(1.0, 2.0);
-    }
-    final scaler = MediaQuery.textScalerOf(
-      context,
-    ).clamp(maxScaleFactor: _maxScale);
-    // The floating tab bar is 60 dp (visual language §4): the 32 dp lens
-    // behind the icon, the label, and 4 dp above and below the visible
-    // stack. Every destination stays a full-height touch target; at large
-    // text the bar grows with its labels.
-    final base = KitTokens.of(context).navHeight;
-    final requiredHeight = 32 + 2 + scaler.scale(_labelHeight) + 10;
-    return MediaQuery.withClampedTextScaling(
-      maxScaleFactor: _maxScale,
-      child: NavigationBarTheme(
-        data: navigation.copyWith(
-          // Muted/primary roles can lose contrast when a bright or dark row
-          // passes beneath the translucent dock. Keep its foreground robust.
-          iconTheme: WidgetStatePropertyAll(
-            IconThemeData(color: GlassSurface.foregroundColor(theme)),
-          ),
-        ),
-        child: NavigationBar(
-          height: requiredHeight > base ? requiredHeight : base,
-          backgroundColor: Colors.transparent,
-          labelTextStyle: WidgetStateProperty.resolveWith(
-            (states) =>
-                states.contains(WidgetState.selected) ? selected : normal,
-          ),
-          animationDuration: GlassSurface.reduceEffects(context)
-              ? Duration.zero
-              : KitMotion.standard,
-          selectedIndex: widget.selectedIndex,
-          onDestinationSelected: widget.onSelected,
-          destinations: widget.destinations,
-        ),
-      ),
-    );
-  }
-}
-
-/// The product's single pending badge (audit UX-P0-01). Semantics carry the
-/// count in words so the number is not colour- or shape-only.
-class _ActivityIcon extends StatelessWidget {
-  final int pending;
-  final IconData icon;
-
-  const _ActivityIcon({required this.pending, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    if (pending <= 0) return AppGlyph(icon);
-    return Semantics(
-      label: _l10n(context).e7WorkspaceAttentionCount(pending),
-      child: Badge(
-        key: const ValueKey('activity-pending-badge'),
-        label: Text('$pending'),
-        child: AppGlyph(icon),
-      ),
-    );
-  }
-}
-
-class _WorkspaceAppBarTitle extends StatelessWidget {
-  final VoidCallback onOpenSwitcher;
-  final String profileName;
-  final String tabTitle;
-  final StreamStatus status;
-  final bool compact;
-
-  const _WorkspaceAppBarTitle({
-    required this.onOpenSwitcher,
-    required this.profileName,
-    required this.tabTitle,
-    required this.status,
-    required this.compact,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final profile = Tooltip(
-      message: profileName,
-      child: Semantics(
-        label: _l10n(context).e7WorkspaceServerName(profileName),
-        excludeSemantics: true,
-        child: Text(
-          profileName,
-          key: const ValueKey('server-profile-title'),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.titleMedium,
-        ),
-      ),
-    );
-    // The destination's name settles in with the tab (§10): one Text, so
-    // there is never a second, fading copy of it.
-    final page = KitEntrance(
-      trigger: tabTitle,
-      onMount: false,
-      rise: 3,
-      child: Text(
-        tabTitle,
-        key: const ValueKey('current-tab-title'),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: AppTheme.mutedOf(theme),
-        ),
-      ),
-    );
-    final server = Row(
-      children: [
-        _StatusDot(status: status),
-        const SizedBox(width: 8),
-        Flexible(child: profile),
-        // The visible handle: the name is a control, not a caption.
-        Icon(
-          AppIconography.chevronDown,
-          size: 18,
-          color: AppTheme.mutedOf(theme),
-        ),
-      ],
-    );
-    // The whole block is the target so it clears 48dp in the app bar; the
-    // name alone would be a 20dp strip.
-    Widget switcher(Widget child) => Semantics(
-      button: true,
-      hint: _l10n(context).serverSwitcherOpen,
-      child: InkWell(
-        key: const ValueKey('server-switcher-button'),
-        borderRadius: BorderRadius.circular(8),
-        onTap: onOpenSwitcher,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: child,
-        ),
-      ),
-    );
-
-    if (compact) {
-      return switcher(
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            server,
-            const SizedBox(height: 1),
-            Padding(
-              padding: const EdgeInsetsDirectional.only(start: 18),
-              child: page,
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Row(
-      children: [
-        Expanded(child: switcher(server)),
-        const SizedBox(width: 12),
-        page,
-      ],
-    );
-  }
-}
-
-class _StatusDot extends StatelessWidget {
-  final StreamStatus status;
-  const _StatusDot({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final (tone, waiting) = switch (status) {
-      StreamStatus.connected => (AppStatusTone.ok, false),
-      StreamStatus.connecting ||
-      StreamStatus.reconnecting => (AppStatusTone.progress, true),
-      StreamStatus.disconnected => (AppStatusTone.failure, false),
-    };
-    final color = AppTheme.statusColor(theme, tone);
-    final label = switch (status) {
-      StreamStatus.connected => _l10n(context).e7WorkspaceConnected,
-      StreamStatus.connecting => _l10n(context).e7WorkspaceConnecting,
-      StreamStatus.reconnecting => _l10n(context).mcpReconnecting,
-      StreamStatus.disconnected => _l10n(context).e7WorkspaceOffline,
-    };
-    return Semantics(
-      label: _l10n(context).e7WorkspaceServerStatus(label),
-      child: Tooltip(
-        message: label,
-        child: _PingDot(
-          color: color,
-          waiting: waiting && !GlassSurface.reduceEffects(context),
-        ),
-      ),
-    );
-  }
-}
-
-/// The server's status dot. While the app connects it sends out a slow,
-/// soft ring (twice per [KitMotion.breath]) instead of a spinning wheel: a
-/// wait, calmly shown. It stops the moment the wait ends, and never runs
-/// under reduced motion or in tests ([KitMotion.loopsIn]).
-class _PingDot extends StatefulWidget {
-  const _PingDot({required this.color, required this.waiting});
-
-  final Color color;
-  final bool waiting;
-
-  @override
-  State<_PingDot> createState() => _PingDotState();
-}
-
-class _PingDotState extends State<_PingDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ping = AnimationController(
-    vsync: this,
-    duration: KitMotion.breath,
-  );
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _sync();
-  }
-
-  @override
-  void didUpdateWidget(_PingDot old) {
-    super.didUpdateWidget(old);
-    _sync();
-  }
-
-  void _sync() {
-    final run = widget.waiting && KitMotion.loopsIn(context);
-    if (run && !_ping.isAnimating) {
-      _ping.repeat();
-    } else if (!run && _ping.isAnimating) {
-      _ping
-        ..stop()
-        ..value = 0;
-    }
-  }
-
-  @override
-  void dispose() {
-    _ping.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => RepaintBoundary(
-    child: CustomPaint(
-      key: const ValueKey('server-status-dot'),
-      // The ring paints beyond the 10 dp dot; the layout never moves.
-      size: const Size.square(10),
-      painter: _PingPainter(color: widget.color, ping: _ping),
-    ),
-  );
-}
-
-class _PingPainter extends CustomPainter {
-  _PingPainter({required this.color, required this.ping})
-    : super(repaint: ping);
-
-  final Color color;
-  final AnimationController ping;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final centre = size.center(Offset.zero);
-    canvas.drawCircle(centre, 5, Paint()..color = color);
-    if (!ping.isAnimating) return;
-    final t = (ping.value * 2) % 1;
-    final ring = KitMotion.enter.transform(t);
-    canvas.drawCircle(
-      centre,
-      5 + 5 * ring,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..color = color.withValues(alpha: color.a * .6 * (1 - ring)),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_PingPainter old) => old.color != color;
 }
 
 AppLocalizations _l10n(BuildContext context) =>

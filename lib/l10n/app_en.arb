@@ -4299,7 +4299,7 @@
   "@e7LocaleUiCommandLauncher": {
     "description": "App shell command menu or routing: CommandLauncher"
   },
-  "e7LocaleUiFindSurface": "Find in this surface",
+  "e7LocaleUiFindSurface": "Find on this screen",
   "@e7LocaleUiFindSurface": {
     "description": "App shell command menu or routing: FindSurface"
   },
@@ -23999,6 +23999,40 @@
     "placeholders": {
       "rows": {
         "type": "int"
+      }
+    }
+  },
+  "shortcutsPaletteSearch": "Search commands and settings",
+  "@shortcutsPaletteSearch": {
+    "description": "Command launcher: the search field's label and hint"
+  },
+  "shortcutsHelpAnywhere": "Anywhere",
+  "@shortcutsHelpAnywhere": {
+    "description": "Keyboard shortcuts sheet: section of shortcuts that work on every screen"
+  },
+  "shortcutsHelpConversation": "In a conversation",
+  "@shortcutsHelpConversation": {
+    "description": "Keyboard shortcuts sheet: section of shortcuts that work inside a conversation"
+  },
+  "homeShellProjectUnavailable": "Project isn't available",
+  "@homeShellProjectUnavailable": {
+    "description": "Shell: title of the row and sheet explaining why the Project tab is missing on this server"
+  },
+  "homeShellProjectUnavailableReason": "{server} doesn't offer files, changes or code search. Connect to an OpenCode server to use them.",
+  "@homeShellProjectUnavailableReason": {
+    "description": "Shell: why the Project tab is missing; {server} is the server's display name",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "homeShellProjectUnavailableShort": "{server} has no project tools.",
+  "@homeShellProjectUnavailableShort": {
+    "description": "Shell: the one-line reason on the row shown after the Project tab went away (a server switch); {server} is the server's display name",
+    "placeholders": {
+      "server": {
+        "type": "String"
       }
     }
   }
