@@ -13,7 +13,8 @@ import 'motion/kit_page_transitions.dart';
 /// `PageRouteBuilder` (KIT-7 retires both from the kit-only allowlist).
 ///
 /// Everything about the transition is fixed by the kit: [transitionDuration]
-/// and [reverseTransitionDuration] are [KitMotion.standard], the route is
+/// and [reverseTransitionDuration] are [KitMotion.standard] with motion on,
+/// and zero when the person asks for reduced motion. The route is
 /// always [opaque], has no [barrierColor] or [barrierLabel] and is never
 /// [barrierDismissible]. Only [maintainState], [fullscreenDialog] and
 /// [allowSnapshotting] are a call site's to choose.
@@ -43,11 +44,26 @@ class KitPageRoute<T> extends PageRoute<T> {
 
   static const _transitions = KitPageTransitionsBuilder();
 
-  @override
-  Duration get transitionDuration => KitMotion.standard;
+  bool get _reduced {
+    final context = navigator?.context;
+    return context != null && KitMotion.reduced(context);
+  }
 
   @override
-  Duration get reverseTransitionDuration => KitMotion.standard;
+  Duration get transitionDuration =>
+      _reduced ? Duration.zero : KitMotion.standard;
+
+  @override
+  Duration get reverseTransitionDuration => transitionDuration;
+
+  @override
+  bool didPop(T? result) {
+    // The preference can change while this page is open. Refresh the
+    // controller's exit duration before reversing it so a reduced-motion
+    // exit finishes immediately, including when it arrived with motion on.
+    controller?.reverseDuration = reverseTransitionDuration;
+    return super.didPop(result);
+  }
 
   @override
   DelegatedTransitionBuilder? get delegatedTransition =>
