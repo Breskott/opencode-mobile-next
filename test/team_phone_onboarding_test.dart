@@ -846,6 +846,23 @@ void main() {
       await settle(tester);
       expect(find.byKey(const ValueKey('team-phone-killed')), findsOneWidget);
       expect(find.text(l10n.teamUiPhoneKilled), findsOneWidget);
+      // P3.4: the page says nothing that contradicts the line (no "not
+      // answering, the app keeps trying" under it, however long it waits),
+      // and its subtitle says the team is stopped.
+      await tester.pump(const Duration(seconds: 9));
+      await settle(tester);
+      expect(
+        find.byKey(const ValueKey('team-home-not-answering')),
+        findsNothing,
+      );
+      expect(find.byKey(const ValueKey('team-home-error')), findsNothing);
+      expect(find.byKey(const ValueKey('team-home-stopped')), findsOneWidget);
+      expect(
+        find.text(
+          '${l10n.teamUiHostPhrasePhone} · ${l10n.teamHomeHostStopped}',
+        ),
+        findsOneWidget,
+      );
       runtime.results['start'] = _ready(agents: 1);
       await tester.tap(find.byKey(const ValueKey('team-phone-killed-start')));
       await settle(tester);
@@ -970,11 +987,17 @@ void main() {
       return (controller, store);
     }
 
+    // The row opens the one AI Team page (P3.4); the phone team's own
+    // controls are in its menu, in every state of the page.
     Future<void> openSheet(WidgetTester tester) async {
       await tapRevealed(
         tester,
         find.byKey(const ValueKey('plugins-ai-team-row')),
       );
+      await tester.tap(find.byKey(const ValueKey('team-home-more')));
+      await settle(tester);
+      await tester.tap(find.byKey(const ValueKey('team-home-phone-controls')));
+      await settle(tester);
       expect(find.byKey(const ValueKey('team-phone-section')), findsOneWidget);
     }
 
@@ -1041,7 +1064,14 @@ void main() {
       );
       await openSheet(tester);
       expect(statusLine(tester), l10n.teamUiPhoneStatusStopped);
-      expect(find.text(l10n.teamUiPhoneKilled), findsOneWidget);
+      // In the phone team's own sheet (the page under it says it too).
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('team-phone-section')),
+          matching: find.text(l10n.teamUiPhoneKilled),
+        ),
+        findsOneWidget,
+      );
       runtime.results['start'] = _ready(agents: 1);
       await tapRevealed(
         tester,
@@ -1154,8 +1184,9 @@ void main() {
           controller.orchestrationStore.phoneOffer(_profileId),
           PhoneOffer.dismissed,
         );
-        // The sheet closed with the removal.
-        expect(find.byKey(const ValueKey('team-plugin-sheet')), findsNothing);
+        // The sheet closed with the removal, and the page is off.
+        expect(find.byKey(const ValueKey('team-phone-section')), findsNothing);
+        expect(find.byKey(const ValueKey('team-intro')), findsOneWidget);
         await teardown(tester, controller);
       },
     );
@@ -1165,7 +1196,10 @@ void main() {
     ) async {
       runtime = _FakeRuntime(supported: false);
       debugTeamPhoneRuntime = runtime;
-      final (controller, _) = await pumpPlugins(tester);
+      final (controller, _) = await pumpPlugins(
+        tester,
+        profile: _phoneProfile(config: _phoneConfig()),
+      );
       expect(find.byKey(const ValueKey('plugins-phone-offer')), findsNothing);
       await openSheet(tester);
       expect(find.text(l10n.teamUiPhoneNotAvailable), findsOneWidget);
@@ -1173,16 +1207,18 @@ void main() {
       await teardown(tester, controller);
     });
 
-    testWidgets('not installed: the sheet sets it up through Add tools', (
+    testWidgets('not installed: the page, off, sets it up through Add tools', (
       tester,
     ) async {
       final (controller, _) = await pumpPlugins(tester);
-      await openSheet(tester);
-      expect(statusLine(tester), l10n.teamUiPhoneStatusNotInstalled);
-      expect(find.byKey(const ValueKey('team-phone-remove')), findsNothing);
       await tapRevealed(
         tester,
-        find.byKey(const ValueKey('team-phone-open-setup')),
+        find.byKey(const ValueKey('plugins-ai-team-row')),
+      );
+      expect(find.byKey(const ValueKey('team-intro')), findsOneWidget);
+      await tapRevealed(
+        tester,
+        find.byKey(const ValueKey('team-intro-set-up')),
       );
       // Phone setup v2's Add tools, on the Termux host (P1.7).
       expect(
@@ -1264,6 +1300,14 @@ void main() {
           tester,
           find.byKey(const ValueKey('plugins-ai-team-row')),
         );
+        expect(tester.takeException(), isNull);
+        // The team page's menu opens the phone team's own controls.
+        await tester.tap(find.byKey(const ValueKey('team-home-more')));
+        await settle(tester);
+        await tester.tap(
+          find.byKey(const ValueKey('team-home-phone-controls')),
+        );
+        await settle(tester);
         expect(tester.takeException(), isNull);
         await reveal(tester, find.byKey(const ValueKey('team-phone-status')));
         await reveal(

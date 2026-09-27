@@ -824,13 +824,24 @@ void main() {
       final card = key('team-run-needs-you');
       expect(card, findsOneWidget);
       // The decision outranks the gate bead; the other run's gate is absent.
+      // The one request card (slice-P4.1c): the reason leads its caption
+      // and the question is its title.
       expect(
-        find.descendant(of: card, matching: find.text('Decision')),
+        find.descendant(
+          of: card,
+          matching: find.textContaining(
+            'Needs your decision',
+            findRichText: true,
+          ),
+        ),
         findsOneWidget,
       );
       expect(
-        _textOf(tester, key('team-run-needs-you-question')).data,
-        'Which persistence strategy?',
+        find.descendant(
+          of: key('team-run-needs-you-question'),
+          matching: find.text('Which persistence strategy?'),
+        ),
+        findsOneWidget,
       );
       expect(
         find.text('This choice controls how the tests store data.'),
@@ -846,7 +857,7 @@ void main() {
           findsOneWidget,
         );
       }
-      expect(key('team-run-needs-you-watch-only'), findsNothing);
+      expect(find.textContaining('can only watch'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -861,13 +872,22 @@ void main() {
       );
       await pumpRun(tester, controller, 'oc-xru');
       final card = key('team-run-needs-you');
+      // Where to answer is the card's detail line (slice-P4.1c).
       expect(
-        _textOf(tester, key('team-run-needs-you-watch-only')).data,
-        'Answer this on the computer. The phone can only watch for now.',
+        find.descendant(
+          of: card,
+          matching: find.textContaining(
+            'Answer this on the computer. The phone can only watch for now.',
+          ),
+        ),
+        findsOneWidget,
       );
       expect(
-        _textOf(tester, key('team-run-needs-you-question')).data,
-        'Which persistence strategy?',
+        find.descendant(
+          of: key('team-run-needs-you-question'),
+          matching: find.text('Which persistence strategy?'),
+        ),
+        findsOneWidget,
       );
       // Nothing to press but More (the Gate sheet), no choices to pick.
       expect(
@@ -889,9 +909,11 @@ void main() {
       );
       await pumpRun(tester, controller, 'oc-xru');
       expect(
-        _textOf(tester, key('team-run-needs-you-watch-only')).data,
-        'Answer this in the host on this phone. The app can only watch '
-        'for now.',
+        find.textContaining(
+          'Answer this in the host on this phone. The app can only watch '
+          'for now.',
+        ),
+        findsOneWidget,
       );
     });
 
@@ -1374,7 +1396,10 @@ void main() {
       expect(
         find.descendant(
           of: key('team-run-needs-you'),
-          matching: find.text(ar.teamUiHomeGateKindChoice),
+          matching: find.textContaining(
+            ar.kitNeedsYouReasonDecision,
+            findRichText: true,
+          ),
         ),
         findsOneWidget,
       );

@@ -140,7 +140,8 @@
     "lib/ui/widgets/team_discover.dart",
     "lib/ui/screens/team/team_conversation_stub.dart",
     "lib/ui/widgets/team_task_row.dart",
-    "lib/ui/widgets/team_now.dart"
+    "lib/ui/widgets/team_now.dart",
+    "lib/ui/screens/team/team_page.dart"
   ],
   "i2-team-sheets": [
     "lib/ui/screens/team/gate_sheet.dart",
@@ -153,7 +154,8 @@
     "lib/ui/widgets/team_host_form.dart",
     "lib/ui/widgets/team_discovery_card.dart",
     "lib/ui/widgets/team_technical_details.dart",
-    "lib/ui/widgets/team_vocabulary.dart"
+    "lib/ui/widgets/team_vocabulary.dart",
+    "lib/ui/widgets/team_switch.dart"
   ],
   "j1-settings-more": [
     "lib/ui/screens/library_screen.dart",

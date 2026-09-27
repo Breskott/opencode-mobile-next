@@ -1,8 +1,8 @@
 /// Finding the AI Team while it is off (docs/qa/team-discover-2026-09-25):
 /// the owner, "AI team is impossible to discover bro". The door is Settings
-/// › AI Team, which leads to the intro ([TeamIntroScreen]) while the team
-/// is off: it says what the team does and what it needs on this kind of
-/// server, and hands over to that kind's own set-up.
+/// › AI Team, which opens the one team page ([TeamPage]); while the team is
+/// off, that page ([TeamIntroScreen]) says what the team does and what it
+/// needs on this kind of server, and hands over to that kind's own set-up.
 ///
 /// These are the helpers those pages share: where a server's team would
 /// run, whether it can, the new-conversation Solo · Team choice and the
@@ -22,7 +22,8 @@ import '../screens/settings/plugins_screen.dart'
     show teamPhoneProfile, teamRowSubtitle;
 import '../screens/new_conversation_sheet.dart'
     show NewConversationChoice, NewConversationKind, NewConversationMemory;
-import '../screens/team/team_intro_screen.dart';
+import '../screens/team/team_intro_screen.dart' show TeamIntroScreen;
+import '../screens/team/team_page.dart' show TeamPage;
 import 'builtin_team_section.dart' show BuiltinTeamSection;
 import 'team_discovery_card.dart' show TeamDiscovery;
 

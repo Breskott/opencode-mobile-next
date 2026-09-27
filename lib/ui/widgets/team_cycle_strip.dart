@@ -305,10 +305,10 @@ class TeamCycleStripState extends State<TeamCycleStrip> {
         if (note != null) ...[SizedBox(height: tokens.space2), note],
         if (receipt != null && !receipt.isSettled) ...[
           SizedBox(height: tokens.space2),
-          TeamReceiptChip(
+          teamControlReceipt(
+            context,
+            receipt,
             key: const ValueKey('team-cycle-receipt'),
-            record: receipt,
-            control: teamControlWord(l10n, receipt.request),
           ),
         ],
       ],
