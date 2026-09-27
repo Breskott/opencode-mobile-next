@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../builtin/app_exit_recovery.dart' show appLifecycleBridgeProvider;
 import '../../builtin/builtin_linux.dart';
 import '../../builtin/builtin_server.dart';
 import '../../builtin/setup/phone_setup.dart';
@@ -19,6 +20,7 @@ import '../kit/kit.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/terminal_screen.dart' show TerminalPage, TerminalSource;
 import '../screens/this_phone_screen.dart' show openThisPhone;
+import 'phone_server_consents.dart';
 import 'product_states.dart';
 import 'termux_running_server_entry.dart' show isManagedPhoneProfile;
 
@@ -554,6 +556,16 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       );
     }
     await _refresh();
+    // The first start is the moment keeping it alive matters (P6.7): asked
+    // once per server, nothing on later starts.
+    if (failure == null && mounted) {
+      await askPhoneServerConsents(
+        context,
+        connection: widget.connection,
+        bridge: ref.read(appLifecycleBridgeProvider),
+        profileId: widget.profile.id,
+      );
+    }
   }
 
   Future<void> _stop() async {

@@ -61,7 +61,20 @@ void main() {
       );
     }
     // One separator between each pair of rows, none above the first.
-    expect(find.byType(Divider), findsNWidgets(2));
+    expect(find.byType(KitDivider), findsNWidgets(2));
     semantics.dispose();
+  });
+
+  testWidgets('KitRowGroup label starts at the gutter, not 4 dp inside it '
+      '(slice-R4)', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: Scaffold(body: SingleChildScrollView(child: _group())),
+      ),
+    );
+    expect(tester.getTopLeft(find.text('Working now')).dx, 16);
+    // First thing in the scroll view: no section gap above.
+    expect(tester.getTopLeft(find.text('Working now')).dy, 0);
   });
 }

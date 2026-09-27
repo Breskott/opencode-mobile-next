@@ -10,6 +10,7 @@ import 'kit_divider.dart';
 import 'kit_menu.dart';
 import 'kit_motion.dart';
 import 'kit_row_parts.dart' show KitRowMenu;
+import 'kit_section_label.dart';
 import 'kit_swipe_action.dart';
 import 'kit_tappable.dart';
 import 'kit_text.dart';
@@ -637,6 +638,19 @@ class _KitCountPill extends StatelessWidget {
 /// above. No per-row menus: a row's rarer actions open on long-press or
 /// right-click (`KitRow.menu`).
 ///
+/// **One inset (slice-R4).** The [label] is a [KitSectionLabel]: its words
+/// start at the group's own edge (the gutter by default, or the sheet's
+/// padding with `margin: EdgeInsets.zero`), on the same line as a
+/// [KitField]'s label and a [KitDetailsFold]'s title. With [labelTerm] the
+/// words explain themselves ([KitTerm]).
+///
+/// **Section gap.** A labelled group keeps [KitTokens.sectionGap] from what
+/// is above it ([gapBefore] null), except as the first thing in a scroll
+/// view or on its page; a fixed spacer the caller already put right above it collapses
+/// into the gap rather than adding to it. An unlabelled group adds no gap
+/// unless [gapBefore] asks for one. For a lazy list on one panel use
+/// [KitSliverRowGroup].
+///
 /// Destructive order (§2.5, §4.2): direct [KitRow] children whose
 /// `destructive` is true are moved, in a stable order, after every other
 /// row, behind a full-width hairline.
@@ -650,6 +664,8 @@ class KitRowGroup extends StatelessWidget {
     this.labelTrailing,
     this.leadingIcons = true,
     this.margin,
+    this.gapBefore,
+    this.labelTerm,
   });
 
   final List<Widget> children;
@@ -657,6 +673,14 @@ class KitRowGroup extends StatelessWidget {
   /// The section's name above the panel (never uppercase).
   final String? label;
   final Widget? labelTrailing;
+
+  /// What [label] means, shown by a [KitTerm] on its words (Providers, MCP
+  /// servers, Resources). Needs a [label].
+  final String? labelTerm;
+
+  /// The space above the group; see the class comment. Null is the section
+  /// gap rule for a labelled group and none for an unlabelled one.
+  final double? gapBefore;
 
   /// Whether the rows lead with an icon tile: the separators then start
   /// where the words do.
@@ -688,24 +712,15 @@ class KitRowGroup extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (label != null)
-            Padding(
-              padding: EdgeInsetsDirectional.only(
-                start: tokens.space1,
-                end: tokens.space1,
-                bottom: tokens.labelGap,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Semantics(
-                      header: true,
-                      child: Text(label, style: tokens.sectionLabel),
-                    ),
-                  ),
-                  ?labelTrailing,
-                ],
-              ),
-            ),
+            KitSectionLabel(
+              label,
+              trailing: labelTrailing,
+              explanation: labelTerm,
+              margin: EdgeInsets.zero,
+              gapBefore: gapBefore,
+            )
+          else if (gapBefore case final gap? when gap > 0)
+            SizedBox(height: gap),
           Material(
             color: tokens.roles.surface1,
             shape: RoundedRectangleBorder(

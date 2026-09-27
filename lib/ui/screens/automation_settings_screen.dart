@@ -1,15 +1,23 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../builtin/app_exit_recovery.dart' show appLifecycleBridgeProvider;
 import '../../l10n/app_localizations.dart';
 import '../../state/automation_policy.dart';
+import '../../state/consent_owners.dart';
 import '../../state/connection.dart';
+import '../../state/in_flow_consent.dart';
 import '../../state/profiles.dart';
 import '../../state/team_planning.dart' show TeamSupervision;
 import '../app_theme.dart';
 import '../kit/kit.dart';
+import '../widgets/first_reply_notify_card.dart'
+    show turnOnNeedsYouNotifications;
 import '../widgets/phone_server_card.dart' show serverDisplayName;
+import '../widgets/phone_server_consents.dart';
+import 'keep_running_screen.dart' show openKeepRunningScreen;
 import 'saved_permissions_screen.dart';
 import 'settings_screen.dart' show NotificationsSettingsScreen;
 import 'team/start_run_sheet.dart' show teamSupervisionCopy;
@@ -74,6 +82,14 @@ class AutomationSettingsSections {
 /// this server in the background (Notifications, whose switch the monitor
 /// reads). A door shows the state it leads to, so nothing is set in two
 /// places. A choice is said as chosen only once storage took it.
+///
+/// **Your answers** (P6.7) lists what the app asked once on this server, in
+/// flow ([ConsentOwners]): keeping the phone server alive (battery, the
+/// maker's auto-start), "Tell me when the agent needs me", and the "Always
+/// allow" offers turned down. Only asked questions have a row, the ones
+/// still owing an answer first, then the declined (each saying what that
+/// means), then the allowed (opening where the system setting lives).
+/// Allowing here asks the same question as in flow and runs the same step.
 class AutomationSettingsScreen extends StatefulWidget {
   const AutomationSettingsScreen({
     super.key,
@@ -97,6 +113,12 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
   String? _profileId;
   bool _saving = false;
   bool _saveFailed = false;
+
+  /// This server's answers asked in flow; null until read (or unreadable).
+  InFlowConsent? _consent;
+  bool _consentUnreadable = false;
+  bool _consentSaveFailed = false;
+  int _declinedOffers = 0;
 
   @override
   void initState() {
@@ -140,6 +162,108 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
             profileId,
           );
     _policy?.addListener(_changed);
+    _consent = null;
+    _consentUnreadable = false;
+    _consentSaveFailed = false;
+    _declinedOffers = 0;
+    if (profileId != null) unawaited(_loadConsents(profileId));
+  }
+
+  Future<void> _loadConsents(String profileId) async {
+    final prefs = widget.controller.store.prefs;
+    InFlowConsent? consent;
+    var unreadable = false;
+    try {
+      consent = await ConsentOwners.inFlow(prefs, profileId);
+    } catch (_) {
+      unreadable = true;
+    }
+    final declined = await ConsentOwners.repeated(
+      prefs,
+      profileId,
+    ).declinedCount();
+    if (!mounted || _profileId != profileId) return;
+    setState(() {
+      _consent = consent;
+      _consentUnreadable = unreadable || declined == null;
+      _declinedOffers = declined ?? 0;
+    });
+  }
+
+  /// A question left unanswered or declined, answered now: the same words
+  /// as in flow, saved before its step runs.
+  Future<void> _allowConsent(InFlowConsentKind kind) async {
+    final consent = _consent;
+    if (consent == null || !consent.storageAvailable) return;
+    final bridge = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(appLifecycleBridgeProvider);
+    final maker = kind == InFlowConsentKind.makerAutoStart
+        ? (await bridge.keepAliveInfo()).manufacturer
+        : '';
+    if (!mounted) return;
+    final allow = await askConsent(
+      context,
+      kind,
+      maker: maker,
+      keyPrefix: 'automation-consent-ask',
+    );
+    if (!allow || !mounted) return;
+    try {
+      await consent.changeFromSettings(kind, allow: true);
+    } catch (_) {
+      if (mounted) setState(() => _consentSaveFailed = true);
+      return;
+    }
+    if (mounted) setState(() => _consentSaveFailed = false);
+    if (kind == InFlowConsentKind.needsYouNotifications) {
+      await turnOnNeedsYouNotifications(widget.controller);
+    } else {
+      await runPhoneConsent(
+        kind,
+        connection: widget.controller,
+        bridge: bridge,
+      );
+    }
+    if (mounted) setState(() {});
+  }
+
+  /// An allowed answer is changed where the system keeps it: the phone's
+  /// own settings (Keep running) or Notifications.
+  Future<void> _openConsentHome(InFlowConsentKind kind) async {
+    if (kind == InFlowConsentKind.needsYouNotifications) {
+      await _open(NotificationsSettingsScreen(controller: widget.controller));
+    } else {
+      await openKeepRunningScreen(context);
+    }
+  }
+
+  Future<void> _offerAgain() async {
+    final profileId = _profileId;
+    if (profileId == null) return;
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final again = await showKitConfirm(
+      context,
+      title: l10n.consentAlwaysAgainTitle,
+      body: l10n.consentAlwaysAgainBody,
+      confirmLabel: l10n.consentAlwaysAgainConfirm,
+      icon: AppIconography.privacy,
+      sheetKey: const ValueKey('automation-consent-offer-again'),
+      confirmKey: const ValueKey('automation-consent-offer-again-confirm'),
+    );
+    if (!again || !mounted) return;
+    final repeated = ConsentOwners.repeated(
+      widget.controller.store.prefs,
+      profileId,
+    );
+    final saved = await repeated.forgetDeclined();
+    final declined = await repeated.declinedCount();
+    if (!mounted || _profileId != profileId) return;
+    setState(() {
+      _consentSaveFailed = !saved;
+      _declinedOffers = declined ?? 0;
+    });
   }
 
   void _connectionChanged() {
@@ -186,8 +310,11 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
       team: widget.teamAvailable,
     );
 
+    final answers = _answerRows(l10n);
     final Widget body;
-    if (profile == null || policy == null || !sections.any) {
+    if (profile == null ||
+        policy == null ||
+        (!sections.any && answers.isEmpty && !_consentUnreadable)) {
       body = KitStateView(
         key: const ValueKey('automation-empty'),
         icon: AppIconography.sync,
@@ -220,6 +347,25 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
               key: const ValueKey('automation-save-failed'),
               tone: AppStatusTone.failure,
               message: l10n.automationSaveFailed,
+            ),
+            SizedBox(height: tokens.sectionGap),
+          ],
+          if (_consentUnreadable || _consentSaveFailed) ...[
+            KitNotice(
+              key: const ValueKey('automation-consent-failed'),
+              tone: AppStatusTone.failure,
+              message: _consentUnreadable
+                  ? l10n.consentStorageFailed
+                  : l10n.consentSaveFailed,
+            ),
+            SizedBox(height: tokens.sectionGap),
+          ],
+          if (answers.isNotEmpty) ...[
+            KitRowGroup(
+              key: const ValueKey('automation-answers'),
+              label: l10n.consentGroupLabel,
+              margin: EdgeInsetsDirectional.zero,
+              children: answers,
             ),
             SizedBox(height: tokens.sectionGap),
           ],
@@ -319,6 +465,86 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
 
   (String, String) _levelCopy(AppLocalizations l10n, TeamSupervision level) =>
       teamSupervisionCopy(l10n, level);
+
+  /// The rows of Your answers, most in need of an answer first: a question
+  /// left unanswered, then what was declined (and the Always allow offers
+  /// turned down), then what was allowed. An unasked question has no row.
+  List<Widget> _answerRows(AppLocalizations l10n) {
+    final consent = _consent;
+    if (consent == null) return const [];
+    final rows = [
+      for (final kind in InFlowConsentKind.values) consent.row(kind),
+    ];
+    final enabled = consent.storageAvailable;
+    Widget row(InFlowConsentRow answer) {
+      final kind = answer.kind;
+      final allowed = answer.choice == InFlowConsentChoice.accepted;
+      return KitRow(
+        key: ValueKey('automation-consent-${kind.name}'),
+        leading: KitRow.icon(context, switch (kind) {
+          InFlowConsentKind.batteryExemption => AppIconography.batteryWarning,
+          InFlowConsentKind.makerAutoStart => AppIconography.sync,
+          InFlowConsentKind.needsYouNotifications => AppIconography.inbox,
+        }),
+        title: switch (kind) {
+          InFlowConsentKind.batteryExemption => l10n.consentRowBattery,
+          InFlowConsentKind.makerAutoStart => l10n.consentRowMaker,
+          InFlowConsentKind.needsYouNotifications => l10n.consentRowNeedsYou,
+        },
+        titleMaxLines: 2,
+        supporting: TextSpan(
+          text: switch (answer.explanation) {
+            InFlowConsentExplanation.batteryMayStopServer =>
+              l10n.consentWhyBattery,
+            InFlowConsentExplanation.makerMayPreventRestart =>
+              l10n.consentWhyMaker,
+            InFlowConsentExplanation.needsYouAlertsOff =>
+              l10n.consentWhyNeedsYou,
+            InFlowConsentExplanation.unfinished => l10n.consentWhyUnfinished,
+            InFlowConsentExplanation.acceptedCheckSystemSettings =>
+              kind == InFlowConsentKind.needsYouNotifications
+                  ? l10n.consentAllowedNeedsYou
+                  : l10n.consentAllowedSystem,
+            InFlowConsentExplanation.notAsked => '',
+          },
+        ),
+        supportingMaxLines: 3,
+        trailing: KitRowValue(switch (answer.choice) {
+          InFlowConsentChoice.accepted => l10n.consentValueAllowed,
+          InFlowConsentChoice.denied => l10n.consentValueDeclined,
+          _ => l10n.consentValueUnanswered,
+        }),
+        onTap: !enabled && !allowed
+            ? null
+            : () => unawaited(
+                allowed ? _openConsentHome(kind) : _allowConsent(kind),
+              ),
+      );
+    }
+
+    final offers = _declinedOffers > 0
+        ? KitRow(
+            key: const ValueKey('automation-consent-always-allow'),
+            leading: KitRow.icon(context, AppIconography.privacy),
+            title: l10n.consentRowAlwaysAllow,
+            supporting: TextSpan(text: l10n.consentWhyAlwaysAllow),
+            supportingMaxLines: 3,
+            trailing: KitRowValue(
+              l10n.consentValueDeclinedCount(_declinedOffers),
+            ),
+            onTap: () => unawaited(_offerAgain()),
+          )
+        : null;
+    return [
+      for (final answer in rows)
+        if (answer.choice == InFlowConsentChoice.offered) row(answer),
+      for (final answer in rows)
+        if (answer.choice == InFlowConsentChoice.denied) row(answer),
+      ?offers,
+      for (final answer in rows)
+        if (answer.choice == InFlowConsentChoice.accepted) row(answer),
+    ];
+  }
 
   /// A door, not a second switch: the monitor reads the switch on
   /// Notifications, so this row says how it is set and opens it there.

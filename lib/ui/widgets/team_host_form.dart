@@ -153,18 +153,57 @@ Future<OrchestrationConfig?> showTeamHostSheet(
   TeamHostProbe? probe,
 }) {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  final actions = TeamHostFormActions._();
+  // Until the form has built: Test and turn on, run through the form.
+  actions.primary.value = KitAction(
+    key: const ValueKey('team-host-submit'),
+    label: l10n.teamUiAddSubmit,
+    onPressed: actions._submit,
+  );
   return showKitSheet<OrchestrationConfig>(
     context,
     title: l10n.teamUiAddTitle,
     icon: AppIconography.computer,
+    primaryListenable: actions.primary,
+    secondaryListenable: actions.secondary,
     body: (sheetContext) => TeamHostForm(
       initialUrl: initialUrl,
       initialCity: initialCity,
       initialHostKind: initialHostKind,
       probe: probe ?? teamHostProbe,
       onFound: (config) => Navigator.of(context).pop(config),
+      actions: actions,
     ),
-  );
+  ).whenComplete(actions._dispose);
+}
+
+/// The form's changing actions (Test and turn on, then Cancel test while
+/// the test runs, then Save the address anyway after no answer), pinned by
+/// the sheet that hosts the form so they stay in reach at any text size
+/// while the fields scroll.
+class TeamHostFormActions {
+  TeamHostFormActions._();
+
+  final primary = ValueNotifier<KitAction?>(null);
+  final secondary = ValueNotifier<KitAction?>(null);
+
+  /// The attached form's submit; null while no form is attached.
+  VoidCallback? _handler;
+  bool _disposed = false;
+
+  void _submit() => _handler?.call();
+
+  void _publish(KitAction primary, KitAction? secondary) {
+    if (_disposed) return;
+    this.primary.value = primary;
+    this.secondary.value = secondary;
+  }
+
+  void _dispose() {
+    _disposed = true;
+    primary.dispose();
+    secondary.dispose();
+  }
 }
 
 /// Address and team name, one submit that tests the address and reports
@@ -172,10 +211,13 @@ Future<OrchestrationConfig?> showTeamHostSheet(
 ///
 /// Map `team-host-sheet` (fix): the test is progress while it runs, with
 /// Cancel test; a failed test says why in one notice and keeps the raw
-/// error under Details; an address that did not answer can be saved
-/// anyway (the team page then says it is not answering). The "kind of
-/// computer" question is gone: the kind comes from [initialHostKind] or the
-/// host itself.
+/// error under Connection details; an address that did not answer can be
+/// saved anyway (the team page then says it is not answering). The "kind
+/// of computer" question is gone: the kind comes from [initialHostKind] or
+/// the host itself.
+///
+/// Inside [showTeamHostSheet] its actions are pinned by the sheet through
+/// [actions]; without it (a page that hosts the form) they close the form.
 class TeamHostForm extends StatefulWidget {
   const TeamHostForm({
     super.key = const ValueKey('team-host-form'),
@@ -184,6 +226,7 @@ class TeamHostForm extends StatefulWidget {
     this.initialUrl = '',
     this.initialCity = '',
     this.initialHostKind,
+    this.actions,
   });
 
   final TeamHostProbe probe;
@@ -194,6 +237,10 @@ class TeamHostForm extends StatefulWidget {
   /// The kind the config carries for the disclaimer; null (or a kind the
   /// form does not offer, such as the phone) is [OrchestrationHostKind.pc].
   final OrchestrationHostKind? initialHostKind;
+
+  /// Where the sheet pins the form's actions; null draws them under the
+  /// fields.
+  final TeamHostFormActions? actions;
 
   @override
   State<TeamHostForm> createState() => _TeamHostFormState();
@@ -227,14 +274,55 @@ class _TeamHostFormState extends State<TeamHostForm> {
   String? _failureDetail;
 
   @override
+  void initState() {
+    super.initState();
+    widget.actions?._handler = _submit;
+  }
+
+  @override
   void dispose() {
+    final actions = widget.actions;
+    if (actions != null && actions._handler == _submit) {
+      actions._handler = null;
+    }
     _url.dispose();
     _city.dispose();
     super.dispose();
   }
 
+  /// A state change: rebuilds the form and re-pins the sheet's actions.
+  /// Only called from events, never while building.
+  void _update(VoidCallback change) {
+    setState(change);
+    final actions = widget.actions;
+    if (actions == null) return;
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    actions._publish(_primary(l10n), _secondary(l10n));
+  }
+
+  KitAction _primary(AppLocalizations l10n) => KitAction(
+    key: const ValueKey('team-host-submit'),
+    label: _testing ? l10n.teamUiAddTesting : l10n.teamUiAddSubmit,
+    working: _testing,
+    onPressed: _submit,
+  );
+
+  KitAction? _secondary(AppLocalizations l10n) => _testing
+      ? KitAction(
+          key: const ValueKey('team-host-cancel-test'),
+          label: l10n.teamHostFormCancelTest,
+          onPressed: _cancelTest,
+        )
+      : _unanswered != null
+      ? KitAction(
+          key: const ValueKey('team-host-save-anyway'),
+          label: l10n.teamHostFormSaveAnyway,
+          onPressed: _saveAnyway,
+        )
+      : null;
+
   void _fail(String message, {bool unavailable = false}) {
-    setState(() {
+    _update(() {
       _failure = message;
       _failureIsUnavailable = unavailable;
       _failureDetail = null;
@@ -266,7 +354,7 @@ class _TeamHostFormState extends State<TeamHostForm> {
     }
     FocusScope.of(context).unfocus();
     final test = ++_test;
-    setState(() {
+    _update(() {
       _testing = true;
       _failure = null;
       _failureDetail = null;
@@ -275,13 +363,13 @@ class _TeamHostFormState extends State<TeamHostForm> {
     final verdict = await widget.probe(url, city: city.isEmpty ? null : city);
     if (!mounted || test != _test) return;
     if (verdict is ProbeFound) {
-      setState(() => _testing = false);
+      _update(() => _testing = false);
       widget.onFound(
         teamConfigFromVerdict(verdict, url: url, city: city, hostKind: _kind),
       );
       return;
     }
-    setState(() {
+    _update(() {
       _testing = false;
       _failure = teamVerdictCopy(l10n, verdict);
       _failureIsUnavailable = verdict is ProbeNotGasCity;
@@ -297,7 +385,7 @@ class _TeamHostFormState extends State<TeamHostForm> {
   /// comes, is dropped (it would be for the old words).
   void _cancelTest() {
     if (!_testing) return;
-    setState(() {
+    _update(() {
       _test++;
       _testing = false;
     });
@@ -357,6 +445,7 @@ class _TeamHostFormState extends State<TeamHostForm> {
             key: const ValueKey('team-host-verdict'),
             tone: AppStatusTone.failure,
             message: failure,
+            notes: [if (_unanswered != null) l10n.teamHostFormSaveAnywayNote],
             actions: [
               if (_failureIsUnavailable)
                 KitAction(
@@ -367,34 +456,19 @@ class _TeamHostFormState extends State<TeamHostForm> {
             ],
           ),
         ],
-        gap,
-        KitActionBlock(
-          primary: KitAction(
-            key: const ValueKey('team-host-submit'),
-            label: _testing ? l10n.teamUiAddTesting : l10n.teamUiAddSubmit,
-            working: _testing,
-            onPressed: _submit,
-          ),
-          secondary: _testing
-              ? KitAction(
-                  key: const ValueKey('team-host-cancel-test'),
-                  label: l10n.teamHostFormCancelTest,
-                  onPressed: _cancelTest,
-                )
-              : _unanswered != null
-              ? KitAction(
-                  key: const ValueKey('team-host-save-anyway'),
-                  label: l10n.teamHostFormSaveAnyway,
-                  onPressed: _saveAnyway,
-                )
-              : null,
-        ),
+        if (widget.actions == null) ...[
+          gap,
+          KitActionBlock(primary: _primary(l10n), secondary: _secondary(l10n)),
+        ],
         // The raw error, last and folded (KIT-33).
-        if (detail != null && detail.isNotEmpty)
+        if (detail != null && detail.isNotEmpty) ...[
+          if (widget.actions != null) gap,
           KitDetailsFold(
+            label: l10n.teamHostFormConnectionDetails,
             text: detail,
             textKey: const ValueKey('team-host-verdict-detail'),
           ),
+        ],
       ],
     );
   }
@@ -474,7 +548,7 @@ Future<bool> showTeamTurnOffSheet(BuildContext context, String serverName) {
     context,
     title: l10n.teamUiTurnOffTitle(serverName),
     body: l10n.teamUiTurnOffBody,
-    confirmLabel: l10n.teamUiTurnOff,
+    confirmLabel: l10n.teamUiTurnOffConfirm,
     cancelLabel: l10n.teamUiKeep,
     kind: KitConfirmKind.destructive,
     icon: AppIconography.unlink,

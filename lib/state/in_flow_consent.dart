@@ -168,6 +168,15 @@ class InFlowConsent {
     });
   });
 
+  /// Stops accepting changes and waits for a write in flight, so the profile
+  /// deletion sweep that follows removes `oc.inFlowConsent.<profileId>` for
+  /// good. A later [load] starts from what storage then holds.
+  Future<void> close() {
+    final drained = _tail;
+    _unavailable = true;
+    return drained;
+  }
+
   Future<T> _serial<T>(Future<T> Function() action) {
     final result = _tail.then((_) {
       if (_unavailable) throw StateError('Consent storage unavailable');

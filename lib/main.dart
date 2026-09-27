@@ -39,11 +39,10 @@ import 'state/profiles.dart';
 import 'update/desktop_release_check.dart';
 import 'update/shorebird_update_notice.dart';
 import 'ui/app_theme.dart';
+import 'ui/capability_flows.dart';
 import 'ui/desktop/desktop_interaction.dart';
 import 'ui/desktop/shortcuts.dart';
-import 'ui/kit/kit_sheet.dart';
-import 'ui/kit/kit_effects.dart';
-import 'ui/kit/motion/kit_haptics.dart';
+import 'ui/kit/kit.dart';
 import 'ui/theme_packs.dart';
 import 'ui/navigation/chat_route.dart';
 import 'ui/screens/settings_screen.dart';
@@ -117,9 +116,18 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
   bool _loading = true;
   int _generation = 0;
 
+  /// When this attempt to open began: after 8 s the page says it is still
+  /// opening and offers Try again (STATE-5).
+  DateTime _since = DateTime.now();
+
   @override
   void initState() {
     super.initState();
+    // Every kit error state offers "Report a problem" (P8.3, C26): Report a
+    // problem opens with the failure attached, from the very first page on,
+    // so even a start that fails can be reported.
+    KitReportHook.handler = (context, report) =>
+        openReportProblem(context, error: report);
     unawaited(_load());
   }
 
@@ -128,6 +136,7 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
     setState(() {
       _loading = true;
       _error = null;
+      _since = DateTime.now();
     });
     try {
       final bootstrap = await PerfTrace.span(
@@ -199,74 +208,47 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Builder(
-        builder: (context) => Scaffold(
-          body: SafeArea(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: _loading
-                      ? Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const CircularProgressIndicator(),
-                            const SizedBox(height: 18),
-                            Text(
-                              AppLocalizations.of(context).e7LocaleUiStarting,
-                            ),
-                          ],
-                        )
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.error_outline_rounded,
-                              size: 40,
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                            const SizedBox(height: 14),
-                            Text(
-                              AppLocalizations.of(
-                                context,
-                              ).e7LocaleUiStartFailed,
-                              style: Theme.of(context).textTheme.headlineSmall,
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              widget.diagnostics.sanitize(
-                                _error?.toString() ??
-                                    AppLocalizations.of(
-                                      context,
-                                    ).e7LocaleUiUnknownStartupError,
-                                limit: 300,
-                              ),
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                            const SizedBox(height: 20),
-                            FilledButton.icon(
-                              key: const ValueKey('retry-app-bootstrap'),
-                              onPressed: _load,
-                              icon: const Icon(Icons.refresh_rounded),
-                              label: Text(
-                                AppLocalizations.of(context).e7LocaleUiRetry,
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
-            ),
+        builder: (context) => _Ground(
+          child: KitScreen(
+            width: KitScreenWidth.reading,
+            body: _bootstrapState(context),
           ),
         ),
       ),
+    );
+  }
+
+  /// The app opening (map page bootstrap-gate): "Opening…" while the saved
+  /// servers are read, then, if that fails, what failed in words with Try
+  /// again, Copy details and Report a problem; the reason is under Details.
+  Widget _bootstrapState(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final retry = KitAction(
+      key: const ValueKey('retry-app-bootstrap'),
+      label: l10n.commonRetry,
+      onPressed: () => unawaited(_load()),
+    );
+    final error = _error;
+    if (_loading || error == null) {
+      return KitStateView(
+        key: const ValueKey('app-bootstrap-opening'),
+        icon: AppIconography.waiting,
+        tone: AppStatusTone.progress,
+        title: l10n.bootstrapOpeningTitle,
+        body: l10n.bootstrapOpeningBody,
+        progress: const KitProgress.waiting(),
+        since: _since,
+        onSlow: [retry],
+      );
+    }
+    return KitStateView.error(
+      key: const ValueKey('app-bootstrap-failed'),
+      title: l10n.bootstrapFailedTitle,
+      body: l10n.bootstrapFailedBody,
+      error: error,
+      details: widget.diagnostics.sanitize(error.toString(), limit: 300),
+      retry: retry,
+      reportSource: 'bootstrap-gate',
     );
   }
 
@@ -309,7 +291,6 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   late final ConnectionController _controller;
   late final AppUpdateService _updateService;
   final _navigatorKey = GlobalKey<NavigatorState>();
-  final _messengerKey = GlobalKey<ScaffoldMessengerState>();
   // Desktop only: the shell shortcut registry. Surfaces claim intents through
   // it, and the Ctrl+K launcher dispatches the same intents the keyboard does.
   final _shortcutSignals = AppShortcutSignals();
@@ -330,11 +311,28 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   final _routeTracker = _TopRouteTracker();
   final _routeTiming = PerfTraceNavigatorObserver();
 
+  /// The app's own condition in every screen's one status line (added to
+  /// KitStatusScope above the navigator): a share or a launch waiting for
+  /// the server, and what became of one that could not open. It replaced
+  /// the snackbars and the share banner (G1).
+  final _notice = ValueNotifier<KitStatus?>(null);
+  Timer? _noticeTimer;
+  Object? _shareFailure;
+  int _shareFailures = 0;
+
+  static const _waitingNotice = 'app:waiting';
+  static const _shareWaitingNotice = 'app:share-waiting';
+  static const _shareFailedNotice = 'app:share-failed';
+  static const _oneShotNotice = 'app:notice';
+
   @override
   void initState() {
     super.initState();
     unawaited(_harvestDynamicColors());
     _controller = ref.read(connProvider);
+    // Every capabilities.json enable flow resolves to its page (C20), so a
+    // missing capability offers "Turn it on" wherever that can happen here.
+    registerCapabilityFlows(_controller);
     _controller.addListener(_controllerChanged);
     _share = widget.shareIntent ?? ShareIntent();
     _share.pending.addListener(_scheduleShareRoute);
@@ -406,6 +404,60 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     }
   }
 
+  /// Shows [status] as the app's line. A [lasting] one stays until its
+  /// condition ends; any other goes after the kit's undo window, except
+  /// under accessible navigation, where it waits for Dismiss.
+  void _showNotice(KitStatus status, {bool lasting = false}) {
+    _noticeTimer?.cancel();
+    _noticeTimer = null;
+    _notice.value = status;
+    if (lasting) return;
+    _noticeTimer = Timer(KitMotion.undoWindow, () {
+      final context = _navigatorKey.currentContext;
+      if (context != null && MediaQuery.accessibleNavigationOf(context)) {
+        return;
+      }
+      _clearNotice(status.id!);
+    });
+  }
+
+  void _clearNotice(String id) {
+    if (_notice.value?.id != id) return;
+    _noticeTimer?.cancel();
+    _noticeTimer = null;
+    _notice.value = null;
+  }
+
+  /// A line that says what just happened, with Dismiss. [supporting] is
+  /// words ([productErrorText]), never the raw failure.
+  void _say(String message, {String? supporting, bool failed = false}) {
+    _showNotice(
+      KitStatus(
+        // `work`: the person's own act, above "Update ready".
+        kind: KitStatusKind.work,
+        id: _oneShotNotice,
+        icon: failed ? AppIconography.error : AppIconography.info,
+        tone: failed ? AppStatusTone.failure : AppStatusTone.neutral,
+        message: message,
+        supporting: supporting,
+        onDismiss: () => _clearNotice(_oneShotNotice),
+      ),
+    );
+  }
+
+  /// A launch, link or share that opens once the server answers.
+  void _showWaiting(String id, String message) {
+    _showNotice(
+      KitStatus(
+        kind: KitStatusKind.work,
+        id: id,
+        icon: AppIconography.waiting,
+        message: message,
+      ),
+      lasting: true,
+    );
+  }
+
   void _controllerChanged() {
     _scheduleCodingAlertRoute();
     _scheduleShareRoute();
@@ -433,15 +485,10 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final context = _navigatorKey.currentContext;
           if (!mounted || context == null) return;
-          _messengerKey.currentState
-            ?..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context).shareWaitingForServer,
-                ),
-              ),
-            );
+          _showWaiting(
+            _shareWaitingNotice,
+            AppLocalizations.of(context).shareWaitingForServer,
+          );
         });
       }
       return;
@@ -449,6 +496,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     _shareRouteScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _shareWaitingNoticeShown = false;
+      _clearNotice(_shareWaitingNotice);
       if (!mounted) return;
       final navigator = _navigatorKey.currentState;
       if (navigator == null) {
@@ -475,12 +523,12 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
             !identical(api, _controller.api) ||
             !identical(repository, _controller.repository)) {
           throw ProductException(
-            AppLocalizations.of(navigator.context).e7LocaleUiShareScopeChanged,
+            AppLocalizations.of(navigator.context).shareConnectionChanged,
           );
         }
         unawaited(
           navigator.push(
-            MaterialPageRoute<void>(
+            KitPageRoute<void>(
               builder: (_) =>
                   ChatScreen(sessionID: session.id, initialText: text),
             ),
@@ -488,35 +536,105 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         );
         if (_share.pending.value == text) _share.take();
         _failedShareText = null;
-        _messengerKey.currentState?.hideCurrentMaterialBanner();
-      } catch (_) {
+        _shareFailure = null;
+        _shareFailures = 0;
+        _clearNotice(_shareFailedNotice);
+      } catch (error) {
         if (!mounted) return;
-        if (_share.pending.value == text) _failedShareText = text;
-        final l10n = AppLocalizations.of(navigator.context);
-        _messengerKey.currentState
-          ?..hideCurrentMaterialBanner()
-          ..showMaterialBanner(
-            MaterialBanner(
-              content: Text(l10n.shareSessionFailed),
-              actions: [
-                TextButton(
-                  child: Text(l10n.commonRetry),
-                  onPressed: () {
-                    if (!mounted) return;
-                    _failedShareText = null;
-                    _messengerKey.currentState?.hideCurrentMaterialBanner();
-                    _scheduleShareRoute();
-                  },
-                ),
-              ],
-            ),
-          );
+        // A newer share replaced this text meanwhile: that one goes next.
+        if (_share.pending.value == text) {
+          _failedShareText = text;
+          _shareFailure = error;
+          _shareFailures += 1;
+          _showShareFailed(text);
+        }
       } finally {
         _shareRouteScheduled = false;
         if (mounted) _scheduleShareRoute();
       }
     });
     WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  /// The shared text could not open a conversation (map page
+  /// share-session-failed-banner): it stays saved, the line says why in
+  /// words, Try again opens it, and More copies or discards it, so the text
+  /// is never lost behind a dismissed banner. A second failure says so.
+  void _showShareFailed(String text) {
+    final context = _navigatorKey.currentContext;
+    if (context == null) return;
+    final l10n = AppLocalizations.of(context);
+    final failure = _shareFailure;
+    _showNotice(
+      KitStatus(
+        kind: KitStatusKind.work,
+        id: _shareFailedNotice,
+        icon: AppIconography.outbox,
+        tone: AppStatusTone.failure,
+        message: _shareFailures > 1
+            ? l10n.shareFailedAgainLine
+            : l10n.shareFailedLine,
+        supporting: failure == null
+            ? null
+            : productErrorText(failure, l10n: l10n),
+        action: KitAction(
+          key: const ValueKey('share-failed-retry'),
+          label: l10n.commonRetry,
+          onPressed: _retryShare,
+        ),
+        more: [
+          KitAction(
+            key: const ValueKey('share-failed-copy'),
+            label: l10n.shareFailedCopy,
+            icon: AppIconography.copy,
+            onPressed: () {
+              final target = _routeTracker.topContext;
+              if (target == null) return;
+              // The person's own words: copied as they are (SEC-13).
+              unawaited(KitCopy.copy(target, text, redact: false));
+            },
+          ),
+          KitAction(
+            key: const ValueKey('share-failed-discard'),
+            label: l10n.shareFailedDiscard,
+            icon: AppIconography.delete,
+            destructive: true,
+            onPressed: () => _discardShare(text),
+          ),
+        ],
+      ),
+      lasting: true,
+    );
+  }
+
+  void _retryShare() {
+    if (!mounted) return;
+    _failedShareText = null;
+    _clearNotice(_shareFailedNotice);
+    _scheduleShareRoute();
+  }
+
+  /// Discards the saved shared text with Undo: it is dropped only when the
+  /// Undo bar goes.
+  void _discardShare(String text) {
+    // The top page's context: under the overlay the Undo bar goes into.
+    final context = _routeTracker.topContext;
+    if (context == null) return;
+    _clearNotice(_shareFailedNotice);
+    showKitUndo(
+      context,
+      key: const ValueKey('share-discarded'),
+      message: AppLocalizations.of(context).shareDiscarded,
+      onCommit: () {
+        if (_share.pending.value == text) _share.take();
+        if (_failedShareText == text) _failedShareText = null;
+        _shareFailure = null;
+        _shareFailures = 0;
+      },
+      onUndo: () {
+        if (mounted && _share.pending.value == text) _showShareFailed(text);
+      },
+    );
   }
 
   /// The active connection can open a session right now: transport,
@@ -574,9 +692,12 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         _launchWaitingNoticeShown = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final context = _navigatorKey.currentContext;
-          if (!mounted || context == null) return;
+          if (!mounted || context == null || !_launchWaitingNoticeShown) {
+            return;
+          }
           final l10n = AppLocalizations.of(context);
-          _showLaunchNotice(
+          _showWaiting(
+            _waitingNotice,
             action == null
                 ? l10n.launchUiSessionWaiting
                 : l10n.launchShortcutWaiting,
@@ -672,8 +793,10 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     } catch (error) {
       if (!mounted) return;
       _consumeLaunchAction(action);
-      _showLaunchNotice(
-        l10n.launchShortcutNewTaskFailed(productErrorText(error)),
+      _say(
+        l10n.appNewConversationFailed,
+        supporting: productErrorText(error, l10n: l10n),
+        failed: true,
       );
     }
   }
@@ -734,7 +857,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     if (_routeTracker.topName == _activityLaunchRoute) return;
     unawaited(
       navigator.push(
-        MaterialPageRoute<void>(
+        KitPageRoute<void>(
           settings: const RouteSettings(name: _activityLaunchRoute),
           builder: (_) => ActivityScreen(controller: _controller),
         ),
@@ -748,12 +871,14 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   /// arrived while this one was being handled is not swallowed with it.
   void _consumeLaunchAction(LaunchAction action) {
     _launchWaitingNoticeShown = false;
+    _clearNotice(_waitingNotice);
     if (_launchShortcut.pending.value == action) _launchShortcut.take();
   }
 
   /// Same single-consumption rule for a pinned-session launch.
   void _consumeSessionLaunch(SessionLaunch launch) {
     _launchWaitingNoticeShown = false;
+    _clearNotice(_waitingNotice);
     if (_launchShortcut.pendingSession.value == launch) {
       _launchShortcut.takeSession();
     }
@@ -770,11 +895,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     unawaited(navigator.pushNamed('/servers'));
   }
 
-  void _showLaunchNotice(String message) {
-    _messengerKey.currentState
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
-  }
+  void _showLaunchNotice(String message) => _say(message);
 
   ServerProfile? _savedProfile(String id) {
     for (final profile in _controller.store.profiles) {
@@ -802,8 +923,11 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         _linkWaitingNoticeShown = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final context = _navigatorKey.currentContext;
-          if (!mounted || context == null) return;
-          _showLaunchNotice(AppLocalizations.of(context).handoffUiLinkWaiting);
+          if (!mounted || context == null || !_linkWaitingNoticeShown) return;
+          _showWaiting(
+            _waitingNotice,
+            AppLocalizations.of(context).handoffUiLinkWaiting,
+          );
         });
       }
       return;
@@ -959,7 +1083,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     switch (link.kind) {
       case TeamLinkKind.gate:
         navigator.push(
-          MaterialPageRoute<void>(
+          KitPageRoute<void>(
             builder: (_) => ActivityScreen(
               controller: _controller,
               initialTeamGateId: team == null ? null : link.id,
@@ -969,7 +1093,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
       case TeamLinkKind.run:
         if (team == null) {
           navigator.push(
-            MaterialPageRoute<void>(
+            KitPageRoute<void>(
               builder: (_) => ActivityScreen(controller: _controller),
             ),
           );
@@ -989,6 +1113,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   /// arrived while this one was being handled is not swallowed with it.
   void _consumeSessionLink(SessionLink link) {
     _linkWaitingNoticeShown = false;
+    _clearNotice(_waitingNotice);
     if (_sessionLink.pending.value == link) _sessionLink.take();
   }
 
@@ -1063,19 +1188,15 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
                   return;
                 }
                 if (route == null) {
-                  _messengerKey.currentState?.showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        lookupAppLocalizations(
-                          Localizations.localeOf(navigator.context),
-                        ).quotaMonitorSourceChanged,
-                      ),
-                    ),
+                  _say(
+                    lookupAppLocalizations(
+                      Localizations.localeOf(navigator.context),
+                    ).quotaMonitorSourceChanged,
                   );
                   return;
                 }
                 navigator.push(
-                  MaterialPageRoute<void>(
+                  KitPageRoute<void>(
                     // Quota monitoring is part of Usage → Remaining.
                     builder: (_) => UsageHubScreen(
                       controller: _controller,
@@ -1097,21 +1218,17 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
             openMonitoredRequest(navigator.context, _controller, route),
           );
         } else {
-          _messengerKey.currentState?.showSnackBar(
-            SnackBar(
-              content: Text(
-                lookupAppLocalizations(
-                  Localizations.localeOf(navigator.context),
-                ).monitorOpenFailed,
-              ),
-            ),
+          _say(
+            lookupAppLocalizations(
+              Localizations.localeOf(navigator.context),
+            ).monitorOpenFailed,
           );
         }
         return;
       }
       if (target.kind == CodingAlertKind.question) {
         navigator.push(
-          MaterialPageRoute<void>(
+          KitPageRoute<void>(
             builder: (_) => ActivityScreen(
               controller: _controller,
               initialQuestionSessionID: target.sessionID,
@@ -1121,7 +1238,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         return;
       }
       navigator.push(
-        MaterialPageRoute<void>(
+        KitPageRoute<void>(
           builder: (_) => ChatScreen(sessionID: target.sessionID),
         ),
       );
@@ -1142,15 +1259,18 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         arguments: const ChatRouteArguments.newlyCreated(),
       );
     } catch (error) {
-      _messengerKey.currentState
-        ?..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(productErrorText(error))));
+      if (!mounted) return;
+      _say(
+        AppLocalizations.of(navigator.context).appNewConversationFailed,
+        supporting: productErrorText(error),
+        failed: true,
+      );
     }
   }
 
   void _openSettings() {
     _navigatorKey.currentState?.push(
-      MaterialPageRoute<void>(
+      KitPageRoute<void>(
         builder: (_) => SettingsScreen(controller: _controller),
       ),
     );
@@ -1269,7 +1389,6 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
           return MaterialApp(
             navigatorKey: _navigatorKey,
             navigatorObservers: [_routeTracker, _routeTiming],
-            scaffoldMessengerKey: _messengerKey,
             builder: (context, child) {
               // Global text-scale safety net: the system setting passes
               // through untouched below the ceiling — including scales under
@@ -1289,36 +1408,41 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
                           : scale,
                     ),
                   ),
-                  child: ShorebirdUpdateNotice(
-                    service: _updateService,
-                    messengerKey: _messengerKey,
-                    child: DesktopReleaseNotice(
-                      messengerKey: _messengerKey,
-                      navigatorKey: _navigatorKey,
-                      // Desktop only. On Android this returns its child
-                      // untouched, so the touch product gains no key handling.
-                      child: AppShortcuts(
+                  // The app's own line joins the conditions every screen's
+                  // status slot reads; the update notices below add theirs.
+                  child: ValueListenableBuilder<KitStatus?>(
+                    valueListenable: _notice,
+                    builder: (context, notice, notices) =>
+                        UpdateStatusScope(status: notice, child: notices!),
+                    child: ShorebirdUpdateNotice(
+                      service: _updateService,
+                      child: DesktopReleaseNotice(
                         navigatorKey: _navigatorKey,
-                        signals: _shortcutSignals,
-                        handlers: AppShortcutHandlers(
-                          onNewSession: () => unawaited(_startNewSession()),
-                          onOpenSettings: _openSettings,
-                          paletteCommands: _shellCommands,
-                        ),
-                        // Settings › Appearance › Effects, above the
-                        // navigator so every route and its transitions read
-                        // the same choices. Calls without a context (a send
-                        // from a controller) obey Vibration via the flag.
-                        child: ValueListenableBuilder<KitEffects>(
-                          valueListenable: _controller.effects,
-                          builder: (context, effects, navigator) {
-                            KitHaptics.enabled = effects.haptics;
-                            return KitEffectsScope(
-                              effects: effects,
-                              child: navigator!,
-                            );
-                          },
-                          child: child ?? const SizedBox.shrink(),
+                        // Desktop only. On Android this returns its child
+                        // untouched, so the touch product gains no key handling.
+                        child: AppShortcuts(
+                          navigatorKey: _navigatorKey,
+                          signals: _shortcutSignals,
+                          handlers: AppShortcutHandlers(
+                            onNewSession: () => unawaited(_startNewSession()),
+                            onOpenSettings: _openSettings,
+                            paletteCommands: _shellCommands,
+                          ),
+                          // Settings › Appearance › Effects, above the
+                          // navigator so every route and its transitions read
+                          // the same choices. Calls without a context (a send
+                          // from a controller) obey Vibration via the flag.
+                          child: ValueListenableBuilder<KitEffects>(
+                            valueListenable: _controller.effects,
+                            builder: (context, effects, navigator) {
+                              KitHaptics.enabled = effects.haptics;
+                              return KitEffectsScope(
+                                effects: effects,
+                                child: navigator!,
+                              );
+                            },
+                            child: child ?? const SizedBox.shrink(),
+                          ),
                         ),
                       ),
                     ),
@@ -1342,7 +1466,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
             darkTheme: AppTheme.dark(pack),
             initialRoute: '/',
             routes: {
-              '/': (_) => _Root(),
+              '/': (_) => _Root(say: _say),
               '/servers': (_) => const ServersScreen(),
               '/home': (_) => const HomeScreen(),
               '/guide': (_) => GuideScreen(embedded: false),
@@ -1362,7 +1486,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
               if (settings.name?.startsWith('/chat/') == true) {
                 final id = settings.name!.substring('/chat/'.length);
                 final arguments = settings.arguments;
-                return MaterialPageRoute(
+                return KitPageRoute<void>(
                   builder: (_) => ChatScreen(
                     sessionID: id,
                     discardIfUntouched:
@@ -1408,6 +1532,8 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     _sessionLink.pending.removeListener(_scheduleSessionLinkRoute);
     _sessionLink.pendingTeam.removeListener(_scheduleTeamLinkRoute);
     if (widget.sessionLinkIntent == null) _sessionLink.dispose();
+    _noticeTimer?.cancel();
+    _notice.dispose();
     super.dispose();
   }
 }
@@ -1418,6 +1544,17 @@ class _TopRouteTracker extends NavigatorObserver {
   final List<Route<dynamic>> _stack = [];
 
   String? get topName => _stack.isEmpty ? null : _stack.last.settings.name;
+
+  /// A context inside the top page (below the navigator's overlay), for
+  /// the app-level parts that need one: the Undo bar, Copy.
+  BuildContext? get topContext {
+    for (final route in _stack.reversed) {
+      if (route is ModalRoute && route.subtreeContext != null) {
+        return route.subtreeContext;
+      }
+    }
+    return null;
+  }
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
@@ -1451,6 +1588,11 @@ class _TopRouteTracker extends NavigatorObserver {
 
 /// Decides the start destination from persisted state.
 class _Root extends ConsumerStatefulWidget {
+  const _Root({required this.say});
+
+  /// The app's one-shot line (the shell's status notice).
+  final void Function(String message, {String? supporting, bool failed}) say;
+
   @override
   ConsumerState<_Root> createState() => _RootState();
 }
@@ -1572,7 +1714,6 @@ class _RootState extends ConsumerState<_Root> {
   Future<void> _startPhoneServer() async {
     if (_startingPhoneServer) return;
     setState(() => _startingPhoneServer = true);
-    final messenger = ScaffoldMessenger.maybeOf(context);
     final strings = lookupAppLocalizations(Localizations.localeOf(context));
     try {
       await LocalServerControls(
@@ -1580,14 +1721,11 @@ class _RootState extends ConsumerState<_Root> {
         connection: _controller,
       ).restart();
     } on LocalServerControlFailure catch (failure) {
-      messenger?.showSnackBar(
-        SnackBar(
-          content: Text(
-            failure.message.isEmpty
-                ? strings.phoneServerStartFailed
-                : failure.message,
-          ),
-        ),
+      // What failed in words; Termux's own text stays in diagnostics.
+      widget.say(
+        strings.rootPhoneServerStartFailed,
+        supporting: productErrorText(failure, l10n: strings),
+        failed: true,
       );
     } finally {
       if (mounted) setState(() => _startingPhoneServer = false);
@@ -1659,9 +1797,11 @@ class _RootState extends ConsumerState<_Root> {
     final inApp = _builtin.recognises(profile);
     final startFailure = _builtin.failureFor(profile);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return Scaffold(
-      body: SafeArea(
-        child: SavedServerConnectionCard(
+    // A KitScreen, so the app's line (a share waiting for this server)
+    // shows above the card (map page root-connecting).
+    return _Ground(
+      child: KitScreen(
+        body: SavedServerConnectionCard(
           profileName: serverDisplayName(
             profile,
             l10n,
@@ -1670,11 +1810,11 @@ class _RootState extends ConsumerState<_Root> {
           usesConnectionToken: conn.usesConnectionToken,
           requiresTokenReentry: profile.requiresCodexTokenReentry,
           baseUrl: profile.baseUrl,
+          // The raw failure: the card diagnoses it into words and keeps
+          // the text itself under Details only.
           error: startFailure != null
               ? l10n.builtinServerStartFailed(startFailure.reason(l10n))
-              : conn.lastError == null
-              ? null
-              : productErrorText(conn.lastError!),
+              : conn.lastError,
           attempts: _attempts,
           inAppServer: inApp,
           startingInAppServer: inApp && _builtin.starting,
@@ -1735,4 +1875,21 @@ class _RootState extends ConsumerState<_Root> {
     _builtin.removeListener(_changed);
     super.dispose();
   }
+}
+
+/// The page ground under a bar-less root page (the app opening, the saved
+/// server connecting): a KitScreen draws its ground only with a top bar.
+class _Ground extends StatelessWidget {
+  const _Ground({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => KitSurface(
+    level: KitSurfaceLevel.ground,
+    shape: KitShape.square,
+    padding: KitSurfacePadding.none,
+    clip: false,
+    child: child,
+  );
 }

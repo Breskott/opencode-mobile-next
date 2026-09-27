@@ -1785,8 +1785,15 @@ final isPage = route is MaterialPageRoute;
           );
         }
 
-        // A file with a baseline entry may not add one either.
-        const mainFile = 'lib/main.dart';
+        // A file with a baseline entry may not add one either (any file
+        // still baselined; lib/main.dart reached 0 in coord-main).
+        final mainFile = committed.entries
+            .firstWhere(
+              (entry) =>
+                  (entry.value as Map<String, dynamic>?)?['MaterialPageRoute']
+                      is num,
+            )
+            .key;
         final base =
             ((committed[mainFile]
                         as Map<String, dynamic>?)?['MaterialPageRoute']

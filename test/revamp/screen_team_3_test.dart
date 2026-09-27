@@ -30,6 +30,8 @@ Widget _app(Widget home) => MaterialApp(
 
 Finder _key(String name) => find.byKey(ValueKey(name));
 
+final _en = lookupAppLocalizations(const Locale('en'));
+
 Future<OrchestrationController> _pumpAgents(
   WidgetTester tester, {
   List<OrchestrationAgent>? agents,
@@ -92,13 +94,13 @@ void main() {
   testWidgets('Wake slit asks the host to resume that agent, then shows the '
       'receipt', (tester) async {
     final controller = await _pumpAgents(tester);
-    // Only the paused agent offers Wake; asleep ones wake by themselves.
-    expect(_key('team-agents-wake-slit'), findsOneWidget);
-    expect(_key('team-agents-wake-dog-1'), findsNothing);
-    expect(_key('team-agents-wake-furiosa'), findsNothing);
-    expect(find.text('Wake slit'), findsOneWidget);
+    // One Wake for the paused agents above the list (owner, build 2055:
+    // no button per row); asleep ones wake by themselves.
+    expect(_key('team-agents-wake-paused'), findsOneWidget);
+    expect(_key('team-agents-wake-slit'), findsNothing);
+    expect(find.text(_en.teamAgentsWakePaused(1)), findsOneWidget);
 
-    await tester.tap(_key('team-agents-wake-slit'));
+    await tester.tap(_key('team-agents-wake-paused'));
     await tester.pumpAndSettle();
     final record = controller.latestMutation(
       kind: MutationKind.controlAgent,
@@ -106,11 +108,14 @@ void main() {
     );
     expect(record, isNotNull);
     expect(record!.request.action, AgentControlAction.resume);
-    expect(_key('team-agents-receipt-slit'), findsOneWidget);
-    // The fixture never confirms: after the wait the receipt says so.
+    expect(_key('team-agents-wake-receipt'), findsOneWidget);
+    // The fixture never confirms: after the wait the receipt says so, in
+    // words, with Check again.
     await tester.pump(controller.mutationTimeout);
     await tester.pumpAndSettle();
-    expect(_key('team-agents-receipt-slit'), findsOneWidget);
+    expect(_key('team-agents-wake-receipt'), findsOneWidget);
+    expect(find.text(_en.teamAgentsWakeUnconfirmed), findsOneWidget);
+    expect(_key('team-agents-wake-check'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -121,8 +126,7 @@ void main() {
       tester,
       caps: const OrchestrationCapabilities(runs: true, workGraph: true),
     );
-    expect(_key('team-agents-wake-slit'), findsNothing);
-    expect(find.text('Wake slit'), findsNothing);
+    expect(_key('team-agents-wake-paused'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
