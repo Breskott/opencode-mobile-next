@@ -8,10 +8,12 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/main.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/review_handoff.dart';
+import 'package:opencode_mobile/ui/kit/kit_code_block.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
@@ -1009,6 +1011,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );
@@ -1016,7 +1020,7 @@ void main() {
     await tester.tap(find.text('image.bin'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Preview unavailable'), findsOneWidget);
+    expect(find.text("Can't show this file"), findsOneWidget);
     expect(find.textContaining('application/octet-stream'), findsOneWidget);
     expect(find.text('AAEC'), findsNothing);
   });
@@ -1041,6 +1045,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );
@@ -1049,8 +1055,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('file-preview-image')), findsOneWidget);
-    expect(find.text('Pinch to zoom'), findsOneWidget);
-    expect(find.byType(InteractiveViewer), findsOneWidget);
+    expect(find.byKey(const ValueKey('kit-viewer-image')), findsOneWidget);
     expect(find.byKey(const Key('project-file-download')), findsOneWidget);
     expect(find.byKey(const Key('project-file-attach')), findsNothing);
   });
@@ -1080,6 +1085,8 @@ void main() {
       FilePreviewData? attached;
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: FilesScreen(
               controller: controller,
@@ -1091,16 +1098,16 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('small.csv'));
       await tester.pumpAndSettle();
-      expect(find.text('Column 1'), findsOneWidget);
-      expect(find.text('entry'), findsOneWidget);
+      expect(find.byKey(const ValueKey('kit-viewer-table')), findsOneWidget);
+      expect(find.textContaining('entry'), findsOneWidget);
       Navigator.of(
         tester.element(find.byKey(const Key('project-file-download'))),
       ).pop();
       await tester.pumpAndSettle();
       await tester.tap(find.text('large.csv'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Only part of this file'), findsOneWidget);
-      expect(find.text('Column 1'), findsNothing);
+      expect(find.textContaining('Showing'), findsOneWidget);
+      expect(find.byKey(const ValueKey('kit-viewer-table')), findsNothing);
       await tester.tap(find.byKey(const Key('project-file-attach')));
       await tester.pumpAndSettle();
       expect(attached?.copyText, original);
@@ -1129,6 +1136,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: FilesScreen(
             controller: controller,
@@ -1199,6 +1208,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (context) => MediaQuery(
             data: MediaQuery.of(
@@ -1237,14 +1248,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Line 42'), findsOneWidget);
+    expect(find.byKey(const ValueKey('file-preview-text')), findsOneWidget);
     expect(
-      find.byKey(const Key('file-preview-focused-source')),
-      findsOneWidget,
-    );
-    expect(find.byKey(const Key('file-preview-target-line')), findsOneWidget);
-    expect(
-      find.text('class ProjectHealthScreen extends StatefulWidget {'),
-      findsOneWidget,
+      tester.widget<KitCodeBlock>(find.byType(KitCodeBlock)).initialLine,
+      42,
     );
     expect(tester.takeException(), isNull);
   });

@@ -4593,6 +4593,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Only part of this file is shown. Copy and Save keep the original content.';
 
   @override
+  String get filePreviewPdfIsolated =>
+      'PDF pages don\'t render in this isolated view. Save the file to read it in a PDF app.';
+
+  @override
+  String get filePreviewCopyOriginal => 'Copy original file';
+
+  @override
+  String get filePreviewOpenInFiles => 'Open in Files';
+
+  @override
+  String get filePreviewViewMode => 'Show file as';
+
+  @override
+  String get filePreviewAttachFailed => 'Couldn\'t attach file';
+
+  @override
+  String get filePreviewSaveFailed => 'Couldn\'t save file';
+
+  @override
   String fileLineOutsidePreview(int line) {
     return 'Line $line is outside this preview. Save the original to read that location.';
   }
