@@ -21,7 +21,7 @@ The host crash lost the original `/tmp` baseline logs, but completed before coun
 
 | File (`test/`) | Before pass / fail / skip | After pass / fail / skip | Evidence phase | Repair / retained behavior |
 |---|---:|---:|---|---|
-| `chat_live_events_test.dart` | 72 / 33 / 0 | 102 / 3 / 0 | `round4` | Kit menus, diff/viewer, accessible attachments, context presentation, prompt editor and delegation; payload checks retained. |
+| `chat_live_events_test.dart` | 72 / 33 / 0 | 102 / 3 / 0 | `final` | Kit menus, diff/viewer, accessible attachments, context presentation, prompt editor and delegation; payload checks retained. |
 | `product_ui_regression_test.dart` | 5 / 22 / 0 | 23 / 4 / 0 | `round3` | Files/review/terminal kit routes, copy announcements, CSV and thinking menus; four product guards retained. |
 | `stable_chat_layout_test.dart` | 3 / 7 / 0 | 10 / 0 / 0 | `verified` | Kit editor/controls and actual viewport; focus, draft and geometry checks retained. |
 | `chat_reference_send_test.dart` | 2 / 4 / 0 | 6 / 0 / 0 | `after` | Kit editor and combined draft warning; references and exact send payloads retained. |
@@ -36,7 +36,7 @@ The host crash lost the original `/tmp` baseline logs, but completed before coun
 | `chat_server_state_ui_test.dart` | 8 / 1 / 0 | 8 / 1 / 0 | `after` | Unchanged; provider-auth navigation exposes page primary-action defect. |
 | `chat_states_standard_test.dart` | 4 / 2 / 0 | 5 / 1 / 0 | `after` | Current state actions; original technical Details requirement retained. |
 | `nudge_moments_test.dart` | 12 / 8 / 0 | 18 / 2 / 0 | `after` | Kit notices, current copy, real viewport and reachable actions; approval overflows retained. |
-| `text_scale_overflow_test.dart` | 101 / 2 / 0 | 327 / 9 / 0 | `round3` | Manifest utility classification strengthened; 54 missing exported kit parts covered with real state fixtures. Existing sizes, scales and zero-overflow baseline unchanged. |
+| `text_scale_overflow_test.dart` | 101 / 2 / 0 | 329 / 8 / 0 | `final` | Manifest utility classification strengthened; 54 missing exported kit parts covered with real state fixtures. Existing sizes, scales and zero-overflow baseline unchanged. |
 | `voice_composer_test.dart` | 3 / 3 / 0 | 6 / 0 / 0 | `round3` | Kit voice radio semantics, primary-first layout, real viewport and bundled license viewers. |
 | `voice_model_localization_test.dart` | 7 / 2 / 0 | 9 / 0 / 0 | `after` | Current kit controls, settled scrolling and localization delegates; Arabic reachability retained. |
 | `voice_reply_pipeline_test.dart` | 0 / 20 / 3 | 19 / 1 / 3 | `round4` | Current consent/switch and scrollable reply controls; speech dispatch, stale reply and opt-in assertions retained; three existing optional capture skips unchanged. |
@@ -92,4 +92,6 @@ All cases below remain enabled and failing; production files are untouched. Sour
 
 Pinned Flutter/Dart were used throughout. Dependencies: `flutter pub get --offline`. Formatting: `dart format --language-version=3.10` on changed Dart files. Each listed file was run separately with `flutter test --no-pub --concurrency=1 <file>`; the lead serialized Flutter work, workers did not launch test processes. Full repository/golden tests are outside this non-golden file batch; no full-suite pass is claimed.
 
-Final analyzer, gate totals, compact model classification and final commit audit are pending until the last serial runs complete.
+The full overflow run completed at **329 pass / 8 fail**. An isolated follow-up replaced runtime-type string matching with generic-safe KIT-24 predicates and extended the existing selftest. Both affected tests were rerun (`kit24-targeted.jsonl`): selftest passes; the segmented scene still fails, now correctly reporting zero stacked choice rows in eight phone combinations. Other matrix code/scenes did not change; the full matrix was not repeated after this isolated helper repair. The table preserves the completed full-run count and this follow-up evidence separately.
+
+Final analyzer and final commit audit are pending until the last serial runs complete.

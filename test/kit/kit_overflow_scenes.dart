@@ -17,6 +17,11 @@ import 'package:flutter/material.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 
+import 'kit_overflow_chat_scenes.dart';
+import 'kit_overflow_data_scenes.dart';
+import 'kit_overflow_form_scenes.dart';
+import 'kit_overflow_layout_scenes.dart';
+
 /// Where the matrix puts a scene.
 enum KitOverflowHost {
   /// In a padded scrolling list, as rows and panels sit on a screen.
@@ -1473,6 +1478,41 @@ final kitOverflowScenes = <KitOverflowScene>[
         onPressed: _noop,
       ),
       child: const SizedBox.expand(),
+    ),
+  ),
+  // September 27 additions: real states, shared with no golden runner.
+  ...kitOverflowChatScenes,
+  ...kitOverflowDataScenes,
+  ...kitOverflowFormScenes,
+  ...kitOverflowLayoutScenes,
+  KitOverflowScene(
+    const ['KitSegmented'],
+    'labels-overflow',
+    labelsOverflow: true,
+    build: (_, c) => KitSegmented<String>(
+      semanticsLabel: c.t('Instruction scope', 'نطاق التعليمات'),
+      segments: [
+        KitSegment(
+          value: 'conversation',
+          label: c.t('Only the current conversation', 'المحادثة الحالية فقط'),
+        ),
+        KitSegment(
+          value: 'project',
+          label: c.t(
+            'Every conversation in this project',
+            'كل المحادثات في هذا المشروع',
+          ),
+        ),
+        KitSegment(
+          value: 'server',
+          label: c.t(
+            'Every conversation on this server',
+            'كل المحادثات على هذا الخادم',
+          ),
+        ),
+      ],
+      selected: 'conversation',
+      onChanged: (_) {},
     ),
   ),
 ];

@@ -32,6 +32,10 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_choice_list.dart'
+    show KitChoice, KitChoiceRow;
+import 'package:opencode_mobile/ui/kit/kit_segmented.dart'
+    show KitSegment, KitSegmented;
 import 'package:opencode_mobile/ui/screens/chat/permission_sheet.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
@@ -194,13 +198,15 @@ const _widgetBases = {'InheritedNotifier', 'InheritedModel', 'InheritedTheme'};
 /// quietly drop out of the matrix. A class with no `extends` is an `Object`
 /// and never a widget.
 const _nonWidgetClasses = {
-  'KitTokens',
-  'KitPageTransitionsBuilder',
-  // A pushed route (kit-KitPageRoute): it lays nothing out itself; the
-  // page it carries is the screen's.
-  'KitPageRoute',
-  // KitZoom's controller (kit-KitImage), a ChangeNotifier.
-  'KitZoomController',
+  'KitTokens': 'ThemeExtension',
+  'KitPageTransitionsBuilder': 'PageTransitionsBuilder',
+  // A route lays out its caller's page, not a kit part.
+  'KitPageRoute': 'PageRoute',
+  'KitZoomController': 'ChangeNotifier',
+  // Input, scrolling and log models have no layout of their own.
+  'KitNumberFormatter': 'TextInputFormatter',
+  'KitScrollBehavior': 'MaterialScrollBehavior',
+  'KitLogBuffer': 'ValueNotifier',
 };
 
 /// Every `export` and `part` directive in a scanned file; each one must match
@@ -352,7 +358,9 @@ KitManifest readKitManifest({String kitFile = '$_kitDir/kit.dart'}) {
       parts.add(name);
       continue;
     }
-    if (classes.any(_nonWidgetClasses.contains)) continue;
+    // Class names alone are not an exemption: a changed or unknown base
+    // must fail, and a known utility turned into a widget was included above.
+    if (classes.any((type) => _nonWidgetClasses[type] == outside)) continue;
     problems.add(
       '$name extends ${classes.length > 1 ? '${classes.skip(1).join(' → ')} → ' : ''}'
       '$outside, which is neither a widget, a kit class nor a known '
@@ -495,11 +503,9 @@ Widget _kitApp({
 // ---------------------------------------------------------------------------
 // KIT-24.
 
-bool _isKitSegmented(Widget widget) =>
-    widget.runtimeType.toString() == 'KitSegmented';
+bool _isKitSegmented(Widget widget) => widget is KitSegmented<Object?>;
 
-bool _isKitChoiceRow(Widget widget) =>
-    widget.runtimeType.toString() == 'KitChoiceRow';
+bool _isKitChoiceRow(Widget widget) => widget is KitChoiceRow<Object?>;
 
 /// KIT-24 on the pumped tree, for a scene whose labels do not fit: every
 /// KitSegmented is full width and is a vertical stack of at least two
@@ -731,9 +737,23 @@ void main() {
   testWidgets('the home shell lays out at 2.5x', (tester) async {
     final conn = await _controller();
     addTearDown(conn.dispose);
-    await _pumpScaled(tester, _scoped(conn, const HomeScreen()));
+    final layoutErrors = <FlutterErrorDetails>[];
+    final reportError = FlutterError.onError;
+    FlutterError.onError = (details) {
+      layoutErrors.add(details);
+      reportError?.call(details);
+    };
+    try {
+      await _pumpScaled(tester, _scoped(conn, const HomeScreen()));
+    } finally {
+      FlutterError.onError = reportError;
+    }
 
-    expect(tester.takeException(), isNull);
+    expect(
+      tester.takeException(),
+      isNull,
+      reason: layoutErrors.map((details) => details.toString()).join('\n'),
+    );
   });
 
   testWidgets('the Settings tab lays out at 2.5x', (tester) async {
@@ -876,7 +896,8 @@ void main() {
         isEmpty,
         reason:
             'Kit parts with no scene in test/kit/kit_overflow_scenes.dart '
-            '(add one per declared state at the end of kitOverflowScenes)',
+            '(add one per declared state at the end of kitOverflowScenes): '
+            '${missing.join(', ')}',
       );
       expect(
         stale,
@@ -906,6 +927,40 @@ void main() {
               'stacks KitChoiceRows when its labels do not fit',
         );
       }
+    });
+
+    test('non-widget utilities require their expected superclass', () {
+      final dir = Directory.systemTemp.createTempSync('g6_utilities');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final kitFile = File('${dir.path}/kit.dart');
+      void writeBases(String Function(String) baseOf) {
+        kitFile.writeAsStringSync(
+          [
+            for (final entry in _nonWidgetClasses.entries)
+              'class ${entry.key} extends ${baseOf(entry.value)} {}',
+          ].join('\n'),
+        );
+      }
+
+      writeBases((base) => base);
+      final utilities = readKitManifest(kitFile: kitFile.path);
+      expect(utilities.parts, isEmpty);
+      expect(utilities.problems, isEmpty);
+
+      writeBases((_) => 'UnrecognisedBase');
+      final changedBases = readKitManifest(kitFile: kitFile.path);
+      expect(changedBases.problems, hasLength(_nonWidgetClasses.length));
+      for (final name in _nonWidgetClasses.keys) {
+        expect(
+          changedBases.problems,
+          contains(contains('$name extends UnrecognisedBase')),
+        );
+      }
+
+      writeBases((_) => 'StatelessWidget');
+      final widgets = readKitManifest(kitFile: kitFile.path);
+      expect(widgets.parts, _nonWidgetClasses.keys.toSet());
+      expect(widgets.problems, isEmpty);
     });
 
     test('the manifest fails loudly on what it cannot read', () {
@@ -952,6 +1007,28 @@ class KitShown extends StatelessWidget {}
       'the KIT-24 check passes a stack and fails a track, narrow rows or no '
       'part',
       (tester) async {
+        // Both real parts are generic. Comparing runtimeType strings with
+        // the bare class names silently misses KitSegmented<String> and
+        // KitChoiceRow<int>, so KIT-24 never inspects their actual layout.
+        final segmented = KitSegmented<String>(
+          segments: const [
+            KitSegment(value: 'one', label: 'One'),
+            KitSegment(value: 'two', label: 'Two'),
+          ],
+          selected: 'one',
+          onChanged: (_) {},
+          semanticsLabel: 'Scope',
+        );
+        final choice = KitChoiceRow<int>(
+          choice: const KitChoice(value: 1, title: 'One'),
+          selected: true,
+          onTap: () {},
+        );
+        expect(_isKitSegmented(segmented), isTrue);
+        expect(_isKitChoiceRow(choice), isTrue);
+        expect(_isKitSegmented(choice), isFalse);
+        expect(_isKitChoiceRow(segmented), isFalse);
+
         tester.view.devicePixelRatio = 1;
         tester.view.physicalSize = const Size(360, 740);
         addTearDown(tester.view.reset);
