@@ -10,12 +10,15 @@
 ///    joins them only when there are more than eight tasks, and opens the
 ///    pinned [KitSearchField] with its one filter menu.
 /// 2. What needs the person, only when something does, with no heading of
-///    its own: one question as a request block with its answers, several as
-///    rows on one panel (the Gate sheet of `gate_sheet.dart` holds the
-///    rest). The one question's block is also its task's row: it names the
-///    task, carries its step count and opens its conversation, so the task
-///    is not listed again below.
-/// 3. **Tasks**: ONE panel of rows under one heading, ordered by urgency
+///    its own: one question as a request block with its answers. The one
+///    question's block is also its task's row: it names the task, carries
+///    its step count and opens its conversation, so the task is not listed
+///    again below. Several questions are no section of their own (owner
+///    rule 2026-09-27): each one's task row becomes the question ("Needs
+///    you · Keep drafts in SQLite? · 2 min ago") and opens the Gate sheet
+///    of `gate_sheet.dart`; a question with no task listed is a row of its
+///    own at the top of the same list.
+/// 3. **Tasks**: ONE panel of rows with no heading, ordered by urgency
 ///    (owner rule 2026-09-27): what needs the person, then what runs, then
 ///    what waits, then what finished (three shown, the rest behind one
 ///    row), never split into state sections. A row is the task's title,
@@ -24,7 +27,7 @@
 ///    opens the task's conversation ([TeamConversation.open]), the same
 ///    page every other door to a task opens.
 /// 4. One **agents** row ("3 agents · 1 working") that opens
-///    [TeamAgentsScreen], and the board row.
+///    [TeamAgentsScreen]. The board opens from the top bar only.
 ///
 /// **Give the team a task** (TEAM-204, only with `controlMessage`) is the
 /// screen's one primary button, pinned below the list; it opens
@@ -46,6 +49,7 @@ import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../kit/scenes/team_scenes.dart';
+import '../../widgets/relative_time.dart';
 import '../../widgets/team_now.dart';
 import '../../widgets/team_receipt.dart';
 import '../../widgets/team_technical_details.dart';
@@ -301,6 +305,10 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     filterKey: const ValueKey('team-home-filter-menu'),
   );
 
+  String? _age(AppLocalizations l10n, DateTime? at) => at == null
+      ? null
+      : relativeTimeLabel(at.millisecondsSinceEpoch, now: _now, l10n: l10n);
+
   static bool _isFinished(OrchestrationRun run) =>
       run.state == RunState.completed || run.state == RunState.cancelled;
 
@@ -348,6 +356,24 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     final carded = gates.length == 1
         ? teamGateRun(snapshot, gates.single)
         : null;
+    // Several questions: each task's row becomes its most urgent question;
+    // a question whose task is not listed (or a second one on the same
+    // task) is a row of its own at the top of the list.
+    final gateOfRun = <String, OrchestrationGate>{};
+    final looseGates = <OrchestrationGate>[];
+    if (gates.length > 1) {
+      final listedIds = {for (final run in runs) run.id};
+      for (final gate in gates) {
+        final id = teamGateRun(snapshot, gate)?.id;
+        if (id != null &&
+            listedIds.contains(id) &&
+            !gateOfRun.containsKey(id)) {
+          gateOfRun[id] = gate;
+        } else {
+          looseGates.add(gate);
+        }
+      }
+    }
     final query = (_searchOpen ? _query : '').trim().toLowerCase();
     final filtering =
         _searchOpen && (query.isNotEmpty || _filter != TeamRunFilter.all);
@@ -359,6 +385,13 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
       for (final run in visible)
         if (run.id != carded?.id) run,
     ];
+    final loose =
+        !filtering ||
+            (_filter != TeamRunFilter.active &&
+                _filter != TeamRunFilter.completed &&
+                query.isEmpty)
+        ? looseGates
+        : const <OrchestrationGate>[];
     final open = [
       for (final run in listed)
         if (!_isFinished(run)) run,
@@ -375,29 +408,68 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     final working = live.where((a) => a.state == AgentState.working).length;
 
     Widget row(OrchestrationRun run) {
-      final needsYou = gated.contains(run.id);
+      final gate = gateOfRun[run.id];
+      final needsYou = gate != null || gated.contains(run.id);
+      final record = gate == null ? null : teamGateMutation(controller, gate);
+      final String line;
+      if (gate != null) {
+        // The row is the question: "Needs you · <question> · 2 min ago".
+        line = [
+          l10n.teamUiHomeRunNeedsYou,
+          gate.title,
+          ?_age(l10n, gate.createdAt),
+        ].join(teamUsageSeparator);
+      } else {
+        final task = teamTaskLine(
+          l10n,
+          run,
+          snapshot.work,
+          needsYou: needsYou,
+          now: _now,
+          cycleOf: controller.cycleFor,
+          explainWait: true,
+          checkEvery: teamCheckInterval(controller),
+          paused: teamRest(snapshot.agents) == TeamRest.paused,
+        );
+        // What happens next, once, on the working task's own row (the
+        // team's Now line no longer repeats the task above the list).
+        final reviewNext =
+            !needsYou &&
+            run.state == RunState.working &&
+            teamRunStage(run, snapshot.work, cycleOf: controller.cycleFor) ==
+                TeamStage.working;
+        line = reviewNext
+            ? [task, l10n.teamUiHomeRunReviewNext].join(teamUsageSeparator)
+            : task;
+      }
+      final receipt =
+          gate != null &&
+              record != null &&
+              record.status != MutationStatus.confirmed
+          ? Padding(
+              padding: EdgeInsetsDirectional.symmetric(
+                horizontal: tokens.space2,
+              ),
+              child: TeamReceiptChip(
+                key: ValueKey('team-home-gate-${gate.id}-receipt'),
+                record: record,
+                onOpen: () => _openGate(gate),
+              ),
+            )
+          : null;
       return KitRow(
         key: ValueKey('team-home-run-${run.id}'),
         leading: KitTaskMark(state: teamRunMark(run, needsYou: needsYou)),
         // A task's title is the person's own objective: two lines.
         title: run.title,
         titleMaxLines: 2,
-        supporting: TextSpan(
-          text: teamTaskLine(
-            l10n,
-            run,
-            snapshot.work,
-            needsYou: needsYou,
-            now: _now,
-            cycleOf: controller.cycleFor,
-            explainWait: true,
-            checkEvery: teamCheckInterval(controller),
-            paused: teamRest(snapshot.agents) == TeamRest.paused,
-          ),
-        ),
+        supporting: TextSpan(text: line),
         supportingMaxLines: 2,
         supportingKey: ValueKey('team-home-run-state-${run.id}'),
-        onTap: () => _openRun(run),
+        // The receipt while the host has not confirmed an answer.
+        trailing: receipt,
+        // A question opens the Gate sheet; any other task its conversation.
+        onTap: gate != null ? () => _openGate(gate) : () => _openRun(run),
       );
     }
 
@@ -421,6 +493,8 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             controller: controller,
             now: _now,
             keyPrefix: 'team-home-now',
+            // Working, in review and waiting are said on the task's row.
+            taskLines: false,
           )
         : null;
     final refusal = _refusal;
@@ -454,37 +528,19 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
         ),
       // 1. What needs the person, first, and only when something does: the
       // answer surface itself, no section heading over it.
-      if (gates.isNotEmpty) ...[
+      if (gates.length == 1) ...[
         SizedBox(height: tokens.space3),
-        if (gates.length == 1)
-          TeamNeedsYouCard(
-            keyPrefix: 'team-home-gate-${gates.single.id}',
-            controller: controller,
-            gate: gates.single,
-            title: carded?.title ?? l10n.teamUiHomeNeedsYouFallbackTitle,
-            detail: carded == null || _isFinished(carded)
-                ? null
-                : teamTaskSteps(
-                    l10n,
-                    TeamRunProgress.of(carded, snapshot.work),
-                  ),
-            onOpenTask: carded == null ? null : () => _openRun(carded),
-            onOpen: () => _openGate(gates.single),
-          )
-        else
-          KitRowGroup(
-            children: [
-              for (final gate in gates)
-                TeamGateRow(
-                  key: ValueKey('team-home-gate-${gate.id}'),
-                  receiptKey: ValueKey('team-home-gate-${gate.id}-receipt'),
-                  controller: controller,
-                  gate: gate,
-                  now: _now,
-                  onTap: () => _openGate(gate),
-                ),
-            ],
-          ),
+        TeamNeedsYouCard(
+          keyPrefix: 'team-home-gate-${gates.single.id}',
+          controller: controller,
+          gate: gates.single,
+          title: carded?.title ?? l10n.teamUiHomeNeedsYouFallbackTitle,
+          detail: carded == null || _isFinished(carded)
+              ? null
+              : teamTaskSteps(l10n, TeamRunProgress.of(carded, snapshot.work)),
+          onOpenTask: carded == null ? null : () => _openRun(carded),
+          onOpen: () => _openGate(gates.single),
+        ),
         gap,
       ] else
         SizedBox(height: tokens.space3),
@@ -518,11 +574,20 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           body: l10n.teamUiHomeRunsEmptyHint,
         ),
       if (runs.isEmpty || visible.isEmpty) gap,
-      if (listed.isNotEmpty) ...[
+      if (listed.isNotEmpty || loose.isNotEmpty) ...[
         KitRowGroup(
           key: const ValueKey('team-home-tasks'),
-          label: l10n.teamUiHomeTasksHeading,
+          // No heading: the page is the task list and its title says so.
           children: [
+            for (final gate in loose)
+              TeamGateRow(
+                key: ValueKey('team-home-gate-${gate.id}'),
+                receiptKey: ValueKey('team-home-gate-${gate.id}-receipt'),
+                controller: controller,
+                gate: gate,
+                now: _now,
+                onTap: () => _openGate(gate),
+              ),
             for (final run in open) row(run),
             for (final run in doneShown) row(run),
             if (hiddenDone > 0)
@@ -554,8 +619,8 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
         ),
         gap,
       ],
-      // 3. The team itself: one row, not a tab; then every task by where
-      // it stands (docs/design/team-board-2026-09-26.md).
+      // 3. The team itself: one row, not a tab. The board opens from the
+      // top bar only (one entry point).
       KitRowGroup(
         children: [
           _AgentsRow(
@@ -565,14 +630,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             rest: teamRest(snapshot.agents),
             working: working,
             onTap: _openAgents,
-          ),
-          KitRow(
-            key: const ValueKey('team-home-board-row'),
-            leading: KitRow.icon(context, AppIconography.kanban),
-            title: l10n.teamBoardViewRow,
-            supporting: TextSpan(text: l10n.teamBoardViewRowSupporting),
-            trailing: const KitChevron(),
-            onTap: () => openTeamBoard(context, controller, now: widget.now),
           ),
         ],
       ),

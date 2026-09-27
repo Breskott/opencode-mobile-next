@@ -25,6 +25,7 @@ import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/termux/team_runtime.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
@@ -526,12 +527,18 @@ void main() {
           findsOneWidget,
         );
         expect(
-          tester.widget(find.byKey(const ValueKey('team-phone-skip'))),
-          isA<FilledButton>(),
+          tester
+              .widget<KitButton>(find.byKey(const ValueKey('team-phone-skip')))
+              .role,
+          KitButtonRole.primary,
         );
         expect(
-          tester.widget(find.byKey(const ValueKey('team-phone-set-up'))),
-          isA<OutlinedButton>(),
+          tester
+              .widget<KitButton>(
+                find.byKey(const ValueKey('team-phone-set-up')),
+              )
+              .role,
+          KitButtonRole.secondary,
         );
         await teardown(tester, controller);
       },
@@ -692,11 +699,10 @@ void main() {
       final failed = find.byKey(const ValueKey('team-phone-failed'));
       await reveal(tester, failed);
       expect(
-        tester
-            .widget<Text>(
-              find.byKey(const ValueKey('team-phone-failed-reason')),
-            )
-            .data,
+        _textOf(
+          tester,
+          find.byKey(const ValueKey('team-phone-failed-reason')),
+        ).data,
         l10n.teamUiPhoneFailedChecksum('gc'),
       );
       expect(
@@ -1057,11 +1063,12 @@ void main() {
       expect(find.byKey(const ValueKey('team-phone-section')), findsOneWidget);
     }
 
-    String statusLine(WidgetTester tester) => tester
-        .widget<Text>(find.byKey(const ValueKey('team-phone-status')))
-        .data!;
+    String statusLine(WidgetTester tester) =>
+        _textOf(tester, find.byKey(const ValueKey('team-phone-status'))).data!;
 
-    testWidgets('running: versions, agents, Stop is two-step', (tester) async {
+    testWidgets('running: agents, versions folded, Stop is two-step', (
+      tester,
+    ) async {
       runtime.current = _ready(agents: 2);
       final (controller, _) = await pumpPlugins(
         tester,
@@ -1069,14 +1076,22 @@ void main() {
       );
       await openSheet(tester);
       expect(statusLine(tester), l10n.teamUiPhoneStatusRunning(2));
-      // Isolated left to right (KitBidi), so matched by its words.
+      // The engine's versions wait under Technical details, never on the
+      // status row every visit.
       expect(
         find.textContaining(
           l10n.teamUiPhoneVersions('1.4.1', '1.2.2', '2.3.3'),
           findRichText: true,
         ),
-        findsOneWidget,
+        findsNothing,
       );
+      await tapRevealed(
+        tester,
+        find.byKey(const ValueKey('team-phone-technical')),
+      );
+      expect(find.byKey(const ValueKey('team-phone-versions')), findsOneWidget);
+      // Stop is a row of the team's own panel, named for where it runs.
+      expect(find.text(l10n.teamPhoneStopTeamRow), findsOneWidget);
       runtime.results['stop'] = _status(
         TeamRuntimePhase.stopped,
         installed: true,
@@ -1457,4 +1472,14 @@ void main() {
       });
     }
   });
+}
+
+/// The [Text] a keyed text draws: the widget itself, or the one inside a
+/// KitText (its key sits on the KitText).
+Text _textOf(WidgetTester tester, Finder finder) {
+  final widget = tester.widget(finder);
+  if (widget is Text) return widget;
+  return tester.widget<Text>(
+    find.descendant(of: finder, matching: find.byType(Text)).first,
+  );
 }

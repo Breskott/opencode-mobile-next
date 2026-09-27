@@ -5,12 +5,17 @@
 /// It is the fallback of "Open conversation" when the agent's OpenCode
 /// session cannot be read (a team on a computer without a readable store).
 ///
+/// Built from kit parts (screen-team-1): a [KitScreen] with a [KitTopBar]
+/// (Live output, the agent by role and name; Copy as its one action), the
+/// one [KitStatusLine], the fallback note in a [KitNotice], and the
+/// transcript under a [KitJumpPillLayer].
+///
 /// Follow-latest works like the chat and the shell output sheet: on by
 /// default, every new capture scrolls to the end; a drag up stops
-/// following so the person can read; the Follow switch (or the "Jump to
-/// latest" pill) resumes and jumps. Once the host stops serving the
-/// session (404) the status line says so and whatever the controller
-/// cached stays on screen.
+/// following so the person can read; the "Jump to latest" pill resumes and
+/// jumps. No switch repeats that. Once the host stops serving the session
+/// (404) the status line says so and whatever the controller cached stays
+/// on screen.
 ///
 /// Never an endless "Connecting…" (design standard §4, the 8 s rule): an
 /// agent that is not running says so at once, with the one action that
@@ -22,7 +27,6 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../domain/orchestration_gateway.dart';
@@ -175,8 +179,7 @@ class _AgentOutputScreenState extends State<AgentOutputScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final tokens = KitTokens.of(context);
     final tail = _tail;
     final text = tail.text;
     final agent = _agent;
@@ -188,136 +191,89 @@ class _AgentOutputScreenState extends State<AgentOutputScreen> {
         ? (l10n.teamUiAgentOutputLive, AppStatusTone.progress, null)
         : _waiting(l10n, agent);
     final canFollow = !tail.ended && tail.available;
-    return Scaffold(
+    return KitScreen(
       key: const ValueKey('team-agent-output-page'),
-      appBar: AppBar(
-        title: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.teamUiAgentOutputTitle,
-              style: theme.textTheme.titleMedium,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            // The agent by its role and short name, never the engine's.
-            if (agent != null)
-              Text(
-                teamAgentTitle(l10n, agent),
-                style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-          ],
-        ),
+      topBar: KitTopBar(
+        title: l10n.teamUiAgentOutputTitle,
+        // The agent by its role and short name, never the engine's.
+        subtitle: agent == null ? null : teamAgentTitle(l10n, agent),
         actions: [
-          IconButton(
-            key: const ValueKey('team-agent-output-copy'),
-            tooltip: l10n.teamUiAgentOutputCopy,
-            onPressed: text.isEmpty
-                ? null
-                : () async {
-                    await Clipboard.setData(ClipboardData(text: text));
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                      SnackBar(
-                        content: Text(l10n.teamUiCopied),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-            icon: const Icon(AppIconography.copy),
-          ),
+          if (text.isNotEmpty)
+            KitAction.copy(
+              key: const ValueKey('team-agent-output-copy'),
+              label: l10n.teamUiAgentOutputCopy,
+              text: () => text,
+            ),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // The one status line (design standard §5): live, connecting,
-            // unavailable or ended.
-            KitStatusLine(
-              key: const ValueKey('team-agent-output-status'),
-              icon: tail.ended
-                  ? AppIconography.cloudOff
-                  : !tail.available
-                  ? AppIconography.warning
-                  : AppIconography.statusDot,
-              tone: tone,
-              message: status,
-              action: action,
+      header: [
+        // The one status line (design standard §5): live, connecting,
+        // unavailable or ended.
+        KitStatusLine(
+          key: const ValueKey('team-agent-output-status'),
+          icon: tail.ended
+              ? AppIconography.cloudOff
+              : !tail.available
+              ? AppIconography.warning
+              : AppIconography.statusDot,
+          tone: tone,
+          message: status,
+          action: action,
+        ),
+        if (widget.note case final note?)
+          Padding(
+            padding: EdgeInsetsDirectional.symmetric(
+              horizontal: tokens.gutter,
+              vertical: tokens.space1,
             ),
-            if (widget.note case final note?)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                child: KitNotice(
-                  key: const ValueKey('team-agent-output-note'),
-                  icon: AppIconography.info,
-                  message: note,
-                  liveRegion: false,
-                ),
-              ),
-            SwitchListTile.adaptive(
-              key: const ValueKey('team-agent-output-follow'),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              title: Text(l10n.teamUiAgentOutputFollow),
-              value: _follow,
-              onChanged: canFollow ? _setFollow : null,
+            child: KitNotice(
+              key: const ValueKey('team-agent-output-note'),
+              icon: AppIconography.info,
+              message: note,
+              liveRegion: false,
             ),
-            const Divider(height: 1),
-            Expanded(
-              child: Stack(
-                children: [
-                  NotificationListener<ScrollUpdateNotification>(
-                    onNotification: _onScroll,
-                    child: ListView(
-                      key: const ValueKey('team-agent-output-list'),
-                      controller: _scroll,
-                      // The chat's own transcript rails.
-                      padding: const EdgeInsets.fromLTRB(6, 10, 6, 72),
-                      children: [
-                        if (text.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: Text(
-                              l10n.teamUiAgentOutputEmpty,
-                              key: const ValueKey('team-agent-output-empty'),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: muted,
-                              ),
-                            ),
-                          )
-                        else
-                          // What it said and did, drawn as the chat draws a
-                          // reply: prose, and its calls folded into lines.
-                          TeamAgentTranscript(
-                            key: const ValueKey('team-agent-output-text'),
-                            text: text,
-                          ),
-                      ],
-                    ),
+          ),
+      ],
+      body: KitJumpPillLayer(
+        pill: KitJumpPill(
+          pillKey: const ValueKey('team-agent-output-jump'),
+          label: l10n.teamUiAgentOutputJump,
+          visible: !_follow && canFollow,
+          onPressed: () => _setFollow(true),
+        ),
+        child: NotificationListener<ScrollUpdateNotification>(
+          onNotification: _onScroll,
+          child: ListView(
+            key: const ValueKey('team-agent-output-list'),
+            controller: _scroll,
+            padding: EdgeInsetsDirectional.fromSTEB(
+              tokens.space2,
+              tokens.space3,
+              tokens.space2,
+              KitScreen.endPadding(context),
+            ),
+            children: [
+              if (text.isEmpty)
+                Padding(
+                  padding: EdgeInsetsDirectional.symmetric(
+                    horizontal: tokens.gutter - tokens.space2,
                   ),
-                  if (!_follow && canFollow)
-                    PositionedDirectional(
-                      bottom: 16,
-                      start: 0,
-                      end: 0,
-                      child: Center(
-                        child: KitButton.secondary(
-                          key: const ValueKey('team-agent-output-jump'),
-                          expand: false,
-                          onPressed: () => _setFollow(true),
-                          icon: AppIconography.down,
-                          label: l10n.teamUiAgentOutputJump,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
+                  child: KitText(
+                    l10n.teamUiAgentOutputEmpty,
+                    key: const ValueKey('team-agent-output-empty'),
+                    role: KitTextRole.secondary,
+                    tone: KitTextTone.secondary,
+                  ),
+                )
+              else
+                // What it said and did, drawn as the chat draws a reply:
+                // prose, and its calls folded into lines.
+                TeamAgentTranscript(
+                  key: const ValueKey('team-agent-output-text'),
+                  text: text,
+                ),
+            ],
+          ),
         ),
       ),
     );

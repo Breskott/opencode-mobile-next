@@ -14524,7 +14524,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiGateAnswerOptionsHint => 'اختر خيارًا واحدًا ثم أرسل.';
 
   @override
-  String get teamUiGateAnswerRunRetry => 'إعادة المحاولة';
+  String teamUiGateAnswerRunRetry(String work, String agent) {
+    return 'إعادة المحاولة';
+  }
 
   @override
   String teamUiGateAnswerRunRetryDetail(String work, String agent) {
@@ -14777,7 +14779,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'يُضبط على المضيف؛ يعرضه الهاتف ولا يختاره.';
 
   @override
-  String get teamUiStartRunSend => 'إرسال إلى المخطِّط';
+  String teamUiStartRunSend(String planner) {
+    return 'إرسال إلى المخطِّط';
+  }
 
   @override
   String get teamUiStartRunPlannerOffTitle =>
@@ -23219,7 +23223,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get phoneServerCardStartOpenCode => 'Start OpenCode';
 
   @override
-  String get phoneServerCardStopOpenCode => 'Stop OpenCode';
+  String get phoneServerCardStopOpenCode => 'Stop OpenCode on this phone';
 
   @override
   String get phoneServerCardShowServerLog => 'Show server log';
@@ -23459,7 +23463,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String gateSheetOpenAgent(String agent) {
-    return 'Open $agent';
+    return 'Open $agent\'s page';
   }
 
   @override
@@ -26037,4 +26041,102 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get voiceConversationStopReading => 'Stop reading the reply';
+
+  @override
+  String get teamUiHomeRunReviewNext => 'a reviewer checks it next';
+
+  @override
+  String teamUiGateRunStoppedTitle(String title) {
+    return '$title stopped';
+  }
+
+  @override
+  String get termuxProcsKindParentGone => 'Parent gone';
+
+  @override
+  String get termuxProcsKindNoOwner => 'No owner';
+
+  @override
+  String termuxProcsStopOrphans(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Stop $count orphaned helpers',
+      one: 'Stop 1 orphaned helper',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String termuxProcsStopOrphansTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Stop $count orphaned helpers?',
+      one: 'Stop the orphaned helper?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamPhoneStopTeamRow => 'Stop the team on this phone';
+
+  @override
+  String get teamPhoneStopTeamRowSupporting =>
+      'Agents stop where they are; nothing is lost';
+
+  @override
+  String teamUiPhoneWorkingOn(String name) {
+    return 'Working on $name';
+  }
+
+  @override
+  String get teamUiPhoneVersionsLabel => 'Engine versions';
+
+  @override
+  String get teamUiPhoneProjectLabel => 'Project folder';
+
+  @override
+  String get phoneServerNameInSentence => 'this phone';
+
+  @override
+  String get teamAgentWorkUnblockedShort => 'nothing blocking it';
+
+  @override
+  String get teamAgentWorkBlockedShort => 'blocked';
+
+  @override
+  String get teamAgentStepCommand => 'Ran a command';
+
+  @override
+  String get teamAgentStepTest => 'Ran the tests';
+
+  @override
+  String get teamAgentStepRead => 'Read a file';
+
+  @override
+  String get teamAgentStepEdit => 'Edited a file';
+
+  @override
+  String get teamAgentStepSearch => 'Searched the code';
+
+  @override
+  String teamAgentStepTool(String tool) {
+    return 'Used $tool';
+  }
+
+  @override
+  String get teamAgentLastCommandLabel => 'Last command';
+
+  @override
+  String get termuxStorageOnlyBuildCaches =>
+      'Only build caches can be cleaned here';
+
+  @override
+  String get termuxStorageWhereItIs => 'Where it is';
+
+  @override
+  String termuxStorageCleanBuildCaches(String size) {
+    return 'Clean build caches ($size)';
+  }
 }

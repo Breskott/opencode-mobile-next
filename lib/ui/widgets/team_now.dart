@@ -291,11 +291,16 @@ KitAction teamUnstickAction(
 /// The home's one line for the whole team when something is in flight:
 /// paused, a task stuck, working, in review, or waiting with when a worker
 /// starts. Null when nothing is.
+///
+/// With [taskLines] off, only the lines that carry an action (paused, a
+/// task stuck) are given: a page that lists the tasks says working, in
+/// review and waiting on the task's own row (nothing shown twice).
 Widget? teamNowLine(
   BuildContext context, {
   required OrchestrationController controller,
   required DateTime now,
   String keyPrefix = 'team-now',
+  bool taskLines = true,
 }) {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   final snapshot = controller.snapshot;
@@ -357,6 +362,7 @@ Widget? teamNowLine(
       ),
     );
   }
+  if (!taskLines) return null;
   for (final run in open) {
     if (gated.contains(run.id)) continue;
     if (teamRunAwaitsMerge(run, snapshot.work, cycleOf: cycleOf)) {

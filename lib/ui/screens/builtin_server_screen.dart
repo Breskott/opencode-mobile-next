@@ -343,6 +343,10 @@ class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
         initial: log,
         readError: readError,
         running: running,
+        // The sheet says "Server log"; the panel names which server.
+        server: _installedVersion == null
+            ? _runtimeName
+            : l10n.phoneServerCardVersion(_installedVersion!),
       ),
     );
   }
@@ -639,8 +643,7 @@ class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
           KitScreen.endPadding(context),
         ),
         children: [
-          KitText(l10n.builtinServerEntryTitle, role: KitTextRole.headline),
-          SizedBox(height: tokens.space2),
+          // The top bar names the page; the intro says the rest once.
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: KitChip(label: l10n.builtinServerExperimental),
@@ -727,12 +730,17 @@ class _ServerLogBody extends StatefulWidget {
     required this.initial,
     required this.readError,
     required this.running,
+    required this.server,
   });
 
   final BuiltinLinux linux;
   final String initial;
   final String? readError;
   final bool running;
+
+  /// Which server the log is from ("OpenCode 1.18.29"): the panel's title,
+  /// so it does not repeat the sheet's "Server log".
+  final String server;
 
   @override
   State<_ServerLogBody> createState() => _ServerLogBodyState();
@@ -783,7 +791,7 @@ class _ServerLogBodyState extends State<_ServerLogBody> {
         KitLogPanel(
           panelKey: const Key('builtin-server-log'),
           lines: _lines,
-          title: l10n.builtinServerLogTitle,
+          title: widget.server,
           emptyText: l10n.builtinServerLogEmpty,
           live: widget.running,
           onRefresh: widget.running ? _reload : null,
@@ -830,32 +838,41 @@ class _StepTile extends StatelessWidget {
       _Step.error => KitMarkState.failed,
       _Step.idle => KitMarkState.waiting,
     };
+    // The body and its buttons start where the title's words start.
     return Padding(
       padding: EdgeInsetsDirectional.symmetric(vertical: tokens.space3),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Semantics(
-            container: true,
-            label: l10n.builtinServerStepSemantics(number, stateLabel, title),
-            child: ExcludeSemantics(
-              child: Row(
-                children: [
-                  KitStatusMark(state: mark),
-                  SizedBox(width: tokens.space3),
-                  Expanded(
+          ExcludeSemantics(child: KitStatusMark(state: mark)),
+          SizedBox(width: tokens.space3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Semantics(
+                  container: true,
+                  label: l10n.builtinServerStepSemantics(
+                    number,
+                    stateLabel,
+                    title,
+                  ),
+                  child: ExcludeSemantics(
                     child: KitText(
                       title,
                       role: KitTextRole.rowTitle,
                       tone: enabled ? null : KitTextTone.tertiary,
                     ),
                   ),
+                ),
+                if (body.isNotEmpty) ...[
+                  SizedBox(height: tokens.space3),
+                  ...body,
                 ],
-              ),
+              ],
             ),
           ),
-          if (body.isNotEmpty) ...[SizedBox(height: tokens.space3), ...body],
         ],
       ),
     );

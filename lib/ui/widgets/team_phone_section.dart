@@ -25,7 +25,6 @@ import '../../termux/bridge.dart';
 import '../../termux/team_runtime.dart';
 import '../app_iconography.dart';
 import '../app_theme.dart' show AppStatusTone;
-import '../kit/kit_bidi.dart';
 import '../kit/kit_buttons.dart';
 import '../kit/kit_code_block.dart';
 import '../kit/kit_notice.dart';
@@ -33,6 +32,7 @@ import '../kit/kit_row.dart';
 import '../kit/kit_row_parts.dart';
 import '../kit/kit_sheet.dart';
 import '../kit/kit_status_mark.dart';
+import '../kit/kit_technical_value.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import 'team_phone_onboarding.dart';
@@ -91,9 +91,12 @@ String teamPhoneStatusLine(AppLocalizations l10n, TeamRuntimeStatus? status) {
 }
 
 /// The "On this phone" section of the AI Team sheet for the Termux profile:
-/// one panel of rows (the state, Keep it running, Delete the team from this
-/// phone, last and apart), what went wrong in a [KitNotice], and the one
-/// act it needs now under it. Each act names the team ("Stop the team").
+/// one panel of rows (the state with the project it works on, "Stop the
+/// team on this phone" while it runs, Keep it running, Delete the team from
+/// this phone, last and apart), what went wrong in a [KitNotice], the one
+/// act it needs now (Start / Start again / Open setup) under it, and the
+/// engine versions and full project path folded under Technical details.
+/// Each act names the team and where it runs.
 ///
 /// States: checking, not available (explains), not installed (offers the
 /// phone setup), stopped, starting (working mark), running, stopped by
@@ -355,6 +358,13 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
         ? const KitStatusMark(state: KitMarkState.failed)
         : const KitStatusMark(state: KitMarkState.waiting);
 
+    // The project by its name ("Working on calc"); the full path and the
+    // engine versions wait under Technical details.
+    final projectName = project.isEmpty
+        ? null
+        : project
+              .split('/')
+              .lastWhere((part) => part.isNotEmpty, orElse: () => project);
     final statusRow = Semantics(
       liveRegion: true,
       child: KitRow(
@@ -362,34 +372,45 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
         title: teamPhoneStatusLine(l10n, status),
         titleKey: const ValueKey('team-phone-status'),
         titleMaxLines: 2,
-        // Engine facts read left to right in any language.
-        supporting: installed && versions.isNotEmpty
-            ? TextSpan(
-                text: KitBidi.ltr(
-                  l10n.teamUiPhoneVersions(
-                    versions['gc'] ?? '—',
-                    versions['bd'] ?? '—',
-                    versions['dolt'] ?? '—',
-                  ),
-                ),
-              )
-            : null,
-        supportingKey: const ValueKey('team-phone-versions'),
-        supportingMaxLines: 2,
-        below: project.isEmpty
+        supporting: projectName == null
             ? null
-            : KitText(
-                l10n.teamUiPhoneProjectLine(KitBidi.ltr(project)),
-                role: KitTextRole.secondary,
-                tone: KitTextTone.secondary,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+            : TextSpan(text: l10n.teamUiPhoneWorkingOn(projectName)),
+        supportingKey: const ValueKey('team-phone-project'),
+        supportingMaxLines: 2,
       ),
     );
+    final technical = [
+      if (installed && versions.isNotEmpty)
+        KitTechnicalValue(
+          l10n.teamUiPhoneVersionsLabel,
+          l10n.teamUiPhoneVersions(
+            versions['gc'] ?? '—',
+            versions['bd'] ?? '—',
+            versions['dolt'] ?? '—',
+          ),
+          key: const ValueKey('team-phone-versions'),
+        ),
+      if (project.isNotEmpty)
+        KitTechnicalValue(
+          l10n.teamUiPhoneProjectLabel,
+          project,
+          key: const ValueKey('team-phone-project-path'),
+        ),
+    ];
 
     final rows = <Widget>[
       statusRow,
+      // Stopping acts on the team this panel is about, so it is a row of
+      // the panel, not a button floating under it.
+      if (running && !working && !killed)
+        KitRow(
+          key: const ValueKey('team-phone-stop'),
+          leading: KitRow.icon(context, AppIconography.stopCircle),
+          title: l10n.teamPhoneStopTeamRow,
+          supporting: TextSpan(text: l10n.teamPhoneStopTeamRowSupporting),
+          supportingMaxLines: 2,
+          onTap: _stop,
+        ),
       KitRow(
         key: const ValueKey('team-phone-keep-running'),
         leading: KitRow.icon(context, AppIconography.batteryWarning),
@@ -438,15 +459,7 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
             onPressed: _openSetup,
           )
         : null;
-    final tertiary = [
-      if (running && !working && !killed)
-        KitAction(
-          key: const ValueKey('team-phone-stop'),
-          label: l10n.teamPhoneStopTeam,
-          onPressed: _stop,
-        ),
-    ];
-    final actions = KitActionBlock(primary: primary, tertiary: tertiary);
+    final actions = KitActionBlock(primary: primary);
 
     return Column(
       key: const ValueKey('team-phone-section'),
@@ -475,6 +488,15 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
           ),
         ],
         if (!actions.isEmpty) ...[gap(), actions],
+        // Every id and version last and folded (KIT-33).
+        if (technical.isNotEmpty) ...[
+          gap(),
+          KitDetailsFold(
+            label: l10n.teamUiTechnicalDetails,
+            foldKey: const ValueKey('team-phone-technical'),
+            values: technical,
+          ),
+        ],
       ],
     );
   }
@@ -527,7 +549,7 @@ Future<void> showTeamPhoneTipsSheet(BuildContext context) {
 /// runtime supports a team, the plugin is off, and the offer state is
 /// `skipped`; Not now writes `dismissed` and it never returns.
 ///
-/// One [KitNotice.offer]: one sentence, Set up AI team, and Not now.
+/// One [KitNotice.offer]: one sentence, Set up AI Team, and Not now.
 // revamp: remove (slice-P3.4)
 class TeamPhoneReofferCard extends StatefulWidget {
   const TeamPhoneReofferCard({

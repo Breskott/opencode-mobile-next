@@ -750,6 +750,18 @@ void main() {
         find.byKey(const Key('termux-storage-project-IPTV_King')),
         findsOneWidget,
       );
+      // "Not removed from here" is said once, as the list's footnote, never
+      // on each row (owner rule 2026-09-27).
+      expect(find.text('Not removed from here'), findsNothing);
+      expect(
+        find.textContaining('Not removed from here', findRichText: true),
+        findsNothing,
+      );
+      expect(find.byKey(const Key('termux-storage-footnote')), findsOneWidget);
+      expect(
+        find.text('Only build caches can be cleaned here'),
+        findsOneWidget,
+      );
       // Non-deletable categories have no Clean button.
       await tester.tap(find.byKey(const Key('termux-storage-cat-opencode')));
       await tester.pumpAndSettle();
@@ -777,6 +789,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('What Clean removes'), findsOneWidget);
       expect(find.text('ubuntu:/root/.gradle/caches'), findsOneWidget);
+      // The one destructive button names what it removes and how much.
+      expect(find.text('Clean build caches (8.1 GB)'), findsOneWidget);
       expect(
         find.textContaining('Downloads may be needed again'),
         findsOneWidget,

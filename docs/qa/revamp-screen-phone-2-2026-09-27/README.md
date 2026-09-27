@@ -114,3 +114,7 @@ $F analyze lib/ui/screens/termux_processes_screen.dart lib/ui/screens/phone_setu
 | Committed | Yes | code head `66f6ed58` |
 | Deployed | No | |
 | Released | No | |
+
+## Rethink follow-up (2026-09-27)
+
+- Running now is one list ordered by urgency (orphans first, each process's kind in its supporting line); the per-group "Stop all" rows and their sheet are gone. `after-termux-processes-stop-group-sheet.png` is replaced by `after-termux-processes-stop-orphans-sheet.png` (golden `phone_termux_processes_stop_orphans_sheet_*`), the one bulk stop left ("Stop 1 orphaned helper").

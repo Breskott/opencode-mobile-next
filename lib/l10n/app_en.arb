@@ -13691,9 +13691,9 @@
       }
     }
   },
-  "teamUiHomeGateLinkRun": "Run {title}",
+  "teamUiHomeGateLinkRun": "Task {title}",
   "@teamUiHomeGateLinkRun": {
-    "description": "AI Team home Needs you row link text naming the run; title is server content",
+    "description": "Gate sheet kicker: the task the question belongs to",
     "placeholders": {
       "title": {
         "type": "String"
@@ -14804,9 +14804,9 @@
   "@teamUiGateFailureClassUnknown": {
     "description": "Failure class word when the error text matches nothing"
   },
-  "teamUiGateFailureClassification": "Classification",
+  "teamUiGateFailureClassification": "What went wrong",
   "@teamUiGateFailureClassification": {
-    "description": "Failed-run sheet heading"
+    "description": "Gate sheet (failed task): label over the failure in words and what to do"
   },
   "teamUiGateFailureError": "Error",
   "@teamUiGateFailureError": {
@@ -14980,9 +14980,17 @@
   "@teamUiGateAnswerOptionsHint": {
     "description": "Helper under the option list of a choice decision before anything is selected"
   },
-  "teamUiGateAnswerRunRetry": "Try again",
+  "teamUiGateAnswerRunRetry": "Send {work} to {agent} again",
   "@teamUiGateAnswerRunRetry": {
-    "description": "Failed-run sheet action sending the stuck work to its agent again"
+    "description": "Gate sheet (failed task): sends the stuck work to its agent again; names the work and the agent",
+    "placeholders": {
+      "work": {
+        "type": "String"
+      },
+      "agent": {
+        "type": "String"
+      }
+    }
   },
   "teamUiGateAnswerRunRetryDetail": "Sends {work} to {agent} again.",
   "@teamUiGateAnswerRunRetryDetail": {
@@ -15317,9 +15325,14 @@
   "@teamUiStartRunPlannerHint": {
     "description": "Helper line under the planner row"
   },
-  "teamUiStartRunSend": "Send to planner",
+  "teamUiStartRunSend": "Send to the {planner}",
   "@teamUiStartRunSend": {
-    "description": "Primary button of the Start-a-run sheet"
+    "description": "Give the team a task: primary, names the planner it sends to",
+    "placeholders": {
+      "planner": {
+        "type": "String"
+      }
+    }
   },
   "teamUiStartRunPlannerOffTitle": "The planner (Mayor) is off on this host",
   "@teamUiStartRunPlannerOffTitle": {
@@ -16018,9 +16031,9 @@
   "@termuxStorageCatOpenCode": {
     "description": "Storage category"
   },
-  "termuxStorageNoteOpenCode": "The server, its sign-ins and conversation history. Not removed from here; conversations have their own screen.",
+  "termuxStorageNoteOpenCode": "The server, its sign-ins and conversation history. Conversations have their own screen.",
   "@termuxStorageNoteOpenCode": {
-    "description": "Storage category note"
+    "description": "Storage on this phone: what the OpenCode category holds (the footnote says once that it is not removed here)"
   },
   "termuxStorageCatProjects": "Projects (your files)",
   "@termuxStorageCatProjects": {
@@ -16303,9 +16316,9 @@
   "@termuxProcsKeep": {
     "description": "Two-step confirmation cancel button"
   },
-  "termuxProcsProtected": "Protected · open On this phone",
+  "termuxProcsProtected": "Protected · control it from On this phone",
   "@termuxProcsProtected": {
-    "description": "Row subtitle for sshd and opencode serve"
+    "description": "Running now: a protected process (the OpenCode server, sshd) says so and where it is controlled"
   },
   "termuxProcsOrphanParentGone": "Its parent is gone · running for {elapsed}",
   "@termuxProcsOrphanParentGone": {
@@ -16495,7 +16508,7 @@
   "@teamUiPhoneSkip": {
     "description": "On-device AI Team block: primary (skip) action"
   },
-  "teamUiPhoneSetUp": "Set up AI team",
+  "teamUiPhoneSetUp": "Set up AI Team on this phone",
   "@teamUiPhoneSetUp": {
     "description": "On-device AI Team block: set-up action"
   },
@@ -16832,9 +16845,9 @@
   "@teamUiPhoneKeepRunningTitle": {
     "description": "On this phone: tips row title"
   },
-  "teamUiPhoneKeepRunningSubtitle": "Wake lock, battery setting and the phantom process killer",
+  "teamUiPhoneKeepRunningSubtitle": "Stop Android from closing the team in the background",
   "@teamUiPhoneKeepRunningSubtitle": {
-    "description": "On this phone: tips row subtitle"
+    "description": "Settings › Plugins › On this phone: what the Keep it running row is for"
   },
   "teamUiPhoneTipsIntro": "Android stops background work it considers excessive, and the team is exactly that: dozens of short gc and bd processes and an agent at full CPU. Three things keep it alive.",
   "@teamUiPhoneTipsIntro": {
@@ -16893,7 +16906,7 @@
   "@teamUiPhoneNotAvailable": {
     "description": "On this phone: unavailable copy (03-onboarding §5)"
   },
-  "teamUiPhoneReofferTitle": "Set up AI team on this phone",
+  "teamUiPhoneReofferTitle": "Let a team of agents work on this phone too",
   "@teamUiPhoneReofferTitle": {
     "description": "Settings › Plugins: re-offer row title"
   },
@@ -18324,9 +18337,9 @@
   "@setupProgressViewContinue": {
     "description": "Button that resumes a setup job after it stopped"
   },
-  "setupProgressViewCancel": "Cancel",
+  "setupProgressViewCancel": "Stop setup",
   "@setupProgressViewCancel": {
-    "description": "Button that stops a running setup job"
+    "description": "Setup progress: stops the running setup (opens 'Stop setup?')"
   },
   "setupProgressViewShowDetails": "Show details",
   "@setupProgressViewShowDetails": {
@@ -18396,17 +18409,17 @@
   "@builtinServerExperimental": {
     "description": "Badge marking the built-in server as experimental"
   },
-  "builtinServerIntro": "The app downloads a small Ubuntu into its own storage and runs the OpenCode server inside it. No Termux needed. The server listens on this phone only; nothing on your network or the internet can reach it.",
+  "builtinServerIntro": "The app downloads a small Ubuntu and runs OpenCode in it. Only this phone can reach it.",
   "@builtinServerIntro": {
-    "description": "Intro text of the built-in server screen"
+    "description": "OpenCode inside the app: the one intro line"
   },
   "builtinServerAndroidOnly": "The built-in server runs on Android only.",
   "@builtinServerAndroidOnly": {
     "description": "Shown when the built-in server screen is opened off Android"
   },
-  "builtinServerStepUbuntu": "Download Ubuntu (about 30 MB)",
+  "builtinServerStepUbuntu": "Ubuntu",
   "@builtinServerStepUbuntu": {
-    "description": "Step 1 title"
+    "description": "OpenCode inside the app: title of the Ubuntu step"
   },
   "builtinServerStepOpenCode": "Install OpenCode",
   "@builtinServerStepOpenCode": {
@@ -18416,9 +18429,9 @@
   "@builtinServerStepStart": {
     "description": "Step 3 title"
   },
-  "builtinServerStepConnect": "Connect",
+  "builtinServerStepConnect": "Use it",
   "@builtinServerStepConnect": {
-    "description": "Step 4 title"
+    "description": "OpenCode inside the app: title of the last step (connect to the server)"
   },
   "builtinServerStepSemantics": "Step {number} of 4, {state}. {title}",
   "@builtinServerStepSemantics": {
@@ -18439,9 +18452,9 @@
   "@builtinServerUbuntuHint": {
     "description": "Explains the Ubuntu download"
   },
-  "builtinServerUbuntuAction": "Download Ubuntu",
+  "builtinServerUbuntuAction": "Download Ubuntu (30 MB)",
   "@builtinServerUbuntuAction": {
-    "description": "Button starting the Ubuntu download"
+    "description": "OpenCode inside the app: downloads Ubuntu, with its size"
   },
   "builtinServerUbuntuWorking": "Downloading and unpacking Ubuntu…",
   "@builtinServerUbuntuWorking": {
@@ -18499,13 +18512,13 @@
   "@builtinServerChooseRuntime": {
     "description": "Label above the OpenCode 1 / OpenCode 2 choice"
   },
-  "builtinServerStartAction": "Start",
+  "builtinServerStartAction": "Start the server",
   "@builtinServerStartAction": {
-    "description": "Button starting the server"
+    "description": "OpenCode inside the app: starts the server (also at the end of the server log)"
   },
-  "builtinServerStopAction": "Stop",
+  "builtinServerStopAction": "Stop the server",
   "@builtinServerStopAction": {
-    "description": "Button stopping the server"
+    "description": "OpenCode inside the app: stops the server"
   },
   "builtinServerStarting": "Starting OpenCode and waiting for it to answer…",
   "@builtinServerStarting": {
@@ -18546,9 +18559,9 @@
       }
     }
   },
-  "builtinServerConnectAction": "Connect",
+  "builtinServerConnectAction": "Connect to this phone",
   "@builtinServerConnectAction": {
-    "description": "Button connecting to the built-in server"
+    "description": "OpenCode inside the app: connects the app to the server inside it"
   },
   "builtinServerConnectHint": "Saves this server as \"{name}\" and opens it.",
   "@builtinServerConnectHint": {
@@ -18724,9 +18737,9 @@
       }
     }
   },
-  "builtinServerShowLog": "Show log",
+  "builtinServerShowLog": "Show server log",
   "@builtinServerShowLog": {
-    "description": "Opens the server log"
+    "description": "OpenCode inside the app: opens the server log"
   },
   "builtinServerLogTitle": "Server log",
   "@builtinServerLogTitle": {
@@ -19234,9 +19247,9 @@
       }
     }
   },
-  "phoneSetupStartSetUp": "Set up",
+  "phoneSetupStartSetUp": "Set up OpenCode on this phone",
   "@phoneSetupStartSetUp": {
-    "description": "The one primary button: installs everything needed to run a coding agent on this phone"
+    "description": "Phone setup start: the primary that starts the setup"
   },
   "phoneSetupStartIncludes": "Includes {tools}.",
   "@phoneSetupStartIncludes": {
@@ -19263,9 +19276,9 @@
   "@phoneSetupStartListSeparator": {
     "description": "Separator between names of a list, before the last pair"
   },
-  "phoneSetupStartCustomize": "Customize",
+  "phoneSetupStartCustomize": "Choose what to install",
   "@phoneSetupStartCustomize": {
-    "description": "Opens the sheet to choose which tools Set up installs"
+    "description": "Phone setup start: opens the sheet of the same name"
   },
   "phoneSetupStartOtherWays": "Other ways",
   "@phoneSetupStartOtherWays": {
@@ -20124,9 +20137,9 @@
   "@teamUiHomeNeedsYouAnswer": {
     "description": "Opens the full question to answer it (AI Team home, run Overview and the Work tab section)"
   },
-  "teamUiHomeNeedsYouMore": "More",
+  "teamUiHomeNeedsYouMore": "See the whole question",
   "@teamUiHomeNeedsYouMore": {
-    "description": "Opens the full question sheet from the inline question block"
+    "description": "Opens the full question sheet from the inline question block; names what it opens"
   },
   "teamUiHomeNeedsYouFallbackTitle": "The team has a question",
   "@teamUiHomeNeedsYouFallbackTitle": {
@@ -26239,9 +26252,9 @@
   "@phoneServerCardStartOpenCode": {
     "description": "This phone card: starts the stopped OpenCode server inside the app"
   },
-  "phoneServerCardStopOpenCode": "Stop OpenCode",
+  "phoneServerCardStopOpenCode": "Stop OpenCode on this phone",
   "@phoneServerCardStopOpenCode": {
-    "description": "This phone card: stops the OpenCode server inside the app"
+    "description": "This phone card menu: stops the OpenCode server inside the app"
   },
   "phoneServerCardShowServerLog": "Show server log",
   "@phoneServerCardShowServerLog": {
@@ -26595,9 +26608,9 @@
       }
     }
   },
-  "gateSheetOpenAgent": "Open {agent}",
+  "gateSheetOpenAgent": "Open {agent}'s page",
   "@gateSheetOpenAgent": {
-    "description": "Gate sheet, failed run: opens the worker's page. {agent} is its short name.",
+    "description": "Gate sheet (failed task): opens the agent's page",
     "placeholders": {
       "agent": {
         "type": "String"
@@ -30186,5 +30199,131 @@
   "voiceConversationStopReading": "Stop reading the reply",
   "@voiceConversationStopReading": {
     "description": "Voice conversation: stops reading the agent reply aloud."
+  },
+  "teamUiHomeRunReviewNext": "a reviewer checks it next",
+  "@teamUiHomeRunReviewNext": {
+    "description": "AI Team home: the end of a working task's line, what happens after the work (owner rule 2026-09-27: said on the task's row, not in a line above the list)"
+  },
+  "teamUiGateRunStoppedTitle": "{title} stopped",
+  "@teamUiGateRunStoppedTitle": {
+    "description": "Gate sheet title for a failed task: the task's title then 'stopped', so the failure is said once",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "termuxProcsKindParentGone": "Parent gone",
+  "@termuxProcsKindParentGone": {
+    "description": "Running now: first words of an orphan's line, why it was flagged"
+  },
+  "termuxProcsKindNoOwner": "No owner",
+  "@termuxProcsKindNoOwner": {
+    "description": "Running now: first words of an orphan's line that burns CPU with nothing waiting on it"
+  },
+  "termuxProcsStopOrphans": "{count, plural, =1{Stop 1 orphaned helper} other{Stop {count} orphaned helpers}}",
+  "@termuxProcsStopOrphans": {
+    "description": "Running now: the one bulk stop, offered only while orphans exist; also its confirm button",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "termuxProcsStopOrphansTitle": "{count, plural, =1{Stop the orphaned helper?} other{Stop {count} orphaned helpers?}}",
+  "@termuxProcsStopOrphansTitle": {
+    "description": "Running now: title of the confirmation for the bulk orphan stop",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamPhoneStopTeamRow": "Stop the team on this phone",
+  "@teamPhoneStopTeamRow": {
+    "description": "Settings › Plugins › On this phone: the row that stops the team while it runs"
+  },
+  "teamPhoneStopTeamRowSupporting": "Agents stop where they are; nothing is lost",
+  "@teamPhoneStopTeamRowSupporting": {
+    "description": "Settings › Plugins › On this phone: what stopping the team does, under its row"
+  },
+  "teamUiPhoneWorkingOn": "Working on {name}",
+  "@teamUiPhoneWorkingOn": {
+    "description": "Settings › Plugins › On this phone: the team's project by name under its status",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamUiPhoneVersionsLabel": "Engine versions",
+  "@teamUiPhoneVersionsLabel": {
+    "description": "Technical details label for the team engine's versions"
+  },
+  "teamUiPhoneProjectLabel": "Project folder",
+  "@teamUiPhoneProjectLabel": {
+    "description": "Technical details label for the team's full project path"
+  },
+  "phoneServerNameInSentence": "this phone",
+  "@phoneServerNameInSentence": {
+    "description": "The default name of the in-app server inside a sentence ('Disconnect from this phone')"
+  },
+  "teamAgentWorkUnblockedShort": "nothing blocking it",
+  "@teamAgentWorkUnblockedShort": {
+    "description": "Agent page subtitle end: its task has nothing holding it up"
+  },
+  "teamAgentWorkBlockedShort": "blocked",
+  "@teamAgentWorkBlockedShort": {
+    "description": "Agent page subtitle end: its task is blocked"
+  },
+  "teamAgentStepCommand": "Ran a command",
+  "@teamAgentStepCommand": {
+    "description": "Agent page: its newest step in plain words"
+  },
+  "teamAgentStepTest": "Ran the tests",
+  "@teamAgentStepTest": {
+    "description": "Agent page: its newest step in plain words"
+  },
+  "teamAgentStepRead": "Read a file",
+  "@teamAgentStepRead": {
+    "description": "Agent page: its newest step in plain words"
+  },
+  "teamAgentStepEdit": "Edited a file",
+  "@teamAgentStepEdit": {
+    "description": "Agent page: its newest step in plain words"
+  },
+  "teamAgentStepSearch": "Searched the code",
+  "@teamAgentStepSearch": {
+    "description": "Agent page: its newest step in plain words"
+  },
+  "teamAgentStepTool": "Used {tool}",
+  "@teamAgentStepTool": {
+    "description": "Agent page: its newest step, a tool with no plain word of its own",
+    "placeholders": {
+      "tool": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentLastCommandLabel": "Last command",
+  "@teamAgentLastCommandLabel": {
+    "description": "Agent page Technical details: the raw command of its newest step"
+  },
+  "termuxStorageOnlyBuildCaches": "Only build caches can be cleaned here",
+  "@termuxStorageOnlyBuildCaches": {
+    "description": "Storage on this phone: the one footnote under the list"
+  },
+  "termuxStorageWhereItIs": "Where it is",
+  "@termuxStorageWhereItIs": {
+    "description": "Storage on this phone: label over a category's folders when it cannot be cleaned"
+  },
+  "termuxStorageCleanBuildCaches": "Clean build caches ({size})",
+  "@termuxStorageCleanBuildCaches": {
+    "description": "Storage on this phone: the one clean button, with the size it frees",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
   }
 }

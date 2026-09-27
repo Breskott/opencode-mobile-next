@@ -417,8 +417,9 @@ void main() {
     });
   });
 
-  testWidgets('the AI Team page opens the board from its header and its '
-      'View board row', (tester) async {
+  testWidgets('the AI Team page opens the board from its header only', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(412, 915);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -450,14 +451,9 @@ void main() {
     expect(find.byKey(const ValueKey('team-board')), findsOneWidget);
     tester.state<NavigatorState>(find.byType(Navigator)).pop();
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('team-home-board-row')),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(find.byKey(const ValueKey('team-home-board-row')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('team-board')), findsOneWidget);
+    // One entry point (owner rule 2026-09-27): no "View board" row repeats
+    // the top bar's Board.
+    expect(find.byKey(const ValueKey('team-home-board-row')), findsNothing);
     await _unmount(tester);
   });
 }

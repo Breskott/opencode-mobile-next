@@ -394,7 +394,7 @@ void main() {
     Finder key(String name) => find.byKey(ValueKey(name));
 
     String text(WidgetTester tester, Finder finder) =>
-        tester.widget<Text>(finder).data!;
+        _textOf(tester, finder).data!;
 
     /// The redesigned Overview keeps the counts, the usage and the
     /// policy under one collapsed "Details" row; open it.
@@ -545,103 +545,36 @@ void main() {
       });
     });
 
-    group('agent Runtime line', () {
-      // The agent screen is a short status page: the team's usage today is
-      // its own panel under the status panel (screen-team-1); only ids and
-      // raw values fold under Technical details.
-      String value(WidgetTester tester) => tester
-          .widgetList<Text>(
-            find.descendant(
-              of: key('team-agent-usage-value'),
-              matching: find.byType(Text),
-              matchRoot: true,
-            ),
-          )
-          .map((t) => t.data ?? t.textSpan?.toPlainText() ?? '')
-          .firstWhere((t) => t.isNotEmpty);
-
-      testWidgets('tokens · context · cost with the hint', (tester) async {
+    group('agent page', () {
+      // The team's tokens and cost are not this agent's (owner rule
+      // 2026-09-27: nothing shown twice, nothing that is not about the
+      // page's subject): the agent page keeps its own context on the
+      // status row and shows no team usage panel.
+      testWidgets('no team usage panel; the context stays on the status row', (
+        tester,
+      ) async {
         final (controller, _) = await boot();
         await pump(
           tester,
           AgentScreen(controller: controller, agentId: 'fox', now: () => clock),
         );
-        expect(key('team-agent-usage-row'), findsOneWidget);
-        expect(find.text('Tokens / context / cost'), findsOneWidget);
-        expect(value(tester), r'12.4k tokens · ctx 63% · $0.42 est.');
-        expect(key('team-agent-usage-hint'), findsOneWidget);
-        // Under the status panel, never inside Technical details.
-        expect(
-          find.descendant(
-            of: key('team-agent-technical'),
-            matching: key('team-agent-usage'),
-          ),
-          findsNothing,
-        );
-        expect(
-          tester.getTopLeft(key('team-agent-usage')).dy,
-          greaterThan(tester.getTopLeft(key('team-agent-work-chip')).dy),
-        );
-      });
-
-      testWidgets('skips the context part when the agent has none', (
-        tester,
-      ) async {
-        final (controller, _) = await boot(context: null);
-        await pump(
-          tester,
-          AgentScreen(controller: controller, agentId: 'fox', now: () => clock),
-        );
-        expect(value(tester), r'12.4k tokens · $0.42 est.');
-      });
-
-      testWidgets('with the fixture usage: an honest zero', (tester) async {
-        final (controller, _) = await boot(fixtureUsage: true);
-        await pump(
-          tester,
-          AgentScreen(controller: controller, agentId: 'fox', now: () => clock),
-        );
-        expect(value(tester), r'0 tokens · ctx 63% · $0.00 est.');
-      });
-
-      testWidgets('is absent when /usage returned nothing', (tester) async {
-        final (controller, _) = await boot(usage: null);
-        await pump(
-          tester,
-          AgentScreen(controller: controller, agentId: 'fox', now: () => clock),
-        );
-        // The context number stays on the status row.
-        expect(find.textContaining('Context 63%'), findsOneWidget);
-        expect(key('team-agent-usage'), findsNothing);
-        expect(key('team-agent-usage-hint'), findsNothing);
-        expect(find.textContaining('est.'), findsNothing);
-      });
-
-      testWidgets('is absent when usage carries only counts', (tester) async {
-        final (controller, _) = await boot(usage: _countsOnly);
-        await pump(
-          tester,
-          AgentScreen(controller: controller, agentId: 'fox', now: () => clock),
-        );
-        expect(key('team-agent-usage'), findsNothing);
-        expect(find.textContaining('est.'), findsNothing);
-      });
-
-      testWidgets('is absent when the usage capability is off', (tester) async {
-        final (controller, _) = await boot(
-          capabilities: const OrchestrationCapabilities(
-            projects: true,
-            runs: true,
-            agents: true,
-            agentOutput: true,
-          ),
-        );
-        await pump(
-          tester,
-          AgentScreen(controller: controller, agentId: 'fox', now: () => clock),
-        );
         expect(key('team-agent-usage-row'), findsNothing);
+        expect(key('team-agent-usage'), findsNothing);
+        expect(find.text('Tokens / context / cost'), findsNothing);
+        expect(find.textContaining('est.'), findsNothing);
+        expect(find.textContaining('ctx 63%'), findsNothing);
+        expect(find.textContaining('Context 63%'), findsOneWidget);
       });
     });
   });
+}
+
+/// The [Text] a keyed text draws: the widget itself, or the one inside a
+/// KitText (its key sits on the KitText).
+Text _textOf(WidgetTester tester, Finder finder) {
+  final widget = tester.widget(finder);
+  if (widget is Text) return widget;
+  return tester.widget<Text>(
+    find.descendant(of: finder, matching: find.byType(Text)).first,
+  );
 }

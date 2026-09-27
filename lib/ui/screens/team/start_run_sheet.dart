@@ -386,21 +386,8 @@ class _StartRunSheetState extends State<StartRunSheet> {
             setState(() => _supervision = level);
           },
         ),
-        SizedBox(height: tokens.space4),
-        KitRowGroup(
-          label: l10n.teamUiStartRunPlannerLabel,
-          margin: EdgeInsets.zero,
-          children: [
-            KitRow(
-              key: const ValueKey('team-start-run-planner'),
-              leading: KitRow.icon(context, AppIconography.agent),
-              title: l10n.teamUiStartRunPlannerMayor,
-              supporting: TextSpan(text: l10n.teamUiStartRunPlannerHint),
-              supportingMaxLines: 3,
-              below: KitText.mono(planner.id, tone: KitTextTone.secondary),
-            ),
-          ],
-        ),
+        // The planner is not a choice here: the primary names it ("Send to
+        // the Mayor") and its id waits under Technical details.
         if (widget.controller.policy case final policy?) ...[
           SizedBox(height: tokens.space4),
           TeamBoundariesRow(policy: policy),
@@ -431,11 +418,23 @@ class _StartRunSheetState extends State<StartRunSheet> {
         KitActionBlock(
           primary: KitAction(
             key: const ValueKey('team-start-run-send'),
-            label: l10n.teamUiStartRunSend,
+            label: l10n.teamUiStartRunSend(l10n.teamUiStartRunPlannerMayor),
             icon: AppIconography.send,
             working: _sending,
             onPressed: _sending ? null : () => _send(planner),
           ),
+        ),
+        SizedBox(height: tokens.space3),
+        KitDetailsFold(
+          label: l10n.teamUiTechnicalDetails,
+          foldKey: const ValueKey('team-start-run-technical'),
+          values: [
+            KitTechnicalValue(
+              l10n.teamUiStartRunPlannerLabel,
+              planner.id,
+              key: const ValueKey('team-start-run-planner-id'),
+            ),
+          ],
         ),
       ],
     );
