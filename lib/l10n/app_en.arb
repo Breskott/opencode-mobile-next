@@ -23734,5 +23734,56 @@
   "kitChecklistHideSteps": "Hide steps",
   "@kitChecklistHideSteps": {
     "description": "KitChecklist compact line: tooltip and hint once the list of steps is unfolded; folds it back to one line"
+  },
+  "kitRequestAllowOnce": "Allow once",
+  "@kitRequestAllowOnce": {
+    "description": "KitRequestCard: a permission's allow button (one time only)"
+  },
+  "kitRequestReject": "Reject",
+  "@kitRequestReject": {
+    "description": "KitRequestCard: a permission's reject button"
+  },
+  "kitRequestApprove": "Approve",
+  "@kitRequestApprove": {
+    "description": "KitRequestCard: an AI Team gate's approve button"
+  },
+  "kitRequestSendBack": "Send back",
+  "@kitRequestSendBack": {
+    "description": "KitRequestCard: an AI Team gate's reject button; the work goes back to the agent"
+  },
+  "kitRequestAnswer": "Answer",
+  "@kitRequestAnswer": {
+    "description": "KitRequestCard: the one button that opens the request's details sheet to answer it (a form, several answers)"
+  },
+  "kitRequestSend": "Send",
+  "@kitRequestSend": {
+    "description": "KitRequestCard: sends the typed reply to the agent"
+  },
+  "kitRequestReplyEmptyReason": "Type a reply first.",
+  "@kitRequestReplyEmptyReason": {
+    "description": "KitRequestCard: why Send is unavailable while the reply field is empty"
+  },
+  "kitRequestMoreAnswers": "{count, plural, one{1 more answer} other{{count} more answers}}",
+  "@kitRequestMoreAnswers": {
+    "description": "KitRequestCard: opens the details sheet with the answers that do not fit in the card",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitRequestExpired": "Expired · the agent stopped waiting",
+  "@kitRequestExpired": {
+    "description": "KitRequestCard: a request the agent no longer waits for; nothing to press"
+  },
+  "kitRequestAge": "waiting {age}",
+  "@kitRequestAge": {
+    "description": "KitRequestCard: the header's age, composed with KitSince.ageLabel, mid-sentence (\"waiting 4 min\")",
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
   }
 }
