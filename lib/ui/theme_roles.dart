@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 /// The colour roles of the visual language (docs/design/visual-language-2026-09-26.md
@@ -70,7 +72,9 @@ class ThemeRoles extends ThemeExtension<ThemeRoles> {
   /// Secondary text and section labels.
   final Color text2;
 
-  /// Meta and placeholders (still at least 4.5:1 on [ground]).
+  /// Meta and placeholders, and the words on a disabled button: at least
+  /// 4.5:1 on [ground] and on every surface, [surface3] included (a
+  /// disabled primary or secondary button is [text3] on [surface3]).
   final Color text3;
 
   /// Primary buttons, working marks and links.
@@ -262,7 +266,9 @@ const graphiteDark = ThemeRoles(
   hairline: Color(0x12FFFFFF), // rgba(255,255,255,.07)
   text1: Color(0xFFF3F3F1),
   text2: Color(0xFFA3A5AB),
-  text3: Color(0xFF8A8D94),
+  // Spec #8A8D94 reads at 4.44:1 on surface3, where a disabled button puts
+  // it; one step lighter reaches 4.5:1 (4.55:1).
+  text3: Color(0xFF8C8F96),
   accent: Color(0xFF3DDC8A),
   onAccent: Color(0xFF03140B),
   attention: Color(0xFFFFB547),
@@ -326,7 +332,7 @@ const graphiteLight = ThemeRoles(
 ///
 /// Teal replaced orange (owner decision B15): amber means only "needs
 /// you", so no accent may sit near it (LOOK-39: at least 30° of hue and a
-/// CIEDE2000 ΔE of 20 from attention and danger). Teal is hue 180–182°,
+/// CIEDE2000 ΔE of 20 from attention and danger; [accentKeepsMeaning]). Teal is hue 180–182°,
 /// carries its on-colour at 5.6:1 or more and reads on the ground and
 /// surface1 at 5:1 or more in both brightnesses (LOOK-8;
 /// test/theme_roles_test.dart).
@@ -336,6 +342,119 @@ const graphiteAccents = <({String name, Color dark, Color light})>[
   (name: 'teal', dark: Color(0xFF3CCFCF), light: Color(0xFF0D7377)),
   (name: 'violet', dark: Color(0xFFC7A6FF), light: Color(0xFF6D4AFF)),
 ];
+
+// ---------------------------------------------------------------------------
+// LOOK-39: an accent keeps its meaning. The one check every accent passes
+// (a Graphite accent, a pack's, the custom theme's picker in KitSwatch.accent,
+// test/theme_roles_test.dart): amber means only "needs you" and red only
+// "destroys or stops", so no accent may sit near either.
+// ---------------------------------------------------------------------------
+
+/// The least hue distance, in degrees, an accent keeps from [ThemeRoles.attention]
+/// and [ThemeRoles.danger] (LOOK-39).
+const double accentMinHueDistance = 30;
+
+/// The least CIEDE2000 colour difference an accent keeps from
+/// [ThemeRoles.attention] and [ThemeRoles.danger] (LOOK-39).
+const double accentMinDeltaE = 20;
+
+/// Whether [accent] keeps its meaning in [roles] (LOOK-39): at least
+/// [accentMinHueDistance] of hue and a CIEDE2000 ΔE of [accentMinDeltaE]
+/// from both [ThemeRoles.attention] and [ThemeRoles.danger], so it never
+/// reads as "needs you" or as a destructive act.
+bool accentKeepsMeaning(Color accent, ThemeRoles roles) {
+  for (final other in [roles.attention, roles.danger]) {
+    if (hueDistance(accent, other) < accentMinHueDistance) return false;
+    if (deltaE2000(accent, other) < accentMinDeltaE) return false;
+  }
+  return true;
+}
+
+/// The distance between two colours' hues on the colour wheel, 0–180°.
+double hueDistance(Color a, Color b) {
+  final d = (HSVColor.fromColor(a).hue - HSVColor.fromColor(b).hue).abs();
+  return d > 180 ? 360 - d : d;
+}
+
+/// CIEDE2000 colour difference of two opaque sRGB colours.
+double deltaE2000(Color a, Color b) => deltaE2000Lab(_lab(a), _lab(b));
+
+/// CIE L*a*b* (D65) of an opaque sRGB colour.
+List<double> _lab(Color c) {
+  double lin(double v) =>
+      v <= 0.04045 ? v / 12.92 : math.pow((v + 0.055) / 1.055, 2.4).toDouble();
+  final r = lin(c.r), g = lin(c.g), b = lin(c.b);
+  final x = (r * .4124564 + g * .3575761 + b * .1804375) / .95047;
+  final y = r * .2126729 + g * .7151522 + b * .0721750;
+  final z = (r * .0193339 + g * .1191920 + b * .9503041) / 1.08883;
+  double f(double t) =>
+      t > 0.008856 ? math.pow(t, 1 / 3).toDouble() : 7.787 * t + 16 / 116;
+  final fx = f(x), fy = f(y), fz = f(z);
+  return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+}
+
+/// CIEDE2000 of two L*a*b* colours (Sharma, Wu and Dalal 2005); exposed
+/// so a test can hold it to the paper's reference pairs.
+@visibleForTesting
+double deltaE2000Lab(List<double> lab1, List<double> lab2) {
+  double rad(double deg) => deg * math.pi / 180;
+  double deg(double rad) => rad * 180 / math.pi;
+  final [l1, a1, b1] = lab1;
+  final [l2, a2, b2] = lab2;
+  final cBar =
+      (math.sqrt(a1 * a1 + b1 * b1) + math.sqrt(a2 * a2 + b2 * b2)) / 2;
+  final cBar7 = math.pow(cBar, 7);
+  final g = .5 * (1 - math.sqrt(cBar7 / (cBar7 + math.pow(25, 7))));
+  final a1p = (1 + g) * a1, a2p = (1 + g) * a2;
+  final c1p = math.sqrt(a1p * a1p + b1 * b1);
+  final c2p = math.sqrt(a2p * a2p + b2 * b2);
+  final h1p = (deg(math.atan2(b1, a1p)) + 360) % 360;
+  final h2p = (deg(math.atan2(b2, a2p)) + 360) % 360;
+  final dLp = l2 - l1;
+  final dCp = c2p - c1p;
+  var dh = h2p - h1p;
+  if (c1p * c2p == 0) {
+    dh = 0;
+  } else if (dh > 180) {
+    dh -= 360;
+  } else if (dh < -180) {
+    dh += 360;
+  }
+  final dHp = 2 * math.sqrt(c1p * c2p) * math.sin(rad(dh / 2));
+  final lBarp = (l1 + l2) / 2;
+  final cBarp = (c1p + c2p) / 2;
+  double hBarp;
+  if (c1p * c2p == 0) {
+    hBarp = h1p + h2p;
+  } else if ((h1p - h2p).abs() <= 180) {
+    hBarp = (h1p + h2p) / 2;
+  } else if (h1p + h2p < 360) {
+    hBarp = (h1p + h2p + 360) / 2;
+  } else {
+    hBarp = (h1p + h2p - 360) / 2;
+  }
+  final t =
+      1 -
+      .17 * math.cos(rad(hBarp - 30)) +
+      .24 * math.cos(rad(2 * hBarp)) +
+      .32 * math.cos(rad(3 * hBarp + 6)) -
+      .20 * math.cos(rad(4 * hBarp - 63));
+  final dTheta = 30 * math.exp(-math.pow((hBarp - 275) / 25, 2));
+  final cBarp7 = math.pow(cBarp, 7);
+  final rc = 2 * math.sqrt(cBarp7 / (cBarp7 + math.pow(25, 7)));
+  final sl =
+      1 +
+      .015 * math.pow(lBarp - 50, 2) / math.sqrt(20 + math.pow(lBarp - 50, 2));
+  final sc = 1 + .045 * cBarp;
+  final sh = 1 + .015 * cBarp * t;
+  final rt = -math.sin(rad(2 * dTheta)) * rc;
+  return math.sqrt(
+    math.pow(dLp / sl, 2) +
+        math.pow(dCp / sc, 2) +
+        math.pow(dHp / sh, 2) +
+        rt * (dCp / sc) * (dHp / sh),
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Deriving a whole role set from a few colours: every non-default theme,
@@ -437,9 +556,10 @@ ThemeRoles deriveRoles({
     4.5,
     toward: far,
   );
+  // Disabled buttons put text3 on surface3, so it reads there too.
   final text3 = readableOn(
     _mix(text1, ground, dark ? .46 : .40),
-    [ground, surface1, surface2],
+    surfaces,
     4.5,
     toward: far,
   );

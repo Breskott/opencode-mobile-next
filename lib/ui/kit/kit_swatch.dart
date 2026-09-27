@@ -417,12 +417,10 @@ class _SwatchTile extends StatelessWidget {
     bool enabled,
   ) {
     assert(
-      !enabled || _accentKeepsMeaning(swatch.color!, roles),
+      !enabled || accentKeepsMeaning(swatch.color!, roles),
       'KitSwatch.accent: color must keep LOOK-39\'s distance from the '
-      'current theme\'s attention and danger (hue ≥ 30°, ΔE2000 ≥ 20). '
-      'theme_roles.dart has no public accentKeepsMeaning yet (pre-wave, '
-      '_new-tokens.md §0.5 step 1); this is a temporary local check — see '
-      'the contract note in this unit\'s QA record.',
+      'current theme\'s attention and danger (hue ≥ 30°, ΔE2000 ≥ 20; '
+      'accentKeepsMeaning in theme_roles.dart).',
     );
     final circle = DecoratedBox(
       key: const ValueKey('kit-swatch-accent-circle'),
@@ -1028,111 +1026,4 @@ class KitThemePreview extends StatelessWidget {
       ),
     );
   }
-}
-
-// -----------------------------------------------------------------------
-// LOOK-39 for KitSwatch.accent's debug assert.
-//
-// Contract note (PROC-20, this unit's QA record): the frozen spec asks for
-// "the same check deriveRoles uses" as a public `accentKeepsMeaning` in
-// theme_roles.dart, but that function does not exist yet — it is listed as
-// out of scope for this unit in docs/ux-system/kit-api/_new-tokens.md
-// ("§0.5 step 1 theme work, not this unit's"), and theme_roles.dart is
-// outside this unit's write set. This is a self-contained duplicate of the
-// exact hue-distance/CIEDE2000 check test/theme_roles_test.dart already
-// uses privately for the same rule (LOOK-39), kept here only for this
-// widget's own debug assert. Once theme_roles.dart exports a public
-// accentKeepsMeaning, this block should be deleted in favour of it.
-// -----------------------------------------------------------------------
-
-/// Whether [accent] keeps LOOK-39's distance (hue ≥ 30°, ΔE2000 ≥ 20) from
-/// both [roles.attention] and [roles.danger].
-bool _accentKeepsMeaning(Color accent, ThemeRoles roles) {
-  for (final other in [roles.attention, roles.danger]) {
-    if (_hueDistance(accent, other) < 30) return false;
-    if (_deltaE2000(accent, other) < 20) return false;
-  }
-  return true;
-}
-
-double _hueDistance(Color a, Color b) {
-  final d = (HSVColor.fromColor(a).hue - HSVColor.fromColor(b).hue).abs();
-  return d > 180 ? 360 - d : d;
-}
-
-/// CIE L*a*b* (D65) of an opaque sRGB colour.
-List<double> _lab(Color c) {
-  double lin(double v) =>
-      v <= 0.04045 ? v / 12.92 : math.pow((v + 0.055) / 1.055, 2.4).toDouble();
-  final r = lin(c.r), g = lin(c.g), b = lin(c.b);
-  final x = (r * .4124564 + g * .3575761 + b * .1804375) / .95047;
-  final y = r * .2126729 + g * .7151522 + b * .0721750;
-  final z = (r * .0193339 + g * .1191920 + b * .9503041) / 1.08883;
-  double f(double t) =>
-      t > 0.008856 ? math.pow(t, 1 / 3).toDouble() : 7.787 * t + 16 / 116;
-  final fx = f(x), fy = f(y), fz = f(z);
-  return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
-}
-
-/// CIEDE2000 colour difference of two opaque sRGB colours (Sharma, Wu and
-/// Dalal 2005), the same formula test/theme_roles_test.dart uses for
-/// LOOK-39.
-double _deltaE2000(Color c1, Color c2) {
-  double rad(double deg) => deg * math.pi / 180;
-  double deg(double rad) => rad * 180 / math.pi;
-  final [l1, a1, b1] = _lab(c1);
-  final [l2, a2, b2] = _lab(c2);
-  final cBar =
-      (math.sqrt(a1 * a1 + b1 * b1) + math.sqrt(a2 * a2 + b2 * b2)) / 2;
-  final cBar7 = math.pow(cBar, 7);
-  final g = .5 * (1 - math.sqrt(cBar7 / (cBar7 + math.pow(25, 7))));
-  final a1p = (1 + g) * a1, a2p = (1 + g) * a2;
-  final c1p = math.sqrt(a1p * a1p + b1 * b1);
-  final c2p = math.sqrt(a2p * a2p + b2 * b2);
-  final h1p = (deg(math.atan2(b1, a1p)) + 360) % 360;
-  final h2p = (deg(math.atan2(b2, a2p)) + 360) % 360;
-  final dLp = l2 - l1;
-  final dCp = c2p - c1p;
-  var dh = h2p - h1p;
-  if (c1p * c2p == 0) {
-    dh = 0;
-  } else if (dh > 180) {
-    dh -= 360;
-  } else if (dh < -180) {
-    dh += 360;
-  }
-  final dHp = 2 * math.sqrt(c1p * c2p) * math.sin(rad(dh / 2));
-  final lBarp = (l1 + l2) / 2;
-  final cBarp = (c1p + c2p) / 2;
-  double hBarp;
-  if (c1p * c2p == 0) {
-    hBarp = h1p + h2p;
-  } else if ((h1p - h2p).abs() <= 180) {
-    hBarp = (h1p + h2p) / 2;
-  } else if (h1p + h2p < 360) {
-    hBarp = (h1p + h2p + 360) / 2;
-  } else {
-    hBarp = (h1p + h2p - 360) / 2;
-  }
-  final t =
-      1 -
-      .17 * math.cos(rad(hBarp - 30)) +
-      .24 * math.cos(rad(2 * hBarp)) +
-      .32 * math.cos(rad(3 * hBarp + 6)) -
-      .20 * math.cos(rad(4 * hBarp - 63));
-  final dTheta = 30 * math.exp(-math.pow((hBarp - 275) / 25, 2));
-  final cBarp7 = math.pow(cBarp, 7);
-  final rc = 2 * math.sqrt(cBarp7 / (cBarp7 + math.pow(25, 7)));
-  final sl =
-      1 +
-      .015 * math.pow(lBarp - 50, 2) / math.sqrt(20 + math.pow(lBarp - 50, 2));
-  final sc = 1 + .045 * cBarp;
-  final sh = 1 + .015 * cBarp * t;
-  final rt = -math.sin(rad(2 * dTheta)) * rc;
-  return math.sqrt(
-    math.pow(dLp / sl, 2) +
-        math.pow(dCp / sc, 2) +
-        math.pow(dHp / sh, 2) +
-        rt * (dCp / sc) * (dHp / sh),
-  );
 }
