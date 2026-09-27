@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/kit/kit_log_panel.dart';
 
 import 'kit_gallery.dart';
@@ -188,6 +189,18 @@ final _scenes = <String, _Scene>{
       await tester.pump();
     },
   ),
+  // R3: the host's "Copy failure report" sits in the header beside Copy
+  // all, and the Wrap toggle keeps its inset from the panel's edge.
+  'failed_report': _Scene(
+    () => KitLogPanel(
+      lines: _setupLines(),
+      ended: const KitLogEnd(exitCode: 1, failed: true),
+      headerAction: KitAction.copy(
+        label: 'Copy failure report',
+        text: () => 'report',
+      ),
+    ),
+  ),
   'dropped': _Scene(() {
     final buffer = KitLogBuffer(capacity: 10);
     for (var i = 0; i < 1250; i++) {
@@ -244,6 +257,19 @@ void main() {
           ),
           fill: true,
         ),
+      );
+    });
+    // R3: on a wide window the host's action shares the header row.
+    testWidgets('kit_log_panel failed_report · 1280x800 · $mode', (
+      tester,
+    ) async {
+      const size = Size(1280, 800);
+      await _shot(
+        tester,
+        name: kitGalleryName('kit_log_panel_failed_report', size, light: light),
+        size: size,
+        light: light,
+        scene: _scenes['failed_report']!,
       );
     });
   }

@@ -153,10 +153,25 @@ class KitDraft {
 /// [primaryListenable]: the frame redraws its pinned block whenever the
 /// listenable changes, and the block stays pinned (KIT-17). While the
 /// listenable holds null, [primary] is shown (null: no primary).
+/// [secondaryListenable] does the same for the secondary, so a form whose
+/// actions change as it works ("Test and turn on", then "Cancel test",
+/// then "Save anyway") keeps both answers pinned.
+///
+/// One close control (owner rule: nothing shown twice): when the secondary
+/// is a plain dismiss ("Cancel", "Not now"), pass [secondaryDismisses] and
+/// the header draws no close button while a secondary is shown. Esc, back,
+/// the handle and a swipe still close the sheet.
+///
+/// A long list is given as [itemCount] and [itemBuilder] instead of [body]:
+/// the frame builds only the rows in view (a virtualised list), where a
+/// [body] is laid out whole inside the frame's scroll view. Pass exactly
+/// one of [body] and [itemBuilder].
 Future<T?> showKitSheet<T>(
   BuildContext context, {
   required String title,
-  required WidgetBuilder body,
+  WidgetBuilder? body,
+  int? itemCount,
+  IndexedWidgetBuilder? itemBuilder,
   String? subtitle,
   IconData? icon,
   KitSheetTone tone = KitSheetTone.neutral,
@@ -164,6 +179,8 @@ Future<T?> showKitSheet<T>(
   KitAction? primary,
   ValueListenable<KitAction?>? primaryListenable,
   KitAction? secondary,
+  ValueListenable<KitAction?>? secondaryListenable,
+  bool secondaryDismisses = false,
   List<KitAction> tertiary = const [],
   ValueListenable<bool>? dirty,
   KitDraft? draft,
@@ -172,6 +189,14 @@ Future<T?> showKitSheet<T>(
   bool dismissible = true,
   Key? sheetKey,
 }) async {
+  assert(
+    (body == null) != (itemBuilder == null),
+    'showKitSheet: pass a body or an itemBuilder, not both',
+  );
+  assert(
+    itemBuilder == null || itemCount != null,
+    'showKitSheet: an itemBuilder needs its itemCount',
+  );
   if (routes?.isPending == false) return null;
   final window = KitLayout.modalWindowOf(context);
   final shape = !window.isWide
@@ -198,11 +223,15 @@ Future<T?> showKitSheet<T>(
         icon: icon,
         tone: tone,
         body: body,
+        itemCount: itemCount,
+        itemBuilder: itemBuilder,
         height: height,
         shape: shape,
         primary: primary,
         primaryListenable: primaryListenable,
         secondary: secondary,
+        secondaryListenable: secondaryListenable,
+        secondaryDismisses: secondaryDismisses,
         tertiary: tertiary,
         dirty: dirty,
         draft: draft,
@@ -221,10 +250,13 @@ Future<T?> showKitSheet<T>(
 /// muted subtitle and the close button at the end, the one loading bar,
 /// the scrolling [child], and the pinned action block. At 200 % text the
 /// title and subtitle wrap (never truncated) and the actions stay pinned
-/// while the body scrolls; when the header and the pinned block leave the
-/// body too little room (200 % text with the keyboard open, a short
-/// window), the header scrolls away with the body. The frame never
+/// while the body scrolls; when a fixed header would take more than half
+/// of the room the pinned actions leave (large text, the keyboard open, a
+/// short window), the header scrolls away with the body. The frame never
 /// overflows.
+///
+/// [KitSheet.list] draws a long list the same way, building only the rows
+/// in view.
 class KitSheet extends StatelessWidget {
   const KitSheet({
     super.key,
@@ -242,7 +274,31 @@ class KitSheet extends StatelessWidget {
     this.fill = false,
     this.onPullDown,
     this.dismissKeyboardOnDrag = false,
-  });
+    this.showClose = true,
+  }) : itemCount = null,
+       itemBuilder = null;
+
+  /// The frame with a virtualised list for a body: only the rows in view
+  /// are built, so a list of thousands opens as fast as a list of three.
+  const KitSheet.list({
+    super.key,
+    required this.title,
+    required int this.itemCount,
+    required IndexedWidgetBuilder this.itemBuilder,
+    this.subtitle,
+    this.icon,
+    this.tone = KitSheetTone.neutral,
+    this.primary,
+    this.secondary,
+    this.tertiary = const [],
+    this.onClose,
+    this.loading = false,
+    this.handle = true,
+    this.fill = false,
+    this.onPullDown,
+    this.dismissKeyboardOnDrag = false,
+    this.showClose = true,
+  }) : child = const SizedBox.shrink();
 
   /// The place in the person's words, at most four words.
   final String title;
@@ -255,12 +311,21 @@ class KitSheet extends StatelessWidget {
   /// The body; it scrolls inside the frame, so it is never its own
   /// scroll view or Scaffold.
   final Widget child;
+
+  /// A [KitSheet.list] body: how many rows, and each row. Null for [child].
+  final int? itemCount;
+  final IndexedWidgetBuilder? itemBuilder;
   final KitAction? primary;
   final KitAction? secondary;
   final List<KitAction> tertiary;
 
   /// Null hides the close button (while an irreversible step runs).
   final VoidCallback? onClose;
+
+  /// False leaves the close button out while [onClose] still closes from
+  /// the handle: the secondary is the one close control (nothing shown
+  /// twice).
+  final bool showClose;
   final bool loading;
 
   /// The drag handle on top (bottom sheets).
@@ -296,11 +361,12 @@ class KitSheet extends StatelessWidget {
       children: [
         if (handle) _KitHandle(onDismiss: onClose),
         Padding(
-          padding: EdgeInsetsDirectional.fromSTEB(
-            tokens.rail,
-            handle ? 0 : tokens.space3,
-            tokens.space2,
-            tokens.space1,
+          // The handle's own height is the air above the header.
+          padding: EdgeInsetsDirectional.only(
+            start: tokens.rail,
+            top: handle ? EdgeInsets.zero.top : tokens.space3,
+            end: tokens.space2,
+            bottom: tokens.space1,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,7 +405,7 @@ class KitSheet extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (onClose case final close?)
+                  if (onClose case final close? when showClose)
                     KitIconButton(
                       key: const ValueKey('kit-sheet-close'),
                       icon: AppIconography.close,
@@ -368,6 +434,13 @@ class KitSheet extends StatelessWidget {
     // place when a short window (or 200 % text with the keyboard open)
     // leaves no room to keep the header fixed: the header then scrolls away
     // with the body ("a short window lets the header scroll with the body").
+    final bodyPadding = EdgeInsetsDirectional.fromSTEB(
+      tokens.rail,
+      tokens.space2,
+      tokens.rail,
+      hasActions ? tokens.space2 : tokens.rail,
+    );
+    final itemBuilder = this.itemBuilder;
     final scroll = CustomScrollView(
       shrinkWrap: !fill,
       keyboardDismissBehavior: dismissKeyboardOnDrag
@@ -375,17 +448,18 @@ class KitSheet extends StatelessWidget {
           : null,
       slivers: [
         const _KitHeaderSpacer(),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(
-              tokens.rail,
-              tokens.space2,
-              tokens.rail,
-              hasActions ? tokens.space2 : tokens.rail,
+        if (itemBuilder != null)
+          SliverPadding(
+            padding: bodyPadding,
+            sliver: SliverList.builder(
+              itemCount: itemCount,
+              itemBuilder: itemBuilder,
             ),
-            child: child,
+          )
+        else
+          SliverToBoxAdapter(
+            child: Padding(padding: bodyPadding, child: child),
           ),
-        ),
       ],
     );
     return _KitSheetFrame(
@@ -424,8 +498,12 @@ class KitSheet extends StatelessWidget {
 ///   less [reserve] (past that it is cut at the bottom, never overflowed:
 ///   its primary comes first);
 /// - the header stays fixed on top while it leaves the body at least
-///   [reserve]; otherwise it takes its place inside the body's scroll view
-///   (through [_KitHeaderSpacer]) and scrolls away with it;
+///   [reserve] and at least as much room as it takes itself ([_bodyShare]
+///   of the room under the pinned block);
+///   otherwise it takes its place inside the body's scroll view (through
+///   [_KitHeaderSpacer]) and scrolls away with it, so at 250 % text on a
+///   small phone the body is not squeezed under a header that fills the
+///   sheet;
 /// - the body takes the rest and scrolls.
 ///
 /// Children, in reading order: header, body scroll view, optional actions.
@@ -479,6 +557,10 @@ class _RenderKitSheetFrame extends RenderBox
     _reserve = value;
     markNeedsLayout();
   }
+
+  /// The share of the room above the pinned block a fixed header must
+  /// leave the body.
+  static const double _bodyShare = 0.5;
 
   /// The header's place inside the scroll view, and how far it scrolled.
   _RenderKitHeaderSpacer? _spacer;
@@ -552,7 +634,10 @@ class _RenderKitSheetFrame extends RenderBox
     final header = _header..layout(widthOnly, parentUsesSize: true);
     final headerHeight = header.size.height;
     final room = maxHeight - actionsHeight;
-    _scrollsHeader = headerHeight + _reserve > room;
+    final minBody = room.isFinite
+        ? math.max(_reserve, room * _bodyShare)
+        : _reserve;
+    _scrollsHeader = headerHeight + minBody > room;
     final spacerExtent = _scrollsHeader ? headerHeight : 0.0;
     if (spacerExtent != _spacerExtent) {
       invokeLayoutCallback<BoxConstraints>((_) {
@@ -1044,11 +1129,15 @@ class _KitSheetHost extends StatefulWidget {
     required this.icon,
     required this.tone,
     required this.body,
+    required this.itemCount,
+    required this.itemBuilder,
     required this.height,
     required this.shape,
     required this.primary,
     required this.primaryListenable,
     required this.secondary,
+    required this.secondaryListenable,
+    required this.secondaryDismisses,
     required this.tertiary,
     required this.dirty,
     required this.draft,
@@ -1061,12 +1150,16 @@ class _KitSheetHost extends StatefulWidget {
   final String? subtitle;
   final IconData? icon;
   final KitSheetTone tone;
-  final WidgetBuilder body;
+  final WidgetBuilder? body;
+  final int? itemCount;
+  final IndexedWidgetBuilder? itemBuilder;
   final KitSheetHeight height;
   final _KitModalShape shape;
   final KitAction? primary;
   final ValueListenable<KitAction?>? primaryListenable;
   final KitAction? secondary;
+  final ValueListenable<KitAction?>? secondaryListenable;
+  final bool secondaryDismisses;
   final List<KitAction> tertiary;
   final ValueListenable<bool>? dirty;
   final KitDraft? draft;
@@ -1097,6 +1190,7 @@ class _KitSheetHostState extends State<_KitSheetHost> {
     widget.dirty?.addListener(_rebuild);
     widget.loading?.addListener(_rebuild);
     widget.primaryListenable?.addListener(_rebuild);
+    widget.secondaryListenable?.addListener(_rebuild);
     _live.add(this);
   }
 
@@ -1113,6 +1207,7 @@ class _KitSheetHostState extends State<_KitSheetHost> {
     widget.dirty?.removeListener(_rebuild);
     widget.loading?.removeListener(_rebuild);
     widget.primaryListenable?.removeListener(_rebuild);
+    widget.secondaryListenable?.removeListener(_rebuild);
     final ask = _ask;
     if (ask != null && !ask.done.isCompleted) ask.done.complete(false);
     _focus.dispose();
@@ -1186,49 +1281,63 @@ class _KitSheetHostState extends State<_KitSheetHost> {
     final size = MediaQuery.sizeOf(context);
     final fill = widget.height != KitSheetHeight.content;
     final bottom = shape == _KitModalShape.bottom;
-    Widget content = KitSheet(
-      key: widget.sheetKey,
-      title: widget.title,
-      subtitle: widget.subtitle,
-      icon: widget.icon,
-      tone: widget.tone,
-      primary: widget.primaryListenable?.value ?? widget.primary,
-      secondary: widget.secondary,
-      tertiary: widget.tertiary,
-      loading: widget.loading?.value ?? false,
-      handle: bottom,
-      fill: fill || shape == _KitModalShape.side,
-      onClose: widget.dismissible ? _close : null,
-      onPullDown: bottom && widget.dismissible && widget.dirty != null
-          ? _close
-          : null,
-      child: Builder(builder: widget.body),
-    );
-    // The question takes the content's place; the content keeps its state
-    // (typed text) underneath, out of sight and out of focus. The content
-    // keeps its place in the tree, so nothing in it is rebuilt from scratch.
-    content = Column(
-      mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    final secondary = widget.secondaryListenable?.value ?? widget.secondary;
+    final primary = widget.primaryListenable?.value ?? widget.primary;
+    final onClose = widget.dismissible ? _close : null;
+    final onPullDown = bottom && widget.dismissible && widget.dirty != null
+        ? _close
+        : null;
+    // One close control: a secondary that only dismisses replaces the X.
+    final showClose = !(widget.secondaryDismisses && secondary != null);
+    final loading = widget.loading?.value ?? false;
+    final frameFill = fill || shape == _KitModalShape.side;
+    final itemBuilder = widget.itemBuilder;
+    Widget content = itemBuilder != null
+        ? KitSheet.list(
+            key: widget.sheetKey,
+            title: widget.title,
+            subtitle: widget.subtitle,
+            icon: widget.icon,
+            tone: widget.tone,
+            itemCount: widget.itemCount!,
+            itemBuilder: itemBuilder,
+            primary: primary,
+            secondary: secondary,
+            tertiary: widget.tertiary,
+            loading: loading,
+            handle: bottom,
+            fill: frameFill,
+            onClose: onClose,
+            showClose: showClose,
+            onPullDown: onPullDown,
+          )
+        : KitSheet(
+            key: widget.sheetKey,
+            title: widget.title,
+            subtitle: widget.subtitle,
+            icon: widget.icon,
+            tone: widget.tone,
+            primary: primary,
+            secondary: secondary,
+            tertiary: widget.tertiary,
+            loading: loading,
+            handle: bottom,
+            fill: frameFill,
+            onClose: onClose,
+            showClose: showClose,
+            onPullDown: onPullDown,
+            child: Builder(builder: widget.body!),
+          );
+    // The question takes the content's place and the sheet's whole height
+    // (up to the frame's cap), never a band beside an empty slot. The
+    // content keeps its state (typed text) offstage, out of sight and out
+    // of focus, at the same place in the tree, so nothing in it is rebuilt
+    // from scratch.
+    content = Stack(
+      fit: fill ? StackFit.expand : StackFit.loose,
       children: [
-        if (ask != null) ...[
-          if (bottom) _KitHandle(onDismiss: () => _answer(false)),
-          Flexible(
-            fit: fill ? FlexFit.tight : FlexFit.loose,
-            child: SingleChildScrollView(
-              child: KitEntrance(
-                child: _KitConfirmBody(
-                  spec: ask.spec,
-                  onConfirm: () => _answer(true),
-                  onCancel: () => _answer(false),
-                ),
-              ),
-            ),
-          ),
-        ],
-        Flexible(
+        KeyedSubtree(
           key: const ValueKey('kit-sheet-content'),
-          fit: fill && ask == null ? FlexFit.tight : FlexFit.loose,
           child: ExcludeFocus(
             excluding: ask != null,
             child: Visibility(
@@ -1238,6 +1347,26 @@ class _KitSheetHostState extends State<_KitSheetHost> {
             ),
           ),
         ),
+        if (ask != null)
+          Column(
+            key: const ValueKey('kit-sheet-question'),
+            mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (bottom) _KitHandle(onDismiss: () => _answer(false)),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: KitEntrance(
+                    child: _KitConfirmBody(
+                      spec: ask.spec,
+                      onConfirm: () => _answer(true),
+                      onCancel: () => _answer(false),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
       ],
     );
     final maxHeight = size.height;

@@ -241,25 +241,58 @@ void main() {
       _spaced('lib/three.dart', 1),
     ];
 
-    testWidgets('a 1600 dp box shows the file list', (tester) async {
+    testWidgets('a 1600 dp box shows the file list: highlight, viewed ticks, '
+        'no Current word, no radio', (tester) async {
+      final changed = <int>[];
       await _pump(
         tester,
-        KitDiffView(files: files),
+        KitDiffView(files: files, onFileChanged: changed.add),
         size: const Size(1600, 1000),
       );
       expect(_key('kit-diff-file-list'), findsOneWidget);
       expect(_key('kit-diff-file-picker'), findsNothing);
+      expect(find.textContaining('Current'), findsNothing);
+      expect(find.byType(Radio<int>), findsNothing);
+      // The open file is viewed; the others are not yet.
+      expect(_key('kit-diff-file-viewed-0'), findsOneWidget);
+      expect(_key('kit-diff-file-viewed-2'), findsNothing);
+      // The header does not repeat a position the list already shows.
+      expect(find.textContaining('· 1 of 3'), findsNothing);
+
       await tester.tap(_key('kit-diff-file-row-2'));
       await tester.pumpAndSettle();
       expect(_key('kit-diff-file-header-lib/three.dart'), findsOneWidget);
+      expect(changed, [2]);
+      expect(_key('kit-diff-file-viewed-0'), findsOneWidget);
+      expect(_key('kit-diff-file-viewed-1'), findsNothing);
+      expect(_key('kit-diff-file-viewed-2'), findsOneWidget);
+      expect(find.textContaining('Current'), findsNothing);
     });
 
-    testWidgets('412: the picker sheet lists the files and opens one', (
+    testWidgets('412: one switcher row "one.dart · 1 of 3" opens the sheet', (
       tester,
     ) async {
-      await _pump(tester, KitDiffView(files: files));
+      final changed = <int>[];
+      await _pump(
+        tester,
+        KitDiffView(files: files, onFileChanged: changed.add),
+      );
       expect(_key('kit-diff-file-list'), findsNothing);
-      expect(find.text('3 files'), findsOneWidget);
+      // The count is said once, in the switcher; no "3 files" bar.
+      expect(find.text('3 files'), findsNothing);
+      expect(find.text('${KitBidi.ltr('one.dart')} · 1 of 3'), findsOneWidget);
+      // The counts sit on the same row, at its end.
+      final picker = tester.getRect(_key('kit-diff-file-picker'));
+      final counts = tester.getRect(
+        find.descendant(
+          of: _key('kit-diff-file-picker'),
+          matching: find.byWidgetPredicate(
+            (w) => w is RichText && w.text.toPlainText() == '+1 −1',
+          ),
+        ),
+      );
+      expect(counts.right, greaterThan(picker.center.dx));
+      expect(picker.height, greaterThanOrEqualTo(48));
       await tester.tap(_key('kit-diff-file-picker'));
       await tester.pumpAndSettle();
       for (final path in ['lib/one.dart', 'lib/two.dart', 'lib/three.dart']) {
@@ -270,6 +303,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(_key('kit-diff-file-header-lib/three.dart'), findsOneWidget);
       expect(find.text('changed lib/three.dart 1'), findsOneWidget);
+      expect(
+        find.text('${KitBidi.ltr('three.dart')} · 3 of 3'),
+        findsOneWidget,
+      );
+      expect(changed, [2]);
     });
   });
 
@@ -277,9 +315,13 @@ void main() {
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
+    final changed = <int>[];
     await _pump(
       tester,
-      KitDiffView(files: [_spaced('a.txt', 3), _spaced('b.txt', 3)]),
+      KitDiffView(
+        files: [_spaced('a.txt', 3), _spaced('b.txt', 3)],
+        onFileChanged: changed.add,
+      ),
     );
     expect(find.text('Change 1 of 6'), findsOneWidget);
     for (var i = 0; i < 5; i++) {
@@ -287,6 +329,8 @@ void main() {
       await tester.pumpAndSettle();
     }
     expect(find.text('Change 6 of 6'), findsOneWidget);
+    // Crossing into the second file is reported once.
+    expect(changed, [1]);
     expect(_key('kit-diff-file-header-b.txt'), findsOneWidget);
     expect(find.text('changed b.txt 3'), findsOneWidget);
 
@@ -402,9 +446,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('3 lines selected'), findsOneWidget);
       expect(_key('kit-diff-selection-bar'), findsOneWidget);
+      // Lines stay compact with selection on (the gutter lends the reach).
       expect(
         tester.getSize(_key('kit-diff-line-0-current-12')).height,
-        greaterThanOrEqualTo(48),
+        lessThan(30),
       );
 
       await tester.tap(find.text('Comment'));
@@ -417,6 +462,8 @@ void main() {
       expect(selection.text, startsWith('new twelve\nkey = '));
       expect(selection.text, isNot(contains(secret)));
       expect(selection.text, endsWith('new fourteen'));
+      // 12-14 is the change, not its whole hunk (the context around it).
+      expect(selection.hunk, isFalse);
 
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
@@ -442,6 +489,70 @@ void main() {
       expect(find.text('3 lines selected'), findsOneWidget);
     });
 
+    testWidgets('7. compact lines: a 10-line hunk stays short, and the '
+        'gutter reaches past a row to a 48 dp target', (tester) async {
+      final comments = <KitDiffSelection>[];
+      final before = _numbered(10);
+      final after = [for (final line in before) 'new $line'];
+      await _pump(
+        tester,
+        KitDiffView(
+          files: [
+            KitDiffFile.fromTexts(
+              'lib/b.dart',
+              before: before.join('\n'),
+              after: after.join('\n'),
+            ),
+          ],
+          readOnly: false,
+          onComment: comments.add,
+        ),
+      );
+      final first = tester.getRect(_key('kit-diff-line-0-old-1'));
+      final last = tester.getRect(_key('kit-diff-line-0-current-10'));
+      // 20 rows (10 removed, 10 added) in well under half the phone.
+      expect(last.bottom - first.top, lessThan(915 / 2));
+      expect(first.height, inInclusiveRange(16, 26));
+
+      // 10 dp below the last row, nothing but padding: the gutter still
+      // gives it to line 10.
+      await tester.tapAt(last.bottomCenter + const Offset(0, 10));
+      await tester.pumpAndSettle();
+      expect(find.text('1 line selected'), findsOneWidget);
+      await tester.tap(find.text('Comment'));
+      await tester.pumpAndSettle();
+      expect(comments.single.side, KitDiffSide.current);
+      expect((comments.single.startLine, comments.single.endLine), (10, 10));
+    });
+
+    testWidgets('7. a hunk selects as a hunk', (tester) async {
+      final comments = <KitDiffSelection>[];
+      await _pump(
+        tester,
+        KitDiffView(
+          files: [KitDiffFile.fromPatch('lib/a.dart', _twoHunks)],
+          readOnly: false,
+          onComment: comments.add,
+        ),
+      );
+      // Tapping a hunk's range selects every current line of it.
+      await tester.tap(find.text('Lines 10–13'));
+      await tester.pumpAndSettle();
+      expect(find.text('4 lines selected'), findsOneWidget);
+      await tester.tap(find.text('Comment'));
+      await tester.pumpAndSettle();
+      expect(comments.last.hunk, isTrue);
+      expect((comments.last.startLine, comments.last.endLine), (10, 13));
+
+      // Part of it is not a hunk.
+      await tester.tap(_key('kit-diff-line-0-current-11'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Comment'));
+      await tester.pumpAndSettle();
+      expect(comments.last.hunk, isFalse);
+      expect((comments.last.startLine, comments.last.endLine), (11, 11));
+    });
+
     testWidgets('7. read-only offers no selection', (tester) async {
       await _pump(tester, KitDiffView(files: [file()]));
       expect(_key('kit-diff-line-0-current-12'), findsNothing);
@@ -455,7 +566,7 @@ void main() {
         tester,
         KitDiffView(files: [file()], readOnly: false, onAddToPrompt: (_) {}),
       );
-      await tester.tap(_key('kit-diff-line-0-current-13'));
+      await tester.tap(_key('kit-diff-line-0-current-13'), warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(find.text('1 line selected'), findsOneWidget);
       await tester.tap(find.text('Copy lines'));

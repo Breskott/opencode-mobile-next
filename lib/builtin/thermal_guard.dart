@@ -251,6 +251,7 @@ class ThermalGuard extends ChangeNotifier {
     bool Function()? inBackground,
     AppLocalizations Function()? strings,
     this.diagnostics,
+    this.onReading,
   }) : policy = policy ?? ThermalPolicy(),
        _clock = clock ?? DateTime.now,
        _inBackground = inBackground ?? _appInBackground,
@@ -264,6 +265,10 @@ class ThermalGuard extends ChangeNotifier {
   final SharedPreferences prefs;
   final ThermalPolicy policy;
   AppDiagnosticsController? diagnostics;
+
+  /// Sees every reading the guard acts on, e.g. the persisted problem
+  /// report's thermal history. Reuses the guard's one native listener.
+  final void Function(ThermalReading reading)? onReading;
   final DateTime Function() _clock;
   final bool Function() _inBackground;
   final AppLocalizations Function() _strings;
@@ -318,6 +323,11 @@ class ThermalGuard extends ChangeNotifier {
   /// One reading from Android (the stream, or a test).
   Future<void> observe(ThermalReading reading) {
     _last = reading;
+    try {
+      onReading?.call(reading);
+    } catch (error, stack) {
+      diagnostics?.record(error, stack, source: 'thermal');
+    }
     return evaluate();
   }
 

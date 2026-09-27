@@ -129,7 +129,7 @@ void main() {
 
     test('every matrix capability has equal supported and partly sets', () {
       expect(KitCapabilities.all, hasLength(_matrix.length));
-      expect(_matrix, hasLength(33));
+      expect(_matrix, hasLength(35));
       for (final row in _matrix) {
         final id = row['capability'] as String;
         final hosts = row['hosts'] as Map<String, dynamic>;

@@ -342,6 +342,36 @@ void main() {
         expect(tester.takeException(), isAssertionError);
       },
     );
+
+    testWidgets(
+      'the debug assert is accentKeepsMeaning: it asserts exactly when the '
+      'shared check fails (R9)',
+      (tester) async {
+        final colours = [
+          for (final option in graphiteAccents) option.dark,
+          graphiteDark.danger, // destroys or stops
+          const Color(0xFFFF8A4C), // the orange teal replaced
+        ];
+        for (final colour in colours) {
+          await _pump(
+            tester,
+            KitSwatch.accent(
+              swatchKey: const ValueKey('sw'),
+              color: colour,
+              label: 'Accent',
+              selected: false,
+              onPressed: () {},
+            ),
+          );
+          final keeps = accentKeepsMeaning(colour, graphiteDark);
+          expect(
+            tester.takeException(),
+            keeps ? isNull : isAssertionError,
+            reason: colour.toString(),
+          );
+        }
+      },
+    );
   });
 
   group('grid columns (test 6)', () {

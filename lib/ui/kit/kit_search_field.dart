@@ -6,6 +6,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../l10n/app_localizations_en.dart';
 import '../app_iconography.dart';
 import 'kit_bidi.dart';
 import 'kit_buttons.dart';
@@ -191,7 +192,7 @@ class _KitSearchFieldState extends State<KitSearchField> {
       unawaited(
         SemanticsService.sendAnnouncement(
           view,
-          _countText(AppLocalizations.of(context), count),
+          _countText(_kitSearchWords(context), count),
           Directionality.of(context),
         ),
       );
@@ -234,7 +235,7 @@ class _KitSearchFieldState extends State<KitSearchField> {
     await showKitMenu(
       anchor,
       items: widget.filters,
-      semanticsLabel: AppLocalizations.of(context).kitSearchFilter,
+      semanticsLabel: _kitSearchWords(context).kitSearchFilter,
     );
   }
 
@@ -242,7 +243,7 @@ class _KitSearchFieldState extends State<KitSearchField> {
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
     final roles = tokens.roles;
-    final l10n = AppLocalizations.of(context);
+    final l10n = _kitSearchWords(context);
     final reduced = KitMotion.reduced(context);
     final wide = KitLayout.windowOf(context) != KitWindow.compact;
     final hasQuery = _hasQuery;
@@ -522,7 +523,7 @@ class KitSearchNoMatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = _kitSearchWords(context);
     final quoted = '“${KitBidi.auto(query)}”';
     final title = what == null
         ? l10n.kitSearchNoMatch(quoted)
@@ -536,4 +537,17 @@ class KitSearchNoMatch extends StatelessWidget {
       secondary: action,
     );
   }
+}
+
+/// The kit's words: the app's bound [AppLocalizations], else the locale's
+/// lookup, else English, so the part never throws in a bare harness with no
+/// localization delegates (R8).
+AppLocalizations _kitSearchWords(BuildContext context) {
+  final bound = Localizations.of<AppLocalizations>(context, AppLocalizations);
+  if (bound != null) return bound;
+  final locale = Localizations.maybeLocaleOf(context);
+  if (locale != null && AppLocalizations.delegate.isSupported(locale)) {
+    return lookupAppLocalizations(locale);
+  }
+  return AppLocalizationsEn();
 }

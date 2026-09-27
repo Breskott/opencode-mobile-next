@@ -33,19 +33,35 @@ class KitStatusScope extends InheritedWidget {
       conditions != oldWidget.conditions;
 }
 
-/// Draws the one line: [KitStatus.highest] over the app-wide conditions,
-/// this slot's own [status] and every status contributed from below (ties
-/// keep the first: app-wide, then own, then contributions in registration
-/// order), rendered with [KitStatusLine.of]. Nothing to show → nothing
-/// drawn. The line folds in and out through [KitReveal] (it stays mounted
-/// with no child).
+/// Draws the one status line of a window: at most one condition, the most
+/// urgent one, never a stack of banners.
 ///
-/// With [child] (coordinator ruling on the KitStatusLine-v2 contract, for
-/// KitScreen), the slot also hosts what sits below its line: it draws the
-/// line above [child], which fills the rest of the slot's height (give the
-/// slot a bounded height), and every [KitStatusContribution] inside [child]
-/// reaches this slot. Without [child] only contributions below the line
-/// itself reach it.
+/// **Which line wins.** [KitStatus.highest] picks from the app-wide
+/// conditions ([KitStatusScope]), this slot's own [status] and every status
+/// contributed from below, by [KitStatusKind] order, highest first:
+/// connection (offline, reconnecting, not answering) > app stopped (Android
+/// killed the app; background checks paused) > heat (the phone is hot; the
+/// team is paused) > a risky switch that is on > the screen's own work line
+/// > update ready > info. Ties keep the first: app-wide, then own, then
+/// contributions in registration order. The winner renders with
+/// [KitStatusLine.of]. Nothing to show → nothing drawn; the line folds in
+/// and out through [KitReveal] (it stays mounted with no child).
+///
+/// **How a contribution gets here.** A [KitStatusContribution] looks up the
+/// nearest [KitStatusLineSlot] above it in the widget tree (an inherited
+/// scope this slot provides) and registers its status there while it is
+/// mounted and its TickerMode is enabled; an offstage tab stops
+/// contributing. A contribution with no slot above it shows nothing. A
+/// `KitScreen` inside a slot contributes its line instead of drawing its
+/// own ([existsAbove]).
+///
+/// **What [child] is for** (coordinator ruling on the KitStatusLine-v2
+/// contract, for KitScreen): the content the line sits on top of — the
+/// window's screens. With [child], the slot draws the line above it, the
+/// child fills the rest of the slot's height (give the slot a bounded
+/// height), and every [KitStatusContribution] inside [child] reaches this
+/// slot. Without [child] the slot is the line alone, and only
+/// contributions placed below the line itself reach it.
 ///
 /// States: none drawn / one condition (KitStatusLine's own states).
 class KitStatusLineSlot extends StatefulWidget {

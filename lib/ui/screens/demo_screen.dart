@@ -98,37 +98,34 @@ class _DemoScreenState extends State<DemoScreen> {
     final tokens = KitTokens.of(context);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
     return KitScreen(
+      // The X is the one way out and says so: "Leave demo". Set up your own
+      // server stays on the finished notice, where the loop has earned it.
       topBar: KitTopBar(
         title: l10n.demoScreenTitle,
-        exit: KitTopBarExit.close,
-        onExit: _exit,
+        exit: KitTopBarExit.none,
         actions: [
           KitAction(
-            key: const Key('demo-reset'),
-            label: DemoCopy.reset,
-            icon: AppIconography.restart,
-            onPressed: _reset,
-          ),
-        ],
-        // Always reachable, also while the keyboard hides the page's own
-        // offer (map statesMissing).
-        menu: [
-          KitMenuItem(
-            key: const Key('demo-set-up-server-menu'),
-            label: l10n.demoSetUpServer,
-            icon: AppIconography.server,
-            onSelected: _exit,
+            key: const Key('demo-leave'),
+            label: l10n.demoScreenLeave,
+            icon: AppIconography.close,
+            onPressed: _exit,
           ),
         ],
       ),
-      // One line says it is simulated; the longer disclosure sits under it
-      // while there is room.
+      // One line says it is simulated and offers to start again; the longer
+      // disclosure sits under it while there is room.
       status: KitStatus(
         kind: KitStatusKind.info,
         id: 'demo',
         icon: AppIconography.experiments,
         message: l10n.demoScreenSimulated,
-        supporting: keyboard ? null : DemoCopy.disclosure,
+        supporting: keyboard ? null : l10n.demoScreenDisclosure,
+        action: KitAction(
+          key: const Key('demo-reset'),
+          label: l10n.demoScreenReset,
+          icon: AppIconography.restart,
+          onPressed: _reset,
+        ),
       ),
       header: [
         ListenableBuilder(

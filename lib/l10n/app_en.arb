@@ -24265,9 +24265,9 @@
   "@kitCapMcpAnyTitle": {
     "description": "KitCapabilityExplainer: the name of the capability \"mcp.any\", shown as the title of the dimmed row or the missing state"
   },
-  "kitCapMcpAnyWhy": "No extra tools are added on this server yet.",
+  "kitCapMcpAnyWhy": "This server can't add extra tools from the app.",
   "@kitCapMcpAnyWhy": {
-    "description": "KitCapabilityExplainer: why the capability \"mcp.any\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+    "description": "KitCapabilityExplainer: why the capability \"mcp.any\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body). It explains a server that cannot add MCP servers at all; the turn-on invitation is kitCapMcpAnyOffer"
   },
   "kitCapMcpAnyEnable": "Add a tool",
   "@kitCapMcpAnyEnable": {
@@ -28407,7 +28407,7 @@
   "@activeContextFailedTitle": {
     "description": "Active context: title of the load failure state."
   },
-  "activeContextIntro": "What the model reads on its next turn: the messages this server keeps for the conversation after its latest summary. Counts are messages, not tokens.",
+  "activeContextIntro": "What the model reads on its next turn, after the latest summary.",
   "@activeContextIntro": {
     "description": "Active context: plain one-paragraph intro above the list."
   },
@@ -28515,10 +28515,6 @@
   "sessionNoteEmptyUseDelete": "To remove the note, use Delete saved note.",
   "@sessionNoteEmptyUseDelete": {
     "description": "Note for the agent: why Save is unavailable when the saved note was cleared in the field."
-  },
-  "sessionNoteUnchanged": "Change the note to save it.",
-  "@sessionNoteUnchanged": {
-    "description": "Note for the agent: why Save is unavailable when nothing changed."
   },
   "sessionRelationsTitle": "Subagents",
   "@sessionRelationsTitle": {
@@ -30555,5 +30551,133 @@
   "setupAppStageVerifying": "Checking the download",
   "@setupAppStageVerifying": {
     "description": "Setup checklist stage while the app verifies a downloaded item"
+  },
+  "kitDiffFilePosition": "{index} of {count}",
+  "@kitDiffFilePosition": {
+    "description": "KitDiffView: the phone file switcher's position after the file name, e.g. 'checkout_page.dart · 1 of 3'",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDiffFilePositionSpoken": "file {index} of {count}",
+  "@kitDiffFilePositionSpoken": {
+    "description": "KitDiffView: the file switcher's position as read by a screen reader, after the path and counts",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDiffViewed": "Viewed",
+  "@kitDiffViewed": {
+    "description": "KitDiffView: screen-reader name of the tick on a file already viewed in the wide file list"
+  },
+  "kitDiffSelectHunk": "Select these lines",
+  "@kitDiffSelectHunk": {
+    "description": "KitDiffView: tooltip of a hunk's line range ('Lines 12–18') when selection is on; tapping it selects the whole hunk"
+  },
+  "kitCapFlagTerminalTitle": "Terminal",
+  "@kitCapFlagTerminalTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:terminal\" (the server's own terminal, without Files), shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagTerminalWhy": "This server doesn't open a terminal for you.",
+  "@kitCapFlagTerminalWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:terminal\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapFlagToolInventoryTitle": "Tool list",
+  "@kitCapFlagToolInventoryTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:toolInventory\" (the list of tools the server's agent can use), shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagToolInventoryWhy": "This server doesn't list the tools its agent can use.",
+  "@kitCapFlagToolInventoryWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:toolInventory\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "demoScreenReset": "Reset demo",
+  "@demoScreenReset": {
+    "description": "Offline demo: status-line action that starts the simulated conversation again."
+  },
+  "demoScreenLeave": "Leave demo",
+  "@demoScreenLeave": {
+    "description": "Offline demo: the top bar close button that leaves the demo."
+  },
+  "demoScreenDisclosure": "Everything here is simulated on this device. No server, provider, or files are accessed.",
+  "@demoScreenDisclosure": {
+    "description": "Offline demo: supporting line under \"Simulated · nothing is saved\"."
+  },
+  "capabilityScreenIntroWithGaps": "{server} decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out. Missing features work on other OpenCode servers.",
+  "@capabilityScreenIntroWithGaps": {
+    "description": "Available on this server: intro when the server lacks something; says once where missing features work.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "activeContextMessageTitle": "{role, select, user{User message} assistant{Assistant message} system{System message} synthetic{Synthetic message} skill{Skill message} shell{Shell message} compaction{Summary message} change{Conversation change} other{Message}}",
+  "@activeContextMessageTitle": {
+    "description": "Active context: title of one message page, by its role.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "newConversationLastUsed": "Last used",
+  "@newConversationLastUsed": {
+    "description": "New conversation chooser: marks the way the person started their last conversation on this server"
+  },
+  "newConversationSoloDetail": "You and the assistant",
+  "@newConversationSoloDetail": {
+    "description": "New conversation chooser: what the Solo row starts, when no project is known"
+  },
+  "newConversationSoloDetailIn": "You and the assistant, in {project}",
+  "@newConversationSoloDetailIn": {
+    "description": "New conversation chooser: what the Solo row starts and where",
+    "placeholders": {
+      "project": {
+        "type": "String",
+        "example": "shopfront"
+      }
+    }
+  },
+  "newConversationTeamDetail": "The AI Team plans the work and shares it out",
+  "@newConversationTeamDetail": {
+    "description": "New conversation chooser: what the Team row starts while the AI Team is on"
+  },
+  "newConversationTeamOffDetail": "Off on this server · opens the AI Team to set it up",
+  "@newConversationTeamOffDetail": {
+    "description": "New conversation chooser: the Team row while the AI Team is off; tapping it opens the team's off state"
+  },
+  "newConversationCopyTitle": "In a separate copy of {project}",
+  "@newConversationCopyTitle": {
+    "description": "New conversation chooser: starts the conversation in a fresh worktree of the project",
+    "placeholders": {
+      "project": {
+        "type": "String",
+        "example": "shopfront"
+      }
+    }
+  },
+  "newConversationCloudTitle": "On {machine}",
+  "@newConversationCloudTitle": {
+    "description": "New conversation chooser: starts the conversation on this cloud machine (a managed workspace)",
+    "placeholders": {
+      "machine": {
+        "type": "String",
+        "example": "feature-login"
+      }
+    }
+  },
+  "newConversationCloudDetail": "A cloud machine for this project",
+  "@newConversationCloudDetail": {
+    "description": "New conversation chooser: what a cloud machine row is"
   }
 }

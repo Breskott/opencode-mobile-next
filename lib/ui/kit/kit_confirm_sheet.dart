@@ -95,9 +95,44 @@ Future<bool> showKitConfirm(
   );
   final host = _KitSheetScope.maybeOf(context);
   if (host != null && host.mounted) return host.ask(spec);
+  final result = await presentKitConfirmFrame<bool>(
+    context,
+    routes: routes,
+    builder: (sheetContext) {
+      void close(bool value) => Navigator.of(sheetContext).pop(value);
+      final question = _KitConfirmBody(
+        spec: spec,
+        onConfirm: () => close(true),
+        onCancel: () => close(false),
+      );
+      return SingleChildScrollView(child: question);
+    },
+  );
+  return result == true;
+}
+
+/// The frame [showKitConfirm] opens in, for the kit's other short
+/// questions (kit_dialog.dart's input dialog): a bottom sheet with a
+/// handle on a compact window, capped at 560 dp on a medium one, a centred
+/// 480 dp panel on an expanded or large one (§8.2). The route goes on the
+/// caller's navigator; `Navigator.pop` from [builder]'s context closes it.
+///
+/// [builder]'s widget is given the room left under the handle and above
+/// the keyboard, and scrolls itself (it may pin its own actions).
+///
+/// With [ownsDrag] the route's own swipe is off and a pull on the handle
+/// asks the route to pop through `maybePop`, so the content's `PopScope`
+/// decides (unsaved text, work in flight). Kit-internal: nothing outside
+/// lib/ui/kit/ calls it.
+Future<T?> presentKitConfirmFrame<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  bool ownsDrag = false,
+  RequestRoutes? routes,
+}) {
   final window = KitLayout.modalWindowOf(context);
   final shape = window.isWide ? _KitModalShape.panel : _KitModalShape.bottom;
-  final result = await _presentKitModal<bool>(
+  return _presentKitModal<T>(
     context,
     shape: shape,
     maxWidth: switch (window) {
@@ -106,46 +141,38 @@ Future<bool> showKitConfirm(
       _ => KitLayout.confirmDialogWidth,
     },
     dismissible: true,
-    enableDrag: true,
+    enableDrag: !ownsDrag,
     builder: (sheetContext) {
       routes?.own(ModalRoute.of(sheetContext));
-      void close(bool value) => Navigator.of(sheetContext).pop(value);
-      final question = _KitConfirmBody(
-        spec: spec,
-        onConfirm: () => close(true),
-        onCancel: () => close(false),
-      );
+      final content = builder(sheetContext);
       if (shape != _KitModalShape.bottom) {
-        // A panel has no handle above the icon: the same air instead.
-        return SingleChildScrollView(
+        // A panel has no handle above the content: the same air instead.
+        return Padding(
           padding: EdgeInsets.only(top: KitTokens.of(sheetContext).space3),
-          child: question,
+          child: content,
         );
       }
+      void pop() => unawaited(Navigator.of(sheetContext).maybePop());
+      Widget handle = _KitHandle(onDismiss: pop);
+      if (ownsDrag) handle = _PullDown(onPullDown: pop, child: handle);
       return Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
         ),
         child: SafeArea(
           top: false,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _KitHandle(
-                  onDismiss: () =>
-                      unawaited(Navigator.of(sheetContext).maybePop()),
-                ),
-                question,
-              ],
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              handle,
+              Flexible(child: content),
+            ],
           ),
         ),
       );
     },
   );
-  return result == true;
 }
 
 class _KitConfirmSpec {
@@ -218,8 +245,9 @@ class _KitConfirmBody extends StatelessWidget {
 /// its own for goldens. Start-aligned on the rails: the icon on the one
 /// 44 dp header tile (neutral: `surface3`; stop, delete, discard: the danger
 /// tint), the title, the body, the consequences, the typed name, then the
-/// confirm with the cancel under it (full width), the alternative on a
-/// line of its own, and Details last.
+/// answers: the confirm, the alternative on a line of its own, and Cancel
+/// last (full width on a phone; one end-aligned row from medium, Cancel,
+/// alternative, confirm), and Details last of all.
 class KitConfirmSheet extends StatefulWidget {
   const KitConfirmSheet({
     super.key,
@@ -406,6 +434,24 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
       expand: !wide,
       onPressed: _working ? null : _cancel,
     );
+    // The safer path sits between the act and Cancel: the person reads
+    // the act, then the way round it, then the way out.
+    final alternativeButton = alternative == null
+        ? null
+        : KitButton.fromAction(
+            KitAction(
+              key: alternative.key,
+              label: alternative.label,
+              icon: alternative.icon,
+              onPressed: alternative.onPressed == null || _working
+                  ? null
+                  : () {
+                      _cancel();
+                      alternative.onPressed!();
+                    },
+            ),
+            role: KitButtonRole.tertiary,
+          );
     final reason = _nameMatches
         ? null
         : Padding(
@@ -494,41 +540,37 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
               SizedBox(height: tokens.space5),
               if (wide) ...[
                 // A PC or tablet (§5): the answers in a row at the end,
-                // the confirm last.
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Flexible(child: cancel),
-                    SizedBox(width: tokens.space3),
-                    Flexible(child: confirm),
-                  ],
-                ),
+                // the confirm last, the alternative between it and Cancel.
+                if (alternativeButton != null)
+                  // Three answers keep their words on one line each and
+                  // wrap to a second row rather than squeeze a label.
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: tokens.space3,
+                    runSpacing: tokens.space2,
+                    children: [cancel, alternativeButton, confirm],
+                  )
+                else
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Flexible(child: cancel),
+                      SizedBox(width: tokens.space3),
+                      Flexible(child: confirm),
+                    ],
+                  ),
                 ?reason,
               ] else ...[
                 confirm,
                 // The reason sits under the button it explains.
                 ?reason,
+                if (alternativeButton != null) ...[
+                  SizedBox(height: tokens.space2),
+                  KitInset(child: alternativeButton),
+                ],
                 SizedBox(height: tokens.space3),
                 cancel,
-              ],
-              if (alternative != null) ...[
-                SizedBox(height: tokens.space1),
-                KitInset(
-                  child: KitButton.fromAction(
-                    KitAction(
-                      key: alternative.key,
-                      label: alternative.label,
-                      icon: alternative.icon,
-                      onPressed: alternative.onPressed == null || _working
-                          ? null
-                          : () {
-                              _cancel();
-                              alternative.onPressed!();
-                            },
-                    ),
-                    role: KitButtonRole.tertiary,
-                  ),
-                ),
               ],
               if (widget.details.isNotEmpty) ...[
                 SizedBox(height: tokens.space2),
