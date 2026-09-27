@@ -414,9 +414,10 @@ class _AgentRow extends StatelessWidget {
                       onPressed: waking ? null : wake,
                     ),
                   if (showReceipt)
-                    TeamReceiptChip(
+                    ?teamGateRowReceipt(
+                      context,
+                      record,
                       key: ValueKey('team-agents-receipt-${agent.id}'),
-                      record: record,
                       onOpen: onTap,
                     ),
                 ],

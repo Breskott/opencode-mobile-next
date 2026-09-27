@@ -235,11 +235,7 @@ class TeamBoardCardView extends StatelessWidget {
       // notice.
       receipt: moving == null
           ? null
-          : KitReceipt(
-              state: KitReceiptState.sending,
-              label: moving,
-              automatic: true,
-            ),
+          : KitReceipt(state: KitReceiptState.sending, sendingLabel: moving),
       action: onMoves == null
           ? null
           : KitAction(

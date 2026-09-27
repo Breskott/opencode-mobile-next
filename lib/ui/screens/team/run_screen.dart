@@ -741,9 +741,10 @@ class _Overview extends StatelessWidget {
         if (receipt case final record?)
           rails(
             top: tokens.space2,
-            TeamReceiptChip(
+            teamControlReceipt(
+              context,
+              record,
               key: const ValueKey('team-run-receipt'),
-              record: record,
               control: run.kind == RunKind.batch
                   ? l10n.teamUiControlCloseBatch
                   : l10n.teamUiControlCancelRun,
@@ -778,7 +779,7 @@ class _Overview extends StatelessWidget {
             keyPrefix: 'team-run-needs-you',
             controller: controller,
             gate: gates.first,
-            title: teamGateKindWord(l10n, gates.first.kind),
+            title: teamGateWho(l10n, controller.snapshot, gates.first),
             onOpen: () => onOpenGate(gates.first),
           ),
         ],

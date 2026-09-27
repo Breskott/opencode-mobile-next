@@ -447,10 +447,7 @@ void main() {
     final time = MaterialLocalizations.of(
       context,
     ).formatTimeOfDay(TimeOfDay.fromDateTime(at));
-    expect(
-      _visible(tester),
-      "Restarted the phone's server at $time · | Undo",
-    );
+    expect(_visible(tester), "Restarted the phone's server at $time · | Undo");
     await tester.tap(find.text('Undo'));
     expect(undos, 1);
   });
@@ -666,7 +663,13 @@ void main() {
     expect(tester.binding.hasScheduledFrame, isFalse);
   });
 
-  group('TeamReceiptChip wrapper (C24)', () {
+  group('teamGateRowReceipt (C24; the wrapper retired by slice-P4.1c)', () {
+    Widget row(MutationRecord record, VoidCallback onOpen) => Builder(
+      builder: (context) =>
+          teamGateRowReceipt(context, record, onOpen: onOpen) ??
+          const SizedBox.shrink(),
+    );
+
     MutationRecord record(MutationStatus status) => MutationRecord(
       key: 'r-1',
       request: MutationRequest.message('mayor', 'Add dark mode'),
@@ -676,41 +679,27 @@ void main() {
 
     testWidgets('confirmed renders nothing', (tester) async {
       await tester.pumpWidget(
-        _app(
-          TeamReceiptChip(
-            record: record(MutationStatus.confirmed),
-            onOpen: () {},
-          ),
-        ),
+        _app(row(record(MutationStatus.confirmed), () {})),
       );
       await tester.pumpAndSettle();
       expect(find.byType(KitReceipt), findsNothing);
     });
 
-    testWidgets('sent and rejected show their words; tap opens', (
+    testWidgets('sending and rejected show their words; tap opens', (
       tester,
     ) async {
       var opens = 0;
       await tester.pumpWidget(
-        _app(
-          TeamReceiptChip(
-            record: record(MutationStatus.sent),
-            onOpen: () => opens++,
-          ),
-        ),
+        _app(row(record(MutationStatus.sent), () => opens++)),
       );
-      await tester.pumpAndSettle();
-      expect(_visible(tester), 'Sent');
-      await tester.tap(find.byType(TeamReceiptChip));
+      // Sending moves (its mark spins): pump, never settle.
+      await tester.pump();
+      expect(_visible(tester), 'Sending…');
+      await tester.tap(find.byType(KitReceipt));
       expect(opens, 1);
 
       await tester.pumpWidget(
-        _app(
-          TeamReceiptChip(
-            record: record(MutationStatus.rejected),
-            onOpen: () => opens++,
-          ),
-        ),
+        _app(row(record(MutationStatus.rejected), () => opens++)),
       );
       await tester.pumpAndSettle();
       expect(_visible(tester), 'Not accepted');
@@ -722,12 +711,7 @@ void main() {
       final semantics = tester.ensureSemantics();
       var opens = 0;
       await tester.pumpWidget(
-        _app(
-          TeamReceiptChip(
-            record: record(MutationStatus.unconfirmed),
-            onOpen: () => opens++,
-          ),
-        ),
+        _app(row(record(MutationStatus.unconfirmed), () => opens++)),
       );
       await tester.pumpAndSettle();
       expect(_visible(tester), 'Not confirmed yet');
@@ -774,9 +758,9 @@ void main() {
                         start: 8,
                         end: 12,
                       ),
-                      child: TeamReceiptChip(
-                        record: record(MutationStatus.unconfirmed),
-                        onOpen: () => opens++,
+                      child: row(
+                        record(MutationStatus.unconfirmed),
+                        () => opens++,
                       ),
                     ),
                     onTap: () {},
@@ -787,7 +771,7 @@ void main() {
           );
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
-          await tester.tap(find.byType(TeamReceiptChip));
+          await tester.tap(find.byType(KitReceipt));
           expect(opens, 1);
         },
       );

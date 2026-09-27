@@ -729,16 +729,19 @@ void main() {
       expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
       expect(runRow('oc-xru'), findsNothing);
       // The block names the task and carries its step count, each once.
+      // The task leads the card's caption (slice-P4.1c: the one request
+      // card), which isolates it for bidi.
+      final task = find.textContaining(
+        'Add subtract function to calc.py',
+        findRichText: true,
+      );
+      expect(find.descendant(of: block, matching: task), findsOneWidget);
+      expect(task, findsOneWidget);
       expect(
         find.descendant(
           of: block,
-          matching: find.text('Add subtract function to calc.py'),
+          matching: find.textContaining('1 of 2 steps done'),
         ),
-        findsOneWidget,
-      );
-      expect(find.text('Add subtract function to calc.py'), findsOneWidget);
-      expect(
-        find.descendant(of: block, matching: find.text('1 of 2 steps done')),
         findsOneWidget,
       );
       // It still opens the task's conversation.
@@ -1072,7 +1075,10 @@ void main() {
       expect(runRow('oc-xru'), findsNothing);
       // Watch-only here: no choices to pick on the home.
       expect(
-        find.byKey(ValueKey('team-home-gate-${gate.id}-watch-only')),
+        find.descendant(
+          of: block,
+          matching: find.textContaining('The phone can only watch'),
+        ),
         findsOneWidget,
       );
       expect(

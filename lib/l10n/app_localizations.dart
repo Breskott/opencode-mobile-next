@@ -22164,41 +22164,11 @@ abstract class AppLocalizations {
   /// **'The host did not accept this answer.'**
   String get teamUiGateAnswerRejectedNoMessage;
 
-  /// Trailing chip on a needs-you row whose answer is on its way
-  ///
-  /// In en, this message translates to:
-  /// **'Sent'**
-  String get teamUiGateAnswerChipSent;
-
-  /// Trailing chip on a needs-you row whose answer got no confirmation; tapping it opens the sheet to retry
-  ///
-  /// In en, this message translates to:
-  /// **'Unconfirmed'**
-  String get teamUiGateAnswerChipUnconfirmed;
-
-  /// Trailing chip on a needs-you row whose answer the host refused
-  ///
-  /// In en, this message translates to:
-  /// **'Not accepted'**
-  String get teamUiGateAnswerChipRejected;
-
   /// Accessibility label of the unconfirmed chip
   ///
   /// In en, this message translates to:
   /// **'Unconfirmed, open to retry'**
   String get teamUiGateAnswerChipUnconfirmedSemantics;
-
-  /// Two-step sheet title before a deny is sent
-  ///
-  /// In en, this message translates to:
-  /// **'Deny this request?'**
-  String get teamUiGateAnswerConfirmDenyTitle;
-
-  /// Two-step sheet body before a deny is sent
-  ///
-  /// In en, this message translates to:
-  /// **'The agent is told no and goes on without it.'**
-  String get teamUiGateAnswerConfirmDenyBody;
 
   /// Two-step sheet title before a destructive confirmation is approved
   ///
@@ -22403,6 +22373,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{control} · {state}'**
   String teamUiControlReceiptLine(String control, String state);
+
+  /// A team control's receipt while the host has not answered yet: the control's name, then the moving word.
+  ///
+  /// In en, this message translates to:
+  /// **'{control} · Sending…'**
+  String teamControlReceiptSending(String control);
 
   /// Button on a refused or unconfirmed receipt chip: send again under a new key
   ///
@@ -28427,12 +28403,6 @@ abstract class AppLocalizations {
   /// **'Answer'**
   String get teamUiHomeNeedsYouAnswer;
 
-  /// Opens the full question sheet from the inline question block; names what it opens
-  ///
-  /// In en, this message translates to:
-  /// **'See the whole question'**
-  String get teamUiHomeNeedsYouMore;
-
   /// Title of the inline question block when the question belongs to no known task
   ///
   /// In en, this message translates to:
@@ -28444,6 +28414,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Needs you: {question}'**
   String teamUiHomeNeedsYouAnnouncement(String question);
+
+  /// A failed task's card in the conversation: the one button that opens its Details, where asking the team to fix it, sending the work again, the logs, Report this failure and Stop work live.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what to do'**
+  String get teamGateCardRunFailedOpen;
+
+  /// A team question's card: what happens if nobody answers.
+  ///
+  /// In en, this message translates to:
+  /// **'The team waits until you answer. Nothing is lost.'**
+  String get teamGateCardIfIgnored;
+
+  /// A failed task's card: what happens if nobody acts.
+  ///
+  /// In en, this message translates to:
+  /// **'The task stays stopped until someone acts on it.'**
+  String get teamGateCardIfIgnoredFailed;
+
+  /// A review-ready card: what happens if nobody reviews it.
+  ///
+  /// In en, this message translates to:
+  /// **'The work waits for review. Nothing is lost.'**
+  String get teamGateCardIfIgnoredReview;
 
   /// Screen-reader hint of the agents row on the AI Team home
   ///
@@ -38784,7 +38778,7 @@ abstract class AppLocalizations {
   /// Saved prompts sheet: subtitle.
   ///
   /// In en, this message translates to:
-  /// **'Newest first · kept on this device for this server'**
+  /// **'Newest first · kept on this device'**
   String get promptStashIntro;
 
   /// Saved prompts sheet: empty state title.

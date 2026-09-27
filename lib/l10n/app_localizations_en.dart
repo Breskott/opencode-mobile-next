@@ -13699,24 +13699,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'The host did not accept this answer.';
 
   @override
-  String get teamUiGateAnswerChipSent => 'Sent';
-
-  @override
-  String get teamUiGateAnswerChipUnconfirmed => 'Unconfirmed';
-
-  @override
-  String get teamUiGateAnswerChipRejected => 'Not accepted';
-
-  @override
   String get teamUiGateAnswerChipUnconfirmedSemantics =>
       'Unconfirmed, open to retry';
-
-  @override
-  String get teamUiGateAnswerConfirmDenyTitle => 'Deny this request?';
-
-  @override
-  String get teamUiGateAnswerConfirmDenyBody =>
-      'The agent is told no and goes on without it.';
 
   @override
   String get teamUiGateAnswerConfirmApproveTitle =>
@@ -13835,6 +13819,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String teamUiControlReceiptLine(String control, String state) {
     return '$control · $state';
+  }
+
+  @override
+  String teamControlReceiptSending(String control) {
+    return '$control · Sending…';
   }
 
   @override
@@ -17603,15 +17592,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiHomeNeedsYouAnswer => 'Answer';
 
   @override
-  String get teamUiHomeNeedsYouMore => 'See the whole question';
-
-  @override
   String get teamUiHomeNeedsYouFallbackTitle => 'The team has a question';
 
   @override
   String teamUiHomeNeedsYouAnnouncement(String question) {
     return 'Needs you: $question';
   }
+
+  @override
+  String get teamGateCardRunFailedOpen => 'Choose what to do';
+
+  @override
+  String get teamGateCardIfIgnored =>
+      'The team waits until you answer. Nothing is lost.';
+
+  @override
+  String get teamGateCardIfIgnoredFailed =>
+      'The task stays stopped until someone acts on it.';
+
+  @override
+  String get teamGateCardIfIgnoredReview =>
+      'The work waits for review. Nothing is lost.';
 
   @override
   String get teamUiHomeAgentsRowHint => 'Open the agents list';
@@ -24531,8 +24532,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get promptStashDeleted => 'Saved prompt deleted';
 
   @override
-  String get promptStashIntro =>
-      'Newest first · kept on this device for this server';
+  String get promptStashIntro => 'Newest first · kept on this device';
 
   @override
   String get promptStashEmptyTitle => 'No saved prompts yet';

@@ -14667,29 +14667,9 @@
   "@teamUiGateAnswerRejectedNoMessage": {
     "description": "Receipt line when the host refused the answer without a reason"
   },
-  "teamUiGateAnswerChipSent": "Sent",
-  "@teamUiGateAnswerChipSent": {
-    "description": "Trailing chip on a needs-you row whose answer is on its way"
-  },
-  "teamUiGateAnswerChipUnconfirmed": "Unconfirmed",
-  "@teamUiGateAnswerChipUnconfirmed": {
-    "description": "Trailing chip on a needs-you row whose answer got no confirmation; tapping it opens the sheet to retry"
-  },
-  "teamUiGateAnswerChipRejected": "Not accepted",
-  "@teamUiGateAnswerChipRejected": {
-    "description": "Trailing chip on a needs-you row whose answer the host refused"
-  },
   "teamUiGateAnswerChipUnconfirmedSemantics": "Unconfirmed, open to retry",
   "@teamUiGateAnswerChipUnconfirmedSemantics": {
     "description": "Accessibility label of the unconfirmed chip"
-  },
-  "teamUiGateAnswerConfirmDenyTitle": "Deny this request?",
-  "@teamUiGateAnswerConfirmDenyTitle": {
-    "description": "Two-step sheet title before a deny is sent"
-  },
-  "teamUiGateAnswerConfirmDenyBody": "The agent is told no and goes on without it.",
-  "@teamUiGateAnswerConfirmDenyBody": {
-    "description": "Two-step sheet body before a deny is sent"
   },
   "teamUiGateAnswerConfirmApproveTitle": "Approve this destructive action?",
   "@teamUiGateAnswerConfirmApproveTitle": {
@@ -14852,6 +14832,16 @@
       },
       "state": {
         "type": "String"
+      }
+    }
+  },
+  "teamControlReceiptSending": "{control} · Sending…",
+  "@teamControlReceiptSending": {
+    "description": "A team control's receipt while the host has not answered yet: the control's name, then the moving word.",
+    "placeholders": {
+      "control": {
+        "type": "String",
+        "example": "Nudge"
       }
     }
   },
@@ -19635,10 +19625,6 @@
   "@teamUiHomeNeedsYouAnswer": {
     "description": "Opens the full question to answer it (AI Team home, run Overview and the Work tab section)"
   },
-  "teamUiHomeNeedsYouMore": "See the whole question",
-  "@teamUiHomeNeedsYouMore": {
-    "description": "Opens the full question sheet from the inline question block; names what it opens"
-  },
   "teamUiHomeNeedsYouFallbackTitle": "The team has a question",
   "@teamUiHomeNeedsYouFallbackTitle": {
     "description": "Title of the inline question block when the question belongs to no known task"
@@ -19651,6 +19637,22 @@
         "type": "String"
       }
     }
+  },
+  "teamGateCardRunFailedOpen": "Choose what to do",
+  "@teamGateCardRunFailedOpen": {
+    "description": "A failed task's card in the conversation: the one button that opens its Details, where asking the team to fix it, sending the work again, the logs, Report this failure and Stop work live."
+  },
+  "teamGateCardIfIgnored": "The team waits until you answer. Nothing is lost.",
+  "@teamGateCardIfIgnored": {
+    "description": "A team question's card: what happens if nobody answers."
+  },
+  "teamGateCardIfIgnoredFailed": "The task stays stopped until someone acts on it.",
+  "@teamGateCardIfIgnoredFailed": {
+    "description": "A failed task's card: what happens if nobody acts."
+  },
+  "teamGateCardIfIgnoredReview": "The work waits for review. Nothing is lost.",
+  "@teamGateCardIfIgnoredReview": {
+    "description": "A review-ready card: what happens if nobody reviews it."
   },
   "teamUiHomeAgentsRowHint": "Open the agents list",
   "@teamUiHomeAgentsRowHint": {
@@ -28953,7 +28955,7 @@
   "@promptStashDeleted": {
     "description": "Undo bar after deleting a saved prompt."
   },
-  "promptStashIntro": "Newest first · kept on this device for this server",
+  "promptStashIntro": "Newest first · kept on this device",
   "@promptStashIntro": {
     "description": "Saved prompts sheet: subtitle."
   },

@@ -1168,13 +1168,16 @@ class ActivityGateTile extends StatelessWidget {
         ],
       ),
       supportingMaxLines: 2,
-      trailing: record == null || record.status == MutationStatus.confirmed
-          ? const KitChevron()
-          : TeamReceiptChip(
-              key: ValueKey('activity-team-gate-${gate.id}-receipt'),
-              record: record,
-              onOpen: open,
-            ),
+      trailing:
+          (record == null
+              ? null
+              : teamGateRowReceipt(
+                  context,
+                  record,
+                  key: ValueKey('activity-team-gate-${gate.id}-receipt'),
+                  onOpen: open,
+                )) ??
+          const KitChevron(),
       onTap: open,
     );
   }

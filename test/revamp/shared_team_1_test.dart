@@ -1,5 +1,5 @@
-// Behaviour of shared-team-1's rebuilt team pieces (wave 2a): the receipt
-// wrapper over KitReceipt, the message field over KitField, the board's
+// Behaviour of shared-team-1's rebuilt team pieces (wave 2a): the control
+// receipt (one KitReceipt since slice-P4.1c), the message field over KitField, the board's
 // sheets on the kit sheet frame, and the manual host form's fixes from its
 // map record (progress with Cancel test, Save without an answer, no "kind
 // of computer" question, the raw error under Details).
@@ -86,31 +86,37 @@ TeamBoardCard _card() => TeamBoardCard(
 );
 
 void main() {
-  group('TeamReceiptChip forwards to KitReceipt', () {
-    testWidgets('names the control in every state', (tester) async {
-      await tester.pumpWidget(
-        _app(TeamReceiptChip(record: _record(MutationStatus.sent))),
-      );
-      expect(find.byType(KitReceipt), findsOneWidget);
-      expect(_hasText(tester, 'Nudge · Sent'), isTrue);
+  group('teamControlReceipt is the one KitReceipt (slice-P4.1c)', () {
+    Widget receipt(MutationRecord record, {Future<void> Function()? onRetry}) =>
+        _app(
+          Builder(
+            builder: (context) =>
+                teamControlReceipt(context, record, onRetry: onRetry),
+          ),
+        );
 
-      await tester.pumpWidget(
-        _app(TeamReceiptChip(record: _record(MutationStatus.confirmed))),
-      );
+    testWidgets('names the control while it moves and once confirmed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(receipt(_record(MutationStatus.sent)));
+      final kit = tester.widget<KitReceipt>(find.byType(KitReceipt));
+      expect(kit.state, KitReceiptState.sending);
+      expect(kit.automatic, isFalse);
+      expect(_hasText(tester, 'Nudge · Sending…'), isTrue);
+
+      await tester.pumpWidget(receipt(_record(MutationStatus.confirmed)));
       expect(_hasText(tester, 'Nudge · Confirmed'), isTrue);
     });
 
     testWidgets('unconfirmed offers Try again, which retries', (tester) async {
       var retried = 0;
       await tester.pumpWidget(
-        _app(
-          TeamReceiptChip(
-            record: _record(MutationStatus.unconfirmed),
-            onRetry: () async => retried++,
-          ),
+        receipt(
+          _record(MutationStatus.unconfirmed),
+          onRetry: () async => retried++,
         ),
       );
-      expect(find.textContaining('Nudge · Unconfirmed'), findsOneWidget);
+      expect(_hasText(tester, _en.kitReceiptNotConfirmed), isTrue);
       await tester.tap(_key('team-receipt-retry'));
       await tester.pump();
       expect(retried, 1);
@@ -118,11 +124,7 @@ void main() {
 
     testWidgets('a refusal carries the host reason', (tester) async {
       await tester.pumpWidget(
-        _app(
-          TeamReceiptChip(
-            record: _record(MutationStatus.rejected, reason: 'session gone'),
-          ),
-        ),
+        receipt(_record(MutationStatus.rejected, reason: 'session gone')),
       );
       expect(find.textContaining('session gone'), findsOneWidget);
     });
