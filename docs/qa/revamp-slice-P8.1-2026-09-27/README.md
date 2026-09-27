@@ -131,6 +131,13 @@ Emulator proof (coordinator; release APK from this branch, API 34 x86_64 AVD):
   (the guard starts after bootstrap, normally later than the open).
 - Errors recorded before `KitRedact` knows a loaded secret are masked only by
   pattern, not by exact value.
+- No Codex audit of this branch: two `codex-companion adversarial-review
+  --base revamp/wave3 --scope branch` runs stayed at "Starting Codex task
+  thread" for 6+ minutes and were cancelled, and a bare `codex exec` did not
+  answer within 100 s (machine shared with other Codex sessions). The
+  coordinator can rerun it on this branch.
+- The first thermal reading of each process is kept even when unchanged from
+  the previous process (changes are tracked per process).
 - The other suites (`app_exit_recovery_test`, `thermal_guard_test`, the full
   suite) were not re-run under the owner's speed rule.
 
