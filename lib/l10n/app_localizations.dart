@@ -32129,6 +32129,30 @@ abstract class AppLocalizations {
   /// **'{minutes, plural, =0{less than a minute} =1{1 min} other{{minutes} min}}'**
   String kitSinceAge(int minutes);
 
+  /// KitScanner: the line under the progress bar while the camera opens
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the camera…'**
+  String get kitScannerStarting;
+
+  /// KitScanner: the line once the camera has taken more than 8 seconds to open; ways out follow it
+  ///
+  /// In en, this message translates to:
+  /// **'Still opening the camera'**
+  String get kitScannerSlow;
+
+  /// KitScanner: shown where the preview was while the app is in the background; the camera restarts by itself on return
+  ///
+  /// In en, this message translates to:
+  /// **'Camera paused'**
+  String get kitScannerPaused;
+
+  /// KitScanner: the screen-reader label of the live camera preview (its hint is the host's instruction)
+  ///
+  /// In en, this message translates to:
+  /// **'Camera view'**
+  String get kitScannerPreview;
+
   /// Kit status mark: the default word for the waiting state, in semantics and beside the mark
   ///
   /// In en, this message translates to:

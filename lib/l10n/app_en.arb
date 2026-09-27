@@ -25798,5 +25798,21 @@
         "example": "Laptop"
       }
     }
+  },
+  "kitScannerStarting": "Opening the camera…",
+  "@kitScannerStarting": {
+    "description": "KitScanner: the line under the progress bar while the camera opens"
+  },
+  "kitScannerSlow": "Still opening the camera",
+  "@kitScannerSlow": {
+    "description": "KitScanner: the line once the camera has taken more than 8 seconds to open; ways out follow it"
+  },
+  "kitScannerPaused": "Camera paused",
+  "@kitScannerPaused": {
+    "description": "KitScanner: shown where the preview was while the app is in the background; the camera restarts by itself on return"
+  },
+  "kitScannerPreview": "Camera view",
+  "@kitScannerPreview": {
+    "description": "KitScanner: the screen-reader label of the live camera preview (its hint is the host's instruction)"
   }
 }

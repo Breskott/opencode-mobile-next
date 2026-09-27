@@ -1,82 +1,148 @@
 # revamp-kit-KitScanner: Build KitScanner (2026-09-26)
 
+Second round. The first round (2026-09-26) stopped because kit-KitSince had not been merged yet (`dependency-check.txt`). KitSince is now on `feat/phone-setup-v2`, and this round builds the part and moves the pairing scanner's camera preview onto it.
+
 ## 1. Scope
 
-- Unit: `kit-KitScanner` (wave 1, tier 1b, `kit-part`). Finish line: `KitScanner` exists in `lib/ui/kit/kit_scanner.dart`, exported with one `kit.dart` row, with its full §4 API, every declared state (starting, slow, scanning, rejected, paused), its galleries and its contract/behaviour tests. Non-goal: no new scanner behaviour (torch, zoom, gallery import, other barcode formats), no permission/recovery/parsing logic, no edits to `pairing_scanner_screen.dart`.
-- Files changed: none in the write set. Only this QA record and (after review) the build-record fields below.
-- Pages (map ids): none listed for this unit (`pages: []` in `work-units.json`).
-- Specs followed: `docs/ux-system/kit-api/KitScanner.md` (frozen, R16); `docs/ux-system/kit-v2.md` §5, §9.2; rules KIT-1, KIT-3, KIT-9, KIT-12, STATE-5, STATE-9, LOOK-4, LOOK-5, LOOK-6, LAY-3, LAY-9, A11Y-1, A11Y-3, SEC-2, SEC-5, MOT-11.
-- **Contract problems (PROC-20): none.** The frozen spec itself is internally correct; the problem is procedural, not textual — see "Blockers" below. `work-units.json`'s `kit-KitScanner` entry has `"after": []`, which does not reflect the dependency the frozen spec states in its own prose ("Depends on: kit-KitSince … It moves this unit from tier 1a to 1b"). That is a scheduling-graph gap worth the coordinator's attention, but it does not make the frozen spec wrong, so it is filed as a blocker (PROC-32), not a contract problem (PROC-20).
-- New kit parts (KIT-3): none. `KitScanner` is this unit's own planned part (R13 exempts it); no other new part was created.
-- Map items (EVID-11): n/a — no `pages` entries on this unit.
-- States per page (STATE-20): n/a — this is a kit-part unit with no owned pages.
-- Deferred states (STATE-21): n/a.
+- **Unit:** `kit-KitScanner` (wave 1, tier 1b, kit part).
+- **Finish line:** `KitScanner` is built to its frozen API, with the states starting, slow, scanning, rejected and paused, its behaviour tests and its gallery. `pairing_scanner_screen.dart` shows its scanning state through `KitScanner`.
+- **Non-goals:**
+  - No new scanner behaviour (P9.9).
+  - No permission, recovery or parsing logic in the part.
+  - No `kit.dart` export. The integrator adds it (R06).
+- **Files changed:**
+  - `lib/ui/kit/kit_scanner.dart` (new).
+  - `lib/ui/screens/pairing_scanner_screen.dart`.
+  - `lib/l10n/app_en.arb`, plus the `gen-l10n` output (`app_localizations*.dart`).
+  - `test/kit/kit_scanner_test.dart` (new).
+  - `test/goldens/kit/kit_scanner_golden_test.dart` and 13 PNGs (new).
+- **Pages (map ids):**
+  - `pairing-scanner`: the element `pairing-scanner-camera` moves into the kit.
+  - The recovery states and the top bar were already on `KitStateView`, `KitScreen` and `KitTopBar` (screen-servers-2).
+- **Specs followed:**
+  - `docs/ux-system/kit-api/KitScanner.md` (frozen).
+  - kit-v2 §5, §9.2 and §8.2.
+  - Rules KIT-1, KIT-3, KIT-9, KIT-12, STATE-5, STATE-9, LOOK-4, LOOK-5, LOOK-6, LAY-3, LAY-9, A11Y-1, A11Y-3, SEC-2, SEC-5 and MOT-11.
+  - Owner decisions of 2026-09-27: Arabic is dropped; galleries only at 412×915 and 1280×800; speed over test breadth.
+- **Contract problems (PROC-20):**
+  1. **Gallery names.**
+     - Spec: the Galleries section names shots `kit_scanner_<state>` with the states starting, slow, scanning, rejected and paused.
+     - Gate: the kit manifest (G4, `test/kit/kit_manifest_test.dart`) requires the KIT-12 `States:` line to use only {loading, empty, error, disabled, working, answered}. It also requires 412×915 goldens whose names start with `kit_scanner_<that state>`. The spec's own KIT-12 line ("loading (starting, slow), error (…), paused") does not parse.
+     - What I did: the doc line reads `States: loading, error.`, and a following sentence names the sub-states.
+     - Resulting shots:
+       - starting → `kit_scanner_loading`;
+       - slow → `kit_scanner_loading_slow`;
+       - rejected → `kit_scanner_error`;
+       - scanning and paused keep their names.
+     - Proposed text: the Galleries section should use these names.
+     - Blocks: nothing.
+  2. **The rejected line's tone.**
+     - Spec: "neutral tone, `AppIconography.error` glyph in `text1`".
+     - Problem: `KitNotice` (v1) paints the neutral tone's glyph in `text2`, and has no colour parameter.
+     - What I did: used `tone: AppStatusTone.failure` with the error glyph. That tone's tint is `text1`, never `danger` or `attention` (LOOK-4, LOOK-5), so the painted colours are exactly what the spec asks for. Test 8 scans the pixels to check it.
+     - Proposed text: "the failure tone of KitNotice (`text1` glyph)".
+  3. **Gallery host.** `KitScanner` paints only its frame. KitPageRoute is opaque, and with no host the text would render over black. The gallery therefore shows the part inside `KitScreen` and `KitTopBar`, as the real screen does.
+  4. **The spec's "No edits to `pairing_scanner_screen.dart`".** The unit task (later, coordinator) explicitly asks for the swap, so the later instruction wins (R15).
+- **New kit parts (KIT-3):** none beyond this unit's own `KitScanner`, `KitScannerCamera` and `KitScannerFailure`.
+- **Map items (EVID-11):** `pairing-scanner#pairing-scanner-camera` → done: `test/kit/kit_scanner_test.dart` "pairing scanner screen …" and the `kit_scanner_*` goldens.
+- **What I moved or removed (owner rule: rethink, not restyle):**
+  - The screen's own `_handled` latch, `MobileScannerController`, `_onDetect` and its `dispose` moved into the kit part (KitScanner.md "Handled once").
+  - The screen's second "Opening the camera…" fallback inside `_preview` is gone. The part has its own starting state.
+  - The rejected line's glyph changed from `warning` to `error`, in `text1` (LOOK-4: amber and warning mean "needs you").
+  - No stray actions were found on the page. "Paste it instead" names what it does and stays the one way out (`onSlow`, and on the recovery states).
+- **States per page (STATE-20):**
+  - Part:
+    - loading (starting, slow): tests 5 and 8, goldens `kit_scanner_loading*`;
+    - scanning: tests 1 and 8, goldens `kit_scanner_scanning*`;
+    - error (rejected): tests 2 and 3, golden `kit_scanner_error*`;
+    - paused: test 6, golden `kit_scanner_paused*`;
+    - failure (reported to the host): test 4.
+  - `pairing-scanner` scanning state: test "scanning is KitScanner under the kept keys…".
+  - `pairing-scanner` camera failure: test "a camera that will not open…".
+- **Deferred states (STATE-21):** none.
 
 ## 2. Builds
 
-- Branch `revamp/kit-KitScanner`, base `b67e3276b373c5bf5b6023d9ab5bcc61f5f23db4` (`feat/phone-setup-v2` tip at start), code head: this record's commit (no separate code commit — see Blockers).
+- Branch `revamp/kit-KitScanner`, base `646990ad` (`feat/phone-setup-v2`), code head `57e1e58c`.
 - No APK (unit agents do not build).
 
 ## 3. Devices
 
-None: tests, goldens and renders only. Device proof is coordinator work (R19, R20).
+None: tests, goldens and renders only. Device proof (a real camera) is coordinator work (R19, R20).
 
 ## 4. Runs
 
+All with the pinned Flutter, through `tool/qa/machine_lock.sh`, one file at a time.
+
 | # | Step | Expected | Actual | Result |
 |---|---|---|---|---|
-| 1 | `flutter pub get` | resolves | "Got dependencies!" | PASS |
-| 2 | Confirm `kit-KitSince` is present and exported (`lib/ui/kit/kit_since.dart`, a `KitSince` row in `kit.dart`) | present | absent: no `lib/ui/kit/kit_since.dart` in this worktree; `grep -rn "KitSince" lib/ui/kit/kit.dart` finds nothing | FAIL (blocking) |
-| 3 | KitScanner implementation | built to spec | not started (see Blockers) | BLOCKED |
+| 1 | `test/kit/kit_scanner_test.dart` (9 contracts + 2 screen tests) | passes | 11 passed | PASS |
+| 2 | `test/goldens/kit/kit_scanner_golden_test.dart` (13 shots, G5 in both themes) | passes | 13 passed | PASS |
+| 3 | `test/kit/kit_manifest_test.dart`, KitScanner lines | only integrator rows left | `exported` and `docRow` (the `kit.dart` row, R06) | PASS (expected) |
+| 4 | `flutter analyze` on the 4 changed Dart files | no issues | no issues | PASS |
+| 5 | `gen-l10n` | generates | generated; the ar class falls back to English for the 4 new keys | PASS |
 
 ## 5. Evidence
 
-- `dependency-check.txt`: the exact commands and output that establish `kit-KitSince` is not yet integrated on `feat/phone-setup-v2`.
-- Rule evidence (PROC-31): n/a — no implementation exists to test.
-- Changed test expectations (TEST-19): none.
-- Goldens changed: none.
-- Before and after: n/a — no UI page owned by this unit.
-- Accessibility: n/a — nothing built.
-- Privacy and security: n/a — nothing built; note for the eventual build: SEC-2/SEC-5 (the decoded QR carries the pairing password) and the "never kept" test in the frozen spec's Tests §3 must be honoured once `kit-KitSince` lands.
-- Migration: n/a — no stored format involved.
+- **Rule evidence (PROC-31)**, all tests in `test/kit/kit_scanner_test.dart`:
+
+  | Rule | Test |
+  |---|---|
+  | "Handled once" | "1. accepts once" |
+  | A11Y-3 | "2. rejects, keeps scanning, and announces a message once" |
+  | SEC-2 | "3. never keeps the value" (the rendered tree, the semantics tree and `debugPrint` during `debugDumpApp`) |
+  | STATE-9 (honest failure) | "4. a camera that fails…" |
+  | STATE-5 | "5. slow…" (7 s: nothing; 8 s: the words and the action; three actions assert) |
+  | Lifecycle | "6. pauses in the background…" |
+  | LAY-3 | "7. a short window…" |
+  | LOOK-4, LOOK-5, LOOK-6 | "8. colours" (a pixel scan of starting, slow, scanning and rejected, dark and light) |
+  | G6, G8 | "9. no overflow… settles after one pump" (320, 412 and 915×412 at text 1.0, 1.3 and 2.0) |
+
+- **Changed test expectations (TEST-19):** none. No existing test was edited.
+- **Goldens added.** Each was opened and looked at:
+  - 412×915, dark and light: `kit_scanner_loading`, `kit_scanner_loading_slow`, `kit_scanner_scanning`, `kit_scanner_error` and `kit_scanner_paused`;
+  - `kit_scanner_scanning_1280x800` in dark and light;
+  - `kit_scanner_error_text2_dark`.
+
+  That is 13 PNGs, about 300 KB.
+- **Before and after:** there is no before render. The census never rendered the scanning state, which needs a camera. After: `after-kit-scanner-scanning.png`, `after-kit-scanner-rejected.png` and `after-kit-scanner-slow.png`.
+- **Accessibility:**
+  - The preview is one image node, "Camera view", with the instruction as its hint.
+  - The rejected line is a live region. Setting the same words again keeps the same node, so they are not announced twice.
+  - The starting and slow line is one live region around the progress bar.
+  - The `onSlow` actions are tertiary `KitButton`s.
+  - At 2.0 text the text block scrolls instead of shrinking the window below 160 dp.
+  - G5 (tap targets, labels, contrast and reading order) passed on every shot in both themes.
+- **Privacy and security:**
+  - The decoded value goes from the camera stream to `onCode` only. It is never kept in state, rendered, put into semantics or logged (test 3).
+  - The camera stops on accept (before the host pops), on inactive, hidden or paused, and on dispose.
+  - `KitScannerFailure.deviceMessage` comes from the camera's start error only.
+- **Migration:** n/a. No stored format changed.
 
 ## 6. How to reproduce
 
 ```bash
 F=~/.shorebird/bin/cache/flutter/91f8bd75076e9c740aa13cf67eb9ec1a093f68f5/bin/flutter
-$F pub get
-ls lib/ui/kit/kit_since.dart            # No such file or directory
-grep -n "KitSince" lib/ui/kit/kit.dart  # no output
-git log --oneline -1 feat/phone-setup-v2
-git branch -a --list 'revamp/kit-KitSince'   # exists as a sibling, unmerged branch
+$F test -j 1 test/kit/kit_scanner_test.dart
+$F test -j 1 test/goldens/kit/kit_scanner_golden_test.dart
+$F analyze lib/ui/kit/kit_scanner.dart lib/ui/screens/pairing_scanner_screen.dart test/kit/kit_scanner_test.dart test/goldens/kit/kit_scanner_golden_test.dart
 ```
 
 ## 7. NOT proven
 
-- Not run on a device or emulator.
-- No implementation exists: none of the frozen spec's states, tokens, adaptive layout, RTL, motion, data-safety or the nine required behaviour tests in `test/kit/kit_scanner_test.dart` were built or run, because the dependency they need (`KitSince`'s 8 s escalation, STATE-5) is not available in this worktree.
-- The 24 required gallery PNGs in `test/goldens/kit/kit_scanner_golden_test.dart` were not generated.
-
-## Blockers (PROC-32)
-
-`kit-KitScanner`'s frozen spec (`docs/ux-system/kit-api/KitScanner.md` §"Depends on") requires `kit-KitSince` for the `slow` state's 8 s escalation (STATE-5), and is explicit that building a local `Timer` instead is forbidden ("Without it the part would need its own `Timer`, which the kit forbids (KitStateView.md, C12)"). The task's own hard rules repeat this: "If you need another unit's part that has not merged, stop and report it; never build a local substitute."
-
-`kit-KitSince` is not present on `feat/phone-setup-v2` (no `lib/ui/kit/kit_since.dart`, no `kit.dart` export) and is not in this repository's committed history under any name. It exists only as work in progress on the sibling branch `revamp/kit-KitSince` (checked out in a sibling worktree in this same wave batch), which has not been integrated. `kit-KitScanner` is therefore blocked by kind `dependency`:
-
-- **Kind:** dependency.
-- **Unit/file needed:** `kit-KitSince` — `lib/ui/kit/kit_since.dart`, exported from `kit.dart`, merged into `feat/phone-setup-v2` (or whatever branch this unit is rebuilt against).
-- **What is needed:** the `KitSince` builder (`KitSince(since:, builder:, onEscalated:)` per `docs/ux-system/kit-api/KitSince.md`) available to import, so `KitScanner`'s `starting → slow` transition at `KitMotion.escalateAfter` (8 s) can be built per spec instead of with a forbidden local `Timer`.
-- **Exact change requested:** merge `kit-KitSince` into the integration branch this unit builds from, then re-run this unit (fresh worktree, same branch name `revamp/kit-KitScanner`) so it can build `KitScanner` in full, including the `slow` state, its `KitSince`-driven tests (spec test 5) and its `slow` gallery frames.
-
-No code was written under `lib/ui/kit/kit_scanner.dart` or the test/golden write set: every state in the frozen spec's state table interacts with the same widget/state machine that also owns `slow`, and four of the nine required behaviour tests (accept-once's stop-before-next-frame timing, the slow test itself, the lifecycle test's restart timing, and the overflow/motion sweep across all five declared states) cannot be written or meaningfully asserted without the real `KitSince` wired in. Writing a partial file that omits `slow` (or fakes it with a local timer) would violate both the frozen spec and the task's explicit "never build a local substitute" rule, and would not meet the unit's finish line ("every state"). So per PROC-32, the unit stops here rather than committing an incomplete or rule-breaking implementation.
+- The part has not run on a device or emulator. `_MobileScannerCamera` (the real mobile_scanner adapter: start, stop, dispose, the `codes` mapping and the preview) is not exercised by any test. Every test uses the fake camera.
+- That the part disposes a camera it created itself is not tested. The fake can only be passed in, so only "a passed camera is stopped, not disposed" is proven.
+- Screen-reader announcements are proven only through the semantics flags and node identity, not with TalkBack.
+- Shared gates were not run (owner decision 2026-09-27): the ratchet, design-standard, l10n coverage, the census and the full suite. The pairing screen now builds only kit parts and `ValueKey`s, so its G16 counts should drop, but the ratchet was not run. `kit_manifest_test` still fails on the `kit.dart` export and doc row, which the integrator adds.
+- The UI ledger's `pairing-scanner-detect` effect text (`docs/design/ui-ledger/parts/g-servers.json:1249`) still says `MobileScanner.onDetect -> _onDetect`. It is outside this unit's write set and left for the integrator.
 
 ## State
 
 | State | Yes/No | Where |
 |---|---|---|
-| Implemented | partial (blocked, PROC-32) | not applicable — no code committed |
-| Enabled | No | |
-| Verified | No | |
-| Committed | Yes (this QA record only) | code head: this record's commit |
+| Implemented | Yes | `revamp/kit-KitScanner` |
+| Enabled | Yes, on the pairing scanner screen (Android, once camera permission is granted) | `lib/ui/screens/pairing_scanner_screen.dart` |
+| Verified | Tests and goldens only; no device | this record |
+| Committed | Yes | `57e1e58c` + this record |
 | Deployed | No | |
 | Released | No | |

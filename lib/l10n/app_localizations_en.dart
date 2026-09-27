@@ -19983,6 +19983,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get kitScannerStarting => 'Opening the camera…';
+
+  @override
+  String get kitScannerSlow => 'Still opening the camera';
+
+  @override
+  String get kitScannerPaused => 'Camera paused';
+
+  @override
+  String get kitScannerPreview => 'Camera view';
+
+  @override
   String get kitMarkWaiting => 'Waiting';
 
   @override
