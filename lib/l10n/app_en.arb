@@ -25814,5 +25814,91 @@
   "kitScannerPreview": "Camera view",
   "@kitScannerPreview": {
     "description": "KitScanner: the screen-reader label of the live camera preview (its hint is the host's instruction)"
+  },
+  "kitDateSet": "Set date",
+  "@kitDateSet": {
+    "description": "Date picker (KitDateTimePicker): the default primary button that sets the chosen day"
+  },
+  "kitTimeSet": "Set time",
+  "@kitTimeSet": {
+    "description": "Time picker (KitDateTimePicker): the default primary button that sets the typed time"
+  },
+  "kitDateTimeSet": "Set",
+  "@kitDateTimeSet": {
+    "description": "Date and time picker (KitDateTimePicker): the default primary button that sets the chosen day and time"
+  },
+  "kitDateType": "Type a date",
+  "@kitDateType": {
+    "description": "Date picker: the button that swaps the calendar for a field where the date is typed"
+  },
+  "kitDateCalendar": "Show calendar",
+  "@kitDateCalendar": {
+    "description": "Date picker: the button that swaps the typed-date field back to the calendar"
+  },
+  "kitDateFormatHint": "e.g. {example}",
+  "@kitDateFormatHint": {
+    "description": "Date picker: the example shown in the empty typed-date field, in the locale's short date format",
+    "placeholders": {
+      "example": {
+        "type": "String",
+        "example": "10/3/2026"
+      }
+    }
+  },
+  "kitDateField": "Date",
+  "@kitDateField": {
+    "description": "Date picker: the label of the typed-date field"
+  },
+  "kitDateInvalid": "Not a date",
+  "@kitDateInvalid": {
+    "description": "Date picker: the reason under the typed-date field when the text is not a real date (for example 31 February)"
+  },
+  "kitDateOutOfRange": "Pick a date between {first} and {last}",
+  "@kitDateOutOfRange": {
+    "description": "Date picker: the reason when the typed or chosen date is outside the allowed range",
+    "placeholders": {
+      "first": {
+        "type": "String",
+        "example": "Jan 1, 1900"
+      },
+      "last": {
+        "type": "String",
+        "example": "Dec 31, 2100"
+      }
+    }
+  },
+  "kitTimeHour": "Hour",
+  "@kitTimeHour": {
+    "description": "Time picker: the label of the hour field"
+  },
+  "kitTimeMinute": "Minute",
+  "@kitTimeMinute": {
+    "description": "Time picker: the label of the minute field"
+  },
+  "kitTimePeriod": "Morning or afternoon",
+  "@kitTimePeriod": {
+    "description": "Time picker: the spoken name of the AM/PM choice on a 12-hour clock"
+  },
+  "kitTimeInvalid": "Not a time",
+  "@kitTimeInvalid": {
+    "description": "Time picker: the reason under an hour or minute field that holds an impossible value (hour 25, minute 61)"
+  },
+  "kitDateTimeNotSet": "Not set",
+  "@kitDateTimeNotSet": {
+    "description": "Date or time row: the value shown when nothing is chosen yet"
+  },
+  "kitDateTimeClear": "Clear {title}",
+  "@kitDateTimeClear": {
+    "description": "Date or time row: the button that removes the chosen value; title is the row's name, e.g. Due date",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Due date"
+      }
+    }
+  },
+  "kitDateUnavailable": "That day can’t be chosen",
+  "@kitDateUnavailable": {
+    "description": "Date picker: the reason under the typed-date field when the date is in range but the caller does not allow that day"
   }
 }
