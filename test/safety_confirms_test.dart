@@ -135,10 +135,14 @@ void main() {
       final disconnect = find.byKey(
         const ValueKey('server-switcher-disconnect'),
       );
-      if (disconnect.evaluate().isEmpty) {
+      final current = find.byKey(const ValueKey('server-switcher-current'));
+      if (current.evaluate().isEmpty) {
         await tester.tap(find.byKey(const ValueKey('server-switcher-button')));
         await tester.pumpAndSettle();
       }
+      // Disconnect acts on the current server through its row menu.
+      await tester.longPress(current);
+      await tester.pumpAndSettle();
       await tester.ensureVisible(disconnect);
       await tester.tap(disconnect);
       await tester.pumpAndSettle();
@@ -304,7 +308,7 @@ void main() {
     testWidgets('session actions menu asks first', (tester) async {
       final repository = await pumpWorkspace(tester);
       await expectConfirmGates(tester, repository, () async {
-        await tester.tap(find.byTooltip('Conversation actions').first);
+        await tester.longPress(find.byKey(const ValueKey('session-row-s1')));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Stop sharing'));
         await tester.pumpAndSettle();

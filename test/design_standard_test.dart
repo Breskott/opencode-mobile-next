@@ -126,10 +126,9 @@ const _migrated = <String, List<String>>{
     'team_home_starting',
   ],
   'lib/ui/screens/team/start_run_sheet.dart': ['team_start_run'],
-  'lib/ui/screens/team/agent_screen.dart': [
-    'team_agent',
-    'team_agent_controls',
-  ],
+  // The separate controls scene was removed with the details sheet in
+  // screen-team-1 (docs/qa/revamp-screen-team-1-2026-09-27/README.md).
+  'lib/ui/screens/team/agent_screen.dart': ['team_agent'],
   'lib/ui/screens/team/gate_sheet.dart': ['team_gate_sheet'],
   'lib/ui/screens/team/work_sheet.dart': ['team_work_sheet'],
   'lib/ui/screens/team/merge_section.dart': ['team_merge'],

@@ -822,11 +822,8 @@ void main() {
       await tapKey(tester, 'local-agent-server-menu');
       await tapKey(tester, 'local-agent-server-restart');
       expect(find.text(l10n.localAgentRestartTitle), findsOneWidget);
-      expect(find.text(l10n.termuxRestartBusyMessage(1)), findsNothing);
-      expect(
-        find.textContaining(l10n.termuxRestartBusyMessage(1)),
-        findsOneWidget,
-      );
+      // The restart consequence is its own sentence in the kit confirm.
+      expect(find.text(l10n.termuxRestartBusyMessage(1)), findsOneWidget);
       expect(runtime.calls, ['start']);
       await tapKey(tester, 'confirm-restart-local-agents');
       expect(runtime.calls, ['start', 'restart']);

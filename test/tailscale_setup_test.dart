@@ -163,7 +163,10 @@ void main() {
       expect(find.textContaining('not installed'), findsOneWidget);
       await _tap(tester, 'Get Tailscale');
       expect(find.text('Open external link?'), findsOneWidget);
-      expect(find.text('play.google.com'), findsOneWidget);
+      expect(
+        find.text('Opens play.google.com outside this app.'),
+        findsOneWidget,
+      );
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       bridge.state = TailscaleAppState.installed;
@@ -336,7 +339,7 @@ void main() {
     await _tap(tester, 'Tailscale setup and recovery');
     await _tap(tester, 'Read the official Serve guide');
     expect(find.text('Open external link?'), findsOneWidget);
-    expect(find.text('tailscale.com'), findsOneWidget);
+    expect(find.text('Opens tailscale.com outside this app.'), findsOneWidget);
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
   });
