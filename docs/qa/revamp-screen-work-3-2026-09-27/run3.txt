@@ -1,0 +1,18 @@
+00:00 +0: loading test/folder_browser_test.dart
+00:00 +0: test/folder_browser_test.dart: starts at the projects folder, goes into a folder and up
+00:01 +1: test/folder_browser_test.dart: git repositories and known OpenCode projects are marked
+00:01 +2: test/folder_browser_test.dart: a project opens with a tap and returns its path
+00:01 +3: test/folder_browser_test.dart: Open opens the folder shown, returning its path
+00:01 +4: test/folder_browser_test.dart: a new project is made in the folder shown
+00:01 +5: test/folder_browser_test.dart: with the keyboard up the name field keeps its focus
+00:01 +6: test/folder_browser_test.dart: the home folder and / are never offered as a project
+00:02 +7: test/folder_browser_test.dart: a folder that cannot be listed says why and can be retried
+00:02 +8: test/folder_browser_test.dart: Enter a path starts from the folder shown
+00:02 +9: test/folder_browser_test.dart: fits 320 dp at twice the text size, in Arabic, paths left to right
+00:02 +10: loading test/folder_browser_termux_test.dart
+00:03 +10: test/folder_browser_termux_test.dart: the Termux server browses its folders through Termux
+00:04 +11: test/folder_browser_termux_test.dart: a new project is made in Termux in the folder shown
+00:04 +12: test/folder_browser_termux_test.dart: a slow Termux shows skeleton rows, then says it took too long
+00:04 +13: test/folder_browser_termux_test.dart: without a usable Termux there is no browser, only a path
+00:04 +14: test/folder_browser_termux_test.dart: a remote server keeps Enter a path
+00:04 +15: All tests passed!
