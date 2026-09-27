@@ -319,6 +319,65 @@ void main() {
       expect(outcome, ExternalLinkOutcome.cancelled);
     });
 
+    for (final suffix in const [
+      '?%74oken=AUDIT_ENCODED_CREDENTIAL',
+      '?code=AUDIT_OAUTH_CREDENTIAL',
+      '#state=AUDIT_OAUTH_STATE',
+      '#/callback?code=AUDIT_FRAGMENT_CODE',
+    ]) {
+      testWidgets('credential URI component stays out of Details and copy: '
+          '${suffix.split('=').first}', (tester) async {
+        final secret = suffix.split('=').last;
+        final address = 'https://example.com/callback$suffix';
+        String? copied;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied = (call.arguments as Map)['text'] as String?;
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        var launched = false;
+        await tap(
+          tester,
+          address,
+          launcher: (_) async {
+            launched = true;
+            return true;
+          },
+        );
+        await tester.tap(find.text('Details'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining(secret), findsNothing);
+        await tester.tap(find.byKey(const ValueKey('external-link-copy')));
+        await tester.pumpAndSettle();
+        expect(copied, isNotNull);
+        expect(copied!.contains(secret), isFalse);
+        expect(launched, isFalse);
+
+        Uri? opened;
+        await tap(
+          tester,
+          address,
+          launcher: (uri) async {
+            opened = uri;
+            return true;
+          },
+        );
+        await tester.tap(find.text('Open link'));
+        await tester.pumpAndSettle();
+        expect(opened, Uri.parse(address));
+      });
+    }
+
     testWidgets('the full address is one tap away under Details', (
       tester,
     ) async {

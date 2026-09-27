@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'in_flow_consent.dart';
@@ -35,11 +37,17 @@ abstract final class ConsentOwners {
   static final _mobileLoaded = Expando<Map<String, MobileDownloadConsent>>(
     'mobile-download-consent-loaded',
   );
+  // Keep admission closed through the sweep-to-profile-removal gap. Removing
+  // only the cached future would let a second facade create a new writer.
+  static final _mobileClosed = Expando<Set<String>>('mobile-consent-closed');
 
   static Future<MobileDownloadConsent> mobileDownloads(
     SharedPreferences prefs,
     String profileId,
   ) {
+    if (_mobileClosed[prefs]?.contains(profileId) ?? false) {
+      return Future.error(StateError('Consent storage unavailable'));
+    }
     final futures = _mobile[prefs] ??= {};
     return futures.putIfAbsent(profileId, () async {
       try {
@@ -104,14 +112,35 @@ abstract final class ConsentOwners {
     String profileId,
   ) => (_invited[prefs] ??= {}).putIfAbsent(profileId, () => <String>{});
 
+  /// Called only after a deletion transaction aborts with its profile retained.
+  /// Old owners stay closed; a subsequent facade loads a fresh durable snapshot.
+  static void cancelDeletion(SharedPreferences prefs, String profileId) {
+    try {
+      final raw = prefs.getString('oc.profiles');
+      final profiles = raw == null ? null : jsonDecode(raw);
+      if (profiles is List &&
+          profiles.any(
+            (profile) => profile is Map && profile['id'] == profileId,
+          )) {
+        _mobileClosed[prefs]?.remove(profileId);
+      }
+    } catch (_) {
+      // Unreadable membership cannot reopen a writer.
+    }
+  }
+
   /// Closes [profileId]'s owners and drains their writes, BEFORE the
   /// profile deletion sweep removes their keys.
   static Future<void> closeProfile(
     SharedPreferences prefs,
     String profileId,
   ) async {
+    (_mobileClosed[prefs] ??= {}).add(profileId);
     _invited[prefs]?.remove(profileId);
-    _mobileLoaded[prefs]?.remove(profileId);
+    // Close a loaded owner synchronously, before awaiting a possibly loading
+    // owner. Its queue still drains below before deletion can sweep the key.
+    final loadedMobile = _mobileLoaded[prefs]?.remove(profileId);
+    final mobileDrain = loadedMobile?.close();
     final mobile = _mobile[prefs]?.remove(profileId);
     if (mobile != null) {
       try {
@@ -122,6 +151,7 @@ abstract final class ConsentOwners {
         _mobileLoaded[prefs]?.remove(profileId);
       }
     }
+    await mobileDrain;
     _loaded[prefs]?.remove(profileId);
     final inFlow = _inFlow[prefs]?.remove(profileId);
     final repeated = _repeated[prefs]?.remove(profileId);

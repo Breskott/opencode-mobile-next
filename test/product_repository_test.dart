@@ -547,7 +547,7 @@ void main() {
     },
   );
 
-  test('worktree errors surface the typed OpenCode message', () async {
+  test('worktree errors keep server prose in the technical cause', () async {
     await HttpOverrides.runZoned(() async {
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       server.listen((request) async {
@@ -573,11 +573,19 @@ void main() {
         await expectLater(
           repository.listWorktrees(projectDirectory: '/work/plain'),
           throwsA(
-            isA<ProductException>().having(
-              (error) => error.message,
-              'message',
-              'Worktrees are only supported for git projects',
-            ),
+            isA<ProductException>()
+                .having(
+                  (error) => error.message,
+                  'message',
+                  'Could not load worktrees',
+                )
+                .having(
+                  (error) => error.cause.toString().contains(
+                    'Worktrees are only supported for git projects',
+                  ),
+                  'original cause preserved',
+                  isTrue,
+                ),
           ),
         );
       } finally {

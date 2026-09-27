@@ -494,13 +494,9 @@ class Api2OperationsGateway extends ProductRepository
       return await action();
     } on ProductException {
       rethrow;
-    } on Api2Error catch (error) {
-      final detail = error.message.trim();
-      throw ProductException(
-        detail.isNotEmpty ? detail : message,
-        cause: error,
-      );
     } catch (error) {
+      // ProductException's message is trusted presentation copy. Keep server
+      // reasons, including Api2Error messages, only in the technical cause.
       throw ProductException(message, cause: error);
     }
   }

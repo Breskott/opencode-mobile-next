@@ -42,16 +42,35 @@ class MobileDownloadResult<T> {
 /// becomes a mobile signal or below-threshold proof. This is a start gate;
 /// callers must separately cancel/pause an in-flight transfer on policy changes.
 class MobileDownloadConsent {
-  MobileDownloadConsent._(this._prefs, this._key, this._choice);
+  MobileDownloadConsent._(
+    this._prefs,
+    this._profileId,
+    this._key,
+    this._choice,
+  );
   static const thresholdBytes = 50000000;
   final SharedPreferences _prefs;
+  final String _profileId;
   final String _key;
   MobileDownloadChoice _choice;
   Future<void> _tail = Future.value();
   bool _closed = false;
   bool _storageAvailable = true;
   MobileDownloadChoice get choice => _choice;
-  bool get storageAvailable => _storageAvailable && !_closed;
+  bool get storageAvailable => _storageAvailable && !_closed && _present;
+
+  bool get _present => _hasProfile(_prefs, _profileId);
+
+  static bool _hasProfile(SharedPreferences prefs, String id) {
+    try {
+      final raw = prefs.getString('oc.profiles');
+      final profiles = raw == null ? null : jsonDecode(raw);
+      return profiles is List &&
+          profiles.any((profile) => profile is Map && profile['id'] == id);
+    } catch (_) {
+      return false;
+    }
+  }
 
   static Future<MobileDownloadConsent> load(
     SharedPreferences prefs, {
@@ -64,9 +83,15 @@ class MobileDownloadConsent {
     final key = 'oc.mobileDownloadConsent.$profileId';
     try {
       await prefs.reload();
+      if (!_hasProfile(prefs, profileId)) throw const FormatException();
       final raw = prefs.getString(key);
       if (raw == null) {
-        return MobileDownloadConsent._(prefs, key, MobileDownloadChoice.unseen);
+        return MobileDownloadConsent._(
+          prefs,
+          profileId,
+          key,
+          MobileDownloadChoice.unseen,
+        );
       }
       if (raw.length > 512) throw const FormatException();
       final value = jsonDecode(raw);
@@ -77,6 +102,7 @@ class MobileDownloadConsent {
       }
       return MobileDownloadConsent._(
         prefs,
+        profileId,
         key,
         MobileDownloadChoice.values.byName(value['choice'] as String),
       );
@@ -97,7 +123,7 @@ class MobileDownloadConsent {
     required DownloadSize size,
     required Future<NetworkReading> Function() readNetwork,
   }) async {
-    if (_closed) return _unavailable(MobileDownloadReason.closed);
+    if (_closed || !_present) return _unavailable(MobileDownloadReason.closed);
     if (!_storageAvailable) {
       return _unavailable(MobileDownloadReason.storageUnavailable);
     }
@@ -107,7 +133,7 @@ class MobileDownloadConsent {
     } catch (_) {
       return _unavailable(MobileDownloadReason.networkUnknown);
     }
-    if (_closed) return _unavailable(MobileDownloadReason.closed);
+    if (_closed || !_present) return _unavailable(MobileDownloadReason.closed);
     if (network.hasNoNetwork || network.status == NetworkStatus.offline) {
       return const MobileDownloadDecision(
         MobileDownloadDecisionKind.blocked,
@@ -179,7 +205,7 @@ class MobileDownloadConsent {
     final started = await _serial(() async {
       final decision = await _request(size: size, readNetwork: readNetwork);
       if (!decision.allowed) return (decision: decision, future: null);
-      if (_closed) {
+      if (_closed || !_present) {
         return (
           decision: _unavailable(MobileDownloadReason.closed),
           future: null,
