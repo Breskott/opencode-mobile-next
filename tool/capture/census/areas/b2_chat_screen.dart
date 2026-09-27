@@ -87,7 +87,7 @@ final b2ChatScreenArea = CensusArea(
     CensusShot('command-launcher-sheet', state: 'commands', (kit) async {
       await openChat(kit);
       await openCommandLauncher(kit);
-      kit.expectText('Composer tools');
+      kit.expectText('Commands and agents');
     }, note: 'Composer + › Commands.'),
     CensusShot(
       'command-launcher-sheet',
@@ -99,7 +99,7 @@ final b2ChatScreenArea = CensusArea(
           find.byKey(const Key('command-launcher-search')),
           'share',
         );
-        kit.expectText('Composer tools');
+        kit.expectText('Commands and agents');
       },
       note:
           'Typing filters the commands (and would list "Go to" results '

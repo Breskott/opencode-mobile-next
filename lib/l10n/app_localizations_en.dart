@@ -25493,4 +25493,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get composerDraftBlockedReason =>
       'Answer the question about this draft first';
+
+  @override
+  String get commandLauncherSubtitle =>
+      'Run an action in this conversation, or a command from this server';
+
+  @override
+  String get commandLauncherAgentCommandsUnavailable =>
+      'This agent can\'t list its own commands here yet. These are the app\'s actions.';
+
+  @override
+  String teamChatNowPendingSlow(String elapsed) {
+    return 'Still waiting for the team to plan this · $elapsed';
+  }
+
+  @override
+  String get teamChatRefusedTitle => 'The team didn\'t take this task';
+
+  @override
+  String get teamChatRefusedRetry => 'Send the task again';
+
+  @override
+  String get teamChatGoneTitle => 'This task is no longer on the team';
+
+  @override
+  String get teamChatGoneBody =>
+      'It may have been removed on the team\'s computer. The AI Team page lists the tasks it has now.';
+
+  @override
+  String get teamChatGoneOpenTeam => 'Open AI Team page';
 }

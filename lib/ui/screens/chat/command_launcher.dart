@@ -123,6 +123,20 @@ class _ChatCommand {
 
 enum _ComposerToolTab { commands, agents }
 
+/// Commands and agents (map `command-launcher-sheet`): the app's actions and
+/// this server's commands, and, where the server takes `@agent` mentions,
+/// the subagents a prompt can be handed to. It opens from the "+" sheet's
+/// "Commands and agents" row, from "/" and "@" in the composer, and from
+/// Ctrl+K.
+///
+/// Kit-only rebuild of today's layout (MAP-1 `redesign`): the
+/// plain-language action launcher fed by each agent's own command
+/// catalogue is deferred to its wave-3 slice (QA record). What this build
+/// already fixes: the title names the door that opened it, an action reads
+/// by its name first with its slash word as a trailing hint, the "mobile"
+/// tag is gone, a search with no match says so with Clear search, and a
+/// session whose agent cannot list its own commands (Codex, Claude Code)
+/// says so instead of staying silent (STATE-12).
 class _CommandLauncherSheet extends StatefulWidget {
   const _CommandLauncherSheet({
     required this.controller,
@@ -150,35 +164,46 @@ class _CommandLauncherSheet extends StatefulWidget {
   State<_CommandLauncherSheet> createState() => _CommandLauncherSheetState();
 }
 
-class _CommandLauncherSheetState extends State<_CommandLauncherSheet>
-    with SingleTickerProviderStateMixin {
+class _CommandLauncherSheetState extends State<_CommandLauncherSheet> {
   final _search = TextEditingController();
-  late final TabController _tabs;
+  late _ComposerToolTab _tab = widget.initialTab;
+
+  bool get _agentsOffered => widget.controller.capabilities.promptAgentMentions;
 
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(
-      length: _ComposerToolTab.values.length,
-      vsync: this,
-      initialIndex: widget.initialTab.index,
-    )..addListener(_onTabChanged);
-    if (widget.loading()) _refresh();
+    // Filtering follows every keystroke: the list is local, so there is no
+    // settling wait before it narrows.
+    _search.addListener(_onQuery);
+    if (widget.loading()) unawaited(_refresh());
   }
 
-  void _onTabChanged() {
-    if (_tabs.indexIsChanging) return;
+  void _onQuery() {
+    if (mounted) setState(() {});
+  }
+
+  void _switchTab(_ComposerToolTab tab) {
+    if (tab == _tab) return;
     _search.clear();
-    setState(() {});
+    setState(() => _tab = tab);
   }
 
   Future<void> _refresh() async {
-    if (_tabs.index == _ComposerToolTab.commands.index) {
+    if (_tab == _ComposerToolTab.commands) {
       await widget.onRefresh();
     } else {
       await widget.controller.refreshCatalog();
     }
     if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _search
+      ..removeListener(_onQuery)
+      ..dispose();
+    super.dispose();
   }
 
   @override
@@ -188,378 +213,238 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet>
   );
 
   Widget _buildSheet(BuildContext context) {
-    final theme = Theme.of(context);
+    final l10n = _chatL10n(context);
     final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.5;
-    final agentTab = _tabs.index == _ComposerToolTab.agents.index;
+    final agentTab = _agentsOffered && _tab == _ComposerToolTab.agents;
+    final query = _search.text;
+    final Widget list;
+    final int resultCount;
+    if (agentTab) {
+      final agents = _matchingAgents(query);
+      resultCount = agents.length;
+      list = _AgentPickerList(
+        agents: agents,
+        query: query,
+        loading: widget.controller.catalogLoading,
+        error: widget.controller.catalogError,
+        onRefresh: _refresh,
+        onClearSearch: _search.clear,
+        onSelected: widget.onAgentSelected,
+      );
+    } else {
+      final commands = _matchingCommands(query);
+      // Typing also searches the rest of the app (settings, Project tools,
+      // tabs) through the same index the Settings search uses, so a person
+      // in a conversation does not have to leave it to look for something.
+      final scope = SearchScope.of(context, widget.controller);
+      final elsewhere = searchEntries(l10n, scope, query);
+      resultCount = commands.length + elsewhere.length;
+      list = _CommandList(
+        commands: commands,
+        elsewhere: elsewhere,
+        query: query,
+        onClearSearch: _search.clear,
+        onSelected: widget.onSelected,
+        onOpenElsewhere: (entry) {
+          // The sheet's context dies with the sheet; the result opens from
+          // the route below it.
+          final navigator = Navigator.of(context);
+          final below = navigator.overlay?.context;
+          navigator.pop();
+          if (below != null) unawaited(entry.open(below, scope));
+        },
+      );
+    }
+    final tokens = KitTokens.of(context);
+    final height = (MediaQuery.sizeOf(context).height * (largeText ? .96 : .86))
+        .floorToDouble();
+    final commandsError = agentTab ? null : widget.error();
+    return SizedBox(
+      key: const Key('command-launcher-sheet'),
+      height: height,
+      child: KitSheet(
+        title: l10n.composerToolCommandsTitle,
+        subtitle: agentTab
+            ? l10n.chatUiDelegateThisPromptToAServerSubagent
+            : l10n.commandLauncherSubtitle,
+        fill: true,
+        // The modal route draws the one handle (the theme's drag handle).
+        handle: false,
+        loading: agentTab ? widget.controller.catalogLoading : widget.loading(),
+        onClose: () => Navigator.pop(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_agentsOffered) ...[
+              KitSegmented<_ComposerToolTab>(
+                semanticsLabel: l10n.composerToolCommandsTitle,
+                selected: agentTab
+                    ? _ComposerToolTab.agents
+                    : _ComposerToolTab.commands,
+                onChanged: _switchTab,
+                segments: [
+                  KitSegment(
+                    key: const Key('composer-tools-commands-tab'),
+                    value: _ComposerToolTab.commands,
+                    label: l10n.runResultsCommandsTitle,
+                    icon: AppIcons.run,
+                  ),
+                  KitSegment(
+                    key: const Key('composer-tools-agents-tab'),
+                    value: _ComposerToolTab.agents,
+                    label: l10n.chatUiDelegate,
+                    icon: AppIconography.agent,
+                  ),
+                ],
+              ),
+              SizedBox(height: tokens.space3),
+            ],
+            KitSearchField(
+              label: agentTab
+                  ? l10n.chatUiFindASubagent
+                  : l10n.chatUiFindACommandOrAction,
+              controller: _search,
+              onChanged: (_) {},
+              resultCount: query.trim().isEmpty ? null : resultCount,
+              fieldKey: const Key('command-launcher-search'),
+              clearKey: const Key('command-launcher-search-clear'),
+            ),
+            SizedBox(height: tokens.space3),
+            if (commandsError != null) ...[
+              KitNotice.error(
+                key: const Key('command-launcher-error'),
+                message: l10n.chatUiServerCommandsCouldNotBeRefreshed,
+                error: commandsError,
+                retry: KitAction(
+                  key: const Key('command-launcher-retry'),
+                  label: l10n.chatUiRetryServerCommands,
+                  onPressed: () => unawaited(_refresh()),
+                ),
+              ),
+              SizedBox(height: tokens.space3),
+            ],
+            // An agent that cannot list its own commands (Codex, Claude
+            // Code through Paseo) says so: what follows is the app's own.
+            if (!agentTab && !widget.controller.capabilities.serverCatalog) ...[
+              KitNotice(
+                key: const Key('command-launcher-agent-commands-unavailable'),
+                icon: AppIconography.info,
+                message: l10n.commandLauncherAgentCommandsUnavailable,
+              ),
+              SizedBox(height: tokens.space3),
+            ],
+            list,
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<_ChatCommand> _matchingCommands(String query) {
     final commands = widget
         .commands()
-        .where((command) => command.matchesQuery(_search.text))
+        .where((command) => command.matchesQuery(query))
         .toList();
-    if (_search.text.trim().isNotEmpty) {
+    if (query.trim().isNotEmpty) {
       commands.sort((a, b) {
-        final score = a
-            .scoreFor(_search.text)
-            .compareTo(b.scoreFor(_search.text));
+        final score = a.scoreFor(query).compareTo(b.scoreFor(query));
         return score != 0 ? score : a.slash.compareTo(b.slash);
       });
+    }
+    return commands;
+  }
+
+  List<CatalogAgent> _matchingAgents(String query) {
+    final normalized = query.trim().toLowerCase().replaceFirst('@', '');
+    return widget.agents().where((agent) {
+      return normalized.isEmpty ||
+          agent.id.toLowerCase().contains(normalized) ||
+          (agent.description?.toLowerCase().contains(normalized) ?? false);
+    }).toList()..sort((a, b) => a.id.compareTo(b.id));
+  }
+}
+
+/// The commands, in their groups, then "Go to" places elsewhere in the app;
+/// "Nothing matches" with Clear search when a query finds neither.
+class _CommandList extends StatelessWidget {
+  const _CommandList({
+    required this.commands,
+    required this.elsewhere,
+    required this.query,
+    required this.onClearSearch,
+    required this.onSelected,
+    required this.onOpenElsewhere,
+  });
+
+  final List<_ChatCommand> commands;
+  final List<SearchEntry> elsewhere;
+  final String query;
+  final VoidCallback onClearSearch;
+  final ValueChanged<_ChatCommand> onSelected;
+  final ValueChanged<SearchEntry> onOpenElsewhere;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _chatL10n(context);
+    if (commands.isEmpty && elsewhere.isEmpty) {
+      if (query.trim().isNotEmpty) {
+        return KitSearchNoMatch(
+          key: const Key('command-launcher-no-match'),
+          query: query.trim(),
+          onClear: onClearSearch,
+        );
+      }
+      return KitStateView(
+        key: const Key('command-launcher-empty'),
+        icon: AppIcons.run,
+        title: l10n.chatUiNoMatchingCommands,
+        size: KitStateSize.inline,
+      );
     }
     final groups = <String, List<_ChatCommand>>{};
     for (final command in commands) {
       groups.putIfAbsent(command.group, () => []).add(command);
     }
-    // Typing also searches the rest of the app (settings, Project tools,
-    // tabs) through the same index the Settings search uses, so a person in
-    // a conversation does not have to leave it to look for something.
-    final scope = SearchScope.of(context, widget.controller);
-    final elsewhere = agentTab
-        ? const <SearchEntry>[]
-        : searchEntries(_chatL10n(context), scope, _search.text);
-    final query = _search.text.trim().toLowerCase().replaceFirst('@', '');
-    final agents = widget.agents().where((agent) {
-      return query.isEmpty ||
-          agent.id.toLowerCase().contains(query) ||
-          (agent.description?.toLowerCase().contains(query) ?? false);
-    }).toList()..sort((a, b) => a.id.compareTo(b.id));
-    return DraggableScrollableSheet(
-      expand: false,
-      minChildSize: .58,
-      initialChildSize: largeText ? .96 : .86,
-      maxChildSize: .96,
-      snap: true,
-      snapSizes: const [.86, .96],
-      builder: (context, scrollController) => Material(
-        color: theme.colorScheme.surfaceContainerLow,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 10, 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _chatL10n(context).chatUiComposerTools,
-                          style: theme.textTheme.titleLarge,
-                        ),
-                        if (!largeText) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            agentTab
-                                ? _chatL10n(
-                                    context,
-                                  ).chatUiDelegateThisPromptToAServerSubagent
-                                : _chatL10n(
-                                    context,
-                                  ).chatUiMobileActionsAndCommandsFromThisServer,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: _chatL10n(context).chatUiCloseComposerTools,
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(AppIconography.close),
-                  ),
-                ],
-              ),
-            ),
-            TabBar(
-              controller: _tabs,
-              tabs: largeText
-                  ? [
-                      Tab(
-                        key: Key('composer-tools-commands-tab'),
-                        text: _chatL10n(context).runResultsCommandsTitle,
-                      ),
-                      Tab(
-                        key: Key('composer-tools-agents-tab'),
-                        text: _chatL10n(context).chatUiDelegate,
-                      ),
-                    ]
-                  : [
-                      Tab(
-                        key: Key('composer-tools-commands-tab'),
-                        icon: Icon(AppIcons.run),
-                        text: _chatL10n(context).runResultsCommandsTitle,
-                      ),
-                      Tab(
-                        key: Key('composer-tools-agents-tab'),
-                        icon: Icon(AppIconography.agent),
-                        text: _chatL10n(context).chatUiDelegate,
-                      ),
-                    ],
-            ),
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 12),
-              child: TextField(
-                key: const Key('command-launcher-search'),
-                controller: _search,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  hintText: agentTab
-                      ? _chatL10n(context).chatUiFindASubagent
-                      : _chatL10n(context).chatUiFindACommandOrAction,
-                  prefixIcon: const Icon(AppIconography.search),
-                  suffixIcon: _search.text.isEmpty
+    return Column(
+      key: const Key('command-launcher-list'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final group in groups.entries)
+          KitRowGroup(
+            label: group.key,
+            leadingIcons: false,
+            margin: EdgeInsetsDirectional.zero,
+            children: [
+              for (final command in group.value)
+                _CommandRow(command: command, onSelected: onSelected),
+            ],
+          ),
+        if (elsewhere.isNotEmpty)
+          KitRowGroup(
+            label: l10n.discoverSearchGoTo,
+            margin: EdgeInsetsDirectional.zero,
+            children: [
+              for (final entry in elsewhere)
+                KitRow(
+                  key: ValueKey('command-launcher-result-${entry.id}'),
+                  leading: KitRowIcon(entry.icon),
+                  title: entry.title,
+                  supporting: entry.parent == null
                       ? null
-                      : IconButton(
-                          tooltip: _chatL10n(context).commonClearSearch,
-                          onPressed: () {
-                            _search.clear();
-                            setState(() {});
-                          },
-                          icon: const Icon(AppIconography.close),
-                        ),
-                  border: const OutlineInputBorder(),
-                  isDense: true,
+                      : TextSpan(text: l10n.discoverSearchIn(entry.parent!)),
+                  trailing: const KitChevron(),
+                  onTap: () => onOpenElsewhere(entry),
                 ),
-              ),
-            ),
-            const Divider(height: 1),
-            if (agentTab && widget.controller.catalogLoading)
-              const LinearProgressIndicator(minHeight: 2),
-            if (!agentTab && widget.loading())
-              const LinearProgressIndicator(minHeight: 2),
-            if (!agentTab && widget.error() != null)
-              ListTile(
-                dense: true,
-                title: Text(
-                  _chatL10n(context).chatUiServerCommandsCouldNotBeRefreshed,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(
-                  productErrorText(widget.error()!),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: IconButton(
-                  tooltip: _chatL10n(context).chatUiRetryServerCommands,
-                  onPressed: _refresh,
-                  icon: const Icon(AppIconography.retry),
-                ),
-              ),
-            Expanded(
-              child: agentTab
-                  ? _AgentPickerList(
-                      agents: agents,
-                      loading: widget.controller.catalogLoading,
-                      error: widget.controller.catalogError,
-                      scrollController: scrollController,
-                      onRefresh: _refresh,
-                      onSelected: widget.onAgentSelected,
-                    )
-                  : commands.isEmpty && elsewhere.isEmpty
-                  ? Center(
-                      child: Text(
-                        _chatL10n(context).chatUiNoMatchingCommands,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    )
-                  : ListView(
-                      key: const Key('command-launcher-list'),
-                      controller: scrollController,
-                      // Dragging the results dismisses the search keyboard so
-                      // it stops covering the list.
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: const EdgeInsets.only(bottom: 24),
-                      children: [
-                        for (final group in groups.entries) ...[
-                          Padding(
-                            padding: const EdgeInsetsDirectional.fromSTEB(
-                              16,
-                              18,
-                              16,
-                              6,
-                            ),
-                            child: Text(
-                              group.key,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          for (final command in group.value)
-                            _CommandRow(
-                              command: command,
-                              onSelected: widget.onSelected,
-                            ),
-                        ],
-                        if (elsewhere.isNotEmpty) ...[
-                          Padding(
-                            padding: const EdgeInsetsDirectional.fromSTEB(
-                              16,
-                              18,
-                              16,
-                              6,
-                            ),
-                            child: Text(
-                              _chatL10n(context).discoverSearchGoTo,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          for (final entry in elsewhere)
-                            ListTile(
-                              key: ValueKey(
-                                'command-launcher-result-${entry.id}',
-                              ),
-                              leading: Icon(entry.icon),
-                              title: Text(entry.title),
-                              subtitle: entry.parent == null
-                                  ? null
-                                  : Text(
-                                      _chatL10n(
-                                        context,
-                                      ).discoverSearchIn(entry.parent!),
-                                    ),
-                              onTap: () {
-                                // The sheet's context dies with the sheet;
-                                // the result opens from the route below it.
-                                final navigator = Navigator.of(context);
-                                final below = navigator.overlay?.context;
-                                navigator.pop();
-                                if (below != null) {
-                                  unawaited(entry.open(below, scope));
-                                }
-                              },
-                            ),
-                        ],
-                      ],
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _tabs
-      ..removeListener(_onTabChanged)
-      ..dispose();
-    _search.dispose();
-    super.dispose();
-  }
-}
-
-class _AgentPickerList extends StatelessWidget {
-  const _AgentPickerList({
-    required this.agents,
-    required this.loading,
-    required this.error,
-    required this.scrollController,
-    required this.onRefresh,
-    required this.onSelected,
-  });
-
-  final List<CatalogAgent> agents;
-  final bool loading;
-  final Object? error;
-  final ScrollController scrollController;
-  final Future<void> Function() onRefresh;
-  final ValueChanged<CatalogAgent> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    if (agents.isEmpty) {
-      return KitRefresh(
-        onRefresh: onRefresh,
-        child: ListView(
-          controller: scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          children: [
-            SizedBox(height: MediaQuery.sizeOf(context).height * .12),
-            Icon(
-              loading ? AppIconography.sync : AppIconography.agent,
-              size: 36,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              loading
-                  ? _chatL10n(context).chatUiLoadingSubagents
-                  : error == null
-                  ? _chatL10n(context).chatUiNoSubagentsAvailableFromThisServer
-                  : _chatL10n(context).chatUiSubagentsCouldNotBeLoaded,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            if (!loading)
-              Center(
-                child: TextButton.icon(
-                  onPressed: onRefresh,
-                  icon: const Icon(AppIconography.retry),
-                  label: Text(_chatL10n(context).globalSessionsRefresh),
-                ),
-              ),
-          ],
-        ),
-      );
-    }
-    return KitRefresh(
-      onRefresh: onRefresh,
-      child: ListView.separated(
-        key: const Key('composer-agent-list'),
-        controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: const EdgeInsets.only(top: 6, bottom: 24),
-        itemCount: agents.length,
-        separatorBuilder: (_, _) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final agent = agents[index];
-          final model = agent.model?.trim();
-          return ListTile(
-            key: Key('composer-agent-${agent.id}'),
-            minTileHeight: 64,
-            leading: _AgentColorDot(
-              key: Key('composer-agent-color-${agent.id}'),
-              color: agentColor(agent.color, theme.colorScheme),
-            ),
-            title: Text(
-              '@${agent.id}',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontFamily: AppTheme.monoFamily,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            subtitle: Text(
-              [
-                agent.description ??
-                    _chatL10n(context).chatUiDelegateThisPrompt,
-                if (model != null && model.isNotEmpty) model,
-              ].join('\n'),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            isThreeLine: model != null && model.isNotEmpty,
-            trailing: const Icon(AppIconography.add),
-            onTap: () => onSelected(agent),
-          );
-        },
-      ),
+            ],
+          ),
+      ],
     );
   }
 }
 
+/// One command: its name first, what it does under it, and its slash word
+/// at the end as the hint for typing it. A server command has no name of
+/// its own beyond the slash word, which is then its title.
 class _CommandRow extends StatelessWidget {
   const _CommandRow({required this.command, required this.onSelected});
 
@@ -568,80 +453,112 @@ class _CommandRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListTile(
-      key: Key(
-        'command-${command.serverCommand == null ? 'mobile' : 'server'}-${command.slash}',
-      ),
+    final server = command.serverCommand != null;
+    final slash = '/${command.slash}';
+    return KitRow(
+      key: Key('command-${server ? 'server' : 'mobile'}-${command.slash}'),
+      title: server ? slash : command.title,
+      supporting: TextSpan(text: command.description),
+      supportingMaxLines: 2,
+      trailing: server
+          ? null
+          : KitText(
+              slash,
+              role: KitTextRole.mono,
+              tone: KitTextTone.secondary,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
       enabled: command.enabled,
-      dense: true,
-      minTileHeight: 58,
-      title: Row(
-        children: [
-          Text(
-            '/${command.slash}',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontFamily: AppTheme.monoFamily,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          if (command.aliases.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                command.aliases.map((alias) => '/$alias').join('  '),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontFamily: AppTheme.monoFamily,
-                ),
-              ),
-            ),
-          ] else
-            const Spacer(),
-          Text(
-            command.serverCommand == null ? 'mobile' : 'server',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-      subtitle: Text(
-        command.description,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-      onTap: () => onSelected(command),
+      onTap: command.enabled ? () => onSelected(command) : null,
     );
   }
 }
 
-/// Agent colour swatch: a 14 dp dot with the smart-toy glyph faintly behind
-/// it, so agents without a colour still read as agents.
-class _AgentColorDot extends StatelessWidget {
-  const _AgentColorDot({super.key, required this.color});
+/// The subagents a prompt can be handed to: "@name", what it is for and the
+/// model it runs, one tap to put the mention in the prompt.
+class _AgentPickerList extends StatelessWidget {
+  const _AgentPickerList({
+    required this.agents,
+    required this.query,
+    required this.loading,
+    required this.error,
+    required this.onRefresh,
+    required this.onClearSearch,
+    required this.onSelected,
+  });
 
-  final Color color;
+  final List<CatalogAgent> agents;
+  final String query;
+  final bool loading;
+  final Object? error;
+  final Future<void> Function() onRefresh;
+  final VoidCallback onClearSearch;
+  final ValueChanged<CatalogAgent> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox.square(
-      dimension: 24,
-      child: Center(
-        child: Container(
-          width: 14,
-          height: 14,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
+    final l10n = _chatL10n(context);
+    if (agents.isEmpty) {
+      if (query.trim().isNotEmpty && !loading) {
+        return KitSearchNoMatch(
+          key: const Key('composer-agent-no-match'),
+          query: query.trim(),
+          onClear: onClearSearch,
+        );
+      }
+      final refresh = KitAction(
+        key: const Key('composer-agent-refresh'),
+        label: l10n.globalSessionsRefresh,
+        icon: AppIconography.retry,
+        onPressed: () => unawaited(onRefresh()),
+      );
+      if (loading) {
+        return KitStateView(
+          key: const Key('composer-agent-loading'),
+          icon: AppIconography.agent,
+          title: l10n.chatUiLoadingSubagents,
+          tone: AppStatusTone.progress,
+          size: KitStateSize.inline,
+        );
+      }
+      if (error != null) {
+        return KitStateView.error(
+          key: const Key('composer-agent-error'),
+          title: l10n.chatUiSubagentsCouldNotBeLoaded,
+          error: error,
+          retry: refresh,
+          size: KitStateSize.inline,
+        );
+      }
+      return KitStateView(
+        key: const Key('composer-agent-empty'),
+        icon: AppIconography.agent,
+        title: l10n.chatUiNoSubagentsAvailableFromThisServer,
+        primary: refresh,
+        size: KitStateSize.inline,
+      );
+    }
+    return KitRowGroup(
+      key: const Key('composer-agent-list'),
+      margin: EdgeInsetsDirectional.zero,
+      children: [
+        for (final agent in agents)
+          KitRow(
+            key: Key('composer-agent-${agent.id}'),
+            leading: const KitRowIcon(AppIconography.agent),
+            title: '@${KitBidi.auto(agent.id)}',
+            supporting: TextSpan(
+              text: [
+                agent.description ?? l10n.chatUiDelegateThisPrompt,
+                if (agent.model?.trim() case final model? when model.isNotEmpty)
+                  KitBidi.auto(model),
+              ].join('\n'),
             ),
+            supportingMaxLines: 3,
+            onTap: () => onSelected(agent),
           ),
-        ),
-      ),
+      ],
     );
   }
 }

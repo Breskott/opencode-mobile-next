@@ -918,59 +918,6 @@ class _WorkGroupState extends State<_WorkGroup> {
   }
 }
 
-/// A fold line outside a turn's work (an AI Team lead's earlier lines): the
-/// kit's summary chip, so every fold in a transcript looks and reads alike.
-class _FoldLine extends StatelessWidget {
-  const _FoldLine({
-    required this.headerKey,
-    required this.icon,
-    required this.title,
-    required this.expanded,
-    required this.onTap,
-  });
-
-  final Key headerKey;
-  final IconData icon;
-  final String title;
-  final bool expanded;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Align(
-    alignment: AlignmentDirectional.centerStart,
-    child: KitChip.summary(
-      key: headerKey,
-      icon: icon,
-      label: title,
-      expanded: expanded,
-      onPressed: onTap,
-    ),
-  );
-}
-
-/// What a [_FoldLine] opens: its lines one indent in, in the order they
-/// happened.
-class _FoldSteps extends StatelessWidget {
-  const _FoldSteps({super.key, required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
-    return Padding(
-      padding: EdgeInsetsDirectional.only(
-        start: tokens.space3,
-        top: tokens.space1,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
-      ),
-    );
-  }
-}
-
 class _AssistantMessagePart extends StatelessWidget {
   const _AssistantMessagePart({
     required this.part,

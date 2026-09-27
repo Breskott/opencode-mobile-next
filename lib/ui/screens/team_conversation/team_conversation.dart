@@ -46,7 +46,7 @@ abstract final class TeamConversation {
   static Route<void> route(
     OrchestrationController team, {
     required String runId,
-  }) => MaterialPageRoute<void>(
+  }) => KitPageRoute<void>(
     builder: (_) => TeamControllerScope(
       team: team,
       child: TeamConversationScreen(team: team, runId: runId),
@@ -88,7 +88,7 @@ abstract final class TeamConversation {
         return record;
     }
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      KitPageRoute<void>(
         builder: (_) => TeamControllerScope(
           team: team,
           child: TeamConversationScreen(team: team, pending: pending),
@@ -119,11 +119,7 @@ class TeamTaskConversationRow extends StatelessWidget {
       leading: KitRow.icon(context, AppIconography.chat),
       title: l10n.teamOpenConversation,
       supporting: TextSpan(text: l10n.teamOpenTaskConversationHint),
-      trailing: Icon(
-        AppIconography.chevronRight,
-        size: 18,
-        color: AppTheme.mutedOf(Theme.of(context)),
-      ),
+      trailing: const KitChevron(),
       onTap: () => TeamConversation.open(context, team, runId: runId),
     );
   }
