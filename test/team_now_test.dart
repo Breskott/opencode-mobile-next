@@ -19,9 +19,10 @@ import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
-import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamWatchLiveScreen;
 import 'package:opencode_mobile/ui/widgets/team_now.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -471,8 +472,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         _app(
-          AgentOutputScreen(
-            controller: controller,
+          TeamWatchLiveScreen(
+            team: controller,
             agentId: 'demo-app/gastown.furiosa',
           ),
         ),
@@ -481,7 +482,7 @@ void main() {
     }
 
     String status(WidgetTester tester) =>
-        tester.widget<KitStatusLine>(_key('team-agent-output-status')).message;
+        tester.widget<KitStatusLine>(_key('chat-watching-banner')).message;
 
     testWidgets('not running: says so at once, with the action', (
       tester,
@@ -489,7 +490,7 @@ void main() {
       final (controller, _) = await boot(runs: const [], agents: [_worker()]);
       await pumpOutput(tester, controller);
       expect(status(tester), _en.teamOutputNotRunning('furiosa'));
-      expect(_key('team-agent-output-wake'), findsOneWidget);
+      expect(_key('chat-watching-live-wake'), findsOneWidget);
       await done(tester);
     });
 

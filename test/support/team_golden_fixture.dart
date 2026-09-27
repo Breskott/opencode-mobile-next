@@ -19,9 +19,8 @@ import 'package:opencode_mobile/orchestration/adapters/fixture/fixture_gateway.d
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
-    show TeamConversationScreen;
+    show TeamConversationScreen, TeamWatchLiveScreen;
 import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_moments.dart';
@@ -400,8 +399,10 @@ Future<OrchestrationController> pumpTeamShot(
       runId: teamSceneMergedRunId,
       now: now,
     ),
-    TeamShot.agentOutput => AgentOutputScreen(
-      controller: controller,
+    // A worker is its conversation (P3.6): the watching page drawn from
+    // the live output.
+    TeamShot.agentOutput => TeamWatchLiveScreen(
+      team: controller,
       agentId: 'fox',
     ),
     TeamShot.agents => TeamAgentsScreen(controller: controller, now: now),

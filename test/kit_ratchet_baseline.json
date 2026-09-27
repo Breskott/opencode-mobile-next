@@ -6,10 +6,6 @@
     "lib/ui/screens/project_folder_actions.dart": {
       "showModalBottomSheet(": 2
     },
-    "lib/ui/screens/team/agent_output_screen.dart": {
-      "SnackBar(": 1,
-      "showSnackBar(": 1
-    },
     "lib/ui/widgets/completion_digest.dart": {
       "SnackBar(": 2,
       "showSnackBar(": 2
@@ -57,17 +53,6 @@
       "MaterialPageRoute": 5,
       "Scaffold": 1,
       "Text": 13
-    },
-    "lib/ui/screens/team/agent_output_screen.dart": {
-      "AppBar": 1,
-      "Divider": 1,
-      "Icon": 1,
-      "IconButton": 1,
-      "NotificationListener": 1,
-      "Scaffold": 1,
-      "SnackBar": 1,
-      "SwitchListTile": 1,
-      "Text": 5
     },
     "lib/ui/widgets/completion_digest.dart": {
       "Icon": 2,
@@ -117,9 +102,6 @@
   "G17": {
     "lib/diagnostics/app_diagnostics.dart": {
       "Color(0x": 2
-    },
-    "lib/ui/screens/team/agent_output_screen.dart": {
-      "attention roles": 2
     },
     "lib/ui/screens/team/team_home_screen.dart": {
       "attention roles": 1
@@ -199,10 +181,6 @@
     },
     "lib/ui/screens/library/integrations_screen.dart": {
       "launchUrl(": 1
-    },
-    "lib/ui/screens/team/agent_output_screen.dart": {
-      "Clipboard.setData(": 1,
-      "duration: Duration(": 1
     },
     "lib/ui/widgets/completion_digest.dart": {
       "Clipboard.setData(": 1

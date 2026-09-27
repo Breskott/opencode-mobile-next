@@ -129,7 +129,6 @@
     "lib/ui/screens/team/team_home_screen.dart",
     "lib/ui/screens/team/task_details_sheet.dart",
     "lib/ui/screens/team/agent_screen.dart",
-    "lib/ui/screens/team/agent_output_screen.dart",
     "lib/ui/screens/team/policy_block.dart",
     "lib/ui/widgets/team_card.dart",
     "lib/ui/widgets/team_cycle_strip.dart",

@@ -227,18 +227,70 @@
      "destructive": false
     },
     {
-     "id": "chat-watching-message",
-     "type": "button",
-     "label": "Message the worker | Message this agent",
-     "key": "chat-watching-message",
+     "id": "chat-watching-composer",
+     "type": "text-field",
+     "label": "Message <name>… | Message the worker… | Message this agent…",
+     "key": "chat-watching-message-field",
      "file": "lib/ui/screens/chat/watching.dart",
-     "line": 158,
-     "action": "open-sheet",
-     "target": "chat-watching-message-sheet",
-     "targetWidget": "_messageTeamAgent",
-     "effect": "_WatchingComposerState._message() -> watch.onMessage(context); the AI Team's ChatWatch (teamAgentWatch, team_conversation_view.dart:1293) opens the message sheet, then on a non-empty answer calls OrchestrationController.messageAgent(agent.id, text).",
+     "line": 274,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_WatchComposer (KitComposer, composer key chat-watching-composer): the person's words for the watched AI Team agent. Send (chat-watching-message-send) -> ChatWatch.onSend (teamAgentWatch: OrchestrationController.messageAgent(agentId, text)); the field and its draft (oc.draft.team-message.<agentId>.<profileId>) clear only when the team took it. Never typed into the watched session. Note 'Goes to <name> through the AI Team'; read-only with 'This team can't be messaged from here.' without the message control.",
      "gates": [
-      "widget.watch != null && watch.messageLabel != null && watch.onMessage != null"
+      "widget.watch != null (watching mode)",
+      "typing only when ChatWatch.onSend != null (team.capabilities.controlMessage)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "chat-watching-message-send",
+     "type": "icon-button",
+     "label": "[Send]",
+     "key": "chat-watching-message-send",
+     "file": "lib/ui/screens/chat/watching.dart",
+     "line": 275,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Same as the composer's onSend: _WatchComposerState._send(); the message's receipt (chat-watching-message-receipt, Sent then Confirmed or the host's reason, with Try again) shows above the composer.",
+     "gates": [
+      "widget.watch != null",
+      "ChatWatch.onSend != null",
+      "non-empty text"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "chat-watching-message-receipt-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": "chat-watching-message-receipt-retry",
+     "file": "lib/ui/screens/chat/team_conversation_view.dart",
+     "line": 1648,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "The receipt above the watching composer (newest message sent to this agent since the page opened): team.retryMutation(record.key).",
+     "gates": [
+      "the record may be retried (teamControlReceipt)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "chat-watching-details",
+     "type": "icon-button",
+     "label": "About <name> | About the <role>",
+     "key": "chat-watching-details",
+     "file": "lib/ui/screens/chat/watching.dart",
+     "line": 131,
+     "action": "navigate",
+     "target": "team-agent",
+     "targetWidget": "AgentScreen",
+     "effect": "Top-bar action while watching: ChatWatch.onDetails pushes AgentScreen(controller: team, agentId) — the agent's state, controls (nudge, pause, restart, stop) and technical details.",
+     "gates": [
+      "widget.watch != null",
+      "ChatWatch.onDetails != null: not when opened from the agent's own page (details: false)"
      ],
      "destructive": false
     }
@@ -679,48 +731,134 @@
    ]
   },
   {
-   "id": "chat-watching-message-sheet",
-   "title": "Message {agent}",
-   "kind": "sheet",
-   "file": "lib/ui/screens/chat/team_conversation_view.dart",
-   "widget": "_TeamMessageSheet",
+   "id": "chat-watching-live",
+   "title": "<task the agent works on> | Live output",
+   "kind": "screen",
+   "file": "lib/ui/screens/chat/team_watch_live.dart",
+   "widget": "TeamWatchLiveScreen",
    "presentedBy": [
-    "_messageTeamAgent"
+    "openTeamAgentConversation",
+    "openTeamAgentConversationById"
    ],
-   "line": 1353,
-   "purpose": "The watched worker's message field: Send pops the text; teamAgentWatch's 'Message the worker' action opens it, then OrchestrationController.messageAgent sends it and a snackbar shows the receipt.",
+   "line": 29,
+   "purpose": "The chat's watching mode for an AI Team agent whose OpenCode session the connected server cannot read (a team on another computer, a worker still starting): the transcript is the team's live output drawn with the chat's parts (TeamAgentTranscript), with the same status line (chat-watching-banner: who and its state from its session, or connecting/starting/not running/ended), the same composer addressed to the agent through the team, and the agent's page as the top-bar action. Replaces team-agent-output (slice-P3.6).",
    "reachedFrom": [
     {
-     "page": "chat",
-     "element": "chat-watching-message"
+     "page": "team-agent",
+     "element": "team-agent-open-conversation"
+    },
+    {
+     "page": "team-agents",
+     "element": "team-agents-row"
+    },
+    {
+     "page": "team-conversation",
+     "element": "team-conversation-family-agent"
+    },
+    {
+     "page": "embedded-team-cycle-strip",
+     "element": "embedded-team-cycle-strip-open-output"
+    },
+    {
+     "page": "gate-sheet",
+     "element": "gate-sheet-run-logs"
+    },
+    {
+     "page": "embedded-team-planning-card",
+     "element": "embedded-team-planning-card-output"
     }
    ],
    "gates": [
-    "ChatWatch.onMessage != null (AI Team watching mode only)"
+    "team.on",
+    "the agent's session was not found on the connected server (TeamAgentConversationMiss), or the agent is opened by id and not listed"
    ],
    "elements": [
     {
-     "id": "chat-watching-message-field",
-     "type": "text-field",
-     "label": "Tell the agent what to do next",
-     "key": "chat-watching-message-field",
-     "line": 1390,
-     "action": "submit",
+     "id": "chat-watching-live-copy",
+     "type": "icon-button",
+     "label": "Copy output",
+     "key": "chat-watching-live-copy",
+     "line": 222,
+     "action": "copy",
      "target": null,
-     "effect": "TeamComposerField onSend -> _send(): pops the trimmed text (Navigator.pop) when non-empty.",
+     "targetWidget": null,
+     "effect": "KitAction.copy: copies the live output text (redacted by the kit).",
+     "gates": [
+      "the output is not empty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "chat-watching-live-details",
+     "type": "icon-button",
+     "label": "About <name>",
+     "key": "chat-watching-details",
+     "line": 228,
+     "action": "navigate",
+     "target": "team-agent",
+     "targetWidget": "AgentScreen",
+     "effect": "watch.onDetails: pushes AgentScreen for the agent.",
+     "gates": [
+      "details: true and the agent is listed"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "chat-watching-live-wake",
+     "type": "button",
+     "label": "Start it | Why?",
+     "key": "chat-watching-live-wake",
+     "line": 167,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Status-line action while the agent is not running: teamUnstickAction wakes it (controlAgent) or explains why (host details sheet, key chat-watching-live-why).",
+     "gates": [
+      "the agent is listed and not live, nothing received yet"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "chat-watching-live-scroll",
+     "type": "gesture",
+     "label": "[drag the output away from the end]",
+     "key": "chat-watching-live-list",
+     "line": 289,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "A drag that leaves more than 24 px above the end stops follow-latest; the Jump to latest pill resumes it.",
      "gates": [],
      "destructive": false
     },
     {
-     "id": "chat-watching-message-send",
+     "id": "chat-watching-live-jump",
      "type": "button",
-     "label": "Send",
-     "key": "chat-watching-message-send",
-     "line": 1394,
+     "label": "Jump to latest",
+     "key": "chat-watching-live-jump",
+     "line": 278,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_setFollow(true): follows the newest output again and jumps to the end.",
+     "gates": [
+      "not following, output available and not ended"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "chat-watching-live-composer",
+     "type": "text-field",
+     "label": "Message <name>…",
+     "key": "chat-watching-message-field",
+     "line": 263,
      "action": "submit",
      "target": null,
-     "effect": "Same as the field's onSend: _send() pops the trimmed text; _messageTeamAgent then calls team.messageAgent(agent.id, text.trim()) and shows a receipt snackbar (chat-watching-message-receipt).",
-     "gates": [],
+     "targetWidget": null,
+     "effect": "The same watching composer as on chat (_WatchComposer): sends through the team's message control, receipt above it.",
+     "gates": [
+      "ChatWatch.onSend != null"
+     ],
      "destructive": false
     }
    ]
@@ -737,7 +875,7 @@
   },
   {
    "file": "lib/ui/screens/chat/watching.dart",
-   "reason": "part of chat_screen.dart (design standard §9 step 5): how the chat page shows a conversation someone else drives (an AI Team worker's own OpenCode session) — the same 'chat' page and route, not a surface of its own. Its status banner and empty state are read-only; its one action (chat-watching-message) and the sheet it opens (chat-watching-message-sheet) are recorded on the chat page. _openWatchedChild (watching.dart:80, a child session delegated to, watched the same way) is wired from chat_screen.dart:7408,7590 (b1/b2, not yet in the ledger)."
+   "reason": "part of chat_screen.dart (design standard §9 step 5): how the chat page shows a conversation someone else drives (an AI Team worker's own OpenCode session) — the same 'chat' page and route, not a surface of its own. Its status banner and empty state are read-only; its composer (chat-watching-composer), send, receipt and the About <name> action are recorded on the chat page. _openWatchedChild (a child session delegated to, watched the same way) is wired from chat_screen.dart."
   }
  ],
  "notes": [

@@ -1,6 +1,6 @@
 // Renders for docs/qa/team-agent-chat-2026-09-25 at 412 × 915, dark: the
 // agent screen's "Open conversation", the worker's conversation in watching
-// mode, Live output as the fallback, and the task as a conversation (also
+// mode, its live output as the fallback, and the task as a conversation (also
 // in Arabic). Writes PNGs only when TEAM_CHAT_CAPTURE_DIR is set; otherwise
 // it checks each screen builds without an exception.
 
@@ -13,7 +13,6 @@ import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
 
 import '../tool/capture/fixtures.dart'
@@ -37,6 +36,10 @@ void main() {
     Future<void> Function()? before,
   }) async {
     phoneViewport(tester);
+    // TEAM_CHAT_CAPTURE_WIDE: the same pages in a 1280 x 800 window.
+    if (Platform.environment['TEAM_CHAT_CAPTURE_WIDE'] != null) {
+      tester.view.physicalSize = const Size(1280, 800);
+    }
     final boundary = GlobalKey();
     await tester.pumpWidget(
       RepaintBoundary(
@@ -165,8 +168,8 @@ void main() {
       tester,
       await connection(),
       Builder(
-        builder: (context) => AgentOutputScreen(
-          controller: team,
+        builder: (context) => TeamWatchLiveScreen(
+          team: team,
           agentId: 'my-app/gastown.furiosa',
           note: lookupAppLocalizations(
             const Locale('en'),

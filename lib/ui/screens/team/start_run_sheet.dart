@@ -45,7 +45,8 @@ import '../../kit/kit.dart';
 import '../../kit/scenes/team_scenes.dart';
 import '../../widgets/team_host_form.dart';
 import '../../widgets/team_vocabulary.dart';
-import 'agent_output_screen.dart';
+import '../team_conversation/team_conversation.dart'
+    show openTeamAgentConversationById;
 import 'policy_block.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -728,16 +729,9 @@ class TeamPlanningCard extends StatelessWidget {
   /// card on a screen moves (design standard §10).
   final bool ambient;
 
-  void _openPlannerOutput(BuildContext context) {
-    Navigator.of(context).push(
-      KitPageRoute<void>(
-        builder: (_) => AgentOutputScreen(
-          controller: controller,
-          agentId: request.plannerId,
-        ),
-      ),
-    );
-  }
+  void _openPlannerOutput(BuildContext context) => unawaited(
+    openTeamAgentConversationById(context, controller, request.plannerId),
+  );
 
   @override
   Widget build(BuildContext context) {
