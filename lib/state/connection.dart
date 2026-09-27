@@ -4,6 +4,7 @@ import 'dart:ui' show Locale, PlatformDispatcher;
 
 import 'app_locale.dart';
 import 'automation_policy.dart';
+import 'builtin_server_owner.dart';
 import 'consent_owners.dart';
 
 import 'package:flutter/foundation.dart';
@@ -6238,6 +6239,9 @@ class ConnectionController extends ChangeNotifier {
             activity?.cancelDeletion();
             policy.cancelDeletion();
             ConsentOwners.cancelDeletion(store.prefs, profileId);
+            BuiltinServerOwner.forPreferences(
+              store.prefs,
+            ).cancelDeletion(profileId);
             _profileMonitor?.cancelDeletion(profileId);
             _quotaMonitor?.cancelDeletion(profileId);
             _pendingAuth.cancelDeletion(profileId);
@@ -6366,11 +6370,9 @@ class ConnectionController extends ChangeNotifier {
         ]);
         // Keep the shared runtime owner through queue preflight failures.
         // Once preservation succeeds, prevent fallback to another profile.
-        if (store.prefs.getString('oc.builtinServerOwner') == profileId) {
-          if (!await store.prefs.setString('oc.builtinServerOwner', '')) {
-            throw StateError('The phone server setting could not be cleared.');
-          }
-        }
+        await BuiltinServerOwner.forPreferences(
+          store.prefs,
+        ).clearProfile(profileId);
         _promptShelfDeletionRevisions[profileId] =
             (_promptShelfDeletionRevisions[profileId] ?? 0) + 1;
         // Outstanding saved-prompt Undo handles refuse from here on; a deleted

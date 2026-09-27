@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/while_away.dart';
 import '../state/automation_policy.dart';
+import '../state/builtin_server_owner.dart';
 import '../state/connection.dart';
 import '../state/lifecycle_report.dart';
 import '../state/profiles.dart';
@@ -47,7 +48,7 @@ class PhoneServerHealing {
   }
 
   /// Shared runtime pointer; deletion clears the reference, not another profile.
-  static const ownerKey = 'oc.builtinServerOwner';
+  static const ownerKey = BuiltinServerOwner.key;
 
   final ConnectionController connection;
   final BuiltinServerStarter starter;
@@ -67,10 +68,10 @@ class PhoneServerHealing {
     report.invalidate();
     recovery.setProfile(null);
     _ownerStorageFailed = true;
-    final saved = await connection.store.prefs.setString(ownerKey, profile.id);
-    if (!saved || _disposed || !connection.isProfileReadable(profile.id)) {
-      throw StateError('The phone server setting could not be saved.');
-    }
+    await BuiltinServerOwner.forPreferences(connection.store.prefs).claim(
+      profile.id,
+      isReadable: () => !_disposed && connection.isProfileReadable(profile.id),
+    );
     _ownerStorageFailed = false;
     _syncProfile();
   }
