@@ -1,0 +1,11 @@
+feat(platform): expose phone storage readings and record SV4 blockers [skip ci]
+
+Combine existing free-space and explicit built-in host storage probes in a
+read-only Dart API, preserving unknown measurements and independent failures.
+Add focused behavior tests and document thermal hooks plus missing native,
+pairing, release-note and installer contracts for the UI integration owner.
+
+Flutter tests and analysis await the verifier; pinned Dart formatting passed.
+
+Co-Authored-By: Codex (gpt-6-astra) <noreply@openai.com>
+Claude-Session: https://claude.ai/code/session_01G7Gr8TYUhyCJ169CtNjJB1
