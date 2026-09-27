@@ -226,6 +226,8 @@ class _KitNavScope extends InheritedWidget {
 
 /// The floating dock (compact). Public for galleries and tests; the app
 /// uses [KitNav].
+///
+/// States: none — its destinations always open (see [KitNav]).
 class KitNavBar extends StatelessWidget {
   const KitNavBar({
     super.key,
@@ -274,6 +276,8 @@ class KitNavBar extends StatelessWidget {
 
 /// The rail (medium) or, with [extended], the sidebar column (expanded+).
 /// Public for galleries and tests; the app uses [KitNav].
+///
+/// States: none — its destinations always open (see [KitNav]).
 class KitNavRail extends StatelessWidget {
   const KitNavRail({
     super.key,

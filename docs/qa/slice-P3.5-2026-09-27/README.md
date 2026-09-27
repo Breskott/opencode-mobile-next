@@ -1,6 +1,6 @@
 # slice-P3.5: Retire RunScreen, plus the owner's team conversation reports (2026-09-27)
 
-Branch `revamp/slice-P3.5`, from `feat/phone-setup-v2` (merged up to `52ab78c4`).
+Branch `revamp/slice-P3.5`, from `feat/phone-setup-v2` (merged up to `5636d02f`: P5.2, R4, R12, P6.7, coord-main, the kit gates).
 
 **Finish line.** team-run and its four tabs are deleted. A task is its
 conversation. Task details is a sheet in the conversation's menu. Steps are
@@ -28,7 +28,9 @@ P6.6a left.
   - the steps as `KitWorkGraph` rows, with their dependencies. Each step
     opens its Work sheet (owner, age, what it waits on, why). A formula run
     that tracks no work lists its own stages;
-  - usage ("Team today · …", never per task) and the host's policy;
+  - where the host reports usage, that a task's cost is not reported
+    (P5.2's rule: the team page has the day's estimate), and the host's
+    policy;
   - one Technical details fold: the host's term, the times, the ids, every
     raw field, and **What the host reported** (the task's event log, which
     was the Timeline tab).
@@ -103,6 +105,26 @@ P6.6a left.
 - `ReviewWorkspace(profileId: _conn.profile?.id)`: the review view's notice
   is said once per server, and comment drafts persist per server.
 
+### Security: Copy transcript and share links (G12, SEC-13)
+
+- **Copy transcript** (`/copy`) no longer copies tool output verbatim.
+  `_transcriptMarkdown` masks everything that is not the person's own
+  through `KitRedact`: replies, reasoning, tool output, attachment names,
+  error text and the title. The person's own prompts stay as typed.
+- The share-link copies (`chat_screen.dart` `_copyShareLink` and the
+  shared status line in `chat/chat_states.dart`) now use the redacted
+  default. A plain share address comes out unchanged, and a credential in
+  one is masked.
+- `test/redaction_test.dart`:
+  - `chat_screen.dart` moves from the findings list (4) to the
+    own-content list (3: message Copy, the composer draft, and the already
+    masked transcript);
+  - `chat_states.dart` leaves both lists (0 verbatim copies).
+- Test: `slice_p3_5_test` "Copy transcript masks what is not the person's
+  own". A tool that printed `ANTHROPIC_API_KEY=sk-ant-…` and a reply
+  quoting a bearer token reach the clipboard masked, while the prompt stays
+  verbatim.
+
 ### team-board-add-sheet: removed (merged into start-run-sheet)
 
 - The board's + (and its empty state's action) opens the one **Give the team
@@ -163,6 +185,11 @@ P6.6a left.
 - The work-row age in `lib/domain/work_row_status.dart` still words long
   ages as minutes (it calls `kitSinceAge` directly). This is a follow-up
   for its owner.
+- `tool/capture`: the screen census (`areas/i1_team_core.dart`,
+  `areas/i2_team_sheets.dart`) now renders team-task-details (batch,
+  formula, reported, missing) and hosts its sheets on the conversation.
+  `motion_team_test` and `aiteam_redesign_test` render the conversation.
+  The census was not re-run here: it rewrites `docs/qa/screen-census`.
 - `test/design_standard_test.dart`: the run page's `_migrated` and
   `_grandfathered` entries are removed (the file is deleted, TEST-10), so
   the grandfathered count is now 58.
@@ -217,7 +244,37 @@ Regenerated goldens:
 - `team_run_{overview,work,merged}_{dark,light}` (now the conversation and
   Task details).
 
-RESULTS_PLACEHOLDER
+Runs, with the pinned Flutter 3.47.1 and `--no-pub`:
+
+- **The files.** Every test file this branch changes or adds, plus the gates
+  (`kit_ratchet`, `ui_glossary`, `l10n_coverage`, `architecture_boundaries`,
+  `redaction`, `design_standard`), the chat goldens and tests
+  (`chat_3/4/5`, `chat_states`, `saved_prompts`, `kit_composer*`,
+  `kit_jump_pill`, `kit_ask_line`), `team_board`, `team_discover`,
+  `team_agent_chat_render`, `slice_p4_1c`, `slice_p6_6a_defaults` and
+  `slice_p52_golden`. That is 44 files.
+- **The base.** The same files at the base `5636d02f`, in a temporary second
+  worktree. The base runs the old `team_run_screen_test` in place of
+  `team_task_details_test`.
+- **Result.**
+  - Base: 168 failing tests.
+  - This branch: 174 before the last fix.
+  - Every failure on this branch fails on the base too, except these:
+    - my own goldens, which the merged R4 row-group change and P5.2's
+      cost line invalidated (regenerated and looked at);
+    - `slice_p52_task_details_cost` (P5.2's golden, now of Task details;
+      regenerated);
+    - one G17 finding: Task details used the attention tone twice
+      (removed).
+  - After those fixes nothing new fails. 8 base failures are fixed, among
+    them `team_design_standard` §1 and the four `team_work_layout` Work
+    sheet tests.
+- **Pre-existing on base.** The kit ratchet G21 and KIT-5 (kit scenes),
+  `design_standard` goldens (`team_agent_controls`), `ui_glossary`
+  G11/G28, `architecture_boundaries`, and many team and chat goldens that
+  are stale on base. Also `redaction_test`: `lib/main.dart` has a new
+  `redact: false`; it is not a chat file and is for the coordinator.
+- `flutter analyze` (whole repo, including tool/): no issues.
 
 ## What still needs a device
 

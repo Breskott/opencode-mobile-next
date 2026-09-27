@@ -118,25 +118,3 @@ Widget? teamGateRowReceipt(
 
 /// The share of the screen width a row's gate receipt may take.
 const double teamGateReceiptMaxWidthFraction = .4;
-
-/// Retired by slice-P4.1c: use [teamGateRowReceipt], which returns the one
-/// [KitReceipt]. Kept only for `team_home_screen.dart`, which slice-P3.4
-/// is rewriting in parallel; its merge replaces that last call and deletes
-/// this class (STANDARDS KIT-43 forbids `@Deprecated`).
-class TeamReceiptChip extends StatelessWidget {
-  const TeamReceiptChip({
-    super.key,
-    required this.record,
-    required this.onOpen,
-  });
-
-  final MutationRecord record;
-
-  /// Opens the Gate sheet, where the retry lives.
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) =>
-      teamGateRowReceipt(context, record, onOpen: onOpen) ??
-      const SizedBox.shrink();
-}

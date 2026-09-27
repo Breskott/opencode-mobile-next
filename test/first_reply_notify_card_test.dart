@@ -17,8 +17,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/complete_message_history.dart';
 
-/// "Get told when it's done?" is asked once, after the first reply of a new
-/// person's first conversation (UX plan 5.6 step 6).
+/// "Notify you when the agent needs you?" is asked once, after the first
+/// reply of a new person's first conversation (UX plan 5.6 step 6; the
+/// preset of P6.7). Per-server recording: test/consent_in_flow_test.dart.
 
 const _card = ValueKey('first-reply-notify-card');
 const _accept = ValueKey('first-reply-notify-accept');
@@ -149,7 +150,7 @@ void main() {
 
     await tester.pumpWidget(_host(controller, replyCompleted: true));
     expect(find.byKey(_card), findsOneWidget);
-    expect(find.text('Notify you when a reply is ready?'), findsOneWidget);
+    expect(find.text('Notify you when the agent needs you?'), findsOneWidget);
     expect(find.text('Notify me'), findsOneWidget);
     expect(find.text('Not now'), findsOneWidget);
     // Showing the question asks Android for nothing.
@@ -199,7 +200,9 @@ void main() {
       controller.store.prefs.getBool(BackgroundLiveController.preferenceKey),
       isTrue,
     );
-    expect(controller.notificationPreferences.finishedRuns, isTrue);
+    // The preset is "Tell me when the agent needs me" (P6.7): requests,
+    // not finished runs.
+    expect(controller.notificationPreferences.finishedRuns, isFalse);
     expect(controller.notificationPreferences.requests, isTrue);
     expect(find.byKey(_card), findsNothing);
     expect(FirstRun(controller.store.prefs).notifyAskPending, isFalse);

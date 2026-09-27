@@ -2354,12 +2354,6 @@ abstract class AppLocalizations {
   /// **'Connect to a server and the shared text opens in a new conversation.'**
   String get shareWaitingForServer;
 
-  /// No description provided for @shareSessionFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Shared text kept. Could not open a conversation. Retry when the connection is ready.'**
-  String get shareSessionFailed;
-
   /// No description provided for @webSourcesDisclosure.
   ///
   /// In en, this message translates to:
@@ -5833,12 +5827,6 @@ abstract class AppLocalizations {
   /// **'Could not connect to the saved server. Choose or fix a server, then start a new conversation.'**
   String get launchShortcutConnectionFailed;
 
-  /// Snackbar shown when the New task shortcut reached a connected server but creating the session failed
-  ///
-  /// In en, this message translates to:
-  /// **'Could not start a new conversation. {error}'**
-  String launchShortcutNewTaskFailed(String error);
-
   /// Launcher shortcut label for a pinned session that has no title yet
   ///
   /// In en, this message translates to:
@@ -8074,18 +8062,6 @@ abstract class AppLocalizations {
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
   ///
   /// In en, this message translates to:
-  /// **'{hostLabel}:{port} is a local Codex listener, but nothing answered.'**
-  String e7ConnectionFailure10(String hostLabel, int port);
-
-  /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing answered at the remote Codex endpoint {hostLabel}:{port}.'**
-  String e7ConnectionFailure11(String hostLabel, int port);
-
-  /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
-  ///
-  /// In en, this message translates to:
   /// **'Start the Codex listener on this device.'**
   String get e7ConnectionFailure12;
 
@@ -8164,12 +8140,6 @@ abstract class AppLocalizations {
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
   ///
   /// In en, this message translates to:
-  /// **'{hostLabel}:{port} means the server should be running on this device, or reached through a tunnel that ends here. Neither answered.'**
-  String e7ConnectionFailure25(String hostLabel, int port);
-
-  /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
-  ///
-  /// In en, this message translates to:
   /// **'Running OpenCode in Termux? Open Termux and check that the server is still running.'**
   String get e7ConnectionFailure26;
 
@@ -8194,12 +8164,6 @@ abstract class AppLocalizations {
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
   ///
   /// In en, this message translates to:
-  /// **'Something is at {hostLabel}, but it did not reply. Usually the network in between, not the server.'**
-  String e7ConnectionFailure30(String hostLabel);
-
-  /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
-  ///
-  /// In en, this message translates to:
   /// **'Are you on the same network or VPN (for example Tailscale) as the computer?'**
   String get e7ConnectionFailure31;
 
@@ -8214,12 +8178,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Server not reachable'**
   String get e7ConnectionFailure33;
-
-  /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing answered at {hostLabel}:{port}. Either the server is not running or this device cannot reach that address.'**
-  String e7ConnectionFailure34(String hostLabel, int port);
 
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
   ///
@@ -8268,12 +8226,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not connect'**
   String get e7ConnectionFailure42;
-
-  /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
-  ///
-  /// In en, this message translates to:
-  /// **'The connection to {hostLabel} failed. Details below.'**
-  String e7ConnectionFailure43(String hostLabel);
 
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
   ///
@@ -9277,30 +9229,6 @@ abstract class AppLocalizations {
   /// **'Language could not be saved. Your previous choice is still active. Select a language to try again.'**
   String get e7LocaleUiSaveFailed;
 
-  /// Locale selection or app shell: Starting
-  ///
-  /// In en, this message translates to:
-  /// **'Starting OpenCode…'**
-  String get e7LocaleUiStarting;
-
-  /// Locale selection or app shell: StartFailed
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode could not start'**
-  String get e7LocaleUiStartFailed;
-
-  /// Locale selection or app shell: UnknownStartupError
-  ///
-  /// In en, this message translates to:
-  /// **'Unknown startup error'**
-  String get e7LocaleUiUnknownStartupError;
-
-  /// Locale selection or app shell: Retry
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get e7LocaleUiRetry;
-
   /// Locale selection or app shell: NewSession
   ///
   /// In en, this message translates to:
@@ -9468,12 +9396,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Right click / Shift + F10 / Menu'**
   String get e7LocaleUiContextKeys;
-
-  /// App shell command menu or routing: ShareScopeChanged
-  ///
-  /// In en, this message translates to:
-  /// **'Shared conversation scope changed'**
-  String get e7LocaleUiShareScopeChanged;
 
   /// App shell command menu or routing: ConnectionChanged
   ///
@@ -21324,12 +21246,6 @@ abstract class AppLocalizations {
   /// **'Work · bead {id}'**
   String teamUiWorkTerm(String id);
 
-  /// Run Overview usage chip: Gas City usage is city-level (today), never per run; {usage} is the est. cost and compact tokens
-  ///
-  /// In en, this message translates to:
-  /// **'Team today · {usage}'**
-  String teamUiUsageChip(String usage);
-
   /// A cost figure with the estimate suffix; every cost the plugin shows carries it (05-beads TEAM-113)
   ///
   /// In en, this message translates to:
@@ -22518,18 +22434,6 @@ abstract class AppLocalizations {
   /// **'Supervision {level}. Boundaries: {boundaries}'**
   String teamUiPolicySemantics(String level, String boundaries);
 
-  /// AI Team home, under the Runs list: switch that reveals the host's own housekeeping runs (patrols, chores), hidden by default; count is how many there are
-  ///
-  /// In en, this message translates to:
-  /// **'Show team upkeep ({count})'**
-  String teamUiHomeUpkeepToggle(int count);
-
-  /// One line under the Show team upkeep switch saying what upkeep runs are
-  ///
-  /// In en, this message translates to:
-  /// **'Patrols and chores the host runs for itself'**
-  String get teamUiHomeUpkeepHint;
-
   /// AI Team home Agents list: the collapsed group of agents switched off (suspended or stopped) on the host; count is how many
   ///
   /// In en, this message translates to:
@@ -23240,7 +23144,7 @@ abstract class AppLocalizations {
   /// On-device setup: success card title
   ///
   /// In en, this message translates to:
-  /// **'AI team is running on this phone'**
+  /// **'AI Team is running on this phone'**
   String get teamUiPhoneSuccessTitle;
 
   /// On-device setup: retry after a failure
@@ -23534,7 +23438,7 @@ abstract class AppLocalizations {
   /// On this phone: remove confirmation title
   ///
   /// In en, this message translates to:
-  /// **'Delete the AI team from this phone?'**
+  /// **'Delete AI Team from this phone?'**
   String get teamUiPhoneRemoveTitle;
 
   /// On this phone: remove confirmation body
@@ -23552,7 +23456,7 @@ abstract class AppLocalizations {
   /// On this phone: removed confirmation
   ///
   /// In en, this message translates to:
-  /// **'The AI team was deleted from this phone.'**
+  /// **'AI Team was deleted from this phone.'**
   String get teamUiPhoneRemoved;
 
   /// On this phone: a verb failed
@@ -23566,30 +23470,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not available on this phone. Running a team needs the 64-bit Linux environment; this device or build can\'t provide it.'**
   String get teamUiPhoneNotAvailable;
-
-  /// Settings › Plugins: re-offer row title
-  ///
-  /// In en, this message translates to:
-  /// **'Let a team of agents work on this phone too'**
-  String get teamUiPhoneReofferTitle;
-
-  /// Settings › Plugins: re-offer row body
-  ///
-  /// In en, this message translates to:
-  /// **'The optional step you skipped during setup. Several coding agents work on your project while you supervise from Work; Android may stop them when the app is away.'**
-  String get teamUiPhoneReofferBody;
-
-  /// Settings › Plugins: dismiss the re-offer (shown once)
-  ///
-  /// In en, this message translates to:
-  /// **'Not now'**
-  String get teamUiPhoneReofferDismiss;
-
-  /// Settings › Plugins: open the setup screen from the re-offer
-  ///
-  /// In en, this message translates to:
-  /// **'Set up'**
-  String get teamUiPhoneReofferAction;
 
   /// On-device setup: the runtime refused to install or create the city for lack of free space
   ///
@@ -25052,13 +24932,13 @@ abstract class AppLocalizations {
   /// Conversation, first run: title of the one card shown above the composer after the first reply completes.
   ///
   /// In en, this message translates to:
-  /// **'Notify you when a reply is ready?'**
+  /// **'Notify you when the agent needs you?'**
   String get firstRunNotifyTitle;
 
   /// Conversation, first run: what accepting the notification card turns on, including its visible cost.
   ///
   /// In en, this message translates to:
-  /// **'Leave the app while the agent works. You get a notification when it finishes or needs you. Android shows a small ongoing notification while it stays connected.'**
+  /// **'Leave the app while the agent works. You get a notification when it needs your answer. Android shows a small ongoing notification while it stays connected.'**
   String get firstRunNotifyBody;
 
   /// Conversation, first run: accepts the notification card; asks Android for notification permission and keeps the connection alive in the background.
@@ -27742,12 +27622,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A running agent turn will stop. Your conversations are kept.'**
   String get workServerRestartBody;
-
-  /// Connecting card action once the server has not answered for 8 seconds
-  ///
-  /// In en, this message translates to:
-  /// **'Choose another server'**
-  String get workChooseAnotherServer;
 
   /// Status line when waiting requests could not be refreshed
   ///
@@ -31988,7 +31862,7 @@ abstract class AppLocalizations {
   /// KitCapabilityExplainer: the name of the capability "server.any", shown as the title of the dimmed row or the missing state
   ///
   /// In en, this message translates to:
-  /// **'A server to work on'**
+  /// **'Server to work on'**
   String get kitCapServerAnyTitle;
 
   /// KitCapabilityExplainer: why the capability "server.any" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
@@ -32144,7 +32018,7 @@ abstract class AppLocalizations {
   /// KitCapabilityExplainer: the name of the capability "phone.any", shown as the title of the dimmed row or the missing state
   ///
   /// In en, this message translates to:
-  /// **'A server on this phone'**
+  /// **'Server on this phone'**
   String get kitCapPhoneAnyTitle;
 
   /// KitCapabilityExplainer: why the capability "phone.any" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
@@ -32528,7 +32402,7 @@ abstract class AppLocalizations {
   /// KitCapabilityExplainer: the name of the capability "flag:fileBrowsing+terminal", shown as the title of the dimmed row or the missing state
   ///
   /// In en, this message translates to:
-  /// **'Files and Terminal'**
+  /// **'Files and terminal'**
   String get kitCapFlagFileBrowsingTerminalTitle;
 
   /// KitCapabilityExplainer: why the capability "flag:fileBrowsing+terminal" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
@@ -32624,7 +32498,7 @@ abstract class AppLocalizations {
   /// KitCapabilityExplainer: the name of the capability "flag:promptAttachments", shown as the title of the dimmed row or the missing state
   ///
   /// In en, this message translates to:
-  /// **'Photos and files in prompts'**
+  /// **'Attach photos and files'**
   String get kitCapFlagPromptAttachmentsTitle;
 
   /// KitCapabilityExplainer: why the capability "flag:promptAttachments" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
@@ -33035,7 +32909,7 @@ abstract class AppLocalizations {
   /// **'Conversations stay in history but can no longer open it.'**
   String get managedWorkspacesRemoveHistoryStays;
 
-  /// Cloud environments: the one verb for removing an environment (menu item and confirm button).
+  /// Cloud environments: the menu item that removes an environment.
   ///
   /// In en, this message translates to:
   /// **'Remove'**
@@ -33182,7 +33056,7 @@ abstract class AppLocalizations {
   /// Open folder: the typed folder does not exist.
   ///
   /// In en, this message translates to:
-  /// **'No folder there'**
+  /// **'Create this folder?'**
   String get projectFolderMissingTitle;
 
   /// Folder flows: title when making a folder failed.
@@ -33200,7 +33074,7 @@ abstract class AppLocalizations {
   /// Projects, on a server that cannot switch projects (Codex, Paseo): the state title
   ///
   /// In en, this message translates to:
-  /// **'This server works in one folder'**
+  /// **'Server uses one folder'**
   String get projectsOneFolderTitle;
 
   /// Development services: the undo bar after Start; its action is Stop
@@ -33230,7 +33104,7 @@ abstract class AppLocalizations {
   /// Development services: the question before clearing an unconfirmed run record
   ///
   /// In en, this message translates to:
-  /// **'Forget the last run of {name}?'**
+  /// **'Forget {name}\'s last run?'**
   String servicesForgetTitle(String name);
 
   /// Development services: the question before removing a service whose command may still be running
@@ -33272,7 +33146,7 @@ abstract class AppLocalizations {
   /// Development services: the label of the workspace id in Details
   ///
   /// In en, this message translates to:
-  /// **'Workspace'**
+  /// **'Environment'**
   String get servicesWorkspace;
 
   /// Development services editor: the name field is empty
@@ -33434,7 +33308,7 @@ abstract class AppLocalizations {
   /// Notifications: row in the saved servers section when there are none.
   ///
   /// In en, this message translates to:
-  /// **'No saved servers to watch'**
+  /// **'No servers to watch'**
   String get notifyNoServersTitle;
 
   /// Notifications: second line of the row shown when there are no saved servers.
@@ -33506,13 +33380,13 @@ abstract class AppLocalizations {
   /// Privacy and local data: confirm button that deletes the queued prompts, with their count.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Delete} one{Delete 1 queued prompt} other{Delete {count} queued prompts}}'**
+  /// **'{count, plural, =0{Delete queued prompts} one{Delete 1 queued prompt} other{Delete {count} queued prompts}}'**
   String privacyDeleteQueuedCount(int count);
 
   /// Privacy and local data: confirm button that deletes the unsent drafts, with their count.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Delete} one{Delete 1 draft} other{Delete {count} drafts}}'**
+  /// **'{count, plural, =0{Delete drafts} one{Delete 1 draft} other{Delete {count} drafts}}'**
   String privacyDeleteDraftsCount(int count);
 
   /// KitMessage: the start of a sent prompt's screen-reader label, before the prompt's words
@@ -33614,7 +33488,7 @@ abstract class AppLocalizations {
   /// Setup guide row that opens phone setup, for people without a computer
   ///
   /// In en, this message translates to:
-  /// **'No computer? Run it on this phone'**
+  /// **'Use this phone instead'**
   String get guidePhonePathTitle;
 
   /// Setup guide phone-path row: what it does
@@ -33684,7 +33558,7 @@ abstract class AppLocalizations {
   /// Server update question: restart needed after the install
   ///
   /// In en, this message translates to:
-  /// **'The OpenCode process must be restarted on its host to use {target}'**
+  /// **'Restart the OpenCode process on its computer to use {target}'**
   String serverSettingsUpgradeRestartAfter(String target);
 
   /// Server update question: what is kept
@@ -33720,13 +33594,13 @@ abstract class AppLocalizations {
   /// Tailscale setup: the first checklist step, whether the official Tailscale app is installed on this phone
   ///
   /// In en, this message translates to:
-  /// **'Tailscale app on this phone'**
+  /// **'Tailscale on this phone'**
   String get tailscaleSetupAppTitle;
 
   /// Tailscale setup: the second checklist step, done by the person in the Tailscale app; the app cannot verify it
   ///
   /// In en, this message translates to:
-  /// **'Sign in and turn on the VPN'**
+  /// **'Sign in and connect'**
   String get tailscaleSetupVpnTitle;
 
   /// Tailscale setup: the short line under the VPN step; the full instructions are in the Details fold
@@ -34278,7 +34152,7 @@ abstract class AppLocalizations {
   /// Import conversation: title in the destination chooser when there is nowhere to import.
   ///
   /// In en, this message translates to:
-  /// **'No projects to import into'**
+  /// **'Nowhere to import'**
   String get importNoDestinationsTitle;
 
   /// Import conversation: supporting line of the destination row, naming the server.
@@ -34512,7 +34386,7 @@ abstract class AppLocalizations {
   /// Continue on computer sheet: reload the conversation when the server did not report its folder
   ///
   /// In en, this message translates to:
-  /// **'Reload conversation'**
+  /// **'Try again'**
   String get handoffSheetReloadConversation;
 
   /// Open on another phone sheet: what happens on a phone without this server
@@ -34602,7 +34476,7 @@ abstract class AppLocalizations {
   /// Model picker: no models on the server
   ///
   /// In en, this message translates to:
-  /// **'Sign in to a provider'**
+  /// **'Provider sign-in needed'**
   String get modelPickerSignInTitle;
 
   /// Model picker: no models on the server, next step
@@ -34716,7 +34590,7 @@ abstract class AppLocalizations {
   /// Delete the team sheet: what goes
   ///
   /// In en, this message translates to:
-  /// **'The team\'s programs, its city and its task list are deleted'**
+  /// **'The team\'s programs, its files and its task list are deleted'**
   String get teamPhoneRemoveLost;
 
   /// Delete the team sheet: what stays
@@ -34736,12 +34610,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete the team'**
   String get teamPhoneRemoveConfirm;
-
-  /// Remove OpenCode from this phone sheet: confirm button
-  ///
-  /// In en, this message translates to:
-  /// **'Remove OpenCode'**
-  String get phoneServerCardRemoveOpenCode;
 
   /// Shared product states: title of the alert shown when an action the person started failed
   ///
@@ -34881,10 +34749,10 @@ abstract class AppLocalizations {
   /// **'Cancel test'**
   String get teamHostFormCancelTest;
 
-  /// Saves an AI Team host address that did not answer, for a computer that is asleep (shared-team-1).
+  /// Saves an AI Team host address that did not answer, for a computer that is asleep (shared-team-1, R12).
   ///
   /// In en, this message translates to:
-  /// **'Save without an answer'**
+  /// **'Save the address anyway'**
   String get teamHostFormSaveAnyway;
 
   /// Agent page action: pause this agent's session. {agent} is the agent's short name.
@@ -35108,12 +34976,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'switched off until someone wakes it'**
   String get teamAgentsPausedHint;
-
-  /// AI Team agents list: button in a paused agent's row that asks the host to resume that agent. {name} is the agent's name or role, e.g. 'Wake furiosa'.
-  ///
-  /// In en, this message translates to:
-  /// **'Wake {name}'**
-  String teamAgentsWake(String name);
 
   /// AI Team work sheet title when the item the person opened is no longer listed by the host.
   ///
@@ -36024,7 +35886,7 @@ abstract class AppLocalizations {
   /// Review the undo page: title of the question before the hidden messages are deleted.
   ///
   /// In en, this message translates to:
-  /// **'Delete the hidden messages for good?'**
+  /// **'Delete hidden messages forever?'**
   String get reviewRevertKeepConfirmTitle;
 
   /// Review the undo page: body of the delete-hidden-messages question.
@@ -36462,7 +36324,7 @@ abstract class AppLocalizations {
   /// Desktop status line when a newer release exists on the project's release page.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode {tag} is available'**
+  /// **'Update {tag} is available'**
   String desktopReleaseAvailable(String tag);
 
   /// Supporting line of the desktop release status line: what the release page offers.
@@ -36534,7 +36396,7 @@ abstract class AppLocalizations {
   /// Running now: title shown when the connection moved to another server or project while the sheet was open.
   ///
   /// In en, this message translates to:
-  /// **'The server or project changed'**
+  /// **'Server or project changed'**
   String get runningWorkScopeChangedTitle;
 
   /// Running now: the agents could not be read.
@@ -36648,7 +36510,7 @@ abstract class AppLocalizations {
   /// Title of the sheet that moves a conversation to a cloud machine (warp).
   ///
   /// In en, this message translates to:
-  /// **'Move to a cloud machine'**
+  /// **'Move to the cloud'**
   String get sessionDestinationWarpTitle;
 
   /// Move conversation: the kind of a folder that is a separate copy (worktree) of the project.
@@ -36720,7 +36582,7 @@ abstract class AppLocalizations {
   /// Move conversation: there is no other destination.
   ///
   /// In en, this message translates to:
-  /// **'Nowhere else to move it yet'**
+  /// **'Nowhere to move it'**
   String get sessionDestinationNoneTitle;
 
   /// Move conversation: why there is no other folder.
@@ -36936,13 +36798,13 @@ abstract class AppLocalizations {
   /// Active context: title when the server, project or conversation changed under the page.
   ///
   /// In en, this message translates to:
-  /// **'This view is out of date'**
+  /// **'This view is outdated'**
   String get activeContextChangedTitle;
 
   /// Active context: title of the load failure state.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t read the active context'**
+  /// **'Couldn\'t read the context'**
   String get activeContextFailedTitle;
 
   /// Active context: plain one-paragraph intro above the list.
@@ -37344,7 +37206,7 @@ abstract class AppLocalizations {
   /// screen-library-2: Commands & tools, Tools tab title when the server does not list its tools (no server name known).
   ///
   /// In en, this message translates to:
-  /// **'This server doesn\'t list its tools'**
+  /// **'Tools aren\'t listed'**
   String get capabilitiesToolsMissingTitle;
 
   /// screen-library-2: Commands & tools, Tools tab title when the server does not list its tools.
@@ -37554,13 +37416,13 @@ abstract class AppLocalizations {
   /// screen-library-2: Add agent: notice title when the card is not supported.
   ///
   /// In en, this message translates to:
-  /// **'This agent can\'t be used from this app'**
+  /// **'Agent not supported'**
   String get externalAgentsUnsupportedTitle;
 
   /// screen-library-2: Add agent: why the card is not supported.
   ///
   /// In en, this message translates to:
-  /// **'It doesn\'t offer text tasks over A2A 1.0 JSON-RPC on its own address, or it asks for a sign-in this app doesn\'t support.'**
+  /// **'It doesn\'t take text tasks the way this app sends them, or it asks for a sign-in this app doesn\'t support.'**
   String get externalAgentsUnsupportedBody;
 
   /// screen-library-2: Add agent and Replace key: the secret field label.
@@ -37620,7 +37482,7 @@ abstract class AppLocalizations {
   /// screen-library-2: Replace key dialog title.
   ///
   /// In en, this message translates to:
-  /// **'Replace the key for {name}'**
+  /// **'Replace key for {name}'**
   String externalAgentsReplaceKeyTitle(String name);
 
   /// screen-library-2: Replace key dialog confirm button.
@@ -37740,7 +37602,7 @@ abstract class AppLocalizations {
   /// screen-library-2: Add MCP server: saved state title when the page stays open after saving.
   ///
   /// In en, this message translates to:
-  /// **'Saved {name} in OpenCode'**
+  /// **'Saved {name} on this server'**
   String mcpSetupSavedNamed(String name);
 
   /// screen-library-2: Add MCP server: saved state body when reconnecting failed.
@@ -37758,7 +37620,7 @@ abstract class AppLocalizations {
   /// screen-library-2: Add MCP server: title on a server that accepts neither configuration writes nor runtime adds.
   ///
   /// In en, this message translates to:
-  /// **'This server can\'t add MCP servers from here'**
+  /// **'Can\'t add MCP servers'**
   String get mcpSetupUnavailableTitle;
 
   /// screen-library-2: Add MCP server: why the page cannot add one here.
@@ -39348,7 +39210,7 @@ abstract class AppLocalizations {
   /// New conversation chooser: starts the conversation in a fresh worktree of the project
   ///
   /// In en, this message translates to:
-  /// **'In a separate copy of {project}'**
+  /// **'Separate copy of {project}'**
   String newConversationCopyTitle(String project);
 
   /// New conversation chooser: starts the conversation on this cloud machine (a managed workspace)
@@ -39738,7 +39600,7 @@ abstract class AppLocalizations {
   /// Accounts sheet: remove confirm title naming the provider and the account
   ///
   /// In en, this message translates to:
-  /// **'Remove the {provider} account “{name}”?'**
+  /// **'Remove {provider} account “{name}”?'**
   String credentialRemoveAccountTitle(String provider, String name);
 
   /// Accounts sheet: remove confirm button naming the account
@@ -40032,7 +39894,7 @@ abstract class AppLocalizations {
   /// What runs by itself: this server has no team, no saved rules and can't be watched.
   ///
   /// In en, this message translates to:
-  /// **'Nothing runs by itself here'**
+  /// **'Nothing runs by itself'**
   String get automationEmptyTitle;
 
   /// What runs by itself: why the page is empty.
@@ -40206,13 +40068,13 @@ abstract class AppLocalizations {
   /// AI Team page: under today's spend; never a task's cost.
   ///
   /// In en, this message translates to:
-  /// **'The whole team since midnight where it runs, estimated'**
+  /// **'The whole team since midnight where it runs, estimated. The host doesn’t report what each task cost.'**
   String get teamHomeSpentHint;
 
-  /// AI Team page: under today's spend when part of it is unpriced or history is missing.
+  /// AI Team page: under today's spend when part of it has no price.
   ///
   /// In en, this message translates to:
-  /// **'Some of today’s use has no price yet, so it cost more than this'**
+  /// **'Some of today’s use has no price yet, so it cost more than this.'**
   String get teamHomeSpentPartial;
 
   /// AI Team page while off, on a computer: discovery found no team. {server} is the server's name.
@@ -40542,7 +40404,7 @@ abstract class AppLocalizations {
   /// This phone: the title of the question before one tool is removed
   ///
   /// In en, this message translates to:
-  /// **'Remove {tool} from this phone?'**
+  /// **'Remove {tool}?'**
   String thisPhoneRemoveToolTitle(String tool);
 
   /// This phone: the remove-a-tool question's body with the measured space it frees, e.g. '180.2 MB'. The title names the tool.
@@ -41180,6 +41042,486 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep in backlog'**
   String get teamStartRunKeepInBacklog;
+
+  /// Confirm button of the AI Team turn-off question; the title names the server (R12).
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off AI Team'**
+  String get teamUiTurnOffConfirm;
+
+  /// Note under the no-answer verdict on the Add AI Team host sheet: what saving the address anyway leads to (R12).
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team shows the team as not answering until the computer answers.'**
+  String get teamHostFormSaveAnywayNote;
+
+  /// Toggle of the fold holding the raw network error behind a failed AI Team address test (R12).
+  ///
+  /// In en, this message translates to:
+  /// **'Connection details'**
+  String get teamHostFormConnectionDetails;
+
+  /// P6.7: asked once at the phone server's first start (and from its Settings row): the battery exemption.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the server running?'**
+  String get consentBatteryTitle;
+
+  /// P6.7: battery consent body.
+  ///
+  /// In en, this message translates to:
+  /// **'Android may stop the server on this phone while the app is closed. Allow background running and Android asks you to confirm.'**
+  String get consentBatteryBody;
+
+  /// P6.7: battery consent confirm; Android's own prompt follows.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow background running'**
+  String get consentBatteryAllow;
+
+  /// P6.7: asked once at the phone server's first start on phones whose maker blocks auto-start.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart the server automatically?'**
+  String get consentMakerTitle;
+
+  /// P6.7: maker auto-start consent body.
+  ///
+  /// In en, this message translates to:
+  /// **'{maker} phones stop apps that aren\'t allowed to start by themselves, and the server then stays off. Turn on auto-start for this app on the screen that opens.'**
+  String consentMakerBody(String maker);
+
+  /// P6.7: maker auto-start consent body when the maker's name is unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Some phones stop apps that aren\'t allowed to start by themselves, and the server then stays off. Turn on auto-start for this app on the screen that opens.'**
+  String get consentMakerBodyUnnamed;
+
+  /// P6.7: maker consent confirm; opens the maker's auto-start screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open auto-start settings'**
+  String get consentMakerAllow;
+
+  /// P6.7: declines a consent asked in flow; remembered and explained in Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get consentNotNow;
+
+  /// P6.7: a consent answer could not be stored.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer couldn\'t be saved on this phone, so nothing was changed. Try again.'**
+  String get consentSaveFailed;
+
+  /// P6.7: What runs by itself, consent storage unreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Your earlier answers on this server couldn\'t be read, so the app won\'t ask them again for now. Reopen this page to try again.'**
+  String get consentStorageFailed;
+
+  /// P6.7: What runs by itself, group of the questions the app asked once on this server.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answers'**
+  String get consentGroupLabel;
+
+  /// P6.7: Your answers row: the battery exemption.
+  ///
+  /// In en, this message translates to:
+  /// **'Background running'**
+  String get consentRowBattery;
+
+  /// P6.7: Your answers row: the maker's auto-start.
+  ///
+  /// In en, this message translates to:
+  /// **'Start again by itself'**
+  String get consentRowMaker;
+
+  /// P6.7: Your answers row: the notification preset.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell me when the agent needs me'**
+  String get consentRowNeedsYou;
+
+  /// P6.7: Your answers row: 'Always allow' offers turned down after three identical asks.
+  ///
+  /// In en, this message translates to:
+  /// **'Always allow offers'**
+  String get consentRowAlwaysAllow;
+
+  /// P6.7: why a declined battery consent matters.
+  ///
+  /// In en, this message translates to:
+  /// **'Android may stop the server on this phone while the app is closed.'**
+  String get consentWhyBattery;
+
+  /// P6.7: why a declined auto-start consent matters.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone may not start the server again after it stops.'**
+  String get consentWhyMaker;
+
+  /// P6.7: why a declined needs-you preset matters.
+  ///
+  /// In en, this message translates to:
+  /// **'You won\'t get a notification when the agent waits for your answer.'**
+  String get consentWhyNeedsYou;
+
+  /// P6.7: a consent asked but left unanswered.
+  ///
+  /// In en, this message translates to:
+  /// **'The question closed before you answered. Tap to answer now.'**
+  String get consentWhyUnfinished;
+
+  /// P6.7: an allowed phone consent; the OS setting is the truth.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone\'s own setting decides. Tap to check it or turn it off.'**
+  String get consentAllowedSystem;
+
+  /// P6.7: an allowed needs-you preset.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to change it in Notifications.'**
+  String get consentAllowedNeedsYou;
+
+  /// P6.7: declined Always allow offers.
+  ///
+  /// In en, this message translates to:
+  /// **'Still asked each time. Tap to be offered Always allow again.'**
+  String get consentWhyAlwaysAllow;
+
+  /// P6.7: Your answers value.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed'**
+  String get consentValueAllowed;
+
+  /// P6.7: Your answers value.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get consentValueDeclined;
+
+  /// P6.7: Your answers value.
+  ///
+  /// In en, this message translates to:
+  /// **'Not answered'**
+  String get consentValueUnanswered;
+
+  /// P6.7: how many Always allow offers were turned down.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 declined} other{{count} declined}}'**
+  String consentValueDeclinedCount(int count);
+
+  /// P6.7: confirm resetting declined Always allow offers.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask to always allow?'**
+  String get consentAlwaysAgainTitle;
+
+  /// P6.7: offer-again body.
+  ///
+  /// In en, this message translates to:
+  /// **'After 3 more identical asks, the app offers to always allow them again. Nothing is allowed until you say so.'**
+  String get consentAlwaysAgainBody;
+
+  /// P6.7: offer-again confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer again'**
+  String get consentAlwaysAgainConfirm;
+
+  /// P6.7: one line under a permission request on its third identical ask.
+  ///
+  /// In en, this message translates to:
+  /// **'Asked 3 times. Always allow {what}?'**
+  String consentAlwaysAllowQuestion(String what);
+
+  /// P6.7: declines the Always allow offer; the request is still answered as usual.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep asking'**
+  String get consentAlwaysAllowDecline;
+
+  /// P6.7: the always reply failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The server didn\'t save Always allow. The request is still waiting; try again or answer it once.'**
+  String get consentAlwaysAllowFailed;
+
+  /// P6.7: confirm title before answering a request with Always allow from the third-ask offer.
+  ///
+  /// In en, this message translates to:
+  /// **'Always allow this request?'**
+  String get consentAlwaysAllowTitle;
+
+  /// P6.7: confirm label for 'Tell me when the agent needs me' asked from Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on notifications'**
+  String get consentNeedsYouAllow;
+
+  /// Map page bootstrap-gate: the app is opening and reading its saved servers.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening…'**
+  String get bootstrapOpeningTitle;
+
+  /// Map page bootstrap-gate: under "Opening…".
+  ///
+  /// In en, this message translates to:
+  /// **'Reading your saved servers.'**
+  String get bootstrapOpeningBody;
+
+  /// Map page bootstrap-gate: the saved servers (preferences or the phone keystore) could not be read; the reason is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t read saved servers'**
+  String get bootstrapFailedTitle;
+
+  /// Map page bootstrap-gate: the likely fix for a locked keystore.
+  ///
+  /// In en, this message translates to:
+  /// **'If your phone just restarted, unlock it, then try again.'**
+  String get bootstrapFailedBody;
+
+  /// Map page share-session-failed-banner: the status line after text shared into the app could not open a conversation; the reason in words is under it.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared text saved · couldn\'t open a conversation'**
+  String get shareFailedLine;
+
+  /// Map page share-session-failed-banner: the same line after Try again failed again.
+  ///
+  /// In en, this message translates to:
+  /// **'Still couldn\'t open a conversation · shared text saved'**
+  String get shareFailedAgainLine;
+
+  /// Status line More action: copies the saved shared text.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy shared text'**
+  String get shareFailedCopy;
+
+  /// Status line More action: drops the saved shared text, with Undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard shared text'**
+  String get shareFailedDiscard;
+
+  /// Undo bar after Discard shared text.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared text discarded'**
+  String get shareDiscarded;
+
+  /// Why shared text did not open: the connection moved to another server or project meanwhile.
+  ///
+  /// In en, this message translates to:
+  /// **'The server or project changed while it opened. Try again.'**
+  String get shareConnectionChanged;
+
+  /// Status line when a new conversation (launcher shortcut, Ctrl+N) could not be created; the reason in words is under it.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t start a new conversation'**
+  String get appNewConversationFailed;
+
+  /// Status line on the connecting page when starting the phone server failed; the reason in words is under it.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode on this phone didn\'t start'**
+  String get rootPhoneServerStartFailed;
+
+  /// Map page root-connecting: the address is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'A local Codex listener should answer on this phone, but nothing did.'**
+  String get connectionFailureLocalCodexBody;
+
+  /// Map page root-connecting: the address is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing answered at the Codex endpoint.'**
+  String get connectionFailureRemoteCodexBody;
+
+  /// Map page root-connecting: the address is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'This address means the server runs on this phone, or is reached through a tunnel that ends here. Neither answered.'**
+  String get connectionFailureLoopbackBody;
+
+  /// Map page root-connecting: the address is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Something is at that address, but it did not reply. Usually the network in between, not the server.'**
+  String get connectionFailureTimedOutBody;
+
+  /// Map page root-connecting: the address is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing answered. Either the server is not running, or this phone cannot reach its address.'**
+  String get connectionFailureNothingAnsweredBody;
+
+  /// Map page root-connecting: an unrecognised failure.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection failed. What went wrong is under Details.'**
+  String get connectionFailureUnknownBody;
+
+  /// Map page root-connecting: first thing to check when a Tailscale address did not answer.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a Tailscale address: is Tailscale on, on this phone and on the server?'**
+  String get connectionFailureTailnetCheck;
+
+  /// AI Team page: under today's spend when the host says part of today's history is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Part of today’s history is missing, so it cost more than this.'**
+  String get teamHomeSpentHistoryMissing;
+
+  /// AI Team page: under today's spend when the host has stopped recording new usage.
+  ///
+  /// In en, this message translates to:
+  /// **'The team isn’t counting new use right now.'**
+  String get teamHomeSpentNotRecording;
+
+  /// A task's Details: the host reports no cost for a single task, only the whole team's day.
+  ///
+  /// In en, this message translates to:
+  /// **'Not reported for one task. The AI Team page shows today’s estimate for the whole team.'**
+  String get teamRunCostUnreported;
+
+  /// AI Team page agents row: how many live agents' sessions ended in an error.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} crashed'**
+  String teamHomeAgentsRowCrashed(int count);
+
+  /// AI Team page agents row: agents switched off on purpose.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} paused'**
+  String teamHomeAgentsRowPaused(int count);
+
+  /// AI Team page agents row: agents the app keeps off on its own phone team to save the phone.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} kept off on this phone'**
+  String teamHomeAgentsRowKeptOff(int count);
+
+  /// AI Team page: the row saying what the host's own upkeep runs are doing.
+  ///
+  /// In en, this message translates to:
+  /// **'Team upkeep'**
+  String get teamHomeUpkeepTitle;
+
+  /// AI Team page upkeep row: the host checking on its agents.
+  ///
+  /// In en, this message translates to:
+  /// **'Patrol'**
+  String get teamHomeUpkeepPatrol;
+
+  /// AI Team page upkeep row: any other housekeeping run.
+  ///
+  /// In en, this message translates to:
+  /// **'Chore'**
+  String get teamHomeUpkeepChore;
+
+  /// AI Team page upkeep row: one kind of upkeep with how many and its state, e.g. 'Patrol ×4 · planning'.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{kind} · {state}} other{{kind} ×{count} · {state}}}'**
+  String teamHomeUpkeepGroup(int count, String kind, String state);
+
+  /// Agents list: tells two supervisors apart; this one looks after the whole team.
+  ///
+  /// In en, this message translates to:
+  /// **'whole team'**
+  String get teamAgentLooksAfterTeam;
+
+  /// Agents list: tells two supervisors apart; this one keeps the other supervisor running.
+  ///
+  /// In en, this message translates to:
+  /// **'watchdog'**
+  String get teamAgentLooksAfterWatchdog;
+
+  /// Agents list: tells two supervisors apart; this one watches the workers.
+  ///
+  /// In en, this message translates to:
+  /// **'workers'**
+  String get teamAgentLooksAfterWorkers;
+
+  /// Agents list: an agent the app keeps off on its own phone team.
+  ///
+  /// In en, this message translates to:
+  /// **'Off on this phone'**
+  String get teamAgentsKeptOff;
+
+  /// Agents list: why an agent is off on the phone's own team.
+  ///
+  /// In en, this message translates to:
+  /// **'kept off so the phone can run the team'**
+  String get teamAgentsKeptOffHint;
+
+  /// Agents list: one action that wakes every paused agent.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Wake the paused agents} =1{Wake the paused agent} other{Wake the {count} paused agents}}'**
+  String teamAgentsWakePaused(int count);
+
+  /// Agents list: what waking the paused agents does.
+  ///
+  /// In en, this message translates to:
+  /// **'They start again one at a time and pick up waiting work.'**
+  String get teamAgentsWakePausedHint;
+
+  /// Agents list: a wake the host did not confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'The team didn’t answer in time. Starting agents can keep it busy for a minute or two, so no more were woken. Check again in a minute.'**
+  String get teamAgentsWakeUnconfirmed;
+
+  /// Agents list: the host refused a wake.
+  ///
+  /// In en, this message translates to:
+  /// **'The team didn’t wake them. Open an agent to see how it stands, or try again later.'**
+  String get teamAgentsWakeRefused;
+
+  /// Agents list: the wake is being sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Waking…'**
+  String get teamAgentsWaking;
+
+  /// Agents list: reads the team again after a wake it did not confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get teamAgentsWakeCheckAgain;
+
+  /// Development services: confirm button of the Stop {name}? sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop service'**
+  String get servicesStopConfirm;
+
+  /// Development services: confirm button of the Restart {name}? sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart service'**
+  String get servicesRestartConfirm;
+
+  /// Cloud environments: confirm button of the Remove {name}? sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove environment'**
+  String get managedWorkspacesRemoveConfirm;
 }
 
 class _AppLocalizationsDelegate

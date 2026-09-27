@@ -2,7 +2,8 @@
 // "Galleries required": the declared states at 412x915, and the default
 // (loaded) state at 1280x800 — the owner decision 2026-09-27 (STANDARDS.md
 // header) drops Arabic/RTL galleries and narrows this wave's gallery sizes
-// to the phone and one wide size, both in light and dark.
+// to the phone and one wide size, both in light and dark; the default is
+// also shot at text 2.0 at both sizes (TEST-9, G4).
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_progress_row_golden_test.dart
@@ -104,5 +105,25 @@ void main() {
         child: _loaded,
       );
     });
+
+    for (final size in kitGalleryScaledSizes) {
+      testWidgets('loaded · text 2.0 · ${kitGallerySize(size)} · $mode', (
+        tester,
+      ) async {
+        await kitGalleryPart(
+          tester,
+          name: kitGalleryName(
+            'kit_progress_row_loaded',
+            size,
+            light: light,
+            text2: true,
+          ),
+          size: size,
+          light: light,
+          textScale: 2,
+          child: _loaded,
+        );
+      });
+    }
   }
 }

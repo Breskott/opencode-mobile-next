@@ -10,8 +10,8 @@
 /// - its steps as the dependency graph in rows ([KitWorkGraph]), each
 ///   opening its Work sheet (owner, age, what it waits on, why);
 ///   a formula run that tracks no work lists its own stages;
-/// - what the team spent today (Gas City reports it per city and day,
-///   never per task, so it says so) and the host's supervision policy;
+/// - that the host reports no cost for one task (the team page has the
+///   day's estimate, P5.2) and the host's supervision policy;
 /// - last, folded, the technical details: the host's term, ids, times and
 ///   every raw field, then what the host reported about the task (its
 ///   event log), newest first.
@@ -134,7 +134,10 @@ class _Body extends StatelessWidget {
       cycleOf: controller.cycleFor,
     );
     final stages = _Stage.of(run);
-    final usage = _usageLabel(l10n, controller, run);
+    // A task's own cost is not reported (slice-P5.2,
+    // docs/qa/codex-p52-2026-09-27): said once where the host reports usage
+    // at all, never replaced by the team's day total or a worker's window.
+    final costUnreported = controller.capabilities.usage;
     final policy = controller.policy;
 
     // Waiting for merge (TEAM-117): every open item is in the merge
@@ -228,13 +231,12 @@ class _Body extends StatelessWidget {
               supporting: TextSpan(text: teamRunStateWord(l10n, step.state)),
             ),
         ],
-        if (usage != null) ...[
+        if (costUnreported) ...[
           SizedBox(height: tokens.space4),
           _DetailLine(
             label: l10n.teamUiRunDetailsUsage,
-            value: usage,
+            value: l10n.teamRunCostUnreported,
             valueKey: const ValueKey('team-task-details-usage'),
-            figures: true,
           ),
         ],
         // 02-ux §7: the host's supervision level and boundaries, read-only
@@ -306,7 +308,8 @@ KitTextTone? _textTone(AppStatusTone tone) => switch (tone) {
   AppStatusTone.failure => KitTextTone.danger,
   AppStatusTone.progress => KitTextTone.primary,
   AppStatusTone.neutral => KitTextTone.secondary,
-  _ => KitTextTone.attention,
+  // Amber is only the needs-you card's (LOOK-4, LOOK-24): the word says it.
+  _ => KitTextTone.primary,
 };
 
 /// "Working · 1 of 5 steps done · 3 h 12 min": the state word in its tone,
@@ -431,19 +434,17 @@ class _StageLine extends StatelessWidget {
   }
 }
 
-/// A label over its value; [figures] holds amounts still.
+/// A label over its value.
 class _DetailLine extends StatelessWidget {
   const _DetailLine({
     required this.label,
     required this.value,
     required this.valueKey,
-    this.figures = false,
   });
 
   final String label;
   final String value;
   final Key valueKey;
-  final bool figures;
 
   @override
   Widget build(BuildContext context) {
@@ -458,51 +459,11 @@ class _DetailLine extends StatelessWidget {
             role: KitTextRole.caption,
             tone: KitTextTone.secondary,
           ),
-          KitText(value, key: valueKey, tabular: figures),
+          KitText(value, key: valueKey),
         ],
       ),
     );
   }
-}
-
-/// The usage line, or null when there is nothing honest to show: the
-/// capability is off, `/usage` returned nothing, or it carried neither a
-/// cost nor a token count. Gas City reports usage for the city (today),
-/// not per task, so the line is labelled "Team today"; a run that carries
-/// its own `usage` in raw (no provider does yet) is preferred.
-String? _usageLabel(
-  AppLocalizations l10n,
-  OrchestrationController controller,
-  OrchestrationRun run,
-) {
-  if (!controller.capabilities.usage) return null;
-  final own = _runUsage(run);
-  final label = teamUsageLabel(l10n, own ?? controller.snapshot.usage);
-  if (label == null) return null;
-  return own == null ? l10n.teamUiUsageChip(label) : label;
-}
-
-/// A per-run usage figure from the run's raw payload, when a provider
-/// ever reports one: `usage.{input_tokens,output_tokens,cost_usd}`.
-OrchestrationUsage? _runUsage(OrchestrationRun run) {
-  final usage = run.raw['usage'];
-  if (usage is! Map<String, Object?>) return null;
-  int? count(String key) => switch (usage[key]) {
-    final int v => v,
-    final num v => v.toInt(),
-    _ => null,
-  };
-  final cost = switch (usage['cost_usd_estimate'] ?? usage['cost_usd']) {
-    final num v => v.toDouble(),
-    _ => null,
-  };
-  final mapped = OrchestrationUsage(
-    inputTokens: count('input_tokens'),
-    outputTokens: count('output_tokens'),
-    costUsd: cost,
-    raw: usage,
-  );
-  return mapped.isEmpty ? null : mapped;
 }
 
 /// "Run · convoy" / "Run · formula": the product word with its Gas City
@@ -818,7 +779,7 @@ String _eventText(
       _EventCategory.agents => (AppIconography.agent, AppStatusTone.neutral),
       _EventCategory.decisions => (
         AppIconography.question,
-        AppStatusTone.attention,
+        AppStatusTone.neutral,
       ),
       _EventCategory.other => (AppIconography.timeline, AppStatusTone.neutral),
     };

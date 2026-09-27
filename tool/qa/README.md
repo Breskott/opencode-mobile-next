@@ -58,3 +58,19 @@ contracts inspected by tests change. The exact paths are listed in
 `SOURCE_DIRECTORIES` and `SOURCE_FILES` in the runner. Local signing credentials
 are not included. Generated golden-failure images and tool caches are excluded.
 Old chunk logs/results are retained; retries receive a new attempt number.
+
+# Commit rules check (opt-in)
+
+`check_commits.sh` (STANDARDS.md G33, PROC-14) checks a branch's commits
+before a merge: every message carries `[skip ci]`, a non-merge commit has a
+body and ends with a `Co-Authored-By:` trailer block, and every Dart file the
+range changed passes `dart format --language-version=3.10`.
+
+```bash
+tool/qa/check_commits.sh feat/phone-setup-v2      # <base> [<head>]
+```
+
+It is opt-in: the repository installs no git hook, because a hook in a
+shared `.git` (or `core.hooksPath`) would run on every agent's commits in
+every worktree. Its `--message-file` mode can back a personal commit-msg hook
+in a checkout only you use.

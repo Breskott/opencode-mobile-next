@@ -28,6 +28,7 @@ class ConnectionFailure {
     required this.checks,
     required this.primary,
     required this.rawError,
+    this.tailnet = false,
   });
 
   /// Short headline, e.g. "Nothing is listening on this phone".
@@ -44,6 +45,24 @@ class ConnectionFailure {
 
   /// The verbatim error, for the Details expander.
   final String rawError;
+
+  /// The address is on a Tailscale network (a 100.64.0.0/10 address or a
+  /// `.ts.net` name) and nothing answered there: Tailscale being off on this
+  /// phone is the likely cause, so the page offers to set it up.
+  final bool tailnet;
+
+  /// A Tailscale address: 100.64.0.0/10 or a MagicDNS `*.ts.net` name.
+  static bool isTailnetHost(String host) {
+    final lower = host.toLowerCase();
+    if (lower.endsWith('.ts.net')) return true;
+    final parts = lower.split('.');
+    if (parts.length != 4) return false;
+    final octets = parts.map(int.tryParse).toList();
+    if (octets.any((octet) => octet == null || octet < 0 || octet > 255)) {
+      return false;
+    }
+    return octets[0] == 100 && octets[1]! >= 64 && octets[1]! <= 127;
+  }
 
   static bool _loopback(Uri? uri) {
     final host = uri?.host.toLowerCase() ?? '';
@@ -79,7 +98,6 @@ class ConnectionFailure {
     final uri = Uri.tryParse(baseUrl);
     final lower = error.toLowerCase();
     final port = uri?.hasPort == true ? uri!.port : 4096;
-    final hostLabel = uri?.host.isNotEmpty == true ? uri!.host : baseUrl;
     final unauthorized =
         lower.contains('http 401') ||
         lower.contains('http 403') ||
@@ -105,6 +123,13 @@ class ConnectionFailure {
                 (lower.contains('reject') || lower.contains('invalid')));
 
     final retried = attempts >= 3 ? l10n.e7ConnectionFailure1(attempts) : null;
+    // Only a remote address that did not answer: a refusal or a sign-in
+    // problem means Tailscale did its part.
+    final tailnet =
+        !loopback &&
+        (nothingAnswered || timedOut) &&
+        isTailnetHost(uri?.host ?? '');
+    final tailnetCheck = tailnet ? l10n.connectionFailureTailnetCheck : null;
 
     if (inAppServer && !usesConnectionToken) {
       final stopped =
@@ -150,8 +175,8 @@ class ConnectionFailure {
       return ConnectionFailure(
         title: local ? l10n.e7ConnectionFailure8 : l10n.e7ConnectionFailure9,
         explanation: local
-            ? l10n.e7ConnectionFailure10(hostLabel, port)
-            : l10n.e7ConnectionFailure11(hostLabel, port),
+            ? l10n.connectionFailureLocalCodexBody
+            : l10n.connectionFailureRemoteCodexBody,
         checks: local
             ? [l10n.e7ConnectionFailure12, l10n.e7ConnectionFailure13, ?retried]
             : [
@@ -206,7 +231,7 @@ class ConnectionFailure {
         (nothingAnswered || timedOut || !serverError && !unhealthy)) {
       return ConnectionFailure(
         title: l10n.e7ConnectionFailure24,
-        explanation: l10n.e7ConnectionFailure25(hostLabel, port),
+        explanation: l10n.connectionFailureLoopbackBody,
         checks: [
           if (supportsTermux) l10n.e7ConnectionFailure26,
           l10n.e7ConnectionFailure27,
@@ -222,21 +247,24 @@ class ConnectionFailure {
     if (timedOut) {
       return ConnectionFailure(
         title: l10n.e7ConnectionFailure29,
-        explanation: l10n.e7ConnectionFailure30(hostLabel),
+        explanation: l10n.connectionFailureTimedOutBody,
         checks: [
+          ?tailnetCheck,
           l10n.e7ConnectionFailure31,
           l10n.e7ConnectionFailure32(port),
           ?retried,
         ],
         primary: ConnectionFailureAction.retry,
         rawError: error,
+        tailnet: tailnet,
       );
     }
     if (nothingAnswered) {
       return ConnectionFailure(
         title: l10n.e7ConnectionFailure33,
-        explanation: l10n.e7ConnectionFailure34(hostLabel, port),
+        explanation: l10n.connectionFailureNothingAnsweredBody,
         checks: [
+          ?tailnetCheck,
           l10n.e7ConnectionFailure35,
           l10n.e7ConnectionFailure36,
           l10n.e7ConnectionFailure37,
@@ -244,6 +272,7 @@ class ConnectionFailure {
         ],
         primary: ConnectionFailureAction.retry,
         rawError: error,
+        tailnet: tailnet,
       );
     }
     if (serverError || unhealthy) {
@@ -261,7 +290,7 @@ class ConnectionFailure {
     }
     return ConnectionFailure(
       title: l10n.e7ConnectionFailure42,
-      explanation: l10n.e7ConnectionFailure43(hostLabel),
+      explanation: l10n.connectionFailureUnknownBody,
       checks: [
         usesConnectionToken
             ? l10n.e7ConnectionFailure44

@@ -1,0 +1,107 @@
+00:00 +0: loading test/permission_presentation_test.dart
+00:00 +0: COPY-15: the generic title reads "Permission needed" in English
+00:00 +1: COPY-15 (en) each known id is titled with its own plain-action getter
+00:00 +1 -1: COPY-15 (en) each known id is titled with its own plain-action getter [E]
+  Expected: empty
+    Actual: [
+              '"bash" -> "Edit a file", expected "Run a shell command"',
+              'known ids share a title: {Edit a file, Read a file, Access an external directory, Continue after repeated failures}'
+            ]
+  "bash" -> "Edit a file", expected "Run a shell command"
+  known ids share a title: {Edit a file, Read a file, Access an external directory, Continue after repeated failures}
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/permission_presentation_test.dart 104:9        main.<fn>.<fn>
+  
+00:00 +1 -1: COPY-15 (en) an empty id is titled "Permission needed"
+00:00 +1 -2: COPY-15 (en) an empty id is titled "Permission needed" [E]
+  Expected: empty
+    Actual: [
+              '"" -> "Use "',
+              '" " -> "Use  "',
+              '"   " -> "Use    "',
+              '"\\t" -> "Use \t"',
+              '"\\n" -> "Use \n'
+                '"'
+            ]
+  "" -> "Use "
+  " " -> "Use  "
+  "   " -> "Use    "
+  "\t" -> "Use 	"
+  "\n" -> "Use 
+  "
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/permission_presentation_test.dart 115:9        main.<fn>.<fn>
+  
+00:00 +1 -2: COPY-15 (ar) each known id is titled with its own plain-action getter
+00:00 +1 -3: COPY-15 (ar) each known id is titled with its own plain-action getter [E]
+  Expected: empty
+    Actual: [
+              '"bash" -> "تعديل ملف", expected "تشغيل أمر في الطرفية"',
+              'known ids share a title: {تعديل ملف, قراءة ملف, الوصول إلى مجلد خارجي, المتابعة بعد إخفاقات متكررة}'
+            ]
+  "bash" -> "تعديل ملف", expected "تشغيل أمر في الطرفية"
+  known ids share a title: {تعديل ملف, قراءة ملف, الوصول إلى مجلد خارجي, المتابعة بعد إخفاقات متكررة}
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/permission_presentation_test.dart 104:9        main.<fn>.<fn>
+  
+00:00 +1 -3: COPY-15 (ar) an empty id is titled "Permission needed"
+00:00 +1 -4: COPY-15 (ar) an empty id is titled "Permission needed" [E]
+  Expected: empty
+    Actual: [
+              '"" -> "استخدام "',
+              '" " -> "استخدام  "',
+              '"   " -> "استخدام    "',
+              '"\\t" -> "استخدام \t"',
+              '"\\n" -> "استخدام \n'
+                '"'
+            ]
+  "" -> "استخدام "
+  " " -> "استخدام  "
+  "   " -> "استخدام    "
+  "\t" -> "استخدام 	"
+  "\n" -> "استخدام 
+  "
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/permission_presentation_test.dart 115:9        main.<fn>.<fn>
+  
+00:00 +1 -4: COPY-15: English titles are the plain actions the rule names
+00:00 +1 -5: COPY-15: English titles are the plain actions the rule names [E]
+  Expected: empty
+    Actual: [
+              '"bash" -> "Edit a file", expected "Run a shell command"',
+              '"" (no l10n) -> "Use "',
+              '" " (no l10n) -> "Use  "',
+              '"   " (no l10n) -> "Use    "',
+              '"\\t" (no l10n) -> "Use \t"',
+              '"\\n" (no l10n) -> "Use \n'
+                '"'
+            ]
+  "bash" -> "Edit a file", expected "Run a shell command"
+  "" (no l10n) -> "Use "
+  " " (no l10n) -> "Use  "
+  "   " (no l10n) -> "Use    "
+  "\t" (no l10n) -> "Use 	"
+  "\n" (no l10n) -> "Use 
+  "
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/permission_presentation_test.dart 130:5        main.<fn>
+  
+00:00 +1 -5: COPY-15 ratchet: unknown ids titled "Permission needed" (baseline only shrinks)
+00:00 +2 -5: Some tests failed.
+
+Failing tests:
+  test/permission_presentation_test.dart: COPY-15 (ar) an empty id is titled "Permission needed"
+  test/permission_presentation_test.dart: COPY-15 (ar) each known id is titled with its own plain-action getter
+  test/permission_presentation_test.dart: COPY-15 (en) an empty id is titled "Permission needed"
+  test/permission_presentation_test.dart: COPY-15 (en) each known id is titled with its own plain-action getter
+  test/permission_presentation_test.dart: COPY-15: English titles are the plain actions the rule names

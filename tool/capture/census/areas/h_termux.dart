@@ -935,7 +935,7 @@ final hTermuxArea = CensusArea(
       await _localAgent(kit, _claudeReady);
       await kit.tapKey('local-agent-menu');
       await kit.tapKey('local-agent-remove');
-      kit.expectText('Remove Claude Code from this phone?');
+      kit.expectText('Remove Claude Code?');
     }),
     CensusShot(
       'embedded-local-agent-server-entry',

@@ -439,7 +439,7 @@ void main() {
         find.byKey(const ValueKey('new-conversation-copy')),
         findsOneWidget,
       );
-      expect(find.textContaining('In a separate copy of '), findsOneWidget);
+      expect(find.textContaining('Separate copy of '), findsOneWidget);
       expect(
         find.textContaining(
           'Works on a separate copy so your main folder stays untouched.',

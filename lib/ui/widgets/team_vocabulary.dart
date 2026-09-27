@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
+import '../../state/team_conversation.dart' show teamSessionState;
 import '../app_theme.dart';
 import '../kit/kit_task_mark.dart';
 import 'relative_time.dart';
@@ -70,7 +71,7 @@ String? teamHostCondition(
   if (!working &&
       controller.phase == OrchestrationPhase.ready &&
       snapshot.hasData &&
-      teamRest(snapshot.agents) == TeamRest.paused) {
+      teamRest(snapshot.agents, config: controller.config) == TeamRest.paused) {
     return l10n.teamUiHostPhrasePaused;
   }
   return null;
@@ -348,10 +349,18 @@ List<OrchestrationRun> teamUpkeepRuns(Iterable<OrchestrationRun> runs) => [
     if (run.isUpkeep) run,
 ];
 
-/// Whether an agent is live: anything but stopped or suspended. Only live
-/// agents are dots on the card and counted as the team.
-bool teamAgentIsLive(OrchestrationAgent agent) =>
-    agent.state != AgentState.stopped && !agent.suspended;
+/// Whether an agent is live: anything but stopped or suspended, with its
+/// session's word first ([teamSessionState], ledger row 21): a running
+/// session is live even on an agent the list calls stopped, and a session
+/// the host reports stopped is not live whatever the list says. An asleep
+/// session leaves the list's word standing. Only live agents are dots on
+/// the card and counted as the team.
+bool teamAgentIsLive(OrchestrationAgent agent) {
+  final state = teamSessionState(agent);
+  if (state == AgentState.working) return true;
+  if (state == AgentState.stopped) return false;
+  return agent.state != AgentState.stopped && !agent.suspended;
+}
 
 /// The live agents, in the given order.
 List<OrchestrationAgent> teamLiveAgents(Iterable<OrchestrationAgent> agents) =>
@@ -475,6 +484,54 @@ String teamRunStateWord(AppLocalizations l10n, RunState state) =>
       RunState.cancelled => l10n.teamUiCardRunStateCancelled,
       RunState.unknown => l10n.teamUiCardRunStateUnknown,
     };
+
+/// The host's upkeep in words, one phrase per kind with duplicates
+/// collapsed: "Patrol ×4 · planning; Chore · working". Patrols are the
+/// host checking on its agents; everything else is a chore. Each kind says
+/// its most active state. Never the engine's formula names.
+String teamUpkeepLine(
+  AppLocalizations l10n,
+  Iterable<OrchestrationRun> upkeep,
+) {
+  bool patrol(OrchestrationRun run) => [
+    run.title,
+    run.formula,
+  ].any((name) => name != null && name.toLowerCase().contains('patrol'));
+  const activity = [
+    RunState.working,
+    RunState.planning,
+    RunState.waiting,
+    RunState.blocked,
+    RunState.failed,
+    RunState.unknown,
+    RunState.completed,
+    RunState.cancelled,
+  ];
+  String group(String kind, List<OrchestrationRun> runs) {
+    final state = activity.firstWhere(
+      (state) => runs.any((run) => run.state == state),
+      orElse: () => RunState.unknown,
+    );
+    return l10n.teamHomeUpkeepGroup(
+      runs.length,
+      kind,
+      teamRunStateWord(l10n, state).toLowerCase(),
+    );
+  }
+
+  final patrols = [
+    for (final run in upkeep)
+      if (patrol(run)) run,
+  ];
+  final chores = [
+    for (final run in upkeep)
+      if (!patrol(run)) run,
+  ];
+  return [
+    if (patrols.isNotEmpty) group(l10n.teamHomeUpkeepPatrol, patrols),
+    if (chores.isNotEmpty) group(l10n.teamHomeUpkeepChore, chores),
+  ].join('; ');
+}
 
 /// The run's state word with the merge named: "Waiting for merge" when
 /// [teamRunAwaitsMerge] (TEAM-117), "Done · merged" for a completed run

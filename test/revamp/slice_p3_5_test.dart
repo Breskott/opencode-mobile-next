@@ -14,8 +14,9 @@
 //   backlog.
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencode_mobile/api/models.dart' show ModelRef;
+import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations_en.dart';
@@ -530,6 +531,82 @@ void main() {
       await pumpChat3(tester, conn);
       await tester.pumpAndSettle();
       expect(_key('chat-default-model-notice'), findsNothing);
+    });
+  });
+
+  // G12 (SEC-13): Copy transcript keeps the person's own prompts verbatim
+  // and masks everything else, so a key a tool printed never reaches the
+  // clipboard.
+  group('Copy transcript masks what is not the person\'s own (G12)', () {
+    testWidgets('tool output and replies are masked; the prompt stays', (
+      tester,
+    ) async {
+      chat3MockSecureStorage();
+      final copied = <String>[];
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add((call.arguments as Map)['text'] as String);
+        }
+        return null;
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+      const secret = 'sk-ant-api03-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+      final api = Chat3Api()
+        ..transcript = [
+          chat3Prompt('m1', 'Rename the env var MY_FLAG to FEATURE_FLAG'),
+          MessageWithParts(
+            info: MessageInfo(
+              id: 'm2',
+              sessionID: 'session-1',
+              role: 'assistant',
+              time: MsgTime(completed: 1),
+            ),
+            parts: [
+              Part(
+                id: 'p1',
+                messageID: 'm2',
+                type: 'tool',
+                callID: 'c1',
+                toolName: 'bash',
+                toolState: ToolState(
+                  status: 'completed',
+                  title: 'env',
+                  input: const {'command': 'env'},
+                  output: 'ANTHROPIC_API_KEY=$secret\nPATH=/usr/bin',
+                ),
+              ),
+              Part(
+                id: 'p2',
+                messageID: 'm2',
+                type: 'text',
+                text: 'Your key is Authorization: Bearer $secret',
+              ),
+            ],
+          ),
+        ];
+      final conn = await chat3Controller(api: api);
+      addTearDown(conn.dispose);
+      await pumpChat3(tester, conn);
+      await tester.tap(find.byKey(const Key('composer-tools-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('composer-tool-commands')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('command-launcher-search')),
+        'copy',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(_en.chatUiCopyTranscript).last);
+      await tester.pumpAndSettle();
+
+      expect(copied, hasLength(1));
+      final text = copied.single;
+      expect(text, isNot(contains(secret)));
+      expect(text, contains('Rename the env var MY_FLAG to FEATURE_FLAG'));
+      expect(text, contains('PATH=/usr/bin'));
     });
   });
 }

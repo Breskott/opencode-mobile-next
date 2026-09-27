@@ -25,6 +25,7 @@ import '../../builtin/team/builtin_team.dart' show BuiltinTeam;
 import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
+import '../../state/profiles.dart' show OrchestrationConfig;
 import '../../state/team_conversation.dart' show teamSessionState;
 import '../app_theme.dart';
 import '../kit/kit.dart';
@@ -70,7 +71,37 @@ bool teamAgentPaused(OrchestrationAgent agent) =>
       'paused',
     }.contains(agent.rawState?.trim().toLowerCase());
 
-TeamRest teamRest(Iterable<OrchestrationAgent> agents) {
+/// The agent's kind: the last part of its pool (or name) without an
+/// instance number (`witness` for `demo-app/gastown.witness`).
+String teamAgentKind(OrchestrationAgent agent) => (agent.pool ?? agent.name)
+    .toLowerCase()
+    .split('/')
+    .last
+    .split('.')
+    .last
+    .replaceFirst(RegExp(r'-\d+$'), '');
+
+/// Whether the app itself keeps [agent] off on its own phone team
+/// ([BuiltinTeam.keptOffKinds]): switched off, but never by the person,
+/// so it is neither the team's pause nor offered a Wake.
+bool teamAgentKeptOff(OrchestrationConfig config, OrchestrationAgent agent) =>
+    BuiltinTeam.isBuiltinConfig(config) &&
+    !teamAgentIsLive(agent) &&
+    BuiltinTeam.keptOffKinds.contains(teamAgentKind(agent));
+
+/// How the team rests. With [config], the agents the app keeps off on its
+/// phone team ([teamAgentKeptOff]) are left out: a lean phone team whose
+/// worker sleeps is asleep, never "Paused" (ledger row 20).
+TeamRest teamRest(
+  Iterable<OrchestrationAgent> all, {
+  OrchestrationConfig? config,
+}) {
+  final agents = config == null
+      ? all
+      : [
+          for (final agent in all)
+            if (!teamAgentKeptOff(config, agent)) agent,
+        ];
   if (agents.isEmpty) return TeamRest.awake;
   if (agents.any(teamAgentIsLive)) return TeamRest.awake;
   // The session is the live truth: an agent the list calls stopped or
@@ -305,7 +336,7 @@ Widget? teamNowLine(
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   final snapshot = controller.snapshot;
   final agents = snapshot.agents;
-  final rest = teamRest(agents);
+  final rest = teamRest(agents, config: controller.config);
   final every = teamCheckInterval(controller);
   final cycleOf = controller.cycleFor;
   final gated = teamGatedRuns(snapshot);
@@ -328,7 +359,9 @@ Widget? teamNowLine(
         keyPrefix: keyPrefix,
         wake: [
           for (final agent in agents)
-            if (teamAgentPaused(agent)) agent,
+            if (teamAgentPaused(agent) &&
+                !teamAgentKeptOff(controller.config, agent))
+              agent,
         ],
         wakeLabel: l10n.teamUiControlResume,
       ),

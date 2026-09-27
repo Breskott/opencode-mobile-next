@@ -694,9 +694,11 @@ class _KitChoiceMarkView extends StatelessWidget {
           curve: KitMotion.enter,
           decoration: BoxDecoration(
             shape: radio ? BoxShape.circle : BoxShape.rectangle,
-            borderRadius: radio ? null : BorderRadius.circular(4),
+            borderRadius: radio
+                ? null
+                : BorderRadius.circular(KitTokens.choiceMarkRadius),
             color: !radio && selected ? on : null,
-            border: Border.all(color: ring, width: 2),
+            border: Border.all(color: ring, width: KitTokens.choiceMarkStroke),
           ),
           child: Center(
             child: AnimatedScale(

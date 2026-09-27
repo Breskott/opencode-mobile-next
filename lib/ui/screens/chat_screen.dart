@@ -3681,10 +3681,11 @@ class _ChatScreenState extends State<ChatScreen>
   /// share banner, where the link stays visible.
   Future<void> _copyShareLink(String url) async {
     try {
+      // The kit's redaction leaves a plain share address as it is and masks
+      // a credential a server might put in it (G12).
       await KitCopy.copy(
         context,
         url,
-        redact: false,
         announcement: _chatL10n(context).chatUiShareLinkCopied,
       );
     } catch (_) {
@@ -5777,47 +5778,63 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  /// The conversation as Markdown for Copy transcript (SEC-13, G12): the
+  /// person's own prompts stay as they typed them; everything else (the
+  /// title, replies, reasoning, tool output, attachments' names and error
+  /// text) is masked through [KitRedact] first, so a key a tool printed
+  /// never reaches the clipboard.
   String _transcriptMarkdown() {
+    final l10n = _chatL10n(context);
     final title = _conn.sessionsById[widget.sessionID]?.title;
-    final out = StringBuffer(
-      '# ${title?.isNotEmpty == true ? title : _chatL10n(context).chatUiOpenCodeSession}\n',
+    final out = StringBuffer();
+    void put(String text) => out.write(KitRedact.text(text));
+    put(
+      '# ${title?.isNotEmpty == true ? title : l10n.chatUiOpenCodeSession}\n',
     );
     if (_olderCursor != null) {
-      out.write('\n> ${_chatL10n(context).historyLoadedOnly}\n');
+      out.write('\n> ${l10n.historyLoadedOnly}\n');
     }
     for (final message in _visibleHistory) {
       if (message.info.id.startsWith('local-')) continue;
+      final own = message.info.role == 'user';
       out.write(
-        '\n## ${message.info.role == 'assistant' ? _chatL10n(context).chatUiAssistant : _chatL10n(context).chatUiUser}\n\n',
+        '\n## ${message.info.role == 'assistant' ? l10n.chatUiAssistant : l10n.chatUiUser}\n\n',
       );
       for (final part in message.parts) {
         if (part.type == 'text' && part.text.trim().isNotEmpty) {
-          out.write('${part.text.trim()}\n\n');
+          // The person's own words, verbatim; a reply is masked.
+          if (own && !part.synthetic) {
+            out.write('${part.text.trim()}\n\n');
+          } else {
+            put('${part.text.trim()}\n\n');
+          }
         } else if (part.type == 'reasoning' && part.text.trim().isNotEmpty) {
-          out.write(
-            '<details><summary>${_chatL10n(context).transcriptFindReasoning}</summary>\n\n${part.text.trim()}\n\n</details>\n\n',
+          put(
+            '<details><summary>${l10n.transcriptFindReasoning}</summary>\n\n${part.text.trim()}\n\n</details>\n\n',
           );
         } else if (part.type == 'file') {
-          out.write(
-            '- ${_chatL10n(context).chatUiAttachment}: ${part.filename ?? part.url ?? _chatL10n(context).chatUiFile}\n',
+          put(
+            '- ${l10n.chatUiAttachment}: ${part.filename ?? part.url ?? l10n.chatUiFile}\n',
           );
         } else if (part.type == 'tool') {
-          out.write(
-            '### ${_chatL10n(context).chatUiTool}: ${part.toolName ?? _chatL10n(context).chatUiTool}\n\n',
+          put(
+            '### ${l10n.chatUiTool}: ${part.toolName ?? l10n.chatUiTool}\n\n',
           );
           final output = part.toolState.output?.trim();
           if (output?.isNotEmpty == true) {
-            out.write('```text\n$output\n```\n\n');
+            put('```text\n$output\n```\n\n');
           }
         }
       }
       if (message.info.errorText case final error?) {
-        out.write('> ${_chatL10n(context).chatUiError}: $error\n');
+        put('> ${l10n.chatUiError}: $error\n');
       }
     }
     return out.toString().trimRight();
   }
 
+  /// Already masked where it is not the person's own ([_transcriptMarkdown]);
+  /// copied as built so their prompts stay verbatim (SEC-13).
   Future<void> _copyTranscript() => KitCopy.copy(
     context,
     _transcriptMarkdown(),

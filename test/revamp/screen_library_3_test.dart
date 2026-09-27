@@ -143,7 +143,7 @@ void main() {
       await _manageAccounts(tester);
       await _accountMenu(tester, 'cred-1', 'Remove Work');
 
-      expect(find.text('Remove the Anthropic account “Work”?'), findsOneWidget);
+      expect(find.text('Remove Anthropic account “Work”?'), findsOneWidget);
       expect(find.text('Remove “Work”'), findsOneWidget);
       expect(
         find.text(

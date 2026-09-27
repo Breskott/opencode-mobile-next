@@ -68,6 +68,7 @@ import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/orchestration.dart';
+import '../../../state/team_conversation.dart' show teamSessionState;
 import '../../../state/team_overview.dart';
 import '../../../termux/team_runtime.dart';
 import '../../app_theme.dart';
@@ -169,8 +170,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
   /// The finished tasks past the first three.
   bool _doneExpanded = false;
 
-  /// "Show team upkeep": off on every open, never persisted.
-  bool _upkeepShown = false;
   bool _refreshing = false;
 
   /// A task the host made but its workers refused, said once at the top
@@ -721,8 +720,30 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
         ? done
         : done.take(teamHomeDoneShown).toList();
     final hiddenDone = done.length - doneShown.length;
+    // Is the team working? From each agent's session first (ledger row
+    // 21): the host's stopped session is never counted as working.
     final live = teamLiveAgents(snapshot.agents);
-    final working = live.where((a) => a.state == AgentState.working).length;
+    final working = live
+        .where((a) => teamSessionState(a) == AgentState.working)
+        .length;
+    final crashed = live
+        .where((a) => teamSessionState(a) == AgentState.crashed)
+        .length;
+    // The row counts every agent the agents list shows (they agree): the
+    // ones the person paused and the ones the app keeps off on its phone
+    // team are counted apart, never as the team's pause.
+    final keptOff = snapshot.agents
+        .where((a) => teamAgentKeptOff(controller.config, a))
+        .length;
+    final pausedAgents = snapshot.agents
+        .where(
+          (a) =>
+              !teamAgentIsLive(a) &&
+              teamAgentPaused(a) &&
+              !teamAgentKeptOff(controller.config, a),
+        )
+        .length;
+    final rest = teamRest(snapshot.agents, config: controller.config);
 
     Widget row(OrchestrationRun run) {
       final gate = gateOfRun[run.id];
@@ -746,7 +767,7 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           cycleOf: controller.cycleFor,
           explainWait: true,
           checkEvery: teamCheckInterval(controller),
-          paused: teamRest(snapshot.agents) == TeamRest.paused,
+          paused: rest == TeamRest.paused,
         );
         // What happens next, once, on the working task's own row (the
         // team's Now line no longer repeats the task above the list).
@@ -759,21 +780,23 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             ? [task, l10n.teamUiHomeRunReviewNext].join(teamUsageSeparator)
             : task;
       }
-      final receipt =
-          gate != null &&
-              record != null &&
-              record.status != MutationStatus.confirmed
-          ? Padding(
+      // Null once the host confirmed the answer (then the chevron shows).
+      final chip = gate == null || record == null
+          ? null
+          : teamGateRowReceipt(
+              context,
+              record,
+              key: ValueKey('team-home-gate-${gate.id}-receipt'),
+              onOpen: () => _openGate(gate),
+            );
+      final receipt = chip == null
+          ? null
+          : Padding(
               padding: EdgeInsetsDirectional.symmetric(
                 horizontal: tokens.space2,
               ),
-              child: TeamReceiptChip(
-                key: ValueKey('team-home-gate-${gate.id}-receipt'),
-                record: record,
-                onOpen: () => _openGate(gate),
-              ),
-            )
-          : null;
+              child: chip,
+            );
       return KitRow(
         key: ValueKey('team-home-run-${run.id}'),
         leading: KitTaskMark(state: teamRunMark(run, needsYou: needsYou)),
@@ -935,24 +958,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
         ),
         gap,
       ],
-      if (upkeep.isNotEmpty) ...[
-        KitRowGroup(
-          leadingIcons: false,
-          children: [
-            KitSwitchRow(
-              key: const ValueKey('team-home-upkeep-row'),
-              switchKey: const ValueKey('team-home-upkeep-toggle'),
-              title: l10n.teamUiHomeUpkeepToggle(upkeep.length),
-              supporting: l10n.teamUiHomeUpkeepHint,
-              value: _upkeepShown,
-              onChanged: (shown) => setState(() => _upkeepShown = shown),
-            ),
-            if (_upkeepShown)
-              for (final run in upkeep) row(run),
-          ],
-        ),
-        gap,
-      ],
       // 3. The team itself: who is on it, how it runs, what it spent. The
       // board opens from the top bar only (one entry point).
       KitRowGroup(
@@ -960,11 +965,13 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
         children: [
           _AgentsRow(
             key: const ValueKey('team-home-agents-row'),
-            live: live.length,
             total: snapshot.agents.length,
-            rest: teamRest(snapshot.agents),
+            rest: rest,
             cooling: hold != null,
             working: working,
+            crashed: crashed,
+            paused: pausedAgents,
+            keptOff: keptOff,
             onTap: _openAgents,
           ),
           // How fast it runs where it runs (the place is the top bar's);
@@ -988,6 +995,18 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             onTap: () => showTeamHostDetailsSheet(context, controller),
           ),
           ?_spentRow(context, l10n, controller),
+          // The host's own upkeep, said once in words ("Patrol ×4 ·
+          // planning"): part of how the team runs, not tasks of the
+          // person's, so no switch and no rows of engine names.
+          if (upkeep.isNotEmpty)
+            KitRow(
+              key: const ValueKey('team-home-upkeep-row'),
+              leading: KitRow.icon(context, AppIconography.retry),
+              title: l10n.teamHomeUpkeepTitle,
+              supporting: TextSpan(text: teamUpkeepLine(l10n, upkeep)),
+              supportingKey: const ValueKey('team-home-upkeep-line'),
+              supportingMaxLines: 3,
+            ),
         ],
       ),
     ];
@@ -1047,71 +1066,90 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     final tokens = input == null && output == null
         ? null
         : (input ?? 0) + (output ?? 0);
+    // Nothing counted (every figure zero or missing) is not a spend of
+    // "\$0.00 · 0 tokens": a worker can run for hours before the host
+    // counts its use, so the row stays away (unknown is never zero).
+    if ((cost ?? 0) == 0 && (tokens ?? 0) == 0) return null;
     final figures = [
       if (cost != null) l10n.teamUiUsageCostEstimated(teamCurrencyLabel(cost)),
       if (tokens != null) l10n.teamUiUsageTokens(teamCompactCount(tokens)),
     ];
-    if (figures.isEmpty) return null;
-    // Some use has no price, or history is missing: the figure is a floor.
-    final incomplete = (today.unpriced ?? 0) > 0 || evidence!.partial;
+    // What the figure covers (the whole team's day where it runs, never a
+    // task's cost: the host has no per-task figure, docs/qa/codex-p52),
+    // then why it may be low: use with no price, history missing, or the
+    // host not counting new use. Each is its own sentence.
+    final lines = [
+      l10n.teamHomeSpentHint,
+      if ((today.unpriced ?? 0) > 0)
+        l10n.teamHomeSpentPartial
+      else if (evidence!.partial)
+        l10n.teamHomeSpentHistoryMissing,
+      if (!evidence!.recording) l10n.teamHomeSpentNotRecording,
+    ];
     return KitRow(
       key: const ValueKey('team-home-spent'),
       leading: KitRow.icon(context, AppIconography.usage),
       title: l10n.teamHomeSpentToday(figures.join(teamUsageSeparator)),
       titleKey: const ValueKey('team-home-spent-figure'),
-      supporting: TextSpan(
-        text: incomplete ? l10n.teamHomeSpentPartial : l10n.teamHomeSpentHint,
-      ),
-      supportingMaxLines: 2,
+      supporting: TextSpan(text: lines.join(' ')),
+      supportingKey: const ValueKey('team-home-spent-scope'),
+      supportingMaxLines: 5,
     );
   }
 }
 
-/// "3 agents · 1 working", opening the agents list.
+/// "6 agents · 1 working · 4 kept off on this phone", opening the agents
+/// list: it counts every agent the list shows, so the two agree.
 class _AgentsRow extends StatelessWidget {
   const _AgentsRow({
     super.key,
-    required this.live,
     required this.total,
     required this.rest,
     required this.working,
     required this.onTap,
+    this.crashed = 0,
+    this.paused = 0,
+    this.keptOff = 0,
     this.cooling = false,
   });
 
-  final int live;
+  /// Every agent the host lists, asleep, paused and kept-off ones included.
+  final int total;
+  final TeamRest rest;
+  final int working;
+
+  /// Live agents whose session ended in an error: said on the row, since a
+  /// team with a crashed worker is not simply "working".
+  final int crashed;
+
+  /// Agents the person (or the host) switched off on purpose.
+  final int paused;
+
+  /// Agents the app keeps off on its own phone team to save the phone.
+  final int keptOff;
 
   /// The heat guard holds the team: its agents rest to cool the phone,
   /// not because the person paused them.
   final bool cooling;
-
-  /// Every agent the host lists, asleep and paused ones included.
-  final int total;
-  final TeamRest rest;
-  final int working;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
+    final count = l10n.teamUiHomeAgentsRowCount(total);
+    final kept = keptOff > 0 ? l10n.teamHomeAgentsRowKeptOff(keptOff) : null;
     // Asleep agents are the team too: "3 agents · asleep until there is
     // work", not "No agents".
     final title = switch (cooling ? null : rest) {
-      null => [
-        l10n.teamUiHomeAgentsRowCount(total),
-        l10n.teamHomeAgentsCooling,
-      ],
-      TeamRest.asleep => [
-        l10n.teamUiHomeAgentsRowCount(total),
-        l10n.teamNowAgentsAsleep,
-      ],
-      TeamRest.paused => [
-        l10n.teamUiHomeAgentsRowCount(total),
-        l10n.teamNowAgentsPaused,
-      ],
+      null => [count, l10n.teamHomeAgentsCooling],
+      TeamRest.asleep => [count, l10n.teamNowAgentsAsleep, ?kept],
+      TeamRest.paused => [count, l10n.teamNowAgentsPaused, ?kept],
       TeamRest.awake => [
-        l10n.teamUiHomeAgentsRowCount(live),
+        count,
         if (working > 0) l10n.teamUiHomeAgentsRowWorking(working),
+        if (crashed > 0) l10n.teamHomeAgentsRowCrashed(crashed),
+        if (paused > 0) l10n.teamHomeAgentsRowPaused(paused),
+        ?kept,
       ],
     }.join(teamUsageSeparator);
     return Semantics(
@@ -1120,6 +1158,8 @@ class _AgentsRow extends StatelessWidget {
       child: KitRow(
         leading: KitRow.icon(context, AppIconography.agent),
         title: title,
+        // "6 agents · 1 working · 4 kept off on this phone" is whole.
+        titleMaxLines: 2,
         trailing: const KitChevron(),
         onTap: onTap,
       ),

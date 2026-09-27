@@ -2,8 +2,9 @@
 //
 // Owner decision 2026-09-27: Arabic is dropped for this wave — no `_ar`
 // shots and no RTL review. Galleries: phone 412x915 and one wide size
-// (1280x800) only, light and dark (the spec's fuller size/text2.0 matrix is
-// out of scope for this wave).
+// (1280x800) only, light and dark (the spec's fuller size matrix is out of
+// scope for this wave); the default (rows) is also shot at text 2.0 at both
+// sizes (TEST-9, G4).
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_work_graph_golden_test.dart
@@ -216,5 +217,31 @@ void main() {
         ),
       );
     });
+
+    for (final size in kitGalleryScaledSizes) {
+      testWidgets('rows · text 2.0 · ${kitGallerySize(size)} · $mode', (
+        tester,
+      ) async {
+        await kitGalleryPart(
+          tester,
+          name: kitGalleryName(
+            'kit_work_graph_rows',
+            size,
+            light: light,
+            text2: true,
+          ),
+          size: size,
+          light: light,
+          textScale: 2,
+          child: _rails(
+            KitWorkGraph(
+              nodes: _six(),
+              onOpen: (_) {},
+              layout: KitWorkGraphLayout.rows,
+            ),
+          ),
+        );
+      });
+    }
   }
 }

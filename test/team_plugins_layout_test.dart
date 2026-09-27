@@ -318,12 +318,14 @@ void main() {
               await settle(tester);
               expect(team.hitTestable(), findsOneWidget);
               await tester.enterText(url, 'http://public.example:8372');
-              // Submit from the keyboard (the team name field's Done):
-              // at 2.5x, the kit sheet's body ends under the bottom edge,
-              // so its pinned-less primary cannot be hit-tested there (QA
-              // record, shared-team-1, "NOT proven").
-              await tester.showKeyboard(team);
-              await tester.testTextInput.receiveAction(TextInputAction.done);
+              // R12: Test and turn on is pinned by the sheet, so it is in
+              // reach at 2.5x while the fields scroll.
+              final submit = find.descendant(
+                of: find.byKey(const ValueKey('kit-sheet-actions')),
+                matching: find.byKey(const ValueKey('team-host-submit')),
+              );
+              expect(submit.hitTestable(), findsOneWidget);
+              await tester.tap(submit);
               await settle(tester);
               final verdict = find.byKey(const ValueKey('team-host-verdict'));
               await tester.ensureVisible(verdict);

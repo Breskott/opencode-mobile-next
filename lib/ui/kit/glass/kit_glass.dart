@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../../theme_roles.dart';
 import '../kit_effects.dart';
 import '../kit_tokens.dart';
 import 'liquid_glass_filter.dart';
@@ -110,7 +111,7 @@ class KitGlass extends StatelessWidget {
   /// Neutral ink stays readable even when contrasting content crosses behind
   /// the translucent material; muted palette roles are not sufficient here.
   static Color foregroundColor(ThemeData theme) =>
-      theme.brightness == Brightness.dark ? Colors.white : Colors.black;
+      ThemeRoles.resolve(theme).glassInk;
 
   /// The system settings under which glass is solid: high contrast,
   /// accessible navigation (a screen reader) and remove animations. Android
@@ -172,7 +173,12 @@ class KitGlass extends StatelessWidget {
           KitGlassLook.liquid => null,
         },
         borderRadius: borderRadius,
-        border: solid ? Border.all(color: roles.hairline, width: 0) : null,
+        border: solid
+            ? Border.all(
+                color: roles.hairline,
+                width: KitTokens.hairlineWidth(context),
+              )
+            : null,
       ),
       // The rim (§7, LOOK-21): one physical pixel, the `glassRimLight` role
       // along the top edge and `glassRimDark` along the bottom, never a

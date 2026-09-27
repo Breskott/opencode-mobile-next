@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
@@ -438,6 +439,40 @@ void main() {
       linux.startGate!.complete();
       await tester.pumpAndSettle();
       expect(status(tester), 'Running');
+    });
+
+    testWidgets('the first start asks once to keep the server running (P6.7)', (
+      tester,
+    ) async {
+      const lifecycle = MethodChannel('oc/lifecycle');
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(
+        lifecycle,
+        (call) async => call.method == 'keepAliveInfo'
+            ? {'manufacturer': 'Google', 'batteryOptimizationIgnored': false}
+            : null,
+      );
+      addTearDown(() => messenger.setMockMethodCallHandler(lifecycle, null));
+      linux.running = false;
+      await mountCard(tester);
+      await tester.tap(find.byKey(const ValueKey('phone-server-start')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('phone-consent-batteryExemption')),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Not now'));
+      await tester.pumpAndSettle();
+
+      // A later start asks nothing.
+      await choose(tester, 'phone-server-stop');
+      await tester.tap(find.byKey(const ValueKey('phone-server-start')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('phone-consent-batteryExemption')),
+        findsNothing,
+      );
     });
 
     testWidgets('Stop stops the server', (tester) async {

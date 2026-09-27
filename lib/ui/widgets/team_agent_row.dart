@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
+import '../../state/team_conversation.dart' show teamSessionState;
 import '../kit/kit.dart';
 import 'relative_time.dart';
 import 'team_vocabulary.dart';
@@ -83,7 +84,7 @@ String teamAgentLine(
           l10n: l10n,
         );
   return [
-    teamAgentStateWord(l10n, agent.state),
+    teamAgentStateWord(l10n, teamSessionState(agent)),
     ?work?.title,
     ?activity,
   ].join(teamUsageSeparator);
@@ -110,7 +111,7 @@ class TeamAgentRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final (icon, tone) = teamAgentGlyph(agent.state);
+    final (icon, tone) = teamAgentGlyph(teamSessionState(agent));
     return KitRow(
       key: ValueKey('$keyPrefix-${agent.id}'),
       leading: KitRow.icon(

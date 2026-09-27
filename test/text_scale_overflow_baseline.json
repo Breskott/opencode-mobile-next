@@ -1,8 +1,1 @@
-{
-  "KitRowGroup/default": {
-    "320x640 text 2.0 ltr": "A RenderFlex overflowed by 55 pixels on the right.",
-    "320x640 text 2.0 rtl": "A RenderFlex overflowed by 55 pixels on the right.",
-    "360x740 text 2.0 ltr": "A RenderFlex overflowed by 15 pixels on the right.",
-    "360x740 text 2.0 rtl": "A RenderFlex overflowed by 15 pixels on the right."
-  }
-}
+{}

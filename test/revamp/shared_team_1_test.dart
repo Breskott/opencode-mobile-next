@@ -1,7 +1,7 @@
 // Behaviour of shared-team-1's rebuilt team pieces (wave 2a): the control
 // receipt (one KitReceipt since slice-P4.1c), the message field over KitField, the board's
 // sheets on the kit sheet frame, and the manual host form's fixes from its
-// map record (progress with Cancel test, Save without an answer, no "kind
+// map record (progress with Cancel test, Save the address anyway, no "kind
 // of computer" question, the raw error under Details).
 import 'dart:async';
 
@@ -307,7 +307,7 @@ void main() {
     });
 
     testWidgets('no answer: the reason, the raw error under Details, and '
-        'Save without an answer', (tester) async {
+        'Save the address anyway', (tester) async {
       final found = <OrchestrationConfig>[];
       await pumpForm(
         tester,

@@ -148,13 +148,43 @@ class RepeatedPermissionConsent {
     return entry.status();
   });
 
+  /// How many invitations were turned down or left unanswered, for the
+  /// Settings row that explains them (those actions are still asked each
+  /// time). Null when storage cannot be read.
+  Future<int?> declinedCount() => _serialOr<int?>(() async {
+    final entries = _read();
+    if (entries == null) return null;
+    return entries.values.where((entry) => entry._notAccepted).length;
+  }, null);
+
+  /// Forgets every invitation that was turned down or left unanswered, so
+  /// each is offered again after three more identical asks. Accepted ones
+  /// stay: their grants live in the server's saved rules. False when
+  /// storage refused.
+  Future<bool> forgetDeclined() => _serialOr<bool>(() async {
+    final entries = _read();
+    if (entries == null) return false;
+    entries.removeWhere((_, entry) => entry._notAccepted);
+    return _write(entries);
+  }, false);
+
+  /// Stops accepting changes and waits for a write in flight, so the profile
+  /// deletion sweep that follows removes this history for good.
+  Future<void> close() {
+    final drained = _tail;
+    _blocked = true;
+    return drained;
+  }
+
   static const _unavailable = RepeatedPermissionStatus(storageAvailable: false);
 
   Future<RepeatedPermissionStatus> _serialized(
     Future<RepeatedPermissionStatus> Function() action,
-  ) {
+  ) => _serialOr(action, _unavailable);
+
+  Future<T> _serialOr<T>(Future<T> Function() action, T fallback) {
     final result = _tail.then((_) async {
-      if (_blocked) return _unavailable;
+      if (_blocked) return fallback;
       try {
         if (!_loaded) {
           // SharedPreferences updates its cache even if a write is refused.
@@ -165,7 +195,7 @@ class RepeatedPermissionConsent {
         return await action();
       } catch (_) {
         _blocked = true;
-        return _unavailable;
+        return fallback;
       }
     });
     _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
@@ -237,6 +267,10 @@ class _Entry {
   _Entry(this.requests, this.decision);
   final List<String> requests;
   PermissionOfferDecision decision;
+
+  bool get _notAccepted =>
+      decision == PermissionOfferDecision.declined ||
+      decision == PermissionOfferDecision.offered;
 
   RepeatedPermissionStatus status({bool offer = false}) =>
       RepeatedPermissionStatus(

@@ -8,8 +8,9 @@
 // Owner decision 2026-09-27 (dated later than KitTopBar.md, R15): Arabic is
 // dropped and galleries are phone 412x915 and one wide size 1280x800 only,
 // light and dark. This replaces KitTopBar.md's own list (360x800, 915x412,
-// 800x1280, 1600x1000, text 2.0 and Arabic RTL); the 200 % text behaviour
-// is covered by test/kit/kit_top_bar_test.dart instead.
+// 800x1280, 1600x1000 and Arabic RTL); the default is shot at text 2.0 at
+// both sizes (TEST-9, G4), and the rest of the 200 % text behaviour is
+// covered by test/kit/kit_top_bar_test.dart.
 //
 // kitGalleryPart centres its child at most 720 dp wide, so the 1280x800
 // shots show the bar at that width; the window class (large) still decides
@@ -73,27 +74,27 @@ KitShellControls _controls({
 );
 
 final Map<String, Widget Function()> _phoneStates = {
-  'kit_top_bar_default': () => KitTopBar(
+  'default': () => KitTopBar(
     title: 'Fix login',
     exit: KitTopBarExit.back,
     actions: _actions.take(1).toList(),
     menu: _menu,
   ),
-  'kit_top_bar_subtitle_working': () => KitTopBar(
+  'subtitle_working': () => KitTopBar(
     title: 'Fix login',
     subtitle: 'Working · 2 min',
     subtitleTone: AppStatusTone.progress,
     exit: KitTopBarExit.back,
     actions: _actions,
   ),
-  'kit_top_bar_needs_you': () => KitTopBar(
+  'needs_you': () => KitTopBar(
     title: 'Fix login',
     subtitle: 'Laptop',
     needsYou: 1,
     exit: KitTopBarExit.back,
     actions: _actions,
   ),
-  'kit_top_bar_switcher': () => KitTopBar(
+  'switcher': () => KitTopBar(
     title: 'shopfront',
     onTitleTap: _noop,
     titleTapLabel: 'Switch project',
@@ -101,18 +102,18 @@ final Map<String, Widget Function()> _phoneStates = {
     exit: KitTopBarExit.none,
     menu: _menu,
   ),
-  'kit_top_bar_brand': () => const KitTopBar(
+  'brand': () => const KitTopBar(
     title: 'Open Portal',
     brand: true,
     exit: KitTopBarExit.none,
   ),
-  'kit_top_bar_close': () =>
+  'close': () =>
       const KitTopBar(title: 'New server', exit: KitTopBarExit.close),
-  'kit_top_bar_shell_connected': () => KitTopBar.shell(controls: _controls()),
-  'kit_top_bar_shell_reconnecting': () => KitTopBar.shell(
+  'shell_connected': () => KitTopBar.shell(controls: _controls()),
+  'shell_reconnecting': () => KitTopBar.shell(
     controls: _controls(status: 'Reconnecting', tone: AppStatusTone.progress),
   ),
-  'kit_top_bar_shell_needs_you': () =>
+  'shell_needs_you': () =>
       KitTopBar.shell(controls: _controls(needsYou: 1), menu: _menu),
 };
 
@@ -121,10 +122,16 @@ void main() {
 
   for (final light in [false, true]) {
     for (final entry in _phoneStates.entries) {
-      testWidgets('${entry.key} ${light ? 'light' : 'dark'}', (tester) async {
+      testWidgets('kit_top_bar_${entry.key} ${light ? 'light' : 'dark'}', (
+        tester,
+      ) async {
         await kitGalleryPart(
           tester,
-          name: kitGalleryName(entry.key, const Size(412, 915), light: light),
+          name: kitGalleryName(
+            'kit_top_bar_${entry.key}',
+            const Size(412, 915),
+            light: light,
+          ),
           size: const Size(412, 915),
           light: light,
           child: _screen(entry.value()),
@@ -182,5 +189,26 @@ void main() {
         ),
       );
     });
+
+    for (final size in kitGalleryScaledSizes) {
+      testWidgets(
+        'kit_top_bar_default · text 2.0 · ${kitGallerySize(size)} · ${light ? 'light' : 'dark'}',
+        (tester) async {
+          await kitGalleryPart(
+            tester,
+            name: kitGalleryName(
+              'kit_top_bar_default',
+              size,
+              light: light,
+              text2: true,
+            ),
+            size: size,
+            light: light,
+            textScale: 2,
+            child: _screen(_phoneStates['default']!()),
+          );
+        },
+      );
+    }
   }
 }

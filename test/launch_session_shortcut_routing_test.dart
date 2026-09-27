@@ -162,12 +162,17 @@ Widget _app(ConnectionController controller, LaunchShortcut shortcut) =>
       child: OcApp(updateService: _NoUpdateService(), launchShortcut: shortcut),
     );
 
-bool _noticeShown() =>
-    find.byType(SnackBar).evaluate().isNotEmpty ||
-    find.byType(MaterialBanner).evaluate().isNotEmpty;
+bool _noticeShown() => _appNotice.evaluate().isNotEmpty;
 
 Future<void> _drainNotices(WidgetTester tester) =>
-    tester.pump(const Duration(seconds: 5));
+    tester.pump(const Duration(seconds: 9));
+
+/// The app's own status line (main.dart's notice, KitStatusLine keys
+/// `kit-status-app:*`), which replaced the snack bars and the banner.
+final _appNotice = find.byWidgetPredicate((widget) {
+  final key = widget.key;
+  return key is ValueKey && '${key.value}'.startsWith('kit-status-app:');
+});
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

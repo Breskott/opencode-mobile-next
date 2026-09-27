@@ -3,48 +3,11 @@
     "lib/ui/screens/activity_screen.dart": {
       "label workspaceDismissNotice: fewer than two words": 1
     },
-    "lib/ui/screens/app_diagnostics_screen.dart": {
-      "label e7SettingsDetailUi5: fewer than two words": 1
-    },
-    "lib/ui/screens/chat/prompt_editor.dart": {
-      "label chatUiDiscard: fewer than two words": 1
-    },
-    "lib/ui/screens/chat/prompt_stash.dart": {
-      "label promptStashDelete: a bare OK/Yes/Continue/Confirm/Delete": 1
-    },
     "lib/ui/screens/chat_screen.dart": {
-      "label chatUiRevert: fewer than two words": 1,
-      "label promptRestore: fewer than two words": 1,
       "title draftAttachmentRecoveryTitle: Arabic does not end with \"؟\"": 1,
       "title draftAttachmentRecoveryTitle: English does not end with \"?\"": 1,
       "title draftLeaveTitle: Arabic does not end with \"؟\"": 1,
-      "title draftLeaveTitle: English does not end with \"?\"": 1,
-      "title photoPendingTitle: Arabic does not end with \"؟\"": 1,
-      "title photoPendingTitle: English does not end with \"?\"": 1,
-      "title promptAttachmentsUnavailable: Arabic does not end with \"؟\"": 1,
-      "title promptAttachmentsUnavailable: English does not end with \"?\"": 1
-    },
-    "lib/ui/screens/development_services_screen.dart": {
-      "label not from app_en.arb": 1,
-      "title not from app_en.arb": 1
-    },
-    "lib/ui/screens/external_agents_screen.dart": {
-      "title a2aCancelTask: Arabic does not end with \"؟\"": 1,
-      "title a2aCancelTask: English does not end with \"?\"": 1,
-      "title a2aDeleteAgent: Arabic does not end with \"؟\"": 2,
-      "title a2aDeleteAgent: English does not end with \"?\"": 2,
-      "title a2aForgetTask: Arabic does not end with \"؟\"": 1,
-      "title a2aForgetTask: English does not end with \"?\"": 1
-    },
-    "lib/ui/screens/library/credential_sheet.dart": {
-      "label mcpRemove: fewer than two words": 1
-    },
-    "lib/ui/screens/library/integrations_screen.dart": {
-      "label mcpRemove: fewer than two words": 1
-    },
-    "lib/ui/screens/library/pending_auth_recovery.dart": {
-      "title pendingAuthForget: Arabic does not end with \"؟\"": 1,
-      "title pendingAuthForget: English does not end with \"?\"": 1
+      "title draftLeaveTitle: English does not end with \"?\"": 1
     },
     "lib/ui/screens/local_terminal_screen.dart": {
       "label localTerminalStop: fewer than two words": 1
@@ -53,45 +16,19 @@
       "label capsuleRemove: fewer than two words": 1,
       "label e7SetupDiscard: fewer than two words": 1
     },
-    "lib/ui/screens/session_destination_sheet.dart": {
-      "label e7SharedSwitch: fewer than two words": 1
-    },
-    "lib/ui/screens/settings/personal_settings_screens.dart": {
-      "label promptStashDelete: a bare OK/Yes/Continue/Confirm/Delete": 1,
-      "title not from app_en.arb": 1
-    },
     "lib/ui/screens/team/gate_sheet.dart": {
-      "label teamUiGateAnswerApprove: fewer than two words": 1,
-      "label teamUiGateAnswerDeny: fewer than two words": 1
-    },
-    "lib/ui/screens/terminal_screen.dart": {
-      "label capsuleRemove: fewer than two words": 1,
-      "label voiceConversationStopReply: fewer than two words": 1
+      "label teamUiGateAnswerApprove: fewer than two words": 1
     },
     "lib/ui/screens/workspace_screen.dart": {
-      "label e7WorkspaceArchive: fewer than two words": 1,
       "label promptStashDelete: a bare OK/Yes/Continue/Confirm/Delete": 1
     },
-    "lib/ui/widgets/form_renderer.dart": {
-      "label workspaceDismissNotice: fewer than two words": 1
-    },
-    "lib/ui/widgets/phone_server_card.dart": {
-      "label phoneServerCardRemoveConfirm: fewer than two words": 1
-    },
     "lib/ui/widgets/safety_confirms.dart": {
-      "label e7SettingsUi8: fewer than two words": 2,
-      "label phoneServerStop: fewer than two words": 1,
+      "label e7SettingsUi8: fewer than two words": 1,
       "label termuxProcsStop: fewer than two words": 1,
       "label termuxRestartConfirm: fewer than two words": 2
     },
-    "lib/ui/widgets/team_phone_section.dart": {
-      "label teamUiPhoneRemoveConfirm: a bare OK/Yes/Continue/Confirm/Delete": 1
-    },
     "lib/ui/widgets/work_status_line.dart": {
       "label workServerRestart: fewer than two words": 1
-    },
-    "lib/voice/voice_ui.dart": {
-      "label e7VoiceUiDelete: a bare OK/Yes/Continue/Confirm/Delete": 1
     }
   },
   "G11 technical": {
@@ -143,21 +80,6 @@
     "connectionHelpGuideTip": {
       "ar address \"localhost\"": 1,
       "en address \"localhost\"": 1
-    },
-    "connectionHelpLoopback": {
-      "ar address \"localhost\"": 1
-    },
-    "connectionHelpRemoteHttp": {
-      "ar address \"100.64.0.0\"": 1,
-      "en address \"100.64.0.0/10\"": 1
-    },
-    "connectionHelpTunnelSteps": {
-      "ar address \"127.0.0.1\"": 1,
-      "ar address \"localhost\"": 1,
-      "en address \"127.0.0.1\"": 1
-    },
-    "connectionHelpTunnelTitle": {
-      "ar address \"localhost\"": 1
     },
     "discoverTerminalAliases": {
       "en engine word \"pty\"": 1
@@ -270,10 +192,6 @@
       "en address \"127.0.0.1\"": 1,
       "en port \":4096\"": 1
     },
-    "handoffCommandUnavailable": {
-      "ar address \"localhost\"": 1,
-      "en address \"localhost\"": 1
-    },
     "localAgentFailedPortInUse": {
       "en port \"Port 6767\"": 1
     },
@@ -364,17 +282,10 @@
     "teamUiPhoneFailedCity": {
       "en engine word \"city\"": 1
     },
-    "teamUiPhoneOfferSize": {
-      "ar engine word \"beads\"": 1,
-      "en engine word \"beads\"": 1
-    },
     "teamUiPhoneRemoveBody": {
       "en engine word \"city\"": 1
     },
     "teamUiPhoneStatusInstalled": {
-      "en engine word \"city\"": 1
-    },
-    "teamUiPhoneStepCity": {
       "en engine word \"city\"": 1
     },
     "teamUiPolicyRig": {
@@ -491,9 +402,6 @@
     "agentAccountUsageUnavailable": {
       "noun sentence host": 1
     },
-    "aiteamComponentSectionTitle": {
-      "title over four words": 1
-    },
     "approvalsUiEverythingTitle": {
       "title over four words": 1
     },
@@ -521,6 +429,9 @@
     "builtinServerTitle": {
       "product name OpenCode": 1
     },
+    "chatRequestAlwaysTitle": {
+      "title over four words": 1
+    },
     "chatUiAskOpenCode": {
       "product name OpenCode": 1
     },
@@ -542,49 +453,14 @@
     "codexExperimentalLabel": {
       "product name Codex": 1
     },
-    "commandAuthConfirmTitle": {
-      "title over four words": 1
-    },
     "connectionCloseEditor": {
       "verb Sign out/Close on a server": 1
     },
     "connectionDisplayNameHint": {
       "noun sentence host": 1
     },
-    "connectionHelpPrivateSteps": {
-      "noun sentence host": 1
-    },
-    "connectionHelpPrivateTitle": {
-      "title over four words": 1
-    },
-    "connectionHelpTunnelSteps": {
-      "noun sentence host": 1
-    },
-    "connectionHelpTunnelTitle": {
-      "title over four words": 1
-    },
-    "connectionHelpVerifySteps": {
-      "noun sentence host": 1
-    },
     "desktopDropFailedTitle": {
       "title over four words": 1
-    },
-    "discoverAllConversationsAliases": {
-      "noun sentence chats": 1,
-      "noun sentence sessions": 1
-    },
-    "discoverInboxAliases": {
-      "noun sentence activity": 1
-    },
-    "discoverMonitorAliases": {
-      "noun sentence attention": 1
-    },
-    "discoverNotifyServersAliases": {
-      "noun sentence attention": 1
-    },
-    "discoverWorkAliases": {
-      "noun sentence chats": 1,
-      "noun sentence sessions": 1
     },
     "draftAttachmentRecoveryTitle": {
       "noun label attention": 1
@@ -598,9 +474,6 @@
     "e7ConnectionFailure9": {
       "product name Codex": 1
     },
-    "e7GlossaryProviderExplanation": {
-      "noun sentence hosts": 1
-    },
     "e7LibraryDestinationHost": {
       "noun label host": 1
     },
@@ -609,10 +482,6 @@
     },
     "e7LibrarySERVERS": {
       "uppercase": 1
-    },
-    "e7LibrarySearchImportAliases": {
-      "noun sentence chat": 1,
-      "noun sentence session": 1
     },
     "e7LibraryTheServerReturnedAnUnsafeAuthorizationLink": {
       "noun sentence host": 1
@@ -628,9 +497,6 @@
     },
     "e7ProjectMonitorUnsupported": {
       "noun sentence attention": 1
-    },
-    "e7SettingsAlphaBody": {
-      "body over two sentences": 1
     },
     "e7SettingsCurrentServer": {
       "noun sentence host": 1
@@ -837,6 +703,12 @@
     "folderBrowserProject": {
       "product name OpenCode": 1
     },
+    "gateSheetAfterAnswer": {
+      "noun sentence host": 1
+    },
+    "gateSheetDestructiveBody": {
+      "noun sentence host": 1
+    },
     "handoffUiUnavailableWorkspace": {
       "noun sentence host": 1
     },
@@ -890,9 +762,6 @@
       "product name Paseo": 1
     },
     "localAgentStopTitle": {
-      "title over four words": 1
-    },
-    "localAgentTitle": {
       "title over four words": 1
     },
     "localTerminalNotSetUpTitle": {
@@ -958,9 +827,6 @@
     "notifyBlockedTitle": {
       "title over four words": 1
     },
-    "oc2DiscoveryConnect": {
-      "product name OpenCode": 1
-    },
     "oc2DiscoveryEditorTitle": {
       "product name OpenCode": 1
     },
@@ -1006,9 +872,6 @@
     "phoneSetupStartTitle": {
       "product name OpenCode": 1
     },
-    "pluginMappingClearTitle": {
-      "title over four words": 1
-    },
     "quotaBudgetClearDescription": {
       "noun sentence attention": 1
     },
@@ -1018,9 +881,6 @@
     "quotaCodexAccount": {
       "product name Codex": 1
     },
-    "readAloudConsentTitle": {
-      "title over four words": 1
-    },
     "returnBriefContinue": {
       "bare Continue": 1
     },
@@ -1029,19 +889,6 @@
     },
     "safetyStopLocalServerTitle": {
       "noun sentence local server": 1
-    },
-    "settingsHubSearchModelModeAliases": {
-      "noun sentence chat": 1,
-      "noun sentence session": 1
-    },
-    "settingsHubSearchSavedServersAliases": {
-      "noun sentence host": 1,
-      "noun sentence profile": 1,
-      "noun sentence profiles": 1
-    },
-    "settingsHubSearchServerAliases": {
-      "noun sentence host": 1,
-      "noun sentence profile": 1
     },
     "setupOtherVersions": {
       "product name OpenCode": 1
@@ -1067,6 +914,20 @@
     "setupUncheckedTitle": {
       "title over four words": 1
     },
+    "teamAgentScreenControlsElsewhere": {
+      "noun sentence host": 1
+    },
+    "teamAgentScreenCrashedBody": {
+      "noun sentence host": 1,
+      "noun sentence session": 1
+    },
+    "teamAgentScreenRecyclingBody": {
+      "noun sentence host": 1,
+      "noun sentence session": 1
+    },
+    "teamAgentScreenStopBody": {
+      "noun sentence host": 1
+    },
     "teamBoardAddFailed": {
       "noun sentence host": 1
     },
@@ -1081,6 +942,12 @@
     },
     "teamBoardStatusReadOnly": {
       "noun sentence host": 1
+    },
+    "teamChatGoneTitle": {
+      "title over four words": 1
+    },
+    "teamChatRefusedTitle": {
+      "title over four words": 1
     },
     "teamChatStopConfirmBody": {
       "body over two sentences": 1
@@ -1097,8 +964,14 @@
     "teamDiscoverSpeedTitle": {
       "title over four words": 1
     },
-    "teamDiscoverUnsupportedTitle": {
+    "teamIntroCostTitle": {
       "title over four words": 1
+    },
+    "teamMergeFailedNext": {
+      "noun sentence host": 1
+    },
+    "teamNowWakeRefusedNoReason": {
+      "noun sentence host": 1
     },
     "teamOpenConversationHint": {
       "noun sentence chat": 1
@@ -1142,19 +1015,10 @@
     "teamUiPhoneContinue": {
       "bare Continue": 1
     },
-    "teamUiPhoneFailedTitle": {
-      "title over four words": 1
-    },
-    "teamUiPhoneOfferTitle": {
-      "title over four words": 1
-    },
     "teamUiPhoneRemoveBody": {
       "body over two sentences": 1
     },
     "teamUiPhoneRemoveTitle": {
-      "title over four words": 1
-    },
-    "teamUiPhoneReofferTitle": {
       "title over four words": 1
     },
     "teamUiPhoneStopTitle": {
@@ -1183,9 +1047,6 @@
       "title over four words": 1
     },
     "teamUiStartRunTitle": {
-      "title over four words": 1
-    },
-    "teamUiStateNotAnsweringTitle": {
       "title over four words": 1
     },
     "teamUiStateNotGasCityTitle": {
