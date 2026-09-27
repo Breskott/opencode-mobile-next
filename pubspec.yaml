@@ -43,7 +43,7 @@ dependencies:
   # deprecated algorithms. Installs that skipped 1.0.31 entirely lose stored
   # server credentials on upgrade and must pair again: acceptable for the
   # alpha line, and called out in the release notes.
-  flutter_secure_storage: 11.0.0
+  flutter_secure_storage: 11.2.0
   crypto: 3.0.7
   image_picker: 1.2.3
   # Scanning the QR that `opencode2 pair` prints. Pinned exactly, because it

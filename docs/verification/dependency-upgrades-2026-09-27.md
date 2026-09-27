@@ -35,3 +35,11 @@ Explicit checks in the published `packages/opencode_sdk/`: `dart analyze` **clea
 App command: `flutter test --no-pub --concurrency=1 test/api2_transport_test.dart test/api2_sse_test.dart test/connection_sse_test.dart test/server_probe_test.dart` — **67 passed**. All named files existed.
 
 Device checks owed: sustained paused/large SSE responses, cancellation/reconnect and bounded RSS/socket backpressure across OpenCode/Gas City/quota streams; retain auth-header and diagnostic redaction behavior. Ordinary transport fixtures do not establish the memory improvement on a phone.
+
+## 4. flutter_secure_storage 11.2.0
+
+Updated the exact root pin; the only lock changes are flutter_secure_storage 11.2.0 and its required platform interface 2.1.1. No key names, namespaces, biometric options or credential migration behavior changed.
+
+Command: `flutter test --no-pub --concurrency=1 test/profile_secure_storage_test.dart test/profile_store_test.dart test/external_agent_state_test.dart test/team_control_test.dart test/team_controller_test.dart` — **96 passed**. These cover the review's profile, external-agent and team-store areas. Tests use secure-storage channel mocks or injected memory/failing storage implementations which override the native operations; none relies on an unmocked ProfileStore channel.
+
+Device checks owed: credentials from an existing installation survive upgrade/restart; concurrent store instances; deleting one profile leaves other profiles' credentials intact. This upgrade does not recover credentials already lost when skipping the older major-version migration.
