@@ -7,11 +7,11 @@
     },
     "lib/ui/screens/chat_screen.dart": {
       "AlertDialog(": 2,
-      "SnackBar(": 18,
-      "showConfirmSheet(": 11,
+      "SnackBar(": 15,
+      "showConfirmSheet(": 4,
       "showDialog(": 2,
-      "showModalBottomSheet(": 8,
-      "showSnackBar(": 18
+      "showModalBottomSheet(": 5,
+      "showSnackBar(": 15
     },
     "lib/ui/screens/connection_help_screen.dart": {
       "SnackBar(": 1,
@@ -89,31 +89,24 @@
       "Text": 10
     },
     "lib/ui/screens/chat_screen.dart": {
-      "ActionChip": 1,
       "AlertDialog": 2,
       "AnimatedSize": 1,
       "AnimatedSwitcher": 1,
       "AppBar": 2,
       "Badge": 2,
-      "Chip": 1,
-      "CircularProgressIndicator": 2,
       "FilledButton": 2,
-      "Icon": 20,
+      "Icon": 12,
       "IconButton": 9,
-      "ListTile": 6,
-      "MaterialPageRoute": 27,
+      "MaterialPageRoute": 24,
       "NotificationListener": 1,
-      "Opacity": 1,
-      "OutlinedButton": 1,
       "Positioned": 2,
       "Scaffold": 2,
-      "SingleChildScrollView": 3,
-      "SnackBar": 18,
-      "SnackBarAction": 1,
-      "Text": 46,
+      "SingleChildScrollView": 2,
+      "SnackBar": 15,
+      "Text": 31,
       "TextButton": 5,
       "TextField": 2,
-      "Tooltip": 5
+      "Tooltip": 4
     },
     "lib/ui/screens/connection_help_screen.dart": {
       "AppBar": 1,
@@ -312,7 +305,7 @@
       "Curves.": 5,
       "HapticFeedback.": 1,
       "duration: Duration(": 3,
-      "showConfirmSheet(": 11
+      "showConfirmSheet(": 4
     },
     "lib/ui/screens/connection_help_screen.dart": {
       "Clipboard.setData(": 1
@@ -373,8 +366,8 @@
       ".textTheme": 2
     },
     "lib/ui/screens/chat_screen.dart": {
-      ".colorScheme": 7,
-      ".textTheme": 4
+      ".colorScheme": 1,
+      ".textTheme": 2
     },
     "lib/ui/screens/connection_help_screen.dart": {
       ".textTheme": 4
@@ -529,12 +522,11 @@
       "SizedBox numeric": 7
     },
     "lib/ui/screens/chat_screen.dart": {
-      "EdgeInsets numeric": 6,
-      "Opacity( around text": 1,
+      "EdgeInsets numeric": 4,
       "SizedBox numeric": 1,
-      "TextStyle(": 2,
+      "TextStyle(": 1,
       "disableAnimationsOf": 4,
-      "icon size not 20/22/24": 4,
+      "icon size not 20/22/24": 2,
       "text scale clamp": 1
     },
     "lib/ui/screens/connection_help_screen.dart": {

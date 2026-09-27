@@ -241,9 +241,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonClearSearch => 'Clear search';
 
   @override
-  String get commonUndo => 'Undo';
-
-  @override
   String get workTitle => 'Tasks';
 
   @override
@@ -8622,10 +8619,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiReloadMessages => 'Refresh messages';
 
   @override
-  String get chatUiRemovesItFromTheConversationPermanently =>
-      'Removes it from the conversation permanently';
-
-  @override
   String get chatUiRename => 'Rename';
 
   @override
@@ -8813,10 +8806,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatUiStartACleanSessionInThisWorkspace =>
       'Start a clean conversation in this project';
-
-  @override
-  String get chatUiStartANewSessionWithThisPrompt =>
-      'Start a new conversation with this prompt in the composer';
 
   @override
   String get chatUiStartCoding => 'Start coding';

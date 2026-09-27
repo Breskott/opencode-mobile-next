@@ -1,8 +1,9 @@
 part of '../chat_screen.dart';
 
-/// "Saved prompts": prompts kept on this device for this server, newest
-/// first. Tapping a row restores it into the draft (the host asks before
-/// replacing anything). Delete sits in the row's menu and happens at once
+/// The body of "Saved prompts": prompts kept on this device for this
+/// server, newest first. The host opens it with [showKitSheet], which draws
+/// the title, the close button and [loading]. Tapping a row restores it
+/// into the draft (the host asks before replacing anything). Delete sits in the row's menu and happens at once
 /// with "Saved prompt deleted · Undo": the entry leaves the list now and is
 /// removed from the device when the Undo window closes, so no confirmation
 /// sheet stacks on this one (map prompt-stash-delete-sheet: remove).
@@ -11,10 +12,15 @@ class _PromptStashSheet extends StatefulWidget {
     required this.controller,
     required this.location,
     required this.profile,
+    required this.loading,
   });
   final ConnectionController controller;
   final int location;
   final String profile;
+
+  /// The sheet's one loading bar: on while the store is read or a restore
+  /// is on its way out.
+  final ValueNotifier<bool> loading;
   @override
   State<_PromptStashSheet> createState() => _PromptStashSheetState();
 }
@@ -39,6 +45,15 @@ class _PromptStashSheetState extends State<_PromptStashSheet> {
       widget.profile == widget.controller.promptShelfProfileID &&
       widget.location == widget.controller.locationRevision;
   bool get _unsafe => !_current || _preparing || _deleting || _readFailed;
+
+  /// Tells the sheet frame whether to show its loading bar. After the
+  /// frame, since the frame is this body's ancestor.
+  void _syncLoading() {
+    final busy = _preparing || _deleting;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.loading.value = busy;
+    });
+  }
 
   @override
   void initState() {
@@ -190,114 +205,101 @@ class _PromptStashSheetState extends State<_PromptStashSheet> {
           : _error;
       final unsafe = _unsafe;
       final busyReason = !current ? l10n.promptStashScopeChanged : null;
-      return KitSheet(
-        key: const Key('prompt-stash-sheet'),
-        // The host's modal draws the handle.
-        handle: false,
-        title: l10n.promptStashTitle,
-        subtitle: l10n.promptStashIntro,
-        icon: AppIconography.bookmarks,
-        loading: _preparing || _deleting,
-        onClose: () => Navigator.pop(context),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            KitSearchField(
-              controller: _search,
-              label: l10n.promptStashSearch,
-              enabled: current,
-              disabledReason: busyReason,
-              resultCount: query.isEmpty ? null : prompts.length,
-              onChanged: (value) => setState(() => _query = value),
-            ),
-            if (error != null)
-              KitNotice(
-                key: const Key('prompt-stash-error'),
-                tone: AppStatusTone.failure,
-                message: error,
-                actions: [
-                  if (current && _readFailed)
-                    KitAction(
-                      label: l10n.commonRetry,
-                      onPressed: _preparing
-                          ? null
-                          : () => unawaited(_prepare()),
-                    ),
-                ],
-              ),
-            if (_migrationPending && current)
-              KitNotice(
-                message: l10n.promptStashMigrationPending,
-                actions: [
+      _syncLoading();
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          KitSearchField(
+            controller: _search,
+            label: l10n.promptStashSearch,
+            enabled: current,
+            disabledReason: busyReason,
+            resultCount: query.isEmpty ? null : prompts.length,
+            onChanged: (value) => setState(() => _query = value),
+          ),
+          if (error != null)
+            KitNotice(
+              key: const Key('prompt-stash-error'),
+              tone: AppStatusTone.failure,
+              message: error,
+              actions: [
+                if (current && _readFailed)
                   KitAction(
                     label: l10n.commonRetry,
-                    onPressed: _preparing || _deleting
-                        ? null
-                        : () => unawaited(_prepare()),
+                    onPressed: _preparing ? null : () => unawaited(_prepare()),
                   ),
-                ],
-              ),
-            if (prompts.isEmpty && error == null && !_preparing)
-              if (query.isNotEmpty)
-                KitSearchNoMatch(
-                  query: _query.trim(),
-                  onClear: () {
-                    _search.clear();
-                    setState(() => _query = '');
-                  },
-                )
-              else
-                KitStateView(
-                  key: const Key('prompt-stash-empty'),
-                  size: KitStateSize.inline,
-                  icon: AppIconography.bookmarks,
-                  title: l10n.promptStashEmptyTitle,
-                  body: l10n.promptStashEmptyBody,
+              ],
+            ),
+          if (_migrationPending && current)
+            KitNotice(
+              message: l10n.promptStashMigrationPending,
+              actions: [
+                KitAction(
+                  label: l10n.commonRetry,
+                  onPressed: _preparing || _deleting
+                      ? null
+                      : () => unawaited(_prepare()),
                 ),
-            if (prompts.isNotEmpty)
-              KitRowGroup(
-                leadingIcons: false,
-                children: [
-                  for (final prompt in prompts)
-                    KitRow(
-                      key: ValueKey('restore-stash-${prompt.id}'),
-                      title: prompt.text.isEmpty
-                          ? l10n.promptStashContextOnly
-                          : prompt.text,
-                      titleMaxLines: 2,
-                      supporting: TextSpan(text: _supporting(context, prompt)),
-                      supportingMaxLines: 2,
-                      enabled: !unsafe,
-                      disabledReason: unsafe
-                          ? (busyReason ?? l10n.promptStashBusy)
-                          : null,
-                      onTap: unsafe ? null : () => _restore(prompt),
-                      menuLabel: l10n.promptStashRowActions,
-                      menu: unsafe
-                          ? const []
-                          : [
-                              KitMenuItem(
-                                key: ValueKey(
-                                  'restore-stash-menu-${prompt.id}',
-                                ),
-                                icon: AppIconography.unarchive,
-                                label: l10n.promptStashRestoreToDraft,
-                                onSelected: () => _restore(prompt),
-                              ),
-                              KitMenuItem(
-                                key: ValueKey('delete-stash-${prompt.id}'),
-                                icon: AppIconography.delete,
-                                label: l10n.promptStashDeleteAction,
-                                destructive: true,
-                                onSelected: () => _delete(prompt),
-                              ),
-                            ],
-                    ),
-                ],
+              ],
+            ),
+          if (prompts.isEmpty && error == null && !_preparing)
+            if (query.isNotEmpty)
+              KitSearchNoMatch(
+                query: _query.trim(),
+                onClear: () {
+                  _search.clear();
+                  setState(() => _query = '');
+                },
+              )
+            else
+              KitStateView(
+                key: const Key('prompt-stash-empty'),
+                size: KitStateSize.inline,
+                icon: AppIconography.bookmarks,
+                title: l10n.promptStashEmptyTitle,
+                body: l10n.promptStashEmptyBody,
               ),
-          ],
-        ),
+          if (prompts.isNotEmpty)
+            KitRowGroup(
+              leadingIcons: false,
+              children: [
+                for (final prompt in prompts)
+                  KitRow(
+                    key: ValueKey('restore-stash-${prompt.id}'),
+                    title: prompt.text.isEmpty
+                        ? l10n.promptStashContextOnly
+                        : prompt.text,
+                    titleMaxLines: 2,
+                    supporting: TextSpan(text: _supporting(context, prompt)),
+                    supportingMaxLines: 2,
+                    enabled: !unsafe,
+                    disabledReason: unsafe
+                        ? (busyReason ?? l10n.promptStashBusy)
+                        : null,
+                    onTap: unsafe ? null : () => _restore(prompt),
+                    menuLabel: l10n.promptStashRowActions,
+                    menu: unsafe
+                        ? const []
+                        : [
+                            KitMenuItem(
+                              key: ValueKey('restore-stash-menu-${prompt.id}'),
+                              icon: AppIconography.unarchive,
+                              label: l10n.promptStashRestoreToDraft,
+                              onSelected: () => _restore(prompt),
+                            ),
+                            KitMenuItem(
+                              key: ValueKey('delete-stash-${prompt.id}'),
+                              icon: AppIconography.delete,
+                              label: l10n.promptStashDeleteAction,
+                              destructive: true,
+                              onSelected: () => _delete(prompt),
+                            ),
+                          ],
+                  ),
+              ],
+            ),
+        ],
       );
     },
   );

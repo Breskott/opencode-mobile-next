@@ -518,12 +518,6 @@ abstract class AppLocalizations {
   /// **'Clear search'**
   String get commonClearSearch;
 
-  /// No description provided for @commonUndo.
-  ///
-  /// In en, this message translates to:
-  /// **'Undo'**
-  String get commonUndo;
-
   /// No description provided for @workTitle.
   ///
   /// In en, this message translates to:
@@ -14233,12 +14227,6 @@ abstract class AppLocalizations {
   /// **'Refresh messages'**
   String get chatUiReloadMessages;
 
-  /// Chat journey: Removes it from the conversation permanently
-  ///
-  /// In en, this message translates to:
-  /// **'Removes it from the conversation permanently'**
-  String get chatUiRemovesItFromTheConversationPermanently;
-
   /// Chat journey: Rename
   ///
   /// In en, this message translates to:
@@ -14586,12 +14574,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start a clean conversation in this project'**
   String get chatUiStartACleanSessionInThisWorkspace;
-
-  /// Chat journey: Start a new session with this prompt in the composer
-  ///
-  /// In en, this message translates to:
-  /// **'Start a new conversation with this prompt in the composer'**
-  String get chatUiStartANewSessionWithThisPrompt;
 
   /// Chat journey: Start coding
   ///

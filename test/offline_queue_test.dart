@@ -14,6 +14,7 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/offline_queue.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitUndo;
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
@@ -833,6 +834,16 @@ void main() {
       tester.widget<TextField>(find.byType(TextField)).controller?.text,
       'edit me',
     );
+
+    // P4.3: "Returned to your draft · Undo"; Undo queues it again.
+    expect(find.text('Returned to your draft'), findsOneWidget);
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(controller.queuedPromptCount, 1);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller?.text,
+      isEmpty,
+    );
   });
 
   testWidgets('discarding a queued draft confirms first', (tester) async {
@@ -1394,6 +1405,8 @@ void main() {
         findsNothing,
       );
       expect(find.textContaining('may already have reached'), findsNothing);
+      // Let the Undo window close.
+      await tester.pump(KitUndo.window);
     });
 
     testWidgets('editing an unconfirmed send whose removal is refused '

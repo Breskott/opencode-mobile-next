@@ -11,6 +11,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitMenuPanel;
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -221,7 +222,9 @@ void main() {
 
       await tester.tap(actions);
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('message-action-copy')), findsOneWidget);
+      // More opens the kit's one menu; Copy stays beside it, not in it.
+      expect(find.byType(KitMenuPanel), findsOneWidget);
+      expect(find.byKey(const ValueKey('message-menu-copy')), findsNothing);
       semantics.dispose();
       await tester.pumpWidget(const SizedBox.shrink());
     },

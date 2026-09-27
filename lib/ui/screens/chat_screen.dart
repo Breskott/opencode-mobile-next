@@ -386,7 +386,7 @@ class _ChatScreenState extends State<ChatScreen>
   /// inbox. Steer matches the server default; the visible delivery control
   /// in the composer both shows and sets this, and the Send long-press
   /// shortcut updates it too so the label never lies (UX-P0-04).
-  PromptDelivery _delivery = PromptDelivery.steer;
+  PromptDelivery _delivery = PromptDelivery.queue;
 
   /// While the reader is scrolled away from the latest message, the rendered
   /// message count is pinned so a completing turn cannot shift the visible
@@ -803,10 +803,11 @@ class _ChatScreenState extends State<ChatScreen>
       if (!mounted || _draftLocation != _conn.locationRevision) return;
       setState(() => _restoringDraftAttachments = false);
       if (recovered.unavailable.isNotEmpty) {
-        final accept = await showConfirmSheet(
+        final accept = await showKitConfirm(
           context,
+          icon: AppIconography.attach,
           title: _chatL10n(context).draftAttachmentRecoveryTitle,
-          message: _chatL10n(
+          body: _chatL10n(
             context,
           ).draftAttachmentRecoveryDetail(recovered.unavailable.join(', ')),
           confirmLabel: _chatL10n(context).draftUseAvailableAttachments,
@@ -955,12 +956,14 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Future<void> _reusePrompt() async {
-    final text = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder: (_) => _PromptHistorySheet(prompts: _recentPrompts),
+    final l10n = _chatL10n(context);
+    final text = await showKitSheet<String>(
+      context,
+      sheetKey: const Key('prompt-history-sheet'),
+      title: l10n.composerReuseTitle,
+      subtitle: l10n.promptHistoryIntro,
+      icon: AppIconography.history,
+      body: (_) => _PromptHistorySheet(prompts: _recentPrompts),
     );
     if (!mounted || text == null) return;
     final draft = _composer.text.trimRight();
@@ -1116,16 +1119,23 @@ class _ChatScreenState extends State<ChatScreen>
     _conn.addListener(checkScope);
     _conn.profileDataChanges.addListener(checkScope);
     setState(() => _promptShelfOperationBusy = true);
+    // Not disposed here: the sheet's body can still report to it while the
+    // sheet slides away; nothing holds it after that.
+    final loading = ValueNotifier<bool>(true);
     try {
-      final selected = await showModalBottomSheet<StashedPrompt>(
-        context: context,
-        useSafeArea: true,
-        isScrollControlled: true,
-        showDragHandle: true,
-        builder: (_) => _PromptStashSheet(
+      final l10n = _chatL10n(context);
+      final selected = await showKitSheet<StashedPrompt>(
+        context,
+        sheetKey: const Key('prompt-stash-sheet'),
+        title: l10n.promptStashTitle,
+        subtitle: l10n.promptStashIntro,
+        icon: AppIconography.bookmarks,
+        loading: loading,
+        body: (_) => _PromptStashSheet(
           controller: _conn,
           location: location,
           profile: profile,
+          loading: loading,
         ),
       );
       if (!mounted || selected == null || !unchanged()) {
@@ -1148,26 +1158,24 @@ class _ChatScreenState extends State<ChatScreen>
       if (!mounted || !unchanged()) return;
       final unavailable = recovered.unavailable;
       if (unavailable.isNotEmpty) {
-        final accepted = await showConfirmSheet(
+        final accepted = await showKitConfirm(
           context,
           icon: AppIconography.attach,
           title: _chatL10n(context).promptAttachmentsUnavailable,
-          message: _chatL10n(
+          body: _chatL10n(
             context,
           ).promptAttachmentsUnavailableDetail(unavailable.join(', ')),
           confirmLabel: _chatL10n(context).promptRestoreAvailable,
-          cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
         );
         if (!mounted || !accepted || !unchanged()) return;
       }
       if (!current.isEmpty) {
-        final accepted = await showConfirmSheet(
+        final accepted = await showKitConfirm(
           context,
           icon: AppIconography.package,
           title: _chatL10n(context).promptRestoreTitle,
-          message: _chatL10n(context).promptRestorePreserve,
+          body: _chatL10n(context).promptRestorePreserve,
           confirmLabel: _chatL10n(context).promptRestore,
-          cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
         );
         if (!mounted || !accepted || !unchanged()) return;
       }
@@ -1248,28 +1256,25 @@ class _ChatScreenState extends State<ChatScreen>
     final previous = _composer.value;
     _composer.clear();
     _persistDraft();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(_chatL10n(context).composerDraftCleared),
-        action: SnackBarAction(
-          label: _chatL10n(context).commonUndo,
-          onPressed: () {
-            if (!mounted) return;
-            // Never overwrite text entered since Clear. Keep both drafts.
-            final current = _composer.text;
-            _composer.value = current.isEmpty
-                ? previous
-                : TextEditingValue(
-                    text: '${previous.text}\n\n$current',
-                    selection: TextSelection.collapsed(
-                      offset: previous.text.length + 2 + current.length,
-                    ),
-                  );
-            _persistDraft();
-            _focus.requestFocus();
-          },
-        ),
-      ),
+    showKitUndo(
+      context,
+      message: _chatL10n(context).composerDraftCleared,
+      key: const Key('composer-cleared-undo'),
+      onUndo: () {
+        if (!mounted) return;
+        // Never overwrite text entered since Clear. Keep both drafts.
+        final current = _composer.text;
+        _composer.value = current.isEmpty
+            ? previous
+            : TextEditingValue(
+                text: '${previous.text}\n\n$current',
+                selection: TextSelection.collapsed(
+                  offset: previous.text.length + 2 + current.length,
+                ),
+              );
+        _persistDraft();
+        _focus.requestFocus();
+      },
     );
     _focus.requestFocus();
   }
@@ -2100,36 +2105,31 @@ class _ChatScreenState extends State<ChatScreen>
 
   Widget _olderHistoryRow() {
     final l10n = _chatL10n(context);
+    final tokens = KitTokens.of(context);
+    final error = _olderError;
     return Padding(
       key: const ValueKey('chat-older-history'),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(tokens.space4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        spacing: tokens.space2,
         children: [
-          if (_olderError != null) Text(productErrorText(_olderError!)),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              OutlinedButton(
-                key: const ValueKey('chat-load-older'),
-                onPressed: _loading || _loadingOlder ? null : _loadOlder,
-                child: Opacity(
-                  opacity: _loadingOlder ? 0 : 1,
-                  child: Text(
-                    _olderNeedsReload
-                        ? l10n.historyReload
-                        : _olderError != null
-                        ? l10n.refreshRetry
-                        : l10n.historyLoadOlder,
-                  ),
-                ),
-              ),
-              if (_loadingOlder)
-                const SizedBox.square(
-                  dimension: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-            ],
+          if (error != null)
+            KitText(
+              productErrorText(error),
+              tone: KitTextTone.danger,
+              textAlign: TextAlign.center,
+            ),
+          KitButton.secondary(
+            key: const ValueKey('chat-load-older'),
+            expand: false,
+            working: _loadingOlder,
+            onPressed: _loading || _loadingOlder ? null : _loadOlder,
+            label: _olderNeedsReload
+                ? l10n.historyReload
+                : error != null
+                ? l10n.refreshRetry
+                : l10n.historyLoadOlder,
           ),
         ],
       ),
@@ -2363,27 +2363,37 @@ class _ChatScreenState extends State<ChatScreen>
     return null;
   }
 
-  /// Edit takes the draft out of the queue and into the composer; nothing
-  /// is sent until the user presses Send. A draft whose send was never
-  /// confirmed still leaves with a note that sending again may duplicate.
+  /// Edit takes the draft out of the queue and back into the composer,
+  /// ahead of what was typed since, with "Returned to your draft · Undo"
+  /// (P4.3). Undo takes it back out and queues it again. Nothing is sent
+  /// until the person presses Send. A draft whose send was never confirmed
+  /// also says that sending it again may duplicate it.
   Future<void> _editQueuedPrompt(QueuedPrompt entry) async {
     final live = _liveQueuedPrompt(entry.id);
     if (live == null) return;
     if (!await _removeQueuedDraft(live.id)) return;
     if (!mounted) return;
-    setState(() {
-      _attachments
-        ..clear()
-        ..addAll(live.attachments);
-    });
-    final current = _composer.text;
-    _composer.text = current.trim().isEmpty
-        ? live.text
-        : '${live.text}\n$current';
-    _composer.selection = TextSelection.collapsed(
-      offset: _composer.text.length,
+    final added = [
+      for (final attachment in live.attachments)
+        if (!_attachments.contains(attachment)) attachment,
+    ];
+    setState(() => _attachments.addAll(added));
+    returnWithdrawnToDraft(
+      context,
+      composer: _composer,
+      text: live.text,
+      focus: _focus,
+      onUndo: () async {
+        if (mounted) {
+          setState(() => _attachments.removeWhere(added.contains));
+        }
+        try {
+          await _conn.queuePrompt(live);
+        } on OfflineQueueWriteException {
+          if (mounted) _showActionError(_chatL10n(context).queueSaveFailed);
+        }
+      },
     );
-    _focus.requestFocus();
     if (live.dispatched) {
       _showComposerNote(
         _chatL10n(context).queuedResendMessage,
@@ -2413,18 +2423,18 @@ class _ChatScreenState extends State<ChatScreen>
   /// The discard sheet, worded for the entry's state at the moment it opens.
   Future<bool> _confirmDiscardQueuedPrompt(QueuedPrompt asked) {
     final l10n = _chatL10n(context);
-    return showConfirmSheet(
+    return showKitConfirm(
       context,
+      kind: KitConfirmKind.discard,
       icon: AppIconography.clearAll,
-      title: _chatL10n(context).chatUiDiscardQueuedDraft,
-      message: asked.dispatched
+      title: l10n.chatUiDiscardQueuedDraft,
+      body: asked.dispatched
           ? l10n.queuedDiscardUnconfirmedMessage
-          : _chatL10n(context).chatUiThisDraftHasNotBeenSentTo,
-      confirmLabel: _chatL10n(context).chatUiDiscardDraft,
+          : l10n.chatUiThisDraftHasNotBeenSentTo,
+      confirmLabel: l10n.chatUiDiscardDraft,
       cancelLabel: asked.dispatched
           ? l10n.queuedKeepForReview
-          : _chatL10n(context).chatUiKeepItQueued,
-      destructive: true,
+          : l10n.chatUiKeepItQueued,
     );
   }
 
@@ -2435,11 +2445,11 @@ class _ChatScreenState extends State<ChatScreen>
   /// confirm; the bubble shows why.
   Future<void> _resendQueuedPrompt(QueuedPrompt entry) async {
     final l10n = _chatL10n(context);
-    final confirmed = await showConfirmSheet(
+    final confirmed = await showKitConfirm(
       context,
       icon: AppIconography.send,
       title: l10n.queuedResendTitle,
-      message: l10n.queuedResendMessage,
+      body: l10n.queuedResendMessage,
       confirmLabel: l10n.queuedResendConfirm,
       cancelLabel: l10n.queuedKeepForReview,
     );
@@ -2451,28 +2461,32 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
-  /// Cancels a pending server send; its text returns to the composer as a
-  /// draft — that is the edit affordance for immutable inbox items.
+  /// Takes a pending server send back: its text returns to the draft with
+  /// "Returned to your draft · Undo", and Undo sends it again the same way.
+  /// Only a send that carries files asks first, since Undo brings back the
+  /// words, not the files.
   Future<void> _cancelInboxSend(Api2InboxItem item) async {
-    final confirmed = await showConfirmSheet(
-      context,
-      icon: AppIconography.clearAll,
-      title: _chatL10n(context).chatUiCancelThisPendingMessage,
-      message: _chatL10n(context).chatUiItsTextReturnsToTheComposerAs,
-      confirmLabel: _chatL10n(context).chatUiCancelMessage,
-      cancelLabel: _chatL10n(context).chatUiKeepItPending,
-      destructive: true,
-    );
-    if (!confirmed || !mounted) return;
+    final files = item.payload['files'];
+    if (files is List && files.isNotEmpty) {
+      final l10n = _chatL10n(context);
+      final confirmed = await showKitConfirm(
+        context,
+        kind: KitConfirmKind.discard,
+        icon: AppIconography.clearAll,
+        title: l10n.chatUiCancelThisPendingMessage,
+        body: l10n.chatUiItsTextReturnsToTheComposerAs,
+        confirmLabel: l10n.chatUiCancelMessage,
+        cancelLabel: l10n.chatUiKeepItPending,
+      );
+      if (!confirmed || !mounted) return;
+    }
     String? text;
     try {
       text = await _conn.cancelInboxItem(widget.sessionID, item.id);
     } on ApiException catch (error) {
       if (!mounted) return;
       if (error.statusCode == 409) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_chatL10n(context).chatUiAlreadyDelivered)),
-        );
+        _showComposerNote(_chatL10n(context).chatUiAlreadyDelivered);
         return;
       }
       _showActionError(error);
@@ -2482,12 +2496,42 @@ class _ChatScreenState extends State<ChatScreen>
       return;
     }
     if (!mounted || text == null || text.isEmpty) return;
-    final current = _composer.text;
-    _composer.text = current.trim().isEmpty ? text : '$text\n$current';
-    _composer.selection = TextSelection.collapsed(
-      offset: _composer.text.length,
+    final withdrawn = text;
+    final delivery = switch (item.delivery) {
+      Api2Delivery.steer => PromptDelivery.steer,
+      Api2Delivery.queue => PromptDelivery.queue,
+      _ => null,
+    };
+    returnWithdrawnToDraft(
+      context,
+      composer: _composer,
+      text: withdrawn,
+      focus: _focus,
+      onUndo: () => _sendWithdrawnAgain(withdrawn, delivery),
     );
-    _focus.requestFocus();
+  }
+
+  /// Undo for a cancelled server send: the same words go back to the
+  /// server with the same delivery. A failure reaches the Undo bar, which
+  /// says so and offers Try again.
+  Future<void> _sendWithdrawnAgain(
+    String text,
+    PromptDelivery? delivery,
+  ) async {
+    final reconnecting = _chatL10n(
+      context,
+    ).chatUiOpenCodeIsReconnectingTryAgainWhenThe;
+    final api = await _conn.prepareActionTransport();
+    if (api == null) throw StateError(_conn.connectionError ?? reconnecting);
+    final selection = _conn.selectionForSession(widget.sessionID);
+    await api.promptAsync(
+      widget.sessionID,
+      text: text,
+      model: selection.model,
+      agent: selection.agent?.isNotEmpty == true ? selection.agent : null,
+      variant: selection.variant.isEmpty ? null : selection.variant,
+      delivery: _conn.busySessions.contains(widget.sessionID) ? delivery : null,
+    );
   }
 
   /// Withdraws this conversation's steering messages that the agent has not
@@ -2534,9 +2578,7 @@ class _ChatScreenState extends State<ChatScreen>
     } on ApiException catch (error) {
       if (!mounted) return;
       if (error.statusCode == 409) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_chatL10n(context).chatUiAlreadyDelivered)),
-        );
+        _showComposerNote(_chatL10n(context).chatUiAlreadyDelivered);
         return;
       }
       _showActionError(error);
@@ -2548,8 +2590,8 @@ class _ChatScreenState extends State<ChatScreen>
   /// The delivery mode that rides on an OpenCode 2 send made while a turn
   /// runs. Off a running turn — and on v1, which has no inbox — nothing is
   /// sent, so the server default applies. While a turn runs the composer's
-  /// visible delivery control decides, and Steer stays the default, matching
-  /// the server.
+  /// visible delivery control decides; "Send after this reply" is the
+  /// default and adding to the running turn is the choice (P6.6).
   PromptDelivery? get _activeDelivery =>
       _conn.supportsInbox && _conn.busySessions.contains(widget.sessionID)
       ? _delivery
@@ -3041,9 +3083,7 @@ class _ChatScreenState extends State<ChatScreen>
     final route = ModalRoute.of(context);
     final selections = await Navigator.of(context)
         .push<List<WebSourceSelection>>(
-          MaterialPageRoute(
-            builder: (_) => WebSourcesScreen(controller: _conn),
-          ),
+          KitPageRoute(builder: (_) => WebSourcesScreen(controller: _conn)),
         );
     if (!mounted || selections == null || selections.isEmpty) return;
     if (source != _speechScopeNow ||
@@ -3120,7 +3160,7 @@ class _ChatScreenState extends State<ChatScreen>
     setState(() => _promptShelfOperationBusy = true);
     try {
       final result = await Navigator.of(context).push<ContextCapsule>(
-        MaterialPageRoute(
+        KitPageRoute(
           builder: (_) => ContextCapsuleScreen(
             sessionTitle: title,
             scopeChanges: changes,
@@ -3193,9 +3233,7 @@ class _ChatScreenState extends State<ChatScreen>
     setState(() => _promptShelfOperationBusy = true);
     try {
       final text = await Navigator.of(context).push<String>(
-        MaterialPageRoute(
-          builder: (_) => LegacyDraftsScreen(controller: _conn),
-        ),
+        KitPageRoute(builder: (_) => LegacyDraftsScreen(controller: _conn)),
       );
       if (!mounted || text == null) return;
       if (location != _conn.locationRevision) {
@@ -3264,13 +3302,13 @@ class _ChatScreenState extends State<ChatScreen>
       return;
     }
     if (_conn.promptPhotos.pending case final pending?) {
-      final discard = await showConfirmSheet(
+      final discard = await showKitConfirm(
         context,
+        kind: KitConfirmKind.discard,
+        icon: AppIconography.camera,
         title: _chatL10n(context).photoPendingTitle,
-        message: _chatL10n(context).photoPendingOther,
+        body: _chatL10n(context).photoPendingOther,
         confirmLabel: _chatL10n(context).photoDiscard,
-        cancelLabel: _chatL10n(context).draftKeepEditing,
-        destructive: true,
       );
       if (!mounted || !discard) return;
       try {
@@ -3322,7 +3360,9 @@ class _ChatScreenState extends State<ChatScreen>
         approval != null &&
         approval.automatic &&
         _conn.permissionsForSession(widget.sessionID).isEmpty;
-    final showBackground = _canBackgroundWork || _backgrounding;
+    // While the move is in flight the chip steps aside (a chip that cannot
+    // act is not shown); the composer note then says how it went.
+    final showBackground = _canBackgroundWork;
     // Context the server will hand the agent at its next step (a finished
     // background command, changed instructions). Nothing to do about it, so
     // it is a label, not a bubble of its own above the composer.
@@ -3335,81 +3375,43 @@ class _ChatScreenState extends State<ChatScreen>
     if (!showApproval && !showBackground && pendingContext == 0) {
       return const SizedBox.shrink();
     }
-    final theme = Theme.of(context);
     final strings = _chatL10n(context);
-    return Align(
-      alignment: AlignmentDirectional.centerStart,
-      child: Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 12, 0),
-        // One line, always. Short labels keep all three on a phone's width;
-        // at large text sizes the line scrolls sideways instead of stacking.
-        child: SingleChildScrollView(
-          key: const Key('composer-status-strip'),
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            spacing: 8,
-            children: [
-              if (pendingContext > 0)
-                Chip(
-                  key: const Key('pending-context-chip'),
-                  materialTapTargetSize: MaterialTapTargetSize.padded,
-                  side: BorderSide.none,
-                  backgroundColor: theme.colorScheme.surfaceContainerHigh,
-                  avatar: Icon(
-                    AppIconography.sparkle,
-                    size: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  label: Text(
-                    pendingContext > 1
-                        ? '${strings.chatStripContextPending} · $pendingContext'
-                        : strings.chatStripContextPending,
-                    style: theme.textTheme.labelMedium,
-                  ),
-                ),
-              if (showApproval)
-                _AutoApprovalIndicator(
-                  key: const ValueKey('auto-approval-indicator-slot'),
-                  effective: approval,
-                  connected: _conn.isConnected,
-                  approved: _conn.autoApprovedFor(widget.sessionID),
-                  onOpen: () => unawaited(
-                    showSessionApprovalsSheet(
-                      context,
-                      controller: _conn,
-                      sessionID: widget.sessionID,
-                    ),
-                  ),
-                ),
-              if (showBackground)
-                Tooltip(
-                  message: strings.backgroundWorkShortcut,
-                  child: ActionChip(
-                    key: const Key('background-running-work'),
-                    onPressed: _backgrounding ? null : _backgroundRunningWork,
-                    materialTapTargetSize: MaterialTapTargetSize.padded,
-                    side: BorderSide.none,
-                    backgroundColor: theme.colorScheme.surfaceContainerHigh,
-                    avatar: _backgrounding
-                        ? const SizedBox.square(
-                            dimension: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Icon(
-                            AppIconography.lowPriority,
-                            size: 16,
-                            color: theme.colorScheme.primary,
-                          ),
-                    label: Text(
-                      strings.chatStripBackground,
-                      style: theme.textTheme.labelMedium,
-                    ),
-                  ),
-                ),
-            ],
+    return KitComposerStatusStrip(
+      stripKey: const Key('composer-status-strip'),
+      chips: [
+        if (pendingContext > 0)
+          KitChip(
+            key: const Key('pending-context-chip'),
+            icon: AppIconography.sparkle,
+            label: pendingContext > 1
+                ? '${strings.chatStripContextPending} · $pendingContext'
+                : strings.chatStripContextPending,
           ),
-        ),
-      ),
+        if (showApproval)
+          _AutoApprovalIndicator(
+            key: const ValueKey('auto-approval-indicator-slot'),
+            effective: approval,
+            connected: _conn.isConnected,
+            approved: _conn.autoApprovedFor(widget.sessionID),
+            onOpen: () => unawaited(
+              showSessionApprovalsSheet(
+                context,
+                controller: _conn,
+                sessionID: widget.sessionID,
+              ),
+            ),
+          ),
+        if (showBackground)
+          Semantics(
+            hint: strings.backgroundWorkShortcut,
+            child: KitChip.action(
+              key: const Key('background-running-work'),
+              icon: AppIconography.lowPriority,
+              label: strings.chatStripBackground,
+              onPressed: () => unawaited(_backgroundRunningWork()),
+            ),
+          ),
+      ],
     );
   }
 
@@ -4398,9 +4400,10 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  /// The desktop right-click menu for a transcript message. Same three
-  /// actions, same gates, same handlers as the long-press sheet below —
-  /// mouse users simply reach them with the button they already use.
+  /// A transcript message's actions, one list for every way in: the reply
+  /// footer's More, long-press, right-click, Shift+F10 and the screen
+  /// reader's custom actions (the footer draws Copy beside More, so its
+  /// menu leaves Copy out). Ordered by use; delete last (KIT-28).
   List<ContextMenuAction> _messageContextActions(MessageWithParts message) => [
     if (_messageCopy(message).text.isNotEmpty)
       ContextMenuAction(
@@ -4415,6 +4418,20 @@ class _ChatScreenState extends State<ChatScreen>
         label: _chatL10n(context).chatUiForkFromThisPrompt,
         icon: AppIconography.fork,
         onSelected: () => unawaited(_forkFromMessage(message)),
+      ),
+    if (_canReadReply(message))
+      ContextMenuAction(
+        menuKey: const ValueKey('message-menu-read-aloud'),
+        label: _chatL10n(context).readAloudAction,
+        icon: AppIconography.volume,
+        onSelected: () => unawaited(_readReply(message)),
+      ),
+    if (_canReadReply(message) && _readAloudConsented)
+      ContextMenuAction(
+        menuKey: const ValueKey('message-menu-read-aloud-voice'),
+        label: _chatL10n(context).readAloudOtherVoice,
+        icon: AppIconography.speakUser,
+        onSelected: () => unawaited(_readReply(message, chooseVoice: true)),
       ),
     if (_canStageFrom(message))
       ContextMenuAction(
@@ -4432,90 +4449,6 @@ class _ChatScreenState extends State<ChatScreen>
         onSelected: () => unawaited(_deleteMessage(message)),
       ),
   ];
-
-  Future<void> _showMessageActions(MessageWithParts message) async {
-    if (_conn.isIsolated) return;
-    final source = _speechScopeNow;
-    final copy = _messageCopy(message);
-    final canFork =
-        message.info.role == 'user' && _conn.capabilities.sessionFork;
-    final theme = Theme.of(context);
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          primary: false,
-          children: [
-            if (copy.text.isNotEmpty)
-              ListTile(
-                key: const ValueKey('message-action-copy'),
-                leading: const Icon(AppIcons.copy),
-                title: Text(copy.label),
-                onTap: () => Navigator.pop(context, 'copy'),
-              ),
-            if (canFork)
-              ListTile(
-                key: const ValueKey('message-action-fork'),
-                leading: const Icon(AppIconography.fork),
-                title: Text(_chatL10n(context).chatUiForkFromThisPrompt),
-                subtitle: Text(
-                  _chatL10n(context).chatUiStartANewSessionWithThisPrompt,
-                ),
-                onTap: () => Navigator.pop(context, 'fork'),
-              ),
-            if (_canReadReply(message))
-              ListTile(
-                leading: const Icon(AppIconography.volume),
-                title: Text(_chatL10n(context).readAloudAction),
-                onTap: () => Navigator.pop(context, 'readAloud'),
-              ),
-            if (_canReadReply(message) && _readAloudConsented)
-              ListTile(
-                leading: const Icon(AppIconography.speakUser),
-                title: Text(_chatL10n(context).readAloudOtherVoice),
-                onTap: () => Navigator.pop(context, 'readAloudOtherVoice'),
-              ),
-            // §7 row 14: v2 has no message delete, and PATCH edit is not the
-            // same promise — do not fake it.
-            if (_canStageFrom(message))
-              ListTile(
-                key: const ValueKey('message-action-revert'),
-                leading: const Icon(AppIconography.history),
-                title: Text(_chatL10n(context).revertFromHere),
-                onTap: () => Navigator.pop(context, 'revert'),
-              ),
-            if (_conn.capabilities.messageDelete)
-              ListTile(
-                key: const ValueKey('message-action-delete'),
-                leading: Icon(
-                  AppIconography.delete,
-                  color: theme.colorScheme.error,
-                ),
-                title: Text(
-                  _chatL10n(context).chatUiDeleteMessage,
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-                subtitle: Text(
-                  _chatL10n(
-                    context,
-                  ).chatUiRemovesItFromTheConversationPermanently,
-                ),
-                onTap: () => Navigator.pop(context, 'delete'),
-              ),
-          ],
-        ),
-      ),
-    );
-    if (!mounted || action == null || source != _speechScopeNow) return;
-    if (action == 'copy') await _copyMessageText(message);
-    if (action == 'fork') await _forkFromMessage(message);
-    if (action == 'revert') await _stageFromMessage(message);
-    if (action == 'delete') await _deleteMessage(message);
-    if (action == 'readAloud' || action == 'readAloudOtherVoice') {
-      await _readReply(message, chooseVoice: action == 'readAloudOtherVoice');
-    }
-  }
 
   Future<void> _deleteMessage(MessageWithParts message) async {
     final confirmed = await showConfirmSheet(
@@ -7520,15 +7453,6 @@ class _ChatScreenState extends State<ChatScreen>
                                                         // one message action;
                                                         // revert and fork are
                                                         // not the person's.
-                                                        onLongPress:
-                                                            _conn.isIsolated ||
-                                                                _watching
-                                                            ? null
-                                                            : () => unawaited(
-                                                                _showMessageActions(
-                                                                  m,
-                                                                ),
-                                                              ),
                                                         contextActions:
                                                             _conn.isIsolated ||
                                                                 _watching

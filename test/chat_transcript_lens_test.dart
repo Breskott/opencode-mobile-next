@@ -315,12 +315,14 @@ void main() {
       ),
       findsOneWidget,
     );
+    // Copy sits beside More, so More's menu does not repeat it.
+    expect(find.byKey(const ValueKey('message-copy-assistant-1')), findsOne);
     await tester.tap(find.byKey(const ValueKey('message-actions-assistant-1')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('message-action-copy')), findsOneWidget);
-    expect(find.byKey(const ValueKey('message-action-fork')), findsNothing);
-    expect(find.byKey(const ValueKey('message-action-delete')), findsOneWidget);
+    expect(find.byKey(const ValueKey('message-menu-copy')), findsNothing);
+    expect(find.byKey(const ValueKey('message-menu-fork')), findsNothing);
+    expect(find.byKey(const ValueKey('message-menu-delete')), findsOneWidget);
   });
 
   testWidgets('a prompt carries no control row; long-press opens its menu', (
@@ -401,10 +403,15 @@ void main() {
       find.byKey(const ValueKey('message-actions-assistant-1')),
       findsNothing,
     );
-    await tester.tap(find.byKey(const ValueKey('message-actions-assistant-2')));
-    await tester.pumpAndSettle();
-    expect(find.text('Copy complete reply'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('message-action-copy')));
+    final copy = find.byKey(const ValueKey('message-copy-assistant-2'));
+    expect(
+      find.descendant(
+        of: copy,
+        matching: find.byTooltip('Copy complete reply'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(copy);
     await tester.pumpAndSettle();
 
     expect(copied, ['First paragraph.\n\nSecond paragraph.']);
@@ -433,12 +440,12 @@ void main() {
       controller.repository = repository;
       await tester.pumpAndSettle();
 
+      expect(find.byTooltip('Copy complete reply'), findsOneWidget);
       await tester.tap(
         find.byKey(const ValueKey('message-actions-assistant-1')),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Copy complete reply'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('message-action-delete')));
+      await tester.tap(find.byKey(const ValueKey('message-menu-delete')));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Delete message'));
       await tester.pumpAndSettle();
@@ -464,10 +471,9 @@ void main() {
       ];
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('message-actions-assistant-1')));
-    await tester.pumpAndSettle();
-    expect(find.text('Copy loaded reply'), findsOneWidget);
-    expect(find.text('Copy complete reply'), findsNothing);
+    // The footer's Copy names what it copies.
+    expect(find.byTooltip('Copy loaded reply'), findsOneWidget);
+    expect(find.byTooltip('Copy complete reply'), findsNothing);
   });
 
   testWidgets(
