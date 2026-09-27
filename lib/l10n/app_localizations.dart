@@ -11932,18 +11932,6 @@ abstract class AppLocalizations {
   /// Distinguishes phone-side folder filtering of loaded results from server-wide title search.
   ///
   /// In en, this message translates to:
-  /// **'{count} shown from {total} loaded conversations'**
-  String e7WorkspaceFilteredLoaded(int count, int total);
-
-  /// Distinguishes phone-side folder filtering of loaded results from server-wide title search.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one {1 loaded conversation} other {{count} loaded conversations}} · {folders, plural, one {1 project} other {{folders} projects}}'**
-  String e7WorkspaceLoadedSummary(int count, int folders);
-
-  /// Distinguishes phone-side folder filtering of loaded results from server-wide title search.
-  ///
-  /// In en, this message translates to:
   /// **'Loaded projects'**
   String get e7WorkspaceLoadedFolders;
 
@@ -14863,12 +14851,6 @@ abstract class AppLocalizations {
   /// **'Always allowed actions'**
   String get e7LibraryAlwaysAllowedActions;
 
-  /// Library and project tools UI: Refresh always allowed actions
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh always allowed actions'**
-  String get e7LibraryRefreshAlwaysAllowedActions;
-
   /// Library and project tools UI: No always allowed actions
   ///
   /// In en, this message translates to:
@@ -15451,23 +15433,11 @@ abstract class AppLocalizations {
   /// **'Git repository initialized'**
   String get e7LibraryGitRepositoryInitialized;
 
-  /// Library and project tools UI: Refresh project health
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh project health'**
-  String get e7LibraryRefreshProjectHealth;
-
   /// Library and project tools UI: Version control
   ///
   /// In en, this message translates to:
   /// **'Version control'**
   String get e7LibraryVersionControl;
-
-  /// Library and project tools UI: {detail1} changed
-  ///
-  /// In en, this message translates to:
-  /// **'{detail1} changed'**
-  String e7LibraryChanged(String detail1);
 
   /// Library and project tools UI: Language services
   ///
@@ -33161,17 +33131,17 @@ abstract class AppLocalizations {
   /// **'{name} was removed'**
   String managedWorkspacesRemoved(String name);
 
-  /// Cloud environments: section of the server providers that can make environments.
-  ///
-  /// In en, this message translates to:
-  /// **'Providers'**
-  String get managedWorkspacesProviders;
-
   /// Cloud environments create sheet: label above the provider choice.
   ///
   /// In en, this message translates to:
   /// **'Provider'**
   String get managedWorkspacesProvider;
+
+  /// Cloud environments create sheet subtitle when the server has one provider: where the new environment is made, e.g. 'In Daytona'.
+  ///
+  /// In en, this message translates to:
+  /// **'In {provider}'**
+  String managedWorkspacesCreateIn(String provider);
 
   /// Cloud environments: the providers could not be read.
   ///
@@ -33256,18 +33226,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set up'**
   String get projectHealthSetUp;
-
-  /// Project health: language servers running out of all.
-  ///
-  /// In en, this message translates to:
-  /// **'{running} of {total} running'**
-  String projectHealthRunningOf(int running, int total);
-
-  /// Project health: formatters turned on out of all.
-  ///
-  /// In en, this message translates to:
-  /// **'{on} of {total} on'**
-  String projectHealthOnOf(int on, int total);
 
   /// Project health: a language server is running.
   ///
@@ -33448,12 +33406,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Actions the agent may take in this project without asking you first. Revoke one and the agent asks again.'**
   String get savedPermissionsIntro;
-
-  /// Always allowed actions: how many actions are allowed in the current project.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{1 action} other{{count} actions}}'**
-  String savedPermissionsCount(int count);
 
   /// Always allowed actions: title of the state when the list could not be loaded.
   ///
@@ -34430,12 +34382,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cloud environment ID'**
   String get importEnvironmentId;
-
-  /// All conversations: how many conversations are loaded and in how many projects, once every page is in.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one {1 conversation} other {{count} conversations}} in {folders, plural, one {one project} other {{folders} projects}}'**
-  String globalSessionsSummaryCount(int count, int folders);
 
   /// Built-in server, step 2: why the OpenCode 1 / OpenCode 2 choice is off while a step runs or the server is running.
   ///

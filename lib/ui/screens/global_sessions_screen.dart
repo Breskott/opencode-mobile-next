@@ -96,6 +96,50 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
   static int _recency(GlobalSessionResult result) =>
       result.session.time?.updated ?? result.session.time?.created ?? 0;
 
+  /// Whether a conversation waits on the person: a permission, a question
+  /// or a form (what Work's rows call "Needs you").
+  bool _needsYou(String sessionID) {
+    final controller = widget.controller;
+    return controller.permissionsForSession(sessionID).isNotEmpty ||
+        controller.questionForSession(sessionID) != null ||
+        controller.formForSession(sessionID) != null;
+  }
+
+  /// One project's rows by urgency: the ones that need the person, then
+  /// the working ones, then the rest; newest first within each (the group
+  /// arrives newest first, and the sort is stable).
+  List<GlobalSessionResult> _byUrgency(List<GlobalSessionResult> results) {
+    final busy = widget.controller.busySessions;
+    int rank(GlobalSessionResult result) {
+      final id = result.session.id;
+      if (_needsYou(id)) return 0;
+      if (busy.contains(id)) return 1;
+      return 2;
+    }
+
+    final ranked = [for (final (i, r) in results.indexed) (rank(r), i, r)]
+      ..sort((a, b) {
+        final byRank = a.$1.compareTo(b.$1);
+        return byRank != 0 ? byRank : a.$2.compareTo(b.$2);
+      });
+    return [for (final (_, _, result) in ranked) result];
+  }
+
+  /// The loaded conversations that need the person or are working, as one
+  /// key: when it changes, the rows re-order and re-mark themselves.
+  String _urgencyKey() {
+    final busy = widget.controller.busySessions;
+    return [
+      for (final result in _results)
+        if (_needsYou(result.session.id))
+          '!${result.session.id}'
+        else if (busy.contains(result.session.id))
+          '~${result.session.id}',
+    ].join(',');
+  }
+
+  String _lastUrgencyKey = '';
+
   static String _directoryOf(GlobalSessionResult result) {
     final value = (result.session.directory ?? result.projectDirectory)?.trim();
     return value == null || value.isEmpty
@@ -222,6 +266,13 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
 
   void _controllerChanged() {
     if (!mounted) return;
+    // A conversation starting, finishing or asking something moves its row
+    // and changes its mark, without reloading the list.
+    final urgency = _urgencyKey();
+    if (urgency != _lastUrgencyKey) {
+      _lastUrgencyKey = urgency;
+      setState(() {});
+    }
     final revision = widget.controller.dataRefreshRevision;
     final repository = widget.controller.repository;
     final profileID = widget.controller.profile?.id;
@@ -742,20 +793,6 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     );
   }
 
-  String? _summary(
-    List<_GlobalGroup> groups,
-    List<_GlobalGroup> visible,
-    String? filter,
-    AppLocalizations l10n,
-  ) {
-    final total = _shown.length;
-    if (total == 0) return null;
-    final shown = visible.fold<int>(0, (sum, g) => sum + g.results.length);
-    if (filter != null) return l10n.e7WorkspaceFilteredLoaded(shown, total);
-    if (_hasMore) return l10n.e7WorkspaceLoadedSummary(total, groups.length);
-    return l10n.globalSessionsSummaryCount(total, groups.length);
-  }
-
   Widget _content(
     BuildContext context,
     List<_GlobalGroup> groups,
@@ -858,7 +895,6 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     final currentDirectory = current.isEmpty
         ? null
         : ConnectionController.normalizeDirectoryPath(current);
-    final summary = _summary(groups, visible, filter, l10n);
     final notice = _notice;
 
     // 3. One panel per project, newest project first, each row a
@@ -888,66 +924,57 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
                 dismissLabel: l10n.workspaceDismissNotice,
               ),
             ),
-          if (summary != null)
+          // Each project's label keeps the section gap from what is above
+          // it (none for the first); the page title and the rows already
+          // say how many there are, so no count is repeated.
+          for (final group in visible)
+            KitRowGroup(
+              key: ValueKey('global-session-group-${group.directory}'),
+              label: group.directory == currentDirectory
+                  ? l10n.globalSessionsProjectInUse(group.label)
+                  : group.label,
+              children: [
+                for (final result in _byUrgency(group.results))
+                  _GlobalSessionRow(
+                    controller: widget.controller,
+                    result: result,
+                    unknownLocation: l10n.globalSessionsUnknownLocation,
+                    opening: _openingSessionID == result.session.id,
+                    needsYou: _needsYou(result.session.id),
+                    onTap: () => guarded(() => _open(result)),
+                    onRelated: () =>
+                        guarded(() => _open(result, related: true)),
+                    onHandoff: () =>
+                        guarded(() => _open(result, handoff: true)),
+                    // §7 row 7: "Continue here" is steal + sync-start,
+                    // neither of which v2 has. A future rebuild is
+                    // export+import+move.
+                    onSteal:
+                        widget.controller.capabilities.sessionSteal &&
+                            _isElsewhere(result)
+                        ? () => guarded(() => unawaited(_steal(result)))
+                        : null,
+                  ),
+              ],
+            ),
+          if (_footer(l10n) case final footer?)
             Padding(
               padding: rails.add(
-                EdgeInsetsDirectional.only(bottom: tokens.space3),
-              ),
-              child: KitText(
-                summary,
-                key: const ValueKey('global-session-count'),
-                role: KitTextRole.secondary,
-                tone: KitTextTone.secondary,
-              ),
-            ),
-          for (final group in visible)
-            Padding(
-              key: ValueKey('global-session-group-${group.directory}'),
-              padding: EdgeInsetsDirectional.only(bottom: tokens.sectionGap),
-              child: KitRowGroup(
-                label: group.directory == currentDirectory
-                    ? l10n.globalSessionsProjectInUse(group.label)
-                    : group.label,
-                labelTrailing: KitText(
-                  '${group.results.length}',
-                  role: KitTextRole.label,
-                  tone: KitTextTone.secondary,
-                  tabular: true,
+                EdgeInsetsDirectional.only(
+                  top: visible.isEmpty ? 0 : tokens.sectionGap,
                 ),
-                children: [
-                  for (final result in group.results)
-                    _GlobalSessionRow(
-                      controller: widget.controller,
-                      result: result,
-                      unknownLocation: l10n.globalSessionsUnknownLocation,
-                      opening: _openingSessionID == result.session.id,
-                      onTap: () => guarded(() => _open(result)),
-                      onRelated: () =>
-                          guarded(() => _open(result, related: true)),
-                      onHandoff: () =>
-                          guarded(() => _open(result, handoff: true)),
-                      // §7 row 7: "Continue here" is steal + sync-start,
-                      // neither of which v2 has. A future rebuild is
-                      // export+import+move.
-                      onSteal:
-                          widget.controller.capabilities.sessionSteal &&
-                              _isElsewhere(result)
-                          ? () => guarded(() => unawaited(_steal(result)))
-                          : null,
-                    ),
-                ],
               ),
+              child: footer,
             ),
-          Padding(padding: rails, child: _footer(l10n)),
         ],
       ),
     );
   }
 
   /// The paging tail: a load error with Try again, or the explicit Load
-  /// more control. Empty once everything is in; a page on its way is the
+  /// more control. Null once everything is in; a page on its way is the
   /// screen's one loading bar.
-  Widget _footer(AppLocalizations l10n) {
+  Widget? _footer(AppLocalizations l10n) {
     if (_error != null) {
       // What failed in the title, why in words, the raw text only behind
       // Copy details (never "ApiException: … page 2" as the words).
@@ -977,7 +1004,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
         onPressed: () => unawaited(_loadMore()),
       );
     }
-    return const SizedBox.shrink();
+    return null;
   }
 
   @override
@@ -1016,6 +1043,9 @@ class _GlobalSessionRow extends StatelessWidget {
   final GlobalSessionResult result;
   final String unknownLocation;
   final bool opening;
+
+  /// A permission, question or form waits on the person.
+  final bool needsYou;
   final VoidCallback onTap;
   final VoidCallback onRelated;
   final VoidCallback onHandoff;
@@ -1026,6 +1056,7 @@ class _GlobalSessionRow extends StatelessWidget {
     required this.result,
     required this.unknownLocation,
     required this.opening,
+    this.needsYou = false,
     required this.onTap,
     required this.onRelated,
     required this.onHandoff,
@@ -1042,13 +1073,13 @@ class _GlobalSessionRow extends StatelessWidget {
       fallback: l10n.globalSessionsUntitled,
       l10n: l10n,
     );
-    final working = controller.busySessions.contains(session.id);
-    final unread = !working && controller.isSessionUnread(session);
+    final working = !needsYou && controller.busySessions.contains(session.id);
+    final unread = !needsYou && !working && controller.isSessionUnread(session);
     final updated = session.time?.updated ?? session.time?.created;
     final directory = (session.directory ?? result.projectDirectory)?.trim();
     final busy = opening;
-    // The state word leads (STATE-9): "Working", "Archived", "Unread
-    // result" at label weight, then the muted facts.
+    // The state word leads (STATE-9): "Needs you", "Working", "Archived",
+    // "Unread result" at label weight, then the muted facts.
     final state = working
         ? l10n.globalSessionsWorking
         : session.archived
@@ -1070,17 +1101,24 @@ class _GlobalSessionRow extends StatelessWidget {
       key: ValueKey('global-session-${session.id}'),
       titleMaxLines: 2,
       supportingMaxLines: largeText ? 3 : 2,
-      leading: busy || working
+      leading: needsYou && !busy
+          ? lead(
+              KitNeedsYou.mark(
+                key: ValueKey('global-session-needs-you-${session.id}'),
+              ),
+            )
+          : busy || working
           ? lead(const KitTaskMark(state: KitTaskState.working))
           : KitRow.icon(
               context,
               session.archived ? AppIconography.archive : AppIconography.chat,
             ),
       title: title,
-      supporting: state == null && facts.isEmpty
+      supporting: !needsYou && state == null && facts.isEmpty
           ? null
           : TextSpan(
               children: [
+                if (needsYou) KitNeedsYou.span(context),
                 if (state != null)
                   TextSpan(
                     text: state,

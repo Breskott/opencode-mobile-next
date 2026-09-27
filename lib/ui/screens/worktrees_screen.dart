@@ -445,16 +445,9 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
         widget.controller.directory == widget.project.directory;
     return KitScreen(
       width: KitScreenWidth.list,
-      topBar: KitTopBar(
-        title: l10n.e7LibraryWorktrees,
-        actions: [
-          KitAction(
-            label: l10n.e7LibraryRefreshWorktrees,
-            icon: AppIconography.retry,
-            onPressed: _busyDirectory == null ? _load : null,
-          ),
-        ],
-      ),
+      // Pull to refresh reloads the list; Try again lives in the error
+      // state, so the top bar carries no refresh of its own.
+      topBar: KitTopBar(title: l10n.e7LibraryWorktrees),
       loading: worktrees == null && _loadError == null,
       loadingLabel: l10n.e7LibraryRefreshWorktrees,
       // Create is offered only where the create call is contract-proven
@@ -496,83 +489,27 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
                   dismissLabel: l10n.workspaceDismissNotice,
                 ),
               ),
-            // 1. The main copy: the project's own folder.
+            // One list: the main copy (the project's own folder) first,
+            // then its worktrees. The page title names them, so the list
+            // has no label or count of its own.
             KitRowGroup(
+              key: const ValueKey('worktrees-group'),
               children: [
-                KitRow(
-                  key: const ValueKey('primary-worktree'),
-                  leading: KitRowIcon(
-                    AppIconography.projects,
-                    current: primaryCurrent,
-                  ),
-                  title: _basename(widget.project.directory),
-                  supporting: TextSpan(
-                    children: [
-                      if (primaryCurrent)
-                        _stateSpan(context, l10n.e7SharedCurrent),
-                      TextSpan(text: l10n.worktreesMainCopy),
-                    ],
-                  ),
-                  trailing: _busyDirectory == widget.project.directory
-                      ? const KitTaskMark(state: KitTaskState.working)
-                      : primaryCurrent
-                      ? null
-                      : const KitChevron(),
-                  onTap: primaryCurrent || _busyDirectory != null
-                      ? null
-                      : () => _open(widget.project.directory),
-                  menuLabel: l10n.e7LibraryWorktreeActions,
-                  menu: [
-                    if (!primaryCurrent)
-                      KitMenuItem(
-                        label: l10n.globalSessionsOpen,
-                        icon: AppIconography.externalLink,
-                        onSelected: () => _open(widget.project.directory),
-                      ),
-                    KitMenuItem.copy(
-                      label: l10n.worktreesCopyFolder,
-                      text: () => widget.project.directory,
-                    ),
-                  ],
-                ),
+                _mainCopyRow(context, primaryCurrent),
+                if (worktrees != null && _loadError == null)
+                  for (final worktree in worktrees) _row(context, worktree),
               ],
             ),
-            // 2. The worktrees, the term explained in place.
-            Padding(
-              padding: EdgeInsetsDirectional.fromSTEB(
-                tokens.gutter,
-                tokens.sectionGap,
-                tokens.gutter + tokens.space1,
-                tokens.labelGap,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: KitTerm(
-                        l10n.e7LibraryWorktrees,
-                        explanation: l10n.e7GlossaryWorktreeExplanation,
-                        role: KitTextRole.label,
-                        termKey: const ValueKey('worktrees-section-label'),
-                      ),
-                    ),
-                  ),
-                  if (worktrees != null)
-                    KitText(
-                      '${worktrees.length}',
-                      role: KitTextRole.label,
-                      tone: KitTextTone.secondary,
-                      tabular: true,
-                    ),
-                ],
-              ),
-            ),
             if (worktrees == null && _loadError == null)
-              const KitSkeletonRows(count: 3)
+              Padding(
+                padding: EdgeInsetsDirectional.only(top: tokens.space3),
+                child: const KitSkeletonRows(count: 3),
+              )
             else if (_loadError != null)
               Padding(
-                padding: rails,
+                padding: rails.add(
+                  EdgeInsetsDirectional.only(top: tokens.sectionGap),
+                ),
                 child: KitStateView.error(
                   key: const ValueKey('worktrees-load-failed'),
                   title: l10n.worktreesLoadFailedTitle,
@@ -583,7 +520,9 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
               )
             else if (worktrees!.isEmpty)
               Padding(
-                padding: rails,
+                padding: rails.add(
+                  EdgeInsetsDirectional.only(top: tokens.sectionGap),
+                ),
                 child: KitStateView(
                   key: const ValueKey('no-worktrees'),
                   size: KitStateSize.inline,
@@ -593,16 +532,48 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
                   // create call the list says only what will be here.
                   body: l10n.emptyTeachWorktreesMessage,
                 ),
-              )
-            else
-              KitRowGroup(
-                children: [
-                  for (final worktree in worktrees) _row(context, worktree),
-                ],
               ),
           ],
         ),
       ),
+    );
+  }
+
+  /// The main copy: the project's own folder, opened by a tap unless it is
+  /// the one in use.
+  Widget _mainCopyRow(BuildContext context, bool primaryCurrent) {
+    final l10n = _l10n;
+    return KitRow(
+      key: const ValueKey('primary-worktree'),
+      leading: KitRowIcon(AppIconography.projects, current: primaryCurrent),
+      title: _basename(widget.project.directory),
+      supporting: TextSpan(
+        children: [
+          if (primaryCurrent) _stateSpan(context, l10n.e7SharedCurrent),
+          TextSpan(text: l10n.worktreesMainCopy),
+        ],
+      ),
+      trailing: _busyDirectory == widget.project.directory
+          ? const KitTaskMark(state: KitTaskState.working)
+          : primaryCurrent
+          ? null
+          : const KitChevron(),
+      onTap: primaryCurrent || _busyDirectory != null
+          ? null
+          : () => _open(widget.project.directory),
+      menuLabel: l10n.e7LibraryWorktreeActions,
+      menu: [
+        if (!primaryCurrent)
+          KitMenuItem(
+            label: l10n.globalSessionsOpen,
+            icon: AppIconography.externalLink,
+            onSelected: () => _open(widget.project.directory),
+          ),
+        KitMenuItem.copy(
+          label: l10n.worktreesCopyFolder,
+          text: () => widget.project.directory,
+        ),
+      ],
     );
   }
 

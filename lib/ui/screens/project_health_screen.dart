@@ -15,8 +15,9 @@ import '../widgets/product_states.dart' show productErrorText;
 /// and changed files, the language servers and the formatters the server
 /// reports, each on one [KitRowGroup].
 ///
-/// Built from kit parts only: a [KitScreen] page with its top bar (Refresh)
-/// and the one loading bar. Each section loads on its own: skeleton rows
+/// Built from kit parts only: a [KitScreen] page with its title (pull to
+/// refresh reloads every section) and the one loading bar. The rows say
+/// each item's state, so the section labels carry no counts. Each section loads on its own: skeleton rows
 /// while it loads, an inline [KitNotice.error] with Try again when its read
 /// fails, an empty state that says what would be there, and its rows. A
 /// section the server cannot report is not shown (and not asked for);
@@ -192,21 +193,7 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
     return KitScreen(
       // A status page read like settings: centred at the reading width.
       width: KitScreenWidth.reading,
-      topBar: KitTopBar(
-        title: l10n.e7LibraryProjectHealth,
-        actions: [
-          KitAction(
-            key: const ValueKey('refresh-project-health'),
-            label: l10n.e7LibraryRefreshProjectHealth,
-            icon: AppIconography.retry,
-            working: _refreshing,
-            onPressed: _refreshing || _initializingGit
-                ? null
-                : () => unawaited(_load()),
-            disabledReason: _initializingGit ? l10n.kitWorking : null,
-          ),
-        ],
-      ),
+      topBar: KitTopBar(title: l10n.e7LibraryProjectHealth),
       loading: _refreshing,
       loadingLabel: l10n.e7LibraryLoading(l10n.e7LibraryProjectHealth),
       body: KitRefresh(
@@ -228,13 +215,14 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
     );
   }
 
-  /// A section's message inside the list's side rails.
-  Widget _inset(Widget child) {
+  /// A section's message inside the list's side rails; [top] is the space
+  /// above it (none right under a section label, which keeps its own).
+  Widget _inset(Widget child, {bool top = true}) {
     final tokens = KitTokens.of(context);
     return Padding(
       padding: EdgeInsetsDirectional.fromSTEB(
         tokens.gutter,
-        tokens.space2,
+        top ? tokens.space2 : 0,
         tokens.gutter,
         0,
       ),
@@ -243,6 +231,7 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
   }
 
   Widget _readFailed(AppLocalizations l10n, String message) => _inset(
+    top: false,
     KitNotice.error(
       title: l10n.workUnknown,
       message: message,
@@ -258,11 +247,11 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
     final label = l10n.e7LibraryVersionControl;
     final error = _versionControlError;
     if (error != null) {
-      return [SectionLabel(label), _readFailed(l10n, error)];
+      return [KitSectionLabel(label), _readFailed(l10n, error)];
     }
     final vcs = _versionControl;
     if (vcs == null) {
-      return [SectionLabel(label), const KitSkeletonRows(count: 2)];
+      return [KitSectionLabel(label), const KitSkeletonRows(count: 2)];
     }
     final done = _gitInitialized
         ? _inset(
@@ -341,12 +330,6 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
       ?done,
       KitRowGroup(
         label: label,
-        labelTrailing: KitText(
-          l10n.e7LibraryChanged('${vcs.changes.length}'),
-          role: KitTextRole.label,
-          tone: KitTextTone.tertiary,
-          tabular: true,
-        ),
         children: [
           KitRow(
             key: const ValueKey('project-health-branch'),
@@ -383,14 +366,16 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
   List<Widget> _languageServiceSection(AppLocalizations l10n) {
     final label = l10n.e7LibraryLanguageServices;
     final error = _languageServicesError;
-    if (error != null) return [SectionLabel(label), _readFailed(l10n, error)];
+    if (error != null) {
+      return [KitSectionLabel(label), _readFailed(l10n, error)];
+    }
     final services = _languageServices;
     if (services == null) {
-      return [SectionLabel(label), const KitSkeletonRows(count: 2)];
+      return [KitSectionLabel(label), const KitSkeletonRows(count: 2)];
     }
     if (services.isEmpty) {
       return [
-        SectionLabel(label),
+        KitSectionLabel(label),
         KitStateView(
           key: const ValueKey('project-health-no-language-services'),
           size: KitStateSize.inline,
@@ -400,16 +385,9 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
         ),
       ];
     }
-    final running = services.where((item) => item.connected).length;
     return [
       KitRowGroup(
         label: label,
-        labelTrailing: KitText(
-          l10n.projectHealthRunningOf(running, services.length),
-          role: KitTextRole.label,
-          tone: KitTextTone.tertiary,
-          tabular: true,
-        ),
         children: [
           for (final service in services)
             KitRow(
@@ -440,14 +418,16 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
   List<Widget> _formatterSection(AppLocalizations l10n) {
     final label = l10n.e7LibraryFormatters;
     final error = _formattersError;
-    if (error != null) return [SectionLabel(label), _readFailed(l10n, error)];
+    if (error != null) {
+      return [KitSectionLabel(label), _readFailed(l10n, error)];
+    }
     final formatters = _formatters;
     if (formatters == null) {
-      return [SectionLabel(label), const KitSkeletonRows(count: 2)];
+      return [KitSectionLabel(label), const KitSkeletonRows(count: 2)];
     }
     if (formatters.isEmpty) {
       return [
-        SectionLabel(label),
+        KitSectionLabel(label),
         KitStateView(
           key: const ValueKey('project-health-no-formatters'),
           size: KitStateSize.inline,
@@ -456,16 +436,9 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
         ),
       ];
     }
-    final on = formatters.where((item) => item.enabled).length;
     return [
       KitRowGroup(
         label: label,
-        labelTrailing: KitText(
-          l10n.projectHealthOnOf(on, formatters.length),
-          role: KitTextRole.label,
-          tone: KitTextTone.tertiary,
-          tabular: true,
-        ),
         children: [
           for (final formatter in formatters)
             KitRow(

@@ -414,7 +414,7 @@ void main() {
   });
 
   group('screen-settings-1', () {
-    testWidgets('says what the page is for and counts actions, not grants', (
+    testWidgets('says what the page is for and names actions, not grants', (
       tester,
     ) async {
       final repository = _PermissionRepository(permissions: _permissions);
@@ -427,8 +427,33 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('without asking you first'), findsOneWidget);
-      expect(find.text('2 actions'), findsOneWidget);
+      // No count beside the label (R13): each row is one action.
+      expect(find.text('2 actions'), findsNothing);
       expect(find.textContaining('grant'), findsNothing);
+    });
+
+    testWidgets('R13: no refresh in the top bar, and the list label sits one '
+        'section gap under the intro', (tester) async {
+      final repository = _PermissionRepository(permissions: _permissions);
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        _app(SavedPermissionsScreen(controller: controller)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('saved-permissions-refresh')),
+        findsNothing,
+      );
+      final intro = tester.getRect(
+        find.textContaining('without asking you first'),
+      );
+      expect(
+        tester.getTopLeft(find.text('Current project')).dy - intro.bottom,
+        moreOrLessEquals(22, epsilon: 0.01),
+      );
     });
 
     testWidgets('a pattern-less action says so in words, not in mono', (
@@ -485,7 +510,15 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('1 action'), findsOneWidget);
+      // The revoked row leaves the list; the other stays.
+      expect(
+        find.byKey(const ValueKey('revoke-saved-permission-permission-bash')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('saved-permissions-group')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('the row menu revokes too, after the same confirmation', (

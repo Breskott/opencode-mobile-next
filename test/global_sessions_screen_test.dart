@@ -10,6 +10,7 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/global_sessions_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/ui/app_iconography.dart';
@@ -340,8 +341,8 @@ void main() {
     // The section names the project; rows no longer repeat it.
     expect(find.text('Project 2'), findsOneWidget);
     expect(find.textContaining('Project 2 ·'), findsNothing);
-    // A partial inventory counts what is loaded without claiming a total.
-    expect(find.text('3 loaded conversations · 2 projects'), findsOneWidget);
+    // No counts (R13): the rows say how many there are.
+    expect(find.byKey(const ValueKey('global-session-count')), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('global-sessions-load-more')));
     await tester.pumpAndSettle();
@@ -354,7 +355,7 @@ void main() {
       '/work/beta',
       'Session 2',
     ]);
-    expect(find.text('4 conversations in 2 projects'), findsOneWidget);
+    expect(find.textContaining('conversations in'), findsNothing);
   });
 
   testWidgets('folders with the same name are told apart by their parent', (
@@ -405,10 +406,6 @@ void main() {
     await pick('/home/dev/Worktrees/TradeNet');
     expect(find.text('Worktree'), findsOneWidget);
     expect(find.text('Main checkout'), findsNothing);
-    expect(
-      find.textContaining('1 shown from 2 loaded conversations'),
-      findsOneWidget,
-    );
 
     // Choosing it again shows every project.
     await pick('/home/dev/Worktrees/TradeNet');
@@ -731,7 +728,7 @@ void main() {
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('50 loaded conversations'), findsOneWidget);
+    expect(find.text('Session 0'), findsOneWidget);
     final list = find.byKey(
       const PageStorageKey<String>('global-sessions-list'),
     );
@@ -740,10 +737,6 @@ void main() {
 
     expect(repository.calls, hasLength(2));
     expect(repository.calls.last.cursor, 'opaque/next+token=');
-    // The count sits at the top of the list.
-    await tester.drag(list, const Offset(0, 10000));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('51 conversations'), findsOneWidget);
   });
 
   testWidgets('global project rows keep a useful label and tap semantics', (
@@ -1166,6 +1159,128 @@ void main() {
 
     expect(find.text('Project 1 · In use'), findsOneWidget);
     expect(find.text('Project 2'), findsOneWidget);
+  });
+
+  group('slice-R13', () {
+    double top(WidgetTester tester, String text) =>
+        tester.getTopLeft(find.text(text)).dy;
+
+    testWidgets('inside a project, needs-you rows lead, then working ones, '
+        'then the rest newest first', (tester) async {
+      final repository = _FinderRepository(
+        (_) async => [
+          _result(1, updated: 500, directory: '/work/app', title: 'Newest'),
+          _result(2, updated: 400, directory: '/work/app', title: 'Working'),
+          _result(3, updated: 300, directory: '/work/app', title: 'Older'),
+          _result(4, updated: 200, directory: '/work/app', title: 'Asks'),
+        ],
+      );
+      final controller = await _controller(repository);
+      controller.busySessions = {'ses_2', 'ses_4'};
+      controller.permissions = {
+        'perm-1': PermissionRequest(
+          id: 'perm-1',
+          sessionID: 'ses_4',
+          permission: 'edit',
+        ),
+      };
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      // The working mark animates, so the frames are pumped, not settled.
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(top(tester, 'Asks'), lessThan(top(tester, 'Working')));
+      expect(top(tester, 'Working'), lessThan(top(tester, 'Newest')));
+      expect(top(tester, 'Newest'), lessThan(top(tester, 'Older')));
+      // The first row says why it leads, in words as well as its mark.
+      expect(
+        find.byKey(const ValueKey('global-session-needs-you-ses_4')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Needs you'), findsOneWidget);
+    });
+
+    testWidgets('a conversation that starts working moves up without a '
+        'reload', (tester) async {
+      final repository = _FinderRepository(
+        (_) async => [
+          _result(1, updated: 500, directory: '/work/app', title: 'Newest'),
+          _result(2, updated: 400, directory: '/work/app', title: 'Later'),
+        ],
+      );
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
+      expect(top(tester, 'Newest'), lessThan(top(tester, 'Later')));
+      final calls = repository.calls.length;
+
+      controller.busySessions = {'ses_2'};
+      controller.notifyListeners();
+      await tester.pump();
+
+      expect(top(tester, 'Later'), lessThan(top(tester, 'Newest')));
+      expect(repository.calls, hasLength(calls));
+    });
+
+    testWidgets('no counts: no summary line and no number beside a '
+        'project', (tester) async {
+      final repository = _FinderRepository(
+        (_) async => [
+          _result(1, directory: '/work/alpha'),
+          _result(2, directory: '/work/alpha'),
+          _result(3, directory: '/work/beta'),
+        ],
+      );
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('global-session-count')), findsNothing);
+      expect(find.text('2'), findsNothing);
+      expect(find.text('1'), findsNothing);
+      expect(find.textContaining('conversations in'), findsNothing);
+    });
+
+    testWidgets('the search field and the Active/Archived choice share the '
+        'gutter, and projects are one section gap apart', (tester) async {
+      final repository = _FinderRepository(
+        (_) async => [
+          _result(1, updated: 500, directory: '/work/alpha'),
+          _result(2, updated: 400, directory: '/work/beta'),
+        ],
+      );
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
+
+      final field = tester.getTopLeft(find.byType(KitSearchField));
+      final segments = tester.getTopLeft(
+        find.byKey(const ValueKey('global-sessions-active')),
+      );
+      final alpha = tester.getRect(
+        find.byKey(const ValueKey('global-session-group-/work/alpha')),
+      );
+      final beta = tester.getRect(
+        find.byKey(const ValueKey('global-session-group-/work/beta')),
+      );
+      // The field, the choice and the project panels share the 16 dp rails.
+      expect(field.dx, 16);
+      expect(tester.getTopLeft(find.byType(KitSegmented<bool>)).dx, 16);
+      expect(alpha.left, 0);
+      expect(segments.dx, greaterThanOrEqualTo(16));
+      // The second project's label starts one section gap (22) under the
+      // first project's panel, not two (the group's own gap only).
+      expect(beta.top, alpha.bottom);
+      expect(
+        tester.getTopLeft(find.text('Project 2')).dy - beta.top,
+        moreOrLessEquals(22, epsilon: 0.01),
+      );
+    });
   });
 
   testWidgets('moving a working conversation warns before it moves', (
