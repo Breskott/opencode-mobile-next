@@ -368,7 +368,8 @@
       ],
       "Radius.circular(<n>": [
         "lib/ui/kit/kit_text.dart",
-        "lib/ui/kit/kit_tokens.dart"
+        "lib/ui/kit/kit_tokens.dart",
+        "lib/ui/kit/scenes/"
       ],
       "SizedBox numeric": [
         "lib/ui/kit/kit_text.dart",

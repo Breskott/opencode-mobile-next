@@ -30437,7 +30437,7 @@
       }
     }
   },
-  "teamHomeSpentHint": "The whole team since midnight where it runs, estimated. The host doesn’t report what each task cost.",
+  "teamHomeSpentHint": "The whole team since midnight where it runs, estimated. The server doesn’t report what each task cost.",
   "@teamHomeSpentHint": {
     "description": "AI Team page: under today's spend; never a task's cost."
   },
@@ -31531,7 +31531,7 @@
   "@teamAgentsWaking": {
     "description": "Agents list: the wake is being sent."
   },
-  "teamAgentsWakeCheckAgain": "Check again",
+  "teamAgentsWakeCheckAgain": "Refresh",
   "@teamAgentsWakeCheckAgain": {
     "description": "Agents list: reads the team again after a wake it did not confirm."
   },

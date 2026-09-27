@@ -40326,7 +40326,7 @@ abstract class AppLocalizations {
   /// AI Team page: under today's spend; never a task's cost.
   ///
   /// In en, this message translates to:
-  /// **'The whole team since midnight where it runs, estimated. The host doesn’t report what each task cost.'**
+  /// **'The whole team since midnight where it runs, estimated. The server doesn’t report what each task cost.'**
   String get teamHomeSpentHint;
 
   /// AI Team page: under today's spend when part of it has no price.
@@ -41598,7 +41598,7 @@ abstract class AppLocalizations {
   /// Agents list: reads the team again after a wake it did not confirm.
   ///
   /// In en, this message translates to:
-  /// **'Check again'**
+  /// **'Refresh'**
   String get teamAgentsWakeCheckAgain;
 
   /// Development services: confirm button of the Stop {name}? sheet.
