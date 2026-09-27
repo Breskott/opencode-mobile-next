@@ -1,9 +1,12 @@
 import '../../l10n/app_localizations.dart';
+import '../../platform/platform_capabilities.dart';
 import '../../termux/bridge.dart' show TermuxBridge, TermuxRuntime;
 import '../../termux/opencode_ubuntu_setup.dart';
+import '../../voice/model_manifest.dart';
 import '../builtin_linux.dart';
 import 'aiteam_scripts.dart';
 import 'setup_contract.dart';
+import 'voice_component.dart';
 
 /// Every component the phone setup can install, in dependency order
 /// (docs/design/phone-setup-v2-2026-09-24.md, "Components").
@@ -144,6 +147,26 @@ List<SetupComponent> setupComponents(
       checkScript: '',
       installScript: '',
     ),
+    // Voice typing's speech model: installed by the app into its own
+    // storage, not inside Linux (SetupComponent.app), so nothing here
+    // depends on Linux. Last, after the start: a working agent does not
+    // wait for it, and a failed download leaves OpenCode running. Its size
+    // is the pack this phone would use, once the device has been asked.
+    if (platformCapabilities.supportsVoice)
+      SetupComponent(
+        id: SetupComponentIds.voice,
+        title: l10n.voiceComponentTitle,
+        shortTitle: l10n.voiceComponentTitle,
+        summary: l10n.voiceComponentSummary,
+        // Mostly the download; the ETA's pace scaling corrects it.
+        estimatedSeconds: 45,
+        downloadBytes:
+            VoiceSetupComponent.instance.lastOfferBytes ??
+            voiceModelPack('base').downloadBytes,
+        checkScript: '',
+        installScript: '',
+        app: VoiceSetupComponent.instance,
+      ),
   ];
 }
 
@@ -156,6 +179,9 @@ abstract final class SetupComponentIds {
   static const node = 'node';
   static const openCode = 'opencode';
   static const aiTeam = 'aiteam';
+
+  /// Voice typing's speech model, installed by the app itself.
+  static const voice = 'voice';
 
   /// Not installed: starting the server and connecting to it, the last step
   /// of every job (see [SetupComponent.jobStep]).

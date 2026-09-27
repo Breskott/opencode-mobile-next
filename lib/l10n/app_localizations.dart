@@ -41054,6 +41054,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{OpenCode changed 1 file. Look it over before you go on.} other{OpenCode changed {count} files. Look them over before you go on.}}'**
   String nudgeReviewChangesCount(int count);
+
+  /// The optional phone setup item that downloads the on-device speech model (Customize sheet, Add tools, setup checklist)
+  ///
+  /// In en, this message translates to:
+  /// **'Voice typing'**
+  String get voiceComponentTitle;
+
+  /// One line under the Voice typing setup item saying what it does
+  ///
+  /// In en, this message translates to:
+  /// **'Speak instead of typing, even offline'**
+  String get voiceComponentSummary;
+
+  /// Action on the installed Voice typing setup item: deletes the speech model
+  ///
+  /// In en, this message translates to:
+  /// **'Remove voice typing'**
+  String get voiceComponentRemove;
+
+  /// Question before deleting the speech model from phone setup
+  ///
+  /// In en, this message translates to:
+  /// **'Remove voice typing?'**
+  String get voiceComponentRemoveTitle;
+
+  /// Body of the question before deleting the speech model
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes the speech model and frees {size}. Voice typing stops working until you add it here again.'**
+  String voiceComponentRemoveBody(String size);
+
+  /// Setup checklist stage while the app downloads an item into its own storage (the voice typing model)
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading'**
+  String get setupAppStageDownloading;
+
+  /// Setup checklist stage while the app verifies a downloaded item
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the download'**
+  String get setupAppStageVerifying;
 }
 
 class _AppLocalizationsDelegate

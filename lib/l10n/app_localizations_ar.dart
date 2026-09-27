@@ -26282,4 +26282,27 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get voiceComponentTitle => 'Voice typing';
+
+  @override
+  String get voiceComponentSummary => 'Speak instead of typing, even offline';
+
+  @override
+  String get voiceComponentRemove => 'Remove voice typing';
+
+  @override
+  String get voiceComponentRemoveTitle => 'Remove voice typing?';
+
+  @override
+  String voiceComponentRemoveBody(String size) {
+    return 'Deletes the speech model and frees $size. Voice typing stops working until you add it here again.';
+  }
+
+  @override
+  String get setupAppStageDownloading => 'Downloading';
+
+  @override
+  String get setupAppStageVerifying => 'Checking the download';
 }
