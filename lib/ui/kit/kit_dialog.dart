@@ -4,8 +4,9 @@
 // ([showKitAlert]). There is no general-purpose dialog and no public widget:
 // the frames below are private and open only through the two functions.
 //
-// Declared states: `input-default`, `input-invalid` (the primary disabled
-// with its reason), `input-error` (a submit error under the field),
+// Declared states: `input-default`, `input-invalid` (after the first edit:
+// the reason under the field, the primary disabled), `input-error` (a
+// submit error under the field),
 // `input-working`, `input-discard` (the discard question in place),
 // `alert`, `alert-with-action`, `alert-with-details`.
 import 'dart:async';
@@ -34,8 +35,10 @@ import 'motion/kit_reveal.dart';
 /// - [initial] is prefilled and selected on open (never with
 ///   [KitFieldKind.secret], which is never prefilled).
 /// - [validate] returns null when the text is valid, the reason otherwise.
-///   Before the first edit the reason sits under the disabled primary;
-///   after it, under the field; never in both places.
+///   Nothing is judged before the first edit (the primary stays enabled; a
+///   tap on it with invalid text shows the reason instead of submitting).
+///   The reason always sits under the field, never under the button, and
+///   the primary is disabled while it shows.
 /// - [onSubmit] runs with the text: the primary shows it is working, the
 ///   field and Cancel are disabled, and Esc, back and a tap outside are
 ///   ignored. A non-null result is an error shown under the field; the text
@@ -44,16 +47,19 @@ import 'motion/kit_reveal.dart';
 /// - [alternative] ("Remove budget") sits on its own line; a destructive
 ///   one stacks the actions on every window. Choosing it closes the dialog
 ///   (null) and runs it.
-/// - [draft] keeps the text across dismissal and a process kill: back, Esc
-///   and Cancel close silently and reopening restores it. The caller clears
-///   it once the text is used. Without a draft, changed text makes a tap
-///   outside do nothing and back or Esc ask the discard question inside
-///   the dialog ("Keep editing" is the default); an explicit Cancel closes.
+/// - [draft] keeps the text across dismissal and a process kill: back, Esc,
+///   a swipe, a tap outside and Cancel close silently and reopening
+///   restores it. The caller clears it once the text is used. Without a
+///   draft, changed text makes back, Esc, a swipe on the handle and a tap
+///   outside ask the discard question inside the dialog ("Keep editing" is
+///   the default); an explicit Cancel closes.
 ///
-/// Compact: the window width minus the gutters, the actions stacked full
-/// width (primary, alternative, Cancel). From medium: at most
-/// [KitLayout.confirmDialogWidth] wide, the actions in one end-aligned row.
-/// Enter or the IME action submits when valid.
+/// It opens in the same frame as [showKitConfirm]: a bottom sheet with a
+/// handle on a compact window (the actions stacked full width: primary,
+/// alternative, Cancel), capped on a medium one, and a centred panel of at
+/// most [KitLayout.confirmDialogWidth] on an expanded or large one, the
+/// actions in one end-aligned row. The field and the pinned actions ride
+/// above the keyboard. Enter or the IME action submits when valid.
 Future<String?> showKitInputDialog(
   BuildContext context, {
   required String title,
@@ -113,8 +119,11 @@ Future<String?> showKitInputDialog(
     fieldKey: fieldKey,
     confirmKey: confirmKey,
   );
-  return _presentKitDialog<String>(
+  return presentKitConfirmFrame<String>(
     context,
+    // The dialog decides what a swipe, a tap outside, back and Esc do
+    // (unsaved text asks first), so the route's own swipe is off.
+    ownsDrag: true,
     builder: (dialogContext) => _KitInputDialog(
       key: dialogKey,
       spec: spec,
@@ -166,10 +175,10 @@ Future<void> showKitAlert(
 AppLocalizations _l10n(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
-/// Pushes the one dialog frame: the scrim (no blur, LOOK-22), a centred
-/// panel on `surface2` with the VL dialog radius, cross-faded on
-/// [KitMotion.standard] with no scale (MOT-2). The route's own barrier never
-/// dismisses; the content decides what a tap outside does ([_KitBarrierTap]).
+/// Pushes the alert's frame: the scrim (no blur, LOOK-22), a centred panel
+/// on `surface2` with the VL dialog radius, cross-faded on
+/// [KitMotion.standard] with no scale (MOT-2). A tap outside does nothing:
+/// the alert blocks until it is answered.
 Future<T?> _presentKitDialog<T>(
   BuildContext context, {
   required Widget Function(BuildContext context) builder,
@@ -193,26 +202,10 @@ Future<T?> _presentKitDialog<T>(
   );
 }
 
-/// Handed to the content so it can say what a tap outside does.
-typedef _BarrierHandler = ValueNotifier<VoidCallback?>;
-
-class _KitDialogFrame extends StatefulWidget {
+class _KitDialogFrame extends StatelessWidget {
   const _KitDialogFrame({required this.child});
 
   final Widget Function(BuildContext context) child;
-
-  @override
-  State<_KitDialogFrame> createState() => _KitDialogFrameState();
-}
-
-class _KitDialogFrameState extends State<_KitDialogFrame> {
-  final _BarrierHandler _barrier = _BarrierHandler(null);
-
-  @override
-  void dispose() {
-    _barrier.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -225,7 +218,7 @@ class _KitDialogFrameState extends State<_KitDialogFrame> {
         : available.clamp(0.0, KitLayout.confirmDialogWidth);
     return Stack(
       children: [
-        // A tap outside: the content decides (blocks by default).
+        // A tap outside is caught and ignored: the alert blocks.
         PositionedDirectional(
           start: 0,
           end: 0,
@@ -235,7 +228,7 @@ class _KitDialogFrameState extends State<_KitDialogFrame> {
             child: GestureDetector(
               key: const ValueKey('kit-dialog-barrier'),
               behavior: HitTestBehavior.opaque,
-              onTap: () => _barrier.value?.call(),
+              onTap: () {},
             ),
           ),
         ),
@@ -257,10 +250,7 @@ class _KitDialogFrameState extends State<_KitDialogFrame> {
                     child: Semantics(
                       scopesRoute: true,
                       explicitChildNodes: true,
-                      child: _KitDialogBarrierScope(
-                        handler: _barrier,
-                        child: Builder(builder: widget.child),
-                      ),
+                      child: Builder(builder: child),
                     ),
                   ),
                 ),
@@ -273,30 +263,29 @@ class _KitDialogFrameState extends State<_KitDialogFrame> {
   }
 }
 
-class _KitDialogBarrierScope extends InheritedWidget {
-  const _KitDialogBarrierScope({required this.handler, required super.child});
-
-  final _BarrierHandler handler;
-
-  static _BarrierHandler? of(BuildContext context) =>
-      context.getInheritedWidgetOfExactType<_KitDialogBarrierScope>()?.handler;
-
-  @override
-  bool updateShouldNotify(_KitDialogBarrierScope old) => false;
-}
-
 /// The panel's layout: a scrolling body over pinned actions, on the VL
 /// dialog inset, so the field and the actions stay reachable on a short
 /// window and at 200 % text.
 class _KitDialogLayout extends StatelessWidget {
-  const _KitDialogLayout({required this.body, required this.actions});
+  const _KitDialogLayout({
+    required this.body,
+    required this.actions,
+    this.sheet = false,
+  });
 
   final List<Widget> body;
   final Widget actions;
 
+  /// Inside the confirm frame ([presentKitConfirmFrame]): the confirm's
+  /// rails and air, under the handle.
+  final bool sheet;
+
   @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
+    final side = sheet ? tokens.rail : tokens.panelInset;
+    final top = sheet ? tokens.space3 : tokens.panelInset;
+    final bottom = sheet ? tokens.space4 : tokens.panelInset;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -304,9 +293,9 @@ class _KitDialogLayout extends StatelessWidget {
         Flexible(
           child: SingleChildScrollView(
             padding: EdgeInsetsDirectional.fromSTEB(
-              tokens.panelInset,
-              tokens.panelInset,
-              tokens.panelInset,
+              side,
+              top,
+              side,
               tokens.space4,
             ),
             child: Column(
@@ -317,11 +306,10 @@ class _KitDialogLayout extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: EdgeInsetsDirectional.fromSTEB(
-            tokens.panelInset,
-            0,
-            tokens.panelInset,
-            tokens.panelInset,
+          padding: EdgeInsetsDirectional.only(
+            start: side,
+            end: side,
+            bottom: bottom,
           ),
           child: actions,
         ),
@@ -399,8 +387,13 @@ class _KitInputDialog extends StatefulWidget {
 class _KitInputDialogState extends State<_KitInputDialog> {
   final _focus = FocusNode(debugLabel: 'kit-dialog-field');
   final _keys = FocusNode(debugLabel: 'kit-dialog', skipTraversal: true);
-  _BarrierHandler? _barrier;
-  late String _lastText = widget.controller.text;
+
+  /// The text as last seen; set in [initState], so the very first edit
+  /// already differs from it (a lazy initialiser would read the edited
+  /// text on that first change and miss it).
+  late String _lastText;
+
+  /// The person has edited, or tried to submit: the reason may show.
   bool _edited = false;
   bool _working = false;
   bool _discarding = false;
@@ -417,13 +410,8 @@ class _KitInputDialogState extends State<_KitInputDialog> {
   @override
   void initState() {
     super.initState();
+    _lastText = widget.controller.text;
     widget.controller.addListener(_onText);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _barrier = _KitDialogBarrierScope.of(context)?..value = _onBarrierTap;
   }
 
   @override
@@ -446,17 +434,10 @@ class _KitInputDialogState extends State<_KitInputDialog> {
 
   void _close([String? value]) {
     if (!mounted) return;
-    _barrier?.value = null;
     Navigator.of(context).pop(value);
   }
 
-  void _onBarrierTap() {
-    // Changed text without a draft: a stray tap never loses it (DATA-1).
-    if (_working || _discarding || _dirty) return;
-    _close();
-  }
-
-  /// Back or Esc.
+  /// Back, Esc, a swipe on the handle or a tap outside.
   void _requestClose() {
     if (_working) return;
     if (_discarding) {
@@ -479,7 +460,13 @@ class _KitInputDialogState extends State<_KitInputDialog> {
   }
 
   Future<void> _submit() async {
-    if (_working || _discarding || _invalid != null) return;
+    if (_working || _discarding) return;
+    if (_invalid != null) {
+      // Nothing was judged yet: show the reason under the field.
+      if (!_edited) setState(() => _edited = true);
+      _focus.requestFocus();
+      return;
+    }
     final value = _text;
     final onSubmit = _spec.onSubmit;
     if (onSubmit == null) {
@@ -558,10 +545,11 @@ class _KitInputDialogState extends State<_KitInputDialog> {
     final tokens = KitTokens.of(context);
     final spec = _spec;
     final invalid = _invalid;
-    // The reason sits under the primary before the first edit, under the
-    // field after it; never in both places (KitDialog.md, States).
+    // Nothing is judged before the first edit; after it the reason sits
+    // under the field, never under the button (so never twice), and the
+    // primary waits for valid text.
     final fieldError = _submitError ?? (_edited ? invalid : null);
-    final buttonReason = _edited ? null : invalid;
+    final blocked = _edited && invalid != null;
     final working = _working;
     final workingReason = working ? l10n.kitWorking : null;
     void submitted(String _) => unawaited(_submit());
@@ -599,6 +587,7 @@ class _KitInputDialogState extends State<_KitInputDialog> {
           );
     final alternative = spec.alternative;
     return _KitDialogLayout(
+      sheet: true,
       body: [
         _KitDialogTitle(spec.title),
         SizedBox(height: tokens.space4),
@@ -609,8 +598,7 @@ class _KitInputDialogState extends State<_KitInputDialog> {
           key: spec.confirmKey,
           label: spec.confirmLabel,
           working: working,
-          onPressed: invalid == null ? () => unawaited(_submit()) : null,
-          disabledReason: buttonReason,
+          onPressed: blocked ? null : () => unawaited(_submit()),
         ),
         tertiary: [
           if (alternative != null)
