@@ -6226,7 +6226,7 @@ abstract class AppLocalizations {
   /// No description provided for @tailscaleIntro.
   ///
   /// In en, this message translates to:
-  /// **'Reach OpenCode on another computer through your own Tailscale network. You control sign-in and VPN access in the official Tailscale app.'**
+  /// **'Reach OpenCode on another computer through your own Tailscale network.'**
   String get tailscaleIntro;
 
   /// No description provided for @tailscaleAppStep.
@@ -6298,7 +6298,7 @@ abstract class AppLocalizations {
   /// No description provided for @tailscaleCheckAgain.
   ///
   /// In en, this message translates to:
-  /// **'Check app again'**
+  /// **'Check Tailscale again'**
   String get tailscaleCheckAgain;
 
   /// No description provided for @tailscaleAddressStep.
@@ -9766,18 +9766,6 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Server updates are managed externally'**
-  String get e7SettingsUi54;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy the official upgrade and model-refresh commands to run on the server host.'**
-  String get e7SettingsUi55;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Not connected'**
   String get e7SettingsUi56;
 
@@ -9832,7 +9820,7 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Keep OpenCode running on your computer after you close the terminal; copy setup, status, restart, log, and update commands'**
+  /// **'Keep OpenCode running after you close the terminal.'**
   String get e7SettingsUi66;
 
   /// Settings and appearance user interface.
@@ -16755,12 +16743,6 @@ abstract class AppLocalizations {
   /// **'Connection closed'**
   String get e7SetupConnectionClosed;
 
-  /// Setup journey: not connected.
-  ///
-  /// In en, this message translates to:
-  /// **'Not connected'**
-  String get e7SetupNotConnected;
-
   /// Setup journey: token banner.
   ///
   /// In en, this message translates to:
@@ -17211,12 +17193,6 @@ abstract class AppLocalizations {
   /// **'Start & connect'**
   String get e7SetupStartConnect;
 
-  /// Setup journey: this server.
-  ///
-  /// In en, this message translates to:
-  /// **'This server'**
-  String get e7SetupThisServer;
-
   /// Setup journey: ubuntu only.
   ///
   /// In en, this message translates to:
@@ -17330,12 +17306,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Terminal status: {status}'**
   String e7SetupTerminalStatus(String status);
-
-  /// Setup journey: server version.
-  ///
-  /// In en, this message translates to:
-  /// **'Server version {version}'**
-  String e7SetupServerVersion(String version);
 
   /// Setup journey: copy command label.
   ///
@@ -33386,13 +33356,13 @@ abstract class AppLocalizations {
   /// Setup guide step 2 when this device can scan; names the real Servers buttons
   ///
   /// In en, this message translates to:
-  /// **'Open Servers, tap Add server, then Scan code and point the camera at the QR, or copy the code and tap Paste code. The address, username and password fill in together.'**
+  /// **'Tap Add server, then Scan code and point the camera at the QR, or Paste code.'**
   String get guideStepTwoScan;
 
   /// Setup guide step 2 without a camera; names the real Servers buttons
   ///
   /// In en, this message translates to:
-  /// **'Copy the printed code, open Servers, tap Add server, then Paste code. The address, username and password fill in together.'**
+  /// **'Copy the printed code, then tap Add server and Paste code.'**
   String get guideStepTwoPaste;
 
   /// Setup guide row that opens phone setup, for people without a computer
@@ -33477,11 +33447,11 @@ abstract class AppLocalizations {
   /// **'Server data stays in place'**
   String get serverSettingsUpgradeKeepsData;
 
-  /// Server settings: copy button for the upgrade commands run on the host
+  /// Server settings: the row that copies the upgrade and model-refresh commands to run on the server's computer (updates managed outside the app).
   ///
   /// In en, this message translates to:
-  /// **'Copy update commands'**
-  String get serverSettingsCopyUpdateCommands;
+  /// **'Copy update commands for {server}'**
+  String serverSettingsCopyUpdateCommands(String server);
 
   /// Server settings authentication row: where the password is set
   ///
@@ -33528,7 +33498,7 @@ abstract class AppLocalizations {
   /// Tailscale setup: the helper under the server address field; says the app cannot pick the computer from the tailnet's devices
   ///
   /// In en, this message translates to:
-  /// **'OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.'**
+  /// **'Paste the HTTPS address Tailscale Serve printed.'**
   String get tailscaleSetupAddressHelper;
 
   /// Tailscale setup: the button on the app step that opens the official Play Store page (after the external-link review)
@@ -41600,6 +41570,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t stop {helper}. Try again, or stop it from Termux.'**
   String workRunawayStopFailed(String helper);
+
+  /// Server settings: the line under 'Copy update commands for {server}' before it is tapped.
+  ///
+  /// In en, this message translates to:
+  /// **'Run them in a terminal on the server\'s computer; this app can\'t update it.'**
+  String get serverSettingsUpdateCommandsDetail;
+
+  /// Server settings: the line under 'Copy update commands for {server}' after the row copied them.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied. Run them in a terminal on the server\'s computer.'**
+  String get serverSettingsUpdateCommandsCopied;
+
+  /// Run as a Linux service page: its title, naming the server (four words at most, glossary G28).
+  ///
+  /// In en, this message translates to:
+  /// **'Linux service for {server}'**
+  String hostServiceTitle(String server);
+
+  /// Run as a Linux service page: the one line under the top bar.
+  ///
+  /// In en, this message translates to:
+  /// **'These commands run on {server}\'s computer; copy each into a terminal there.'**
+  String hostServiceIntro(String server);
+
+  /// Tailscale steps: a step the person still has to do; the neutral to-do word leads its line.
+  ///
+  /// In en, this message translates to:
+  /// **'To do · {detail}'**
+  String tailscaleSetupToDo(String detail);
+
+  /// Tailscale setup and recovery fold: why the address is typed, not picked.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode can’t list the devices on your tailnet.'**
+  String get tailscaleSetupNoDeviceList;
 
   /// Safe app-authored explanation when a queued prompt needs staged revert review.
   ///

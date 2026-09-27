@@ -3693,7 +3693,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tailscaleIntro =>
-      'Reach OpenCode on another computer through your own Tailscale network. You control sign-in and VPN access in the official Tailscale app.';
+      'Reach OpenCode on another computer through your own Tailscale network.';
 
   @override
   String get tailscaleAppStep => '1. Open your private network';
@@ -3736,7 +3736,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tailscaleInstall => 'Get official Android app';
 
   @override
-  String get tailscaleCheckAgain => 'Check app again';
+  String get tailscaleCheckAgain => 'Check Tailscale again';
 
   @override
   String get tailscaleAddressStep => '2. Review your server address';
@@ -5821,13 +5821,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SettingsUi53 => 'an unknown version';
 
   @override
-  String get e7SettingsUi54 => 'Server updates are managed externally';
-
-  @override
-  String get e7SettingsUi55 =>
-      'Copy the official upgrade and model-refresh commands to run on the server host.';
-
-  @override
   String get e7SettingsUi56 => 'Not connected';
 
   @override
@@ -5856,7 +5849,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SettingsUi66 =>
-      'Keep OpenCode running on your computer after you close the terminal; copy setup, status, restart, log, and update commands';
+      'Keep OpenCode running after you close the terminal.';
 
   @override
   String get e7SettingsUi67 => 'Server updates';
@@ -10285,9 +10278,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SetupConnectionClosed => 'Connection closed';
 
   @override
-  String get e7SetupNotConnected => 'Not connected';
-
-  @override
   String get e7SetupTokenBanner =>
       'Connection token re-entry required for the active server. Edit the server and save its token before connecting.';
 
@@ -10533,9 +10523,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SetupStartConnect => 'Start & connect';
 
   @override
-  String get e7SetupThisServer => 'This server';
-
-  @override
   String get e7SetupUbuntuOnly =>
       'Ubuntu is installed. OpenCode is not installed yet.';
 
@@ -10604,11 +10591,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String e7SetupTerminalStatus(String status) {
     return 'Terminal status: $status';
-  }
-
-  @override
-  String e7SetupServerVersion(String version) {
-    return 'Server version $version';
   }
 
   @override
@@ -21011,11 +20993,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideStepTwoScan =>
-      'Open Servers, tap Add server, then Scan code and point the camera at the QR, or copy the code and tap Paste code. The address, username and password fill in together.';
+      'Tap Add server, then Scan code and point the camera at the QR, or Paste code.';
 
   @override
   String get guideStepTwoPaste =>
-      'Copy the printed code, open Servers, tap Add server, then Paste code. The address, username and password fill in together.';
+      'Copy the printed code, then tap Add server and Paste code.';
 
   @override
   String get guidePhonePathTitle => 'Use this phone instead';
@@ -21071,7 +21053,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serverSettingsUpgradeKeepsData => 'Server data stays in place';
 
   @override
-  String get serverSettingsCopyUpdateCommands => 'Copy update commands';
+  String serverSettingsCopyUpdateCommands(String server) {
+    return 'Copy update commands for $server';
+  }
 
   @override
   String get serverSettingsPasswordInServers => 'Add or change it in Servers';
@@ -21098,7 +21082,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tailscaleSetupAddressHelper =>
-      'OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.';
+      'Paste the HTTPS address Tailscale Serve printed.';
 
   @override
   String get tailscaleSetupGetApp => 'Get Tailscale';
@@ -26407,6 +26391,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String workRunawayStopFailed(String helper) {
     return 'Couldn\'t stop $helper. Try again, or stop it from Termux.';
   }
+
+  @override
+  String get serverSettingsUpdateCommandsDetail =>
+      'Run them in a terminal on the server\'s computer; this app can\'t update it.';
+
+  @override
+  String get serverSettingsUpdateCommandsCopied =>
+      'Copied. Run them in a terminal on the server\'s computer.';
+
+  @override
+  String hostServiceTitle(String server) {
+    return 'Linux service for $server';
+  }
+
+  @override
+  String hostServiceIntro(String server) {
+    return 'These commands run on $server\'s computer; copy each into a terminal there.';
+  }
+
+  @override
+  String tailscaleSetupToDo(String detail) {
+    return 'To do · $detail';
+  }
+
+  @override
+  String get tailscaleSetupNoDeviceList =>
+      'OpenCode can’t list the devices on your tailnet.';
 
   @override
   String get productErrorStagedRevert =>

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/platform/tailscale.dart';
 import 'package:opencode_mobile/state/tailscale_address.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/tailscale_setup_screen.dart';
 
 class _Bridge extends TailscaleBridge {
@@ -166,7 +167,7 @@ void main() {
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       bridge.state = TailscaleAppState.installed;
-      await _tap(tester, 'Check app again');
+      await _tap(tester, 'Check Tailscale again');
       expect(find.text('Open Tailscale'), findsOneWidget);
       expect(bridge.opens, 0);
     },
@@ -193,8 +194,8 @@ void main() {
     final bridge = _Bridge();
     await _show(tester, bridge);
     bridge.pending = Completer<TailscaleAppState>();
-    await tester.ensureVisible(find.text('Check app again'));
-    await tester.tap(find.text('Check app again'));
+    await tester.ensureVisible(find.text('Check Tailscale again'));
+    await tester.tap(find.text('Check Tailscale again'));
     await tester.pump();
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
@@ -217,14 +218,20 @@ void main() {
       await tester.pump();
       expect(find.text('Enter your server’s address first.'), findsNothing);
       expect(find.textContaining('/2048'), findsNothing);
+      // The one caveat line; the rest waits in the fold.
       expect(
-        find.textContaining('can’t list the devices on your tailnet'),
+        find.text('Paste the HTTPS address Tailscale Serve printed.'),
         findsOneWidget,
       );
+      expect(
+        find.textContaining('can’t list the devices on your tailnet'),
+        findsNothing,
+      );
+      expect(find.textContaining('Continue only with'), findsNothing);
     },
   );
 
-  testWidgets('a failed app check offers Check app again on its row', (
+  testWidgets('a failed app check offers Check Tailscale again on its row', (
     tester,
   ) async {
     final bridge = _Bridge()..state = TailscaleAppState.unavailable;
@@ -232,10 +239,75 @@ void main() {
     expect(find.textContaining('Could not check the app'), findsOneWidget);
     expect(find.text('Open Tailscale'), findsNothing);
     bridge.state = TailscaleAppState.installed;
-    await _tap(tester, 'Check app again');
+    await _tap(tester, 'Check Tailscale again');
     expect(find.text('Open Tailscale'), findsOneWidget);
     expect(
       find.text('Tailscale is installed. VPN connection is unverified.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'R15: the steps are one panel of rows; a step the person has '
+    'to do says To do, never Needs you, and its button sits under its words',
+    (tester) async {
+      final bridge = _Bridge()..state = TailscaleAppState.missing;
+      await _show(tester, bridge);
+      final panel = find.byKey(const ValueKey('tailscale-steps'));
+      expect(
+        find.descendant(of: panel, matching: find.byType(KitRow)),
+        findsNWidgets(3),
+      );
+      expect(find.textContaining('Needs you'), findsNothing);
+      expect(
+        find.textContaining('To do · Tailscale is not installed'),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('tailscale-step-app')),
+          matching: find.byType(KitStatusMark),
+        ),
+        findsOneWidget,
+      );
+      final words = find.textContaining('To do · Tailscale is not installed');
+      final button = find.text('Get Tailscale');
+      expect(
+        tester.getTopLeft(button).dy,
+        greaterThan(tester.getBottomLeft(words).dy),
+      );
+      // Check Tailscale again is the panel's own last row.
+      expect(
+        find.descendant(
+          of: panel,
+          matching: find.byKey(const ValueKey('tailscale-check-again')),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Check Tailscale again'), findsOneWidget);
+      // The section captions are the kit's.
+      expect(find.byType(KitSectionLabel), findsNWidgets(2));
+    },
+  );
+
+  testWidgets('R15: one caveat line on the page; the rest is in the fold', (
+    tester,
+  ) async {
+    await _show(tester, _Bridge());
+    expect(
+      find.text('Paste the HTTPS address Tailscale Serve printed.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Continue only with'), findsNothing);
+    await tester.dragUntilVisible(
+      find.text('Tailscale setup and recovery'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
+    await _tap(tester, 'Tailscale setup and recovery');
+    expect(find.textContaining('Continue only with'), findsOneWidget);
+    expect(
+      find.text('OpenCode can’t list the devices on your tailnet.'),
       findsOneWidget,
     );
   });
@@ -248,7 +320,7 @@ void main() {
     expect(find.textContaining('cannot open the Android app'), findsOneWidget);
     expect(find.text('Open Tailscale'), findsNothing);
     expect(find.text('Get Tailscale'), findsNothing);
-    expect(find.text('Check app again'), findsNothing);
+    expect(find.text('Check Tailscale again'), findsNothing);
   });
 
   testWidgets('official guides fold under Details and open for review', (
@@ -290,11 +362,11 @@ void main() {
         expect(tester.takeException(), isNull);
         bridge.state = TailscaleAppState.installed;
         await tester.dragUntilVisible(
-          find.text('Check app again'),
+          find.text('Check Tailscale again'),
           find.byType(ListView),
           const Offset(0, -200),
         );
-        await _tap(tester, 'Check app again');
+        await _tap(tester, 'Check Tailscale again');
         // Short windows may have scrolled the steps away: bring the row
         // back into view, then check its button laid out cleanly.
         await tester.dragUntilVisible(

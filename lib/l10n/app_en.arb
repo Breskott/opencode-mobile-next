@@ -2212,7 +2212,7 @@
   "markdownSnapshot": "Snapshot of the code when opened. Close and reopen to read later updates.",
   "tailscaleTitle": "Connect with Tailscale",
   "tailscaleQuickAdd": "Use your private network and an HTTPS server address",
-  "tailscaleIntro": "Reach OpenCode on another computer through your own Tailscale network. You control sign-in and VPN access in the official Tailscale app.",
+  "tailscaleIntro": "Reach OpenCode on another computer through your own Tailscale network.",
   "tailscaleAppStep": "1. Open your private network",
   "tailscaleChecking": "Checking for the Tailscale app…",
   "tailscaleInstalled": "Tailscale is installed. VPN connection is unverified.",
@@ -2224,7 +2224,7 @@
   "tailscaleOpenFailed": "Tailscale could not open. Open it from your launcher, then return here. Your address stays in this form.",
   "tailscaleOpen": "Open Tailscale",
   "tailscaleInstall": "Get official Android app",
-  "tailscaleCheckAgain": "Check app again",
+  "tailscaleCheckAgain": "Check Tailscale again",
   "tailscaleAddressStep": "2. Review your server address",
   "tailscaleAddressLabel": "Private HTTPS server address",
   "tailscaleAddressDetail": "Use the full HTTPS origin printed by Tailscale Serve, such as https://computer.tailnet-name.ts.net. Keep any HTTPS port it prints. A short device name or a raw HTTP port may not provide a valid certificate.",
@@ -4153,14 +4153,6 @@
   "@e7SettingsUi53": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsUi54": "Server updates are managed externally",
-  "@e7SettingsUi54": {
-    "description": "Settings and appearance user interface."
-  },
-  "e7SettingsUi55": "Copy the official upgrade and model-refresh commands to run on the server host.",
-  "@e7SettingsUi55": {
-    "description": "Settings and appearance user interface."
-  },
   "e7SettingsUi56": "Not connected",
   "@e7SettingsUi56": {
     "description": "Settings and appearance user interface."
@@ -4197,7 +4189,7 @@
   "@e7SettingsUi65": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsUi66": "Keep OpenCode running on your computer after you close the terminal; copy setup, status, restart, log, and update commands",
+  "e7SettingsUi66": "Keep OpenCode running after you close the terminal.",
   "@e7SettingsUi66": {
     "description": "Settings and appearance user interface."
   },
@@ -10068,10 +10060,6 @@
   "@e7SetupConnectionClosed": {
     "description": "Setup journey: connection closed."
   },
-  "e7SetupNotConnected": "Not connected",
-  "@e7SetupNotConnected": {
-    "description": "Setup journey: not connected."
-  },
   "e7SetupTokenBanner": "Connection token re-entry required for the active server. Edit the server and save its token before connecting.",
   "@e7SetupTokenBanner": {
     "description": "Setup journey: token banner."
@@ -10372,10 +10360,6 @@
   "@e7SetupStartConnect": {
     "description": "Setup journey: start connect."
   },
-  "e7SetupThisServer": "This server",
-  "@e7SetupThisServer": {
-    "description": "Setup journey: this server."
-  },
   "e7SetupUbuntuOnly": "Ubuntu is installed. OpenCode is not installed yet.",
   "@e7SetupUbuntuOnly": {
     "description": "Setup journey: ubuntu only."
@@ -10479,15 +10463,6 @@
     "description": "Setup journey: terminal status.",
     "placeholders": {
       "status": {
-        "type": "String"
-      }
-    }
-  },
-  "e7SetupServerVersion": "Server version {version}",
-  "@e7SetupServerVersion": {
-    "description": "Setup journey: server version.",
-    "placeholders": {
-      "version": {
         "type": "String"
       }
     }
@@ -24171,11 +24146,11 @@
   "@serversRemoveServerKeeps": {
     "description": "Servers › Remove server sheet: what is kept."
   },
-  "guideStepTwoScan": "Open Servers, tap Add server, then Scan code and point the camera at the QR, or copy the code and tap Paste code. The address, username and password fill in together.",
+  "guideStepTwoScan": "Tap Add server, then Scan code and point the camera at the QR, or Paste code.",
   "@guideStepTwoScan": {
     "description": "Setup guide step 2 when this device can scan; names the real Servers buttons"
   },
-  "guideStepTwoPaste": "Copy the printed code, open Servers, tap Add server, then Paste code. The address, username and password fill in together.",
+  "guideStepTwoPaste": "Copy the printed code, then tap Add server and Paste code.",
   "@guideStepTwoPaste": {
     "description": "Setup guide step 2 without a camera; names the real Servers buttons"
   },
@@ -24260,9 +24235,14 @@
   "@serverSettingsUpgradeKeepsData": {
     "description": "Server update question: what is kept"
   },
-  "serverSettingsCopyUpdateCommands": "Copy update commands",
+  "serverSettingsCopyUpdateCommands": "Copy update commands for {server}",
   "@serverSettingsCopyUpdateCommands": {
-    "description": "Server settings: copy button for the upgrade commands run on the host"
+    "description": "Server settings: the row that copies the upgrade and model-refresh commands to run on the server's computer (updates managed outside the app).",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
   },
   "serverSettingsPasswordInServers": "Add or change it in Servers",
   "@serverSettingsPasswordInServers": {
@@ -24292,7 +24272,7 @@
   "@tailscaleSetupOpenFailed": {
     "description": "Tailscale setup: the VPN step's short reason when the Tailscale app could not be opened"
   },
-  "tailscaleSetupAddressHelper": "OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.",
+  "tailscaleSetupAddressHelper": "Paste the HTTPS address Tailscale Serve printed.",
   "@tailscaleSetupAddressHelper": {
     "description": "Tailscale setup: the helper under the server address field; says the app cannot pick the computer from the tailnet's devices"
   },
@@ -31568,6 +31548,45 @@
         "type": "String"
       }
     }
+  },
+  "serverSettingsUpdateCommandsDetail": "Run them in a terminal on the server's computer; this app can't update it.",
+  "@serverSettingsUpdateCommandsDetail": {
+    "description": "Server settings: the line under 'Copy update commands for {server}' before it is tapped."
+  },
+  "serverSettingsUpdateCommandsCopied": "Copied. Run them in a terminal on the server's computer.",
+  "@serverSettingsUpdateCommandsCopied": {
+    "description": "Server settings: the line under 'Copy update commands for {server}' after the row copied them."
+  },
+  "hostServiceTitle": "Linux service for {server}",
+  "@hostServiceTitle": {
+    "description": "Run as a Linux service page: its title, naming the server (four words at most, glossary G28).",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "hostServiceIntro": "These commands run on {server}'s computer; copy each into a terminal there.",
+  "@hostServiceIntro": {
+    "description": "Run as a Linux service page: the one line under the top bar.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "tailscaleSetupToDo": "To do · {detail}",
+  "@tailscaleSetupToDo": {
+    "description": "Tailscale steps: a step the person still has to do; the neutral to-do word leads its line.",
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "tailscaleSetupNoDeviceList": "OpenCode can’t list the devices on your tailnet.",
+  "@tailscaleSetupNoDeviceList": {
+    "description": "Tailscale setup and recovery fold: why the address is typed, not picked."
   },
   "productErrorStagedRevert": "Review the staged revert before sending this queued prompt.",
   "@productErrorStagedRevert": {

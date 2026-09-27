@@ -9,6 +9,7 @@ import '../../state/local_agent_server.dart';
 import '../../state/profiles.dart';
 import '../../termux/bridge.dart';
 import '../../termux/local_agent_runtime.dart';
+import '../app_theme.dart';
 import '../kit/kit.dart';
 import 'local_agent_onboarding.dart';
 import 'local_server_row.dart';
@@ -316,6 +317,7 @@ class _LocalAgentServerEntryState extends State<LocalAgentServerEntry>
       return LocalServerRow(
         dividerAbove: widget.dividerAbove,
         keyPrefix: 'local-agent-server',
+        mark: AppIconography.agent,
         title: l10n.localAgentTitle,
         status: status == null
             ? (_checking
@@ -400,6 +402,7 @@ class _LocalAgentServerEntryState extends State<LocalAgentServerEntry>
         return LocalServerRow(
           dividerAbove: widget.dividerAbove,
           keyPrefix: 'local-agent-server',
+          mark: AppIconography.agent,
           title: l10n.localAgentTitle,
           status: signedOut ? l10n.localAgentEntrySignedOut(state) : state,
           connectedLabel: l10n.serverRowConnected,

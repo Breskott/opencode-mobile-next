@@ -16,9 +16,11 @@ import '../widgets/external_link.dart';
 /// Host-side management for a remote OpenCode server.
 ///
 /// The app cannot execute commands on the host, so this surface is truthful
-/// by construction: it shows the server facts the app already knows and
-/// provides exact, copyable commands for the documented Ubuntu helper
-/// script. It never claims the app performed a host action.
+/// by construction: the title names the server, one line under the bar says
+/// where the commands run, and the rest are exact, copyable commands for
+/// the documented Ubuntu helper script. The server's address and version
+/// live on its own page, so they are not repeated here. It never claims the
+/// app performed a host action.
 // revamp: redesign (no owner) — the map's sheet from Server settings with
 // one pinned, checksummed install command, "What this does", Linux-only
 // stated, daily commands folded and "Check it is running" waits for a
@@ -45,53 +47,40 @@ class HostManagementScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return KitScreen(
-      topBar: KitTopBar(title: l10n.e7SetupLinuxService),
-      width: KitScreenWidth.reading,
-      body: ListenableBuilder(
-        listenable: controller,
-        builder: (context, _) => _list(context, l10n),
-      ),
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+        // Only a remote server has this page, so its saved name is its
+        // shown name.
+        final server = controller.profile?.name ?? l10n.e7SetupDefaultServer;
+        return KitScreen(
+          topBar: KitTopBar(title: l10n.hostServiceTitle(server)),
+          width: KitScreenWidth.reading,
+          body: _list(context, l10n, server),
+        );
+      },
     );
   }
 
-  Widget _list(BuildContext context, AppLocalizations l10n) {
+  Widget _list(BuildContext context, AppLocalizations l10n, String server) {
     final tokens = KitTokens.of(context);
-    final profile = controller.profile;
     final port = _serverPort();
-    final baseUrl = profile?.baseUrl;
     return ListView(
       padding: EdgeInsets.only(
         top: tokens.space3,
         bottom: KitScreen.endPadding(context),
       ),
       children: [
-        KitRowGroup(
-          label: l10n.e7SetupThisServer,
-          children: [
-            KitRow(
-              leading: KitRow.icon(context, AppIconography.server),
-              title: profile?.name ?? l10n.e7SetupDefaultServer,
-              supporting: baseUrl == null
-                  ? TextSpan(text: l10n.e7SetupNotConnected)
-                  : null,
-              below: baseUrl == null
-                  ? null
-                  : KitText.mono(baseUrl, cut: KitMonoCut.middle),
-            ),
-            KitRow(
-              leading: KitRow.icon(context, AppIconography.info),
-              title: l10n.e7SetupServerVersion(
-                controller.version ?? l10n.e7SetupUnknownVersion,
-              ),
-              titleMaxLines: 2,
-              supporting: TextSpan(text: l10n.e7SetupHostInstructions),
-              supportingMaxLines: 4,
-            ),
-          ],
+        // Where the commands run, once, under the bar.
+        Padding(
+          padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
+          child: KitText(
+            l10n.hostServiceIntro(server),
+            key: const ValueKey('host-service-intro'),
+            tone: KitTextTone.secondary,
+          ),
         ),
-        SizedBox(height: tokens.sectionGap),
         KitRowGroup(
           label: l10n.e7SetupHostFirstSetup,
           leadingIcons: false,

@@ -20,6 +20,7 @@ import 'package:opencode_mobile/ui/screens/guide_screen.dart';
 import 'package:opencode_mobile/ui/screens/pairing_scanner_screen.dart';
 import 'package:opencode_mobile/ui/screens/profile_monitor_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
+import 'package:opencode_mobile/ui/app_iconography.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../support/profile_monitor_fixture.dart';
@@ -144,7 +145,18 @@ void main() {
       debugPlatformCapabilities = const PlatformCapabilities.android();
       await tester.pumpWidget(_app(const GuideScreen()));
       await tester.pumpAndSettle();
-      expect(find.textContaining('tap Paste code'), findsOneWidget);
+      // R15: the words name Add server's own buttons and send nobody to
+      // find Servers first; the Add server button stays.
+      expect(
+        find.text(
+          'Tap Add server, then Scan code and point the camera at the QR, '
+          'or Paste code.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Open Servers'), findsNothing);
+      expect(find.textContaining('open Servers'), findsNothing);
+      expect(find.byKey(const ValueKey('guide-add-server')), findsOneWidget);
       expect(find.textContaining('Paste pairing code'), findsNothing);
     });
 
@@ -254,6 +266,36 @@ void main() {
       expect(find.text('Restart OpenCode to use 1.20.0'), findsOneWidget);
     });
 
+    testWidgets('R15: the update row carries no download mark; the Linux '
+        'service row says what it is for in one line', (tester) async {
+      final (controller, _) = await _server(repository: _Repository());
+      addTearDown(controller.dispose);
+      controller.handleEventForTesting(
+        EventEnvelope(
+          type: 'installation.update-available',
+          properties: const {'version': '1.20.0'},
+        ),
+      );
+      await tester.pumpWidget(
+        _app(ServerSettingsScreen(controller: controller)),
+      );
+      await tester.pumpAndSettle();
+      final update = find.byKey(const Key('server-updates-tile'));
+      // The leading icon is the row's only mark (download and system
+      // download share a glyph): no trailing download mark.
+      expect(
+        find.descendant(
+          of: update,
+          matching: find.byIcon(AppIconography.systemDownload),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Keep OpenCode running after you close the terminal.'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('restart: the command to run, and I restarted it re-checks', (
       tester,
     ) async {
@@ -321,13 +363,21 @@ void main() {
         _app(ServerSettingsScreen(controller: controller)),
       );
       await tester.pumpAndSettle();
-      await tester.tap(
+      expect(find.text('Copy update commands for Laptop'), findsOneWidget);
+      // Tapping the row itself copies: no trailing copy icon.
+      expect(
         find.byKey(const ValueKey('server-update-commands-copy')),
+        findsNothing,
       );
+      await tester.tap(find.byKey(const Key('server-updates-tile')));
       await tester.pump();
       expect(copied, 'opencode upgrade\nopencode models --refresh');
       expect(find.byType(SnackBar), findsNothing);
       await tester.pumpAndSettle();
+      expect(
+        find.text("Copied. Run them in a terminal on the server's computer."),
+        findsOneWidget,
+      );
     });
 
     testWidgets('the address is in Details, not on the identity row', (

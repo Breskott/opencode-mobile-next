@@ -5849,13 +5849,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SettingsUi53 => 'إصدار غير معروف';
 
   @override
-  String get e7SettingsUi54 => 'تُدار تحديثات الخادم خارجيًا';
-
-  @override
-  String get e7SettingsUi55 =>
-      'انسخ أوامر الترقية وتحديث النماذج الرسمية لتشغيلها على الجهاز المضيف للخادم.';
-
-  @override
   String get e7SettingsUi56 => 'غير متصل';
 
   @override
@@ -10475,9 +10468,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SetupConnectionClosed => 'أُغلق الاتصال';
 
   @override
-  String get e7SetupNotConnected => 'غير متصل';
-
-  @override
   String get e7SetupTokenBanner =>
       'يلزم إدخال رمز الاتصال للخادم النشط مجددًا. عدّل الخادم واحفظ رمزه قبل الاتصال.';
 
@@ -10722,9 +10712,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SetupStartConnect => 'التشغيل والاتصال';
 
   @override
-  String get e7SetupThisServer => 'هذا الخادم';
-
-  @override
   String get e7SetupUbuntuOnly => 'Ubuntu مثبّت، لكن OpenCode لم يُثبّت بعد.';
 
   @override
@@ -10792,11 +10779,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String e7SetupTerminalStatus(String status) {
     return 'حالة الطرفية: $status';
-  }
-
-  @override
-  String e7SetupServerVersion(String version) {
-    return 'إصدار الخادم $version';
   }
 
   @override
@@ -21273,11 +21255,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get guideStepTwoScan =>
-      'Open Servers, tap Add server, then Scan code and point the camera at the QR, or copy the code and tap Paste code. The address, username and password fill in together.';
+      'Tap Add server, then Scan code and point the camera at the QR, or Paste code.';
 
   @override
   String get guideStepTwoPaste =>
-      'Copy the printed code, open Servers, tap Add server, then Paste code. The address, username and password fill in together.';
+      'Copy the printed code, then tap Add server and Paste code.';
 
   @override
   String get guidePhonePathTitle => 'Use this phone instead';
@@ -21333,7 +21315,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get serverSettingsUpgradeKeepsData => 'Server data stays in place';
 
   @override
-  String get serverSettingsCopyUpdateCommands => 'Copy update commands';
+  String serverSettingsCopyUpdateCommands(String server) {
+    return 'Copy update commands for $server';
+  }
 
   @override
   String get serverSettingsPasswordInServers => 'Add or change it in Servers';
@@ -21360,7 +21344,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get tailscaleSetupAddressHelper =>
-      'OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.';
+      'Paste the HTTPS address Tailscale Serve printed.';
 
   @override
   String get tailscaleSetupGetApp => 'Get Tailscale';
@@ -26669,6 +26653,33 @@ class AppLocalizationsAr extends AppLocalizations {
   String workRunawayStopFailed(String helper) {
     return 'Couldn\'t stop $helper. Try again, or stop it from Termux.';
   }
+
+  @override
+  String get serverSettingsUpdateCommandsDetail =>
+      'Run them in a terminal on the server\'s computer; this app can\'t update it.';
+
+  @override
+  String get serverSettingsUpdateCommandsCopied =>
+      'Copied. Run them in a terminal on the server\'s computer.';
+
+  @override
+  String hostServiceTitle(String server) {
+    return 'Linux service for $server';
+  }
+
+  @override
+  String hostServiceIntro(String server) {
+    return 'These commands run on $server\'s computer; copy each into a terminal there.';
+  }
+
+  @override
+  String tailscaleSetupToDo(String detail) {
+    return 'To do · $detail';
+  }
+
+  @override
+  String get tailscaleSetupNoDeviceList =>
+      'OpenCode can’t list the devices on your tailnet.';
 
   @override
   String get productErrorStagedRevert =>

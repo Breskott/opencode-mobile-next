@@ -7,8 +7,8 @@ part of '../settings_screen.dart';
 /// Versions are the health probe's first ("Health-reported version
 /// everywhere"): the connection's own reading only fills in until it
 /// answers. The address and the other technical values sit in the one
-/// Details fold, and Disconnect from this server is the last row, after a
-/// divider: the action lives on the page of the thing it acts on.
+/// Details fold, and Disconnect from this server is the last row, one
+/// section gap below: the action lives on the page of the thing it acts on.
 class ServerSettingsScreen extends StatefulWidget {
   final ConnectionController controller;
 
@@ -41,6 +41,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   bool _checking = false;
   bool _upgradingServer = false;
   String? _serverUpgradeError;
+
+  /// The update commands were copied from their row: its line says so.
+  bool _updateCommandsCopied = false;
   final _disconnectKey = GlobalKey();
 
   @override
@@ -214,6 +217,15 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         ? null
         : controller.installedServerVersion;
     final running = _runningVersion;
+    // The page is titled with the server it is about (R3): no identity row
+    // repeats the name under a generic "Server".
+    final serverName = profile == null
+        ? copy.e7SettingsUi1
+        : serverDisplayName(
+            profile,
+            lookupAppLocalizations(Localizations.localeOf(context)),
+            among: controller.store.profiles,
+          );
     late final String serverUpdateTitle;
     late final String serverUpdateSubtitle;
     Widget? serverUpdateTrailing;
@@ -237,18 +249,18 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       serverUpdateSubtitle = _serverUpgradeError != null
           ? copy.e7SettingsRetryError(_serverUpgradeError!)
           : copy.serverSettingsUpdateHint;
-      serverUpdateTrailing = const _RowMark(AppIconography.download);
       serverUpdateAction = () => _upgradeRemoteServer(availableVersion);
     } else {
-      serverUpdateTitle = copy.e7SettingsUi54;
-      serverUpdateSubtitle = copy.e7SettingsUi55;
-      // The copy shows its own check (K2 §4.8): never a snackbar.
-      serverUpdateTrailing = KitIconButton.copy(
-        key: const ValueKey('server-update-commands-copy'),
-        tooltip: copy.serverSettingsCopyUpdateCommands,
-        text: () => _serverUpdateCommands,
-      );
-      serverUpdateAction = null;
+      // The row is the copy (its title says so): tapping it copies, and its
+      // line then says it was copied, never a snackbar (K2 §4.8).
+      serverUpdateTitle = copy.serverSettingsCopyUpdateCommands(serverName);
+      serverUpdateSubtitle = _updateCommandsCopied
+          ? copy.serverSettingsUpdateCommandsCopied
+          : copy.serverSettingsUpdateCommandsDetail;
+      serverUpdateAction = () async {
+        await KitCopy.copy(context, _serverUpdateCommands);
+        if (mounted) setState(() => _updateCommandsCopied = true);
+      };
     }
     final healthy = _health?.healthy == true;
     final hasPassword = profile?.password.isNotEmpty == true;
@@ -262,15 +274,6 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       onPressed: _checking ? null : _checkHealth,
       disabledReason: _checking ? copy.e7SettingsUi11 : null,
     );
-    // The page is titled with the server it is about (R3): no identity row
-    // repeats the name under a generic "Server".
-    final serverName = profile == null
-        ? copy.e7SettingsUi1
-        : serverDisplayName(
-            profile,
-            lookupAppLocalizations(Localizations.localeOf(context)),
-            among: controller.store.profiles,
-          );
     return KitScreen(
       topBar: KitTopBar(title: serverName),
       width: KitScreenWidth.reading,
@@ -399,11 +402,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               ),
             ),
           ],
-          // Destructive and last, set apart by a divider (KitRow-v2); it
-          // names the server and says what stops and what stays where.
+          // Destructive and last, one section gap below the rest; it names
+          // the server and says what stops and what stays where.
           if (profile != null) ...[
-            SizedBox(height: tokens.sectionGap),
-            const KitDivider(key: ValueKey('server-disconnect-divider')),
             SizedBox(height: tokens.sectionGap),
             KitRowGroup(
               key: _disconnectKey,
