@@ -855,6 +855,10 @@
   "runResultsSourceNote": "Everything here is copied from the server's message and tool records. Nothing is summarised by a model.",
   "runResultsOutputTitle": "Recorded tool output",
   "runResultsOpenConversation": "Open conversation",
+  "runResultViewOutputTitle": "What it did",
+  "@runResultViewOutputTitle": {
+    "description": "Title of the sheet that shows one tool step's recorded output (the command it ran or the file it changed), opened from a row on Run results."
+  },
   "attentionDisclosure": "A local overview, not live monitoring across servers. Cached signals may be incomplete or out of date. Open a server to check its current activity.",
   "attentionNavigationUnavailable": "Opening servers is unavailable here. Return to Home to choose a server and view Inbox.",
   "handoffTitle": "Copy handoff reference?",

@@ -1728,6 +1728,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get runResultsOpenConversation => 'فتح المحادثة';
 
   @override
+  String get runResultViewOutputTitle => 'What it did';
+
+  @override
   String get attentionDisclosure =>
       'نظرة عامة محلية، وليست مراقبة مباشرة عبر الخوادم. قد تكون الإشارات المخزّنة مؤقتًا غير مكتملة أو قديمة. افتح خادمًا للتحقق من نشاطه الحالي.';
 

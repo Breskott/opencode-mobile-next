@@ -1695,6 +1695,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get runResultsOpenConversation => 'Open conversation';
 
   @override
+  String get runResultViewOutputTitle => 'What it did';
+
+  @override
   String get attentionDisclosure =>
       'A local overview, not live monitoring across servers. Cached signals may be incomplete or out of date. Open a server to check its current activity.';
 
