@@ -5,6 +5,7 @@ import 'dart:ui' show Locale, PlatformDispatcher;
 import 'app_locale.dart';
 import 'automation_policy.dart';
 import 'builtin_server_owner.dart';
+import 'session_link_bindings.dart';
 import 'consent_owners.dart';
 
 import 'package:flutter/foundation.dart';
@@ -6408,6 +6409,10 @@ class ConnectionController extends ChangeNotifier {
     // Close admission synchronously, before any drain can yield. An epoch also
     // rejects old callbacks after a failed deletion makes the profile usable.
     _deletingReadProfiles.add(profileId);
+    final sessionLinkDrain = SessionLinkBindings.closeProfile(
+      store.prefs,
+      profileId,
+    );
     _profileDeletionRevisions[profileId] =
         (_profileDeletionRevisions[profileId] ?? 0) + 1;
     _monitorAttentionReader.forget(profileId);
@@ -6433,6 +6438,7 @@ class ConnectionController extends ChangeNotifier {
           await Future.wait([
             if (activity != null) activity.prepareForDeletion(),
             policy.pauseForDeletion(),
+            sessionLinkDrain,
           ]);
           // Admitted activity inverses have finished; from here no new prompt
           // may join this profile while the removal is in progress.
@@ -6445,13 +6451,14 @@ class ConnectionController extends ChangeNotifier {
             keepQueuedPrompts: keepQueuedPrompts,
           );
         })
-        .whenComplete(() {
+        .whenComplete(() async {
           _deletingReadProfiles.remove(profileId);
           if (store.profiles.any((p) => p.id == profileId)) {
             _closedQueueProfiles.remove(profileId);
             activity?.cancelDeletion();
             policy.cancelDeletion();
             ConsentOwners.cancelDeletion(store.prefs, profileId);
+            await SessionLinkBindings.cancelDeletion(store.prefs, profileId);
             BuiltinServerOwner.forPreferences(
               store.prefs,
             ).cancelDeletion(profileId);

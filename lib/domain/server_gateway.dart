@@ -819,6 +819,10 @@ class ProductException implements Exception {
 /// protocol generation. The v1 server exposes every listed feature, so its
 /// gateway reports [allV1]; a v2 gateway narrows these per endpoint support.
 class ServerCapabilities {
+  /// Portable session links remain off until private host, UI consent and
+  /// authorized scoped lookup are verified together. No adapter enables this.
+  final bool sessionAddressHandoff;
+
   // AI setup assistant: additive capability section (2026-09-27).
   final bool setupConfigRead;
   final bool setupConfigWrite;
@@ -921,6 +925,7 @@ class ServerCapabilities {
   final bool cliSessionResume;
 
   const ServerCapabilities({
+    this.sessionAddressHandoff = false,
     this.setupConfigRead = false,
     this.setupConfigWrite = false,
     this.setupMcpInventory = false,

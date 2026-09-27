@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../domain/session_handoff.dart';
+import '../domain/session_address_link.dart';
 import '../domain/team_link.dart';
 
 /// A session handoff link (`opencode-mobile://session?…`) opened on this
@@ -15,7 +16,8 @@ import '../domain/team_link.dart';
 /// LaunchShortcut: one consume on start for the link that launched the app,
 /// a live `linked` push for links opened while the engine is already
 /// running. Parsing is strict ([SessionLink.parse]); anything malformed is
-/// dropped here and never reaches routing. This class never connects,
+/// dropped here; recognizable versioned session links retain only a safe error
+/// category for the shell. This class never connects,
 /// creates a session or sends anything. Off Android the class is inert.
 class SessionLinkIntent {
   SessionLinkIntent({@visibleForTesting MethodChannel? channel})
@@ -28,6 +30,16 @@ class SessionLinkIntent {
 
   /// The most recent valid AI Team link that nothing has consumed yet.
   final ValueNotifier<TeamLink?> pendingTeam = ValueNotifier<TeamLink?>(null);
+
+  /// Parsed only, never automatically connected. The app must gate reception
+  /// on verified v2 support and obtain contact consent before any I/O.
+  final ValueNotifier<SessionAddressLink?> pendingAddress =
+      ValueNotifier<SessionAddressLink?>(null);
+
+  /// A recognizable versioned link failed local parsing. Retains only the
+  /// category, never the input or an exception carrying host/session metadata.
+  final ValueNotifier<SessionAddressFailureCode?> pendingAddressFailure =
+      ValueNotifier<SessionAddressFailureCode?>(null);
 
   bool _started = false;
   bool _disposed = false;
@@ -62,15 +74,43 @@ class SessionLinkIntent {
 
   void _accept(Object? value) {
     if (_disposed) return;
+    final address = SessionAddressLink.parse(value);
+    if (address != null) {
+      _acceptGeneration++;
+      pending.value = null;
+      pendingTeam.value = null;
+      pendingAddressFailure.value = null;
+      pendingAddress.value = address;
+      return;
+    }
+    if (value is String &&
+        value.toLowerCase().startsWith('opencode-mobile://session/v')) {
+      try {
+        SessionAddressLink.require(value);
+      } on SessionAddressFailure catch (failure) {
+        _acceptGeneration++;
+        pending.value = null;
+        pendingTeam.value = null;
+        pendingAddress.value = null;
+        pendingAddressFailure.value = failure.code;
+      }
+      return;
+    }
     final link = SessionLink.parse(value);
     if (link != null) {
       _acceptGeneration++;
+      pendingTeam.value = null;
+      pendingAddress.value = null;
+      pendingAddressFailure.value = null;
       pending.value = link;
       return;
     }
     final team = TeamLink.parse(value);
     if (team == null) return;
     _acceptGeneration++;
+    pending.value = null;
+    pendingAddress.value = null;
+    pendingAddressFailure.value = null;
     pendingTeam.value = team;
   }
 
@@ -90,11 +130,29 @@ class SessionLinkIntent {
     return link;
   }
 
+  /// Consumes or dismisses the locator without contacting its host.
+  SessionAddressLink? takeAddress() {
+    if (_disposed) return null;
+    final link = pendingAddress.value;
+    pendingAddress.value = null;
+    return link;
+  }
+
+  /// Consumes or dismisses a local parsing failure without retaining its input.
+  SessionAddressFailureCode? takeAddressFailure() {
+    if (_disposed) return null;
+    final code = pendingAddressFailure.value;
+    pendingAddressFailure.value = null;
+    return code;
+  }
+
   void dispose() {
     if (_disposed) return;
     _disposed = true;
     if (_started) _channel.setMethodCallHandler(null);
     pending.dispose();
     pendingTeam.dispose();
+    pendingAddress.dispose();
+    pendingAddressFailure.dispose();
   }
 }

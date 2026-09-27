@@ -74,7 +74,9 @@
             </intent-filter>
             <!-- Session handoff link (backlog F4-S2): the QR another phone
                  shows encodes opencode-mobile://session?profile=…&session=…
-                 with route identifiers only. MainActivity.captureSessionLink
+                 with route identifiers only. The same session host also admits
+                 /v2 to the local bounded parser; v2 never automatically connects.
+                 MainActivity.captureSessionLink
                  forwards the URI text to Dart over oc/link; Dart validates
                  it and decides whether the saved server exists here. Nothing
                  here connects, creates a session or sends a prompt. -->
