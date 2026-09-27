@@ -24265,9 +24265,9 @@
   "@kitCapMcpAnyTitle": {
     "description": "KitCapabilityExplainer: the name of the capability \"mcp.any\", shown as the title of the dimmed row or the missing state"
   },
-  "kitCapMcpAnyWhy": "No extra tools are added on this server yet.",
+  "kitCapMcpAnyWhy": "This server can't add extra tools from the app.",
   "@kitCapMcpAnyWhy": {
-    "description": "KitCapabilityExplainer: why the capability \"mcp.any\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+    "description": "KitCapabilityExplainer: why the capability \"mcp.any\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body). It explains a server that cannot add MCP servers at all; the turn-on invitation is kitCapMcpAnyOffer"
   },
   "kitCapMcpAnyEnable": "Add a tool",
   "@kitCapMcpAnyEnable": {
@@ -30553,5 +30553,21 @@
   "kitDiffSelectHunk": "Select these lines",
   "@kitDiffSelectHunk": {
     "description": "KitDiffView: tooltip of a hunk's line range ('Lines 12–18') when selection is on; tapping it selects the whole hunk"
+  },
+  "kitCapFlagTerminalTitle": "Terminal",
+  "@kitCapFlagTerminalTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:terminal\" (the server's own terminal, without Files), shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagTerminalWhy": "This server doesn't open a terminal for you.",
+  "@kitCapFlagTerminalWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:terminal\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapFlagToolInventoryTitle": "Tool list",
+  "@kitCapFlagToolInventoryTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:toolInventory\" (the list of tools the server's agent can use), shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagToolInventoryWhy": "This server doesn't list the tools its agent can use.",
+  "@kitCapFlagToolInventoryWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:toolInventory\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
   }
 }

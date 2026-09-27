@@ -25,6 +25,12 @@ Map<String, Widget Function()> _states() => {
     host: KitHost.codex,
     serverName: 'laptop',
   ),
+  // Terminal on its own (slice-R10): the Terminal page's own entry.
+  'row_terminal': () => const KitCapabilityExplainer.row(
+    capability: 'flag:terminal',
+    host: KitHost.paseo,
+    serverName: 'laptop',
+  ),
   'row_enable': () =>
       const KitCapabilityExplainer.row(capability: 'voice.model'),
   'state_explains': () => _inset(
