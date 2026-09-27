@@ -25774,5 +25774,9 @@
   "kitTurnActions": "Reply actions",
   "@kitTurnActions": {
     "description": "KitTurn: the screen-reader name of a turn's actions menu"
+  },
+  "workspaceConversations": "Conversations",
+  "@workspaceConversations": {
+    "description": "Work tab: the one header over this project's conversations, ordered with those that need you first, then running, then the rest newest first"
   }
 }

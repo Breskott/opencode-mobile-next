@@ -7753,6 +7753,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7WorkspaceRecentSessions => 'المحادثات الأخيرة';
 
   @override
+  String get workspaceConversations => 'Conversations';
+
+  @override
   String get e7WorkspaceNoRecent => 'لا توجد محادثات حديثة';
 
   @override

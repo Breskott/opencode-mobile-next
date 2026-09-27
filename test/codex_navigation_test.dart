@@ -157,7 +157,8 @@ void main() {
         find.byKey(const ValueKey('restricted-directory-context')),
         findsOneWidget,
       );
-      expect(find.text('Pinned'), findsOneWidget);
+      // One Conversations list: the pin is a row in it, no Pinned header.
+      expect(find.text('Conversations'), findsOneWidget);
       expect(find.text('Pinned Codex session'), findsOneWidget);
 
       // The project catalog is not queried when project management is absent.
