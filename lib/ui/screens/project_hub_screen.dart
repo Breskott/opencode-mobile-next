@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../app_iconography.dart';
 import '../kit/kit_buttons.dart' show KitAction;
+import '../kit/kit_capability_explainer.dart';
 import '../kit/kit_menu.dart';
 import '../kit/kit_page_route.dart';
 import '../kit/kit_row.dart';
@@ -20,7 +21,9 @@ import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import '../kit/kit_top_bar.dart';
 import '../widgets/product_states.dart';
+import 'development_services_screen.dart';
 import 'files_screen.dart';
+import 'managed_workspaces_screen.dart';
 import 'project_health_screen.dart';
 import 'projects_screen.dart';
 import 'terminal_screen.dart';
@@ -28,8 +31,19 @@ import 'workspace_screen.dart';
 import 'worktrees_screen.dart';
 
 /// A tool scoped to the current project, in the order the Project tab lists
-/// them.
-enum ProjectTool { files, changes, terminal, health, worktrees, search }
+/// them. Development services and cloud environments came over from the
+/// retired Manage project page (slice-P3.11a), so the project's tools have
+/// one landing.
+enum ProjectTool {
+  files,
+  changes,
+  terminal,
+  health,
+  worktrees,
+  services,
+  workspaces,
+  search,
+}
 
 /// Asks the shell for a tool that lives inside the Project tab (Files and its
 /// search), from a search result on any route.
@@ -73,7 +87,15 @@ Future<void> openProjectTool(
             capabilities: controller.capabilities,
           ),
         );
-      case ProjectTool.worktrees:
+      case ProjectTool.services:
+        if (controller.directory?.isNotEmpty != true) {
+          throw ProductException(l10n.e7LibraryNoProjectFolderIsOpenChooseOne);
+        }
+        await pushKitPage<void>(
+          context,
+          (_) => DevelopmentServicesScreen(controller: controller),
+        );
+      case ProjectTool.worktrees || ProjectTool.workspaces:
         final repository = await controller.prepareActionRepository();
         if (!context.mounted) return;
         if (repository == null) {
@@ -92,7 +114,12 @@ Future<void> openProjectTool(
         }
         await pushKitPage<void>(
           context,
-          (_) => WorktreesScreen(controller: controller, project: project),
+          (_) => tool == ProjectTool.worktrees
+              ? WorktreesScreen(controller: controller, project: project)
+              : ManagedWorkspacesScreen(
+                  controller: controller,
+                  project: project,
+                ),
         );
     }
   } catch (error) {
@@ -143,6 +170,9 @@ class ProjectHub extends StatefulWidget {
     if (capabilities.terminal) ProjectTool.terminal,
     if (capabilities.projectManagement) ProjectTool.health,
     if (capabilities.projectManagement) ProjectTool.worktrees,
+    if (capabilities.developmentServices) ProjectTool.services,
+    if (capabilities.projectManagement && capabilities.managedWorkspaces)
+      ProjectTool.workspaces,
     if (capabilities.fileBrowsing) ProjectTool.search,
   ];
 
@@ -170,6 +200,8 @@ class _ProjectHubState extends State<ProjectHub> {
     ProjectTool.terminal,
     ProjectTool.health,
     ProjectTool.worktrees,
+    ProjectTool.services,
+    ProjectTool.workspaces,
   ];
 
   @override
@@ -313,7 +345,11 @@ class _ProjectHubState extends State<ProjectHub> {
     final available = ProjectHub.toolsFor(widget.controller.capabilities);
     final tools = [
       for (final tool in _hubOrder)
-        if (available.contains(tool)) tool,
+        // Terminal stays listed on a server without one, dimmed with the
+        // reason, while the tab has other tools to show (slice-P3.11a).
+        if (available.contains(tool) ||
+            (tool == ProjectTool.terminal && available.isNotEmpty))
+          tool,
     ];
     return KitScreen(
       width: KitScreenWidth.list,
@@ -427,6 +463,14 @@ class _ProjectHubState extends State<ProjectHub> {
       title: l10n.readerUiChanges,
       onTap: () => _openTool(tool),
     ),
+    ProjectTool.terminal when !widget.controller.capabilities.terminal =>
+      KitRow.unavailable(
+        key: ValueKey('project-hub-${tool.name}'),
+        leading: KitRow.icon(context, AppIconography.terminal),
+        title: l10n.libraryTerminalTitle,
+        reason: KitCapabilityExplainer.whyOf(context, 'flag:terminal'),
+        capability: 'flag:terminal',
+      ),
     ProjectTool.terminal => _row(
       tool,
       icon: AppIconography.terminal,
@@ -444,6 +488,19 @@ class _ProjectHubState extends State<ProjectHub> {
       tool,
       icon: AppIconography.branch,
       title: l10n.e7LibraryWorktrees,
+      onTap: () => _openTool(tool),
+    ),
+    ProjectTool.services => _row(
+      tool,
+      icon: AppIconography.processor,
+      title: l10n.servicesTitle,
+      subtitle: l10n.servicesSubtitle,
+      onTap: () => _openTool(tool),
+    ),
+    ProjectTool.workspaces => _row(
+      tool,
+      icon: AppIconography.cloud,
+      title: l10n.e7LibraryManagedWorkspaces,
       onTap: () => _openTool(tool),
     ),
     ProjectTool.search => _row(

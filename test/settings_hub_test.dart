@@ -266,7 +266,8 @@ void main() {
       _en.settingsHubModelRow: ['settings-model-and-mode'],
       _en.settingsHubModelAndMode: ['settings-model-and-mode'],
       _en.e7SettingsUi35: ['default-shell-settings-entry'],
-      _en.e7SettingsUi74: ['saved-permissions-entry'],
+      _en.e7SettingsUi74: ['search-result-saved-permissions-entry'],
+      _en.automationTitle: ['settings-automation'],
       _en.chatUiTranscriptDisplay: [
         'settings-show-reasoning',
         'settings-show-timestamps',
@@ -321,7 +322,11 @@ void main() {
       'quiet hours': ['settings-category-background'],
       'wi-fi': ['settings-category-background'],
       'finished': ['settings-category-background'],
-      'approvals': ['settings-category-background', 'saved-permissions-entry'],
+      'approvals': [
+        'settings-category-background',
+        'settings-automation',
+        'search-result-saved-permissions-entry',
+      ],
       'monitor': ['settings-category-background'],
       'theme': ['settings-category-appearance'],
       'dark': ['settings-category-appearance'],

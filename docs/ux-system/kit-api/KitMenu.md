@@ -67,6 +67,7 @@ class KitMenuItem {
     this.icon = AppIconography.copy,
     this.group,
     this.shortcut,
+    this.redact = true,               // false: the person's own content, verbatim (SEC-13)
   }) : copyText = text,
        onSelected = _noop,
        destructive = false,
@@ -234,7 +235,7 @@ The menu shows no server data, so it has no loading or error state. A caller tha
 ## Data safety and honest state
 
 - **Destructive items:** never decide their own treatment. The item runs `onSelected` after the menu closes, and the act confirms or offers Undo per DATA-11, the same as from every other door. A menu entry and a swipe for the same act behave alike (KIT-29).
-- **Copy items:** go through `KitCopy.copy`, which redacts (G12) and never receives a secret.
+- **Copy items:** go through `KitCopy.copy`, which redacts (G12) and never receives a secret; only `redact: false`, for the person's own content, copies verbatim (SEC-13, R5).
 - **Disabled items:** show their reason as visible text (STATE-8), never only in a tooltip.
 - **No stacking:** `onSelected` runs after the popup route has popped, so an item that opens `showKitConfirm` from inside a `KitSheet` replaces the sheet's content (KIT-16), never stacking on the menu.
 

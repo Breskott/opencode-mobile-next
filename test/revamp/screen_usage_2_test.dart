@@ -98,7 +98,7 @@ void main() {
     testWidgets('reads only after consent and an explicit read, then shows '
         'each window as a kit progress row', (tester) async {
       final h = await _pumpQuota(tester);
-      expect(find.text(_en.quotaSetupTitle), findsOneWidget);
+      expect(find.text(_en.quotaNeedsCollector('Studio')), findsOneWidget);
       // The collector is named by its origin on the page; its route is a
       // technical value under Details.
       expect(find.textContaining(quotaOrigin), findsWidgets);
@@ -108,13 +108,14 @@ void main() {
       await _consentAndRead(tester, h);
       expect(h.gateways, hasLength(1));
       expect(h.gateways.single.reads, 1);
-      expect(find.text(_en.quotaSetupTitle), findsNothing);
+      expect(find.text(_en.quotaNeedsCollector('Studio')), findsNothing);
       expect(find.text(_en.quotaCodexAccount), findsOneWidget);
       final bar = tester.widget<KitProgressRow>(
         _key('quota-window-bar-primary'),
       );
       expect(bar.value, closeTo(.255, 1e-9));
-      expect(bar.valueLabel, '74.5% remaining');
+      expect(bar.valueLabel, '25.5% used');
+      expect(bar.title, startsWith('About 75% left in this 5-hour window'));
       expect(bar.asOf, isNull, reason: 'a fresh reading carries no age');
       // The unreported window says so instead of drawing an empty bar.
       await _scrollTo(tester, _key('quota-window-secondary'));
@@ -144,19 +145,15 @@ void main() {
       expect(find.text(_en.quotaBudgetClearAll), findsNothing);
 
       await _scrollTo(tester, _key('quota-enable-monitoring'));
-      await tester.tap(_key('quota-enable-monitoring'));
-      await tester.pumpAndSettle();
-      // One line that leads into the choice names the provider and server.
+      // The row names the provider and server it turns on; it acts at
+      // once, starting at 80% (the enrol sheet merged into the page).
       expect(
-        find.text(_en.quotaMonitorConsent(_en.quotaCodex, 'Studio')),
+        find.text(_en.quotaMonitorOffer(_en.quotaCodex, 'Studio')),
         findsOneWidget,
       );
-      await tester.ensureVisible(find.text('90%').last);
+      await tester.tap(_key('quota-enable-monitoring'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('90%').last);
-      await tester.pumpAndSettle();
-      await tester.tap(_key('quota-enroll-confirm'));
-      await tester.pumpAndSettle();
+      expect(_key('quota-enroll-sheet'), findsNothing);
       // The save touches the device alert (a platform call) before it
       // notifies; let that real async work finish.
       await tester.runAsync(
@@ -171,7 +168,7 @@ void main() {
       expect(
         find.descendant(
           of: _key('quota-account-monitoring'),
-          matching: find.text(_en.quotaBudgetPercent('90')),
+          matching: find.text(_en.quotaBudgetPercent('80')),
         ),
         findsOneWidget,
       );
@@ -196,24 +193,20 @@ void main() {
       expect(_key('quota-enable-monitoring'), findsOneWidget);
     });
 
-    testWidgets('monitoring is enabled from a sheet with the chosen '
-        'percentage, and stopping the collector returns to setup', (
-      tester,
-    ) async {
+    testWidgets('monitoring is turned on in place at 80%, and stopping the '
+        'collector returns to setup', (tester) async {
       final h = await _pumpQuota(tester);
       await _consentAndRead(tester, h);
 
       await _scrollTo(tester, _key('quota-enable-monitoring'));
       await tester.tap(_key('quota-enable-monitoring'));
       await tester.pumpAndSettle();
-      expect(_key('quota-enroll-sheet'), findsOneWidget);
+      expect(_key('quota-enroll-sheet'), findsNothing);
       expect(find.byType(AlertDialog), findsNothing);
       expect(find.byType(DropdownButton<double>), findsNothing);
-      await tester.ensureVisible(find.text('75%').last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('75%').last);
-      await tester.pumpAndSettle();
-      await tester.tap(_key('quota-enroll-confirm'));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
       await tester.pumpAndSettle();
       final stored =
           jsonDecode(
@@ -223,7 +216,7 @@ void main() {
               )
               as Map<String, dynamic>;
       final rules = (stored['rules'] as Map<String, dynamic>)['codex'] as Map;
-      expect(rules['threshold'], 75);
+      expect(rules['threshold'], 80);
       expect(_key('quota-monitor-save-failed'), findsNothing);
 
       await _scrollTo(tester, _key('quota-stop'));
@@ -231,7 +224,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.drag(_key('quota-content'), const Offset(0, 5000));
       await tester.pumpAndSettle();
-      expect(find.text(_en.quotaSetupTitle), findsOneWidget);
+      expect(find.text(_en.quotaNeedsCollector('Studio')), findsOneWidget);
     });
 
     testWidgets('changing provider asks for consent again; Claude explains '
@@ -246,7 +239,7 @@ void main() {
       expect(find.text(_en.quotaClaudeUnavailable), findsOneWidget);
       await tester.tap(find.text(_en.quotaMiniMax));
       await tester.pumpAndSettle();
-      expect(find.text(_en.quotaSetupTitle), findsOneWidget);
+      expect(find.text(_en.quotaNeedsCollector('Studio')), findsOneWidget);
     });
   });
 
@@ -266,7 +259,7 @@ void main() {
       expect(
         find.descendant(
           of: _key('usage-section-remaining'),
-          matching: find.text(_en.quotaSetupTitle),
+          matching: find.text(_en.quotaNeedsCollector('Studio')),
         ),
         findsOneWidget,
       );
@@ -279,7 +272,7 @@ void main() {
       expect(
         find.descendant(
           of: _key('usage-section-remaining'),
-          matching: find.text(_en.quotaSetupTitle),
+          matching: find.text(_en.quotaNeedsCollector('Studio')),
         ),
         findsOneWidget,
       );

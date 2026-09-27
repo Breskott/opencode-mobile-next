@@ -22,6 +22,7 @@ import '../desktop/shortcuts.dart';
 import '../screens/about_screen.dart';
 import '../screens/agent_account_screen.dart';
 import '../screens/app_diagnostics_screen.dart';
+import '../screens/automation_settings_screen.dart';
 import '../screens/capabilities_screen.dart';
 import '../screens/demo_screen.dart';
 import '../screens/global_sessions_screen.dart';
@@ -564,19 +565,39 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
             : _push(context, TeamHomeScreen(controller: team));
       },
     ),
-    // Conversations: what the agent may do alone, how a transcript shows,
+    // Conversations: what runs by itself, how a transcript shows,
     // the shell it runs commands in, and voice.
-    // revamp: slice-P6.1 turns this row into "What runs by itself".
+    // What runs by itself (P6.1): the team's level and the doors to the
+    // rules and the watching that let things happen without asking.
     SearchEntry(
-      id: 'saved-permissions-entry',
+      id: 'settings-automation',
       kind: SearchEntryKind.hubRow,
       group: SettingsGroup.conversations,
+      icon: AppIconography.sync,
+      title: l10n.automationTitle,
+      keywords: l10n.automationSearchAliases,
+      pages: const ['automation-settings'],
+      gate: (scope) => AutomationSettingsSections.of(
+        scope.controller,
+        team: scope.hasTeam,
+      ).any,
+      open: _screen(
+        (scope) => AutomationSettingsScreen(
+          controller: scope.controller,
+          teamAvailable: scope.hasTeam,
+        ),
+      ),
+    ),
+    // Inside What runs by itself; still found by its own words.
+    SearchEntry(
+      id: 'saved-permissions-entry',
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.automationTitle,
       icon: AppIconography.permissions,
       title: l10n.e7SettingsUi74,
       keywords: l10n.settingsHubSearchPermissionsAliases,
       pages: const ['saved-permissions'],
       gate: (scope) => scope.controller.capabilities.savedPermissionList,
-      serverGate: (scope) => scope.controller.capabilities.savedPermissionList,
       open: _screen(
         (scope) => SavedPermissionsScreen(controller: scope.controller),
       ),
@@ -1446,6 +1467,30 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       pages: const ['worktrees'],
       gate: (scope) => _hasProjectTool(scope, ProjectTool.worktrees),
       open: _projectTool(ProjectTool.worktrees),
+    ),
+    // Development services and cloud environments moved to the Project tab
+    // with the retired Manage project page (slice-P3.11a).
+    SearchEntry(
+      id: 'project-services',
+      kind: SearchEntryKind.destination,
+      icon: AppIconography.processor,
+      title: l10n.servicesTitle,
+      parent: l10n.shellTabProject,
+      keywords: l10n.discoverServicesAliases,
+      pages: const ['development-services'],
+      gate: (scope) => _hasProjectTool(scope, ProjectTool.services),
+      open: _projectTool(ProjectTool.services),
+    ),
+    SearchEntry(
+      id: 'project-workspaces',
+      kind: SearchEntryKind.destination,
+      icon: AppIconography.cloud,
+      title: l10n.e7LibraryManagedWorkspaces,
+      parent: l10n.shellTabProject,
+      keywords: l10n.discoverCloudEnvironmentsAliases,
+      pages: const ['managed-workspaces'],
+      gate: (scope) => _hasProjectTool(scope, ProjectTool.workspaces),
+      open: _projectTool(ProjectTool.workspaces),
     ),
     SearchEntry(
       id: 'project-search',

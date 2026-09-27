@@ -3,10 +3,14 @@ part of '../chat_screen.dart';
 /// The body of "Saved prompts": prompts kept on this device for this
 /// server, newest first. The host opens it with [showKitSheet], which draws
 /// the title, the close button and [loading]. Tapping a row restores it
-/// into the draft (the host asks before replacing anything). Delete sits in the row's menu and happens at once
-/// with "Saved prompt deleted · Undo": the entry leaves the list now and is
-/// removed from the device when the Undo window closes, so no confirmation
+/// into the draft at once; the host offers Undo (P3.2). Delete sits in the
+/// row's menu and also acts at once: the prompt leaves the device now and
+/// "Saved prompt deleted · Undo" puts it back exactly, so no confirmation
 /// sheet stacks on this one (map prompt-stash-delete-sheet: remove).
+///
+/// The older drafts (saved before drafts named their server) live here too:
+/// opening the sheet moves any that are left ([ConnectionController
+/// .migrateOlderDrafts]); one that cannot move yet is named with a retry.
 class _PromptStashSheet extends StatefulWidget {
   const _PromptStashSheet({
     required this.controller,
@@ -35,9 +39,6 @@ class _PromptStashSheetState extends State<_PromptStashSheet> {
   bool _readFailed = false;
   bool _migrationPending = false;
   List<StashedPrompt> _prompts = const [];
-
-  /// Deleted in the list, waiting for the Undo window to close.
-  final _pendingDelete = <String>{};
 
   bool get _current =>
       !_invalidated &&
@@ -92,6 +93,8 @@ class _PromptStashSheetState extends State<_PromptStashSheet> {
       _error = null;
     });
     try {
+      await widget.controller.migrateOlderDrafts();
+      if (!mounted || !_current) return;
       final deferred = await widget.controller.preparePromptStash(
         locationRevision: widget.location,
       );
@@ -122,39 +125,35 @@ class _PromptStashSheetState extends State<_PromptStashSheet> {
     Navigator.pop(context, prompt);
   }
 
-  /// Delete at once, with Undo. The store keeps the entry until the Undo
-  /// window closes; a failed removal brings the row back and says so.
-  void _delete(StashedPrompt prompt) {
+  /// Delete at once, with Undo. The prompt leaves the device now; Undo
+  /// puts it back exactly (text, attachments, references, date).
+  Future<void> _delete(StashedPrompt prompt) async {
     if (_unsafe) return;
     final controller = widget.controller;
-    final location = widget.location;
     final strings = _chatL10n(context);
     setState(() {
-      _pendingDelete.add(prompt.id);
+      _deleting = true;
       _error = null;
     });
-    showKitUndo(
-      context,
-      message: strings.promptStashDeleted,
-      key: ValueKey('stash-deleted-${prompt.id}'),
-      onUndo: () {
-        if (mounted) setState(() => _pendingDelete.remove(prompt.id));
-      },
-      onCommit: () async {
-        try {
-          await controller.removePromptStash(
-            prompt.id,
-            locationRevision: location,
-          );
-        } catch (_) {
-          if (mounted && _current) {
-            setState(() => _error = strings.promptStashDeleteFailed);
-          }
-        } finally {
-          if (mounted) setState(() => _pendingDelete.remove(prompt.id));
-        }
-      },
-    );
+    try {
+      final undo = await controller.deleteSavedPrompt(
+        prompt.id,
+        locationRevision: widget.location,
+      );
+      if (!mounted) return;
+      showKitUndo(
+        context,
+        message: strings.promptStashDeleted,
+        key: ValueKey('stash-deleted-${prompt.id}'),
+        onUndo: () => controller.undoSavedPrompt(undo),
+      );
+    } catch (_) {
+      if (mounted && _current) {
+        setState(() => _error = strings.promptStashDeleteFailed);
+      }
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
   }
 
   bool _matches(StashedPrompt prompt, String query) {
@@ -190,13 +189,9 @@ class _PromptStashSheetState extends State<_PromptStashSheet> {
     builder: (context, _) {
       final l10n = _chatL10n(context);
       final query = _query.trim().toLowerCase();
-      final prompts =
-          _prompts
-              .where((p) => !_pendingDelete.contains(p.id))
-              .where((p) => _matches(p, query))
-              .toList()
-            // Newest first.
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final prompts = _prompts.where((p) => _matches(p, query)).toList()
+        // Newest first.
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       final current = _current;
       final error = !current
           ? l10n.promptStashScopeChanged
@@ -229,6 +224,22 @@ class _PromptStashSheetState extends State<_PromptStashSheet> {
                     label: l10n.commonRetry,
                     onPressed: _preparing ? null : () => unawaited(_prepare()),
                   ),
+              ],
+            ),
+          if (widget.controller.olderDraftsBlocker case final blocker?
+              when current)
+            KitNotice(
+              key: const Key('older-drafts-waiting'),
+              message: blocker == DraftMigrationBlocker.full
+                  ? l10n.promptStashOlderDraftsFull
+                  : l10n.promptStashOlderDraftsWaiting,
+              actions: [
+                KitAction(
+                  label: l10n.commonRetry,
+                  onPressed: _preparing || _deleting
+                      ? null
+                      : () => unawaited(_prepare()),
+                ),
               ],
             ),
           if (_migrationPending && current)
@@ -293,7 +304,7 @@ class _PromptStashSheetState extends State<_PromptStashSheet> {
                               icon: AppIconography.delete,
                               label: l10n.promptStashDeleteAction,
                               destructive: true,
-                              onSelected: () => _delete(prompt),
+                              onSelected: () => unawaited(_delete(prompt)),
                             ),
                           ],
                   ),

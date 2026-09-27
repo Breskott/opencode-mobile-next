@@ -1079,25 +1079,7 @@ final gServersArea = CensusArea(
       kit.expectText('Enable quota monitoring');
     }),
 
-    // -- provider-quota-enroll-dialog / clear-dialog -------------------------
-    CensusShot('provider-quota-enroll-dialog', (kit) async {
-      final controller = await _quotaController(kit);
-      final overview = ProviderQuotaOverview(
-        controller,
-        clock: () => _demoTime,
-        gatewayFactory: (_) => _QuotaGateway(),
-      );
-      kit.onDispose(overview.dispose);
-      await kit.pumpRaw(
-        _rawApp(
-          ProviderQuotaScreen(controller: controller, overview: overview),
-        ),
-      );
-      await overview.allowAndRefresh();
-      await kit.settle();
-      await kit.tapText('Enable quota monitoring');
-      kit.expectText('Monitor this provider source?');
-    }),
+    // -- provider-quota-clear-dialog (the enrol dialog merged into the page) --
     CensusShot('provider-quota-clear-dialog', (kit) async {
       final controller = await _quotaController(kit);
       final overview = ProviderQuotaOverview(

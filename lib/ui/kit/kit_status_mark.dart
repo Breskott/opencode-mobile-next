@@ -131,12 +131,11 @@ class KitStatusMark extends StatelessWidget {
                       color: working,
                     )
                   // The spec's "small indeterminate ring": the glyph's own
-                  // size, and the kit's heavier stroke (two physical px;
-                  // KitTokens has no spinner stroke yet — reported).
+                  // size, and the kit's one spinner stroke.
                   : SizedBox.square(
                       dimension: glyphSize,
                       child: CircularProgressIndicator(
-                        strokeWidth: KitTokens.focusRingWidth(context),
+                        strokeWidth: KitTokens.spinnerStroke,
                         color: working,
                       ),
                     ),

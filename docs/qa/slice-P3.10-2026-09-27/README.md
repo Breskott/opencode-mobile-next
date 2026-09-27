@@ -7,7 +7,7 @@
 
 | Page | Before | After |
 |---|---|---|
-| Settings hub (`settings_screen.dart`) | 3 groups: 11 server rows, 7 phone rows, 3 help rows | 5 groups, at most 5 rows each: **server name** (This server, Saved servers, This phone once set up) · **Agent** (Model, Providers and accounts, Tools, AI Team) · **Conversations** (Always allowed actions, Show reasoning, Show timestamps and usage, Default shell, Voice) · **This app** (Notifications, Keep running, Appearance, Privacy and data, Usage) · unlabelled **Help** (Setup guide, Report a problem, Available on this server, About). The wide window uses the same five groups as its index. |
+| Settings hub (`settings_screen.dart`) | 3 groups: 11 server rows, 7 phone rows, 3 help rows | 5 groups, at most 5 rows each: **server name** (This server, Saved servers, This phone once set up) · **Agent** (Model, Providers and accounts, Tools, AI Team) · **Conversations** (What runs by itself, Show reasoning, Show timestamps and usage, Default shell, Voice) · **This app** (Notifications, Keep running, Appearance, Privacy and data, Usage) · unlabelled **Help** (Setup guide, Report a problem, Available on this server, About). The wide window uses the same five groups as its index. |
 | Rows the server hides | absent, with nothing said | still absent, and each group now shows one muted line: "N settings aren't available on this server · **Why**". Why opens Available on this server. Uses the new kit part `KitGroupNote`. The line is not shown while searching. |
 | Transcript display sheet | a hub row that opened a sheet with two switches | removed. The two switches are hub rows (`settings-show-reasoning`, `settings-show-timestamps`) and write the same stored values the conversation menu uses. |
 | Providers / Accounts | two rows | one row, **Providers and accounts**. It opens Providers, or the Codex account on Codex. `settings-accounts` stays a search entry for a server that has both. |
@@ -28,7 +28,7 @@
 
 - **Wording of the muted line.** It says "N settings aren't available on this server" rather than "need a newer server". On Codex or Paseo no newer version adds these rows, so "newer" would be false. The Why link leads to the page with the same name.
 - **Row count.** The hub has 20 rows on Android with OpenCode 1 and nothing set up on the phone, and 21 with the phone set up. The setup assistant (row 1) is P2.2's.
-- **Row 9, What runs by itself.** It is still "Always allowed actions" (`saved-permissions-entry`). slice-P6.1 owns `automation-settings`.
+- **Row 9, What runs by itself.** Since the merge of feat/phone-setup-v2 (P6.1) this is P6.1's `settings-automation` row; Always allowed actions (`saved-permissions-entry`) is found inside it.
 - **Default shell.** It is not yet hidden when the server offers only one shell. That needs a load before the row can decide, so it is left as it was.
 
 ## Tests

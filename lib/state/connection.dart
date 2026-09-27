@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:ui' show Locale, PlatformDispatcher;
 
 import 'app_locale.dart';
+import 'automation_policy.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -52,7 +53,10 @@ import 'profiles.dart';
 import 'pending_auth.dart';
 import 'session_drafts.dart';
 import 'draft_attachments.dart';
+import 'draft_photo_recovery.dart';
+import 'migration_runner.dart';
 import 'prompt_photos.dart';
+import 'saved_prompts_controller.dart';
 import 'session_pins.dart';
 import 'session_auto_approval.dart';
 import 'prompt_shelf.dart';
@@ -5594,28 +5598,56 @@ class ConnectionController extends ChangeNotifier {
     return savedSessionDraft(sessionID)?.text;
   }
 
-  List<SessionDraft> get legacySessionDrafts =>
-      _drafts.values.where((draft) => draft.profileID.isEmpty).toList()
-        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-
-  /// Explicit removal after review, restricted to the exact legacy snapshot.
-  Future<bool> removeLegacySessionDraft(SessionDraft snapshot) =>
+  /// Bootstrap step, before any conversation reads its draft: a photo the
+  /// camera handed back after Android stopped the app goes into the draft of
+  /// the conversation that asked for it (P3.2). Also used when a new photo is
+  /// picked while an older one from another conversation is still waiting.
+  /// The conversation that is open handles its own photo in its composer.
+  Future<DraftPhotoRecoveryResult> recoverPendingPhoto() =>
       _serializeDraftChange(() async {
-        if (snapshot.profileID.isNotEmpty || !_draftStore.readable) {
-          return false;
+        try {
+          return await DraftPhotoRecovery(
+            photos: promptPhotos,
+            drafts: _draftStore,
+            vault: _draftAttachmentVault,
+            profileExists: isProfileReadable,
+          ).recover();
+        } finally {
+          // Recovery writes the draft index directly; read it again.
+          _sessionDrafts = null;
         }
-        final current = _drafts[snapshot.storageKey];
-        if (current == null ||
-            jsonEncode(current.toJson()) != jsonEncode(snapshot.toJson())) {
-          return false;
-        }
-        final next = Map<String, SessionDraft>.of(_drafts)
-          ..remove(snapshot.storageKey);
-        if (!await _draftStore.save(next)) return false;
-        _sessionDrafts = next;
-        notifyListeners();
-        return _collectDraftAttachments(owner: '');
       });
+
+  /// Why the older drafts have not moved into Saved prompts yet, or null.
+  /// Set by [migrateOlderDrafts]; Saved prompts shows it with a retry.
+  DraftMigrationBlocker? get olderDraftsBlocker => _olderDraftsBlocker;
+  DraftMigrationBlocker? _olderDraftsBlocker;
+
+  /// Moves the older drafts (saved before drafts named their server) into
+  /// the Saved prompts of the server in use, once (P3.2; see
+  /// [MigrationRunner]). Runs in the draft lane so no draft write overlaps
+  /// it. Safe to call again: a finished migration returns at once.
+  Future<DraftMigrationResult> migrateOlderDrafts() {
+    final owner = promptShelfProfileID;
+    return _serializeDraftChange(() async {
+      final result = await MigrationRunner(
+        prefs: store.prefs,
+        shelf: _promptShelf,
+        draftVault: _draftAttachmentVault,
+        draftStore: _draftStore,
+        profileExists: isProfileReadable,
+      ).runForProfile(owner);
+      _sessionDrafts = null;
+      final blocker = result.blocker == DraftMigrationBlocker.unknownOwner
+          ? null
+          : result.blocker;
+      if (result.migrated > 0 || blocker != _olderDraftsBlocker) {
+        _olderDraftsBlocker = blocker;
+        if (!_disposed) notifyListeners();
+      }
+      return result;
+    });
+  }
 
   SessionDraft? savedSessionDraft(String sessionID, {String? profileID}) {
     final owner = profileID ?? profile?.id ?? store.activeId ?? '';
@@ -5793,6 +5825,12 @@ class ConnectionController extends ChangeNotifier {
     );
     _promptShelfDeletionRevisions[profileId] =
         (_promptShelfDeletionRevisions[profileId] ?? 0) + 1;
+    // Outstanding saved-prompt Undo handles refuse from here on; a deleted
+    // server's prompts never come back.
+    if (_savedPrompts?.profileID == profileId) {
+      _savedPrompts!.dispose();
+      _savedPrompts = null;
+    }
     final operation = _profileDeletionChanges
         .then((_) async {
           final recoveryError = await recoveryDisabled;
@@ -5844,6 +5882,11 @@ class ConnectionController extends ChangeNotifier {
     } catch (_) {}
     try {
       await sessionAutoApproval.drain(profileId);
+    } catch (_) {}
+    try {
+      // Stop accepting edits and drain a write in flight, so the sweep below
+      // removes `oc.automation.<id>` for good.
+      await AutomationPolicyController.closeProfile(store.prefs, profileId);
     } catch (_) {}
     try {
       await _promptShelf.drain(profileId);
@@ -7744,6 +7787,44 @@ class ConnectionController extends ChangeNotifier {
     }
   }
 
+  SavedPromptsController? _savedPrompts;
+
+  /// One Saved prompts controller for the server in use, sharing its shelf.
+  SavedPromptsController get _savedPromptsForShelf {
+    final owner = promptShelfProfileID;
+    final current = _savedPrompts;
+    if (current != null && current.profileID == owner) return current;
+    current?.dispose();
+    return _savedPrompts = SavedPromptsController(
+      profileID: owner,
+      shelf: _promptShelf,
+      profileExists: isProfileReadable,
+    );
+  }
+
+  /// Deletes a saved prompt now, without asking. The returned Undo puts it
+  /// back exactly, attachments included, until its notice closes.
+  Future<SavedPromptUndo> deleteSavedPrompt(
+    String id, {
+    required int locationRevision,
+  }) async {
+    _promptShelfScope(locationRevision);
+    try {
+      return await _savedPromptsForShelf.delete(id);
+    } finally {
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  /// Runs a saved-prompt Undo and refreshes whoever lists saved prompts.
+  Future<void> undoSavedPrompt(SavedPromptUndo undo) async {
+    try {
+      await undo.undo();
+    } finally {
+      if (!_disposed) notifyListeners();
+    }
+  }
+
   Future<void> rememberSentPrompt(String profileID, String text) async {
     // A network send can finish after its server profile has been deleted.
     // Never recreate the removed profile's local history in that callback.
@@ -9171,6 +9252,8 @@ class ConnectionController extends ChangeNotifier {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    _savedPrompts?.dispose();
+    _savedPrompts = null;
     store.changes.removeListener(_profilesSaved);
     _profileDataChanges.notifyListeners();
     _profileDataChanges.dispose();

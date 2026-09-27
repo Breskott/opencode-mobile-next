@@ -9,7 +9,6 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
-import 'package:opencode_mobile/ui/screens/manage_project_screen.dart';
 import 'package:opencode_mobile/ui/screens/managed_workspaces_screen.dart';
 import 'package:opencode_mobile/ui/screens/mcp_setup_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
@@ -167,10 +166,6 @@ void main() {
         await loadCaptureFonts();
       }
       final screens = <String, Widget>{
-        'manage-project': ManageProjectScreen(
-          controller: controller,
-          project: _project,
-        ),
         'worktrees': WorktreesScreen(controller: controller, project: _project),
         'cloud-environments': ManagedWorkspacesScreen(
           controller: controller,

@@ -1,15 +1,11 @@
 // Census scenes for the ledger part `b1-chat-screen`
 // (docs/design/ui-ledger/parts/b1-chat-screen.json). See tool/capture/census_test.dart.
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api2/models.dart';
 import 'package:opencode_mobile/state/draft_attachments.dart';
 import 'package:opencode_mobile/state/offline_queue.dart';
-import 'package:opencode_mobile/state/prompt_shelf.dart';
-import 'package:opencode_mobile/state/prompt_photos.dart';
 import 'package:opencode_mobile/state/session_drafts.dart';
 
 import '../../fixtures.dart';
@@ -23,26 +19,6 @@ const _textAttachment = PromptAttachment(
   filename: 'checkout-log.txt',
   url: 'data:text/plain;base64,MDA6MDYgKzEyOiBBbGwgdGVzdHMgcGFzc2VkIQ==',
 );
-
-StashedPrompt _stashed() => StashedPrompt(
-  id: 'stash_coupon',
-  text:
-      'Add a test for an expired coupon: the total must stay the same and '
-      'the banner should say why.',
-  createdAt: _now - 26 * 60 * 60 * 1000,
-  directory: projectDirectory,
-  attachments: const [_textAttachment],
-);
-
-/// Opens the prompt shelf through the composer's + tools and taps Restore on
-/// the one saved prompt.
-Future<void> _restoreStashed(CensusKit kit) async {
-  await openComposerTools(kit);
-  await kit.tapKey('composer-tools-prompts');
-  await kit.tapKey('composer-tool-saved');
-  kit.expectVisible(find.byKey(const Key('prompt-stash-sheet')));
-  await kit.tapKey('restore-stash-stash_coupon');
-}
 
 QueuedPrompt _queued({int? dispatchedAt}) => QueuedPrompt(
   id: 'queued_suite',
@@ -134,40 +110,6 @@ final b1ChatScreenArea = CensusArea(
           'Opens by itself when the saved draft of this conversation had an '
           'attachment that could not be read back (faked store).',
     ),
-    CensusShot('chat-stash-attachments-unavailable-sheet', (kit) async {
-      await openChat(
-        kit,
-        configure: (c) => c
-          ..stash = [_stashed()]
-          ..stashRecovery = const DraftAttachmentRecovery([], [
-            'checkout-log.txt',
-          ]),
-      );
-      await _restoreStashed(kit);
-      kit.expectText('Some attachments cannot be restored');
-    }, note: 'Composer + › Prompts › Saved prompts › Restore (faked shelf).'),
-    CensusShot(
-      'chat-stash-restore-confirm-sheet',
-      (kit) async {
-        await openChat(
-          kit,
-          configure: (c) => c
-            ..stash = [_stashed()]
-            ..stashRecovery = const DraftAttachmentRecovery([
-              _textAttachment,
-            ], []),
-        );
-        await kit.enterText(
-          find.byKey(const Key('chat-composer-field')),
-          'Check the payment form on a small phone',
-        );
-        await _restoreStashed(kit);
-        kit.expectText('Restore saved prompt?');
-      },
-      note:
-          'Restoring a saved prompt while the composer holds text (faked '
-          'shelf).',
-    ),
     CensusShot(
       'chat-discard-queued-draft-sheet',
       (kit) async {
@@ -213,31 +155,6 @@ final b1ChatScreenArea = CensusArea(
       note:
           'OpenCode 2 inbox: a message waiting for the running turn (faked '
           'inbox capability and item).',
-    ),
-    CensusShot(
-      'chat-pending-photo-sheet',
-      (kit) async {
-        await openChat(
-          kit,
-          prefValues: {
-            PromptPhotoStore.key: jsonEncode(
-              const PendingPromptPhoto(
-                id: 'photo_whiteboard',
-                profileID: 'laptop',
-                sessionID: darkModeSessionID,
-                directory: projectDirectory,
-                name: 'whiteboard.jpg',
-              ).toJson(),
-            ),
-          },
-        );
-        await openComposerTools(kit);
-        await kit.tapKey('composer-tool-camera');
-        kit.expectText('Pending photo');
-      },
-      note:
-          'Composer + › Take photo while a photo taken for another '
-          'conversation is still pending.',
     ),
     CensusShot('chat-share-confirm-sheet', (kit) async {
       await openChat(kit);

@@ -7,7 +7,7 @@ import 'package:opencode_mobile/codex/gateway.dart'
     show codexServerCapabilities;
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/manage_project_screen.dart';
+import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -57,46 +57,13 @@ Future<ConnectionController> _controller(
 }
 
 void main() {
-  testWidgets(
-    'Codex project management shows configured folder without unsupported rows',
-    (tester) async {
-      final repository = _NoProjectCallsRepository();
-      final controller = await _controller(repository);
-      addTearDown(controller.dispose);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: ManageProjectScreen(
-            controller: controller,
-            project: const WorkspaceProject(
-              id: 'codex-project',
-              name: 'Codex project',
-              directory: '/work/codex-project',
-              worktrees: [],
-              updatedAt: 0,
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(
-        find.byKey(const ValueKey('manage-project-context')),
-        findsOneWidget,
-      );
-      expect(find.text('/work/codex-project'), findsOneWidget);
-      for (final key in const [
-        'switch-project-entry',
-        'worktrees-entry',
-        'managed-workspaces-entry',
-        'project-health-entry',
-      ]) {
-        expect(find.byKey(ValueKey(key)), findsNothing, reason: key);
-      }
-      expect(repository.listCalls, 0);
-      expect(repository.renameCalls, 0);
-    },
-  );
+  // Manage project merged into the Project tab (slice-P3.11a). Codex
+  // serves none of its tools, so the tab is absent and the configured
+  // folder is shown by the Work tab's folder row and its sheet.
+  test('Codex offers no Project tab tools', () {
+    expect(ProjectHub.toolsFor(codexServerCapabilities), isEmpty);
+    expect(ProjectHub.isAvailable(codexServerCapabilities), isFalse);
+  });
 
   testWidgets(
     'Codex ProjectsScreen does not list projects or expose project actions',

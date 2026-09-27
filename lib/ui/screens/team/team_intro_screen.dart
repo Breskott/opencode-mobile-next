@@ -4,14 +4,14 @@
 /// on this kind of server, and one primary action that hands over to that
 /// kind's own set-up. Nothing here sets anything up itself:
 ///
-/// - **OpenCode inside the app**: Set it up opens Settings › Plugins, where
-///   [BuiltinTeamSection] adds the team (the setup engine's download), turns
-///   it on for the project and starts it.
-/// - **OpenCode in Termux**: Set it up opens the Termux setup screen, whose
-///   "Also run an AI team on this phone" block installs it
-///   ([TeamPhoneOnboardingBlock]); the offer is reopened first, since the
-///   person asked for it. On a phone that cannot run a team the screen says
-///   so and offers the computer route instead.
+/// - **This phone** (OpenCode inside the app or in Termux): "Set up AI
+///   Team on this phone" is phone setup v2's Add tools › AI Team on that
+///   host ([openTeamOnThisPhone]), then the ready page that turns it on for
+///   the project and ends with "Give the team a first task" (programme
+///   P1.7). The phone's pre-flight ([checkSetupPreflight]: CPU, memory,
+///   free space for the team's download) is read first; a phone that
+///   cannot run a team is told why here, with the computer route, and is
+///   never hidden.
 /// - **A computer**: the app looks for Gas City on the server's host
 ///   ([TeamDiscovery]). Found: Turn on. Not found: Set it up shows the host
 ///   guide and looks again when it closes; Enter its address is the manual
@@ -29,23 +29,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../builtin/setup/aiteam_scripts.dart' show AiTeamPins;
+import '../../../builtin/setup/preflight.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
-import '../../../state/orchestration_store.dart';
-import '../../../state/phone_host.dart' show PhoneHostKind;
 import '../../../state/profiles.dart';
 import '../../../termux/team_runtime.dart';
+import '../../../voice/device.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../kit/scenes/team_discover_scenes.dart';
 import '../../widgets/team_discover.dart';
 import '../../widgets/team_discovery_card.dart' show TeamDiscovery;
 import '../../widgets/team_host_form.dart';
-import '../../widgets/team_phone_onboarding.dart'
-    show teamPhoneDownloadMb, teamPhoneRuntime;
-import '../phone_setup/phone_setup_selection.dart' show setupSizeText;
-import '../settings/plugins_screen.dart' show PluginsSettingsScreen;
-import '../this_phone_screen.dart' show thisPhoneRoute;
+import '../../widgets/team_phone_onboarding.dart' show openTeamOnThisPhone;
+import '../phone_setup/phone_setup_selection.dart'
+    show setupPreflightBody, setupPreflightHeadline, setupSizeText;
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -56,10 +54,15 @@ Future<void> openTeamIntro(
   ConnectionController controller, {
   TeamHostProbe? probe,
   TermuxTeamRuntime? runtime,
+  Future<VoiceDeviceInfo> Function()? deviceProbe,
 }) => pushKitPage<void>(
   context,
-  (_) =>
-      TeamIntroScreen(controller: controller, probe: probe, runtime: runtime),
+  (_) => TeamIntroScreen(
+    controller: controller,
+    probe: probe,
+    runtime: runtime,
+    deviceProbe: deviceProbe,
+  ),
 );
 
 class TeamIntroScreen extends StatefulWidget {
@@ -68,6 +71,7 @@ class TeamIntroScreen extends StatefulWidget {
     required this.controller,
     this.probe,
     this.runtime,
+    this.deviceProbe,
   });
 
   final ConnectionController controller;
@@ -78,6 +82,10 @@ class TeamIntroScreen extends StatefulWidget {
   /// The Termux team runtime; tests pass a fake.
   final TermuxTeamRuntime? runtime;
 
+  /// The device facts the phone's pre-flight reads (CPU, memory, free
+  /// space); [voiceDevicePlatform] by default, tests stand in.
+  final Future<VoiceDeviceInfo> Function()? deviceProbe;
+
   @override
   State<TeamIntroScreen> createState() => _TeamIntroScreenState();
 }
@@ -86,10 +94,9 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
   ServerProfile? _profile;
   TeamServerKind? _kind;
 
-  /// Termux: whether this phone can run a team (null while asked) and the
-  /// download's size in MB.
-  bool? _termuxSupported;
-  int? _termuxMb;
+  /// This phone: what its pre-flight found (null while the device is
+  /// asked); [SetupPreflightResult.supported] when the team can run here.
+  SetupPreflightResult? _preflight;
 
   /// A computer: the search for Gas City on the server's host.
   TeamDiscovery? _discovery;
@@ -103,9 +110,8 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
     final kind = _kind = teamServerKindOf(profile);
     switch (kind) {
       case TeamServerKind.inApp:
-        break;
       case TeamServerKind.termux:
-        unawaited(_checkTermux());
+        unawaited(_checkPhone());
       case TeamServerKind.computer:
         _look();
     }
@@ -123,22 +129,24 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _checkTermux() async {
-    final runtime = widget.runtime ?? teamPhoneRuntime;
-    final supported = await teamTermuxSupported(runtime);
-    int? mb;
-    if (supported) {
-      try {
-        mb = teamPhoneDownloadMb(await runtime.manifest());
-      } catch (_) {
-        mb = teamPhoneDownloadMb(null);
-      }
+  /// The phone's pre-flight for the team's download: the same check phone
+  /// setup runs before it downloads anything (P0.8). An unknown reading
+  /// never blocks.
+  Future<void> _checkPhone() async {
+    VoiceDeviceInfo device;
+    try {
+      device =
+          await (widget.deviceProbe ?? voiceDevicePlatform.getDeviceInfo)();
+    } catch (_) {
+      device = const VoiceDeviceInfo.unknown();
     }
     if (!mounted) return;
-    setState(() {
-      _termuxSupported = supported;
-      _termuxMb = mb;
-    });
+    setState(
+      () => _preflight = checkSetupPreflight(
+        device,
+        downloadBytes: AiTeamPins.deviceDownloadBytes,
+      ),
+    );
   }
 
   /// Looks for Gas City on the server's host, afresh.
@@ -173,35 +181,18 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
     }
   }
 
-  /// Settings › Plugins, whose AI Team section opens phone setup's Add
-  /// tools › AI Team when the team is not installed yet, then turns it on
-  /// for the project.
-  void _openPlugins() => unawaited(
-    replaceWithKitPage<void, void>(
+  /// Add tools › AI Team on this phone's host, then its ready page. Once
+  /// the team is on, the intro has done its part: back to where the person
+  /// came from, where the team now shows.
+  Future<void> _setUpOnPhone() => _run(() async {
+    await openTeamOnThisPhone(
       context,
-      (_) => PluginsSettingsScreen(
-        controller: widget.controller,
-        probe: widget.probe,
-        teamRuntime: widget.runtime,
-      ),
-    ),
-  );
-
-  Future<void> _openTermuxSetup() => _run(() async {
-    final profile = _profile;
-    if (profile == null) return;
-    // The person asked for it: the setup screen's offer shows again even
-    // if it was skipped or dismissed before.
-    final store = widget.controller.orchestrationStore;
-    if (store.phoneOffer(profile.id) != PhoneOffer.open) {
-      await store.setPhoneOffer(profile.id, PhoneOffer.open);
-    }
-    if (!mounted) return;
-    unawaited(
-      Navigator.of(
-        context,
-      ).pushReplacementNamed(thisPhoneRoute, arguments: PhoneHostKind.termux),
+      widget.controller,
+      runtime: widget.runtime,
     );
+    if (mounted && widget.controller.orchestration != null) {
+      Navigator.of(context).pop();
+    }
   });
 
   Future<void> _turnOn() => _run(() async {
@@ -249,18 +240,13 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
       case null:
         break;
       case TeamServerKind.inApp:
-        primary = KitAction(
-          key: const ValueKey('team-intro-set-up'),
-          label: l10n.teamIntroSetUpPhone,
-          onPressed: _openPlugins,
-        );
       case TeamServerKind.termux:
-        if (_termuxSupported == true) {
+        if (_preflight?.supported ?? false) {
           primary = KitAction(
             key: const ValueKey('team-intro-set-up'),
             label: l10n.teamIntroSetUpPhone,
             working: _busy,
-            onPressed: _busy ? null : _openTermuxSetup,
+            onPressed: _busy ? null : _setUpOnPhone,
           );
         }
       case TeamServerKind.computer:
@@ -390,49 +376,24 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
     );
     switch (kind) {
       case TeamServerKind.inApp:
-        final download = l10n.teamDiscoverDownloadTitle(
-          setupSizeText(l10n, AiTeamPins.deviceDownloadBytes),
-        );
-        return [
-          group([
-            _fact(
-              context,
-              AppIconography.download,
-              download,
-              l10n.teamDiscoverInAppDownloadBody,
-            ),
-            _fact(
-              context,
-              AppIconography.batteryWarning,
-              l10n.teamDiscoverBatteryTitle,
-              l10n.teamDiscoverInAppBatteryBody,
-            ),
-            _fact(
-              context,
-              AppIconography.projects,
-              l10n.teamDiscoverProjectTitle,
-              l10n.teamDiscoverProjectBody,
-            ),
-          ]),
-          phoneCost(download),
-        ];
       case TeamServerKind.termux:
-        final supported = _termuxSupported;
-        if (supported == null) {
+        final preflight = _preflight;
+        if (preflight == null) {
           return [
             group(const [KitSkeletonRows(count: 2)]),
           ];
         }
-        if (!supported) {
-          // Explain instead of vanish (P7.4): why, and the computer route.
+        if (!preflight.supported) {
+          // Told why before anything downloads, never hidden (P1.7): the
+          // phone's own reason, and the computer route instead.
           return [
             Padding(
               padding: inset,
               child: KitNotice(
                 key: const ValueKey('team-intro-unsupported'),
                 icon: AppIconography.phone,
-                title: l10n.teamDiscoverUnsupportedTitle,
-                message: l10n.teamDiscoverUnsupportedBody,
+                title: setupPreflightHeadline(l10n, preflight.issue!),
+                message: setupPreflightBody(l10n, preflight),
                 actions: [
                   KitAction(
                     key: const ValueKey('team-intro-on-computer'),
@@ -445,21 +406,32 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
           ];
         }
         final download = l10n.teamDiscoverDownloadTitle(
-          setupSizeText(l10n, (_termuxMb ?? 0) * 1000000),
+          setupSizeText(l10n, AiTeamPins.deviceDownloadBytes),
         );
+        final inApp = kind == TeamServerKind.inApp;
         return [
           group([
             _fact(
               context,
               AppIconography.download,
               download,
-              l10n.teamDiscoverTermuxDownloadBody,
+              inApp
+                  ? l10n.teamDiscoverInAppDownloadBody
+                  : l10n.teamDiscoverTermuxDownloadBody,
             ),
             _fact(
               context,
               AppIconography.batteryWarning,
               l10n.teamDiscoverBatteryTitle,
-              l10n.teamDiscoverTermuxBatteryBody,
+              inApp
+                  ? l10n.teamDiscoverInAppBatteryBody
+                  : l10n.teamDiscoverTermuxBatteryBody,
+            ),
+            _fact(
+              context,
+              AppIconography.projects,
+              l10n.teamDiscoverProjectTitle,
+              l10n.teamDiscoverProjectBody,
             ),
           ]),
           phoneCost(download),

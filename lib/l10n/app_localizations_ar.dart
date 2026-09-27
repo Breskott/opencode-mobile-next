@@ -898,9 +898,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get usageTinyCost => 'أقل من \$0.000001';
 
   @override
-  String get usageReportedCost => 'التكلفة المُبلّغ عنها · USD';
-
-  @override
   String get usageSessions => 'المحادثات';
 
   @override
@@ -1291,19 +1288,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get promptStashSearch => 'البحث في الطلبات المحفوظة';
 
   @override
-  String get promptStashNoMatches =>
-      'لا توجد طلبات محفوظة تطابق بحثك. امسح البحث أو غيّره لعرض المزيد.';
-
-  @override
   String get promptStashDeleteFailed =>
       'تعذّر حذف هذا الطلب المحفوظ. حاول مجددًا.';
-
-  @override
-  String get promptRestoreTitle => 'هل تريد استعادة الطلب المحفوظ؟';
-
-  @override
-  String get promptRestorePreserve =>
-      'سيُحفظ طلبك الحالي أولًا ضمن الطلبات المحفوظة، بما فيه من مرفقات ومراجع.';
 
   @override
   String get promptStashDelete => 'حذف';
@@ -1311,13 +1297,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get promptStashFull =>
       'لديك 50 طلبًا محفوظًا. احذف طلبًا محفوظًا لتوفير مساحة؛ لم يتغيّر طلبك الحالي.';
-
-  @override
-  String get promptStashListDescription =>
-      'محفوظة على هذا الجهاز لهذا الخادم. عند استعادة طلب، يُحفظ أي طلب حالي أيضًا لاستخدامه لاحقًا.';
-
-  @override
-  String get promptStashDeleteTitle => 'هل تريد حذف الطلب المحفوظ؟';
 
   @override
   String promptStashAttachments(int count) {
@@ -1350,23 +1329,8 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get promptRestoredCopyKept =>
-      'استُعيد المحتوى المتاح. تبقى نسخة ضمن الطلبات المحفوظة. راجع المرفقات والمراجع قبل الإرسال.';
-
-  @override
-  String get promptAttachmentsUnavailable => 'يتعذّر استعادة بعض المرفقات';
-
-  @override
-  String get promptRestore => 'استعادة';
-
-  @override
   String get promptHistorySaveFailed =>
       'أُرسل الطلب، لكن تعذّر حفظه في السجل على هذا الجهاز.';
-
-  @override
-  String promptAttachmentsUnavailableDetail(String names) {
-    return 'مرفقات مفقودة أو تالفة أو مؤقتة: $names. استعد المحتوى المتاح وأعد إرفاق هذه الملفات قبل الإرسال. ستبقى النسخة ضمن الطلبات المحفوظة.';
-  }
 
   @override
   String get promptStashMigrationPending =>
@@ -1671,23 +1635,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يمكن فتح الخوادم هنا. ارجع إلى الرئيسية لاختيار خادم وعرض «الوارد».';
 
   @override
-  String get handoffTitle => 'هل تريد نسخ مرجع متابعة المحادثة؟';
-
-  @override
-  String get handoffDisclosure =>
-      'بيانات وصفية فقط، وليست أمرًا أو رابطًا. اتصل بالخادم نفسه على جهازك الآخر وابحث عن هذا المشروع وهذه المحادثة. لن يُنشر أو يُرسل شيء.\n\nستحتوي الحافظة على معرّفات المحادثة والمشروع. قد تتمكن تطبيقات أخرى من قراءتها؛ شاركها فقط مع أشخاص تثق بهم.';
-
-  @override
-  String get handoffCopy => 'نسخ المرجع';
-
-  @override
-  String get handoffCopied => 'نُسخ مرجع بيانات المحادثة';
-
-  @override
-  String get handoffCopyFailed =>
-      'تعذّر نسخ مرجع متابعة المحادثة. حاول مجددًا.';
-
-  @override
   String get sessionOpenRelated => 'فتح العناصر المرتبطة';
 
   @override
@@ -1900,21 +1847,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'تشغيل طريقة تسجيل الدخول الخاصة بمزوّد الخدمة على الخادم المحدّد، وليس على هذا الهاتف. قد تحتاج إلى إتمام خطوات تفاعلية على الخادم.';
 
   @override
-  String get commandAuthConfirmTitle => 'هل تريد بدء تسجيل الدخول على الخادم؟';
-
-  @override
-  String get commandAuthConfirmDetail =>
-      'سينفّذ OpenCode طريقة تسجيل الدخول المعلنة لهذا المزوّد على الخادم المحدّد. تابع فقط إذا كنت تثق بالخادم ومزوّد الخدمة. لا يشغّل التطبيق أمر صدفة على هاتفك ولا ينسخه إليه.';
-
-  @override
   String get commandAuthStart => 'بدء تسجيل الدخول على الخادم';
 
   @override
   String get commandAuthPending =>
       'تسجيل الدخول معلّق على الخادم. أكمل أي تفاعل مطلوب على الخادم، ثم تحقّق من حالته. إغلاق هذه اللوحة لا يلغيه.';
-
-  @override
-  String get commandAuthCheck => 'التحقق من تسجيل الدخول';
 
   @override
   String get commandAuthCancel => 'إلغاء تسجيل الدخول';
@@ -1993,16 +1930,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'تُعرض تسميات الحسابات المحفوظة فقط. تبقى مفاتيح API ورموز تسجيل الدخول على خادمك.';
 
   @override
-  String get credentialActiveUnknown =>
-      'الحساب النشط غير معروف. لا تبيّن قائمة الحسابات المحفوظة أي حساب نشط.';
-
-  @override
-  String get credentialNoneActive => 'أبلغ الخادم عن عدم وجود حساب محفوظ نشط.';
-
-  @override
-  String get credentialActiveObserved => 'تعكس شارة «نشط» أحدث حدث من الخادم.';
-
-  @override
   String get credentialActiveUpdated => 'حُدّث الحساب النشط من الخادم.';
 
   @override
@@ -2023,11 +1950,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get credentialSave => 'حفظ التسمية';
-
-  @override
-  String credentialRemoveTitle(String label) {
-    return 'هل تريد إزالة $label؟';
-  }
 
   @override
   String get credentialRemoveDetail =>
@@ -2106,15 +2028,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر إتمام استعادة الطلب. لا تزال النسخ المحفوظة متاحة؛ تحقّق من محرّر الرسالة قبل المحاولة مجددًا.';
 
   @override
-  String get promptStashEmpty =>
-      'لا توجد طلبات محفوظة بعد. استخدم «حفظ الطلب الحالي» في أدوات الطلب للاحتفاظ بطلب لاستخدامه لاحقًا.';
-
-  @override
   String get promptStashContextOnly => 'المرفقات والمراجع';
-
-  @override
-  String get promptRestoredReferences =>
-      'استُعيد الطلب. المراجع المحفوظة لقطات سابقة؛ وقد تكون ملفاتها على الخادم قد تغيّرت.';
 
   @override
   String get promptDefaultLocation => 'المجلد الافتراضي للخادم';
@@ -2131,21 +2045,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّرت قراءة الطلبات المحفوظة. احتُفظ ببياناتها المخزّنة.';
 
   @override
-  String get promptStashDeleteDetail =>
-      'سيُحذف النص المحفوظ ومرفقاته ومراجعه من هذا الجهاز.';
-
-  @override
   String get promptStashDescription =>
       'حفظ النص والمرفقات والمراجع لاستخدامها لاحقًا';
 
   @override
-  String get promptRestoreAvailable => 'استعادة المحتوى المتاح';
-
-  @override
-  String get promptRestored => 'استُعيد الطلب. راجعه قبل الإرسال.';
-
-  @override
-  String get promptStashAction => 'حفظ الطلب الحالي';
+  String get promptRestored => 'Saved prompt restored';
 
   @override
   String promptStashLocation(String directory) {
@@ -2451,7 +2355,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get photoPendingOther =>
-      'توجد صورة منتظرة في محادثتها الأصلية. احتفظ بها هناك أو تجاهلها قبل اختيار صورة أخرى.';
+      'A photo is still waiting for another conversation. Add or discard it there, then try again.';
 
   @override
   String get photoUnavailable =>
@@ -2479,49 +2383,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'أزل مرفقًا أولًا. تتسع المسودة لما يصل إلى 5 ملفات بإجمالي 20 MB.';
 
   @override
-  String get legacyDraftsTitle => 'المسودات القديمة';
-
-  @override
-  String get legacyDraftsDescription =>
-      'مراجعة المسودات المحفوظة قبل تتبّع الخادم';
-
-  @override
-  String get legacyDraftsExplanation =>
-      'لا يوجد خادم مسجّل لهذه المسودات. راجع نصوصها قبل استخدامها في هذه المحادثة.';
-
-  @override
-  String get legacyDraftInsertExplanation =>
-      'يضيف الإدراج هذا النص بعد مسودتك الحالية. تبقى النسخة المحفوظة الأصلية هنا حتى تحذفها.';
-
-  @override
-  String get legacyDraftTextOnly =>
-      'يمكن إدراج النص فقط هنا. تبقى أي مرفقات محفوظة مع المسودة القديمة.';
-
-  @override
-  String get legacyDraftDelete => 'حذف النسخة المحفوظة';
-
-  @override
-  String get legacyDraftDeleteExplanation =>
-      'هل تريد حذف هذه المسودة القديمة ومرفقاتها المحفوظة نهائيًا من هذا الجهاز؟';
-
-  @override
-  String get legacyDraftDeleteFailed =>
-      'تغيّرت المسودة أو تعذّرت إزالتها. افتحها مجددًا وأعد المحاولة.';
-
-  @override
-  String get legacyDraftInsert => 'إدراج في المسودة';
-
-  @override
-  String get legacyDraftSearch => 'البحث في المسودات القديمة';
-
-  @override
-  String get legacyDraftsEmpty => 'لم يُعثر على مسودات قديمة';
-
-  @override
-  String get legacyDraftLocationChanged =>
-      'تغيّر المشروع. افتح المسودات القديمة مجددًا لاختيار وجهة إدراج النص.';
-
-  @override
   String get quotaTitle => 'رصيد الاستخدام المتبقي';
 
   @override
@@ -2540,15 +2401,8 @@ class AppLocalizationsAr extends AppLocalizations {
       'تغيّر الخادم أو المشروع، أو تجري إزالة بياناته المحلية. افتح رصيد الاستخدام المتبقي مجددًا لمراجعة المصدر.';
 
   @override
-  String get quotaSetupTitle => 'يلزم جامع بيانات اختياري';
-
-  @override
   String get quotaSetupDescription =>
-      'يجب على مسؤول الخادم تثبيت هذا المسار وحمايته على عنوان أصل OpenCode نفسه. تستخدم قراءته بيانات دخول هذا الخادم المحفوظ. أكّد فقط إذا ثبّتّ هذه الخدمة أو كنت تثق بها. تبقى رموز مزوّد الخدمة على الخادم.';
-
-  @override
-  String get quotaSetupGuide =>
-      'تعليمات الإعداد في tool/quota/README.md داخل مستودع التطبيق. لا تثبّت هذه الشاشة أي خدمات، ولا تحتفظ بالإذن بعد مغادرتها.';
+      'Once it’s installed, confirm you trust it, then read. Provider tokens stay on the server.';
 
   @override
   String get quotaSetupNeeded =>
@@ -2572,10 +2426,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get quotaCollectorAuth =>
       'لم يقبل مسار جامع البيانات بيانات دخول هذا الخادم. اطلب من مسؤول الخادم التحقق من إعدادات المصادقة.';
-
-  @override
-  String get quotaCollectorMissing =>
-      'مسار جامع البيانات الاختياري غير متاح على هذا الخادم. تحقّق من تثبيته وتوجيه الوكيل.';
 
   @override
   String get quotaUnavailable =>
@@ -2661,55 +2511,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get quotaResetUnknown => 'لم يُبلّغ عن موعد التجديد';
-
-  @override
-  String get quotaResetPassed =>
-      'مرّ موعد التجديد — حدّث للتحقق. لم يُجدَّد الرصيد المعروض محليًا.';
-
-  @override
-  String quotaDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'فترة مدتها $count يوم',
-      many: 'فترة مدتها $count يومًا',
-      few: 'فترة مدتها $count أيام',
-      two: 'فترة مدتها يومان',
-      one: 'فترة مدتها يوم واحد',
-      zero: 'فترة مدتها $count يوم',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String quotaHours(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'فترة مدتها $count ساعة',
-      many: 'فترة مدتها $count ساعة',
-      few: 'فترة مدتها $count ساعات',
-      two: 'فترة مدتها ساعتان',
-      one: 'فترة مدتها ساعة واحدة',
-      zero: 'فترة مدتها $count ساعة',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String quotaSeconds(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'فترة مدتها $count ثانية',
-      many: 'فترة مدتها $count ثانية',
-      few: 'فترة مدتها $count ثوانٍ',
-      two: 'فترة مدتها ثانيتان',
-      one: 'فترة مدتها ثانية واحدة',
-      zero: 'فترة مدتها $count ثانية',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get quotaSourceDisclosure =>
@@ -2818,16 +2619,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'ربما بدأ الخادم تسجيل الدخول، لكن لم يصل معرّف المحاولة. تحقّق على الخادم قبل البدء مجددًا.';
 
   @override
-  String get uncertainAuthForgetTitle => 'نسيان محاولة البدء غير المؤكدة؟';
-
-  @override
-  String get uncertainAuthForgetDetail =>
-      'يمحو هذا منع إعادة المحاولة المحلي فقط، ولا يلغي تسجيل الدخول على الخادم. تحقّق من الخادم أولًا لتجنب بدء تسجيل دخول ثانٍ. لن يبدأ تسجيل دخول جديد.';
-
-  @override
-  String get uncertainAuthForget => 'نسيان محاولة البدء غير المؤكدة';
-
-  @override
   String get uncertainAuthCloseHint =>
       'أغلق هذه اللوحة واستخدم صف تسجيل الدخول غير المؤكد لإزالة منع إعادة المحاولة المحلي بعد التحقق من الخادم.';
 
@@ -2894,21 +2685,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get demoSetUpServer => 'إعداد خادمك الخاص';
 
   @override
-  String get handoffCommandTitle => 'المتابعة على الكمبيوتر';
-
-  @override
-  String get handoffCommandDisclosure =>
-      'شغّل هذا الأمر في طرفية متوافقة مع POSIX على كمبيوتر مثبّت عليه OpenCode ويمكنه الوصول إلى هذا الخادم. اضبط OPENCODE_SERVER_PASSWORD بشكل خاص على ذلك الكمبيوتر إذا تطلّبه الخادم. ستتضمن الحافظة عنوان الخادم واسم المستخدم ومجلد المشروع ومعرّف المحادثة، دون كلمة المرور.';
-
-  @override
   String get handoffCopyCommand => 'نسخ الأمر';
-
-  @override
-  String get handoffCommandCopied => 'تم نسخ أمر الاستئناف';
-
-  @override
-  String get handoffCommandUnavailable =>
-      'أمر الاستئناف غير متاح لهذا الخادم أو هذه البيئة السحابية. تحتاج المتابعة على كمبيوتر آخر إلى أمر OpenCode مدعوم وخادم HTTPS يمكن الوصول إليه؛ يشير عنوان localhost إلى الجهاز نفسه على كل جهاز. لا يزال بإمكانك نسخ بيانات المحادثة الوصفية أدناه.';
 
   @override
   String get quotaMiniMax => 'MiniMax';
@@ -3376,23 +3153,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get quotaMonitorTitle => 'مراقبة الحصص';
 
   @override
-  String get quotaMonitorConsentTitle => 'مراقبة مصدر مزوّد الخدمة هذا؟';
-
-  @override
-  String quotaMonitorConsent(String provider, String server) {
-    return 'اسمح للتطبيق بمواصلة قراءة جامع البيانات الموثوق لحساب مزوّد الخدمة هذا تحديدًا بعد مغادرة الصفحة، وحتى بعد إعادة تشغيل التطبيق. تفحص الدورة ثلاثة مصادر محفوظة كحد أقصى، كل خمس دقائق في المقدمة أو خمس عشرة دقيقة أثناء عمل خدمة الخلفية الحالية. عند وجود أكثر من ثلاثة مصادر، قد ينتظر كل مصدر عدة دورات. تتطلب تنبيهات الجهاز تفعيل «حدود الحصص» في إعدادات الإشعارات وقراءة حديثة لفترة بلغت نسبة الاستخدام المحددة أو تجاوزتها. يسجل التنبيه تلك القراءة السابقة؛ افتحه للتحقق من الاستخدام الحالي. حدود الصفحة الشخصية مستقلة. لا تبدأ أي خدمة هنا.';
-  }
-
-  @override
   String get quotaMonitorRuntime =>
       'تُفحص المصادر بالتناوب، ثلاثة مصادر كحد أقصى في الدورة؛ وتحتاج القوائم الأطول إلى عدة دورات. تتطلب القراءات في الخلفية أن تكون خدمة الاتصال الحالية نشطة؛ وقد يوقفها Android. تنتهي صلاحية القراءات المعروضة وفقًا لجامع البيانات. تسجل تنبيهات الجهاز قراءات سابقة بلغت الحد، ولا تعرض الرصيد المتبقي الحالي. لا تبدّل هذه الصفحة خادمك النشط مطلقًا.';
 
   @override
   String get quotaMonitorEmpty =>
       'لا توجد مصادر مزوّدي خدمة خاضعة للمراقبة. اقرأ الاستخدام المتبقي من جامع بيانات موثوق، ثم فعّل المراقبة لذلك المصدر.';
-
-  @override
-  String get quotaMonitorEnable => 'تفعيل مراقبة الحصص';
 
   @override
   String get quotaMonitorDisabled => 'المراقبة متوقفة.';
@@ -4813,9 +4579,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get workspaceDismissNotice => 'تجاهل';
-
-  @override
-  String get workspaceManageProject => 'إدارة المشروع';
 
   @override
   String get workspaceManageProjectHint =>
@@ -9880,41 +9643,16 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يوجد مجلد مشروع مفتوح. اختر مجلدًا من «العمل».';
 
   @override
-  String get e7LibraryProject => 'المشروع';
-
-  @override
   String get e7LibrarySwitchProject => 'تبديل المشروع';
-
-  @override
-  String get e7LibraryChooseAnotherProjectOpenedByThisServer =>
-      'اختيار مشروع آخر مفتوح على هذا الخادم';
-
-  @override
-  String get e7LibraryCoding => 'البرمجة';
 
   @override
   String get e7LibraryWorktrees => 'أشجار العمل';
 
   @override
-  String get e7LibraryChooseAProjectFirst => 'اختر مشروعًا أولًا';
-
-  @override
-  String get e7LibraryCreateAndManageIsolatedGitBranches =>
-      'إنشاء فروع Git معزولة وإدارتها';
-
-  @override
   String get e7LibraryManagedWorkspaces => 'البيئات السحابية';
 
   @override
-  String get e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked =>
-      'إنشاء بيئات عبر المهايئات واكتشافها وفتحها وإزالتها';
-
-  @override
   String get e7LibraryProjectHealth => 'حالة المشروع';
-
-  @override
-  String get e7LibraryBranchChangedFilesLanguageServicesAndFormatters =>
-      'الفرع والملفات المتغيرة وخدمات اللغات وأدوات التنسيق';
 
   @override
   String get e7LibraryOpenCodeIsReconnecting => 'يعيد OpenCode الاتصال.';
@@ -15250,103 +14988,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiPhoneOptionalTag => 'اختياري · تجريبي';
 
   @override
-  String get teamUiPhoneOfferTitle =>
-      'شغّل فريق ذكاء اصطناعي على هذا الهاتف أيضًا';
-
-  @override
-  String get teamUiPhoneOfferBody =>
-      'يتيح لعدة وكلاء برمجة العمل على مشروعك بينما تشرف عليهم من تبويب «العمل». يستخدم بيئة لينكس نفسها التي أعددتها للتو.';
-
-  @override
-  String teamUiPhoneOfferSize(int size) {
-    return 'يُنزّل نحو $size م.ب (Gas City وbeads وDolt من الإصدارات الرسمية لكل مشروع).';
-  }
-
-  @override
-  String get teamUiPhoneOfferWarning =>
-      'أبقِ Termux مفتوحًا أو فعّل قفل الاستيقاظ فيه أثناء عمل الفريق؛ فقد يوقفه أندرويد في الخلفية. لا يُفقد شيء؛ وتُستأنف التشغيلات عند بدئه من جديد.';
-
-  @override
-  String get teamUiPhoneSkip => 'تخطَّ الآن';
-
-  @override
-  String get teamUiPhoneSetUp => 'إعداد فريق الذكاء الاصطناعي';
-
-  @override
-  String get teamUiPhoneStepDownload => 'التنزيل والتحقق';
-
-  @override
-  String get teamUiPhoneStepPackages => 'تثبيت المتطلبات';
-
-  @override
-  String get teamUiPhoneStepCity => 'إنشاء مدينة بجوار المشروع';
-
-  @override
-  String get teamUiPhoneStepStart => 'بدء المشرف على هذا الهاتف';
-
-  @override
-  String get teamUiPhoneStepConnect => 'الاتصال';
-
-  @override
-  String get teamUiPhoneLeaveNote =>
-      'يمكنك مغادرة هذه الشاشة والعودة لمتابعة التقدّم.';
-
-  @override
-  String teamUiPhoneProjectLine(String path) {
-    return 'المشروع: $path';
-  }
-
-  @override
   String get teamUiPhoneChooseProjectTitle => 'اختر مشروعًا';
 
   @override
-  String get teamUiPhoneChooseProjectBody =>
-      'يعمل الفريق على مجلد مشروع واحد من خادم الهاتف. المشروع الذي ليس له أصل git يحصل على أصل على الهاتف، ويعود عمل الفريق المدمج إلى المجلد تلقائيًا.';
-
-  @override
-  String teamUiPhoneNoProjects(String directory) {
-    return 'لا يوجد مجلد مشروع بعد. سمِّ واحدًا وسيُنشأ ضمن $directory.';
-  }
-
-  @override
-  String get teamUiPhoneNewFolderLabel => 'اسم المجلد';
-
-  @override
-  String get teamUiPhoneCreateAndContinue => 'إنشاء ومتابعة';
-
-  @override
   String get teamUiPhoneContinue => 'متابعة';
-
-  @override
-  String get teamUiPhoneSetupRunning => 'جارٍ إعداد فريق الذكاء الاصطناعي';
 
   @override
   String get teamUiPhoneSuccessTitle =>
       'فريق الذكاء الاصطناعي يعمل على هذا الهاتف';
 
   @override
-  String teamUiPhoneAgentsReady(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count وكيل جاهز',
-      many: '$count وكيلًا جاهزًا',
-      few: '$count وكلاء جاهزون',
-      two: 'وكيلان جاهزان',
-      one: 'وكيل واحد جاهز',
-      zero: 'لا وكلاء بعد',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get teamUiPhoneOpenWorkspace => 'فتح «العمل»';
-
-  @override
   String get teamUiPhoneRetry => 'إعادة المحاولة';
-
-  @override
-  String get teamUiPhoneFailedTitle => 'تعذّر إعداد فريق الذكاء الاصطناعي.';
 
   @override
   String teamUiPhoneFailedChecksum(String name) {
@@ -15512,9 +15164,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'أوقف أندرويد الفريق أثناء غياب التطبيق. لم يُفقد شيء.';
 
   @override
-  String get teamUiPhoneStartAgain => 'ابدأ من جديد';
-
-  @override
   String get teamUiPhoneKeepRunningTitle => 'أبقِه يعمل';
 
   @override
@@ -15582,9 +15231,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiPhoneReofferAction => 'إعداد';
-
-  @override
-  String get teamUiPhoneOpenSetup => 'فتح إعداد الهاتف';
 
   @override
   String teamUiPhoneFailedNoSpace(String detail) {
@@ -18829,14 +18475,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamDiscoverProjectBody => 'شغّله لكل مشروع تريده أن يعمل عليه.';
 
   @override
-  String get teamDiscoverUnsupportedTitle =>
-      'لا يستطيع هذا الهاتف تشغيل فريق الذكاء الاصطناعي';
-
-  @override
-  String get teamDiscoverUnsupportedBody =>
-      'يحتاج إلى هاتف 64 بت وإصدار من التطبيق يحمل برامج الفريق. يمكن لحاسوب أن يشغّله لك بدلًا من ذلك.';
-
-  @override
   String teamDiscoverComputerTitle(String server) {
     return 'يعمل على $server';
   }
@@ -21875,7 +21513,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get workspaceChooserEnterPath => 'Enter a folder path';
 
   @override
-  String get workspaceChooserRecentProjects => 'Recent projects';
+  String get workspaceChooserRecentProjects => 'Open a project you used before';
 
   @override
   String get workspaceChooserLoadFailedTitle => 'Couldn\'t load your projects';
@@ -24644,7 +24282,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String sessionRelationsCopyHandoff(String title) {
-    return 'Copy handoff for $title';
+    return 'Continue $title on computer';
   }
 
   @override
@@ -25671,10 +25309,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get webSourcesPastedLinks => 'Links you added';
 
   @override
-  String get quotaMonitorConsentDetails =>
-      'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.';
-
-  @override
   String get thisPhoneHostInApp => 'In the app';
 
   @override
@@ -26349,4 +25983,294 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get sessionsListChanged =>
       'The conversation list changed on the server. Refresh it to see older conversations.';
+
+  @override
+  String get handoffUiComputerUnsupported =>
+      'This server can’t give a command that continues a conversation on a computer.';
+
+  @override
+  String get handoffUiComputerChanged =>
+      'This conversation moved or its server changed. Go back and try again.';
+
+  @override
+  String commandAuthSheetIntro(String provider) {
+    return 'Runs this sign-in on your server, not on this phone. Start it only if you trust the server and $provider. You may need to finish steps on the server.';
+  }
+
+  @override
+  String commandAuthCheckNamed(String provider) {
+    return 'Check $provider sign-in now';
+  }
+
+  @override
+  String credentialRemoveAccountTitle(String provider, String name) {
+    return 'Remove the $provider account “$name”?';
+  }
+
+  @override
+  String credentialRemoveConfirmNamed(String name) {
+    return 'Remove “$name”';
+  }
+
+  @override
+  String quotaMonitorOffer(String provider, String server) {
+    return 'Alert me about $provider on $server';
+  }
+
+  @override
+  String quotaMonitorOfferDetail(String percent) {
+    return 'Keeps checking in the background, including after a restart, and alerts when use reaches $percent. You can change the percentage once it’s on.';
+  }
+
+  @override
+  String workspaceChooserBody(String server) {
+    return 'Conversations run inside a folder on $server.';
+  }
+
+  @override
+  String get discoverServicesAliases =>
+      'services dev server preview logs run commands processes';
+
+  @override
+  String get discoverCloudEnvironmentsAliases =>
+      'cloud environments managed workspaces remote sandbox';
+
+  @override
+  String promptRestoredWithout(String names) {
+    return 'Restored without $names; attach them again before sending';
+  }
+
+  @override
+  String get promptStashOlderDraftsWaiting =>
+      'Some older drafts have not moved here yet. They are kept on this device.';
+
+  @override
+  String get promptStashOlderDraftsFull =>
+      'Older drafts are waiting to move here. Delete saved prompts to make room.';
+
+  @override
+  String quotaAnswerLeft(String percent) {
+    return 'About $percent left';
+  }
+
+  @override
+  String quotaAnswerLeftWeek(String percent) {
+    return 'About $percent left this week';
+  }
+
+  @override
+  String quotaAnswerLeftDays(String percent, int days) {
+    return 'About $percent left in this $days-day window';
+  }
+
+  @override
+  String quotaAnswerLeftHours(String percent, int hours) {
+    return 'About $percent left in this $hours-hour window';
+  }
+
+  @override
+  String quotaAnswerResetsAt(String time) {
+    return 'resets at $time';
+  }
+
+  @override
+  String quotaAnswerResetsOn(String day) {
+    return 'resets $day';
+  }
+
+  @override
+  String get quotaAnswerResetPassed => 'reset time passed, refresh to check';
+
+  @override
+  String quotaAnswerFromCodex(String server) {
+    return 'From your Codex account on $server';
+  }
+
+  @override
+  String get quotaAnswerAgeNow => 'Last known reading, from just now';
+
+  @override
+  String quotaAnswerAgeMinutes(int minutes) {
+    return 'Last known reading, from $minutes min ago';
+  }
+
+  @override
+  String quotaAnswerAgeHours(int hours) {
+    return 'Last known reading, from $hours h ago';
+  }
+
+  @override
+  String quotaAnswerAgeDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Last known reading, from $days days ago',
+      one: 'Last known reading, from yesterday',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String quotaAnswerAlert(String percent) {
+    return 'Alert me at $percent used';
+  }
+
+  @override
+  String get quotaAnswerAlertDetail =>
+      'Says so here when a fresh reading reaches it.';
+
+  @override
+  String get quotaAnswerAlertSaveFailed =>
+      'Couldn’t save this. The alert stays as it was.';
+
+  @override
+  String quotaAnswerAttention(String percent) {
+    return 'You’ve used $percent or more of a Codex limit.';
+  }
+
+  @override
+  String quotaAnswerNotConnected(String server) {
+    return 'Connect to $server to see what’s left on its Codex account.';
+  }
+
+  @override
+  String quotaAnswerSignIn(String server) {
+    return 'Sign in to Codex on $server';
+  }
+
+  @override
+  String get quotaAnswerSignInDetail =>
+      'What’s left shows here once you’re signed in with ChatGPT.';
+
+  @override
+  String get quotaAnswerUnsupported =>
+      'This Codex sign-in has no plan limits to show. They show for ChatGPT sign-ins, not API keys.';
+
+  @override
+  String get quotaAnswerUnavailable =>
+      'Couldn’t read the Codex limits. Check the connection, then refresh.';
+
+  @override
+  String get quotaAnswerInvalid =>
+      'Codex sent limits this app can’t read. Nothing new is shown.';
+
+  @override
+  String get quotaAnswerNoWindows =>
+      'Codex reported no limits for this account.';
+
+  @override
+  String get quotaAnswerCodexNote =>
+      'Read from the Codex account on this server. Other limits, credits and model-specific caps are not included. Missing data is unknown, not unlimited.';
+
+  @override
+  String quotaNeedsCollector(String server) {
+    return 'Needs the quota collector on $server';
+  }
+
+  @override
+  String get quotaCollectorHowTo => 'How to get it';
+
+  @override
+  String quotaCollectorStepInstall(String server) {
+    return 'Ask whoever runs $server to install the quota collector from tool/quota in the app’s repository. It needs Node 20 or later.';
+  }
+
+  @override
+  String get quotaCollectorStepRoute =>
+      'They keep the provider sign-in on the server and put the collector behind the same HTTPS address and password as OpenCode.';
+
+  @override
+  String get quotaCollectorStepRetry => 'Then come back here and read again.';
+
+  @override
+  String get usageSpentToday => 'Spent today';
+
+  @override
+  String get usageSpentThirtyDays => 'Spent in the last 30 days';
+
+  @override
+  String get usageSpentYear => 'Spent this year';
+
+  @override
+  String get usageSpentAllTime => 'Spent in total';
+
+  @override
+  String usageSpentPeriod(String period) {
+    return 'Spent · $period';
+  }
+
+  @override
+  String get automationTitle => 'What runs by itself';
+
+  @override
+  String get automationSearchAliases =>
+      'automation automatic supervision auto approve approvals always allow permissions background watch monitor team level';
+
+  @override
+  String automationIntro(String server) {
+    return 'What the app and the agent do on $server without asking you first.';
+  }
+
+  @override
+  String get automationSaveFailed =>
+      'This choice wasn\'t saved on this phone. The level above is still the one in use; try again.';
+
+  @override
+  String get automationSaving => 'Saving…';
+
+  @override
+  String get automationEmptyTitle => 'Nothing runs by itself here';
+
+  @override
+  String get automationEmptyBody =>
+      'This server has no AI Team, doesn\'t keep always allowed actions and can\'t be watched in the background.';
+
+  @override
+  String get automationTeamLabel => 'How much the AI Team decides alone';
+
+  @override
+  String get automationTeamFootnote =>
+      'New team tasks start at this level. You can pick another level for one task when you start it.';
+
+  @override
+  String get automationWithoutAskingLabel => 'Without asking you';
+
+  @override
+  String get automationSavedRulesDetail =>
+      'What the agent may run here without asking you.';
+
+  @override
+  String get automationWatchTitle => 'Watch in the background';
+
+  @override
+  String get automationWatchDetail =>
+      'Checks for requests while the app is closed. Set in Notifications.';
+
+  @override
+  String get automationValueOn => 'On';
+
+  @override
+  String get automationValueOff => 'Off';
+
+  @override
+  String phoneSetupStartTermuxProgressHeadline(int percent) {
+    return 'Setup in Termux is $percent% done';
+  }
+
+  @override
+  String get teamPhoneReadyChooseTitle => 'Choose the team\'s project';
+
+  @override
+  String get teamPhoneReadyTurningOnTitle => 'Turning on AI Team';
+
+  @override
+  String get teamPhoneReadyFailedTitle => 'AI Team didn\'t start';
+
+  @override
+  String teamPhoneReadyBody(String project) {
+    return 'Give it a first task. It plans the work, shares it between its agents and brings the result back into $project.';
+  }
+
+  @override
+  String get teamPhoneReadyFirstTask => 'Give the team a first task';
 }

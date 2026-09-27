@@ -80,7 +80,7 @@ class KitTaskMark extends StatelessWidget {
 | State | Mark | Word (default, kit ARB) |
 |---|---|---|
 | waiting | a hollow ring, 1 physical px stroke | Waiting (`kitMarkWaiting`) |
-| working | a small indeterminate ring; under reduced motion, a still dot | Working (`kitMarkWorking`) |
+| working | a small indeterminate ring (`KitTokens.spinnerStroke`, 2 dp, the same arc as a working button); under reduced motion, a still dot | Working (`kitMarkWorking`) |
 | done | a check | Done (`kitMarkDone`) |
 | failed | the neutral error glyph | Failed (`kitMarkFailed`) |
 | paused (waiting or working) | `AppIconography.pause` | Paused (`kitMarkPaused`) |

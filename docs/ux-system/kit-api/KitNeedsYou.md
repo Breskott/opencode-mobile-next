@@ -107,7 +107,8 @@ Loading, empty and error belong to the host list (Inbox: STATE-20). There is no 
 - **KitTokens:** `smallIconSize`, `rowHeightTwoLine` (60), `gutter`, `space1`, `minTarget`.
 - **New tokens (pre-wave, `_new-tokens.md`):**
   - `KitTokens.badgeHeight` = 18 and `KitTokens.badgeMinWidth` = 18, drawn as `KitShape.pill` (LOOK-19 "chips and pills"; no radius number);
-  - `KitTokens.badgeTextScaleMax` = 1.3 (the badge's clamp, allowed only in the kit with a named reason, A11Y-8: "badges and counts").
+  - `KitTokens.badgeTextScaleMax` = 1.3 (the badge's clamp, allowed only in the kit with a named reason, A11Y-8: "badges and counts");
+  - `KitTokens.badgeOffset` = 6 (`badgeHeight / 3`): how far the badge sits past its child's top-end corner (R5).
 
 ## Adaptive
 

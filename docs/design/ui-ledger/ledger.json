@@ -1,5 +1,5 @@
 {
- "generatedFrom": "441012f8eb961024afb8f443c0f5d42bbd172f69",
+ "generatedFrom": "2bec3ed3293d8afee0853858ad262097c5bab750",
  "pages": [
   {
    "id": "system",
@@ -1816,10 +1816,10 @@
      "key": null,
      "file": "lib/ui/screens/activity_screen.dart",
      "line": 1279,
-     "action": "open-dialog",
-     "target": "question-sheet-dismiss-dialog",
-     "targetWidget": "_reject",
-     "effect": "_reject(): opens the dismiss confirmation dialog.",
+     "action": "open-sheet",
+     "target": "confirm-sheet",
+     "targetWidget": "showKitConfirm",
+     "effect": "_reject(): showKitConfirm (destructive, 'Dismiss this request?'); on confirm controller.rejectQuestion(question.id, expectedRequest: request) and routes.close().",
      "gates": [
       "!_busy"
      ],
@@ -1835,59 +1835,11 @@
      "action": "submit",
      "target": null,
      "targetWidget": null,
-     "effect": "_submit(): controller.answerQuestion(question.id, answers, expectedRequest: request) then routes.close().",
+     "effect": "_submit(): controller.answerQuestion(question.id, answers, expectedRequest: request) then routes.close(). Pinned to the sheet foot through showKitSheet primaryListenable (slice-P3.11a); enables once every prompt is answered.",
      "gates": [
       "_complete && !_busy"
      ],
      "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "question-sheet-dismiss-dialog",
-   "title": "Dismiss this request?",
-   "kind": "dialog",
-   "area": "shell",
-   "file": "lib/ui/screens/activity_screen.dart",
-   "widget": "_reject",
-   "presentedBy": [],
-   "line": 1129,
-   "purpose": "Confirms rejecting a pending question ('OpenCode will continue without answers to these questions.').",
-   "reachedFrom": [
-    {
-     "page": "question-sheet",
-     "element": "question-sheet-dismiss"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "question-sheet-dismiss-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/activity_screen.dart",
-     "line": 1137,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, false).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "question-sheet-dismiss-dialog-confirm",
-     "type": "button",
-     "label": "Dismiss",
-     "key": null,
-     "file": "lib/ui/screens/activity_screen.dart",
-     "line": 1141,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, true) then controller.rejectQuestion(question.id, expectedRequest: request) and routes.close().",
-     "gates": [],
-     "destructive": true
     }
    ]
   },
@@ -9984,6 +9936,14 @@
     {
      "page": "session-menu-sheet",
      "element": "session-menu-sheet-context"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-session-menu-details"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-session-context-details"
     }
    ],
    "gates": [],
@@ -10615,14 +10575,14 @@
     {
      "id": "session-relations-menu-handoff",
      "type": "menu-item",
-     "label": "Copy handoff",
+     "label": "Continue {title} on computer",
      "key": null,
      "file": "lib/ui/screens/session_relations_screen.dart",
      "line": 474,
-     "action": "open-dialog",
-     "target": "session-handoff-dialog",
-     "targetWidget": "showSessionHandoff",
-     "effect": "Calls showSessionHandoff(context, controller, sessionID, projectID) for that session (wired at lines 274/317).",
+     "action": "open-sheet",
+     "target": "continue-on-computer-sheet",
+     "targetWidget": "showContinueOnComputerSheet",
+     "effect": "showSessionHandoff re-reads the session and opens the continue-on-computer sheet (the handoff dialog merged into it, slice-P3.11a).",
      "gates": [],
      "destructive": false
     },
@@ -11674,63 +11634,6 @@
    "elements": []
   },
   {
-   "id": "session-handoff-dialog",
-   "title": "Copy handoff reference? | Continue on computer",
-   "kind": "dialog",
-   "area": "chat",
-   "file": "lib/ui/widgets/session_handoff.dart",
-   "widget": "showSessionHandoff",
-   "presentedBy": [
-    "showSessionHandoff"
-   ],
-   "line": 85,
-   "purpose": "Previews the resume command (or a metadata reference when the repository cannot create one) and copies it to the clipboard on confirm.",
-   "reachedFrom": [
-    {
-     "page": "session-relations",
-     "element": "session-relations-menu-handoff"
-    },
-    {
-     "page": "global-sessions",
-     "element": "global-sessions-row-menu-handoff"
-    }
-   ],
-   "gates": [
-    "sessionID and projectID match ^[A-Za-z0-9_-]+$ (else product error)",
-    "command variant when repository is SessionCommandHandoffGateway"
-   ],
-   "elements": [
-    {
-     "id": "session-handoff-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/widgets/session_handoff.dart",
-     "line": 117,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, false).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "session-handoff-dialog-copy",
-     "type": "button",
-     "label": "Copy reference | Copy command",
-     "key": null,
-     "file": "lib/ui/widgets/session_handoff.dart",
-     "line": 121,
-     "action": "copy",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Pops true; showSessionHandoff revalidates session/location/command and Clipboard.setData(command ?? reference) (line 157), then shows a snackbar.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
    "id": "continue-on-computer-sheet",
    "title": "Continue on computer",
    "kind": "sheet",
@@ -11749,6 +11652,14 @@
     {
      "page": "session-menu-sheet",
      "element": "session-menu-sheet-continue-computer"
+    },
+    {
+     "page": "global-sessions",
+     "element": "global-sessions-row-menu-handoff"
+    },
+    {
+     "page": "session-relations",
+     "element": "session-relations-menu-handoff"
     }
    ],
    "gates": [],
@@ -12810,14 +12721,14 @@
     {
      "id": "global-sessions-row-menu-handoff",
      "type": "menu-item",
-     "label": "Copy handoff",
+     "label": "Continue on computer",
      "key": null,
      "file": "lib/ui/screens/global_sessions_screen.dart",
      "line": 1077,
      "action": "open-sheet",
-     "target": "session-handoff-dialog",
-     "targetWidget": "showSessionHandoff",
-     "effect": "onHandoff -> _open(result, handoff: true): switches location, then showSessionHandoff(context, controller, sessionID, projectID). Also a CustomSemanticsAction (979).",
+     "target": "continue-on-computer-sheet",
+     "targetWidget": "showContinueOnComputerSheet",
+     "effect": "showSessionHandoff re-reads the session and opens the continue-on-computer sheet with its resume command (the handoff dialog merged into it, slice-P3.11a).",
      "gates": [
       "guarded(): refuses with e7WorkspaceLocationChangedReturn when SessionNavigationScope no longer matches the controller"
      ],
@@ -13100,122 +13011,6 @@
    ]
   },
   {
-   "id": "manage-project",
-   "title": "Manage project",
-   "kind": "screen",
-   "area": "workspace",
-   "file": "lib/ui/screens/manage_project_screen.dart",
-   "widget": "ManageProjectScreen",
-   "presentedBy": [],
-   "line": 18,
-   "purpose": "Hub for low-frequency project surfaces: development services, switch project, worktrees, managed workspaces and project health.",
-   "reachedFrom": [
-    {
-     "page": "workspace-context-sheet",
-     "element": "workspace-context-sheet-manage-project"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "manage-project-back",
-     "type": "gesture",
-     "label": "[system back]",
-     "key": null,
-     "file": "lib/ui/screens/manage_project_screen.dart",
-     "line": 47,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "PopScope pops with _changed so Workspace reloads.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "manage-project-services",
-     "type": "list-tile",
-     "label": "Development services",
-     "key": null,
-     "file": "lib/ui/screens/manage_project_screen.dart",
-     "line": 92,
-     "action": "navigate",
-     "target": "development-services",
-     "targetWidget": "DevelopmentServicesScreen",
-     "effect": "Pushes DevelopmentServicesScreen(controller).",
-     "gates": [
-      "enabled only when widget.controller.directory?.isNotEmpty == true"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "manage-project-switch-project",
-     "type": "list-tile",
-     "label": "Switch project",
-     "key": "switch-project-entry",
-     "file": "lib/ui/screens/manage_project_screen.dart",
-     "line": 117,
-     "action": "navigate",
-     "target": "projects",
-     "targetWidget": "ProjectsScreen",
-     "effect": "_switchProject() pushes ProjectsScreen; when it returns true this screen pops(true).",
-     "gates": [
-      "capabilities.projectManagement"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "manage-project-worktrees",
-     "type": "list-tile",
-     "label": "Worktrees",
-     "key": "worktrees-entry",
-     "file": "lib/ui/screens/manage_project_screen.dart",
-     "line": 142,
-     "action": "navigate",
-     "target": "worktrees",
-     "targetWidget": "WorktreesScreen",
-     "effect": "_openWorktrees() pushes WorktreesScreen(controller, project).",
-     "gates": [
-      "capabilities.projectManagement",
-      "enabled only when project != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "manage-project-managed-workspaces",
-     "type": "list-tile",
-     "label": "Managed workspaces",
-     "key": "managed-workspaces-entry",
-     "file": "lib/ui/screens/manage_project_screen.dart",
-     "line": 166,
-     "action": "navigate",
-     "target": "managed-workspaces",
-     "targetWidget": "ManagedWorkspacesScreen",
-     "effect": "_openManagedWorkspaces() pushes ManagedWorkspacesScreen(controller, project).",
-     "gates": [
-      "capabilities.managedWorkspaces",
-      "enabled only when project != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "manage-project-health",
-     "type": "list-tile",
-     "label": "Project health",
-     "key": "project-health-entry",
-     "file": "lib/ui/screens/manage_project_screen.dart",
-     "line": 183,
-     "action": "navigate",
-     "target": "project-health",
-     "targetWidget": "ProjectHealthScreen",
-     "effect": "_openProjectHealth(): controller.prepareActionRepository() then pushes ProjectHealthScreen(repository, repositoryResolver, capabilities).",
-     "gates": [
-      "capabilities.projectManagement"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
    "id": "managed-workspaces",
    "title": "Cloud environments",
    "kind": "screen",
@@ -13227,8 +13022,8 @@
    "purpose": "List, discover, create, open and remove adapter-backed managed workspaces (cloud environments) for the project.",
    "reachedFrom": [
     {
-     "page": "manage-project",
-     "element": "manage-project-managed-workspaces"
+     "page": "project-hub",
+     "element": "project-hub-workspaces"
     }
    ],
    "gates": [
@@ -13851,10 +13646,6 @@
    "purpose": "Read-only health of the open project: version control branch and changed files, language services and formatters, with Git initialization.",
    "reachedFrom": [
     {
-     "page": "manage-project",
-     "element": "manage-project-health"
-    },
-    {
      "page": "chat",
      "element": null,
      "evidence": "lib/ui/screens/chat_screen.dart:5163"
@@ -14044,10 +13835,6 @@
     {
      "page": "workspace-context-sheet",
      "element": "workspace-context-sheet-switch-project"
-    },
-    {
-     "page": "manage-project",
-     "element": "manage-project-switch-project"
     }
    ],
    "gates": [
@@ -14985,10 +14772,10 @@
      "key": "active-session-directory",
      "file": "lib/ui/screens/workspace_screen.dart",
      "line": 449,
-     "action": "open-dialog",
-     "target": "workspace-directory-details-dialog",
-     "targetWidget": "_showDirectoryDetails",
-     "effect": "_showDirectoryDetails(_selectedDirectory) shows the full path in a dialog.",
+     "action": "open-sheet",
+     "target": "workspace-context-sheet",
+     "targetWidget": "_openContextSheet",
+     "effect": "_openContextSheet(folder: <this folder>): the project sheet with its Details fold open on the folder (the folder dialog merged here, slice-P3.11a).",
      "gates": [
       "widget.controller.capabilities.projectManagement && _hasExternalSessionDirectory (selected directory is neither the project root nor a listed worktree)"
      ],
@@ -15001,10 +14788,10 @@
      "key": "restricted-directory-context",
      "file": "lib/ui/screens/workspace_screen.dart",
      "line": 469,
-     "action": "open-dialog",
-     "target": "workspace-directory-details-dialog",
-     "targetWidget": "_showDirectoryDetails",
-     "effect": "_showDirectoryDetails(controller.directory) shows the full path in a dialog.",
+     "action": "open-sheet",
+     "target": "workspace-context-sheet",
+     "targetWidget": "_openContextSheet",
+     "effect": "_openContextSheet(folder: <this folder>): the project sheet with its Details fold open on the folder (the folder dialog merged here, slice-P3.11a).",
      "gates": [
       "!capabilities.projectManagement && widget.controller.directory?.isNotEmpty == true"
      ],
@@ -15252,14 +15039,14 @@
     {
      "id": "workspace-session-menu-details",
      "type": "menu-item",
-     "label": "Details",
+     "label": "Conversation context",
      "key": null,
      "file": "lib/ui/screens/workspace_screen.dart",
      "line": 1530,
-     "action": "open-sheet",
-     "target": "workspace-session-details-sheet",
-     "targetWidget": "_sessionAction",
-     "effect": "_sessionAction('details') opens the session details sheet.",
+     "action": "navigate",
+     "target": "session-context",
+     "targetWidget": "SessionContextScreen",
+     "effect": "_openSessionContext(session): pushes SessionContextScreen; its Details hold the folder and shared link (the details sheet merged here, slice-P3.11a).",
      "gates": [],
      "destructive": false
     },
@@ -15390,14 +15177,14 @@
     {
      "id": "workspace-session-context-details",
      "type": "menu-item",
-     "label": "Details",
+     "label": "Conversation context",
      "key": null,
      "file": "lib/ui/screens/workspace_screen.dart",
      "line": 1573,
-     "action": "open-sheet",
-     "target": "workspace-session-details-sheet",
-     "targetWidget": "_sessionAction",
-     "effect": "onAction('details', session).",
+     "action": "navigate",
+     "target": "session-context",
+     "targetWidget": "SessionContextScreen",
+     "effect": "_openSessionContext(session): pushes SessionContextScreen; its Details hold the folder and shared link (the details sheet merged here, slice-P3.11a).",
      "gates": [
       "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
      ],
@@ -15615,44 +15402,6 @@
    ]
   },
   {
-   "id": "workspace-directory-details-dialog",
-   "title": "<directory basename>",
-   "kind": "dialog",
-   "area": "workspace",
-   "file": "lib/ui/screens/workspace_screen.dart",
-   "widget": "_showDirectoryDetails",
-   "presentedBy": [],
-   "line": 834,
-   "purpose": "Shows the full selectable path of the active directory.",
-   "reachedFrom": [
-    {
-     "page": "workspace",
-     "element": "workspace-active-session-directory"
-    },
-    {
-     "page": "workspace",
-     "element": "workspace-restricted-directory"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "workspace-directory-details-dialog-close",
-     "type": "button",
-     "label": "Close",
-     "key": null,
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 843,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop().",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
    "id": "workspace-context-sheet",
    "title": "[Project and workspace context]",
    "kind": "sheet",
@@ -15668,6 +15417,14 @@
     {
      "page": "workspace",
      "element": "workspace-project-header"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-active-session-directory"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-restricted-directory"
     }
    ],
    "gates": [
@@ -15686,22 +15443,6 @@
      "targetWidget": "ProjectsScreen",
      "effect": "Pops the sheet with _ContextChoice.switchProject(); _openContextSheet then calls _openProjects() which pushes ProjectsScreen.",
      "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "workspace-context-sheet-manage-project",
-     "type": "list-tile",
-     "label": "Manage project",
-     "key": "manage-project-entry",
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 967,
-     "action": "navigate",
-     "target": "manage-project",
-     "targetWidget": "ManageProjectScreen",
-     "effect": "Pops with _ContextChoice.manageProject(); _openManageProject() pushes ManageProjectScreen(project: _selectedProject) and reloads on return.",
-     "gates": [
-      "ManageProjectScreen.isAvailable(capabilities) (always true)"
-     ],
      "destructive": false
     },
     {
@@ -15737,29 +15478,6 @@
      "destructive": false
     }
    ]
-  },
-  {
-   "id": "workspace-session-details-sheet",
-   "title": "<session title>",
-   "kind": "sheet",
-   "area": "workspace",
-   "file": "lib/ui/screens/workspace_screen.dart",
-   "widget": "_sessionAction",
-   "presentedBy": [],
-   "line": 1044,
-   "purpose": "Read-only session details: title, directory, cost/diff usage labels and shared URL (selectable text only).",
-   "reachedFrom": [
-    {
-     "page": "workspace",
-     "element": "workspace-session-menu-details"
-    },
-    {
-     "page": "workspace",
-     "element": "workspace-session-context-details"
-    }
-   ],
-   "gates": [],
-   "elements": []
   },
   {
    "id": "workspace-rename-session-dialog",
@@ -15945,7 +15663,7 @@
    "file": "lib/ui/screens/workspace_screen.dart",
    "widget": "_WorkspaceFolderChooser",
    "presentedBy": [],
-   "line": 2233,
+   "line": 2123,
    "purpose": "Blocking state of the Workspace tab while the connection has no usable project folder: create, open or browse a folder, or search all sessions.",
    "reachedFrom": [
     {
@@ -15973,7 +15691,7 @@
      "label": "Create a new folder",
      "key": "workspace-create-folder",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2281,
+     "line": 2152,
      "action": "open-dialog",
      "target": "project-folder-new-dialog",
      "targetWidget": "ProjectFolderActions.createFolder",
@@ -15989,7 +15707,7 @@
      "label": "Open a project folder",
      "key": "workspace-open-folder",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2288,
+     "line": 2158,
      "action": "open-dialog",
      "target": "project-folder-open-dialog",
      "targetWidget": "ProjectFolderActions.openFolder",
@@ -16003,7 +15721,7 @@
      "label": "Choose from opened projects",
      "key": "workspace-browse-projects",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2295,
+     "line": 2164,
      "action": "navigate",
      "target": "projects",
      "targetWidget": "ProjectsScreen",
@@ -16012,18 +15730,18 @@
      "destructive": false
     },
     {
-     "id": "workspace-folder-chooser-details",
-     "type": "list-tile",
-     "label": "Details",
-     "key": null,
+     "id": "workspace-folder-chooser-search-all",
+     "type": "button",
+     "label": "Search all sessions",
+     "key": "workspace-chooser-search-all",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2300,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "ExpansionTile expands the projectFolderNoCreateHint explanation.",
+     "line": 2171,
+     "action": "navigate",
+     "target": "global-sessions",
+     "targetWidget": "GlobalSessionsScreen",
+     "effect": "onSearchAll -> _openAllSessions() pushes GlobalSessionsScreen.",
      "gates": [
-      "!canCreate"
+      "capabilities.globalSessionSearch"
      ],
      "destructive": false
     },
@@ -16033,7 +15751,7 @@
      "label": "Retry projects",
      "key": null,
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2317,
+     "line": 2191,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -16044,18 +15762,18 @@
      "destructive": false
     },
     {
-     "id": "workspace-folder-chooser-search-all",
-     "type": "button",
-     "label": "Search all sessions",
-     "key": "workspace-chooser-search-all",
+     "id": "workspace-folder-chooser-details",
+     "type": "list-tile",
+     "label": "Details",
+     "key": null,
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2326,
-     "action": "navigate",
-     "target": "global-sessions",
-     "targetWidget": "GlobalSessionsScreen",
-     "effect": "onSearchAll -> _openAllSessions() pushes GlobalSessionsScreen.",
+     "line": 2197,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ExpansionTile expands the projectFolderNoCreateHint explanation.",
      "gates": [
-      "capabilities.globalSessionSearch"
+      "!canCreate"
      ],
      "destructive": false
     }
@@ -16072,10 +15790,6 @@
    "line": 32,
    "purpose": "List the project's main copy and its worktrees with each row's state word; open, start a conversation in, create (pinned primary), reset and delete them.",
    "reachedFrom": [
-    {
-     "page": "manage-project",
-     "element": "manage-project-worktrees"
-    },
     {
      "page": "project-hub",
      "element": "project-hub-worktrees"
@@ -17551,6 +17265,38 @@
    ],
    "elements": [
     {
+     "id": "project-hub-services",
+     "type": "list-tile",
+     "label": "Development services",
+     "key": "project-hub-services",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 1,
+     "action": "navigate",
+     "target": "development-services",
+     "targetWidget": "DevelopmentServicesScreen",
+     "effect": "openProjectTool(services): pushes DevelopmentServicesScreen for the open project folder (moved from Manage project, slice-P3.11a).",
+     "gates": [
+      "capabilities.developmentServices"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-workspaces",
+     "type": "list-tile",
+     "label": "Cloud environments",
+     "key": "project-hub-workspaces",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 1,
+     "action": "navigate",
+     "target": "managed-workspaces",
+     "targetWidget": "ManagedWorkspacesScreen",
+     "effect": "openProjectTool(workspaces): resolves the catalog project for controller.directory and pushes ManagedWorkspacesScreen (moved from Manage project, slice-P3.11a).",
+     "gates": [
+      "capabilities.projectManagement && capabilities.managedWorkspaces"
+     ],
+     "destructive": false
+    },
+    {
      "id": "project-hub-system-back",
      "type": "gesture",
      "label": "[system back]",
@@ -17622,9 +17368,9 @@
      "action": "navigate",
      "target": "terminal",
      "targetWidget": "TerminalPage",
-     "effect": "_openTerminal(): Navigator.push(MaterialPageRoute(TerminalPage(controller))).",
+     "effect": "_openTerminal(): Navigator.push(MaterialPageRoute(TerminalPage(controller))). Without capabilities.terminal (and other tools present) the row stays, dimmed with the registry's reason (KitRow.unavailable, 'flag:terminal').",
      "gates": [
-      "capabilities.terminal"
+      "listed while the tab shows; enabled when capabilities.terminal"
      ],
      "destructive": false
     },
@@ -20872,15 +20618,15 @@
     },
     {
      "id": "provider-quota-enable-monitoring",
-     "type": "button",
-     "label": "Enable quota monitoring",
+     "type": "list-tile",
+     "label": "Alert me about {provider} on {server}",
      "key": null,
      "file": "lib/ui/screens/provider_quota_screen.dart",
      "line": 342,
-     "action": "open-dialog",
-     "target": "provider-quota-enroll-dialog",
-     "targetWidget": "_enroll",
-     "effect": "_enroll(): opens the monitoring consent dialog.",
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_enroll(): quotaMonitor.enroll(profileID, snapshot, threshold: 90, shared notification rules) in place; the row gives way to the source's threshold row and named Stop (the enrol dialog merged into the page, slice-P3.11a).",
      "gates": [
       "_overview.consented && snapshot != null && snapshot.canShowWindows",
       "disabled when _overview.snapshotIsStale"
@@ -21011,70 +20757,6 @@
      "target": null,
      "targetWidget": null,
      "effect": "quotaMonitor.disable(profileID, provider): removes the source from monitoring.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "provider-quota-enroll-dialog",
-   "title": "Monitor this provider source?",
-   "kind": "dialog",
-   "area": "servers",
-   "file": "lib/ui/screens/provider_quota_screen.dart",
-   "widget": "_enroll",
-   "presentedBy": [
-    "_enroll"
-   ],
-   "line": 108,
-   "purpose": "Consent dialog for background quota monitoring of the current source, with its initial threshold.",
-   "reachedFrom": [
-    {
-     "page": "provider-quota",
-     "element": "provider-quota-enable-monitoring"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "provider-quota-enroll-dialog-threshold",
-     "type": "dropdown",
-     "label": "{percent}% used (50 / 75 / 90 / 100)",
-     "key": null,
-     "file": "lib/ui/screens/provider_quota_screen.dart",
-     "line": 124,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Local dialog state: threshold.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "provider-quota-enroll-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/provider_quota_screen.dart",
-     "line": 143,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Pops with false.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "provider-quota-enroll-dialog-enable",
-     "type": "button",
-     "label": "Enable quota monitoring",
-     "key": null,
-     "file": "lib/ui/screens/provider_quota_screen.dart",
-     "line": 147,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Pops with true; _enroll then calls controller.quotaMonitor.enroll(profileID, snapshot, threshold) with alerts, Wi-Fi only and quiet hours taken from the shared notification rules; the new source appears in the monitoring section in place (snackbar on failure).",
      "gates": [],
      "destructive": false
     }
@@ -23061,8 +22743,8 @@
    "purpose": "Per-project registry of development commands and preview links: register, start/stop/restart tracked commands on the server, read logs, open the preview URL.",
    "reachedFrom": [
     {
-     "page": "manage-project",
-     "element": "manage-project-services"
+     "page": "project-hub",
+     "element": "project-hub-services"
     }
    ],
    "gates": [
@@ -31553,6 +31235,76 @@
    ]
   },
   {
+   "id": "automation-settings",
+   "title": "What runs by itself",
+   "kind": "screen",
+   "area": "settings",
+   "file": "lib/ui/screens/automation_settings_screen.dart",
+   "widget": "AutomationSettingsScreen",
+   "presentedBy": [],
+   "line": 70,
+   "purpose": "Settings › What runs by itself (P6.1): what the app and the agent do on the current server without asking. The AI Team's supervision level (stored in the per-server AutomationPolicy, oc.automation.<profileId>; new team tasks start at it) and doors to Always allowed actions and background watching (Notifications).",
+   "reachedFrom": [
+    {
+     "page": "settings",
+     "element": "settings-automation"
+    }
+   ],
+   "gates": [
+    "one server (controller.profile); each section present only where the server supports it"
+   ],
+   "elements": [
+    {
+     "id": "automation-saved-permissions",
+     "type": "list-tile",
+     "label": "Always allowed actions",
+     "key": "automation-saved-permissions",
+     "file": "lib/ui/screens/automation_settings_screen.dart",
+     "line": 210,
+     "action": "navigate",
+     "target": "saved-permissions",
+     "targetWidget": "SavedPermissionsScreen",
+     "effect": "Pushes SavedPermissionsScreen(controller).",
+     "gates": [
+      "capabilities.savedPermissionList"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "automation-supervision",
+     "type": "list-tile",
+     "label": "High / Balanced / Autonomous",
+     "key": "automation-supervision-<level>",
+     "file": "lib/ui/screens/automation_settings_screen.dart",
+     "line": 250,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "AutomationPolicyController.setSupervision(level); a refused write shows automation-save-failed.",
+     "gates": [
+      "AI Team set up for this server"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "automation-watch",
+     "type": "list-tile",
+     "label": "Watch this server in the background",
+     "key": "automation-watch",
+     "file": "lib/ui/screens/automation_settings_screen.dart",
+     "line": 290,
+     "action": "navigate",
+     "target": "notifications-settings",
+     "targetWidget": "NotificationsSettingsScreen",
+     "effect": "Pushes NotificationsSettingsScreen(initialSection: 'servers'); the value says whether the monitor watches this server.",
+     "gates": [
+      "profile monitor supports and can read this server"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
    "id": "keep-running",
    "title": "Keep running in the background",
    "kind": "screen",
@@ -31799,10 +31551,10 @@
      "key": null,
      "file": "lib/ui/screens/library/command_auth_sheet.dart",
      "line": 203,
-     "action": "open-sheet",
-     "target": "command-auth-sheet-confirm-sheet",
-     "targetWidget": "showConfirmSheet",
-     "effect": "_start(): confirm sheet, then controller.startIntegrationCommand(integration.id, method.id, locationRevision); on failure tries controller.pendingIntegrationCommand to recover the attempt.",
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_start(): controller.startIntegrationCommand(integration.id, method.id, locationRevision) directly; the sheet's intro is the question (the confirm merged into it, slice-P3.11a).",
      "gates": [
       "_current (source/profile unchanged)",
       "_attempt == null && !_uncertainStart && _status != complete"
@@ -31812,14 +31564,14 @@
     {
      "id": "command-auth-sheet-check",
      "type": "button",
-     "label": "Check status",
+     "label": "Check {provider} sign-in now",
      "key": null,
      "file": "lib/ui/screens/library/command_auth_sheet.dart",
      "line": 208,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
-     "effect": "_check(): controller.integrationCommandStatus(...); on complete clears the attempt and controller.refreshCatalog().",
+     "effect": "_check(): controller.integrationCommandStatus(...); on complete clears the attempt and controller.refreshCatalog(). Offered 8 s after a start without an answer, or at once for an attempt found running.",
      "gates": [
       "_current",
       "_attempt != null"
@@ -31842,58 +31594,6 @@
       "_attempt != null"
      ],
      "destructive": true
-    }
-   ]
-  },
-  {
-   "id": "command-auth-sheet-confirm-sheet",
-   "title": "Start sign-in on the server?",
-   "kind": "sheet",
-   "area": "settings",
-   "file": "lib/ui/screens/library/command_auth_sheet.dart",
-   "widget": "_CommandAuthSheetState._start",
-   "presentedBy": [
-    "showConfirmSheet"
-   ],
-   "line": 65,
-   "purpose": "Confirms running the sign-in command on the server.",
-   "reachedFrom": [
-    {
-     "page": "command-auth-sheet",
-     "element": "command-auth-sheet-start"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "command-auth-sheet-confirm-sheet-confirm",
-     "type": "button",
-     "label": "Start server sign-in",
-     "key": null,
-     "file": "lib/ui/screens/library/command_auth_sheet.dart",
-     "line": 69,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.startIntegrationCommand(integration.id, method.id, locationRevision); sheet then shows pending state.",
-     "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
-    },
-    {
-     "id": "command-auth-sheet-confirm-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/library/command_auth_sheet.dart",
-     "line": 86,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, false); nothing is changed.",
-     "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/confirm_sheet.dart"
     }
    ]
   },
@@ -32171,26 +31871,12 @@
    "gates": [],
    "elements": [
     {
-     "id": "credential-management-sheet-rename-dialog-label",
-     "type": "text-field",
-     "label": "Account label",
-     "key": null,
-     "file": "lib/ui/screens/library/credential_sheet.dart",
-     "line": 418,
-     "action": "submit",
-     "target": null,
-     "targetWidget": null,
-     "effect": "onChanged revalidates; onSubmitted pops the trimmed label when valid.",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "credential-management-sheet-rename-dialog-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
      "file": "lib/ui/screens/library/credential_sheet.dart",
-     "line": 430,
+     "line": 178,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
@@ -32204,11 +31890,25 @@
      "label": "Save label",
      "key": null,
      "file": "lib/ui/screens/library/credential_sheet.dart",
-     "line": 434,
+     "line": 182,
      "action": "submit",
      "target": null,
      "targetWidget": null,
      "effect": "Pops the label; caller runs controller.renameIntegrationCredential(integrationID, id, label, locationRevision). Disabled when invalid.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "credential-management-sheet-rename-dialog-label",
+     "type": "text-field",
+     "label": "Account label",
+     "key": null,
+     "file": "lib/ui/screens/library/credential_sheet.dart",
+     "line": 418,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onChanged revalidates; onSubmitted pops the trimmed label when valid.",
      "gates": [],
      "destructive": false
     }
@@ -32704,8 +32404,8 @@
      "file": "lib/ui/screens/library/integrations_screen.dart",
      "line": 187,
      "action": "open-sheet",
-     "target": "integrations-forget-uncertain-auth-sheet",
-     "targetWidget": "showConfirmSheet",
+     "target": "integrations-forget-pending-auth-sheet",
+     "targetWidget": "_confirmForgetSignIn",
      "effect": "_UncertainAuthRecoveryTile ('Unconfirmed sign-in: {integrationID}'): opens confirm sheet, then controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision).",
      "gates": [
       "_showProviders (widget.mode != IntegrationsMode.mcp)",
@@ -33278,11 +32978,15 @@
     "showConfirmSheet"
    ],
    "line": 59,
-   "purpose": "Confirms dropping a locally persisted pending sign-in attempt.",
+   "purpose": "The one forget-sign-in question, for a saved sign-in and for a start the server never confirmed (the uncertain start's own sheet merged here, slice-P3.11a).",
    "reachedFrom": [
     {
      "page": "integrations",
      "element": "integrations-pending-forget"
+    },
+    {
+     "page": "integrations",
+     "element": "integrations-uncertain-forget"
     }
    ],
    "gates": [],
@@ -33303,56 +33007,6 @@
     },
     {
      "id": "integrations-forget-pending-auth-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 86,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, false); nothing is changed.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "integrations-forget-uncertain-auth-sheet",
-   "title": "Forget uncertain start?",
-   "kind": "sheet",
-   "area": "settings",
-   "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-   "widget": "_UncertainAuthRecoveryTile.build",
-   "presentedBy": [
-    "showConfirmSheet"
-   ],
-   "line": 191,
-   "purpose": "Confirms forgetting a sign-in start whose outcome was never confirmed.",
-   "reachedFrom": [
-    {
-     "page": "integrations",
-     "element": "integrations-uncertain-forget"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "integrations-forget-uncertain-auth-sheet-confirm",
-     "type": "button",
-     "label": "Forget uncertain start",
-     "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 69,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision); shows 'sign-in source changed' error if it throws.",
-     "gates": [],
-     "destructive": true
-    },
-    {
-     "id": "integrations-forget-uncertain-auth-sheet-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
@@ -33649,27 +33303,6 @@
    ]
   },
   {
-   "id": "skills-preview-sheet",
-   "title": "<skill name>",
-   "kind": "sheet",
-   "area": "settings",
-   "file": "lib/ui/screens/library/skills_screen.dart",
-   "widget": "_showSkill",
-   "presentedBy": [],
-   "line": 173,
-   "purpose": "Read-only preview of a skill: name, selectable location path and rendered SKILL.md (FilePreviewBody, key 'skill-content-preview').",
-   "reachedFrom": [
-    {
-     "page": "skills",
-     "element": "skills-row"
-    }
-   ],
-   "gates": [
-    "widget.sessionID == null (library / capabilities entry)"
-   ],
-   "elements": []
-  },
-  {
    "id": "mcp-setup",
    "title": "Add MCP server",
    "kind": "screen",
@@ -33923,8 +33556,8 @@
    "purpose": "Lists the durable \"always allow\" grants for the current project and lets the user revoke them.",
    "reachedFrom": [
     {
-     "page": "settings",
-     "element": "settings-saved-permissions"
+     "page": "automation-settings",
+     "element": "automation-saved-permissions"
     }
    ],
    "gates": [],
@@ -34149,6 +33782,10 @@
     {
      "page": "provider-quota",
      "element": "provider-quota-monitor-notification-settings"
+    },
+    {
+     "page": "automation-settings",
+     "element": "automation-watch"
     }
    ],
    "gates": [],
@@ -35101,18 +34738,18 @@
      "widgetFile": "lib/ui/screens/settings/default_shell_row.dart"
     },
     {
-     "id": "settings-saved-permissions",
+     "id": "settings-automation",
      "type": "list-tile",
-     "label": "Always allowed actions",
-     "key": "saved-permissions-entry",
+     "label": "What runs by itself",
+     "key": "settings-automation",
      "file": "lib/ui/screens/settings_screen.dart",
      "line": 326,
      "action": "navigate",
-     "target": "saved-permissions",
-     "targetWidget": "SavedPermissionsScreen",
-     "effect": "Pushes SavedPermissionsScreen(controller) via _open.",
+     "target": "automation-settings",
+     "targetWidget": "AutomationSettingsScreen",
+     "effect": "Pushes AutomationSettingsScreen(controller) via the search index entry; the value names the AI Team's level when there is a team.",
      "gates": [
-      "row hidden when it does not match the search query (_HubRow.matches(_query))"
+      "absent when the server has no team, no saved-permission list and cannot be watched (AutomationSettingsSections.any)"
      ],
      "destructive": false
     },
@@ -37201,6 +36838,10 @@
    "purpose": "Shared bottom-sheet confirmation (icon, title, message, one primary action, cancel). Callers supply copy, keys and the destructive flag and perform the actual mutation after it returns true; caller agents record their own instances.",
    "reachedFrom": [
     {
+     "page": "question-sheet",
+     "element": "question-sheet-dismiss"
+    },
+    {
      "page": "prompt-stash-sheet",
      "element": "prompt-stash-sheet-delete"
     }
@@ -37811,7 +37452,7 @@
    {
     "from": "question-sheet",
     "element": "question-sheet-dismiss",
-    "to": "question-sheet-dismiss-dialog"
+    "to": "confirm-sheet"
    },
    {
     "from": "global-shortcuts",
@@ -38931,12 +38572,12 @@
    {
     "from": "workspace",
     "element": "workspace-active-session-directory",
-    "to": "workspace-directory-details-dialog"
+    "to": "workspace-context-sheet"
    },
    {
     "from": "workspace",
     "element": "workspace-restricted-directory",
-    "to": "workspace-directory-details-dialog"
+    "to": "workspace-context-sheet"
    },
    {
     "from": "workspace",
@@ -38961,7 +38602,7 @@
    {
     "from": "workspace",
     "element": "workspace-session-menu-details",
-    "to": "workspace-session-details-sheet"
+    "to": "session-context"
    },
    {
     "from": "workspace",
@@ -38981,7 +38622,7 @@
    {
     "from": "workspace",
     "element": "workspace-session-context-details",
-    "to": "workspace-session-details-sheet"
+    "to": "session-context"
    },
    {
     "from": "workspace",
@@ -39064,11 +38705,6 @@
     "to": "projects"
    },
    {
-    "from": "workspace-context-sheet",
-    "element": "workspace-context-sheet-manage-project",
-    "to": "manage-project"
-   },
-   {
     "from": "projects",
     "element": "projects-create-folder",
     "to": "project-folder-new-dialog"
@@ -39082,31 +38718,6 @@
     "from": "projects",
     "element": "projects-project-rename",
     "to": "projects-rename-dialog"
-   },
-   {
-    "from": "manage-project",
-    "element": "manage-project-services",
-    "to": "development-services"
-   },
-   {
-    "from": "manage-project",
-    "element": "manage-project-switch-project",
-    "to": "projects"
-   },
-   {
-    "from": "manage-project",
-    "element": "manage-project-worktrees",
-    "to": "worktrees"
-   },
-   {
-    "from": "manage-project",
-    "element": "manage-project-managed-workspaces",
-    "to": "managed-workspaces"
-   },
-   {
-    "from": "manage-project",
-    "element": "manage-project-health",
-    "to": "project-health"
    },
    {
     "from": "project-folder-browser",
@@ -39186,7 +38797,7 @@
    {
     "from": "global-sessions",
     "element": "global-sessions-row-menu-handoff",
-    "to": "session-handoff-dialog"
+    "to": "continue-on-computer-sheet"
    },
    {
     "from": "global-sessions",
@@ -39277,6 +38888,16 @@
     "from": "project-hub",
     "element": "project-hub-worktrees",
     "to": "worktrees"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-services",
+    "to": "development-services"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-workspaces",
+    "to": "managed-workspaces"
    },
    {
     "from": "project-hub",
@@ -39657,11 +39278,6 @@
     "from": "embedded-profile-monitor-inbox",
     "element": "embedded-profile-monitor-inbox-request-row",
     "to": "permission-sheet"
-   },
-   {
-    "from": "provider-quota",
-    "element": "provider-quota-enable-monitoring",
-    "to": "provider-quota-enroll-dialog"
    },
    {
     "from": "provider-quota",
@@ -40410,8 +40026,8 @@
    },
    {
     "from": "settings",
-    "element": "settings-saved-permissions",
-    "to": "saved-permissions"
+    "element": "settings-automation",
+    "to": "automation-settings"
    },
    {
     "from": "settings",
@@ -40594,6 +40210,16 @@
     "to": "legacy-drafts-delete-sheet"
    },
    {
+    "from": "automation-settings",
+    "element": "automation-saved-permissions",
+    "to": "saved-permissions"
+   },
+   {
+    "from": "automation-settings",
+    "element": "automation-watch",
+    "to": "notifications-settings"
+   },
+   {
     "from": "saved-permissions",
     "element": "saved-permissions-revoke",
     "to": "saved-permissions-revoke-dialog"
@@ -40651,7 +40277,7 @@
    {
     "from": "integrations",
     "element": "integrations-uncertain-forget",
-    "to": "integrations-forget-uncertain-auth-sheet"
+    "to": "integrations-forget-pending-auth-sheet"
    },
    {
     "from": "integrations",
@@ -40724,11 +40350,6 @@
     "to": "integrations-authorization-launch-dialog"
    },
    {
-    "from": "command-auth-sheet",
-    "element": "command-auth-sheet-start",
-    "to": "command-auth-sheet-confirm-sheet"
-   },
-   {
     "from": "credential-management-sheet",
     "element": "credential-management-sheet-rename",
     "to": "credential-management-sheet-rename-dialog"
@@ -40751,7 +40372,7 @@
    {
     "from": "session-relations",
     "element": "session-relations-menu-handoff",
-    "to": "session-handoff-dialog"
+    "to": "continue-on-computer-sheet"
    },
    {
     "from": "session-import",
@@ -40947,12 +40568,6 @@
     "from": "team-phone-onboarding-offer",
     "element": "team-phone-onboarding-offer-set-up",
     "to": "team-phone-onboarding-steps",
-    "secondary": true
-   },
-   {
-    "from": "skills",
-    "element": "skills-row",
-    "to": "skills-preview-sheet",
     "secondary": true
    },
    {

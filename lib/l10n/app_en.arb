@@ -421,7 +421,6 @@
   "usagePreviousResult": "Showing the previous result for these filters.",
   "usageLocationChanged": "The active server or project changed. Reopen Usage from Settings.",
   "usageTinyCost": "Less than $0.000001",
-  "usageReportedCost": "Reported cost · USD",
   "usageSessions": "Conversations",
   "usageSubagents": "Subagent conversations",
   "usagePrompts": "Prompts",
@@ -621,24 +620,12 @@
   "@promptStashSearch": {
     "description": "Search local saved prompt text, attachment names, references and locations without loading attachment payloads"
   },
-  "promptStashNoMatches": "No saved prompts match your search. Clear or change the search to see more.",
-  "@promptStashNoMatches": {
-    "description": "Filtered saved-prompts empty state, distinct from an empty stash"
-  },
   "promptStashDeleteFailed": "Could not delete this saved prompt. Try again.",
-  "promptRestoreTitle": "Restore saved prompt?",
-  "promptRestorePreserve": "Your current prompt will be saved to the stash first, including its attachments and references.",
   "promptStashDelete": "Delete",
   "promptStashFull": "Your stash has 50 prompts. Delete a saved prompt to make room; your current prompt is unchanged.",
-  "promptStashListDescription": "Saved on this device for this server. Restoring a prompt also saves any current prompt for later.",
-  "promptStashDeleteTitle": "Delete saved prompt?",
   "promptStashAttachments": "{count, plural, =1{1 attachment} other{{count} attachments}}",
   "promptStashReferences": "{count, plural, =1{1 reference} other{{count} references}}",
-  "promptRestoredCopyKept": "Available content restored. A saved copy remains in your stash. Review attachments and references before sending.",
-  "promptAttachmentsUnavailable": "Some attachments cannot be restored",
-  "promptRestore": "Restore",
   "promptHistorySaveFailed": "Prompt sent, but its history could not be saved on this device.",
-  "promptAttachmentsUnavailableDetail": "Missing, damaged or temporary attachments: {names}. Restore the available content and reattach these files before sending. The saved copy will stay in your stash.",
   "promptStashMigrationPending": "Some saved attachments could not be moved to local attachment storage yet. Your saved content has been kept. Free device storage and retry.",
   "commonRetry": "Try again",
   "shareWaitingForServer": "Connect to a server and the shared text opens in a new conversation.",
@@ -812,13 +799,8 @@
   "runResultsOpenConversation": "Open conversation",
   "attentionDisclosure": "A local overview, not live monitoring across servers. Cached signals may be incomplete or out of date. Open a server to check its current activity.",
   "attentionNavigationUnavailable": "Opening servers is unavailable here. Return to Home to choose a server and view Inbox.",
-  "handoffTitle": "Copy handoff reference?",
-  "handoffDisclosure": "Metadata only, not a command or link. On your other device, connect to the same server and locate this project and conversation. Nothing is published or sent.\n\nThe clipboard will contain conversation and project identifiers. Other apps may read it; share only with people you trust.",
-  "handoffCopy": "Copy reference",
-  "handoffCopied": "Conversation metadata reference copied",
-  "handoffCopyFailed": "Could not copy the handoff. Try again.",
   "sessionOpenRelated": "Open related",
-  "sessionCopyHandoff": "Copy handoff",
+  "sessionCopyHandoff": "Continue on computer",
   "sessionActions": "Conversation actions",
   "attentionTitle": "Server attention",
   "webSourcesTitle": "Add web source",
@@ -890,14 +872,6 @@
   "@commandAuthMethodHint": {
     "description": "Command authentication runs server-side; do not imply an app shell or browser flow"
   },
-  "commandAuthConfirmTitle": "Start sign-in on the server?",
-  "@commandAuthConfirmTitle": {
-    "description": "Explicit consent before executing a server-side authentication method"
-  },
-  "commandAuthConfirmDetail": "OpenCode will execute this provider's declared sign-in method on the selected server. Continue only if you trust that server and provider. The app does not run or copy a shell command on your phone.",
-  "@commandAuthConfirmDetail": {
-    "description": "Trust boundary of executable provider authentication"
-  },
   "commandAuthStart": "Start server sign-in",
   "@commandAuthStart": {
     "description": "Launch a command authentication attempt after confirmation"
@@ -905,10 +879,6 @@
   "commandAuthPending": "Sign-in is pending on the server. Finish any server-side interaction, then check its status. Closing this sheet does not cancel it.",
   "@commandAuthPending": {
     "description": "Pending status without fabricated instructions or automatic cancellation"
-  },
-  "commandAuthCheck": "Check sign-in",
-  "@commandAuthCheck": {
-    "description": "Read the pinned command-auth attempt status"
   },
   "commandAuthCancel": "Cancel sign-in",
   "@commandAuthCancel": {
@@ -990,21 +960,9 @@
   "@credentialManage": {
     "description": "Open individual saved provider credential management"
   },
-  "credentialMetadataOnly": "Only saved account labels are shown. API keys and login tokens stay on your server.",
+  "credentialMetadataOnly": "Keys stay on your server.",
   "@credentialMetadataOnly": {
     "description": "Describes the metadata-only credential list"
-  },
-  "credentialActiveUnknown": "Active account unknown. The saved-account list does not report which account is active.",
-  "@credentialActiveUnknown": {
-    "description": "Cold start or stream gap cannot establish an active credential"
-  },
-  "credentialNoneActive": "The server reported no active saved account.",
-  "@credentialNoneActive": {
-    "description": "An explicit nullable credential-switched event reported no active credential"
-  },
-  "credentialActiveObserved": "The Active badge reflects the latest server event.",
-  "@credentialActiveObserved": {
-    "description": "Distinguishes event-confirmed activation from a successful command response"
   },
   "credentialActiveUpdated": "Active account updated from the server.",
   "@credentialActiveUpdated": {
@@ -1033,15 +991,6 @@
   "credentialSave": "Save label",
   "@credentialSave": {
     "description": "Submit only the edited credential label"
-  },
-  "credentialRemoveTitle": "Remove {label}?",
-  "@credentialRemoveTitle": {
-    "description": "Destructive confirmation naming the saved provider credential",
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
   },
   "credentialRemoveDetail": "Remove this saved sign-in from the server. Other projects using it may be affected. This does not edit environment configuration; the server determines which account, if any, becomes active afterward.",
   "@credentialRemoveDetail": {
@@ -1119,9 +1068,7 @@
     "description": "Warns against acting on MCP data from a previous profile or location"
   },
   "promptStashRestoreFailed": "Could not finish restoring the prompt. Saved copies remain available; check the composer before trying again.",
-  "promptStashEmpty": "Nothing saved yet. Use Stash current prompt in Prompt tools to keep a prompt for later.",
   "promptStashContextOnly": "Attachments and references",
-  "promptRestoredReferences": "Prompt restored. Saved references are snapshots; their server files may have changed.",
   "promptDefaultLocation": "the server default directory",
   "promptStashed": "Prompt saved to your stash.",
   "promptStashedDraftPending": "Prompt saved to your stash. The composer draft still needs to be saved; try again from the draft warning.",
@@ -1129,23 +1076,13 @@
     "description": "Stash save succeeded but persisting the cleared or restored composer draft failed; the saved stash remains available"
   },
   "promptStashReadFailed": "Could not read saved prompts. Their stored data has been kept.",
-  "promptStashDeleteDetail": "This removes the saved text, attachments and references from this device.",
   "promptStashDescription": "Save text, attachments and references for later",
-  "promptRestoreAvailable": "Restore available content",
-  "promptRestored": "Prompt restored. Review it before sending.",
-  "promptStashAction": "Stash current prompt",
+  "promptRestored": "Saved prompt restored",
   "promptStashLocation": "This prompt refers to files in {directory}. Switch to its original project before restoring it.",
   "promptStashScopeChanged": "The server or project changed. Close and reopen Saved prompts.",
   "@promptStashLocation": {
     "placeholders": {
       "directory": {
-        "type": "String"
-      }
-    }
-  },
-  "@promptAttachmentsUnavailableDetail": {
-    "placeholders": {
-      "names": {
         "type": "String"
       }
     }
@@ -1305,7 +1242,7 @@
   "photoCameraAction": "Take photo",
   "photoTooLarge": "Choose a photo smaller than 10 MB.",
   "photoStorageFailed": "The photo could not be saved on this device. Free some space and retry.",
-  "photoPendingOther": "A photo is waiting in its original conversation. Keep it there, or discard it before choosing another photo.",
+  "photoPendingOther": "A photo is still waiting for another conversation. Add or discard it there, then try again.",
   "photoUnavailable": "The photo could not be opened. Try adding it again from Photo library or Take photo.",
   "photoPermissionDenied": "Photo access was denied. Allow camera or photo access in Android app settings, then try again.",
   "photoPendingTitle": "Pending photo",
@@ -1313,18 +1250,6 @@
   "photoAddToDraft": "Add recovered photo to draft",
   "photoOtherLocation": "Return to the photo's original server and project before adding it.",
   "photoDraftFull": "Remove an attachment first. A draft holds up to 5 files and 20 MB in total.",
-  "legacyDraftsTitle": "Older drafts",
-  "legacyDraftsDescription": "Review drafts saved before server tracking",
-  "legacyDraftsExplanation": "These drafts have no recorded server. Review their text before using it in this conversation.",
-  "legacyDraftInsertExplanation": "Insert adds this text after your current draft. The original saved copy stays here until you delete it.",
-  "legacyDraftTextOnly": "Only text can be inserted here. Any saved attachments remain with the older draft.",
-  "legacyDraftDelete": "Delete saved copy",
-  "legacyDraftDeleteExplanation": "Permanently remove this older draft and its saved attachments from this device?",
-  "legacyDraftDeleteFailed": "The draft changed or could not be removed. Reopen it and retry.",
-  "legacyDraftInsert": "Insert into draft",
-  "legacyDraftSearch": "Search older drafts",
-  "legacyDraftsEmpty": "No older drafts found",
-  "legacyDraftLocationChanged": "The project changed. Reopen Older drafts to choose where to insert the text.",
   "quotaTitle": "Remaining usage",
   "@quotaTitle": {
     "description": "Read-only subscription quota screen title"
@@ -1353,17 +1278,9 @@
   "@quotaSourceChanged": {
     "description": "A retained quota screen lost its original scope or profile"
   },
-  "quotaSetupTitle": "An optional collector is required",
-  "@quotaSetupTitle": {
-    "description": "First-visit quota setup heading; no claim of built-in OpenCode support"
-  },
-  "quotaSetupDescription": "Needs a usage collector installed on this server. Provider tokens stay on the server.",
+  "quotaSetupDescription": "Once it’s installed, confirm you trust it, then read. Provider tokens stay on the server.",
   "@quotaSetupDescription": {
     "description": "Informed consent before sending existing server authentication to an optional same-origin route"
-  },
-  "quotaSetupGuide": "Setup instructions are in tool/quota/README.md in the app repository. This screen does not install services or remember permission after you leave.",
-  "@quotaSetupGuide": {
-    "description": "Explains operator configuration and visit-only consent"
   },
   "quotaSetupNeeded": "Use a saved server with a password and HTTPS, or phone loopback. Update its connection settings before checking the collector.",
   "@quotaSetupNeeded": {
@@ -1392,10 +1309,6 @@
   "quotaCollectorAuth": "The collector route did not accept this server sign-in. Ask the server operator to check its authentication setup.",
   "@quotaCollectorAuth": {
     "description": "Collector or proxy authentication failure, distinct from provider reauthentication"
-  },
-  "quotaCollectorMissing": "The optional collector route is not available on this server. Check its installation and proxy routing.",
-  "@quotaCollectorMissing": {
-    "description": "Optional collector returned a missing route or unsupported method"
   },
   "quotaUnavailable": "Remaining usage could not be refreshed. Check the connection and collector, then retry.",
   "@quotaUnavailable": {
@@ -1516,37 +1429,6 @@
   "@quotaResetUnknown": {
     "description": "Missing provider reset time is not fabricated"
   },
-  "quotaResetPassed": "Reset time passed — refresh to check. The displayed allowance has not been replenished locally.",
-  "@quotaResetPassed": {
-    "description": "Passing a reset deadline does not invent a new allowance"
-  },
-  "quotaDays": "{count, plural, one{1-day window} other{{count}-day window}}",
-  "@quotaDays": {
-    "description": "Exact whole-day provider window duration",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "quotaHours": "{count, plural, one{1-hour window} other{{count}-hour window}}",
-  "@quotaHours": {
-    "description": "Exact whole-hour provider window duration",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "quotaSeconds": "{count, plural, one{1-second window} other{{count}-second window}}",
-  "@quotaSeconds": {
-    "description": "Exact duration when a provider window is not whole hours or days",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "quotaSourceDisclosure": "Read-only snapshot from the optional collector using an internal provider endpoint. Other product allowances, model-specific limits, credits and eligibility are not included. Missing data is unknown, not unlimited.",
   "@quotaSourceDisclosure": {
     "description": "Honest limits and provenance of optional provider quota collectors"
@@ -1629,9 +1511,6 @@
   "setupInstallStart": "Install & start",
   "setupCheckAgain": "Try again",
   "uncertainAuthDetail": "The server may have started this sign-in without confirming it. Check on the server before you start again.",
-  "uncertainAuthForgetTitle": "Forget this sign-in on this phone?",
-  "uncertainAuthForgetDetail": "This clears only the local retry block. It does not cancel sign-in on the server. Check the server first to avoid running a second sign-in. No new sign-in will start.",
-  "uncertainAuthForget": "Forget this sign-in",
   "uncertainAuthCloseHint": "Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.",
   "pluginsDescription": "Plugins reported for this project on the server. Inspect status and source here; manage plugins on the server.",
   "pluginsUnsupported": "This server does not support plugin inspection.",
@@ -1653,11 +1532,7 @@
   "pluginsFailureDetail": "Failure details are hidden because they may contain credentials.",
   "demoReviewChanges": "Review changes",
   "demoSetUpServer": "Set up your own server",
-  "handoffCommandTitle": "Continue on computer",
-  "handoffCommandDisclosure": "Run this command in a POSIX shell on a computer with OpenCode installed and access to this server. Set OPENCODE_SERVER_PASSWORD privately on that computer if the server requires it. The clipboard will contain the server address, username, project directory and conversation ID, but no password.",
   "handoffCopyCommand": "Copy command",
-  "handoffCommandCopied": "Resume command copied",
-  "handoffCommandUnavailable": "A resume command is unavailable for this server or cloud environment. Continuing on another computer needs a supported OpenCode command and a reachable HTTPS server; a localhost address points to each device itself. You can still copy the conversation metadata below.",
   "quotaMiniMax": "MiniMax",
   "quotaMiniMaxAccount": "MiniMax subscription windows",
   "quotaMiniMaxSourceBound": "Tied to the collector's configured MiniMax Subscription Key. The quota response does not independently identify the account. Only reported general-pool percentages are shown; other limits may apply.",
@@ -1923,11 +1798,8 @@
   "mobileTaskPriorityMedium": "Medium priority",
   "mobileTaskPriorityLow": "Low priority",
   "quotaMonitorTitle": "Quota monitoring",
-  "quotaMonitorConsentTitle": "Monitor this provider source?",
-  "quotaMonitorConsent": "Keep checking {provider} on {server} in the background and alert me when use reaches:",
   "quotaMonitorRuntime": "Sources are checked in rotation, at most three per cycle; larger lists take several cycles. Background reads require the existing live service to be active; Android may stop it. Displayed readings expire when the collector says they do. Device alerts record past threshold readings, not current remaining allowance. This page never switches your active server.",
   "quotaMonitorEmpty": "No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.",
-  "quotaMonitorEnable": "Enable quota monitoring",
   "quotaMonitorDisabled": "Monitoring is off.",
   "quotaMonitorWaiting": "Waiting for a fresh reading.",
   "quotaMonitorChecking": "Checking the trusted collector…",
@@ -2737,8 +2609,7 @@
   "workspaceIsolatedTask": "Isolated task",
   "workspaceAllSessions": "All conversations",
   "workspaceDismissNotice": "Dismiss",
-  "workspaceManageProject": "Manage project",
-  "workspaceManageProjectHint": "Switch project, worktrees, and project health",
+  "workspaceManageProjectHint": "Switch project, where it runs, and its folder",
   "workspaceManage": "Manage",
   "reviewCopiedFile": "Updated file copied",
   "reviewCopiedPatch": "Patch copied",
@@ -8993,49 +8864,21 @@
   "@e7LibraryNoProjectFolderIsOpenChooseOne": {
     "description": "Library and project tools UI: No project folder is open. Choose one from Workspace."
   },
-  "e7LibraryProject": "Project",
-  "@e7LibraryProject": {
-    "description": "Library and project tools UI: Project"
-  },
   "e7LibrarySwitchProject": "Switch project",
   "@e7LibrarySwitchProject": {
     "description": "Library and project tools UI: Switch project"
-  },
-  "e7LibraryChooseAnotherProjectOpenedByThisServer": "Choose another project opened by this server",
-  "@e7LibraryChooseAnotherProjectOpenedByThisServer": {
-    "description": "Library and project tools UI: Choose another project opened by this server"
-  },
-  "e7LibraryCoding": "Coding",
-  "@e7LibraryCoding": {
-    "description": "Library and project tools UI: Coding"
   },
   "e7LibraryWorktrees": "Worktrees",
   "@e7LibraryWorktrees": {
     "description": "Library and project tools UI: Worktrees"
   },
-  "e7LibraryChooseAProjectFirst": "Choose a project first",
-  "@e7LibraryChooseAProjectFirst": {
-    "description": "Library and project tools UI: Choose a project first"
-  },
-  "e7LibraryCreateAndManageIsolatedGitBranches": "Create and manage isolated Git branches",
-  "@e7LibraryCreateAndManageIsolatedGitBranches": {
-    "description": "Library and project tools UI: Create and manage isolated Git branches"
-  },
   "e7LibraryManagedWorkspaces": "Cloud environments",
   "@e7LibraryManagedWorkspaces": {
     "description": "Library and project tools UI: Managed workspaces"
   },
-  "e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked": "Create, discover, open, and remove adapter-backed environments",
-  "@e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked": {
-    "description": "Library and project tools UI: Create, discover, open, and remove adapter-backed environments"
-  },
   "e7LibraryProjectHealth": "Project health",
   "@e7LibraryProjectHealth": {
     "description": "Library and project tools UI: Project health"
-  },
-  "e7LibraryBranchChangedFilesLanguageServicesAndFormatters": "Branch, changed files, language services, and formatters",
-  "@e7LibraryBranchChangedFilesLanguageServicesAndFormatters": {
-    "description": "Library and project tools UI: Branch, changed files, language services, and formatters"
   },
   "e7LibraryOpenCodeIsReconnecting": "OpenCode is reconnecting.",
   "@e7LibraryOpenCodeIsReconnecting": {
@@ -16300,125 +16143,21 @@
   "@teamUiPhoneOptionalTag": {
     "description": "On-device AI Team block: eyebrow label"
   },
-  "teamUiPhoneOfferTitle": "Also run an AI team on this phone",
-  "@teamUiPhoneOfferTitle": {
-    "description": "On-device AI Team block: title"
-  },
-  "teamUiPhoneOfferBody": "Lets several coding agents work on your project while you supervise from Work. Uses the same Linux environment you just set up.",
-  "@teamUiPhoneOfferBody": {
-    "description": "On-device AI Team block: body"
-  },
-  "teamUiPhoneOfferSize": "Downloads about {size} MB (Gas City, beads and Dolt, from each project's own releases).",
-  "@teamUiPhoneOfferSize": {
-    "description": "On-device AI Team block: download size line",
-    "placeholders": {
-      "size": {
-        "type": "int"
-      }
-    }
-  },
-  "teamUiPhoneOfferWarning": "Keep Termux open or hold its wake lock while the team works; Android may stop it in the background. Nothing is lost; runs resume when you start it again.",
-  "@teamUiPhoneOfferWarning": {
-    "description": "On-device AI Team block: lifecycle warning"
-  },
-  "teamUiPhoneSkip": "Skip for now",
-  "@teamUiPhoneSkip": {
-    "description": "On-device AI Team block: primary (skip) action"
-  },
-  "teamUiPhoneSetUp": "Set up AI Team on this phone",
-  "@teamUiPhoneSetUp": {
-    "description": "On-device AI Team block: set-up action"
-  },
-  "teamUiPhoneStepDownload": "Download & verify",
-  "@teamUiPhoneStepDownload": {
-    "description": "On-device setup step 1"
-  },
-  "teamUiPhoneStepPackages": "Install prerequisites",
-  "@teamUiPhoneStepPackages": {
-    "description": "On-device setup step 2"
-  },
-  "teamUiPhoneStepCity": "Create a city next to the project",
-  "@teamUiPhoneStepCity": {
-    "description": "On-device setup step 3"
-  },
-  "teamUiPhoneStepStart": "Start the supervisor on this phone",
-  "@teamUiPhoneStepStart": {
-    "description": "On-device setup step 4"
-  },
-  "teamUiPhoneStepConnect": "Connect",
-  "@teamUiPhoneStepConnect": {
-    "description": "On-device setup step 5"
-  },
-  "teamUiPhoneLeaveNote": "You can leave this screen and return to check progress.",
-  "@teamUiPhoneLeaveNote": {
-    "description": "On-device setup: the steps keep running while away"
-  },
-  "teamUiPhoneProjectLine": "Project: {path}",
-  "@teamUiPhoneProjectLine": {
-    "description": "On-device setup: which project folder the city is created next to",
-    "placeholders": {
-      "path": {
-        "type": "String"
-      }
-    }
-  },
   "teamUiPhoneChooseProjectTitle": "Choose a project",
   "@teamUiPhoneChooseProjectTitle": {
     "description": "On-device setup: project picker title"
-  },
-  "teamUiPhoneChooseProjectBody": "The team works on one project folder of the phone server. A project without a git origin gets one on the phone, and the team's merged work comes back into the folder by itself.",
-  "@teamUiPhoneChooseProjectBody": {
-    "description": "On-device setup: project picker body"
-  },
-  "teamUiPhoneNoProjects": "No project folder yet. Name one and it will be created under {directory}.",
-  "@teamUiPhoneNoProjects": {
-    "description": "On-device setup: project picker when the server has no folders",
-    "placeholders": {
-      "directory": {
-        "type": "String"
-      }
-    }
-  },
-  "teamUiPhoneNewFolderLabel": "Folder name",
-  "@teamUiPhoneNewFolderLabel": {
-    "description": "On-device setup: new project folder field label"
-  },
-  "teamUiPhoneCreateAndContinue": "Create and continue",
-  "@teamUiPhoneCreateAndContinue": {
-    "description": "On-device setup: create the folder and start the setup"
   },
   "teamUiPhoneContinue": "Continue",
   "@teamUiPhoneContinue": {
     "description": "On-device setup: continue with the chosen project"
   },
-  "teamUiPhoneSetupRunning": "Setting up the AI team",
-  "@teamUiPhoneSetupRunning": {
-    "description": "On-device setup: heading while the steps run"
-  },
   "teamUiPhoneSuccessTitle": "AI team is running on this phone",
   "@teamUiPhoneSuccessTitle": {
     "description": "On-device setup: success card title"
   },
-  "teamUiPhoneAgentsReady": "{count, plural, =0{no agents yet} =1{1 agent ready} other{{count} agents ready}}",
-  "@teamUiPhoneAgentsReady": {
-    "description": "On-device setup: success card agent count",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teamUiPhoneOpenWorkspace": "Open Work",
-  "@teamUiPhoneOpenWorkspace": {
-    "description": "On-device setup: success card action"
-  },
   "teamUiPhoneRetry": "Try again",
   "@teamUiPhoneRetry": {
     "description": "On-device setup: retry after a failure"
-  },
-  "teamUiPhoneFailedTitle": "The AI team could not be set up.",
-  "@teamUiPhoneFailedTitle": {
-    "description": "On-device setup: failure heading"
   },
   "teamUiPhoneFailedChecksum": "The downloaded {name} did not match the checksum this build pins, so it was not installed. Nothing from it was kept; check the network and try again.",
   "@teamUiPhoneFailedChecksum": {
@@ -16654,10 +16393,6 @@
   "@teamUiPhoneKilled": {
     "description": "On this phone: killed by Android line (03-onboarding §5)"
   },
-  "teamUiPhoneStartAgain": "Start again",
-  "@teamUiPhoneStartAgain": {
-    "description": "On this phone: restart after Android killed the team"
-  },
   "teamUiPhoneKeepRunningTitle": "Keep it running",
   "@teamUiPhoneKeepRunningTitle": {
     "description": "On this phone: tips row title"
@@ -16738,10 +16473,6 @@
   "teamUiPhoneReofferAction": "Set up",
   "@teamUiPhoneReofferAction": {
     "description": "Settings › Plugins: open the setup screen from the re-offer"
-  },
-  "teamUiPhoneOpenSetup": "Open phone setup",
-  "@teamUiPhoneOpenSetup": {
-    "description": "On this phone: open the Termux setup screen to set up or resume"
   },
   "teamUiPhoneFailedNoSpace": "Not enough space on this phone. {detail} Free some space (Storage on this phone can clean build caches), then try again.",
   "@teamUiPhoneFailedNoSpace": {
@@ -20691,14 +20422,6 @@
   "teamDiscoverProjectBody": "Turn it on for each project you want it to work on.",
   "@teamDiscoverProjectBody": {
     "description": "AI Team intro, on this phone: the per-project row's line"
-  },
-  "teamDiscoverUnsupportedTitle": "This phone can't run the AI Team",
-  "@teamDiscoverUnsupportedTitle": {
-    "description": "AI Team intro, OpenCode in Termux on a phone that cannot run the team: the notice title"
-  },
-  "teamDiscoverUnsupportedBody": "It needs a 64-bit phone and an app build that carries the team's programs. A computer can run it for you instead.",
-  "@teamDiscoverUnsupportedBody": {
-    "description": "AI Team intro, phone that cannot run the team: what is possible instead"
   },
   "teamDiscoverComputerTitle": "Runs on {server}",
   "@teamDiscoverComputerTitle": {
@@ -24662,7 +24385,7 @@
   "@workspaceChooserEnterPath": {
     "description": "Folder chooser: open an existing folder by typing its path"
   },
-  "workspaceChooserRecentProjects": "Recent projects",
+  "workspaceChooserRecentProjects": "Open a project you used before",
   "@workspaceChooserRecentProjects": {
     "description": "Folder chooser: pick one of the projects already opened on this server"
   },
@@ -28400,7 +28123,7 @@
       }
     }
   },
-  "sessionRelationsCopyHandoff": "Copy handoff for {title}",
+  "sessionRelationsCopyHandoff": "Continue {title} on computer",
   "@sessionRelationsCopyHandoff": {
     "description": "Subagents row menu: copies the handoff for the conversation.",
     "placeholders": {
@@ -29707,12 +29430,6 @@
   "@uncertainAuthDetail": {
     "description": "Sign-in sheet: a start the server may have taken without confirming it."
   },
-  "@uncertainAuthForgetTitle": {
-    "description": "Confirm title before clearing an unconfirmed sign-in start on this phone."
-  },
-  "@uncertainAuthForget": {
-    "description": "Confirm button that clears an unconfirmed sign-in start on this phone."
-  },
   "integrationsSignInWaiting": "Sign-in waiting",
   "@integrationsSignInWaiting": {
     "description": "Providers: the state word of a provider whose sign-in waits on the person (needs-you row)."
@@ -29877,21 +29594,6 @@
         "type": "String"
       }
     }
-  },
-  "@quotaMonitorConsent": {
-    "description": "One-line explanation on the monitoring sheet that leads straight into the percentage choice, e.g. 'Keep checking Codex on Workstation in the background and alert me when use reaches:'",
-    "placeholders": {
-      "provider": {
-        "type": "String"
-      },
-      "server": {
-        "type": "String"
-      }
-    }
-  },
-  "quotaMonitorConsentDetails": "This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.",
-  "@quotaMonitorConsentDetails": {
-    "description": "Full terms of quota monitoring, under Details on the monitoring sheet"
   },
   "thisPhoneHostInApp": "In the app",
   "@thisPhoneHostInApp": {
@@ -30733,5 +30435,436 @@
   "sessionsListChanged": "The conversation list changed on the server. Refresh it to see older conversations.",
   "@sessionsListChanged": {
     "description": "The end of a conversation list: the server's list moved while paging, so it must start again from the newest page."
+  },
+  "handoffUiComputerUnsupported": "This server can’t give a command that continues a conversation on a computer.",
+  "@handoffUiComputerUnsupported": {
+    "description": "Continue on computer from a conversation list, on a server without CLI session resume"
+  },
+  "handoffUiComputerChanged": "This conversation moved or its server changed. Go back and try again.",
+  "@handoffUiComputerChanged": {
+    "description": "Continue on computer from a conversation list: the session could not be read again or changed place"
+  },
+  "commandAuthSheetIntro": "Runs this sign-in on your server, not on this phone. Start it only if you trust the server and {provider}. You may need to finish steps on the server.",
+  "@commandAuthSheetIntro": {
+    "description": "Server sign-in sheet: what Start does and whom it trusts (the confirm merged into the sheet)",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "commandAuthCheckNamed": "Check {provider} sign-in now",
+  "@commandAuthCheckNamed": {
+    "description": "Server sign-in sheet: offered once the server has had a few seconds to finish the sign-in",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "credentialRemoveAccountTitle": "Remove the {provider} account “{name}”?",
+  "@credentialRemoveAccountTitle": {
+    "description": "Accounts sheet: remove confirm title naming the provider and the account",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "credentialRemoveConfirmNamed": "Remove “{name}”",
+  "@credentialRemoveConfirmNamed": {
+    "description": "Accounts sheet: remove confirm button naming the account",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaMonitorOffer": "Alert me about {provider} on {server}",
+  "@quotaMonitorOffer": {
+    "description": "Remaining: the row that turns on background monitoring for the account shown",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaMonitorOfferDetail": "Keeps checking in the background, including after a restart, and alerts when use reaches {percent}. You can change the percentage once it’s on.",
+  "@quotaMonitorOfferDetail": {
+    "description": "Remaining: what the monitoring row does, with its starting percentage",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "workspaceChooserBody": "Conversations run inside a folder on {server}.",
+  "@workspaceChooserBody": {
+    "description": "Work, no project folder yet: why a folder is needed, naming the server",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverServicesAliases": "services dev server preview logs run commands processes",
+  "@discoverServicesAliases": {
+    "description": "Search keywords for Development services (space separated)"
+  },
+  "discoverCloudEnvironmentsAliases": "cloud environments managed workspaces remote sandbox",
+  "@discoverCloudEnvironmentsAliases": {
+    "description": "Search keywords for Cloud environments (space separated)"
+  },
+  "@promptRestored": {
+    "description": "Undo bar after a saved prompt replaced the draft; Undo puts the previous draft back."
+  },
+  "promptRestoredWithout": "Restored without {names}; attach them again before sending",
+  "@promptRestoredWithout": {
+    "description": "Undo bar after a saved prompt was restored but some of its attachment files could not be read.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "promptStashOlderDraftsWaiting": "Some older drafts have not moved here yet. They are kept on this device.",
+  "@promptStashOlderDraftsWaiting": {
+    "description": "Saved prompts sheet: drafts saved before drafts named their server could not move into Saved prompts yet (with Try again)."
+  },
+  "promptStashOlderDraftsFull": "Older drafts are waiting to move here. Delete saved prompts to make room.",
+  "@promptStashOlderDraftsFull": {
+    "description": "Saved prompts sheet: the older drafts cannot move in because Saved prompts is full (with Try again)."
+  },
+  "quotaAnswerLeft": "About {percent} left",
+  "@quotaAnswerLeft": {
+    "description": "Remaining (answer sentence): what is left of a quota window whose length is not reported, e.g. \"About 40% left\"",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerLeftWeek": "About {percent} left this week",
+  "@quotaAnswerLeftWeek": {
+    "description": "Remaining (answer sentence): what is left of a weekly quota window",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerLeftDays": "About {percent} left in this {days}-day window",
+  "@quotaAnswerLeftDays": {
+    "description": "Remaining (answer sentence): what is left of a quota window counted in days",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaAnswerLeftHours": "About {percent} left in this {hours}-hour window",
+  "@quotaAnswerLeftHours": {
+    "description": "Remaining (answer sentence): what is left of a quota window counted in hours",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      },
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaAnswerResetsAt": "resets at {time}",
+  "@quotaAnswerResetsAt": {
+    "description": "Remaining (answer sentence, after \" · \"): the window resets later today",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerResetsOn": "resets {day}",
+  "@quotaAnswerResetsOn": {
+    "description": "Remaining (answer sentence, after \" · \"): the window resets on a later day, e.g. \"resets Tue\" or \"resets Oct 3\"",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerResetPassed": "reset time passed, refresh to check",
+  "@quotaAnswerResetPassed": {
+    "description": "Remaining (answer sentence, after \" · \"): the reported reset time has passed; the app never assumes the allowance came back"
+  },
+  "quotaAnswerFromCodex": "From your Codex account on {server}",
+  "@quotaAnswerFromCodex": {
+    "description": "Remaining: whose limits the rows show, above them",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerAgeNow": "Last known reading, from just now",
+  "@quotaAnswerAgeNow": {
+    "description": "Remaining: the rows show a retained reading (offline or refresh failed), less than a minute old"
+  },
+  "quotaAnswerAgeMinutes": "Last known reading, from {minutes} min ago",
+  "@quotaAnswerAgeMinutes": {
+    "description": "Remaining: the rows show a retained reading (offline or refresh failed) and its age",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaAnswerAgeHours": "Last known reading, from {hours} h ago",
+  "@quotaAnswerAgeHours": {
+    "description": "Remaining: the rows show a retained reading (offline or refresh failed) and its age",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaAnswerAgeDays": "{days, plural, one{Last known reading, from yesterday} other{Last known reading, from {days} days ago}}",
+  "@quotaAnswerAgeDays": {
+    "description": "Remaining: the rows show a retained reading (offline or refresh failed) and its age",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaAnswerAlert": "Alert me at {percent} used",
+  "@quotaAnswerAlert": {
+    "description": "Remaining: the switch (on by default) that says so on this page when a fresh reading reaches the percentage used",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerAlertDetail": "Says so here when a fresh reading reaches it.",
+  "@quotaAnswerAlertDetail": {
+    "description": "Remaining: what the alert switch does, under it"
+  },
+  "quotaAnswerAlertSaveFailed": "Couldn’t save this. The alert stays as it was.",
+  "@quotaAnswerAlertSaveFailed": {
+    "description": "Remaining: the alert switch could not be saved"
+  },
+  "quotaAnswerAttention": "You’ve used {percent} or more of a Codex limit.",
+  "@quotaAnswerAttention": {
+    "description": "Remaining: a fresh reading reached the alert percentage",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerNotConnected": "Connect to {server} to see what’s left on its Codex account.",
+  "@quotaAnswerNotConnected": {
+    "description": "Remaining on a Codex host that is not connected",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerSignIn": "Sign in to Codex on {server}",
+  "@quotaAnswerSignIn": {
+    "description": "Remaining on a Codex host with no signed-in account: the row that opens the Codex account page",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerSignInDetail": "What’s left shows here once you’re signed in with ChatGPT.",
+  "@quotaAnswerSignInDetail": {
+    "description": "Remaining: under the sign-in row"
+  },
+  "quotaAnswerUnsupported": "This Codex sign-in has no plan limits to show. They show for ChatGPT sign-ins, not API keys.",
+  "@quotaAnswerUnsupported": {
+    "description": "Remaining: the Codex host is signed in with an API key, or cannot report limits"
+  },
+  "quotaAnswerUnavailable": "Couldn’t read the Codex limits. Check the connection, then refresh.",
+  "@quotaAnswerUnavailable": {
+    "description": "Remaining: reading the Codex account limits failed and nothing is known yet"
+  },
+  "quotaAnswerInvalid": "Codex sent limits this app can’t read. Nothing new is shown.",
+  "@quotaAnswerInvalid": {
+    "description": "Remaining: the Codex account returned an invalid limits answer"
+  },
+  "quotaAnswerNoWindows": "Codex reported no limits for this account.",
+  "@quotaAnswerNoWindows": {
+    "description": "Remaining: the Codex account answered with no limit windows"
+  },
+  "quotaAnswerCodexNote": "Read from the Codex account on this server. Other limits, credits and model-specific caps are not included. Missing data is unknown, not unlimited.",
+  "@quotaAnswerCodexNote": {
+    "description": "Remaining (Codex host): the note in Details about what the numbers cover"
+  },
+  "quotaNeedsCollector": "Needs the quota collector on {server}",
+  "@quotaNeedsCollector": {
+    "description": "Remaining: the server has no quota collector (setup title, and the notice when its route is missing)",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaCollectorHowTo": "How to get it",
+  "@quotaCollectorHowTo": {
+    "description": "Remaining: the fold with the steps to get the quota collector"
+  },
+  "quotaCollectorStepInstall": "Ask whoever runs {server} to install the quota collector from tool/quota in the app’s repository. It needs Node 20 or later.",
+  "@quotaCollectorStepInstall": {
+    "description": "Remaining: collector setup step 1",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaCollectorStepRoute": "They keep the provider sign-in on the server and put the collector behind the same HTTPS address and password as OpenCode.",
+  "@quotaCollectorStepRoute": {
+    "description": "Remaining: collector setup step 2"
+  },
+  "quotaCollectorStepRetry": "Then come back here and read again.",
+  "@quotaCollectorStepRetry": {
+    "description": "Remaining: collector setup step 3"
+  },
+  "usageSpentToday": "Spent today",
+  "@usageSpentToday": {
+    "description": "Usage (Spent): above the total, when the server covered exactly today"
+  },
+  "usageSpentThirtyDays": "Spent in the last 30 days",
+  "@usageSpentThirtyDays": {
+    "description": "Usage (Spent): above the total, when the server covered exactly the last 30 days"
+  },
+  "usageSpentYear": "Spent this year",
+  "@usageSpentYear": {
+    "description": "Usage (Spent): above the total, when the server covered exactly this year"
+  },
+  "usageSpentAllTime": "Spent in total",
+  "@usageSpentAllTime": {
+    "description": "Usage (Spent): above the total, for all time"
+  },
+  "usageSpentPeriod": "Spent · {period}",
+  "@usageSpentPeriod": {
+    "description": "Usage (Spent): above the total, when the server covered other days than the range asked for; the days it covered, e.g. \"Spent · Sep 2 – 6\"",
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "automationTitle": "What runs by itself",
+  "@automationTitle": {
+    "description": "Settings: title of the page and hub row listing what the app and agent do on this server without asking."
+  },
+  "automationSearchAliases": "automation automatic supervision auto approve approvals always allow permissions background watch monitor team level",
+  "@automationSearchAliases": {
+    "description": "Settings search: extra words that find What runs by itself."
+  },
+  "automationIntro": "What the app and the agent do on {server} without asking you first.",
+  "@automationIntro": {
+    "description": "What runs by itself: intro line. {server} is the server's shown name.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "automationSaveFailed": "This choice wasn't saved on this phone. The level above is still the one in use; try again.",
+  "@automationSaveFailed": {
+    "description": "What runs by itself: storage refused the chosen level."
+  },
+  "automationSaving": "Saving…",
+  "@automationSaving": {
+    "description": "What runs by itself: a choice is being saved."
+  },
+  "automationEmptyTitle": "Nothing runs by itself here",
+  "@automationEmptyTitle": {
+    "description": "What runs by itself: this server has no team, no saved rules and can't be watched."
+  },
+  "automationEmptyBody": "This server has no AI Team, doesn't keep always allowed actions and can't be watched in the background.",
+  "@automationEmptyBody": {
+    "description": "What runs by itself: why the page is empty."
+  },
+  "automationTeamLabel": "How much the AI Team decides alone",
+  "@automationTeamLabel": {
+    "description": "What runs by itself: label over the supervision levels."
+  },
+  "automationTeamFootnote": "New team tasks start at this level. You can pick another level for one task when you start it.",
+  "@automationTeamFootnote": {
+    "description": "What runs by itself: what the chosen level changes."
+  },
+  "automationWithoutAskingLabel": "Without asking you",
+  "@automationWithoutAskingLabel": {
+    "description": "What runs by itself: label over the rows for saved rules and background watching."
+  },
+  "automationSavedRulesDetail": "What the agent may run here without asking you.",
+  "@automationSavedRulesDetail": {
+    "description": "What runs by itself: the Always allowed actions row's line."
+  },
+  "automationWatchTitle": "Watch in the background",
+  "@automationWatchTitle": {
+    "description": "What runs by itself: row that opens Notifications at the watched servers."
+  },
+  "automationWatchDetail": "Checks for requests while the app is closed. Set in Notifications.",
+  "@automationWatchDetail": {
+    "description": "What runs by itself: the watch row's line."
+  },
+  "automationValueOn": "On",
+  "@automationValueOn": {
+    "description": "What runs by itself: a door row's state value."
+  },
+  "automationValueOff": "Off",
+  "@automationValueOff": {
+    "description": "What runs by itself: a door row's state value."
+  },
+  "phoneSetupStartTermuxProgressHeadline": "Setup in Termux is {percent}% done",
+  "@phoneSetupStartTermuxProgressHeadline": {
+    "description": "Phone setup start screen: headline while a setup job in Termux is running or stopped part way. {percent} is a whole number.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "teamPhoneReadyChooseTitle": "Choose the team's project",
+  "@teamPhoneReadyChooseTitle": {
+    "description": "AI Team ready page (after Add tools installed AI Team): title when no project is open yet."
+  },
+  "teamPhoneReadyTurningOnTitle": "Turning on AI Team",
+  "@teamPhoneReadyTurningOnTitle": {
+    "description": "AI Team ready page: title while the team is turned on for the project; the stages below name the project."
+  },
+  "teamPhoneReadyFailedTitle": "AI Team didn't start",
+  "@teamPhoneReadyFailedTitle": {
+    "description": "AI Team ready page: title when turning the team on failed; the reason follows."
+  },
+  "teamPhoneReadyBody": "Give it a first task. It plans the work, shares it between its agents and brings the result back into {project}.",
+  "@teamPhoneReadyBody": {
+    "description": "AI Team ready page: line under the success title. {project} is the project's folder name.",
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "teamPhoneReadyFirstTask": "Give the team a first task",
+  "@teamPhoneReadyFirstTask": {
+    "description": "AI Team ready page: the primary action; opens the task sheet, and the task lands in its conversation."
   }
 }

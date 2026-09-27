@@ -51,6 +51,7 @@ import '../../kit/kit.dart';
 import '../../kit/scenes/team_scenes.dart';
 import '../../widgets/relative_time.dart';
 import '../../widgets/team_now.dart';
+import '../../widgets/team_phone_onboarding.dart' show TeamPhoneKilledNotice;
 import '../../widgets/team_receipt.dart';
 import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_vocabulary.dart';
@@ -255,7 +256,13 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           // A list on its own: centred at the list width on a PC.
           width: KitScreenWidth.list,
           search: _searchOpen && ready ? _searchField(l10n) : null,
-          header: [?line],
+          // Android stopped the phone's Termux team: said here, with
+          // Start the team again (map: team-phone-onboarding-killed).
+          header: [
+            ?line,
+            if (TeamPhoneKilledNotice.appliesTo(controller.config))
+              TeamPhoneKilledNotice(controller: controller),
+          ],
           loading: teamScreenLoading(controller) || _refreshing,
           loadingLabel: l10n.teamUiCardLoading,
           body: _body(context),

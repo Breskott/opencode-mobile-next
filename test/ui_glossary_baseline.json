@@ -36,10 +36,6 @@
       "title a2aForgetTask: Arabic does not end with \"؟\"": 1,
       "title a2aForgetTask: English does not end with \"?\"": 1
     },
-    "lib/ui/screens/legacy_drafts_screen.dart": {
-      "title legacyDraftDelete: Arabic does not end with \"؟\"": 1,
-      "title legacyDraftDelete: English does not end with \"?\"": 1
-    },
     "lib/ui/screens/library/credential_sheet.dart": {
       "label mcpRemove: fewer than two words": 1
     },
@@ -301,10 +297,6 @@
     "phoneServerCardVersion": {
       "ar version \"{version}\"": 1,
       "en version \"{version}\"": 1
-    },
-    "quotaSetupGuide": {
-      "ar path \"tool/quota/README.md\"": 1,
-      "en path \"tool/quota/README.md\"": 1
     },
     "servicesUrlHint": {
       "ar address \"localhost\"": 1,
@@ -1025,9 +1017,6 @@
     },
     "quotaCodexAccount": {
       "product name Codex": 1
-    },
-    "quotaSetupTitle": {
-      "title over four words": 1
     },
     "readAloudConsentTitle": {
       "title over four words": 1

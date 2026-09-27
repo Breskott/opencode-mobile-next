@@ -559,7 +559,91 @@ void main() {
         expect(copied(), isNot(contains('AbCdEfGhIjKlMnOp')));
       },
     );
+
+    testWidgets(
+      'redact: false copies the text verbatim, fake key and all (SEC-13)',
+      (tester) async {
+        const raw = 'export KEY=sk-ant-api03-AbCdEfGhIjKlMnOp';
+        await tester.pumpWidget(
+          _host(KitIconButton.copy(text: () => raw, redact: false)),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(_button);
+        await tester.pump();
+        expect(copied(), raw);
+        // The copied check shows exactly as on a redacting copy.
+        expect(
+          find.byKey(const ValueKey('kit-icon-button-copied')),
+          findsOneWidget,
+        );
+        await tester.pump(KitMotion.copiedHold);
+        await tester.pumpAndSettle();
+      },
+    );
   });
+
+  testWidgets('a working spinner draws the kit spinner stroke at any density', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _host(
+        KitIconButton(
+          icon: AppIconography.retry,
+          tooltip: 'Refresh',
+          working: true,
+          onPressed: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+    final spinner = tester.widget<CircularProgressIndicator>(
+      find.byType(CircularProgressIndicator),
+    );
+    expect(spinner.strokeWidth, KitTokens.spinnerStroke);
+  });
+
+  testWidgets(
+    'a long tooltip keeps a side margin at 412 dp and 2.0 text (A11Y)',
+    (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const label =
+          'Retry connecting to the server on the computer in the other room';
+      await tester.pumpWidget(
+        _host(
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: KitIconButton(
+              icon: AppIconography.retry,
+              tooltip: label,
+              onPressed: () {},
+            ),
+          ),
+          textScale: 2,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.longPress(_button);
+      await tester.pumpAndSettle();
+      final bubble = tester.getRect(
+        find
+            .ancestor(
+              of: find.textContaining('Retry connecting'),
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
+      const gutter = 16.0;
+      expect(bubble.left, greaterThanOrEqualTo(gutter));
+      expect(bubble.right, lessThanOrEqualTo(412 - gutter));
+      // Dismiss the tooltip so no timer is left pending.
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+    },
+  );
 
   group('reduced motion settles after one pump (G8x)', () {
     const iconKey = ValueKey('kit-icon-button-icon');

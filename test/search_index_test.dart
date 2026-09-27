@@ -49,11 +49,8 @@ const _excluded = <String, String>{
   'legacy-drafts': 'restores a draft into the open conversation',
   'staged-revert': 'needs a staged revert in an open conversation',
   // Need something picked first.
-  'manage-project': 'needs a project; opened from the Work project header',
-  'managed-workspaces': 'needs a project; opened from Manage project',
   'projects': 'a picker that returns the chosen project to Work',
   'workspace-folder-chooser': 'a state of the Work tab, not a place',
-  'development-services': 'needs a project; opened from Manage project',
   'shell-output': 'the output of one command that was just run',
   'terminal-surface': 'one terminal process; opened from Terminal',
   'diff-view': 'one file of a review; opened from Changes',
@@ -593,7 +590,8 @@ void main() {
       expect(_key('settings-category-usage'), findsOneWidget);
       await tester.enterText(search, 'always allowed');
       await tester.pump(KitMotion.typingSettle);
-      expect(_key('saved-permissions-entry'), findsOneWidget);
+      // Inside What runs by itself (P6.1), still found by its own name.
+      expect(_key('search-result-saved-permissions-entry'), findsOneWidget);
     });
 
     testWidgets('a tab result asks the shell for that tab', (tester) async {

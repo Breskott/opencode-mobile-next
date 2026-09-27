@@ -18,7 +18,6 @@ import '../../builtin/setup/setup_contract.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/profiles.dart';
-import '../../termux/team_runtime.dart';
 import '../screens/settings/plugins_screen.dart'
     show teamPhoneProfile, teamRowSubtitle;
 import '../screens/new_conversation_sheet.dart'
@@ -26,7 +25,6 @@ import '../screens/new_conversation_sheet.dart'
 import '../screens/team/team_intro_screen.dart';
 import 'builtin_team_section.dart' show BuiltinTeamSection;
 import 'team_discovery_card.dart' show TeamDiscovery;
-import 'team_phone_onboarding.dart' show teamPhoneRuntime;
 
 /// Where the AI Team of a server would run, which decides what setting it
 /// up means.
@@ -35,8 +33,8 @@ enum TeamServerKind {
   /// the app's setup, installed here and turned on per project.
   inApp,
 
-  /// OpenCode in Termux, managed by this app: the team installs into Termux
-  /// from the Termux setup screen, when this phone can run it.
+  /// OpenCode in Termux, managed by this app: the team is the same setup
+  /// component, installed into Termux's Ubuntu by the Termux host's job.
   termux,
 
   /// Any other server (a computer, a laptop, WSL): Gas City runs there and
@@ -51,24 +49,11 @@ TeamServerKind teamServerKindOf(ServerProfile profile) {
   return TeamServerKind.computer;
 }
 
-/// Whether this phone can run a team inside Termux: false when it cannot
-/// be told (a Termux that does not answer).
-Future<bool> teamTermuxSupported(TermuxTeamRuntime? runtime) async {
-  try {
-    return await (runtime ?? teamPhoneRuntime).supportsAiTeam;
-  } catch (_) {
-    return false;
-  }
-}
-
-/// Whether [profile]'s kind of server can run a team at all: always, but
-/// on a Termux phone only when its runtime can.
-Future<bool> teamPossibleOn(
-  ServerProfile profile, {
-  TermuxTeamRuntime? runtime,
-}) async => teamServerKindOf(profile) == TeamServerKind.termux
-    ? teamTermuxSupported(runtime)
-    : true;
+/// Whether New conversation offers Team on [profile]'s server: on every
+/// kind of server. A phone that cannot run a team is never hidden: Team
+/// opens the intro, whose pre-flight says why and offers a computer
+/// (programme P1.7).
+Future<bool> teamPossibleOn(ServerProfile profile) async => true;
 
 /// New conversation's Solo · Team choice, remembered per server.
 ///

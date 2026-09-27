@@ -23,7 +23,7 @@ import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/widgets/form_renderer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:opencode_mobile/ui/screens/manage_project_screen.dart';
+import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
 
 /// Audit rec UX-007: an automated gate for Android tap targets, labelled
 /// tap targets, and text contrast across the critical flows, so a shrinking
@@ -296,15 +296,13 @@ void main() {
       await _expectAccessible(tester);
     });
 
-    testWidgets('$label: manage project meets the guidelines', (tester) async {
-      final conn = await _controller(projects: const [_project]);
+    // Manage project merged into the Project tab (slice-P3.11a).
+    testWidgets('$label: the Project tab meets the guidelines', (tester) async {
+      final conn = await _controller(projects: const [_project])
+        ..directory = _project.directory;
       addTearDown(conn.dispose);
       await tester.pumpWidget(
-        _scoped(
-          conn,
-          ManageProjectScreen(controller: conn, project: _project),
-          brightness,
-        ),
+        _scoped(conn, ProjectHub(controller: conn), brightness),
       );
       await _settle(tester);
       await _expectAccessible(tester);

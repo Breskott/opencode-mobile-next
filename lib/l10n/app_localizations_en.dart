@@ -895,9 +895,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get usageTinyCost => 'Less than \$0.000001';
 
   @override
-  String get usageReportedCost => 'Reported cost · USD';
-
-  @override
   String get usageSessions => 'Conversations';
 
   @override
@@ -1289,19 +1286,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get promptStashSearch => 'Search saved prompts';
 
   @override
-  String get promptStashNoMatches =>
-      'No saved prompts match your search. Clear or change the search to see more.';
-
-  @override
   String get promptStashDeleteFailed =>
       'Could not delete this saved prompt. Try again.';
-
-  @override
-  String get promptRestoreTitle => 'Restore saved prompt?';
-
-  @override
-  String get promptRestorePreserve =>
-      'Your current prompt will be saved to the stash first, including its attachments and references.';
 
   @override
   String get promptStashDelete => 'Delete';
@@ -1309,13 +1295,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get promptStashFull =>
       'Your stash has 50 prompts. Delete a saved prompt to make room; your current prompt is unchanged.';
-
-  @override
-  String get promptStashListDescription =>
-      'Saved on this device for this server. Restoring a prompt also saves any current prompt for later.';
-
-  @override
-  String get promptStashDeleteTitle => 'Delete saved prompt?';
 
   @override
   String promptStashAttachments(int count) {
@@ -1340,24 +1319,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get promptRestoredCopyKept =>
-      'Available content restored. A saved copy remains in your stash. Review attachments and references before sending.';
-
-  @override
-  String get promptAttachmentsUnavailable =>
-      'Some attachments cannot be restored';
-
-  @override
-  String get promptRestore => 'Restore';
-
-  @override
   String get promptHistorySaveFailed =>
       'Prompt sent, but its history could not be saved on this device.';
-
-  @override
-  String promptAttachmentsUnavailableDetail(String names) {
-    return 'Missing, damaged or temporary attachments: $names. Restore the available content and reattach these files before sending. The saved copy will stay in your stash.';
-  }
 
   @override
   String get promptStashMigrationPending =>
@@ -1646,26 +1609,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Opening servers is unavailable here. Return to Home to choose a server and view Inbox.';
 
   @override
-  String get handoffTitle => 'Copy handoff reference?';
-
-  @override
-  String get handoffDisclosure =>
-      'Metadata only, not a command or link. On your other device, connect to the same server and locate this project and conversation. Nothing is published or sent.\n\nThe clipboard will contain conversation and project identifiers. Other apps may read it; share only with people you trust.';
-
-  @override
-  String get handoffCopy => 'Copy reference';
-
-  @override
-  String get handoffCopied => 'Conversation metadata reference copied';
-
-  @override
-  String get handoffCopyFailed => 'Could not copy the handoff. Try again.';
-
-  @override
   String get sessionOpenRelated => 'Open related';
 
   @override
-  String get sessionCopyHandoff => 'Copy handoff';
+  String get sessionCopyHandoff => 'Continue on computer';
 
   @override
   String get sessionActions => 'Conversation actions';
@@ -1874,21 +1821,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Runs the provider\'s sign-in method on your selected server, not on this phone. You may need to finish interactive steps on the server.';
 
   @override
-  String get commandAuthConfirmTitle => 'Start sign-in on the server?';
-
-  @override
-  String get commandAuthConfirmDetail =>
-      'OpenCode will execute this provider\'s declared sign-in method on the selected server. Continue only if you trust that server and provider. The app does not run or copy a shell command on your phone.';
-
-  @override
   String get commandAuthStart => 'Start server sign-in';
 
   @override
   String get commandAuthPending =>
       'Sign-in is pending on the server. Finish any server-side interaction, then check its status. Closing this sheet does not cancel it.';
-
-  @override
-  String get commandAuthCheck => 'Check sign-in';
 
   @override
   String get commandAuthCancel => 'Cancel sign-in';
@@ -1963,20 +1900,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get credentialManage => 'Manage accounts';
 
   @override
-  String get credentialMetadataOnly =>
-      'Only saved account labels are shown. API keys and login tokens stay on your server.';
-
-  @override
-  String get credentialActiveUnknown =>
-      'Active account unknown. The saved-account list does not report which account is active.';
-
-  @override
-  String get credentialNoneActive =>
-      'The server reported no active saved account.';
-
-  @override
-  String get credentialActiveObserved =>
-      'The Active badge reflects the latest server event.';
+  String get credentialMetadataOnly => 'Keys stay on your server.';
 
   @override
   String get credentialActiveUpdated =>
@@ -2000,11 +1924,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get credentialSave => 'Save label';
-
-  @override
-  String credentialRemoveTitle(String label) {
-    return 'Remove $label?';
-  }
 
   @override
   String get credentialRemoveDetail =>
@@ -2086,15 +2005,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not finish restoring the prompt. Saved copies remain available; check the composer before trying again.';
 
   @override
-  String get promptStashEmpty =>
-      'Nothing saved yet. Use Stash current prompt in Prompt tools to keep a prompt for later.';
-
-  @override
   String get promptStashContextOnly => 'Attachments and references';
-
-  @override
-  String get promptRestoredReferences =>
-      'Prompt restored. Saved references are snapshots; their server files may have changed.';
 
   @override
   String get promptDefaultLocation => 'the server default directory';
@@ -2111,21 +2022,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not read saved prompts. Their stored data has been kept.';
 
   @override
-  String get promptStashDeleteDetail =>
-      'This removes the saved text, attachments and references from this device.';
-
-  @override
   String get promptStashDescription =>
       'Save text, attachments and references for later';
 
   @override
-  String get promptRestoreAvailable => 'Restore available content';
-
-  @override
-  String get promptRestored => 'Prompt restored. Review it before sending.';
-
-  @override
-  String get promptStashAction => 'Stash current prompt';
+  String get promptRestored => 'Saved prompt restored';
 
   @override
   String promptStashLocation(String directory) {
@@ -2428,7 +2329,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get photoPendingOther =>
-      'A photo is waiting in its original conversation. Keep it there, or discard it before choosing another photo.';
+      'A photo is still waiting for another conversation. Add or discard it there, then try again.';
 
   @override
   String get photoUnavailable =>
@@ -2456,49 +2357,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remove an attachment first. A draft holds up to 5 files and 20 MB in total.';
 
   @override
-  String get legacyDraftsTitle => 'Older drafts';
-
-  @override
-  String get legacyDraftsDescription =>
-      'Review drafts saved before server tracking';
-
-  @override
-  String get legacyDraftsExplanation =>
-      'These drafts have no recorded server. Review their text before using it in this conversation.';
-
-  @override
-  String get legacyDraftInsertExplanation =>
-      'Insert adds this text after your current draft. The original saved copy stays here until you delete it.';
-
-  @override
-  String get legacyDraftTextOnly =>
-      'Only text can be inserted here. Any saved attachments remain with the older draft.';
-
-  @override
-  String get legacyDraftDelete => 'Delete saved copy';
-
-  @override
-  String get legacyDraftDeleteExplanation =>
-      'Permanently remove this older draft and its saved attachments from this device?';
-
-  @override
-  String get legacyDraftDeleteFailed =>
-      'The draft changed or could not be removed. Reopen it and retry.';
-
-  @override
-  String get legacyDraftInsert => 'Insert into draft';
-
-  @override
-  String get legacyDraftSearch => 'Search older drafts';
-
-  @override
-  String get legacyDraftsEmpty => 'No older drafts found';
-
-  @override
-  String get legacyDraftLocationChanged =>
-      'The project changed. Reopen Older drafts to choose where to insert the text.';
-
-  @override
   String get quotaTitle => 'Remaining usage';
 
   @override
@@ -2517,15 +2375,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'The server or project changed, or its local data is being removed. Reopen Remaining usage to review the source again.';
 
   @override
-  String get quotaSetupTitle => 'An optional collector is required';
-
-  @override
   String get quotaSetupDescription =>
-      'Needs a usage collector installed on this server. Provider tokens stay on the server.';
-
-  @override
-  String get quotaSetupGuide =>
-      'Setup instructions are in tool/quota/README.md in the app repository. This screen does not install services or remember permission after you leave.';
+      'Once it’s installed, confirm you trust it, then read. Provider tokens stay on the server.';
 
   @override
   String get quotaSetupNeeded =>
@@ -2550,10 +2401,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get quotaCollectorAuth =>
       'The collector route did not accept this server sign-in. Ask the server operator to check its authentication setup.';
-
-  @override
-  String get quotaCollectorMissing =>
-      'The optional collector route is not available on this server. Check its installation and proxy routing.';
 
   @override
   String get quotaUnavailable =>
@@ -2640,43 +2487,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quotaResetUnknown => 'Reset time not reported';
-
-  @override
-  String get quotaResetPassed =>
-      'Reset time passed — refresh to check. The displayed allowance has not been replenished locally.';
-
-  @override
-  String quotaDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count-day window',
-      one: '1-day window',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String quotaHours(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count-hour window',
-      one: '1-hour window',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String quotaSeconds(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count-second window',
-      one: '1-second window',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get quotaSourceDisclosure =>
@@ -2781,16 +2591,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'The server may have started this sign-in without confirming it. Check on the server before you start again.';
 
   @override
-  String get uncertainAuthForgetTitle => 'Forget this sign-in on this phone?';
-
-  @override
-  String get uncertainAuthForgetDetail =>
-      'This clears only the local retry block. It does not cancel sign-in on the server. Check the server first to avoid running a second sign-in. No new sign-in will start.';
-
-  @override
-  String get uncertainAuthForget => 'Forget this sign-in';
-
-  @override
   String get uncertainAuthCloseHint =>
       'Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.';
 
@@ -2859,21 +2659,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get demoSetUpServer => 'Set up your own server';
 
   @override
-  String get handoffCommandTitle => 'Continue on computer';
-
-  @override
-  String get handoffCommandDisclosure =>
-      'Run this command in a POSIX shell on a computer with OpenCode installed and access to this server. Set OPENCODE_SERVER_PASSWORD privately on that computer if the server requires it. The clipboard will contain the server address, username, project directory and conversation ID, but no password.';
-
-  @override
   String get handoffCopyCommand => 'Copy command';
-
-  @override
-  String get handoffCommandCopied => 'Resume command copied';
-
-  @override
-  String get handoffCommandUnavailable =>
-      'A resume command is unavailable for this server or cloud environment. Continuing on another computer needs a supported OpenCode command and a reachable HTTPS server; a localhost address points to each device itself. You can still copy the conversation metadata below.';
 
   @override
   String get quotaMiniMax => 'MiniMax';
@@ -3335,23 +3121,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaMonitorTitle => 'Quota monitoring';
 
   @override
-  String get quotaMonitorConsentTitle => 'Monitor this provider source?';
-
-  @override
-  String quotaMonitorConsent(String provider, String server) {
-    return 'Keep checking $provider on $server in the background and alert me when use reaches:';
-  }
-
-  @override
   String get quotaMonitorRuntime =>
       'Sources are checked in rotation, at most three per cycle; larger lists take several cycles. Background reads require the existing live service to be active; Android may stop it. Displayed readings expire when the collector says they do. Device alerts record past threshold readings, not current remaining allowance. This page never switches your active server.';
 
   @override
   String get quotaMonitorEmpty =>
       'No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.';
-
-  @override
-  String get quotaMonitorEnable => 'Enable quota monitoring';
 
   @override
   String get quotaMonitorDisabled => 'Monitoring is off.';
@@ -4778,11 +4553,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceDismissNotice => 'Dismiss';
 
   @override
-  String get workspaceManageProject => 'Manage project';
-
-  @override
   String get workspaceManageProjectHint =>
-      'Switch project, worktrees, and project health';
+      'Switch project, where it runs, and its folder';
 
   @override
   String get workspaceManage => 'Manage';
@@ -9694,41 +9466,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'No project folder is open. Choose one from Work.';
 
   @override
-  String get e7LibraryProject => 'Project';
-
-  @override
   String get e7LibrarySwitchProject => 'Switch project';
-
-  @override
-  String get e7LibraryChooseAnotherProjectOpenedByThisServer =>
-      'Choose another project opened by this server';
-
-  @override
-  String get e7LibraryCoding => 'Coding';
 
   @override
   String get e7LibraryWorktrees => 'Worktrees';
 
   @override
-  String get e7LibraryChooseAProjectFirst => 'Choose a project first';
-
-  @override
-  String get e7LibraryCreateAndManageIsolatedGitBranches =>
-      'Create and manage isolated Git branches';
-
-  @override
   String get e7LibraryManagedWorkspaces => 'Cloud environments';
 
   @override
-  String get e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked =>
-      'Create, discover, open, and remove adapter-backed environments';
-
-  @override
   String get e7LibraryProjectHealth => 'Project health';
-
-  @override
-  String get e7LibraryBranchChangedFilesLanguageServicesAndFormatters =>
-      'Branch, changed files, language services, and formatters';
 
   @override
   String get e7LibraryOpenCodeIsReconnecting => 'OpenCode is reconnecting.';
@@ -15006,98 +14753,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiPhoneOptionalTag => 'Optional · experimental';
 
   @override
-  String get teamUiPhoneOfferTitle => 'Also run an AI team on this phone';
-
-  @override
-  String get teamUiPhoneOfferBody =>
-      'Lets several coding agents work on your project while you supervise from Work. Uses the same Linux environment you just set up.';
-
-  @override
-  String teamUiPhoneOfferSize(int size) {
-    return 'Downloads about $size MB (Gas City, beads and Dolt, from each project\'s own releases).';
-  }
-
-  @override
-  String get teamUiPhoneOfferWarning =>
-      'Keep Termux open or hold its wake lock while the team works; Android may stop it in the background. Nothing is lost; runs resume when you start it again.';
-
-  @override
-  String get teamUiPhoneSkip => 'Skip for now';
-
-  @override
-  String get teamUiPhoneSetUp => 'Set up AI Team on this phone';
-
-  @override
-  String get teamUiPhoneStepDownload => 'Download & verify';
-
-  @override
-  String get teamUiPhoneStepPackages => 'Install prerequisites';
-
-  @override
-  String get teamUiPhoneStepCity => 'Create a city next to the project';
-
-  @override
-  String get teamUiPhoneStepStart => 'Start the supervisor on this phone';
-
-  @override
-  String get teamUiPhoneStepConnect => 'Connect';
-
-  @override
-  String get teamUiPhoneLeaveNote =>
-      'You can leave this screen and return to check progress.';
-
-  @override
-  String teamUiPhoneProjectLine(String path) {
-    return 'Project: $path';
-  }
-
-  @override
   String get teamUiPhoneChooseProjectTitle => 'Choose a project';
-
-  @override
-  String get teamUiPhoneChooseProjectBody =>
-      'The team works on one project folder of the phone server. A project without a git origin gets one on the phone, and the team\'s merged work comes back into the folder by itself.';
-
-  @override
-  String teamUiPhoneNoProjects(String directory) {
-    return 'No project folder yet. Name one and it will be created under $directory.';
-  }
-
-  @override
-  String get teamUiPhoneNewFolderLabel => 'Folder name';
-
-  @override
-  String get teamUiPhoneCreateAndContinue => 'Create and continue';
 
   @override
   String get teamUiPhoneContinue => 'Continue';
 
   @override
-  String get teamUiPhoneSetupRunning => 'Setting up the AI team';
-
-  @override
   String get teamUiPhoneSuccessTitle => 'AI team is running on this phone';
 
   @override
-  String teamUiPhoneAgentsReady(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count agents ready',
-      one: '1 agent ready',
-      zero: 'no agents yet',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get teamUiPhoneOpenWorkspace => 'Open Work';
-
-  @override
   String get teamUiPhoneRetry => 'Try again';
-
-  @override
-  String get teamUiPhoneFailedTitle => 'The AI team could not be set up.';
 
   @override
   String teamUiPhoneFailedChecksum(String name) {
@@ -15260,9 +14925,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Android stopped the team while the app was away. Nothing is lost.';
 
   @override
-  String get teamUiPhoneStartAgain => 'Start again';
-
-  @override
   String get teamUiPhoneKeepRunningTitle => 'Keep it running';
 
   @override
@@ -15329,9 +14991,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiPhoneReofferAction => 'Set up';
-
-  @override
-  String get teamUiPhoneOpenSetup => 'Open phone setup';
 
   @override
   String teamUiPhoneFailedNoSpace(String detail) {
@@ -18579,14 +18238,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Turn it on for each project you want it to work on.';
 
   @override
-  String get teamDiscoverUnsupportedTitle =>
-      'This phone can\'t run the AI Team';
-
-  @override
-  String get teamDiscoverUnsupportedBody =>
-      'It needs a 64-bit phone and an app build that carries the team\'s programs. A computer can run it for you instead.';
-
-  @override
   String teamDiscoverComputerTitle(String server) {
     return 'Runs on $server';
   }
@@ -21599,7 +21250,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceChooserEnterPath => 'Enter a folder path';
 
   @override
-  String get workspaceChooserRecentProjects => 'Recent projects';
+  String get workspaceChooserRecentProjects => 'Open a project you used before';
 
   @override
   String get workspaceChooserLoadFailedTitle => 'Couldn\'t load your projects';
@@ -24368,7 +24019,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String sessionRelationsCopyHandoff(String title) {
-    return 'Copy handoff for $title';
+    return 'Continue $title on computer';
   }
 
   @override
@@ -25395,10 +25046,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get webSourcesPastedLinks => 'Links you added';
 
   @override
-  String get quotaMonitorConsentDetails =>
-      'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.';
-
-  @override
   String get thisPhoneHostInApp => 'In the app';
 
   @override
@@ -26073,4 +25720,294 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get sessionsListChanged =>
       'The conversation list changed on the server. Refresh it to see older conversations.';
+
+  @override
+  String get handoffUiComputerUnsupported =>
+      'This server can’t give a command that continues a conversation on a computer.';
+
+  @override
+  String get handoffUiComputerChanged =>
+      'This conversation moved or its server changed. Go back and try again.';
+
+  @override
+  String commandAuthSheetIntro(String provider) {
+    return 'Runs this sign-in on your server, not on this phone. Start it only if you trust the server and $provider. You may need to finish steps on the server.';
+  }
+
+  @override
+  String commandAuthCheckNamed(String provider) {
+    return 'Check $provider sign-in now';
+  }
+
+  @override
+  String credentialRemoveAccountTitle(String provider, String name) {
+    return 'Remove the $provider account “$name”?';
+  }
+
+  @override
+  String credentialRemoveConfirmNamed(String name) {
+    return 'Remove “$name”';
+  }
+
+  @override
+  String quotaMonitorOffer(String provider, String server) {
+    return 'Alert me about $provider on $server';
+  }
+
+  @override
+  String quotaMonitorOfferDetail(String percent) {
+    return 'Keeps checking in the background, including after a restart, and alerts when use reaches $percent. You can change the percentage once it’s on.';
+  }
+
+  @override
+  String workspaceChooserBody(String server) {
+    return 'Conversations run inside a folder on $server.';
+  }
+
+  @override
+  String get discoverServicesAliases =>
+      'services dev server preview logs run commands processes';
+
+  @override
+  String get discoverCloudEnvironmentsAliases =>
+      'cloud environments managed workspaces remote sandbox';
+
+  @override
+  String promptRestoredWithout(String names) {
+    return 'Restored without $names; attach them again before sending';
+  }
+
+  @override
+  String get promptStashOlderDraftsWaiting =>
+      'Some older drafts have not moved here yet. They are kept on this device.';
+
+  @override
+  String get promptStashOlderDraftsFull =>
+      'Older drafts are waiting to move here. Delete saved prompts to make room.';
+
+  @override
+  String quotaAnswerLeft(String percent) {
+    return 'About $percent left';
+  }
+
+  @override
+  String quotaAnswerLeftWeek(String percent) {
+    return 'About $percent left this week';
+  }
+
+  @override
+  String quotaAnswerLeftDays(String percent, int days) {
+    return 'About $percent left in this $days-day window';
+  }
+
+  @override
+  String quotaAnswerLeftHours(String percent, int hours) {
+    return 'About $percent left in this $hours-hour window';
+  }
+
+  @override
+  String quotaAnswerResetsAt(String time) {
+    return 'resets at $time';
+  }
+
+  @override
+  String quotaAnswerResetsOn(String day) {
+    return 'resets $day';
+  }
+
+  @override
+  String get quotaAnswerResetPassed => 'reset time passed, refresh to check';
+
+  @override
+  String quotaAnswerFromCodex(String server) {
+    return 'From your Codex account on $server';
+  }
+
+  @override
+  String get quotaAnswerAgeNow => 'Last known reading, from just now';
+
+  @override
+  String quotaAnswerAgeMinutes(int minutes) {
+    return 'Last known reading, from $minutes min ago';
+  }
+
+  @override
+  String quotaAnswerAgeHours(int hours) {
+    return 'Last known reading, from $hours h ago';
+  }
+
+  @override
+  String quotaAnswerAgeDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Last known reading, from $days days ago',
+      one: 'Last known reading, from yesterday',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String quotaAnswerAlert(String percent) {
+    return 'Alert me at $percent used';
+  }
+
+  @override
+  String get quotaAnswerAlertDetail =>
+      'Says so here when a fresh reading reaches it.';
+
+  @override
+  String get quotaAnswerAlertSaveFailed =>
+      'Couldn’t save this. The alert stays as it was.';
+
+  @override
+  String quotaAnswerAttention(String percent) {
+    return 'You’ve used $percent or more of a Codex limit.';
+  }
+
+  @override
+  String quotaAnswerNotConnected(String server) {
+    return 'Connect to $server to see what’s left on its Codex account.';
+  }
+
+  @override
+  String quotaAnswerSignIn(String server) {
+    return 'Sign in to Codex on $server';
+  }
+
+  @override
+  String get quotaAnswerSignInDetail =>
+      'What’s left shows here once you’re signed in with ChatGPT.';
+
+  @override
+  String get quotaAnswerUnsupported =>
+      'This Codex sign-in has no plan limits to show. They show for ChatGPT sign-ins, not API keys.';
+
+  @override
+  String get quotaAnswerUnavailable =>
+      'Couldn’t read the Codex limits. Check the connection, then refresh.';
+
+  @override
+  String get quotaAnswerInvalid =>
+      'Codex sent limits this app can’t read. Nothing new is shown.';
+
+  @override
+  String get quotaAnswerNoWindows =>
+      'Codex reported no limits for this account.';
+
+  @override
+  String get quotaAnswerCodexNote =>
+      'Read from the Codex account on this server. Other limits, credits and model-specific caps are not included. Missing data is unknown, not unlimited.';
+
+  @override
+  String quotaNeedsCollector(String server) {
+    return 'Needs the quota collector on $server';
+  }
+
+  @override
+  String get quotaCollectorHowTo => 'How to get it';
+
+  @override
+  String quotaCollectorStepInstall(String server) {
+    return 'Ask whoever runs $server to install the quota collector from tool/quota in the app’s repository. It needs Node 20 or later.';
+  }
+
+  @override
+  String get quotaCollectorStepRoute =>
+      'They keep the provider sign-in on the server and put the collector behind the same HTTPS address and password as OpenCode.';
+
+  @override
+  String get quotaCollectorStepRetry => 'Then come back here and read again.';
+
+  @override
+  String get usageSpentToday => 'Spent today';
+
+  @override
+  String get usageSpentThirtyDays => 'Spent in the last 30 days';
+
+  @override
+  String get usageSpentYear => 'Spent this year';
+
+  @override
+  String get usageSpentAllTime => 'Spent in total';
+
+  @override
+  String usageSpentPeriod(String period) {
+    return 'Spent · $period';
+  }
+
+  @override
+  String get automationTitle => 'What runs by itself';
+
+  @override
+  String get automationSearchAliases =>
+      'automation automatic supervision auto approve approvals always allow permissions background watch monitor team level';
+
+  @override
+  String automationIntro(String server) {
+    return 'What the app and the agent do on $server without asking you first.';
+  }
+
+  @override
+  String get automationSaveFailed =>
+      'This choice wasn\'t saved on this phone. The level above is still the one in use; try again.';
+
+  @override
+  String get automationSaving => 'Saving…';
+
+  @override
+  String get automationEmptyTitle => 'Nothing runs by itself here';
+
+  @override
+  String get automationEmptyBody =>
+      'This server has no AI Team, doesn\'t keep always allowed actions and can\'t be watched in the background.';
+
+  @override
+  String get automationTeamLabel => 'How much the AI Team decides alone';
+
+  @override
+  String get automationTeamFootnote =>
+      'New team tasks start at this level. You can pick another level for one task when you start it.';
+
+  @override
+  String get automationWithoutAskingLabel => 'Without asking you';
+
+  @override
+  String get automationSavedRulesDetail =>
+      'What the agent may run here without asking you.';
+
+  @override
+  String get automationWatchTitle => 'Watch in the background';
+
+  @override
+  String get automationWatchDetail =>
+      'Checks for requests while the app is closed. Set in Notifications.';
+
+  @override
+  String get automationValueOn => 'On';
+
+  @override
+  String get automationValueOff => 'Off';
+
+  @override
+  String phoneSetupStartTermuxProgressHeadline(int percent) {
+    return 'Setup in Termux is $percent% done';
+  }
+
+  @override
+  String get teamPhoneReadyChooseTitle => 'Choose the team\'s project';
+
+  @override
+  String get teamPhoneReadyTurningOnTitle => 'Turning on AI Team';
+
+  @override
+  String get teamPhoneReadyFailedTitle => 'AI Team didn\'t start';
+
+  @override
+  String teamPhoneReadyBody(String project) {
+    return 'Give it a first task. It plans the work, shares it between its agents and brings the result back into $project.';
+  }
+
+  @override
+  String get teamPhoneReadyFirstTask => 'Give the team a first task';
 }

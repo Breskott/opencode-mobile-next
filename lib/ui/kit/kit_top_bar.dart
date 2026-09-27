@@ -508,6 +508,7 @@ class _KitTopBarActions extends StatelessWidget {
         text: copyText,
         icon: action.icon ?? AppIconography.copy,
         shortcut: action.shortcut,
+        redact: action.redact,
       );
     }
     final onPressed = action.onPressed;
@@ -529,6 +530,7 @@ class _KitTopBarActions extends StatelessWidget {
         text: copyText,
         tooltip: action.label,
         shortcut: action.shortcut,
+        redact: action.redact,
       );
     }
     return KitIconButton(

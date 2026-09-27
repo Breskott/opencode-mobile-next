@@ -11,7 +11,6 @@ import 'package:opencode_mobile/builtin/builtin_folders.dart';
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/manage_project_screen.dart';
 import 'package:opencode_mobile/ui/screens/global_sessions_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_folder_actions.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
@@ -509,20 +508,20 @@ void main() {
       findsNothing,
     );
 
+    // The project sheet switches and chooses where it runs; the project's
+    // tools live on the Project tab (Manage project merged there,
+    // slice-P3.11a), so the sheet has no Manage project row.
     await tester.tap(find.byKey(const ValueKey('current-project-entry')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('manage-project-entry')));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(ManageProjectScreen), findsOneWidget);
-    for (final key in const [
-      'switch-project-entry',
-      'worktrees-entry',
-      'managed-workspaces-entry',
-      'project-health-entry',
-    ]) {
-      expect(find.byKey(ValueKey(key)), findsOneWidget, reason: key);
-    }
+    expect(
+      find.byKey(const ValueKey('workspace-context-sheet')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('context-switch-project')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('manage-project-entry')), findsNothing);
   });
 
   testWidgets('the quick-ask pill stays reachable without scrolling', (

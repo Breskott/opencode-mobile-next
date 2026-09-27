@@ -242,7 +242,7 @@ class _KitNeedsYouBadge extends StatefulWidget {
 class _KitNeedsYouBadgeState extends State<_KitNeedsYouBadge>
     with SingleTickerProviderStateMixin {
   /// A third of the pill's height past the child's top-end corner.
-  static const double _offset = KitTokens.badgeHeight / 3;
+  static const double _offset = KitTokens.badgeOffset;
 
   final GlobalKey _childKey = GlobalKey();
 
