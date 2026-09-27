@@ -21214,4 +21214,77 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get kitToolNotRun => 'Not run';
+
+  @override
+  String get kitToolWaiting => 'Waiting';
+
+  @override
+  String get kitToolRunning => 'Running';
+
+  @override
+  String get kitToolWaitingForYou => 'Waiting for you';
+
+  @override
+  String get kitToolDone => 'Done';
+
+  @override
+  String get kitToolFailed => 'Failed';
+
+  @override
+  String get kitToolStopped => 'Stopped';
+
+  @override
+  String get kitToolBackground => 'Started in the background';
+
+  @override
+  String kitToolTookSeconds(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString seconds',
+      one: '1 second',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitToolTookMinutes(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString minutes',
+      one: '1 minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitToolForMinutes(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString min',
+      one: '1 min',
+      zero: 'under a minute',
+    );
+    return 'for $_temp0';
+  }
+
+  @override
+  String get kitToolOpenConversation => 'Open its conversation';
 }
