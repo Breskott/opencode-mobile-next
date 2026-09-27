@@ -21402,12 +21402,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{Waits on 1 step} other{Waits on {count} steps}}'**
   String teamUiWorkWaitsOn(int count);
 
-  /// Run Overview usage chip: Gas City usage is city-level (today), never per run; {usage} is the est. cost and compact tokens
-  ///
-  /// In en, this message translates to:
-  /// **'Team today · {usage}'**
-  String teamUiUsageChip(String usage);
-
   /// A cost figure with the estimate suffix; every cost the plugin shows carries it (05-beads TEAM-113)
   ///
   /// In en, this message translates to:
@@ -22625,18 +22619,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Supervision {level}. Boundaries: {boundaries}'**
   String teamUiPolicySemantics(String level, String boundaries);
-
-  /// AI Team home, under the Runs list: switch that reveals the host's own housekeeping runs (patrols, chores), hidden by default; count is how many there are
-  ///
-  /// In en, this message translates to:
-  /// **'Show team upkeep ({count})'**
-  String teamUiHomeUpkeepToggle(int count);
-
-  /// One line under the Show team upkeep switch saying what upkeep runs are
-  ///
-  /// In en, this message translates to:
-  /// **'Patrols and chores the host runs for itself'**
-  String get teamUiHomeUpkeepHint;
 
   /// AI Team home Agents list: the collapsed group of agents switched off (suspended or stopped) on the host; count is how many
   ///
@@ -35259,12 +35241,6 @@ abstract class AppLocalizations {
   /// **'switched off until someone wakes it'**
   String get teamAgentsPausedHint;
 
-  /// AI Team agents list: button in a paused agent's row that asks the host to resume that agent. {name} is the agent's name or role, e.g. 'Wake furiosa'.
-  ///
-  /// In en, this message translates to:
-  /// **'Wake {name}'**
-  String teamAgentsWake(String name);
-
   /// AI Team work sheet title when the item the person opened is no longer listed by the host.
   ///
   /// In en, this message translates to:
@@ -40356,13 +40332,13 @@ abstract class AppLocalizations {
   /// AI Team page: under today's spend; never a task's cost.
   ///
   /// In en, this message translates to:
-  /// **'The whole team since midnight where it runs, estimated'**
+  /// **'The whole team since midnight where it runs, estimated. The host doesn’t report what each task cost.'**
   String get teamHomeSpentHint;
 
-  /// AI Team page: under today's spend when part of it is unpriced or history is missing.
+  /// AI Team page: under today's spend when part of it has no price.
   ///
   /// In en, this message translates to:
-  /// **'Some of today’s use has no price yet, so it cost more than this'**
+  /// **'Some of today’s use has no price yet, so it cost more than this.'**
   String get teamHomeSpentPartial;
 
   /// AI Team page while off, on a computer: discovery found no team. {server} is the server's name.
@@ -41504,6 +41480,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This is a Tailscale address: is Tailscale on, on this phone and on the server?'**
   String get connectionFailureTailnetCheck;
+
+  /// AI Team page: under today's spend when the host says part of today's history is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Part of today’s history is missing, so it cost more than this.'**
+  String get teamHomeSpentHistoryMissing;
+
+  /// AI Team page: under today's spend when the host has stopped recording new usage.
+  ///
+  /// In en, this message translates to:
+  /// **'The team isn’t counting new use right now.'**
+  String get teamHomeSpentNotRecording;
+
+  /// A task's Details: the host reports no cost for a single task, only the whole team's day.
+  ///
+  /// In en, this message translates to:
+  /// **'Not reported for one task. The AI Team page shows today’s estimate for the whole team.'**
+  String get teamRunCostUnreported;
+
+  /// AI Team page agents row: how many live agents' sessions ended in an error.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} crashed'**
+  String teamHomeAgentsRowCrashed(int count);
+
+  /// AI Team page agents row: agents switched off on purpose.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} paused'**
+  String teamHomeAgentsRowPaused(int count);
+
+  /// AI Team page agents row: agents the app keeps off on its own phone team to save the phone.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} kept off on this phone'**
+  String teamHomeAgentsRowKeptOff(int count);
+
+  /// AI Team page: the row saying what the host's own upkeep runs are doing.
+  ///
+  /// In en, this message translates to:
+  /// **'Team upkeep'**
+  String get teamHomeUpkeepTitle;
+
+  /// AI Team page upkeep row: the host checking on its agents.
+  ///
+  /// In en, this message translates to:
+  /// **'Patrol'**
+  String get teamHomeUpkeepPatrol;
+
+  /// AI Team page upkeep row: any other housekeeping run.
+  ///
+  /// In en, this message translates to:
+  /// **'Chore'**
+  String get teamHomeUpkeepChore;
+
+  /// AI Team page upkeep row: one kind of upkeep with how many and its state, e.g. 'Patrol ×4 · planning'.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{kind} · {state}} other{{kind} ×{count} · {state}}}'**
+  String teamHomeUpkeepGroup(int count, String kind, String state);
+
+  /// Agents list: tells two supervisors apart; this one looks after the whole team.
+  ///
+  /// In en, this message translates to:
+  /// **'whole team'**
+  String get teamAgentLooksAfterTeam;
+
+  /// Agents list: tells two supervisors apart; this one keeps the other supervisor running.
+  ///
+  /// In en, this message translates to:
+  /// **'watchdog'**
+  String get teamAgentLooksAfterWatchdog;
+
+  /// Agents list: tells two supervisors apart; this one watches the workers.
+  ///
+  /// In en, this message translates to:
+  /// **'workers'**
+  String get teamAgentLooksAfterWorkers;
+
+  /// Agents list: an agent the app keeps off on its own phone team.
+  ///
+  /// In en, this message translates to:
+  /// **'Off on this phone'**
+  String get teamAgentsKeptOff;
+
+  /// Agents list: why an agent is off on the phone's own team.
+  ///
+  /// In en, this message translates to:
+  /// **'kept off so the phone can run the team'**
+  String get teamAgentsKeptOffHint;
+
+  /// Agents list: one action that wakes every paused agent.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Wake the paused agents} =1{Wake the paused agent} other{Wake the {count} paused agents}}'**
+  String teamAgentsWakePaused(int count);
+
+  /// Agents list: what waking the paused agents does.
+  ///
+  /// In en, this message translates to:
+  /// **'They start again one at a time and pick up waiting work.'**
+  String get teamAgentsWakePausedHint;
+
+  /// Agents list: a wake the host did not confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'The team didn’t answer in time. Starting agents can keep it busy for a minute or two, so no more were woken. Check again in a minute.'**
+  String get teamAgentsWakeUnconfirmed;
+
+  /// Agents list: the host refused a wake.
+  ///
+  /// In en, this message translates to:
+  /// **'The team didn’t wake them. Open an agent to see how it stands, or try again later.'**
+  String get teamAgentsWakeRefused;
+
+  /// Agents list: the wake is being sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Waking…'**
+  String get teamAgentsWaking;
+
+  /// Agents list: reads the team again after a wake it did not confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get teamAgentsWakeCheckAgain;
 }
 
 class _AppLocalizationsDelegate

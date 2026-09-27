@@ -13244,11 +13244,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String teamUiUsageChip(String usage) {
-    return 'Team today · $usage';
-  }
-
-  @override
   String teamUiUsageCostEstimated(String cost) {
     return '$cost est.';
   }
@@ -13976,15 +13971,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String teamUiPolicySemantics(String level, String boundaries) {
     return 'Supervision $level. Boundaries: $boundaries';
   }
-
-  @override
-  String teamUiHomeUpkeepToggle(int count) {
-    return 'Show team upkeep ($count)';
-  }
-
-  @override
-  String get teamUiHomeUpkeepHint =>
-      'Patrols and chores the host runs for itself';
 
   @override
   String teamUiHomeSuspendedGroup(int count) {
@@ -22220,11 +22206,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamAgentsPausedHint => 'switched off until someone wakes it';
 
   @override
-  String teamAgentsWake(String name) {
-    return 'Wake $name';
-  }
-
-  @override
   String get teamWorkSheetMissingTitle => 'Work item gone';
 
   @override
@@ -25633,11 +25614,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamHomeSpentHint =>
-      'The whole team since midnight where it runs, estimated';
+      'The whole team since midnight where it runs, estimated. The host doesn’t report what each task cost.';
 
   @override
   String get teamHomeSpentPartial =>
-      'Some of today’s use has no price yet, so it cost more than this';
+      'Some of today’s use has no price yet, so it cost more than this.';
 
   @override
   String teamIntroNotFound(String server) {
@@ -26390,4 +26371,96 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get connectionFailureTailnetCheck =>
       'This is a Tailscale address: is Tailscale on, on this phone and on the server?';
+
+  @override
+  String get teamHomeSpentHistoryMissing =>
+      'Part of today’s history is missing, so it cost more than this.';
+
+  @override
+  String get teamHomeSpentNotRecording =>
+      'The team isn’t counting new use right now.';
+
+  @override
+  String get teamRunCostUnreported =>
+      'Not reported for one task. The AI Team page shows today’s estimate for the whole team.';
+
+  @override
+  String teamHomeAgentsRowCrashed(int count) {
+    return '$count crashed';
+  }
+
+  @override
+  String teamHomeAgentsRowPaused(int count) {
+    return '$count paused';
+  }
+
+  @override
+  String teamHomeAgentsRowKeptOff(int count) {
+    return '$count kept off on this phone';
+  }
+
+  @override
+  String get teamHomeUpkeepTitle => 'Team upkeep';
+
+  @override
+  String get teamHomeUpkeepPatrol => 'Patrol';
+
+  @override
+  String get teamHomeUpkeepChore => 'Chore';
+
+  @override
+  String teamHomeUpkeepGroup(int count, String kind, String state) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$kind ×$count · $state',
+      one: '$kind · $state',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamAgentLooksAfterTeam => 'whole team';
+
+  @override
+  String get teamAgentLooksAfterWatchdog => 'watchdog';
+
+  @override
+  String get teamAgentLooksAfterWorkers => 'workers';
+
+  @override
+  String get teamAgentsKeptOff => 'Off on this phone';
+
+  @override
+  String get teamAgentsKeptOffHint => 'kept off so the phone can run the team';
+
+  @override
+  String teamAgentsWakePaused(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Wake the $count paused agents',
+      one: 'Wake the paused agent',
+      zero: 'Wake the paused agents',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamAgentsWakePausedHint =>
+      'They start again one at a time and pick up waiting work.';
+
+  @override
+  String get teamAgentsWakeUnconfirmed =>
+      'The team didn’t answer in time. Starting agents can keep it busy for a minute or two, so no more were woken. Check again in a minute.';
+
+  @override
+  String get teamAgentsWakeRefused =>
+      'The team didn’t wake them. Open an agent to see how it stands, or try again later.';
+
+  @override
+  String get teamAgentsWaking => 'Waking…';
+
+  @override
+  String get teamAgentsWakeCheckAgain => 'Check again';
 }
