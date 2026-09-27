@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/codex/gateway.dart'
     show codexServerCapabilities;
@@ -72,6 +73,9 @@ Future<void> _pumpChat(
     ProviderScope(
       overrides: [connProvider.overrideWithValue(controller)],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+
         home: ChatScreen(
           sessionID: 'thread-1',
           initialText: initialText,
@@ -345,6 +349,9 @@ void main() {
     );
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+
         home: Scaffold(
           body: PermissionSheet(
             permission: permission,

@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart'
     show KitCodeBlock, KitMarkdown, KitMotion, KitTurn;
 import 'package:opencode_mobile/api/models.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
@@ -541,6 +542,9 @@ Future<ConnectionController> _pumpChat(
     ProviderScope(
       overrides: [connProvider.overrideWithValue(activeController)],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
             context,
@@ -573,6 +577,9 @@ Future<ConnectionController> _pumpProvisionalChat(
     ProviderScope(
       overrides: [connProvider.overrideWithValue(controller)],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
             context,
@@ -1600,7 +1607,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(sessionID: 'session-1'),
+        ),
       ),
     );
     await tester.pump();
@@ -1655,7 +1666,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(sessionID: 'session-1'),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -1933,7 +1948,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(sessionID: 'session-1'),
+        ),
       ),
     );
     await tester.pump();
@@ -1982,7 +2001,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(sessionID: 'session-1'),
+        ),
       ),
     );
     await tester.pump();
@@ -3230,7 +3253,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(sessionID: 'session-1'),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -3304,7 +3331,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(sessionID: 'session-1'),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -3343,6 +3374,9 @@ void main() {
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
         child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+
           home: ChatScreen(
             sessionID: 'session-1',
             initialAttachments: [
@@ -3684,7 +3718,11 @@ void main() {
         overrides: [connProvider.overrideWithValue(controller)],
         child: MediaQuery(
           data: const MediaQueryData(textScaler: TextScaler.linear(2)),
-          child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ChatScreen(sessionID: 'session-1'),
+          ),
         ),
       ),
     );
@@ -3970,6 +4008,9 @@ void main() {
         ProviderScope(
           overrides: [connProvider.overrideWithValue(controller)],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+
             theme: AppTheme.dark(),
             home: const ChatScreen(sessionID: 'session-1'),
           ),
@@ -4035,13 +4076,25 @@ void main() {
         tester.widget<BottomSheet>(find.byType(BottomSheet)).showDragHandle,
         isNot(false),
       );
-      final launcherList = tester.widget<ListView>(
-        find.byKey(const Key('command-launcher-list')),
+      // Focus the launcher's search, then drag its list: the keyboard
+      // focus releases here too.
+      await tester.tap(find.byKey(const Key('command-launcher-search')));
+      await tester.pump();
+      final launcherSearch = tester.widget<EditableText>(
+        find.descendant(
+          of: find.byKey(const Key('command-launcher-search')),
+          matching: find.byType(EditableText),
+        ),
       );
-      expect(
-        launcherList.keyboardDismissBehavior,
-        ScrollViewKeyboardDismissBehavior.onDrag,
+      expect(launcherSearch.focusNode.hasFocus, isTrue);
+      // The list is taller than the sheet: drag from its visible top.
+      await tester.dragFrom(
+        tester.getTopLeft(find.byKey(const Key('command-launcher-list'))) +
+            const Offset(24, 24),
+        const Offset(0, -120),
       );
+      await tester.pumpAndSettle();
+      expect(launcherSearch.focusNode.hasFocus, isFalse);
     },
   );
 
@@ -4075,7 +4128,11 @@ void main() {
         overrides: [connProvider.overrideWithValue(controller)],
         child: const MediaQuery(
           data: MediaQueryData(textScaler: TextScaler.linear(2)),
-          child: MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ChatScreen(sessionID: 'session-1'),
+          ),
         ),
       ),
     );
@@ -4197,7 +4254,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(sessionID: 'session-1'),
+        ),
       ),
     );
     await tester.pump();
@@ -4238,6 +4299,9 @@ void main() {
         ProviderScope(
           overrides: [connProvider.overrideWithValue(controller)],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+
             home: ChatScreen(
               sessionID: 'session-1',
               initialAttachments: [
@@ -4794,6 +4858,9 @@ void main() {
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+
           home: ChatScreen(
             sessionID: 'session-1',
             initialAttachments: List.generate(
@@ -4827,6 +4894,9 @@ void main() {
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
         child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+
           home: ChatScreen(
             sessionID: 'session-1',
             initialAttachments: [
@@ -5139,6 +5209,9 @@ void main() {
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
               context,

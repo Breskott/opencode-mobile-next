@@ -270,6 +270,7 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet> {
         fill: true,
         // The modal route draws the one handle (the theme's drag handle).
         handle: false,
+        dismissKeyboardOnDrag: true,
         loading: agentTab ? widget.controller.catalogLoading : widget.loading(),
         onClose: () => Navigator.pop(context),
         child: Column(

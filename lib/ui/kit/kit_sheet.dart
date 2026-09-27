@@ -241,6 +241,7 @@ class KitSheet extends StatelessWidget {
     this.handle = true,
     this.fill = false,
     this.onPullDown,
+    this.dismissKeyboardOnDrag = false,
   });
 
   /// The place in the person's words, at most four words.
@@ -272,6 +273,10 @@ class KitSheet extends StatelessWidget {
   /// A swipe down on the handle or header, where the frame owns the drag
   /// (a sheet guarding unsaved input).
   final VoidCallback? onPullDown;
+
+  /// A drag on the body closes the keyboard (a searchable sheet: the
+  /// search field above, results below).
+  final bool dismissKeyboardOnDrag;
 
   /// Closes the sheet [context] is inside with [result]: the person chose
   /// an action, so nothing is asked.
@@ -365,6 +370,9 @@ class KitSheet extends StatelessWidget {
     // with the body ("a short window lets the header scroll with the body").
     final scroll = CustomScrollView(
       shrinkWrap: !fill,
+      keyboardDismissBehavior: dismissKeyboardOnDrag
+          ? ScrollViewKeyboardDismissBehavior.onDrag
+          : null,
       slivers: [
         const _KitHeaderSpacer(),
         SliverToBoxAdapter(
