@@ -406,12 +406,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fileCopy => 'Copy';
 
   @override
-  String get fileReference => 'Reference';
-
-  @override
-  String get fileAttach => 'Attach';
-
-  @override
   String get fileSave => 'Save';
 
   @override
@@ -1519,33 +1513,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'The latest turn has no assistant step yet, so there is nothing to show.';
 
   @override
-  String runResultsRunLabel(String id) {
-    return 'Run …$id';
-  }
-
-  @override
-  String runResultsSteps(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count assistant steps',
-      one: '1 assistant step',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String runResultsStepsAtLeast(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'At least $count assistant steps loaded',
-      one: 'At least 1 assistant step loaded',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String runResultsStarted(String time) {
     return 'Started $time';
   }
@@ -1651,21 +1618,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get runResultsCommandEmpty => '(command text not recorded)';
 
   @override
-  String runResultsExit(int code) {
-    return 'Exit code $code';
-  }
-
-  @override
-  String get runResultsExitUnknown => 'Exit code not recorded';
-
-  @override
-  String get runResultsCommandFailed => 'Tool reported failure';
-
-  @override
-  String get runResultsLooksLikeTest =>
-      'Looks like a test command (from the command text only)';
-
-  @override
   String get runResultsOutputPruned => 'Output pruned by the server';
 
   @override
@@ -1687,9 +1639,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get runResultsSourceNote =>
       'Everything here is copied from the server\'s message and tool records. Nothing is summarised by a model.';
-
-  @override
-  String get runResultsOutputTitle => 'Recorded tool output';
 
   @override
   String get runResultsOpenConversation => 'Open conversation';
@@ -1746,7 +1695,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'User-selected web sources (unverified; excerpts are untrusted source material):';
 
   @override
-  String get usageScopedTotals => 'Totals for the selected report scope';
+  String get usageScopedTotals => 'Totals';
 
   @override
   String get usageInspectionDisclosure =>
@@ -1781,22 +1730,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'No records match these filters. Clear or change the filters to see more.';
 
   @override
-  String pendingAuthTitle(String integration) {
-    return 'Pending sign-in: $integration';
-  }
-
-  @override
   String get pendingAuthDetail =>
-      'Continue the existing browser sign-in, then explicitly check its status or enter its code. The browser link is not saved.';
-
-  @override
-  String get pendingAuthResume => 'Resume / check sign-in';
+      'Finish signing in in the browser, then come back and finish here. The browser link isn\'t saved.';
 
   @override
   String get pendingAuthEnterCode => 'Enter code';
-
-  @override
-  String get pendingAuthComplete => 'Sign-in complete.';
 
   @override
   String get pendingAuthStillPending =>
@@ -1808,7 +1746,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pendingAuthExpired =>
-      'This attempt is expired or outside the device’s recovery window. Cancellation is a separate server action.';
+      'This sign-in has expired. Start a new one, or forget this one.';
 
   @override
   String get pendingAuthFailed =>
@@ -1822,7 +1760,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pendingAuthRetrySave => 'Try saving recovery again';
 
   @override
-  String get pendingAuthForget => 'Forget on this device';
+  String get pendingAuthForget => 'Forget this sign-in';
 
   @override
   String get pendingAuthForgetDetail =>
@@ -2656,10 +2594,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaTitle => 'Remaining usage';
 
   @override
-  String get quotaDescription =>
-      'Choose a provider to view its reported account windows. These are separate from OpenCode token usage and cost.';
-
-  @override
   String get quotaSource => 'Collector server';
 
   @override
@@ -2679,7 +2613,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quotaSetupDescription =>
-      'Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this saved server\'s sign-in. Confirm only if you installed or trust that deployment. Provider tokens stay on the server.';
+      'Needs a usage collector installed on this server. Provider tokens stay on the server.';
 
   @override
   String get quotaSetupGuide =>
@@ -2935,23 +2869,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setupCheckAgain => 'Try again';
 
   @override
-  String uncertainAuthTitle(String integrationID) {
-    return 'Unconfirmed sign-in: $integrationID';
-  }
-
-  @override
   String get uncertainAuthDetail =>
-      'The server may have started sign-in, but no attempt ID was received. Check on the server before starting again.';
+      'The server may have started this sign-in without confirming it. Check on the server before you start again.';
 
   @override
-  String get uncertainAuthForgetTitle => 'Forget uncertain start?';
+  String get uncertainAuthForgetTitle => 'Forget this sign-in on this phone?';
 
   @override
   String get uncertainAuthForgetDetail =>
       'This clears only the local retry block. It does not cancel sign-in on the server. Check the server first to avoid running a second sign-in. No new sign-in will start.';
 
   @override
-  String get uncertainAuthForget => 'Forget uncertain start';
+  String get uncertainAuthForget => 'Forget this sign-in';
 
   @override
   String get uncertainAuthCloseHint =>
@@ -3146,7 +3075,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaGlmMcpWindow => 'Reported MCP window';
 
   @override
-  String get usageBudgetTitle => 'Personal consumption budgets';
+  String get usageBudgetTitle => 'Budgets';
 
   @override
   String get usageBudgetDescription =>
@@ -3184,7 +3113,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Previous reading reached this budget. Refresh to check current consumption.';
 
   @override
-  String get usageBudgetClearAll => 'Clear saved consumption budgets';
+  String get usageBudgetClearAll => 'Clear both budgets';
 
   @override
   String get usageBudgetClearDescription =>
@@ -3333,11 +3262,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get monitorCheckInDetail =>
-      'Shows when busy checks span the chosen time. Work may pause or restart between checks. At most one notification is attempted per observed interval, while Keep live is on.';
+      'Remind me when a run has been busy this long.';
 
   @override
   String get monitorCheckInDetailForeground =>
-      'Shows a check-in row when busy checks span the chosen time. Work may pause or restart between checks. This device cannot deliver reminders in the background.';
+      'Show a reminder row when a run has been busy this long.';
 
   @override
   String get monitorCheckInAfter => 'Check in after';
@@ -3528,7 +3457,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mobileTaskPriorityLow => 'Low priority';
 
   @override
-  String get pluginMappingClearAll => 'Clear personal links';
+  String get pluginMappingClearAll => 'Clear personal command links';
 
   @override
   String get pluginMappingClearTitle => 'Clear all personal command links?';
@@ -3551,8 +3480,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaMonitorConsentTitle => 'Monitor this provider source?';
 
   @override
-  String get quotaMonitorConsent =>
-      'Allow this app to keep reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. Personal page thresholds are separate. No service is started here.';
+  String quotaMonitorConsent(String provider, String server) {
+    return 'Keep checking $provider on $server in the background and alert me when use reaches:';
+  }
 
   @override
   String get quotaMonitorRuntime =>
@@ -3595,7 +3525,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not save quota monitoring. A failed disable stays paused in this app; retry before closing the app.';
 
   @override
-  String get quotaMonitorDisable => 'Disable quota monitoring';
+  String quotaMonitorDisable(String provider, String server) {
+    return 'Stop monitoring $provider on $server';
+  }
 
   @override
   String get setupChooseServerTitle => 'Choose your server setup';
@@ -5979,7 +5911,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SharedEnterANumber => 'Enter a number';
 
   @override
-  String get e7SharedDismissThisRequest => 'Dismiss this request?';
+  String get e7SharedDismissThisRequest => 'Decline this request?';
 
   @override
   String get e7SharedTheAgentContinuesWithoutYourAnswers =>
@@ -6879,15 +6811,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SettingsAlphaBody =>
-      'This independent app is built heavily with AI assistance. Android is the primary supported platform. Desktop builds are experimental and have not been hardware-tested. Report what breaks to help improve the app.';
+      'Android is the supported platform; desktop builds are experimental.';
 
   @override
   String get e7SettingsNonAffiliation =>
       'OpenCode Mobile is an independent community project. It is not built, maintained, endorsed by, or affiliated with the official OpenCode team.';
-
-  @override
-  String get e7SettingsOriginalLicenses =>
-      'Third-party license notices below are reproduced in their original language.';
 
   @override
   String e7SettingsDiagnosticSendError(String error) {
@@ -9960,33 +9888,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LibraryChooseModel => 'Choose model';
 
   @override
-  String get e7LibraryChange => 'Change';
-
-  @override
   String get e7LibrarySearchTools => 'Search tools';
 
   @override
   String e7LibrarySearchTools2(String detail1) {
     return 'Search $detail1 tools';
   }
-
-  @override
-  String e7LibraryUsable(String detail1) {
-    return '$detail1 usable';
-  }
-
-  @override
-  String e7LibraryRegistered(String detail1) {
-    return '$detail1 registered';
-  }
-
-  @override
-  String get e7LibraryBackgroundSubagentsEnabled =>
-      'Background subagents enabled';
-
-  @override
-  String get e7LibraryBackgroundSubagentsUnavailable =>
-      'Background subagents unavailable';
 
   @override
   String get e7LibraryRegisteredInventoryUnavailable =>
@@ -10486,17 +10393,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Finish authentication in the browser, then check its status.';
 
   @override
-  String get e7LibraryFinish => 'Finish';
-
-  @override
-  String get e7LibraryCheck => 'Check';
-
-  @override
-  String e7LibraryConnecting2(String detail1) {
-    return 'Connecting $detail1';
-  }
-
-  @override
   String get e7LibraryAuthenticationOptions => 'Authentication options';
 
   @override
@@ -10578,11 +10474,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LibraryMCPUnavailable => 'MCP unavailable';
 
   @override
-  String get e7LibraryMCPAndIntegrations => 'MCP and integrations';
-
-  @override
-  String get e7LibraryTheModelProvidersThisOpenCodeServerCan =>
-      'The model providers this OpenCode server can use. Connect one to start chatting.';
+  String get e7LibraryMCPAndIntegrations => 'Providers and MCP';
 
   @override
   String get e7LibraryCouldNotSaveSignInRecovery =>
@@ -10639,10 +10531,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LibraryResources => 'Resources';
-
-  @override
-  String get e7LibraryFilesAndDataThatConnectedMCPServers =>
-      'Files and data that connected MCP servers expose to the agent.';
 
   @override
   String get e7LibraryLoadingAvailableResources =>
@@ -12199,7 +12087,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7ModelUiFavoritesFailed => 'Could not save favorites. Try again.';
 
   @override
-  String get e7ModelUiUseModelMode => 'Use model and mode';
+  String e7ModelUiUseModelMode(String model, String agent) {
+    return 'Use $model · $agent';
+  }
 
   @override
   String get e7ModelUiUseSession => 'Use for this conversation';
@@ -12227,8 +12117,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7VoiceUiChooseModel => 'Choose a multilingual Whisper INT8 model';
 
   @override
-  String get e7VoiceUiPrivacyDownload =>
-      'Audio stays on this device. Transcription is local and audio is discarded after use. The one-time model download requires internet access.';
+  String get e7VoiceUiPrivacyDownload => 'Audio never leaves this phone.';
 
   @override
   String get e7VoiceUiNoBuiltInMic =>
@@ -12296,7 +12185,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7VoiceUiRedownload => 'Re-download';
 
   @override
-  String get e7VoiceUiReviewTranscript => 'Review transcript';
+  String get e7VoiceUiReviewTranscript => 'Transcript';
 
   @override
   String get e7VoiceUiOpenSettings => 'Open app settings';
@@ -12417,7 +12306,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7VoiceUiDeletePack(String model) {
-    return 'Delete $model?';
+    return 'Delete $model speech model?';
   }
 
   @override
@@ -12747,7 +12636,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get handoffUiPhoneIntro =>
-      'Scan this with OpenCode Mobile on the other phone. The code carries only this saved server’s ID and the conversation ID: no messages, no address, no password. The other phone must already have this server saved.';
+      'Scan with OpenCode Mobile on the other phone. The code holds only the server and conversation IDs.';
 
   @override
   String get handoffUiPhoneQrLabel =>
@@ -16004,7 +15893,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notifyQuotaAlertsDetail =>
-      'When a monitored provider passes the threshold you set in Usage. An alert records a past reading, not what remains now.';
+      'When a monitored provider passes the threshold you set in Usage.';
 
   @override
   String get notifyBlockedTitle => 'Notifications are off for this app';
@@ -16024,8 +15913,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Confirms whether Android is actually delivering this app\'s notifications right now.';
 
   @override
-  String get notifyQuietDetail =>
-      'No notifications during these local times, for every server and for quota alerts. Checks continue.';
+  String get notifyQuietDetail => 'Silence notifications during these hours.';
 
   @override
   String get notifySectionBackground => 'Background';
@@ -16058,15 +15946,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shellTabProject => 'Project';
-
-  @override
-  String get projectHubFilesSubtitle => 'Browse and preview project files';
-
-  @override
-  String get projectHubChangesSubtitle => 'Review uncommitted changes';
-
-  @override
-  String get projectHubSearchSubtitle => 'Find a file by name';
 
   @override
   String get serverSwitcherManage => 'Manage servers';
@@ -18071,7 +17950,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'How long each step took while the app has been open: connecting, loading, every request to the server. Kept in memory only and cleared when the app closes. The report holds names and timings, never messages or passwords.';
 
   @override
-  String get perfTraceCopy => 'Copy report';
+  String get perfTraceCopy => 'Copy timing report';
 
   @override
   String get perfTraceClear => 'Clear';
@@ -18569,13 +18448,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String pluginsTeamRowFound(String server) {
     return 'Found on $server';
   }
-
-  @override
-  String get pluginsSectionMore => 'More plugin actions';
-
-  @override
-  String get pluginsDescriptionShort =>
-      'Loaded by the server for this project.';
 
   @override
   String get pluginsLoading => 'Loading plugins';
@@ -23114,9 +22986,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneServerCardRemoveOpenCode => 'Remove OpenCode';
 
   @override
-  String get runResultViewOutputTitle => 'What it did';
-
-  @override
   String get productStatesActionFailedTitle => 'Couldn\'t finish that';
 
   @override
@@ -23547,7 +23416,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get catalogScreenNoProviderBody =>
-      'Only signed-in providers\' models are listed. Connect one to choose a model.';
+      'Connect a provider to choose a model.';
 
   @override
   String get catalogScreenConnectProvider => 'Connect a provider';
@@ -23974,35 +23843,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get reviewRevertChooseLabel => 'Choose what happens';
-
-  @override
   String get reviewRevertRestoreTitle => 'Put everything back';
 
   @override
-  String get reviewRevertRestoreLine =>
-      'Bring back the hidden messages and the files as they were.';
+  String get reviewRevertKeepTitle => 'Delete the hidden messages';
 
   @override
-  String get reviewRevertKeepTitle => 'Keep the undo';
+  String get reviewRevertKeepConfirmTitle =>
+      'Delete the hidden messages for good?';
 
   @override
-  String get reviewRevertKeepLine =>
-      'Delete the hidden messages for good. This can\'t be undone.';
-
-  @override
-  String get reviewRevertKeepConfirmTitle => 'Keep the undo for good?';
-
-  @override
-  String get reviewRevertKeepConfirmBody =>
-      'The hidden prompt and everything after it are deleted from this conversation. This can\'t be undone.';
+  String get reviewRevertKeepConfirmBody => 'This can\'t be undone.';
 
   @override
   String get reviewRevertKeepConfirmAction => 'Delete hidden messages';
 
   @override
   String get reviewRevertKeepConsequenceMessages =>
-      'The hidden messages are deleted';
+      'The hidden prompt and every message after it are deleted';
 
   @override
   String get reviewRevertKeepConsequenceFiles => 'Files stay as they are now';
@@ -24254,12 +24112,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String voiceSetupRedownloadPack(String model) {
-    return 'Download $model again';
+    return 'Download $model speech model again';
   }
 
   @override
-  String voiceSetupDeletePack(String model) {
-    return 'Delete $model';
+  String voiceSetupDeletePack(String model, String size) {
+    return 'Delete $model speech model ($size)';
   }
 
   @override
@@ -24336,7 +24194,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bugReportLinkCopied => 'Bug form link copied';
 
   @override
-  String get runningWorkTitle => 'Running now';
+  String get runningWorkTitle => 'Work in this conversation';
 
   @override
   String get runningWorkFailed => 'Failed';
@@ -24392,7 +24250,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get runningWorkBackgroundBody =>
-      'This conversation waits for the work above. Keep chatting instead: the work goes on running on the server and its results come back here.';
+      'The work keeps running on the server and its results come back here.';
 
   @override
   String get runningWorkBackgroundAction => 'Keep chatting while it runs';
@@ -24534,22 +24392,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String sessionContextVerdictPlenty(String percent) {
-    return '$percent % used · plenty left';
+    return '$percent% used · plenty left';
   }
 
   @override
   String sessionContextVerdictUsed(String percent) {
-    return '$percent % used';
+    return '$percent% used';
   }
 
   @override
   String sessionContextVerdictNear(String percent) {
-    return '$percent % used · near the limit';
+    return '$percent% used';
   }
 
   @override
   String sessionContextVerdictFull(String percent) {
-    return '$percent % used · at the limit';
+    return '$percent% used · at the limit';
   }
 
   @override
@@ -24877,8 +24735,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Done · $count added',
-      one: 'Done · 1 added',
+      other: 'Add $count sources to prompt',
+      one: 'Add 1 source to prompt',
     );
     return '$_temp0';
   }
@@ -25522,4 +25380,316 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamChatGoneOpenTeam => 'Open AI Team page';
+
+  @override
+  String activityFinishedRow(String when) {
+    return 'Finished · $when';
+  }
+
+  @override
+  String get activityOfflineRequests =>
+      'Requests can\'t load while you\'re offline.';
+
+  @override
+  String connectionReconnectTo(String server) {
+    return 'Reconnect to $server';
+  }
+
+  @override
+  String workspaceIsolatedTaskRow(String project) {
+    return 'New task in a fresh worktree of $project';
+  }
+
+  @override
+  String get workspaceIsolatedTaskRowDetail =>
+      'Works on a separate copy so your main folder stays untouched.';
+
+  @override
+  String get workspaceSearchAllDetail =>
+      'Every project on this server, archived ones too';
+
+  @override
+  String serverDisconnectFrom(String server) {
+    return 'Disconnect from $server';
+  }
+
+  @override
+  String get localAgentStopNamed => 'Stop Claude Code';
+
+  @override
+  String get localAgentStartNamed => 'Start Claude Code';
+
+  @override
+  String monitorSwitchToTitle(String server) {
+    return 'Switch to $server?';
+  }
+
+  @override
+  String monitorSwitchTo(String server) {
+    return 'Switch to $server';
+  }
+
+  @override
+  String servicesStartNamed(String service) {
+    return 'Start $service';
+  }
+
+  @override
+  String servicesStopNamed(String service) {
+    return 'Stop $service';
+  }
+
+  @override
+  String get teamDiscoverTurnOnNamed => 'Turn on AI Team';
+
+  @override
+  String serverSettingsChangeSignIn(String server) {
+    return 'Change sign-in for $server';
+  }
+
+  @override
+  String serverSettingsAuthBasic(String user) {
+    return 'Basic authentication as $user';
+  }
+
+  @override
+  String get serverSettingsUpdateHint =>
+      'Uses OpenCode\'s official installer; restart the server afterwards.';
+
+  @override
+  String get settingsHubThisPhone => 'This phone';
+
+  @override
+  String get settingsHubHelpRow => 'Help';
+
+  @override
+  String get settingsHubHelpSubtitle =>
+      'Guide, tips, shortcuts and diagnostics';
+
+  @override
+  String get settingsHubModelRow => 'Model';
+
+  @override
+  String get notifyTurnOnInAndroid => 'Turn on notifications in Android';
+
+  @override
+  String get serversAddOtherWays => 'Or connect another way';
+
+  @override
+  String get libraryImportAConversation => 'Import a conversation';
+
+  @override
+  String get catalogScreenNoProviderTitle => 'No models yet';
+
+  @override
+  String runResultsStepsShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count steps',
+      one: '1 step',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String runResultsStepsShortAtLeast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'At least $count steps',
+      one: 'At least 1 step',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get runResultsUnderAMinute => 'under a minute';
+
+  @override
+  String runResultsMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String runResultsHoursMinutes(int hours, int minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
+  String get runResultsHowMade => 'How this was put together';
+
+  @override
+  String get runResultsRunIdLabel => 'Run id';
+
+  @override
+  String get runResultsAgentLabel => 'Agent';
+
+  @override
+  String runResultsCommandFailedExit(int code) {
+    return 'Failed · exit $code';
+  }
+
+  @override
+  String runResultsCommandPassedExit(int code) {
+    return 'Passed · exit $code';
+  }
+
+  @override
+  String get runResultsCommandFailedNoExit => 'Failed · exit not recorded';
+
+  @override
+  String get runResultsExitNotRecorded => 'Exit not recorded';
+
+  @override
+  String get projectHubHealthSubtitle =>
+      'Branch, language services and formatters';
+
+  @override
+  String get projectHubCopyFolderPath => 'Copy folder path';
+
+  @override
+  String get terminalScreenNoTerminalThisServer =>
+      'This server doesn\'t share a terminal';
+
+  @override
+  String terminalScreenNoTerminalNamed(String server) {
+    return '$server doesn\'t share a terminal';
+  }
+
+  @override
+  String get terminalScreenNoTerminalWhy =>
+      'Terminals open here only on servers that share them.';
+
+  @override
+  String get integrationsSignInWaiting => 'Sign-in waiting';
+
+  @override
+  String get integrationsSignInMayNotHaveStarted =>
+      'Sign-in may not have started';
+
+  @override
+  String get integrationsSignInExpired => 'Sign-in expired';
+
+  @override
+  String get integrationsSignInFailed => 'Sign-in failed';
+
+  @override
+  String get integrationsSignInComplete => 'Signed in · tap to finish';
+
+  @override
+  String integrationsFinishSigningIn(String provider) {
+    return 'Finish signing in to $provider';
+  }
+
+  @override
+  String integrationsEnterCodeFor(String provider) {
+    return 'Enter code for $provider';
+  }
+
+  @override
+  String integrationsCancelSignInFor(String provider) {
+    return 'Cancel $provider sign-in';
+  }
+
+  @override
+  String get integrationsForgetSignInOnPhone =>
+      'Forget this sign-in on this phone';
+
+  @override
+  String integrationsSignInActions(String provider) {
+    return 'Sign-in actions for $provider';
+  }
+
+  @override
+  String integrationsAccountCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count accounts',
+      one: '1 account',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get toolsScreenNoBackgroundSubagents => 'no background subagents';
+
+  @override
+  String get usageRefreshSpending => 'Refresh spending';
+
+  @override
+  String get quotaSetupTrustNote =>
+      'Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this saved server\'s sign-in. Confirm only if you installed or trust that deployment.';
+
+  @override
+  String get quotaAlertsRowTitle => 'Quota alerts';
+
+  @override
+  String get quotaAlertsRowSupporting => 'Sound, Wi-Fi only and quiet hours';
+
+  @override
+  String modelPickerUseModel(String model) {
+    return 'Use $model';
+  }
+
+  @override
+  String get modelPickerUseChosenModel => 'Use model';
+
+  @override
+  String get handoffUiComputerCommandLabel => 'Terminal command';
+
+  @override
+  String get formRendererDecline => 'Decline this request';
+
+  @override
+  String get perfTraceActions => 'Timing report actions';
+
+  @override
+  String appDiagnosticsCopyCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Copy $count errors',
+      one: 'Copy 1 error',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String appDiagnosticsActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Actions for $count errors',
+      one: 'Actions for 1 error',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String voiceSetupNotDownloaded(String size) {
+    return 'Not downloaded · $size';
+  }
+
+  @override
+  String get voiceSetupDone => 'Done';
+
+  @override
+  String get voiceAllowMicInSettings => 'Allow microphone in Android settings';
+
+  @override
+  String sessionContextMessagesSplit(String count, String yours, String agent) {
+    return '$count ($yours yours, $agent agent)';
+  }
+
+  @override
+  String get webSourcesClose => 'Close';
+
+  @override
+  String get webSourcesPastedLinks => 'Links you added';
+
+  @override
+  String get quotaMonitorConsentDetails =>
+      'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.';
 }
