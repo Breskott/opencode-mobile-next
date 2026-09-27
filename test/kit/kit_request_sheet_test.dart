@@ -23,6 +23,7 @@ import 'package:opencode_mobile/ui/widgets/request_routes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'kit_harness.dart';
+import 'kit_motion_still.dart';
 
 const _ifIgnored = 'The agent waits; nothing is lost.';
 const _command = 'flutter test --concurrency=1 test/offline_queue_test.dart';
@@ -223,6 +224,31 @@ bool _focusOn(WidgetTester tester, Finder target) {
 }
 
 void main() {
+  Future<void> openMotionRequest(BuildContext context) async {
+    await showKitRequestSheet(
+      context,
+      card: _permission(),
+      routes: RequestRoutes(),
+      fullText: _command,
+    );
+  }
+
+  kitMotionStillTests(
+    'showKitRequestSheet',
+    opens: {
+      'permission': KitMotionOpen(
+        openMotionRequest,
+        shows: 'Run a shell command',
+      ),
+    },
+    changes: {
+      'dismissed': kitModalDismiss(
+        openMotionRequest,
+        shows: 'Run a shell command',
+      ),
+    },
+  );
+
   setUp(() => SharedPreferences.setMockInitialValues({}));
   tearDown(() => debugPlatformCapabilities = null);
 

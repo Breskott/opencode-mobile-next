@@ -14,6 +14,7 @@ import 'package:opencode_mobile/ui/kit/kit_date_time_picker.dart';
 import 'package:opencode_mobile/ui/kit/kit_field.dart';
 import 'package:opencode_mobile/ui/kit/kit_row.dart';
 import 'package:opencode_mobile/ui/kit/kit_segmented.dart';
+import 'kit_motion_still.dart';
 
 final _today = DateTime(2026, 10, 1);
 final _fixture = DateTime(2026, 10, 3);
@@ -100,6 +101,85 @@ Future<void> _key(WidgetTester tester, LogicalKeyboardKey key) async {
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitDateTimeRow',
+    builds: {
+      'empty': () => KitDateTimeRow.date(
+        title: 'Due date',
+        value: null,
+        onChanged: (_) {},
+      ),
+    },
+    changes: {
+      'value set': KitMotionChange(
+        build: () => KitDateTimeRow.date(
+          title: 'Due date',
+          value: null,
+          onChanged: (_) {},
+        ),
+        act: (tester, stage) => stage.rebuild(
+          KitDateTimeRow.date(
+            title: 'Due date',
+            value: DateTime(2026, 9, 28),
+            onChanged: (_) {},
+          ),
+        ),
+        hides: 'Not set',
+      ),
+    },
+  );
+  Future<void> openMotionDate(BuildContext context) async {
+    await showKitDatePicker(
+      context,
+      title: 'Due date',
+      initial: DateTime(2026, 9, 28),
+    );
+  }
+
+  Future<void> openMotionTime(BuildContext context) async {
+    await showKitTimePicker(
+      context,
+      title: 'Start time',
+      initial: const TimeOfDay(hour: 14, minute: 30),
+    );
+  }
+
+  Future<void> openMotionDateTime(BuildContext context) async {
+    await showKitDateTimePicker(
+      context,
+      title: 'Start date and time',
+      initial: DateTime(2026, 9, 28, 14, 30),
+    );
+  }
+
+  kitMotionStillTests(
+    'showKitDatePicker',
+    opens: {'date': KitMotionOpen(openMotionDate, shows: 'Due date')},
+    changes: {'dismissed': kitModalDismiss(openMotionDate, shows: 'Due date')},
+  );
+  kitMotionStillTests(
+    'showKitTimePicker',
+    opens: {'time': KitMotionOpen(openMotionTime, shows: 'Start time')},
+    changes: {
+      'dismissed': kitModalDismiss(openMotionTime, shows: 'Start time'),
+    },
+  );
+  kitMotionStillTests(
+    'showKitDateTimePicker',
+    opens: {
+      'date and time': KitMotionOpen(
+        openMotionDateTime,
+        shows: 'Start date and time',
+      ),
+    },
+    changes: {
+      'dismissed': kitModalDismiss(
+        openMotionDateTime,
+        shows: 'Start date and time',
+      ),
+    },
+  );
+
   group('showKitDatePicker', () {
     testWidgets('its route is named by the title and a day is returned', (
       tester,

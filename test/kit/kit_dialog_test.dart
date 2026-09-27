@@ -18,6 +18,7 @@ import 'package:opencode_mobile/ui/kit/kit_technical_value.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'kit_harness.dart';
+import 'kit_motion_still.dart';
 
 const _title = 'Rename conversation';
 const _fieldKey = ValueKey('dialog-field');
@@ -72,6 +73,35 @@ Future<void> _key(WidgetTester tester, LogicalKeyboardKey key) async {
 }
 
 void main() {
+  Future<void> openMotionAlert(BuildContext context) => showKitAlert(
+    context,
+    title: 'File unavailable',
+    body: 'Try opening the file again.',
+  );
+  Future<void> openMotionInput(BuildContext context) async {
+    await showKitInputDialog(
+      context,
+      title: 'Rename project',
+      label: 'Project name',
+      confirmLabel: 'Rename',
+    );
+  }
+
+  kitMotionStillTests(
+    'showKitAlert',
+    opens: {'alert': KitMotionOpen(openMotionAlert, shows: 'File unavailable')},
+    changes: {
+      'dismissed': kitModalDismiss(openMotionAlert, shows: 'File unavailable'),
+    },
+  );
+  kitMotionStillTests(
+    'showKitInputDialog',
+    opens: {'input': KitMotionOpen(openMotionInput, shows: 'Rename project')},
+    changes: {
+      'dismissed': kitModalDismiss(openMotionInput, shows: 'Rename project'),
+    },
+  );
+
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   testWidgets('1. opens with the field focused, the text selected, and the '
