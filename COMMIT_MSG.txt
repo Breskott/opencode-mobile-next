@@ -1,10 +1,9 @@
-feat(setup): add guarded configuration review backend and UI contract [skip ci]
+feat(setup): add durable Termux host for shared setup engine [skip ci]
 
-Add redacted OC1/OC2 config and MCP inspection, typed review and audit APIs,
-local structured setup guidance, and an explicitly opt-in cached MCP registry.
-Document the frontend contract and server capability gaps. Keep production
-writes and AI sessions disabled where reversible changes or restricted agent
-execution cannot be verified. Include focused behavior and lifecycle tests.
+Run the shared component job in Termux with durable progress, restore, resume
+and scoped cancellation. Keep RUN_COMMAND permission checks and guard host
+identity at the connection step. Document the UI integration API and add
+focused behavior tests. Flutter and Android runtime checks remain unrun.
 
 Co-Authored-By: Codex (gpt-6-astra) <noreply@openai.com>
 Claude-Session: https://claude.ai/code/session_01G7Gr8TYUhyCJ169CtNjJB1

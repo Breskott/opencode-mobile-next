@@ -7,21 +7,28 @@ import 'package:flutter/foundation.dart';
 import '../../diagnostics/perf_trace.dart';
 import '../../l10n/app_localizations.dart';
 import '../../termux/bridge.dart' show TermuxRuntime;
+import '../../ui/kit/kit_redact.dart';
 import '../builtin_linux.dart';
 import 'components.dart';
 import 'setup_contract.dart';
 import 'setup_scripts.dart';
+import 'termux_setup_host.dart';
+
+/// The installation and server host; runtime selects OpenCode's protocol.
+enum SetupHostKind { builtin, termux }
 
 /// What the engine asks of the app once OpenCode is installed: start the
-/// in-app server for [runtime] and connect to it.
+/// server for [runtime] on [SetupFinishRequest.host] and connect to it.
 @immutable
 class SetupFinishRequest {
   const SetupFinishRequest({
     required this.runtime,
     required this.openCodeChanged,
     this.version,
+    this.host = SetupHostKind.builtin,
   });
 
+  final SetupHostKind host;
   final TermuxRuntime runtime;
 
   /// OpenCode was installed or updated by this job, so a server already
@@ -69,6 +76,34 @@ class ChannelSetupEngine implements SetupEngine {
        _clock = clock ?? DateTime.now {
     _progress = _WatchedProgress(_watchersChanged);
   }
+
+  /// Uses the same component engine inside Termux's proot-distro Ubuntu.
+  /// [finisher] must start and authenticate the Termux server, returning null
+  /// only after connection succeeds. No built-in server fallback is used.
+  factory ChannelSetupEngine.termux({
+    required SetupFinisher finisher,
+    AppLocalizations Function()? strings,
+    List<SetupComponent> Function(
+      AppLocalizations l10n,
+      Map<String, Map<String, String>> params,
+    )?
+    components,
+    Duration pollInterval = const Duration(milliseconds: 500),
+    Duration readTimeout = const Duration(seconds: 10),
+    DateTime Function()? clock,
+  }) => ChannelSetupEngine(
+    linux: TermuxSetupHost(),
+    finisher: finisher,
+    strings: strings,
+    components: components,
+    pollInterval: pollInterval,
+    readTimeout: readTimeout,
+    clock: clock,
+  );
+
+  /// Fixed for this instance, including restoration and the finish request.
+  SetupHostKind get host =>
+      _linux is TermuxSetupHost ? SetupHostKind.termux : SetupHostKind.builtin;
 
   final BuiltinLinux _linux;
 
@@ -126,6 +161,8 @@ class ChannelSetupEngine implements SetupEngine {
 
   /// The last job given to the native runner by this engine.
   String? _handedOver;
+  bool _handoverUncertain = false;
+  String? _handoverError;
   String? _finishing;
   Timer? _poll;
   bool _polling = false;
@@ -146,6 +183,13 @@ class ChannelSetupEngine implements SetupEngine {
     _starting = true;
     _cancelRequested = false;
     try {
+      if (_handoverUncertain) {
+        await _refresh();
+        if (_handoverUncertain || _progress.value.state == SetupState.running) {
+          _ensurePolling();
+          return;
+        }
+      }
       final last = await _read();
       if (last != null && last.state == 'running') {
         // Already running (the app came back to it): watch, do not restart.
@@ -153,7 +197,11 @@ class ChannelSetupEngine implements SetupEngine {
         _ensurePolling();
         return;
       }
-      await _start(ids, effectiveJobParams(params, last));
+      final effectiveParams = effectiveJobParams(params, last);
+      if (host == SetupHostKind.termux) {
+        TermuxSetupHost.validateParams(effectiveParams);
+      }
+      await _start(ids, effectiveParams);
     } finally {
       _starting = false;
     }
@@ -242,6 +290,23 @@ class ChannelSetupEngine implements SetupEngine {
         },
       );
     } on BuiltinLinuxException catch (error) {
+      if (host == SetupHostKind.termux) {
+        // Native persists before dispatch. A lost RUN_COMMAND reply is not
+        // proof of a failed install; reconcile without launching another job.
+        _handedOver = jobId;
+        _handoverUncertain = true;
+        _handoverError = KitRedact.text(error.message);
+        try {
+          await _refresh();
+        } on BuiltinLinuxException {
+          // Keep the locally running state until durable status is available.
+        } on TimeoutException {
+          // The next poll resolves the handover; never infer failure here.
+        } finally {
+          _ensurePolling();
+        }
+        return;
+      }
       _emitLocal(
         jobId,
         _afterChecks(job, checks),
@@ -260,8 +325,11 @@ class ChannelSetupEngine implements SetupEngine {
         // The next read shows how the job ended.
       }
     }
-    await _refresh();
-    _ensurePolling();
+    try {
+      await _refresh();
+    } finally {
+      _ensurePolling();
+    }
   }
 
   Map<String, Object?> _spec(
@@ -399,6 +467,21 @@ class ChannelSetupEngine implements SetupEngine {
     if (record.state == 'running') _ensurePolling();
   }
 
+  /// Continues the saved selection and parameters after a cold restart.
+  /// A running job is observed, never duplicated; completed jobs are left alone.
+  Future<void> resume() async {
+    final record = await _read();
+    if (record == null) return;
+    _show(record);
+    if (record.state == 'running') {
+      _ensurePolling();
+    } else if (record.canContinue) {
+      await run({
+        for (final component in record.components) component.id,
+      }, params: record.params);
+    }
+  }
+
   @override
   Future<Set<String>> installedOptional() async {
     final optional = [
@@ -437,9 +520,10 @@ class ChannelSetupEngine implements SetupEngine {
     } catch (error, stack) {
       // Polling is the only way the screens see the job, and the only way
       // the app's own step gets run: one bad read must never end it.
-      debugPrint('setup: status poll failed: $error\n$stack');
+      debugPrint(KitRedact.text('setup: status poll failed: $error\n$stack'));
     }
-    if (!_disposed && (_progress.watched || _jobRunning)) {
+    if (!_disposed &&
+        (_progress.watched || _jobRunning || _handoverUncertain)) {
       _poll = Timer(pollInterval, _tick);
     } else {
       _polling = false;
@@ -449,8 +533,32 @@ class ChannelSetupEngine implements SetupEngine {
 
   Future<void> _refresh({Duration? timeout}) async {
     final record = await _read(timeout: timeout);
+    if (_handoverUncertain) {
+      _handoverUncertain = false;
+      final error = _handoverError;
+      _handoverError = null;
+      if (record?.jobId != _handedOver) {
+        final current = _progress.value;
+        _emitLocal(
+          current.jobId!,
+          {for (final component in current.components) component.id: component},
+          0,
+          state: SetupState.failed,
+          error: error,
+        );
+        return;
+      }
+    }
     if (record == null) return;
     _show(record);
+    if (host == SetupHostKind.termux &&
+        record.state == 'running' &&
+        _cancelRequested) {
+      // A cancel during a lost start reply must survive until status recovers.
+      // Keep the flag through failures so polling retries before any finisher.
+      await _linux.cancelSetup();
+      return;
+    }
     if (record.state == 'running' &&
         record.current == SetupComponentIds.start &&
         _finishing != record.jobId) {
@@ -474,6 +582,7 @@ class ChannelSetupEngine implements SetupEngine {
           'setup.finish',
           () => finish(
             SetupFinishRequest(
+              host: host,
               runtime: TermuxRuntime.parse(step.data['runtime']),
               openCodeChanged: step.data['openCodeChanged'] == 'true',
               version: version,
@@ -489,28 +598,63 @@ class ChannelSetupEngine implements SetupEngine {
         jobId: record.jobId,
         id: SetupComponentIds.start,
         ok: error == null,
-        error: error,
-        version: version,
+        error: error == null ? null : KitRedact.text(error),
+        version: version == null ? null : KitRedact.text(version),
       );
     } on BuiltinLinuxException {
-      // The next poll shows whatever the job did.
+      // The acknowledgement may have been lost. Let the next poll either
+      // observe completion or retry the idempotent finish on this same job.
+      _finishing = null;
+      return;
     }
-    await _refresh();
+    try {
+      await _refresh();
+    } on BuiltinLinuxException {
+      // Poll again; failure to read is not evidence the finish was lost.
+    } on TimeoutException {
+      // A late status reply is recoverable on the next poll.
+    }
   }
 
   Future<SetupJobRecord?> _read({Duration? timeout}) async {
     final String? text;
+    final limit =
+        timeout ?? (host == SetupHostKind.termux ? readTimeout : null);
     try {
       final read = _linux.setupStatus();
-      text = await (timeout == null ? read : read.timeout(timeout));
+      text = await (limit == null ? read : read.timeout(limit));
     } on BuiltinLinuxException {
+      if (host == SetupHostKind.termux) rethrow;
       return null;
     } on TimeoutException {
-      debugPrint('setup: status read took over ${timeout!.inSeconds} s');
+      if (host == SetupHostKind.termux) rethrow;
+      debugPrint('setup: status read took over ${limit!.inSeconds} s');
       return null;
     }
     final record = SetupJobRecord.parse(text);
-    if (record != null) _record = record;
+    if (host == SetupHostKind.termux &&
+        text != null &&
+        text.trim().isNotEmpty &&
+        record == null) {
+      throw const BuiltinLinuxException(
+        'The saved Termux setup could not be read.',
+        code: 'setup_status_invalid',
+      );
+    }
+    if (record != null) {
+      // Hostless records predate host selection and belong only to built-in.
+      final recordedHost = record.host ?? SetupHostKind.builtin.name;
+      if (recordedHost != host.name) {
+        throw const BuiltinLinuxException(
+          'The saved setup belongs to a different host.',
+          code: 'setup_host_mismatch',
+        );
+      }
+      if (host == SetupHostKind.termux) {
+        TermuxSetupHost.validateParams(record.params);
+      }
+      _record = record;
+    }
     return record;
   }
 
@@ -771,8 +915,11 @@ class SetupJobRecord {
     this.error,
     this.logTail = '',
     this.params = const {},
+    this.host,
   });
 
+  /// Missing only for legacy built-in jobs.
+  final String? host;
   final String jobId;
 
   /// running | done | failed | cancelled | interrupted
@@ -832,6 +979,7 @@ class SetupJobRecord {
     }
     return SetupJobRecord(
       jobId: jobId,
+      host: _string(decoded['host']),
       state: _string(decoded['state']) ?? 'interrupted',
       current: _string(decoded['current']),
       components: [

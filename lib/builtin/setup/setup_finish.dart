@@ -35,6 +35,10 @@ class BuiltinSetupFinisher {
 
   Future<String?> call(SetupFinishRequest request) async {
     final l10n = strings();
+    // A Termux job must never create/start the in-app Ubuntu profile.
+    if (request.host != SetupHostKind.builtin) {
+      return l10n.phoneSetupErrorCannotStart;
+    }
     final two = request.runtime == TermuxRuntime.openCode2;
     final profile = await ensureBuiltinProfile(
       store,
