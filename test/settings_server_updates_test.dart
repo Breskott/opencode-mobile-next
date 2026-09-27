@@ -234,9 +234,13 @@ void main() {
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-server');
 
-    expect(find.text('Server updates are managed externally'), findsOneWidget);
+    // The row is the copy and names the server; no trailing copy icon.
+    expect(find.textContaining('Copy update commands for '), findsOneWidget);
     expect(
-      find.textContaining('official upgrade and model-refresh commands'),
+      find.text(
+        "Run them in a terminal on the server's computer; this app can't "
+        'update it.',
+      ),
       findsOneWidget,
     );
   });

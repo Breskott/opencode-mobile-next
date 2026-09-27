@@ -189,13 +189,8 @@ void main() {
         ),
         findsOneWidget,
       );
-      // Last on the page, after its divider.
-      final divider = _row('server-disconnect-divider');
-      expect(divider, findsOneWidget);
-      expect(
-        tester.getTopLeft(disconnect).dy,
-        greaterThan(tester.getBottomLeft(divider).dy),
-      );
+      // Last on the page, one section gap below the rest: no divider.
+      expect(_row('server-disconnect-divider'), findsNothing);
       expect(
         tester.getTopLeft(disconnect).dy,
         greaterThan(

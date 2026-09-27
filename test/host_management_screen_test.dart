@@ -90,10 +90,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(HostManagementScreen), findsOneWidget);
+    // Titled with the server; one line says where the commands run, and
+    // no "This server" group repeats the server's address and version.
+    expect(find.text('Linux service for Dev workstation'), findsOneWidget);
     expect(
-      find.textContaining('the app cannot run them for you'),
+      find.text(
+        "These commands run on Dev workstation's computer; copy each into "
+        'a terminal there.',
+      ),
       findsOneWidget,
     );
+    expect(find.text('This server'), findsNothing);
+    expect(find.text('http://192.0.2.20:4747'), findsNothing);
     // The setup command carries the profile's exact port.
     expect(find.textContaining('OPENCODE_PORT=4747'), findsOneWidget);
     await tester.drag(find.byType(ListView).last, const Offset(0, -800));
