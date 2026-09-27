@@ -10,7 +10,8 @@ import 'report_problem.dart';
 import 'report_problem_capture.dart';
 
 /// The app's one persisted problem report, opened once per process by
-/// `main()` right after error capture is installed.
+/// `main()` after the first frame. In-memory error capture is installed before
+/// `runApp`, so opening storage can import early failures without blocking paint.
 ///
 /// It keeps what a crash would otherwise take with it: errors (through the
 /// shared [AppDiagnosticsController]), finished OCTRACE timings, the typed
