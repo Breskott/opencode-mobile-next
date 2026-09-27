@@ -459,7 +459,7 @@ void main() {
     expect(repository.addCalls, 1);
     expect(controller.reloadCalls, 1);
     // The saved state replaces the form: what happened and what is left.
-    expect(find.text('Saved docs in OpenCode'), findsOneWidget);
+    expect(find.text('Saved docs on this server'), findsOneWidget);
     expect(find.byKey(const ValueKey('mcp-saved-status')), findsOneWidget);
     expect(find.textContaining("didn't reconnect"), findsOneWidget);
     expect(find.byKey(const ValueKey('mcp-retry-reconnect')), findsOneWidget);

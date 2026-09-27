@@ -23182,7 +23182,7 @@
       }
     }
   },
-  "kitCapServerAnyTitle": "A server to work on",
+  "kitCapServerAnyTitle": "Server to work on",
   "@kitCapServerAnyTitle": {
     "description": "KitCapabilityExplainer: the name of the capability \"server.any\", shown as the title of the dimmed row or the missing state"
   },
@@ -23286,7 +23286,7 @@
   "@kitCapPhoneTermuxOffer": {
     "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"phone.termux\" at the moment of need, beside its button and \"Not now\""
   },
-  "kitCapPhoneAnyTitle": "A server on this phone",
+  "kitCapPhoneAnyTitle": "Server on this phone",
   "@kitCapPhoneAnyTitle": {
     "description": "KitCapabilityExplainer: the name of the capability \"phone.any\", shown as the title of the dimmed row or the missing state"
   },
@@ -23542,7 +23542,7 @@
   "@kitCapAgentA2aOffer": {
     "description": "KitCapabilityExplainer: the one-sentence turn-on offer for \"agent.a2a\" at the moment of need, beside its button and \"Not now\""
   },
-  "kitCapFlagFileBrowsingTerminalTitle": "Files and Terminal",
+  "kitCapFlagFileBrowsingTerminalTitle": "Files and terminal",
   "@kitCapFlagFileBrowsingTerminalTitle": {
     "description": "KitCapabilityExplainer: the name of the capability \"flag:fileBrowsing+terminal\", shown as the title of the dimmed row or the missing state"
   },
@@ -23606,7 +23606,7 @@
   "@kitCapFlagRemoteUpgradeWhy": {
     "description": "KitCapabilityExplainer: why the capability \"flag:remoteUpgrade\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
   },
-  "kitCapFlagPromptAttachmentsTitle": "Photos and files in prompts",
+  "kitCapFlagPromptAttachmentsTitle": "Attach photos and files",
   "@kitCapFlagPromptAttachmentsTitle": {
     "description": "KitCapabilityExplainer: the name of the capability \"flag:promptAttachments\", shown as the title of the dimmed row or the missing state"
   },
@@ -23990,7 +23990,7 @@
   },
   "managedWorkspacesRemoveAction": "Remove",
   "@managedWorkspacesRemoveAction": {
-    "description": "Cloud environments: the one verb for removing an environment (menu item and confirm button)."
+    "description": "Cloud environments: the menu item that removes an environment."
   },
   "managedWorkspacesRemoved": "{name} was removed",
   "@managedWorkspacesRemoved": {
@@ -24123,7 +24123,7 @@
       }
     }
   },
-  "projectFolderMissingTitle": "No folder there",
+  "projectFolderMissingTitle": "Create this folder?",
   "@projectFolderMissingTitle": {
     "description": "Open folder: the typed folder does not exist."
   },
@@ -24135,7 +24135,7 @@
   "@projectFolderOpenFailedTitle": {
     "description": "Folder flows: title when opening a folder failed."
   },
-  "projectsOneFolderTitle": "This server works in one folder",
+  "projectsOneFolderTitle": "Server uses one folder",
   "@projectsOneFolderTitle": {
     "description": "Projects, on a server that cannot switch projects (Codex, Paseo): the state title"
   },
@@ -24175,7 +24175,7 @@
       }
     }
   },
-  "servicesForgetTitle": "Forget the last run of {name}?",
+  "servicesForgetTitle": "Forget {name}'s last run?",
   "@servicesForgetTitle": {
     "description": "Development services: the question before clearing an unconfirmed run record",
     "placeholders": {
@@ -24213,7 +24213,7 @@
   "@servicesProjectFolder": {
     "description": "Development services: the label of the project path in Details"
   },
-  "servicesWorkspace": "Workspace",
+  "servicesWorkspace": "Environment",
   "@servicesWorkspace": {
     "description": "Development services: the label of the workspace id in Details"
   },
@@ -24331,7 +24331,7 @@
   "@notifySendingTest": {
     "description": "Notifications: why the send test row is resting while a test is on its way."
   },
-  "notifyNoServersTitle": "No saved servers to watch",
+  "notifyNoServersTitle": "No servers to watch",
   "@notifyNoServersTitle": {
     "description": "Notifications: row in the saved servers section when there are none."
   },
@@ -24379,7 +24379,7 @@
   "@privacyDeleting": {
     "description": "Privacy and local data: accessible name of the loading bar while a delete runs."
   },
-  "privacyDeleteQueuedCount": "{count, plural, =0{Delete} one{Delete 1 queued prompt} other{Delete {count} queued prompts}}",
+  "privacyDeleteQueuedCount": "{count, plural, =0{Delete queued prompts} one{Delete 1 queued prompt} other{Delete {count} queued prompts}}",
   "@privacyDeleteQueuedCount": {
     "description": "Privacy and local data: confirm button that deletes the queued prompts, with their count.",
     "placeholders": {
@@ -24388,7 +24388,7 @@
       }
     }
   },
-  "privacyDeleteDraftsCount": "{count, plural, =0{Delete} one{Delete 1 draft} other{Delete {count} drafts}}",
+  "privacyDeleteDraftsCount": "{count, plural, =0{Delete drafts} one{Delete 1 draft} other{Delete {count} drafts}}",
   "@privacyDeleteDraftsCount": {
     "description": "Privacy and local data: confirm button that deletes the unsent drafts, with their count.",
     "placeholders": {
@@ -24478,7 +24478,7 @@
   "@guideStepTwoPaste": {
     "description": "Setup guide step 2 without a camera; names the real Servers buttons"
   },
-  "guidePhonePathTitle": "No computer? Run it on this phone",
+  "guidePhonePathTitle": "Use this phone instead",
   "@guidePhonePathTitle": {
     "description": "Setup guide row that opens phone setup, for people without a computer"
   },
@@ -24546,7 +24546,7 @@
       }
     }
   },
-  "serverSettingsUpgradeRestartAfter": "The OpenCode process must be restarted on its host to use {target}",
+  "serverSettingsUpgradeRestartAfter": "Restart the OpenCode process on its computer to use {target}",
   "@serverSettingsUpgradeRestartAfter": {
     "description": "Server update question: restart needed after the install",
     "placeholders": {
@@ -24575,11 +24575,11 @@
   "@serverSettingsRunningVersionLabel": {
     "description": "Server settings Details: the running OpenCode version label"
   },
-  "tailscaleSetupAppTitle": "Tailscale app on this phone",
+  "tailscaleSetupAppTitle": "Tailscale on this phone",
   "@tailscaleSetupAppTitle": {
     "description": "Tailscale setup: the first checklist step, whether the official Tailscale app is installed on this phone"
   },
-  "tailscaleSetupVpnTitle": "Sign in and turn on the VPN",
+  "tailscaleSetupVpnTitle": "Sign in and connect",
   "@tailscaleSetupVpnTitle": {
     "description": "Tailscale setup: the second checklist step, done by the person in the Tailscale app; the app cannot verify it"
   },
@@ -25028,7 +25028,7 @@
       }
     }
   },
-  "importNoDestinationsTitle": "No projects to import into",
+  "importNoDestinationsTitle": "Nowhere to import",
   "@importNoDestinationsTitle": {
     "description": "Import conversation: title in the destination chooser when there is nowhere to import."
   },
@@ -25202,7 +25202,7 @@
   "@handoffSheetCopyCommand": {
     "description": "Continue on computer sheet: copy button for the resume command"
   },
-  "handoffSheetReloadConversation": "Reload conversation",
+  "handoffSheetReloadConversation": "Try again",
   "@handoffSheetReloadConversation": {
     "description": "Continue on computer sheet: reload the conversation when the server did not report its folder"
   },
@@ -25275,7 +25275,7 @@
   "@modelPickerCollections": {
     "description": "Model picker: spoken name of the All / Favorites / Recent choice"
   },
-  "modelPickerSignInTitle": "Sign in to a provider",
+  "modelPickerSignInTitle": "Provider sign-in needed",
   "@modelPickerSignInTitle": {
     "description": "Model picker: no models on the server"
   },
@@ -25366,7 +25366,7 @@
   "@teamPhoneRemoveBody": {
     "description": "Delete the team sheet: what happens, in plain words"
   },
-  "teamPhoneRemoveLost": "The team's programs, its city and its task list are deleted",
+  "teamPhoneRemoveLost": "The team's programs, its files and its task list are deleted",
   "@teamPhoneRemoveLost": {
     "description": "Delete the team sheet: what goes"
   },
@@ -25386,10 +25386,6 @@
   "teamPhoneRemoveConfirm": "Delete the team",
   "@teamPhoneRemoveConfirm": {
     "description": "Delete the team sheet: confirm button"
-  },
-  "phoneServerCardRemoveOpenCode": "Remove OpenCode",
-  "@phoneServerCardRemoveOpenCode": {
-    "description": "Remove OpenCode from this phone sheet: confirm button"
   },
   "productStatesActionFailedTitle": "Couldn't finish that",
   "@productStatesActionFailedTitle": {
@@ -26619,7 +26615,7 @@
   "@reviewRevertKeepTitle": {
     "description": "Review the undo page: the destructive tertiary in the bottom block; deletes the hidden prompt and everything after it for good."
   },
-  "reviewRevertKeepConfirmTitle": "Delete the hidden messages for good?",
+  "reviewRevertKeepConfirmTitle": "Delete hidden messages forever?",
   "@reviewRevertKeepConfirmTitle": {
     "description": "Review the undo page: title of the question before the hidden messages are deleted."
   },
@@ -26993,7 +26989,7 @@
   "@shorebirdUpdateReadyBody": {
     "description": "Supporting line of the app update status line: when the downloaded update applies."
   },
-  "desktopReleaseAvailable": "OpenCode {tag} is available",
+  "desktopReleaseAvailable": "Update {tag} is available",
   "@desktopReleaseAvailable": {
     "description": "Desktop status line when a newer release exists on the project's release page.",
     "placeholders": {
@@ -27067,7 +27063,7 @@
   "@runningWorkStopAgentConfirm": {
     "description": "Running now: the stop-agent confirmation's button."
   },
-  "runningWorkScopeChangedTitle": "The server or project changed",
+  "runningWorkScopeChangedTitle": "Server or project changed",
   "@runningWorkScopeChangedTitle": {
     "description": "Running now: title shown when the connection moved to another server or project while the sheet was open."
   },
@@ -27153,7 +27149,7 @@
   "@shellOutputReading": {
     "description": "Command output: loading bar label while the output is read."
   },
-  "sessionDestinationWarpTitle": "Move to a cloud machine",
+  "sessionDestinationWarpTitle": "Move to the cloud",
   "@sessionDestinationWarpTitle": {
     "description": "Title of the sheet that moves a conversation to a cloud machine (warp)."
   },
@@ -27226,7 +27222,7 @@
   "@sessionDestinationLoadFailed": {
     "description": "Move conversation: the destinations could not be read."
   },
-  "sessionDestinationNoneTitle": "Nowhere else to move it yet",
+  "sessionDestinationNoneTitle": "Nowhere to move it",
   "@sessionDestinationNoneTitle": {
     "description": "Move conversation: there is no other destination."
   },
@@ -27420,11 +27416,11 @@
       }
     }
   },
-  "activeContextChangedTitle": "This view is out of date",
+  "activeContextChangedTitle": "This view is outdated",
   "@activeContextChangedTitle": {
     "description": "Active context: title when the server, project or conversation changed under the page."
   },
-  "activeContextFailedTitle": "Couldn't read the active context",
+  "activeContextFailedTitle": "Couldn't read the context",
   "@activeContextFailedTitle": {
     "description": "Active context: title of the load failure state."
   },
@@ -27800,7 +27796,7 @@
   "@sessionExportSaveFailed": {
     "description": "Export conversation: the file was made but writing it to the chosen place on the device failed"
   },
-  "capabilitiesToolsMissingTitle": "This server doesn't list its tools",
+  "capabilitiesToolsMissingTitle": "Tools aren't listed",
   "@capabilitiesToolsMissingTitle": {
     "description": "screen-library-2: Commands & tools, Tools tab title when the server does not list its tools (no server name known)."
   },
@@ -27976,11 +27972,11 @@
   "@externalAgentsUnverified": {
     "description": "screen-library-2: Add agent: note under the agent's description."
   },
-  "externalAgentsUnsupportedTitle": "This agent can't be used from this app",
+  "externalAgentsUnsupportedTitle": "Agent not supported",
   "@externalAgentsUnsupportedTitle": {
     "description": "screen-library-2: Add agent: notice title when the card is not supported."
   },
-  "externalAgentsUnsupportedBody": "It doesn't offer text tasks over A2A 1.0 JSON-RPC on its own address, or it asks for a sign-in this app doesn't support.",
+  "externalAgentsUnsupportedBody": "It doesn't take text tasks the way this app sends them, or it asks for a sign-in this app doesn't support.",
   "@externalAgentsUnsupportedBody": {
     "description": "screen-library-2: Add agent: why the card is not supported."
   },
@@ -28032,7 +28028,7 @@
       }
     }
   },
-  "externalAgentsReplaceKeyTitle": "Replace the key for {name}",
+  "externalAgentsReplaceKeyTitle": "Replace key for {name}",
   "@externalAgentsReplaceKeyTitle": {
     "description": "screen-library-2: Replace key dialog title.",
     "placeholders": {
@@ -28142,7 +28138,7 @@
   "@externalAgentsForgetConfirm": {
     "description": "screen-library-2: Forget question confirm button."
   },
-  "mcpSetupSavedNamed": "Saved {name} in OpenCode",
+  "mcpSetupSavedNamed": "Saved {name} on this server",
   "@mcpSetupSavedNamed": {
     "description": "screen-library-2: Add MCP server: saved state title when the page stays open after saving.",
     "placeholders": {
@@ -28166,7 +28162,7 @@
   "@mcpSetupSavedElsewhere": {
     "description": "screen-library-2: Add MCP server: saved state body when the location changed after saving."
   },
-  "mcpSetupUnavailableTitle": "This server can't add MCP servers from here",
+  "mcpSetupUnavailableTitle": "Can't add MCP servers",
   "@mcpSetupUnavailableTitle": {
     "description": "screen-library-2: Add MCP server: title on a server that accepts neither configuration writes nor runtime adds."
   },
@@ -29611,7 +29607,7 @@
   "@newConversationTeamOffDetail": {
     "description": "New conversation chooser: the Team row while the AI Team is off; tapping it opens the team's off state"
   },
-  "newConversationCopyTitle": "In a separate copy of {project}",
+  "newConversationCopyTitle": "Separate copy of {project}",
   "@newConversationCopyTitle": {
     "description": "New conversation chooser: starts the conversation in a fresh worktree of the project",
     "placeholders": {
@@ -29948,7 +29944,7 @@
       }
     }
   },
-  "credentialRemoveAccountTitle": "Remove the {provider} account “{name}”?",
+  "credentialRemoveAccountTitle": "Remove {provider} account “{name}”?",
   "@credentialRemoveAccountTitle": {
     "description": "Accounts sheet: remove confirm title naming the provider and the account",
     "placeholders": {
@@ -30279,7 +30275,7 @@
   "@automationSaving": {
     "description": "What runs by itself: a choice is being saved."
   },
-  "automationEmptyTitle": "Nothing runs by itself here",
+  "automationEmptyTitle": "Nothing runs by itself",
   "@automationEmptyTitle": {
     "description": "What runs by itself: this server has no team, no saved rules and can't be watched."
   },
@@ -30425,7 +30421,7 @@
       }
     }
   },
-  "teamHomeSpentHint": "The whole team since midnight where it runs, estimated. The host doesn’t report what each task cost.",
+  "teamHomeSpentHint": "The whole team since midnight where it runs, estimated. The server doesn’t report what each task cost.",
   "@teamHomeSpentHint": {
     "description": "AI Team page: under today's spend; never a task's cost."
   },
@@ -30723,7 +30719,7 @@
       }
     }
   },
-  "thisPhoneRemoveToolTitle": "Remove {tool} from this phone?",
+  "thisPhoneRemoveToolTitle": "Remove {tool}?",
   "@thisPhoneRemoveToolTitle": {
     "description": "This phone: the title of the question before one tool is removed",
     "placeholders": {
@@ -31642,8 +31638,20 @@
   "@teamAgentsWaking": {
     "description": "Agents list: the wake is being sent."
   },
-  "teamAgentsWakeCheckAgain": "Check again",
+  "teamAgentsWakeCheckAgain": "Refresh",
   "@teamAgentsWakeCheckAgain": {
     "description": "Agents list: reads the team again after a wake it did not confirm."
+  },
+  "servicesStopConfirm": "Stop service",
+  "@servicesStopConfirm": {
+    "description": "Development services: confirm button of the Stop {name}? sheet."
+  },
+  "servicesRestartConfirm": "Restart service",
+  "@servicesRestartConfirm": {
+    "description": "Development services: confirm button of the Restart {name}? sheet."
+  },
+  "managedWorkspacesRemoveConfirm": "Remove environment",
+  "@managedWorkspacesRemoveConfirm": {
+    "description": "Cloud environments: confirm button of the Remove {name}? sheet."
   }
 }

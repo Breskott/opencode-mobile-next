@@ -1732,11 +1732,13 @@ class _KitTableState extends State<_KitTable> {
     List<double> widths, {
     required bool header,
   }) {
-    final hairline = KitTokens.hairlineWidth(context);
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: tokens.roles.hairline, width: hairline),
+          bottom: BorderSide(
+            color: tokens.roles.hairline,
+            width: KitTokens.hairlineWidth(context),
+          ),
         ),
       ),
       child: ConstrainedBox(

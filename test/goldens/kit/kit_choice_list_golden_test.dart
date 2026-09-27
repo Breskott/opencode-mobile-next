@@ -2,7 +2,8 @@
 // (docs/ux-system/kit-api/KitChoiceList.md): every declared state at the
 // phone size, and the default (the picker sheet) at the wide size, dark and
 // light. Sizes follow the owner decision of 2026-09-27: the phone (412x915)
-// and one wide size (1280x800); no Arabic.
+// and one wide size (1280x800); no Arabic. The default is also shot at
+// text 2.0 at both sizes (TEST-9, G4).
 //
 // Deterministic (TEST-11): no receipt waits on `since`.
 //
@@ -23,7 +24,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'kit_gallery.dart';
 
 const _phone = Size(412, 915);
-const _wide = Size(1280, 800);
 
 const _deploy = [
   KitChoice(value: 'staging', title: 'Staging', supporting: 'staging.example'),
@@ -224,7 +224,8 @@ void main() {
   for (final light in [false, true]) {
     final mode = light ? 'light' : 'dark';
 
-    for (final size in [_phone, _wide]) {
+    // kitGalleryScaledSizes is the phone and the wide size.
+    for (final size in kitGalleryScaledSizes) {
       testWidgets('default (sheet) · ${kitGallerySize(size)} · $mode', (
         tester,
       ) async {
@@ -236,6 +237,27 @@ void main() {
           open: _sheet,
         );
       });
+    }
+
+    for (final size in kitGalleryScaledSizes) {
+      testWidgets(
+        'default (sheet) · text 2.0 · ${kitGallerySize(size)} · $mode',
+        (tester) async {
+          await kitGalleryShot(
+            tester,
+            name: kitGalleryName(
+              'kit_choice_list_default',
+              size,
+              light: light,
+              text2: true,
+            ),
+            size: size,
+            light: light,
+            textScale: 2,
+            open: _sheet,
+          );
+        },
+      );
     }
 
     for (final MapEntry(key: state, value: build) in _states().entries) {

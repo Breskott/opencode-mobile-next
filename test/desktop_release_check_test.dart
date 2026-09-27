@@ -68,7 +68,7 @@ const _release = DesktopReleaseInfo(
   htmlUrl:
       'https://github.com/Eslamasabry/opencode-mobile-next/releases/tag/v31',
 );
-const _available = 'OpenCode v1.0.30+31-preview.9 is available';
+const _available = 'Update v1.0.30+31-preview.9 is available';
 const _whatChanged =
     'The release page lists what changed and has the downloads.';
 const _open = 'Open release page';

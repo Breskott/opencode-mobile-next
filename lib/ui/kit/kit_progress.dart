@@ -20,12 +20,14 @@ class KitLoadingBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-    height: 2,
+    height: KitTokens.loadingBarHeight,
     child: loading
         ? Semantics(
             key: const ValueKey('kit-loading-bar'),
             label: label,
-            child: const LinearProgressIndicator(minHeight: 2),
+            child: const LinearProgressIndicator(
+              minHeight: KitTokens.loadingBarHeight,
+            ),
           )
         : null,
   );
@@ -44,6 +46,7 @@ class KitSkeletonRows extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = KitTokens.of(context);
     Widget bar(double height, Color color) => Container(
       height: height,
       decoration: BoxDecoration(
@@ -57,9 +60,9 @@ class KitSkeletonRows extends StatelessWidget {
         children: [
           for (var i = 0; i < count; i++)
             SizedBox(
-              height: 64,
+              height: KitTokens.skeletonRowHeight,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
                 child: Row(
                   children: [
                     SizedBox.square(
@@ -75,7 +78,7 @@ class KitSkeletonRows extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: tokens.space3),
                     Expanded(
                       child: LayoutBuilder(
                         builder: (context, constraints) => Column(
@@ -88,7 +91,7 @@ class KitSkeletonRows extends StatelessWidget {
                                   _titleWidths[i % _titleWidths.length],
                               child: bar(12, scheme.surfaceContainerHigh),
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: tokens.space2),
                             SizedBox(
                               width: constraints.maxWidth * 0.28,
                               child: bar(9, scheme.surfaceContainer),

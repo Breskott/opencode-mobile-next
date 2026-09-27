@@ -168,7 +168,7 @@ class KitTaskCard extends StatelessWidget {
     final flag = receipt == null ? this.flag : null;
 
     final metaStyle = KitText.styleOf(context, KitTextRole.secondary);
-    final metaLine = meta.isEmpty
+    final metaText = meta.isEmpty
         ? null
         : Padding(
             padding: EdgeInsetsDirectional.only(top: tokens.space1),
@@ -258,7 +258,7 @@ class KitTaskCard extends StatelessWidget {
                     maxLines: scale >= 1.3 ? 3 : 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  ?metaLine,
+                  ?metaText,
                   ?flagLine,
                 ],
               ),
@@ -275,12 +275,18 @@ class KitTaskCard extends StatelessWidget {
       tooltip: title,
       shape: KitShape.panel,
       child: Padding(
-        padding: EdgeInsetsDirectional.fromSTEB(
-          tokens.space2,
-          tokens.space3,
-          endPad,
-          receiptLine == null ? tokens.space3 : 0,
-        ),
+        padding: receiptLine == null
+            ? EdgeInsetsDirectional.only(
+                start: tokens.space2,
+                top: tokens.space3,
+                end: endPad,
+                bottom: tokens.space3,
+              )
+            : EdgeInsetsDirectional.only(
+                start: tokens.space2,
+                top: tokens.space3,
+                end: endPad,
+              ),
         child: main,
       ),
     );
@@ -435,6 +441,8 @@ class KitTaskCard extends StatelessWidget {
 /// Priority as signal bars: three bars filled to the level, a filled
 /// square with a bang for urgent, a dashed line for someday. Decorative:
 /// the word beside it says the priority. The bars fill from the start edge.
+///
+/// States: none — a decorative glyph beside the priority word.
 class KitPriorityGlyph extends StatelessWidget {
   const KitPriorityGlyph({super.key, required this.priority});
 
@@ -489,7 +497,13 @@ class _KitPriorityPainter extends CustomPainter {
     final h = size.height;
     if (priority == KitPriority.urgent) {
       canvas.drawRRect(
-        RRect.fromLTRBR(2, 2, w - 2, h - 2, const Radius.circular(4)),
+        RRect.fromLTRBR(
+          2,
+          2,
+          w - 2,
+          h - 2,
+          const Radius.circular(KitTokens.priorityPlateRadius),
+        ),
         Paint()..color = lit,
       );
       final bang = Paint()
@@ -519,7 +533,13 @@ class _KitPriorityPainter extends CustomPainter {
       if (rtl) left = w - left - bar;
       final top = 17 - 4 - i * 4.0;
       canvas.drawRRect(
-        RRect.fromLTRBR(left, top, left + bar, 17, const Radius.circular(1)),
+        RRect.fromLTRBR(
+          left,
+          top,
+          left + bar,
+          17,
+          const Radius.circular(KitTokens.priorityBarRadius),
+        ),
         Paint()..color = i < on ? lit : unlit,
       );
     }

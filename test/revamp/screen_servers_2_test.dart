@@ -160,13 +160,13 @@ void main() {
       await tester.pumpWidget(_app(const GuideScreen()));
       await tester.pumpAndSettle();
       expect(help, findsOneWidget);
-      expect(find.text('No computer? Run it on this phone'), findsOneWidget);
+      expect(find.text('Use this phone instead'), findsOneWidget);
 
       debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
       await tester.pumpWidget(_app(const GuideScreen(key: ValueKey('d'))));
       await tester.pumpAndSettle();
       expect(help, findsOneWidget);
-      expect(find.text('No computer? Run it on this phone'), findsNothing);
+      expect(find.text('Use this phone instead'), findsNothing);
     });
   });
 

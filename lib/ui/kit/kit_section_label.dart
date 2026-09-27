@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -112,6 +114,8 @@ class KitSectionLabel extends StatelessWidget {
         ),
       );
     }
+    // The target's reach already covers part of the label gap.
+    final labelBottom = math.max(tokens.labelGap - reach, 0.0);
     return Padding(
       padding: margin ?? EdgeInsets.symmetric(horizontal: tokens.gutter),
       child: Column(
@@ -120,9 +124,7 @@ class KitSectionLabel extends StatelessWidget {
         children: [
           _KitSectionGap(gap: gapBefore, trim: reach),
           Padding(
-            padding: EdgeInsetsDirectional.only(
-              bottom: reach >= tokens.labelGap ? 0 : tokens.labelGap - reach,
-            ),
+            padding: EdgeInsetsDirectional.only(bottom: labelBottom),
             child: trailing == null
                 ? Align(
                     alignment: AlignmentDirectional.centerStart,

@@ -147,7 +147,7 @@ void main() {
       ),
     );
     await _open(tester);
-    expect(find.text('Move to a cloud machine'), findsOneWidget);
+    expect(find.text('Move to the cloud'), findsOneWidget);
     expect(_line('Cloud machine · Connected'), findsOneWidget);
     expect(
       find.textContaining('It can be picked once it connects.'),
@@ -177,7 +177,7 @@ void main() {
       ),
     );
     await _open(tester);
-    expect(find.text('Nowhere else to move it yet'), findsOneWidget);
+    expect(find.text('Nowhere to move it'), findsOneWidget);
     expect(find.text('Current'), findsOneWidget);
   });
 

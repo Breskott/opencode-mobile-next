@@ -308,6 +308,28 @@ class KitTokens extends ThemeExtension<KitTokens> {
   /// KitProgress.md, KitChecklist.md: the thin indeterminate bar.
   static const double loadingBarHeight = 2;
 
+  /// The inside of a panel (G20: panel padding 16), for parts whose default
+  /// padding must be a compile-time constant.
+  static const double panelPadding = 16;
+
+  /// One placeholder row of `KitSkeletonRows`.
+  static const double skeletonRowHeight = 64;
+
+  /// A visually hidden live region keeps one logical pixel, so screen
+  /// readers keep its node (A11Y-3).
+  static const double liveRegionSize = 1;
+
+  /// The ring of a [KitChoiceList] radio or check mark: a glyph stroke in
+  /// logical pixels, like [spinnerStroke].
+  static const double choiceMarkStroke = 2;
+
+  /// The corners of a [KitChoiceList] check mark.
+  static const double choiceMarkRadius = 4;
+
+  /// `KitPriorityGlyph`'s urgent plate and its bars.
+  static const double priorityPlateRadius = 4;
+  static const double priorityBarRadius = 1;
+
   /// KitProgress.md, KitChecklist.md, KitProgressRow.md: the job bar.
   static const double progressBarHeight = 4;
 

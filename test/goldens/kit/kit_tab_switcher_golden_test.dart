@@ -4,7 +4,8 @@
 // 412x915 and 1280x800, dark and light, plus focused (keyboard) at 412x915.
 //
 // Owner decision 2026-09-27: phone 412x915 and one wide size (1280x800)
-// only, light and dark; no Arabic or text-2.0 shots (Arabic is dropped).
+// only, light and dark; no Arabic (Arabic is dropped). The default is also
+// shot at text 2.0 at both sizes (TEST-9, G4).
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_tab_switcher_golden_test.dart
@@ -181,5 +182,26 @@ void main() {
         light: light,
       );
     });
+
+    for (final size in kitGalleryScaledSizes) {
+      testWidgets(
+        'kit_tab_switcher default · text 2.0 · ${kitGallerySize(size)} · $mode',
+        (tester) async {
+          await kitGalleryPart(
+            tester,
+            name: kitGalleryName(
+              'kit_tab_switcher_default',
+              size,
+              light: light,
+              text2: true,
+            ),
+            size: size,
+            light: light,
+            textScale: 2,
+            child: _scene(_State.defaults),
+          );
+        },
+      );
+    }
   }
 }

@@ -323,7 +323,7 @@ void main() {
     testWidgets('no models leads to signing in to a provider', (tester) async {
       final controller = await _controller(models: const []);
       await _open(tester, controller);
-      expect(find.text('Sign in to a provider'), findsOneWidget);
+      expect(find.text('Provider sign-in needed'), findsOneWidget);
       expect(find.text('Open providers'), findsOneWidget);
     });
 

@@ -1,0 +1,9 @@
+00:00 +0: loading test/permission_presentation_test.dart
+00:00 +0: COPY-15: the generic title reads "Permission needed" in English
+00:00 +1: COPY-15 (en) each known id is titled with its own plain-action getter
+00:00 +2: COPY-15 (en) an empty id is titled "Permission needed"
+00:00 +3: COPY-15 (ar) each known id is titled with its own plain-action getter
+00:00 +4: COPY-15 (ar) an empty id is titled "Permission needed"
+00:00 +5: COPY-15: English titles are the plain actions the rule names
+00:00 +6: COPY-15 ratchet: unknown ids titled "Permission needed" (baseline only shrinks)
+00:00 +7: All tests passed!

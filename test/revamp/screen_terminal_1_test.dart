@@ -199,7 +199,7 @@ void main() {
       );
       // The Terminal page talks about the terminal, not Files.
       expect(find.text("This server doesn't share a terminal"), findsOneWidget);
-      expect(find.text('Files and Terminal'), findsNothing);
+      expect(find.text('Files and terminal'), findsNothing);
       expect(find.byKey(const ValueKey('terminal-session-rows')), findsNothing);
       // One control for the switch: the source choice, no second button.
       expect(find.byKey(const ValueKey('terminal-use-phone')), findsNothing);

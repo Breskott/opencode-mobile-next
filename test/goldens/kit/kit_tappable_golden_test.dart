@@ -5,9 +5,9 @@
 //
 // Reduced from the frozen spec's size matrix by the owner decision in
 // docs/ux-system/revamp/STANDARDS.md (2026-09-27, R15: later owner
-// decisions win): Arabic/RTL and 2.0-text galleries are dropped, and every
-// part's gallery is phone (412x915) and one wide size (1280x800), light and
-// dark, only. See docs/qa/revamp-kit-KitTappable-2026-09-27/README.md.
+// decisions win): Arabic/RTL galleries are dropped, and every part's
+// gallery is phone (412x915) and one wide size (1280x800), light and dark,
+// with the enabled state also at text 2.0 at both sizes (TEST-9, G4). See docs/qa/revamp-kit-KitTappable-2026-09-27/README.md.
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_tappable_golden_test.dart
@@ -298,5 +298,26 @@ void main() {
         },
       );
     });
+
+    for (final size in kitGalleryScaledSizes) {
+      testWidgets(
+        'kit_tappable enabled · text 2.0 · ${kitGallerySize(size)} · $mode',
+        (tester) async {
+          await kitGalleryPart(
+            tester,
+            name: kitGalleryName(
+              'kit_tappable_enabled',
+              size,
+              light: light,
+              text2: true,
+            ),
+            size: size,
+            light: light,
+            textScale: 2,
+            child: _scene(_State.enabled),
+          );
+        },
+      );
+    }
   }
 }
