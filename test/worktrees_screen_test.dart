@@ -176,6 +176,29 @@ Widget _app(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  testWidgets('the Worktrees label explains itself: a labelled term whose '
+      'bubble says what a worktree is (slice-P3.1)', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final controller = await _controller(_WorktreeRepository());
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    final term = find.byKey(const ValueKey('worktrees-section-label'));
+    expect(term, findsOneWidget);
+    // A screen reader hears the word as a button with a hint.
+    final node = tester.getSemantics(term);
+    expect(node.label, startsWith('Worktrees'));
+    expect(node.hint, isNotEmpty);
+    expect(node.flagsCollection.isButton, isTrue);
+    await tester.tap(term);
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('A separate checkout of the same repository'),
+      findsOneWidget,
+    );
+    semantics.dispose();
+  });
+
   testWidgets('compact worktree creation grows into global ready state', (
     tester,
   ) async {

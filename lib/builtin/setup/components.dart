@@ -1,9 +1,12 @@
 import '../../l10n/app_localizations.dart';
+import '../../platform/platform_capabilities.dart';
 import '../../termux/bridge.dart' show TermuxBridge, TermuxRuntime;
 import '../../termux/opencode_ubuntu_setup.dart';
+import '../../voice/model_manifest.dart';
 import '../builtin_linux.dart';
 import 'aiteam_scripts.dart';
 import 'setup_contract.dart';
+import 'voice_component.dart';
 
 /// Every component the phone setup can install, in dependency order
 /// (docs/design/phone-setup-v2-2026-09-24.md, "Components").
@@ -22,9 +25,15 @@ import 'setup_contract.dart';
 /// phone, where proot makes apt and npm several times slower. They weigh the
 /// bar and the ETA against each other, and the ETA rescales them by the
 /// pace it measures, so being off by a factor only shows in the first 10 s.
+///
+/// [host] is where the job runs. On Termux an older build installed Node
+/// from Ubuntu's own packages; that Node already runs OpenCode there, so
+/// the Termux check accepts it rather than replacing it under a working
+/// server (an existing Termux install is recognised as done).
 List<SetupComponent> setupComponents(
   AppLocalizations l10n, {
   Map<String, Map<String, String>> params = const {},
+  SetupHostKind host = SetupHostKind.builtin,
 }) {
   final openCode = params[SetupComponentIds.openCode] ?? const {};
   final runtime = TermuxRuntime.parse(openCode['runtime']);
@@ -80,7 +89,9 @@ List<SetupComponent> setupComponents(
       required: true,
       estimatedSeconds: 20,
       downloadBytes: 58 * _mb,
-      checkScript: SetupScripts.nodeCheck,
+      checkScript: host == SetupHostKind.termux
+          ? SetupScripts.termuxNodeCheck
+          : SetupScripts.nodeCheck,
       presenceScript:
           '[ -e /opt/node ] || [ -L /opt/node ] || '
           'command -v node >/dev/null 2>&1',
@@ -144,6 +155,26 @@ List<SetupComponent> setupComponents(
       checkScript: '',
       installScript: '',
     ),
+    // Voice typing's speech model: installed by the app into its own
+    // storage, not inside Linux (SetupComponent.app), so nothing here
+    // depends on Linux. Last, after the start: a working agent does not
+    // wait for it, and a failed download leaves OpenCode running. Its size
+    // is the pack this phone would use, once the device has been asked.
+    if (platformCapabilities.supportsVoice)
+      SetupComponent(
+        id: SetupComponentIds.voice,
+        title: l10n.voiceComponentTitle,
+        shortTitle: l10n.voiceComponentTitle,
+        summary: l10n.voiceComponentSummary,
+        // Mostly the download; the ETA's pace scaling corrects it.
+        estimatedSeconds: 45,
+        downloadBytes:
+            VoiceSetupComponent.instance.lastOfferBytes ??
+            voiceModelPack('base').downloadBytes,
+        checkScript: '',
+        installScript: '',
+        app: VoiceSetupComponent.instance,
+      ),
   ];
 }
 
@@ -156,6 +187,9 @@ abstract final class SetupComponentIds {
   static const node = 'node';
   static const openCode = 'opencode';
   static const aiTeam = 'aiteam';
+
+  /// Voice typing's speech model, installed by the app itself.
+  static const voice = 'voice';
 
   /// Not installed: starting the server and connecting to it, the last step
   /// of every job (see [SetupComponent.jobStep]).
@@ -219,6 +253,14 @@ printf '%s\n' "$packages" | grep -Eq '^python3-(pip|venv) install ok installed$'
 [ "\$(node --version)" = '$_nodeVersion' ]
 command -v npm >/dev/null
 [ "\$(npm config get prefix)" = /usr/local ]
+node --version | sed 's/^v//'
+''';
+
+  /// The Termux host: the pinned Node, or the Node an older build put in
+  /// Termux's Ubuntu from its own packages, as long as it and npm run.
+  static const termuxNodeCheck = '''set -e
+node --version >/dev/null
+command -v npm >/dev/null
 node --version | sed 's/^v//'
 ''';
 

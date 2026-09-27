@@ -328,9 +328,7 @@ void main() {
           home: Scaffold(
             body: SafeArea(
               child: ListView(
-                children: [
-                  ProfileMonitorInbox(controller: controller, compact: true),
-                ],
+                children: [ProfileMonitorInbox(controller: controller)],
               ),
             ),
           ),

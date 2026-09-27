@@ -6,6 +6,10 @@ import 'package:flutter/foundation.dart';
 /// particular component, so adding one (AI Team, Python, anything) never
 /// changes this file.
 
+/// Where a setup job installs and runs OpenCode: the app's own Linux, or
+/// Termux's. The components are the same; a few checks differ by host.
+enum SetupHostKind { builtin, termux }
+
 /// One installable piece: a check that says whether it is there, and an
 /// install that puts it there and reports progress with `::oc` lines.
 @immutable
@@ -24,8 +28,10 @@ class SetupComponent {
     this.removeScript,
     this.presenceScript,
     this.why,
+    this.summary,
     this.native = false,
     this.jobStep = false,
+    this.app,
   });
 
   final String id;
@@ -35,6 +41,11 @@ class SetupComponent {
   /// One plain sentence shown when a required component cannot be switched
   /// off ("OpenCode needs it to run").
   final String? why;
+
+  /// What an optional component does, in one line, beside its switch
+  /// ("Speak instead of typing, even offline"). Null says nothing more
+  /// than the title.
+  final String? summary;
   final List<String> dependsOn;
   final bool required;
   final bool defaultOn;
@@ -64,6 +75,107 @@ class SetupComponent {
   /// so the progress checklist can name it; lists of things to install
   /// (Customize, sizes) leave it out.
   final bool jobStep;
+
+  /// Installed by the app itself, into its own storage, instead of by a
+  /// script inside Linux (the voice typing model). Its check, install and
+  /// removal are Dart calls, so it works on either host and before Linux is
+  /// there; the native job runs it as a step the app completes. The scripts
+  /// of such a component are empty.
+  final SetupAppComponent? app;
+
+  /// The same component with [bytes] as its download size: an app-side
+  /// component knows its real size only once it has asked the device.
+  SetupComponent withDownloadBytes(int? bytes) => SetupComponent(
+    id: id,
+    title: title,
+    shortTitle: shortTitle,
+    checkScript: checkScript,
+    installScript: installScript,
+    dependsOn: dependsOn,
+    required: required,
+    defaultOn: defaultOn,
+    estimatedSeconds: estimatedSeconds,
+    downloadBytes: bytes,
+    removeScript: removeScript,
+    presenceScript: presenceScript,
+    why: why,
+    summary: summary,
+    native: native,
+    jobStep: jobStep,
+    app: app,
+  );
+}
+
+/// What an app-side component offers this phone, from [SetupAppComponent.offer].
+@immutable
+class SetupAppOffer {
+  const SetupAppOffer({required this.downloadBytes, this.installed = false});
+
+  /// What installing it downloads (for an installed one, what removing it
+  /// frees).
+  final int downloadBytes;
+  final bool installed;
+}
+
+/// Where an app-side install is, for the progress row.
+enum SetupAppStage { downloading, verifying }
+
+@immutable
+class SetupAppProgress {
+  const SetupAppProgress({
+    required this.stage,
+    this.bytesDone,
+    this.bytesTotal,
+  });
+
+  final SetupAppStage stage;
+  final int? bytesDone;
+  final int? bytesTotal;
+}
+
+/// Why an app-side install or removal did not happen, as a kind the engine
+/// turns into plain words; no exception text crosses this API.
+enum SetupAppFailureKind {
+  offline,
+  noSpace,
+  checksum,
+  unsupported,
+  busy,
+  cancelled,
+  failed,
+}
+
+class SetupAppFailure implements Exception {
+  const SetupAppFailure(this.kind);
+
+  final SetupAppFailureKind kind;
+
+  @override
+  String toString() => 'SetupAppFailure(${kind.name})';
+}
+
+/// A [SetupComponent] the app installs itself ([SetupComponent.app]).
+///
+/// [check] answers as a check script would; [install] is idempotent and
+/// resumes what an earlier, interrupted run left; [cancel] stops a running
+/// install and keeps what it downloaded for the next run.
+abstract class SetupAppComponent {
+  /// Null when this phone cannot have it at all: the item is not offered.
+  Future<SetupAppOffer?> offer();
+
+  /// Installed and usable; the version is shown on the finished row.
+  Future<({bool ok, String? version})> check();
+
+  /// Installs it, reporting through [onProgress]; returns its version.
+  /// Throws [SetupAppFailure].
+  Future<String?> install({
+    required void Function(SetupAppProgress progress) onProgress,
+  });
+
+  void cancel();
+
+  /// Removes it and confirms it is gone. Throws [SetupAppFailure].
+  Future<void> remove();
 }
 
 enum SetupState { idle, running, done, failed, interrupted, cancelled }

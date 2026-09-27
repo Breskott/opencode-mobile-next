@@ -346,95 +346,110 @@ class _EffectsSectionState extends State<_EffectsSection> {
                     label: copy.effectsSection,
                     children: [
                       _EffectsPreview(effects: effects),
-                      KitSwitchRow(
-                        key: const ValueKey('effects-glass'),
-                        leading: KitRow.icon(context, AppIconography.layers),
-                        title: copy.effectsGlass,
-                        supporting: glassSupporting,
-                        value: effects.glass,
-                        onChanged: (value) =>
-                            _choose(effects.copyWith(glass: value)),
+                      KitArrival(
+                        id: 'effects-glass',
+                        child: KitSwitchRow(
+                          key: const ValueKey('effects-glass'),
+                          leading: KitRow.icon(context, AppIconography.layers),
+                          title: copy.effectsGlass,
+                          supporting: glassSupporting,
+                          value: effects.glass,
+                          onChanged: (value) =>
+                              _choose(effects.copyWith(glass: value)),
+                        ),
                       ),
-                      KitRow(
-                        key: const ValueKey('effects-motion'),
-                        leading: KitRow.icon(
-                          context,
-                          AppIconography.playCircle,
-                        ),
-                        title: copy.effectsAnimations,
-                        supporting: TextSpan(
-                          text: switch (effects.motion) {
-                            KitMotionLevel.full => copy.effectsMotionFullHint,
-                            KitMotionLevel.calm => copy.effectsMotionCalmHint,
-                            KitMotionLevel.off => copy.effectsMotionOffHint,
-                          },
-                        ),
-                        supportingMaxLines: 2,
-                        below: Padding(
-                          padding: EdgeInsetsDirectional.only(
-                            top: tokens.space2,
-                            bottom: tokens.space1,
+                      KitArrival(
+                        id: 'effects-motion',
+                        child: KitRow(
+                          key: const ValueKey('effects-motion'),
+                          leading: KitRow.icon(
+                            context,
+                            AppIconography.playCircle,
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              KitSegmented<KitMotionLevel>(
-                                semanticsLabel: copy.effectsAnimations,
-                                selected: effects.motion,
-                                segments: [
-                                  for (final (level, label) in [
-                                    (
-                                      KitMotionLevel.full,
-                                      copy.effectsMotionFull,
-                                    ),
-                                    (
-                                      KitMotionLevel.calm,
-                                      copy.effectsMotionCalm,
-                                    ),
-                                    (KitMotionLevel.off, copy.effectsMotionOff),
-                                  ])
-                                    KitSegment(
-                                      key: ValueKey(
-                                        'effects-motion-${level.name}',
+                          title: copy.effectsAnimations,
+                          supporting: TextSpan(
+                            text: switch (effects.motion) {
+                              KitMotionLevel.full => copy.effectsMotionFullHint,
+                              KitMotionLevel.calm => copy.effectsMotionCalmHint,
+                              KitMotionLevel.off => copy.effectsMotionOffHint,
+                            },
+                          ),
+                          supportingMaxLines: 2,
+                          below: Padding(
+                            padding: EdgeInsetsDirectional.only(
+                              top: tokens.space2,
+                              bottom: tokens.space1,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                KitSegmented<KitMotionLevel>(
+                                  semanticsLabel: copy.effectsAnimations,
+                                  selected: effects.motion,
+                                  segments: [
+                                    for (final (level, label) in [
+                                      (
+                                        KitMotionLevel.full,
+                                        copy.effectsMotionFull,
                                       ),
-                                      value: level,
-                                      label: label,
-                                    ),
-                                ],
-                                onChanged: (level) =>
-                                    _choose(effects.copyWith(motion: level)),
-                              ),
-                              if (systemStill)
-                                Padding(
-                                  padding: EdgeInsetsDirectional.only(
-                                    top: tokens.space2,
-                                  ),
-                                  child: KitText(
-                                    copy.effectsMotionSystemOff,
-                                    role: KitTextRole.secondary,
-                                  ),
+                                      (
+                                        KitMotionLevel.calm,
+                                        copy.effectsMotionCalm,
+                                      ),
+                                      (
+                                        KitMotionLevel.off,
+                                        copy.effectsMotionOff,
+                                      ),
+                                    ])
+                                      KitSegment(
+                                        key: ValueKey(
+                                          'effects-motion-${level.name}',
+                                        ),
+                                        value: level,
+                                        label: label,
+                                      ),
+                                  ],
+                                  onChanged: (level) =>
+                                      _choose(effects.copyWith(motion: level)),
                                 ),
-                            ],
+                                if (systemStill)
+                                  Padding(
+                                    padding: EdgeInsetsDirectional.only(
+                                      top: tokens.space2,
+                                    ),
+                                    child: KitText(
+                                      copy.effectsMotionSystemOff,
+                                      role: KitTextRole.secondary,
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                      KitSwitchRow(
-                        key: const ValueKey('effects-celebrations'),
-                        leading: KitRow.icon(context, AppIconography.sparkle),
-                        title: copy.effectsCelebrations,
-                        supporting: copy.effectsCelebrationsHint,
-                        value: effects.celebrations,
-                        onChanged: (value) =>
-                            _choose(effects.copyWith(celebrations: value)),
+                      KitArrival(
+                        id: 'effects-celebrations',
+                        child: KitSwitchRow(
+                          key: const ValueKey('effects-celebrations'),
+                          leading: KitRow.icon(context, AppIconography.sparkle),
+                          title: copy.effectsCelebrations,
+                          supporting: copy.effectsCelebrationsHint,
+                          value: effects.celebrations,
+                          onChanged: (value) =>
+                              _choose(effects.copyWith(celebrations: value)),
+                        ),
                       ),
-                      KitSwitchRow(
-                        key: const ValueKey('effects-vibration'),
-                        leading: KitRow.icon(context, AppIconography.touch),
-                        title: copy.effectsVibration,
-                        supporting: copy.effectsVibrationHint,
-                        value: effects.haptics,
-                        onChanged: (value) =>
-                            _choose(effects.copyWith(haptics: value)),
+                      KitArrival(
+                        id: 'effects-vibration',
+                        child: KitSwitchRow(
+                          key: const ValueKey('effects-vibration'),
+                          leading: KitRow.icon(context, AppIconography.touch),
+                          title: copy.effectsVibration,
+                          supporting: copy.effectsVibrationHint,
+                          value: effects.haptics,
+                          onChanged: (value) =>
+                              _choose(effects.copyWith(haptics: value)),
+                        ),
                       ),
                     ],
                   ),

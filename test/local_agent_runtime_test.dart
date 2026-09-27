@@ -315,8 +315,8 @@ void main() {
       expect(pins['node_sha256_x64'], matches(RegExp(r'^[0-9a-f]{64}$')));
       expect(pins['node_sha256_arm64'], isNot(pins['node_sha256_x64']));
       expect(pins['node_base_url'], 'https://nodejs.org/dist');
-      // The protocol client in lib/paseo was verified against exactly this.
-      expect(pins['paseo_version'], '0.9.1');
+      // Reviewed patch target; on-device verification is tracked separately.
+      expect(pins['paseo_version'], '0.9.2');
       final file = TermuxBridge.localAgentsPinsFile();
       for (final entry in pins.entries) {
         expect(file, contains('${entry.key}=${entry.value}\n'));

@@ -954,6 +954,15 @@ final kitOverflowScenes = <KitOverflowScene>[
       child: _row(c),
     ),
   ),
+  // kit_arrival.dart (slice-P9.4): a row arrived at, its wash on.
+  KitOverflowScene(
+    const ['KitArrival', 'KitArrivalScope'],
+    'default',
+    build: (_, c) => KitArrivalScope(
+      rowId: 'arrived',
+      child: KitArrival(id: 'arrived', child: _row(c)),
+    ),
+  ),
   // kit_text.dart (visual language merge, before the wave-0b gates)
   KitOverflowScene(
     const ['KitText'],

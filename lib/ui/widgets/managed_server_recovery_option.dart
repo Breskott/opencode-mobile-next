@@ -171,46 +171,50 @@ class _ManagedServerRecoveryOptionState
         ),
       );
     }
-    return Column(
-      key: const ValueKey('managed-recovery-option'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        KitSwitchRow(
-          switchKey: const ValueKey('managed-recovery-switch'),
-          leading: KitRow.icon(context, AppIconography.restart),
-          title: l10n.managedRecoveryRowTitle,
-          supporting: l10n.managedRecoveryRowDetail,
-          value: recovery.enabled,
-          onChanged: recovery.busy && !recovery.enabled ? null : _set,
-        ),
-        if (notes.isNotEmpty || actions.isNotEmpty)
-          Padding(
-            // Under the row's words: past its icon tile and the gap after
-            // it, the inset of the row's own hairline (KitDividerInset.text).
-            padding: EdgeInsetsDirectional.only(
-              start: tokens.space4 + tokens.iconTileSize + tokens.space3,
-              end: tokens.space4,
-              bottom: tokens.space2,
-            ),
-            child: Semantics(
-              liveRegion: true,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final note in notes)
-                    Padding(
-                      padding: EdgeInsetsDirectional.only(
-                        bottom: tokens.space1,
+    // A search result for "crash" arrives here (KitArrival).
+    return KitArrival(
+      id: 'managed-recovery-option',
+      child: Column(
+        key: const ValueKey('managed-recovery-option'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          KitSwitchRow(
+            switchKey: const ValueKey('managed-recovery-switch'),
+            leading: KitRow.icon(context, AppIconography.restart),
+            title: l10n.managedRecoveryRowTitle,
+            supporting: l10n.managedRecoveryRowDetail,
+            value: recovery.enabled,
+            onChanged: recovery.busy && !recovery.enabled ? null : _set,
+          ),
+          if (notes.isNotEmpty || actions.isNotEmpty)
+            Padding(
+              // Under the row's words: past its icon tile and the gap after
+              // it, the inset of the row's own hairline (KitDividerInset.text).
+              padding: EdgeInsetsDirectional.only(
+                start: tokens.space4 + tokens.iconTileSize + tokens.space3,
+                end: tokens.space4,
+                bottom: tokens.space2,
+              ),
+              child: Semantics(
+                liveRegion: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final note in notes)
+                      Padding(
+                        padding: EdgeInsetsDirectional.only(
+                          bottom: tokens.space1,
+                        ),
+                        child: note,
                       ),
-                      child: note,
-                    ),
-                  if (actions.isNotEmpty) KitActionBlock(tertiary: actions),
-                ],
+                    if (actions.isNotEmpty) KitActionBlock(tertiary: actions),
+                  ],
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

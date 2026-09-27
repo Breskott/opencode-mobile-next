@@ -132,6 +132,12 @@ class MainActivity : FlutterActivity() {
                             pendingSharedText = null
                             result.success(text)
                         }
+                        "shareText" -> result.success(
+                            shareTextOut(
+                                call.argument<String>("text"),
+                                call.argument<String>("subject"),
+                            ),
+                        )
                         else -> result.notImplemented()
                     }
                 }
@@ -154,6 +160,8 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     }
                     "runInTermux" -> runInTermux(call, result)
+                    "startSetup", "setupStatus", "cancelSetup", "completeSetupStep",
+                    "setupHostInstalled", "setupRun" -> handleTermuxSetup(call, result)
                     "openTermuxSession" -> openTermuxSession(call, result)
                     else -> result.notImplemented()
                 }
@@ -660,6 +668,30 @@ class MainActivity : FlutterActivity() {
         return true
     }
 
+    /// Shares [text] out through the system chooser (Report a problem's
+    /// Share). This app is left out of the targets: sharing the report to
+    /// ourselves would start a session with it. True once the chooser opened.
+    private fun shareTextOut(text: String?, subject: String?): Boolean {
+        if (text.isNullOrEmpty()) return false
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+            if (!subject.isNullOrEmpty()) putExtra(Intent.EXTRA_SUBJECT, subject)
+        }
+        val chooser = Intent.createChooser(send, null).apply {
+            putExtra(
+                Intent.EXTRA_EXCLUDE_COMPONENTS,
+                arrayOf(ComponentName(this@MainActivity, MainActivity::class.java)),
+            )
+        }
+        return try {
+            startActivity(chooser)
+            true
+        } catch (error: ActivityNotFoundException) {
+            false
+        }
+    }
+
     /// Text shared from another app through the system share sheet. Only
     /// plain text is accepted; the subject, when present, becomes a first
     /// line so a shared link keeps its title.
@@ -933,6 +965,55 @@ class MainActivity : FlutterActivity() {
         }
         permissionResult = result
         requestPermissions(arrayOf(RUN_COMMAND_PERMISSION), RUN_COMMAND_PERMISSION_REQUEST)
+    }
+
+    /** V2 setup keeps the exact RUN_COMMAND permission/service boundary. */
+    private fun handleTermuxSetup(call: MethodCall, result: MethodChannel.Result) {
+        if (!hasRunCommandPermission()) {
+            result.error("permission_denied", "Termux RUN_COMMAND permission is required.", null)
+            return
+        }
+        if (!isRunCommandServiceAvailable()) {
+            result.error("service_unavailable", "Termux RunCommandService is unavailable.", null)
+            return
+        }
+        Thread({
+            try {
+                val runner = TermuxSetupRunner.get(applicationContext)
+                val answer: Any? = when (call.method) {
+                    "startSetup" -> {
+                        runner.start(
+                            call.argument<String>("jobId") ?: error("A setup job needs an id"),
+                            call.argument<List<Map<String, Any?>>>("components").orEmpty(),
+                            call.argument<Map<String, Any?>>("params").orEmpty(),
+                        )
+                        null
+                    }
+                    "setupStatus" -> runner.status()
+                    "cancelSetup" -> { runner.cancel(); null }
+                    "completeSetupStep" -> {
+                        runner.completeStep(
+                            call.argument<String>("jobId") ?: error("A step needs a job"),
+                            call.argument<String>("id") ?: error("A step needs an id"),
+                            call.argument<Boolean>("ok") == true,
+                            call.argument<String>("version"),
+                        )
+                        null
+                    }
+                    "setupHostInstalled" -> runner.installed()
+                    "setupRun" -> runner.run(
+                        call.argument<String>("script") ?: error("A check needs a script"),
+                        call.argument<Number>("timeoutMs")?.toLong() ?: 120_000,
+                    )
+                    else -> null
+                }
+                handler.post { result.success(answer) }
+            } catch (_: Exception) {
+                // No raw exception, command or provider output crosses into
+                // diagnostic copy; callers must recheck durable status.
+                handler.post { result.error("termux_setup", "Termux setup could not be confirmed. Check Termux and retry status.", null) }
+            }
+        }, "oc-termux-setup").start()
     }
 
     private fun runInTermux(call: MethodCall, result: MethodChannel.Result) {

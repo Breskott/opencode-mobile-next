@@ -1,0 +1,11 @@
+java -jar /tmp/codex-x12-shell-tests.jar progress-and-finish
+PASS progress-and-finish
+exit=0
+
+java -jar /tmp/codex-x12-shell-tests.jar cancel-and-resume
+PASS cancel-and-resume
+exit=0
+
+java -jar /tmp/codex-x12-shell-tests.jar interrupted-launch
+PASS interrupted-launch
+exit=0

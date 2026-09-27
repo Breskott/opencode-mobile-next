@@ -1,6 +1,6 @@
 // Behaviour contracts for KitTerm (docs/ux-system/kit-api/KitTerm.md
-// "Tests required" 1-6, 8-12; wrapper compatibility (7) lives in
-// test/info_label_test.dart, which owns InfoLabel).
+// "Tests required" 1-6, 8-12; the InfoLabel wrapper of test 7 was deleted
+// by slice-P3.1).
 import 'dart:async';
 
 import 'package:flutter/gestures.dart';
@@ -8,12 +8,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/kit/kit_term.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
-import 'package:opencode_mobile/ui/widgets/info_label.dart' show Glossary;
 
 import 'kit_motion_still.dart';
 
@@ -76,17 +76,17 @@ final _bubble = find.byKey(const ValueKey('kit-term-bubble'));
 final _sheet = find.byKey(const ValueKey('kit-term-sheet'));
 final _termFinder = find.byKey(const ValueKey('kit-term'));
 
-/// The glossary's longest English entry (KitTerm.md test 6).
-final _longestGlossary = [
-  Glossary.mcp,
-  Glossary.worktree,
-  Glossary.provider,
-  Glossary.context,
-  Glossary.agent,
-  Glossary.reasoning,
-  Glossary.permission,
-  Glossary.variant,
-].reduce((a, b) => a.explanation.length >= b.explanation.length ? a : b);
+/// The longest English term explanation the app shows (KitTerm.md test 6).
+final _longestGlossary = () {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+  return [
+    (term: l10n.libraryMcpTitle, explanation: l10n.e7GlossaryMcpExplanation),
+    (
+      term: l10n.e7LibraryWorktrees,
+      explanation: l10n.e7GlossaryWorktreeExplanation,
+    ),
+  ].reduce((a, b) => a.explanation.length >= b.explanation.length ? a : b);
+}();
 
 /// A 260-character explanation and a 40-character term, per K2 test 12's
 /// overflow matrix.

@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart'
-    show KitCodeBlock, KitMarkdown, KitMotion, KitTurn;
+    show KitCodeBlock, KitMarkdown, KitMotion, KitTurn, KitUndo;
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
@@ -1483,12 +1483,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.deleteCalls, isEmpty);
-    expect(
-      find.text(
-        'Empty conversation was kept because OpenCode could not verify or remove it.',
-      ),
-      findsOneWidget,
-    );
+    // Kept quietly: an empty conversation is harmless and the list shows
+    // it, so nothing interrupts the way out.
+    expect(find.byType(SnackBar), findsNothing);
+    expect(find.byKey(const ValueKey('product-error-alert')), findsNothing);
   });
 
   testWidgets('leaving with a typed draft keeps it silently', (tester) async {
@@ -1675,7 +1673,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Subagent · 1 of 2'), findsOneWidget);
+    expect(find.text('Delegated conversation · 1 of 2'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('subagent-parent-session')),
       findsOneWidget,
@@ -2745,6 +2743,11 @@ void main() {
 
     expect(controller.transcriptReasoningExpanded, isTrue);
     expect(find.text(reasoning), findsOneWidget);
+    // The toggle offers Undo; the bar floats above every sheet until its
+    // window ends.
+    expect(find.text('Reasoning expanded in the transcript'), findsOneWidget);
+    await tester.pump(KitUndo.window);
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
@@ -3054,85 +3057,77 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppearanceSettingsScreen), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('appearance-settings-entry')));
+    // Light or dark is chosen inline and applies at once (the separate
+    // light-or-dark sheet was removed by slice-P3.1).
+    final light = find.byKey(const ValueKey('appearance-mode-light'));
+    await tester.ensureVisible(light);
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('appearance-picker')), findsOneWidget);
-    await tester.ensureVisible(find.byKey(const Key('appearance-light')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('appearance-light')));
-    await tester.pumpAndSettle();
-    // Browsing previews; nothing changes until Apply.
-    expect(controller.appearance.value, isNot(AppAppearance.light));
-    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Apply'));
-    await tester.tap(find.widgetWithText(FilledButton, 'Apply'));
+    await tester.tap(light);
     await tester.pumpAndSettle();
 
     expect(controller.appearance.value, AppAppearance.light);
-    expect(find.byKey(const Key('appearance-picker')), findsNothing);
   });
 
-  testWidgets('session todo view shows server status and priority', (
+  testWidgets('the menu\'s Tasks lands on the plan in the transcript, open', (
     tester,
   ) async {
     final api = _FakeOpenCodeApi()
-      ..todoItems = [
-        Todo(
-          content: 'Verify production release',
-          status: 'in_progress',
-          priority: 'high',
-        ),
+      ..messagesHandler = (_) async => [
+        _message('assistant-plan', 'assistant', [
+          Part(
+            id: 'tool-plan',
+            messageID: 'assistant-plan',
+            type: 'tool',
+            toolName: 'todowrite',
+            toolState: ToolState.fromJson({
+              'status': 'completed',
+              'input': {
+                'todos': [
+                  {
+                    'content': 'Verify production release',
+                    'status': 'pending',
+                    'priority': 'high',
+                  },
+                ],
+              },
+              'output': '',
+            }),
+          ),
+          Part(
+            id: 'text-plan',
+            messageID: 'assistant-plan',
+            type: 'text',
+            text: 'Planned the release check.',
+          ),
+        ]),
       ];
 
     await _pumpChat(tester, api);
+    await tester.pumpAndSettle();
+    // The plan's step shows closed until asked for.
+    expect(find.text('Verify production release'), findsNothing);
+
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Todos'));
+    // The step in the transcript and the menu's entry share one name; the
+    // menu's is the one on top.
+    await tester.tap(find.text('Tasks').last);
     await tester.pumpAndSettle();
 
+    // No sheet: the transcript's own checklist, opened in place.
+    expect(find.byKey(const Key('timeline-sheet')), findsNothing);
     expect(find.text('Verify production release'), findsOneWidget);
-    expect(find.text('in progress · high priority'), findsOneWidget);
+    expect(find.text('Pending'), findsWidgets);
   });
 
-  testWidgets('todos sheet failure offers retry instead of raw exception', (
+  testWidgets('no plan in the transcript, no Tasks entry in the menu', (
     tester,
   ) async {
-    final api = _FakeOpenCodeApi()
-      ..todosError = ApiException(
-        'Load todos failed (HTTP 500): session store unavailable',
-      );
-
-    await _pumpChat(tester, api);
+    await _pumpChat(tester, _FakeOpenCodeApi());
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Todos'));
-    await tester.pumpAndSettle();
 
-    expect(
-      find.text('Load todos failed (HTTP 500): session store unavailable'),
-      findsOneWidget,
-    );
-    expect(find.text('Try again'), findsOneWidget);
-
-    api
-      ..todosError = null
-      ..todoItems = [Todo(content: 'Recovered todo', status: 'pending')];
-    await tester.tap(find.text('Try again'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Recovered todo'), findsOneWidget);
-    expect(find.text('Try again'), findsNothing);
-  });
-
-  testWidgets('todos sheet explains an empty todo list', (tester) async {
-    final api = _FakeOpenCodeApi();
-
-    await _pumpChat(tester, api);
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Todos'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('No todos in this conversation'), findsOneWidget);
+    expect(find.text('Tasks'), findsNothing);
   });
 
   testWidgets('launcher combines mobile actions with server commands', (
@@ -4030,10 +4025,11 @@ void main() {
         tester.widget<BottomSheet>(find.byType(BottomSheet)).showDragHandle,
         isNot(false),
       );
-      final timelineList = tester.widget<ListView>(
+      // The kit sheet frame's one scroll carries the rows.
+      final timelineList = tester.widget<CustomScrollView>(
         find.descendant(
-          of: find.byType(BottomSheet),
-          matching: find.byType(ListView),
+          of: find.byKey(const ValueKey('timeline-sheet')),
+          matching: find.byType(CustomScrollView),
         ),
       );
       expect(
@@ -4051,8 +4047,8 @@ void main() {
         ),
       );
       expect(editable.focusNode.hasFocus, isTrue);
-      // First drag expands the draggable sheet to its max; the second one
-      // scrolls the result list itself, which releases the keyboard focus.
+      // Dragging the rows scrolls the sheet's body, which releases the
+      // keyboard focus.
       await tester.drag(
         find.byKey(const ValueKey('timeline-row-user-7')),
         const Offset(0, -300),
@@ -4067,7 +4063,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(editable.focusNode.hasFocus, isFalse);
 
-      await tester.tap(find.byTooltip('Close timeline'));
+      await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
 
       await _useComposerTool(tester, 'commands');
@@ -4604,7 +4600,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('prompt-error-details')));
     await tester.pumpAndSettle();
     expect(find.textContaining('ECONNRESET'), findsOneWidget);
-    await tester.tap(find.text('Close'));
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
 
     // The reply carries the same problem (worded slightly differently by the
@@ -5033,7 +5029,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('message-menu-copy')));
     await tester.pumpAndSettle();
     expect(copiedText, 'Fix the login bug');
-    expect(find.text('Message text copied'), findsOneWidget);
+    // The kit's copy feedback (a tick and an announcement), not a snackbar.
+    expect(find.byType(SnackBar), findsNothing);
   });
 
   testWidgets('deleting a message confirms, calls the server, and prunes it', (

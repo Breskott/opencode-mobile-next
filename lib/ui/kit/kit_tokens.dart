@@ -248,6 +248,12 @@ class KitTokens extends ThemeExtension<KitTokens> {
     return 2 / dpr;
   }
 
+  /// The stroke of the kit's small indeterminate spinners: a working
+  /// [KitButton] or [KitIconButton], and [KitStatusMark]'s working ring.
+  /// Logical pixels, so the arc keeps its weight on every screen density
+  /// (the focus ring is physical pixels; a spinner is a glyph).
+  static const double spinnerStroke = 2;
+
   /// KitChip.md: the visual pill height; its 48 dp target is padding.
   static const double chipHeight = 32;
 
@@ -331,6 +337,10 @@ class KitTokens extends ThemeExtension<KitTokens> {
 
   /// KitNeedsYou.md: the badge's text-scale clamp (A11Y-8).
   static const double badgeTextScaleMax = 1.3;
+
+  /// KitNeedsYou.md: how far a count badge sits past its child's top-end
+  /// corner, on both axes: a third of [badgeHeight].
+  static const double badgeOffset = badgeHeight / 3;
 
   /// KitQr.md: the QR code's largest side.
   static const double qrMaxSize = 240;

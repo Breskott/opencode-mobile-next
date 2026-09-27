@@ -5,10 +5,14 @@ class _CommandAuthSheet extends StatefulWidget {
     required this.controller,
     required this.integration,
     required this.method,
+    required this.name,
   });
   final ConnectionController controller;
   final IntegrationInfo integration;
   final IntegrationMethodInfo method;
+
+  /// The provider's presented name, as the sheet's title says it.
+  final String name;
   @override
   State<_CommandAuthSheet> createState() => _CommandAuthSheetState();
 }
@@ -22,6 +26,14 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
   bool _invalidated = false;
   bool _uncertainStart = false;
   String? _error;
+
+  /// The server has had [_answerWait] to finish a started sign-in without
+  /// the sheet hearing back: "Check {provider} sign-in now" is offered.
+  /// An attempt found already running when the sheet opens offers it at
+  /// once.
+  bool _checkOffered = false;
+  Timer? _answerTimer;
+  static const _answerWait = Duration(seconds: 8);
   AppLocalizations get _l10n =>
       lookupAppLocalizations(Localizations.localeOf(context));
   bool get _current =>
@@ -44,9 +56,19 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
         widget.integration.id,
         locationRevision: _location,
       );
+      _checkOffered = _attempt != null;
     } catch (_) {
       _invalidated = true;
     }
+  }
+
+  /// Waits [_answerWait] after a start before offering the check, so the
+  /// person first finishes what the server asks of them.
+  void _waitForAnswer() {
+    _answerTimer?.cancel();
+    _answerTimer = Timer(_answerWait, () {
+      if (mounted && _attempt != null) setState(() => _checkOffered = true);
+    });
   }
 
   void _changed() {
@@ -62,16 +84,10 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
     });
     var dispatched = false;
     try {
-      // revamp: merge-into:command-auth-sheet (no owner). Raised from this
-      // sheet, the question replaces its content in place (K2 §4.7).
-      final confirmed = await showKitConfirm(
-        context,
-        icon: AppIconography.terminal,
-        title: _l10n.commandAuthConfirmTitle,
-        body: _l10n.commandAuthConfirmDetail,
-        confirmLabel: _l10n.commandAuthStart,
-      );
-      if (!confirmed || !_current || !(route?.isCurrent ?? true)) return;
+      // The sheet itself is the question (slice-P3.11a: the separate
+      // "Start sign-in on the server?" confirm merged into it): its intro
+      // says what starting does and whom it trusts, and Start acts.
+      if (!_current || !(route?.isCurrent ?? true)) return;
       dispatched = true;
       final launch = await widget.controller.startIntegrationCommand(
         widget.integration.id,
@@ -82,7 +98,9 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
       setState(() {
         _attempt = launch.attemptID;
         _status = IntegrationAuthState.pending;
+        _checkOffered = false;
       });
+      _waitForAnswer();
     } catch (_) {
       if (_current) {
         String? recovered;
@@ -94,6 +112,7 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
         } catch (_) {}
         setState(() {
           _attempt = recovered;
+          _checkOffered = recovered != null;
           _uncertainStart = dispatched && recovered == null;
           _error = _l10n.commandAuthFailed;
         });
@@ -146,6 +165,7 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
 
   @override
   void dispose() {
+    _answerTimer?.cancel();
     widget.controller.removeListener(_changed);
     widget.controller.profileDataChanges.removeListener(_changed);
     super.dispose();
@@ -204,7 +224,7 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
           tone: KitTextTone.secondary,
         ),
         SizedBox(height: tokens.space1),
-        KitText(l10n.commandAuthMethodHint),
+        KitText(l10n.commandAuthSheetIntro(widget.name)),
         if (_current) ...[
           gap,
           KitLoadingBar(loading: _busy, label: l10n.commandAuthSheetWorking),
@@ -220,12 +240,14 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
                     working: _busy,
                     onPressed: _busy ? null : _start,
                   )
-                : KitAction(
+                : _checkOffered
+                ? KitAction(
                     key: const ValueKey('command-auth-check'),
-                    label: l10n.commandAuthCheck,
+                    label: l10n.commandAuthCheckNamed(widget.name),
                     working: _busy,
                     onPressed: _busy ? null : () => _check(),
-                  ),
+                  )
+                : null,
             secondary: _attempt == null
                 ? null
                 : KitAction(

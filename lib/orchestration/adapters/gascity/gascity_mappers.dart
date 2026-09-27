@@ -933,7 +933,9 @@ String _gateTitle(GateKind kind, String? raw) => switch (kind) {
 /// Tokens and cost come from `today`; every figure is the host's local
 /// estimate, which [OrchestrationUsageGasCity.isEstimated] reports.
 OrchestrationUsage mapUsage(GcUsage usage, {GcStatus? status}) {
-  final today = usage.today;
+  final available = usage.available && usage.source != 'unavailable';
+  final today = available ? _mapUsageTotals(usage.today) : null;
+  final windowSecs = usage.recentWindowSecs;
   final counts = status == null ? null : mapStatusCounts(status);
   return OrchestrationUsage(
     capturedAt: usage.updatedAt,
@@ -945,7 +947,48 @@ OrchestrationUsage mapUsage(GcUsage usage, {GcStatus? status}) {
     inputTokens: today?.inputTokens,
     outputTokens: today?.outputTokens,
     costUsd: today?.costUsdEstimate,
+    evidence: OrchestrationUsageEvidence(
+      available: available,
+      recording: usage.recording,
+      // Gas City has no billing source. Unknown future source values must
+      // not promote these estimates to authoritative charges.
+      isEstimated: true,
+      partial: usage.partial,
+      partialReasons: List.unmodifiable(usage.partialReasons),
+      observedFrom: usage.observedFrom,
+      updatedAt: usage.updatedAt,
+      today: today,
+      recent: available ? _mapUsageTotals(usage.recent) : null,
+      recentWindow: windowSecs != null && windowSecs > 0
+          ? Duration(seconds: windowSecs)
+          : null,
+      recentBySession: available && usage.recentBySession != null
+          ? List.unmodifiable([
+              for (final session in usage.recentBySession!)
+                if (session.session.isNotEmpty)
+                  OrchestrationSessionUsage(
+                    workerName: session.session,
+                    sessionId: session.sessionId,
+                    totals: _mapUsageTotals(session.totals)!,
+                  ),
+            ])
+          : null,
+    ),
     raw: usage.raw,
+  );
+}
+
+OrchestrationUsageTotals? _mapUsageTotals(GcUsageTotals? totals) {
+  if (totals == null) return null;
+  int? nonnegative(int? value) => value != null && value >= 0 ? value : null;
+  final cost = totals.costUsdEstimate;
+  return OrchestrationUsageTotals(
+    inputTokens: nonnegative(totals.inputTokens),
+    outputTokens: nonnegative(totals.outputTokens),
+    cacheReadTokens: nonnegative(totals.cacheReadTokens),
+    cacheCreationTokens: nonnegative(totals.cacheCreationTokens),
+    costUsdEstimate: cost != null && cost.isFinite && cost >= 0 ? cost : null,
+    unpriced: nonnegative(totals.unpriced),
   );
 }
 
@@ -965,6 +1008,8 @@ OrchestrationUsage mapStatusCounts(GcStatus status) => OrchestrationUsage(
 /// treated as estimated so the UI labels it.
 extension OrchestrationUsageGasCity on OrchestrationUsage {
   bool get isEstimated {
+    final reported = evidence?.isEstimated;
+    if (reported != null) return reported;
     final source = readText(raw, 'source');
     return source == null ||
         source == 'local_estimate' ||

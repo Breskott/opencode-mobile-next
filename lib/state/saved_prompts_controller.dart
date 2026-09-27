@@ -93,6 +93,7 @@ class SavedPromptsController extends ChangeNotifier {
   Future<StashedPrompt> _materialize(
     String id, {
     required bool sameLocation,
+    bool partial = false,
   }) async {
     final prompt = prompts.firstWhere((p) => p.id == id);
     if (!sameLocation && prompt.locationBound) {
@@ -104,7 +105,7 @@ class SavedPromptsController extends ChangeNotifier {
       sameLocation: sameLocation,
       checkCurrent: _check,
     );
-    if (recovered.unavailable.isNotEmpty) {
+    if (recovered.unavailable.isNotEmpty && !partial) {
       throw StateError('Saved prompt attachments are unavailable');
     }
     return sanitizeSavedPrompt(
@@ -122,8 +123,10 @@ class SavedPromptsController extends ChangeNotifier {
 
   /// Removes now; keeps full attachment bytes in the Undo closure until the
   /// notice is dismissed. No persistent tombstone or hidden recovery queue.
+  /// An attachment whose file is already gone does not block the delete;
+  /// Undo brings back everything that could still be read.
   Future<SavedPromptUndo> delete(String id) => _change(() async {
-    final original = await _materialize(id, sameLocation: true);
+    final original = await _materialize(id, sameLocation: true, partial: true);
     await shelf.remove(profileID, id, checkCurrent: _check);
     return SavedPromptUndo._(
       () =>

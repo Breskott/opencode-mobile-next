@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../diagnostics/app_diagnostics.dart';
 import '../diagnostics/perf_trace.dart';
+import '../diagnostics/report_problem_startup.dart';
 import '../platform/app_exit.dart';
 import '../state/profiles.dart';
 import 'builtin_linux.dart';
@@ -75,11 +76,16 @@ class AppExitRecovery extends ChangeNotifier {
   }
 
   /// Runs once per app process; later calls do nothing.
+  ///
+  /// A notable exit is also kept, typed, in the persisted problem report
+  /// ([problemReport], by default [ReportProblemStartup.ready]), so it is
+  /// still there after the next crash or restart.
   Future<void> runOnce({
     required ProfileStore store,
     required ServerProfile? active,
     required BuiltinServerStarter starter,
     AppDiagnosticsController? diagnostics,
+    Future<ReportProblemStartup?>? problemReport,
   }) async {
     if (_ran) return;
     _ran = true;
@@ -108,6 +114,12 @@ class AppExitRecovery extends ChangeNotifier {
         null,
         source: 'android.exit',
         at: exit.timestamp,
+      );
+      unawaited(
+        (problemReport ?? ReportProblemStartup.ready).then(
+          (kept) => kept?.recordAndroidExit(exit),
+          onError: (Object _) {},
+        ),
       );
     }
     if (!wasRunning) return;

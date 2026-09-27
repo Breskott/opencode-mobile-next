@@ -79,11 +79,10 @@ EventEnvelope _permission(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('chat queues concurrent permissions and replies by request ID', (
-    tester,
+  Future<void> pumpChat(
+    WidgetTester tester,
+    ConnectionController controller,
   ) async {
-    final api = _FakeOpenCodeApi();
-    final controller = await _controller(api);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
@@ -91,6 +90,16 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+  }
+
+  // chat-5: the card answers in place (one tap for Allow once); Details
+  // opens the one request sheet.
+  testWidgets('chat queues concurrent permissions and replies by request ID', (
+    tester,
+  ) async {
+    final api = _FakeOpenCodeApi();
+    final controller = await _controller(api);
+    await pumpChat(tester, controller);
 
     controller.handleEventForTesting(
       _permission('request-1', 'bash', 'git status'),
@@ -101,22 +110,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Run a shell command'), findsOneWidget);
-    expect(find.text('git status'), findsOneWidget);
     expect(find.text('Edit a file'), findsNothing);
+    expect(find.textContaining('1 more request is waiting'), findsOneWidget);
 
-    expect(find.text('Allow once'), findsNothing);
-    await tester.tap(find.byKey(const Key('permission-card-review')));
-    await tester.pumpAndSettle();
-    expect(api.replies, isEmpty);
-    await tester.tap(find.text('Allow once'));
+    await tester.tap(find.byKey(const Key('permission-card-allow')));
     await tester.pumpAndSettle();
 
     expect(api.replies, [(requestID: 'request-1', reply: 'once')]);
     expect(find.text('Edit a file'), findsOneWidget);
-    expect(find.text('lib/main.dart'), findsOneWidget);
   });
 
-  testWidgets('chat distinguishes requested patterns from always-allow scope', (
+  testWidgets('Always allow states its scope in the sheet before it sends', (
     tester,
   ) async {
     final api = _FakeOpenCodeApi();
@@ -124,45 +128,27 @@ void main() {
     controller.handleEventForTesting(
       _permission('request-1', 'bash', 'git status', always: ['git *', 'gh *']),
     );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
-      ),
-    );
-    await tester.pumpAndSettle();
+    await pumpChat(tester, controller);
 
     // The request lands as an inline card above the composer, not as a
-    // modal sheet: nothing steals the keyboard until the user asks.
+    // modal sheet: nothing steals the keyboard until the person asks.
     expect(find.byKey(const Key('permission-sheet')), findsNothing);
-    expect(find.byKey(const Key('permission-card-review')), findsOneWidget);
-    expect(find.text('git status'), findsOneWidget);
     await tester.tap(find.byKey(const Key('permission-card-review')));
     await tester.pumpAndSettle();
-
     expect(find.byKey(const Key('permission-sheet')), findsOneWidget);
-    // A bash pattern is the command itself, so the sheet shows it once as
-    // the highlighted command preview instead of repeating it as a resource
-    // row; the always-allow scope below stays a separate list.
-    expect(find.byKey(const Key('permission-command-preview')), findsOneWidget);
-    expect(find.byKey(const Key('permission-resources')), findsNothing);
-    expect(find.text('git status'), findsWidgets);
-    expect(find.text('Always allow would also cover'), findsOneWidget);
-    expect(find.text('git *\ngh *'), findsOneWidget);
-    expect(find.text('Always allow'), findsOneWidget);
-    await tester.tap(find.text('Always allow'));
+
+    await tester.tap(find.byKey(const Key('permission-allow-always')));
     await tester.pumpAndSettle();
-    expect(find.text('Confirm broader access'), findsOneWidget);
-    expect(find.text('git *\ngh *'), findsWidgets);
-    expect(find.textContaining('Allow once is safer'), findsOneWidget);
+    expect(find.textContaining('git *, gh *'), findsOneWidget);
     expect(api.replies, isEmpty);
-    await tester.tap(find.text('Confirm always allow'));
+    await tester.ensureVisible(find.text('Turn on'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Turn on'));
     await tester.pumpAndSettle();
     expect(api.replies, [(requestID: 'request-1', reply: 'always')]);
   });
 
-  testWidgets('chat keeps failed permission open and shows the failure', (
+  testWidgets('a failed reply keeps the card with the refusal in words', (
     tester,
   ) async {
     final api = _FakeOpenCodeApi()..failReplies = true;
@@ -170,22 +156,15 @@ void main() {
     controller.handleEventForTesting(
       _permission('request-1', 'bash', 'git status'),
     );
+    await pumpChat(tester, controller);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('permission-card-review')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('permission-allow-once')));
+    await tester.tap(find.byKey(const Key('permission-card-allow')));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Reply failed:'), findsOneWidget);
+    expect(find.textContaining('Not accepted'), findsOneWidget);
     expect(find.textContaining('server refused the reply'), findsOneWidget);
     expect(controller.permissions, contains('request-1'));
+    expect(find.byKey(const Key('permission-card-allow')), findsOneWidget);
   });
 
   testWidgets(
@@ -235,25 +214,15 @@ void main() {
       controller.handleEventForTesting(
         _permission('request-2', 'edit', 'lib/main.dart'),
       );
+      await pumpChat(tester, controller);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [connProvider.overrideWithValue(controller)],
-          child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Allow once'), findsNothing);
-      await tester.tap(find.byKey(const Key('permission-card-review')));
-      await tester.pumpAndSettle();
-      expect(api.replies, isEmpty);
-      await tester.tap(find.text('Allow once'));
+      await tester.tap(find.byKey(const Key('permission-card-allow')));
       await tester.pumpAndSettle();
 
       expect(controller.permissions.keys, ['request-2']);
       expect(find.text('Run a shell command'), findsNothing);
       expect(find.text('Edit a file'), findsOneWidget);
-      expect(find.textContaining('Reply failed:'), findsNothing);
+      expect(find.textContaining('Not accepted'), findsNothing);
 
       controller.handleEventForTesting(
         EventEnvelope(
@@ -292,21 +261,13 @@ void main() {
         },
       ),
     );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
-      ),
-    );
-    await tester.pumpAndSettle();
+    await pumpChat(tester, controller);
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Allow once'), findsNothing);
-    await tester.tap(find.byKey(const Key('permission-card-review')));
+    final allow = find.byKey(const Key('permission-card-allow'));
+    await tester.ensureVisible(allow);
     await tester.pumpAndSettle();
-    expect(api.replies, isEmpty);
-    await tester.tap(find.text('Allow once'));
+    await tester.tap(allow);
     await tester.pumpAndSettle();
     expect(api.replies, [(requestID: 'request-1', reply: 'once')]);
   });
@@ -337,27 +298,19 @@ void main() {
     expect(find.byType(AlertDialog), findsNothing);
   });
 
-  testWidgets('the attention card keeps the composer focus and Review opens '
+  testWidgets('the attention card keeps the composer focus and Details opens '
       'a dismissible sheet', (tester) async {
     final api = _FakeOpenCodeApi();
     final controller = await _controller(api);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
-      ),
-    );
+    await pumpChat(tester, controller);
+    final composer = find.byKey(const Key('chat-composer-field'));
+    await tester.tap(composer);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('chat-composer-field')));
-    await tester.pumpAndSettle();
-    final field = tester.widget<TextField>(
-      find.byKey(const Key('chat-composer-field')),
+    final field = tester.widget<EditableText>(
+      find.descendant(of: composer, matching: find.byType(EditableText)),
     );
-    expect(field.focusNode?.hasFocus, isTrue);
-    await tester.enterText(
-      find.byKey(const Key('chat-composer-field')),
-      'Keep this draft',
-    );
+    expect(field.focusNode.hasFocus, isTrue);
+    await tester.enterText(composer, 'Keep this draft');
     await tester.pumpAndSettle();
 
     controller.handleEventForTesting(
@@ -367,12 +320,8 @@ void main() {
 
     // Inline card, focus untouched, no modal route.
     expect(find.byKey(const Key('permission-card-request-1')), findsOneWidget);
-    expect(field.focusNode?.hasFocus, isTrue);
+    expect(field.focusNode.hasFocus, isTrue);
     expect(find.byKey(const Key('permission-sheet')), findsNothing);
-    expect(
-      find.bySemanticsLabel('Permission needed: Run a shell command'),
-      findsOneWidget,
-    );
 
     await tester.tap(find.byKey(const Key('permission-card-review')));
     await tester.pumpAndSettle();
@@ -383,6 +332,6 @@ void main() {
     expect(find.byKey(const Key('permission-sheet')), findsNothing);
     expect(find.byKey(const Key('permission-card-request-1')), findsOneWidget);
     expect(api.replies, isEmpty);
-    expect(field.controller!.text, 'Keep this draft');
+    expect(field.controller.text, 'Keep this draft');
   });
 }

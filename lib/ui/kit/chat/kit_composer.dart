@@ -260,11 +260,21 @@ class KitComposer extends StatefulWidget {
   /// composer's height is published with KitBottomInset.add so the last
   /// message, KitJumpPill and KitUndo stay clear of it. The keyboard lifts
   /// the composer; nothing else moves.
+  ///
+  /// [composer] is the glass [KitComposer], or the host's widget that
+  /// builds one. [above] is solid content pinned over the composer (a
+  /// request card, a note, a find bar): it sits on the ground, edge to edge
+  /// on its own gutters, so the body passes under it unseen; the composer
+  /// stays the only glass (visual language §6). The published height
+  /// counts both, and the layer never grows past the body: [above] gets
+  /// the room the composer leaves.
   static Widget layer({
     Key? key,
     required Widget body,
-    required KitComposer composer,
-  }) => _KitComposerLayer(key: key, body: body, composer: composer);
+    required Widget composer,
+    Widget? above,
+  }) =>
+      _KitComposerLayer(key: key, body: body, composer: composer, above: above);
 
   @override
   State<KitComposer> createState() => _KitComposerState();
@@ -468,7 +478,12 @@ class _KitComposerState extends State<KitComposer> {
     final media = MediaQuery.of(context);
     final note = _noteLine(l10n);
     final short = KitLayout.isShort(context);
-    final available = media.size.height - media.viewInsets.bottom;
+    // Under [KitComposer.layer] the room is the layer's own height (a page
+    // frame has already taken the keyboard off it and hidden the inset);
+    // elsewhere, the window less the keyboard.
+    final available =
+        _KitComposerRoom.of(context) ??
+        media.size.height - media.viewInsets.bottom;
     final fieldCap = (available * KitLayout.composerMaxShare)
         .floorToDouble()
         .clamp(tokens.minTarget, double.infinity);
@@ -997,10 +1012,12 @@ class _KitComposerLayer extends StatefulWidget {
     super.key,
     required this.body,
     required this.composer,
+    this.above,
   });
 
   final Widget body;
-  final KitComposer composer;
+  final Widget composer;
+  final Widget? above;
 
   @override
   State<_KitComposerLayer> createState() => _KitComposerLayerState();
@@ -1014,46 +1031,118 @@ class _KitComposerLayerState extends State<_KitComposerLayer> {
     setState(() => _height = size.height);
   }
 
+  /// [above] on the ground over [composer], within [maxHeight] (null:
+  /// unbounded): the composer keeps its height and [above] gets the rest.
+  Widget _aboveAndComposer(
+    KitTokens tokens,
+    double? maxHeight,
+    Widget above,
+    Widget composer,
+  ) {
+    final band = ColoredBox(
+      color: tokens.roles.ground,
+      child: Center(
+        heightFactor: 1,
+        child: ConstrainedBox(
+          // The composer's width plus the gutters the parts above draw
+          // themselves.
+          constraints: BoxConstraints(
+            maxWidth: KitLayout.paneDetailMaxWidth + 2 * tokens.gutter,
+          ),
+          child: above,
+        ),
+      ),
+    );
+    final column = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        maxHeight == null ? band : Flexible(child: band),
+        composer,
+      ],
+    );
+    if (maxHeight == null) return column;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: column,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
     final inherited = KitBottomInset.of(context).bottom;
-    return Stack(
-      children: [
-        PositionedDirectional(
-          start: 0,
-          end: 0,
-          top: 0,
-          bottom: 0,
-          child: KitBottomInset.add(extraBottom: _height, child: widget.body),
+    final composer = Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.gutter,
+        end: tokens.gutter,
+        bottom: tokens.space2,
+      ),
+      child: Center(
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: KitLayout.paneDetailMaxWidth,
+          ),
+          child: widget.composer,
         ),
-        PositionedDirectional(
-          start: 0,
-          end: 0,
-          bottom: inherited,
-          child: _SizeReporter(
-            onSize: _onSize,
-            child: Padding(
-              padding: EdgeInsetsDirectional.only(
-                start: tokens.gutter,
-                end: tokens.gutter,
-                bottom: tokens.space2,
-              ),
-              child: Center(
-                heightFactor: 1,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: KitLayout.paneDetailMaxWidth,
-                  ),
-                  child: widget.composer,
+      ),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) => Stack(
+        children: [
+          PositionedDirectional(
+            start: 0,
+            end: 0,
+            top: 0,
+            bottom: 0,
+            child: KitBottomInset.add(extraBottom: _height, child: widget.body),
+          ),
+          PositionedDirectional(
+            start: 0,
+            end: 0,
+            bottom: inherited,
+            child: _SizeReporter(
+              onSize: _onSize,
+              // One structure with or without [above], so the composer's
+              // field keeps its state and focus when a part comes or goes.
+              child: _aboveAndComposer(
+                tokens,
+                constraints.hasBoundedHeight
+                    ? (constraints.maxHeight - inherited).clamp(
+                        0.0,
+                        double.infinity,
+                      )
+                    : null,
+                widget.above ?? const SizedBox.shrink(),
+                _KitComposerRoom(
+                  height: constraints.hasBoundedHeight
+                      ? constraints.maxHeight
+                      : null,
+                  child: composer,
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
+}
+
+/// The height [KitComposer.layer] lays its composer out in: the field's
+/// cap is a share of it (KitLayout.composerMaxShare).
+class _KitComposerRoom extends InheritedWidget {
+  const _KitComposerRoom({required this.height, required super.child});
+
+  final double? height;
+
+  static double? of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_KitComposerRoom>()?.height;
+
+  @override
+  bool updateShouldNotify(_KitComposerRoom oldWidget) =>
+      height != oldWidget.height;
 }
 
 /// Reports its child's laid-out size after each layout that changes it.

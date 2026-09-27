@@ -209,10 +209,17 @@ void main() {
     final chat = tester.widget<ChatScreen>(find.byType(ChatScreen));
     expect(chat.sessionID, 'session-1');
     expect(find.text('Edit a file'), findsOneWidget);
-    expect(find.text('Allow once'), findsNothing);
+    // The card answers in place (chat-5); Details opens the exact request.
+    expect(find.byKey(const Key('permission-card-allow')), findsOneWidget);
+    expect(find.byKey(const Key('permission-sheet')), findsNothing);
     await tester.tap(find.byKey(const Key('permission-card-review')));
     await tester.pumpAndSettle();
-    expect(find.text('Allow once'), findsOneWidget);
+    final sheet = find.byKey(const Key('permission-sheet'));
+    expect(sheet, findsOneWidget);
+    expect(
+      find.descendant(of: sheet, matching: find.text('Allow once')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('question notification opens the exact answer sheet', (

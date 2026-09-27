@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../builtin/builtin_linux.dart';
+import '../../../builtin/setup/components.dart' show SetupComponentIds;
 import '../../../builtin/setup/preflight.dart';
 import '../../../builtin/setup/setup_contract.dart';
 import '../../../l10n/app_localizations.dart';
@@ -13,13 +14,17 @@ import 'phone_setup_selection.dart';
 
 /// The Customize sheet of screen A, and "Add tools" from the phone's card.
 ///
-/// First setup ([addMode] false): every component, required ones on and
-/// locked with their reason, optional ones as switches. It returns the whole
+/// First setup ([addMode] false): every component, the required ones first
+/// and locked on, then the optional ones as switches. It returns the whole
 /// selection (required ids included) so the caller can hand it straight to
 /// `SetupEngine.run`.
 ///
 /// Add mode: only optional components. Those already on the phone are shown
 /// as installed and cannot be toggled; it returns only the ids to add.
+///
+/// An app-side component (voice typing, [SetupComponent.app]) shows only
+/// once it says this phone can have it, with its real size; installed, it
+/// is shown as installed in both modes, with its removal beside it.
 ///
 /// Totals update as switches change and always count what the engine will
 /// really install, dependencies included.
@@ -92,8 +97,23 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
   Set<String>? _installed;
   VoiceDeviceInfo? _device;
 
-  List<SetupComponent> get _optional => [
+  /// What each app-side component offers this phone, once it has answered;
+  /// until then (and when it offers nothing) it has no row.
+  final _offers = <String, SetupAppOffer>{};
+  String? _removing;
+
+  /// The registry as this phone sees it: app-side components only when
+  /// offered, at their real size.
+  List<SetupComponent> get _registry => [
     for (final component in widget.registry)
+      if (component.app == null)
+        component
+      else if (_offers[component.id] case final offer?)
+        component.withDownloadBytes(offer.downloadBytes),
+  ];
+
+  List<SetupComponent> get _optional => [
+    for (final component in _registry)
       if (!component.required) component,
   ];
 
@@ -101,6 +121,9 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
   void initState() {
     super.initState();
     unawaited(_probeDevice());
+    for (final component in widget.registry) {
+      if (component.app case final app?) unawaited(_ask(component.id, app));
+    }
     if (widget.addMode) {
       _chosen = {...?widget.selected};
       final pending = widget.installedOptional;
@@ -130,7 +153,56 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
     }
   }
 
-  bool _isInstalled(String id) => _installed?.contains(id) ?? false;
+  bool _isInstalled(String id) =>
+      (_installed?.contains(id) ?? false) || (_offers[id]?.installed ?? false);
+
+  Future<void> _ask(String id, SetupAppComponent app) async {
+    SetupAppOffer? offer;
+    try {
+      offer = await app.offer();
+    } catch (_) {
+      offer = null;
+    }
+    if (!mounted) return;
+    setState(() {
+      if (offer == null) {
+        _offers.remove(id);
+        _chosen.remove(id);
+      } else {
+        _offers[id] = offer;
+        if (offer.installed) _chosen.remove(id);
+      }
+    });
+  }
+
+  /// Removes an installed app-side component after a question that says
+  /// what goes and how much space comes back; a failure stays in the
+  /// question with Try again.
+  Future<void> _remove(AppLocalizations l10n, SetupComponent component) async {
+    final app = component.app;
+    final offer = _offers[component.id];
+    if (app == null || offer == null || _removing != null) return;
+    setState(() => _removing = component.id);
+    try {
+      final removed = await showKitConfirm(
+        context,
+        title: l10n.voiceComponentRemoveTitle,
+        body: l10n.voiceComponentRemoveBody(
+          setupSizeText(l10n, offer.downloadBytes),
+        ),
+        confirmLabel: l10n.voiceComponentRemove,
+        kind: KitConfirmKind.destructive,
+        icon: AppIconography.delete,
+        confirmKey: ValueKey(
+          'phone-setup-customize-remove-${component.id}-confirm',
+        ),
+        action: app.remove,
+      );
+      if (removed && mounted) await _ask(component.id, app);
+    } finally {
+      if (mounted) setState(() => _removing = null);
+    }
+  }
 
   /// P0.8: the CPU ABI, free space and total RAM the pre-flight check reads,
   /// before "Done"/"Add" starts a download.
@@ -169,7 +241,8 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
   /// turns off the optional tools that need it. The switches never show a
   /// state the engine would silently override.
   void _toggle(SetupComponent component, bool on) {
-    final byId = {for (final c in widget.registry) c.id: c};
+    final registry = _registry;
+    final byId = {for (final c in registry) c.id: c};
     final next = {..._chosen};
     void enable(String id) {
       final target = byId[id];
@@ -180,7 +253,7 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
 
     void disable(String id) {
       if (!next.remove(id)) return;
-      for (final other in widget.registry) {
+      for (final other in registry) {
         if (other.dependsOn.contains(id)) disable(other.id);
       }
     }
@@ -195,14 +268,18 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
 
   /// What the engine will actually run for the current switches.
   List<SetupComponent> get _willInstall {
+    final registry = _registry;
     if (!widget.addMode) {
-      return expandSetupSelection(widget.registry, _chosen);
+      return [
+        for (final component in expandSetupSelection(registry, _chosen))
+          if (component.app == null || !_isInstalled(component.id)) component,
+      ];
     }
     // Adding tools to a phone that is already set up: the required base is
     // there, and so is every optional tool the check found.
     return [
       for (final component in expandSetupSelection(
-        widget.registry,
+        registry,
         _chosen,
         includeRequired: false,
       ))
@@ -218,7 +295,7 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final tokens = KitTokens.of(context);
-    final rows = widget.addMode ? _optional : widget.registry;
+    final rows = widget.addMode ? _optional : _registry;
     final checking = widget.addMode && _installed == null;
     final install = _willInstall;
     final totals = setupTotals(install);
@@ -247,6 +324,7 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
         setupSizeText(l10n, totals.bytes),
       );
     }
+    final showsCost = !checking && !everythingInstalled && install.isNotEmpty;
     final disabled =
         checking || preflight != null || (widget.addMode && install.isEmpty);
     final children = <Widget>[
@@ -267,18 +345,46 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
             ),
           ),
         ),
-      KitRowGroup(
-        margin: EdgeInsetsDirectional.zero,
-        leadingIcons: false,
-        children: [
+      // What is always installed first, then what the person chooses: the
+      // locks say "Required" once per row and nothing else repeats it.
+      for (final group in [
+        [
           for (final component in rows)
-            _row(context, l10n, component, checking: checking),
+            if (component.required) component,
         ],
-      ),
-      SizedBox(height: tokens.space4),
+        [
+          for (final component in rows)
+            if (!component.required) component,
+        ],
+      ])
+        if (group.isNotEmpty) ...[
+          KitRowGroup(
+            margin: EdgeInsetsDirectional.zero,
+            leadingIcons: false,
+            children: [
+              for (final component in group)
+                _row(context, l10n, component, checking: checking),
+            ],
+          ),
+          SizedBox(height: tokens.space4),
+        ],
       // What the switches add up to, said once as they change. A problem
       // the phone has (P0.8) is a notice with its fix beside it.
-      if (preflight == null)
+      // A real install is priced with the kit's cost line (KIT-37, P1.5:
+      // before every install); checking and nothing-to-add stay words.
+      if (preflight == null && showsCost)
+        Semantics(
+          liveRegion: true,
+          child: KitNotice.cost(
+            [
+              setupDurationText(l10n, totals.seconds),
+              l10n.phoneSetupStartApproxSize(setupSizeText(l10n, totals.bytes)),
+            ],
+            key: const ValueKey('phone-setup-customize-cost'),
+            messageKey: const ValueKey('phone-setup-customize-totals'),
+          ),
+        )
+      else if (preflight == null)
         Semantics(
           liveRegion: true,
           child: KitText(
@@ -348,36 +454,61 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
     final key = ValueKey('phone-setup-customize-${component.id}');
     if (component.required) {
       // Shown so nothing is installed behind the person's back, but locked
-      // on with its reason (KIT-30: an always-on setting is locked, not a
-      // disabled switch): switching it off would leave no working agent.
+      // on (KIT-30: an always-on setting is locked, not a disabled switch):
+      // switching it off would leave no working agent. Only a reason of its
+      // own is said; "Required" already says why it cannot be switched off.
       return KitSwitchRow(
         key: key,
         title: component.title,
         value: true,
         onChanged: null,
-        supporting: component.why ?? l10n.phoneSetupStartRequiredWhy,
+        supporting: component.why,
         locked: l10n.phoneSetupCustomizeIncluded,
       );
     }
-    if (widget.addMode && _isInstalled(component.id)) {
+    final app = component.app != null;
+    if ((widget.addMode || app) && _isInstalled(component.id)) {
+      // Installed. One the app installed itself can be removed right here,
+      // where it was added; what it does stays said, its size moves to the
+      // question.
       return KitSwitchRow(
         key: key,
         title: component.title,
         value: true,
         onChanged: null,
+        supporting: app ? component.summary : null,
         locked: l10n.phoneSetupStartInstalled,
+        below: app && component.id == SetupComponentIds.voice
+            ? KitInset(
+                child: KitButton.tertiary(
+                  key: ValueKey('phone-setup-customize-remove-${component.id}'),
+                  label: l10n.voiceComponentRemove,
+                  icon: AppIconography.delete,
+                  destructive: true,
+                  onPressed: _removing != null
+                      ? null
+                      : () => unawaited(_remove(l10n, component)),
+                ),
+              )
+            : null,
       );
     }
     final bytes = component.downloadBytes;
+    final supporting = [
+      ?component.summary,
+      // Kept on one line when the row wraps ("~160" and "MB" together).
+      if (bytes != null && bytes > 0)
+        l10n
+            .phoneSetupStartApproxSize(setupSizeText(l10n, bytes))
+            .replaceAll(' ', '\u00A0'),
+    ];
     return KitSwitchRow(
       key: key,
       title: component.title,
       value: _chosen.contains(component.id),
       onChanged: checking ? null : (on) => _toggle(component, on),
       disabledReason: checking ? l10n.phoneSetupStartChecking : null,
-      supporting: bytes == null || bytes <= 0
-          ? null
-          : l10n.phoneSetupStartApproxSize(setupSizeText(l10n, bytes)),
+      supporting: supporting.isEmpty ? null : supporting.join(' · '),
     );
   }
 }

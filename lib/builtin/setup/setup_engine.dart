@@ -7,21 +7,27 @@ import 'package:flutter/foundation.dart';
 import '../../diagnostics/perf_trace.dart';
 import '../../l10n/app_localizations.dart';
 import '../../termux/bridge.dart' show TermuxRuntime;
+import '../../ui/kit/kit_redact.dart';
 import '../builtin_linux.dart';
 import 'components.dart';
 import 'setup_contract.dart';
 import 'setup_scripts.dart';
+import 'termux_setup_host.dart';
+
+export 'setup_contract.dart' show SetupHostKind;
 
 /// What the engine asks of the app once OpenCode is installed: start the
-/// in-app server for [runtime] and connect to it.
+/// server for [runtime] on [SetupFinishRequest.host] and connect to it.
 @immutable
 class SetupFinishRequest {
   const SetupFinishRequest({
     required this.runtime,
     required this.openCodeChanged,
     this.version,
+    this.host = SetupHostKind.builtin,
   });
 
+  final SetupHostKind host;
   final TermuxRuntime runtime;
 
   /// OpenCode was installed or updated by this job, so a server already
@@ -69,6 +75,37 @@ class ChannelSetupEngine implements SetupEngine {
        _clock = clock ?? DateTime.now {
     _progress = _WatchedProgress(_watchersChanged);
   }
+
+  /// Uses the same component engine inside Termux's proot-distro Ubuntu.
+  /// [finisher] must start and authenticate the Termux server, returning null
+  /// only after connection succeeds. No built-in server fallback is used.
+  factory ChannelSetupEngine.termux({
+    required SetupFinisher finisher,
+    AppLocalizations Function()? strings,
+    List<SetupComponent> Function(
+      AppLocalizations l10n,
+      Map<String, Map<String, String>> params,
+    )?
+    components,
+    Duration pollInterval = const Duration(milliseconds: 500),
+    Duration readTimeout = const Duration(seconds: 10),
+    DateTime Function()? clock,
+  }) => ChannelSetupEngine(
+    linux: TermuxSetupHost(),
+    finisher: finisher,
+    strings: strings,
+    components:
+        components ??
+        ((l10n, params) =>
+            setupComponents(l10n, params: params, host: SetupHostKind.termux)),
+    pollInterval: pollInterval,
+    readTimeout: readTimeout,
+    clock: clock,
+  );
+
+  /// Fixed for this instance, including restoration and the finish request.
+  SetupHostKind get host =>
+      _linux is TermuxSetupHost ? SetupHostKind.termux : SetupHostKind.builtin;
 
   final BuiltinLinux _linux;
 
@@ -126,7 +163,21 @@ class ChannelSetupEngine implements SetupEngine {
 
   /// The last job given to the native runner by this engine.
   String? _handedOver;
+  bool _handoverUncertain = false;
+  String? _handoverError;
   String? _finishing;
+
+  /// App-side components ([SetupComponent.app]) this engine has started,
+  /// as `job/component`, so a poll never starts one twice.
+  final _appStarted = <String>{};
+
+  /// The app-side install running now, if any.
+  ({String jobId, String id, SetupAppComponent app})? _appRun;
+
+  /// Its latest progress, laid over the job's record (the native runner
+  /// only waits for an app step and knows nothing of its bytes).
+  SetupAppProgress? _appLive;
+  DateTime? _appLiveShown;
   Timer? _poll;
   bool _polling = false;
   bool _disposed = false;
@@ -146,6 +197,13 @@ class ChannelSetupEngine implements SetupEngine {
     _starting = true;
     _cancelRequested = false;
     try {
+      if (_handoverUncertain) {
+        await _refresh();
+        if (_handoverUncertain || _progress.value.state == SetupState.running) {
+          _ensurePolling();
+          return;
+        }
+      }
       final last = await _read();
       if (last != null && last.state == 'running') {
         // Already running (the app came back to it): watch, do not restart.
@@ -153,7 +211,11 @@ class ChannelSetupEngine implements SetupEngine {
         _ensurePolling();
         return;
       }
-      await _start(ids, effectiveJobParams(params, last));
+      final effectiveParams = effectiveJobParams(params, last);
+      if (host == SetupHostKind.termux) {
+        TermuxSetupHost.validateParams(effectiveParams);
+      }
+      await _start(ids, effectiveParams);
     } finally {
       _starting = false;
     }
@@ -242,6 +304,23 @@ class ChannelSetupEngine implements SetupEngine {
         },
       );
     } on BuiltinLinuxException catch (error) {
+      if (host == SetupHostKind.termux) {
+        // Native persists before dispatch. A lost RUN_COMMAND reply is not
+        // proof of a failed install; reconcile without launching another job.
+        _handedOver = jobId;
+        _handoverUncertain = true;
+        _handoverError = KitRedact.text(error.message);
+        try {
+          await _refresh();
+        } on BuiltinLinuxException {
+          // Keep the locally running state until durable status is available.
+        } on TimeoutException {
+          // The next poll resolves the handover; never infer failure here.
+        } finally {
+          _ensurePolling();
+        }
+        return;
+      }
       _emitLocal(
         jobId,
         _afterChecks(job, checks),
@@ -260,8 +339,11 @@ class ChannelSetupEngine implements SetupEngine {
         // The next read shows how the job ended.
       }
     }
-    await _refresh();
-    _ensurePolling();
+    try {
+      await _refresh();
+    } finally {
+      _ensurePolling();
+    }
   }
 
   Map<String, Object?> _spec(
@@ -287,6 +369,16 @@ class ChannelSetupEngine implements SetupEngine {
           'runtime': runtime.wireName,
           'openCodeChanged': '$openCodeChanged',
         },
+      };
+    }
+    if (component.app != null) {
+      // The native job waits while the app installs it (see _runApp); a
+      // download can take longer than a start, so it waits longer.
+      return {
+        ...base,
+        'step': true,
+        'stage': l10n.setupAppStageDownloading,
+        'data': {'waitMinutes': '$appStepWaitMinutes'},
       };
     }
     if (component.native) {
@@ -315,11 +407,16 @@ class ChannelSetupEngine implements SetupEngine {
   Future<Map<String, SetupCheckResult>> _checkUntraced(
     List<SetupComponent> job,
   ) async {
+    // App-side components do not live in Linux: asked even before it is
+    // there.
+    final apps = await _checkApps(job);
     final status = await _linux.status();
-    if (!status.installed) return const {};
+    if (!status.installed) return apps;
     final scripts = <String, String>{
       for (final component in job)
-        if (!component.jobStep && component.checkScript.trim().isNotEmpty)
+        if (!component.jobStep &&
+            component.app == null &&
+            component.checkScript.trim().isNotEmpty)
           component.id: component.checkScript,
     };
     final results = scripts.isEmpty
@@ -338,7 +435,24 @@ class ChannelSetupEngine implements SetupEngine {
         version: results[component.id]?.version,
       );
     }
-    return results;
+    return {...results, ...apps};
+  }
+
+  Future<Map<String, SetupCheckResult>> _checkApps(
+    List<SetupComponent> components,
+  ) async => {
+    for (final component in components)
+      if (component.app case final app?) component.id: await _checkApp(app),
+  };
+
+  /// A check that cannot answer says "not installed": the install is
+  /// idempotent, so the worst case is a quick no-op.
+  static Future<SetupCheckResult> _checkApp(SetupAppComponent app) async {
+    try {
+      return await app.check();
+    } catch (_) {
+      return (ok: false, version: null);
+    }
   }
 
   Map<String, ComponentProgress> _afterChecks(
@@ -383,6 +497,7 @@ class ChannelSetupEngine implements SetupEngine {
     if (_starting && _handedOver != _progress.value.jobId) return;
     final current = _progress.value;
     if (current.state != SetupState.running) return;
+    _appRun?.app.cancel();
     try {
       await _linux.cancelSetup();
     } on BuiltinLinuxException {
@@ -399,6 +514,21 @@ class ChannelSetupEngine implements SetupEngine {
     if (record.state == 'running') _ensurePolling();
   }
 
+  /// Continues the saved selection and parameters after a cold restart.
+  /// A running job is observed, never duplicated; completed jobs are left alone.
+  Future<void> resume() async {
+    final record = await _read();
+    if (record == null) return;
+    _show(record);
+    if (record.state == 'running') {
+      _ensurePolling();
+    } else if (record.canContinue) {
+      await run({
+        for (final component in record.components) component.id,
+      }, params: record.params);
+    }
+  }
+
   @override
   Future<Set<String>> installedOptional() async {
     final optional = [
@@ -406,14 +536,25 @@ class ChannelSetupEngine implements SetupEngine {
         if (!component.required && !component.jobStep) component,
     ];
     if (optional.isEmpty) return {};
+    final apps = await _checkApps(optional);
+    final installed = {
+      for (final entry in apps.entries)
+        if (entry.value.ok) entry.key,
+    };
+    final inLinux = [
+      for (final component in optional)
+        if (component.app == null) component,
+    ];
+    if (inLinux.isEmpty) return installed;
     try {
-      final checks = await _check(optional);
+      final checks = await _check(inLinux);
       return {
-        for (final component in optional)
+        ...installed,
+        for (final component in inLinux)
           if (checks[component.id]?.ok == true) component.id,
       };
     } on BuiltinLinuxException {
-      return {};
+      return installed;
     }
   }
 
@@ -437,9 +578,10 @@ class ChannelSetupEngine implements SetupEngine {
     } catch (error, stack) {
       // Polling is the only way the screens see the job, and the only way
       // the app's own step gets run: one bad read must never end it.
-      debugPrint('setup: status poll failed: $error\n$stack');
+      debugPrint(KitRedact.text('setup: status poll failed: $error\n$stack'));
     }
-    if (!_disposed && (_progress.watched || _jobRunning)) {
+    if (!_disposed &&
+        (_progress.watched || _jobRunning || _handoverUncertain)) {
       _poll = Timer(pollInterval, _tick);
     } else {
       _polling = false;
@@ -449,8 +591,33 @@ class ChannelSetupEngine implements SetupEngine {
 
   Future<void> _refresh({Duration? timeout}) async {
     final record = await _read(timeout: timeout);
+    if (_handoverUncertain) {
+      _handoverUncertain = false;
+      final error = _handoverError;
+      _handoverError = null;
+      if (record?.jobId != _handedOver) {
+        final current = _progress.value;
+        _emitLocal(
+          current.jobId!,
+          {for (final component in current.components) component.id: component},
+          0,
+          state: SetupState.failed,
+          error: error,
+        );
+        return;
+      }
+    }
     if (record == null) return;
     _show(record);
+    _followAppStep(record);
+    if (host == SetupHostKind.termux &&
+        record.state == 'running' &&
+        _cancelRequested) {
+      // A cancel during a lost start reply must survive until status recovers.
+      // Keep the flag through failures so polling retries before any finisher.
+      await _linux.cancelSetup();
+      return;
+    }
     if (record.state == 'running' &&
         record.current == SetupComponentIds.start &&
         _finishing != record.jobId) {
@@ -460,6 +627,97 @@ class ChannelSetupEngine implements SetupEngine {
         unawaited(_finish(record, step));
       }
     }
+  }
+
+  /// Starts the app-side component the native job is waiting on, once per
+  /// job, and stops one the job no longer waits on (cancelled, or the
+  /// native side gave up on it).
+  void _followAppStep(SetupJobRecord record) {
+    final run = _appRun;
+    if (run != null &&
+        (record.jobId != run.jobId ||
+            record.state != 'running' ||
+            record.current != run.id)) {
+      run.app.cancel();
+    }
+    final id = record.current;
+    if (record.state != 'running' || id == null) return;
+    final step = record.component(id);
+    if (step == null || step.state != 'running') return;
+    SetupAppComponent? app;
+    for (final component in _jobComponents) {
+      if (component.id == id) app = component.app;
+    }
+    if (app == null || !_appStarted.add('${record.jobId}/$id')) return;
+    unawaited(_runApp(record.jobId, id, app));
+  }
+
+  /// Installs an app-side component and tells the native job how it went.
+  Future<void> _runApp(String jobId, String id, SetupAppComponent app) async {
+    _appRun = (jobId: jobId, id: id, app: app);
+    _appLive = null;
+    String? error;
+    String? version;
+    try {
+      version = await app.install(
+        onProgress: (progress) => _appProgress(jobId, progress),
+      );
+    } on SetupAppFailure catch (failure) {
+      if (failure.kind == SetupAppFailureKind.cancelled) {
+        // The job was cancelled or gave up on it: nothing to report.
+        _appDone(jobId, id);
+        return;
+      }
+      error = appFailureReason(failure.kind);
+    } catch (_) {
+      error = appFailureReason(SetupAppFailureKind.failed);
+    }
+    _appDone(jobId, id);
+    try {
+      await _linux.completeSetupStep(
+        jobId: jobId,
+        id: id,
+        ok: error == null,
+        error: error,
+        version: version == null ? null : KitRedact.text(version),
+      );
+    } on BuiltinLinuxException {
+      // Lost on the way: the next poll starts it again, which finds it
+      // installed (or resumes the download) and reports again.
+      _appStarted.remove('$jobId/$id');
+      return;
+    }
+    try {
+      await _refresh();
+    } on BuiltinLinuxException {
+      // The next poll reads the job.
+    } on TimeoutException {
+      // Likewise.
+    }
+  }
+
+  void _appDone(String jobId, String id) {
+    final run = _appRun;
+    if (run != null && run.jobId == jobId && run.id == id) _appRun = null;
+    _appLive = null;
+  }
+
+  /// Shows an app-side install's bytes at most four times a second, and at
+  /// once when its stage changes.
+  void _appProgress(String jobId, SetupAppProgress progress) {
+    if (_appRun?.jobId != jobId) return;
+    final previous = _appLive;
+    _appLive = progress;
+    final now = _clock();
+    final shown = _appLiveShown;
+    if (previous?.stage == progress.stage &&
+        shown != null &&
+        now.difference(shown) < const Duration(milliseconds: 250)) {
+      return;
+    }
+    _appLiveShown = now;
+    final record = _record;
+    if (record != null && record.jobId == jobId && !_disposed) _show(record);
   }
 
   Future<void> _finish(SetupJobRecord record, SetupJobComponent step) async {
@@ -474,6 +732,7 @@ class ChannelSetupEngine implements SetupEngine {
           'setup.finish',
           () => finish(
             SetupFinishRequest(
+              host: host,
               runtime: TermuxRuntime.parse(step.data['runtime']),
               openCodeChanged: step.data['openCodeChanged'] == 'true',
               version: version,
@@ -489,28 +748,63 @@ class ChannelSetupEngine implements SetupEngine {
         jobId: record.jobId,
         id: SetupComponentIds.start,
         ok: error == null,
-        error: error,
-        version: version,
+        error: error == null ? null : KitRedact.text(error),
+        version: version == null ? null : KitRedact.text(version),
       );
     } on BuiltinLinuxException {
-      // The next poll shows whatever the job did.
+      // The acknowledgement may have been lost. Let the next poll either
+      // observe completion or retry the idempotent finish on this same job.
+      _finishing = null;
+      return;
     }
-    await _refresh();
+    try {
+      await _refresh();
+    } on BuiltinLinuxException {
+      // Poll again; failure to read is not evidence the finish was lost.
+    } on TimeoutException {
+      // A late status reply is recoverable on the next poll.
+    }
   }
 
   Future<SetupJobRecord?> _read({Duration? timeout}) async {
     final String? text;
+    final limit =
+        timeout ?? (host == SetupHostKind.termux ? readTimeout : null);
     try {
       final read = _linux.setupStatus();
-      text = await (timeout == null ? read : read.timeout(timeout));
+      text = await (limit == null ? read : read.timeout(limit));
     } on BuiltinLinuxException {
+      if (host == SetupHostKind.termux) rethrow;
       return null;
     } on TimeoutException {
-      debugPrint('setup: status read took over ${timeout!.inSeconds} s');
+      if (host == SetupHostKind.termux) rethrow;
+      debugPrint('setup: status read took over ${limit!.inSeconds} s');
       return null;
     }
     final record = SetupJobRecord.parse(text);
-    if (record != null) _record = record;
+    if (host == SetupHostKind.termux &&
+        text != null &&
+        text.trim().isNotEmpty &&
+        record == null) {
+      throw const BuiltinLinuxException(
+        'The saved Termux setup could not be read.',
+        code: 'setup_status_invalid',
+      );
+    }
+    if (record != null) {
+      // Hostless records predate host selection and belong only to built-in.
+      final recordedHost = record.host ?? SetupHostKind.builtin.name;
+      if (recordedHost != host.name) {
+        throw const BuiltinLinuxException(
+          'The saved setup belongs to a different host.',
+          code: 'setup_host_mismatch',
+        );
+      }
+      if (host == SetupHostKind.termux) {
+        TermuxSetupHost.validateParams(record.params);
+      }
+      _record = record;
+    }
     return record;
   }
 
@@ -537,11 +831,49 @@ class ChannelSetupEngine implements SetupEngine {
     _resetFloors(record.jobId);
     _traceFinished(record);
     _progress.value = progressFromRecord(
-      record,
+      _withAppLive(record, l10n),
       _jobComponents,
       l10n,
       now: _clock(),
       floors: _floors,
+    );
+  }
+
+  /// [record] with the running app-side install's own progress on its row.
+  SetupJobRecord _withAppLive(SetupJobRecord record, AppLocalizations l10n) {
+    final run = _appRun;
+    final live = _appLive;
+    if (run == null || live == null || run.jobId != record.jobId) {
+      return record;
+    }
+    return SetupJobRecord(
+      jobId: record.jobId,
+      host: record.host,
+      state: record.state,
+      current: record.current,
+      startedAt: record.startedAt,
+      updatedAt: record.updatedAt,
+      error: record.error,
+      logTail: record.logTail,
+      params: record.params,
+      components: [
+        for (final component in record.components)
+          component.id == run.id && component.state == 'running'
+              ? SetupJobComponent(
+                  id: component.id,
+                  state: component.state,
+                  weight: component.weight,
+                  stage: switch (live.stage) {
+                    SetupAppStage.downloading => l10n.setupAppStageDownloading,
+                    SetupAppStage.verifying => l10n.setupAppStageVerifying,
+                  },
+                  done: live.bytesDone,
+                  total: live.bytesTotal,
+                  startedAt: component.startedAt,
+                  data: component.data,
+                )
+              : component,
+      ],
     );
   }
 
@@ -622,6 +954,23 @@ class _WatchedProgress extends ValueNotifier<SetupProgress> {
 }
 
 // ---- pure parts, tested directly --------------------------------------------
+
+/// How long the native job waits for an app-side component: a download on
+/// a slow network can take far longer than starting OpenCode.
+const appStepWaitMinutes = 120;
+
+/// An app-side failure in words the failure matcher
+/// ([describeSetupFailure]) turns into the right plain message; it is the
+/// component's recorded error, never an exception's text.
+String appFailureReason(SetupAppFailureKind kind) => switch (kind) {
+  SetupAppFailureKind.offline => 'Could not connect to the download server',
+  SetupAppFailureKind.noSpace => 'No space left on device',
+  SetupAppFailureKind.checksum => 'The download did not match its checksum',
+  SetupAppFailureKind.unsupported => 'This phone cannot run it',
+  SetupAppFailureKind.busy => 'Another download of it is running',
+  SetupAppFailureKind.cancelled => 'cancelled',
+  SetupAppFailureKind.failed => 'The download failed',
+};
 
 /// The params a new run gets. Continue keeps what the stopped job was for
 /// (OpenCode 2, a version) unless the caller asks for something else; job
@@ -771,8 +1120,11 @@ class SetupJobRecord {
     this.error,
     this.logTail = '',
     this.params = const {},
+    this.host,
   });
 
+  /// Missing only for legacy built-in jobs.
+  final String? host;
   final String jobId;
 
   /// running | done | failed | cancelled | interrupted
@@ -832,6 +1184,7 @@ class SetupJobRecord {
     }
     return SetupJobRecord(
       jobId: jobId,
+      host: _string(decoded['host']),
       state: _string(decoded['state']) ?? 'interrupted',
       current: _string(decoded['current']),
       components: [

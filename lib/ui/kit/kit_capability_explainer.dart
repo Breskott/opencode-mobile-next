@@ -190,7 +190,7 @@ typedef KitEnableFlowHandler =
 /// The registry: every matrix capability, and the enable-flow handlers the
 /// app registers at start-up (coord-main), so the kit imports no screens.
 abstract final class KitCapabilities {
-  /// Every matrix capability (33), 21 of them with an enableFlow.
+  /// Every matrix capability (35), 21 of them with an enableFlow.
   static const List<KitCapability> all = [
     KitCapability(
       id: 'server.any',
@@ -397,6 +397,16 @@ abstract final class KitCapabilities {
       partly: {KitHost.demo},
     ),
     KitCapability(
+      id: 'flag:terminal',
+      supported: {
+        KitHost.thisPhone,
+        KitHost.termux,
+        KitHost.openCode1,
+        KitHost.openCode2,
+      },
+      partly: {KitHost.demo},
+    ),
+    KitCapability(
       id: 'flag:sessionDiff',
       supported: {
         KitHost.thisPhone,
@@ -415,6 +425,11 @@ abstract final class KitCapabilities {
         KitHost.openCode2,
       },
       partly: {KitHost.demo},
+    ),
+    KitCapability(
+      id: 'flag:toolInventory',
+      supported: {KitHost.openCode1},
+      partly: {KitHost.thisPhone, KitHost.termux},
     ),
     KitCapability(
       id: 'flag:usageStatistics',
@@ -1055,6 +1070,7 @@ _Words _wordsOf(AppLocalizations l, String id) => switch (id) {
     l.kitCapFlagFileBrowsingTerminalTitle,
     l.kitCapFlagFileBrowsingTerminalWhy,
   ),
+  'flag:terminal' => _words(l.kitCapFlagTerminalTitle, l.kitCapFlagTerminalWhy),
   'flag:sessionDiff' => _words(
     l.kitCapFlagSessionDiffTitle,
     l.kitCapFlagSessionDiffWhy,
@@ -1062,6 +1078,10 @@ _Words _wordsOf(AppLocalizations l, String id) => switch (id) {
   'flag:serverCatalog' => _words(
     l.kitCapFlagServerCatalogTitle,
     l.kitCapFlagServerCatalogWhy,
+  ),
+  'flag:toolInventory' => _words(
+    l.kitCapFlagToolInventoryTitle,
+    l.kitCapFlagToolInventoryWhy,
   ),
   'flag:usageStatistics' => _words(
     l.kitCapFlagUsageStatisticsTitle,

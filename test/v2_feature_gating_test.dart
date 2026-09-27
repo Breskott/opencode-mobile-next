@@ -28,6 +28,7 @@ import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
 import 'package:opencode_mobile/ui/screens/capabilities_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
+import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/tools_screen.dart';
@@ -312,12 +313,14 @@ void main() {
     // sliver so presence/absence is what the assertions actually measure.
     setUp(() => _useTallSurface());
 
-    // Audit UX-101 moved every management destination behind one labelled
-    // "Manage project" route; the gating rule now applies inside it.
-    Future<void> openManageProject(WidgetTester tester) async {
-      await tester.tap(find.byKey(const ValueKey('current-project-entry')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('manage-project-entry')));
+    // Every project management destination is a Project tab tool (Manage
+    // project merged into the tab, slice-P3.11a); the gating rule applies
+    // to the tab's rows.
+    Future<void> openProjectTab(
+      WidgetTester tester,
+      ConnectionController controller,
+    ) async {
+      await tester.pumpWidget(_app(ProjectHub(controller: controller)));
       await tester.pumpAndSettle();
     }
 
@@ -325,17 +328,16 @@ void main() {
       final controller = await _controller(v2: false);
       addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        _app(Scaffold(body: WorkspaceScreen(controller: controller))),
-      );
-      await tester.pumpAndSettle();
-      await openManageProject(tester);
+      await openProjectTab(tester, controller);
 
       expect(
-        find.byKey(const ValueKey('managed-workspaces-entry')),
+        find.byKey(const ValueKey('project-hub-workspaces')),
         findsOneWidget,
       );
-      expect(find.byKey(const ValueKey('worktrees-entry')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('project-hub-worktrees')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('v2 hides the tile and leaves the rest of Coding', (
@@ -344,33 +346,21 @@ void main() {
       final controller = await _controller(v2: true);
       addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        _app(Scaffold(body: WorkspaceScreen(controller: controller))),
-      );
-      await tester.pumpAndSettle();
-      // The route itself survives: switching projects and project health
-      // have a backend on every generation, so it is never a dead end.
-      expect(
-        find.byKey(const ValueKey('current-project-entry')),
-        findsOneWidget,
-      );
-      await openManageProject(tester);
+      await openProjectTab(tester, controller);
 
       expect(
-        find.byKey(const ValueKey('managed-workspaces-entry')),
+        find.byKey(const ValueKey('project-hub-workspaces')),
         findsNothing,
       );
       // No explainer for a hidden tile: the list simply reflows.
       expect(find.textContaining('OpenCode 2'), findsNothing);
-      expect(find.byKey(const ValueKey('worktrees-entry')), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('project-health-entry')),
+        find.byKey(const ValueKey('project-hub-worktrees')),
         findsOneWidget,
       );
-      expect(
-        find.byKey(const ValueKey('switch-project-entry')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const ValueKey('project-hub-health')), findsOneWidget);
+      // Switching project stays beside the project's name.
+      expect(find.byKey(const ValueKey('project-hub-menu')), findsOneWidget);
     });
   });
 
@@ -589,34 +579,27 @@ void main() {
       );
     });
 
-    testWidgets('v2 has no send button; Copy is the one primary', (
+    testWidgets('Report a problem is the same page on v1 and v2', (
       tester,
     ) async {
-      final v1 = await _controller(v2: false);
-      addTearDown(v1.dispose);
-      await tester.pumpWidget(_app(AppDiagnosticsScreen(controller: v1)));
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey('gated-client-diagnostics')),
-        findsNothing,
-      );
-
-      final v2 = await _controller(v2: true);
-      addTearDown(v2.dispose);
-      await tester.pumpWidget(_app(AppDiagnosticsScreen(controller: v2)));
-      await tester.pumpAndSettle();
-
-      // No dead button and no line explaining it: Copy takes the slot.
-      expect(find.byKey(const ValueKey('send-app-diagnostics')), findsNothing);
-      expect(
-        find.byKey(const ValueKey('gated-client-diagnostics')),
-        findsNothing,
-      );
-      expect(find.text("This server doesn't accept client logs"), findsNothing);
-      expect(
-        find.byKey(const ValueKey('copy-app-diagnostics')),
-        findsOneWidget,
-      );
+      // P8.2 merged the server-log send into Report a problem, so no
+      // capability decides what the page offers.
+      for (final isV2 in [false, true]) {
+        final controller = await _controller(v2: isV2);
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(
+          _app(AppDiagnosticsScreen(controller: controller)),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('send-app-diagnostics')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('report-problem-review')),
+          findsOneWidget,
+        );
+      }
     });
   });
 

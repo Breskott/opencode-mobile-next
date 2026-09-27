@@ -92,15 +92,17 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('2. an invalid empty field: the reason under the primary, then '
-      'once under the field after an edit', (tester) async {
+  testWidgets('2. an invalid empty field: nothing judged before the first '
+      'edit, then the reason once under the field (slice-R2)', (tester) async {
     final context = await pumpKitHost(tester);
     final result = _openInput(tester, context, initial: null, validate: _empty);
     await tester.pumpAndSettle();
-    expect(find.text('Name is empty'), findsOneWidget);
+    expect(find.text('Name is empty'), findsNothing);
+    // A tap before any edit does not submit: it shows the reason.
     await tester.tap(find.byKey(_confirmKey));
     await tester.pumpAndSettle();
     expect((await result()).done, isFalse);
+    expect(find.text('Name is empty'), findsOneWidget);
     await tester.enterText(find.byType(EditableText), 'a');
     await tester.pumpAndSettle();
     expect(find.text('Name is empty'), findsNothing);
@@ -195,7 +197,8 @@ void main() {
   });
 
   testWidgets('6. changed text without a draft: the discard question in '
-      'place, no route, a tap outside does nothing', (tester) async {
+      'place, no route; a tap outside asks too (slice-R2: the confirm '
+      'frame)', (tester) async {
     final routes = RouteCounter();
     final context = await pumpKitHost(tester, routes: routes);
     final result = _openInput(tester, context);
@@ -205,8 +208,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tapAt(const Offset(4, 4));
     await tester.pumpAndSettle();
+    expect(find.text('Discard your changes?'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
     expect(find.text(_title), findsOneWidget);
-    expect(find.text('Discard your changes?'), findsNothing);
+    expect(find.text('wolf'), findsOneWidget);
 
     await _key(tester, LogicalKeyboardKey.escape);
     expect(find.text('Discard your changes?'), findsOneWidget);

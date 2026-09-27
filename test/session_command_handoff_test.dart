@@ -61,6 +61,10 @@ class _Controller extends ConnectionController {
   );
   @override
   ServerProfile get profile => fixtureProfile;
+  bool resume = true;
+  @override
+  ServerCapabilities get capabilities =>
+      ServerCapabilities(cliSessionResume: resume);
   @override
   Future<ServerOperationsGateway?> prepareActionRepository() async =>
       repository;
@@ -189,13 +193,13 @@ void main() {
   Future<({_Controller controller, List<String> clipboard})> mount(
     WidgetTester tester,
     _MetadataRepository repository, {
-    bool clipboardFails = false,
+    bool resume = true,
   }) async {
     SharedPreferences.setMockInitialValues({});
     final controller = _Controller(
       ProfileStore(prefs: await SharedPreferences.getInstance()),
       repository,
-    );
+    )..resume = resume;
     final clipboard = <String>[];
     final messenger =
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
@@ -205,9 +209,6 @@ void main() {
     messenger.setMockMethodCallHandler(secureStorage, (_) async => null);
     messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
       if (call.method == 'Clipboard.setData') {
-        if (clipboardFails) {
-          throw PlatformException(code: 'clipboard-unavailable');
-        }
         clipboard.add((call.arguments as Map)['text'] as String);
       }
       return null;
@@ -242,100 +243,75 @@ void main() {
     return (controller: controller, clipboard: clipboard);
   }
 
-  testWidgets('preview then copy revalidates session and excludes password', (
-    tester,
-  ) async {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
+  // The handoff dialog merged into the one continue-on-computer sheet
+  // (slice-P3.11a): the list doors show the same sheet, command and copy
+  // as the conversation menu.
+  testWidgets('a list door opens the continue-on-computer sheet with the '
+      'resume command for the folder the server reports now', (tester) async {
     final repo = _CommandRepository();
     final fixture = await mount(tester, repo);
-    expect(find.text('Copy command'), findsOneWidget);
-    expect(fixture.clipboard, isEmpty);
     expect(repo.reads, 1);
-    await tester.tap(find.text('Copy command'));
+    expect(find.byKey(const Key('continue-on-computer-sheet')), findsOneWidget);
+    // One command: the attach command and the metadata reference are gone.
+    expect(find.text(l10n.handoffUiComputerTitle), findsOneWidget);
+    expect(find.textContaining('opencode attach'), findsNothing);
+    expect(
+      find.textContaining('OpenCode session metadata reference'),
+      findsNothing,
+    );
+    final copy = find.byKey(const Key('continue-on-computer-copy'));
+    await tester.ensureVisible(copy);
     await tester.pumpAndSettle();
-    expect(repo.reads, 2);
-    expect(fixture.clipboard.single, contains('--dir=\'/srv/project\''));
+    await tester.tap(copy);
+    await tester.pumpAndSettle();
+    expect(fixture.clipboard, [
+      "cd '/srv/project' && opencode --session 'session-1'",
+    ]);
     expect(
       fixture.clipboard.single,
       isNot(contains(fixture.controller.profile.password)),
     );
   });
 
-  testWidgets('changed directory during preview blocks clipboard handoff', (
-    tester,
-  ) async {
-    final repo = _CommandRepository();
-    final fixture = await mount(tester, repo);
-    repo.session = Session(
-      id: 'session-1',
-      projectID: 'project-1',
-      directory: '/another/project',
-    );
-    await tester.tap(find.text('Copy command'));
-    await tester.pumpAndSettle();
-    expect(repo.reads, 2);
-    expect(fixture.clipboard, isEmpty);
-  });
-
-  testWidgets(
-    'changed connection scope during preview blocks clipboard handoff',
-    (tester) async {
-      final repo = _CommandRepository();
-      final fixture = await mount(tester, repo);
-      fixture.controller.locationRevision++;
-      await tester.tap(find.text('Copy command'));
-      await tester.pumpAndSettle();
-      expect(repo.reads, 1);
-      expect(fixture.clipboard, isEmpty);
-    },
-  );
-
-  testWidgets('connection generation changes block a stale handoff copy', (
-    tester,
-  ) async {
-    final repo = _CommandRepository();
-    final fixture = await mount(tester, repo);
-    fixture.controller.connectionRevision++;
-    await tester.tap(find.text('Copy command'));
-    await tester.pumpAndSettle();
-    expect(repo.reads, 1);
-    expect(fixture.clipboard, isEmpty);
-  });
-
-  testWidgets('clipboard failure reports a retryable copy error', (
-    tester,
-  ) async {
-    final repo = _CommandRepository();
-    final fixture = await mount(tester, repo, clipboardFails: true);
-    await tester.tap(find.text('Copy command'));
-    await tester.pumpAndSettle();
-    expect(fixture.clipboard, isEmpty);
-    expect(find.text('Could not copy the handoff. Try again.'), findsOneWidget);
+  testWidgets('a conversation in a cloud environment says why there is no '
+      'command', (tester) async {
+    final repo = _MetadataRepository()
+      ..session = Session(
+        id: 'session-1',
+        projectID: 'project-1',
+        directory: '/srv/project',
+        workspaceID: 'wrk_managed',
+      );
+    await mount(tester, repo);
     expect(
-      find.text(
-        'Session unavailable or location changed. Return and try again.',
-      ),
-      findsNothing,
+      find.byKey(const Key('continue-on-computer-unavailable')),
+      findsOneWidget,
     );
+    expect(find.text(l10n.handoffUiUnavailableWorkspace), findsOneWidget);
+    expect(find.byKey(const Key('continue-on-computer-copy')), findsNothing);
   });
 
-  for (final loopback in [false, true]) {
-    testWidgets(
-      '${loopback ? 'loopback v1' : 'unsupported protocol'} retains metadata fallback',
-      (tester) async {
-        final repo = loopback
-            ? (_CommandRepository()..serverURL = 'http://127.0.0.1:4096')
-            : _MetadataRepository();
-        final fixture = await mount(tester, repo);
-        expect(find.text('Copy command'), findsNothing);
-        await tester.tap(find.text('Copy reference'));
-        await tester.pumpAndSettle();
-        expect(
-          fixture.clipboard.single,
-          contains('OpenCode session metadata reference'),
-        );
-        expect(fixture.clipboard.single, isNot(contains('opencode attach')));
-        expect(fixture.clipboard.single, isNot(contains('/srv/project')));
-      },
-    );
-  }
+  testWidgets('a conversation that moved project says so instead of a '
+      'command for the old place', (tester) async {
+    final repo = _MetadataRepository()
+      ..session = Session(
+        id: 'session-1',
+        projectID: 'project-2',
+        directory: '/srv/other',
+      );
+    await mount(tester, repo);
+    expect(find.byKey(const Key('continue-on-computer-sheet')), findsNothing);
+    expect(find.text(l10n.handoffUiComputerChanged), findsOneWidget);
+  });
+
+  testWidgets('a server without CLI resume explains itself and reads '
+      'nothing', (tester) async {
+    final repo = _MetadataRepository();
+    await mount(tester, repo, resume: false);
+    expect(repo.reads, 0);
+    expect(find.byKey(const Key('continue-on-computer-sheet')), findsNothing);
+    expect(find.text(l10n.handoffUiComputerUnsupported), findsOneWidget);
+  });
 }

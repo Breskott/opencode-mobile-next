@@ -38,6 +38,8 @@ class SetupProgressView extends StatefulWidget {
     this.onCancel,
     this.note,
     this.title,
+    this.personActions = const {},
+    this.timeLine,
   });
 
   final SetupProgress progress;
@@ -62,6 +64,16 @@ class SetupProgressView extends StatefulWidget {
   /// OpenCode on this phone", "Adding Python"). A stopped or failed job says
   /// that instead, so the title never contradicts the bar.
   final String? title;
+
+  /// Steps only the person can do, by row id ("Get Termux", "Allow
+  /// Termux" on the Termux host): a pending row with one leads with the
+  /// needs-you mark, says its [ComponentProgress.stage] as the instruction,
+  /// and offers this button.
+  final Map<String, KitAction> personActions;
+
+  /// The line under the bar in place of the engine's estimate, for a host
+  /// that knows how long it has been going but not how long is left.
+  final String? timeLine;
 
   /// Network trouble as curl, apt and the resolver word it. Matched so the
   /// person is told to reconnect instead of being shown a curl exit code.
@@ -274,7 +286,13 @@ class _SetupProgressViewState extends State<SetupProgressView> {
             state: _markOf(row.state),
             supporting: row.state == ComponentState.failed
                 ? _failureText(l10n, progress, row, network)
+                : row.state == ComponentState.pending &&
+                      widget.personActions.containsKey(row.id)
+                ? row.stage
                 : _detail(l10n, row),
+            personAction: row.state == ComponentState.pending
+                ? widget.personActions[row.id]
+                : null,
           ),
       ],
       since: running ? _lastReport : null,
@@ -327,7 +345,9 @@ class _SetupProgressViewState extends State<SetupProgressView> {
               ? AppStatusTone.neutral
               : null,
           semanticsLabel: l10n.setupProgressViewOverallLabel,
-          caption: running || done ? _timeLine(l10n, progress) : null,
+          caption: running || done
+              ? widget.timeLine ?? _timeLine(l10n, progress)
+              : null,
         ),
         content: checklist,
       ),

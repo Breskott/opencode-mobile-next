@@ -19,7 +19,6 @@ import 'package:opencode_mobile/ui/screens/session_export_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_import_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_note_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_relations_screen.dart';
-import 'package:opencode_mobile/ui/widgets/info_label.dart';
 import 'package:opencode_mobile/ui/widgets/session_handoff.dart';
 import 'package:opencode_mobile/ui/widgets/session_handoff_sheets.dart';
 
@@ -341,8 +340,9 @@ final kSessionMiscArea = CensusArea(
       kit.expectText('Subagent conversations');
     }),
 
-    // -- session-handoff-dialog ------------------------------------------------------
-    CensusShot('session-handoff-dialog', state: 'available', (kit) async {
+    // -- continue-on-computer-sheet from a conversation list (the handoff
+    // dialog merged into it, slice-P3.11a) --------------------------------------
+    CensusShot('continue-on-computer-sheet', state: 'from-list', (kit) async {
       final controller = await kit.connected(repository: _HandoffRepository());
       await kit.pumpApp(
         _backdrop('Fix flaky checkout test'),
@@ -358,7 +358,9 @@ final kSessionMiscArea = CensusArea(
       );
       kit.expectText('Continue on computer');
     }),
-    CensusShot('session-handoff-dialog', state: 'unavailable', (kit) async {
+    CensusShot('continue-on-computer-sheet', state: 'from-list-unavailable', (
+      kit,
+    ) async {
       final controller = await kit.connected(
         repository: _HandoffRepository(workspaceID: 'wrk_managed'),
       );
@@ -374,7 +376,7 @@ final kSessionMiscArea = CensusArea(
           projectID: 'project_shopfront',
         ),
       );
-      kit.expectText('Copy handoff reference?');
+      kit.expectText('Continue on computer');
     }),
 
     // -- session-export ---------------------------------------------------------------
@@ -444,9 +446,7 @@ final kSessionMiscArea = CensusArea(
       );
       await kit.tapText('Choose JSON file');
       await kit.tapKey('import-destination');
-      kit.expectVisible(
-        find.byKey(const ValueKey('import-destination-sheet')),
-      );
+      kit.expectVisible(find.byKey(const ValueKey('import-destination-sheet')));
       kit.expectText('shopfront');
     }),
 
@@ -589,7 +589,6 @@ final kSessionMiscArea = CensusArea(
               sessionID: checkoutSessionID,
               directory: projectDirectory,
             ),
-            exportAvailable: true,
           ),
         ),
       );
@@ -614,7 +613,6 @@ final kSessionMiscArea = CensusArea(
               sessionID: checkoutSessionID,
               directory: null,
             ),
-            exportAvailable: true,
           ),
         ),
       );
@@ -644,47 +642,6 @@ final kSessionMiscArea = CensusArea(
       );
       kit.expectText('Open on another phone');
     }),
-
-    // -- info-label-sheet -------------------------------------------------------------
-    CensusShot('info-label-sheet', (kit) async {
-      final controller = await kit.connected();
-      await kit.pumpApp(_backdrop('Worktrees'), controller: controller);
-      await kit.present(
-        (context) => InfoLabel.show(
-          context,
-          term: Glossary.worktree.term,
-          explanation: Glossary.worktree.explanation,
-        ),
-      );
-      kit.expectText('Worktree');
-      kit.expectText('Got it');
-    }),
-
-    // -- embedded-info-label -----------------------------------------------------------
-    CensusShot(
-      'embedded-info-label',
-      (kit) async {
-        final controller = await kit.connected();
-        await kit.pumpApp(
-          Scaffold(
-            appBar: AppBar(title: const Text('Worktrees')),
-            body: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Text('Base '),
-                  InfoLabel.glossary(Glossary.worktree),
-                ],
-              ),
-            ),
-          ),
-          controller: controller,
-        );
-        kit.expectText('Worktree');
-      },
-      note:
-          'InfoLabel inline in a stand-in Worktrees row; the real screen belongs to another area.',
-    ),
   ],
   notRendered: const {},
 );

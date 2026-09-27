@@ -514,4 +514,56 @@ void main() {
     }
     expect(seen, order);
   });
+
+  testWidgets('12. Report this failure sits on the failed row only (P8.4)', (
+    tester,
+  ) async {
+    var reported = 0;
+    await _show(
+      tester,
+      KitChecklist(
+        steps: [
+          _step('Linux base', KitMarkState.done),
+          KitStep(
+            key: const ValueKey('kit-checklist-step-1'),
+            title: 'Node.js',
+            state: KitMarkState.failed,
+            supporting: 'The download stopped',
+            retry: KitAction(
+              key: const ValueKey('retry'),
+              label: 'Try again',
+              onPressed: () {},
+            ),
+            report: KitAction(
+              key: const ValueKey('report'),
+              label: 'Report this failure',
+              onPressed: () => reported++,
+            ),
+          ),
+        ],
+      ),
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('kit-checklist-step-1')),
+        matching: find.byKey(const ValueKey('report')),
+      ),
+      findsOneWidget,
+    );
+    // Try again stays the row's one button; Report follows under it.
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('report'))).dy,
+      greaterThan(tester.getTopLeft(find.byKey(const ValueKey('retry'))).dy),
+    );
+    await tester.tap(find.byKey(const ValueKey('report')));
+    expect(reported, 1);
+    expect(
+      () => KitStep(
+        title: 'x',
+        state: KitMarkState.done,
+        report: KitAction(label: 'Report this failure', onPressed: () {}),
+      ),
+      throwsAssertionError,
+    );
+  });
 }

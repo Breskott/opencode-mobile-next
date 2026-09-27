@@ -61,7 +61,7 @@ class KitTerm extends StatelessWidget {
 }
 
 /// Shows [explanation] for [term] without a [KitTerm] on screen (a toolbar
-/// button that explains "MCP"; `InfoLabel.show`). The bubble anchors to
+/// button that explains "MCP"). The bubble anchors to
 /// [context]'s render box; when it cannot fit, it opens as a sheet (see
 /// [KitTerm]'s Presentation). Completes when it closes.
 ///

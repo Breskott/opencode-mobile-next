@@ -254,7 +254,7 @@ class _KitTappableState extends State<KitTappable> {
   void _invokeMenuItem(KitMenuItem item) {
     final copyText = item.copyText;
     if (copyText != null) {
-      KitCopy.copy(context, copyText());
+      KitCopy.copy(context, copyText(), redact: item.redact);
     } else {
       item.onSelected();
     }

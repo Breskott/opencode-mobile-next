@@ -304,14 +304,14 @@ void main() {
     // refactor provably changed nothing for Termux. A deliberate edit to the
     // manager script or the shared setup text updates this hash with it.
     // Pinned so the manager on people's phones never changes by accident.
-    // Last deliberate change: the phone context written before each start
-    // (lib/domain/phone_agent_context.dart, 2026-09-24).
+    // Last deliberate change: OpenCode 1 1.18.32 and Canonical Ubuntu Base
+    // 24.04.5 pins (2026-09-27).
     test('the Termux manager script changes only on purpose', () {
       final script = TermuxBridge.managerScriptForTesting();
       expect(script.length, 51360);
       expect(
         sha256.convert(utf8.encode(script)).toString(),
-        'b629299fcab94ee634e95bcae8afe291a24c4f1da76845aea416912a68e870d3',
+        '55199f944184781a42bc642990ef38c5e589e4c08b50dbeaf5113ed3166cfc49',
       );
     });
 

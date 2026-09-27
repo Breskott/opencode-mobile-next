@@ -5,11 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
-import 'package:opencode_mobile/api/sse.dart' show StreamStatus;
 import 'package:opencode_mobile/api2/events.dart';
 import 'package:opencode_mobile/api2/gateway_events.dart';
 import 'package:opencode_mobile/api2/gateway_mappers.dart';
 import 'package:opencode_mobile/api2/models.dart';
+import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/offline_queue.dart';
@@ -30,6 +30,15 @@ class RevertApi extends OpenCodeApi {
   Future<Session> Function()? read;
   @override
   Future<Session> session(String id) async => read == null ? value : read!();
+
+  /// The history the review page counts; empty leaves the count unknown.
+  List<MessageWithParts> history = const [];
+  @override
+  Future<ServerPage<MessageWithParts>> messagePage(
+    String id, {
+    String? cursor,
+    int limit = 100,
+  }) async => ServerPage(items: cursor == null ? history : const []);
 }
 
 class RevertController extends ConnectionController {

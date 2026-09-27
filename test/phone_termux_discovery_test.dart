@@ -9,7 +9,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
-import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _RemoteStore extends ProfileStore {
@@ -50,7 +50,6 @@ Widget _app(
       ).copyWith(textScaler: TextScaler.linear(scale)),
       child: child!,
     ),
-    routes: {'/termux-setup': (_) => const TermuxSetupScreen()},
     home: servers
         ? const ServersScreen()
         : Scaffold(
@@ -154,9 +153,14 @@ void main() {
         await tester.ensureVisible(useTermux);
         await tester.tap(useTermux);
         await tester.pumpAndSettle();
-        expect(find.byType(TermuxSetupScreen), findsOneWidget);
+        // Termux is a host of the same setup: its first row waits on the
+        // person (P1.3; the Termux wizard is gone).
+        expect(find.byType(PhoneSetupTermuxScreen), findsOneWidget);
         if (state == 'not installed') {
-          expect(find.text('Get Termux'), findsOneWidget);
+          expect(
+            find.byKey(const ValueKey('phone-setup-termux-get')),
+            findsOneWidget,
+          );
         }
         if (state == 'permission needed') {
           expect(find.text('Connect Termux once'), findsOneWidget);

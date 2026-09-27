@@ -1,13 +1,12 @@
 /// App-authored demo copy, collected for the lead's localization integration.
-/// These samples are synthetic, not captured server or user content.
+/// These samples are synthetic, not captured server or user content. The
+/// page's own chrome (Reset demo, Leave demo, the disclosure) lives in
+/// app_en.arb as `demoScreen*`.
 abstract final class DemoCopy {
   static const tryDemo = 'Try demo';
   static const entryDescription =
       'Explore a simulated session. No server needed.';
   static const title = 'Offline demo';
-  static const disclosure =
-      'Everything here is simulated on this device. No server, provider, or '
-      'files are accessed. Nothing is saved.';
   static const promptTitle = 'Sample prompt';
   static const prompt = 'Make the welcome message friendlier.';
   static const send = 'Send sample prompt';
@@ -33,6 +32,4 @@ abstract final class DemoCopy {
   static const denied =
       'You denied the sample change. In this simulation, the welcome message '
       'remains “Hello”. No real files were changed.';
-  static const reset = 'Reset demo';
-  static const exit = 'Exit demo';
 }

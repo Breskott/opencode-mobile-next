@@ -180,21 +180,21 @@ void main() {
     expect(find.text('Review status unknown'), findsNothing);
   });
 
-  testWidgets('a partial list keeps the mark and offers Load more', (
-    tester,
-  ) async {
+  testWidgets('a partial list keeps the mark and pages itself', (tester) async {
     final c = await briefController(requests: true);
     addTearDown(c.dispose);
     c.partial = true;
     await tester.pumpWidget(briefApp(c));
     await frames(tester);
     expect(_mark, findsOneWidget);
+    final more = find.byKey(const ValueKey('sessions-older-more'));
     await tester.scrollUntilVisible(
-      find.text('Load more conversations'),
+      more,
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('Load more conversations'), findsOneWidget);
+    expect(more, findsOneWidget);
+    expect(find.text('Load more conversations'), findsNothing);
     expect(c.returnBriefAcknowledgement.runs, isEmpty);
   });
 
@@ -209,15 +209,8 @@ void main() {
     await frames(tester);
     expect(find.text('No recent conversations'), findsNothing);
     expect(find.text('No conversations yet'), findsNothing);
-    expect(find.text('Could not load this project'), findsOneWidget);
-    expect(
-      tester
-          .widget<TextButton>(
-            find.byKey(const ValueKey('session-inventory-more')),
-          )
-          .onPressed,
-      isNotNull,
-    );
+    expect(find.text('Could not load your conversations.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('sessions-older-retry')), findsOneWidget);
   });
 
   for (final cancel in [false, true]) {

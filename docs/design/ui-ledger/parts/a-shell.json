@@ -79,14 +79,14 @@
         {
           "id": "root-connecting-termux-secondary",
           "type": "button",
-          "label": "Termux setup",
+          "label": "On this phone",
           "key": "saved-server-open-termux",
           "file": "lib/ui/widgets/saved_server_connection_card.dart",
-          "line": 446,
+          "line": 328,
           "action": "navigate",
-          "target": "termux-setup",
-          "targetWidget": "/termux-setup",
-          "effect": "onOpenTermuxSetup -> navigator.pushNamed('/termux-setup') (main.dart:1416).",
+          "target": "termux-setup-installed",
+          "targetWidget": "openThisPhone",
+          "effect": "onOpenTermuxSetup (main.dart:1658): the phone's own Termux server -> openThisPhone(kind: termux), where Start is; any other loopback server -> openPhoneSetupStart.",
           "gates": [
             "failed",
             "primaryIsRetry && onOpenTermuxSetup != null",
@@ -134,11 +134,11 @@
           "label": "Check Termux",
           "key": "saved-server-open-termux",
           "file": "lib/ui/widgets/saved_server_connection_card.dart",
-          "line": 380,
+          "line": 255,
           "action": "navigate",
-          "target": "termux-setup",
-          "targetWidget": "/termux-setup",
-          "effect": "Primary action when ConnectionFailure.primary == openTermuxSetup: navigator.pushNamed('/termux-setup').",
+          "target": "phone-setup-start",
+          "targetWidget": "openPhoneSetupStart",
+          "effect": "Primary when ConnectionFailure.primary == openTermuxSetup: onOpenTermuxSetup -> openPhoneSetupStart for a loopback server that is not the phone's managed one, openThisPhone(kind: termux) for the managed one.",
           "gates": [
             "failure.primary == ConnectionFailureAction.openTermuxSetup && onOpenTermuxSetup != null",
             "widget.supportsTermux && !widget.usesConnectionToken && isLoopbackHost(Uri.tryParse(widget.baseUrl)?.host ?? '') (card) and !conn.usesConnectionToken && platformCapabilities.supportsTermux (_Root)"
@@ -209,6 +209,22 @@
             "failure.primary == retry or its callback is null"
           ],
           "destructive": false
+        },
+        {
+          "id": "root-connecting-open-in-app-setup",
+          "type": "button",
+          "label": "Open setup",
+          "key": "saved-server-open-in-app-setup",
+          "line": 322,
+          "action": "navigate",
+          "target": "phone-setup-start",
+          "targetWidget": "openPhoneSetupStart",
+          "effect": "onOpenInAppSetup (main.dart:1636): the in-app server would not start -> openPhoneSetupStart(context), whose ready hero starts and connects it.",
+          "gates": [
+            "inAppServer && startFailure != null"
+          ],
+          "destructive": false,
+          "file": "lib/ui/widgets/saved_server_connection_card.dart"
         }
       ]
     },
@@ -245,13 +261,6 @@
           "widget": "ServersScreen",
           "file": "lib/ui/screens/servers_screen.dart",
           "line": 224
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "TermuxSetupScreen",
-          "file": "lib/ui/screens/termux_setup_screen.dart",
-          "line": 1448
         },
         {
           "page": "global-shortcuts",
@@ -387,7 +396,7 @@
           "action": "open-sheet",
           "target": "server-switcher-sheet",
           "targetWidget": "showServerSwitcher",
-          "effect": "_openServerSwitcher(conn): showServerSwitcher(context, conn); the returned choice is acted on after the sheet closed: pushNamed('/servers', arguments: ServersRouteRequest), pushNamed('/termux-setup'), or conn.disconnect() + pushNamedAndRemoveUntil('/servers').",
+          "effect": "_openServerSwitcher(conn): showServerSwitcher(context, conn); the returned choice is acted on after the sheet closed: pushNamed('/servers', arguments: ServersRouteRequest), openThisPhone(kind: termux) for ServerSwitcherOpenPhoneSetup, runPhoneServerAction for a This phone card action (manage opens This phone), or conn.disconnect() + pushNamedAndRemoveUntil('/servers').",
           "gates": [],
           "destructive": false
         },
@@ -607,16 +616,16 @@
         {
           "id": "server-switcher-sheet-phone-manage",
           "key": "termux-running-server-manage",
-          "target": "termux-setup",
-          "targetWidget": "/termux-setup",
+          "target": "termux-setup-installed",
+          "targetWidget": "openThisPhone",
           "gates": [],
           "destructive": false,
           "type": "menu-item",
-          "label": "Manage setup (phone server card menu)",
+          "label": "Manage (phone server card menu)",
           "file": "lib/ui/widgets/termux_running_server_entry.dart",
           "line": 128,
           "action": "navigate",
-          "effect": "Pops ServerSwitcherOpenPhoneSetup; the shell pushes '/termux-setup'."
+          "effect": "Pops ServerSwitcherOpenPhoneSetup; the shell opens This phone for Termux (openThisPhone(kind: termux), home_screen.dart:540)."
         },
         {
           "id": "server-switcher-sheet-phone-forget",
@@ -1183,10 +1192,10 @@
           "label": "Dismiss",
           "key": null,
           "line": 1279,
-          "action": "open-dialog",
-          "target": "question-sheet-dismiss-dialog",
-          "targetWidget": "_reject",
-          "effect": "_reject(): opens the dismiss confirmation dialog.",
+          "action": "open-sheet",
+          "target": "confirm-sheet",
+          "targetWidget": "showKitConfirm",
+          "effect": "_reject(): showKitConfirm (destructive, 'Dismiss this request?'); on confirm controller.rejectQuestion(question.id, expectedRequest: request) and routes.close().",
           "gates": [
             "!_busy"
           ],
@@ -1201,56 +1210,11 @@
           "action": "submit",
           "target": null,
           "targetWidget": null,
-          "effect": "_submit(): controller.answerQuestion(question.id, answers, expectedRequest: request) then routes.close().",
+          "effect": "_submit(): controller.answerQuestion(question.id, answers, expectedRequest: request) then routes.close(). Pinned to the sheet foot through showKitSheet primaryListenable (slice-P3.11a); enables once every prompt is answered.",
           "gates": [
             "_complete && !_busy"
           ],
           "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "question-sheet-dismiss-dialog",
-      "title": "Dismiss this request?",
-      "kind": "dialog",
-      "file": "lib/ui/screens/activity_screen.dart",
-      "widget": "_reject",
-      "presentedBy": [],
-      "line": 1129,
-      "purpose": "Confirms rejecting a pending question ('OpenCode will continue without answers to these questions.').",
-      "reachedFrom": [
-        {
-          "page": "question-sheet",
-          "element": "question-sheet-dismiss"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "question-sheet-dismiss-dialog-cancel",
-          "type": "button",
-          "label": "Cancel",
-          "key": null,
-          "line": 1137,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop(context, false).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "question-sheet-dismiss-dialog-confirm",
-          "type": "button",
-          "label": "Dismiss",
-          "key": null,
-          "line": 1141,
-          "action": "mutate",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop(context, true) then controller.rejectQuestion(question.id, expectedRequest: request) and routes.close().",
-          "gates": [],
-          "destructive": true
         }
       ]
     },
@@ -2532,57 +2496,6 @@
           "destructive": false
         }
       ]
-    },
-    {
-      "id": "attention-overview",
-      "title": "Server attention",
-      "kind": "screen",
-      "file": "lib/ui/screens/attention_overview_screen.dart",
-      "widget": "AttentionOverviewScreen",
-      "presentedBy": [],
-      "line": 12,
-      "purpose": "Local per-saved-server overview (selected/inactive, data source, pending/running/unread counts or 'unknown'); never switches profiles itself.",
-      "reachedFrom": [
-        {
-          "page": "?",
-          "element": null,
-          "widget": "ServersScreen app-bar icon 'Server attention'",
-          "file": "lib/ui/screens/servers_screen.dart",
-          "line": 396
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "attention-overview-monitor-settings",
-          "type": "icon-button",
-          "label": "Monitoring settings",
-          "key": null,
-          "line": 34,
-          "action": "navigate",
-          "target": "profile-monitor",
-          "targetWidget": "ProfileMonitorScreen",
-          "effect": "Pushes ProfileMonitorScreen(controller).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "attention-overview-open-profile",
-          "type": "button",
-          "label": "Open server / Choose server…",
-          "key": null,
-          "line": 141,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Per profile card: when the profile is still readable and saved calls host onOpenProfile(profileID); ServersScreen's host pops this route with the id and runs its own safe switch flow. Disabled (with 'navigation unavailable' text) when onOpenProfile == null.",
-          "gates": [
-            "onOpenProfile != null",
-            "controller.isProfileReadable(item.profileID)"
-          ],
-          "destructive": false
-        }
-      ]
     }
   ],
   "notPages": [
@@ -2643,6 +2556,7 @@
     "ShortcutHelp lists shortcuts not bound in shortcuts.dart (Mod+Enter send, Mod+C copy transcript, F2/Shift+F2 recent model, context keys): they live in chat/composer code owned by other agents (shortcuts.dart:121-129).",
     "Hard-coded English strings (not in app_en.arb): 'Try again' and 'Report a bug' in ProductErrorState (product_states.dart:242,252), 'Requires an OpenCode N server' (product_states.dart:410), 'Drop to attach' (file_drop.dart:133), desktop release snackbar + 'View' (desktop_release_check.dart:245-247), Shorebird snackbars + 'Got it' (shorebird_update_notice.dart:140,156-157), MaterialApp title 'OpenCode Mobile', fallback profile name 'OpenCode' (home_screen.dart:183).",
     "No in-app caller of pushNamed('/activity'), '/requests' or '/home'-with-initialTab was found; HomeScreen.initialTab is only ever the default 0 in lib/.",
-    "CapabilitiesScreen tab bodies are other agents' screens in embedded mode; element targets use the '<owner>-<tab>-tab' naming and targetWidget for resolution."
+    "CapabilitiesScreen tab bodies are other agents' screens in embedded mode; element targets use the '<owner>-<tab>-tab' naming and targetWidget for resolution.",
+    "slice P1.3/P1.5 (2026-09-27): the route table's '/termux-setup' (TermuxSetupScreen) is replaced by '/this-phone' (ThisPhoneScreen, still Android only); root-connecting's Termux action goes to This phone or phone setup, and its in-app 'Open setup' goes to phone setup start."
   ]
 }

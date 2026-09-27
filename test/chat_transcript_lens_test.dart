@@ -4,6 +4,7 @@ import 'support/complete_message_history.dart';
 // assistant long-press actions, and earlier-messages pill gating.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -315,12 +316,14 @@ void main() {
       ),
       findsOneWidget,
     );
+    // Copy sits beside More, so More's menu does not repeat it.
+    expect(find.byKey(const ValueKey('message-copy-assistant-1')), findsOne);
     await tester.tap(find.byKey(const ValueKey('message-actions-assistant-1')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('message-action-copy')), findsOneWidget);
-    expect(find.byKey(const ValueKey('message-action-fork')), findsNothing);
-    expect(find.byKey(const ValueKey('message-action-delete')), findsOneWidget);
+    expect(find.byKey(const ValueKey('message-menu-copy')), findsNothing);
+    expect(find.byKey(const ValueKey('message-menu-fork')), findsNothing);
+    expect(find.byKey(const ValueKey('message-menu-delete')), findsOneWidget);
   });
 
   testWidgets('a prompt carries no control row; long-press opens its menu', (
@@ -401,10 +404,15 @@ void main() {
       find.byKey(const ValueKey('message-actions-assistant-1')),
       findsNothing,
     );
-    await tester.tap(find.byKey(const ValueKey('message-actions-assistant-2')));
-    await tester.pumpAndSettle();
-    expect(find.text('Copy complete reply'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('message-action-copy')));
+    final copy = find.byKey(const ValueKey('message-copy-assistant-2'));
+    expect(
+      find.descendant(
+        of: copy,
+        matching: find.byTooltip('Copy complete reply'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(copy);
     await tester.pumpAndSettle();
 
     expect(copied, ['First paragraph.\n\nSecond paragraph.']);
@@ -433,12 +441,12 @@ void main() {
       controller.repository = repository;
       await tester.pumpAndSettle();
 
+      expect(find.byTooltip('Copy complete reply'), findsOneWidget);
       await tester.tap(
         find.byKey(const ValueKey('message-actions-assistant-1')),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Copy complete reply'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('message-action-delete')));
+      await tester.tap(find.byKey(const ValueKey('message-menu-delete')));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Delete message'));
       await tester.pumpAndSettle();
@@ -464,10 +472,9 @@ void main() {
       ];
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('message-actions-assistant-1')));
-    await tester.pumpAndSettle();
-    expect(find.text('Copy loaded reply'), findsOneWidget);
-    expect(find.text('Copy complete reply'), findsNothing);
+    // The footer's Copy names what it copies.
+    expect(find.byTooltip('Copy loaded reply'), findsOneWidget);
+    expect(find.byTooltip('Copy complete reply'), findsNothing);
   });
 
   testWidgets(
@@ -498,16 +505,31 @@ void main() {
         find.byKey(const ValueKey('message-actions-assistant-1')),
         findsNothing,
       );
-      // (Past the end of the prose's line here: the words themselves are
-      // selectable.)
-      await tester.longPressAt(
-        tester.getTopRight(find.byKey(const ValueKey('message-assistant-1'))) +
-            const Offset(-2, 2),
+      // The prose fills the conversation's width (a long-press on the words
+      // selects them), so the turn's menu is read from the actions it
+      // offers a screen reader and a long-press past the words alike.
+      final semantics = tester.ensureSemantics();
+      await tester.pump();
+      final turn = find.descendant(
+        of: find.byKey(const ValueKey('message-assistant-1')),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.customSemanticsActions != null,
+        ),
       );
-      await tester.pump(const Duration(milliseconds: 400));
-
-      expect(find.text('Copy reply so far'), findsOneWidget);
-      expect(find.text('Copy complete reply'), findsNothing);
+      final ids =
+          tester
+              .getSemantics(turn.first)
+              .getSemanticsData()
+              .customSemanticsActionIds ??
+          const <int>[];
+      final labels = [
+        for (final id in ids) CustomSemanticsAction.getAction(id)?.label,
+      ];
+      expect(labels, contains('Copy reply so far'));
+      expect(labels, isNot(contains('Copy complete reply')));
+      semantics.dispose();
     },
   );
 

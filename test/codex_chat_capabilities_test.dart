@@ -167,7 +167,7 @@ void main() {
 
     expect(find.text('Changes'), findsNothing);
     expect(find.text('Fork conversation'), findsNothing);
-    expect(find.text('Revert last prompt'), findsNothing);
+    expect(find.text('Undo last prompt'), findsNothing);
     expect(find.text('Compact context'), findsNothing);
     expect(find.text('Run shell command'), findsNothing);
     expect(find.text('Subagent conversations'), findsNothing);
@@ -177,7 +177,7 @@ void main() {
     await tester.tap(find.text('Conversation actions'));
     await tester.pumpAndSettle();
     expect(find.text('Fork conversation'), findsNothing);
-    expect(find.text('Revert last prompt'), findsNothing);
+    expect(find.text('Undo last prompt'), findsNothing);
     expect(find.text('Compact context'), findsNothing);
     expect(find.text('Run shell command'), findsNothing);
     expect(find.text('Share conversation'), findsNothing);
@@ -365,12 +365,25 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('permission-allow-once')), findsOneWidget);
-    expect(find.byKey(const Key('permission-reject')), findsOneWidget);
+    expect(find.byKey(const Key('permission-card-allow')), findsOneWidget);
+    expect(find.byKey(const Key('permission-card-reject')), findsOneWidget);
+    expect(find.byKey(const Key('permission-allow-always')), findsNothing);
+
+    // The details sheet offers no "Always allow" switch either.
+    await tester.tap(find.byKey(const Key('permission-card-review')));
+    await tester.pumpAndSettle();
+    final sheet = find.byKey(const Key('permission-sheet'));
+    expect(sheet, findsOneWidget);
     expect(find.byKey(const Key('permission-allow-always')), findsNothing);
     expect(find.text('Always allow would also cover'), findsNothing);
 
-    await tester.tap(find.byKey(const Key('permission-allow-once')));
+    final allowOnce = find.descendant(
+      of: sheet,
+      matching: find.text('Allow once'),
+    );
+    await tester.ensureVisible(allowOnce.last);
+    await tester.pumpAndSettle();
+    await tester.tap(allowOnce.last);
     await tester.pumpAndSettle();
     expect(replies, ['once']);
   });

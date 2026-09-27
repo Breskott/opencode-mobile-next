@@ -15,7 +15,8 @@ import 'report_problem.dart';
 /// are imported only at attachment; clearing never replays old timings.
 /// Android exit errors already collected by AppExitBridge enter through the
 /// diagnostics controller; callers needing typed exits may instead call
-/// [ReportProblem.recordAndroidExit] explicitly.
+/// [ReportProblem.recordAndroidExit] explicitly and pass [typedAndroidExits]
+/// so the same exit is not also kept as an error event.
 ///
 /// Capture never throws storage errors into the application being diagnosed;
 /// callers observe [ReportProblem.storageFailed] on the report instead.
@@ -24,6 +25,7 @@ class ReportProblemCapture {
     required ReportProblem report,
     required AppDiagnosticsController diagnostics,
     Stream<ThermalReading>? thermalReadings,
+    this.typedAndroidExits = false,
   }) : _report = report,
        _diagnostics = diagnostics {
     final timings = PerfTrace.spans;
@@ -43,6 +45,14 @@ class ReportProblemCapture {
       ),
     );
   }
+
+  /// The error source `AppExitRecovery` uses for Android's exit record.
+  static const androidExitSource = 'android.exit';
+
+  /// True when the caller feeds exits through
+  /// [ReportProblem.recordAndroidExit]; diagnostics errors from
+  /// [androidExitSource] are then skipped instead of stored twice.
+  final bool typedAndroidExits;
 
   final ReportProblem _report;
   final AppDiagnosticsController _diagnostics;
@@ -69,6 +79,7 @@ class ReportProblemCapture {
       final revision = (entry.timestamp, entry.occurrences);
       if (_seenErrors[entry.id] == revision) continue;
       _seenErrors[entry.id] = revision;
+      if (typedAndroidExits && entry.source == androidExitSource) continue;
       _safely(
         () => _report.recordError(
           entry.message,

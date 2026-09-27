@@ -150,9 +150,10 @@ class KitNotice extends StatelessWidget {
 
   /// One sentence, one action, one close: a one-time tip or a turn-on offer
   /// ("{server} also runs an AI team. Turn it on?"). The sentence wraps
-  /// whole; when it needs more than one line, the action and the close
-  /// share the row under it, so a height-limited slot that scrolls to its
-  /// end shows them together. "Not now" memory is the caller's (COPY-20).
+  /// whole; when it needs more than one line, the close stays at the end
+  /// of the sentence's first line and the action moves under the sentence,
+  /// starting at the sentence's text inset. "Not now" memory is the
+  /// caller's (COPY-20).
   const KitNotice.offer({
     super.key,
     required this.message,
@@ -444,6 +445,7 @@ class KitNotice extends StatelessWidget {
         builder: (context, constraints) => _offerLine(
           context,
           stacked: _offerStacks(context, constraints.maxWidth, shown.single),
+          firstLine: firstLine,
           mark: mark,
           text: text,
           action: shown.single,
@@ -503,7 +505,7 @@ class KitNotice extends StatelessWidget {
     );
   }
 
-  /// The offer's controls move under the sentence when the sentence, the
+  /// The offer's action moves under the sentence when the sentence, the
   /// action and the close do not fit on one line (long words, large text).
   bool _offerStacks(BuildContext context, double width, KitAction action) {
     if (!width.isFinite) return false;
@@ -542,6 +544,7 @@ class KitNotice extends StatelessWidget {
   Widget _offerLine(
     BuildContext context, {
     required bool stacked,
+    required double firstLine,
     required Widget mark,
     required Widget text,
     required KitAction action,
@@ -560,26 +563,34 @@ class KitNotice extends StatelessWidget {
         ],
       );
     }
+    // The close ends the sentence's first line: the sentence and its mark
+    // drop so that line is centred on the close's target, where it sits in
+    // the one-line form. The action starts at the sentence's text inset.
+    final drop = trailing.isEmpty
+        ? 0.0
+        : math.max(0.0, ((tokens.minTarget - firstLine) / 2).floorToDouble());
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        mark,
+        Padding(
+          padding: EdgeInsetsDirectional.only(top: drop),
+          child: mark,
+        ),
         SizedBox(width: tokens.space3),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              text,
-              Row(
-                children: [
-                  Expanded(child: KitInset(child: button)),
-                  ...trailing,
-                ],
-              ),
-            ],
+          child: Padding(
+            padding: EdgeInsetsDirectional.only(top: drop),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                text,
+                KitInset(child: button),
+              ],
+            ),
           ),
         ),
+        ...trailing,
       ],
     );
   }
@@ -775,6 +786,7 @@ class KitReport {
     this.details,
     this.source,
     this.errorType,
+    this.log,
   });
 
   /// The state's title: "Couldn't load files".
@@ -788,6 +800,12 @@ class KitReport {
 
   /// `error.runtimeType.toString()`, no message text.
   final String? errorType;
+
+  /// The failed job's log excerpt (P8.4), already redacted and bounded:
+  /// the report shows it in a KitLogPanel and attaches it. Empty when the
+  /// job kept no log (the report says so); null when the report is not
+  /// about a job.
+  final String? log;
 }
 
 typedef KitReportHandler =

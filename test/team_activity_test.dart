@@ -25,6 +25,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/gate_sheet.dart';
 import 'package:opencode_mobile/ui/widgets/team_vocabulary.dart';
@@ -560,7 +561,7 @@ void main() {
         );
         expect(
           find.text(
-            'Needs you · Run failed · Run Add subtract() to calc.py · '
+            'Needs you · Run failed · Task Add subtract() to calc.py · '
             'Workstation · 1d ago',
           ),
           findsOneWidget,
@@ -691,8 +692,8 @@ void main() {
       );
       expect(
         tester
-            .widget<Text>(find.byKey(const ValueKey('team-gate-prompt')))
-            .data,
+            .widget<KitText>(find.byKey(const ValueKey('team-gate-prompt')))
+            .text,
         'Pick one and the agent continues.',
       );
       for (final choice in ['SQLite', 'Filesystem', 'Server-only']) {
@@ -732,28 +733,22 @@ void main() {
         find.byKey(const ValueKey('team-gate-destructive')),
         findsOneWidget,
       );
-      final prompt = tester.widget<Text>(
+      // The warning is its own failure-toned notice; the prompt reads plain.
+      final prompt = tester.widget<KitText>(
         find.byKey(const ValueKey('team-gate-prompt')),
       );
-      expect(prompt.data, 'This removes db/migrations/* for good.');
-      expect(prompt.style?.color, AppTheme.dark().colorScheme.error);
+      expect(prompt.text, 'This removes db/migrations/* for good.');
       expect(answer, findsOneWidget);
       expect(find.text('Approve'), findsNothing);
       expect(find.text('Cancel'), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('team-gate-close')));
+      await tester.tap(find.byKey(const ValueKey('kit-sheet-close')));
       await tester.pumpAndSettle();
       expect(sheet, findsNothing);
 
       // A plain confirmation is not marked.
       await open(tester, gateRow('confirm-safe'));
       expect(find.byKey(const ValueKey('team-gate-destructive')), findsNothing);
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('team-gate-prompt')))
-            .style
-            ?.color,
-        isNot(AppTheme.dark().colorScheme.error),
-      );
+      expect(find.byKey(const ValueKey('team-gate-prompt')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -768,17 +763,18 @@ void main() {
       );
       expect(
         tester
-            .widget<Text>(find.byKey(const ValueKey('team-gate-prompt')))
-            .data,
+            .widget<KitText>(find.byKey(const ValueKey('team-gate-prompt')))
+            .text,
         'main is frozen; dev has the fix.',
       );
       expect(find.byType(TextField), findsNothing);
       expect(answer, findsOneWidget);
-      // Technical details: request id and session id with copy buttons.
+      // Technical details: the request id; a session id only when the gate
+      // names one (this one does not).
       await tester.tap(find.byKey(const ValueKey('team-gate-technical')));
       await tester.pumpAndSettle();
       expect(find.text('Request id'), findsOneWidget);
-      expect(find.text('Session id'), findsOneWidget);
+      expect(find.text('Session id'), findsNothing);
       expect(find.text('text'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -797,7 +793,6 @@ void main() {
       expect(find.textContaining('signs off the'), findsOneWidget);
       final chip = find.byKey(const ValueKey('team-gate-unblocks-w-tests'));
       expect(chip, findsOneWidget);
-      expect(find.text('Gate · bead w-gate'), findsOneWidget);
       expect(
         find.text('Close this on the host. The phone can only watch for now.'),
         findsOneWidget,
@@ -822,20 +817,14 @@ void main() {
         final connection = await connect(team);
         await pumpActivity(tester, connection);
         await open(tester, gateRow('run:oc-loy'));
-        expect(find.text('Run failed · run oc-loy'), findsOneWidget);
+        // Titled after the task it stopped; the failure is said once.
+        expect(find.text('Add subtract() to calc.py stopped'), findsOneWidget);
         expect(
-          tester
-              .widget<Text>(find.byKey(const ValueKey('team-gate-error')))
-              .data,
-          'tests failed',
-        );
-        expect(
-          tester
-              .widget<Text>(
-                find.byKey(const ValueKey('team-gate-classification')),
-              )
-              .data,
-          'Test',
+          find.descendant(
+            of: find.byKey(const ValueKey('team-gate-classification')),
+            matching: find.text('Test'),
+          ),
+          findsOneWidget,
         );
         // Open items of the run, stuck ones first; the completed one is
         // not affected.
@@ -860,17 +849,22 @@ void main() {
             ),
           ),
         );
+        // A failure a retry cannot recover offers no retry, and no row
+        // says so a second time.
         expect(
-          tester
-              .widget<Text>(find.byKey(const ValueKey('team-gate-recoverable')))
-              .data,
-          'No — something needs changing first',
+          find.byKey(const ValueKey('team-gate-recoverable')),
+          findsNothing,
         );
+        expect(find.byKey(const ValueKey('team-gate-run-retry')), findsNothing);
         expect(
-          tester
-              .widget<Text>(find.byKey(const ValueKey('team-gate-action')))
-              .data,
-          'Fix the failing tests on the host, then retry the run.',
+          find.descendant(
+            of: find.byKey(const ValueKey('team-gate-action')),
+            matching: find.text(
+              'Fix the failing tests on the host, then retry the run.',
+              findRichText: true,
+            ),
+          ),
+          findsOneWidget,
         );
         expect(answer, findsOneWidget);
         for (final button in ['Retry', 'Restart agent', 'Reassign']) {
@@ -1112,7 +1106,7 @@ void main() {
             final how = find.byKey(const ValueKey('team-gate-how'));
             await reveal(tester, how);
             expect(tester.getSize(how).height, greaterThanOrEqualTo(48));
-            final close = find.byKey(const ValueKey('team-gate-close'));
+            final close = find.byKey(const ValueKey('kit-sheet-close'));
             await reveal(tester, close);
             expect(tester.getSize(close).height, greaterThanOrEqualTo(48));
             await tester.tap(close);
@@ -1137,20 +1131,15 @@ void main() {
             tester,
             find.byKey(const ValueKey('team-gate-answer-on-host')),
           );
-          await reveal(tester, find.byKey(const ValueKey('team-gate-close')));
-          await tester.tap(find.byKey(const ValueKey('team-gate-close')));
+          await reveal(tester, find.byKey(const ValueKey('kit-sheet-close')));
+          await tester.tap(find.byKey(const ValueKey('kit-sheet-close')));
           await tester.pumpAndSettle();
           expect(sheet, findsNothing);
 
           await pumpSheet(tester, team, 'run:oc-loy', direction, locale);
-          // The error text stays LTR mono in both directions.
-          final error = find.byKey(const ValueKey('team-gate-error'));
-          await reveal(tester, error);
-          expect(tester.widget<Text>(error).textDirection, TextDirection.ltr);
           for (final key in [
             'team-gate-classification',
             'team-gate-affected-w-tests',
-            'team-gate-recoverable',
             'team-gate-action',
             'team-gate-answer-on-host',
           ]) {
@@ -1162,7 +1151,9 @@ void main() {
           await tester.tap(technical);
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
-          await reveal(tester, find.byKey(const ValueKey('team-gate-close')));
+          // The raw error sits in Technical details and fits the sheet.
+          await reveal(tester, find.byKey(const ValueKey('team-gate-error')));
+          await reveal(tester, find.byKey(const ValueKey('kit-sheet-close')));
           expect(tester.takeException(), isNull);
         });
       }

@@ -164,14 +164,18 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('welcome-tailscale-card')));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'work.example.ts.net');
-      tester.testTextInput.hide();
-      await tester.scrollUntilVisible(
-        find.text('Continue to authentication'),
-        220,
-        scrollable: find.byType(Scrollable).first,
+      // Tailscale is a step of Add server (P3.9), not a page it leaves for.
+      expect(
+        find.byKey(const ValueKey('server-tailscale-step')),
+        findsOneWidget,
       );
-      await tester.tap(find.text('Continue to authentication'));
+      await tester.tap(find.byKey(const ValueKey('server-tailscale-continue')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('server-url-field')),
+        'work.example.ts.net',
+      );
+      tester.testTextInput.hide();
       await tester.pumpAndSettle();
       expect(probes, 0);
       expect(store.saved.single.id, 'existing');
@@ -206,25 +210,35 @@ void main() {
         -220,
         scrollable: find.byType(Scrollable).first,
       );
+      // Back to the Tailscale step, and on again: the draft is kept.
+      await tester.ensureVisible(find.text('Tailscale setup and recovery'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Tailscale setup and recovery'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Open Tailscale'));
       await tester.tap(find.text('Open Tailscale'));
       await tester.pumpAndSettle();
-      await tester.pageBack();
+      await tester.tap(find.byKey(const ValueKey('server-tailscale-continue')));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        password,
+        find.byKey(const ValueKey('server-password-replace')),
         220,
         scrollable: find.byType(Scrollable).first,
       );
+      // The typed password is held, never put back into a field (SEC-3);
+      // the next check still sends it.
       expect(
-        tester.widget<TextField>(password).controller!.text,
-        'synthetic-password',
+        find.byKey(const ValueKey('server-password-replace')),
+        findsOneWidget,
       );
       expect(
         tester
-            .widget<TextField>(find.byKey(const ValueKey('server-url-field')))
+            .widget<TextField>(
+              find.descendant(
+                of: find.byKey(const ValueKey('server-url-field')),
+                matching: find.byType(TextField),
+              ),
+            )
             .controller!
             .text,
         'https://work.example.ts.net',
@@ -245,6 +259,7 @@ void main() {
         store.prefs.getBool('oc.tailscale.${store.saved.single.id}'),
         isTrue,
       );
+      await openReadyServer(tester);
       expect(find.text('home-route'), findsOneWidget);
     },
   );
@@ -315,7 +330,7 @@ void main() {
 
     expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
-    // Titled with the agent chosen at "Which agent?".
+    // Titled with what was chosen on Add server's first step.
     expect(find.widgetWithText(KitTopBar, 'OpenCode'), findsOneWidget);
     expect(find.text('Save & connect'), findsOneWidget);
     // Address and password only; the rest waits under More options.
@@ -324,7 +339,10 @@ void main() {
     expect(find.byKey(const ValueKey('server-username-field')), findsNothing);
 
     final url = tester.widget<TextField>(
-      find.byKey(const ValueKey('server-url-field')),
+      find.descendant(
+        of: find.byKey(const ValueKey('server-url-field')),
+        matching: find.byType(TextField),
+      ),
     );
     expect(url.focusNode?.hasFocus, isFalse);
     expect(url.textInputAction, TextInputAction.next);
@@ -406,10 +424,6 @@ void main() {
 
     await tester.tap(save);
     await tester.pumpAndSettle();
-    final url = tester.widget<TextField>(
-      find.byKey(const ValueKey('server-url-field')),
-    );
-    expect(url.decoration?.errorMaxLines, 3);
     // The URL field now starts empty (no https:// pre-seed), so an empty
     // save surfaces the enter-a-URL error instead of the incomplete-URL one.
     expect(find.text('Enter a server URL.'), findsOneWidget);
@@ -452,6 +466,7 @@ void main() {
     expect(connection.connected, hasLength(1));
     expect(connection.connected.single.baseUrl, 'https://server.example:4096');
     expect(store.saved, hasLength(1));
+    await openReadyServer(tester);
     expect(find.text('home-route'), findsOneWidget);
   });
 
@@ -543,6 +558,12 @@ void main() {
       find.byKey(const ValueKey('server-name-field')),
       'Workstation',
     );
+    // Back steps to the first step and keeps what was typed; Close from
+    // there asks before it is lost.
+    await tester.tap(find.byKey(const ValueKey('server-editor-back')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('server-kind-step')), findsOneWidget);
+    expect(find.text('Discard server changes?'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('server-editor-close')));
     await tester.pumpAndSettle();
 

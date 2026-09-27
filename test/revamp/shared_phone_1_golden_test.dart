@@ -18,7 +18,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/builtin/builtin_server.dart';
 import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
-import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 import 'package:opencode_mobile/ui/widgets/phone_server_card.dart';
 import 'package:opencode_mobile/ui/widgets/setup_terminal.dart';
@@ -230,23 +229,13 @@ void main() {
 
       testWidgets('On this phone ($theme, $size)', (tester) async {
         final profile = teamProfile();
-        final offered = teamProfile(on: false);
         store.saved.addAll([profile]);
-        await connection.orchestrationStore.setPhoneOffer(
-          offered.id,
-          PhoneOffer.skipped,
-        );
         await _shot(
           tester,
           'team_phone_section_states',
           light: light,
           size: size,
           body: (context) => column(context, [
-            TeamPhoneReofferCard(
-              connection: connection,
-              profile: offered,
-              runtime: TeamRuntime(),
-            ),
             TeamPhoneSection(
               connection: connection,
               profile: profile,

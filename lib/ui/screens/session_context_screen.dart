@@ -507,7 +507,8 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
       );
     }
     if (metrics.currentMessage == null) {
-      return KitStateView(
+      final facts = _sessionFacts(l10n);
+      final empty = KitStateView(
         icon: AppIconography.usageRing,
         title: l10n.e7SharedNoContextUsageYet,
         body: _error != null
@@ -527,6 +528,21 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
               ? () => _load(older: true)
               : _load,
         ),
+      );
+      if (facts.isEmpty) return empty;
+      // Nothing to measure yet, but where the conversation lives still
+      // shows, folded under the state.
+      return ListView(
+        key: const ValueKey('session-context-list'),
+        padding: KitScreen.padding(context),
+        children: [
+          empty,
+          SizedBox(height: KitTokens.of(context).space4),
+          KitDetailsFold(
+            key: const ValueKey('session-context-details'),
+            values: facts,
+          ),
+        ],
       );
     }
 
@@ -688,6 +704,7 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
           KitDetailsFold(
             key: const ValueKey('session-context-details'),
             values: [
+              ..._sessionFacts(l10n),
               if (model.wire != model.name)
                 KitTechnicalValue(l10n.sessionContextModelId, model.wire),
               KitTechnicalValue(
@@ -731,6 +748,29 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
         ],
       ),
     );
+  }
+
+  /// Where the conversation lives and its public link, copyable: the facts
+  /// the Work row's old details sheet held (map
+  /// `workspace-session-details-sheet`, merged here in slice-P3.11a).
+  List<KitTechnicalValue> _sessionFacts(AppLocalizations l10n) {
+    final session = widget.controller.sessionsById[widget.sessionID];
+    final directory = session?.directory;
+    final share = session?.shareUrl;
+    return [
+      if (directory != null && directory.isNotEmpty)
+        KitTechnicalValue(
+          l10n.workspaceContextFolder,
+          directory,
+          key: const ValueKey('session-context-folder'),
+        ),
+      if (share != null && share.isNotEmpty)
+        KitTechnicalValue(
+          l10n.workspaceSessionSharedLink,
+          share,
+          key: const ValueKey('session-context-share'),
+        ),
+    ];
   }
 
   String _verdict(AppLocalizations l10n, double? usage) {

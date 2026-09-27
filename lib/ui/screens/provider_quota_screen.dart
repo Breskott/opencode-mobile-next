@@ -51,6 +51,9 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
   /// that failed (a notice, not a toast: G1).
   bool _monitorSaveFailed = false;
 
+  /// Monitoring is being turned on: the row says so until it is saved.
+  bool _enrolling = false;
+
   @override
   void initState() {
     super.initState();
@@ -119,6 +122,14 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
         QuotaProvider.glm => l10n.quotaGlm,
       };
 
+  /// The threshold a newly monitored source alerts at; its row changes it
+  /// once monitoring is on.
+  static const _defaultThreshold = 90.0;
+
+  /// Turns monitoring on for the account shown, in place (slice-P3.11a: the
+  /// enrol sheet merged into this page). The row that starts it says what
+  /// it does and at what percentage; the threshold row and the named Stop
+  /// that replace it change or undo it.
   Future<void> _enroll() async {
     final snapshot = _overview.snapshot;
     final profileID = widget.controller.profile?.id;
@@ -128,36 +139,9 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
         _overview.detached) {
       return;
     }
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final threshold = ValueNotifier<double>(100);
-    final origin = _origin();
-    final profile = widget.controller.profile!;
-    final consent = l10n.quotaMonitorConsent(
-      _providerName(snapshot.provider, l10n),
-      serverDisplayName(profile, l10n, among: widget.controller.store.profiles),
-    );
-    final accepted = await showKitSheet<bool>(
-      context,
-      sheetKey: const ValueKey('quota-enroll-sheet'),
-      title: l10n.quotaMonitorConsentTitle,
-      icon: AppIconography.notificationImportant,
-      body: (_) => _EnrollSheetBody(
-        threshold: threshold,
-        origin: origin,
-        consent: consent,
-      ),
-      primary: KitAction(
-        key: const ValueKey('quota-enroll-confirm'),
-        label: l10n.quotaMonitorEnable,
-        icon: AppIconography.check,
-        onPressed: () => Navigator.of(context).pop(true),
-      ),
-    );
-    final chosen = threshold.value;
-    threshold.dispose();
-    if (!mounted || accepted != true) {
-      return;
-    }
+    if (_enrolling) return;
+    const chosen = _defaultThreshold;
+    setState(() => _enrolling = true);
     final shared = widget.controller.sharedNotifyRules;
     final valid =
         !_overview.detached &&
@@ -180,9 +164,24 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
     if (!mounted) {
       return;
     }
-    // The new source appears in the monitoring section below, in place; a
+    // The row gives way to the source's threshold and Stop, in place; a
     // failure is said beside the action that failed.
-    setState(() => _monitorSaveFailed = !saved);
+    setState(() {
+      _enrolling = false;
+      _monitorSaveFailed = !saved;
+    });
+  }
+
+  /// This server's name as the rest of the app says it.
+  String _serverName(AppLocalizations l10n) {
+    final profile = widget.controller.profile;
+    return profile == null
+        ? l10n.quotaUnknownSource
+        : serverDisplayName(
+            profile,
+            l10n,
+            among: widget.controller.store.profiles,
+          );
   }
 
   void _stopUsingCollector() {
@@ -459,7 +458,17 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
                 : null,
             controller: widget.controller,
             monitorSaveFailed: _monitorSaveFailed,
-            onEnableMonitoring: stale ? null : _enroll,
+            monitorOffer: l10n.quotaMonitorOffer(
+              _providerName(snapshot.provider, l10n),
+              _serverName(l10n),
+            ),
+            monitorOfferDetail: l10n.quotaMonitorOfferDetail(
+              NumberFormat.percentPattern(
+                Localizations.localeOf(context).toLanguageTag(),
+              ).format(_defaultThreshold / 100),
+            ),
+            enrolling: _enrolling,
+            onEnableMonitoring: stale || _enrolling ? null : _enroll,
           ),
       ],
     ];
@@ -517,6 +526,12 @@ class _QuotaReport extends StatelessWidget {
   final QuotaMonitorTarget? monitored;
   final ConnectionController controller;
 
+  /// "Alert me about Codex on Studio" and what it does, for the row that
+  /// turns monitoring on.
+  final String monitorOffer;
+  final String monitorOfferDetail;
+  final bool enrolling;
+
   /// Null while the reading is stale (monitoring needs a fresh one).
   final VoidCallback? onEnableMonitoring;
 
@@ -527,6 +542,9 @@ class _QuotaReport extends StatelessWidget {
     required this.monitored,
     required this.controller,
     required this.monitorSaveFailed,
+    required this.monitorOffer,
+    required this.monitorOfferDetail,
+    required this.enrolling,
     required this.onEnableMonitoring,
   });
 
@@ -594,11 +612,33 @@ class _QuotaReport extends StatelessWidget {
             grouped: true,
           )
         else
-          KitButton.secondary(
-            key: const ValueKey('quota-enable-monitoring'),
-            label: l10n.quotaMonitorEnable,
-            icon: AppIconography.notificationImportant,
-            onPressed: onEnableMonitoring,
+          // One row names what it turns on and says what that does; no
+          // sheet asks again (slice-P3.11a).
+          KitRowGroup(
+            margin: EdgeInsetsDirectional.zero,
+            children: [
+              KitRow(
+                key: const ValueKey('quota-enable-monitoring'),
+                leading: KitRow.icon(
+                  context,
+                  AppIconography.notificationImportant,
+                ),
+                title: monitorOffer,
+                titleMaxLines: 2,
+                supporting: TextSpan(text: monitorOfferDetail),
+                supportingMaxLines: 3,
+                enabled: onEnableMonitoring != null,
+                disabledReason: enrolling
+                    ? l10n.quotaMonitorSaving
+                    : stale
+                    ? l10n.quotaStale
+                    : null,
+                trailing: enrolling
+                    ? const KitTaskMark(state: KitTaskState.working)
+                    : null,
+                onTap: onEnableMonitoring,
+              ),
+            ],
           ),
         if (monitorSaveFailed) ...[
           SizedBox(height: tokens.space3),
@@ -704,71 +744,6 @@ class _WindowGroup extends StatelessWidget {
           titleMaxLines: 2,
           supporting: passed ? TextSpan(text: l10n.quotaResetPassed) : null,
           supportingMaxLines: 3,
-        ),
-      ],
-    );
-  }
-}
-
-// revamp: merge-into:provider-quota (slice-P3.11a)
-/// What monitoring does in one line that leads into the percentage used
-/// that alerts, then the source and the full terms under Details. The
-/// threshold is a segmented choice in place: a picker would open a sheet on
-/// this sheet (KIT-16).
-class _EnrollSheetBody extends StatelessWidget {
-  const _EnrollSheetBody({
-    required this.threshold,
-    required this.origin,
-    required this.consent,
-  });
-
-  final ValueNotifier<double> threshold;
-  final String? origin;
-
-  /// "Keep checking Codex on Workstation … when use reaches:"
-  final String consent;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final tokens = KitTokens.of(context);
-    final origin = this.origin;
-    final percent = NumberFormat.percentPattern(
-      Localizations.localeOf(context).toLanguageTag(),
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        KitText(consent, role: KitTextRole.secondary),
-        SizedBox(height: tokens.space3),
-        ValueListenableBuilder<double>(
-          valueListenable: threshold,
-          builder: (context, value, _) => KitSegmented<double>(
-            key: const ValueKey('quota-enroll-threshold'),
-            semanticsLabel: l10n.quotaMonitorThreshold,
-            selected: value,
-            segments: [
-              for (final option in [50.0, 75.0, 90.0, 100.0])
-                KitSegment(
-                  value: option,
-                  // The line above says "use reaches"; the bare percentage
-                  // fits four segments on a phone without cutting.
-                  label: percent.format(option / 100),
-                ),
-            ],
-            onChanged: (option) => threshold.value = option,
-          ),
-        ),
-        SizedBox(height: tokens.space4),
-        KitDetailsFold(
-          values: [
-            KitTechnicalValue(
-              l10n.quotaSource,
-              origin ?? l10n.quotaUnknownSource,
-            ),
-          ],
-          notes: [l10n.quotaMonitorConsentDetails],
         ),
       ],
     );

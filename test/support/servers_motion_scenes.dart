@@ -21,6 +21,7 @@ import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 
 import '../../tool/capture/fixtures.dart';
 import 'first_run_path.dart';
+import 'server_editor.dart';
 import 'setup_capture_preferences.dart';
 
 /// The scenes, in the order the QA record lists them.
@@ -213,6 +214,12 @@ Future<Future<void> Function()> mountServersMotionScene(
     default:
       await tester.tap(find.byKey(const ValueKey('servers-add')));
       await _settle(tester);
+      // Add server starts at what runs there (P3.9); Codex and Paseo
+      // answer it below.
+      if (scene != ServersMotionScene.addCodex &&
+          scene != ServersMotionScene.addPaseo) {
+        await chooseServerKind(tester);
+      }
   }
   switch (scene) {
     case ServersMotionScene.addOpenCodeManual:

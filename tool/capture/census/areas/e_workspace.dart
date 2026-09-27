@@ -20,7 +20,6 @@ import 'package:opencode_mobile/builtin/builtin_folders.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/global_sessions_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
-import 'package:opencode_mobile/ui/screens/manage_project_screen.dart';
 import 'package:opencode_mobile/ui/screens/managed_workspaces_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_folder_actions.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
@@ -338,8 +337,11 @@ final eWorkspaceArea = CensusArea(
         ),
       );
     }, note: 'The project list could not load.'),
+    // The folder dialog merged into the project sheet (slice-P3.11a): the
+    // folder row opens the sheet with its Details open on that folder.
     CensusShot(
-      'workspace-directory-details-dialog',
+      'workspace-context-sheet',
+      state: 'folder',
       (kit) async {
         final conn = await eController(
           directory: eApiDirectory,
@@ -347,8 +349,10 @@ final eWorkspaceArea = CensusArea(
         );
         await _work(kit, controller: conn);
         await kit.tapKey('active-session-directory');
-        kit.expectVisible(find.byType(AlertDialog));
-        kit.expectText('api');
+        kit.expectVisible(
+          find.byKey(const ValueKey('workspace-context-sheet')),
+        );
+        kit.expectTextContaining('api');
       },
       note:
           'Work open in packages/api inside shopfront; the folder row opened.',
@@ -359,15 +363,6 @@ final eWorkspaceArea = CensusArea(
       kit.expectVisible(find.byKey(const ValueKey('workspace-context-sheet')));
       kit.expectText('Switch project');
     }, note: 'Project header tapped; one cloud workspace listed.'),
-    CensusShot('workspace-session-details-sheet', (kit) async {
-      final conn = await eController(
-        otherProjects: true,
-        sessions: eSessions(shared: true),
-      );
-      await _work(kit, controller: conn);
-      await _rowMenu(kit, darkModeSessionID, 'Details');
-      kit.expectTextContaining('opncd.ai/share/k3v9Qd2m');
-    }, note: 'Row menu › Details on a shared conversation.'),
     CensusShot('workspace-rename-session-dialog', (kit) async {
       await _work(kit);
       await _rowMenu(kit, darkModeSessionID, 'Rename');
@@ -438,14 +433,6 @@ final eWorkspaceArea = CensusArea(
       );
       await kit.tapKey('rename-project-${eProject.id}');
       kit.expectVisible(find.byKey(const ValueKey('project-name-input')));
-    }),
-    CensusShot('manage-project', (kit) async {
-      await _overWork(
-        kit,
-        (conn) => ManageProjectScreen(controller: conn, project: eProject),
-      );
-      kit.expectText('Manage project');
-      kit.expectText('Worktrees');
     }),
     CensusShot('project-folder-new-dialog', (kit) async {
       await _chooser(kit);
@@ -810,7 +797,8 @@ final eWorkspaceArea = CensusArea(
     // -- Isolated task ----------------------------------------------------------
     CensusShot('isolated-task-sheet', state: 'form', (kit) async {
       await _work(kit);
-      await kit.tapKey('workspace-isolated-task');
+      await kit.tapKey('workspace-new');
+      await kit.tapKey('new-conversation-copy');
       await kit.enterText(
         find.byKey(const ValueKey('isolated-task-name')),
         'coupon-banner',
@@ -821,7 +809,8 @@ final eWorkspaceArea = CensusArea(
       final repository = ERepository()
         ..createWorktreeHold = Completer<WorktreeInfo>();
       await _work(kit, controller: await eController(repository: repository));
-      await kit.tapKey('workspace-isolated-task');
+      await kit.tapKey('workspace-new');
+      await kit.tapKey('new-conversation-copy');
       await kit.tapKey('isolated-task-start');
       kit.expectText('Creating the worktree…');
     }),
@@ -829,7 +818,8 @@ final eWorkspaceArea = CensusArea(
       final hold = Completer<WorktreeInfo>();
       final repository = ERepository()..createWorktreeHold = hold;
       await _work(kit, controller: await eController(repository: repository));
-      await kit.tapKey('workspace-isolated-task');
+      await kit.tapKey('workspace-new');
+      await kit.tapKey('new-conversation-copy');
       await kit.enterText(
         find.byKey(const ValueKey('isolated-task-name')),
         'coupon-banner',
@@ -850,7 +840,8 @@ final eWorkspaceArea = CensusArea(
       final repository = ERepository()..createWorktreeHold = hold;
       final conn = await eController(repository: repository);
       await _work(kit, controller: conn);
-      await kit.tapKey('workspace-isolated-task');
+      await kit.tapKey('workspace-new');
+      await kit.tapKey('new-conversation-copy');
       await kit.enterText(
         find.byKey(const ValueKey('isolated-task-name')),
         'coupon-banner',
@@ -934,28 +925,6 @@ final eWorkspaceArea = CensusArea(
     }),
 
     // -- Embedded parts -----------------------------------------------------------
-    CensusShot('embedded-session-inventory-footer', state: 'more', (kit) async {
-      final conn = await eController()
-        ..moreSessions = true;
-      await _work(kit, controller: conn);
-      final more = find.byKey(const ValueKey('session-inventory-more'));
-      await kit.scrollTo(more);
-      await kit.settle();
-      kit.expectVisible(more);
-    }, note: 'Host: the Work tab, scrolled to the end of a partial list.'),
-    CensusShot('embedded-session-inventory-footer', state: 'error', (
-      kit,
-    ) async {
-      final conn = await eController()
-        ..moreSessions = true
-        ..sessionsMoreError =
-            'Could not load older conversations: the server took too long';
-      await _work(kit, controller: conn);
-      final more = find.byKey(const ValueKey('session-inventory-more'));
-      await kit.scrollTo(more);
-      await kit.settle();
-      kit.expectTextContaining('older conversations');
-    }, note: 'Host: the Work tab; the next page failed.'),
     CensusShot('embedded-mobile-task-list', (kit) async {
       await _chat(kit, transcript: _todoTranscript);
       final tasks = find.text('Tasks');

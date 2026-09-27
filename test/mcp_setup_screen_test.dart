@@ -171,6 +171,30 @@ Future<void> _reveal(WidgetTester tester, Key key) async {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  testWidgets('What is MCP? explains the term in a bubble, in the app\'s '
+      'copy (slice-P3.1: the info-label sheet is gone)', (tester) async {
+    final repository = _McpRepository();
+    final controller = await _controller(repository)
+      ..serverCapabilities = api2ServerCapabilities;
+    addTearDown(controller.dispose);
+    await _open(tester, controller);
+    await tester.tap(find.byKey(const ValueKey('mcp-glossary')));
+    await tester.pumpAndSettle();
+    final bubble = find.byKey(const ValueKey('kit-term-bubble'));
+    expect(bubble, findsOneWidget);
+    expect(
+      find.descendant(
+        of: bubble,
+        matching: find.textContaining('every conversation can use them'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Got it'), findsNothing);
+    await tester.tapAt(const Offset(5, 400));
+    await tester.pumpAndSettle();
+    expect(bubble, findsNothing);
+  });
+
   testWidgets('v2 shows its location and adds without configuration reload', (
     tester,
   ) async {

@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:flutter/gestures.dart' show DragStartBehavior;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -18,8 +20,10 @@ import 'kit_motion.dart';
 import 'kit_page_route.dart';
 import 'kit_progress.dart';
 import 'kit_redact.dart';
+import 'kit_row.dart';
 import 'kit_screen.dart';
 import 'kit_state_view.dart';
+import 'kit_tappable.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
 import 'kit_top_bar.dart';
@@ -395,10 +399,34 @@ class _FileIndex {
         }
       }
     }
+    _Hunk? open;
+    void close() {
+      if (open != null && open!.hasChange) hunks.add(open!);
+      open = null;
+    }
+
+    for (var i = 0; i < file.segments.length; i++) {
+      final segment = file.segments[i];
+      if (segment is KitDiffGap) {
+        close();
+      } else if (segment is KitDiffLine) {
+        if (segment.kind == KitDiffLineKind.hunk) {
+          close();
+          open = _Hunk(i);
+        } else {
+          (open ??= _Hunk(null)).add(segment);
+        }
+      }
+    }
+    close();
   }
 
   /// Segment index where each change starts.
   final List<int> changes = [];
+
+  /// The hunks holding a change: runs of lines between `@@` headers or
+  /// folded gaps.
+  final List<_Hunk> hunks = [];
   final List<KitDiffLine> allLines = [];
   int total = 0;
   int maxNumber = 1;
@@ -406,6 +434,39 @@ class _FileIndex {
 
   static final _cache = Expando<_FileIndex>();
   static _FileIndex of(KitDiffFile file) => _cache[file] ??= _FileIndex(file);
+}
+
+/// One hunk's line ranges on each side.
+class _Hunk {
+  _Hunk(this.header);
+
+  /// The segment index of its `@@` line, when the source had one.
+  final int? header;
+  int? oldLo, oldHi, newLo, newHi;
+  bool hasChange = false;
+
+  void add(KitDiffLine line) {
+    final old = line.kind == KitDiffLineKind.added ? null : line.oldNo;
+    final current = line.kind == KitDiffLineKind.removed ? null : line.newNo;
+    if (old != null) {
+      oldLo = math.min(oldLo ?? old, old);
+      oldHi = math.max(oldHi ?? old, old);
+    }
+    if (current != null) {
+      newLo = math.min(newLo ?? current, current);
+      newHi = math.max(newHi ?? current, current);
+    }
+    if (line.kind == KitDiffLineKind.added ||
+        line.kind == KitDiffLineKind.removed) {
+      hasChange = true;
+    }
+  }
+
+  (int, int)? range(KitDiffSide side) => switch (side) {
+    KitDiffSide.old when oldLo != null => (oldLo!, oldHi!),
+    KitDiffSide.current when newLo != null => (newLo!, newHi!),
+    _ => null,
+  };
 }
 
 enum KitDiffMode {
@@ -428,6 +489,7 @@ class KitDiffSelection {
     required this.startLine,
     required this.endLine,
     required this.text,
+    this.hunk = false,
   });
 
   final KitDiffFile file;
@@ -438,6 +500,11 @@ class KitDiffSelection {
 
   /// The selected lines, redacted.
   final String text;
+
+  /// True when the selection is exactly one whole hunk on [side] (every
+  /// line that side has between two `@@` headers or folded gaps), so a
+  /// host that stages or reverts can act on it as a hunk.
+  final bool hunk;
 }
 
 /// The one diff renderer (K2 §1.15): unified on a phone, side by side from
@@ -458,6 +525,7 @@ class KitDiffView extends StatefulWidget {
     this.onComment,
     this.onAddToPrompt,
     this.fileActions,
+    this.onFileChanged,
     this.maxLines,
     this.onOpenAll,
     this.loading = false,
@@ -485,6 +553,11 @@ class KitDiffView extends StatefulWidget {
   /// The file header's "More" menu (Copy file, Copy patch, Ask about this
   /// file, …). Copies in it are the host's, verbatim (SEC-13).
   final List<KitMenuItem> Function(KitDiffFile file)? fileActions;
+
+  /// Called with the index into [files] whenever the shown file changes
+  /// (the switcher, the file list, or the navigator crossing into another
+  /// file), so a host can track the current file.
+  final ValueChanged<int>? onFileChanged;
   final VoidCallback? onOpenAll, onRetry;
 
   /// A failure in words; the part shows it with Try again.
@@ -693,8 +766,17 @@ class _KitDiffViewState extends State<KitDiffView> {
   int? _anchor;
   int? _extent;
 
-  /// Built line-number cells, for drag selection.
-  final Map<(KitDiffSide, int), BuildContext> _cells = {};
+  /// Built rows by the side and number they carry, with where that side's
+  /// number column starts inside the row: the gutter's hit area resolves a
+  /// touch to the nearest of them (compact lines, 48 dp reach, A11Y-2).
+  final Map<(KitDiffSide, int), (BuildContext, double)> _cells = {};
+
+  /// Built gap bars and hunk headers: their own taps win over the gutter's
+  /// reach.
+  final Set<BuildContext> _blockers = {};
+
+  /// Files opened so far (the file list ticks them).
+  final Set<int> _viewed = {};
 
   /// The item the navigator last moved to: keyed, so it can be revealed
   /// precisely once it is built.
@@ -728,6 +810,7 @@ class _KitDiffViewState extends State<KitDiffView> {
       final first = changes.indexWhere((c) => c.$1 == _file);
       _change = math.max(0, first);
     }
+    _viewed.add(_file);
   }
 
   @override
@@ -736,6 +819,9 @@ class _KitDiffViewState extends State<KitDiffView> {
     if (widget.files.length != old.files.length) {
       _file = _file.clamp(0, math.max(0, widget.files.length - 1));
       _change = _change.clamp(0, math.max(0, _changes.length - 1));
+      _viewed
+        ..clear()
+        ..add(_file);
     }
     if (widget.readOnly && !old.readOnly) _clearSelection();
   }
@@ -772,23 +858,28 @@ class _KitDiffViewState extends State<KitDiffView> {
       _clearSelectionState();
       final first = _changes.indexWhere((c) => c.$1 == index);
       if (first >= 0) _change = first;
+      _viewed.add(index);
     });
     if (_lines.hasClients) _lines.jumpTo(0);
+    widget.onFileChanged?.call(index);
   }
 
   void _goToChange(int index) {
     final changes = _changes;
     if (index < 0 || index >= changes.length) return;
     final (file, _) = changes[index];
+    final crossed = file != _file;
     setState(() {
-      if (file != _file) {
+      if (crossed) {
         _file = file;
         _shownTop.clear();
         _shownBottom.clear();
         _clearSelectionState();
+        _viewed.add(file);
       }
       _change = index;
     });
+    if (crossed) widget.onFileChanged?.call(file);
     _bodyFocus.requestFocus();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _revealChange(animate: !KitMotion.reduced(context));
@@ -838,13 +929,11 @@ class _KitDiffViewState extends State<KitDiffView> {
 
   bool _lastSplit = false;
   double _lastLineHeight = 19;
+  double _lastNumberWidth = 0;
   double _lastBarHeight = 48;
 
   double _estimateExtent(_Item item) => switch (item) {
-    _LineItem() || _PairItem() => math.max(
-      _lastLineHeight,
-      widget.readOnly ? 0 : _lastBarHeight,
-    ),
+    _LineItem() || _PairItem() => _lastLineHeight,
     _HunkItem() => _lastLineHeight + 8,
     _GapItem(:final gap, :final seg) =>
       _lastBarHeight * (gap.lines == null ? 1 : 2) +
@@ -892,7 +981,8 @@ class _KitDiffViewState extends State<KitDiffView> {
   void _dragTo(KitDiffSide side, Offset global) {
     if (_side != side) return;
     int? best;
-    for (final MapEntry(key: (cellSide, n), value: ctx) in _cells.entries) {
+    for (final MapEntry(key: (cellSide, n), value: (ctx, _))
+        in _cells.entries) {
       if (cellSide != side || !ctx.mounted) continue;
       final box = ctx.findRenderObject();
       if (box is! RenderBox || !box.attached) continue;
@@ -903,6 +993,63 @@ class _KitDiffViewState extends State<KitDiffView> {
       }
     }
     if (best != null && best != _extent) setState(() => _extent = best);
+  }
+
+  /// The line whose number column is under [global], or within reach of it:
+  /// rows draw at the text's line height, and the gutter lends each number
+  /// the rest of a 48 dp target above and below it, unless a gap bar or a
+  /// hunk header (a target of its own) is there.
+  (KitDiffSide, int)? _gutterLineAt(Offset global) {
+    Rect? rectOf(BuildContext ctx) {
+      if (!ctx.mounted) return null;
+      final box = ctx.findRenderObject();
+      if (box is! RenderBox || !box.attached || !box.hasSize) return null;
+      return box.localToGlobal(Offset.zero) & box.size;
+    }
+
+    final number = _lastNumberWidth;
+    final reachTarget = _lastBarHeight;
+    (KitDiffSide, int)? best;
+    var bestDistance = double.infinity;
+    for (final MapEntry(key: cell, value: (ctx, dx)) in _cells.entries) {
+      final row = rectOf(ctx);
+      if (row == null) continue;
+      final left = row.left + dx;
+      if (global.dx < left || global.dx >= left + number) continue;
+      if (global.dy >= row.top && global.dy < row.bottom) return cell;
+      final reach = math.max(0.0, (reachTarget - row.height) / 2);
+      final distance = global.dy < row.top
+          ? row.top - global.dy
+          : global.dy - row.bottom;
+      if (distance <= reach && distance < bestDistance) {
+        best = cell;
+        bestDistance = distance;
+      }
+    }
+    if (best == null) return null;
+    for (final ctx in _blockers) {
+      if (rectOf(ctx)?.contains(global) ?? false) return null;
+    }
+    return best;
+  }
+
+  /// Selects the whole hunk under the `@@` line at segment [seg].
+  void _selectHunk(int seg) {
+    if (widget.readOnly) return;
+    final hunk = _FileIndex.of(
+      widget.files[_file],
+    ).hunks.where((h) => h.header == seg).firstOrNull;
+    if (hunk == null) return;
+    final side = hunk.range(KitDiffSide.current) != null
+        ? KitDiffSide.current
+        : KitDiffSide.old;
+    final (lo, hi) = hunk.range(side)!;
+    _bodyFocus.requestFocus();
+    setState(() {
+      _side = side;
+      _anchor = lo;
+      _extent = hi;
+    });
   }
 
   /// The selected lines of the current file, verbatim.
@@ -931,12 +1078,17 @@ class _KitDiffViewState extends State<KitDiffView> {
 
   KitDiffSelection? get _selection {
     if (!_selecting) return null;
+    final file = widget.files[_file];
+    final side = _side!;
+    final lo = math.min(_anchor!, _extent!);
+    final hi = math.max(_anchor!, _extent!);
     return KitDiffSelection(
-      file: widget.files[_file],
-      side: _side!,
-      startLine: math.min(_anchor!, _extent!),
-      endLine: math.max(_anchor!, _extent!),
+      file: file,
+      side: side,
+      startLine: lo,
+      endLine: hi,
       text: KitRedact.text(_selectedText()),
+      hunk: _FileIndex.of(file).hunks.any((h) => h.range(side) == (lo, hi)),
     );
   }
 
@@ -1136,25 +1288,66 @@ class _KitDiffViewState extends State<KitDiffView> {
         : '';
   }
 
-  Widget _fileList(KitTokens tokens, {required bool bounded}) {
-    final roles = tokens.roles;
+  String _fileSupporting(KitDiffFile file, AppLocalizations l10n) => [
+    '+${file.added} −${file.removed}',
+    _statusLine(file, l10n),
+  ].where((s) => s.isNotEmpty).join(' · ');
+
+  Future<void> _pickFile() async {
     final l10n = _l10n;
-    final list = KitChoiceList<int>.single(
-      semanticsLabel: l10n.kitDiffFiles(widget.files.length),
+    final picked = await showKitChoiceSheet<int>(
+      context,
+      title: l10n.kitDiffFiles(widget.files.length),
       choices: [
         for (var i = 0; i < widget.files.length; i++)
           KitChoice(
-            key: ValueKey('${widget.keyPrefix}-file-row-$i'),
             value: i,
             title: KitBidi.ltr(widget.files[i].path),
-            supporting: [
-              '+${widget.files[i].added} −${widget.files[i].removed}',
-              _statusLine(widget.files[i], l10n),
-            ].where((s) => s.isNotEmpty).join(' · '),
+            supporting: _fileSupporting(widget.files[i], l10n),
           ),
       ],
       selected: _file,
-      onSelected: _openFile,
+    );
+    if (picked != null && mounted) _openFile(picked);
+  }
+
+  /// The large box's file list: the open file is highlighted (no word for
+  /// it), and a tick marks each file already viewed.
+  Widget _fileList(KitTokens tokens, {required bool bounded}) {
+    final roles = tokens.roles;
+    final l10n = _l10n;
+    final list = Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: l10n.kitDiffFiles(widget.files.length),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < widget.files.length; i++)
+            KitRow(
+              key: ValueKey('${widget.keyPrefix}-file-row-$i'),
+              title: KitBidi.ltr(widget.files[i].path),
+              titleMaxLines: 2,
+              supporting: TextSpan(
+                text: _fileSupporting(widget.files[i], l10n),
+              ),
+              selected: i == _file,
+              trailing: _viewed.contains(i)
+                  ? Semantics(
+                      label: l10n.kitDiffViewed,
+                      child: Icon(
+                        AppIconography.check,
+                        key: ValueKey('${widget.keyPrefix}-file-viewed-$i'),
+                        size: tokens.smallIconSize,
+                        color: roles.text2,
+                      ),
+                    )
+                  : null,
+              onTap: () => _openFile(i),
+            ),
+        ],
+      ),
     );
     return DecoratedBox(
       key: ValueKey('${widget.keyPrefix}-file-list'),
@@ -1162,15 +1355,18 @@ class _KitDiffViewState extends State<KitDiffView> {
         color: roles.surface1,
         borderRadius: BorderRadius.circular(tokens.panelCornerRadius),
       ),
-      child: bounded
-          ? SingleChildScrollView(
-              padding: EdgeInsets.symmetric(vertical: tokens.space2),
-              child: list,
-            )
-          : Padding(
-              padding: EdgeInsets.symmetric(vertical: tokens.space2),
-              child: list,
-            ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(tokens.panelCornerRadius),
+        child: bounded
+            ? SingleChildScrollView(
+                padding: EdgeInsets.symmetric(vertical: tokens.space2),
+                child: list,
+              )
+            : Padding(
+                padding: EdgeInsets.symmetric(vertical: tokens.space2),
+                child: list,
+              ),
+      ),
     );
   }
 
@@ -1277,81 +1473,103 @@ class _KitDiffViewState extends State<KitDiffView> {
       child: _Counts(added: file.added, removed: file.removed),
     );
 
-    final Widget title;
-    if (multi && picker) {
-      title = KitPickerRow<int>(
-        rowKey: ValueKey('${widget.keyPrefix}-file-picker'),
-        title: l10n.kitDiffFiles(widget.files.length),
-        valueLabel: _baseName(file.path),
-        supporting: [
-          '+${file.added} −${file.removed}',
-          status,
-        ].where((s) => s.isNotEmpty).join(' · '),
-        choices: [
-          for (var i = 0; i < widget.files.length; i++)
-            KitChoice(
-              value: i,
-              title: KitBidi.ltr(widget.files[i].path),
-              supporting: [
-                '+${widget.files[i].added} −${widget.files[i].removed}',
-                _statusLine(widget.files[i], l10n),
-              ].where((s) => s.isNotEmpty).join(' · '),
+    // One row names the file; with 2+ files and no file list it is the
+    // switcher, "checkout_page.dart · 1 of 3 ›", and the count is said
+    // only there. The counts sit at the end, the folder and the status
+    // word under the name.
+    final switcher = multi && picker;
+    final directory = _directory(file.path);
+    final supporting = [
+      if (directory.isNotEmpty) KitBidi.ltr(directory),
+      status,
+    ].where((s) => s.isNotEmpty).join(' · ');
+    final position = l10n.kitDiffFilePosition(_file + 1, widget.files.length);
+    final name = Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: KitBidi.ltr(_baseName(file.path)),
+            style: tokens.rowTitle.copyWith(color: roles.text1),
+          ),
+          if (switcher)
+            TextSpan(
+              text: ' · $position',
+              style: KitText.styleOf(
+                context,
+                KitTextRole.secondary,
+              ).copyWith(color: roles.text2),
             ),
         ],
-        selected: _file,
-        onSelected: _openFile,
-      );
-    } else {
-      final directory = _directory(file.path);
-      final supporting = [
-        if (directory.isNotEmpty) KitBidi.ltr(directory),
-        status,
-      ].where((s) => s.isNotEmpty).join(' · ');
-      title = Padding(
-        padding: EdgeInsetsDirectional.only(
-          start: tokens.gutter,
-          top: tokens.space2,
-          end: tokens.gutter,
-        ),
-        child: Semantics(
-          container: true,
-          label: [
-            file.path,
-            l10n.kitDiffCounts(file.added, file.removed),
-            if (status.isNotEmpty) status,
-          ].join(', '),
-          excludeSemantics: true,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      KitBidi.ltr(_baseName(file.path)),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: tokens.rowTitle.copyWith(color: roles.text1),
-                    ),
-                    if (supporting.isNotEmpty)
-                      KitText(
-                        supporting,
-                        role: KitTextRole.secondary,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+    final label = [
+      file.path,
+      l10n.kitDiffCounts(file.added, file.removed),
+      if (switcher)
+        l10n.kitDiffFilePositionSpoken(_file + 1, widget.files.length),
+      if (status.isNotEmpty) status,
+    ].join(', ');
+    // Without the switcher the file list follows at once: no bottom inset.
+    final rowBottom = switcher ? tokens.space2 : 0.0;
+    final row = Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.gutter,
+        top: tokens.space2,
+        end: tokens.gutter,
+        bottom: rowBottom,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (switcher)
+                  Row(
+                    children: [
+                      Flexible(child: name),
+                      SizedBox(width: tokens.space1),
+                      Icon(
+                        AppIconography.chevronRight,
+                        size: tokens.smallIconSize,
+                        color: roles.text2,
                       ),
-                  ],
-                ),
-              ),
-              SizedBox(width: tokens.space3),
-              counts,
-            ],
+                    ],
+                  )
+                else
+                  name,
+                if (supporting.isNotEmpty)
+                  KitText(
+                    supporting,
+                    role: KitTextRole.secondary,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
           ),
-        ),
-      );
-    }
+          SizedBox(width: tokens.space3),
+          counts,
+        ],
+      ),
+    );
+    final Widget title = switcher
+        ? KitTappable(
+            key: ValueKey('${widget.keyPrefix}-file-picker'),
+            label: label,
+            onTap: _pickFile,
+            child: row,
+          )
+        : Semantics(
+            container: true,
+            label: label,
+            excludeSemantics: true,
+            child: row,
+          );
 
     final changes = _changes;
     final more = widget.fileActions?.call(file) ?? const <KitMenuItem>[];
@@ -1565,6 +1783,7 @@ class _KitDiffViewState extends State<KitDiffView> {
     _lastSplit = split;
     _lastLineHeight = lineHeight;
     _lastBarHeight = tokens.minTarget;
+    _lastNumberWidth = numberWidth;
 
     final gutter = (split ? numberWidth : numberWidth * 2) + glyphWidth;
     double? textWidth;
@@ -1635,6 +1854,25 @@ class _KitDiffViewState extends State<KitDiffView> {
       itemBuilder: itemAt,
     );
     list = SelectionArea(child: list);
+    if (!widget.readOnly) {
+      // The gutter's hit area lies over the list, so a number's reach can
+      // extend past its compact row into its neighbours' space.
+      list = Stack(
+        children: [
+          list,
+          PositionedDirectional(
+            start: 0,
+            end: 0,
+            top: 0,
+            bottom: 0,
+            child: _GutterHitArea(
+              claims: (global) => _gutterLineAt(global) != null,
+              child: Builder(builder: _gutterGestures),
+            ),
+          ),
+        ],
+      );
+    }
     if (!wrap) {
       list = SingleChildScrollView(
         key: ValueKey('${widget.keyPrefix}-horizontal'),
@@ -1653,6 +1891,44 @@ class _KitDiffViewState extends State<KitDiffView> {
     return (view, capped);
   }
 
+  /// The side a gutter drag started on (a field: rows rebuild mid-drag).
+  KitDiffSide? _dragSide;
+
+  Widget _gutterGestures(BuildContext anchor) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      // Each row's own node carries its select action.
+      excludeFromSemantics: true,
+      // A drag selects from the line it went down on.
+      dragStartBehavior: DragStartBehavior.down,
+      onTapUp: (details) {
+        final hit = _gutterLineAt(details.globalPosition);
+        if (hit == null) return;
+        _select(
+          hit.$1,
+          hit.$2,
+          extend: HardwareKeyboard.instance.isShiftPressed,
+        );
+      },
+      onSecondaryTapUp: (details) {
+        final hit = _gutterLineAt(details.globalPosition);
+        if (hit == null) return;
+        _lineMenu(hit.$1, hit.$2, details.globalPosition, anchor);
+      },
+      onVerticalDragStart: (details) {
+        final hit = _gutterLineAt(details.globalPosition);
+        _dragSide = hit?.$1;
+        if (hit != null) _select(hit.$1, hit.$2);
+      },
+      onVerticalDragUpdate: (details) {
+        final side = _dragSide;
+        if (side != null) _dragTo(side, details.globalPosition);
+      },
+      onVerticalDragEnd: (_) => _dragSide = null,
+      child: const SizedBox.expand(),
+    );
+  }
+
   Widget _itemView(
     BuildContext context,
     KitTokens tokens,
@@ -1667,11 +1943,11 @@ class _KitDiffViewState extends State<KitDiffView> {
       current,
       g,
     ),
-    _HunkItem(:final line) => _hunkRow(tokens, line, g),
+    _HunkItem(:final seg, :final line) => _hunkRow(tokens, seg, line, g),
     _GapItem(:final seg, :final gap) => _gapView(context, tokens, seg, gap, g),
   };
 
-  Widget _hunkRow(KitTokens tokens, KitDiffLine line, _Geometry g) {
+  Widget _hunkRow(KitTokens tokens, int seg, KitDiffLine line, _Geometry g) {
     final match = KitDiffFile._hunkHeader.firstMatch(line.text);
     var label = line.text;
     if (match != null) {
@@ -1684,7 +1960,7 @@ class _KitDiffViewState extends State<KitDiffView> {
           : (oldStart, oldCount);
       label = _l10n.kitDiffLines(start, start + math.max<int>(count, 1) - 1);
     }
-    return Padding(
+    final text = Padding(
       padding: EdgeInsetsDirectional.only(
         start: g.indent,
         top: tokens.space1,
@@ -1694,6 +1970,21 @@ class _KitDiffViewState extends State<KitDiffView> {
         label,
         role: KitTextRole.mono,
         tone: KitTextTone.secondary,
+      ),
+    );
+    final selectable =
+        g.selectable &&
+        _FileIndex.of(widget.files[_file]).hunks.any((h) => h.header == seg);
+    if (!selectable) return text;
+    // With selection on, the range selects its whole hunk.
+    return _Registered(
+      register: _blockers.add,
+      unregister: _blockers.remove,
+      child: KitTappable(
+        key: ValueKey('${widget.keyPrefix}-hunk-$_file-$seg'),
+        onTap: () => _selectHunk(seg),
+        tooltip: _l10n.kitDiffSelectHunk,
+        child: Align(alignment: AlignmentDirectional.centerStart, child: text),
       ),
     );
   }
@@ -1735,12 +2026,10 @@ class _KitDiffViewState extends State<KitDiffView> {
   Widget _numberCell(KitTokens tokens, KitDiffSide side, int? n, _Geometry g) {
     final roles = tokens.roles;
     final selected = _isSelected(side, n);
-    // With selection on, a number is a 48 dp-tall target (A11Y-2).
-    final text = Container(
+    // The row stays at the text's line height; the gutter's hit area over
+    // the list gives the number its 48 dp reach (A11Y-2, _gutterLineAt).
+    final text = SizedBox(
       width: g.number,
-      constraints: BoxConstraints(
-        minHeight: g.selectable ? tokens.minTarget : 0,
-      ),
       child: Padding(
         padding: EdgeInsetsDirectional.only(end: tokens.space1),
         child: Text(
@@ -1754,32 +2043,17 @@ class _KitDiffViewState extends State<KitDiffView> {
       ),
     );
     if (!g.selectable || n == null) return text;
-    final side0 = side;
-    return _NumberCell(
+    return DecoratedBox(
       key: ValueKey('${widget.keyPrefix}-line-$_file-${side.name}-$n'),
-      register: (ctx) => _cells[(side0, n)] = ctx,
-      unregister: (ctx) {
-        if (identical(_cells[(side0, n)], ctx)) _cells.remove((side0, n));
-      },
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () =>
-            _select(side, n, extend: HardwareKeyboard.instance.isShiftPressed),
-        onVerticalDragStart: (_) => _select(side, n),
-        onVerticalDragUpdate: (details) =>
-            _dragTo(side, details.globalPosition),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: BorderDirectional(
-              start: BorderSide(
-                color: selected ? roles.accent : Colors.transparent,
-                width: KitTokens.focusRingWidth(context),
-              ),
-            ),
+      decoration: BoxDecoration(
+        border: BorderDirectional(
+          start: BorderSide(
+            color: selected ? roles.accent : Colors.transparent,
+            width: KitTokens.focusRingWidth(context),
           ),
-          child: text,
         ),
       ),
+      child: text,
     );
   }
 
@@ -1827,6 +2101,7 @@ class _KitDiffViewState extends State<KitDiffView> {
     required int? number,
     required _Geometry g,
     required KitTokens tokens,
+    List<(KitDiffSide, int?, double)> gutter = const [],
   }) {
     final roles = tokens.roles;
     final color = selected
@@ -1835,16 +2110,31 @@ class _KitDiffViewState extends State<KitDiffView> {
             tint ?? tokens.detailsSurface,
           )
         : tint;
-    Widget row = ConstrainedBox(
-      constraints: BoxConstraints(
-        minHeight: g.selectable ? tokens.minTarget : 0,
-      ),
-      child: child,
-    );
     // Always a ColoredBox: a row that gains a tint when selected keeps its
-    // element tree, so a drag that started on its number is not dropped.
-    row = ColoredBox(color: color ?? Colors.transparent, child: row);
+    // element tree.
+    Widget row = ColoredBox(color: color ?? Colors.transparent, child: child);
     final selectable = g.selectable && number != null;
+    final cells = [
+      for (final (cellSide, n, dx) in gutter)
+        if (n != null) (cellSide, n, dx),
+    ];
+    if (g.selectable && cells.isNotEmpty) {
+      row = _Registered(
+        register: (ctx) {
+          for (final (cellSide, n, dx) in cells) {
+            _cells[(cellSide, n)] = (ctx, dx);
+          }
+        },
+        unregister: (ctx) {
+          for (final (cellSide, n, _) in cells) {
+            if (identical(_cells[(cellSide, n)]?.$1, ctx)) {
+              _cells.remove((cellSide, n));
+            }
+          }
+        },
+        child: row,
+      );
+    }
     row = Semantics(
       container: true,
       label: label,
@@ -1898,6 +2188,10 @@ class _KitDiffViewState extends State<KitDiffView> {
       number: number,
       g: g,
       tokens: tokens,
+      gutter: [
+        (KitDiffSide.old, line.oldNo, 0),
+        (KitDiffSide.current, line.newNo, g.number),
+      ],
     );
   }
 
@@ -1926,6 +2220,7 @@ class _KitDiffViewState extends State<KitDiffView> {
       number: number,
       g: g,
       tokens: tokens,
+      gutter: [(side, number, 0)],
     );
   }
 
@@ -1985,46 +2280,60 @@ class _KitDiffViewState extends State<KitDiffView> {
       ],
     );
 
+    Widget bar(_GapBar bar) => g.selectable
+        ? _Registered(
+            register: _blockers.add,
+            unregister: _blockers.remove,
+            child: bar,
+          )
+        : bar;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (expandable && top + bottom > 0)
-          _GapBar(
-            key: ValueKey('${widget.keyPrefix}-collapse-$seg'),
-            label: l10n.kitDiffHideUnchanged,
-            icon: AppIconography.unfoldLess,
-            indent: indent,
-            onTap: () => setState(() {
-              _shownTop.remove(seg);
-              _shownBottom.remove(seg);
-            }),
+          bar(
+            _GapBar(
+              key: ValueKey('${widget.keyPrefix}-collapse-$seg'),
+              label: l10n.kitDiffHideUnchanged,
+              icon: AppIconography.unfoldLess,
+              indent: indent,
+              onTap: () => setState(() {
+                _shownTop.remove(seg);
+                _shownBottom.remove(seg);
+              }),
+            ),
           ),
         KitReveal(
           child: expandable && top > 0 ? rowsOf(lines.take(top)) : null,
         ),
         if (remaining > 0 && expandable && seg > 0)
-          _GapBar(
-            key: ValueKey('${widget.keyPrefix}-expand-down-$seg'),
-            label: l10n.kitDiffShowUnchanged(step),
-            icon: AppIconography.chevronDown,
-            indent: indent,
-            onTap: () =>
-                setState(() => _shownTop[seg] = top + KitDiffView.expandStep),
+          bar(
+            _GapBar(
+              key: ValueKey('${widget.keyPrefix}-expand-down-$seg'),
+              label: l10n.kitDiffShowUnchanged(step),
+              icon: AppIconography.chevronDown,
+              indent: indent,
+              onTap: () =>
+                  setState(() => _shownTop[seg] = top + KitDiffView.expandStep),
+            ),
           ),
         if (remaining > 0)
-          _GapBar(
-            key: ValueKey('${widget.keyPrefix}-gap-$seg'),
-            label: expandable
-                ? l10n.kitDiffShowUnchanged(step)
-                : l10n.kitDiffUnchangedCount(remaining),
-            icon: expandable ? AppIconography.chevronUp : null,
-            indent: indent,
-            onTap: expandable
-                ? () => setState(
-                    () => _shownBottom[seg] = bottom + KitDiffView.expandStep,
-                  )
-                : null,
+          bar(
+            _GapBar(
+              key: ValueKey('${widget.keyPrefix}-gap-$seg'),
+              label: expandable
+                  ? l10n.kitDiffShowUnchanged(step)
+                  : l10n.kitDiffUnchangedCount(remaining),
+              icon: expandable ? AppIconography.chevronUp : null,
+              indent: indent,
+              onTap: expandable
+                  ? () => setState(
+                      () => _shownBottom[seg] = bottom + KitDiffView.expandStep,
+                    )
+                  : null,
+            ),
           ),
         KitReveal(
           child: expandable && bottom > 0
@@ -2036,11 +2345,10 @@ class _KitDiffViewState extends State<KitDiffView> {
   }
 }
 
-/// A line-number cell that registers its context while built, so a drag
-/// over the gutter can find the line under the pointer.
-class _NumberCell extends StatefulWidget {
-  const _NumberCell({
-    super.key,
+/// Registers its context while built, so the gutter's hit area can find
+/// the row (or the gap bar) under the pointer.
+class _Registered extends StatefulWidget {
+  const _Registered({
     required this.register,
     required this.unregister,
     required this.child,
@@ -2051,10 +2359,10 @@ class _NumberCell extends StatefulWidget {
   final Widget child;
 
   @override
-  State<_NumberCell> createState() => _NumberCellState();
+  State<_Registered> createState() => _RegisteredState();
 }
 
-class _NumberCellState extends State<_NumberCell> {
+class _RegisteredState extends State<_Registered> {
   @override
   void initState() {
     super.initState();
@@ -2062,7 +2370,7 @@ class _NumberCellState extends State<_NumberCell> {
   }
 
   @override
-  void didUpdateWidget(_NumberCell old) {
+  void didUpdateWidget(_Registered old) {
     super.didUpdateWidget(old);
     widget.register(context);
   }
@@ -2164,5 +2472,38 @@ class _GapBar extends StatelessWidget {
             ),
     );
     return Semantics(button: onTap != null, child: bar);
+  }
+}
+
+/// Takes a pointer only where [claims] says a line's number is within
+/// reach; everywhere else the lines below get it (text selection, gap bars,
+/// the row's right-click menu).
+class _GutterHitArea extends SingleChildRenderObjectWidget {
+  const _GutterHitArea({required this.claims, super.child});
+
+  final bool Function(Offset global) claims;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderGutterHitArea(claims);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderGutterHitArea renderObject,
+  ) => renderObject.claims = claims;
+}
+
+class _RenderGutterHitArea extends RenderProxyBox {
+  _RenderGutterHitArea(this.claims);
+
+  bool Function(Offset global) claims;
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (!size.contains(position) || !claims(localToGlobal(position))) {
+      return false;
+    }
+    return super.hitTest(result, position: position);
   }
 }

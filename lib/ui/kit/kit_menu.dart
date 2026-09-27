@@ -36,10 +36,14 @@ class KitMenuItem {
     this.group,
     this.disabledReason,
     this.shortcut,
-  }) : copyText = null;
+  }) : copyText = null,
+       redact = true;
 
   /// A copy entry (KIT-23): selecting it runs `KitCopy.copy(context, text())`
   /// after the menu closes; "Copied" is announced once; no SnackBar.
+  /// [redact] (default true) masks secrets on the way to the clipboard; the
+  /// person's own content (a message) passes false to copy verbatim
+  /// (SEC-13).
   const KitMenuItem.copy({
     required this.label, // "Copy message", "Copy path"
     required String Function() text, // read at selection time
@@ -47,6 +51,7 @@ class KitMenuItem {
     this.icon = AppIconography.copy,
     this.group,
     this.shortcut,
+    this.redact = true,
   }) : copyText = text,
        onSelected = _noop,
        destructive = false,
@@ -90,6 +95,10 @@ class KitMenuItem {
 
   /// Set only by [KitMenuItem.copy].
   final String Function()? copyText;
+
+  /// Whether [KitMenuItem.copy] masks secrets before copying (default
+  /// true). Always true on a plain item, which copies nothing.
+  final bool redact;
 }
 
 /// A divider marker used by [kitMenuLayout]; never a [KitMenuItem].
@@ -209,7 +218,9 @@ Future<KitMenuItem?> showKitMenu(
     // that rebuilt). The navigator outlives it and carries the same view,
     // localizations and direction, so the chosen copy always happens.
     final copyContext = context.mounted ? context : navigator.context;
-    if (copyContext.mounted) await KitCopy.copy(copyContext, copyText());
+    if (copyContext.mounted) {
+      await KitCopy.copy(copyContext, copyText(), redact: selected.redact);
+    }
   } else {
     selected.onSelected();
   }

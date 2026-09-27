@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -16,6 +17,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/prompt_shelf.dart';
 import 'package:opencode_mobile/state/review_handoff.dart';
+import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/widgets/prompt_history_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -332,12 +334,13 @@ void main() {
       expect(field.text, '/help');
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
       expect(field.text, '/help');
+      KitUndo.commitPending();
       await tester.pumpWidget(const SizedBox());
     },
   );
 
   testWidgets(
-    'temporary attachments are named and partial restore keeps the source entry',
+    'temporary attachments are named and a partial restore keeps the source entry',
     (tester) async {
       final (c, _) = await _pump(tester);
       await c.savePromptStash(
@@ -358,9 +361,14 @@ void main() {
       await _tool(tester, 'composer-tool-saved');
       await tester.tap(find.byKey(const ValueKey('restore-stash-temporary')));
       await _frames(tester);
-      expect(find.textContaining('temporary.png'), findsOneWidget);
-      await tester.tap(find.text('Restore available content'));
-      await _frames(tester);
+      // No question first: the available content is restored now and the
+      // Undo bar names what could not come back.
+      expect(
+        find.text(
+          'Restored without temporary.png; attach them again before sending',
+        ),
+        findsOneWidget,
+      );
       expect(
         tester
             .widget<TextField>(
@@ -374,19 +382,29 @@ void main() {
         c.promptStash.single.attachmentRefs.single.url,
         'content://keyboard/temporary',
       );
+      KitUndo.commitPending();
       await tester.pumpWidget(const SizedBox());
     },
   );
 
   testWidgets(
-    'deleting a saved prompt happens at once with Undo, and commits when the '
-    'Undo window closes',
+    'deleting a saved prompt leaves the device at once, and Undo puts it back '
+    'exactly',
     (tester) async {
       final (c, _) = await _pump(tester);
       await c.savePromptStash(
-        const StashedPrompt(id: 'old', text: 'keep for later', createdAt: 1),
+        StashedPrompt(
+          id: 'old',
+          text: 'keep for later',
+          createdAt: 1,
+          directory: c.directory,
+          workspace: c.workspace,
+          attachments: const [_attachment],
+          references: const [_reference],
+        ),
         locationRevision: c.locationRevision,
       );
+      final before = jsonEncode(c.promptStash.single.toJson());
       await _tool(tester, 'composer-tool-saved');
       final row = find.byKey(const ValueKey('restore-stash-old'));
       expect(row, findsOneWidget);
@@ -398,13 +416,27 @@ void main() {
       }
 
       await delete();
-      // No confirmation sheet on the sheet: the row leaves now.
+      // No confirmation sheet on the sheet: the prompt leaves the device now.
       expect(row, findsNothing);
+      expect(c.promptStash, isEmpty);
       expect(find.text('Saved prompt deleted'), findsOneWidget);
       await tester.tap(find.text('Undo'));
       await _frames(tester);
       expect(row, findsOneWidget);
-      expect(c.promptStash.single.id, 'old');
+      // Exactly as it was: text, date, attachment, reference.
+      final restored = c.promptStash.single;
+      expect(restored.attachmentCount, 1);
+      final bytes = await c.restorePromptStashAttachments(
+        'old',
+        locationRevision: c.locationRevision,
+      );
+      expect(bytes.attachments.single.url, _attachment.url);
+      expect(
+        restored.references.single.toPromptText(),
+        _reference.toPromptText(),
+      );
+      expect((restored.text, restored.createdAt), ('keep for later', 1));
+      expect(jsonEncode(restored.toJson()), before);
 
       await delete();
       expect(row, findsNothing);
@@ -412,6 +444,7 @@ void main() {
         await tester.pump(const Duration(seconds: 1));
       }
       expect(c.promptStash, isEmpty);
+      KitUndo.commitPending();
       await tester.pumpWidget(const SizedBox());
     },
   );
@@ -457,11 +490,8 @@ void main() {
         );
         await tester.tap(find.byKey(ValueKey('restore-stash-$id')));
         await _frames(tester);
-        // At 320 dp and large text the question scrolls: reach its answer.
-        await tester.ensureVisible(find.text('Restore').last);
-        await _frames(tester);
-        await tester.tap(find.text('Restore').last);
-        await _frames(tester);
+        // Restored at once; the replaced draft is kept, with Undo.
+        expect(find.text('Saved prompt restored'), findsOneWidget);
         expect(
           tester.widget<TextField>(_inner(fieldFinder)).controller!.text,
           'save this',
@@ -482,6 +512,7 @@ void main() {
           handoff.referencesFor('s').single.toPromptText(),
           _reference.toPromptText(),
         );
+        KitUndo.commitPending();
         await tester.pumpWidget(const SizedBox());
       },
     );

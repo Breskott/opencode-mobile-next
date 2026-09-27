@@ -16,7 +16,7 @@ and the upstream MIT and OpenAPI Generator Apache-2.0 license references.
 ## Requirements
 
 * Dart 3.10.0+
-* Dio 5.11.0
+* Dio 5.11.1
 * JSON Serializable 6.14.1
 
 ## Installation & Usage

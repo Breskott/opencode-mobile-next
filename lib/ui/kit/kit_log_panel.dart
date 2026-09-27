@@ -183,6 +183,7 @@ class KitLogPanel extends StatefulWidget {
     this.panelKey,
     this.copyAllKey,
     this.wrapKey,
+    this.headerAction,
   });
 
   /// A [KitLogBuffer] or the caller's own listenable.
@@ -227,6 +228,14 @@ class KitLogPanel extends StatefulWidget {
 
   /// Wrap; null is `ValueKey('kit-log-wrap')`.
   final Key? wrapKey;
+
+  /// One more action in the header, after Copy all, with its words shown
+  /// (R3): a host's "Copy failure report" belongs inside the panel it
+  /// reports on, not under it. It shares the header row when the row has
+  /// room and takes its own header line, under Copy all, when it has not
+  /// (a phone), so its words are never cut short. A [KitAction.copy]
+  /// copies with the check feedback. Null shows nothing.
+  final KitAction? headerAction;
 
   /// Lines kept on screen; older ones are dropped and counted (honest state).
   static const int defaultMaxLines = 2000;
@@ -572,6 +581,7 @@ class _KitLogPanelState extends State<KitLogPanel> with WidgetsBindingObserver {
       copyAllKey: widget.copyAllKey ?? const ValueKey('kit-log-copy-all'),
       onWrap: () => _toggleWrap(wrap),
       copyText: () => _copyText(shown, dropped),
+      action: widget.headerAction,
     );
 
     Widget body = _body(context, shown, dropped, wrap, extent);
@@ -793,8 +803,11 @@ class _KitLogPanelState extends State<KitLogPanel> with WidgetsBindingObserver {
   }
 }
 
-/// Title, state words (the panel's one polite live region), Wrap and Copy
-/// all.
+/// Title, state words (the panel's one polite live region), Wrap, Copy all
+/// and the host's one extra action (beside Copy all, or on its own header
+/// line under it when the row is narrow). The controls sit inside the header with
+/// a space1 inset top and bottom and space2 at the end, so the Wrap toggle's
+/// pressed fill never touches the panel's edge or corner (R3).
 class _Header extends StatelessWidget {
   const _Header({
     required this.title,
@@ -808,6 +821,7 @@ class _Header extends StatelessWidget {
     required this.copyAllKey,
     required this.onWrap,
     required this.copyText,
+    this.action,
   });
 
   final String title;
@@ -821,6 +835,7 @@ class _Header extends StatelessWidget {
   final Key copyAllKey;
   final VoidCallback onWrap;
   final String Function() copyText;
+  final KitAction? action;
 
   @override
   Widget build(BuildContext context) {
@@ -866,43 +881,115 @@ class _Header extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: EdgeInsetsDirectional.only(start: tokens.space3),
-        child: Row(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: tokens.space2),
-                child: Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: tokens.space2,
-                  runSpacing: tokens.space1,
-                  children: [
-                    KitText(title, role: KitTextRole.label),
-                    words,
-                  ],
-                ),
-              ),
-            ),
-            KitIconButton(
-              key: wrapKey,
-              icon: AppIconography.wrapText,
-              tooltip: l10n.kitWrapLines,
-              selected: wrap,
-              size: 20,
-              onPressed: onWrap,
-            ),
-            if (hasLines)
-              KitIconButton.copy(
-                key: copyAllKey,
-                text: copyText,
-                tooltip: l10n.kitCopyAll,
-                size: 20,
-              ),
-          ],
+        padding: EdgeInsetsDirectional.fromSTEB(
+          tokens.space3,
+          tokens.space1,
+          tokens.space2,
+          tokens.space1,
         ),
+        child: action == null
+            ? _row(context, tokens, l10n, words, inlineAction: false)
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  final inline =
+                      constraints.maxWidth >= _inlineWidth(context, tokens);
+                  final row = _row(
+                    context,
+                    tokens,
+                    l10n,
+                    words,
+                    inlineAction: inline,
+                  );
+                  if (inline) return row;
+                  // Too narrow for the words beside everything else: the
+                  // action takes its own line in the header, under Copy
+                  // all, with its words whole instead of cut short.
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      row,
+                      Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: _actionButton(),
+                      ),
+                    ],
+                  );
+                },
+              ),
       ),
     );
   }
+
+  Widget _actionButton() => KitButton.fromAction(
+    action!,
+    role: KitButtonRole.tertiary,
+    expand: false,
+  );
+
+  /// The width the header row needs to hold the host's action beside Wrap
+  /// and Copy all while the title and state words keep a readable column:
+  /// the action's words in the button role, its glyph, gap and padding.
+  double _inlineWidth(BuildContext context, KitTokens tokens) {
+    final scaler =
+        MediaQuery.maybeTextScalerOf(context) ?? TextScaler.noScaling;
+    final painter = TextPainter(
+      text: TextSpan(
+        text: action!.label,
+        style: KitText.styleOf(context, KitTextRole.button),
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: scaler,
+      maxLines: 1,
+    )..layout();
+    final label = painter.width;
+    painter.dispose();
+    final actionWidth =
+        label + tokens.smallIconSize + tokens.space2 * 3 + tokens.space1;
+    final controls = tokens.minTarget * (hasLines ? 2 : 1);
+    return scaler.scale(160) + controls + actionWidth;
+  }
+
+  Widget _row(
+    BuildContext context,
+    KitTokens tokens,
+    AppLocalizations l10n,
+    Widget words, {
+    required bool inlineAction,
+  }) => Row(
+    children: [
+      Expanded(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: tokens.space2),
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: tokens.space2,
+            runSpacing: tokens.space1,
+            children: [
+              KitText(title, role: KitTextRole.label),
+              words,
+            ],
+          ),
+        ),
+      ),
+      KitIconButton(
+        key: wrapKey,
+        icon: AppIconography.wrapText,
+        tooltip: l10n.kitWrapLines,
+        selected: wrap,
+        size: 20,
+        onPressed: onWrap,
+      ),
+      if (hasLines)
+        KitIconButton.copy(
+          key: copyAllKey,
+          text: copyText,
+          tooltip: l10n.kitCopyAll,
+          size: 20,
+        ),
+      if (inlineAction) _actionButton(),
+    ],
+  );
 }
 
 class _StateWords extends StatelessWidget {

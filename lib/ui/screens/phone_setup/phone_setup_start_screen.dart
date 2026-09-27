@@ -22,6 +22,7 @@ import '../servers_screen.dart' show ServersRouteRequest;
 import 'phone_setup_hero.dart';
 import 'phone_setup_routes.dart';
 import 'phone_setup_selection.dart';
+import 'phone_setup_termux_screen.dart';
 
 /// Screen A of phone setup v2 (docs/design/phone-setup-v2-2026-09-24.md):
 /// "On this phone". One promise, one filled button, and the less common ways
@@ -344,8 +345,15 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
     );
   }
 
+  /// The Termux host of the same v2 job (P1.2): Termux and its permission
+  /// are rows only the person can do, then the same components as here,
+  /// with the same Customize choice, install in Termux.
   Future<void> _useTermux() async {
-    await Navigator.of(context).pushNamed('/termux-setup');
+    await openPhoneSetupTermux(
+      context,
+      firstSetup: true,
+      selection: _selection,
+    );
     // Setting Termux up there changes what this screen should lead with.
     if (mounted) unawaited(_probeTermux());
   }
@@ -619,9 +627,10 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
                 // Termux is there but has not let the app in yet (map
                 // statesMissing "Termux installed but not yet allowed"):
                 // the Termux setup is where that permission is given.
+                // What it costs, said before anything installs.
                 detail: termux?.state == TermuxRunningServerState.denied
                     ? l10n.phoneSetupStartTermuxNotAllowed
-                    : l10n.phoneSetupStartAdvanced,
+                    : l10n.phoneSetupTermuxCost,
                 onTap: () => unawaited(_useTermux()),
               ),
             row(

@@ -86,8 +86,8 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
     probe: widget.probe,
   );
 
-  /// The "On the server" section's refresh and link clearing, offered by
-  /// this page's top bar.
+  /// The "On the server" section's refresh, offered by this page's top
+  /// bar.
   final ServerPluginsActions _serverActions = ServerPluginsActions();
 
   @override
@@ -151,7 +151,6 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
     final phoneIsTheTeam = phoneHosts && (config == null || phoneTeamOn);
     final serverPlugins = controller.capabilities.pluginInventory;
     final refresh = serverPlugins ? _serverActions.refresh : null;
-    final clearLinks = serverPlugins ? _serverActions.clearLinks : null;
     return KitScreen(
       topBar: KitTopBar(
         title: l10n.teamUiPluginsTitle,
@@ -162,17 +161,6 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
               label: l10n.pluginsRefresh,
               icon: AppIconography.retry,
               onPressed: refresh,
-            ),
-        ],
-        menuKey: const ValueKey('plugins-section-menu'),
-        menu: [
-          if (clearLinks != null)
-            KitMenuItem(
-              key: const ValueKey('plugins-clear-links'),
-              label: l10n.pluginMappingClearAll,
-              icon: AppIconography.unlink,
-              destructive: true,
-              onSelected: clearLinks,
             ),
         ],
       ),
@@ -223,14 +211,6 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
                     onTap: _openSheet,
                   ),
                 ],
-              ),
-            if (teamPhoneProfile(profile))
-              rails(
-                TeamPhoneReofferCard(
-                  connection: controller,
-                  profile: profile!,
-                  runtime: widget.teamRuntime,
-                ),
               ),
             if (profile == null)
               // Plugins belong to a server: say so, with nothing to tap

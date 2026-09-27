@@ -1,7 +1,5 @@
 // Census scenes for the ledger part `j1-settings-more`
 // (docs/design/ui-ledger/parts/j1-settings-more.json). See tool/capture/census_test.dart.
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,7 +11,6 @@ import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_probe.dar
 import 'package:opencode_mobile/ui/screens/about_screen.dart';
 import 'package:opencode_mobile/ui/screens/guide_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
-import 'package:opencode_mobile/ui/screens/legacy_drafts_screen.dart';
 import 'package:opencode_mobile/ui/screens/saved_permissions_screen.dart';
 import 'package:opencode_mobile/ui/screens/server_capabilities_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
@@ -352,17 +349,6 @@ final j1SettingsMoreArea = CensusArea(
       kit.onDispose(done);
       kit.expectText('Appearance');
     }),
-    CensusShot('appearance-picker-sheet', (kit) async {
-      final done = await mountSettingsScene(
-        kit.tester,
-        SettingsScene.appearance,
-        light: false,
-        boundary: kit.boundaryKey,
-      );
-      kit.onDispose(done);
-      await kit.tapKey('appearance-settings-entry');
-      kit.expectVisible(find.byKey(const ValueKey('appearance-picker')));
-    }),
     CensusShot('theme-pack-preview-sheet', (kit) async {
       final done = await mountSettingsScene(
         kit.tester,
@@ -430,18 +416,6 @@ final j1SettingsMoreArea = CensusArea(
       await kit.tapKey('plugins-ai-team-row');
       kit.expectVisible(find.byKey(const ValueKey('team-sheet-add-manually')));
     }),
-    CensusShot('plugins-clear-mappings-sheet', (kit) async {
-      await _pluginsController(kit);
-      await kit.tapKey('plugins-section-menu');
-      await kit.tapKey('plugins-clear-links');
-      kit.expectText('Clear links');
-    }),
-    CensusShot('plugins-mapping-dialog', (kit) async {
-      await _pluginsController(kit);
-      await kit.tapKey('plugin-menu-code-review');
-      await kit.tapKey('plugin-link-code-review');
-      kit.expectText('Save links');
-    }),
 
     // ---- About -------------------------------------------------------------
     CensusShot('about', (kit) async {
@@ -470,7 +444,7 @@ final j1SettingsMoreArea = CensusArea(
         boundary: kit.boundaryKey,
       );
       kit.onDispose(done);
-      kit.expectVisible(find.byKey(const ValueKey('app-diagnostics-actions')));
+      kit.expectVisible(find.byKey(const ValueKey('report-problem-review')));
     }),
     CensusShot('app-diagnostics', state: 'empty', (kit) async {
       final done = await mountSettingsScene(
@@ -480,7 +454,7 @@ final j1SettingsMoreArea = CensusArea(
         boundary: kit.boundaryKey,
       );
       kit.onDispose(done);
-      kit.expectVisible(find.byKey(const ValueKey('send-app-diagnostics')));
+      kit.expectVisible(find.byKey(const ValueKey('report-problem-review')));
     }),
     CensusShot('app-diagnostics-clear-sheet', (kit) async {
       final done = await mountSettingsScene(
@@ -490,84 +464,8 @@ final j1SettingsMoreArea = CensusArea(
         boundary: kit.boundaryKey,
       );
       kit.onDispose(done);
-      await kit.tapKey('app-diagnostics-actions');
       await kit.tapKey('clear-app-diagnostics');
       kit.expectText('Clear');
-    }),
-
-    // ---- Legacy drafts -------------------------------------------------------
-    CensusShot('legacy-drafts', (kit) async {
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final controller = await kit.connected(
-        prefValues: {
-          'oc.sessionDrafts': jsonEncode([
-            {
-              'sessionID': darkModeSessionID,
-              'text':
-                  'Ship the checkout redesign before Friday review — add '
-                  'empty states and update the changelog.',
-              'updatedAt': now - 3 * 24 * 60 * 60 * 1000,
-            },
-            {
-              'sessionID': ciSessionID,
-              'text': 'Investigate the flaky CI runner on the payments job.',
-              'updatedAt': now - 6 * 24 * 60 * 60 * 1000,
-            },
-          ]),
-        },
-      );
-      await kit.pumpApp(
-        LegacyDraftsScreen(controller: controller),
-        controller: controller,
-      );
-      kit.expectVisible(
-        find.byKey(ValueKey('legacy-draft-$darkModeSessionID')),
-      );
-    }),
-    CensusShot('legacy-drafts-review-sheet', (kit) async {
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final controller = await kit.connected(
-        prefValues: {
-          'oc.sessionDrafts': jsonEncode([
-            {
-              'sessionID': darkModeSessionID,
-              'text':
-                  'Ship the checkout redesign before Friday review — add '
-                  'empty states and update the changelog.',
-              'updatedAt': now - 3 * 24 * 60 * 60 * 1000,
-            },
-          ]),
-        },
-      );
-      await kit.pumpApp(
-        LegacyDraftsScreen(controller: controller),
-        controller: controller,
-      );
-      await kit.tapKey('legacy-draft-$darkModeSessionID');
-      kit.expectText('Insert into draft');
-    }),
-    CensusShot('legacy-drafts-delete-sheet', (kit) async {
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final controller = await kit.connected(
-        prefValues: {
-          'oc.sessionDrafts': jsonEncode([
-            {
-              'sessionID': darkModeSessionID,
-              'text':
-                  'Ship the checkout redesign before Friday review — add '
-                  'empty states and update the changelog.',
-              'updatedAt': now - 3 * 24 * 60 * 60 * 1000,
-            },
-          ]),
-        },
-      );
-      await kit.pumpApp(
-        LegacyDraftsScreen(controller: controller),
-        controller: controller,
-      );
-      await kit.tapKey('legacy-draft-$darkModeSessionID');
-      await kit.tap(find.widgetWithText(OutlinedButton, 'Delete saved copy'));
-      kit.expectVisible(find.widgetWithText(FilledButton, 'Delete saved copy'));
     }),
 
     // ---- Saved permissions -----------------------------------------------

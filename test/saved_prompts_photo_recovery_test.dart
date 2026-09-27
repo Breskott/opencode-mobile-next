@@ -227,10 +227,12 @@ void main() {
     'native recovery redacts filename metadata before persistence',
     () async {
       await pending();
-      final source = File('${root.path}/camera.png');
-      picker.lost = LostDataResponse(
-        files: [XFile(source.path, name: 'password=fake-photo.png')],
-      );
+      // On io, XFile.name is the path's basename; the file itself carries
+      // the sensitive-looking name.
+      final source = await File(
+        '${root.path}/camera.png',
+      ).copy('${root.path}/password=fake-photo.png');
+      picker.lost = LostDataResponse(files: [XFile(source.path)]);
       await photos.recoverLostData();
       expect(photos.pending!.name, 'password=${KitRedact.mask}');
       expect(photos.pending!.ref!.filename, 'password=${KitRedact.mask}');

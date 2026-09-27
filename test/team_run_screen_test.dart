@@ -520,7 +520,7 @@ void main() {
 
   /// The supporting line of a KitRow (a Text.rich) by its key.
   String line(WidgetTester tester, String name) =>
-      tester.widget<Text>(key(name)).textSpan!.toPlainText();
+      _textOf(tester, key(name)).textSpan!.toPlainText();
 
   /// Counts, usage and the host's policy sit under the Overview's
   /// collapsed Details row (the 2026-09-24 redesign); open it.
@@ -550,18 +550,18 @@ void main() {
       // holding the bead, is waiting for a worker; the host's own
       // `sling-` title is in Technical details only.
       expect(
-        tester.widget<Text>(key('team-run-objective-title')).data,
+        _textOf(tester, key('team-run-objective-title')).data,
         'Add subtract function to calc.py',
       );
       expect(find.text('sling-oc-loy'), findsNothing);
       expect(find.text('Task · convoy', findRichText: true), findsNothing);
       expect(
-        tester.widget<Text>(key('team-run-state')).data,
+        _textOf(tester, key('team-run-state')).data,
         'Waiting for a worker',
       );
       expect(find.text('Planning'), findsNothing);
       // Created 2026-09-10T18:44:53Z, the clock is 12:30 the next day.
-      expect(tester.widget<Text>(key('team-run-elapsed')).data, '17 h 45 min');
+      expect(_textOf(tester, key('team-run-elapsed')).data, '17 h 45 min');
       // One step: no "0 of 1" on the status line; the step is a row.
       expect(key('team-run-progress-label'), findsNothing);
       expect(key('team-run-step-oc-loy'), findsOneWidget);
@@ -570,7 +570,7 @@ void main() {
       expect(key('team-run-counts'), findsNothing);
       await openDetails(tester);
       expect(
-        tester.widget<Text>(key('team-run-counts')).data,
+        _textOf(tester, key('team-run-counts')).data,
         '0 done · 0 working · 0 held up',
       );
       expect(key('team-run-stages'), findsNothing);
@@ -613,9 +613,9 @@ void main() {
         configure: (g) => handedToRefineryShape(g, updatedAt: handedAt),
       );
       await pumpRun(tester, controller, 'oc-xru');
-      expect(tester.widget<Text>(key('team-run-state')).data, 'Reviewing');
+      expect(_textOf(tester, key('team-run-state')).data, 'Reviewing');
       expect(
-        tester.widget<Text>(key('team-run-elapsed')).data,
+        _textOf(tester, key('team-run-elapsed')).data,
         '20 h 19 min since hand-off',
       );
       expect(find.bySemanticsLabel('Stage 3 of 4: Reviewing'), findsOneWidget);
@@ -630,7 +630,7 @@ void main() {
       expect(cycle.stallReason, DispatchStall.mergeWaiting);
       await openDetails(tester);
       expect(
-        tester.widget<Text>(key('team-run-counts')).data,
+        _textOf(tester, key('team-run-counts')).data,
         '0 done · 0 working · 0 held up',
       );
       // Technical details agree with the header.
@@ -647,10 +647,10 @@ void main() {
         'hand-off is counted from its creation, steps untimed', (tester) async {
       final (controller, _) = await boot(configure: handedToRefineryShape);
       await pumpRun(tester, controller, 'oc-xru');
-      expect(tester.widget<Text>(key('team-run-state')).data, 'Reviewing');
+      expect(_textOf(tester, key('team-run-state')).data, 'Reviewing');
       // Created 2026-09-10T18:44:45Z, the clock is 12:30 the next day.
       expect(
-        tester.widget<Text>(key('team-run-elapsed')).data,
+        _textOf(tester, key('team-run-elapsed')).data,
         '17 h 45 min since hand-off',
       );
       final cycle = controller.cycleFor('oc-loy');
@@ -689,18 +689,18 @@ void main() {
         );
       }
       expect(
-        tester.widget<Text>(key('team-run-objective-title')).data,
+        _textOf(tester, key('team-run-objective-title')).data,
         'Offline-first sessions',
       );
-      expect(tester.widget<Text>(key('team-run-state')).data, 'Blocked');
-      expect(tester.widget<Text>(key('team-run-elapsed')).data, '34 min');
+      expect(_textOf(tester, key('team-run-state')).data, 'Blocked');
+      expect(_textOf(tester, key('team-run-elapsed')).data, '34 min');
       expect(
-        tester.widget<Text>(key('team-run-progress-label')).data,
+        _textOf(tester, key('team-run-progress-label')).data,
         '1 of 4 steps done',
       );
       await openDetails(tester);
       expect(
-        tester.widget<Text>(key('team-run-counts')).data,
+        _textOf(tester, key('team-run-counts')).data,
         '1 done · 1 working · 1 held up',
       );
       expect(
@@ -736,9 +736,9 @@ void main() {
     ) async {
       final (controller, _) = await boot(configure: blockedShape);
       await pumpRun(tester, controller, 'oc-xru');
-      expect(tester.widget<Text>(key('team-run-state')).data, 'Blocked');
+      expect(_textOf(tester, key('team-run-state')).data, 'Blocked');
       expect(
-        tester.widget<Text>(key('team-run-progress-label')).data,
+        _textOf(tester, key('team-run-progress-label')).data,
         '1 of 3 steps done',
       );
       expect(
@@ -754,7 +754,7 @@ void main() {
       );
       await openDetails(tester);
       expect(
-        tester.widget<Text>(key('team-run-counts')).data,
+        _textOf(tester, key('team-run-counts')).data,
         '1 done · 0 working · 1 held up',
       );
       expect(tester.takeException(), isNull);
@@ -765,8 +765,8 @@ void main() {
     ) async {
       final (controller, _) = await boot(configure: richShape);
       await pumpRun(tester, controller, 'run-ship');
-      expect(tester.widget<Text>(key('team-run-state')).data, 'Working');
-      expect(tester.widget<Text>(key('team-run-elapsed')).data, '2 h 5 min');
+      expect(_textOf(tester, key('team-run-state')).data, 'Working');
+      expect(_textOf(tester, key('team-run-elapsed')).data, '2 h 5 min');
       // It tracks no work: nothing counted on the status line.
       expect(key('team-run-progress-label'), findsNothing);
       expect(key('team-run-stages'), findsOneWidget);
@@ -829,7 +829,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        tester.widget<Text>(key('team-run-needs-you-question')).data,
+        _textOf(tester, key('team-run-needs-you-question')).data,
         'Which persistence strategy?',
       );
       expect(
@@ -862,11 +862,11 @@ void main() {
       await pumpRun(tester, controller, 'oc-xru');
       final card = key('team-run-needs-you');
       expect(
-        tester.widget<Text>(key('team-run-needs-you-watch-only')).data,
+        _textOf(tester, key('team-run-needs-you-watch-only')).data,
         'Answer this on the computer. The phone can only watch for now.',
       );
       expect(
-        tester.widget<Text>(key('team-run-needs-you-question')).data,
+        _textOf(tester, key('team-run-needs-you-question')).data,
         'Which persistence strategy?',
       );
       // Nothing to press but More (the Gate sheet), no choices to pick.
@@ -889,7 +889,7 @@ void main() {
       );
       await pumpRun(tester, controller, 'oc-xru');
       expect(
-        tester.widget<Text>(key('team-run-needs-you-watch-only')).data,
+        _textOf(tester, key('team-run-needs-you-watch-only')).data,
         'Answer this in the host on this phone. The app can only watch '
         'for now.',
       );
@@ -1349,7 +1349,7 @@ void main() {
       // The task it opened, by its title; the Gas City term is in
       // Technical details.
       expect(
-        tester.widget<Text>(key('team-run-objective-title')).data,
+        _textOf(tester, key('team-run-objective-title')).data,
         'Add subtract function to calc.py',
       );
       final sheet = await openTechnical(tester);
@@ -1368,7 +1368,7 @@ void main() {
       final (controller, _) = await boot(configure: richShape);
       await pumpRun(tester, controller, 'oc-xru', locale: const Locale('ar'));
       expect(
-        tester.widget<Text>(key('team-run-progress-label')).data,
+        _textOf(tester, key('team-run-progress-label')).data,
         ar.teamUiTaskSteps(1, 4),
       );
       expect(
@@ -1384,7 +1384,7 @@ void main() {
       );
       await openDetails(tester);
       expect(
-        tester.widget<Text>(key('team-run-counts')).data,
+        _textOf(tester, key('team-run-counts')).data,
         ar.teamUiRunDetailsCounts(1, 1, 1),
       );
       expect(
@@ -1412,4 +1412,14 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+}
+
+/// The [Text] a keyed text draws: the widget itself, or the one inside a
+/// KitText (its key sits on the KitText).
+Text _textOf(WidgetTester tester, Finder finder) {
+  final widget = tester.widget(finder);
+  if (widget is Text) return widget;
+  return tester.widget<Text>(
+    find.descendant(of: finder, matching: find.byType(Text)).first,
+  );
 }

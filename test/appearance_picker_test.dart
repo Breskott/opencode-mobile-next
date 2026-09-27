@@ -42,7 +42,7 @@ class _RefusedPlatformStore extends InMemorySharedPreferencesStore {
 Future<void> _open(
   WidgetTester tester,
   ConnectionController controller, {
-  ThemePackId? pack,
+  required ThemePackId pack,
   double scale = 1,
   TextDirection direction = TextDirection.ltr,
 }) async {
@@ -62,13 +62,11 @@ Future<void> _open(
       home: Builder(
         builder: (context) => Scaffold(
           body: FilledButton(
-            onPressed: () => pack == null
-                ? showAppearancePicker(context, controller: controller)
-                : showThemePackPreview(
-                    context,
-                    controller: controller,
-                    pack: pack,
-                  ),
+            onPressed: () => showThemePackPreview(
+              context,
+              controller: controller,
+              pack: pack,
+            ),
             child: const Text('Open appearance'),
           ),
         ),
@@ -142,29 +140,6 @@ void main() {
   }
 
   testWidgets(
-    'appearance selection previews before explicitly applying and persists',
-    (tester) async {
-      final preferences = await SharedPreferences.getInstance();
-      final controller = ConnectionController(ProfileStore(prefs: preferences));
-      addTearDown(controller.dispose);
-      await _open(tester, controller);
-
-      await _reveal(tester, find.byKey(const Key('appearance-light')));
-      await tester.tap(find.byKey(const Key('appearance-light')));
-      await tester.pumpAndSettle();
-      expect(controller.appearance.value, AppAppearance.system);
-      expect(preferences.getString('oc.appearance'), 'system');
-
-      await _reveal(tester, find.text('Apply'));
-      await tester.tap(find.text('Apply'));
-      await tester.pumpAndSettle();
-      expect(controller.appearance.value, AppAppearance.light);
-      expect(preferences.getString('oc.appearance'), 'light');
-      expect(find.byKey(const Key('appearance-picker')), findsNothing);
-    },
-  );
-
-  testWidgets(
     'closing a preview discards the draft and previewing light does not apply',
     (tester) async {
       final preferences = await SharedPreferences.getInstance();
@@ -183,48 +158,33 @@ void main() {
     },
   );
 
-  for (final packMode in [false, true]) {
-    testWidgets(
-      '${packMode ? 'pack' : 'brightness'} save failure preserves current theme and supports retry',
-      (tester) async {
-        final prefs = await SharedPreferences.getInstance();
-        final store = _FailingStore(prefs: prefs);
-        final controller = ConnectionController(store);
-        addTearDown(controller.dispose);
-        await _open(
-          tester,
-          controller,
-          pack: packMode ? ThemePackId.gruvbox : null,
-        );
-        if (!packMode) {
-          await _reveal(tester, find.byKey(const Key('appearance-dark')));
-          await tester.tap(find.byKey(const Key('appearance-dark')));
-          await tester.pump();
-        }
-        await _reveal(tester, find.text('Apply'));
-        await tester.tap(find.text('Apply'));
-        await tester.pumpAndSettle();
-        expect(
-          find.text(
-            'Could not save the appearance. Your previous setting is unchanged. Try again.',
-          ),
-          findsOneWidget,
-        );
-        expect(controller.appearance.value, AppAppearance.system);
-        expect(controller.themePack.value, ThemePackId.opencode);
-        store.fail = false;
-        await _reveal(tester, find.text('Apply'));
-        await tester.tap(find.text('Apply'));
-        await tester.pumpAndSettle();
-        expect(find.byKey(const Key('appearance-picker')), findsNothing);
-        expect(
-          packMode ? controller.themePack.value : controller.appearance.value,
-          packMode ? ThemePackId.gruvbox : AppAppearance.dark,
-        );
-        KitUndo.commitPending();
-      },
+  testWidgets('a failed theme save keeps the current theme and supports retry', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final store = _FailingStore(prefs: prefs);
+    final controller = ConnectionController(store);
+    addTearDown(controller.dispose);
+    await _open(tester, controller, pack: ThemePackId.gruvbox);
+    await _reveal(tester, find.text('Apply'));
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Could not save the appearance. Your previous setting is unchanged. Try again.',
+      ),
+      findsOneWidget,
     );
-  }
+    expect(controller.appearance.value, AppAppearance.system);
+    expect(controller.themePack.value, ThemePackId.opencode);
+    store.fail = false;
+    await _reveal(tester, find.text('Apply'));
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('appearance-picker')), findsNothing);
+    expect(controller.themePack.value, ThemePackId.gruvbox);
+    KitUndo.commitPending();
+  });
 
   testWidgets(
     'Material You preview uses the harvested scheme and refuses an unavailable one',
@@ -278,15 +238,24 @@ void main() {
           ProfileStore(prefs: await SharedPreferences.getInstance()),
         );
         addTearDown(controller.dispose);
-        await _open(tester, controller, scale: 2.5, direction: direction);
-        await _reveal(tester, find.byKey(const Key('appearance-dark')));
-        await tester.tap(find.byKey(const Key('appearance-dark')));
+        await _open(
+          tester,
+          controller,
+          pack: ThemePackId.solarized,
+          scale: 2.5,
+          direction: direction,
+        );
+        await _reveal(tester, find.byKey(const Key('appearance-preview-dark')));
+        await tester.tap(find.byKey(const Key('appearance-preview-dark')));
         await tester.pumpAndSettle();
         await _reveal(tester, find.text('Apply'));
         await tester.tap(find.text('Apply'));
         await tester.pumpAndSettle();
-        expect(controller.appearance.value, AppAppearance.dark);
+        // Previewing dark never changes light or dark itself.
+        expect(controller.appearance.value, AppAppearance.system);
+        expect(controller.themePack.value, ThemePackId.solarized);
         expect(tester.takeException(), isNull);
+        KitUndo.commitPending();
       },
     );
   }

@@ -36,10 +36,6 @@
       "title a2aForgetTask: Arabic does not end with \"؟\"": 1,
       "title a2aForgetTask: English does not end with \"?\"": 1
     },
-    "lib/ui/screens/legacy_drafts_screen.dart": {
-      "title legacyDraftDelete: Arabic does not end with \"؟\"": 1,
-      "title legacyDraftDelete: English does not end with \"?\"": 1
-    },
     "lib/ui/screens/library/credential_sheet.dart": {
       "label mcpRemove: fewer than two words": 1
     },
@@ -71,10 +67,6 @@
     "lib/ui/screens/terminal_screen.dart": {
       "label capsuleRemove: fewer than two words": 1,
       "label voiceConversationStopReply: fewer than two words": 1
-    },
-    "lib/ui/screens/termux_setup_screen.dart": {
-      "label e7SetupUpdate: fewer than two words": 1,
-      "label termuxRestartConfirm: fewer than two words": 1
     },
     "lib/ui/screens/workspace_screen.dart": {
       "label e7WorkspaceArchive: fewer than two words": 1,

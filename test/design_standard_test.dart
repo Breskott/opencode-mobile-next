@@ -67,15 +67,9 @@ const _migrated = <String, List<String>>{
     'work_not_answering',
     'work_runaway',
   ],
-  // Step 2 leftovers (test/goldens/work_parts_golden_test.dart): the AI
-  // Team section, the one-time tip, the other servers and the shell's
-  // connection line on the other tabs.
-  'lib/ui/widgets/team_card.dart': [
-    'work_team',
-    'team_card',
-    'team_card_phone',
-    'team_card_idle',
-  ],
+  // Step 2 leftovers (test/goldens/work_parts_golden_test.dart): the
+  // one-time tip, the other servers and the shell's connection line on the
+  // other tabs.
   'lib/ui/widgets/nudge_card.dart': ['work_nudge'],
   'lib/ui/widgets/other_servers_panel.dart': ['work_other_servers'],
   'lib/ui/widgets/connection_status_banner.dart': ['shell_reconnecting'],
@@ -161,12 +155,9 @@ const _migrated = <String, List<String>>{
     'team_run_overview',
   ],
   // Finding the AI Team while it is off (docs/qa/team-discover-2026-09-25):
-  // the Work tab's entry and folded row, and the intro
+  // Work without the offer (it moved to Settings › AI Team), and the intro
   // (test/goldens/team_discover_golden_test.dart).
-  'lib/ui/widgets/team_discover.dart': [
-    'team_discover_work',
-    'team_discover_work_folded',
-  ],
+  'lib/ui/widgets/team_discover.dart': ['team_discover_work'],
   'lib/ui/screens/team/team_intro_screen.dart': [
     'team_intro_phone',
     'team_intro_computer',
@@ -224,11 +215,6 @@ const _migrated = <String, List<String>>{
     'add_server_paired',
     'add_server_failed',
     'first_run_connect',
-  ],
-  'lib/ui/screens/termux_setup_screen.dart': [
-    'termux_setup',
-    'phone_running',
-    'phone_stopped',
   ],
   // The Servers, On this phone and Plugins cleanup
   // (docs/design/phone-server-screens-cleanup-2026-09-24.md; goldens:
@@ -386,7 +372,6 @@ const _grandfathered = <String>{
   'lib/ui/screens/team/team_needs_you.dart',
   'lib/ui/screens/team/team_states.dart',
   'lib/ui/screens/team/work_sheet.dart',
-  'lib/ui/screens/termux_setup_screen.dart',
   'lib/ui/screens/workspace_screen.dart',
   'lib/ui/widgets/connection_status_banner.dart',
   'lib/ui/widgets/first_reply_notify_card.dart',
@@ -400,7 +385,6 @@ const _grandfathered = <String>{
   'lib/ui/widgets/saved_server_connection_card.dart',
   'lib/ui/widgets/setup_progress_view.dart',
   'lib/ui/widgets/team_agent_row.dart',
-  'lib/ui/widgets/team_card.dart',
   'lib/ui/widgets/team_discover.dart',
   'lib/ui/widgets/team_moments.dart',
   'lib/ui/widgets/termux_phone_tools.dart',

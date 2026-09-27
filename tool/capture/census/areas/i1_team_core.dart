@@ -19,7 +19,6 @@ import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/work_sheet.dart';
-import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 
 import '../census_core.dart';
 import '../support/i1_team_core_world.dart';
@@ -650,33 +649,6 @@ final i1TeamCoreArea = CensusArea(
       kit.expectVisible(find.byKey(const ValueKey('team-cycle-stop-confirm')));
     }),
 
-    // -- Team card on the Workspace -------------------------------------------
-    CensusShot('embedded-team-card', state: 'loaded', (kit) async {
-      await _workspaceCard(kit);
-    }, note: 'Host: the Workspace, scrolled to the AI Team card.'),
-    CensusShot('embedded-team-card', state: 'idle', (kit) async {
-      await _workspaceCard(
-        kit,
-        configure: (g) => g
-          ..runList = []
-          ..workList = []
-          ..gateList = []
-          ..agentList = [g.agentList.first],
-      );
-    }, note: 'Host: the Workspace. Nothing running: the idle line.'),
-    CensusShot('embedded-team-card', state: 'on-phone', (kit) async {
-      await _workspaceCard(kit, onPhone: true);
-    }, note: 'Host: the Workspace. The team hosted on this phone.'),
-    CensusShot('embedded-team-card', state: 'error', (kit) async {
-      await _workspaceCard(
-        kit,
-        probe: (_) async => const ProbeUnreachable(
-          error: 'Connection refused (http://pop-os:7000)',
-        ),
-        expectKey: 'team-card-error',
-      );
-    }, note: 'Host: the Workspace. The host cannot be reached.'),
-
     // -- Receipt chip on Activity ------------------------------------------------
     CensusShot('embedded-team-receipt-chip', state: 'unconfirmed', (kit) async {
       await _activityReceipt(kit, MutationReceiptStatus.pending);
@@ -707,36 +679,6 @@ Future<void> _tapAgentControl(CensusKit kit, String key) async {
     );
   }
   await kit.tap(target, scroll: false);
-}
-
-Future<void> _workspaceCard(
-  CensusKit kit, {
-  void Function(CensusTeamGateway gateway)? configure,
-  bool onPhone = false,
-  Future<ProbeVerdict> Function(OrchestrationConfig config)? probe,
-  String expectKey = 'team-card-data',
-}) async {
-  final conn = await kit.connected();
-  final (team, _) = await teamController(
-    configure: configure,
-    onPhone: onPhone,
-    probe: probe,
-    prefs: conn.store.prefs,
-  );
-  // The connection owns (and disposes) an adopted controller.
-  conn.adoptOrchestrationForTesting(team);
-  await kit.pumpApp(
-    Scaffold(body: WorkspaceScreen(controller: conn)),
-    controller: conn,
-  );
-  final card = find.byKey(const ValueKey('team-card'));
-  await kit.scrollTo(card);
-  if (card.evaluate().isNotEmpty) {
-    await kit.tester.ensureVisible(card);
-    await kit.settle();
-  }
-  kit.expectVisible(card);
-  kit.expectVisible(find.byKey(ValueKey(expectKey)));
 }
 
 Future<void> _activityReceipt(

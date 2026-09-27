@@ -32,7 +32,6 @@ const _excluded = <String, String>{
   'root-connecting': 'shown automatically while a saved server connects',
   'bootstrap-gate': 'startup failure screen; nothing is connected yet',
   'servers-welcome': 'first run only, before any server exists',
-  'demo': 'offered on the first-run welcome only; owned by phase 3b',
   // Need a conversation: the conversation menu and its command launcher are
   // their search (phase 4 adds them to this index through the registry).
   'chat': 'a conversation; opened from Work, Inbox or All conversations',
@@ -50,11 +49,8 @@ const _excluded = <String, String>{
   'legacy-drafts': 'restores a draft into the open conversation',
   'staged-revert': 'needs a staged revert in an open conversation',
   // Need something picked first.
-  'manage-project': 'needs a project; opened from the Work project header',
-  'managed-workspaces': 'needs a project; opened from Manage project',
   'projects': 'a picker that returns the chosen project to Work',
   'workspace-folder-chooser': 'a state of the Work tab, not a place',
-  'development-services': 'needs a project; opened from Manage project',
   'shell-output': 'the output of one command that was just run',
   'terminal-surface': 'one terminal process; opened from Terminal',
   'diff-view': 'one file of a review; opened from Changes',
@@ -83,9 +79,6 @@ const _excluded = <String, String>{
   'phone-setup-ready':
       'a step of phone setup; shown automatically when a '
       'first setup finishes',
-  'builtin-server-setup':
-      'an experimental repair path, superseded by phone '
-      'setup v2; opened from a failed saved connection or Termux setup',
 };
 
 class _Api extends OpenCodeApi {
@@ -293,6 +286,24 @@ void main() {
         expect(entry.matches(entry.title), isTrue, reason: 'ar ${entry.id}');
       }
     });
+
+    test('each result names the page that holds it (reachability audit)', () {
+      final byId = {for (final entry in entries) entry.id: entry};
+      expect(byId['settings-privacy-data-use']!.parent, _en.aboutTitle);
+      expect(byId['ai-team']!.parent, _en.librarySettingsTitle);
+      expect(
+        byId['inside-servers-monitor']!.title,
+        _en.monitorBackgroundChecks,
+      );
+      expect(byId['settings-try-demo']!.parent, _en.settingsHubHelpRow);
+      expect(byId['settings-try-demo']!.matches('demo'), isTrue);
+      expect(byId['archived-conversations']!.matches('archived'), isTrue);
+      expect(byId['archived-conversations']!.pages, ['global-sessions']);
+      expect(byId['settings-models']!.pages, ['model-picker-sheet']);
+      final servers = byId['settings-saved-servers']!;
+      expect(servers.pages, ['servers']);
+      expect(servers.keywords, isNot(contains(_en.attentionTitle)));
+    });
   });
 
   group('gates: a result the server or device cannot open is absent', () {
@@ -496,7 +507,8 @@ void main() {
           find.byKey(const Key('library-search')),
           'quiet hours',
         );
-        await tester.pump();
+        // The field reports once typing settles.
+        await tester.pump(KitMotion.typingSettle);
         // The door and the thing itself.
         expect(_key('settings-category-background'), findsOneWidget);
         final result = _key('search-result-inside-notifications-quiet');
@@ -547,7 +559,8 @@ void main() {
           find.byKey(const Key('library-search')),
           entry.key,
         );
-        await tester.pump();
+        // The field reports once typing settles.
+        await tester.pump(KitMotion.typingSettle);
         expect(_key(entry.value), findsOneWidget, reason: entry.key);
       }
       await tester.tap(_key('search-result-inside-appearance-theme'));
@@ -563,11 +576,11 @@ void main() {
       await tester.pumpAndSettle();
       final search = find.byKey(const Key('library-search'));
       await tester.enterText(search, 'budget');
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
       expect(_key('search-result-inside-usage-budgets'), findsOneWidget);
       expect(_key('settings-category-usage'), findsOneWidget);
       await tester.enterText(search, 'always allowed');
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
       expect(_key('saved-permissions-entry'), findsOneWidget);
     });
 
@@ -580,7 +593,7 @@ void main() {
       final search = find.byKey(const Key('library-search'));
 
       await tester.enterText(search, _en.shellTabInbox);
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
       expect(_key('search-results-places'), findsOneWidget);
       await tester.tap(_key('search-result-tab-inbox'));
       await tester.pump();
@@ -589,13 +602,13 @@ void main() {
 
       seen.clear();
       await tester.enterText(search, _en.readerUiFiles);
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
       await tester.tap(_key('search-result-project-files'));
       await tester.pump();
       expect((seen.single as OpenProjectToolIntent).tool, ProjectTool.files);
       // The hub never offers a way to itself.
       await tester.enterText(search, _en.librarySettingsTitle);
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
       expect(_key('search-result-tab-settings'), findsNothing);
     });
 
@@ -608,10 +621,10 @@ void main() {
       await tester.pumpAndSettle();
       final search = find.byKey(const Key('library-search'));
       await tester.enterText(search, _en.shellTabInbox);
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
       expect(_key('search-result-tab-inbox'), findsNothing);
       await tester.enterText(search, 'terminal');
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
       expect(_key('search-result-project-terminal'), findsOneWidget);
     });
 
@@ -625,7 +638,7 @@ void main() {
       final search = find.byKey(const Key('library-search'));
       for (final query in ['terminal', 'skills', 'worktrees', 'files']) {
         await tester.enterText(search, query);
-        await tester.pump();
+        await tester.pump(KitMotion.typingSettle);
         expect(_key('search-results-places'), findsNothing, reason: query);
         expect(
           find.byWidgetPredicate(

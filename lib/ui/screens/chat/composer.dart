@@ -21,7 +21,6 @@ enum _PromptTool {
   clearText,
   stash,
   saved,
-  legacyDrafts,
 }
 
 class _ChatComposer extends StatelessWidget {
@@ -44,7 +43,6 @@ class _ChatComposer extends StatelessWidget {
     this.onClearText,
     this.onStashPrompt,
     this.onOpenStash,
-    this.onLegacyDrafts,
     this.onRestoreHistoryDraft,
     this.shelfBusy = false,
     this.shelfLoading = true,
@@ -111,7 +109,6 @@ class _ChatComposer extends StatelessWidget {
   final VoidCallback? onClearText;
   final VoidCallback? onStashPrompt;
   final VoidCallback? onOpenStash;
-  final VoidCallback? onLegacyDrafts;
   final VoidCallback? onRestoreHistoryDraft;
   final bool shelfBusy;
   final bool shelfLoading;
@@ -225,88 +222,82 @@ class _ChatComposer extends StatelessWidget {
         conn.status != StreamStatus.connected &&
         conn.capabilities.offlinePromptQueue;
     final restore = onRestoreHistoryDraft;
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: EdgeInsetsDirectional.fromSTEB(
-          tokens.space2,
-          tokens.space1,
-          tokens.space2,
-          tokens.space2,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (!conversationMode && restore != null)
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: KitButton.tertiary(
-                  key: const Key('composer-restore-history-draft'),
-                  icon: AppIconography.undo,
-                  label: l10n.promptOriginalDraft,
-                  onPressed: shelfBusy ? null : restore,
-                ),
+    // The floating layer draws the gutters, the bottom edge and the safe
+    // area ([KitComposer.layer]).
+    return Padding(
+      padding: EdgeInsetsDirectional.only(top: tokens.space1),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (!conversationMode && restore != null)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: KitButton.tertiary(
+                key: const Key('composer-restore-history-draft'),
+                icon: AppIconography.undo,
+                label: l10n.promptOriginalDraft,
+                onPressed: shelfBusy ? null : restore,
               ),
-            KitComposer(
-              controller: controller,
-              focusNode: focusNode,
-              hint: agentName == null
-                  ? l10n.chatUiAskOpenCode
-                  : l10n.chatUiAskAgent(KitBidi.auto(agentName!)),
-              onSend: _send,
-              busy: busy,
-              onStop: _stop,
-              stopping: stopping,
-              sending: sending || (shelfBusy && shelfLoading),
-              canSendWhileBusy: canSendWhileBusy,
-              // Without an inbox (OpenCode 1) a send made during a reply
-              // always runs after it, whatever the host remembers.
-              delivery: canChooseDelivery && delivery == PromptDelivery.steer
-                  ? KitComposerDelivery.addToThisTurn
-                  : KitComposerDelivery.afterThisReply,
-              onDeliveryChanged: canChooseDelivery && onDeliveryChanged != null
-                  ? (value) => onDeliveryChanged!(
-                      value == KitComposerDelivery.addToThisTurn
-                          ? PromptDelivery.steer
-                          : PromptDelivery.queue,
-                    )
-                  : null,
-              offline: offline,
-              readOnlyReason: !shelfBusy
-                  ? null
-                  : shelfLoading
-                  ? l10n.composerBusyReason
-                  : l10n.composerDraftBlockedReason,
-              note: _note(context),
-              hasAttachments: _hasAttachments,
-              attachments: _attachmentChips(context),
-              suggestions: _suggestions(context),
-              model: isolated ? null : _modelChip(context, conn),
-              onTools: isolated || conversationMode
-                  ? null
-                  : () => unawaited(_openTools(context)),
-              onVoice:
-                  isolated ||
-                      conversationMode ||
-                      !platformCapabilities.supportsVoice
-                  ? null
-                  : onVoice,
-              onOpenEditor: isolated || conversationMode ? null : onOpenEditor,
-              onContentInserted: isolated || !promptAttachmentsSupported
-                  ? null
-                  : onContentInserted,
-              composerKey: const Key('chat-composer-surface'),
-              fieldKey: const Key('chat-composer-field'),
-              sendKey: const Key('chat-send-button'),
-              stopKey: const Key('chat-stop-button'),
-              toolsKey: const Key('composer-tools-button'),
-              voiceButtonKey: const Key('composer-voice-button'),
-              editorKey: const Key('prompt-editor-button'),
-              deliveryKey: const Key('composer-delivery-control'),
             ),
-          ],
-        ),
+          KitComposer(
+            controller: controller,
+            focusNode: focusNode,
+            hint: agentName == null
+                ? l10n.chatUiAskOpenCode
+                : l10n.chatUiAskAgent(KitBidi.auto(agentName!)),
+            onSend: _send,
+            busy: busy,
+            onStop: _stop,
+            stopping: stopping,
+            sending: sending || (shelfBusy && shelfLoading),
+            canSendWhileBusy: canSendWhileBusy,
+            // Without an inbox (OpenCode 1) a send made during a reply
+            // always runs after it, whatever the host remembers.
+            delivery: canChooseDelivery && delivery == PromptDelivery.steer
+                ? KitComposerDelivery.addToThisTurn
+                : KitComposerDelivery.afterThisReply,
+            onDeliveryChanged: canChooseDelivery && onDeliveryChanged != null
+                ? (value) => onDeliveryChanged!(
+                    value == KitComposerDelivery.addToThisTurn
+                        ? PromptDelivery.steer
+                        : PromptDelivery.queue,
+                  )
+                : null,
+            offline: offline,
+            readOnlyReason: !shelfBusy
+                ? null
+                : shelfLoading
+                ? l10n.composerBusyReason
+                : l10n.composerDraftBlockedReason,
+            note: _note(context),
+            hasAttachments: _hasAttachments,
+            attachments: _attachmentChips(context),
+            suggestions: _suggestions(context),
+            model: isolated ? null : _modelChip(context, conn),
+            onTools: isolated || conversationMode
+                ? null
+                : () => unawaited(_openTools(context)),
+            onVoice:
+                isolated ||
+                    conversationMode ||
+                    !platformCapabilities.supportsVoice
+                ? null
+                : onVoice,
+            onOpenEditor: isolated || conversationMode ? null : onOpenEditor,
+            onContentInserted: isolated || !promptAttachmentsSupported
+                ? null
+                : onContentInserted,
+            composerKey: const Key('chat-composer-surface'),
+            fieldKey: const Key('chat-composer-field'),
+            sendKey: const Key('chat-send-button'),
+            stopKey: const Key('chat-stop-button'),
+            toolsKey: const Key('composer-tools-button'),
+            voiceButtonKey: const Key('composer-voice-button'),
+            editorKey: const Key('prompt-editor-button'),
+            deliveryKey: const Key('composer-delivery-control'),
+          ),
+        ],
       ),
     );
   }
@@ -547,7 +538,6 @@ class _ChatComposer extends StatelessWidget {
         canClearText: canClearText,
         canStash: canStash,
         canOpenStash: onOpenStash != null,
-        hasLegacyDrafts: onLegacyDrafts != null,
         onPick: (tool) => KitSheet.close(sheetContext, tool),
       ),
     );
@@ -578,8 +568,6 @@ class _ChatComposer extends StatelessWidget {
         onStashPrompt?.call();
       case _PromptTool.saved:
         onOpenStash?.call();
-      case _PromptTool.legacyDrafts:
-        onLegacyDrafts?.call();
     }
   }
 }
@@ -619,7 +607,6 @@ class _PromptToolsList extends StatelessWidget {
     required this.canClearText,
     required this.canStash,
     required this.canOpenStash,
-    required this.hasLegacyDrafts,
     required this.onPick,
   });
 
@@ -632,7 +619,6 @@ class _PromptToolsList extends StatelessWidget {
   final bool canClearText;
   final bool canStash;
   final bool canOpenStash;
-  final bool hasLegacyDrafts;
   final ValueChanged<_PromptTool> onPick;
 
   @override
@@ -719,7 +705,7 @@ class _PromptToolsList extends StatelessWidget {
             ),
           ],
         ),
-        if (canReusePrompt || canOpenStash || hasLegacyDrafts || canClearText)
+        if (canReusePrompt || canOpenStash || canClearText)
           KitExpandRow(
             headerKey: const Key('composer-tools-prompts'),
             leading: const KitRowIcon(AppIconography.bookmarks),
@@ -750,14 +736,6 @@ class _PromptToolsList extends StatelessWidget {
                   blockedBy: canStash ? null : l10n.composerToolNothingToSave,
                 ),
               ],
-              if (hasLegacyDrafts)
-                tool(
-                  _PromptTool.legacyDrafts,
-                  key: 'legacy-drafts',
-                  icon: AppIconography.history,
-                  title: l10n.legacyDraftsTitle,
-                  supporting: l10n.legacyDraftsDescription,
-                ),
               if (canClearText)
                 tool(
                   _PromptTool.clearText,

@@ -60,6 +60,7 @@ class KitIconButton extends StatefulWidget {
     this.tooltip,      // null: l10n.kitCopy ("Copy"); prefer a noun: "Copy command"
     this.size = 24,
     this.shortcut,
+    this.redact = true, // false: the person's own content, copied verbatim (SEC-13)
   }) : copyText = text,
        icon = AppIconography.copy,
        onPressed = null,
@@ -136,7 +137,7 @@ There is no loading, empty or error state: the button shows no data (KIT-12).
 Only names that exist on `feat/visual-language-v1`, except where flagged:
 
 - **ThemeRoles:** `text1`, `text3`, `surface3`, `accent`, `danger`.
-- **KitTokens:** `minTarget` (48), `space2` (the 8 dp gap to neighbours), `smallIconSize` (the default for dense rows is 20 when a caller passes it). The tooltip's words use `KitText` roles below.
+- **KitTokens:** `minTarget` (48), `space2` (the 8 dp gap to neighbours), `smallIconSize` (the default for dense rows is 20 when a caller passes it), `gutter` (the tooltip's side margin, so a long label at 2.0 text wraps inside the screen instead of running edge to edge; R5), `spinnerStroke` (the working spinner's 2 dp arc; R5). The tooltip's words use `KitText` roles below.
 - **KitText:** `secondary` for the tooltip label; `mono` for the shortcut (a key combination is a technical token, COPY-24).
 - **KitMotion:** `quick`, `enter`, `exit`, `reduced(context)`.
 - **Not yet on the VL branch** (arriving in STANDARDS §0.5 step 2, before wave 1):
@@ -183,7 +184,7 @@ Only names that exist on `feat/visual-language-v1`, except where flagged:
 ## Data safety and honest state
 
 - **Copy:**
-  - It copies only through `KitCopy.copy`, which applies the redactor (G12, SEC-2).
+  - It copies only through `KitCopy.copy`, which applies the redactor (G12, SEC-2) unless the caller passes `redact: false` for the person's own content (SEC-13).
   - It is never given a secret: KitField.secret has no copy (SEC-3).
   - The text is read at tap time, so it copies what is on screen now.
 - **Destructive:** the tint marks an act that loses data or ends work. That act still follows DATA-11 (confirm or Undo), and the button never performs it silently.

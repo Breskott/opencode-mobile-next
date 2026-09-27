@@ -7,6 +7,7 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
+import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -414,33 +415,17 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.byKey(const ValueKey('search-all-sessions')), findsOneWidget);
-    // Open the project sheet to disclose management.
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('current-project-entry')),
-      -160,
-      scrollable: find.byType(Scrollable).first,
+    // Project health is a Project tab tool (Manage project merged into
+    // the tab, slice-P3.11a).
+    await tester.pumpWidget(
+      _app(ProjectHub(controller: controller), textScale: 2),
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('current-project-entry')));
     await tester.pumpAndSettle();
     await tester.ensureVisible(
-      find.byKey(const ValueKey('manage-project-entry')),
+      find.byKey(const ValueKey('project-hub-health')),
     );
-    await tester.tap(find.byKey(const ValueKey('manage-project-entry')));
     await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('project-health-entry')),
-      160,
-      scrollable: find
-          .descendant(
-            of: find.byKey(const ValueKey('manage-project-list')),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    expect(find.byKey(const ValueKey('project-health-entry')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('project-health-entry')));
+    await tester.tap(find.byKey(const ValueKey('project-hub-health')));
     await tester.pumpAndSettle();
 
     expect(find.byType(ProjectHealthScreen), findsOneWidget);

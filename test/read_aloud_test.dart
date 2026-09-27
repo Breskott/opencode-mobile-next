@@ -278,7 +278,7 @@ void main() {
     (tester) async {
       await _pumpChat(tester, _Api());
       await _openReadReply(tester);
-      expect(find.text('Use the system speech engine?'), findsOneWidget);
+      expect(find.text('Read replies aloud?'), findsOneWidget);
       expect(calls, isEmpty);
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();

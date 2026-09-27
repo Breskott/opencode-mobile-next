@@ -109,7 +109,11 @@ void main() {
       expect(find.text('Use Termux instead'), findsNothing);
       await _openOtherWays(tester);
       expect(find.text('Use Termux instead'), findsOneWidget);
-      expect(find.text('Advanced'), findsOneWidget);
+      // What Termux costs is said before anything installs (P1.5).
+      expect(
+        find.text("About 10–15 minutes the first time, in Termux's storage"),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
       await unmountPhone(tester);
     });

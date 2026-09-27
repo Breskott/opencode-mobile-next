@@ -1,5 +1,7 @@
 part of '../chat_screen.dart';
 
+/// Where the timeline sends the person: a message to jump to (with the
+/// words they searched for, carried into find), or a prompt to fork from.
 class _TimelineSelection {
   const _TimelineSelection({
     required this.message,
@@ -12,25 +14,10 @@ class _TimelineSelection {
   final String query;
 }
 
-class _SessionSheetRow extends StatelessWidget {
-  const _SessionSheetRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-    leading: Icon(icon),
-    title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-    onTap: () => Navigator.pop(context, value),
-  );
-}
-
+/// The message timeline in the kit's sheet frame: newest first,
+/// searchable, each row a jump; in [forkMode] only the prompts that can be
+/// forked. The host rebuilds it as older history loads into the transcript.
+/// A drag on the rows closes the search keyboard.
 class _TimelineSheet extends StatefulWidget {
   const _TimelineSheet({
     required this.messages,
@@ -60,13 +47,34 @@ class _TimelineSheetState extends State<_TimelineSheet> {
   final _search = TextEditingController();
   final _index = TranscriptSearchIndex();
 
+  @override
+  void initState() {
+    super.initState();
+    // The list follows every keystroke; the field's settled callback is
+    // only for its announcement.
+    _search.addListener(_onQuery);
+  }
+
+  void _onQuery() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _search
+      ..removeListener(_onQuery)
+      ..dispose();
+    super.dispose();
+  }
+
+  /// A row's words: the message's prose with Markdown's marks dropped
+  /// (backticks, bold, heading marks), else its files, tools or thought.
   String _preview(MessageWithParts message) {
     final text = message.parts
         .where((part) => part.type == 'text' && !part.synthetic)
-        .map((part) => part.text.trim())
+        .map((part) => _plain(part.text))
         .where((text) => text.isNotEmpty)
         .join(' ')
-        .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
     if (text.isNotEmpty) return text;
 
@@ -90,10 +98,16 @@ class _TimelineSheetState extends State<_TimelineSheet> {
 
     final reasoning = message.parts
         .where((part) => part.type == 'reasoning')
-        .map((part) => part.text.trim())
+        .map((part) => _plain(part.text))
         .firstWhere((text) => text.isNotEmpty, orElse: () => '');
     return reasoning.isNotEmpty ? reasoning : _chatL10n(context).chatUiMessage;
   }
+
+  static String _plain(String markdown) => markdown
+      .replaceAll(RegExp(r'^\s{0,3}#{1,6}\s+', multiLine: true), '')
+      .replaceAll(RegExp(r'`+|\*\*|__'), '')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
 
   bool _isForkable(MessageWithParts message) =>
       message.info.role == 'user' &&
@@ -101,223 +115,154 @@ class _TimelineSheetState extends State<_TimelineSheet> {
       message.parts.any((part) => part.type == 'text' && !part.synthetic);
 
   @override
-  void dispose() {
-    _search.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.5;
+    final l10n = _chatL10n(context);
+    final tokens = KitTokens.of(context);
     final query = _search.text.trim().toLowerCase();
     final hits = _index.search(widget.messages, query);
     final firstHits = <String, TranscriptMatch>{};
     for (final hit in hits) {
       firstHits.putIfAbsent(hit.messageID, () => hit);
     }
-    final matchingIDs = hits.map((match) => match.messageID).toSet();
     final visible = widget.messages.reversed.where((message) {
       if (widget.forkMode && !_isForkable(message)) return false;
       if (query.isEmpty) return true;
-      if (!widget.forkMode) return matchingIDs.contains(message.info.id);
-      final role = message.info.role == 'user'
-          ? _chatL10n(context).chatUiYouUser
-          : _chatL10n(context).chatUiOpencodeAssistant;
-      return '$role ${_preview(message)}'.toLowerCase().contains(query);
+      if (!widget.forkMode) return firstHits.containsKey(message.info.id);
+      return _preview(message).toLowerCase().contains(query);
     }).toList();
+    final error = widget.olderError;
+    final loadOlder = widget.loadOlder;
+    final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.5;
+    final height = (MediaQuery.sizeOf(context).height * (largeText ? .96 : .86))
+        .floorToDouble();
 
-    return DraggableScrollableSheet(
-      expand: false,
-      minChildSize: .5,
-      initialChildSize: largeText ? .96 : .82,
-      maxChildSize: .96,
-      snap: true,
-      snapSizes: const [.82, .96],
-      builder: (context, scrollController) => Material(
-        color: theme.colorScheme.surfaceContainerLow,
+    return SizedBox(
+      key: const ValueKey('timeline-sheet'),
+      height: height,
+      child: KitSheet(
+        title: widget.forkMode
+            ? l10n.chatUiForkFromPrompt
+            : l10n.chatUiMessageTimeline,
+        // Only what the rows cannot say: what forking does.
+        subtitle: widget.forkMode
+            ? l10n.chatUiChooseAPromptToRestoreItIn
+            : widget.forkAvailable
+            ? l10n.chatUiJumpAnywhereForkRestoresAPromptFor
+            : null,
+        fill: true,
+        // The modal route draws the one handle (the theme's drag handle).
+        handle: false,
+        dismissKeyboardOnDrag: true,
+        onClose: () => Navigator.pop(context),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 10, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.forkMode
-                              ? _chatL10n(context).chatUiForkFromPrompt
-                              : _chatL10n(context).chatUiMessageTimeline,
-                          style: theme.textTheme.titleLarge,
-                        ),
-                        if (!largeText) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            widget.forkMode
-                                ? _chatL10n(
-                                    context,
-                                  ).chatUiChooseAPromptToRestoreItIn
-                                : widget.forkAvailable
-                                ? _chatL10n(
-                                    context,
-                                  ).chatUiJumpAnywhereForkRestoresAPromptFor
-                                : _chatL10n(
-                                    context,
-                                  ).chatUiJumpAnywhereInThisConversation,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: _chatL10n(context).chatUiCloseTimeline,
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(AppIconography.close),
+            KitSearchField(
+              label: l10n.chatUiSearchMessages,
+              controller: _search,
+              onChanged: (_) {},
+              // Messages, not occurrences: the rows below are the count.
+              resultCount: query.isEmpty ? null : visible.length,
+              partial: widget.hasOlder,
+              fieldKey: const ValueKey('timeline-search'),
+            ),
+            SizedBox(height: tokens.space3),
+            if (widget.hasOlder) ...[
+              KitNotice(
+                key: const ValueKey('timeline-older'),
+                icon: AppIconography.history,
+                tone: error == null
+                    ? AppStatusTone.neutral
+                    : AppStatusTone.failure,
+                message: error == null
+                    ? l10n.historyLoadedOnly
+                    : productErrorText(error, l10n: l10n),
+                actions: [
+                  KitAction(
+                    key: const ValueKey('timeline-load-older'),
+                    label: widget.olderNeedsReload
+                        ? l10n.historyReload
+                        : l10n.historyLoadOlder,
+                    working: widget.loadingOlder,
+                    onPressed: loadOlder == null
+                        ? null
+                        : widget.loadingOlder
+                        ? () {}
+                        : () => unawaited(loadOlder()),
                   ),
                 ],
               ),
-            ),
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 10),
-              child: TextField(
-                key: const ValueKey('timeline-search'),
-                controller: _search,
-                onChanged: (_) => setState(() {}),
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  hintText: _chatL10n(context).chatUiSearchMessages,
-                  prefixIcon: Icon(AppIconography.search),
-                  isDense: true,
-                ),
-              ),
-            ),
-            if (!widget.forkMode && query.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  _chatL10n(context).transcriptFindTotal(hits.length),
-                ),
-              ),
-            if (widget.hasOlder)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      widget.olderError == null
-                          ? _chatL10n(context).historyLoadedOnly
-                          : productErrorText(widget.olderError!),
-                    ),
-                    TextButton(
-                      key: const ValueKey('timeline-load-older'),
-                      onPressed: widget.loadingOlder ? null : widget.loadOlder,
-                      child: Text(
-                        widget.olderNeedsReload
-                            ? _chatL10n(context).historyReload
-                            : _chatL10n(context).historyLoadOlder,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            Expanded(
-              child: visible.isEmpty
-                  ? Center(
-                      child: Text(
-                        _chatL10n(context).chatUiNoMatchingMessages,
-                        style: TextStyle(color: AppTheme.mutedOf(theme)),
-                      ),
+              SizedBox(height: tokens.space3),
+            ],
+            if (visible.isEmpty)
+              query.isNotEmpty && !widget.hasOlder
+                  ? KitSearchNoMatch(
+                      key: const ValueKey('timeline-no-match'),
+                      query: _search.text.trim(),
+                      onClear: _search.clear,
                     )
-                  : ListView.separated(
-                      controller: scrollController,
-                      // Dragging the results dismisses the search keyboard so
-                      // it stops covering the list.
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                        8,
-                        0,
-                        8,
-                        20,
-                      ),
-                      itemCount: visible.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final message = visible[index];
-                        final isUser = message.info.role == 'user';
-                        final created = message.info.time?.created;
-                        final footer = [
-                          isUser ? _chatL10n(context).chatUiYou : 'OpenCode',
-                          if (created != null)
-                            _fmtSessionTime(created, context),
-                        ].join('  ·  ');
-                        return ListTile(
-                          key: ValueKey('timeline-row-${message.info.id}'),
-                          minVerticalPadding: 10,
-                          leading: Icon(
-                            isUser
-                                ? AppIconography.person
-                                : AppIconography.sparkle,
-                            size: 20,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          title: TranscriptHighlight(
-                            query: query,
-                            child: Builder(
-                              builder: (context) => Text.rich(
-                                TranscriptHighlight.decorate(
-                                  context,
-                                  TextSpan(
-                                    text:
-                                        firstHits[message.info.id]?.preview ??
-                                        _preview(message),
-                                  ),
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                          subtitle: Text(footer),
-                          trailing: widget.forkAvailable && _isForkable(message)
-                              ? widget.forkMode
-                                    ? const Icon(AppIconography.branch)
-                                    : IconButton(
-                                        key: ValueKey(
-                                          'timeline-fork-${message.info.id}',
-                                        ),
-                                        tooltip: _chatL10n(
-                                          context,
-                                        ).chatUiForkFromThisPrompt,
-                                        onPressed: () => Navigator.pop(
-                                          context,
-                                          _TimelineSelection(
-                                            message: message,
-                                            fork: true,
-                                          ),
-                                        ),
-                                        icon: const Icon(AppIconography.branch),
-                                      )
-                              : null,
-                          onTap: () => Navigator.pop(
-                            context,
-                            _TimelineSelection(
-                              message: message,
-                              fork: widget.forkMode,
-                              query: widget.forkMode ? '' : _search.text.trim(),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
+                  : KitStateView(
+                      key: const ValueKey('timeline-empty'),
+                      icon: AppIconography.history,
+                      title: l10n.chatUiNoMatchingMessages,
+                      size: KitStateSize.inline,
+                    )
+            else
+              KitRowGroup(
+                margin: EdgeInsetsDirectional.zero,
+                children: [
+                  for (final message in visible)
+                    _timelineRow(context, message, firstHits[message.info.id]),
+                ],
+              ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _timelineRow(
+    BuildContext context,
+    MessageWithParts message,
+    TranscriptMatch? hit,
+  ) {
+    final l10n = _chatL10n(context);
+    final isUser = message.info.role == 'user';
+    final created = message.info.time?.created;
+    final fork =
+        widget.forkAvailable && !widget.forkMode && _isForkable(message);
+    return KitRow(
+      key: ValueKey('timeline-row-${message.info.id}'),
+      leading: KitRow.icon(
+        context,
+        isUser ? AppIconography.person : AppIconography.sparkle,
+      ),
+      // The matched words when searching, else the message's own.
+      title: hit == null ? _preview(message) : _plain(hit.preview),
+      titleMaxLines: 2,
+      supporting: TextSpan(
+        text: [
+          isUser ? l10n.chatUiYou : 'OpenCode',
+          if (created != null) _fmtSessionTime(created, context),
+        ].join(' · '),
+      ),
+      trailing: fork
+          ? KitIconButton(
+              key: ValueKey('timeline-fork-${message.info.id}'),
+              icon: AppIconography.branch,
+              tooltip: l10n.chatUiForkFromThisPrompt,
+              onPressed: () => KitSheet.close(
+                context,
+                _TimelineSelection(message: message, fork: true),
+              ),
+            )
+          : null,
+      onTap: () => KitSheet.close(
+        context,
+        _TimelineSelection(
+          message: message,
+          fork: widget.forkMode,
+          query: widget.forkMode ? '' : _search.text.trim(),
         ),
       ),
     );

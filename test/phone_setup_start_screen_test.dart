@@ -9,10 +9,12 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/termux_running_server.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_customize_sheet.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_routes.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_selection.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_job_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/voice/device.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -75,7 +77,6 @@ Widget _app(
       child: child!,
     ),
     routes: {
-      '/termux-setup': (_) => const _RouteProbe('termux'),
       '/servers': (_) => const _RouteProbe('servers'),
       '/home': (_) => const _RouteProbe('home'),
     },
@@ -92,6 +93,8 @@ class _Harness {
     VoiceDeviceInfo? device,
   }) : engine = FakeSetupEngine(registry: registry) {
     PhoneSetup.engine = engine;
+    // "Use Termux instead" opens the Termux host's job: a fake here too.
+    PhoneSetup.termux = FakeSetupEngine(registry: registry);
     screen = PhoneSetupStartScreen(
       termuxProbe: () async => termux,
       inAppProbe: () async => inApp,
@@ -186,7 +189,10 @@ void main() {
         findsOneWidget,
       );
       expect(find.byType(FilledButton), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Set up'), findsOneWidget);
+      expect(
+        find.widgetWithText(FilledButton, 'Set up OpenCode on this phone'),
+        findsOneWidget,
+      );
       // Other ways starts folded.
       expect(find.text('Use Termux instead'), findsNothing);
 
@@ -402,13 +408,20 @@ void main() {
     await tester.pumpAndSettle();
     await _expandOtherWays(tester);
 
-    await _tapVisible(
-      tester,
-      find.byKey(const ValueKey('phone-setup-start-use-termux')),
-    );
-    expect(find.text('termux null'), findsOneWidget);
-    await tester.pageBack();
+    final termux = find.byKey(const ValueKey('phone-setup-start-use-termux'));
+    await tester.ensureVisible(termux);
     await tester.pumpAndSettle();
+    await tester.tap(termux);
+    // Termux's own checks keep a working mark moving: frames, not settle.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    // Termux is a host of phone setup (P1.3): its checklist, not a wizard.
+    expect(find.byType(PhoneSetupTermuxJobScreen), findsOneWidget);
+    await tester.pageBack();
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
 
     await _tapVisible(
       tester,
@@ -429,21 +442,36 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('phone-setup-start-customize')));
     await tester.pumpAndSettle();
     final totals = find.byKey(const ValueKey('phone-setup-customize-totals'));
-    expect(tester.widget<Text>(totals).data, 'About 4 minutes · ~165 MB');
+    expect(_words(tester, totals), 'About 4 minutes · ~165 MB');
 
-    // Required: shown on, locked, with a reason.
-    final node = tester.widget<SwitchListTile>(
+    // Required: shown on and locked, said once by the lock (nothing
+    // repeats "needed" under every row), before the optional tools.
+    final node = tester.widget<KitSwitchRow>(
       find.byKey(const ValueKey('phone-setup-customize-node')),
     );
     expect(node.value, isTrue);
     expect(node.onChanged, isNull);
-    expect(find.text('Needed for the agent to run'), findsNWidgets(4));
+    expect(node.supporting, isNull);
+    expect(find.text('Required'), findsNWidgets(4));
+    expect(find.text('Needed for the agent to run'), findsNothing);
+    expect(
+      tester
+          .getTopLeft(find.byKey(const ValueKey('phone-setup-customize-node')))
+          .dy,
+      lessThan(
+        tester
+            .getTopLeft(
+              find.byKey(const ValueKey('phone-setup-customize-python')),
+            )
+            .dy,
+      ),
+    );
 
     await tester.tap(
       find.byKey(const ValueKey('phone-setup-customize-python')),
     );
     await tester.pumpAndSettle();
-    expect(tester.widget<Text>(totals).data, 'About 3 minutes · ~135 MB');
+    expect(_words(tester, totals), 'About 3 minutes · ~135 MB');
 
     await tester.tap(find.byKey(const ValueKey('phone-setup-customize-done')));
     await tester.pumpAndSettle();
@@ -696,7 +724,7 @@ void main() {
         final totals = find.byKey(
           const ValueKey('phone-setup-customize-totals'),
         );
-        expect(tester.widget<Text>(totals).data, 'Nothing chosen yet');
+        expect(_words(tester, totals), 'Nothing chosen yet');
         final add = find.descendant(
           of: find.byKey(const ValueKey('phone-setup-customize-done')),
           matching: find.byType(FilledButton),
@@ -710,13 +738,13 @@ void main() {
         await tester.pumpAndSettle();
         expect(
           tester
-              .widget<SwitchListTile>(
+              .widget<KitSwitchRow>(
                 find.byKey(const ValueKey('phone-setup-customize-lfs')),
               )
               .value,
           isTrue,
         );
-        expect(tester.widget<Text>(totals).data, 'About 2 minutes · ~50 MB');
+        expect(_words(tester, totals), 'About 2 minutes · ~50 MB');
 
         await tester.tap(add);
         await tester.pumpAndSettle();
@@ -769,11 +797,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        tester
-            .widget<Text>(
-              find.byKey(const ValueKey('phone-setup-customize-totals')),
-            )
-            .data,
+        _words(
+          tester,
+          find.byKey(const ValueKey('phone-setup-customize-totals')),
+        ),
         "This app's Ubuntu only runs on a 64-bit Arm or Intel phone; this "
         'one reports armeabi-v7a.',
       );
@@ -802,11 +829,10 @@ void main() {
       // python (30 MB) is the only tool chosen: the 300 MB floor applies
       // (2x margin would be only 60 MB), 250 MB free.
       expect(
-        tester
-            .widget<Text>(
-              find.byKey(const ValueKey('phone-setup-customize-totals')),
-            )
-            .data,
+        _words(
+          tester,
+          find.byKey(const ValueKey('phone-setup-customize-totals')),
+        ),
         'Free about 50 MB on this phone, then come back to set this up.',
       );
       final add = find.descendant(
@@ -837,11 +863,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        tester
-            .widget<Text>(
-              find.byKey(const ValueKey('phone-setup-customize-totals')),
-            )
-            .data,
+        _words(
+          tester,
+          find.byKey(const ValueKey('phone-setup-customize-totals')),
+        ),
         'About a minute · ~30 MB',
       );
       final add = find.descendant(
@@ -1072,4 +1097,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(PhoneSetupStartScreen), findsOneWidget);
   });
+}
+
+// The words a KitText (or a notice's message) draws, read from its Text.
+String? _words(WidgetTester tester, Finder finder) {
+  final text = tester.widget<Text>(
+    find
+        .descendant(of: finder, matching: find.byType(Text), matchRoot: true)
+        .first,
+  );
+  return text.data ?? text.textSpan?.toPlainText();
 }

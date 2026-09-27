@@ -9,12 +9,14 @@ import '../../builtin/setup/phone_setup.dart';
 import '../../builtin/setup/setup_contract.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
+import '../../state/phone_host.dart' show PhoneHostKind;
 import '../../state/profiles.dart';
 import '../../termux/bridge.dart' show TermuxRuntime;
 import '../app_iconography.dart';
 import '../kit/kit.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/terminal_screen.dart' show TerminalPage, TerminalSource;
+import '../screens/this_phone_screen.dart' show openThisPhone;
 import 'product_states.dart';
 import 'termux_running_server_entry.dart' show isManagedPhoneProfile;
 
@@ -29,7 +31,15 @@ import 'termux_running_server_entry.dart' show isManagedPhoneProfile;
 /// What the ⋯ menu can ask for. Each one either leaves for the setup
 /// progress screen or removes the server, so a host that is itself a sheet
 /// (the switcher) closes first and runs it with [runPhoneServerAction].
-enum PhoneServerAction { terminal, switchRuntime, addTools, update, remove }
+enum PhoneServerAction {
+  /// This phone: the page where everything about it is managed.
+  manage,
+  terminal,
+  switchRuntime,
+  addTools,
+  update,
+  remove,
+}
 
 /// The saved in-app profile the card stands for: the active one when it is
 /// in-app, else the newest. Setup may have saved one per OpenCode version;
@@ -173,6 +183,9 @@ Future<bool> runPhoneServerAction(
   }
 
   switch (action) {
+    case PhoneServerAction.manage:
+      await openThisPhone(context, kind: PhoneHostKind.inApp);
+      return false;
     case PhoneServerAction.terminal:
       // A shell in this phone's Linux: it needs no running server, so it is
       // the way in when the server is stopped or not answering.
@@ -229,9 +242,12 @@ Future<bool> runPhoneServerAction(
   }
 }
 
-/// Confirms with the space that comes back, stops and deletes OpenCode and
-/// everything inside it, then forgets the saved entries: a "This phone"
-/// entry left behind would point at nothing and could only fail.
+/// The remove-from-phone sheet (P0.7, P1.5): it says what survives. The
+/// default removes OpenCode and its tools and keeps the projects, with the
+/// space that comes back; "Delete everything" is the heavy path and asks
+/// for the typed name. Then OpenCode is stopped and removed and the saved
+/// entries are forgotten: a "This phone" entry left behind would point at
+/// nothing and could only fail.
 Future<bool> _removePhoneServer(
   BuildContext context, {
   required AppLocalizations l10n,
@@ -241,20 +257,56 @@ Future<bool> _removePhoneServer(
   int? bytesUsed,
   VoidCallback? onRemoving,
 }) async {
-  final size = bytesUsed;
-  final confirmed = await showKitConfirm(
+  // Measured afresh: sizes come from a real reading or are not said. A
+  // slow reading (many projects) does not hold the question back.
+  BuiltinProjectStorage? storage;
+  try {
+    storage = await linux.projectStorage().timeout(const Duration(seconds: 3));
+  } catch (_) {
+    storage = null;
+  }
+  if (!context.mounted) return false;
+  var deleteEverything = false;
+  final keep = await showKitConfirm(
     context,
     title: l10n.phoneServerCardRemoveTitle,
-    body: size != null && size > 0
-        ? l10n.phoneServerCardRemoveBody(formatPhoneStorage(size))
-        : l10n.phoneServerCardRemoveBodyUnmeasured,
-    confirmLabel: l10n.phoneServerCardRemoveOpenCode,
+    body: storage != null
+        ? l10n.removeFromPhoneKeepBody(
+            formatPhoneStorage(storage.keepProjectsFreedBytes),
+          )
+        : l10n.removeFromPhoneKeepBodyUnmeasured,
+    confirmLabel: l10n.removeFromPhoneKeepConfirm,
     kind: KitConfirmKind.destructive,
     icon: AppIconography.delete,
+    alternative: KitAction(
+      key: const ValueKey('phone-server-remove-everything'),
+      label: l10n.removeFromPhoneDeleteAll,
+      destructive: true,
+      onPressed: () => deleteEverything = true,
+    ),
     sheetKey: const ValueKey('phone-server-remove-sheet'),
     confirmKey: const ValueKey('phone-server-remove-confirm'),
   );
-  if (!confirmed) return false;
+  if (!keep && deleteEverything && context.mounted) {
+    deleteEverything = await showKitConfirm(
+      context,
+      title: l10n.removeFromPhoneDeleteTitle,
+      body: storage != null
+          ? l10n.removeFromPhoneDeleteBody(
+              formatPhoneStorage(storage.deleteEverythingFreedBytes),
+            )
+          : l10n.removeFromPhoneDeleteBodyUnmeasured,
+      confirmLabel: l10n.removeFromPhoneDeleteAll,
+      kind: KitConfirmKind.destructive,
+      icon: AppIconography.delete,
+      typedName: BuiltinLinux.deletionConfirmationName,
+      sheetKey: const ValueKey('phone-server-delete-everything-sheet'),
+      confirmKey: const ValueKey('phone-server-delete-everything-confirm'),
+    );
+  } else {
+    deleteEverything = false;
+  }
+  if (!keep && !deleteEverything) return false;
   onRemoving?.call();
   // Leave the server before it disappears, so the app does not spend the
   // next minute reconnecting to something that is gone.
@@ -262,7 +314,14 @@ Future<bool> _removePhoneServer(
     await connection.disconnect(keepActive: true);
   }
   try {
-    await linux.uninstall();
+    if (deleteEverything) {
+      await linux.remove(
+        alsoDeleteProjects: true,
+        confirmationName: BuiltinLinux.deletionConfirmationName,
+      );
+    } else {
+      await linux.uninstall();
+    }
   } on BuiltinLinuxException catch (error) {
     await fail([l10n.phoneServerCardActionFailed(error.message)]);
     return false;
@@ -307,9 +366,13 @@ enum _Status { checking, notSetUp, stopped, starting, stopping, running }
 ///
 /// Kit only (shared-phone-1): a [KitRow] (the phone tile, filled when it is
 /// the server in use, and "Connected · " leading its line; the state word
-/// at its end), a [KitActionBlock] with at most one primary, and the rarer
-/// acts in the row's menu ([KitRowMenu] and long-press). Each act names
-/// what it acts on ("Start OpenCode", "Disconnect from This phone").
+/// at its end), and every other act in the row's menu ([KitRowMenu] and
+/// long-press), the same shape as [LocalServerRow]. The row's tap connects
+/// when it can, so no button repeats it; a filled button shows only for
+/// what the server needs before it can be used (Set up, Start OpenCode,
+/// Continue setup, Show progress), aligned with the row's words. Each act
+/// names what it acts on ("Stop OpenCode on this phone", "Disconnect from
+/// this phone").
 ///
 /// States: checking, not set up, stopped, starting, stopping, running,
 /// setting up, removing, failed (the failure in words under the row).
@@ -542,6 +605,14 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       l10n,
       among: widget.connection.store.profiles,
     );
+    // Inside a sentence the default name is lower case ("Disconnect from
+    // this phone"); a name the person gave stays as it is.
+    final sentenceName = name.startsWith(l10n.phoneServerCardTitle)
+        ? name.replaceFirst(
+            l10n.phoneServerCardTitle,
+            l10n.phoneServerNameInSentence,
+          )
+        : name;
 
     // The status word says what is going on, so no button stands in for it
     // (standard §2): while it starts, stops or goes away there is simply no
@@ -567,18 +638,17 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
         : runtime == TermuxRuntime.openCode2
         ? l10n.setupRuntimeTwo
         : l10n.setupRuntimeOne;
-    final bytes = _status?.bytesUsed;
-    // Storage is measured in the background: nothing until a real figure.
-    final detail = bytes != null && bytes > 0
-        ? '$what · ${formatPhoneStorage(bytes)}'
-        : what;
+    // What it runs, never its storage: the line must fit, and the size is
+    // said where it matters (removing it frees the space).
+    final detail = what;
 
     final running = state == _Status.running;
     final installed = state != _Status.notSetUp && state != _Status.checking;
     final canOpen = running && !widget.connected && widget.onOpen != null;
     final hasEngine = _engine() != null;
 
-    // One filled button at most: the one thing this server needs now.
+    // One filled button at most, and only for what the server needs before
+    // it can be used: the row's own tap connects a running one.
     final KitAction? primary = locked
         ? null
         : settingUp
@@ -599,12 +669,6 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
             label: l10n.phoneServerCardStartOpenCode,
             onPressed: _start,
           )
-        : canOpen
-        ? KitAction(
-            key: const ValueKey('phone-server-open'),
-            label: l10n.phoneServerCardConnect(name),
-            onPressed: widget.onOpen,
-          )
         : null;
     // A setup that stopped part way leads when nothing else does.
     final continueSetup = canContinue && !settingUp
@@ -615,21 +679,6 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
           )
         : null;
     final lead = primary ?? (locked ? null : continueSetup);
-    final tertiary = <KitAction>[
-      if (running && !locked && !settingUp)
-        KitAction(
-          key: const ValueKey('phone-server-stop'),
-          label: l10n.phoneServerCardStopOpenCode,
-          onPressed: _stop,
-        ),
-      if (continueSetup != null && lead != continueSetup) continueSetup,
-      if (installed)
-        KitAction(
-          key: const ValueKey('phone-server-show-log'),
-          label: l10n.phoneServerCardShowServerLog,
-          onPressed: _showLog,
-        ),
-    ];
 
     // The terminal needs Ubuntu, not the server: it stays in the menu while
     // the server starts or stops, which is when a server that does not
@@ -638,6 +687,27 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
     final menuOpen = terminalOnly || (!locked && state != _Status.checking);
     void choose(PhoneServerAction action) => unawaited(_menu(action));
     final items = <KitMenuItem>[
+      if (installed && !terminalOnly)
+        KitMenuItem(
+          key: const ValueKey('phone-server-manage'),
+          label: l10n.thisPhoneManage,
+          icon: AppIconography.phone,
+          onSelected: () => choose(PhoneServerAction.manage),
+        ),
+      // A setup that stopped part way, when a filled button leads already.
+      if (!terminalOnly && continueSetup != null && lead != continueSetup)
+        KitMenuItem(
+          key: const ValueKey('phone-server-continue'),
+          label: l10n.phoneServerCardContinueSetup,
+          onSelected: () => PhoneServerCardRoutes.openProgress(context),
+        ),
+      if (!terminalOnly && installed)
+        KitMenuItem(
+          key: const ValueKey('phone-server-show-log'),
+          label: l10n.phoneServerCardShowServerLog,
+          icon: AppIconography.text,
+          onSelected: () => unawaited(_showLog()),
+        ),
       if (installed)
         KitMenuItem(
           key: const ValueKey('phone-server-terminal'),
@@ -672,9 +742,18 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       if (widget.connected && widget.onDisconnect != null && !_removing)
         KitMenuItem(
           key: const ValueKey('phone-server-disconnect'),
-          label: l10n.phoneServerCardDisconnect(name),
+          label: l10n.phoneServerCardDisconnect(sentenceName),
           icon: AppIconography.unlink,
           onSelected: widget.onDisconnect!,
+        ),
+      // Stopping keeps the saved server; it leaves the menu's end to the
+      // one act that deletes.
+      if (running && !locked && !settingUp)
+        KitMenuItem(
+          key: const ValueKey('phone-server-stop'),
+          label: l10n.phoneServerCardStopOpenCode,
+          icon: AppIconography.stopCircle,
+          onSelected: () => unawaited(_stop()),
         ),
       if (!terminalOnly)
         KitMenuItem(
@@ -697,6 +776,9 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       tone: running && !working ? KitTextTone.success : KitTextTone.secondary,
       maxLines: 2,
     );
+    // The one button sits with the row's words, inside the row: no hairline
+    // divides it from the server it acts on.
+    final actions = KitActionBlock(primary: lead);
     final failure = _failure;
     final below = <Widget>[
       if (large) status,
@@ -710,6 +792,11 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
           tone: KitTextTone.primary,
           maxLines: 4,
           overflow: TextOverflow.ellipsis,
+        ),
+      if (!actions.isEmpty)
+        Padding(
+          padding: EdgeInsetsDirectional.only(top: tokens.space1),
+          child: actions,
         ),
     ];
     final trailing = <Widget>[
@@ -764,23 +851,10 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       ),
     );
 
-    final actions = KitActionBlock(primary: lead, tertiary: tertiary);
     return KitRowGroup(
       key: const ValueKey('phone-server-card'),
       margin: EdgeInsets.zero,
-      children: [
-        row,
-        if (!actions.isEmpty)
-          Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(
-              tokens.space4,
-              tokens.space2,
-              tokens.space4,
-              tokens.space3,
-            ),
-            child: actions,
-          ),
-      ],
+      children: [row],
     );
   }
 }

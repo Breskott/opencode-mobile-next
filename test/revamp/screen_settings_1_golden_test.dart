@@ -188,6 +188,20 @@ void main() {
         size: _wide,
       );
     });
+    testWidgets('settings hub report a problem badge · $mode', (tester) async {
+      await _scene(
+        tester,
+        SettingsScene.hub,
+        'settings_hub_report_problem',
+        light: light,
+        then: () async {
+          await tester.ensureVisible(
+            find.byKey(const ValueKey('library-report-bug')),
+          );
+          await tester.pumpAndSettle();
+        },
+      );
+    });
     testWidgets('notifications · $mode', (tester) async {
       await _scene(
         tester,

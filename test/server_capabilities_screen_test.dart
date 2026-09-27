@@ -161,6 +161,9 @@ void main() {
     final l10n = lookupAppLocalizations(const Locale('en'));
     final words = [
       l10n.capabilityScreenTitle,
+      // capabilityScreenIntroWithGaps is left out on purpose: like the
+      // kit's "Works on …" line, it says where missing features work, and
+      // R16 names "other OpenCode servers" there once.
       l10n.capabilityScreenIntro('Workstation'),
       l10n.capabilityAllAvailable,
       l10n.capabilityStateHere,
@@ -364,7 +367,9 @@ void main() {
       (key) => !key.startsWith('capability-available-'),
     );
     expect(lastMissing, lessThan(firstAvailable));
-    // A missing server feature says so in words and which servers have it.
+    // A missing server feature says so in words. Which servers have it is
+    // said once in the intro; a row repeats it only when its answer differs
+    // from the most common one (R16).
     final files = _key('capability-unavailable-files');
     expect(
       find.descendant(
@@ -378,6 +383,17 @@ void main() {
         of: files,
         matching: find.textContaining('Works on', findRichText: true),
       ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: _key('capability-unavailable-worktrees'),
+        matching: find.textContaining('Works on', findRichText: true),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Missing features work on other OpenCode servers.'),
       findsOneWidget,
     );
     // No state headings: one list.

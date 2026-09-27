@@ -11,7 +11,6 @@ import 'package:opencode_mobile/builtin/builtin_folders.dart';
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/manage_project_screen.dart';
 import 'package:opencode_mobile/ui/screens/global_sessions_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_folder_actions.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
@@ -267,18 +266,13 @@ void main() {
       await tester.pumpAndSettle();
       // Nothing contradicts the pager: no "no conversations" text, and no
       // Archived row until an archived conversation is actually known
-      // (work-tab cleanup item 4). Load more is the way on.
+      // (work-tab cleanup item 4). The list pages itself, and archived
+      // conversations are a filter of All conversations (R3, R4): the
+      // older page loads, and Work grows no archived row of its own.
       expect(
         find.text('No recent conversations in loaded results'),
         findsNothing,
       );
-      expect(find.text('Archived conversations'), findsNothing);
-      await tester.tap(
-        find.byKey(const ValueKey('session-inventory-more')).hitTestable(),
-      );
-      await tester.pumpAndSettle();
-      // Archived conversations are a filter of All conversations (R3, R4):
-      // the older page loads, and Work grows no archived row of its own.
       expect(find.text('Archived conversations'), findsNothing);
       expect(controller.archivedSessions(), isNotEmpty);
     },
@@ -514,20 +508,20 @@ void main() {
       findsNothing,
     );
 
+    // The project sheet switches and chooses where it runs; the project's
+    // tools live on the Project tab (Manage project merged there,
+    // slice-P3.11a), so the sheet has no Manage project row.
     await tester.tap(find.byKey(const ValueKey('current-project-entry')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('manage-project-entry')));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(ManageProjectScreen), findsOneWidget);
-    for (final key in const [
-      'switch-project-entry',
-      'worktrees-entry',
-      'managed-workspaces-entry',
-      'project-health-entry',
-    ]) {
-      expect(find.byKey(ValueKey(key)), findsOneWidget, reason: key);
-    }
+    expect(
+      find.byKey(const ValueKey('workspace-context-sheet')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('context-switch-project')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('manage-project-entry')), findsNothing);
   });
 
   testWidgets('the quick-ask pill stays reachable without scrolling', (
@@ -983,12 +977,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Session list unavailable'), findsOneWidget);
+    // Said in words at the end of the list; the raw error is under Details.
+    expect(find.text('Could not load your conversations.'), findsOneWidget);
+    expect(find.textContaining('Session list unavailable'), findsNothing);
     fail = false;
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Load more conversations'));
-    await tester.pumpAndSettle();
+    // The list pages itself once it can: the older page loads.
     expect(find.text('Older conversation'), findsOneWidget);
     expect(controller.hasMoreSessions, isFalse);
   });

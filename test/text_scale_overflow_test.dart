@@ -790,6 +790,15 @@ void main() {
       ),
     );
 
+    // The retired wrapper draws the one request card (chat-5); Details
+    // opens the request sheet, which must lay out at 2.5x too.
+    expect(find.byKey(const Key('permission-card-allow')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    final details = find.byKey(const Key('permission-card-review'));
+    await tester.ensureVisible(details);
+    await tester.pumpAndSettle();
+    await tester.tap(details);
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('permission-sheet')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

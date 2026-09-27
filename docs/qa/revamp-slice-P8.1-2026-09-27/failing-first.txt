@@ -1,0 +1,37 @@
+machine_lock: waiting for a test slot (60s)
+machine_lock: got test slot 4 after 87s
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_6d3e482e-eea-30/test/report_problem_startup_test.dart
+00:00 +0: start opens once, imports what came before, and keeps every kind redacted on disk across a crash and reopen
+00:00 +1: notification and log copy made from the report stays redacted
+00:00 +2: the report stays within its entry and byte bounds
+00:08 +3: the diagnostics Clear action erases the saved report, also after a restart
+00:09 +4: exit recovery keeps the typed exit once, without an error copy, and not again after a restart
+00:09 +4 -1: exit recovery keeps the typed exit once, without an error copy, and not again after a restart [E]
+  Expected: an object with length of <1>
+    Actual: WhereIterable<ProblemEvent>:[
+              Instance of 'ProblemEvent',
+              Instance of 'ProblemEvent'
+            ]
+     Which: has length of <2>
+  the diagnostics copy of the exit is not stored twice
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/report_problem_startup_test.dart 264:5         main.<fn>
+  
+00:09 +4 -1: the thermal guard hands its readings to the report: changes only, no unknowns
+00:09 +4 -2: the thermal guard hands its readings to the report: changes only, no unknowns [E]
+  Expected: an object with length of <2>
+    Actual: []
+     Which: has length of <0>
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/report_problem_startup_test.dart 303:5         main.<fn>
+  
+00:09 +4 -2: a store that cannot open leaves one fixed diagnostics line
+00:09 +5 -2: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_6d3e482e-eea-30/test/report_problem_startup_test.dart: exit recovery keeps the typed exit once, without an error copy, and not again after a restart
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_6d3e482e-eea-30/test/report_problem_startup_test.dart: the thermal guard hands its readings to the report: changes only, no unknowns

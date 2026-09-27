@@ -4,13 +4,14 @@ import 'package:flutter/services.dart';
 import '../domain/phone_agent_context.dart';
 import '../domain/workspace_paths.dart';
 import '../platform/platform_capabilities.dart';
+import '../ui/kit/kit_redact.dart';
 import 'opencode_ubuntu_setup.dart';
 import 'team_scripts.dart';
 
 /// The runtime selected for the one app-managed Ubuntu server. It is separate
 /// from a server's reported version and survives restarts in the manager state.
 enum TermuxRuntime {
-  openCode1('opencode1', '1.18.29'),
+  openCode1('opencode1', '1.18.32'),
   openCode2('opencode2', '2.0.10');
 
   const TermuxRuntime(this.wireName, this.pinnedVersion);
@@ -66,7 +67,7 @@ class TermuxBridge {
   ///
   /// Keep this in step with the shell fallback in [_managerScript]
   /// (`requested_version="${2:-…}"`); a test asserts the two agree.
-  static const defaultOpenCodeVersion = '1.18.29';
+  static const defaultOpenCodeVersion = '1.18.32';
 
   /// The npm dist-tag, available only when a caller passes it to
   /// [installAndServeScript] on purpose. Nothing in the app does today: it
@@ -100,6 +101,181 @@ class TermuxBridge {
   static Future<bool> openTermux() => _invokeFlag('openTermux');
 
   static Future<bool> openAppSettings() => _invokeFlag('openAppSettings');
+
+  /// Durable v2 setup. Scripts travel in memory only; metadata is allowlisted
+  /// and redacted before the native host stores it. A lost callback never
+  /// implies that the independently owned Termux process has stopped.
+  static Future<void> startSetup({
+    required String jobId,
+    required List<Map<String, Object?>> components,
+    Map<String, Map<String, String>> params = const {},
+    Map<String, String> texts = const {},
+  }) async {
+    if (!RegExp(r'^[A-Za-z0-9_-]{1,96}$').hasMatch(jobId)) {
+      throw const TermuxBridgeException(
+        'Invalid setup job id.',
+        code: 'invalid_setup',
+      );
+    }
+    final safeParams = <String, Map<String, String>>{};
+    const allowed = {
+      'opencode': {'runtime', 'version'},
+      '_job': {'first', 'adding'},
+    };
+    for (final entry in params.entries) {
+      final keys = allowed[entry.key];
+      if (keys == null || entry.value.keys.any((key) => !keys.contains(key))) {
+        throw const TermuxBridgeException(
+          'Unsupported setup parameter.',
+          code: 'invalid_setup',
+        );
+      }
+      for (final value in entry.value.entries) {
+        final valid = switch (value.key) {
+          'runtime' => {'opencode1', 'opencode2'}.contains(value.value),
+          'version' => RegExp(
+            r'^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$',
+          ).hasMatch(value.value),
+          'first' => {'0', '1'}.contains(value.value),
+          'adding' =>
+            value.value.isEmpty ||
+                RegExp(
+                  r'^[a-z][a-z0-9_-]*(?:,[a-z][a-z0-9_-]*)*$',
+                ).hasMatch(value.value),
+          _ => false,
+        };
+        if (!valid || KitRedact.containsSecret(value.value)) {
+          throw const TermuxBridgeException(
+            'Invalid setup parameter.',
+            code: 'invalid_setup',
+          );
+        }
+      }
+      safeParams[entry.key] = {
+        for (final value in entry.value.entries)
+          if (keys.contains(value.key)) value.key: KitRedact.text(value.value),
+      };
+    }
+    final safeComponents = <Map<String, Object?>>[];
+    for (final component in components) {
+      final id = component['id'];
+      if (id is! String || !RegExp(r'^[a-z][a-z0-9_-]{0,63}$').hasMatch(id)) {
+        throw const TermuxBridgeException(
+          'Invalid setup component.',
+          code: 'invalid_setup',
+        );
+      }
+      final native = component['native'] == true;
+      if (native && id != 'linux') {
+        throw const TermuxBridgeException(
+          'Unsupported native component.',
+          code: 'invalid_setup',
+        );
+      }
+      final data = component['data'];
+      safeComponents.add({
+        'id': id,
+        'script': native ? setupBaseScript : component['script'],
+        'native': native,
+        'step': component['step'] == true,
+        'skipped': component['skipped'] == true,
+        'weight': component['weight'],
+        'version': component['version'] is String
+            ? KitRedact.text(component['version'] as String)
+            : null,
+        'data': data is Map
+            ? {
+                for (final key in ['runtime', 'openCodeChanged'])
+                  if (data[key] is String)
+                    key: KitRedact.text(data[key] as String),
+              }
+            : <String, String>{},
+      });
+    }
+    await _setupInvoke<void>('startSetup', {
+      'jobId': jobId,
+      'components': safeComponents,
+      'params': safeParams,
+    });
+  }
+
+  static Future<String?> setupStatus() => _setupInvoke<String>('setupStatus');
+
+  static Future<void> cancelSetup() => _setupInvoke<void>('cancelSetup');
+
+  static Future<void> completeSetupStep({
+    required String jobId,
+    required String id,
+    required bool ok,
+    String? error,
+    String? version,
+  }) => _setupInvoke<void>('completeSetupStep', {
+    'jobId': jobId, 'id': id, 'ok': ok,
+    // Native persists fixed failure copy; arbitrary errors never cross here.
+    'version': version == null ? null : KitRedact.text(version),
+  });
+
+  static Future<bool> setupHostInstalled() async =>
+      await _setupInvoke<bool>('setupHostInstalled') ?? false;
+
+  /// Runs a check in the same app-managed Ubuntu container as the v1 manager.
+  static Future<TermuxCommandResult> setupRun(
+    String script, {
+    Duration timeout = const Duration(minutes: 2),
+  }) async {
+    final raw = await _setupInvoke<Map<Object?, Object?>>('setupRun', {
+      'script': script,
+      'timeoutMs': timeout.inMilliseconds,
+    });
+    return TermuxCommandResult.fromMap(
+      raw?.cast<String, dynamic>() ?? const {},
+    );
+  }
+
+  static Future<T?> _setupInvoke<T>(String method, [Object? args]) async {
+    if (!supported) throw _unsupported;
+    try {
+      return await _channel.invokeMethod<T>(method, args);
+    } on MissingPluginException {
+      throw _unsupported;
+    } on PlatformException catch (error) {
+      throw TermuxBridgeException(
+        KitRedact.text(error.message ?? 'Termux setup failed.'),
+        code: error.code,
+      );
+    }
+  }
+
+  /// Pinned Canonical base; leaves any unknown existing container untouched.
+  /// No credentials or generated manager scripts are written by this step.
+  @visibleForTesting
+  static const setupBaseScript = r'''set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
+if command -v proot-distro >/dev/null 2>&1 &&
+   proot-distro login opencode-ubuntu -- /bin/true >/dev/null 2>&1; then exit 0; fi
+apt-get update
+apt-get -y --no-remove -o Dpkg::Options::="--force-confold" --fix-broken install
+apt-get -y --no-remove -o Dpkg::Options::="--force-confold" install proot-distro curl openssl
+case "$(uname -m)" in
+  aarch64|arm64) arch=arm64; sha=04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2 ;;
+  arm|armv7l|armv8l) arch=armhf; sha=991520b47f6586f38a78505cf016e300b6191bb8ff86a0723481ec23a37ab7f4 ;;
+  x86_64|amd64) arch=amd64; sha=c1e67ef7b17a6300e136118bd1dc04725009cb376c1aad10abcf8cd453628d58 ;;
+  *) exit 64 ;;
+esac
+mkdir -p "$HOME/.oc/setup-v2"
+archive="$HOME/.oc/setup-v2/ubuntu-base.tar.gz"
+root="$PREFIX/var/lib/proot-distro/installed-rootfs/opencode-ubuntu"
+# Never erase an existing container, including one from an interrupted setup.
+# A damaged extraction needs explicit recovery rather than risking projects.
+[ ! -d "$root" ] &&
+  [ ! -d "$PREFIX/var/lib/proot-distro/containers/opencode-ubuntu/rootfs" ] || exit 65
+curl --fail --location --retry 5 --connect-timeout 20 \
+  "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-$arch.tar.gz" -o "$archive"
+printf '%s  %s\n' "$sha" "$archive" | sha256sum -c -
+proot-distro install "$archive" --name opencode-ubuntu
+proot-distro login opencode-ubuntu -- /bin/true
+rm -f "$archive"
+''';
 
   /// Every one of these answers "did the platform do the thing?", so a
   /// missing channel is simply `false` — never an exception a caller that
@@ -1579,16 +1755,16 @@ install_ubuntu_base() {
   local filename checksum
   case "$(uname -m)" in
     aarch64|arm64)
-      filename='ubuntu-base-24.04.4-base-arm64.tar.gz'
-      checksum='04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2'
+      filename='ubuntu-base-24.04.5-base-arm64.tar.gz'
+      checksum='a91d5a93010193712d346d761372b7c9db6dfcf093893161c64ca107f05914f2'
       ;;
     arm|armv7l|armv8l)
-      filename='ubuntu-base-24.04.4-base-armhf.tar.gz'
-      checksum='991520b47f6586f38a78505cf016e300b6191bb8ff86a0723481ec23a37ab7f4'
+      filename='ubuntu-base-24.04.5-base-armhf.tar.gz'
+      checksum='4fcee4d278f1c5232e085a021a85e4c6cef3853557a88d98ff380b5e5d5841bb'
       ;;
     x86_64|amd64)
-      filename='ubuntu-base-24.04.4-base-amd64.tar.gz'
-      checksum='c1e67ef7b17a6300e136118bd1dc04725009cb376c1aad10abcf8cd453628d58'
+      filename='ubuntu-base-24.04.5-base-amd64.tar.gz'
+      checksum='e77b6f10c2590cef872b33ee9f635a0e3fd1f57fb074c0e52b5c7f56147a0c86'
       ;;
     *) fail_setup "Unsupported CPU architecture: $(uname -m)" "$CURRENT_PORT" ;;
   esac
@@ -1608,7 +1784,7 @@ install_ubuntu_base() {
       return
     fi
   fi
-  printf 'source=canonical-ubuntu-base-24.04.4\n' > "$UBUNTU_INSTALL_MARKER"
+  printf 'source=canonical-ubuntu-base-24.04.5\n' > "$UBUNTU_INSTALL_MARKER"
   proot-distro install "$archive" --name "$PROOT_NAME"
   rm -f "$archive"
   ubuntu_usable || fail_setup 'Ubuntu Base extraction did not create a usable container' "$CURRENT_PORT"
@@ -1634,7 +1810,7 @@ setup() {
   managed_runtime >/dev/null || return 64
   if [ -z "$requested_version" ]; then
     case "$CURRENT_RUNTIME" in
-      opencode1) requested_version=1.18.29 ;;
+      opencode1) requested_version=1.18.32 ;;
       opencode2) requested_version=2.0.10 ;;
     esac
   fi
@@ -1901,7 +2077,7 @@ switch_runtime() {
     require_setup_space
     local requested_version
     case "$target" in
-      opencode1) requested_version=1.18.29 ;;
+      opencode1) requested_version=1.18.32 ;;
       opencode2) requested_version=2.0.10 ;;
     esac
     install_runtime "$requested_version"
@@ -3177,7 +3353,8 @@ echo "aiteam-started:\$!"
   ///
   /// Paseo is pinned exactly: lib/paseo/ was verified against daemon 0.8.0
   /// and, with a real Claude Opus 5.5 turn, 0.9.1 (the first release whose
-  /// Claude model list includes Opus 5.5; 2026-09-23).
+  /// Claude model list includes Opus 5.5; 2026-09-23). The 0.9.2 patch is
+  /// reviewed for compatible protocol changes; device validation is pending.
   /// Claude Code is not pinned; the installed version is recorded in the
   /// script's state and shown in the app.
   static const localAgentsPins = <String, String>{
@@ -3187,7 +3364,7 @@ echo "aiteam-started:\$!"
         '724282c3b43aec998aa9527380465b45d229e021b58035f5f4f63095eabfe5d5',
     'node_sha256_x64':
         '6e1db87ef58b8819e5d5402eff1536491b18edd8eb7bee5ef7897876e88dc5ff',
-    'paseo_version': '0.9.1',
+    'paseo_version': '0.9.2',
   };
 
   /// The verbs `claude.sh` runs detached from the bridge shell (their

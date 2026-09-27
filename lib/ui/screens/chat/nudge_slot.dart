@@ -94,7 +94,10 @@ extension _ChatNudges on _ChatScreenState {
         ),
       ),
       NudgeId.reviewChanges => (
-        strings.nudgeReviewChanges,
+        switch (_conn.sessionsById[widget.sessionID]?.summary?.files ?? 0) {
+          final files when files > 0 => strings.nudgeReviewChangesCount(files),
+          _ => strings.nudgeReviewChanges,
+        },
         strings.demoReviewChanges,
         AppIconography.review,
         () => unawaited(_showDiff()),
@@ -113,18 +116,31 @@ extension _ChatNudges on _ChatScreenState {
         () {},
       ),
     };
-    return NudgeCard(
-      id: active.id,
-      message: message,
-      actionLabel: actionLabel,
-      icon: icon,
-      dismissTooltip: strings.nudgeDismiss,
-      onDismiss: done,
-      onAction: () {
-        // Taking the action is also the end of the tip.
-        done();
-        action();
-      },
+    final wire = active.id.wire;
+    // One sentence, its action and the close, on the transcript's rails
+    // just above the composer, where the moment happened (KitNotice.offer).
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: KitTokens.of(context).gutter,
+        end: KitTokens.of(context).space1,
+      ),
+      child: KitNotice.offer(
+        key: ValueKey('nudge-$wire'),
+        message: message,
+        icon: icon,
+        action: KitAction(
+          key: ValueKey('nudge-$wire-action'),
+          label: actionLabel,
+          onPressed: () {
+            // Taking the action is also the end of the tip.
+            done();
+            action();
+          },
+        ),
+        onDismiss: done,
+        dismissKey: ValueKey('nudge-$wire-dismiss'),
+        dismissLabel: strings.nudgeDismiss,
+      ),
     );
   }
 }

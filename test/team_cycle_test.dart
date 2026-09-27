@@ -26,7 +26,6 @@ import 'package:opencode_mobile/ui/kit/kit_status_mark.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/work_sheet.dart';
-import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:opencode_mobile/ui/widgets/team_cycle_strip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -1490,49 +1489,6 @@ void main() {
   // ---------------------------------------------------------------------
 
   group('placement', () {
-    testWidgets('the card shows no strip: the task line says where it is '
-        '(AI Team redesign)', (tester) async {
-      // The fixture convoy tracks oc-loy, routed and waiting for an agent.
-      final (controller, gateway) = await boot();
-      await tester.pumpWidget(
-        app(TeamCard(controller: controller, onOpen: () {})),
-      );
-      await tester.pump();
-      expect(key('team-card-cycle'), findsNothing);
-      expect(key('team-cycle-current'), findsNothing);
-      expect(
-        tester
-            .widget<RichText>(
-              find
-                  .descendant(
-                    of: key('team-card-run-line-oc-xru'),
-                    matching: find.byType(RichText),
-                  )
-                  .first,
-            )
-            .text
-            .toPlainText(),
-        // Then when a worker starts (docs/qa/team-discover-2026-09-25).
-        startsWith('Waiting for a worker · '),
-      );
-
-      // A completed task leaves the card.
-      gateway.runsOverride = [
-        OrchestrationRun(
-          id: 'oc-xru',
-          title: 'Add subtract function to calc.py',
-          state: RunState.completed,
-          kind: RunKind.batch,
-          stepCount: 1,
-          completedSteps: 1,
-          updatedAt: clock,
-        ),
-      ];
-      await controller.refresh();
-      await tester.pump();
-      expect(key('team-card-run-oc-xru'), findsNothing);
-    });
-
     testWidgets('the run Overview shows the four stages and why it waits, '
         'with no time it cannot know (TEAM-117)', (tester) async {
       tester.view.physicalSize = const Size(800, 1600);
@@ -1608,7 +1564,7 @@ void main() {
       expect(key('team-work-sheet-cycle'), findsOneWidget);
       expect(
         tester.getTopLeft(key('team-work-sheet-cycle')).dy,
-        lessThan(tester.getTopLeft(key('team-work-sheet-state')).dy),
+        lessThan(tester.getTopLeft(key('team-work-sheet-owner')).dy),
       );
       // The title is the kit sheet's own header (screen-team-3), so the
       // strip is the body's first part.

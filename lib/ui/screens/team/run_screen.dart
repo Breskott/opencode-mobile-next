@@ -37,14 +37,21 @@
 /// with the host's boundaries as chips, from `controller.policy`; absent
 /// entirely when the host reports none (no front).
 ///
-/// **Run controls** (TEAM-204): the app bar keeps one icon action
+/// **Run controls** (TEAM-204): the top bar keeps one icon action
 /// (Refresh); its overflow holds Technical details and Cancel run (a
 /// formula run) or Close batch (a convoy), each two-step in the error
 /// tone and present only with `controlCancelRun` on a run that is still
 /// open; the receipt chip sits under the state header. The supervisor
 /// has no pause / resume for a run, so none is offered.
+///
+/// Built from kit parts (owner rule 2026-09-27, R6): [KitScreen] with its
+/// [KitTopBar] and menu, [KitTabSwitcher.tabs] for the four tabs,
+/// [KitSegmented] for the List / Graph view and the Timeline filter,
+/// [KitJumpPill] for the held timeline, [KitRow], [KitText], [KitIcon] and
+/// [KitAvatar] for the rest, and [showKitSheet] for Technical details.
 library;
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -107,15 +114,12 @@ class RunScreen extends StatefulWidget {
   State<RunScreen> createState() => _RunScreenState();
 }
 
-class _RunScreenState extends State<RunScreen>
-    with SingleTickerProviderStateMixin {
+class _RunScreenState extends State<RunScreen> {
   /// Past this offset the timeline counts as scrolled away.
   static const _scrolledAway = 24.0;
 
-  late final TabController _tabs = TabController(
-    length: TeamRunTab.values.length,
-    vsync: this,
-  );
+  /// The tab in view ([TeamRunTab] index).
+  int _tab = TeamRunTab.overview.index;
   final _timelineScroll = ScrollController();
   TeamTimelineFilter _filter = TeamTimelineFilter.all;
 
@@ -137,7 +141,6 @@ class _RunScreenState extends State<RunScreen>
   @override
   void initState() {
     super.initState();
-    _tabs.addListener(_onTab);
     _timelineScroll.addListener(_onTimelineScroll);
     _workView = switch (widget.controller.workView(widget.runId)) {
       'graph' => TeamWorkView.graph,
@@ -159,18 +162,10 @@ class _RunScreenState extends State<RunScreen>
     _timelineScroll
       ..removeListener(_onTimelineScroll)
       ..dispose();
-    _tabs
-      ..removeListener(_onTab)
-      ..dispose();
     super.dispose();
   }
 
-  /// The app bar's title follows the tab (none on the Overview).
-  int _shownTab = 0;
-  void _onTab() {
-    if (_tabs.index == _shownTab || !mounted) return;
-    setState(() => _shownTab = _tabs.index);
-  }
+  void _selectTab(int index) => setState(() => _tab = index);
 
   void _onTimelineScroll() {
     if (!_timelineScroll.hasClients) return;
@@ -187,8 +182,8 @@ class _RunScreenState extends State<RunScreen>
     if (_timelineScroll.hasClients) {
       _timelineScroll.animateTo(
         0,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
+        duration: KitMotion.standard,
+        curve: KitMotion.enter,
       );
     }
   }
@@ -265,13 +260,15 @@ class _RunScreenState extends State<RunScreen>
   }
 
   void _openDetails(OrchestrationRun run) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) =>
-          _RunDetailsSheet(run: run, work: widget.controller.snapshot.work),
+    final l10n = _copy(context);
+    unawaited(
+      showKitSheet<void>(
+        context,
+        title: l10n.teamUiTechnicalDetails,
+        icon: AppIconography.info,
+        body: (_) =>
+            _RunDetailsSheet(run: run, work: widget.controller.snapshot.work),
+      ),
     );
   }
 
@@ -280,78 +277,63 @@ class _RunScreenState extends State<RunScreen>
     listenable: widget.controller,
     builder: (context, _) {
       final l10n = _copy(context);
-      final theme = Theme.of(context);
       final run = _run;
-      return Scaffold(
+      // The Overview opens with the task's title, whole, so the bar stays
+      // empty there rather than say it twice; the other tabs keep it on
+      // one line. The Gas City term ("convoy", "formula") is under
+      // Technical details.
+      final overview = _tab == TeamRunTab.overview.index && run != null;
+      return KitScreen(
         key: const ValueKey('team-run'),
-        appBar: AppBar(
-          // The Overview opens with the task's title, whole, so the bar
-          // stays empty there rather than say it twice; the other tabs keep
-          // it on one line. The Gas City term ("convoy", "formula") is
-          // under Technical details.
-          title: _tabs.index == TeamRunTab.overview.index && run != null
-              ? null
-              : Text(
-                  run?.title ?? l10n.teamUiRunTermUnknown,
-                  key: const ValueKey('team-run-title'),
-                  style: theme.textTheme.titleMedium,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+        topBar: KitTopBar(
+          title: overview ? '' : run?.title ?? l10n.teamUiRunTermUnknown,
+          titleKey: overview ? null : const ValueKey('team-run-title'),
           actions: [
-            IconButton(
+            KitAction(
               key: const ValueKey('team-run-refresh'),
-              tooltip: l10n.teamUiRefresh,
+              label: l10n.teamUiRefresh,
+              icon: AppIconography.sync,
               onPressed: _refreshing ? null : _refresh,
-              icon: const Icon(AppIconography.sync),
             ),
-            // One icon action and the overflow (design standard §1):
-            // Technical details always, Stop run / Close batch only on an
-            // open run with the capability.
+          ],
+          // One icon action and the overflow (design standard §1):
+          // Technical details always, Stop run / Close batch only on an
+          // open run with the capability.
+          menu: [
             if (run != null)
-              PopupMenuButton<String>(
-                key: const ValueKey('team-run-more'),
-                tooltip: l10n.teamUiControlMoreActions,
-                icon: const Icon(AppIconography.more),
-                onSelected: (value) =>
-                    value == 'cancel' ? _cancelRun(run) : _openDetails(run),
-                itemBuilder: (context) => [
-                  PopupMenuItem<String>(
-                    key: const ValueKey('team-run-details'),
-                    value: 'details',
-                    child: Text(l10n.teamUiTechnicalDetails),
-                  ),
-                  if (widget.controller.capabilities.controlCancelRun &&
-                      _open(run))
-                    PopupMenuItem<String>(
-                      key: const ValueKey('team-run-cancel'),
-                      value: 'cancel',
-                      child: Text(
-                        run.kind == RunKind.batch
-                            ? l10n.teamUiControlCloseBatch
-                            : l10n.teamUiControlCancelRun,
-                        style: TextStyle(color: theme.colorScheme.error),
-                      ),
-                    ),
-                ],
+              KitMenuItem(
+                key: const ValueKey('team-run-details'),
+                label: l10n.teamUiTechnicalDetails,
+                icon: AppIconography.info,
+                onSelected: () => _openDetails(run),
+              ),
+            if (run != null &&
+                widget.controller.capabilities.controlCancelRun &&
+                _open(run))
+              KitMenuItem(
+                key: const ValueKey('team-run-cancel'),
+                label: run.kind == RunKind.batch
+                    ? l10n.teamUiControlCloseBatch
+                    : l10n.teamUiControlCancelRun,
+                destructive: true,
+                onSelected: () => unawaited(_cancelRun(run)),
               ),
           ],
+          menuKey: const ValueKey('team-run-more'),
         ),
-        body: KitScreen(
-          header: [
-            if (!teamScreenLoading(widget.controller) &&
-                !teamScreenFailed(widget.controller))
-              ?teamStatusLine(
-                context,
-                controller: widget.controller,
-                keyPrefix: 'team-run',
-                onRetry: _refreshing ? null : _refresh,
-              ),
-          ],
-          loading: teamScreenLoading(widget.controller) || _refreshing,
-          loadingLabel: l10n.teamUiCardLoading,
-          body: _body(context, run),
-        ),
+        header: [
+          if (!teamScreenLoading(widget.controller) &&
+              !teamScreenFailed(widget.controller))
+            ?teamStatusLine(
+              context,
+              controller: widget.controller,
+              keyPrefix: 'team-run',
+              onRetry: _refreshing ? null : _refresh,
+            ),
+        ],
+        loading: teamScreenLoading(widget.controller) || _refreshing,
+        loadingLabel: l10n.teamUiCardLoading,
+        body: _body(context, run),
       );
     },
   );
@@ -382,88 +364,81 @@ class _RunScreenState extends State<RunScreen>
       );
     }
 
-    final stale = controller.isStale;
     final live = _scopedEvents();
     final held = _held;
     final shown = held ?? live;
     final arrived = held == null ? 0 : math.max(0, live.length - held.length);
-    final tabs = TabBarView(
-      controller: _tabs,
-      children: [
-        KitRefresh(
-          key: const ValueKey('team-run-pull'),
-          onRefresh: _refresh,
-          child: _Overview(
-            controller: controller,
-            run: run,
-            now: _now,
-            receipt: _cancelReceipt,
-            onRetryReceipt: _retryCancel,
-            detailsOpen: _detailsOpen,
-            onToggleDetails: () => setState(() => _detailsOpen = !_detailsOpen),
-            onOpenStep: _openWork,
-            onSeeAllSteps: () => _tabs.animateTo(TeamRunTab.work.index),
-            onOpenGate: (gate) =>
-                showGateSheet(context, controller, gate.id, now: () => _now),
-          ),
-        ),
-        _WorkTab(
-          key: const ValueKey('team-run-work'),
-          snapshot: snapshot,
-          runId: run.id,
-          now: _now,
-          view:
-              _workView ??
-              (MediaQuery.sizeOf(context).width >= teamWorkGraphDefaultWidth
-                  ? TeamWorkView.graph
-                  : TeamWorkView.list),
-          onView: _chooseWorkView,
-          onOpen: _openWork,
-        ),
-        _AgentsTab(
-          key: const ValueKey('team-run-agents'),
+    final pages = <Widget>[
+      KitRefresh(
+        key: const ValueKey('team-run-pull'),
+        onRefresh: _refresh,
+        child: _Overview(
           controller: controller,
-          runId: run.id,
+          run: run,
           now: _now,
-          clock: widget.now,
+          receipt: _cancelReceipt,
+          onRetryReceipt: _retryCancel,
+          detailsOpen: _detailsOpen,
+          onToggleDetails: () => setState(() => _detailsOpen = !_detailsOpen),
+          onOpenStep: _openWork,
+          onSeeAllSteps: () => _selectTab(TeamRunTab.work.index),
+          onOpenGate: (gate) =>
+              showGateSheet(context, controller, gate.id, now: () => _now),
         ),
-        _Timeline(
-          events: shown,
-          arrived: arrived,
-          filter: _filter,
-          scroll: _timelineScroll,
-          snapshot: snapshot,
-          onFilter: (f) => setState(() => _filter = f),
-          onJump: _jumpToLatest,
-        ),
-      ],
-    );
+      ),
+      _WorkTab(
+        key: const ValueKey('team-run-work'),
+        snapshot: snapshot,
+        runId: run.id,
+        now: _now,
+        view:
+            _workView ??
+            (MediaQuery.sizeOf(context).width >= teamWorkGraphDefaultWidth
+                ? TeamWorkView.graph
+                : TeamWorkView.list),
+        onView: _chooseWorkView,
+        onOpen: _openWork,
+      ),
+      _AgentsTab(
+        key: const ValueKey('team-run-agents'),
+        controller: controller,
+        runId: run.id,
+        now: _now,
+        clock: widget.now,
+      ),
+      _Timeline(
+        events: shown,
+        arrived: arrived,
+        filter: _filter,
+        scroll: _timelineScroll,
+        snapshot: snapshot,
+        onFilter: (f) => setState(() => _filter = f),
+        onJump: _jumpToLatest,
+      ),
+    ];
 
-    return Column(
+    // Old numbers stay at full strength; the one status line above says
+    // how old they are (LOOK-14).
+    return KeyedSubtree(
       key: const ValueKey('team-run-data'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        TabBar(
-          key: const ValueKey('team-run-tabs'),
-          controller: _tabs,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          tabs: [
-            for (final tab in TeamRunTab.values)
-              Tab(
-                key: ValueKey('team-run-tab-${tab.name}'),
-                text: switch (tab) {
-                  TeamRunTab.overview => l10n.teamUiRunTabOverview,
-                  TeamRunTab.work => l10n.teamUiRunTabWork,
-                  TeamRunTab.agents => l10n.teamUiRunTabAgents,
-                  TeamRunTab.timeline => l10n.teamUiRunTabTimeline,
-                },
-              ),
-          ],
-        ),
-        // Stale numbers dim; they stay readable (never colour-only).
-        Expanded(child: stale ? Opacity(opacity: .6, child: tabs) : tabs),
-      ],
+      child: KitTabSwitcher.tabs(
+        stripKey: const ValueKey('team-run-tabs'),
+        index: _tab,
+        onSelected: _selectTab,
+        tabs: [
+          for (final tab in TeamRunTab.values)
+            KitTab(
+              key: ValueKey('team-run-tab-${tab.name}'),
+              label: switch (tab) {
+                TeamRunTab.overview => l10n.teamUiRunTabOverview,
+                TeamRunTab.work => l10n.teamUiRunTabWork,
+                TeamRunTab.agents => l10n.teamUiRunTabAgents,
+                TeamRunTab.timeline => l10n.teamUiRunTabTimeline,
+              },
+            ),
+        ],
+        children: pages,
+      ),
     );
   }
 }
@@ -511,8 +486,8 @@ class _AgentsTab extends StatelessWidget {
     }
     return ListView(
       key: const ValueKey('team-run-agents-list'),
-      padding: EdgeInsets.only(
-        bottom: 24 + MediaQuery.paddingOf(context).bottom,
+      padding: EdgeInsetsDirectional.only(
+        bottom: KitScreen.endPadding(context),
       ),
       children: [
         for (final agent in agents)
@@ -522,7 +497,7 @@ class _AgentsTab extends StatelessWidget {
             work: workById[agent.currentWorkId],
             now: now,
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
+              KitPageRoute<void>(
                 builder: (_) => AgentScreen(
                   controller: controller,
                   agentId: agent.id,
@@ -719,16 +694,23 @@ class _Overview extends StatelessWidget {
     final stall = cycle != null && cycle.stalled ? cycle.stallReason : null;
     final usage = _usageLabel(l10n, controller, run);
     final policy = controller.policy;
+    final tokens = KitTokens.of(context);
 
-    Widget rails(Widget child, {double top = 0}) =>
-        Padding(padding: EdgeInsets.fromLTRB(16, top, 16, 0), child: child);
+    Widget rails(Widget child, {double top = 0}) => Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.gutter,
+        end: tokens.gutter,
+        top: top,
+      ),
+      child: child,
+    );
 
     return ListView(
       key: const ValueKey('team-run-overview'),
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.only(
-        top: 16,
-        bottom: 24 + MediaQuery.paddingOf(context).bottom,
+      padding: EdgeInsetsDirectional.only(
+        top: tokens.space4,
+        bottom: KitScreen.endPadding(context),
       ),
       children: [
         // Merged: a celebration, once per task (it is remembered).
@@ -758,7 +740,7 @@ class _Overview extends StatelessWidget {
         TeamTaskConversationRow(team: controller, runId: run.id),
         if (receipt case final record?)
           rails(
-            top: 10,
+            top: tokens.space2,
             TeamReceiptChip(
               key: const ValueKey('team-run-receipt'),
               record: record,
@@ -772,12 +754,12 @@ class _Overview extends StatelessWidget {
           ),
         if (stage != null)
           rails(
-            top: 20,
+            top: tokens.space5,
             _StageLine(key: const ValueKey('team-run-stage-line'), at: stage),
           ),
         if (stall != null)
           rails(
-            top: 16,
+            top: tokens.space4,
             KitNotice(
               key: const ValueKey('team-run-stall'),
               tone: AppStatusTone.attention,
@@ -825,14 +807,7 @@ class _Overview extends StatelessWidget {
               key: const ValueKey('team-run-steps-all'),
               leading: KitRow.icon(context, AppIconography.checklist),
               title: l10n.teamUiRunStepsAll(items.length),
-              trailing: Padding(
-                padding: const EdgeInsetsDirectional.only(end: 12),
-                child: Icon(
-                  AppIconography.chevronRight,
-                  size: 20,
-                  color: AppTheme.mutedOf(Theme.of(context)),
-                ),
-              ),
+              trailing: const KitChevron(),
               onTap: onSeeAllSteps,
             ),
         ] else if (stages.isNotEmpty) ...[
@@ -857,7 +832,7 @@ class _Overview extends StatelessWidget {
               supporting: TextSpan(text: teamRunStateWord(l10n, step.state)),
             ),
         ],
-        const SizedBox(height: 8),
+        SizedBox(height: tokens.space2),
         _DetailsRow(
           key: const ValueKey('team-run-summary'),
           open: detailsOpen,
@@ -889,7 +864,7 @@ class _Overview extends StatelessWidget {
                 // 02-ux §7: the host's supervision level and boundaries,
                 // read-only (TEAM-207); absent when the host reports none.
                 if (policy != null) ...[
-                  const SizedBox(height: 8),
+                  SizedBox(height: tokens.space2),
                   TeamPolicyBlock(policy: policy),
                 ],
               ],
@@ -929,47 +904,48 @@ class _Objective extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final tokens = KitTokens.of(context);
     final (_, tone) = teamRunGlyph(run.state);
-    final color = AppTheme.statusColor(theme, tone);
-    final quiet = theme.textTheme.bodyMedium?.copyWith(color: muted);
-    final dot = Text(teamUsageSeparator, style: quiet);
+    const dot = KitText(
+      teamUsageSeparator,
+      role: KitTextRole.secondary,
+      tone: KitTextTone.secondary,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        KitText(
           run.title,
           key: const ValueKey('team-run-objective-title'),
-          style: theme.textTheme.titleLarge?.copyWith(height: 1.2),
+          role: KitTextRole.title,
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: tokens.space1),
         // One line that wraps at large text rather than overflowing.
         Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text(
+            KitText(
               stateWord,
               key: const ValueKey('team-run-state'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
+              role: KitTextRole.label,
+              tone: _textTone(tone),
             ),
             if (steps case final steps?) ...[
               dot,
-              Text(
+              KitText(
                 steps,
                 key: const ValueKey('team-run-progress-label'),
-                style: quiet,
+                role: KitTextRole.secondary,
+                tone: KitTextTone.secondary,
               ),
             ],
             if (elapsed case final elapsed?) ...[
               dot,
-              Text(
+              KitText(
                 elapsed,
                 key: const ValueKey('team-run-elapsed'),
-                style: quiet,
+                role: KitTextRole.secondary,
+                tone: KitTextTone.secondary,
               ),
             ],
           ],
@@ -978,6 +954,16 @@ class _Objective extends StatelessWidget {
     );
   }
 }
+
+/// A status tone as a text tone: the state word in its colour, never the
+/// only sign (the word itself says it).
+KitTextTone? _textTone(AppStatusTone tone) => switch (tone) {
+  AppStatusTone.ok => KitTextTone.success,
+  AppStatusTone.failure => KitTextTone.danger,
+  AppStatusTone.progress => KitTextTone.primary,
+  AppStatusTone.neutral => KitTextTone.secondary,
+  _ => KitTextTone.attention,
+};
 
 /// Waiting · Working · Reviewing · Done: where the task is, at most four
 /// stages, the current one named in the accent and the ones behind it
@@ -990,45 +976,40 @@ class _StageLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    final accent = theme.colorScheme.primary;
-    final ok = AppTheme.statusColor(theme, AppStatusTone.ok);
+    final tokens = KitTokens.of(context);
     final done = at == TeamStage.done;
     Widget mark(TeamStage stage) {
       final passed = stage.index < at.index || done;
       final current = stage == at && !done;
+      // Passed: the done check; current: the accent dot; ahead: a quiet
+      // dot. The words say it too (never colour-only).
       final Widget glyph = passed
-          ? Icon(AppIconography.check, size: 16, color: ok)
-          : Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: current ? accent : null,
-                border: current
-                    ? null
-                    : Border.all(
-                        color: muted.withValues(alpha: .7),
-                        width: 1.5,
-                      ),
-              ),
+          ? const KitIcon.status(AppStatusTone.ok, icon: AppIconography.check)
+          : current
+          ? const KitIcon.status(
+              AppStatusTone.progress,
+              icon: AppIconography.statusDot,
+            )
+          : const KitIcon(
+              AppIconography.statusDot,
+              size: KitIconSize.small,
+              tone: KitTextTone.tertiary,
             );
       return Row(
         key: ValueKey('team-run-stage-${stage.name}'),
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox.square(dimension: 16, child: Center(child: glyph)),
-          const SizedBox(width: 6),
+          glyph,
+          SizedBox(width: tokens.space1),
           // Flexible: a stage word at 2.5× on a 320 dp phone (Arabic
           // especially) wraps under its mark instead of overflowing.
           Flexible(
-            child: Text(
+            child: KitText(
               teamStageWord(l10n, stage),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: current ? accent : (passed ? null : muted),
-                fontWeight: current ? FontWeight.w600 : null,
-              ),
+              role: current ? KitTextRole.label : KitTextRole.secondary,
+              tone: current || passed
+                  ? KitTextTone.primary
+                  : KitTextTone.secondary,
             ),
           ),
         ],
@@ -1042,8 +1023,8 @@ class _StageLine extends StatelessWidget {
       ),
       child: ExcludeSemantics(
         child: Wrap(
-          spacing: 18,
-          runSpacing: 8,
+          spacing: tokens.space4,
+          runSpacing: tokens.space2,
           children: [for (final stage in TeamStage.values) mark(stage)],
         ),
       ),
@@ -1110,7 +1091,7 @@ class _DetailsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final muted = AppTheme.mutedOf(Theme.of(context));
+    final tokens = KitTokens.of(context);
     return Semantics(
       button: true,
       expanded: open,
@@ -1118,11 +1099,11 @@ class _DetailsRow extends StatelessWidget {
         leading: KitRow.icon(context, AppIconography.info),
         title: l10n.teamUiRunDetails,
         trailing: Padding(
-          padding: const EdgeInsetsDirectional.only(end: 12),
-          child: Icon(
+          padding: EdgeInsetsDirectional.only(end: tokens.space3),
+          child: KitIcon(
             open ? AppIconography.chevronUp : AppIconography.chevronDown,
-            size: 20,
-            color: muted,
+            size: KitIconSize.small,
+            tone: KitTextTone.secondary,
           ),
         ),
         onTap: onTap,
@@ -1147,28 +1128,18 @@ class _DetailLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: EdgeInsetsDirectional.symmetric(vertical: tokens.space1),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          KitText(
             label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedOf(theme),
-            ),
+            role: KitTextRole.caption,
+            tone: KitTextTone.secondary,
           ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            key: valueKey,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontFeatures: figures
-                  ? const [FontFeature.tabularFigures()]
-                  : null,
-            ),
-          ),
+          KitText(value, key: valueKey, tabular: figures),
         ],
       ),
     );
@@ -1247,43 +1218,42 @@ class _WorkTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
+    final tokens = KitTokens.of(context);
     final items = _workOf(snapshot, runId);
     // At large text the words alone fit 320dp; the icons go.
     final icons = !AppTheme.stackedActions(context);
     final toggle = Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SegmentedButton<TeamWorkView>(
-          key: const ValueKey('team-run-work-view'),
-          showSelectedIcon: false,
-          segments: [
-            ButtonSegment(
-              value: TeamWorkView.list,
-              icon: icons ? const Icon(AppIconography.checklist) : null,
-              label: Text(
-                l10n.teamUiWorkViewList,
-                key: const ValueKey('team-run-work-view-list'),
-              ),
-            ),
-            ButtonSegment(
-              value: TeamWorkView.graph,
-              icon: icons ? const Icon(AppIconography.fork) : null,
-              label: Text(
-                l10n.teamUiWorkViewGraph,
-                key: const ValueKey('team-run-work-view-graph'),
-              ),
-            ),
-          ],
-          selected: {view},
-          onSelectionChanged: (value) => onView(value.single),
-        ),
+      padding: EdgeInsetsDirectional.fromSTEB(
+        tokens.gutter,
+        tokens.space2,
+        tokens.gutter,
+        tokens.space1,
+      ),
+      child: KitSegmented<TeamWorkView>(
+        key: const ValueKey('team-run-work-view'),
+        semanticsLabel: l10n.teamUiRunTabWork,
+        segments: [
+          KitSegment(
+            key: const ValueKey('team-run-work-view-list'),
+            value: TeamWorkView.list,
+            icon: icons ? AppIconography.checklist : null,
+            label: l10n.teamUiWorkViewList,
+          ),
+          KitSegment(
+            key: const ValueKey('team-run-work-view-graph'),
+            value: TeamWorkView.graph,
+            icon: icons ? AppIconography.fork : null,
+            label: l10n.teamUiWorkViewGraph,
+          ),
+        ],
+        selected: view,
+        onChanged: onView,
       ),
     );
     if (items.isEmpty) {
       return ListView(
         key: const ValueKey('team-run-work-empty'),
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: EdgeInsetsDirectional.symmetric(vertical: tokens.space2),
         children: [
           toggle,
           KitStateView(
@@ -1344,7 +1314,7 @@ class _WorkList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     final byId = {for (final item in snapshot.work) item.id: item};
     final groups = <(WorkState, List<WorkItem>)>[
       for (final state in teamWorkStateOrder)
@@ -1362,7 +1332,7 @@ class _WorkList extends StatelessWidget {
       children: [
         for (final (state, members) in groups)
           Padding(
-            padding: const EdgeInsets.only(bottom: 4),
+            padding: EdgeInsetsDirectional.only(bottom: tokens.space1),
             child: _WorkGroup(
               key: ValueKey('team-run-work-group-${state.name}'),
               state: state,
@@ -1370,7 +1340,6 @@ class _WorkList extends StatelessWidget {
                 teamWorkStateWord(l10n, state),
                 members.length,
               ),
-              theme: theme,
               children: [
                 for (final item in members)
                   _WorkRow(
@@ -1407,38 +1376,38 @@ class _WorkGroup extends StatelessWidget {
     required this.state,
     required this.count,
     required this.children,
-    required this.theme,
   });
 
   final WorkState state;
   final String count;
   final List<Widget> children;
-  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
     final (icon, tone) = teamWorkGlyph(state);
-    final color = AppTheme.statusColor(theme, tone);
-    // A section heading (design standard §6) in the state's tone, then its
-    // rows; the state also lives in every row's glyph.
+    // A section heading (design standard §6) with the state's glyph, then
+    // its rows; the state also lives in every row's glyph.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          padding: EdgeInsetsDirectional.fromSTEB(
+            tokens.gutter,
+            tokens.space4,
+            tokens.gutter,
+            tokens.space1,
+          ),
           child: Row(
             children: [
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: 8),
+              KitIcon.status(tone, icon: icon),
+              SizedBox(width: tokens.space2),
               Expanded(
-                child: Text(
+                child: KitText(
                   count,
                   key: ValueKey('team-run-work-group-count-${state.name}'),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.1,
-                  ),
+                  role: KitTextRole.label,
+                  tone: _textTone(tone),
                 ),
               ),
             ],
@@ -1473,10 +1442,9 @@ class _WorkRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final tokens = KitTokens.of(context);
     final (icon, tone) = teamWorkGlyph(item.state);
-    final color = AppTheme.statusColor(theme, tone);
+    final color = AppTheme.statusColor(Theme.of(context), tone);
     final detail = [
       if (waitsOn > 0) l10n.teamUiWorkWaitsOn(waitsOn),
       ?age,
@@ -1488,40 +1456,28 @@ class _WorkRow extends StatelessWidget {
       titleMaxLines: 2,
       below: detail.isEmpty
           ? null
-          : Text(
+          : KitText(
               detail,
               key: ValueKey('team-run-work-detail-${item.id}'),
+              role: KitTextRole.secondary,
+              // What it waits on is the part to notice.
+              tone: waitsOn > 0 ? _textTone(tone) : KitTextTone.secondary,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: waitsOn > 0
-                    ? AppTheme.statusColor(theme, AppStatusTone.attention)
-                    : muted,
-              ),
             ),
       trailing: Padding(
-        padding: const EdgeInsetsDirectional.only(start: 12, end: 12),
+        padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.space3),
         child: Semantics(
           label: name == null
               ? l10n.teamUiWorkOwnerNone
               : l10n.teamUiWorkOwnerSemantics(name),
           child: ExcludeSemantics(
-            child: Container(
+            // The owner as the kit's one identity mark: its initial.
+            child: KeyedSubtree(
               key: ValueKey('team-run-work-owner-${item.id}'),
-              width: 28,
-              height: 28,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: theme.colorScheme.outlineVariant),
-              ),
-              child: Text(
-                name == null ? '—' : workOwnerInitial(name),
-                textDirection: TextDirection.ltr,
-                style: const TextStyle(
-                  fontFamily: AppTheme.monoFamily,
-                  fontSize: 12,
-                ),
+              child: KitAvatar(
+                name: name == null ? '—' : workOwnerInitial(name),
+                decorative: true,
               ),
             ),
           ),
@@ -1770,26 +1726,34 @@ class _Timeline extends StatelessWidget {
         if (_category(event) case final category when _passes(category))
           (event, category),
     ];
+    final tokens = KitTokens.of(context);
     final list = ListView.builder(
       key: const ValueKey('team-run-timeline'),
       controller: scroll,
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.only(
-        bottom: 24 + MediaQuery.paddingOf(context).bottom,
+      padding: EdgeInsetsDirectional.only(
+        bottom: KitScreen.endPadding(context),
       ),
       itemCount: visible.length + 2,
       itemBuilder: (context, index) {
         if (index == 0) {
+          // The one filter: one choice among four short, always-visible
+          // options (KitSegmented), never a row of chips.
           return Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
+            padding: EdgeInsetsDirectional.fromSTEB(
+              tokens.gutter,
+              tokens.space2,
+              tokens.gutter,
+              tokens.space1,
+            ),
+            child: KitSegmented<TeamTimelineFilter>(
+              semanticsLabel: l10n.teamUiRunTabTimeline,
+              segments: [
                 for (final f in TeamTimelineFilter.values)
-                  ChoiceChip(
+                  KitSegment(
                     key: ValueKey('team-run-timeline-filter-${f.name}'),
-                    label: Text(switch (f) {
+                    value: f,
+                    label: switch (f) {
                       TeamTimelineFilter.all => l10n.teamUiRunTimelineFilterAll,
                       TeamTimelineFilter.work =>
                         l10n.teamUiRunTimelineFilterWork,
@@ -1797,11 +1761,11 @@ class _Timeline extends StatelessWidget {
                         l10n.teamUiRunTimelineFilterAgents,
                       TeamTimelineFilter.decisions =>
                         l10n.teamUiRunTimelineFilterDecisions,
-                    }),
-                    selected: filter == f,
-                    onSelected: (_) => onFilter(f),
+                    },
                   ),
               ],
+              selected: filter,
+              onChanged: onFilter,
             ),
           );
         }
@@ -1834,19 +1798,16 @@ class _Timeline extends StatelessWidget {
         );
       },
     );
-    return Stack(
-      children: [
-        list,
-        if (arrived > 0)
-          Positioned(
-            top: 8,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: _JumpPill(count: arrived, onTap: onJump),
-            ),
-          ),
-      ],
+    // "N new · Jump to latest" over the held list (the kit's one pill).
+    return KitJumpPillLayer(
+      clearBottomInset: false,
+      pill: KitJumpPill.older(
+        pillKey: const ValueKey('team-run-timeline-jump'),
+        label: l10n.teamUiRunTimelineJump(arrived),
+        visible: arrived > 0,
+        onPressed: onJump,
+      ),
+      child: list,
     );
   }
 }
@@ -1866,91 +1827,28 @@ class _TimelineRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final tokens = KitTokens.of(context);
     final (icon, tone) = _categoryGlyph(category);
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 48),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Icon(
-                icon,
-                size: 18,
-                color: AppTheme.statusColor(theme, tone),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                text,
-                style: theme.textTheme.bodyMedium,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (at != null) ...[
-              const SizedBox(width: 12),
-              Text(
+    // One quiet row: the category glyph, the words, the clock time.
+    return KitRow(
+      leading: KitRow.icon(
+        context,
+        icon,
+        color: AppTheme.statusColor(Theme.of(context), tone),
+      ),
+      title: text,
+      titleMaxLines: 3,
+      trailing: at == null
+          ? null
+          : Padding(
+              padding: EdgeInsetsDirectional.only(end: tokens.space3),
+              child: KitText(
                 teamClockLabel(context, at!),
-                style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                role: KitTextRole.caption,
+                tone: KitTextTone.secondary,
+                tabular: true,
               ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// "N new · Jump to latest", floating over the held list.
-class _JumpPill extends StatelessWidget {
-  const _JumpPill({required this.count, required this.onTap});
-
-  final int count;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Material(
-      key: const ValueKey('team-run-timeline-jump'),
-      color: theme.colorScheme.surfaceContainerHigh,
-      elevation: 3,
-      shape: const StadiumBorder(),
-      child: InkWell(
-        customBorder: const StadiumBorder(),
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  AppIconography.chevronUp,
-                  size: 18,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    _copy(context).teamUiRunTimelineJump(count),
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ],
             ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1970,8 +1868,7 @@ class _RunDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final tokens = KitTokens.of(context);
     final tracked = [
       for (final item in work)
         if (item.runId == run.id) item.id,
@@ -1992,17 +1889,15 @@ class _RunDetailsSheet extends StatelessWidget {
     collect(run.raw, '');
     collect(_map(run.raw['metadata']), 'metadata.');
     scalars.sort((a, b) => a.$1.compareTo(b.$1));
-    return SingleChildScrollView(
+    // The kit sheet frame gives the title and scrolls the body.
+    return KeyedSubtree(
       key: const ValueKey('team-run-details-sheet'),
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(l10n.teamUiTechnicalDetails, style: theme.textTheme.titleLarge),
-          const SizedBox(height: 2),
           TeamTermRow(_term(l10n, run)),
-          const SizedBox(height: 8),
+          SizedBox(height: tokens.space2),
           TeamIdentityRow(
             label: l10n.teamUiRunLabelState,
             value: teamRunStateWordFor(l10n, run, work),
@@ -2019,12 +1914,13 @@ class _RunDetailsSheet extends StatelessWidget {
               value: at.toLocal().toString(),
               mono: true,
             ),
-          const SizedBox(height: 12),
-          Text(
+          SizedBox(height: tokens.space3),
+          KitText(
             l10n.teamUiHomeHostRawHeading,
-            style: theme.textTheme.labelLarge?.copyWith(color: muted),
+            role: KitTextRole.label,
+            tone: KitTextTone.secondary,
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: tokens.space1),
           TeamTechnicalValue(label: l10n.teamUiRunLabelId, value: run.id),
           TeamTechnicalValue(
             label: l10n.teamUiRunLabelKind,

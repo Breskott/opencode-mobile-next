@@ -43,7 +43,7 @@ class KitSkeletonTranscript extends StatelessWidget {
 }
 ```
 
-- **The answers** are tertiary `KitButton`s built from the two `KitAction`s (`KitButton.fromAction`, the existing constructor): decline in `text2`, then accept; the same measurement decides when they move under the question, now measured with `KitText.styleOf(label/secondary)` and token widths instead of literals.
+- **The answers** are tertiary `KitButton`s built from the two `KitAction`s (`KitButton.fromAction`, the existing constructor): decline, then accept, both in the tertiary `accent` (R5); the same measurement decides when they move under the question, now measured with `KitText.styleOf(label/secondary)` and token widths instead of literals.
 - **Internal keys (TEST-5):** `kit-skeleton-transcript` stays. The answers keep their callers' `KitAction.key`s.
 
 ## States

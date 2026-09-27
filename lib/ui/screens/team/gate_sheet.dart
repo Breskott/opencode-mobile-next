@@ -19,9 +19,12 @@
 /// - Free text: a multi-line [KitField] whose draft survives swipe, back
 ///   and reopen (P7.1) and [Send].
 /// - Gate bead: [Mark done].
-/// - Run failed: **Ask the team to fix it** (sends the error to the worker)
-///   as the primary, [Try again] (send the stuck work to its agent again),
+/// - Run failed: titled after its task ("Sync engine stopped"). **Ask
+///   the team to fix it** (sends the error to the worker) as the primary,
+///   "Send Sync engine to fox again" (only when a retry can recover it),
 ///   the agent's page, Live output and [Stop work] (confirmed, stop tone).
+///
+/// The sheet's own close button is the one way out: no action repeats it.
 ///
 /// Every answer routes with the gate's own id through
 /// [OrchestrationController.answerGate] and friends, which persist the
@@ -35,12 +38,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../diagnostics/failed_job_report.dart';
 import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../widgets/relative_time.dart';
+import '../app_diagnostics_screen.dart' show openReportProblem;
 import '../../widgets/team_host_form.dart' show showTeamHostGuideSheet;
 import '../../widgets/team_receipt.dart' show teamGateMutation;
 import '../../widgets/team_vocabulary.dart';
@@ -65,6 +70,17 @@ OrchestrationGate? _gateIn(OrchestrationSnapshot snapshot, String gateId) {
   return null;
 }
 
+/// The title of the task a failed-run gate stopped, when the snapshot
+/// lists it: the sheet is then titled after its task ("Sync engine
+/// stopped") and says the failure once.
+String? _stoppedTask(OrchestrationSnapshot snapshot, OrchestrationGate gate) {
+  if (gate.kind != GateKind.runFailed) return null;
+  for (final run in snapshot.runs) {
+    if (run.id == gate.runId) return run.title;
+  }
+  return null;
+}
+
 /// Opens the Gate sheet for [gateId]. The sheet reads the gate from the
 /// controller's snapshot on every rebuild, so one answered on the host
 /// meanwhile says so instead of showing stale options. Work rows close
@@ -79,6 +95,7 @@ Future<void> showGateSheet(
   final gate = _gateIn(controller.snapshot, gateId);
   final at = (now ?? DateTime.now)();
   String? kicker;
+  final stopped = gate == null ? null : _stoppedTask(controller.snapshot, gate);
   if (gate != null) {
     final age = gate.createdAt == null
         ? null
@@ -87,7 +104,10 @@ Future<void> showGateSheet(
             now: at,
             l10n: l10n,
           );
-    final link = teamGateLink(l10n, controller.snapshot, gate);
+    // A title that names the task leaves the task out of the kicker.
+    final link = stopped != null
+        ? null
+        : teamGateLink(l10n, controller.snapshot, gate);
     final parts = [?age, ?link];
     kicker = parts.isEmpty ? null : parts.join(teamUsageSeparator);
   }
@@ -95,6 +115,8 @@ Future<void> showGateSheet(
     context,
     title: gate == null
         ? l10n.teamUiAgentNeedsYou
+        : stopped != null
+        ? l10n.teamUiGateRunStoppedTitle(stopped)
         : teamGateKindWord(l10n, gate.kind),
     subtitle: kicker,
     icon: gate == null ? AppIconography.question : teamGateGlyph(gate.kind).$1,
@@ -125,6 +147,10 @@ Future<void> showGateSheet(
           ),
         );
       },
+      onReport: (report) {
+        Navigator.of(sheetContext).pop();
+        unawaited(openReportProblem(context, error: report));
+      },
     ),
   );
 }
@@ -139,6 +165,7 @@ class GateSheet extends StatelessWidget {
     required this.onOpenWork,
     this.onOpenAgent,
     this.onOpenLogs,
+    this.onReport,
     this.now,
   });
 
@@ -152,6 +179,10 @@ class GateSheet extends StatelessWidget {
 
   /// Opens the agent's output page (View logs).
   final ValueChanged<String>? onOpenLogs;
+
+  /// Opens Report a problem with the failed run attached, its log when
+  /// the host serves it (P8.4); Report is absent when null.
+  final ValueChanged<KitReport>? onReport;
   final DateTime Function()? now;
 
   @override
@@ -168,13 +199,6 @@ class GateSheet extends StatelessWidget {
           size: KitStateSize.inline,
           icon: AppIconography.checkCircle,
           title: l10n.teamUiGateGone,
-          tertiary: [
-            KitAction(
-              key: const ValueKey('team-gate-close'),
-              label: l10n.teamUiHomeGateClose,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
         );
       }
       return _Body(
@@ -186,6 +210,7 @@ class GateSheet extends StatelessWidget {
         onOpenWork: onOpenWork,
         onOpenAgent: onOpenAgent,
         onOpenLogs: onOpenLogs,
+        onReport: onReport,
       );
     },
   );
@@ -207,9 +232,11 @@ class _GateActions {
   final List<KitAction> tertiary;
   final List<String> notes;
 
-  /// Whether this phone can act on the gate at all (anything besides
-  /// Close); when not, the sheet says where to answer it.
+  /// Whether this phone can act on the gate at all; when not, the sheet
+  /// says where to answer it.
   final bool answers;
+
+  bool get isEmpty => primary == null && secondary == null && tertiary.isEmpty;
 }
 
 class _Body extends StatefulWidget {
@@ -222,6 +249,7 @@ class _Body extends StatefulWidget {
     required this.onOpenWork,
     required this.onOpenAgent,
     required this.onOpenLogs,
+    required this.onReport,
   });
 
   final OrchestrationController controller;
@@ -231,6 +259,7 @@ class _Body extends StatefulWidget {
   final ValueChanged<String> onOpenWork;
   final ValueChanged<String>? onOpenAgent;
   final ValueChanged<String>? onOpenLogs;
+  final ValueChanged<KitReport>? onReport;
 
   @override
   State<_Body> createState() => _BodyState();
@@ -245,6 +274,9 @@ class _BodyState extends State<_Body> {
     controller: _text,
   );
   bool _sending = false;
+
+  /// Report is waiting for the failed agent's output to arrive.
+  bool _reporting = false;
 
   /// The record this sheet sent or retried; the receipt follows it (and
   /// any retry that superseded it).
@@ -383,28 +415,30 @@ class _BodyState extends State<_Body> {
       GateKind.reviewReady => _bead(l10n, promptShown ? prompt : null),
       GateKind.runFailed => _runFailed(l10n),
     };
-    final close = KitAction(
-      key: const ValueKey('team-gate-close'),
-      label: l10n.teamUiHomeGateClose,
-      onPressed: () => Navigator.of(context).pop(),
-    );
+    // The sheet's close button is the way out; no action repeats it.
     final actions = hideActions
-        ? _GateActions(tertiary: [close])
-        : _actions(l10n, caps, busy: busy, close: close);
+        ? const _GateActions()
+        : _actions(l10n, caps, busy: busy);
     final error = gate.kind == GateKind.runFailed ? gate.prompt?.trim() : null;
     final gap = SizedBox(height: tokens.space3);
+    // "Sync engine stopped" already says the failure: no second heading.
+    final headline = _stoppedTask(snapshot, gate) == null;
 
     return Column(
       key: const ValueKey('team-gate-body'),
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        KitText(
-          gate.title,
-          key: const ValueKey('team-gate-title'),
-          role: KitTextRole.headline,
-        ),
-        for (final part in body) ...[gap, part],
+        if (headline)
+          KitText(
+            gate.title,
+            key: const ValueKey('team-gate-title'),
+            role: KitTextRole.headline,
+          ),
+        for (final (index, part) in body.indexed) ...[
+          if (headline || index > 0) gap,
+          part,
+        ],
         if (record != null) ...[
           gap,
           KitReceipt(
@@ -452,12 +486,14 @@ class _BodyState extends State<_Body> {
             tone: KitTextTone.secondary,
           ),
         ],
-        gap,
-        KitActionBlock(
-          primary: actions.primary,
-          secondary: actions.secondary,
-          tertiary: actions.tertiary,
-        ),
+        if (!actions.isEmpty) ...[
+          gap,
+          KitActionBlock(
+            primary: actions.primary,
+            secondary: actions.secondary,
+            tertiary: actions.tertiary,
+          ),
+        ],
         // Details close the sheet, never above the actions (KIT-33).
         gap,
         KitDetailsFold(
@@ -561,21 +597,19 @@ class _BodyState extends State<_Body> {
   // -------------------------------------------------------------------------
 
   /// The variant's actions in the one hierarchy, each only behind its
-  /// capability, with [close] as the last way out. When nothing but
-  /// [close] is left the sheet explains where to answer.
+  /// capability. When none is left the sheet explains where to answer.
   _GateActions _actions(
     AppLocalizations l10n,
     OrchestrationCapabilities caps, {
     required bool busy,
-    required KitAction close,
   }) {
     final after = l10n.gateSheetAfterAnswer;
     switch (gate.kind) {
       case GateKind.choice:
-        if (!caps.controlRespond) return _GateActions(tertiary: [close]);
-        return _GateActions(answers: true, notes: [after], tertiary: [close]);
+        if (!caps.controlRespond) return const _GateActions();
+        return _GateActions(answers: true, notes: [after]);
       case GateKind.freeText:
-        if (!caps.controlRespond) return _GateActions(tertiary: [close]);
+        if (!caps.controlRespond) return const _GateActions();
         final text = _text.text.trim();
         return _GateActions(
           answers: true,
@@ -596,10 +630,9 @@ class _BodyState extends State<_Body> {
                     return record;
                   }),
           ),
-          tertiary: [close],
         );
       case GateKind.confirmation:
-        if (!caps.controlRespond) return _GateActions(tertiary: [close]);
+        if (!caps.controlRespond) return const _GateActions();
         final destructive = teamGateIsDestructive(gate);
         Future<void> answer(bool confirmed) => _send(
           () => controller.answerGate(
@@ -645,10 +678,9 @@ class _BodyState extends State<_Body> {
                     if (ok && mounted) await answer(false);
                   },
           ),
-          tertiary: [close],
         );
       case GateKind.gateBead:
-        if (!caps.controlRespond) return _GateActions(tertiary: [close]);
+        if (!caps.controlRespond) return const _GateActions();
         return _GateActions(
           answers: true,
           notes: [after],
@@ -664,25 +696,23 @@ class _BodyState extends State<_Body> {
                     ),
                   ),
           ),
-          tertiary: [close],
         );
       case GateKind.runFailed:
-        return _runActions(l10n, caps, busy: busy, close: close);
+        return _runActions(l10n, caps, busy: busy);
       case GateKind.reviewReady:
       case GateKind.unknown:
-        return _GateActions(tertiary: [close]);
+        return const _GateActions();
     }
   }
 
   /// A doable primary on failure: Ask the team to fix it (the error goes
-  /// to the worker as a message). Then Try again (send the stuck work to
-  /// its agent again), and under it the agent's page, Close, View logs and
-  /// Stop work (confirmed, stop tone, last).
+  /// to the worker as a message). Then "Send the work to its agent again"
+  /// (only when a retry can recover it), and under it the agent's page,
+  /// View logs and Stop work (confirmed, stop tone, last).
   _GateActions _runActions(
     AppLocalizations l10n,
     OrchestrationCapabilities caps, {
     required bool busy,
-    required KitAction close,
   }) {
     final runId = gate.runId;
     final open = _affectedWork();
@@ -725,18 +755,22 @@ class _BodyState extends State<_Body> {
       notes.add(l10n.gateSheetFixItDetail(agentName ?? id));
     }
     KitAction? retry;
-    if (caps.controlAssign && stuck != null && target != null) {
+    // A failure a retry cannot recover offers no retry: something needs
+    // changing first, which Ask the team to fix it asks for.
+    final recoverable = teamFailureRecoverable(_failureClass());
+    if (caps.controlAssign &&
+        stuck != null &&
+        target != null &&
+        recoverable != false) {
       final item = stuck;
+      // The button names what it sends and to whom; no note repeats it.
       retry = KitAction(
         key: const ValueKey('team-gate-run-retry'),
-        label: l10n.teamUiGateAnswerRunRetry,
+        label: l10n.teamUiGateAnswerRunRetry(item.title, agentName ?? target),
         onPressed: busy
             ? null
             : () =>
                   _send(() => controller.assignWork(item.id, agentId: target)),
-      );
-      notes.add(
-        l10n.teamUiGateAnswerRunRetryDetail(item.title, agentName ?? target),
       );
     }
     KitAction? agent;
@@ -780,6 +814,17 @@ class _BodyState extends State<_Body> {
               },
       );
     }
+    // Report is always there for a failed run (P8.4), with the log when
+    // the host serves it; it never answers the gate.
+    KitAction? report;
+    if (widget.onReport != null) {
+      report = KitAction(
+        key: const ValueKey('team-gate-run-report'),
+        label: l10n.failedJobReport,
+        icon: AppIconography.bug,
+        onPressed: _reporting ? null : () => unawaited(_report(stuck)),
+      );
+    }
     return _GateActions(
       answers:
           fix != null ||
@@ -790,10 +835,82 @@ class _BodyState extends State<_Body> {
       primary: fix,
       secondary: retry,
       notes: notes,
-      // Two tertiary actions show; the rest go under More. Close stays
-      // visible so the sheet always has its way out; Stop work is last.
-      tertiary: [?agent, close, ?logs, ?cancel],
+      // Two tertiary actions show; the rest go under More. Stop work is
+      // last; the sheet's close button is its way out.
+      tertiary: [?agent, ?logs, ?report, ?cancel],
     );
+  }
+
+  /// How long Report waits for a failed agent's output before it opens
+  /// the report without a log.
+  static const reportOutputWait = Duration(seconds: 3);
+
+  /// Captures the failed run for Report: the gate's own work item (else
+  /// the run's displayed stuck one) and, when the host serves output, its
+  /// agent's tail. [FailedJobReport.teamGate] attaches the log only when
+  /// the tail's session is that work's session, never a reused agent's
+  /// newer one.
+  Future<void> _report(WorkItem? displayed) async {
+    final onReport = widget.onReport;
+    if (onReport == null || _reporting) return;
+    WorkItem? work = displayed;
+    if (gate.workId case final id?) {
+      work = null;
+      for (final item in snapshot.work) {
+        if (item.id == id) work = item;
+      }
+    }
+    final agentId = work?.assignee ?? gate.agentId;
+    AgentOutputTail? tail;
+    if (agentId != null && controller.capabilities.agentOutput) {
+      setState(() => _reporting = true);
+      tail = controller.watchAgentOutput(agentId);
+      try {
+        await _firstOutput(tail);
+      } finally {
+        controller.unwatchAgentOutput(agentId);
+      }
+      if (!mounted) return;
+      setState(() => _reporting = false);
+    }
+    final report = FailedJobReport.teamGate(
+      gate,
+      work: work,
+      sessionId: tail?.sessionId,
+      logTail: tail?.text ?? '',
+    );
+    if (report == null) return;
+    onReport(report.toKitReport(title: _stoppedTitle()));
+  }
+
+  /// The sheet's own title for a stopped task ("Sync engine stopped"),
+  /// else the gate's.
+  String? _stoppedTitle() {
+    final stopped = _stoppedTask(snapshot, gate);
+    return stopped == null
+        ? null
+        : _copy(context).teamUiGateRunStoppedTitle(stopped);
+  }
+
+  /// Completes once [tail] has text, ended, cannot be served or stopped
+  /// streaming, or after [reportOutputWait].
+  static Future<void> _firstOutput(AgentOutputTail tail) {
+    bool settled() =>
+        tail.text.isNotEmpty ||
+        tail.received ||
+        tail.ended ||
+        !tail.available ||
+        !tail.watching;
+    if (settled()) return Future.value();
+    final done = Completer<void>();
+    void check() {
+      if (settled() && !done.isCompleted) done.complete();
+    }
+
+    tail.addListener(check);
+    return done.future
+        .timeout(reportOutputWait, onTimeout: () {})
+        .whenComplete(() => tail.removeListener(check));
   }
 
   /// The failed run's open work, stuck items first.
@@ -885,11 +1002,11 @@ class _BodyState extends State<_Body> {
 
   TeamFailureClass _failureClass() => teamClassifyFailure(_errorText());
 
-  /// What went wrong in words, whether a retry can recover it, what to do,
-  /// and the open work it holds up. The raw error is under Details.
+  /// What went wrong in words and what to do, and the open work it holds
+  /// up. Whether a retry can recover it shows as the retry button being
+  /// there or not. The raw error is under Details.
   List<Widget> _runFailed(AppLocalizations l10n) {
     final cls = _failureClass();
-    final recoverable = teamFailureRecoverable(cls);
     final affected = _affectedWork();
     return [
       KitRowGroup(
@@ -903,16 +1020,6 @@ class _BodyState extends State<_Body> {
             supporting: TextSpan(text: teamFailureAction(l10n, cls)),
             supportingKey: const ValueKey('team-gate-action'),
             supportingMaxLines: 4,
-          ),
-          KitRow(
-            key: const ValueKey('team-gate-recoverable'),
-            leading: KitRow.icon(context, AppIconography.restart),
-            title: switch (recoverable) {
-              true => l10n.teamUiGateFailureRecoverableYes,
-              false => l10n.teamUiGateFailureRecoverableNo,
-              null => l10n.teamUiGateFailureRecoverableUnknown,
-            },
-            titleMaxLines: 2,
           ),
         ],
       ),

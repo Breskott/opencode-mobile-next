@@ -25,6 +25,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/team_runtime.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/new_conversation_sheet.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
@@ -232,15 +233,6 @@ void main() {
       return controller;
     }
 
-    Future<WorkController> pumpWork(WidgetTester tester) async {
-      final controller = await computer(tester);
-      await tester.pumpWidget(
-        _app(Scaffold(body: TeamDiscoverEntry(controller: controller))),
-      );
-      await _settle(tester);
-      return controller;
-    }
-
     testWidgets('Work lists conversations only; the offer is not there', (
       tester,
     ) async {
@@ -253,65 +245,6 @@ void main() {
       await _settle(tester);
       expect(_key('team-discover-open'), findsNothing);
       expect(_key('team-discover-row'), findsNothing);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-
-    testWidgets('the offer: a drawing and one line the first time', (
-      tester,
-    ) async {
-      await pumpWork(tester);
-      expect(_key('team-discover-open'), findsOneWidget);
-      expect(find.text(_en.teamDiscoverEntryTitle), findsOneWidget);
-      expect(find.text(_en.teamDiscoverEntryBody), findsOneWidget);
-      expect(_key('team-discover-drawing'), findsOneWidget);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-
-    testWidgets('hiding it folds it to one quiet row that stays folded', (
-      tester,
-    ) async {
-      final controller = await pumpWork(tester);
-      await tester.tap(_key('team-discover-hide'));
-      await _settle(tester);
-      expect(_key('team-discover-open'), findsNothing);
-      expect(_key('team-discover-row'), findsOneWidget);
-      expect(find.text(_en.teamDiscoverRowLine), findsOneWidget);
-
-      // Remembered: a fresh offer (a restart) opens folded.
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpWidget(
-        _app(Scaffold(body: TeamDiscoverEntry(controller: controller))),
-      );
-      await _settle(tester);
-      expect(_key('team-discover-open'), findsNothing);
-      expect(_key('team-discover-row'), findsOneWidget);
-
-      // A global memory, not a server's: deleting a server keeps it.
-      final prefs = controller.store.prefs;
-      expect(prefs.getBool(TeamDiscoverMemory.foldedKey), isTrue);
-      expect(
-        controller.store.profileScopedPreferenceKeys('phone'),
-        isNot(contains(TeamDiscoverMemory.foldedKey)),
-      );
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-
-    testWidgets('opening it shows the intro; back, it is folded', (
-      tester,
-    ) async {
-      await pumpWork(tester);
-      await tester.tap(_key('team-discover-open'));
-      await _settle(tester);
-      expect(find.byType(TeamIntroScreen), findsOneWidget);
-      expect(find.text(_en.teamDiscoverHowHeading), findsOneWidget);
-      await tester.pageBack();
-      await _settle(tester);
-      expect(_key('team-discover-open'), findsNothing);
-      expect(_key('team-discover-row'), findsOneWidget);
-      // The folded row is still a way in.
-      await tester.tap(_key('team-discover-row'));
-      await _settle(tester);
-      expect(find.byType(TeamIntroScreen), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });
@@ -336,33 +269,42 @@ void main() {
       return controller;
     }
 
-    testWidgets('Team is offered, remembered per server, and with the team '
-        'off it opens the intro', (tester) async {
+    testWidgets('Team is offered in the New conversation chooser, remembered '
+        'per server, and with the team off it opens the intro', (tester) async {
       final controller = await pumpWork(tester);
-      expect(_key('workspace-new-mode'), findsOneWidget);
+      // One New conversation; how to start is asked by its chooser.
+      expect(_key('workspace-new-mode'), findsNothing);
       expect(find.text(_en.workspaceNewSession), findsOneWidget);
-      await tester.tap(_key('workspace-new-mode-team'));
+      await tester.tap(_key('workspace-new'));
       await _settle(tester);
-      expect(find.text(_en.teamNewTask), findsOneWidget);
+      expect(_key('new-conversation-team'), findsOneWidget);
+      await tester.tap(_key('new-conversation-team'));
+      await _settle(tester);
+      expect(find.byType(TeamIntroScreen), findsOneWidget);
       expect(
-        controller.store.prefs.getString(TeamNewMode.key('phone')),
+        controller.store.prefs.getString(NewConversationMemory.key('phone')),
         'team',
       );
-      // Remembered: a fresh Work tab opens on Team.
+      // Remembered: a fresh Work tab's chooser marks Team.
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(
         _app(Scaffold(body: WorkspaceScreen(controller: controller))),
       );
       await _settle(tester);
-      expect(find.text(_en.teamNewTask), findsOneWidget);
+      await tester.tap(_key('workspace-new'));
+      await _settle(tester);
+      expect(
+        find.descendant(
+          of: _key('new-conversation-team'),
+          matching: find.textContaining(_en.newConversationLastUsed),
+        ),
+        findsOneWidget,
+      );
       // Swept with the server.
       expect(
         controller.store.profileScopedPreferenceKeys('phone'),
-        contains(TeamNewMode.key('phone')),
+        contains(NewConversationMemory.key('phone')),
       );
-      await tester.tap(_key('workspace-new'));
-      await _settle(tester);
-      expect(find.byType(TeamIntroScreen), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
@@ -396,67 +338,16 @@ void main() {
       expect(find.byType(TeamConversationScreen), findsOneWidget);
       await tester.pageBack();
       await _settle(tester);
-      await tester.tap(_key('workspace-new-mode-team'));
-      await _settle(tester);
       await tester.tap(_key('workspace-new'));
       await _settle(tester);
-      expect(_key('team-start-run-sheet'), findsOneWidget);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-  });
-
-  group('the entry per kind of server', () {
-    Future<void> pumpEntry(
-      WidgetTester tester,
-      ConnectionController controller, {
-      TermuxTeamRuntime? runtime,
-    }) async {
-      await tester.pumpWidget(
-        _app(
-          Scaffold(
-            body: TeamDiscoverEntry(controller: controller, runtime: runtime),
-          ),
-        ),
+      expect(
+        find.text(_en.newConversationTeamDetail),
+        findsOneWidget,
+        reason: 'with the team on, Team says what it starts',
       );
+      await tester.tap(_key('new-conversation-team'));
       await _settle(tester);
-    }
-
-    testWidgets('absent once the team is on', (tester) async {
-      _mockChannels();
-      final profile = _computer()
-        ..orchestration = OrchestrationConfig(
-          provider: OrchestrationProvider.gascity,
-          url: 'https://team.example',
-          city: 'city',
-          hostMode: OrchestrationHostMode.computer,
-          enabledAt: DateTime.utc(2026, 9, 25),
-        );
-      final controller = await _boot(profile);
-      await pumpEntry(tester, controller);
-      expect(_key('team-discover-open'), findsNothing);
-      expect(_key('team-discover-row'), findsNothing);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-
-    testWidgets('a Termux phone that can run a team shows it', (tester) async {
-      debugPlatformCapabilities = const PlatformCapabilities.android();
-      _mockChannels();
-      final controller = await _boot(_termux());
-      expect(teamServerKindOf(controller.profile!), TeamServerKind.termux);
-      await pumpEntry(tester, controller, runtime: _Runtime(supported: true));
-      expect(_key('team-discover-open'), findsOneWidget);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-
-    testWidgets('a Termux phone that cannot run a team shows nothing', (
-      tester,
-    ) async {
-      debugPlatformCapabilities = const PlatformCapabilities.android();
-      _mockChannels();
-      final controller = await _boot(_termux());
-      await pumpEntry(tester, controller, runtime: _Runtime(supported: false));
-      expect(_key('team-discover-open'), findsNothing);
-      expect(_key('team-discover-row'), findsNothing);
+      expect(_key('team-start-run-sheet'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });
@@ -496,7 +387,7 @@ void main() {
             ),
           ),
           routes: {
-            '/termux-setup': (_) =>
+            '/this-phone': (_) =>
                 const Scaffold(body: Text('termux setup screen')),
           },
         ),

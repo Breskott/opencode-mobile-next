@@ -15,11 +15,13 @@ import 'builtin/app_exit_recovery.dart';
 import 'builtin/builtin_server.dart';
 import 'builtin/setup/phone_setup.dart';
 import 'builtin/setup/setup_finish.dart';
+import 'builtin/setup/termux_setup_finish.dart';
 import 'builtin/thermal_guard_teams.dart';
 import 'desktop/window_icon.dart';
 import 'desktop/window_state.dart';
 import 'diagnostics/app_diagnostics.dart';
 import 'diagnostics/perf_trace.dart';
+import 'diagnostics/report_problem_startup.dart';
 import 'domain/server_gateway.dart' show ProductException;
 import 'l10n/app_localizations.dart';
 import 'platform/launch_shortcut.dart';
@@ -37,6 +39,7 @@ import 'update/shorebird_update_notice.dart';
 import 'ui/app_theme.dart';
 import 'ui/desktop/desktop_interaction.dart';
 import 'ui/desktop/shortcuts.dart';
+import 'ui/kit/kit_sheet.dart';
 import 'ui/kit/kit_effects.dart';
 import 'ui/kit/motion/kit_haptics.dart';
 import 'ui/theme_packs.dart';
@@ -53,10 +56,10 @@ import 'ui/screens/chat_screen.dart';
 import 'ui/screens/activity_screen.dart';
 import 'ui/screens/team_conversation/team_conversation.dart'
     show TeamConversation;
-import 'ui/screens/termux_setup_screen.dart';
-import 'ui/screens/builtin_server_screen.dart';
+import 'ui/screens/this_phone_screen.dart';
+import 'state/phone_host.dart' show PhoneHostKind;
 import 'ui/screens/phone_setup/phone_setup_routes.dart'
-    show openPhoneSetupFromNotification;
+    show openPhoneSetupFromNotification, openPhoneSetupStart;
 import 'ui/screens/app_diagnostics_screen.dart';
 
 Future<void> main() async {
@@ -83,6 +86,8 @@ Future<void> main() async {
   }
   final diagnostics = AppDiagnosticsController();
   installAppErrorCapture(diagnostics);
+  // The persisted, redacted problem report (errors, timings, exits, heat).
+  unawaited(ReportProblemStartup.start(diagnostics));
   runApp(AppBootstrapGate(diagnostics: diagnostics));
   WidgetsBinding.instance.addPostFrameCallback(
     (_) => PerfTrace.markOnce('app.first_frame'),
@@ -132,8 +137,13 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
         bootstrap.store,
         diagnostics: widget.diagnostics,
       );
+      // Before any conversation reads its draft: the older drafts move into
+      // Saved prompts, then a photo the camera handed back after Android
+      // stopped the app joins its own conversation's draft (P3.2). Both keep
+      // their source on failure and retry on the next start.
+      await controller.migrateOlderDrafts();
       if (platformCapabilities.supportsPromptPhotos) {
-        await controller.promptPhotos.recoverLostData();
+        await controller.recoverPendingPhoto();
       }
       // Before anything can alert: quiet hours and Wi-Fi only become one
       // shared definition. Idempotent, and a failure leaves the legacy
@@ -980,36 +990,33 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     if (_sessionLink.pending.value == link) _sessionLink.take();
   }
 
+  /// A link for a server this phone has not saved: the link names only the
+  /// sending phone's profile id (never the server's address, see
+  /// [SessionLink.profileID]), so the sheet cannot fill anything in. It
+  /// offers Add server itself, not the list to find it on (P3.9).
   void _showSessionLinkServerMissing(
     NavigatorState navigator,
     AppLocalizations l10n,
   ) {
-    final messenger = _messengerKey.currentState;
-    if (messenger == null) return;
-    messenger
-      ..hideCurrentMaterialBanner()
-      ..showMaterialBanner(
-        MaterialBanner(
-          key: const Key('session-link-server-missing'),
-          content: Text(l10n.handoffUiLinkServerMissing),
-          actions: [
-            TextButton(
-              onPressed: () {
-                _messengerKey.currentState?.hideCurrentMaterialBanner();
-              },
-              child: Text(l10n.handoffUiLinkDismiss),
-            ),
-            TextButton(
-              onPressed: () {
-                _messengerKey.currentState?.hideCurrentMaterialBanner();
-                final navigator = _navigatorKey.currentState;
-                if (navigator != null) _showServersForLaunch(navigator);
-              },
-              child: Text(l10n.handoffUiLinkOpenServers),
-            ),
-          ],
+    unawaited(() async {
+      final add = await showKitConfirm(
+        navigator.context,
+        title: l10n.handoffUiLinkAddTitle,
+        body: l10n.handoffUiLinkServerMissing,
+        confirmLabel: l10n.handoffUiLinkAddServer,
+        cancelLabel: l10n.handoffUiLinkDismiss,
+        icon: AppIconography.add,
+        sheetKey: const Key('session-link-server-missing'),
+        confirmKey: const Key('session-link-add-server'),
+      );
+      if (!add || !mounted) return;
+      unawaited(
+        _navigatorKey.currentState?.pushNamed(
+          '/servers',
+          arguments: const ServersRouteRequest.add(),
         ),
       );
+    }());
   }
 
   void _scheduleCodingAlertRoute() {
@@ -1160,7 +1167,11 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
       );
     }
 
-    final scope = SearchScope(controller: _controller, hasShell: true);
+    final scope = SearchScope(
+      controller: _controller,
+      hasShell: true,
+      thermalGuard: ref.read(thermalGuardSlotProvider).value != null,
+    );
     return [
       DesktopCommand(
         label: l10n.e7LocaleUiNewSession,
@@ -1334,11 +1345,15 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
               '/home': (_) => const HomeScreen(),
               '/guide': (_) => GuideScreen(embedded: false),
               '/about': (_) => const AboutScreen(),
-              // Termux is an Android app. Registering the route everywhere
-              // meant a desktop deep link, or any leftover push, landed on a
-              // setup flow with no bridge behind it.
+              // This phone (in the app or in Termux) exists only on
+              // Android: a desktop deep link, or any leftover push, must not
+              // land on a page with no phone behind it.
               if (platformCapabilities.supportsTermux)
-                '/termux-setup': (_) => const TermuxSetupScreen(),
+                thisPhoneRoute: (context) => ThisPhoneScreen(
+                  kind:
+                      ModalRoute.of(context)?.settings.arguments
+                          as PhoneHostKind?,
+                ),
               '/debug': (_) => AppDiagnosticsScreen(controller: _controller),
             },
             onGenerateRoute: (settings) {
@@ -1509,6 +1524,22 @@ class _RootState extends ConsumerState<_Root> {
           );
         },
       ).call(request),
+      // The Termux host ends the same way, through Termux's own manager.
+      termuxFinisher: (request) => TermuxSetupFinisher(
+        store: ref.read(bootstrapProvider).store,
+        strings: strings,
+        isConnectedTo: (profile) =>
+            _controller.profile?.id == profile.id &&
+            _controller.hasConnectedServer,
+        connect: (profile) async {
+          await _controller.connect(profile);
+          if (_controller.hasConnectedServer) return null;
+          final l10n = strings();
+          return l10n.builtinServerConnectFailed(
+            _controller.lastError ?? l10n.e7SetupAuthFailed,
+          );
+        },
+      ).call(request),
     );
   }
 
@@ -1633,7 +1664,7 @@ class _RootState extends ConsumerState<_Root> {
           startingInAppServer: inApp && _builtin.starting,
           inAppStartFailed: startFailure != null,
           onOpenInAppSetup: startFailure != null
-              ? () => openBuiltinServerScreen(context)
+              ? () => openPhoneSetupStart(context)
               : null,
           supportsTermux:
               !inApp &&
@@ -1655,7 +1686,11 @@ class _RootState extends ConsumerState<_Root> {
               !inApp &&
                   !conn.usesConnectionToken &&
                   platformCapabilities.supportsTermux
-              ? () => navigator.pushNamed('/termux-setup')
+              // The phone's own Termux server goes to This phone (Start is
+              // there); any other server on this phone goes to phone setup.
+              ? () => TermuxBridge.managesServerUrl(profile.baseUrl)
+                    ? openThisPhone(context, kind: PhoneHostKind.termux)
+                    : openPhoneSetupStart(context)
               : null,
           // The app's own phone server: when nothing answers, it is stopped
           // (a phone restart, Android closing Termux, the app closed for

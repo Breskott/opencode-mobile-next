@@ -78,7 +78,9 @@ Future<void> showWorkSheet(
     context,
     sheetKey: const ValueKey('team-work-sheet'),
     title: item?.title ?? l10n.teamWorkSheetMissingTitle,
-    subtitle: item == null ? null : l10n.teamUiWorkTerm(item.id),
+    // The task it belongs to, in the person's words; the host's own term
+    // and id wait under Technical details.
+    subtitle: item == null ? null : _taskOf(controller.snapshot, item),
     icon: AppIconography.checklist,
     body: (sheetContext) => WorkSheet(
       controller: controller,
@@ -118,6 +120,27 @@ OrchestrationAgent? _agentOn(OrchestrationSnapshot snapshot, WorkItem item) {
     if (agent.currentWorkId == item.id) return agent;
   }
   return null;
+}
+
+/// The title of the task [item] belongs to, else its project; null when
+/// the snapshot names neither.
+String? _taskOf(OrchestrationSnapshot snapshot, WorkItem item) {
+  for (final run in snapshot.runs) {
+    // A one-step task shares its step's title: the title says it once.
+    if (run.id == item.runId) return run.title == item.title ? null : run.title;
+  }
+  final project = item.projectId?.trim();
+  return project == null || project.isEmpty ? null : project;
+}
+
+/// An owner as the person knows it: the agent's own name, never the host's
+/// handle ("ocproof/gastown.furiosa" reads "furiosa"). The full handle
+/// stays under Technical details.
+String? workOwnerShortName(OrchestrationSnapshot snapshot, WorkItem item) {
+  final owner = workOwnerName(snapshot, item);
+  if (owner == null) return null;
+  final tail = owner.split('/').last.split('.').last.trim();
+  return tail.isEmpty ? owner : tail;
 }
 
 /// Who owns an item: the agent on it (by work id, id, name or session),
@@ -328,11 +351,10 @@ class _Body extends StatelessWidget {
           (other.id, other),
     ];
     final description = _text(item.raw['description']);
-    final owner = workOwnerName(snapshot, item);
+    final owner = workOwnerShortName(snapshot, item);
     final link = workSessionLink(item);
     final output = workOutputExcerpt(item);
     final validation = WorkValidation.of(item);
-    final (icon, tone) = teamWorkGlyph(item.state);
     final openSession = onOpenSession;
     final agent = _agentOn(snapshot, item);
     final closedAt = _closedAt(item);
@@ -376,46 +398,22 @@ class _Body extends StatelessWidget {
           workId: item.id,
         ),
         SizedBox(height: tokens.space3),
-        Wrap(
-          spacing: tokens.space4,
-          runSpacing: tokens.space2,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        // The strip above carries the state; this line says only who owns
+        // the work, by the agent's name.
+        Row(
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                KitIcon.status(tone, icon: icon),
-                SizedBox(width: tokens.space2),
-                KitText(
-                  teamWorkStateWord(l10n, item.state),
-                  key: const ValueKey('team-work-sheet-state'),
-                  role: KitTextRole.rowTitle,
-                ),
-              ],
+            const KitIcon(
+              AppIconography.person,
+              size: KitIconSize.small,
+              tone: KitTextTone.secondary,
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const KitIcon(
-                  AppIconography.person,
-                  size: KitIconSize.small,
-                  tone: KitTextTone.secondary,
-                ),
-                SizedBox(width: tokens.space2),
-                Flexible(
-                  child: owner == null
-                      ? KitText(
-                          l10n.teamUiWorkOwnerNone,
-                          key: const ValueKey('team-work-sheet-owner'),
-                          role: KitTextRole.secondary,
-                        )
-                      : KitText.mono(
-                          owner,
-                          key: const ValueKey('team-work-sheet-owner'),
-                          tone: KitTextTone.secondary,
-                        ),
-                ),
-              ],
+            SizedBox(width: tokens.space2),
+            Flexible(
+              child: KitText(
+                owner ?? l10n.teamUiWorkOwnerNone,
+                key: const ValueKey('team-work-sheet-owner'),
+                role: KitTextRole.secondary,
+              ),
             ),
           ],
         ),

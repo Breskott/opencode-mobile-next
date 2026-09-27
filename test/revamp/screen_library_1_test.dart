@@ -12,7 +12,6 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
-import 'package:opencode_mobile/ui/widgets/pickers.dart';
 import 'package:opencode_mobile/ui/widgets/provider_logo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -376,32 +375,5 @@ void main() {
     );
     expect(repository.listCalls, 0);
     expect(find.byKey(const ValueKey('add-mcp-server')), findsNothing);
-  });
-
-  testWidgets('Models offers to connect a provider when none is signed in', (
-    tester,
-  ) async {
-    final repository = _Repository()..integrations = const [_anthropic];
-    final controller = await _controller(repository);
-    controller.catalog = const CatalogSnapshot(
-      providers: [],
-      models: [],
-      agents: [],
-    );
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(_app(CatalogScreen(controller: controller)));
-    await tester.pumpAndSettle();
-    expect(find.text('Models'), findsWidgets);
-    // One state, one way out: no notice, no catalog empty state, no
-    // "Browse all models", no basic-catalog card.
-    expect(find.text('No models yet'), findsOneWidget);
-    expect(find.text('Connect a provider to choose a model.'), findsOneWidget);
-    expect(find.text('Connect a provider'), findsOneWidget);
-    expect(find.byType(ModelCatalogView), findsNothing);
-    expect(find.text('Browse all models'), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('catalog-connect-provider')));
-    await tester.pumpAndSettle();
-    expect(find.byType(IntegrationsScreen), findsOneWidget);
-    expect(find.byKey(const ValueKey('connect-provider-anthropic')), findsOne);
   });
 }

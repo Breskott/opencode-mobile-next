@@ -281,13 +281,13 @@ void main() {
         },
       );
     });
-    testWidgets('running now stop AI Team · $mode', (tester) async {
+    testWidgets('running now stop the orphans · $mode', (tester) async {
       await _processes(
         tester,
-        'phone_termux_processes_stop_group_sheet',
+        'phone_termux_processes_stop_orphans_sheet',
         light: light,
         then: () async {
-          final stop = find.byKey(const Key('termux-procs-stop-group-ai_team'));
+          final stop = find.byKey(const Key('termux-procs-stop-orphans'));
           await tester.ensureVisible(stop);
           await tester.pumpAndSettle();
           await tester.tap(stop);

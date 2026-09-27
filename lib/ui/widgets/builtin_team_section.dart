@@ -28,6 +28,8 @@ import '../../builtin/setup/phone_setup.dart';
 import '../../builtin/setup/setup_contract.dart';
 import '../../builtin/team/builtin_team.dart';
 import '../../builtin/team/builtin_team_job.dart';
+import '../../diagnostics/failed_job_report.dart';
+import '../../feedback/bug_report.dart' show failedJobReportAction;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/profiles.dart';
@@ -436,6 +438,17 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
             tone: AppStatusTone.failure,
             message: error,
             messageKey: const ValueKey('builtin-team-error'),
+            // A failed turn-on or start is a job: Report carries its log
+            // (P8.4), captured at the tap before Retry can clear it.
+            actions: [
+              if (_error == null)
+                ?failedJobReportAction(
+                  context,
+                  key: const ValueKey('builtin-team-report'),
+                  title: error,
+                  capture: () => FailedJobReport.teamSetup(_job),
+                ),
+            ],
           ),
         );
       // The raw output, last and folded (KIT-33).

@@ -6,6 +6,7 @@
 // Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/shared_usage_1_test.dart
 // and look at every changed image before committing it.
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -60,6 +61,37 @@ Future<ConnectionController> _connection({bool monitored = true}) async {
   final store = ProfileStore(prefs: await SharedPreferences.getInstance());
   await store.load();
   return ConnectionController(store);
+}
+
+/// A monitor whose Check now is held until the test lets it finish.
+class _HeldMonitor extends ProviderQuotaMonitor {
+  _HeldMonitor(ProfileStore store)
+    : super(
+        store: store,
+        createGateway: (_, _) => throw StateError('no reads here'),
+        isReadable: (_) => true,
+        networkWifi: () async => true,
+        alert: ({required profileID, required key, required token}) async =>
+            false,
+        dismiss: (_) async => true,
+      );
+
+  final checked = <QuotaMonitorTarget>[];
+  final done = Completer<void>();
+
+  @override
+  Future<void> refreshSource(QuotaMonitorTarget target) {
+    checked.add(target);
+    return done.future;
+  }
+}
+
+class _HeldConnection extends ConnectionController {
+  _HeldConnection(super.store) : held = _HeldMonitor(store);
+  final _HeldMonitor held;
+
+  @override
+  ProviderQuotaMonitor get quotaMonitor => held;
 }
 
 Widget _section(ConnectionController connection, {VoidCallback? onOpen}) =>
@@ -191,6 +223,53 @@ void main() {
       await tester.tap(_key('quota-monitor-notification-settings'));
       expect(opened, 1);
       await _finish(tester, c);
+    });
+
+    testWidgets('Check now reads that one source, named with its provider and '
+        'server, and says so while it runs', (tester) async {
+      tester.view.physicalSize = const Size(412, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final base = await _connection();
+      final c = _HeldConnection(base.store);
+      base.dispose();
+      await tester.pumpWidget(_app(_section(c)));
+      await tester.pumpAndSettle();
+
+      final row = _key('quota-check-now-profile-1-codex');
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.text(
+            _en.quotaMonitorCheckNow(_en.quotaCodex, 'Workstation'),
+          ),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(row);
+      await tester.pump();
+      expect(c.held.checked, hasLength(1));
+      expect(c.held.checked.single.profileID, 'profile-1');
+      expect(c.held.checked.single.provider, QuotaProvider.codex);
+      expect(
+        find.descendant(of: row, matching: find.text(_en.quotaMonitorChecking)),
+        findsOneWidget,
+      );
+      // One read at a time: a second tap while it runs does nothing.
+      await tester.tap(row, warnIfMissed: false);
+      await tester.pump();
+      expect(c.held.checked, hasLength(1));
+
+      c.held.done.complete();
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: row, matching: find.text(_en.quotaMonitorChecking)),
+        findsNothing,
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+      c.held.dispose();
+      c.dispose();
+      await tester.pump();
     });
 
     testWidgets('Stop monitoring removes the source and the empty state says '

@@ -8,7 +8,6 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
-import 'package:opencode_mobile/ui/widgets/first_run_choice.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -122,7 +121,7 @@ void main() {
     expect(find.text('Keep your work moving.'), findsOneWidget);
     expect(find.text('Where does your coding agent run?'), findsOneWidget);
     expect(
-      find.descendant(of: welcome, matching: find.byType(FirstRunChoice)),
+      find.descendant(of: welcome, matching: _welcomeChoice),
       findsNWidgets(3),
     );
     expect(find.text('On my computer'), findsOneWidget);
@@ -157,7 +156,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
 
-    expect(find.byType(FirstRunChoice), findsNWidgets(2));
+    expect(_welcomeChoice, findsNWidgets(2));
     expect(find.text('On my computer'), findsOneWidget);
     expect(find.text('Just show me'), findsOneWidget);
     expect(find.text('On this phone'), findsNothing);
@@ -196,7 +195,7 @@ void main() {
         store,
         controller,
         routes: {
-          '/termux-setup': (_) => Scaffold(
+          '/this-phone': (_) => Scaffold(
             appBar: AppBar(title: const Text('Termux')),
             body: const Text('termux-route'),
           ),
@@ -568,3 +567,10 @@ void main() {
     );
   });
 }
+
+/// One of the welcome's answers (its rows are keyed `welcome-choice-*`).
+final _welcomeChoice = find.byWidgetPredicate(
+  (w) =>
+      w.key is ValueKey<String> &&
+      (w.key! as ValueKey<String>).value.startsWith('welcome-choice-'),
+);

@@ -80,10 +80,9 @@ extension _ChatWatching on _ChatScreenState {
   void _openWatchedChild(String id) {
     if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(id)) return;
     unawaited(
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => ChatScreen(sessionID: id, watch: widget.watch),
-        ),
+      pushKitPage<void>(
+        context,
+        (_) => ChatScreen(sessionID: id, watch: widget.watch),
       ),
     );
   }
@@ -133,28 +132,31 @@ class _WatchingComposerState extends State<_WatchingComposer> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     final watch = widget.watch;
     final label = watch.messageLabel;
     return SafeArea(
       top: false,
       child: Padding(
         key: const ValueKey('chat-watching-composer'),
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        padding: EdgeInsetsDirectional.fromSTEB(
+          tokens.gutter,
+          tokens.space2,
+          tokens.gutter,
+          tokens.space3,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
+            KitText(
               watch.note,
               key: const ValueKey('chat-watching-note'),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-                height: 1.35,
-              ),
+              role: KitTextRole.secondary,
+              tone: KitTextTone.secondary,
             ),
             if (label != null && watch.onMessage != null) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: tokens.space2),
               KitButton.secondary(
                 key: const ValueKey('chat-watching-message'),
                 icon: AppIconography.chat,

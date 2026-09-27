@@ -241,9 +241,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonClearSearch => 'Clear search';
 
   @override
-  String get commonUndo => 'Undo';
-
-  @override
   String get workTitle => 'Tasks';
 
   @override
@@ -625,9 +622,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Conversation details could not be loaded. Try again.';
 
   @override
-  String get sessionsLoadMore => 'Load more conversations';
-
-  @override
   String get sessionsReload => 'Refresh recent conversations';
 
   @override
@@ -722,11 +716,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get revertReview => 'Review';
 
   @override
-  String get revertFromHere => 'Revert from this prompt';
+  String get revertFromHere => 'Undo from here';
 
   @override
   String get revertUndoDescription =>
-      'Stage a revert and review the affected files';
+      'Undo the last prompt and everything after it';
 
   @override
   String get revertClearShortDescription =>
@@ -1295,19 +1289,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get promptStashSearch => 'Search saved prompts';
 
   @override
-  String get promptStashNoMatches =>
-      'No saved prompts match your search. Clear or change the search to see more.';
-
-  @override
   String get promptStashDeleteFailed =>
       'Could not delete this saved prompt. Try again.';
-
-  @override
-  String get promptRestoreTitle => 'Restore saved prompt?';
-
-  @override
-  String get promptRestorePreserve =>
-      'Your current prompt will be saved to the stash first, including its attachments and references.';
 
   @override
   String get promptStashDelete => 'Delete';
@@ -1315,13 +1298,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get promptStashFull =>
       'Your stash has 50 prompts. Delete a saved prompt to make room; your current prompt is unchanged.';
-
-  @override
-  String get promptStashListDescription =>
-      'Saved on this device for this server. Restoring a prompt also saves any current prompt for later.';
-
-  @override
-  String get promptStashDeleteTitle => 'Delete saved prompt?';
 
   @override
   String promptStashAttachments(int count) {
@@ -1346,24 +1322,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get promptRestoredCopyKept =>
-      'Available content restored. A saved copy remains in your stash. Review attachments and references before sending.';
-
-  @override
-  String get promptAttachmentsUnavailable =>
-      'Some attachments cannot be restored';
-
-  @override
-  String get promptRestore => 'Restore';
-
-  @override
   String get promptHistorySaveFailed =>
       'Prompt sent, but its history could not be saved on this device.';
-
-  @override
-  String promptAttachmentsUnavailableDetail(String names) {
-    return 'Missing, damaged or temporary attachments: $names. Restore the available content and reattach these files before sending. The saved copy will stay in your stash.';
-  }
 
   @override
   String get promptStashMigrationPending =>
@@ -1652,26 +1612,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Opening servers is unavailable here. Return to Home to choose a server and view Inbox.';
 
   @override
-  String get handoffTitle => 'Copy handoff reference?';
-
-  @override
-  String get handoffDisclosure =>
-      'Metadata only, not a command or link. On your other device, connect to the same server and locate this project and conversation. Nothing is published or sent.\n\nThe clipboard will contain conversation and project identifiers. Other apps may read it; share only with people you trust.';
-
-  @override
-  String get handoffCopy => 'Copy reference';
-
-  @override
-  String get handoffCopied => 'Conversation metadata reference copied';
-
-  @override
-  String get handoffCopyFailed => 'Could not copy the handoff. Try again.';
-
-  @override
   String get sessionOpenRelated => 'Open related';
 
   @override
-  String get sessionCopyHandoff => 'Copy handoff';
+  String get sessionCopyHandoff => 'Continue on computer';
 
   @override
   String get sessionActions => 'Conversation actions';
@@ -1700,9 +1644,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get usageInspectionDisclosure =>
       'Filters inspect this server\'s returned model records. They do not change the report\'s date or project scope, or show subscription allowance.';
-
-  @override
-  String get usageProviderFilter => 'Provider';
 
   @override
   String get usageAllProviders => 'All providers';
@@ -1775,91 +1716,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Other pending sign-ins belong to another server or project. Return to their original source to manage them.';
 
   @override
-  String get connectionHelpTitle => 'Connection help';
-
-  @override
-  String get connectionHelpEntrySubtitle =>
-      'Explain an address locally, without connecting';
-
-  @override
   String get connectionHelpGuideTip =>
-      'Keep the server off the public internet. Use private HTTPS or an encrypted tunnel ending on the device running this app. Localhost on your computer is not localhost on your phone. Open Connection help above for steps and examples.';
-
-  @override
-  String get connectionHelpPrivacy =>
-      'This checks address rules only, not connectivity. Nothing is sent or saved. Input is hidden and cleared after checking. Paste only an address, not a password or pairing code.';
-
-  @override
-  String get connectionHelpAddress => 'Server address';
-
-  @override
-  String get connectionHelpCheck => 'Explain address';
-
-  @override
-  String get connectionHelpEmpty => 'Enter a server address to explain.';
-
-  @override
-  String get connectionHelpMalformed =>
-      'This address could not be understood. Use a complete origin such as https://server.example, with no path, credentials or query.';
-
-  @override
-  String get connectionHelpCredentials =>
-      'Credentials do not belong in a URL. Remove them and enter the server username and password separately in Servers. The pasted value has been cleared.';
-
-  @override
-  String get connectionHelpQuery =>
-      'Remove query parameters and fragments. They can contain secrets; enter only the server origin. The pasted value has been cleared.';
-
-  @override
-  String get connectionHelpPath =>
-      'Remove the path. This app needs the server origin, not a page or API route.';
-
-  @override
-  String get connectionHelpScheme =>
-      'Use HTTPS for a remote server, or HTTP only for this device\'s supported loopback addresses.';
-
-  @override
-  String get connectionHelpRemoteHttp =>
-      'Remote HTTP is blocked, including LAN and 100.64.0.0/10 addresses. A VPN does not change this rule. Set up private HTTPS or an encrypted tunnel ending on this device.';
-
-  @override
-  String get connectionHelpHttps =>
-      'This address passes the HTTPS address rules. That does not verify its certificate, reachability, sign-in or privacy. A bare remote address is interpreted as HTTPS.';
-
-  @override
-  String get connectionHelpLoopback =>
-      'This address passes the loopback address rules. Localhost means this device, not another computer. A server or tunnel must be listening here; this check does not verify that.';
-
-  @override
-  String get connectionHelpPrivateTitle => 'Private HTTPS or reverse proxy';
-
-  @override
-  String get connectionHelpPrivateSteps =>
-      '1. Keep the server on its host\'s loopback with authentication enabled.\n2. Connect both devices to your private network and restrict access to intended users.\n3. Configure private HTTPS, such as Tailscale Serve, or a reverse proxy with a trusted certificate forwarding to the server. Support streaming and WebSockets.\n4. Add the HTTPS origin in Servers with sign-in in separate fields.\nTailscale Funnel exposes the service publicly; it is not a private-network fix. This app cannot infer VPN presence. The example below is a placeholder.';
-
-  @override
-  String get connectionHelpTunnelTitle => 'Localhost on the wrong device?';
-
-  @override
-  String get connectionHelpTunnelSteps =>
-      'Localhost, 127.0.0.1 and [::1] refer to the device running this app. For a server on another computer, use private HTTPS or an encrypted tunnel ending here. If an SSH client is available on this device, adapt the example below, verify the host key and keep it running. Replace user@host with your SSH destination. Running it on another computer does not forward this device\'s port. Keep server authentication enabled.';
-
-  @override
-  String get connectionHelpVerifyTitle => 'Verify connectivity separately';
-
-  @override
-  String get connectionHelpVerifySteps =>
-      'On this device, check private-network membership, DNS, firewall access and certificate trust using your network tools. Check server and proxy configuration on the host, then use Servers to connect. Never disable TLS verification or share passwords, pairing codes or unredacted logs. Access to this server is shell access.';
-
-  @override
-  String get connectionHelpCopyExample => 'Copy example';
-
-  @override
-  String get connectionHelpCopied => 'Example copied';
-
-  @override
-  String get connectionHelpCopyFailed =>
-      'Could not copy the example. Select the example text to copy it manually.';
+      'Keep the server off the public internet. Reach it over Tailscale\'s private HTTPS, or an encrypted tunnel ending on the device running this app. Localhost on your computer is not localhost on your phone.';
 
   @override
   String get voiceConversationTitle => 'Voice conversation';
@@ -1966,21 +1824,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Runs the provider\'s sign-in method on your selected server, not on this phone. You may need to finish interactive steps on the server.';
 
   @override
-  String get commandAuthConfirmTitle => 'Start sign-in on the server?';
-
-  @override
-  String get commandAuthConfirmDetail =>
-      'OpenCode will execute this provider\'s declared sign-in method on the selected server. Continue only if you trust that server and provider. The app does not run or copy a shell command on your phone.';
-
-  @override
   String get commandAuthStart => 'Start server sign-in';
 
   @override
   String get commandAuthPending =>
       'Sign-in is pending on the server. Finish any server-side interaction, then check its status. Closing this sheet does not cancel it.';
-
-  @override
-  String get commandAuthCheck => 'Check sign-in';
 
   @override
   String get commandAuthCancel => 'Cancel sign-in';
@@ -2018,11 +1866,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readAloudChooseVoice => 'Choose a reading voice';
 
   @override
-  String get readAloudConsentTitle => 'Use the system speech engine?';
+  String get readAloudConsentTitle => 'Read replies aloud?';
 
   @override
   String get readAloudConsentDetail =>
-      'The loaded reply prose will be sent to your system speech engine. Only voices marked offline are offered, but the engine is separate software and its privacy practices apply. Code blocks and tool details are omitted. Others may hear the audio. Playback stops when this conversation is covered or the app goes into the background.';
+      'Your phone\'s speech engine reads the reply aloud. Code and tool details are skipped.';
 
   @override
   String get readAloudContinue => 'Choose voice';
@@ -2055,20 +1903,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get credentialManage => 'Manage accounts';
 
   @override
-  String get credentialMetadataOnly =>
-      'Only saved account labels are shown. API keys and login tokens stay on your server.';
-
-  @override
-  String get credentialActiveUnknown =>
-      'Active account unknown. The saved-account list does not report which account is active.';
-
-  @override
-  String get credentialNoneActive =>
-      'The server reported no active saved account.';
-
-  @override
-  String get credentialActiveObserved =>
-      'The Active badge reflects the latest server event.';
+  String get credentialMetadataOnly => 'Keys stay on your server.';
 
   @override
   String get credentialActiveUpdated =>
@@ -2092,11 +1927,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get credentialSave => 'Save label';
-
-  @override
-  String credentialRemoveTitle(String label) {
-    return 'Remove $label?';
-  }
 
   @override
   String get credentialRemoveDetail =>
@@ -2178,15 +2008,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not finish restoring the prompt. Saved copies remain available; check the composer before trying again.';
 
   @override
-  String get promptStashEmpty =>
-      'Nothing saved yet. Use Stash current prompt in Prompt tools to keep a prompt for later.';
-
-  @override
   String get promptStashContextOnly => 'Attachments and references';
-
-  @override
-  String get promptRestoredReferences =>
-      'Prompt restored. Saved references are snapshots; their server files may have changed.';
 
   @override
   String get promptDefaultLocation => 'the server default directory';
@@ -2203,21 +2025,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not read saved prompts. Their stored data has been kept.';
 
   @override
-  String get promptStashDeleteDetail =>
-      'This removes the saved text, attachments and references from this device.';
-
-  @override
   String get promptStashDescription =>
       'Save text, attachments and references for later';
 
   @override
-  String get promptRestoreAvailable => 'Restore available content';
-
-  @override
-  String get promptRestored => 'Prompt restored. Review it before sending.';
-
-  @override
-  String get promptStashAction => 'Stash current prompt';
+  String get promptRestored => 'Saved prompt restored';
 
   @override
   String promptStashLocation(String directory) {
@@ -2520,7 +2332,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get photoPendingOther =>
-      'A photo is waiting in its original conversation. Keep it there, or discard it before choosing another photo.';
+      'A photo is still waiting for another conversation. Add or discard it there, then try again.';
 
   @override
   String get photoUnavailable =>
@@ -2546,49 +2358,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get photoDraftFull =>
       'Remove an attachment first. A draft holds up to 5 files and 20 MB in total.';
-
-  @override
-  String get legacyDraftsTitle => 'Older drafts';
-
-  @override
-  String get legacyDraftsDescription =>
-      'Review drafts saved before server tracking';
-
-  @override
-  String get legacyDraftsExplanation =>
-      'These drafts have no recorded server. Review their text before using it in this conversation.';
-
-  @override
-  String get legacyDraftInsertExplanation =>
-      'Insert adds this text after your current draft. The original saved copy stays here until you delete it.';
-
-  @override
-  String get legacyDraftTextOnly =>
-      'Only text can be inserted here. Any saved attachments remain with the older draft.';
-
-  @override
-  String get legacyDraftDelete => 'Delete saved copy';
-
-  @override
-  String get legacyDraftDeleteExplanation =>
-      'Permanently remove this older draft and its saved attachments from this device?';
-
-  @override
-  String get legacyDraftDeleteFailed =>
-      'The draft changed or could not be removed. Reopen it and retry.';
-
-  @override
-  String get legacyDraftInsert => 'Insert into draft';
-
-  @override
-  String get legacyDraftSearch => 'Search older drafts';
-
-  @override
-  String get legacyDraftsEmpty => 'No older drafts found';
-
-  @override
-  String get legacyDraftLocationChanged =>
-      'The project changed. Reopen Older drafts to choose where to insert the text.';
 
   @override
   String get quotaTitle => 'Remaining usage';
@@ -2873,16 +2642,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'The server may have started this sign-in without confirming it. Check on the server before you start again.';
 
   @override
-  String get uncertainAuthForgetTitle => 'Forget this sign-in on this phone?';
-
-  @override
-  String get uncertainAuthForgetDetail =>
-      'This clears only the local retry block. It does not cancel sign-in on the server. Check the server first to avoid running a second sign-in. No new sign-in will start.';
-
-  @override
-  String get uncertainAuthForget => 'Forget this sign-in';
-
-  @override
   String get uncertainAuthCloseHint =>
       'Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.';
 
@@ -2951,21 +2710,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get demoSetUpServer => 'Set up your own server';
 
   @override
-  String get handoffCommandTitle => 'Continue on computer';
-
-  @override
-  String get handoffCommandDisclosure =>
-      'Run this command in a POSIX shell on a computer with OpenCode installed and access to this server. Set OPENCODE_SERVER_PASSWORD privately on that computer if the server requires it. The clipboard will contain the server address, username, project directory and conversation ID, but no password.';
-
-  @override
   String get handoffCopyCommand => 'Copy command';
-
-  @override
-  String get handoffCommandCopied => 'Resume command copied';
-
-  @override
-  String get handoffCommandUnavailable =>
-      'A resume command is unavailable for this server or cloud environment. Continuing on another computer needs a supported OpenCode command and a reachable HTTPS server; a localhost address points to each device itself. You can still copy the conversation metadata below.';
 
   @override
   String get quotaMiniMax => 'MiniMax';
@@ -3376,41 +3121,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'The local server is stopped. Recovery settings could not be fully cleared; turn off Restart after a crash again before removing the server.';
 
   @override
-  String get pluginMappingPersonal =>
-      'Your command links · not verified plugin ownership';
-
-  @override
-  String pluginMappingReview(String command) {
-    return 'Review /$command';
-  }
-
-  @override
-  String get pluginMappingManage => 'Link commands';
-
-  @override
-  String get pluginMappingDescription =>
-      'Choose commands you associate with this plugin. These personal links apply only to this project on this server. Each action opens a review of the conversation and arguments before you run it.';
-
-  @override
-  String get pluginMappingEmpty => 'No server commands are available to link.';
-
-  @override
   String get pluginMappingUnavailable =>
       'This plugin or command is no longer available here. Refresh and review your links.';
-
-  @override
-  String get pluginMappingLimit => 'Choose up to 16 commands for this plugin.';
-
-  @override
-  String get pluginMappingSave => 'Save links';
-
-  @override
-  String get pluginMappingSaveFailed =>
-      'Links could not be saved. Check that this project is still selected and try again.';
-
-  @override
-  String get pluginMappingLoadFailed =>
-      'Commands could not be loaded. Try again when connected.';
 
   @override
   String get mobileTasksDescription => 'Server-reported tasks · mobile view';
@@ -3457,32 +3169,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mobileTaskPriorityLow => 'Low priority';
 
   @override
-  String get pluginMappingClearAll => 'Clear personal command links';
-
-  @override
-  String get pluginMappingClearTitle => 'Clear all personal command links?';
-
-  @override
-  String get pluginMappingClearDescription =>
-      'Remove personal plugin-command links for every project on this saved server, including previous projects. Server plugins and commands stay installed.';
-
-  @override
-  String get pluginMappingClearConfirm => 'Clear links';
-
-  @override
-  String get pluginMappingClearFailed =>
-      'Personal links could not be cleared. Check that this server is still selected and try again.';
-
-  @override
   String get quotaMonitorTitle => 'Quota monitoring';
-
-  @override
-  String get quotaMonitorConsentTitle => 'Monitor this provider source?';
-
-  @override
-  String quotaMonitorConsent(String provider, String server) {
-    return 'Keep checking $provider on $server in the background and alert me when use reaches:';
-  }
 
   @override
   String get quotaMonitorRuntime =>
@@ -3491,9 +3178,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get quotaMonitorEmpty =>
       'No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.';
-
-  @override
-  String get quotaMonitorEnable => 'Enable quota monitoring';
 
   @override
   String get quotaMonitorDisabled => 'Monitoring is off.';
@@ -3851,9 +3535,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get launchUiActivityNoServer =>
       'Choose a server to see what needs your attention.';
-
-  @override
-  String get queuedSending => 'Sending…';
 
   @override
   String get queuedDeliveryUnconfirmed =>
@@ -4923,11 +4604,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceDismissNotice => 'Dismiss';
 
   @override
-  String get workspaceManageProject => 'Manage project';
-
-  @override
   String get workspaceManageProjectHint =>
-      'Switch project, worktrees, and project health';
+      'Switch project, where it runs, and its folder';
 
   @override
   String get workspaceManage => 'Manage';
@@ -5156,9 +4834,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Ask your agent to delegate work in the background. Results return to this conversation automatically.';
 
   @override
-  String get oc2DiscoveryConnect => 'Connect OpenCode 2';
-
-  @override
   String get oc2DiscoveryEditorTitle => 'OpenCode 2';
 
   @override
@@ -5166,9 +4841,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get oc2DiscoveryTypes => 'OpenCode 1 or 2';
-
-  @override
-  String get oc2DiscoveryAutodetect => 'Detects OpenCode 1 or 2 automatically.';
 
   @override
   String get oc2DiscoveryPhone => 'Set up OpenCode 1 or 2 here with Termux.';
@@ -5475,47 +5147,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Model Context Protocol. Small add-on servers that give the agent extra tools, like a browser, a database, or a design tool. You connect them once and every conversation can use them.';
 
   @override
-  String get e7GlossaryWorktreeTerm => 'Worktree';
-
-  @override
   String get e7GlossaryWorktreeExplanation =>
       'A separate checkout of the same repository. Use one when you want the agent to try something on its own branch without touching the code you are working in.';
-
-  @override
-  String get e7GlossaryProviderExplanation =>
-      'The company that hosts a model, such as Anthropic, OpenAI or a local runtime. Each one needs its own API key or login.';
-
-  @override
-  String get e7GlossaryContextTerm => 'Context';
-
-  @override
-  String get e7GlossaryContextExplanation =>
-      'Everything the model can see right now: your messages, files it read, and tool results. It has a size limit. When it fills up, older parts are summarised so the conversation can continue.';
-
-  @override
-  String get e7GlossaryAgentTerm => 'Agent';
-
-  @override
-  String get e7GlossaryAgentExplanation =>
-      'A named set of instructions and permissions the model works under. The default one can read and edit code. Others might only plan, or only review.';
-
-  @override
-  String get e7GlossaryReasoningExplanation =>
-      'The model’s working notes before it answers. Useful for seeing why it made a choice. Hidden by default to keep the conversation short.';
-
-  @override
-  String get e7GlossaryPermissionTerm => 'Permission';
-
-  @override
-  String get e7GlossaryPermissionExplanation =>
-      'Before the agent runs a command or edits a file outside what it is already allowed, it asks you. Allow once, or always for that pattern.';
-
-  @override
-  String get e7GlossaryVariantTerm => 'Variant';
-
-  @override
-  String get e7GlossaryVariantExplanation =>
-      'A speed-versus-depth setting for the model, such as how long it may think before answering.';
 
   @override
   String get e7GlossaryGotIt => 'Got it';
@@ -6550,9 +6183,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SettingsUi88 => 'App diagnostics';
 
   @override
-  String get e7SettingsUi89 => 'No captured errors';
-
-  @override
   String get e7SettingsUi91 =>
       'Connect a computer or run OpenCode on this phone';
 
@@ -6675,17 +6305,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String e7SettingsDiagnosticCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count handled errors kept in memory',
-      one: '1 handled error kept in memory',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String e7SettingsRestartBody(String version, String current) {
     return 'OpenCode $version is installed, but this server process is still running $current. Restart that process on the server host; mobile will reconnect and confirm the running version.';
   }
@@ -6736,9 +6355,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get e7SettingsDetailUi0 => 'Diagnostics copied';
-
-  @override
   String get e7SettingsDetailUi2 => 'Diagnostics sent to OpenCode';
 
   @override
@@ -6752,20 +6368,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SettingsDetailUi5 => 'Clear';
 
   @override
-  String get e7SettingsDetailUi7 => 'Private until you send it';
-
-  @override
-  String get e7SettingsDetailUi8 =>
-      'Handled app errors are redacted and kept only in memory. Your messages and file contents are not collected. Nothing is sent automatically.';
-
-  @override
   String get e7SettingsDetailUi10 => 'Send';
 
   @override
   String get e7SettingsDetailUi12 => 'This server doesn\'t accept client logs';
-
-  @override
-  String get e7SettingsDetailUi13 => 'No captured app errors';
 
   @override
   String get e7SettingsDetailUi14 =>
@@ -6816,22 +6422,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get e7SettingsNonAffiliation =>
       'OpenCode Mobile is an independent community project. It is not built, maintained, endorsed by, or affiliated with the official OpenCode team.';
-
-  @override
-  String e7SettingsDiagnosticSendError(String error) {
-    return 'Could not send diagnostics: $error';
-  }
-
-  @override
-  String e7SettingsDiagnosticTotal(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count handled errors',
-      one: '1 handled error',
-    );
-    return '$_temp0';
-  }
 
   @override
   String e7SettingsDiagnosticOccurrences(int count) {
@@ -7865,9 +7455,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get e7WorkspaceLoadingSessions => 'Loading conversations…';
-
-  @override
   String get e7WorkspaceLoadedRecentEmpty =>
       'Older conversations may still be available below.';
 
@@ -8256,10 +7843,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Edit the current prompt in a focused full-screen view';
 
   @override
-  String get chatUiEmptySessionWasKeptBecauseOpenCodeCould =>
-      'Empty conversation was kept because OpenCode could not verify or remove it.';
-
-  @override
   String get chatUiErrorDetails => 'Error details';
 
   @override
@@ -8425,12 +8008,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiMessageActions => 'Message actions';
 
   @override
-  String get chatUiMessageDeleted => 'Message deleted';
-
-  @override
-  String get chatUiMessageTextCopied => 'Message text copied';
-
-  @override
   String get chatUiMessageTimeline => 'Message timeline';
 
   @override
@@ -8438,10 +8015,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiMessageTimestampsShown => 'Message timestamps shown';
-
-  @override
-  String get chatUiMessagesAndFileChangesAfterTheMost =>
-      'Messages and file changes after the most recent prompt will be rolled back.';
 
   @override
   String get chatUiMobileActionsAndCommandsFromThisServer =>
@@ -8622,10 +8195,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiReloadMessages => 'Refresh messages';
 
   @override
-  String get chatUiRemovesItFromTheConversationPermanently =>
-      'Removes it from the conversation permanently';
-
-  @override
   String get chatUiRename => 'Rename';
 
   @override
@@ -8654,13 +8223,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiRetryServerCommands => 'Try again';
 
   @override
-  String get chatUiRevert => 'Revert';
-
-  @override
-  String get chatUiRevertFromThisPrompt => 'Revert from this prompt?';
-
-  @override
-  String get chatUiRevertLastPrompt => 'Revert last prompt';
+  String get chatUiRevertLastPrompt => 'Undo last prompt';
 
   @override
   String get chatUiReviewCommentAddedToThePrompt =>
@@ -8675,14 +8238,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'Review the actual diff for this conversation';
 
   @override
-  String get chatUiRollBackMessagesAndFileChangesAfter =>
-      'Roll back messages and file changes after the prompt';
-
-  @override
   String get chatUiRunOnYourComputer => 'Run on your computer';
 
   @override
   String get chatUiRunShellCommand => 'Run shell command';
+
+  @override
+  String get chatRunShellLabel => 'Command';
+
+  @override
+  String get chatRunShellHint => 'npm test';
+
+  @override
+  String get chatRunShellHelper =>
+      'The agent runs it in this project, and its output joins the conversation.';
+
+  @override
+  String get chatRunShellEmpty => 'Type a command to run.';
+
+  @override
+  String get chatRenameEmpty => 'Type a title.';
 
   @override
   String get chatUiRunningTools => 'Running tools';
@@ -8760,10 +8335,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiSessionContext => 'Conversation context';
 
   @override
-  String get chatUiSessionIsNoLongerShared =>
-      'Conversation is no longer shared';
-
-  @override
   String get chatUiSessionMenu => 'Conversation menu';
 
   @override
@@ -8813,10 +8384,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatUiStartACleanSessionInThisWorkspace =>
       'Start a clean conversation in this project';
-
-  @override
-  String get chatUiStartANewSessionWithThisPrompt =>
-      'Start a new conversation with this prompt in the composer';
 
   @override
   String get chatUiStartCoding => 'Start coding';
@@ -8924,7 +8491,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiTodoList => 'Todo list';
 
   @override
-  String get chatUiTodos => 'Todos';
+  String get chatUiTodos => 'Tasks';
 
   @override
   String get chatUiToggleCreationTimesBesideTranscriptEntries =>
@@ -9264,7 +8831,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String chatUiSubagentCount(Object count) {
-    return 'Subagent · $count';
+    return 'Delegated conversation · $count';
   }
 
   @override
@@ -9682,7 +9249,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get e7LibraryReportABug => 'Report a bug';
+  String get e7LibraryReportABug => 'Report a problem';
 
   @override
   String get e7LibraryKeyboardShortcuts => 'Keyboard shortcuts';
@@ -9954,41 +9521,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'No project folder is open. Choose one from Work.';
 
   @override
-  String get e7LibraryProject => 'Project';
-
-  @override
   String get e7LibrarySwitchProject => 'Switch project';
-
-  @override
-  String get e7LibraryChooseAnotherProjectOpenedByThisServer =>
-      'Choose another project opened by this server';
-
-  @override
-  String get e7LibraryCoding => 'Coding';
 
   @override
   String get e7LibraryWorktrees => 'Worktrees';
 
   @override
-  String get e7LibraryChooseAProjectFirst => 'Choose a project first';
-
-  @override
-  String get e7LibraryCreateAndManageIsolatedGitBranches =>
-      'Create and manage isolated Git branches';
-
-  @override
   String get e7LibraryManagedWorkspaces => 'Cloud environments';
 
   @override
-  String get e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked =>
-      'Create, discover, open, and remove adapter-backed environments';
-
-  @override
   String get e7LibraryProjectHealth => 'Project health';
-
-  @override
-  String get e7LibraryBranchChangedFilesLanguageServicesAndFormatters =>
-      'Branch, changed files, language services, and formatters';
 
   @override
   String get e7LibraryOpenCodeIsReconnecting => 'OpenCode is reconnecting.';
@@ -10318,9 +9860,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String e7LibraryLoading(String detail1) {
     return 'Loading $detail1';
   }
-
-  @override
-  String get e7LibraryLocationChanged => 'Project changed.';
 
   @override
   String get e7LibraryAuthenticateFromTheServerMachine =>
@@ -12657,10 +12196,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get handoffUiLinkServerMissing =>
-      'This server is not saved on this phone. Add it under Servers, then scan the code again.';
-
-  @override
-  String get handoffUiLinkOpenServers => 'Open Servers';
+      'The conversation is on a server this phone has not saved. Add it here, then scan the code again.';
 
   @override
   String get handoffUiLinkDismiss => 'Dismiss';
@@ -13318,7 +12854,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String teamUiHomeGateLinkRun(String title) {
-    return 'Run $title';
+    return 'Task $title';
   }
 
   @override
@@ -14140,7 +13676,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiGateFailureClassUnknown => 'Unknown';
 
   @override
-  String get teamUiGateFailureClassification => 'Classification';
+  String get teamUiGateFailureClassification => 'What went wrong';
 
   @override
   String get teamUiGateFailureError => 'Error';
@@ -14269,7 +13805,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiGateAnswerOptionsHint => 'Choose one option, then send.';
 
   @override
-  String get teamUiGateAnswerRunRetry => 'Try again';
+  String teamUiGateAnswerRunRetry(String work, String agent) {
+    return 'Send $work to $agent again';
+  }
 
   @override
   String teamUiGateAnswerRunRetryDetail(String work, String agent) {
@@ -14522,7 +14060,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Set on the host; the phone shows it and does not choose it.';
 
   @override
-  String get teamUiStartRunSend => 'Send to planner';
+  String teamUiStartRunSend(String planner) {
+    return 'Send to the $planner';
+  }
 
   @override
   String get teamUiStartRunPlannerOffTitle =>
@@ -14998,7 +14538,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termuxStorageNoteOpenCode =>
-      'The server, its sign-ins and conversation history. Not removed from here; conversations have their own screen.';
+      'The server, its sign-ins and conversation history. Conversations have their own screen.';
 
   @override
   String get termuxStorageCatProjects => 'Projects (your files)';
@@ -15177,7 +14717,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get termuxProcsKeep => 'Keep';
 
   @override
-  String get termuxProcsProtected => 'Protected · open On this phone';
+  String get termuxProcsProtected =>
+      'Protected · control it from On this phone';
 
   @override
   String termuxProcsOrphanParentGone(String elapsed) {
@@ -15286,7 +14827,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiPhoneSkip => 'Skip for now';
 
   @override
-  String get teamUiPhoneSetUp => 'Set up AI team';
+  String get teamUiPhoneSetUp => 'Set up AI Team on this phone';
 
   @override
   String get teamUiPhoneStepDownload => 'Download & verify';
@@ -15528,7 +15069,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiPhoneKeepRunningSubtitle =>
-      'Wake lock, battery setting and the phantom process killer';
+      'Stop Android from closing the team in the background';
 
   @override
   String get teamUiPhoneTipsIntro =>
@@ -15578,7 +15119,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Not available on this phone. Running a team needs the 64-bit Linux environment; this device or build can\'t provide it.';
 
   @override
-  String get teamUiPhoneReofferTitle => 'Set up AI team on this phone';
+  String get teamUiPhoneReofferTitle =>
+      'Let a team of agents work on this phone too';
 
   @override
   String get teamUiPhoneReofferBody =>
@@ -15817,11 +15359,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsHubSearchNotificationsAliases =>
-      'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds';
+      'notifications alerts quiet hours background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds';
 
   @override
   String get settingsHubSearchAppearanceAliases =>
-      'appearance theme dark light language arabic english font text size colors';
+      'appearance theme dark light language arabic english colors';
 
   @override
   String get settingsHubSearchModelsAliases =>
@@ -15855,7 +15397,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'help guide connect tutorial start';
 
   @override
-  String get settingsHubSearchBugAliases => 'bug feedback issue support report';
+  String get settingsHubSearchBugAliases =>
+      'bug feedback issue support report problem crash diagnostics errors log github';
 
   @override
   String get settingsHubSearchDiagnosticsAliases =>
@@ -16020,7 +15563,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discoverNotifyBackgroundAliases =>
-      'background connection stay connected battery keep alive service';
+      'background connection stay connected keep alive service';
 
   @override
   String get discoverNotifyServersAliases =>
@@ -16080,7 +15623,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discoverConnectionHelpAliases =>
-      'connection help cannot connect troubleshooting network refused timeout';
+      'add server computer connect pair pairing code connection help cannot connect troubleshooting network refused timeout';
 
   @override
   String gestureEquivFileRowActions(String name) {
@@ -16383,7 +15926,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nudgeReviewChanges =>
-      'This run changed files: review what changed before you continue.';
+      'OpenCode changed files. Look them over before you go on.';
 
   @override
   String get nudgeLeave =>
@@ -16417,24 +15960,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get firstRunJustShowMe => 'Just show me';
 
   @override
-  String get firstRunWhichAgent => 'Which agent first?';
-
-  @override
   String get firstRunAgentOpenCode => 'OpenCode';
 
   @override
-  String get firstRunAgentClaudeOrPi => 'Claude Code, Codex, Pi and more';
-
-  @override
-  String get firstRunAgentClaudeOrPiDetail =>
-      'One connection to the Paseo daemon drives every agent installed there. Experimental.';
-
-  @override
   String get firstRunAgentCodex => 'Codex';
-
-  @override
-  String get firstRunAgentCodexDetail =>
-      'Directly, through Codex app-server. Experimental.';
 
   @override
   String get firstRunRunOnComputer => 'On your computer, run:';
@@ -17046,7 +16575,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setupProgressViewContinue => 'Continue setup';
 
   @override
-  String get setupProgressViewCancel => 'Cancel';
+  String get setupProgressViewCancel => 'Stop setup';
 
   @override
   String get setupProgressViewShowDetails => 'Show details';
@@ -17105,14 +16634,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get builtinServerIntro =>
-      'The app downloads a small Ubuntu into its own storage and runs the OpenCode server inside it. No Termux needed. The server listens on this phone only; nothing on your network or the internet can reach it.';
+      'The app downloads a small Ubuntu and runs OpenCode in it. Only this phone can reach it.';
 
   @override
   String get builtinServerAndroidOnly =>
       'The built-in server runs on Android only.';
 
   @override
-  String get builtinServerStepUbuntu => 'Download Ubuntu (about 30 MB)';
+  String get builtinServerStepUbuntu => 'Ubuntu';
 
   @override
   String get builtinServerStepOpenCode => 'Install OpenCode';
@@ -17121,7 +16650,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get builtinServerStepStart => 'Start the server';
 
   @override
-  String get builtinServerStepConnect => 'Connect';
+  String get builtinServerStepConnect => 'Use it';
 
   @override
   String builtinServerStepSemantics(int number, String state, String title) {
@@ -17133,7 +16662,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Canonical\'s Ubuntu Base 24.04, checked against its published checksum. It unpacks to a few hundred MB.';
 
   @override
-  String get builtinServerUbuntuAction => 'Download Ubuntu';
+  String get builtinServerUbuntuAction => 'Download Ubuntu (30 MB)';
 
   @override
   String get builtinServerUbuntuWorking => 'Downloading and unpacking Ubuntu…';
@@ -17172,10 +16701,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get builtinServerChooseRuntime => 'Which OpenCode';
 
   @override
-  String get builtinServerStartAction => 'Start';
+  String get builtinServerStartAction => 'Start the server';
 
   @override
-  String get builtinServerStopAction => 'Stop';
+  String get builtinServerStopAction => 'Stop the server';
 
   @override
   String get builtinServerStarting =>
@@ -17203,7 +16732,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get builtinServerConnectAction => 'Connect';
+  String get builtinServerConnectAction => 'Connect to this phone';
 
   @override
   String builtinServerConnectHint(String name) {
@@ -17323,7 +16852,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get builtinServerShowLog => 'Show log';
+  String get builtinServerShowLog => 'Show server log';
 
   @override
   String get builtinServerLogTitle => 'Server log';
@@ -17692,7 +17221,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get phoneSetupStartSetUp => 'Set up';
+  String get phoneSetupStartSetUp => 'Set up OpenCode on this phone';
 
   @override
   String phoneSetupStartIncludes(String tools) {
@@ -17708,7 +17237,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneSetupStartListSeparator => ', ';
 
   @override
-  String get phoneSetupStartCustomize => 'Customize';
+  String get phoneSetupStartCustomize => 'Choose what to install';
 
   @override
   String get phoneSetupStartOtherWays => 'Other ways';
@@ -17775,9 +17304,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneSetupStartAddTitle => 'Add tools';
-
-  @override
-  String get phoneSetupStartRequiredWhy => 'Needed for the agent to run';
 
   @override
   String get phoneSetupStartInstalled => 'Installed';
@@ -18305,7 +17831,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiHomeNeedsYouAnswer => 'Answer';
 
   @override
-  String get teamUiHomeNeedsYouMore => 'More';
+  String get teamUiHomeNeedsYouMore => 'See the whole question';
 
   @override
   String get teamUiHomeNeedsYouFallbackTitle => 'The team has a question';
@@ -18317,12 +17843,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiHomeAgentsRowHint => 'Open the agents list';
-
-  @override
-  String get teamUiCardNothingRunning => 'Nothing running';
-
-  @override
-  String get teamUiCardOpenHint => 'Open AI Team';
 
   @override
   String get teamUiAgentRoleWorker => 'Worker';
@@ -18467,9 +17987,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pluginsStatusFailedToLoad => 'Failed to load';
-
-  @override
-  String get pluginsRowMore => 'More actions for this plugin';
 
   @override
   String get pluginsDetailsId => 'ID';
@@ -21429,7 +20946,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get kitCapMcpAnyTitle => 'Extra tools';
 
   @override
-  String get kitCapMcpAnyWhy => 'No extra tools are added on this server yet.';
+  String get kitCapMcpAnyWhy =>
+      'This server can\'t add extra tools from the app.';
 
   @override
   String get kitCapMcpAnyEnable => 'Add a tool';
@@ -21827,7 +21345,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceChooserEnterPath => 'Enter a folder path';
 
   @override
-  String get workspaceChooserRecentProjects => 'Recent projects';
+  String get workspaceChooserRecentProjects => 'Open a project you used before';
 
   @override
   String get workspaceChooserLoadFailedTitle => 'Couldn\'t load your projects';
@@ -22933,7 +22451,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneServerCardStartOpenCode => 'Start OpenCode';
 
   @override
-  String get phoneServerCardStopOpenCode => 'Stop OpenCode';
+  String get phoneServerCardStopOpenCode => 'Stop OpenCode on this phone';
 
   @override
   String get phoneServerCardShowServerLog => 'Show server log';
@@ -23173,7 +22691,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String gateSheetOpenAgent(String agent) {
-    return 'Open $agent';
+    return 'Open $agent\'s page';
   }
 
   @override
@@ -23926,21 +23444,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get perfTraceClearTimings => 'Clear timings';
 
   @override
-  String appDiagnosticsSendTo(String server) {
-    return 'Send to $server\'s log';
-  }
-
-  @override
-  String appDiagnosticsSendWhere(String server) {
-    return 'Adds these errors to the log of $server. The app\'s makers don\'t receive them.';
-  }
-
-  @override
-  String appDiagnosticsSentTo(String server) {
-    return 'Sent to $server\'s log';
-  }
-
-  @override
   String get appDiagnosticsCopyErrors => 'Copy errors';
 
   @override
@@ -23963,9 +23466,9 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'The $count errors recorded since the app opened are removed from this phone. This can\'t be undone.',
+          'The $count errors kept on this phone are removed, also from the saved report. This can\'t be undone.',
       one:
-          'The error recorded since the app opened is removed from this phone. This can\'t be undone.',
+          'The error kept on this phone is removed, also from the saved report. This can\'t be undone.',
     );
     return '$_temp0';
   }
@@ -23980,10 +23483,6 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get appDiagnosticsEmptyBody =>
-      'Errors the app handles appear here until it closes. After a crash or a restart this list starts empty.';
 
   @override
   String get capabilityStateHere => 'Works here';
@@ -24182,16 +23681,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get desktopReleaseOpenPage => 'Open release page';
-
-  @override
-  String get bugReportBrowserDidNotOpen =>
-      'Your browser didn\'t open, so the link to the bug form is copied. Paste it into a browser to file the report.';
-
-  @override
-  String get bugReportCopyLinkAgain => 'Copy bug form link';
-
-  @override
-  String get bugReportLinkCopied => 'Bug form link copied';
 
   @override
   String get runningWorkTitle => 'Work in this conversation';
@@ -24493,7 +23982,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activeContextIntro =>
-      'What the model reads on its next turn: the messages this server keeps for the conversation after its latest summary. Counts are messages, not tokens.';
+      'What the model reads on its next turn, after the latest summary.';
 
   @override
   String get activeContextEmptyDetail =>
@@ -24570,9 +24059,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'To remove the note, use Delete saved note.';
 
   @override
-  String get sessionNoteUnchanged => 'Change the note to save it.';
-
-  @override
   String get sessionRelationsTitle => 'Subagents';
 
   @override
@@ -24631,7 +24117,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String sessionRelationsCopyHandoff(String title) {
-    return 'Copy handoff for $title';
+    return 'Continue $title on computer';
   }
 
   @override
@@ -25646,28 +25132,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get perfTraceActions => 'Timing report actions';
 
   @override
-  String appDiagnosticsCopyCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Copy $count errors',
-      one: 'Copy 1 error',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String appDiagnosticsActions(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Actions for $count errors',
-      one: 'Actions for 1 error',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String voiceSetupNotDownloaded(String size) {
     return 'Not downloaded · $size';
   }
@@ -25690,6 +25154,742 @@ class AppLocalizationsEn extends AppLocalizations {
   String get webSourcesPastedLinks => 'Links you added';
 
   @override
-  String get quotaMonitorConsentDetails =>
-      'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.';
+  String get thisPhoneHostInApp => 'In the app';
+
+  @override
+  String get thisPhoneHostTermux => 'In Termux';
+
+  @override
+  String get thisPhoneNeedsAttention => 'Needs you';
+
+  @override
+  String get thisPhoneSetUp => 'Set up OpenCode';
+
+  @override
+  String get thisPhoneStart => 'Start the server';
+
+  @override
+  String get thisPhoneStop => 'Stop the server';
+
+  @override
+  String get thisPhoneUpdate => 'Update OpenCode';
+
+  @override
+  String thisPhoneUpdateDetail(String version) {
+    return 'Installs version $version';
+  }
+
+  @override
+  String get thisPhoneAddTools => 'Add tools';
+
+  @override
+  String get thisPhoneInstalled => 'Installed';
+
+  @override
+  String get thisPhoneTerminal => 'Open a terminal';
+
+  @override
+  String get thisPhoneStorage => 'Storage';
+
+  @override
+  String get thisPhoneConnect => 'Connect';
+
+  @override
+  String get thisPhoneRemove => 'Remove OpenCode';
+
+  @override
+  String get thisPhoneBusy => 'Wait for the current step to finish';
+
+  @override
+  String get phoneSetupTermuxAllowHow =>
+      'In Termux, paste the copied line and press Enter.';
+
+  @override
+  String get phoneSetupTermuxUpdatingTitle => 'Updating this phone';
+
+  @override
+  String get phoneSetupTermuxStartingTitle => 'Starting the server';
+
+  @override
+  String get phoneSetupTermuxConnecting => 'Connecting';
+
+  @override
+  String get phoneSetupTermuxLeaveHint =>
+      'You can leave the app. Termux keeps working and this list picks up where it is when you come back.';
+
+  @override
+  String get phoneSetupTermuxCost =>
+      'About 10–15 minutes the first time, in Termux\'s storage';
+
+  @override
+  String removeFromPhoneKeepBody(String size) {
+    return 'OpenCode and its tools are removed and $size comes back. Your projects stay on this phone and come back when you set up again.';
+  }
+
+  @override
+  String get removeFromPhoneKeepBodyUnmeasured =>
+      'OpenCode and its tools are removed. Your projects stay on this phone and come back when you set up again.';
+
+  @override
+  String get removeFromPhoneKeepConfirm => 'Remove OpenCode, keep my projects';
+
+  @override
+  String get removeFromPhoneDeleteAll => 'Delete everything';
+
+  @override
+  String get removeFromPhoneDeleteTitle => 'Delete OpenCode and projects?';
+
+  @override
+  String removeFromPhoneDeleteBody(String size) {
+    return 'OpenCode, its tools and every project on this phone are deleted and $size comes back. This cannot be undone.';
+  }
+
+  @override
+  String get removeFromPhoneDeleteBodyUnmeasured =>
+      'OpenCode, its tools and every project on this phone are deleted. This cannot be undone.';
+
+  @override
+  String get thisPhoneManage => 'Manage This phone';
+
+  @override
+  String get chatRequestWho => 'The agent';
+
+  @override
+  String get chatRequestIfIgnored =>
+      'The agent waits until you answer. Nothing is lost.';
+
+  @override
+  String chatRequestMoreWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more requests are waiting.',
+      one: '1 more request is waiting.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatRequestNoConnection =>
+      'Not connected to the server, so this can’t be answered here.';
+
+  @override
+  String get chatRequestAlwaysTitle => 'Always allow requests like this';
+
+  @override
+  String chatRequestAlwaysScope(String patterns, String context) {
+    return 'From now on, $patterns runs without asking you, $context. You can take this back in Settings under Always allowed actions.';
+  }
+
+  @override
+  String get chatRequestAlwaysOn => 'Always allowed';
+
+  @override
+  String get chatRequestDetailTool => 'Tool';
+
+  @override
+  String get chatRequestDetailPatterns => 'Requested patterns';
+
+  @override
+  String get chatRequestOtherAnswer => 'Something else';
+
+  @override
+  String get chatRequestOtherField => 'Your answer';
+
+  @override
+  String get formFlowAnsweredElsewhereBody =>
+      'This form was answered on another device, so nothing was sent from this phone.';
+
+  @override
+  String get approvalsUiPausedDetail =>
+      'This phone is not connected. Automatic approval resumes when it reconnects.';
+
+  @override
+  String get voiceConversationSpeakRepliesBusy => 'Getting the voice ready…';
+
+  @override
+  String get voiceConversationStopReading => 'Stop reading the reply';
+
+  @override
+  String get teamUiHomeRunReviewNext => 'a reviewer checks it next';
+
+  @override
+  String teamUiGateRunStoppedTitle(String title) {
+    return '$title stopped';
+  }
+
+  @override
+  String get termuxProcsKindParentGone => 'Parent gone';
+
+  @override
+  String get termuxProcsKindNoOwner => 'No owner';
+
+  @override
+  String termuxProcsStopOrphans(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Stop $count orphaned helpers',
+      one: 'Stop 1 orphaned helper',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String termuxProcsStopOrphansTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Stop $count orphaned helpers?',
+      one: 'Stop the orphaned helper?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamPhoneStopTeamRow => 'Stop the team on this phone';
+
+  @override
+  String get teamPhoneStopTeamRowSupporting =>
+      'Agents stop where they are; nothing is lost';
+
+  @override
+  String teamUiPhoneWorkingOn(String name) {
+    return 'Working on $name';
+  }
+
+  @override
+  String get teamUiPhoneVersionsLabel => 'Engine versions';
+
+  @override
+  String get teamUiPhoneProjectLabel => 'Project folder';
+
+  @override
+  String get phoneServerNameInSentence => 'this phone';
+
+  @override
+  String get teamAgentWorkUnblockedShort => 'nothing blocking it';
+
+  @override
+  String get teamAgentWorkBlockedShort => 'blocked';
+
+  @override
+  String get teamAgentStepCommand => 'Ran a command';
+
+  @override
+  String get teamAgentStepTest => 'Ran the tests';
+
+  @override
+  String get teamAgentStepRead => 'Read a file';
+
+  @override
+  String get teamAgentStepEdit => 'Edited a file';
+
+  @override
+  String get teamAgentStepSearch => 'Searched the code';
+
+  @override
+  String teamAgentStepTool(String tool) {
+    return 'Used $tool';
+  }
+
+  @override
+  String get teamAgentLastCommandLabel => 'Last command';
+
+  @override
+  String get termuxStorageOnlyBuildCaches =>
+      'Only build caches can be cleaned here';
+
+  @override
+  String get termuxStorageWhereItIs => 'Where it is';
+
+  @override
+  String termuxStorageCleanBuildCaches(String size) {
+    return 'Clean build caches ($size)';
+  }
+
+  @override
+  String get monitorBackgroundChecks => 'Background checks';
+
+  @override
+  String monitorRowLastChecked(String when) {
+    return 'Last checked $when';
+  }
+
+  @override
+  String get monitorRowNotChecked => 'Not checked yet';
+
+  @override
+  String get monitorRowOff => 'Off for every server';
+
+  @override
+  String get settingsTryDemo => 'Try the demo';
+
+  @override
+  String quotaMonitorCheckNow(String provider, String server) {
+    return 'Check $provider on $server now';
+  }
+
+  @override
+  String get searchArchivedConversations => 'Archived conversations';
+
+  @override
+  String get readAloudConsentEngine =>
+      'Only offline voices are offered, but the speech engine is separate software with its own privacy terms.';
+
+  @override
+  String get readAloudConsentHeard =>
+      'People near you may hear it. Reading stops when you leave this conversation or the app.';
+
+  @override
+  String get transcriptFindStopSearchingAll => 'Stop searching older messages';
+
+  @override
+  String nudgeReviewChangesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'OpenCode changed $count files. Look them over before you go on.',
+      one: 'OpenCode changed 1 file. Look it over before you go on.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get voiceComponentTitle => 'Voice typing';
+
+  @override
+  String get voiceComponentSummary => 'Speak instead of typing, even offline';
+
+  @override
+  String get voiceComponentRemove => 'Remove voice typing';
+
+  @override
+  String get voiceComponentRemoveTitle => 'Remove voice typing?';
+
+  @override
+  String voiceComponentRemoveBody(String size) {
+    return 'Deletes the speech model and frees $size. Voice typing stops working until you add it here again.';
+  }
+
+  @override
+  String get setupAppStageDownloading => 'Downloading';
+
+  @override
+  String get setupAppStageVerifying => 'Checking the download';
+
+  @override
+  String kitDiffFilePosition(int index, int count) {
+    return '$index of $count';
+  }
+
+  @override
+  String kitDiffFilePositionSpoken(int index, int count) {
+    return 'file $index of $count';
+  }
+
+  @override
+  String get kitDiffViewed => 'Viewed';
+
+  @override
+  String get kitDiffSelectHunk => 'Select these lines';
+
+  @override
+  String get kitCapFlagTerminalTitle => 'Terminal';
+
+  @override
+  String get kitCapFlagTerminalWhy =>
+      'This server doesn\'t open a terminal for you.';
+
+  @override
+  String get kitCapFlagToolInventoryTitle => 'Tool list';
+
+  @override
+  String get kitCapFlagToolInventoryWhy =>
+      'This server doesn\'t list the tools its agent can use.';
+
+  @override
+  String get demoScreenReset => 'Reset demo';
+
+  @override
+  String get demoScreenLeave => 'Leave demo';
+
+  @override
+  String get demoScreenDisclosure =>
+      'Everything here is simulated on this device. No server, provider, or files are accessed.';
+
+  @override
+  String capabilityScreenIntroWithGaps(String server) {
+    return '$server decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out. Missing features work on other OpenCode servers.';
+  }
+
+  @override
+  String activeContextMessageTitle(String role) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'user': 'User message',
+      'assistant': 'Assistant message',
+      'system': 'System message',
+      'synthetic': 'Synthetic message',
+      'skill': 'Skill message',
+      'shell': 'Shell message',
+      'compaction': 'Summary message',
+      'change': 'Conversation change',
+      'other': 'Message',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get newConversationLastUsed => 'Last used';
+
+  @override
+  String get newConversationSoloDetail => 'You and the assistant';
+
+  @override
+  String newConversationSoloDetailIn(String project) {
+    return 'You and the assistant, in $project';
+  }
+
+  @override
+  String get newConversationTeamDetail =>
+      'The AI Team plans the work and shares it out';
+
+  @override
+  String get newConversationTeamOffDetail =>
+      'Off on this server · opens the AI Team to set it up';
+
+  @override
+  String newConversationCopyTitle(String project) {
+    return 'In a separate copy of $project';
+  }
+
+  @override
+  String newConversationCloudTitle(String machine) {
+    return 'On $machine';
+  }
+
+  @override
+  String get newConversationCloudDetail => 'A cloud machine for this project';
+
+  @override
+  String get chatUiExportThisConversation => 'Export this conversation';
+
+  @override
+  String get chatDraftCopy => 'Copy draft';
+
+  @override
+  String get reportProblemIntro =>
+      'Say what went wrong. You see the whole report before anything leaves this phone.';
+
+  @override
+  String get reportProblemDescribeLabel => 'What happened?';
+
+  @override
+  String get reportProblemDescribeHint =>
+      'What you did, what you expected, what you got instead';
+
+  @override
+  String get reportProblemDescribeFirst => 'Say what happened first';
+
+  @override
+  String reportProblemAttached(String title) {
+    return 'Attached: $title';
+  }
+
+  @override
+  String get reportProblemIncludeDiagnostics => 'Include recent diagnostics';
+
+  @override
+  String reportProblemIncludeDiagnosticsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count events from this phone',
+      one: '1 event from this phone',
+    );
+    return '$_temp0, with keys, passwords and server addresses removed';
+  }
+
+  @override
+  String get reportProblemReview => 'Review report';
+
+  @override
+  String get reportProblemReviewHint =>
+      'Then open it on GitHub, copy it or share it. Screenshots can be added on the GitHub form.';
+
+  @override
+  String reportProblemErrorsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recent errors',
+      one: '1 recent error',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reportProblemClearFailed =>
+      'Couldn\'t clear the saved report. Try again.';
+
+  @override
+  String get reportProblemPreviewSubtitle => 'This is exactly what is sent';
+
+  @override
+  String get reportProblemPublicNotice =>
+      'GitHub issues are public. Nothing is filed until you submit the form there.';
+
+  @override
+  String get reportProblemOpenGitHub => 'Open GitHub form';
+
+  @override
+  String get reportProblemLinkCopiesDiagnostics =>
+      'The diagnostics are too long for the link. Opening the form copies them, so paste them into its Diagnostics field.';
+
+  @override
+  String get reportProblemLinkCopiesWhole =>
+      'The report is too long for the link. Opening the form copies it, so paste it into the form.';
+
+  @override
+  String get reportProblemCopy => 'Copy report';
+
+  @override
+  String get reportProblemCopied => 'Report copied';
+
+  @override
+  String get reportProblemDiagnosticsCopied =>
+      'Diagnostics copied: paste them into the form';
+
+  @override
+  String get reportProblemShare => 'Share report';
+
+  @override
+  String get reportProblemShareFallback =>
+      'Sharing didn\'t open, so the report is copied';
+
+  @override
+  String reportProblemErrorBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count errors kept',
+      one: '1 error kept',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get thisPhoneAddToolsDetail =>
+      'Python, AI Team, voice typing and more';
+
+  @override
+  String get phoneSetupTermuxOtherRuntime =>
+      'Termux already runs the other OpenCode. Switch it on This phone, then continue setup.';
+
+  @override
+  String get undoFromHereNowAction => 'Undo now';
+
+  @override
+  String undoFromHereBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This prompt and the $count messages after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.',
+      one:
+          'This prompt and the message after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.',
+      zero:
+          'This prompt is removed, and files go back to how they were before it. You can put it back until you send another prompt.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get undoFromHereBodyUnknown =>
+      'This prompt and everything after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.';
+
+  @override
+  String get undoFromHereFilesLabel => 'Files the agent edited after it';
+
+  @override
+  String get undoFromHereNoEdits =>
+      'The agent reported no file edits after this prompt.';
+
+  @override
+  String get undoneStatus => 'Undone from a prompt';
+
+  @override
+  String get undonePutBack => 'Put back';
+
+  @override
+  String reviewRevertScreenIntroCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This prompt and the $count messages after it are hidden. Nothing is final until you choose below.',
+      one:
+          'This prompt and the message after it are hidden. Nothing is final until you choose below.',
+      zero:
+          'This prompt is hidden; nothing came after it. Nothing is final until you choose below.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reviewRevertKeepConsequenceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'The hidden prompt and the $count messages after it are deleted',
+      one: 'The hidden prompt and the message after it are deleted',
+      zero: 'The hidden prompt is deleted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String addServerConnectedHost(String host) {
+    return 'Connected to $host';
+  }
+
+  @override
+  String addServerCheckSlow(String host) {
+    return '$host has not answered yet. A slow network can take a while.';
+  }
+
+  @override
+  String get addServerCheckCancel => 'Stop checking';
+
+  @override
+  String get addServerRemoteHttpAdvice =>
+      'A computer on your network needs an https:// address. Tailscale gives it a private one that only your devices can reach.';
+
+  @override
+  String get addServerUseTailscale => 'Use Tailscale';
+
+  @override
+  String get addServerStepsLabel => 'Add server progress';
+
+  @override
+  String get addServerStepKind => 'What runs there';
+
+  @override
+  String get addServerStepTailscale => 'Tailscale on this phone';
+
+  @override
+  String get addServerStepPair => 'Pair or enter the address';
+
+  @override
+  String get addServerStepAddress => 'Address and sign-in';
+
+  @override
+  String get addServerStepCheck => 'Checking';
+
+  @override
+  String get addServerStepReady => 'Ready';
+
+  @override
+  String addServerReadyTitle(String name) {
+    return '$name is connected';
+  }
+
+  @override
+  String get addServerReadyBody =>
+      'Its conversations open next. Start one, or pick up one already there.';
+
+  @override
+  String addServerReadyOpen(String name) {
+    return 'Open $name';
+  }
+
+  @override
+  String get handoffUiLinkAddTitle => 'Add this server?';
+
+  @override
+  String get handoffUiLinkAddServer => 'Add server';
+
+  @override
+  String get failedJobReport => 'Report this failure';
+
+  @override
+  String get reportProblemJobLog => 'Log of the failed job';
+
+  @override
+  String get reportProblemJobLogNone =>
+      'No log was kept for this job, so none is attached.';
+
+  @override
+  String get sessionsOlderLoadFailed => 'Could not load older conversations.';
+
+  @override
+  String get sessionsLoadFailed => 'Could not load your conversations.';
+
+  @override
+  String get sessionsListChanged =>
+      'The conversation list changed on the server. Refresh it to see older conversations.';
+
+  @override
+  String get handoffUiComputerUnsupported =>
+      'This server can’t give a command that continues a conversation on a computer.';
+
+  @override
+  String get handoffUiComputerChanged =>
+      'This conversation moved or its server changed. Go back and try again.';
+
+  @override
+  String commandAuthSheetIntro(String provider) {
+    return 'Runs this sign-in on your server, not on this phone. Start it only if you trust the server and $provider. You may need to finish steps on the server.';
+  }
+
+  @override
+  String commandAuthCheckNamed(String provider) {
+    return 'Check $provider sign-in now';
+  }
+
+  @override
+  String credentialRemoveAccountTitle(String provider, String name) {
+    return 'Remove the $provider account “$name”?';
+  }
+
+  @override
+  String credentialRemoveConfirmNamed(String name) {
+    return 'Remove “$name”';
+  }
+
+  @override
+  String quotaMonitorOffer(String provider, String server) {
+    return 'Alert me about $provider on $server';
+  }
+
+  @override
+  String quotaMonitorOfferDetail(String percent) {
+    return 'Keeps checking in the background, including after a restart, and alerts when use reaches $percent. You can change the percentage once it’s on.';
+  }
+
+  @override
+  String workspaceChooserBody(String server) {
+    return 'Conversations run inside a folder on $server.';
+  }
+
+  @override
+  String get discoverServicesAliases =>
+      'services dev server preview logs run commands processes';
+
+  @override
+  String get discoverCloudEnvironmentsAliases =>
+      'cloud environments managed workspaces remote sandbox';
+
+  @override
+  String promptRestoredWithout(String names) {
+    return 'Restored without $names; attach them again before sending';
+  }
+
+  @override
+  String get promptStashOlderDraftsWaiting =>
+      'Some older drafts have not moved here yet. They are kept on this device.';
+
+  @override
+  String get promptStashOlderDraftsFull =>
+      'Older drafts are waiting to move here. Delete saved prompts to make room.';
 }

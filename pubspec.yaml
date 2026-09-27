@@ -43,7 +43,7 @@ dependencies:
   # deprecated algorithms. Installs that skipped 1.0.31 entirely lose stored
   # server credentials on upgrade and must pair again: acceptable for the
   # alpha line, and called out in the release notes.
-  flutter_secure_storage: 11.0.0
+  flutter_secure_storage: 11.2.0
   crypto: 3.0.7
   image_picker: 1.2.3
   # Scanning the QR that `opencode2 pair` prints. Pinned exactly, because it
@@ -56,10 +56,7 @@ dependencies:
   # long-dead qr_code_scanner.
   #
   # Known costs, stated rather than hidden:
-  #  * Like desktop_drop, it applies the Kotlin Gradle Plugin, so the Android
-  #    release build now warns "Your app uses the following plugins that
-  #    apply Kotlin Gradle Plugin (KGP): desktop_drop, mobile_scanner". Real,
-  #    and a future Flutter will turn it into an error.
+  #  * 7.4.2 supports AGP 9 built-in Kotlin without applying legacy KGP.
   #  * It defaults to the *bundled* ML Kit barcode model
   #    (com.google.mlkit:barcode-scanning), not the Play-Services download.
   #    That grows the APK, and buys scanning that works with no Play Services
@@ -69,7 +66,7 @@ dependencies:
   #    `platformCapabilities.supportsQrPairing` (Android only) and desktop
   #    never constructs a controller — but the Linux bundle does resolve a
   #    package it cannot use, exactly as record and file_picker already do.
-  mobile_scanner: 7.4.0
+  mobile_scanner: 7.4.2
   opencode_sdk:
     path: packages/opencode_sdk
   path_provider: 2.1.6

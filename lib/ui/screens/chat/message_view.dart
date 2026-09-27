@@ -5,39 +5,6 @@ part of '../chat_screen.dart';
 // KIT-41). This file decides what a server message is (a prompt, a step, a
 // notice) and which part draws it; the parts draw.
 
-/// A floating affordance shown when the transcript is scrolled away from the
-/// newest message; tapping returns to the live end of the conversation.
-class _JumpToLatestButton extends StatelessWidget {
-  const _JumpToLatestButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => KitJumpPill(
-    pillKey: const ValueKey('jump-to-latest'),
-    label: KitJumpPill.latestLabel(context),
-    onPressed: onTap,
-    visible: true,
-  );
-}
-
-/// A floating chip over long transcripts naming how much history sits above,
-/// opening the timeline for direct navigation.
-class _EarlierMessagesPill extends StatelessWidget {
-  const _EarlierMessagesPill({required this.count, required this.onTap});
-
-  final int count;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => KitJumpPill.older(
-    pillKey: const ValueKey('earlier-messages-pill'),
-    label: _chatL10n(context).chatUiEarlierMessageCount(count),
-    onPressed: onTap,
-    visible: true,
-  );
-}
-
 /// Finds the mapper's v2-only variant tag on a message, if any: a part whose
 /// `type` starts with `v2:` (see `mapApi2Message`). v1 servers never emit
 /// these, and `Part.isRenderable` is false for them, so the v1 rendering
@@ -986,6 +953,7 @@ class _AssistantMessagePart extends StatelessWidget {
         final raw = part.toolState.metadata?['shellID'];
         if (raw != null) shellID = raw.toString();
       }
+      final chat = context.findAncestorStateOfType<_ChatScreenState>();
       return ToolCard(
         key: shellID != null
             ? ValueKey('shell-card-$shellID')
@@ -1000,6 +968,8 @@ class _AssistantMessagePart extends StatelessWidget {
         onAttachFile: onAttachFile,
         onDownloadFile: onDownloadFile,
         onOpenSession: onOpenSession,
+        waitingForYou: chat?._toolWaitsForYou(part) ?? false,
+        onRerunCommand: chat?._rerunShellCommand,
       );
     }
     if (part.type == 'file') {
@@ -1040,11 +1010,10 @@ class _MessageView extends StatelessWidget {
   final String searchLabel;
   final ValueChanged<BuildContext>? onSearchExcerptContext;
 
-  /// Opens the host's actions for this message; the footer's More calls it.
-  final VoidCallback? onLongPress;
-
-  /// The message's actions as menu entries (copy, fork, revert, delete):
-  /// the prompt's long-press and right-click menu, and the reply's.
+  /// The message's actions as menu entries (copy, fork, read aloud, revert,
+  /// delete): the prompt's long-press and right-click menu, and the reply's
+  /// More, long-press and right-click menu (without Copy, which the turn's
+  /// footer shows beside More).
   final List<ContextMenuAction> Function()? contextActions;
   final ToolOutputFileLoader filePreviewLoader;
   final ToolOutputFileAction? onAttachFile;
@@ -1074,7 +1043,6 @@ class _MessageView extends StatelessWidget {
     this.searchMatch,
     this.searchLabel = '',
     this.onSearchExcerptContext,
-    this.onLongPress,
     this.contextActions,
     required this.filePreviewLoader,
     required this.onAttachFile,
@@ -1284,10 +1252,10 @@ class _MessageView extends StatelessWidget {
             expansionStore: expansionStore,
             waitingForYou: waiting,
             stopped: stopped,
-            buildRun: (run) => _stepWidgets(run, runs, streaming),
+            buildRun: (run) => _stepWidgets(run, runs, streaming, chat),
           )
         else
-          _runWidget(stretch.single, runs, streaming),
+          _runWidget(stretch.single, runs, streaming, chat),
       if (raw != null && !stopped)
         _AssistantErrorRow(
           info: m.info,
@@ -1334,7 +1302,7 @@ class _MessageView extends StatelessWidget {
         ? KitTurnPhase.running
         : KitTurnPhase.finished;
 
-    final footer = onCopy == null && onLongPress == null
+    final footer = onCopy == null && contextActions == null
         ? null
         : KitTurnFooter(
             copyText: () =>
@@ -1342,7 +1310,6 @@ class _MessageView extends StatelessWidget {
             copyLabel: chat?._messageCopy(m).label,
             meta: metaParts.isEmpty ? null : metaParts.join(' · '),
             menu: _menuItems(withCopy: false),
-            onMore: onLongPress,
           );
 
     final Widget turn = KitTurn(
@@ -1419,8 +1386,9 @@ class _MessageView extends StatelessWidget {
     _AssistantPartRun run,
     List<_AssistantPartRun> all,
     bool streaming,
+    _ChatScreenState? chat,
   ) {
-    if (!run.grouped) return [_runWidget(run, all, streaming)];
+    if (!run.grouped) return [_runWidget(run, all, streaming, chat)];
     return [
       for (final (index, part) in run.parts.indexed)
         ToolCard(
@@ -1436,6 +1404,8 @@ class _MessageView extends StatelessWidget {
           onAttachFile: onAttachFile,
           onDownloadFile: onDownloadFile,
           onOpenSession: onOpenSession,
+          waitingForYou: chat?._toolWaitsForYou(part) ?? false,
+          onRerunCommand: chat?._rerunShellCommand,
         ),
     ];
   }
@@ -1444,6 +1414,7 @@ class _MessageView extends StatelessWidget {
     _AssistantPartRun run,
     List<_AssistantPartRun> all,
     bool streaming,
+    _ChatScreenState? chat,
   ) => run.parts.first.type == 'v2:notice'
       ? V2TranscriptRow(
           part: run.parts.first,
@@ -1453,7 +1424,7 @@ class _MessageView extends StatelessWidget {
       ? Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
-          children: _stepWidgets(run, all, streaming),
+          children: _stepWidgets(run, all, streaming, chat),
         )
       : _AssistantMessagePart(
           part: run.parts.single,
@@ -1578,7 +1549,7 @@ class _AssistantErrorRow extends StatelessWidget {
             key: const Key('error-action-details'),
             label: strings.chatUiErrorDetails,
             onPressed: () => unawaited(
-              showKitTechnicalDetails(
+              _showChatErrorDetails(
                 context,
                 title: strings.chatUiErrorDetails,
                 text: raw.trim().isEmpty ? text : raw,

@@ -17,11 +17,13 @@ import 'package:opencode_mobile/codex/gateway.dart';
 import 'package:opencode_mobile/diagnostics/perf_trace.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
+import 'package:opencode_mobile/ui/kit/kit_notice.dart' show KitReport;
 import 'package:opencode_mobile/ui/screens/about_screen.dart';
 import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
 import 'package:opencode_mobile/ui/screens/keep_running_screen.dart';
 import 'package:opencode_mobile/ui/screens/server_capabilities_screen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../tool/capture/fixtures.dart' show captureTheme, loadCaptureFonts;
 import 'screen_system_1_fixtures.dart';
@@ -87,6 +89,44 @@ Future<void> _shot(
     debugDefaultTargetPlatformOverride = null;
   }
 }
+
+/// Types [description] and opens report-problem-preview-sheet.
+Future<void> _review(WidgetTester tester, String description) async {
+  await tester.enterText(
+    find.descendant(
+      of: find.byKey(const ValueKey('report-problem-description')),
+      matching: find.byType(EditableText),
+    ),
+    description,
+  );
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(
+    find.byKey(const ValueKey('report-problem-review')),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('report-problem-review')));
+  // The version resolves on a real future.
+  for (var i = 0; i < 3; i++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 60)),
+    );
+    await tester.pumpAndSettle();
+  }
+}
+
+/// A failed team run as Report this failure attaches it (P8.4).
+const _failedJob = KitReport(
+  title: 'Sync engine stopped',
+  details: 'tests failed',
+  source: 'failed job · teamRun · oc-loy',
+  log:
+      '\$ pytest -q\n'
+      '..F.\n'
+      'FAILED tests/test_calc.py::test_subtract\n'
+      '    assert subtract(1, 2) == -1\n'
+      'E   assert 3 == -1\n'
+      '1 failed, 3 passed in 0.42s',
+);
 
 void main() {
   setUpAll(loadCaptureFonts);
@@ -165,13 +205,44 @@ void main() {
         light: light,
         home: AppDiagnosticsScreen(controller: controller),
         then: () async {
-          await tester.tap(
-            find.byKey(const ValueKey('app-diagnostics-actions')),
+          await tester.ensureVisible(
+            find.byKey(const ValueKey('clear-app-diagnostics')),
           );
           await tester.pumpAndSettle();
           await tester.tap(find.byKey(const ValueKey('clear-app-diagnostics')));
           await tester.pumpAndSettle();
         },
+      );
+    });
+
+    testWidgets('report a problem preview sheet ($theme)', (tester) async {
+      final controller = await systemController(codexServerCapabilities);
+      addTearDown(controller.dispose);
+      recordSampleErrors(controller);
+      await _shot(
+        tester,
+        'system_report_problem_preview',
+        light: light,
+        home: AppDiagnosticsScreen(
+          controller: controller,
+          error: const KitReport(
+            title: "Couldn't load files",
+            errorType: 'FormatException',
+          ),
+        ),
+        then: () => _review(tester, 'The file list stays empty after Refresh'),
+      );
+    });
+
+    testWidgets('report a problem with a failed job log ($theme)', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      await _shot(
+        tester,
+        'system_report_problem_job_log',
+        light: light,
+        home: const AppDiagnosticsScreen(error: _failedJob),
       );
     });
 
@@ -231,6 +302,33 @@ void main() {
       light: false,
       size: _wide,
       home: AppDiagnosticsScreen(controller: controller),
+    );
+  });
+
+  testWidgets('report a problem preview sheet wide (dark)', (tester) async {
+    final controller = await systemController(codexServerCapabilities);
+    addTearDown(controller.dispose);
+    recordSampleErrors(controller);
+    await _shot(
+      tester,
+      'system_report_problem_preview',
+      light: false,
+      size: _wide,
+      home: AppDiagnosticsScreen(controller: controller),
+      then: () => _review(tester, 'The file list stays empty after Refresh'),
+    );
+  });
+
+  testWidgets('report a problem with a failed job log wide (dark)', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await _shot(
+      tester,
+      'system_report_problem_job_log',
+      light: false,
+      size: _wide,
+      home: const AppDiagnosticsScreen(error: _failedJob),
     );
   });
 

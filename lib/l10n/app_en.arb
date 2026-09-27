@@ -127,7 +127,6 @@
   "modelUnavailableSelection": "The conversation's model is unavailable in this catalog. Refresh models or choose another.",
   "modelScopeChanged": "The server changed. Reopen the model selector to continue.",
   "commonClearSearch": "Clear search",
-  "commonUndo": "Undo",
   "workTitle": "Tasks",
   "workDescription": "Agents and commands related to this conversation.",
   "workAgents": "Agents",
@@ -327,7 +326,6 @@
   "historyServerTotalsNote": "Rows marked reported by server cover the conversation. Message counts and other estimates cover loaded history.",
   "sessionsLoadedOnly": "Showing loaded conversations. Load more to include older ones.",
   "sessionsDetailsUnavailable": "Conversation details could not be loaded. Try again.",
-  "sessionsLoadMore": "Load more conversations",
   "sessionsReload": "Refresh recent conversations",
   "sessionsNoLoadedRecent": "No recent conversations in loaded results",
   "sessionsNoLoadedArchived": "No archived conversations in loaded results",
@@ -362,8 +360,8 @@
   "revertPreviewEmpty": "No file changes were reported for this stage.",
   "revertStaged": "Revert staged",
   "revertReview": "Review",
-  "revertFromHere": "Revert from this prompt",
-  "revertUndoDescription": "Stage a revert and review the affected files",
+  "revertFromHere": "Undo from here",
+  "revertUndoDescription": "Undo the last prompt and everything after it",
   "revertClearShortDescription": "Review and clear the staged revert",
   "revertPromptUnavailable": "The boundary prompt could not be loaded.",
   "revertPromptLoading": "Loading the boundary prompt…",
@@ -623,24 +621,12 @@
   "@promptStashSearch": {
     "description": "Search local saved prompt text, attachment names, references and locations without loading attachment payloads"
   },
-  "promptStashNoMatches": "No saved prompts match your search. Clear or change the search to see more.",
-  "@promptStashNoMatches": {
-    "description": "Filtered saved-prompts empty state, distinct from an empty stash"
-  },
   "promptStashDeleteFailed": "Could not delete this saved prompt. Try again.",
-  "promptRestoreTitle": "Restore saved prompt?",
-  "promptRestorePreserve": "Your current prompt will be saved to the stash first, including its attachments and references.",
   "promptStashDelete": "Delete",
   "promptStashFull": "Your stash has 50 prompts. Delete a saved prompt to make room; your current prompt is unchanged.",
-  "promptStashListDescription": "Saved on this device for this server. Restoring a prompt also saves any current prompt for later.",
-  "promptStashDeleteTitle": "Delete saved prompt?",
   "promptStashAttachments": "{count, plural, =1{1 attachment} other{{count} attachments}}",
   "promptStashReferences": "{count, plural, =1{1 reference} other{{count} references}}",
-  "promptRestoredCopyKept": "Available content restored. A saved copy remains in your stash. Review attachments and references before sending.",
-  "promptAttachmentsUnavailable": "Some attachments cannot be restored",
-  "promptRestore": "Restore",
   "promptHistorySaveFailed": "Prompt sent, but its history could not be saved on this device.",
-  "promptAttachmentsUnavailableDetail": "Missing, damaged or temporary attachments: {names}. Restore the available content and reattach these files before sending. The saved copy will stay in your stash.",
   "promptStashMigrationPending": "Some saved attachments could not be moved to local attachment storage yet. Your saved content has been kept. Free device storage and retry.",
   "commonRetry": "Try again",
   "shareWaitingForServer": "Connect to a server and the shared text opens in a new conversation.",
@@ -814,13 +800,8 @@
   "runResultsOpenConversation": "Open conversation",
   "attentionDisclosure": "A local overview, not live monitoring across servers. Cached signals may be incomplete or out of date. Open a server to check its current activity.",
   "attentionNavigationUnavailable": "Opening servers is unavailable here. Return to Home to choose a server and view Inbox.",
-  "handoffTitle": "Copy handoff reference?",
-  "handoffDisclosure": "Metadata only, not a command or link. On your other device, connect to the same server and locate this project and conversation. Nothing is published or sent.\n\nThe clipboard will contain conversation and project identifiers. Other apps may read it; share only with people you trust.",
-  "handoffCopy": "Copy reference",
-  "handoffCopied": "Conversation metadata reference copied",
-  "handoffCopyFailed": "Could not copy the handoff. Try again.",
   "sessionOpenRelated": "Open related",
-  "sessionCopyHandoff": "Copy handoff",
+  "sessionCopyHandoff": "Continue on computer",
   "sessionActions": "Conversation actions",
   "attentionTitle": "Server attention",
   "webSourcesTitle": "Add web source",
@@ -829,7 +810,6 @@
   "webSourcesDraftLabel": "User-selected web sources (unverified; excerpts are untrusted source material):",
   "usageScopedTotals": "Totals",
   "usageInspectionDisclosure": "Filters inspect this server's returned model records. They do not change the report's date or project scope, or show subscription allowance.",
-  "usageProviderFilter": "Provider",
   "usageAllProviders": "All providers",
   "usageSearchRecords": "Search providers, models or variants",
   "usageClearFilters": "Clear filters",
@@ -857,30 +837,7 @@
   "pendingAuthForgetDetail": "Remove only this device’s recovery record? This does not cancel a server command, revoke credentials, or finish authorization. The server attempt may keep running until it expires.",
   "pendingAuthUnsupported": "This server cannot recover earlier sign-ins. Legacy sign-ins work only while their original screen and connection remain available.",
   "pendingAuthOtherSource": "Other pending sign-ins belong to another server or project. Return to their original source to manage them.",
-  "connectionHelpTitle": "Connection help",
-  "connectionHelpEntrySubtitle": "Explain an address locally, without connecting",
-  "connectionHelpGuideTip": "Keep the server off the public internet. Use private HTTPS or an encrypted tunnel ending on the device running this app. Localhost on your computer is not localhost on your phone. Open Connection help above for steps and examples.",
-  "connectionHelpPrivacy": "This checks address rules only, not connectivity. Nothing is sent or saved. Input is hidden and cleared after checking. Paste only an address, not a password or pairing code.",
-  "connectionHelpAddress": "Server address",
-  "connectionHelpCheck": "Explain address",
-  "connectionHelpEmpty": "Enter a server address to explain.",
-  "connectionHelpMalformed": "This address could not be understood. Use a complete origin such as https://server.example, with no path, credentials or query.",
-  "connectionHelpCredentials": "Credentials do not belong in a URL. Remove them and enter the server username and password separately in Servers. The pasted value has been cleared.",
-  "connectionHelpQuery": "Remove query parameters and fragments. They can contain secrets; enter only the server origin. The pasted value has been cleared.",
-  "connectionHelpPath": "Remove the path. This app needs the server origin, not a page or API route.",
-  "connectionHelpScheme": "Use HTTPS for a remote server, or HTTP only for this device's supported loopback addresses.",
-  "connectionHelpRemoteHttp": "Remote HTTP is blocked, including LAN and 100.64.0.0/10 addresses. A VPN does not change this rule. Set up private HTTPS or an encrypted tunnel ending on this device.",
-  "connectionHelpHttps": "This address passes the HTTPS address rules. That does not verify its certificate, reachability, sign-in or privacy. A bare remote address is interpreted as HTTPS.",
-  "connectionHelpLoopback": "This address passes the loopback address rules. Localhost means this device, not another computer. A server or tunnel must be listening here; this check does not verify that.",
-  "connectionHelpPrivateTitle": "Private HTTPS or reverse proxy",
-  "connectionHelpPrivateSteps": "1. Keep the server on its host's loopback with authentication enabled.\n2. Connect both devices to your private network and restrict access to intended users.\n3. Configure private HTTPS, such as Tailscale Serve, or a reverse proxy with a trusted certificate forwarding to the server. Support streaming and WebSockets.\n4. Add the HTTPS origin in Servers with sign-in in separate fields.\nTailscale Funnel exposes the service publicly; it is not a private-network fix. This app cannot infer VPN presence. The example below is a placeholder.",
-  "connectionHelpTunnelTitle": "Localhost on the wrong device?",
-  "connectionHelpTunnelSteps": "Localhost, 127.0.0.1 and [::1] refer to the device running this app. For a server on another computer, use private HTTPS or an encrypted tunnel ending here. If an SSH client is available on this device, adapt the example below, verify the host key and keep it running. Replace user@host with your SSH destination. Running it on another computer does not forward this device's port. Keep server authentication enabled.",
-  "connectionHelpVerifyTitle": "Verify connectivity separately",
-  "connectionHelpVerifySteps": "On this device, check private-network membership, DNS, firewall access and certificate trust using your network tools. Check server and proxy configuration on the host, then use Servers to connect. Never disable TLS verification or share passwords, pairing codes or unredacted logs. Access to this server is shell access.",
-  "connectionHelpCopyExample": "Copy example",
-  "connectionHelpCopied": "Example copied",
-  "connectionHelpCopyFailed": "Could not copy the example. Select the example text to copy it manually.",
+  "connectionHelpGuideTip": "Keep the server off the public internet. Reach it over Tailscale's private HTTPS, or an encrypted tunnel ending on the device running this app. Localhost on your computer is not localhost on your phone.",
   "voiceConversationTitle": "Voice conversation",
   "voiceConversationDescription": "Listen, review, then Send. No automatic listening; replies are read aloud only if you turn that on.",
   "voiceConversationSpeakReplies": "Speak replies",
@@ -916,14 +873,6 @@
   "@commandAuthMethodHint": {
     "description": "Command authentication runs server-side; do not imply an app shell or browser flow"
   },
-  "commandAuthConfirmTitle": "Start sign-in on the server?",
-  "@commandAuthConfirmTitle": {
-    "description": "Explicit consent before executing a server-side authentication method"
-  },
-  "commandAuthConfirmDetail": "OpenCode will execute this provider's declared sign-in method on the selected server. Continue only if you trust that server and provider. The app does not run or copy a shell command on your phone.",
-  "@commandAuthConfirmDetail": {
-    "description": "Trust boundary of executable provider authentication"
-  },
   "commandAuthStart": "Start server sign-in",
   "@commandAuthStart": {
     "description": "Launch a command authentication attempt after confirmation"
@@ -931,10 +880,6 @@
   "commandAuthPending": "Sign-in is pending on the server. Finish any server-side interaction, then check its status. Closing this sheet does not cancel it.",
   "@commandAuthPending": {
     "description": "Pending status without fabricated instructions or automatic cancellation"
-  },
-  "commandAuthCheck": "Check sign-in",
-  "@commandAuthCheck": {
-    "description": "Read the pinned command-auth attempt status"
   },
   "commandAuthCancel": "Cancel sign-in",
   "@commandAuthCancel": {
@@ -976,11 +921,11 @@
   "@readAloudChooseVoice": {
     "description": "Picker of installed system voices marked offline"
   },
-  "readAloudConsentTitle": "Use the system speech engine?",
+  "readAloudConsentTitle": "Read replies aloud?",
   "@readAloudConsentTitle": {
     "description": "Consent before any system speech engine access"
   },
-  "readAloudConsentDetail": "The loaded reply prose will be sent to your system speech engine. Only voices marked offline are offered, but the engine is separate software and its privacy practices apply. Code blocks and tool details are omitted. Others may hear the audio. Playback stops when this conversation is covered or the app goes into the background.",
+  "readAloudConsentDetail": "Your phone's speech engine reads the reply aloud. Code and tool details are skipped.",
   "@readAloudConsentDetail": {
     "description": "Discloses external engine access and audible output without promising network isolation"
   },
@@ -1016,21 +961,9 @@
   "@credentialManage": {
     "description": "Open individual saved provider credential management"
   },
-  "credentialMetadataOnly": "Only saved account labels are shown. API keys and login tokens stay on your server.",
+  "credentialMetadataOnly": "Keys stay on your server.",
   "@credentialMetadataOnly": {
     "description": "Describes the metadata-only credential list"
-  },
-  "credentialActiveUnknown": "Active account unknown. The saved-account list does not report which account is active.",
-  "@credentialActiveUnknown": {
-    "description": "Cold start or stream gap cannot establish an active credential"
-  },
-  "credentialNoneActive": "The server reported no active saved account.",
-  "@credentialNoneActive": {
-    "description": "An explicit nullable credential-switched event reported no active credential"
-  },
-  "credentialActiveObserved": "The Active badge reflects the latest server event.",
-  "@credentialActiveObserved": {
-    "description": "Distinguishes event-confirmed activation from a successful command response"
   },
   "credentialActiveUpdated": "Active account updated from the server.",
   "@credentialActiveUpdated": {
@@ -1059,15 +992,6 @@
   "credentialSave": "Save label",
   "@credentialSave": {
     "description": "Submit only the edited credential label"
-  },
-  "credentialRemoveTitle": "Remove {label}?",
-  "@credentialRemoveTitle": {
-    "description": "Destructive confirmation naming the saved provider credential",
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
   },
   "credentialRemoveDetail": "Remove this saved sign-in from the server. Other projects using it may be affected. This does not edit environment configuration; the server determines which account, if any, becomes active afterward.",
   "@credentialRemoveDetail": {
@@ -1145,9 +1069,7 @@
     "description": "Warns against acting on MCP data from a previous profile or location"
   },
   "promptStashRestoreFailed": "Could not finish restoring the prompt. Saved copies remain available; check the composer before trying again.",
-  "promptStashEmpty": "Nothing saved yet. Use Stash current prompt in Prompt tools to keep a prompt for later.",
   "promptStashContextOnly": "Attachments and references",
-  "promptRestoredReferences": "Prompt restored. Saved references are snapshots; their server files may have changed.",
   "promptDefaultLocation": "the server default directory",
   "promptStashed": "Prompt saved to your stash.",
   "promptStashedDraftPending": "Prompt saved to your stash. The composer draft still needs to be saved; try again from the draft warning.",
@@ -1155,23 +1077,13 @@
     "description": "Stash save succeeded but persisting the cleared or restored composer draft failed; the saved stash remains available"
   },
   "promptStashReadFailed": "Could not read saved prompts. Their stored data has been kept.",
-  "promptStashDeleteDetail": "This removes the saved text, attachments and references from this device.",
   "promptStashDescription": "Save text, attachments and references for later",
-  "promptRestoreAvailable": "Restore available content",
-  "promptRestored": "Prompt restored. Review it before sending.",
-  "promptStashAction": "Stash current prompt",
+  "promptRestored": "Saved prompt restored",
   "promptStashLocation": "This prompt refers to files in {directory}. Switch to its original project before restoring it.",
   "promptStashScopeChanged": "The server or project changed. Close and reopen Saved prompts.",
   "@promptStashLocation": {
     "placeholders": {
       "directory": {
-        "type": "String"
-      }
-    }
-  },
-  "@promptAttachmentsUnavailableDetail": {
-    "placeholders": {
-      "names": {
         "type": "String"
       }
     }
@@ -1331,7 +1243,7 @@
   "photoCameraAction": "Take photo",
   "photoTooLarge": "Choose a photo smaller than 10 MB.",
   "photoStorageFailed": "The photo could not be saved on this device. Free some space and retry.",
-  "photoPendingOther": "A photo is waiting in its original conversation. Keep it there, or discard it before choosing another photo.",
+  "photoPendingOther": "A photo is still waiting for another conversation. Add or discard it there, then try again.",
   "photoUnavailable": "The photo could not be opened. Try adding it again from Photo library or Take photo.",
   "photoPermissionDenied": "Photo access was denied. Allow camera or photo access in Android app settings, then try again.",
   "photoPendingTitle": "Pending photo",
@@ -1339,18 +1251,6 @@
   "photoAddToDraft": "Add recovered photo to draft",
   "photoOtherLocation": "Return to the photo's original server and project before adding it.",
   "photoDraftFull": "Remove an attachment first. A draft holds up to 5 files and 20 MB in total.",
-  "legacyDraftsTitle": "Older drafts",
-  "legacyDraftsDescription": "Review drafts saved before server tracking",
-  "legacyDraftsExplanation": "These drafts have no recorded server. Review their text before using it in this conversation.",
-  "legacyDraftInsertExplanation": "Insert adds this text after your current draft. The original saved copy stays here until you delete it.",
-  "legacyDraftTextOnly": "Only text can be inserted here. Any saved attachments remain with the older draft.",
-  "legacyDraftDelete": "Delete saved copy",
-  "legacyDraftDeleteExplanation": "Permanently remove this older draft and its saved attachments from this device?",
-  "legacyDraftDeleteFailed": "The draft changed or could not be removed. Reopen it and retry.",
-  "legacyDraftInsert": "Insert into draft",
-  "legacyDraftSearch": "Search older drafts",
-  "legacyDraftsEmpty": "No older drafts found",
-  "legacyDraftLocationChanged": "The project changed. Reopen Older drafts to choose where to insert the text.",
   "quotaTitle": "Remaining usage",
   "@quotaTitle": {
     "description": "Read-only subscription quota screen title"
@@ -1655,9 +1555,6 @@
   "setupInstallStart": "Install & start",
   "setupCheckAgain": "Try again",
   "uncertainAuthDetail": "The server may have started this sign-in without confirming it. Check on the server before you start again.",
-  "uncertainAuthForgetTitle": "Forget this sign-in on this phone?",
-  "uncertainAuthForgetDetail": "This clears only the local retry block. It does not cancel sign-in on the server. Check the server first to avoid running a second sign-in. No new sign-in will start.",
-  "uncertainAuthForget": "Forget this sign-in",
   "uncertainAuthCloseHint": "Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.",
   "pluginsDescription": "Plugins reported for this project on the server. Inspect status and source here; manage plugins on the server.",
   "pluginsUnsupported": "This server does not support plugin inspection.",
@@ -1679,11 +1576,7 @@
   "pluginsFailureDetail": "Failure details are hidden because they may contain credentials.",
   "demoReviewChanges": "Review changes",
   "demoSetUpServer": "Set up your own server",
-  "handoffCommandTitle": "Continue on computer",
-  "handoffCommandDisclosure": "Run this command in a POSIX shell on a computer with OpenCode installed and access to this server. Set OPENCODE_SERVER_PASSWORD privately on that computer if the server requires it. The clipboard will contain the server address, username, project directory and conversation ID, but no password.",
   "handoffCopyCommand": "Copy command",
-  "handoffCommandCopied": "Resume command copied",
-  "handoffCommandUnavailable": "A resume command is unavailable for this server or cloud environment. Continuing on another computer needs a supported OpenCode command and a reachable HTTPS server; a localhost address points to each device itself. You can still copy the conversation metadata below.",
   "quotaMiniMax": "MiniMax",
   "quotaMiniMaxAccount": "MiniMax subscription windows",
   "quotaMiniMaxSourceBound": "Tied to the collector's configured MiniMax Subscription Key. The quota response does not independently identify the account. Only reported general-pool percentages are shown; other limits may apply.",
@@ -1913,23 +1806,7 @@
   "managedRecoveryUncertain": "Recovery paused because Termux did not confirm the result. Refresh to continue.",
   "managedRecoveryRetryDisable": "Try disabling recovery again",
   "managedRecoveryStoppedWithCleanupError": "The local server is stopped. Recovery settings could not be fully cleared; turn off Restart after a crash again before removing the server.",
-  "pluginMappingPersonal": "Your command links · not verified plugin ownership",
-  "pluginMappingReview": "Review /{command}",
-  "@pluginMappingReview": {
-    "placeholders": {
-      "command": {
-        "type": "String"
-      }
-    }
-  },
-  "pluginMappingManage": "Link commands",
-  "pluginMappingDescription": "Choose commands you associate with this plugin. These personal links apply only to this project on this server. Each action opens a review of the conversation and arguments before you run it.",
-  "pluginMappingEmpty": "No server commands are available to link.",
   "pluginMappingUnavailable": "This plugin or command is no longer available here. Refresh and review your links.",
-  "pluginMappingLimit": "Choose up to 16 commands for this plugin.",
-  "pluginMappingSave": "Save links",
-  "pluginMappingSaveFailed": "Links could not be saved. Check that this project is still selected and try again.",
-  "pluginMappingLoadFailed": "Commands could not be loaded. Try again when connected.",
   "mobileTasksDescription": "Server-reported tasks · mobile view",
   "mobileTasksUnfinished": "Show unfinished only",
   "mobileTasksNoUnfinished": "No unfinished tasks in this list.",
@@ -1964,17 +1841,9 @@
   "mobileTaskPriorityHigh": "High priority",
   "mobileTaskPriorityMedium": "Medium priority",
   "mobileTaskPriorityLow": "Low priority",
-  "pluginMappingClearAll": "Clear personal command links",
-  "pluginMappingClearTitle": "Clear all personal command links?",
-  "pluginMappingClearDescription": "Remove personal plugin-command links for every project on this saved server, including previous projects. Server plugins and commands stay installed.",
-  "pluginMappingClearConfirm": "Clear links",
-  "pluginMappingClearFailed": "Personal links could not be cleared. Check that this server is still selected and try again.",
   "quotaMonitorTitle": "Quota monitoring",
-  "quotaMonitorConsentTitle": "Monitor this provider source?",
-  "quotaMonitorConsent": "Keep checking {provider} on {server} in the background and alert me when use reaches:",
   "quotaMonitorRuntime": "Sources are checked in rotation, at most three per cycle; larger lists take several cycles. Background reads require the existing live service to be active; Android may stop it. Displayed readings expire when the collector says they do. Device alerts record past threshold readings, not current remaining allowance. This page never switches your active server.",
   "quotaMonitorEmpty": "No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.",
-  "quotaMonitorEnable": "Enable quota monitoring",
   "quotaMonitorDisabled": "Monitoring is off.",
   "quotaMonitorWaiting": "Waiting for a fresh reading.",
   "quotaMonitorChecking": "Checking the trusted collector…",
@@ -2134,10 +2003,6 @@
   "launchUiActivityNoServer": "Choose a server to see what needs your attention.",
   "@launchUiActivityNoServer": {
     "description": "Snackbar shown on the servers screen when the Quick Settings tile is tapped with no saved server selected"
-  },
-  "queuedSending": "Sending…",
-  "@queuedSending": {
-    "description": "Queued draft bubble label while the offline flush is dispatching it"
   },
   "queuedDeliveryUnconfirmed": "Delivery unconfirmed — review before resending",
   "@queuedDeliveryUnconfirmed": {
@@ -2788,8 +2653,7 @@
   "workspaceIsolatedTask": "Isolated task",
   "workspaceAllSessions": "All conversations",
   "workspaceDismissNotice": "Dismiss",
-  "workspaceManageProject": "Manage project",
-  "workspaceManageProjectHint": "Switch project, worktrees, and project health",
+  "workspaceManageProjectHint": "Switch project, where it runs, and its folder",
   "workspaceManage": "Manage",
   "reviewCopiedFile": "Updated file copied",
   "reviewCopiedPatch": "Patch copied",
@@ -2938,14 +2802,9 @@
   "workBackgroundUnavailable": "This server has not confirmed support for moving work to the background.",
   "workBackgroundEligible": "Run in background is available while a supported agent task or command is blocking this conversation.",
   "workBackgroundAutomatic": "Ask your agent to delegate work in the background. Results return to this conversation automatically.",
-  "oc2DiscoveryConnect": "Connect OpenCode 2",
-  "@oc2DiscoveryConnect": {
-    "description": "Opens the existing-server editor for someone looking for OpenCode 2; does not force the protocol."
-  },
   "oc2DiscoveryEditorTitle": "OpenCode 2",
   "oc2DiscoveryExisting": "Use a server that is already running.",
   "oc2DiscoveryTypes": "OpenCode 1 or 2",
-  "oc2DiscoveryAutodetect": "Detects OpenCode 1 or 2 automatically.",
   "oc2DiscoveryPhone": "Set up OpenCode 1 or 2 here with Termux.",
   "setupSwitchUse": "Try {runtime}",
   "@setupSwitchUse": {
@@ -3296,52 +3155,8 @@
   "@e7GlossaryMcpExplanation": {
     "description": "Localized shared connection or glossary interface"
   },
-  "e7GlossaryWorktreeTerm": "Worktree",
-  "@e7GlossaryWorktreeTerm": {
-    "description": "Localized shared connection or glossary interface"
-  },
   "e7GlossaryWorktreeExplanation": "A separate checkout of the same repository. Use one when you want the agent to try something on its own branch without touching the code you are working in.",
   "@e7GlossaryWorktreeExplanation": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryProviderExplanation": "The company that hosts a model, such as Anthropic, OpenAI or a local runtime. Each one needs its own API key or login.",
-  "@e7GlossaryProviderExplanation": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryContextTerm": "Context",
-  "@e7GlossaryContextTerm": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryContextExplanation": "Everything the model can see right now: your messages, files it read, and tool results. It has a size limit. When it fills up, older parts are summarised so the conversation can continue.",
-  "@e7GlossaryContextExplanation": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryAgentTerm": "Agent",
-  "@e7GlossaryAgentTerm": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryAgentExplanation": "A named set of instructions and permissions the model works under. The default one can read and edit code. Others might only plan, or only review.",
-  "@e7GlossaryAgentExplanation": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryReasoningExplanation": "The model’s working notes before it answers. Useful for seeing why it made a choice. Hidden by default to keep the conversation short.",
-  "@e7GlossaryReasoningExplanation": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryPermissionTerm": "Permission",
-  "@e7GlossaryPermissionTerm": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryPermissionExplanation": "Before the agent runs a command or edits a file outside what it is already allowed, it asks you. Allow once, or always for that pattern.",
-  "@e7GlossaryPermissionExplanation": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryVariantTerm": "Variant",
-  "@e7GlossaryVariantTerm": {
-    "description": "Localized shared connection or glossary interface"
-  },
-  "e7GlossaryVariantExplanation": "A speed-versus-depth setting for the model, such as how long it may think before answering.",
-  "@e7GlossaryVariantExplanation": {
     "description": "Localized shared connection or glossary interface"
   },
   "e7GlossaryGotIt": "Got it",
@@ -4678,10 +4493,6 @@
   "@e7SettingsUi88": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsUi89": "No captured errors",
-  "@e7SettingsUi89": {
-    "description": "Settings and appearance user interface."
-  },
   "e7SettingsUi91": "Connect a computer or run OpenCode on this phone",
   "@e7SettingsUi91": {
     "description": "Settings and appearance user interface."
@@ -4838,15 +4649,6 @@
       }
     }
   },
-  "e7SettingsDiagnosticCount": "{count, plural, =1{1 handled error kept in memory} other{{count} handled errors kept in memory}}",
-  "@e7SettingsDiagnosticCount": {
-    "description": "Settings and appearance user interface.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "e7SettingsRestartBody": "OpenCode {version} is installed, but this server process is still running {current}. Restart that process on the server host; mobile will reconnect and confirm the running version.",
   "@e7SettingsRestartBody": {
     "description": "Settings and appearance user interface.",
@@ -4949,10 +4751,6 @@
       }
     }
   },
-  "e7SettingsDetailUi0": "Diagnostics copied",
-  "@e7SettingsDetailUi0": {
-    "description": "Settings and appearance user interface."
-  },
   "e7SettingsDetailUi2": "Diagnostics sent to OpenCode",
   "@e7SettingsDetailUi2": {
     "description": "Settings and appearance user interface."
@@ -4969,24 +4767,12 @@
   "@e7SettingsDetailUi5": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsDetailUi7": "Private until you send it",
-  "@e7SettingsDetailUi7": {
-    "description": "Settings and appearance user interface."
-  },
-  "e7SettingsDetailUi8": "Handled app errors are redacted and kept only in memory. Your messages and file contents are not collected. Nothing is sent automatically.",
-  "@e7SettingsDetailUi8": {
-    "description": "Settings and appearance user interface."
-  },
   "e7SettingsDetailUi10": "Send",
   "@e7SettingsDetailUi10": {
     "description": "Settings and appearance user interface."
   },
   "e7SettingsDetailUi12": "This server doesn't accept client logs",
   "@e7SettingsDetailUi12": {
-    "description": "Settings and appearance user interface."
-  },
-  "e7SettingsDetailUi13": "No captured app errors",
-  "@e7SettingsDetailUi13": {
     "description": "Settings and appearance user interface."
   },
   "e7SettingsDetailUi14": "Handled Flutter, platform, and startup errors will appear here for this app run.",
@@ -5048,24 +4834,6 @@
   "e7SettingsNonAffiliation": "OpenCode Mobile is an independent community project. It is not built, maintained, endorsed by, or affiliated with the official OpenCode team.",
   "@e7SettingsNonAffiliation": {
     "description": "Settings and appearance user interface."
-  },
-  "e7SettingsDiagnosticSendError": "Could not send diagnostics: {error}",
-  "@e7SettingsDiagnosticSendError": {
-    "description": "Settings and appearance user interface.",
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "e7SettingsDiagnosticTotal": "{count, plural, =1{1 handled error} other{{count} handled errors}}",
-  "@e7SettingsDiagnosticTotal": {
-    "description": "Settings and appearance user interface.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
   },
   "e7SettingsDiagnosticOccurrences": "{count} occurrences",
   "@e7SettingsDiagnosticOccurrences": {
@@ -6489,10 +6257,6 @@
       }
     }
   },
-  "e7WorkspaceLoadingSessions": "Loading conversations…",
-  "@e7WorkspaceLoadingSessions": {
-    "description": "Workspace and activity: Loading sessions…"
-  },
   "e7WorkspaceLoadedRecentEmpty": "Older conversations may still be available below.",
   "@e7WorkspaceLoadedRecentEmpty": {
     "description": "Workspace and activity: Older conversations may still be available below."
@@ -6965,10 +6729,6 @@
   "@chatUiEditTheCurrentPromptInAFocused": {
     "description": "Chat journey: Edit the current prompt in a focused full-screen view"
   },
-  "chatUiEmptySessionWasKeptBecauseOpenCodeCould": "Empty conversation was kept because OpenCode could not verify or remove it.",
-  "@chatUiEmptySessionWasKeptBecauseOpenCodeCould": {
-    "description": "Chat journey: Empty session was kept because OpenCode could not verify or remove it."
-  },
   "chatUiErrorDetails": "Error details",
   "@chatUiErrorDetails": {
     "description": "Chat journey: Error details"
@@ -7169,14 +6929,6 @@
   "@chatUiMessageActions": {
     "description": "Chat journey: Message actions"
   },
-  "chatUiMessageDeleted": "Message deleted",
-  "@chatUiMessageDeleted": {
-    "description": "Chat journey: Message deleted"
-  },
-  "chatUiMessageTextCopied": "Message text copied",
-  "@chatUiMessageTextCopied": {
-    "description": "Chat journey: Message text copied"
-  },
   "chatUiMessageTimeline": "Message timeline",
   "@chatUiMessageTimeline": {
     "description": "Chat journey: Message timeline"
@@ -7188,10 +6940,6 @@
   "chatUiMessageTimestampsShown": "Message timestamps shown",
   "@chatUiMessageTimestampsShown": {
     "description": "Chat journey: Message timestamps shown"
-  },
-  "chatUiMessagesAndFileChangesAfterTheMost": "Messages and file changes after the most recent prompt will be rolled back.",
-  "@chatUiMessagesAndFileChangesAfterTheMost": {
-    "description": "Chat journey: Messages and file changes after the most recent prompt will be rolled back."
   },
   "chatUiMobileActionsAndCommandsFromThisServer": "Mobile actions and commands from this server",
   "@chatUiMobileActionsAndCommandsFromThisServer": {
@@ -7409,10 +7157,6 @@
   "@chatUiReloadMessages": {
     "description": "Chat journey: Reload messages"
   },
-  "chatUiRemovesItFromTheConversationPermanently": "Removes it from the conversation permanently",
-  "@chatUiRemovesItFromTheConversationPermanently": {
-    "description": "Chat journey: Removes it from the conversation permanently"
-  },
   "chatUiRename": "Rename",
   "@chatUiRename": {
     "description": "Chat journey: Rename"
@@ -7449,17 +7193,9 @@
   "@chatUiRetryServerCommands": {
     "description": "Chat journey: Retry server commands"
   },
-  "chatUiRevert": "Revert",
-  "@chatUiRevert": {
-    "description": "Chat journey: Revert"
-  },
-  "chatUiRevertFromThisPrompt": "Revert from this prompt?",
-  "@chatUiRevertFromThisPrompt": {
-    "description": "Chat journey: Revert from this prompt?"
-  },
-  "chatUiRevertLastPrompt": "Revert last prompt",
+  "chatUiRevertLastPrompt": "Undo last prompt",
   "@chatUiRevertLastPrompt": {
-    "description": "Chat journey: Revert last prompt"
+    "description": "Conversation menu and /undo command: opens the one \"Undo from this prompt?\" sheet for the newest prompt."
   },
   "chatUiReviewCommentAddedToThePrompt": "Review comment added to the prompt",
   "@chatUiReviewCommentAddedToThePrompt": {
@@ -7473,10 +7209,6 @@
   "@chatUiReviewTheActualDiffForThisSession": {
     "description": "Chat journey: Review the actual diff for this session"
   },
-  "chatUiRollBackMessagesAndFileChangesAfter": "Roll back messages and file changes after the prompt",
-  "@chatUiRollBackMessagesAndFileChangesAfter": {
-    "description": "Chat journey: Roll back messages and file changes after the prompt"
-  },
   "chatUiRunOnYourComputer": "Run on your computer",
   "@chatUiRunOnYourComputer": {
     "description": "Chat journey: Run on your computer"
@@ -7484,6 +7216,26 @@
   "chatUiRunShellCommand": "Run shell command",
   "@chatUiRunShellCommand": {
     "description": "Chat journey: Run shell command"
+  },
+  "chatRunShellLabel": "Command",
+  "@chatRunShellLabel": {
+    "description": "Run shell command dialog (chat-run-shell-dialog): the field's label"
+  },
+  "chatRunShellHint": "npm test",
+  "@chatRunShellHint": {
+    "description": "Run shell command dialog: an example command shown in the empty field; a real command, never translated"
+  },
+  "chatRunShellHelper": "The agent runs it in this project, and its output joins the conversation.",
+  "@chatRunShellHelper": {
+    "description": "Run shell command dialog: what happens when the command runs, under the field"
+  },
+  "chatRunShellEmpty": "Type a command to run.",
+  "@chatRunShellEmpty": {
+    "description": "Run shell command dialog: why Run is off while the field is empty"
+  },
+  "chatRenameEmpty": "Type a title.",
+  "@chatRenameEmpty": {
+    "description": "Rename conversation dialog (chat-rename-session-dialog): why Rename is off while the title is empty"
   },
   "chatUiRunningTools": "Running tools",
   "@chatUiRunningTools": {
@@ -7577,10 +7329,6 @@
   "@chatUiSessionContext": {
     "description": "Chat journey: Session context"
   },
-  "chatUiSessionIsNoLongerShared": "Conversation is no longer shared",
-  "@chatUiSessionIsNoLongerShared": {
-    "description": "Chat journey: Session is no longer shared"
-  },
   "chatUiSessionMenu": "Conversation menu",
   "@chatUiSessionMenu": {
     "description": "Chat journey: Session menu"
@@ -7644,10 +7392,6 @@
   "chatUiStartACleanSessionInThisWorkspace": "Start a clean conversation in this project",
   "@chatUiStartACleanSessionInThisWorkspace": {
     "description": "Chat journey: Start a clean session in this workspace"
-  },
-  "chatUiStartANewSessionWithThisPrompt": "Start a new conversation with this prompt in the composer",
-  "@chatUiStartANewSessionWithThisPrompt": {
-    "description": "Chat journey: Start a new session with this prompt in the composer"
   },
   "chatUiStartCoding": "Start coding",
   "@chatUiStartCoding": {
@@ -7769,9 +7513,9 @@
   "@chatUiTodoList": {
     "description": "Chat journey: Todo list"
   },
-  "chatUiTodos": "Todos",
+  "chatUiTodos": "Tasks",
   "@chatUiTodos": {
-    "description": "Chat journey: Todos"
+    "description": "Conversation menu entry that jumps to the agent's latest task list in the transcript (the Tasks step)."
   },
   "chatUiToggleCreationTimesBesideTranscriptEntries": "Toggle creation times beside transcript entries",
   "@chatUiToggleCreationTimesBesideTranscriptEntries": {
@@ -8240,9 +7984,9 @@
       }
     }
   },
-  "chatUiSubagentCount": "Subagent · {count}",
+  "chatUiSubagentCount": "Delegated conversation · {count}",
   "@chatUiSubagentCount": {
-    "description": "Chat journey: Subagent · {count}",
+    "description": "Status line of a conversation another agent delegated: its place among its siblings, such as 2 of 3.",
     "placeholders": {
       "count": {
         "type": "Object"
@@ -8790,7 +8534,7 @@
       }
     }
   },
-  "e7LibraryReportABug": "Report a bug",
+  "e7LibraryReportABug": "Report a problem",
   "@e7LibraryReportABug": {
     "description": "Library and project tools UI: Report a bug"
   },
@@ -9168,49 +8912,21 @@
   "@e7LibraryNoProjectFolderIsOpenChooseOne": {
     "description": "Library and project tools UI: No project folder is open. Choose one from Workspace."
   },
-  "e7LibraryProject": "Project",
-  "@e7LibraryProject": {
-    "description": "Library and project tools UI: Project"
-  },
   "e7LibrarySwitchProject": "Switch project",
   "@e7LibrarySwitchProject": {
     "description": "Library and project tools UI: Switch project"
-  },
-  "e7LibraryChooseAnotherProjectOpenedByThisServer": "Choose another project opened by this server",
-  "@e7LibraryChooseAnotherProjectOpenedByThisServer": {
-    "description": "Library and project tools UI: Choose another project opened by this server"
-  },
-  "e7LibraryCoding": "Coding",
-  "@e7LibraryCoding": {
-    "description": "Library and project tools UI: Coding"
   },
   "e7LibraryWorktrees": "Worktrees",
   "@e7LibraryWorktrees": {
     "description": "Library and project tools UI: Worktrees"
   },
-  "e7LibraryChooseAProjectFirst": "Choose a project first",
-  "@e7LibraryChooseAProjectFirst": {
-    "description": "Library and project tools UI: Choose a project first"
-  },
-  "e7LibraryCreateAndManageIsolatedGitBranches": "Create and manage isolated Git branches",
-  "@e7LibraryCreateAndManageIsolatedGitBranches": {
-    "description": "Library and project tools UI: Create and manage isolated Git branches"
-  },
   "e7LibraryManagedWorkspaces": "Cloud environments",
   "@e7LibraryManagedWorkspaces": {
     "description": "Library and project tools UI: Managed workspaces"
   },
-  "e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked": "Create, discover, open, and remove adapter-backed environments",
-  "@e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked": {
-    "description": "Library and project tools UI: Create, discover, open, and remove adapter-backed environments"
-  },
   "e7LibraryProjectHealth": "Project health",
   "@e7LibraryProjectHealth": {
     "description": "Library and project tools UI: Project health"
-  },
-  "e7LibraryBranchChangedFilesLanguageServicesAndFormatters": "Branch, changed files, language services, and formatters",
-  "@e7LibraryBranchChangedFilesLanguageServicesAndFormatters": {
-    "description": "Library and project tools UI: Branch, changed files, language services, and formatters"
   },
   "e7LibraryOpenCodeIsReconnecting": "OpenCode is reconnecting.",
   "@e7LibraryOpenCodeIsReconnecting": {
@@ -9691,10 +9407,6 @@
         "description": "Server or project detail displayed verbatim in this message."
       }
     }
-  },
-  "e7LibraryLocationChanged": "Project changed.",
-  "@e7LibraryLocationChanged": {
-    "description": "Library and project tools UI: Location changed."
   },
   "e7LibraryAuthenticateFromTheServerMachine": "Authenticate from the server machine",
   "@e7LibraryAuthenticateFromTheServerMachine": {
@@ -12772,13 +12484,9 @@
   "@handoffUiPhoneUnavailable": {
     "description": "QR sheet state when the session or server reference fails validation"
   },
-  "handoffUiLinkServerMissing": "This server is not saved on this phone. Add it under Servers, then scan the code again.",
+  "handoffUiLinkServerMissing": "The conversation is on a server this phone has not saved. Add it here, then scan the code again.",
   "@handoffUiLinkServerMissing": {
     "description": "Banner shown when a scanned session link names a server this phone does not have"
-  },
-  "handoffUiLinkOpenServers": "Open Servers",
-  "@handoffUiLinkOpenServers": {
-    "description": "Banner action opening the servers screen"
   },
   "handoffUiLinkDismiss": "Dismiss",
   "@handoffUiLinkDismiss": {
@@ -13691,9 +13399,9 @@
       }
     }
   },
-  "teamUiHomeGateLinkRun": "Run {title}",
+  "teamUiHomeGateLinkRun": "Task {title}",
   "@teamUiHomeGateLinkRun": {
-    "description": "AI Team home Needs you row link text naming the run; title is server content",
+    "description": "Gate sheet kicker: the task the question belongs to",
     "placeholders": {
       "title": {
         "type": "String"
@@ -14804,9 +14512,9 @@
   "@teamUiGateFailureClassUnknown": {
     "description": "Failure class word when the error text matches nothing"
   },
-  "teamUiGateFailureClassification": "Classification",
+  "teamUiGateFailureClassification": "What went wrong",
   "@teamUiGateFailureClassification": {
-    "description": "Failed-run sheet heading"
+    "description": "Gate sheet (failed task): label over the failure in words and what to do"
   },
   "teamUiGateFailureError": "Error",
   "@teamUiGateFailureError": {
@@ -14980,9 +14688,17 @@
   "@teamUiGateAnswerOptionsHint": {
     "description": "Helper under the option list of a choice decision before anything is selected"
   },
-  "teamUiGateAnswerRunRetry": "Try again",
+  "teamUiGateAnswerRunRetry": "Send {work} to {agent} again",
   "@teamUiGateAnswerRunRetry": {
-    "description": "Failed-run sheet action sending the stuck work to its agent again"
+    "description": "Gate sheet (failed task): sends the stuck work to its agent again; names the work and the agent",
+    "placeholders": {
+      "work": {
+        "type": "String"
+      },
+      "agent": {
+        "type": "String"
+      }
+    }
   },
   "teamUiGateAnswerRunRetryDetail": "Sends {work} to {agent} again.",
   "@teamUiGateAnswerRunRetryDetail": {
@@ -15317,9 +15033,14 @@
   "@teamUiStartRunPlannerHint": {
     "description": "Helper line under the planner row"
   },
-  "teamUiStartRunSend": "Send to planner",
+  "teamUiStartRunSend": "Send to the {planner}",
   "@teamUiStartRunSend": {
-    "description": "Primary button of the Start-a-run sheet"
+    "description": "Give the team a task: primary, names the planner it sends to",
+    "placeholders": {
+      "planner": {
+        "type": "String"
+      }
+    }
   },
   "teamUiStartRunPlannerOffTitle": "The planner (Mayor) is off on this host",
   "@teamUiStartRunPlannerOffTitle": {
@@ -16018,9 +15739,9 @@
   "@termuxStorageCatOpenCode": {
     "description": "Storage category"
   },
-  "termuxStorageNoteOpenCode": "The server, its sign-ins and conversation history. Not removed from here; conversations have their own screen.",
+  "termuxStorageNoteOpenCode": "The server, its sign-ins and conversation history. Conversations have their own screen.",
   "@termuxStorageNoteOpenCode": {
-    "description": "Storage category note"
+    "description": "Storage on this phone: what the OpenCode category holds (the footnote says once that it is not removed here)"
   },
   "termuxStorageCatProjects": "Projects (your files)",
   "@termuxStorageCatProjects": {
@@ -16303,9 +16024,9 @@
   "@termuxProcsKeep": {
     "description": "Two-step confirmation cancel button"
   },
-  "termuxProcsProtected": "Protected · open On this phone",
+  "termuxProcsProtected": "Protected · control it from On this phone",
   "@termuxProcsProtected": {
-    "description": "Row subtitle for sshd and opencode serve"
+    "description": "Running now: a protected process (the OpenCode server, sshd) says so and where it is controlled"
   },
   "termuxProcsOrphanParentGone": "Its parent is gone · running for {elapsed}",
   "@termuxProcsOrphanParentGone": {
@@ -16495,7 +16216,7 @@
   "@teamUiPhoneSkip": {
     "description": "On-device AI Team block: primary (skip) action"
   },
-  "teamUiPhoneSetUp": "Set up AI team",
+  "teamUiPhoneSetUp": "Set up AI Team on this phone",
   "@teamUiPhoneSetUp": {
     "description": "On-device AI Team block: set-up action"
   },
@@ -16832,9 +16553,9 @@
   "@teamUiPhoneKeepRunningTitle": {
     "description": "On this phone: tips row title"
   },
-  "teamUiPhoneKeepRunningSubtitle": "Wake lock, battery setting and the phantom process killer",
+  "teamUiPhoneKeepRunningSubtitle": "Stop Android from closing the team in the background",
   "@teamUiPhoneKeepRunningSubtitle": {
-    "description": "On this phone: tips row subtitle"
+    "description": "Settings › Plugins › On this phone: what the Keep it running row is for"
   },
   "teamUiPhoneTipsIntro": "Android stops background work it considers excessive, and the team is exactly that: dozens of short gc and bd processes and an agent at full CPU. Three things keep it alive.",
   "@teamUiPhoneTipsIntro": {
@@ -16893,7 +16614,7 @@
   "@teamUiPhoneNotAvailable": {
     "description": "On this phone: unavailable copy (03-onboarding §5)"
   },
-  "teamUiPhoneReofferTitle": "Set up AI team on this phone",
+  "teamUiPhoneReofferTitle": "Let a team of agents work on this phone too",
   "@teamUiPhoneReofferTitle": {
     "description": "Settings › Plugins: re-offer row title"
   },
@@ -17121,11 +16842,11 @@
   "@settingsHubSearchVoiceAliases": {
     "description": "Search aliases for the Voice row; preserve English terms."
   },
-  "settingsHubSearchNotificationsAliases": "notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds",
+  "settingsHubSearchNotificationsAliases": "notifications alerts quiet hours background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds",
   "@settingsHubSearchNotificationsAliases": {
     "description": "Search aliases for the Notifications row; preserve English terms."
   },
-  "settingsHubSearchAppearanceAliases": "appearance theme dark light language arabic english font text size colors",
+  "settingsHubSearchAppearanceAliases": "appearance theme dark light language arabic english colors",
   "@settingsHubSearchAppearanceAliases": {
     "description": "Search aliases for the Appearance row; preserve English terms."
   },
@@ -17161,7 +16882,7 @@
   "@settingsHubSearchGuideAliases": {
     "description": "Search aliases for the Setup guide row; preserve English terms."
   },
-  "settingsHubSearchBugAliases": "bug feedback issue support report",
+  "settingsHubSearchBugAliases": "bug feedback issue support report problem crash diagnostics errors log github",
   "@settingsHubSearchBugAliases": {
     "description": "Search aliases for the Report a bug row; preserve English terms."
   },
@@ -17320,7 +17041,7 @@
   },
   "discoverNotifyWhatAliases": "finished runs approvals questions check-ins check in quota alerts what notifies",
   "discoverNotifyQuietAliases": "quiet hours do not disturb night silence mute schedule",
-  "discoverNotifyBackgroundAliases": "background connection stay connected battery keep alive service",
+  "discoverNotifyBackgroundAliases": "background connection stay connected keep alive service",
   "discoverNotifyServersAliases": "monitor saved servers attention wi-fi wifi check in the background",
   "discoverAppearanceModeAliases": "light dark mode system appearance night",
   "discoverLanguageAliases": "language arabic english locale translation rtl",
@@ -17336,7 +17057,7 @@
   "discoverRunningNowAliases": "running now processes termux services stop on this phone",
   "discoverStorageAliases": "storage on this phone disk space clean termux",
   "discoverMonitorAliases": "saved-server attention monitor other servers waiting server attention",
-  "discoverConnectionHelpAliases": "connection help cannot connect troubleshooting network refused timeout",
+  "discoverConnectionHelpAliases": "add server computer connect pair pairing code connection help cannot connect troubleshooting network refused timeout",
   "gestureEquivFileRowActions": "Actions for {name}",
   "@gestureEquivFileRowActions": {
     "description": "Files list: tooltip and accessibility label of the trailing button on a file or folder row. It opens the same actions as a long press or right click on the row.",
@@ -17488,7 +17209,7 @@
       }
     }
   },
-  "nudgeReviewChanges": "This run changed files: review what changed before you continue.",
+  "nudgeReviewChanges": "OpenCode changed files. Look them over before you go on.",
   "@nudgeReviewChanges": {
     "description": "One-time tip above the composer when a run that edited files finishes. Its button opens Review changes."
   },
@@ -17533,29 +17254,13 @@
   "@firstRunJustShowMe": {
     "description": "First-run welcome choice that opens the simulated demo."
   },
-  "firstRunWhichAgent": "Which agent first?",
-  "@firstRunWhichAgent": {
-    "description": "First run, computer path: the question above the three agent choices."
-  },
   "firstRunAgentOpenCode": "OpenCode",
   "@firstRunAgentOpenCode": {
     "description": "Agent choice title; a product name, not translated."
   },
-  "firstRunAgentClaudeOrPi": "Claude Code, Codex, Pi and more",
-  "@firstRunAgentClaudeOrPi": {
-    "description": "Agent choice title for the Paseo backend; product names are not translated."
-  },
-  "firstRunAgentClaudeOrPiDetail": "One connection to the Paseo daemon drives every agent installed there. Experimental.",
-  "@firstRunAgentClaudeOrPiDetail": {
-    "description": "Agent choice: one line under 'Claude Code or Pi'."
-  },
   "firstRunAgentCodex": "Codex",
   "@firstRunAgentCodex": {
     "description": "Agent choice title; a product name, not translated."
-  },
-  "firstRunAgentCodexDetail": "Directly, through Codex app-server. Experimental.",
-  "@firstRunAgentCodexDetail": {
-    "description": "Agent choice: one line under 'Codex'."
   },
   "firstRunRunOnComputer": "On your computer, run:",
   "@firstRunRunOnComputer": {
@@ -18324,9 +18029,9 @@
   "@setupProgressViewContinue": {
     "description": "Button that resumes a setup job after it stopped"
   },
-  "setupProgressViewCancel": "Cancel",
+  "setupProgressViewCancel": "Stop setup",
   "@setupProgressViewCancel": {
-    "description": "Button that stops a running setup job"
+    "description": "Setup progress: stops the running setup (opens 'Stop setup?')"
   },
   "setupProgressViewShowDetails": "Show details",
   "@setupProgressViewShowDetails": {
@@ -18396,17 +18101,17 @@
   "@builtinServerExperimental": {
     "description": "Badge marking the built-in server as experimental"
   },
-  "builtinServerIntro": "The app downloads a small Ubuntu into its own storage and runs the OpenCode server inside it. No Termux needed. The server listens on this phone only; nothing on your network or the internet can reach it.",
+  "builtinServerIntro": "The app downloads a small Ubuntu and runs OpenCode in it. Only this phone can reach it.",
   "@builtinServerIntro": {
-    "description": "Intro text of the built-in server screen"
+    "description": "OpenCode inside the app: the one intro line"
   },
   "builtinServerAndroidOnly": "The built-in server runs on Android only.",
   "@builtinServerAndroidOnly": {
     "description": "Shown when the built-in server screen is opened off Android"
   },
-  "builtinServerStepUbuntu": "Download Ubuntu (about 30 MB)",
+  "builtinServerStepUbuntu": "Ubuntu",
   "@builtinServerStepUbuntu": {
-    "description": "Step 1 title"
+    "description": "OpenCode inside the app: title of the Ubuntu step"
   },
   "builtinServerStepOpenCode": "Install OpenCode",
   "@builtinServerStepOpenCode": {
@@ -18416,9 +18121,9 @@
   "@builtinServerStepStart": {
     "description": "Step 3 title"
   },
-  "builtinServerStepConnect": "Connect",
+  "builtinServerStepConnect": "Use it",
   "@builtinServerStepConnect": {
-    "description": "Step 4 title"
+    "description": "OpenCode inside the app: title of the last step (connect to the server)"
   },
   "builtinServerStepSemantics": "Step {number} of 4, {state}. {title}",
   "@builtinServerStepSemantics": {
@@ -18439,9 +18144,9 @@
   "@builtinServerUbuntuHint": {
     "description": "Explains the Ubuntu download"
   },
-  "builtinServerUbuntuAction": "Download Ubuntu",
+  "builtinServerUbuntuAction": "Download Ubuntu (30 MB)",
   "@builtinServerUbuntuAction": {
-    "description": "Button starting the Ubuntu download"
+    "description": "OpenCode inside the app: downloads Ubuntu, with its size"
   },
   "builtinServerUbuntuWorking": "Downloading and unpacking Ubuntu…",
   "@builtinServerUbuntuWorking": {
@@ -18499,13 +18204,13 @@
   "@builtinServerChooseRuntime": {
     "description": "Label above the OpenCode 1 / OpenCode 2 choice"
   },
-  "builtinServerStartAction": "Start",
+  "builtinServerStartAction": "Start the server",
   "@builtinServerStartAction": {
-    "description": "Button starting the server"
+    "description": "OpenCode inside the app: starts the server (also at the end of the server log)"
   },
-  "builtinServerStopAction": "Stop",
+  "builtinServerStopAction": "Stop the server",
   "@builtinServerStopAction": {
-    "description": "Button stopping the server"
+    "description": "OpenCode inside the app: stops the server"
   },
   "builtinServerStarting": "Starting OpenCode and waiting for it to answer…",
   "@builtinServerStarting": {
@@ -18546,9 +18251,9 @@
       }
     }
   },
-  "builtinServerConnectAction": "Connect",
+  "builtinServerConnectAction": "Connect to this phone",
   "@builtinServerConnectAction": {
-    "description": "Button connecting to the built-in server"
+    "description": "OpenCode inside the app: connects the app to the server inside it"
   },
   "builtinServerConnectHint": "Saves this server as \"{name}\" and opens it.",
   "@builtinServerConnectHint": {
@@ -18724,9 +18429,9 @@
       }
     }
   },
-  "builtinServerShowLog": "Show log",
+  "builtinServerShowLog": "Show server log",
   "@builtinServerShowLog": {
-    "description": "Opens the server log"
+    "description": "OpenCode inside the app: opens the server log"
   },
   "builtinServerLogTitle": "Server log",
   "@builtinServerLogTitle": {
@@ -19234,9 +18939,9 @@
       }
     }
   },
-  "phoneSetupStartSetUp": "Set up",
+  "phoneSetupStartSetUp": "Set up OpenCode on this phone",
   "@phoneSetupStartSetUp": {
-    "description": "The one primary button: installs everything needed to run a coding agent on this phone"
+    "description": "Phone setup start: the primary that starts the setup"
   },
   "phoneSetupStartIncludes": "Includes {tools}.",
   "@phoneSetupStartIncludes": {
@@ -19263,9 +18968,9 @@
   "@phoneSetupStartListSeparator": {
     "description": "Separator between names of a list, before the last pair"
   },
-  "phoneSetupStartCustomize": "Customize",
+  "phoneSetupStartCustomize": "Choose what to install",
   "@phoneSetupStartCustomize": {
-    "description": "Opens the sheet to choose which tools Set up installs"
+    "description": "Phone setup start: opens the sheet of the same name"
   },
   "phoneSetupStartOtherWays": "Other ways",
   "@phoneSetupStartOtherWays": {
@@ -19352,10 +19057,6 @@
   "phoneSetupStartAddTitle": "Add tools",
   "@phoneSetupStartAddTitle": {
     "description": "Title of the Customize sheet in add mode"
-  },
-  "phoneSetupStartRequiredWhy": "Needed for the agent to run",
-  "@phoneSetupStartRequiredWhy": {
-    "description": "Fallback reason a required component cannot be switched off"
   },
   "phoneSetupStartInstalled": "Installed",
   "@phoneSetupStartInstalled": {
@@ -20124,9 +19825,9 @@
   "@teamUiHomeNeedsYouAnswer": {
     "description": "Opens the full question to answer it (AI Team home, run Overview and the Work tab section)"
   },
-  "teamUiHomeNeedsYouMore": "More",
+  "teamUiHomeNeedsYouMore": "See the whole question",
   "@teamUiHomeNeedsYouMore": {
-    "description": "Opens the full question sheet from the inline question block"
+    "description": "Opens the full question sheet from the inline question block; names what it opens"
   },
   "teamUiHomeNeedsYouFallbackTitle": "The team has a question",
   "@teamUiHomeNeedsYouFallbackTitle": {
@@ -20144,14 +19845,6 @@
   "teamUiHomeAgentsRowHint": "Open the agents list",
   "@teamUiHomeAgentsRowHint": {
     "description": "Screen-reader hint of the agents row on the AI Team home"
-  },
-  "teamUiCardNothingRunning": "Nothing running",
-  "@teamUiCardNothingRunning": {
-    "description": "The Work tab AI Team section when no task is running or waiting"
-  },
-  "teamUiCardOpenHint": "Open AI Team",
-  "@teamUiCardOpenHint": {
-    "description": "Screen-reader hint of the Work tab AI Team section header, which opens the AI Team home"
   },
   "teamUiAgentRoleWorker": "Worker",
   "@teamUiAgentRoleWorker": {
@@ -20375,10 +20068,6 @@
   "pluginsStatusFailedToLoad": "Failed to load",
   "@pluginsStatusFailedToLoad": {
     "description": "State of a plugin the server could not load"
-  },
-  "pluginsRowMore": "More actions for this plugin",
-  "@pluginsRowMore": {
-    "description": "Tooltip of a plugin row's menu"
   },
   "pluginsDetailsId": "ID",
   "@pluginsDetailsId": {
@@ -24257,9 +23946,9 @@
   "@kitCapMcpAnyTitle": {
     "description": "KitCapabilityExplainer: the name of the capability \"mcp.any\", shown as the title of the dimmed row or the missing state"
   },
-  "kitCapMcpAnyWhy": "No extra tools are added on this server yet.",
+  "kitCapMcpAnyWhy": "This server can't add extra tools from the app.",
   "@kitCapMcpAnyWhy": {
-    "description": "KitCapabilityExplainer: why the capability \"mcp.any\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+    "description": "KitCapabilityExplainer: why the capability \"mcp.any\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body). It explains a server that cannot add MCP servers at all; the turn-on invitation is kitCapMcpAnyOffer"
   },
   "kitCapMcpAnyEnable": "Add a tool",
   "@kitCapMcpAnyEnable": {
@@ -24796,7 +24485,7 @@
   "@workspaceChooserEnterPath": {
     "description": "Folder chooser: open an existing folder by typing its path"
   },
-  "workspaceChooserRecentProjects": "Recent projects",
+  "workspaceChooserRecentProjects": "Open a project you used before",
   "@workspaceChooserRecentProjects": {
     "description": "Folder chooser: pick one of the projects already opened on this server"
   },
@@ -26239,9 +25928,9 @@
   "@phoneServerCardStartOpenCode": {
     "description": "This phone card: starts the stopped OpenCode server inside the app"
   },
-  "phoneServerCardStopOpenCode": "Stop OpenCode",
+  "phoneServerCardStopOpenCode": "Stop OpenCode on this phone",
   "@phoneServerCardStopOpenCode": {
-    "description": "This phone card: stops the OpenCode server inside the app"
+    "description": "This phone card menu: stops the OpenCode server inside the app"
   },
   "phoneServerCardShowServerLog": "Show server log",
   "@phoneServerCardShowServerLog": {
@@ -26595,9 +26284,9 @@
       }
     }
   },
-  "gateSheetOpenAgent": "Open {agent}",
+  "gateSheetOpenAgent": "Open {agent}'s page",
   "@gateSheetOpenAgent": {
-    "description": "Gate sheet, failed run: opens the worker's page. {agent} is its short name.",
+    "description": "Gate sheet (failed task): opens the agent's page",
     "placeholders": {
       "agent": {
         "type": "String"
@@ -27630,36 +27319,6 @@
   "@perfTraceClearTimings": {
     "description": "screen-system-1: App diagnostics › Performance: clears the measured step timings (not the errors)."
   },
-  "appDiagnosticsSendTo": "Send to {server}'s log",
-  "@appDiagnosticsSendTo": {
-    "description": "screen-system-1: App diagnostics primary: sends the captured errors to the connected server's own log.",
-    "placeholders": {
-      "server": {
-        "type": "String",
-        "example": "Workstation"
-      }
-    }
-  },
-  "appDiagnosticsSendWhere": "Adds these errors to the log of {server}. The app's makers don't receive them.",
-  "@appDiagnosticsSendWhere": {
-    "description": "screen-system-1: App diagnostics: says where Send goes, under the Send button.",
-    "placeholders": {
-      "server": {
-        "type": "String",
-        "example": "Workstation"
-      }
-    }
-  },
-  "appDiagnosticsSentTo": "Sent to {server}'s log",
-  "@appDiagnosticsSentTo": {
-    "description": "screen-system-1: App diagnostics: notice after a successful send.",
-    "placeholders": {
-      "server": {
-        "type": "String",
-        "example": "Workstation"
-      }
-    }
-  },
   "appDiagnosticsCopyErrors": "Copy errors",
   "@appDiagnosticsCopyErrors": {
     "description": "screen-system-1: App diagnostics secondary: copies the redacted error report."
@@ -27677,7 +27336,7 @@
       }
     }
   },
-  "appDiagnosticsClearBody": "{count, plural, =1{The error recorded since the app opened is removed from this phone. This can't be undone.} other{The {count} errors recorded since the app opened are removed from this phone. This can't be undone.}}",
+  "appDiagnosticsClearBody": "{count, plural, =1{The error kept on this phone is removed, also from the saved report. This can't be undone.} other{The {count} errors kept on this phone are removed, also from the saved report. This can't be undone.}}",
   "@appDiagnosticsClearBody": {
     "description": "screen-system-1: Confirmation body before clearing the captured errors.",
     "placeholders": {
@@ -27694,10 +27353,6 @@
         "type": "int"
       }
     }
-  },
-  "appDiagnosticsEmptyBody": "Errors the app handles appear here until it closes. After a crash or a restart this list starts empty.",
-  "@appDiagnosticsEmptyBody": {
-    "description": "screen-system-1: App diagnostics empty state body."
   },
   "capabilityStateHere": "Works here",
   "@capabilityStateHere": {
@@ -27974,18 +27629,6 @@
   "desktopReleaseOpenPage": "Open release page",
   "@desktopReleaseOpenPage": {
     "description": "Desktop release status line action: opens the release page in the browser after the external-link confirmation."
-  },
-  "bugReportBrowserDidNotOpen": "Your browser didn't open, so the link to the bug form is copied. Paste it into a browser to file the report.",
-  "@bugReportBrowserDidNotOpen": {
-    "description": "Report a bug sheet, shown when no browser opened the bug form: the link was copied instead."
-  },
-  "bugReportCopyLinkAgain": "Copy bug form link",
-  "@bugReportCopyLinkAgain": {
-    "description": "Report a bug sheet action: copies the bug form link again."
-  },
-  "bugReportLinkCopied": "Bug form link copied",
-  "@bugReportLinkCopied": {
-    "description": "Screen-reader announcement after the bug form link was copied."
   },
   "runningWorkTitle": "Work in this conversation",
   "@runningWorkTitle": {
@@ -28399,7 +28042,7 @@
   "@activeContextFailedTitle": {
     "description": "Active context: title of the load failure state."
   },
-  "activeContextIntro": "What the model reads on its next turn: the messages this server keeps for the conversation after its latest summary. Counts are messages, not tokens.",
+  "activeContextIntro": "What the model reads on its next turn, after the latest summary.",
   "@activeContextIntro": {
     "description": "Active context: plain one-paragraph intro above the list."
   },
@@ -28508,10 +28151,6 @@
   "@sessionNoteEmptyUseDelete": {
     "description": "Note for the agent: why Save is unavailable when the saved note was cleared in the field."
   },
-  "sessionNoteUnchanged": "Change the note to save it.",
-  "@sessionNoteUnchanged": {
-    "description": "Note for the agent: why Save is unavailable when nothing changed."
-  },
   "sessionRelationsTitle": "Subagents",
   "@sessionRelationsTitle": {
     "description": "Subagents page title."
@@ -28588,7 +28227,7 @@
       }
     }
   },
-  "sessionRelationsCopyHandoff": "Copy handoff for {title}",
+  "sessionRelationsCopyHandoff": "Continue {title} on computer",
   "@sessionRelationsCopyHandoff": {
     "description": "Subagents row menu: copies the handoff for the conversation.",
     "placeholders": {
@@ -29907,12 +29546,6 @@
   "@uncertainAuthDetail": {
     "description": "Sign-in sheet: a start the server may have taken without confirming it."
   },
-  "@uncertainAuthForgetTitle": {
-    "description": "Confirm title before clearing an unconfirmed sign-in start on this phone."
-  },
-  "@uncertainAuthForget": {
-    "description": "Confirm button that clears an unconfirmed sign-in start on this phone."
-  },
   "integrationsSignInWaiting": "Sign-in waiting",
   "@integrationsSignInWaiting": {
     "description": "Providers: the state word of a provider whose sign-in waits on the person (needs-you row)."
@@ -29986,9 +29619,6 @@
   "@toolsScreenNoBackgroundSubagents": {
     "description": "Tools page: appended to the model row's second line ('Anthropic · no background subagents') when the server runs no background subagents."
   },
-  "@pluginMappingClearAll": {
-    "description": "Plugins page: top bar menu item that asks, then clears every personal command link for this server."
-  },
   "usageRefreshSpending": "Refresh spending",
   "@usageRefreshSpending": {
     "description": "Usage top bar action that reloads the Spent tab"
@@ -30029,24 +29659,6 @@
   "perfTraceActions": "Timing report actions",
   "@perfTraceActions": {
     "description": "App diagnostics > Performance: name of the menu on the timings list header"
-  },
-  "appDiagnosticsCopyCount": "{count, plural, =1{Copy 1 error} other{Copy {count} errors}}",
-  "@appDiagnosticsCopyCount": {
-    "description": "App diagnostics: copies the listed handled errors as text",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "appDiagnosticsActions": "{count, plural, =1{Actions for 1 error} other{Actions for {count} errors}}",
-  "@appDiagnosticsActions": {
-    "description": "App diagnostics: name of the menu on the handled errors list header",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
   },
   "voiceSetupNotDownloaded": "Not downloaded · {size}",
   "@voiceSetupNotDownloaded": {
@@ -30099,8 +29711,364 @@
       }
     }
   },
-  "@quotaMonitorConsent": {
-    "description": "One-line explanation on the monitoring sheet that leads straight into the percentage choice, e.g. 'Keep checking Codex on Workstation in the background and alert me when use reaches:'",
+  "thisPhoneHostInApp": "In the app",
+  "@thisPhoneHostInApp": {
+    "description": "This phone: where OpenCode runs, when it runs inside this app's own Linux"
+  },
+  "thisPhoneHostTermux": "In Termux",
+  "@thisPhoneHostTermux": {
+    "description": "This phone: where OpenCode runs, when it runs in the Termux app"
+  },
+  "thisPhoneNeedsAttention": "Needs you",
+  "@thisPhoneNeedsAttention": {
+    "description": "This phone: the status word when a start or a switch between OpenCode versions failed or stopped half way"
+  },
+  "thisPhoneSetUp": "Set up OpenCode",
+  "@thisPhoneSetUp": {
+    "description": "This phone: the button when OpenCode is not set up yet"
+  },
+  "thisPhoneStart": "Start the server",
+  "@thisPhoneStart": {
+    "description": "This phone: the button that starts the stopped OpenCode server"
+  },
+  "thisPhoneStop": "Stop the server",
+  "@thisPhoneStop": {
+    "description": "This phone: the button that stops the running OpenCode server (it asks first)"
+  },
+  "thisPhoneUpdate": "Update OpenCode",
+  "@thisPhoneUpdate": {
+    "description": "This phone: the row that installs the pinned OpenCode version again"
+  },
+  "thisPhoneUpdateDetail": "Installs version {version}",
+  "@thisPhoneUpdateDetail": {
+    "description": "Technical: This phone: the line under Update, naming the pinned version it installs, e.g. 'Installs version 1.18.29'",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "thisPhoneAddTools": "Add tools",
+  "@thisPhoneAddTools": {
+    "description": "This phone: the row (and sheet title) that adds optional tools"
+  },
+  "thisPhoneInstalled": "Installed",
+  "@thisPhoneInstalled": {
+    "description": "This phone: the folded row that lists what setup installed"
+  },
+  "thisPhoneTerminal": "Open a terminal",
+  "@thisPhoneTerminal": {
+    "description": "This phone: the row that opens a shell in this phone's Linux"
+  },
+  "thisPhoneStorage": "Storage",
+  "@thisPhoneStorage": {
+    "description": "This phone: the storage row. The page title already names the phone."
+  },
+  "thisPhoneConnect": "Connect",
+  "@thisPhoneConnect": {
+    "description": "This phone: the primary button that connects the app to this phone's running server. The page title names the phone."
+  },
+  "thisPhoneRemove": "Remove OpenCode",
+  "@thisPhoneRemove": {
+    "description": "This phone: the destructive row that removes OpenCode (it asks first)"
+  },
+  "thisPhoneBusy": "Wait for the current step to finish",
+  "@thisPhoneBusy": {
+    "description": "This phone: why a row is off while OpenCode starts, stops or installs"
+  },
+  "phoneSetupTermuxAllowHow": "In Termux, paste the copied line and press Enter.",
+  "@phoneSetupTermuxAllowHow": {
+    "description": "Termux setup checklist: the instruction under 'Connect Termux once' while it waits for the person"
+  },
+  "phoneSetupTermuxUpdatingTitle": "Updating this phone",
+  "@phoneSetupTermuxUpdatingTitle": {
+    "description": "Termux setup checklist: the title while an update runs"
+  },
+  "phoneSetupTermuxStartingTitle": "Starting the server",
+  "@phoneSetupTermuxStartingTitle": {
+    "description": "Termux setup checklist: the title while OpenCode starts"
+  },
+  "phoneSetupTermuxConnecting": "Connecting",
+  "@phoneSetupTermuxConnecting": {
+    "description": "Termux setup checklist: the line under 'Start OpenCode' while the app connects to it"
+  },
+  "phoneSetupTermuxLeaveHint": "You can leave the app. Termux keeps working and this list picks up where it is when you come back.",
+  "@phoneSetupTermuxLeaveHint": {
+    "description": "Termux setup checklist: the quiet line under the title while setup runs"
+  },
+  "phoneSetupTermuxCost": "About 10–15 minutes the first time, in Termux's storage",
+  "@phoneSetupTermuxCost": {
+    "description": "Phone setup start: the cost line under 'Use Termux instead', said before anything installs"
+  },
+  "removeFromPhoneKeepBody": "OpenCode and its tools are removed and {size} comes back. Your projects stay on this phone and come back when you set up again.",
+  "@removeFromPhoneKeepBody": {
+    "description": "Remove from this phone: the default choice's body, with the space freed, e.g. '1.2 GB'",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "removeFromPhoneKeepBodyUnmeasured": "OpenCode and its tools are removed. Your projects stay on this phone and come back when you set up again.",
+  "@removeFromPhoneKeepBodyUnmeasured": {
+    "description": "Remove from this phone: the default choice's body when the space could not be measured"
+  },
+  "removeFromPhoneKeepConfirm": "Remove OpenCode, keep my projects",
+  "@removeFromPhoneKeepConfirm": {
+    "description": "Remove from this phone: the default confirm button"
+  },
+  "removeFromPhoneDeleteAll": "Delete everything",
+  "@removeFromPhoneDeleteAll": {
+    "description": "Remove from this phone: the other choice, which also deletes every project (asks for the typed name)"
+  },
+  "removeFromPhoneDeleteTitle": "Delete OpenCode and projects?",
+  "@removeFromPhoneDeleteTitle": {
+    "description": "Remove from this phone: the title of the heavy delete"
+  },
+  "removeFromPhoneDeleteBody": "OpenCode, its tools and every project on this phone are deleted and {size} comes back. This cannot be undone.",
+  "@removeFromPhoneDeleteBody": {
+    "description": "Remove from this phone: the heavy delete's body with the space freed",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "removeFromPhoneDeleteBodyUnmeasured": "OpenCode, its tools and every project on this phone are deleted. This cannot be undone.",
+  "@removeFromPhoneDeleteBodyUnmeasured": {
+    "description": "Remove from this phone: the heavy delete's body when the space could not be measured"
+  },
+  "thisPhoneManage": "Manage This phone",
+  "@thisPhoneManage": {
+    "description": "The This phone card's menu: opens This phone, where OpenCode on this phone is managed"
+  },
+  "chatRequestWho": "The agent",
+  "@chatRequestWho": {
+    "description": "Chat request card: who asks, in the card caption and the request sheet subtitle."
+  },
+  "chatRequestIfIgnored": "The agent waits until you answer. Nothing is lost.",
+  "@chatRequestIfIgnored": {
+    "description": "Chat request card: what happens if the person does not answer yet."
+  },
+  "chatRequestMoreWaiting": "{count, plural, one{1 more request is waiting.} other{{count} more requests are waiting.}}",
+  "@chatRequestMoreWaiting": {
+    "description": "Chat request card: how many other requests of this conversation wait behind the one shown.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatRequestNoConnection": "Not connected to the server, so this can’t be answered here.",
+  "@chatRequestNoConnection": {
+    "description": "Chat request card: why Allow once and Reject are unavailable (no connection)."
+  },
+  "chatRequestAlwaysTitle": "Always allow requests like this",
+  "@chatRequestAlwaysTitle": {
+    "description": "Permission request sheet: the risky switch that saves an always-allow rule."
+  },
+  "chatRequestAlwaysScope": "From now on, {patterns} runs without asking you, {context}. You can take this back in Settings under Always allowed actions.",
+  "@chatRequestAlwaysScope": {
+    "description": "Permission request sheet: what the always-allow switch covers, shown before it is turned on. {patterns} is the command or file pattern list; {context} says where, for example in this chat.",
+    "placeholders": {
+      "patterns": {
+        "type": "String"
+      },
+      "context": {
+        "type": "String"
+      }
+    }
+  },
+  "chatRequestAlwaysOn": "Always allowed",
+  "@chatRequestAlwaysOn": {
+    "description": "Permission request sheet: status words while an always-allow rule is on."
+  },
+  "chatRequestDetailTool": "Tool",
+  "@chatRequestDetailTool": {
+    "description": "Permission request sheet, Details: label of the tool name the server asked with."
+  },
+  "chatRequestDetailPatterns": "Requested patterns",
+  "@chatRequestDetailPatterns": {
+    "description": "Permission request sheet, Details: label of the patterns the request covers besides the command."
+  },
+  "chatRequestOtherAnswer": "Something else",
+  "@chatRequestOtherAnswer": {
+    "description": "Question request card: the row that opens a field for a typed answer."
+  },
+  "chatRequestOtherField": "Your answer",
+  "@chatRequestOtherField": {
+    "description": "Question request card: label of the typed-answer field."
+  },
+  "formFlowAnsweredElsewhereBody": "This form was answered on another device, so nothing was sent from this phone.",
+  "@formFlowAnsweredElsewhereBody": {
+    "description": "Form alert body when the server says the form was already answered elsewhere."
+  },
+  "approvalsUiPausedDetail": "This phone is not connected. Automatic approval resumes when it reconnects.",
+  "@approvalsUiPausedDetail": {
+    "description": "Approvals sheet and chip: why automatic approval is paused and when it resumes."
+  },
+  "voiceConversationSpeakRepliesBusy": "Getting the voice ready…",
+  "@voiceConversationSpeakRepliesBusy": {
+    "description": "Voice conversation: why the Speak replies switch is unavailable for a moment."
+  },
+  "voiceConversationStopReading": "Stop reading the reply",
+  "@voiceConversationStopReading": {
+    "description": "Voice conversation: stops reading the agent reply aloud."
+  },
+  "teamUiHomeRunReviewNext": "a reviewer checks it next",
+  "@teamUiHomeRunReviewNext": {
+    "description": "AI Team home: the end of a working task's line, what happens after the work (owner rule 2026-09-27: said on the task's row, not in a line above the list)"
+  },
+  "teamUiGateRunStoppedTitle": "{title} stopped",
+  "@teamUiGateRunStoppedTitle": {
+    "description": "Gate sheet title for a failed task: the task's title then 'stopped', so the failure is said once",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "termuxProcsKindParentGone": "Parent gone",
+  "@termuxProcsKindParentGone": {
+    "description": "Running now: first words of an orphan's line, why it was flagged"
+  },
+  "termuxProcsKindNoOwner": "No owner",
+  "@termuxProcsKindNoOwner": {
+    "description": "Running now: first words of an orphan's line that burns CPU with nothing waiting on it"
+  },
+  "termuxProcsStopOrphans": "{count, plural, =1{Stop 1 orphaned helper} other{Stop {count} orphaned helpers}}",
+  "@termuxProcsStopOrphans": {
+    "description": "Running now: the one bulk stop, offered only while orphans exist; also its confirm button",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "termuxProcsStopOrphansTitle": "{count, plural, =1{Stop the orphaned helper?} other{Stop {count} orphaned helpers?}}",
+  "@termuxProcsStopOrphansTitle": {
+    "description": "Running now: title of the confirmation for the bulk orphan stop",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamPhoneStopTeamRow": "Stop the team on this phone",
+  "@teamPhoneStopTeamRow": {
+    "description": "Settings › Plugins › On this phone: the row that stops the team while it runs"
+  },
+  "teamPhoneStopTeamRowSupporting": "Agents stop where they are; nothing is lost",
+  "@teamPhoneStopTeamRowSupporting": {
+    "description": "Settings › Plugins › On this phone: what stopping the team does, under its row"
+  },
+  "teamUiPhoneWorkingOn": "Working on {name}",
+  "@teamUiPhoneWorkingOn": {
+    "description": "Settings › Plugins › On this phone: the team's project by name under its status",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamUiPhoneVersionsLabel": "Engine versions",
+  "@teamUiPhoneVersionsLabel": {
+    "description": "Technical details label for the team engine's versions"
+  },
+  "teamUiPhoneProjectLabel": "Project folder",
+  "@teamUiPhoneProjectLabel": {
+    "description": "Technical details label for the team's full project path"
+  },
+  "phoneServerNameInSentence": "this phone",
+  "@phoneServerNameInSentence": {
+    "description": "The default name of the in-app server inside a sentence ('Disconnect from this phone')"
+  },
+  "teamAgentWorkUnblockedShort": "nothing blocking it",
+  "@teamAgentWorkUnblockedShort": {
+    "description": "Agent page subtitle end: its task has nothing holding it up"
+  },
+  "teamAgentWorkBlockedShort": "blocked",
+  "@teamAgentWorkBlockedShort": {
+    "description": "Agent page subtitle end: its task is blocked"
+  },
+  "teamAgentStepCommand": "Ran a command",
+  "@teamAgentStepCommand": {
+    "description": "Agent page: its newest step in plain words"
+  },
+  "teamAgentStepTest": "Ran the tests",
+  "@teamAgentStepTest": {
+    "description": "Agent page: its newest step in plain words"
+  },
+  "teamAgentStepRead": "Read a file",
+  "@teamAgentStepRead": {
+    "description": "Agent page: its newest step in plain words"
+  },
+  "teamAgentStepEdit": "Edited a file",
+  "@teamAgentStepEdit": {
+    "description": "Agent page: its newest step in plain words"
+  },
+  "teamAgentStepSearch": "Searched the code",
+  "@teamAgentStepSearch": {
+    "description": "Agent page: its newest step in plain words"
+  },
+  "teamAgentStepTool": "Used {tool}",
+  "@teamAgentStepTool": {
+    "description": "Agent page: its newest step, a tool with no plain word of its own",
+    "placeholders": {
+      "tool": {
+        "type": "String"
+      }
+    }
+  },
+  "teamAgentLastCommandLabel": "Last command",
+  "@teamAgentLastCommandLabel": {
+    "description": "Agent page Technical details: the raw command of its newest step"
+  },
+  "termuxStorageOnlyBuildCaches": "Only build caches can be cleaned here",
+  "@termuxStorageOnlyBuildCaches": {
+    "description": "Storage on this phone: the one footnote under the list"
+  },
+  "termuxStorageWhereItIs": "Where it is",
+  "@termuxStorageWhereItIs": {
+    "description": "Storage on this phone: label over a category's folders when it cannot be cleaned"
+  },
+  "termuxStorageCleanBuildCaches": "Clean build caches ({size})",
+  "@termuxStorageCleanBuildCaches": {
+    "description": "Storage on this phone: the one clean button, with the size it frees",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "monitorBackgroundChecks": "Background checks",
+  "@monitorBackgroundChecks": {
+    "description": "Title of the page that lists every saved server's last and next background check, and of the Servers page row that opens it"
+  },
+  "monitorRowLastChecked": "Last checked {when}",
+  "@monitorRowLastChecked": {
+    "description": "Supporting line of the Servers page's Background checks row, e.g. 'Last checked 5m ago'",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "monitorRowNotChecked": "Not checked yet",
+  "@monitorRowNotChecked": {
+    "description": "Supporting line of the Servers page's Background checks row when a server is monitored but no check has finished yet"
+  },
+  "monitorRowOff": "Off for every server",
+  "@monitorRowOff": {
+    "description": "Supporting line of the Servers page's Background checks row when no saved server is monitored"
+  },
+  "settingsTryDemo": "Try the demo",
+  "@settingsTryDemo": {
+    "description": "Settings › Help row (and search result) that opens the offline demo conversation"
+  },
+  "quotaMonitorCheckNow": "Check {provider} on {server} now",
+  "@quotaMonitorCheckNow": {
+    "description": "Row that reads one monitored provider account's quota again right away, e.g. 'Check Codex on Workstation now'",
     "placeholders": {
       "provider": {
         "type": "String"
@@ -30110,8 +30078,583 @@
       }
     }
   },
-  "quotaMonitorConsentDetails": "This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.",
-  "@quotaMonitorConsentDetails": {
-    "description": "Full terms of quota monitoring, under Details on the monitoring sheet"
+  "searchArchivedConversations": "Archived conversations",
+  "@searchArchivedConversations": {
+    "description": "Search result that opens All conversations filtered to archived ones"
+  },
+  "readAloudConsentEngine": "Only offline voices are offered, but the speech engine is separate software with its own privacy terms.",
+  "@readAloudConsentEngine": {
+    "description": "Read-aloud consent: a caveat under the two-sentence body. The engine is not part of this app; no promise of network isolation."
+  },
+  "readAloudConsentHeard": "People near you may hear it. Reading stops when you leave this conversation or the app.",
+  "@readAloudConsentHeard": {
+    "description": "Read-aloud consent: a caveat under the two-sentence body about audible output and when playback stops."
+  },
+  "transcriptFindStopSearchingAll": "Stop searching older messages",
+  "@transcriptFindStopSearchingAll": {
+    "description": "Find in conversation: stops loading older history to search it; what is already loaded stays searched."
+  },
+  "nudgeReviewChangesCount": "{count, plural, =1{OpenCode changed 1 file. Look it over before you go on.} other{OpenCode changed {count} files. Look them over before you go on.}}",
+  "@nudgeReviewChangesCount": {
+    "description": "One-time tip above the composer when a turn that edited files finishes and the server counted them. Its button opens Review changes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "voiceComponentTitle": "Voice typing",
+  "@voiceComponentTitle": {
+    "description": "The optional phone setup item that downloads the on-device speech model (Customize sheet, Add tools, setup checklist)"
+  },
+  "voiceComponentSummary": "Speak instead of typing, even offline",
+  "@voiceComponentSummary": {
+    "description": "One line under the Voice typing setup item saying what it does"
+  },
+  "voiceComponentRemove": "Remove voice typing",
+  "@voiceComponentRemove": {
+    "description": "Action on the installed Voice typing setup item: deletes the speech model"
+  },
+  "voiceComponentRemoveTitle": "Remove voice typing?",
+  "@voiceComponentRemoveTitle": {
+    "description": "Question before deleting the speech model from phone setup"
+  },
+  "voiceComponentRemoveBody": "Deletes the speech model and frees {size}. Voice typing stops working until you add it here again.",
+  "@voiceComponentRemoveBody": {
+    "description": "Body of the question before deleting the speech model",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "161 MB"
+      }
+    }
+  },
+  "setupAppStageDownloading": "Downloading",
+  "@setupAppStageDownloading": {
+    "description": "Setup checklist stage while the app downloads an item into its own storage (the voice typing model)"
+  },
+  "setupAppStageVerifying": "Checking the download",
+  "@setupAppStageVerifying": {
+    "description": "Setup checklist stage while the app verifies a downloaded item"
+  },
+  "kitDiffFilePosition": "{index} of {count}",
+  "@kitDiffFilePosition": {
+    "description": "KitDiffView: the phone file switcher's position after the file name, e.g. 'checkout_page.dart · 1 of 3'",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDiffFilePositionSpoken": "file {index} of {count}",
+  "@kitDiffFilePositionSpoken": {
+    "description": "KitDiffView: the file switcher's position as read by a screen reader, after the path and counts",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitDiffViewed": "Viewed",
+  "@kitDiffViewed": {
+    "description": "KitDiffView: screen-reader name of the tick on a file already viewed in the wide file list"
+  },
+  "kitDiffSelectHunk": "Select these lines",
+  "@kitDiffSelectHunk": {
+    "description": "KitDiffView: tooltip of a hunk's line range ('Lines 12–18') when selection is on; tapping it selects the whole hunk"
+  },
+  "kitCapFlagTerminalTitle": "Terminal",
+  "@kitCapFlagTerminalTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:terminal\" (the server's own terminal, without Files), shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagTerminalWhy": "This server doesn't open a terminal for you.",
+  "@kitCapFlagTerminalWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:terminal\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "kitCapFlagToolInventoryTitle": "Tool list",
+  "@kitCapFlagToolInventoryTitle": {
+    "description": "KitCapabilityExplainer: the name of the capability \"flag:toolInventory\" (the list of tools the server's agent can use), shown as the title of the dimmed row or the missing state"
+  },
+  "kitCapFlagToolInventoryWhy": "This server doesn't list the tools its agent can use.",
+  "@kitCapFlagToolInventoryWhy": {
+    "description": "KitCapabilityExplainer: why the capability \"flag:toolInventory\" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)"
+  },
+  "demoScreenReset": "Reset demo",
+  "@demoScreenReset": {
+    "description": "Offline demo: status-line action that starts the simulated conversation again."
+  },
+  "demoScreenLeave": "Leave demo",
+  "@demoScreenLeave": {
+    "description": "Offline demo: the top bar close button that leaves the demo."
+  },
+  "demoScreenDisclosure": "Everything here is simulated on this device. No server, provider, or files are accessed.",
+  "@demoScreenDisclosure": {
+    "description": "Offline demo: supporting line under \"Simulated · nothing is saved\"."
+  },
+  "capabilityScreenIntroWithGaps": "{server} decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out. Missing features work on other OpenCode servers.",
+  "@capabilityScreenIntroWithGaps": {
+    "description": "Available on this server: intro when the server lacks something; says once where missing features work.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "activeContextMessageTitle": "{role, select, user{User message} assistant{Assistant message} system{System message} synthetic{Synthetic message} skill{Skill message} shell{Shell message} compaction{Summary message} change{Conversation change} other{Message}}",
+  "@activeContextMessageTitle": {
+    "description": "Active context: title of one message page, by its role.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "newConversationLastUsed": "Last used",
+  "@newConversationLastUsed": {
+    "description": "New conversation chooser: marks the way the person started their last conversation on this server"
+  },
+  "newConversationSoloDetail": "You and the assistant",
+  "@newConversationSoloDetail": {
+    "description": "New conversation chooser: what the Solo row starts, when no project is known"
+  },
+  "newConversationSoloDetailIn": "You and the assistant, in {project}",
+  "@newConversationSoloDetailIn": {
+    "description": "New conversation chooser: what the Solo row starts and where",
+    "placeholders": {
+      "project": {
+        "type": "String",
+        "example": "shopfront"
+      }
+    }
+  },
+  "newConversationTeamDetail": "The AI Team plans the work and shares it out",
+  "@newConversationTeamDetail": {
+    "description": "New conversation chooser: what the Team row starts while the AI Team is on"
+  },
+  "newConversationTeamOffDetail": "Off on this server · opens the AI Team to set it up",
+  "@newConversationTeamOffDetail": {
+    "description": "New conversation chooser: the Team row while the AI Team is off; tapping it opens the team's off state"
+  },
+  "newConversationCopyTitle": "In a separate copy of {project}",
+  "@newConversationCopyTitle": {
+    "description": "New conversation chooser: starts the conversation in a fresh worktree of the project",
+    "placeholders": {
+      "project": {
+        "type": "String",
+        "example": "shopfront"
+      }
+    }
+  },
+  "newConversationCloudTitle": "On {machine}",
+  "@newConversationCloudTitle": {
+    "description": "New conversation chooser: starts the conversation on this cloud machine (a managed workspace)",
+    "placeholders": {
+      "machine": {
+        "type": "String",
+        "example": "feature-login"
+      }
+    }
+  },
+  "newConversationCloudDetail": "A cloud machine for this project",
+  "@newConversationCloudDetail": {
+    "description": "New conversation chooser: what a cloud machine row is"
+  },
+  "chatUiExportThisConversation": "Export this conversation",
+  "@chatUiExportThisConversation": {
+    "description": "Conversation menu row: save this conversation as a file (JSON where the server exports, Markdown otherwise)"
+  },
+  "chatDraftCopy": "Copy draft",
+  "@chatDraftCopy": {
+    "description": "Chat, draft not saved: copies the unsaved draft text"
+  },
+  "reportProblemIntro": "Say what went wrong. You see the whole report before anything leaves this phone.",
+  "@reportProblemIntro": {
+    "description": "slice-P8.2 Report a problem: the line under the page title."
+  },
+  "reportProblemDescribeLabel": "What happened?",
+  "@reportProblemDescribeLabel": {
+    "description": "slice-P8.2 Report a problem: the description field label."
+  },
+  "reportProblemDescribeHint": "What you did, what you expected, what you got instead",
+  "@reportProblemDescribeHint": {
+    "description": "slice-P8.2 Report a problem: the description field hint."
+  },
+  "reportProblemDescribeFirst": "Say what happened first",
+  "@reportProblemDescribeFirst": {
+    "description": "slice-P8.2 Report a problem: the description field error when Review is tapped with nothing to report."
+  },
+  "reportProblemAttached": "Attached: {title}",
+  "@reportProblemAttached": {
+    "description": "slice-P8.2 Report a problem: the error the page was opened from.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "reportProblemIncludeDiagnostics": "Include recent diagnostics",
+  "@reportProblemIncludeDiagnostics": {
+    "description": "slice-P8.2 Report a problem: the switch that adds the recent events."
+  },
+  "reportProblemIncludeDiagnosticsBody": "{count, plural, =1{1 event from this phone} other{{count} events from this phone}}, with keys, passwords and server addresses removed",
+  "@reportProblemIncludeDiagnosticsBody": {
+    "description": "slice-P8.2 Report a problem: what the switch adds.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportProblemReview": "Review report",
+  "@reportProblemReview": {
+    "description": "slice-P8.2 Report a problem: the primary button and the preview sheet title."
+  },
+  "reportProblemReviewHint": "Then open it on GitHub, copy it or share it. Screenshots can be added on the GitHub form.",
+  "@reportProblemReviewHint": {
+    "description": "slice-P8.2 Report a problem: what comes after Review."
+  },
+  "reportProblemErrorsLabel": "{count, plural, =1{1 recent error} other{{count} recent errors}}",
+  "@reportProblemErrorsLabel": {
+    "description": "slice-P8.2 Report a problem: the recent errors list label.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportProblemClearFailed": "Couldn't clear the saved report. Try again.",
+  "@reportProblemClearFailed": {
+    "description": "slice-P8.2 Report a problem: the saved report could not be deleted."
+  },
+  "reportProblemPreviewSubtitle": "This is exactly what is sent",
+  "@reportProblemPreviewSubtitle": {
+    "description": "slice-P8.2 Report a problem: the preview sheet subtitle."
+  },
+  "reportProblemPublicNotice": "GitHub issues are public. Nothing is filed until you submit the form there.",
+  "@reportProblemPublicNotice": {
+    "description": "slice-P8.2 Report a problem: the preview sheet notice above the report."
+  },
+  "reportProblemOpenGitHub": "Open GitHub form",
+  "@reportProblemOpenGitHub": {
+    "description": "slice-P8.2 Report a problem: the preview sheet primary: opens the prefilled issue form."
+  },
+  "reportProblemLinkCopiesDiagnostics": "The diagnostics are too long for the link. Opening the form copies them, so paste them into its Diagnostics field.",
+  "@reportProblemLinkCopiesDiagnostics": {
+    "description": "slice-P8.2 Report a problem: the prefill link cannot carry the diagnostics."
+  },
+  "reportProblemLinkCopiesWhole": "The report is too long for the link. Opening the form copies it, so paste it into the form.",
+  "@reportProblemLinkCopiesWhole": {
+    "description": "slice-P8.2 Report a problem: the prefill link cannot carry the report."
+  },
+  "reportProblemCopy": "Copy report",
+  "@reportProblemCopy": {
+    "description": "slice-P8.2 Report a problem: the preview sheet Copy action."
+  },
+  "reportProblemCopied": "Report copied",
+  "@reportProblemCopied": {
+    "description": "slice-P8.2 Report a problem: the announcement after Copy report."
+  },
+  "reportProblemDiagnosticsCopied": "Diagnostics copied: paste them into the form",
+  "@reportProblemDiagnosticsCopied": {
+    "description": "slice-P8.2 Report a problem: the announcement when opening the form copied the diagnostics."
+  },
+  "reportProblemShare": "Share report",
+  "@reportProblemShare": {
+    "description": "slice-P8.2 Report a problem: the preview sheet Share action."
+  },
+  "reportProblemShareFallback": "Sharing didn't open, so the report is copied",
+  "@reportProblemShareFallback": {
+    "description": "slice-P8.2 Report a problem: the announcement when the share sheet failed."
+  },
+  "reportProblemErrorBadge": "{count, plural, =1{1 error kept} other{{count} errors kept}}",
+  "@reportProblemErrorBadge": {
+    "description": "slice-P8.2 Report a problem: the Settings row badge semantics.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "thisPhoneAddToolsDetail": "Python, AI Team, voice typing and more",
+  "@thisPhoneAddToolsDetail": {
+    "description": "This phone: the line under Add tools, the optional tools phone setup can add (in the app or in Termux)"
+  },
+  "phoneSetupTermuxOtherRuntime": "Termux already runs the other OpenCode. Switch it on This phone, then continue setup.",
+  "@phoneSetupTermuxOtherRuntime": {
+    "description": "Termux setup: the job installed one OpenCode generation but Termux serves the other; switching is This phone's job"
+  },
+  "undoFromHereNowAction": "Undo now",
+  "@undoFromHereNowAction": {
+    "description": "\"Undo from this prompt?\" sheet on a server that undoes at once (no review step): the primary button that undoes."
+  },
+  "undoFromHereBody": "{count, plural, =0{This prompt is removed, and files go back to how they were before it. You can put it back until you send another prompt.} =1{This prompt and the message after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.} other{This prompt and the {count} messages after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.}}",
+  "@undoFromHereBody": {
+    "description": "\"Undo from this prompt?\" sheet on a server that undoes at once: what happens, with the number of messages after the prompt, and the way back.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "undoFromHereBodyUnknown": "This prompt and everything after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.",
+  "@undoFromHereBodyUnknown": {
+    "description": "\"Undo from this prompt?\" sheet on a server that undoes at once, when the number of messages is not known."
+  },
+  "undoFromHereFilesLabel": "Files the agent edited after it",
+  "@undoFromHereFilesLabel": {
+    "description": "\"Undo from this prompt?\" sheet on a server that undoes at once: label above the files the agent reported editing after the prompt."
+  },
+  "undoFromHereNoEdits": "The agent reported no file edits after this prompt.",
+  "@undoFromHereNoEdits": {
+    "description": "\"Undo from this prompt?\" sheet on a server that undoes at once: the files list when the agent reported no edits."
+  },
+  "undoneStatus": "Undone from a prompt",
+  "@undoneStatus": {
+    "description": "Conversation status line on a server that undoes at once: the conversation was undone from a prompt and can still be put back."
+  },
+  "undonePutBack": "Put back",
+  "@undonePutBack": {
+    "description": "Conversation status line after an undo: brings the removed messages and files back."
+  },
+  "reviewRevertScreenIntroCount": "{count, plural, =0{This prompt is hidden; nothing came after it. Nothing is final until you choose below.} =1{This prompt and the message after it are hidden. Nothing is final until you choose below.} other{This prompt and the {count} messages after it are hidden. Nothing is final until you choose below.}}",
+  "@reviewRevertScreenIntroCount": {
+    "description": "Review the undo page: first line with the number of messages after the hidden prompt, as the server counted them.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewRevertKeepConsequenceCount": "{count, plural, =0{The hidden prompt is deleted} =1{The hidden prompt and the message after it are deleted} other{The hidden prompt and the {count} messages after it are deleted}}",
+  "@reviewRevertKeepConsequenceCount": {
+    "description": "Review the undo page: consequence line (lost) in the delete-hidden-messages question, with the number of messages the server counted.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addServerConnectedHost": "Connected to {host}",
+  "@addServerConnectedHost": {
+    "description": "Add server, ready step: line under the linked drawing.",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "addServerCheckSlow": "{host} has not answered yet. A slow network can take a while.",
+  "@addServerCheckSlow": {
+    "description": "Add server: notice when a connection check or pairing has run for 8 seconds.",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "addServerCheckCancel": "Stop checking",
+  "@addServerCheckCancel": {
+    "description": "Add server: action on the slow-check notice; the answer, when it comes, is ignored."
+  },
+  "addServerRemoteHttpAdvice": "A computer on your network needs an https:// address. Tailscale gives it a private one that only your devices can reach.",
+  "@addServerRemoteHttpAdvice": {
+    "description": "Add server: under an http:// address on the network, which is refused. Never suggests a public relay."
+  },
+  "addServerUseTailscale": "Use Tailscale",
+  "@addServerUseTailscale": {
+    "description": "Add server: action that opens the Tailscale step from the http:// advice."
+  },
+  "addServerStepsLabel": "Add server progress",
+  "@addServerStepsLabel": {
+    "description": "Add server: what a screen reader calls the step bar."
+  },
+  "addServerStepKind": "What runs there",
+  "@addServerStepKind": {
+    "description": "Add server, step 1: choose what runs on the computer."
+  },
+  "addServerStepTailscale": "Tailscale on this phone",
+  "@addServerStepTailscale": {
+    "description": "Add server, Tailscale step: the app and the VPN on this phone."
+  },
+  "addServerStepPair": "Pair or enter the address",
+  "@addServerStepPair": {
+    "description": "Add server, connect step for OpenCode."
+  },
+  "addServerStepAddress": "Address and sign-in",
+  "@addServerStepAddress": {
+    "description": "Add server, connect step for Codex and Paseo."
+  },
+  "addServerStepCheck": "Checking",
+  "@addServerStepCheck": {
+    "description": "Add server: the step while the connection is checked."
+  },
+  "addServerStepReady": "Ready",
+  "@addServerStepReady": {
+    "description": "Add server: the last step, connected."
+  },
+  "addServerReadyTitle": "{name} is connected",
+  "@addServerReadyTitle": {
+    "description": "Add server, ready step: heading.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addServerReadyBody": "Its conversations open next. Start one, or pick up one already there.",
+  "@addServerReadyBody": {
+    "description": "Add server, ready step: what happens next."
+  },
+  "addServerReadyOpen": "Open {name}",
+  "@addServerReadyOpen": {
+    "description": "Add server, ready step: the primary; opens the server's conversations.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "handoffUiLinkAddTitle": "Add this server?",
+  "@handoffUiLinkAddTitle": {
+    "description": "Session link for a server this phone has not saved: sheet title."
+  },
+  "handoffUiLinkAddServer": "Add server",
+  "@handoffUiLinkAddServer": {
+    "description": "Session link sheet: opens Add server."
+  },
+  "failedJobReport": "Report this failure",
+  "@failedJobReport": {
+    "description": "P8.4: action on a failed job (setup step, AI Team start, failed team run, failed dev service) that opens Report a problem with the job's log attached"
+  },
+  "reportProblemJobLog": "Log of the failed job",
+  "@reportProblemJobLog": {
+    "description": "P8.4: title of the log panel on Report a problem when a failed job's log is attached"
+  },
+  "reportProblemJobLogNone": "No log was kept for this job, so none is attached.",
+  "@reportProblemJobLogNone": {
+    "description": "P8.4: Report a problem, a failed job is attached but no log could be kept for it"
+  },
+  "sessionsOlderLoadFailed": "Could not load older conversations.",
+  "@sessionsOlderLoadFailed": {
+    "description": "The end of a conversation list: the next older page failed to load. Try again follows."
+  },
+  "sessionsLoadFailed": "Could not load your conversations.",
+  "@sessionsLoadFailed": {
+    "description": "The end of a conversation list: refreshing the list failed. Try again follows."
+  },
+  "sessionsListChanged": "The conversation list changed on the server. Refresh it to see older conversations.",
+  "@sessionsListChanged": {
+    "description": "The end of a conversation list: the server's list moved while paging, so it must start again from the newest page."
+  },
+  "handoffUiComputerUnsupported": "This server can’t give a command that continues a conversation on a computer.",
+  "@handoffUiComputerUnsupported": {
+    "description": "Continue on computer from a conversation list, on a server without CLI session resume"
+  },
+  "handoffUiComputerChanged": "This conversation moved or its server changed. Go back and try again.",
+  "@handoffUiComputerChanged": {
+    "description": "Continue on computer from a conversation list: the session could not be read again or changed place"
+  },
+  "commandAuthSheetIntro": "Runs this sign-in on your server, not on this phone. Start it only if you trust the server and {provider}. You may need to finish steps on the server.",
+  "@commandAuthSheetIntro": {
+    "description": "Server sign-in sheet: what Start does and whom it trusts (the confirm merged into the sheet)",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "commandAuthCheckNamed": "Check {provider} sign-in now",
+  "@commandAuthCheckNamed": {
+    "description": "Server sign-in sheet: offered once the server has had a few seconds to finish the sign-in",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "credentialRemoveAccountTitle": "Remove the {provider} account “{name}”?",
+  "@credentialRemoveAccountTitle": {
+    "description": "Accounts sheet: remove confirm title naming the provider and the account",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "credentialRemoveConfirmNamed": "Remove “{name}”",
+  "@credentialRemoveConfirmNamed": {
+    "description": "Accounts sheet: remove confirm button naming the account",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaMonitorOffer": "Alert me about {provider} on {server}",
+  "@quotaMonitorOffer": {
+    "description": "Remaining: the row that turns on background monitoring for the account shown",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaMonitorOfferDetail": "Keeps checking in the background, including after a restart, and alerts when use reaches {percent}. You can change the percentage once it’s on.",
+  "@quotaMonitorOfferDetail": {
+    "description": "Remaining: what the monitoring row does, with its starting percentage",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "workspaceChooserBody": "Conversations run inside a folder on {server}.",
+  "@workspaceChooserBody": {
+    "description": "Work, no project folder yet: why a folder is needed, naming the server",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverServicesAliases": "services dev server preview logs run commands processes",
+  "@discoverServicesAliases": {
+    "description": "Search keywords for Development services (space separated)"
+  },
+  "discoverCloudEnvironmentsAliases": "cloud environments managed workspaces remote sandbox",
+  "@discoverCloudEnvironmentsAliases": {
+    "description": "Search keywords for Cloud environments (space separated)"
+  },
+  "@promptRestored": {
+    "description": "Undo bar after a saved prompt replaced the draft; Undo puts the previous draft back."
+  },
+  "promptRestoredWithout": "Restored without {names}; attach them again before sending",
+  "@promptRestoredWithout": {
+    "description": "Undo bar after a saved prompt was restored but some of its attachment files could not be read.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "promptStashOlderDraftsWaiting": "Some older drafts have not moved here yet. They are kept on this device.",
+  "@promptStashOlderDraftsWaiting": {
+    "description": "Saved prompts sheet: drafts saved before drafts named their server could not move into Saved prompts yet (with Try again)."
+  },
+  "promptStashOlderDraftsFull": "Older drafts are waiting to move here. Delete saved prompts to make room.",
+  "@promptStashOlderDraftsFull": {
+    "description": "Saved prompts sheet: the older drafts cannot move in because Saved prompts is full (with Try again)."
   }
 }

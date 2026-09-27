@@ -712,7 +712,29 @@ class ProfileStore {
   /// without this the app bar kept the old name until a restart.
   Listenable get changes => _changes;
 
+  /// Where the retired personal quota budgets were kept, per profile
+  /// (`oc.budgets.<profileId>`). Quota monitoring's own threshold replaced
+  /// them and nothing reads or writes them any more.
+  static const retiredQuotaBudgetsPrefix = 'oc.budgets.';
+
+  /// Drops what the retired quota budgets left on the device. It runs on
+  /// every load, but only the first finds anything. A key the store refuses
+  /// to drop stays for the next load, and profile deletion's sweep still
+  /// matches it as an `oc.<what>.<profileId>` key.
+  Future<void> _retireQuotaBudgets() async {
+    final keys = [
+      for (final key in prefs.getKeys())
+        if (key.startsWith(retiredQuotaBudgetsPrefix)) key,
+    ];
+    for (final key in keys) {
+      try {
+        await prefs.remove(key);
+      } catch (_) {}
+    }
+  }
+
   Future<List<ServerProfile>> load() async {
+    await _retireQuotaBudgets();
     final raw = prefs.getString(_profilesKey);
     if (raw == null) {
       _cache = [];

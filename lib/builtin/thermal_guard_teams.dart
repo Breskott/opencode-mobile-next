@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../diagnostics/app_diagnostics.dart';
+import '../diagnostics/report_problem_startup.dart';
 import '../platform/platform_capabilities.dart';
 import '../platform/thermal.dart';
 import '../state/profiles.dart';
@@ -301,6 +302,9 @@ void startThermalGuard(
     ),
     prefs: store.prefs,
     diagnostics: diagnostics,
+    // Thermal changes go to the persisted problem report once it is open.
+    onReading: (reading) =>
+        ReportProblemStartup.current?.recordThermal(reading),
   );
   slot.value = guard;
   unawaited(guard.start());

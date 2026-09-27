@@ -29,11 +29,13 @@ enum KitTaskFlagKind {
   /// LOOK-4).
   blocked,
 
-  /// "Stopped with an error": neutral error glyph, text1 (never red,
-  /// LOOK-5).
+  /// "Stopped with an error": text1 semibold (never red, LOOK-5). On a
+  /// failed card the leading mark is the one error glyph, so the line is
+  /// words alone, like the needs-you line.
   failed,
 
-  /// "Cancelled": stop glyph, text2.
+  /// "Cancelled": text2. On a stopped card the leading mark is the one
+  /// stop glyph, so the line is words alone.
   stopped,
 
   /// "In epic: Onboarding": its own glyph, text2.
@@ -411,7 +413,14 @@ class KitTaskCard extends StatelessWidget {
       role: KitTextRole.secondary,
       tone: tone,
     );
-    if (glyph == null) return words;
+    // Nothing shown twice: the leading mark already draws the error or the
+    // stop glyph on a failed or stopped card.
+    final markDrawsIt = switch (flag.kind) {
+      KitTaskFlagKind.failed => mark == KitTaskState.failed,
+      KitTaskFlagKind.stopped => mark == KitTaskState.stopped,
+      _ => false,
+    };
+    if (glyph == null || markDrawsIt) return words;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

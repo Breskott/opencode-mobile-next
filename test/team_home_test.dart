@@ -26,7 +26,6 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
-import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/gascity_recorded_city.dart';
@@ -44,7 +43,7 @@ Directory _findFixtureRoot() {
 }
 
 /// The `blocked` scenario's derived `/pending` entry (as in
-/// team_card_test).
+/// team_on_work_test).
 const _blockedPending = <String, Object?>{
   'session_id': 'bl-polecat-1',
   'request_id': 'req-fixture-choice-1',
@@ -383,7 +382,7 @@ void main() {
       ..gatesOverride = const [];
   }
 
-  /// The `blocked` shape of team_card_test: the fixture convoy over a
+  /// The `blocked` shape of the old team card test: the fixture convoy over a
   /// blocked `oc-loy` and a closed sibling, plus the pending choice.
   void blockedShape(_Gateway gateway) {
     final convoys = GcList<GcConvoy>.fromJson(
@@ -552,7 +551,10 @@ void main() {
       // out of the list.
       expect(find.textContaining('formula'), findsNothing);
       expect(find.textContaining('convoy'), findsNothing);
-      expect(lineOf(tester, 'work-new'), 'Working · 1 of 4 steps done');
+      expect(
+        lineOf(tester, 'work-new'),
+        'Working · 1 of 4 steps done · a reviewer checks it next',
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -561,8 +563,8 @@ void main() {
       final (controller, _) = await boot(
         configure: (g) {
           mixedShape(g);
-          // Two questions: rows on their own panel, so their tasks stay in
-          // the list, first.
+          // Two questions: each is its task's row, first; no panel of
+          // questions above the list.
           g.gatesOverride = const [
             OrchestrationGate(
               id: 'q-wait',
@@ -580,10 +582,11 @@ void main() {
         },
       );
       await pumpHome(tester, controller);
-      // One heading over every task; none of the old section labels.
+      // One panel of every task, with no heading; none of the old section
+      // labels.
       final tasks = find.byKey(const ValueKey('team-home-tasks'));
       expect(tasks, findsOneWidget);
-      expect(find.text('Tasks'), findsOneWidget);
+      expect(find.text('Tasks'), findsNothing);
       expect(find.text('Done today'), findsNothing);
       expect(find.text('Needs you'), findsNothing);
       expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
@@ -606,9 +609,16 @@ void main() {
           reason: '${order[i - 1]} above ${order[i]}',
         );
       }
-      // The row's own words carry the state.
-      expect(lineOf(tester, 'wait-1'), 'Needs you · 1 of 4 steps done');
-      expect(lineOf(tester, 'work-new'), 'Working · 1 of 4 steps done');
+      // The row's own words carry the state: a question's task row is the
+      // question, shown once.
+      expect(lineOf(tester, 'wait-1'), 'Needs you · Which branch?');
+      expect(lineOf(tester, 'blocked-1'), 'Needs you · Which port?');
+      expect(find.byKey(const ValueKey('team-home-gate-q-wait')), findsNothing);
+      expect(find.text('Which branch?'), findsNothing);
+      expect(
+        lineOf(tester, 'work-new'),
+        'Working · 1 of 4 steps done · a reviewer checks it next',
+      );
       expect(lineOf(tester, 'done-1'), startsWith('Done'));
       expect(tester.takeException(), isNull);
     });
@@ -1092,7 +1102,7 @@ void main() {
       // Read-only: nothing to send.
       expect(find.byType(Radio<String>), findsNothing);
       expect(find.byType(TextField), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('team-gate-close')));
+      await tester.tap(find.byKey(const ValueKey('kit-sheet-close')));
       await tester.pumpAndSettle();
       expect(sheet, findsNothing);
       expect(tester.takeException(), isNull);
@@ -1123,8 +1133,10 @@ void main() {
       );
     });
 
-    testWidgets('several questions are rows: decision → task failed → '
-        'review → gate', (tester) async {
+    testWidgets('several questions are no section: a task\'s question is '
+        'its row, the rest head the one list (owner rule 2026-09-27)', (
+      tester,
+    ) async {
       final (controller, _) = await boot(
         configure: (g) => g.gatesOverride = const [
           OrchestrationGate(
@@ -1152,10 +1164,26 @@ void main() {
         ],
       );
       await pumpHome(tester, controller);
-      // The questions head the page without a section label.
+      // The questions head the page without a section label, and no
+      // separate panel of questions sits above the list.
       expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
       Finder row(String id) => find.byKey(ValueKey('team-home-gate-$id'));
-      final order = ['ask', 'failed', 'review', 'gate'];
+      final tasks = find.byKey(const ValueKey('team-home-tasks'));
+      // The failed task's question is its own row, once: the mark and
+      // "Needs you · <question> · age", never a second row above.
+      expect(row('failed'), findsNothing);
+      expect(runRow('oc-xru'), findsOneWidget);
+      expect(lineOf(tester, 'oc-xru'), startsWith('Needs you · Run failed'));
+      // Questions with no task listed are rows of the same list, first,
+      // most urgent first.
+      final order = ['ask', 'review', 'gate'];
+      for (final id in order) {
+        expect(
+          find.descendant(of: tasks, matching: row(id)),
+          findsOneWidget,
+          reason: '$id is a row of the one list',
+        );
+      }
       for (var i = 1; i < order.length; i++) {
         expect(
           top(tester, row(order[i - 1])),
@@ -1163,14 +1191,22 @@ void main() {
           reason: '${order[i - 1]} above ${order[i]}',
         );
       }
+      expect(top(tester, row('gate')), lessThan(top(tester, runRow('oc-xru'))));
+      // The task's row opens the question, not the conversation.
+      await tester.tap(runRow('oc-xru'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('team-gate-sheet')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('kit-sheet-close')));
+      await tester.pumpAndSettle();
       // A prompt that differs from the title is shown in the sheet.
       await tester.tap(row('ask'));
       await tester.pumpAndSettle();
       expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('team-gate-prompt')))
-            .data,
-        'main is frozen; dev has the fix.',
+        find.descendant(
+          of: find.byKey(const ValueKey('team-gate-prompt')),
+          matching: find.text('main is frozen; dev has the fix.'),
+        ),
+        findsOneWidget,
       );
     });
 
@@ -1306,7 +1342,7 @@ void main() {
         // conversations are a filter of All conversations.
         expect(find.text('recent conversation'), findsOneWidget);
         expect(find.byKey(const ValueKey('team-work-door')), findsNothing);
-        expect(find.byType(TeamCard), findsNothing);
+        expect(find.byKey(const ValueKey('team-card')), findsNothing);
         expect(find.text('Archived conversations'), findsNothing);
         expect(find.text('Conversations'), findsNothing);
       },

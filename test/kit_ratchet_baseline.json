@@ -1,64 +1,15 @@
 {
   "G1": {
     "lib/main.dart": {
-      "MaterialBanner(": 2,
+      "MaterialBanner(": 1,
       "SnackBar(": 6,
       "showSnackBar(": 6
     },
-    "lib/ui/screens/chat/approvals_sheet.dart": {
-      "SnackBar(": 2,
-      "showConfirmSheet(": 1,
-      "showModalBottomSheet(": 1,
-      "showSnackBar(": 2
-    },
-    "lib/ui/screens/chat/chat_states.dart": {
-      "AlertDialog(": 1,
-      "showDialog(": 1
-    },
-    "lib/ui/screens/chat/form_flow.dart": {
-      "SnackBar(": 1,
-      "showSnackBar(": 1
-    },
-    "lib/ui/screens/chat/permission_sheet.dart": {
-      "AlertDialog(": 1,
-      "showDialog(": 1,
-      "showModalBottomSheet(": 1
-    },
-    "lib/ui/screens/chat/read_aloud.dart": {
-      "showConfirmSheet(": 1,
-      "showModalBottomSheet(": 1
-    },
-    "lib/ui/screens/chat/timeline_sheet.dart": {
-      "DraggableScrollableSheet(": 1
-    },
     "lib/ui/screens/chat_screen.dart": {
-      "AlertDialog(": 2,
-      "SnackBar(": 18,
-      "showConfirmSheet(": 11,
-      "showDialog(": 2,
-      "showModalBottomSheet(": 9,
-      "showSnackBar(": 18
-    },
-    "lib/ui/screens/connection_help_screen.dart": {
-      "SnackBar(": 1,
-      "showSnackBar(": 1
-    },
-    "lib/ui/screens/legacy_drafts_screen.dart": {
-      "SnackBar(": 1,
-      "showConfirmSheet(": 1,
-      "showModalBottomSheet(": 1,
-      "showSnackBar(": 1
+      "showModalBottomSheet(": 3
     },
     "lib/ui/screens/project_folder_actions.dart": {
       "showModalBottomSheet(": 2
-    },
-    "lib/ui/screens/settings/server_plugins_section.dart": {
-      "AlertDialog(": 1,
-      "SnackBar(": 1,
-      "showConfirmSheet(": 1,
-      "showDialog(": 1,
-      "showModalBottomSheet(": 1,
-      "showSnackBar(": 1
     },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "SnackBar(": 1,
@@ -66,11 +17,6 @@
     },
     "lib/ui/screens/team/run_screen.dart": {
       "showModalBottomSheet(": 1
-    },
-    "lib/ui/screens/termux_setup_screen.dart": {
-      "SnackBar(": 6,
-      "showConfirmSheet(": 6,
-      "showSnackBar(": 6
     },
     "lib/ui/widgets/completion_digest.dart": {
       "SnackBar(": 2,
@@ -93,11 +39,6 @@
       "showSnackBar(": 1
     }
   },
-  "G15": {
-    "lib/ui/screens/termux_setup_screen.dart": {
-      "width-literal": 2
-    }
-  },
   "G16": {
     "lib/main.dart": {
       "MaterialPageRoute": 9
@@ -105,12 +46,6 @@
     "lib/ui/app_theme.dart": {
       "AppBarTheme": 1,
       "InputDecorationTheme": 1
-    },
-    "lib/ui/screens/agent_choice_screen.dart": {
-      "AppBar": 1,
-      "Scaffold": 1,
-      "SingleChildScrollView": 1,
-      "Text": 3
     },
     "lib/ui/screens/attention_overview_screen.dart": {
       "AppBar": 1,
@@ -122,144 +57,8 @@
       "Scaffold": 1,
       "Text": 10
     },
-    "lib/ui/screens/chat/approvals_sheet.dart": {
-      "ActionChip": 1,
-      "Container": 1,
-      "Divider": 1,
-      "FilledButton": 1,
-      "Icon": 5,
-      "RadioGroup": 1,
-      "RadioListTile": 2,
-      "SingleChildScrollView": 1,
-      "SnackBar": 2,
-      "SwitchListTile": 2,
-      "Text": 22,
-      "TextButton": 2,
-      "Tooltip": 1
-    },
-    "lib/ui/screens/chat/attention_card.dart": {
-      "ActionChip": 1,
-      "ExpansionTile": 2,
-      "Icon": 1,
-      "SingleChildScrollView": 1,
-      "Text": 7
-    },
-    "lib/ui/screens/chat/chat_states.dart": {
-      "AlertDialog": 1,
-      "SelectableText": 1,
-      "SingleChildScrollView": 1,
-      "Text": 2,
-      "TextButton": 1
-    },
-    "lib/ui/screens/chat/empty_chat.dart": {
-      "ActionChip": 1,
-      "Container": 1,
-      "Opacity": 3,
-      "SingleChildScrollView": 2,
-      "Text": 5,
-      "Transform": 2,
-      "TweenAnimationBuilder": 2
-    },
-    "lib/ui/screens/chat/form_flow.dart": {
-      "SnackBar": 1,
-      "Text": 1
-    },
-    "lib/ui/screens/chat/permission_sheet.dart": {
-      "ActionChip": 1,
-      "AlertDialog": 1,
-      "AnimatedSize": 1,
-      "Container": 2,
-      "Icon": 8,
-      "IconButton": 2,
-      "Material": 2,
-      "MaterialPageRoute": 1,
-      "SelectableText": 1,
-      "SingleChildScrollView": 4,
-      "Text": 17,
-      "TextButton": 1,
-      "TextField": 1
-    },
-    "lib/ui/screens/chat/read_aloud.dart": {
-      "ListTile": 1,
-      "Text": 3
-    },
-    "lib/ui/screens/chat/session_sheets.dart": {
-      "CheckboxListTile": 1,
-      "Text": 2
-    },
-    "lib/ui/screens/chat/timeline_sheet.dart": {
-      "Divider": 1,
-      "DraggableScrollableSheet": 1,
-      "Icon": 6,
-      "IconButton": 2,
-      "ListTile": 2,
-      "Material": 1,
-      "Text": 9,
-      "TextButton": 1,
-      "TextField": 1
-    },
-    "lib/ui/screens/chat/transcript_find.dart": {
-      "Icon": 4,
-      "IconButton": 3,
-      "LinearProgressIndicator": 1,
-      "Material": 1,
-      "SingleChildScrollView": 1,
-      "Text": 4,
-      "TextButton": 2,
-      "TextField": 1
-    },
-    "lib/ui/screens/chat/voice_conversation.dart": {
-      "CircularProgressIndicator": 1,
-      "Container": 1,
-      "Icon": 4,
-      "Material": 1,
-      "Scrollbar": 1,
-      "SingleChildScrollView": 1,
-      "SwitchListTile": 1,
-      "Text": 8,
-      "TextButton": 4
-    },
-    "lib/ui/screens/chat/watching.dart": {
-      "MaterialPageRoute": 1,
-      "Text": 1
-    },
     "lib/ui/screens/chat_screen.dart": {
-      "ActionChip": 1,
-      "AlertDialog": 2,
-      "AnimatedSize": 1,
-      "AnimatedSwitcher": 1,
-      "AppBar": 2,
-      "Badge": 2,
-      "Chip": 1,
-      "CircularProgressIndicator": 2,
-      "FilledButton": 2,
-      "Icon": 20,
-      "IconButton": 9,
-      "ListTile": 6,
-      "MaterialPageRoute": 27,
-      "NotificationListener": 1,
-      "Opacity": 1,
-      "OutlinedButton": 1,
-      "Positioned": 2,
-      "Scaffold": 2,
-      "SingleChildScrollView": 3,
-      "SnackBar": 18,
-      "SnackBarAction": 1,
-      "Text": 46,
-      "TextButton": 5,
-      "TextField": 2,
-      "Tooltip": 5
-    },
-    "lib/ui/screens/connection_help_screen.dart": {
-      "AppBar": 1,
-      "FilledButton": 1,
-      "Icon": 1,
-      "IconButton": 1,
-      "Scaffold": 1,
-      "SelectableText": 1,
-      "SnackBar": 1,
-      "Text": 11,
-      "TextField": 1
+      "NotificationListener": 1
     },
     "lib/ui/screens/context_capsule_screen.dart": {
       "AppBar": 1,
@@ -274,20 +73,6 @@
       "TextButton": 4,
       "TextField": 2
     },
-    "lib/ui/screens/legacy_drafts_screen.dart": {
-      "AppBar": 1,
-      "FilledButton": 1,
-      "Icon": 4,
-      "IconButton": 1,
-      "ListTile": 1,
-      "OutlinedButton": 1,
-      "Scaffold": 1,
-      "SelectableText": 1,
-      "SingleChildScrollView": 1,
-      "SnackBar": 1,
-      "Text": 10,
-      "TextField": 1
-    },
     "lib/ui/screens/manage_project_screen.dart": {
       "AppBar": 1,
       "Divider": 1,
@@ -299,17 +84,6 @@
     },
     "lib/ui/screens/phone_setup/phone_setup_routes.dart": {
       "MaterialPageRoute": 3
-    },
-    "lib/ui/screens/settings/server_plugins_section.dart": {
-      "AlertDialog": 1,
-      "CheckboxListTile": 1,
-      "Icon": 1,
-      "IconButton": 1,
-      "SelectableText": 1,
-      "SingleChildScrollView": 1,
-      "SnackBar": 1,
-      "Text": 17,
-      "TextButton": 1
     },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "AppBar": 1,
@@ -343,34 +117,11 @@
       "TabBarView": 1,
       "Text": 22
     },
-    "lib/ui/screens/termux_setup_screen.dart": {
-      "AppBar": 4,
-      "CircleAvatar": 1,
-      "Container": 4,
-      "DecoratedBox": 2,
-      "Divider": 3,
-      "ExpansionTile": 1,
-      "Icon": 7,
-      "MaterialPageRoute": 1,
-      "Opacity": 1,
-      "RadioGroup": 1,
-      "RadioListTile": 3,
-      "Scaffold": 4,
-      "SelectableText": 1,
-      "SnackBar": 6,
-      "Text": 54
-    },
     "lib/ui/widgets/completion_digest.dart": {
       "Icon": 2,
       "SnackBar": 2,
       "Text": 12,
       "TextButton": 5
-    },
-    "lib/ui/widgets/diff_view.dart": {
-      "AppBar": 1,
-      "CloseButton": 1,
-      "Scaffold": 1,
-      "Text": 1
     },
     "lib/ui/widgets/local_agent_onboarding.dart": {
       "CircularProgressIndicator": 1,
@@ -397,18 +148,6 @@
       "Text": 7,
       "TextButton": 1
     },
-    "lib/ui/widgets/session_inventory_footer.dart": {
-      "LinearProgressIndicator": 1,
-      "Text": 3,
-      "TextButton": 2
-    },
-    "lib/ui/widgets/team_card.dart": {
-      "Icon": 1,
-      "InkWell": 2,
-      "Material": 1,
-      "Opacity": 1,
-      "Text": 3
-    },
     "lib/ui/widgets/team_phone_onboarding.dart": {
       "CircularProgressIndicator": 1,
       "Container": 1,
@@ -421,6 +160,71 @@
       "SnackBar": 1,
       "Text": 28,
       "TextField": 1
+    }
+  },
+  "G17": {
+    "lib/diagnostics/app_diagnostics.dart": {
+      "Color(0x": 2
+    },
+    "lib/main.dart": {
+      ".colorScheme": 2,
+      ".textTheme": 2
+    },
+    "lib/ui/kit/glass/kit_glass.dart": {
+      "Colors.*": 2
+    },
+    "lib/ui/screens/attention_overview_screen.dart": {
+      ".textTheme": 2
+    },
+    "lib/ui/screens/context_capsule_screen.dart": {
+      ".colorScheme": 3,
+      ".textTheme": 1
+    },
+    "lib/ui/screens/team/agent_output_screen.dart": {
+      ".textTheme": 3,
+      "attention roles": 2
+    },
+    "lib/ui/screens/team/run_screen.dart": {
+      ".colorScheme": 6,
+      ".textTheme": 14,
+      "attention roles": 3
+    },
+    "lib/ui/screens/team/team_states.dart": {
+      "attention roles": 5
+    },
+    "lib/ui/widgets/app_exit_notice.dart": {
+      "attention roles": 1
+    },
+    "lib/ui/widgets/completion_digest.dart": {
+      ".textTheme": 2
+    },
+    "lib/ui/widgets/local_agent_onboarding.dart": {
+      ".colorScheme": 7,
+      ".textTheme": 18,
+      "attention roles": 3
+    },
+    "lib/ui/widgets/saved_server_connection_card.dart": {
+      "attention roles": 2
+    },
+    "lib/ui/widgets/session_handoff.dart": {
+      ".textTheme": 1
+    },
+    "lib/ui/widgets/team_board_card.dart": {
+      "attention roles": 2
+    },
+    "lib/ui/widgets/team_phone_onboarding.dart": {
+      ".colorScheme": 5,
+      ".textTheme": 19,
+      "attention roles": 2
+    },
+    "lib/ui/widgets/team_receipt.dart": {
+      "attention roles": 1
+    },
+    "lib/ui/widgets/team_vocabulary.dart": {
+      "attention roles": 11
+    },
+    "lib/ui/widgets/thermal_notice.dart": {
+      "attention roles": 1
     }
   },
   "G2": {
@@ -466,50 +270,9 @@
     "lib/ui/screens/attention_overview_screen.dart": {
       "ProductEmptyState(": 1
     },
-    "lib/ui/screens/chat/approvals_sheet.dart": {
-      "showConfirmSheet(": 1
-    },
-    "lib/ui/screens/chat/chat_states.dart": {
-      "Clipboard.setData(": 1
-    },
-    "lib/ui/screens/chat/empty_chat.dart": {
-      "Curves.": 2,
-      "duration: Duration(": 2
-    },
-    "lib/ui/screens/chat/permission_sheet.dart": {
-      "AnimatedSize(": 1,
-      "Clipboard.setData(": 2,
-      "Curves.": 1,
-      "duration: Duration(": 1
-    },
-    "lib/ui/screens/chat/read_aloud.dart": {
-      "showConfirmSheet(": 1
-    },
-    "lib/ui/screens/chat/session_sheets.dart": {
-      "ProductErrorState(": 1,
-      "ProductInlineEmpty(": 1
-    },
-    "lib/ui/screens/chat_screen.dart": {
-      "AnimatedSize(": 1,
-      "Clipboard.setData(": 5,
-      "Curves.": 5,
-      "HapticFeedback.": 1,
-      "duration: Duration(": 3,
-      "showConfirmSheet(": 11
-    },
-    "lib/ui/screens/connection_help_screen.dart": {
-      "Clipboard.setData(": 1
-    },
-    "lib/ui/screens/legacy_drafts_screen.dart": {
-      "Clipboard.setData(": 1,
-      "showConfirmSheet(": 1
-    },
     "lib/ui/screens/library/integrations_screen.dart": {
       "launchUrl(": 1
     },
-    "lib/ui/screens/settings/server_plugins_section.dart": {
-      "showConfirmSheet(": 1
-    },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "Clipboard.setData(": 1,
       "duration: Duration(": 1
@@ -518,11 +281,6 @@
       "Curves.": 1,
       "duration: Duration(": 1
     },
-    "lib/ui/screens/termux_setup_screen.dart": {
-      "Clipboard.setData(": 3,
-      "launchUrl(": 1,
-      "showConfirmSheet(": 6
-    },
     "lib/ui/widgets/completion_digest.dart": {
       "Clipboard.setData(": 1
     },
@@ -534,153 +292,6 @@
     },
     "lib/ui/widgets/team_phone_onboarding.dart": {
       "Clipboard.setData(": 1
-    }
-  },
-  "G7": {
-    "lib/ui/screens/chat_screen.dart": {
-      "Positioned(left|right:)": 1
-    },
-    "lib/ui/screens/settings/server_plugins_section.dart": {
-      "EdgeInsets.fromLTRB asymmetric": 1
-    }
-  },
-  "G15x": {},
-  "G17": {
-    "lib/diagnostics/app_diagnostics.dart": {
-      "Color(0x": 2
-    },
-    "lib/main.dart": {
-      ".colorScheme": 2,
-      ".textTheme": 2
-    },
-    "lib/ui/kit/glass/kit_glass.dart": {
-      "Colors.*": 2
-    },
-    "lib/ui/screens/agent_choice_screen.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 2
-    },
-    "lib/ui/screens/attention_overview_screen.dart": {
-      ".textTheme": 2
-    },
-    "lib/ui/screens/chat/approvals_sheet.dart": {
-      ".colorScheme": 6,
-      ".textTheme": 8
-    },
-    "lib/ui/screens/chat/attention_card.dart": {
-      ".textTheme": 4,
-      "attention roles": 1
-    },
-    "lib/ui/screens/chat/chat_states.dart": {
-      ".textTheme": 1,
-      "attention roles": 2
-    },
-    "lib/ui/screens/chat/empty_chat.dart": {
-      ".colorScheme": 3,
-      ".textTheme": 4
-    },
-    "lib/ui/screens/chat/permission_sheet.dart": {
-      ".colorScheme": 9,
-      ".textTheme": 8
-    },
-    "lib/ui/screens/chat/read_aloud.dart": {
-      ".textTheme": 1
-    },
-    "lib/ui/screens/chat/session_sheets.dart": {
-      ".textTheme": 1
-    },
-    "lib/ui/screens/chat/timeline_sheet.dart": {
-      ".colorScheme": 3,
-      ".textTheme": 2
-    },
-    "lib/ui/screens/chat/transcript_find.dart": {
-      ".colorScheme": 2,
-      ".textTheme": 1
-    },
-    "lib/ui/screens/chat/voice_conversation.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 1
-    },
-    "lib/ui/screens/chat/watching.dart": {
-      ".textTheme": 1
-    },
-    "lib/ui/screens/chat_screen.dart": {
-      ".colorScheme": 7,
-      ".textTheme": 4
-    },
-    "lib/ui/screens/connection_help_screen.dart": {
-      ".textTheme": 4
-    },
-    "lib/ui/screens/context_capsule_screen.dart": {
-      ".colorScheme": 3,
-      ".textTheme": 1
-    },
-    "lib/ui/screens/legacy_drafts_screen.dart": {
-      ".textTheme": 1
-    },
-    "lib/ui/screens/settings/server_plugins_section.dart": {
-      ".colorScheme": 4,
-      ".textTheme": 6
-    },
-    "lib/ui/screens/team/agent_output_screen.dart": {
-      ".textTheme": 3,
-      "attention roles": 2
-    },
-    "lib/ui/screens/team/run_screen.dart": {
-      ".colorScheme": 6,
-      ".textTheme": 14,
-      "attention roles": 3
-    },
-    "lib/ui/screens/team/team_states.dart": {
-      "attention roles": 5
-    },
-    "lib/ui/screens/termux_setup_screen.dart": {
-      ".colorScheme": 14,
-      ".textTheme": 16,
-      "Colors.*": 4,
-      "attention roles": 3
-    },
-    "lib/ui/widgets/app_exit_notice.dart": {
-      "attention roles": 1
-    },
-    "lib/ui/widgets/completion_digest.dart": {
-      ".textTheme": 2
-    },
-    "lib/ui/widgets/local_agent_onboarding.dart": {
-      ".colorScheme": 7,
-      ".textTheme": 18,
-      "attention roles": 3
-    },
-    "lib/ui/widgets/saved_server_connection_card.dart": {
-      "attention roles": 2
-    },
-    "lib/ui/widgets/session_handoff.dart": {
-      ".textTheme": 1
-    },
-    "lib/ui/widgets/session_inventory_footer.dart": {
-      ".colorScheme": 1
-    },
-    "lib/ui/widgets/team_board_card.dart": {
-      "attention roles": 2
-    },
-    "lib/ui/widgets/team_card.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 4,
-      "attention roles": 1
-    },
-    "lib/ui/widgets/team_phone_onboarding.dart": {
-      ".colorScheme": 5,
-      ".textTheme": 19,
-      "attention roles": 2
-    },
-    "lib/ui/widgets/team_receipt.dart": {
-      "attention roles": 1
-    },
-    "lib/ui/widgets/team_vocabulary.dart": {
-      "attention roles": 11
-    },
-    "lib/ui/widgets/thermal_notice.dart": {
-      "attention roles": 1
     }
   },
   "G21": {
@@ -758,91 +369,15 @@
     "lib/ui/kit/terminal_key_bar.dart": {
       "EdgeInsets numeric": 1
     },
-    "lib/ui/screens/agent_choice_screen.dart": {
-      "EdgeInsets numeric": 1,
-      "SizedBox numeric": 2
-    },
     "lib/ui/screens/attention_overview_screen.dart": {
       "EdgeInsets numeric": 4,
       "SizedBox numeric": 7
-    },
-    "lib/ui/screens/chat/approvals_sheet.dart": {
-      "EdgeInsets numeric": 5,
-      "SizedBox numeric": 10,
-      "TextStyle(": 1,
-      "fontSize:": 1,
-      "icon size not 20/22/24": 5
-    },
-    "lib/ui/screens/chat/attention_card.dart": {
-      "EdgeInsets numeric": 6,
-      "icon size not 20/22/24": 1
-    },
-    "lib/ui/screens/chat/empty_chat.dart": {
-      "BorderRadius.circular(<n>": 1,
-      "EdgeInsets numeric": 5,
-      "SizedBox numeric": 6,
-      "disableAnimationsOf": 3
-    },
-    "lib/ui/screens/chat/permission_sheet.dart": {
-      "Border.all(": 2,
-      "BorderRadius.circular(<n>": 3,
-      "EdgeInsets numeric": 6,
-      "Radius.circular(<n>": 1,
-      "SizedBox numeric": 19,
-      "TextStyle(": 3,
-      "disableAnimationsOf": 1,
-      "fontSize:": 3,
-      "icon size not 20/22/24": 6
-    },
-    "lib/ui/screens/chat/read_aloud.dart": {
-      "EdgeInsets numeric": 1
-    },
-    "lib/ui/screens/chat/session_sheets.dart": {
-      "EdgeInsets numeric": 1,
-      "SizedBox numeric": 2,
-      "TextStyle(": 1
-    },
-    "lib/ui/screens/chat/timeline_sheet.dart": {
-      "EdgeInsets numeric": 5,
-      "SizedBox numeric": 1,
-      "TextStyle(": 1
-    },
-    "lib/ui/screens/chat/transcript_find.dart": {
-      "EdgeInsets numeric": 1
-    },
-    "lib/ui/screens/chat/voice_conversation.dart": {
-      "Border.all(": 1,
-      "BorderRadius.circular(<n>": 2,
-      "EdgeInsets numeric": 3,
-      "SizedBox numeric": 2,
-      "TextStyle(": 1
-    },
-    "lib/ui/screens/chat/watching.dart": {
-      "EdgeInsets numeric": 1,
-      "SizedBox numeric": 1
-    },
-    "lib/ui/screens/chat_screen.dart": {
-      "EdgeInsets numeric": 6,
-      "Opacity( around text": 1,
-      "SizedBox numeric": 1,
-      "TextStyle(": 2,
-      "disableAnimationsOf": 4,
-      "icon size not 20/22/24": 4,
-      "text scale clamp": 1
-    },
-    "lib/ui/screens/connection_help_screen.dart": {
-      "EdgeInsets numeric": 2,
-      "SizedBox numeric": 9
     },
     "lib/ui/screens/context_capsule_screen.dart": {
       "EdgeInsets numeric": 5,
       "SizedBox numeric": 6,
       "TextStyle(": 2,
       "icon size not 20/22/24": 4
-    },
-    "lib/ui/screens/legacy_drafts_screen.dart": {
-      "EdgeInsets numeric": 3,
-      "SizedBox numeric": 3
     },
     "lib/ui/screens/manage_project_screen.dart": {
       "EdgeInsets numeric": 1
@@ -855,9 +390,7 @@
     },
     "lib/ui/screens/settings/server_plugins_section.dart": {
       ".toUpperCase()": 2,
-      "EdgeInsets numeric": 5,
-      "SizedBox numeric": 7,
-      "TextStyle(": 4
+      "TextStyle(": 2
     },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "EdgeInsets numeric": 4
@@ -872,16 +405,6 @@
     },
     "lib/ui/screens/team/work_sheet.dart": {
       ".toUpperCase()": 1
-    },
-    "lib/ui/screens/termux_setup_screen.dart": {
-      "Border.all(": 1,
-      "BorderRadius.circular(<n>": 5,
-      "EdgeInsets numeric": 14,
-      "Opacity( around text": 1,
-      "SizedBox numeric": 52,
-      "TextStyle(": 3,
-      "fontSize:": 2,
-      "icon size not 20/22/24": 2
     },
     "lib/ui/widgets/app_exit_notice.dart": {
       "EdgeInsets numeric": 1
@@ -900,15 +423,6 @@
     "lib/ui/widgets/session_handoff.dart": {
       "SizedBox numeric": 2
     },
-    "lib/ui/widgets/session_inventory_footer.dart": {
-      "EdgeInsets numeric": 1,
-      "SizedBox numeric": 1,
-      "TextStyle(": 1
-    },
-    "lib/ui/widgets/team_card.dart": {
-      "EdgeInsets numeric": 4,
-      "SizedBox numeric": 2
-    },
     "lib/ui/widgets/team_phone_onboarding.dart": {
       "Border.all(": 1,
       "BorderRadius.circular(<n>": 1,
@@ -921,9 +435,6 @@
     }
   },
   "G48": {
-    "lib/ui/screens/chat/permission_sheet.dart": {
-      "sheet multiline without draft:": 1
-    },
     "lib/voice/voice_ui.dart": {
       "sheet multiline without draft:": 1
     }

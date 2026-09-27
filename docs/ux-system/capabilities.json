@@ -1052,6 +1052,47 @@
    }
   },
   {
+   "capability": "flag:terminal",
+   "kind": "ServerCapabilities flag (derived, not a taxonomy id): the server's own Terminal, on its own (slice-R10: the Terminal page gates on this, not on Files and Terminal)",
+   "hosts": {
+    "builtin": {
+     "status": "supported",
+     "note": "follows the phone's runtime (OpenCode 1 or 2); the Terminal page's 'This phone' source is a shell in the app's Linux and needs no server",
+     "evidence": "lib/builtin/setup/components.dart:15-31; lib/ui/screens/terminal_screen.dart:88-97"
+    },
+    "termux": {
+     "status": "supported",
+     "note": "follows the phone's runtime (OpenCode 1 or 2)",
+     "evidence": "lib/builtin/setup/components.dart:15-31"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/domain/server_gateway.dart:924 (terminal defaults true)"
+    },
+    "oc2Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/api2/gateway_mappers.dart:34-72 (terminal left true)"
+    },
+    "codex": {
+     "status": "not",
+     "note": "no server terminals; the Terminal page falls back to 'This phone' when it is set up",
+     "evidence": "lib/codex/gateway.dart:20"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "no server terminals",
+     "evidence": "lib/paseo/gateway.dart:24"
+    },
+    "demo": {
+     "status": "partly",
+     "note": "flag on; no real shell",
+     "evidence": "lib/demo/demo_gateway.dart:65-92"
+    }
+   }
+  },
+  {
    "capability": "flag:sessionDiff",
    "kind": "ServerCapabilities flag (derived, not a taxonomy id): Review changes",
    "hosts": {
@@ -1130,6 +1171,47 @@
      "status": "partly",
      "note": "",
      "evidence": "lib/demo/demo_gateway.dart:65-92"
+    }
+   }
+  },
+  {
+   "capability": "flag:toolInventory",
+   "kind": "ServerCapabilities flag (derived, not a taxonomy id): the list of tools the server's agent can use (slice-R10: the Tools page gates on this, not on server.oc1)",
+   "hosts": {
+    "builtin": {
+     "status": "partly",
+     "note": "only while the phone runs OpenCode 1; OpenCode 2 does not list its tools",
+     "evidence": "lib/builtin/setup/components.dart:15-31; lib/api2/gateway_mappers.dart:56"
+    },
+    "termux": {
+     "status": "partly",
+     "note": "same as builtin",
+     "evidence": "lib/api2/gateway_mappers.dart:56"
+    },
+    "oc1Computer": {
+     "status": "supported",
+     "note": "",
+     "evidence": "lib/domain/server_gateway.dart:959 (toolInventory defaults true)"
+    },
+    "oc2Computer": {
+     "status": "not",
+     "note": "OpenCode 2 has no tool list call",
+     "evidence": "lib/api2/gateway_mappers.dart:56"
+    },
+    "codex": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/codex/gateway.dart:54"
+    },
+    "paseo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/paseo/gateway.dart:58"
+    },
+    "demo": {
+     "status": "not",
+     "note": "",
+     "evidence": "lib/demo/demo_gateway.dart:80"
     }
    }
   },

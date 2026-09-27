@@ -200,7 +200,7 @@ void main() {
           routes: {
             '/servers': (_) => const ServersScreen(),
             '/home': (_) => const Scaffold(body: Text('Connected home')),
-            '/termux-setup': (_) => const Scaffold(body: Text('Phone setup')),
+            '/this-phone': (_) => const Scaffold(body: Text('Phone setup')),
           },
           home: const HomeScreen(),
         ),
