@@ -70,32 +70,21 @@ const _allowed = <String, Map<String, String>>{
   // Pending: another agent owns these files right now (see
   // docs/qa/no-raw-errors-2026-09-27/README.md). Remove each entry with its
   // fix.
-  'screens/usage_screen.dart': {
-    'Api2Error() => error.message,': 'pending: quota/usage owner (P5.4)',
-  },
   'screens/chat_screen.dart': {
     "out.write('> \${_chatL10n(context).chatUiError}: \$error\\n');":
-        'transcript export text, not UI copy (chat lane P3.3 to review)',
+        'transcript export text, not UI copy (chat lane to review)',
   },
   'screens/phone_setup/phone_setup_termux_job_screen.dart': {
-    ": failure.message;": 'pending: phone setup owner (P1.7)',
+    ": failure.message;": 'pending: phone setup owner (P5.3)',
     "error = failure.message ?? l10n.e7SetupInspectTermuxFailed;":
-        'pending: phone setup owner (P1.7)',
-    "error = '\$failure';": 'pending: phone setup owner (P1.7)',
+        'pending: phone setup owner (P5.3)',
+    "error = '\$failure';": 'pending: phone setup owner (P5.3)',
     "error = failure.message ?? l10n.termuxGuideCopyOpenFailed;":
-        'pending: phone setup owner (P1.7)',
+        'pending: phone setup owner (P5.3)',
   },
   'screens/phone_setup/phone_setup_ready_screen.dart': {
     'failure = _l10n.phoneSetupReadyCreateFailed(error.message);':
-        'pending: phone setup owner (P1.7)',
-  },
-  'widgets/team_phone_section.dart': {
-    'setState(() => _error = l10n.teamUiPhoneActionFailed(error.message));':
-        'pending: team phone owner (P1.7)',
-  },
-  'widgets/builtin_team_section.dart': {
-    "setState(() => _error = _copy(context).aiteamComponentFailed('\$error'));":
-        'pending: AI Team owner (P1.7)',
+        'pending: phone setup owner (P5.3)',
   },
 };
 

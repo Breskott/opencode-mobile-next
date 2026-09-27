@@ -86,29 +86,45 @@ where they call it; the lines below bypass it.
 
 | Owner | File:line | What shows | Proposed fix / words |
 | --- | --- | --- | --- |
-| P1.7 phone setup | `screens/phone_setup/phone_setup_termux_job_screen.dart:210` | `TermuxBridgeException.message` (Termux output) | `productErrorText(failure)` |
-| P1.7 | `…/phone_setup_termux_job_screen.dart:215` | `PlatformException.message` (native) | `l10n.e7SetupInspectTermuxFailed`, message to details |
-| P1.7 | `…/phone_setup_termux_job_screen.dart:218` | `'$failure'` | `productErrorText(failure)`; `productErrorDetails` to a fold |
-| P1.7 | `…/phone_setup_termux_job_screen.dart:344` | `PlatformException.message` | `l10n.termuxGuideCopyOpenFailed` |
-| P1.7 | `screens/phone_setup/phone_setup_ready_screen.dart:177` | `phoneSetupReadyCreateFailed(error.message)` | `phoneSetupReadyCreateFailed(productErrorText(error))` |
-| P1.7 | `…/phone_setup_ready_screen.dart:153,199` | `connection.lastError` (raw `toString()`) | `productErrorText(connection.lastError!)` |
-| P1.7 | `screens/phone_setup/phone_setup_start_screen.dart:303` | `connection.lastError` | same |
-| P1.7 team phone | `widgets/team_phone_onboarding.dart:564,608` | `TermuxBridgeException.message` as `_dispatchError` | `productErrorText(error)` |
-| P1.7 | `widgets/team_phone_onboarding.dart:895` | `error.toString()` as the field problem | `productErrorText(error)` |
-| P1.7 | `widgets/team_phone_onboarding.dart:204-210` | `teamUiPhoneFailedReason(status.lastError / reason / rawPhase)` (script text, raw phase id) | words per reason; raw into the log/details |
-| P1.7 | `widgets/team_phone_section.dart:202,277` | `teamUiPhoneActionFailed(status.lastError ?? reason ?? rawPhase)` | same |
-| P1.7 | `widgets/team_phone_section.dart:208,306` | `teamUiPhoneActionFailed(error.message)` | `productErrorText(error)` |
-| P1.7 AI Team | `widgets/builtin_team_section.dart:274` | `aiteamComponentFailed('$error')` | `productErrorText(error)`, `_detail = productErrorDetails(error)` |
-| P5.4 quota/usage | `screens/usage_screen.dart:131` | `Api2Error() => error.message` | drop the arm; `productErrorText` handles `Api2Error` |
-| P6.1 background / P3.10 settings | `screens/settings/notifications_settings_screen.dart:83-88` | `backgroundLive.lastError` (raw `PlatformException.message` / `toString()` from `lib/background/live_background.dart:587-593`) | `productErrorText(error)`, or keep the setting's own sentence `e7SettingsUi22` and fold the raw text |
-| P6.1 | `widgets/first_reply_notify_card.dart:99` | same `backgroundLive.lastError` | same |
-| P3.3 chat | `screens/chat_screen.dart:5898` | transcript export writes `> Error: {raw}` | export text, not UI copy; review whether the export should carry words |
-| P3.3 chat | `screens/chat_screen.dart:3720` | `_showActionError(_conn.connectionError …)` passes raw `lastError` | now said in words by `productErrorText`'s string check; nothing to do unless the chat lane wants its own words |
+| P5.3 phone setup | `screens/phone_setup/phone_setup_termux_job_screen.dart:210` | `TermuxBridgeException.message` (Termux output) | `productErrorText(failure)` |
+| P5.3 | `…/phone_setup_termux_job_screen.dart:215` | `PlatformException.message` (native) | `l10n.e7SetupInspectTermuxFailed`, message to details |
+| P5.3 | `…/phone_setup_termux_job_screen.dart:218` | `'$failure'` | `productErrorText(failure)`; `productErrorDetails` to a fold |
+| P5.3 | `…/phone_setup_termux_job_screen.dart:344` | `PlatformException.message` | `l10n.termuxGuideCopyOpenFailed` |
+| P5.3 | `screens/phone_setup/phone_setup_ready_screen.dart:177` | `phoneSetupReadyCreateFailed(error.message)` | `phoneSetupReadyCreateFailed(productErrorText(error))` |
+| P5.3 | `…/phone_setup_ready_screen.dart:153,199` | `connection.lastError` (raw `toString()`) | `productErrorText(connection.lastError!)` |
+| P5.3 | `screens/phone_setup/phone_setup_start_screen.dart:303` | `connection.lastError` | same |
+| chat lane | `screens/chat_screen.dart:5898` | transcript export writes `> Error: {raw}` | export text, not UI copy; review whether the export should carry words |
+| chat lane | `screens/chat_screen.dart:3720` | `_showActionError(_conn.connectionError …)` passes raw `lastError` | now said in words by `productErrorText`'s string check; nothing to do unless the chat lane wants its own words |
 
 `test/no_raw_error_text_test.dart` allowlists the pending lines its scan
 detects (the `lastError`/`status` rows are plain strings it cannot tell from
 words); each entry fails the test once its line is fixed, so the owner
 removes it with the fix.
+
+## Follow-up after the merge (601b4ec1)
+
+The files below were freed by their owners and are now fixed on this branch:
+
+| File | Was | Now |
+| --- | --- | --- |
+| `widgets/team_phone_onboarding.dart` (rewritten by P1.7) | killed-team Start again: `teamUiPhoneActionFailed(error.message)`; failure fallback `Reason: {lastError / reason id / raw phase}`; turn-on failure `… ${e.message}` and `aiteamComponentFailed('$other')` | words through `productErrorText`; a bare reason id or phase says the Termux words; the notice becomes `KitNotice.error` with Start again and Copy details (`teamPhoneFailureDetails`) |
+| `widgets/team_phone_section.dart:200,207,275,305` | `teamUiPhoneActionFailed(status.lastError ?? reason ?? rawPhase)` and `(error.message)` | `teamPhoneFailureText` / `productErrorText`; `KitNotice.error` with Copy details |
+| `widgets/builtin_team_section.dart:111,345` | the script's last output line as the words; `aiteamComponentFailed('$error')` | the last line only when it is a sentence, otherwise words; raw via `productErrorDetails` into the existing Details. "Turn off AI Team" (P1.4) unchanged |
+| `screens/usage_screen.dart:131` | `Api2Error() => error.message` | `productErrorText`; the notice has Copy details |
+| `screens/settings/notifications_settings_screen.dart:83` | `backgroundLive.lastError` (native / `toString()`) as the words | the app's own Android sentence stays, exception text is said in words and kept under Copy details; a failed turn-off says "Android did not turn background mode off." |
+| `widgets/first_reply_notify_card.dart:99` | same | same words rule (dismissible notice keeps its form) |
+
+Still owned by others and forwarded by the coordinator: the phone setup
+screens, `this_phone_screen`, `lib/builtin/setup` (P5.3) and
+`chat_screen.dart` + `chat/**` (chat lane).
+
+Follow-up checks: `flutter analyze` clean; the guard, `product_error_text`
+and the tests of the six changed files (27 files) run once — every failure
+also fails at `601b4ec1` in a temporary worktree except one
+(`first_reply_notify_card_test` expected Android's own "Notification access
+is required.", which the words rule now keeps), fixed and re-run.
+`builtin_team_section_test` now expects words, not the script's
+"dirty tables".
 
 ## Guard and behaviour tests
 
