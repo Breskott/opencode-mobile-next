@@ -22578,4 +22578,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get filePreviewSaveFailed => 'Couldn\'t save file';
+
+  @override
+  String get teamControlsFieldUnavailable =>
+      'The team can\'t take words from this phone right now.';
+
+  @override
+  String get teamNowWakeRefusedNoReason => 'The host didn\'t say why.';
+
+  @override
+  String get teamBoardMoveSheetAddEmpty => 'Say what the team should do first.';
+
+  @override
+  String get teamCycleStripNoAgentYet => 'No agent has taken this step yet.';
+
+  @override
+  String get teamHostFormTeamLabel => 'Team name (optional)';
+
+  @override
+  String get teamHostFormTeamHelper =>
+      'Leave it empty to use the team the computer runs.';
+
+  @override
+  String get teamHostFormHowAction => 'How to set up the computer';
+
+  @override
+  String get teamHostFormCancelTest => 'Cancel test';
+
+  @override
+  String get teamHostFormSaveAnyway => 'Save without an answer';
 }

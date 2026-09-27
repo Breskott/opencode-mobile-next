@@ -35816,6 +35816,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t save file'**
   String get filePreviewSaveFailed;
+
+  /// Why an agent's message field is turned off (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'The team can\'t take words from this phone right now.'**
+  String get teamControlsFieldUnavailable;
+
+  /// Shown when the team host refused to wake an agent without a reason (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'The host didn\'t say why.'**
+  String get teamNowWakeRefusedNoReason;
+
+  /// Error under the Add to backlog field when it is empty (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'Say what the team should do first.'**
+  String get teamBoardMoveSheetAddEmpty;
+
+  /// Why Open agent output is unavailable on the dispatch strip (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'No agent has taken this step yet.'**
+  String get teamCycleStripNoAgentYet;
+
+  /// Label of the field for the Gas City city name on the Add AI Team host sheet (shared-team-1; was 'City').
+  ///
+  /// In en, this message translates to:
+  /// **'Team name (optional)'**
+  String get teamHostFormTeamLabel;
+
+  /// Helper under the team name field (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'Leave it empty to use the team the computer runs.'**
+  String get teamHostFormTeamHelper;
+
+  /// Opens the host guide from a failed address test (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'How to set up the computer'**
+  String get teamHostFormHowAction;
+
+  /// Stops waiting for the address test on the Add AI Team host sheet (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel test'**
+  String get teamHostFormCancelTest;
+
+  /// Saves an AI Team host address that did not answer, for a computer that is asleep (shared-team-1).
+  ///
+  /// In en, this message translates to:
+  /// **'Save without an answer'**
+  String get teamHostFormSaveAnyway;
 }
 
 class _AppLocalizationsDelegate

@@ -22,6 +22,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_status_mark.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/work_sheet.dart';
@@ -1034,19 +1035,17 @@ void main() {
         find.byType(TeamCycleStrip),
       );
       expect(state.debugHasAnimation, isTrue);
+      expect(workingMarks(tester), 1);
       expect(
-        find.descendant(
-          of: key('team-cycle-strip'),
-          matching: find.byType(ScaleTransition),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: key('team-cycle-step-working'),
-          matching: find.byType(ScaleTransition),
-        ),
-        findsOneWidget,
+        tester
+            .widget<KitStatusMark>(
+              find.descendant(
+                of: key('team-cycle-step-working'),
+                matching: find.byType(KitStatusMark),
+              ),
+            )
+            .state,
+        KitMarkState.working,
       );
       expect(
         await semanticsOf(tester),
@@ -1054,7 +1053,7 @@ void main() {
       );
       expect(key('team-cycle-hint'), findsNothing);
       expect(key('team-cycle-stall'), findsNothing);
-      expect(key('team-cycle-actions'), findsNothing);
+      expect(key('team-cycle-action-refresh'), findsNothing);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -1074,13 +1073,6 @@ void main() {
       );
       expect(state.debugHasAnimation, isFalse);
       expect(tester.binding.transientCallbackCount, 0);
-      expect(
-        find.descendant(
-          of: key('team-cycle-strip'),
-          matching: find.byType(ScaleTransition),
-        ),
-        findsNothing,
-      );
       expect(
         await semanticsOf(tester),
         'Step 2 of 6, Agent starting, since ${clockLabel(tester, t0)}',
@@ -1108,13 +1100,7 @@ void main() {
         find.byType(TeamCycleStrip),
       );
       expect(merged.debugHasAnimation, isFalse);
-      expect(
-        find.descendant(
-          of: key('team-cycle-strip'),
-          matching: find.byType(ScaleTransition),
-        ),
-        findsNothing,
-      );
+      expect(workingMarks(tester), 0);
       expect(
         await semanticsOf(tester),
         'All 6 steps done, merged at ${clockLabel(tester, clock)}',
@@ -1191,17 +1177,10 @@ void main() {
         find.text('The agent could not start on the host'),
         findsOneWidget,
       );
-      final buttons = tester
-          .widgetList(
-            find.descendant(
-              of: key('team-cycle-actions'),
-              matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
-            ),
-          )
-          .toList();
-      expect(buttons.length, 2);
-      expect(buttons.first.key, const ValueKey('team-cycle-action-how'));
-      expect(buttons.last.key, const ValueKey('team-cycle-action-refresh'));
+      // The notice's two ways out, How first.
+      final how = tester.getTopLeft(key('team-cycle-action-how'));
+      final refresh = tester.getTopLeft(key('team-cycle-action-refresh'));
+      expect(how.dy < refresh.dy || how.dx < refresh.dx, isTrue);
     });
 
     testWidgets('providerLimit from the probed transcript: Open agent '
@@ -1277,7 +1256,9 @@ void main() {
       await tester.tap(key('team-cycle-action-stop'));
       await tester.pumpAndSettle();
       expect(key('team-cycle-stop-confirm'), findsOneWidget);
-      expect(find.text('Stop ocproof/gastown.furiosa?'), findsOneWidget);
+      // The agent in the person's words, never the engine's address.
+      expect(find.textContaining('furiosa'), findsWidgets);
+      expect(find.textContaining('ocproof/gastown'), findsNothing);
       tester.state<NavigatorState>(find.byType(Navigator)).pop();
       await tester.pumpAndSettle();
       expect(gateway.inner.controlCalls, isEmpty);
@@ -1641,3 +1622,14 @@ void main() {
     });
   });
 }
+
+/// How many kit working marks the strip shows (the current step's).
+int workingMarks(WidgetTester tester) => tester
+    .widgetList<KitStatusMark>(
+      find.descendant(
+        of: find.byKey(const ValueKey('team-cycle-strip')),
+        matching: find.byType(KitStatusMark),
+      ),
+    )
+    .where((mark) => mark.state == KitMarkState.working)
+    .length;

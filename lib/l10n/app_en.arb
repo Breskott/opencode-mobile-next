@@ -25741,5 +25741,41 @@
   "filePreviewOpenInFiles": "Open in Files",
   "filePreviewViewMode": "Show file as",
   "filePreviewAttachFailed": "Couldn't attach file",
-  "filePreviewSaveFailed": "Couldn't save file"
+  "filePreviewSaveFailed": "Couldn't save file",
+  "teamControlsFieldUnavailable": "The team can't take words from this phone right now.",
+  "@teamControlsFieldUnavailable": {
+    "description": "Why an agent's message field is turned off (shared-team-1)."
+  },
+  "teamNowWakeRefusedNoReason": "The host didn't say why.",
+  "@teamNowWakeRefusedNoReason": {
+    "description": "Shown when the team host refused to wake an agent without a reason (shared-team-1)."
+  },
+  "teamBoardMoveSheetAddEmpty": "Say what the team should do first.",
+  "@teamBoardMoveSheetAddEmpty": {
+    "description": "Error under the Add to backlog field when it is empty (shared-team-1)."
+  },
+  "teamCycleStripNoAgentYet": "No agent has taken this step yet.",
+  "@teamCycleStripNoAgentYet": {
+    "description": "Why Open agent output is unavailable on the dispatch strip (shared-team-1)."
+  },
+  "teamHostFormTeamLabel": "Team name (optional)",
+  "@teamHostFormTeamLabel": {
+    "description": "Label of the field for the Gas City city name on the Add AI Team host sheet (shared-team-1; was 'City')."
+  },
+  "teamHostFormTeamHelper": "Leave it empty to use the team the computer runs.",
+  "@teamHostFormTeamHelper": {
+    "description": "Helper under the team name field (shared-team-1)."
+  },
+  "teamHostFormHowAction": "How to set up the computer",
+  "@teamHostFormHowAction": {
+    "description": "Opens the host guide from a failed address test (shared-team-1)."
+  },
+  "teamHostFormCancelTest": "Cancel test",
+  "@teamHostFormCancelTest": {
+    "description": "Stops waiting for the address test on the Add AI Team host sheet (shared-team-1)."
+  },
+  "teamHostFormSaveAnyway": "Save without an answer",
+  "@teamHostFormSaveAnyway": {
+    "description": "Saves an AI Team host address that did not answer, for a computer that is asleep (shared-team-1)."
+  }
 }

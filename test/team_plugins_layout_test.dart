@@ -300,32 +300,19 @@ void main() {
                 tester.widget<TextField>(url).textDirection,
                 TextDirection.ltr,
               );
-              // TEAM-206: the kind chips wrap at large text and every one
-              // is reachable; a tap on WSL selects it.
-              for (final kind in teamHostKindChoices) {
-                final chip = find.byKey(
-                  ValueKey('team-host-kind-${kind.name}'),
-                );
-                await tester.ensureVisible(chip);
-                await tester.pumpAndSettle();
-                expect(chip.hitTestable(), findsOneWidget);
-                expect(
-                  find.text(teamHostKindLabel(l10n, kind)),
-                  findsOneWidget,
-                );
-              }
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('team-host-kind-wsl')),
-              );
+              // shared-team-1 (map team-host-sheet, fix): no "kind of
+              // computer" question any more; the team name field is
+              // reachable at large text.
               expect(
-                tester
-                    .widget<ChoiceChip>(
-                      find.byKey(const ValueKey('team-host-kind-wsl')),
-                    )
-                    .selected,
-                isTrue,
+                find.byKey(
+                  ValueKey('team-host-kind-${teamHostKindChoices.first.name}'),
+                ),
+                findsNothing,
               );
+              final team = find.byKey(const ValueKey('team-host-city'));
+              await tester.ensureVisible(team);
+              await tester.pumpAndSettle();
+              expect(team.hitTestable(), findsOneWidget);
               await tester.enterText(url, 'http://public.example:8372');
               await tapVisible(
                 tester,
