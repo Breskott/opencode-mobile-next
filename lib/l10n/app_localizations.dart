@@ -33983,10 +33983,10 @@ abstract class AppLocalizations {
   /// **'Extra tools'**
   String get kitCapMcpAnyTitle;
 
-  /// KitCapabilityExplainer: why the capability "mcp.any" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  /// KitCapabilityExplainer: why the capability "mcp.any" is missing, in one sentence (the dimmed row's supporting line and the missing state's body). It explains a server that cannot add MCP servers at all; the turn-on invitation is kitCapMcpAnyOffer
   ///
   /// In en, this message translates to:
-  /// **'No extra tools are added on this server yet.'**
+  /// **'This server can\'t add extra tools from the app.'**
   String get kitCapMcpAnyWhy;
 
   /// KitCapabilityExplainer: the button that starts the flow turning "mcp.any" on (a verb, COPY-8)
@@ -38748,7 +38748,7 @@ abstract class AppLocalizations {
   /// Active context: plain one-paragraph intro above the list.
   ///
   /// In en, this message translates to:
-  /// **'What the model reads on its next turn: the messages this server keeps for the conversation after its latest summary. Counts are messages, not tokens.'**
+  /// **'What the model reads on its next turn, after the latest summary.'**
   String get activeContextIntro;
 
   /// Active context: body of the empty state.
@@ -38858,12 +38858,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'To remove the note, use Delete saved note.'**
   String get sessionNoteEmptyUseDelete;
-
-  /// Note for the agent: why Save is unavailable when nothing changed.
-  ///
-  /// In en, this message translates to:
-  /// **'Change the note to save it.'**
-  String get sessionNoteUnchanged;
 
   /// Subagents page title.
   ///
@@ -41096,6 +41090,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Checking the download'**
   String get setupAppStageVerifying;
+
+  /// KitDiffView: the phone file switcher's position after the file name, e.g. 'checkout_page.dart · 1 of 3'
+  ///
+  /// In en, this message translates to:
+  /// **'{index} of {count}'**
+  String kitDiffFilePosition(int index, int count);
+
+  /// KitDiffView: the file switcher's position as read by a screen reader, after the path and counts
+  ///
+  /// In en, this message translates to:
+  /// **'file {index} of {count}'**
+  String kitDiffFilePositionSpoken(int index, int count);
+
+  /// KitDiffView: screen-reader name of the tick on a file already viewed in the wide file list
+  ///
+  /// In en, this message translates to:
+  /// **'Viewed'**
+  String get kitDiffViewed;
+
+  /// KitDiffView: tooltip of a hunk's line range ('Lines 12–18') when selection is on; tapping it selects the whole hunk
+  ///
+  /// In en, this message translates to:
+  /// **'Select these lines'**
+  String get kitDiffSelectHunk;
+
+  /// KitCapabilityExplainer: the name of the capability "flag:terminal" (the server's own terminal, without Files), shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal'**
+  String get kitCapFlagTerminalTitle;
+
+  /// KitCapabilityExplainer: why the capability "flag:terminal" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t open a terminal for you.'**
+  String get kitCapFlagTerminalWhy;
+
+  /// KitCapabilityExplainer: the name of the capability "flag:toolInventory" (the list of tools the server's agent can use), shown as the title of the dimmed row or the missing state
+  ///
+  /// In en, this message translates to:
+  /// **'Tool list'**
+  String get kitCapFlagToolInventoryTitle;
+
+  /// KitCapabilityExplainer: why the capability "flag:toolInventory" is missing, in one sentence (the dimmed row's supporting line and the missing state's body)
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t list the tools its agent can use.'**
+  String get kitCapFlagToolInventoryWhy;
+
+  /// Offline demo: status-line action that starts the simulated conversation again.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset demo'**
+  String get demoScreenReset;
+
+  /// Offline demo: the top bar close button that leaves the demo.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave demo'**
+  String get demoScreenLeave;
+
+  /// Offline demo: supporting line under "Simulated · nothing is saved".
+  ///
+  /// In en, this message translates to:
+  /// **'Everything here is simulated on this device. No server, provider, or files are accessed.'**
+  String get demoScreenDisclosure;
+
+  /// Available on this server: intro when the server lacks something; says once where missing features work.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out. Missing features work on other OpenCode servers.'**
+  String capabilityScreenIntroWithGaps(String server);
+
+  /// Active context: title of one message page, by its role.
+  ///
+  /// In en, this message translates to:
+  /// **'{role, select, user{User message} assistant{Assistant message} system{System message} synthetic{Synthetic message} skill{Skill message} shell{Shell message} compaction{Summary message} change{Conversation change} other{Message}}'**
+  String activeContextMessageTitle(String role);
+
+  /// New conversation chooser: marks the way the person started their last conversation on this server
+  ///
+  /// In en, this message translates to:
+  /// **'Last used'**
+  String get newConversationLastUsed;
+
+  /// New conversation chooser: what the Solo row starts, when no project is known
+  ///
+  /// In en, this message translates to:
+  /// **'You and the assistant'**
+  String get newConversationSoloDetail;
+
+  /// New conversation chooser: what the Solo row starts and where
+  ///
+  /// In en, this message translates to:
+  /// **'You and the assistant, in {project}'**
+  String newConversationSoloDetailIn(String project);
+
+  /// New conversation chooser: what the Team row starts while the AI Team is on
+  ///
+  /// In en, this message translates to:
+  /// **'The AI Team plans the work and shares it out'**
+  String get newConversationTeamDetail;
+
+  /// New conversation chooser: the Team row while the AI Team is off; tapping it opens the team's off state
+  ///
+  /// In en, this message translates to:
+  /// **'Off on this server · opens the AI Team to set it up'**
+  String get newConversationTeamOffDetail;
+
+  /// New conversation chooser: starts the conversation in a fresh worktree of the project
+  ///
+  /// In en, this message translates to:
+  /// **'In a separate copy of {project}'**
+  String newConversationCopyTitle(String project);
+
+  /// New conversation chooser: starts the conversation on this cloud machine (a managed workspace)
+  ///
+  /// In en, this message translates to:
+  /// **'On {machine}'**
+  String newConversationCloudTitle(String machine);
+
+  /// New conversation chooser: what a cloud machine row is
+  ///
+  /// In en, this message translates to:
+  /// **'A cloud machine for this project'**
+  String get newConversationCloudDetail;
 }
 
 class _AppLocalizationsDelegate

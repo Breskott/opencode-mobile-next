@@ -21426,7 +21426,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get kitCapMcpAnyTitle => 'Extra tools';
 
   @override
-  String get kitCapMcpAnyWhy => 'No extra tools are added on this server yet.';
+  String get kitCapMcpAnyWhy =>
+      'This server can\'t add extra tools from the app.';
 
   @override
   String get kitCapMcpAnyEnable => 'Add a tool';
@@ -24490,7 +24491,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activeContextIntro =>
-      'What the model reads on its next turn: the messages this server keeps for the conversation after its latest summary. Counts are messages, not tokens.';
+      'What the model reads on its next turn, after the latest summary.';
 
   @override
   String get activeContextEmptyDetail =>
@@ -24565,9 +24566,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get sessionNoteEmptyUseDelete =>
       'To remove the note, use Delete saved note.';
-
-  @override
-  String get sessionNoteUnchanged => 'Change the note to save it.';
 
   @override
   String get sessionRelationsTitle => 'Subagents';
@@ -26020,4 +26018,97 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get setupAppStageVerifying => 'Checking the download';
+
+  @override
+  String kitDiffFilePosition(int index, int count) {
+    return '$index of $count';
+  }
+
+  @override
+  String kitDiffFilePositionSpoken(int index, int count) {
+    return 'file $index of $count';
+  }
+
+  @override
+  String get kitDiffViewed => 'Viewed';
+
+  @override
+  String get kitDiffSelectHunk => 'Select these lines';
+
+  @override
+  String get kitCapFlagTerminalTitle => 'Terminal';
+
+  @override
+  String get kitCapFlagTerminalWhy =>
+      'This server doesn\'t open a terminal for you.';
+
+  @override
+  String get kitCapFlagToolInventoryTitle => 'Tool list';
+
+  @override
+  String get kitCapFlagToolInventoryWhy =>
+      'This server doesn\'t list the tools its agent can use.';
+
+  @override
+  String get demoScreenReset => 'Reset demo';
+
+  @override
+  String get demoScreenLeave => 'Leave demo';
+
+  @override
+  String get demoScreenDisclosure =>
+      'Everything here is simulated on this device. No server, provider, or files are accessed.';
+
+  @override
+  String capabilityScreenIntroWithGaps(String server) {
+    return '$server decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out. Missing features work on other OpenCode servers.';
+  }
+
+  @override
+  String activeContextMessageTitle(String role) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'user': 'User message',
+      'assistant': 'Assistant message',
+      'system': 'System message',
+      'synthetic': 'Synthetic message',
+      'skill': 'Skill message',
+      'shell': 'Shell message',
+      'compaction': 'Summary message',
+      'change': 'Conversation change',
+      'other': 'Message',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get newConversationLastUsed => 'Last used';
+
+  @override
+  String get newConversationSoloDetail => 'You and the assistant';
+
+  @override
+  String newConversationSoloDetailIn(String project) {
+    return 'You and the assistant, in $project';
+  }
+
+  @override
+  String get newConversationTeamDetail =>
+      'The AI Team plans the work and shares it out';
+
+  @override
+  String get newConversationTeamOffDetail =>
+      'Off on this server · opens the AI Team to set it up';
+
+  @override
+  String newConversationCopyTitle(String project) {
+    return 'In a separate copy of $project';
+  }
+
+  @override
+  String newConversationCloudTitle(String machine) {
+    return 'On $machine';
+  }
+
+  @override
+  String get newConversationCloudDetail => 'A cloud machine for this project';
 }
