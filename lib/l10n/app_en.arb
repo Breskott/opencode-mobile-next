@@ -421,7 +421,6 @@
   "usagePreviousResult": "Showing the previous result for these filters.",
   "usageLocationChanged": "The active server or project changed. Reopen Usage from Settings.",
   "usageTinyCost": "Less than $0.000001",
-  "usageReportedCost": "Reported cost · USD",
   "usageSessions": "Conversations",
   "usageSubagents": "Subagent conversations",
   "usagePrompts": "Prompts",
@@ -1279,17 +1278,9 @@
   "@quotaSourceChanged": {
     "description": "A retained quota screen lost its original scope or profile"
   },
-  "quotaSetupTitle": "An optional collector is required",
-  "@quotaSetupTitle": {
-    "description": "First-visit quota setup heading; no claim of built-in OpenCode support"
-  },
-  "quotaSetupDescription": "Needs a usage collector installed on this server. Provider tokens stay on the server.",
+  "quotaSetupDescription": "Once it’s installed, confirm you trust it, then read. Provider tokens stay on the server.",
   "@quotaSetupDescription": {
     "description": "Informed consent before sending existing server authentication to an optional same-origin route"
-  },
-  "quotaSetupGuide": "Setup instructions are in tool/quota/README.md in the app repository. This screen does not install services or remember permission after you leave.",
-  "@quotaSetupGuide": {
-    "description": "Explains operator configuration and visit-only consent"
   },
   "quotaSetupNeeded": "Use a saved server with a password and HTTPS, or phone loopback. Update its connection settings before checking the collector.",
   "@quotaSetupNeeded": {
@@ -1318,10 +1309,6 @@
   "quotaCollectorAuth": "The collector route did not accept this server sign-in. Ask the server operator to check its authentication setup.",
   "@quotaCollectorAuth": {
     "description": "Collector or proxy authentication failure, distinct from provider reauthentication"
-  },
-  "quotaCollectorMissing": "The optional collector route is not available on this server. Check its installation and proxy routing.",
-  "@quotaCollectorMissing": {
-    "description": "Optional collector returned a missing route or unsupported method"
   },
   "quotaUnavailable": "Remaining usage could not be refreshed. Check the connection and collector, then retry.",
   "@quotaUnavailable": {
@@ -1441,37 +1428,6 @@
   "quotaResetUnknown": "Reset time not reported",
   "@quotaResetUnknown": {
     "description": "Missing provider reset time is not fabricated"
-  },
-  "quotaResetPassed": "Reset time passed — refresh to check. The displayed allowance has not been replenished locally.",
-  "@quotaResetPassed": {
-    "description": "Passing a reset deadline does not invent a new allowance"
-  },
-  "quotaDays": "{count, plural, one{1-day window} other{{count}-day window}}",
-  "@quotaDays": {
-    "description": "Exact whole-day provider window duration",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "quotaHours": "{count, plural, one{1-hour window} other{{count}-hour window}}",
-  "@quotaHours": {
-    "description": "Exact whole-hour provider window duration",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "quotaSeconds": "{count, plural, one{1-second window} other{{count}-second window}}",
-  "@quotaSeconds": {
-    "description": "Exact duration when a provider window is not whole hours or days",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
   },
   "quotaSourceDisclosure": "Read-only snapshot from the optional collector using an internal provider endpoint. Other product allowances, model-specific limits, credits and eligibility are not included. Missing data is unknown, not unlimited.",
   "@quotaSourceDisclosure": {
@@ -30656,5 +30612,232 @@
   "promptStashOlderDraftsFull": "Older drafts are waiting to move here. Delete saved prompts to make room.",
   "@promptStashOlderDraftsFull": {
     "description": "Saved prompts sheet: the older drafts cannot move in because Saved prompts is full (with Try again)."
+  },
+  "quotaAnswerLeft": "About {percent} left",
+  "@quotaAnswerLeft": {
+    "description": "Remaining (answer sentence): what is left of a quota window whose length is not reported, e.g. \"About 40% left\"",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerLeftWeek": "About {percent} left this week",
+  "@quotaAnswerLeftWeek": {
+    "description": "Remaining (answer sentence): what is left of a weekly quota window",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerLeftDays": "About {percent} left in this {days}-day window",
+  "@quotaAnswerLeftDays": {
+    "description": "Remaining (answer sentence): what is left of a quota window counted in days",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaAnswerLeftHours": "About {percent} left in this {hours}-hour window",
+  "@quotaAnswerLeftHours": {
+    "description": "Remaining (answer sentence): what is left of a quota window counted in hours",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      },
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaAnswerResetsAt": "resets at {time}",
+  "@quotaAnswerResetsAt": {
+    "description": "Remaining (answer sentence, after \" · \"): the window resets later today",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerResetsOn": "resets {day}",
+  "@quotaAnswerResetsOn": {
+    "description": "Remaining (answer sentence, after \" · \"): the window resets on a later day, e.g. \"resets Tue\" or \"resets Oct 3\"",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerResetPassed": "reset time passed, refresh to check",
+  "@quotaAnswerResetPassed": {
+    "description": "Remaining (answer sentence, after \" · \"): the reported reset time has passed; the app never assumes the allowance came back"
+  },
+  "quotaAnswerFromCodex": "From your Codex account on {server}",
+  "@quotaAnswerFromCodex": {
+    "description": "Remaining: whose limits the rows show, above them",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerAgeNow": "Last known reading, from just now",
+  "@quotaAnswerAgeNow": {
+    "description": "Remaining: the rows show a retained reading (offline or refresh failed), less than a minute old"
+  },
+  "quotaAnswerAgeMinutes": "Last known reading, from {minutes} min ago",
+  "@quotaAnswerAgeMinutes": {
+    "description": "Remaining: the rows show a retained reading (offline or refresh failed) and its age",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaAnswerAgeHours": "Last known reading, from {hours} h ago",
+  "@quotaAnswerAgeHours": {
+    "description": "Remaining: the rows show a retained reading (offline or refresh failed) and its age",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaAnswerAgeDays": "{days, plural, one{Last known reading, from yesterday} other{Last known reading, from {days} days ago}}",
+  "@quotaAnswerAgeDays": {
+    "description": "Remaining: the rows show a retained reading (offline or refresh failed) and its age",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaAnswerAlert": "Alert me at {percent} used",
+  "@quotaAnswerAlert": {
+    "description": "Remaining: the switch (on by default) that says so on this page when a fresh reading reaches the percentage used",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerAlertDetail": "Says so here when a fresh reading reaches it.",
+  "@quotaAnswerAlertDetail": {
+    "description": "Remaining: what the alert switch does, under it"
+  },
+  "quotaAnswerAlertSaveFailed": "Couldn’t save this. The alert stays as it was.",
+  "@quotaAnswerAlertSaveFailed": {
+    "description": "Remaining: the alert switch could not be saved"
+  },
+  "quotaAnswerAttention": "You’ve used {percent} or more of a Codex limit.",
+  "@quotaAnswerAttention": {
+    "description": "Remaining: a fresh reading reached the alert percentage",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerNotConnected": "Connect to {server} to see what’s left on its Codex account.",
+  "@quotaAnswerNotConnected": {
+    "description": "Remaining on a Codex host that is not connected",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerSignIn": "Sign in to Codex on {server}",
+  "@quotaAnswerSignIn": {
+    "description": "Remaining on a Codex host with no signed-in account: the row that opens the Codex account page",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaAnswerSignInDetail": "What’s left shows here once you’re signed in with ChatGPT.",
+  "@quotaAnswerSignInDetail": {
+    "description": "Remaining: under the sign-in row"
+  },
+  "quotaAnswerUnsupported": "This Codex sign-in has no plan limits to show. They show for ChatGPT sign-ins, not API keys.",
+  "@quotaAnswerUnsupported": {
+    "description": "Remaining: the Codex host is signed in with an API key, or cannot report limits"
+  },
+  "quotaAnswerUnavailable": "Couldn’t read the Codex limits. Check the connection, then refresh.",
+  "@quotaAnswerUnavailable": {
+    "description": "Remaining: reading the Codex account limits failed and nothing is known yet"
+  },
+  "quotaAnswerInvalid": "Codex sent limits this app can’t read. Nothing new is shown.",
+  "@quotaAnswerInvalid": {
+    "description": "Remaining: the Codex account returned an invalid limits answer"
+  },
+  "quotaAnswerNoWindows": "Codex reported no limits for this account.",
+  "@quotaAnswerNoWindows": {
+    "description": "Remaining: the Codex account answered with no limit windows"
+  },
+  "quotaAnswerCodexNote": "Read from the Codex account on this server. Other limits, credits and model-specific caps are not included. Missing data is unknown, not unlimited.",
+  "@quotaAnswerCodexNote": {
+    "description": "Remaining (Codex host): the note in Details about what the numbers cover"
+  },
+  "quotaNeedsCollector": "Needs the quota collector on {server}",
+  "@quotaNeedsCollector": {
+    "description": "Remaining: the server has no quota collector (setup title, and the notice when its route is missing)",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaCollectorHowTo": "How to get it",
+  "@quotaCollectorHowTo": {
+    "description": "Remaining: the fold with the steps to get the quota collector"
+  },
+  "quotaCollectorStepInstall": "Ask whoever runs {server} to install the quota collector from tool/quota in the app’s repository. It needs Node 20 or later.",
+  "@quotaCollectorStepInstall": {
+    "description": "Remaining: collector setup step 1",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaCollectorStepRoute": "They keep the provider sign-in on the server and put the collector behind the same HTTPS address and password as OpenCode.",
+  "@quotaCollectorStepRoute": {
+    "description": "Remaining: collector setup step 2"
+  },
+  "quotaCollectorStepRetry": "Then come back here and read again.",
+  "@quotaCollectorStepRetry": {
+    "description": "Remaining: collector setup step 3"
+  },
+  "usageSpentToday": "Spent today",
+  "@usageSpentToday": {
+    "description": "Usage (Spent): above the total, when the server covered exactly today"
+  },
+  "usageSpentThirtyDays": "Spent in the last 30 days",
+  "@usageSpentThirtyDays": {
+    "description": "Usage (Spent): above the total, when the server covered exactly the last 30 days"
+  },
+  "usageSpentYear": "Spent this year",
+  "@usageSpentYear": {
+    "description": "Usage (Spent): above the total, when the server covered exactly this year"
+  },
+  "usageSpentAllTime": "Spent in total",
+  "@usageSpentAllTime": {
+    "description": "Usage (Spent): above the total, for all time"
+  },
+  "usageSpentPeriod": "Spent · {period}",
+  "@usageSpentPeriod": {
+    "description": "Usage (Spent): above the total, when the server covered other days than the range asked for; the days it covered, e.g. \"Spent · Sep 2 – 6\"",
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
   }
 }
