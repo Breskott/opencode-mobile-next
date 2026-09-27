@@ -56,7 +56,10 @@ dependencies:
   # long-dead qr_code_scanner.
   #
   # Known costs, stated rather than hidden:
-  #  * 7.4.2 supports AGP 9 built-in Kotlin without applying legacy KGP.
+  #  * Like desktop_drop, it applies the Kotlin Gradle Plugin, so the Android
+  #    release build now warns "Your app uses the following plugins that
+  #    apply Kotlin Gradle Plugin (KGP): desktop_drop, mobile_scanner". Real,
+  #    and a future Flutter will turn it into an error.
   #  * It defaults to the *bundled* ML Kit barcode model
   #    (com.google.mlkit:barcode-scanning), not the Play-Services download.
   #    That grows the APK, and buys scanning that works with no Play Services
@@ -66,7 +69,7 @@ dependencies:
   #    `platformCapabilities.supportsQrPairing` (Android only) and desktop
   #    never constructs a controller — but the Linux bundle does resolve a
   #    package it cannot use, exactly as record and file_picker already do.
-  mobile_scanner: 7.4.2
+  mobile_scanner: 7.4.0
   opencode_sdk:
     path: packages/opencode_sdk
   path_provider: 2.1.6

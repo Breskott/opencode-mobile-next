@@ -151,6 +151,7 @@ Files with no surface of their own and no interactive element (also in
 
 - `lib/ui/screens/chat/form_flow.dart`: `presentConnectionForm` is glue that calls `presentForm` from `lib/ui/widgets/form_renderer.dart` (page `form-sheet`) and routes submit/cancel.
 - `lib/ui/screens/library_screen.dart`: no surface since UX phase 2 (the More tab merged into the Settings hub); it only hosts the library part files and `defaultModelLabel()`.
+- `lib/ui/screens/team/team_page.dart`: `TeamPage` / `openTeamPage`, the one AI Team route (P3.4): it shows `team-home` while the server's team is on and `team-intro` while it is off, following the connection; no surface of its own.
 - `lib/ui/screens/team/policy_block.dart`: `TeamPolicyBlock` / `TeamBoundariesRow` are read-only rendering blocks embedded in the run overview and the start-run sheet; no taps.
 - `lib/ui/screens/phone_setup/phone_setup_hero.dart`: `PhoneSetupHero` lays out setup start and ready (the drawing at the top, then the state's slots); its actions are the host screens' and are recorded on their pages.
 - `lib/ui/screens/phone_setup/phone_setup_routes.dart`: navigation only; opens the phone setup screens and routes a setup notification tap.

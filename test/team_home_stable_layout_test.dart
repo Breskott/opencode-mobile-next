@@ -1,6 +1,6 @@
 // Stable team home (2026-09-13, redesigned 2026-09-24): on a compact phone
 // the task list keeps its space at every text size. A short list carries
-// no controls at all (no sections, chips or search); the task, the info
+// no controls at all (no sections, chips or search); the task, the board
 // button and "Give the team a task" stay on screen. Boots the plain
 // fixture gateway, the same data the QA captures use: one waiting convoy,
 // a handful of agents.
@@ -43,7 +43,8 @@ void main() {
 
   const run = ValueKey('team-home-run-oc-xru');
   const start = ValueKey('team-home-start-run');
-  const info = ValueKey('team-home-info');
+  // The top bar's one action beside the menu.
+  const info = ValueKey('team-home-board');
 
   /// Nothing to choose before the list: no sections, chips or search.
   void noControls(WidgetTester tester) {
@@ -167,7 +168,18 @@ void main() {
     );
     await tester.pumpAndSettle();
     onScreen(tester, run, 320);
-    await tester.tap(find.byKey(info));
+    // Technical details open from the page's "how it runs" row (P3.4).
+    const host = ValueKey('team-home-host-row');
+    await tester.scrollUntilVisible(
+      find.byKey(host),
+      200,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('team-home-runs')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(host));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('team-home-host-sheet')), findsOneWidget);
     expect(

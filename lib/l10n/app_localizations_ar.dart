@@ -2808,10 +2808,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get usageBudgetAmount => 'قيمة الميزانية';
 
   @override
-  String get usageBudgetInvalid =>
-      'أدخل قيمة موجبة ومحدودة. يجب أن تكون ميزانيات الرموز أعدادًا صحيحة.';
-
-  @override
   String get usageBudgetRemove => 'إزالة الميزانية';
 
   @override
@@ -5235,9 +5231,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SharedOtherContext => 'سياق آخر';
 
   @override
-  String get e7SharedMove => 'نقل';
-
-  @override
   String get e7SharedSessionLocationChangedCloseAndReopenThis =>
       'تغيّر مشروع المحادثة. أغلق هذه الورقة وأعد فتحها.';
 
@@ -5254,12 +5247,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get e7SharedTheAppCouldNotInspectWorkingChanges =>
       'تعذّر على التطبيق فحص تغييرات العمل. للسلامة، ستتم المتابعة دون نقل التغييرات.';
-
-  @override
-  String get e7SharedMoveWithChanges => 'نقل مع التغييرات';
-
-  @override
-  String get e7SharedCopyChangesAndMove => 'نسخ التغييرات ثم النقل';
 
   @override
   String get e7SharedMoveSession => 'نقل المحادثة';
@@ -5456,7 +5443,9 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get e7SharedDetail429 => 'نقل المحادثة؟';
+  String e7SharedDetail429(String destination) {
+    return 'Move conversation to $destination?';
+  }
 
   @override
   String e7SharedDetail430(int count, String action) {
@@ -5475,11 +5464,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'other': 'تُنسخ',
     });
     return '$_temp0 اختر ما إذا كانت تغييرات العمل تلك يجب أن $_temp1 مع المحادثة.';
-  }
-
-  @override
-  String e7SharedDetail432(String destination) {
-    return 'المتابعة إلى $destination؟';
   }
 
   @override
@@ -12254,9 +12238,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get teamUiDiscoveryTurnOn => 'تشغيل';
-
-  @override
   String get teamUiEditorBody =>
       'إذا كان هذا الحاسوب يشغّل Gas City، فسيعثر عليه التطبيق تلقائيًا.';
 
@@ -12267,28 +12248,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiEditorTitle => 'فريق الذكاء الاصطناعي (اختياري)';
-
-  @override
-  String get teamUiEventStreamClosed => 'أُغلق تدفق الأحداث';
-
-  @override
-  String get teamUiEventStreamConnecting => 'جارٍ الاتصال بتدفق الأحداث…';
-
-  @override
-  String teamUiEventStreamLive(String seq) {
-    return 'تدفق الأحداث متصل · التسلسل $seq';
-  }
-
-  @override
-  String get teamUiEventStreamLiveNoSeq => 'تدفق الأحداث متصل';
-
-  @override
-  String get teamUiEventStreamReconnecting =>
-      'جارٍ إعادة الاتصال بتدفق الأحداث…';
-
-  @override
-  String get teamUiFrontLine =>
-      'الواجهة الأمامية أداة صغيرة على الحاسوب تتيح للهاتف الإجابة والتوجيه.';
 
   @override
   String get teamUiHostGuideDocs =>
@@ -12425,32 +12384,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String teamUiSavedOn(String server) {
-    return 'فريق الذكاء الاصطناعي مفعّل لخادم $server.';
-  }
-
-  @override
-  String get teamUiStatusConnected => 'متصل';
-
-  @override
-  String get teamUiStatusNotAvailable => 'غير متاح';
-
-  @override
-  String get teamUiStatusOff => 'متوقف';
-
-  @override
-  String get teamUiStatusOn => 'مفعّل';
-
-  @override
-  String get teamUiStatusProbing => 'جارٍ فحص المضيف…';
-
-  @override
-  String get teamUiStatusReconnecting => 'جارٍ إعادة الاتصال…';
-
-  @override
-  String get teamUiStatusUnreachable => 'تعذّر الوصول إلى المضيف';
-
-  @override
   String get teamUiTailnetRequired =>
       'يعمل فريق الذكاء الاصطناعي عبر شبكة Tailscale الخاصة بك أو على هذا الجهاز. استخدم عنوان Tailscale الخاص بالحاسوب (100.x.x.x أو name.ts.net).';
 
@@ -12486,10 +12419,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'يزيل بطاقته وعناصر الانتباه وبيانات الفريق المخزّنة مؤقتًا من هذا الهاتف. لا يتغير شيء على المضيف.';
 
   @override
-  String get teamUiTurnOffFailed =>
-      'تم الإيقاف، لكن تعذّرت إزالة بعض البيانات المخزّنة مؤقتًا من هذا الهاتف.';
-
-  @override
   String teamUiTurnOffTitle(String server) {
     return 'هل تريد إيقاف فريق الذكاء الاصطناعي لخادم $server؟';
   }
@@ -12518,12 +12447,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiVersionUnknown => 'غير معروف';
-
-  @override
-  String get teamUiWatchingAndAnswering => 'المتابعة والإجابة من هذا الهاتف';
-
-  @override
-  String get teamUiWatchingOnly => 'المتابعة من هذا الهاتف';
 
   @override
   String teamUiCardAgentsSummary(
@@ -13885,24 +13808,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiGateAnswerRejectedNoMessage => 'لم يقبل المضيف هذه الإجابة.';
 
   @override
-  String get teamUiGateAnswerChipSent => 'أُرسل';
-
-  @override
-  String get teamUiGateAnswerChipUnconfirmed => 'غير مؤكد';
-
-  @override
-  String get teamUiGateAnswerChipRejected => 'لم يُقبل';
-
-  @override
   String get teamUiGateAnswerChipUnconfirmedSemantics =>
       'غير مؤكد، افتح لإعادة المحاولة';
-
-  @override
-  String get teamUiGateAnswerConfirmDenyTitle => 'رفض هذا الطلب؟';
-
-  @override
-  String get teamUiGateAnswerConfirmDenyBody =>
-      'يُبلَّغ الوكيل بالرفض ويواصل من دونه.';
 
   @override
   String get teamUiGateAnswerConfirmApproveTitle =>
@@ -14685,36 +14592,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get termuxProcsTitle => 'يعمل الآن';
 
   @override
-  String termuxProcsRowSubtitle(int count, String cpu) {
-    return '$count عمليات · المعالج $cpu٪';
-  }
-
-  @override
   String get termuxProcsRowLoading => 'جارٍ التحقق…';
-
-  @override
-  String get termuxProcsRowUnavailable => 'غير متاح الآن';
 
   @override
   String get termuxProcsRefresh => 'تحديث';
 
   @override
   String get termuxProcsAutoRefresh => 'يتحدّث كل 10 ثوانٍ أثناء فتح الشاشة';
-
-  @override
-  String get termuxProcsGroupOpenCode => 'خادم OpenCode';
-
-  @override
-  String get termuxProcsGroupAiTeam => 'فريق الذكاء الاصطناعي';
-
-  @override
-  String get termuxProcsGroupBuild => 'خدمات البناء';
-
-  @override
-  String get termuxProcsGroupOrphans => 'عمليات يتيمة';
-
-  @override
-  String get termuxProcsGroupOther => 'أخرى';
 
   @override
   String get termuxProcsGroupOpenCodeHint => 'يُدار من «على هذا الهاتف»';
@@ -14775,11 +14659,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String termuxProcsStats(String cpu, String memory, String elapsed) {
-    return 'المعالج $cpu٪ · $memory · $elapsed';
-  }
-
-  @override
   String get termuxProcsStopping => 'جارٍ الإيقاف…';
 
   @override
@@ -14806,9 +14685,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get termuxProcsEmpty => 'لا شيء يعمل في خادم الهاتف';
 
   @override
-  String get termuxProcsFailed => 'تعذّر قراءة قائمة العمليات.';
-
-  @override
   String get termuxProcsAttentionLine => 'لا يزال شيء ما يعمل على هذا الهاتف';
 
   @override
@@ -14821,11 +14697,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get termuxProcsFolder => 'المجلد';
-
-  @override
-  String termuxProcsPid(int pid, int ppid) {
-    return 'المعرّف $pid · الأم $ppid';
-  }
 
   @override
   String termuxProcsDurationSeconds(int seconds) {
@@ -17786,9 +17657,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiHomeNeedsYouAnswer => 'أجب';
-
-  @override
-  String get teamUiHomeNeedsYouMore => 'المزيد';
 
   @override
   String get teamUiHomeNeedsYouFallbackTitle => 'لدى الفريق سؤال';
@@ -22220,7 +22088,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get termuxProcsCopyCommand => 'Copy command';
 
   @override
-  String get termuxProcsOpenControls => 'Open On this phone';
+  String get termuxProcsOpenControls => 'Open This phone';
 
   @override
   String get termuxProcsProcessId => 'Process ID';
@@ -23748,7 +23616,9 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get sessionDestinationMoveWithout => 'Move without changes';
+  String sessionDestinationMoveWithout(String destination) {
+    return 'Move to $destination without changes';
+  }
 
   @override
   String get sessionDestinationMoveFailed => 'Couldn\'t move the conversation.';
@@ -24722,8 +24592,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get promptStashDeleted => 'Saved prompt deleted';
 
   @override
-  String get promptStashIntro =>
-      'Newest first · kept on this device for this server';
+  String get promptStashIntro => 'Newest first · kept on this device';
 
   @override
   String get promptStashEmptyTitle => 'No saved prompts yet';
@@ -26034,6 +25903,72 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamPhoneReadyFirstTask => 'Give the team a first task';
 
   @override
+  String get teamUiStateNotAnsweringPhone =>
+      'The app keeps trying while the team starts on this phone.';
+
+  @override
+  String get teamUiStateNotAnsweringComputer =>
+      'The app keeps trying. Check that your computer is on and online.';
+
+  @override
+  String teamUiStateNotAnsweringComputerNamed(String computer) {
+    return 'The app keeps trying. Check that $computer is on and online.';
+  }
+
+  @override
+  String get teamHomeChangeAddress => 'Change address';
+
+  @override
+  String get teamHomeTurnOffFailed =>
+      'Couldn’t stop the team on this phone, so it is still on. Try again.';
+
+  @override
+  String get teamHomeHostStopped => 'Stopped';
+
+  @override
+  String get teamHomeHostCooling => 'Cooling down';
+
+  @override
+  String get teamHomeHostStoppedForHeat => 'Stopped to cool down';
+
+  @override
+  String teamHomeHeatPausedLine(String time) {
+    return 'The phone got hot at $time, so the team paused. It carries on by itself once the phone has cooled.';
+  }
+
+  @override
+  String teamHomeHeatStoppedLine(String time) {
+    return 'The phone got very hot at $time, so the team stopped. Its work is kept, and it starts again once the phone has cooled.';
+  }
+
+  @override
+  String get teamHomeAgentsCooling => 'resting while the phone cools';
+
+  @override
+  String get teamHomePhoneControls => 'Keep it running, stop it or remove it';
+
+  @override
+  String teamHomeSpentToday(String usage) {
+    return 'Today · $usage';
+  }
+
+  @override
+  String get teamHomeSpentHint =>
+      'The whole team since midnight where it runs, estimated';
+
+  @override
+  String get teamHomeSpentPartial =>
+      'Some of today’s use has no price yet, so it cost more than this';
+
+  @override
+  String teamIntroNotFound(String server) {
+    return 'No AI Team found on $server';
+  }
+
+  @override
+  String get pluginsTeamOpenPage => 'See the team’s tasks';
+
+  @override
   String get chatErrorModelNotFound => 'The server doesn\'t have this model.';
 
   @override
@@ -26387,4 +26322,198 @@ class AppLocalizationsAr extends AppLocalizations {
   String productErrorServer(int code) {
     return 'The server had a problem (error $code). Try again in a moment.';
   }
+
+  @override
+  String get usageBudgetInvalidUsd => 'Enter an amount above 0, like 2.50';
+
+  @override
+  String get usageBudgetInvalidTokens =>
+      'Enter a whole number of tokens above 0';
+
+  @override
+  String get usageBudgetSaveUsd => 'Save USD budget';
+
+  @override
+  String get usageBudgetSaveTokens => 'Save token budget';
+
+  @override
+  String sessionDestinationMoveWithChanges(String destination) {
+    return 'Move to $destination with changes';
+  }
+
+  @override
+  String sessionDestinationWarpWithChanges(String destination) {
+    return 'Move to $destination with a copy of changes';
+  }
+
+  @override
+  String sessionDestinationMoveTo(String destination) {
+    return 'Move to $destination';
+  }
+
+  @override
+  String sessionDestinationNoChanges(String place) {
+    return 'No working changes in $place, so only the conversation moves.';
+  }
+
+  @override
+  String get settingsBackgroundOffFailed =>
+      'Android did not turn background mode off.';
+
+  @override
+  String defaultProjectOnlyNotice(String project) {
+    return 'Opened $project, the only project on this server.';
+  }
+
+  @override
+  String defaultProjectLastUsedNotice(String project) {
+    return 'Opened $project, the project worked on most recently.';
+  }
+
+  @override
+  String get defaultProjectChange => 'Choose another project';
+
+  @override
+  String defaultReviewScopeNotice(String scope) {
+    return 'Showing $scope: it is the view with changes.';
+  }
+
+  @override
+  String defaultModelNotice(String model) {
+    return 'Using $model, this server\'s default model.';
+  }
+
+  @override
+  String get defaultModelChange => 'Choose another model';
+
+  @override
+  String teamControlReceiptSending(String control) {
+    return '$control · Sending…';
+  }
+
+  @override
+  String get teamGateCardRunFailedOpen => 'Choose what to do';
+
+  @override
+  String get teamGateCardIfIgnored =>
+      'The team waits until you answer. Nothing is lost.';
+
+  @override
+  String get teamGateCardIfIgnoredFailed =>
+      'The task stays stopped until someone acts on it.';
+
+  @override
+  String get teamGateCardIfIgnoredReview =>
+      'The work waits for review. Nothing is lost.';
+
+  @override
+  String termuxProcsBudget(int count, int limit) {
+    return '$count of $limit background processes';
+  }
+
+  @override
+  String termuxProcsBudgetNote(int limit) {
+    return 'Android 12 and later may stop the oldest ones when all apps together run more than $limit.';
+  }
+
+  @override
+  String termuxProcsBudgetOver(int limit) {
+    return 'More than $limit: Android may stop the oldest of these at any time.';
+  }
+
+  @override
+  String get termuxProcsLoadFailedBody =>
+      'Termux did not answer. Open Termux, then try again.';
+
+  @override
+  String get termuxProcsRefreshFailed =>
+      'Couldn\'t read the list again, so it shows the last reading.';
+
+  @override
+  String get termuxProcsStopFailed =>
+      'Couldn\'t stop it. Try again, or stop it from Termux.';
+
+  @override
+  String get termuxProcsKindOpenCode => 'OpenCode server';
+
+  @override
+  String get termuxProcsKindAiTeam => 'AI Team';
+
+  @override
+  String get termuxProcsKindClaudeCode => 'Claude Code';
+
+  @override
+  String get termuxProcsKindDevService => 'Dev service';
+
+  @override
+  String get termuxProcsKindTerminal => 'Terminal';
+
+  @override
+  String get termuxProcsKindHelper => 'Helper';
+
+  @override
+  String get termuxProcsKindHostApp => 'Termux app';
+
+  @override
+  String get termuxProcsBusy => 'Busy';
+
+  @override
+  String get termuxProcsIdle => 'Idle';
+
+  @override
+  String termuxProcsRunningFor(String elapsed) {
+    return 'running $elapsed';
+  }
+
+  @override
+  String termuxProcsStopKindBody(String names) {
+    return '$names: each gets a polite stop, then a forced one after 5 seconds.';
+  }
+
+  @override
+  String termuxProcsStopKind(int count, String things) {
+    return 'Stop all $count $things';
+  }
+
+  @override
+  String termuxProcsStopKindTitle(int count, String things) {
+    return 'Stop all $count $things?';
+  }
+
+  @override
+  String get termuxProcsKindsAiTeam => 'AI Team processes';
+
+  @override
+  String get termuxProcsKindsClaudeCode => 'Claude Code processes';
+
+  @override
+  String get termuxProcsKindsDevServices => 'dev services';
+
+  @override
+  String get termuxProcsKindsTerminals => 'terminals';
+
+  @override
+  String get termuxProcsKindsHelpers => 'helpers';
+
+  @override
+  String get termuxProcsStopDevRestart =>
+      'The next build starts them again when it needs them.';
+
+  @override
+  String get termuxProcsAboutClaudeCode =>
+      'Claude Code, the coding agent. Stopping it ends the answer it is writing.';
+
+  @override
+  String get termuxProcsAboutTerminal =>
+      'A terminal. Stopping it closes it and whatever runs in it.';
+
+  @override
+  String get termuxProcsAboutHostApp =>
+      'The Termux app itself. It is not stopped from here.';
+
+  @override
+  String get termuxProcsAverageCpu => 'Average processor use';
+
+  @override
+  String get termuxProcsCpuTime => 'Processor time';
 }

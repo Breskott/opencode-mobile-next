@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
@@ -72,7 +73,9 @@ Widget? teamScreenState(
               icon: AppIconography.cloudOff,
               tone: AppStatusTone.attention,
               title: l10n.teamUiStateNotAnsweringTitle,
-              body: l10n.workServerKeepsTrying,
+              // What to check, where the team runs (P3.4): the phone's
+              // team is still starting; a computer must be on and online.
+              body: teamNotAnsweringBody(l10n, controller),
               secondary: retry,
             )
           : KitStateView(
@@ -85,6 +88,19 @@ Widget? teamScreenState(
   }
   return null;
 }
+
+/// The not-answering page's one sentence: what the app does and what to
+/// check where this team runs.
+String teamNotAnsweringBody(
+  AppLocalizations l10n,
+  OrchestrationController controller,
+) => switch (controller.host?.hostMode ?? controller.config.hostMode) {
+  OrchestrationHostMode.phone => l10n.teamUiStateNotAnsweringPhone,
+  OrchestrationHostMode.computer => switch (teamComputerName(controller)) {
+    final name? => l10n.teamUiStateNotAnsweringComputerNamed(name),
+    null => l10n.teamUiStateNotAnsweringComputer,
+  },
+};
 
 /// The icon, tone and one-line title of an error kind; the body is
 /// [teamErrorCopy].

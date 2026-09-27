@@ -86,6 +86,7 @@ Future<void> _shot(
   String shot, {
   required bool light,
   Future<List<FileDiff>> Function()? load,
+  Future<List<FileDiff>> Function()? loadWorkingTree,
   Size size = _phone,
   ReviewHandoffSession? handoff,
   Future<void> Function()? then,
@@ -113,7 +114,7 @@ Future<void> _shot(
           ),
           home: ReviewWorkspace(
             loadDiffs: load ?? () async => _diffs,
-            loadWorkingTreeDiffs: () async => _diffs,
+            loadWorkingTreeDiffs: loadWorkingTree ?? () async => _diffs,
             handoff: handoff,
           ),
         ),
@@ -217,7 +218,15 @@ void main() {
       );
     });
     testWidgets('empty · $mode', (tester) async {
-      await _shot(tester, 'empty', light: light, load: () async => const []);
+      // Nothing changed anywhere: with changes in another view the page
+      // would open that one instead (P6.6a).
+      await _shot(
+        tester,
+        'empty',
+        light: light,
+        load: () async => const [],
+        loadWorkingTree: () async => const [],
+      );
     });
     testWidgets('slow · $mode', (tester) async {
       final never = Completer<List<FileDiff>>();

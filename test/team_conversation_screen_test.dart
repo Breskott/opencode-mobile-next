@@ -271,12 +271,13 @@ void main() {
     );
     await tester.ensureVisible(find.text('Always dark'));
     await tester.pumpAndSettle();
+    // One tap sends the option (slice-P4.1c: the one request card); no
+    // separate Send.
     await tester.tap(find.text('Always dark'));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(_key('team-conversation-gate-ma-gate-1-send'));
-    await tester.pumpAndSettle();
-    await tester.tap(_key('team-conversation-gate-ma-gate-1-send'));
-    await tester.pumpAndSettle();
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(_key('team-conversation-gate-ma-gate-1-send'), findsNothing);
     expect(gateway.messages, isEmpty);
     expect(
       find.byWidgetPredicate(

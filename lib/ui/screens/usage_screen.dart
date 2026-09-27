@@ -129,8 +129,7 @@ class _UsageScreenState extends State<UsageScreen> {
     UsageRefreshInterrupted() => l10n.usageRefreshInterrupted,
     FormatException() => l10n.usageInvalidResponse,
     Api2Error(statusCode: 401 || 403) => l10n.usageAuthorization,
-    Api2Error() => error.message,
-    _ => productErrorText(error),
+    _ => productErrorText(error, l10n: l10n),
   };
 
   @override
@@ -172,6 +171,7 @@ class _UsageScreenState extends State<UsageScreen> {
                 KitNotice.error(
                   message: _error(error, l10n),
                   error: error,
+                  details: productErrorDetails(error),
                   reportSource: 'usage',
                   retry: available
                       ? KitAction(
@@ -493,7 +493,7 @@ class _UsageBudgetControls extends StatelessWidget {
       context,
       title: usd ? l10n.usageBudgetUsd : l10n.usageBudgetTokens,
       label: l10n.usageBudgetAmount,
-      confirmLabel: l10n.fileSave,
+      confirmLabel: usd ? l10n.usageBudgetSaveUsd : l10n.usageBudgetSaveTokens,
       cancelLabel: l10n.workCancel,
       // showKitInputDialog has no `decimal` switch yet, and the number
       // kind is digits only: a dollar amount like 2.50 needs the text kind
@@ -501,10 +501,14 @@ class _UsageBudgetControls extends StatelessWidget {
       kind: usd ? KitFieldKind.text : KitFieldKind.number,
       initial: current?.toString(),
       helper: usd ? l10n.usageBudgetHelperUsd : l10n.usageBudgetHelperTokens,
+      // The kit shows the reason only after the first edit (or a submit
+      // attempt), so an empty dialog opens without an error.
       validate: (value) =>
           UsageBudgets.validLimit(num.tryParse(value.trim()), unit)
           ? null
-          : l10n.usageBudgetInvalid,
+          : usd
+          ? l10n.usageBudgetInvalidUsd
+          : l10n.usageBudgetInvalidTokens,
       alternative: current == null
           ? null
           : KitAction(

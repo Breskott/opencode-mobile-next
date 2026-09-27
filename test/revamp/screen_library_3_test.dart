@@ -435,24 +435,18 @@ void main() {
       expect(find.byType(AppBar), findsNothing);
     });
 
-    testWidgets('the AI Team sheet says "Off" once', (tester) async {
+    testWidgets('the AI Team row opens the one team page, off, which says '
+        '"Off" once (P3.4: no AI Team sheet)', (tester) async {
       final c = await library3Server();
       addTearDown(c.dispose);
       await tester.pumpWidget(_app(library3Plugins(c)));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('team-plugin-sheet')), findsOne);
-      final status = find.byKey(const ValueKey('team-sheet-status'));
-      expect(status, findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('team-plugin-sheet')),
-          matching: find.text('Off'),
-        ),
-        findsOneWidget,
-      );
-      expect(find.byKey(const ValueKey('team-sheet-add-manually')), findsOne);
+      expect(find.byKey(const ValueKey('team-plugin-sheet')), findsNothing);
+      expect(find.byKey(const ValueKey('team-intro')), findsOne);
+      expect(find.text('Off'), findsOneWidget);
+      expect(find.byKey(const ValueKey('team-intro-address')), findsOne);
     });
   });
 }

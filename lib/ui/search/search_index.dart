@@ -40,8 +40,7 @@ import '../screens/settings_screen.dart';
 import '../screens/servers_screen.dart' show ServersRouteRequest;
 import '../screens/tailscale_setup_screen.dart';
 import '../screens/tools_hub_screen.dart';
-import '../screens/team/team_home_screen.dart';
-import '../screens/team/team_intro_screen.dart';
+import '../screens/team/team_page.dart';
 import '../screens/termux_processes_screen.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/termux_storage_screen.dart';
@@ -542,9 +541,9 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       open: _screen((scope) => ToolsHubScreen(controller: scope.controller)),
     ),
     // The AI Team as a place of its own in Settings, not only a plugin
-    // (docs/qa/team-discover-2026-09-25): off, it opens the intro, which
-    // leads to this server's set-up; on, the team page itself (P0.5), the
-    // same door 'ai-team' below and Work's own entry already use.
+    // (docs/qa/team-discover-2026-09-25): the one team page (P3.4), on or
+    // off; off, it sets the team up for this kind of server. The same door
+    // 'ai-team' below uses.
     SearchEntry(
       id: 'settings-ai-team',
       kind: SearchEntryKind.hubRow,
@@ -554,16 +553,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       keywords: l10n.discoverTeamAliases,
       pages: const ['team-intro'],
       gate: (scope) => scope.controller.profile != null,
-      open: (context, scope) {
-        final controller = scope.controller;
-        if (controller.profile?.orchestration == null) {
-          return openTeamIntro(context, controller);
-        }
-        final team = controller.orchestration;
-        return team == null
-            ? Future<void>.value()
-            : _push(context, TeamHomeScreen(controller: team));
-      },
+      open: (context, scope) => openTeamPage(context, scope.controller),
     ),
     // Conversations: what runs by itself, how a transcript shows,
     // the shell it runs commands in, and voice.
@@ -1545,19 +1535,10 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       // Settings › AI Team, no longer a Work section.
       parent: l10n.librarySettingsTitle,
       keywords: l10n.discoverTeamAliases,
-      pages: const [
-        'team-home',
-        'team-home-runs-tab',
-        'team-home-agents-tab',
-        'team-home-needs-you-tab',
-      ],
+      pages: const ['team-home'],
       // Not in the index at all while the server has no plugin config.
       gate: (scope) => scope.hasTeam,
-      open: (context, scope) {
-        final team = scope.controller.orchestration;
-        if (team == null) return Future<void>.value();
-        return _push(context, TeamHomeScreen(controller: team));
-      },
+      open: (context, scope) => openTeamPage(context, scope.controller),
     ),
   ];
 }

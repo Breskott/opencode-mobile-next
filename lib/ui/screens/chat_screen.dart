@@ -82,8 +82,7 @@ import '../../state/orchestration.dart';
 import '../../state/team_conversation.dart';
 import '../../state/team_planning.dart'
     show teamPlanningRunMatches, teamPlannerAgent, teamPlannerIsOff;
-import '../widgets/team_controls.dart'
-    show teamControlReceiptWord, teamControlWord;
+import '../widgets/team_controls.dart' show teamControlReceipt;
 import '../widgets/team_cycle_strip.dart' show teamCycleStallSentence;
 import '../widgets/team_receipt.dart' show teamReceiptLine;
 import '../widgets/team_vocabulary.dart';
@@ -92,7 +91,8 @@ import 'team/gate_sheet.dart' show showGateSheet;
 import 'team/merge_section.dart' show TeamMergeSection;
 import 'team/run_screen.dart' show RunScreen;
 import 'team/team_home_screen.dart' show TeamHomeScreen;
-import 'team/team_needs_you.dart' show TeamNeedsYouCard, teamOpenGates;
+import 'team/team_needs_you.dart'
+    show TeamNeedsYouCard, teamGateWho, teamOpenGates;
 import 'team_conversation/team_conversation.dart' show TeamConversation;
 import '../kit/scenes/states_scenes.dart';
 import '../widgets/grace_timer.dart';

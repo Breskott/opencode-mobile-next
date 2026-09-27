@@ -12,6 +12,7 @@ import '../app_theme.dart';
 import '../kit/kit_ask_line.dart';
 import '../kit/kit_buttons.dart';
 import '../kit/kit_notice.dart';
+import 'product_states.dart' show productErrorText;
 
 /// What a yes to "Tell me when the agent needs me" turns on: notifications
 /// for requests, and the background connection that delivers them (which
@@ -161,8 +162,11 @@ class _FirstReplyNotifyCardState extends State<FirstReplyNotifyCard> {
     if (!mounted) return;
     setState(() {
       _answered = true;
+      // The app's own sentence from the Android side ("Notification access
+      // is required.") stays; exception text is said in words instead.
+      final error = controller.backgroundLive.lastError;
       if (!enabled) {
-        _failure = controller.backgroundLive.lastError ?? copy.e7SettingsUi22;
+        _failure = error == null ? copy.e7SettingsUi22 : productErrorText(error);
       }
     });
   }

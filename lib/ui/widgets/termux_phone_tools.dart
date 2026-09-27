@@ -1,9 +1,11 @@
-/// The "On this phone" rows of the Termux server settings (TEAM-304/305)
-/// and the watcher behind the Work tab's "OpenCode has been busy" line.
+/// This phone's Termux rows, Storage and Running on this phone
+/// (TEAM-304/305, P5.3), and the watcher behind the Work tab's "OpenCode
+/// has been busy" line.
 ///
-/// Both read through `~/.oc/tools.sh` and swallow every bridge failure: a
-/// phone without the tools installed simply shows no numbers, and a desktop
-/// build never gets here (the callers gate on the Termux platform).
+/// Each reads through `~/.oc/tools.sh` and swallows every bridge failure: a
+/// phone without the tools installed simply shows no numbers (or, for the
+/// process list, no row), and a desktop build never gets here (the callers
+/// gate on the Termux platform).
 library;
 
 import 'dart:async';
@@ -23,28 +25,18 @@ import 'work_status_line.dart' show WorkRunawayNotice;
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
-/// One of the two rows [TermuxPhoneToolsRows] can show on its own.
-enum TermuxPhoneTool { storage, processes }
-
-/// The Storage and Running now rows, each with its live
-/// summary ("11.6 GB used", "14 processes · CPU 3%").
-///
-/// With [only], just that row: This phone puts each in its own place in
-/// one list, where the group draws the line between them.
-class TermuxPhoneToolsRows extends StatefulWidget {
-  const TermuxPhoneToolsRows({super.key, this.only});
-
-  final TermuxPhoneTool? only;
+/// Termux's Storage row on This phone, with its live summary ("11.6 GB
+/// used"); opens Storage and reads again on the way back.
+class TermuxStorageRow extends StatefulWidget {
+  const TermuxStorageRow({super.key});
 
   @override
-  State<TermuxPhoneToolsRows> createState() => _TermuxPhoneToolsRowsState();
+  State<TermuxStorageRow> createState() => _TermuxStorageRowState();
 }
 
-class _TermuxPhoneToolsRowsState extends State<TermuxPhoneToolsRows> {
+class _TermuxStorageRowState extends State<TermuxStorageRow> {
   TermuxStorageSummary? _storage;
-  TermuxProcessReport? _processes;
   bool _storageFailed = false;
-  bool _processesFailed = false;
 
   @override
   void initState() {
@@ -53,29 +45,16 @@ class _TermuxPhoneToolsRowsState extends State<TermuxPhoneToolsRows> {
   }
 
   Future<void> _load() async {
-    final only = widget.only;
-    await Future.wait([
-      if (only != TermuxPhoneTool.processes)
-        TermuxStorage.summary()
-            .then((summary) {
-              if (mounted) setState(() => _storage = summary);
-            })
-            .catchError((Object _) {
-              if (mounted) setState(() => _storageFailed = true);
-            }),
-      if (only != TermuxPhoneTool.storage)
-        TermuxProcesses.scan()
-            .then((report) {
-              if (mounted) setState(() => _processes = report);
-            })
-            .catchError((Object _) {
-              if (mounted) setState(() => _processesFailed = true);
-            }),
-    ]);
+    try {
+      final summary = await TermuxStorage.summary();
+      if (mounted) setState(() => _storage = summary);
+    } catch (_) {
+      if (mounted) setState(() => _storageFailed = true);
+    }
   }
 
-  Future<void> _open(Widget screen) async {
-    await pushKitPage<void>(context, (_) => screen);
+  Future<void> _open() async {
+    await pushKitPage<void>(context, (_) => const TermuxStorageScreen());
     if (mounted) unawaited(_load());
   }
 
@@ -94,46 +73,51 @@ class _TermuxPhoneToolsRowsState extends State<TermuxPhoneToolsRows> {
         : l10n.termuxStorageRowUsed(
             formatTermuxBytes(l10n, storage.totalBytes!),
           );
-    final processes = _processes;
-    final processesSubtitle = _processesFailed
-        ? l10n.termuxProcsRowUnavailable
-        : processes == null
-        ? l10n.termuxProcsRowLoading
-        : l10n.termuxProcsRowSubtitle(
-            processes.count,
-            formatTermuxCpuPct(processes.totalCpuPct),
-          );
-    final storageRow = KitRow(
+    return KitRow(
       key: const Key('termux-storage-row'),
       leading: KitRow.icon(context, AppIconography.database),
       title: l10n.thisPhoneStorage,
       supporting: TextSpan(text: storageSubtitle),
       supportingKey: const Key('termux-storage-row-subtitle'),
       trailing: const KitChevron(),
-      onTap: () => _open(const TermuxStorageScreen()),
+      onTap: () => unawaited(_open()),
     );
-    final processesRow = KitRow(
+  }
+}
+
+/// The Running on this phone row (P5.3): the budget as its summary ("18 of
+/// 32 background processes"), "Checking…" until the first reading.
+///
+/// The page that holds it reads the list, so that a list that cannot be
+/// read leaves the row out of its group altogether (no dead "Not available
+/// right now" row, and no stray hairline where it was).
+class PhoneProcessesRow extends StatelessWidget {
+  const PhoneProcessesRow({
+    super.key,
+    required this.report,
+    required this.onTap,
+  });
+
+  /// Null while the first reading runs.
+  final TermuxProcessReport? report;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _copy(context);
+    final report = this.report;
+    return KitRow(
       key: const Key('termux-procs-row'),
       leading: KitRow.icon(context, AppIconography.processor),
       title: l10n.termuxProcsTitle,
-      supporting: TextSpan(text: processesSubtitle),
+      supporting: TextSpan(
+        text: report == null
+            ? l10n.termuxProcsRowLoading
+            : phoneProcessBudget(l10n, report),
+      ),
       supportingKey: const Key('termux-procs-row-subtitle'),
       trailing: const KitChevron(),
-      onTap: () => _open(const TermuxProcessesScreen()),
-    );
-    switch (widget.only) {
-      case TermuxPhoneTool.storage:
-        return storageRow;
-      case TermuxPhoneTool.processes:
-        return processesRow;
-      case null:
-        break;
-    }
-    // Kit rows under the caller's "Options" label (design standard §6).
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [storageRow, processesRow],
+      onTap: onTap,
     );
   }
 }
