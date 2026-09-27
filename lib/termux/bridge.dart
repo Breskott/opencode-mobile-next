@@ -449,7 +449,9 @@ LC_ALL=C timeout -k 1s 5s df -Pk '$termuxHome' | awk 'NR == 2 { printf "total_ki
     if (!toolVerbs.contains(verb)) {
       throw ArgumentError.value(verb, 'verb', 'Unknown tools verb.');
     }
-    if (!RegExp(r'^[A-Za-z0-9_]{0,32}$').hasMatch(argument)) {
+    // A name, a number or a comma-separated list of process IDs (one
+    // kind's stop): single-quoted below, so nothing here can escape it.
+    if (!RegExp(r'^[A-Za-z0-9_,]{0,400}$').hasMatch(argument)) {
       throw ArgumentError.value(argument, 'argument', 'Invalid argument.');
     }
     final launch = verb == 'storage-scan'
@@ -3097,8 +3099,8 @@ procs_stop() {
   read_processes
   classify_processes
   case "$target" in
-    '') echo 'usage: procs-stop <pid|group>' >&2; return 64 ;;
-    *[!0-9]*)
+    '') echo 'usage: procs-stop <pid|pid,pid,...|group>' >&2; return 64 ;;
+    *[!0-9,]*)
       case "$target" in
         ai_team|build_daemons|orphans|other) ;;
         opencode_server) printf '{"stopped":[],"killed":[],"remaining":[],"refused":[{"pid":0,"reason":"protected_group"}]}\n'; return 0 ;;
@@ -3107,6 +3109,25 @@ procs_stop() {
       for pid in "${P_ORDER[@]}"; do
         [ "${P_GROUP[$pid]}" = "$target" ] || continue
         if [ "${P_PROTECTED[$pid]}" = true ]; then
+          [ "$first_refused" = 1 ] || refused+=','
+          first_refused=0
+          refused+="{\"pid\":$pid,\"reason\":\"protected\"}"
+        else
+          targets+=("$pid")
+        fi
+      done ;;
+    *,*)
+      # One kind's processes, confirmed together: each is checked again
+      # now, so a process that ended or became protected is refused.
+      local list=()
+      IFS=, read -r -a list <<<"$target"
+      for pid in "${list[@]}"; do
+        case "$pid" in ''|*[!0-9]*) continue ;; esac
+        if [ -z "${P_COMM[$pid]+x}" ]; then
+          [ "$first_refused" = 1 ] || refused+=','
+          first_refused=0
+          refused+="{\"pid\":$pid,\"reason\":\"not_found\"}"
+        elif [ "${P_PROTECTED[$pid]}" = true ]; then
           [ "$first_refused" = 1 ] || refused+=','
           first_refused=0
           refused+="{\"pid\":$pid,\"reason\":\"protected\"}"
@@ -3167,7 +3188,7 @@ case "${1:-}" in
   storage-clean) shift; storage_clean "$@" ;;
   procs-scan) procs_scan ;;
   procs-stop) shift; procs_stop "$@" ;;
-  *) echo "usage: $0 {storage-scan|storage-status|storage-summary|storage-cancel|storage-clean <category>|procs-scan|procs-stop <pid|group>}" >&2; exit 64 ;;
+  *) echo "usage: $0 {storage-scan|storage-status|storage-summary|storage-cancel|storage-clean <category>|procs-scan|procs-stop <pid|pid,pid,...|group>}" >&2; exit 64 ;;
 esac
 ''';
 

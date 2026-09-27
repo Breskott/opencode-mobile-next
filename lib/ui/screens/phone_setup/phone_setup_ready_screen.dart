@@ -150,14 +150,16 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
       if (!mounted) return;
       if (!await _ensureConnected(connection)) {
         failure = _l10n.phoneSetupReadyOpenFailed(
-          connection.lastError ?? _l10n.builtinServerStopped,
+          _connectionProblem(connection),
         );
       } else {
         // Opened first, so the new conversation is made inside it.
         await connection.selectLocation(directory: made.path);
         final locationProblem = connection.locationError;
         if (locationProblem != null) {
-          failure = _l10n.phoneSetupReadyOpenFailed(locationProblem);
+          failure = _l10n.phoneSetupReadyOpenFailed(
+            productErrorText(locationProblem, l10n: _l10n),
+          );
         } else {
           final session = await connection.createSession();
           if (!mounted) return;
@@ -174,15 +176,28 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
         }
       }
     } on BuiltinLinuxException catch (error) {
-      failure = _l10n.phoneSetupReadyCreateFailed(error.message);
+      failure = _l10n.phoneSetupReadyCreateFailed(
+        productErrorText(error, l10n: _l10n),
+      );
     } catch (error) {
-      failure = _l10n.phoneSetupReadyOpenFailed(productErrorText(error));
+      failure = _l10n.phoneSetupReadyOpenFailed(
+        productErrorText(error, l10n: _l10n),
+      );
     }
     if (!mounted) return;
     setState(() {
       _busy = false;
       _problem = failure;
     });
+  }
+
+  /// Why connecting failed, in words: the connection's last error mapped
+  /// to plain words (never its raw text), else that the server stopped.
+  String _connectionProblem(ConnectionController connection) {
+    final error = connection.lastError;
+    return error == null
+        ? _l10n.builtinServerStopped
+        : productErrorText(error, l10n: _l10n);
   }
 
   Future<void> _openExisting() async {
@@ -196,7 +211,7 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
     if (!connected) {
       setState(
         () => _problem = _l10n.phoneSetupReadyOpenFailed(
-          connection.lastError ?? _l10n.builtinServerStopped,
+          _connectionProblem(connection),
         ),
       );
       return;

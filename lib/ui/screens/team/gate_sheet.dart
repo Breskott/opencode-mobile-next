@@ -1,37 +1,43 @@
-/// The Gate sheet (02-ux §6): what a needs-you row opens, from Activity,
-/// the AI Team home, a run, an agent or a notification. Five variants —
-/// Choice, Confirmation, Free text, Gate bead, Run failed — plus Review
-/// ready.
+/// The Gate sheet (02-ux §6): the Details of a gate's card
+/// (`TeamNeedsYouCard`, the one [KitRequestCard.ask]), and what a pointing
+/// row opens from Activity, the AI Team lists, an agent or a notification.
+/// Five variants — Choice, Confirmation, Free text, Gate bead, Run failed —
+/// plus Review ready (slice-P4.1c).
 ///
-/// Built from kit parts only (screen-team-1): the one sheet frame
-/// ([showKitSheet]) whose header is the one kicker — the kind in words
-/// ("Decision") with its age and the task it belongs to — then the
-/// question itself, the variant's body, the receipt, the actions and,
-/// last and folded, every id and raw value ([KitDetailsFold]).
+/// Built from kit parts only: the one sheet frame ([showKitSheet]) with the
+/// card's header — the kind's tile, the ask as the title ("Sync engine
+/// stopped" for a failed task) and "{kind} · {task} · {age}" under it —
+/// then the whole question, the variant's body, the receipt, the actions
+/// and, last and folded, every id and raw value ([KitDetailsFold]).
 ///
-/// Each action is present only behind its `control*` capability; without
-/// one the sheet explains where to answer it and offers the host guide
-/// (How) instead of hiding the question:
+/// The card answers the common cases in place (an option, Approve / Deny,
+/// a reply); the sheet holds everything the card cannot: the whole
+/// question, the destructive approval's two steps, a gate bead's Mark done
+/// and a failed task's ways out. Each action is present only behind its
+/// `control*` capability; without one the sheet explains where to answer
+/// it and offers the host guide (How) instead of hiding the question:
 ///
 /// - Choice: one [KitChoiceList.single] whose tap sends the answer.
 /// - Confirmation: [Approve] (primary; a destructive prompt is confirmed in
-///   the destructive tone first) and [Deny] (confirmed, neutral).
-/// - Free text: a multi-line [KitField] whose draft survives swipe, back
-///   and reopen (P7.1) and [Send].
+///   the destructive tone first) and [Deny] (sends at once, as on the
+///   card).
+/// - Free text: a multi-line [KitField] whose draft is the card's too, so
+///   it survives swipe, back and reopen (P7.1), and [Send].
 /// - Gate bead: [Mark done].
-/// - Run failed: titled after its task ("Sync engine stopped"). **Ask
-///   the team to fix it** (sends the error to the worker) as the primary,
-///   "Send Sync engine to fox again" (only when a retry can recover it),
-///   the agent's page, Live output and [Stop work] (confirmed, stop tone).
+/// - Run failed: **Ask the team to fix it** (sends the error to the
+///   worker) as the primary, "Send Sync engine to fox again" (only when a
+///   retry can recover it), the agent's page, Live output, Report this
+///   failure (P8.4) and [Stop work] (confirmed, stop tone).
 ///
 /// The sheet's own close button is the one way out: no action repeats it.
 ///
 /// Every answer routes with the gate's own id through
 /// [OrchestrationController.answerGate] and friends, which persist the
 /// idempotency key before sending. The sheet then shows the receipt in
-/// place ([KitReceipt]): sent, answered (then it closes after a beat),
-/// not confirmed with Try again, or the host's refusal with its reason. A
-/// retry is a new record under a new key and only ever follows a tap.
+/// place ([KitReceipt]), the same one the card shows: sending, answered
+/// (then it closes after a beat), not confirmed with Try again, or the
+/// host's refusal with its reason. A retry is a new record under a new key
+/// and only ever follows a tap.
 library;
 
 import 'dart:async';
@@ -104,20 +110,25 @@ Future<void> showGateSheet(
             now: at,
             l10n: l10n,
           );
-    // A title that names the task leaves the task out of the kicker.
+    // The card's own header: what it is, the task it belongs to (unless
+    // the title already names it) and its age.
     final link = stopped != null
         ? null
         : teamGateLink(l10n, controller.snapshot, gate);
-    final parts = [?age, ?link];
-    kicker = parts.isEmpty ? null : parts.join(teamUsageSeparator);
+    kicker = [
+      teamGateKindWord(l10n, gate.kind),
+      ?link,
+      ?age,
+    ].join(teamUsageSeparator);
   }
   return showKitSheet<void>(
     context,
+    // The ask is the title, as on the card this sheet is the Details of.
     title: gate == null
         ? l10n.teamUiAgentNeedsYou
         : stopped != null
         ? l10n.teamUiGateRunStoppedTitle(stopped)
-        : teamGateKindWord(l10n, gate.kind),
+        : gate.title,
     subtitle: kicker,
     icon: gate == null ? AppIconography.question : teamGateGlyph(gate.kind).$1,
     sheetKey: const ValueKey('team-gate-sheet'),
@@ -421,30 +432,20 @@ class _BodyState extends State<_Body> {
         : _actions(l10n, caps, busy: busy);
     final error = gate.kind == GateKind.runFailed ? gate.prompt?.trim() : null;
     final gap = SizedBox(height: tokens.space3);
-    // "Sync engine stopped" already says the failure: no second heading.
-    final headline = _stoppedTask(snapshot, gate) == null;
-
     return Column(
       key: const ValueKey('team-gate-body'),
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (headline)
-          KitText(
-            gate.title,
-            key: const ValueKey('team-gate-title'),
-            role: KitTextRole.headline,
-          ),
-        for (final (index, part) in body.indexed) ...[
-          if (headline || index > 0) gap,
-          part,
-        ],
+        // The ask is the sheet's title (the card's header): no second
+        // heading here.
+        for (final (index, part) in body.indexed) ...[if (index > 0) gap, part],
         if (record != null) ...[
           gap,
           KitReceipt(
             key: ValueKey('team-gate-receipt-${record.status.name}'),
             state: switch (record.status) {
-              MutationStatus.sent => KitReceiptState.sent,
+              MutationStatus.sent => KitReceiptState.sending,
               MutationStatus.confirmed => KitReceiptState.confirmed,
               MutationStatus.unconfirmed => KitReceiptState.notConfirmed,
               MutationStatus.rejected => KitReceiptState.refused,
@@ -663,20 +664,11 @@ class _BodyState extends State<_Body> {
                   }
                 : () => answer(true),
           ),
+          // Deny sends at once, as on the card: saying no loses nothing.
           secondary: KitAction(
             key: const ValueKey('team-gate-deny'),
             label: l10n.teamUiGateAnswerDeny,
-            onPressed: busy
-                ? null
-                : () async {
-                    final ok = await _confirm(
-                      title: l10n.teamUiGateAnswerConfirmDenyTitle,
-                      body: l10n.teamUiGateAnswerConfirmDenyBody,
-                      label: l10n.teamUiGateAnswerDeny,
-                      kind: KitConfirmKind.neutral,
-                    );
-                    if (ok && mounted) await answer(false);
-                  },
+            onPressed: busy ? null : () => answer(false),
           ),
         );
       case GateKind.gateBead:

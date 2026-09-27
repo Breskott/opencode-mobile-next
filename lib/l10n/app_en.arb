@@ -14547,29 +14547,9 @@
   "@teamUiGateAnswerRejectedNoMessage": {
     "description": "Receipt line when the host refused the answer without a reason"
   },
-  "teamUiGateAnswerChipSent": "Sent",
-  "@teamUiGateAnswerChipSent": {
-    "description": "Trailing chip on a needs-you row whose answer is on its way"
-  },
-  "teamUiGateAnswerChipUnconfirmed": "Unconfirmed",
-  "@teamUiGateAnswerChipUnconfirmed": {
-    "description": "Trailing chip on a needs-you row whose answer got no confirmation; tapping it opens the sheet to retry"
-  },
-  "teamUiGateAnswerChipRejected": "Not accepted",
-  "@teamUiGateAnswerChipRejected": {
-    "description": "Trailing chip on a needs-you row whose answer the host refused"
-  },
   "teamUiGateAnswerChipUnconfirmedSemantics": "Unconfirmed, open to retry",
   "@teamUiGateAnswerChipUnconfirmedSemantics": {
     "description": "Accessibility label of the unconfirmed chip"
-  },
-  "teamUiGateAnswerConfirmDenyTitle": "Deny this request?",
-  "@teamUiGateAnswerConfirmDenyTitle": {
-    "description": "Two-step sheet title before a deny is sent"
-  },
-  "teamUiGateAnswerConfirmDenyBody": "The agent is told no and goes on without it.",
-  "@teamUiGateAnswerConfirmDenyBody": {
-    "description": "Two-step sheet body before a deny is sent"
   },
   "teamUiGateAnswerConfirmApproveTitle": "Approve this destructive action?",
   "@teamUiGateAnswerConfirmApproveTitle": {
@@ -15627,7 +15607,7 @@
   "@termuxStorageFreedNothing": {
     "description": "Result line after a clean that removed nothing"
   },
-  "termuxStorageInUse": "In use by {process}. Stop it under Running now first.",
+  "termuxStorageInUse": "In use by {process}. Stop it under Running on this phone first.",
   "@termuxStorageInUse": {
     "description": "Clean refused because a process is using the category",
     "placeholders": {
@@ -15657,7 +15637,7 @@
       }
     }
   },
-  "termuxStorageOpenRunning": "Open Running now",
+  "termuxStorageOpenRunning": "Open Running on this phone",
   "@termuxStorageOpenRunning": {
     "description": "Action that opens the process screen"
   },
@@ -15705,29 +15685,13 @@
   "@termuxStorageReadFailed": {
     "description": "Error when the scan status cannot be read"
   },
-  "termuxProcsTitle": "Running now",
+  "termuxProcsTitle": "Running on this phone",
   "@termuxProcsTitle": {
-    "description": "Settings › Termux server › Running now: screen title"
-  },
-  "termuxProcsRowSubtitle": "{count} processes · CPU {cpu}%",
-  "@termuxProcsRowSubtitle": {
-    "description": "Settings entry row subtitle and the screen headline",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "cpu": {
-        "type": "String"
-      }
-    }
+    "description": "This phone › Running on this phone (P5.3): the processes tool's title and its row on This phone"
   },
   "termuxProcsRowLoading": "Checking…",
   "@termuxProcsRowLoading": {
     "description": "Settings entry row subtitle while the list loads"
-  },
-  "termuxProcsRowUnavailable": "Not available right now",
-  "@termuxProcsRowUnavailable": {
-    "description": "Settings entry row subtitle when the list cannot be read"
   },
   "termuxProcsRefresh": "Refresh",
   "@termuxProcsRefresh": {
@@ -15736,26 +15700,6 @@
   "termuxProcsAutoRefresh": "Refreshes every 10 seconds while open",
   "@termuxProcsAutoRefresh": {
     "description": "Line under the headline"
-  },
-  "termuxProcsGroupOpenCode": "OpenCode server",
-  "@termuxProcsGroupOpenCode": {
-    "description": "Process group"
-  },
-  "termuxProcsGroupAiTeam": "AI Team",
-  "@termuxProcsGroupAiTeam": {
-    "description": "Process group"
-  },
-  "termuxProcsGroupBuild": "Build daemons",
-  "@termuxProcsGroupBuild": {
-    "description": "Process group"
-  },
-  "termuxProcsGroupOrphans": "Orphans",
-  "@termuxProcsGroupOrphans": {
-    "description": "Process group"
-  },
-  "termuxProcsGroupOther": "Other",
-  "@termuxProcsGroupOther": {
-    "description": "Process group"
   },
   "termuxProcsGroupOpenCodeHint": "Managed from On this phone",
   "@termuxProcsGroupOpenCodeHint": {
@@ -15826,7 +15770,7 @@
   "@termuxProcsKeep": {
     "description": "Two-step confirmation cancel button"
   },
-  "termuxProcsProtected": "Protected · control it from On this phone",
+  "termuxProcsProtected": "Protected · control it from This phone",
   "@termuxProcsProtected": {
     "description": "Running now: a protected process (the OpenCode server, sshd) says so and where it is controlled"
   },
@@ -15844,21 +15788,6 @@
     "description": "Orphan reason line",
     "placeholders": {
       "cpu": {
-        "type": "String"
-      }
-    }
-  },
-  "termuxProcsStats": "CPU {cpu}% · {memory} · {elapsed}",
-  "@termuxProcsStats": {
-    "description": "Row subtitle: CPU, memory, elapsed",
-    "placeholders": {
-      "cpu": {
-        "type": "String"
-      },
-      "memory": {
-        "type": "String"
-      },
-      "elapsed": {
         "type": "String"
       }
     }
@@ -15910,10 +15839,6 @@
   "@termuxProcsEmpty": {
     "description": "Empty state"
   },
-  "termuxProcsFailed": "Could not read the process list.",
-  "@termuxProcsFailed": {
-    "description": "Error state"
-  },
   "termuxProcsAttentionLine": "Something is still running on this phone",
   "@termuxProcsAttentionLine": {
     "description": "Workspace line when an orphan has burned over ten minutes of CPU"
@@ -15937,18 +15862,6 @@
   "termuxProcsFolder": "Folder",
   "@termuxProcsFolder": {
     "description": "Process detail sheet: working directory label"
-  },
-  "termuxProcsPid": "PID {pid} · parent {ppid}",
-  "@termuxProcsPid": {
-    "description": "Process detail sheet: identifiers",
-    "placeholders": {
-      "pid": {
-        "type": "int"
-      },
-      "ppid": {
-        "type": "int"
-      }
-    }
   },
   "termuxProcsDurationSeconds": "{seconds} s",
   "@termuxProcsDurationSeconds": {
@@ -16728,7 +16641,7 @@
   "discoverToolsAliases": "tools tools and capabilities inventory model tools",
   "discoverSkillsAliases": "skills skill instructions playbook",
   "discoverReferencesAliases": "references reference docs sources context",
-  "discoverRunningNowAliases": "running now processes termux services stop on this phone",
+  "discoverRunningNowAliases": "running now running on this phone processes termux services stop busy memory background",
   "discoverStorageAliases": "storage on this phone disk space clean termux",
   "discoverMonitorAliases": "saved-server attention monitor other servers waiting server attention",
   "discoverConnectionHelpAliases": "add server computer connect pair pairing code connection help cannot connect troubleshooting network refused timeout",
@@ -19493,10 +19406,6 @@
   "teamUiHomeNeedsYouAnswer": "Answer",
   "@teamUiHomeNeedsYouAnswer": {
     "description": "Opens the full question to answer it (AI Team home, run Overview and the Work tab section)"
-  },
-  "teamUiHomeNeedsYouMore": "See the whole question",
-  "@teamUiHomeNeedsYouMore": {
-    "description": "Opens the full question sheet from the inline question block; names what it opens"
   },
   "teamUiHomeNeedsYouFallbackTitle": "The team has a question",
   "@teamUiHomeNeedsYouFallbackTitle": {
@@ -25342,7 +25251,7 @@
   "@termuxProcsCopyCommand": {
     "description": "Copies a process's command line"
   },
-  "termuxProcsOpenControls": "Open On this phone",
+  "termuxProcsOpenControls": "Open This phone",
   "@termuxProcsOpenControls": {
     "description": "Opens the phone server controls for a protected process"
   },
@@ -28812,7 +28721,7 @@
   "@promptStashDeleted": {
     "description": "Undo bar after deleting a saved prompt."
   },
-  "promptStashIntro": "Newest first · kept on this device for this server",
+  "promptStashIntro": "Newest first · kept on this device",
   "@promptStashIntro": {
     "description": "Saved prompts sheet: subtitle."
   },
@@ -31226,5 +31135,195 @@
   "defaultModelChange": "Choose another model",
   "@defaultModelChange": {
     "description": "Conversation: the action on the notice about the model picked by itself; opens the model sheet."
+  },
+  "teamControlReceiptSending": "{control} · Sending…",
+  "@teamControlReceiptSending": {
+    "description": "A team control's receipt while the host has not answered yet: the control's name, then the moving word.",
+    "placeholders": {
+      "control": {
+        "type": "String",
+        "example": "Nudge"
+      }
+    }
+  },
+  "teamGateCardRunFailedOpen": "Choose what to do",
+  "@teamGateCardRunFailedOpen": {
+    "description": "A failed task's card in the conversation: the one button that opens its Details, where asking the team to fix it, sending the work again, the logs, Report this failure and Stop work live."
+  },
+  "teamGateCardIfIgnored": "The team waits until you answer. Nothing is lost.",
+  "@teamGateCardIfIgnored": {
+    "description": "A team question's card: what happens if nobody answers."
+  },
+  "teamGateCardIfIgnoredFailed": "The task stays stopped until someone acts on it.",
+  "@teamGateCardIfIgnoredFailed": {
+    "description": "A failed task's card: what happens if nobody acts."
+  },
+  "teamGateCardIfIgnoredReview": "The work waits for review. Nothing is lost.",
+  "@teamGateCardIfIgnoredReview": {
+    "description": "A review-ready card: what happens if nobody reviews it."
+  },
+  "termuxProcsBudget": "{count} of {limit} background processes",
+  "@termuxProcsBudget": {
+    "description": "Running on this phone: the budget line, also the row's summary on This phone. limit is Android's phantom process limit (32).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "termuxProcsBudgetNote": "Android 12 and later may stop the oldest ones when all apps together run more than {limit}.",
+  "@termuxProcsBudgetNote": {
+    "description": "Running on this phone: under the budget line, what the limit is and that other apps count too",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "termuxProcsBudgetOver": "More than {limit}: Android may stop the oldest of these at any time.",
+  "@termuxProcsBudgetOver": {
+    "description": "Running on this phone: under the budget line when the count is past the limit",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "termuxProcsLoadFailedBody": "Termux did not answer. Open Termux, then try again.",
+  "@termuxProcsLoadFailedBody": {
+    "description": "Running on this phone: body when the list could not be read; the technical reason is under Details"
+  },
+  "termuxProcsRefreshFailed": "Couldn't read the list again, so it shows the last reading.",
+  "@termuxProcsRefreshFailed": {
+    "description": "Running on this phone: a later refresh failed; the technical reason is under Details"
+  },
+  "termuxProcsStopFailed": "Couldn't stop it. Try again, or stop it from Termux.",
+  "@termuxProcsStopFailed": {
+    "description": "Running on this phone: a stop could not be sent; the technical reason is under Details"
+  },
+  "termuxProcsKindOpenCode": "OpenCode server",
+  "@termuxProcsKindOpenCode": {
+    "description": "Running on this phone: what a process is, first words of its line"
+  },
+  "termuxProcsKindAiTeam": "AI Team",
+  "@termuxProcsKindAiTeam": {
+    "description": "Running on this phone: what a process is, first words of its line"
+  },
+  "termuxProcsKindClaudeCode": "Claude Code",
+  "@termuxProcsKindClaudeCode": {
+    "description": "Running on this phone: what a process is, first words of its line"
+  },
+  "termuxProcsKindDevService": "Dev service",
+  "@termuxProcsKindDevService": {
+    "description": "Running on this phone: what a process is (a build daemon or dev server), first words of its line"
+  },
+  "termuxProcsKindTerminal": "Terminal",
+  "@termuxProcsKindTerminal": {
+    "description": "Running on this phone: what a process is (a shell session), first words of its line"
+  },
+  "termuxProcsKindHelper": "Helper",
+  "@termuxProcsKindHelper": {
+    "description": "Running on this phone: what a process is (anything else), first words of its line"
+  },
+  "termuxProcsKindHostApp": "Termux app",
+  "@termuxProcsKindHostApp": {
+    "description": "Running on this phone: the Termux app's own process, first words of its line"
+  },
+  "termuxProcsBusy": "Busy",
+  "@termuxProcsBusy": {
+    "description": "Running on this phone: the process used the processor since the last reading"
+  },
+  "termuxProcsIdle": "Idle",
+  "@termuxProcsIdle": {
+    "description": "Running on this phone: the process barely used the processor since the last reading"
+  },
+  "termuxProcsRunningFor": "running {elapsed}",
+  "@termuxProcsRunningFor": {
+    "description": "Running on this phone: how long a process has run, e.g. 'running 12 min'",
+    "placeholders": {
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "termuxProcsStopKindBody": "{names}: each gets a polite stop, then a forced one after 5 seconds.",
+  "@termuxProcsStopKindBody": {
+    "description": "Running on this phone: what a kind's stop stops, by name",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "termuxProcsStopKind": "Stop all {count} {things}",
+  "@termuxProcsStopKind": {
+    "description": "Running on this phone: one stop for every process of a kind (offered from two up); also its confirm button. things is a kind in the plural, e.g. 'dev services'",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "things": {
+        "type": "String"
+      }
+    }
+  },
+  "termuxProcsStopKindTitle": "Stop all {count} {things}?",
+  "@termuxProcsStopKindTitle": {
+    "description": "Running on this phone: the question of a kind's stop",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "things": {
+        "type": "String"
+      }
+    }
+  },
+  "termuxProcsKindsAiTeam": "AI Team processes",
+  "@termuxProcsKindsAiTeam": {
+    "description": "Running on this phone: the AI Team kind in the plural, inside 'Stop all 3 …'"
+  },
+  "termuxProcsKindsClaudeCode": "Claude Code processes",
+  "@termuxProcsKindsClaudeCode": {
+    "description": "Running on this phone: the Claude Code kind in the plural, inside 'Stop all 3 …'"
+  },
+  "termuxProcsKindsDevServices": "dev services",
+  "@termuxProcsKindsDevServices": {
+    "description": "Running on this phone: the dev service kind in the plural, inside 'Stop all 3 …'"
+  },
+  "termuxProcsKindsTerminals": "terminals",
+  "@termuxProcsKindsTerminals": {
+    "description": "Running on this phone: the terminal kind in the plural, inside 'Stop all 3 …'"
+  },
+  "termuxProcsKindsHelpers": "helpers",
+  "@termuxProcsKindsHelpers": {
+    "description": "Running on this phone: the helper kind in the plural, inside 'Stop all 3 …'"
+  },
+  "termuxProcsStopDevRestart": "The next build starts them again when it needs them.",
+  "@termuxProcsStopDevRestart": {
+    "description": "Running on this phone: what stopping the dev services costs"
+  },
+  "termuxProcsAboutClaudeCode": "Claude Code, the coding agent. Stopping it ends the answer it is writing.",
+  "@termuxProcsAboutClaudeCode": {
+    "description": "Running on this phone: what a Claude Code process is"
+  },
+  "termuxProcsAboutTerminal": "A terminal. Stopping it closes it and whatever runs in it.",
+  "@termuxProcsAboutTerminal": {
+    "description": "Running on this phone: what a terminal process is"
+  },
+  "termuxProcsAboutHostApp": "The Termux app itself. It is not stopped from here.",
+  "@termuxProcsAboutHostApp": {
+    "description": "Running on this phone: what the Termux app's own process is"
+  },
+  "termuxProcsAverageCpu": "Average processor use",
+  "@termuxProcsAverageCpu": {
+    "description": "Running on this phone › Details: ps's average CPU since the process started"
+  },
+  "termuxProcsCpuTime": "Processor time",
+  "@termuxProcsCpuTime": {
+    "description": "Running on this phone › Details: total CPU time the process used"
   }
 }

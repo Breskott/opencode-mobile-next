@@ -899,7 +899,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(fixture.cleans, ['build_caches']);
         expect(
-          find.text('In use by java. Stop it under Running now first.'),
+          find.text('In use by java. Stop it under Running on this phone first.'),
           findsOneWidget,
         );
         expect(

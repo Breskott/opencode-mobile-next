@@ -200,9 +200,6 @@
       ".textTheme": 19,
       "attention roles": 2
     },
-    "lib/ui/widgets/team_receipt.dart": {
-      "attention roles": 1
-    },
     "lib/ui/widgets/team_vocabulary.dart": {
       "attention roles": 11
     },

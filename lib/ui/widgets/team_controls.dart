@@ -2,8 +2,8 @@
 /// the receipt every control shows after a tap, the field the message and
 /// objective sheets use, and the two-step confirmation the controls that
 /// end work go through. Built from kit parts only (shared-team-1): the
-/// receipt is a [KitReceipt], the field a [KitField], the confirmation a
-/// [showKitConfirm].
+/// receipt is a [KitReceipt] ([teamControlReceipt]), the field a
+/// [KitField], the confirmation a [showKitConfirm].
 library;
 
 import 'package:flutter/material.dart';
@@ -50,58 +50,47 @@ String teamControlWord(AppLocalizations l10n, MutationRequest request) =>
       MutationKind.createWork => l10n.teamUiControlCreateWork,
     };
 
-/// "Nudge · Sent": the control's name and its state in words, beside the
-/// state's own mark, the host's reason on a refusal, and Try again when the
-/// record may be retried. Never colour-only: the state word is always in
-/// the text.
+/// The receipt a team control shows after a tap, as the one [KitReceipt]
+/// (02-ux §6): "Nudge · Sending…" while the host has not answered, then
+/// "Nudge · Confirmed", "Not confirmed yet" with Try again, or "Not
+/// accepted: {the host's reason}". The moving state names the act through
+/// [KitReceipt.sendingLabel]; the state's own mark stays beside the words,
+/// never colour alone.
 ///
-/// Retired by shared-team-1: use [KitReceipt]. A thin forwarding wrapper
-/// (STANDARDS KIT-43 forbids `@Deprecated`) that maps [MutationStatus] to
-/// [KitReceiptState]. The receipt names the act in every state (KitReceipt's
-/// `automatic` form: "the label names the act in every state and the
-/// state's own mark stays beside it"), so a person who tapped Nudge reads
-/// "Nudge · Sent", then "Nudge · Confirmed", never a bare "Sent".
-class TeamReceiptChip extends StatelessWidget {
-  const TeamReceiptChip({
-    super.key,
-    required this.record,
-    this.control,
-    this.onRetry,
-  });
-
-  final MutationRecord record;
-
-  /// The control's name; defaults to [teamControlWord].
-  final String? control;
-  final Future<void> Function()? onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final control = this.control ?? teamControlWord(l10n, record.request);
-    final state = switch (record.status) {
-      MutationStatus.sent => KitReceiptState.sent,
+/// [control] defaults to [teamControlWord]; [onRetry] shows Try again only
+/// when the record may be retried (a retry is a new record under a new key
+/// and only ever follows a tap).
+KitReceipt teamControlReceipt(
+  BuildContext context,
+  MutationRecord record, {
+  Key? key,
+  String? control,
+  Future<void> Function()? onRetry,
+  Key? retryKey,
+}) {
+  final l10n = _copy(context);
+  final act = control ?? teamControlWord(l10n, record.request);
+  final reason = record.status == MutationStatus.rejected
+      ? record.receipt?.message?.trim()
+      : null;
+  final retry = onRetry;
+  return KitReceipt(
+    key: key ?? ValueKey('team-receipt-${record.key}'),
+    state: switch (record.status) {
+      MutationStatus.sent => KitReceiptState.sending,
       MutationStatus.confirmed => KitReceiptState.confirmed,
       MutationStatus.unconfirmed => KitReceiptState.notConfirmed,
       MutationStatus.rejected => KitReceiptState.refused,
-    };
-    final reason = record.status == MutationStatus.rejected
-        ? record.receipt?.message?.trim()
-        : null;
-    final retry = onRetry;
-    return KitReceipt(
-      key: ValueKey('team-receipt-${record.key}'),
-      state: state,
-      automatic: true,
-      label: l10n.teamUiControlReceiptLine(
-        control,
-        teamControlReceiptWord(l10n, record.status),
-      ),
-      reason: reason == null || reason.isEmpty ? null : reason,
-      onRetry: retry != null && record.canRetry ? () => retry() : null,
-      retryKey: const ValueKey('team-receipt-retry'),
-    );
-  }
+    },
+    sendingLabel: l10n.teamControlReceiptSending(act),
+    label: l10n.teamUiControlReceiptLine(
+      act,
+      l10n.teamUiControlReceiptConfirmed,
+    ),
+    reason: reason == null || reason.isEmpty ? null : reason,
+    onRetry: retry != null && record.canRetry ? () => retry() : null,
+    retryKey: retryKey ?? const ValueKey('team-receipt-retry'),
+  );
 }
 
 /// The field an agent's message and a task's objective are typed in: a
