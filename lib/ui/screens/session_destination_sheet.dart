@@ -8,7 +8,8 @@ import '../../state/connection.dart';
 import '../app_iconography.dart';
 import '../early_l10n.dart';
 import '../kit/kit.dart';
-import '../widgets/product_states.dart' show productErrorText;
+import '../widgets/product_states.dart'
+    show productErrorDetails, productErrorText;
 import '../widgets/session_handoff.dart';
 
 enum SessionDestinationMode { move, warp }
@@ -495,7 +496,7 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
           title: copy.sessionDestinationLoadFailed,
           body: productErrorText(_error!),
           error: _error,
-          details: productErrorText(_error!),
+          details: productErrorDetails(_error!),
           size: KitStateSize.inline,
           retry: KitAction(label: copy.isolatedTaskRetryOpen, onPressed: _load),
         ),
@@ -668,7 +669,7 @@ class _ConsoleOrganizationSheetState extends State<_ConsoleOrganizationSheet> {
                 title: copy.consoleOrganizationLoadFailed,
                 body: productErrorText(_error!),
                 error: _error,
-                details: productErrorText(_error!),
+                details: productErrorDetails(_error!),
                 size: KitStateSize.inline,
                 retry: KitAction(
                   label: copy.isolatedTaskRetryOpen,

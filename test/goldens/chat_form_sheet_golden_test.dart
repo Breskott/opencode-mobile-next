@@ -14,6 +14,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api2/models.dart';
+import 'package:opencode_mobile/domain/server_gateway.dart'
+    show ProductException;
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/widgets/form_renderer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -212,7 +214,11 @@ void main() {
         light: light,
         form: _shortForm('frm_fail'),
         onSubmit: (_) async =>
-            throw Exception('The server did not accept these answers.'),
+            // App-authored words pass through; a raw Exception would be
+            // said as the generic line (no raw text as the words).
+            throw const ProductException(
+              'The server did not accept these answers.',
+            ),
         then: (tester) async {
           await tester.tap(find.byKey(const Key('form-submit')));
           await tester.pumpAndSettle();

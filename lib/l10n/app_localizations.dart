@@ -41024,6 +41024,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Project files not saved anywhere else are lost for good'**
   String get removeFromPhoneDeleteLost;
+
+  /// Error words: a request timed out.
+  ///
+  /// In en, this message translates to:
+  /// **'The server took too long to answer. Try again.'**
+  String get productErrorTimedOut;
+
+  /// Error words: the TLS handshake or certificate check failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The server\'s security certificate isn\'t trusted, so the app stopped. Check the server address.'**
+  String get productErrorCertificate;
+
+  /// Error words: the server answered 401 or 403.
+  ///
+  /// In en, this message translates to:
+  /// **'The server didn\'t accept the sign-in. Check the password in the server\'s settings.'**
+  String get productErrorSignIn;
+
+  /// Error words: the server answered 404.
+  ///
+  /// In en, this message translates to:
+  /// **'The server couldn\'t find it. It may have been moved or deleted.'**
+  String get productErrorNotFound;
+
+  /// Error words: the server answered 409 (conflict).
+  ///
+  /// In en, this message translates to:
+  /// **'It changed on the server in the meantime. Refresh, then try again.'**
+  String get productErrorConflict;
+
+  /// Error words: the server answered 429 (too many requests).
+  ///
+  /// In en, this message translates to:
+  /// **'The server is busy. Wait a moment, then try again.'**
+  String get productErrorBusy;
+
+  /// Error words: the server answered another 4xx status.
+  ///
+  /// In en, this message translates to:
+  /// **'The server didn\'t accept the request. Try again, or report the problem.'**
+  String get productErrorRejected;
+
+  /// Error words: the server answered with something the app could not read.
+  ///
+  /// In en, this message translates to:
+  /// **'The server\'s answer didn\'t make sense to the app. Try again, or report the problem.'**
+  String get productErrorUnexpected;
+
+  /// Error words: a native (platform) call on the phone failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Something on this device didn\'t work. Try again.'**
+  String get productErrorDevice;
+
+  /// Error words: a local file read or write failed (storage unavailable, full, or denied).
+  ///
+  /// In en, this message translates to:
+  /// **'The app couldn\'t read or save a file on this device.'**
+  String get productErrorStorage;
+
+  /// Error words: a command the app sent to Termux failed (its output goes to details).
+  ///
+  /// In en, this message translates to:
+  /// **'Termux didn\'t finish that. Check that Termux is installed and open, then try again.'**
+  String get productErrorTermux;
+
+  /// Label of the folded technical text under an error alert.
+  ///
+  /// In en, this message translates to:
+  /// **'Error details'**
+  String get productErrorDetailsLabel;
+
+  /// Error words: the server refused a request (400/422) and gave a short reason for people.
+  ///
+  /// In en, this message translates to:
+  /// **'The server didn\'t accept it: {reason}'**
+  String productErrorRejectedBecause(String reason);
+
+  /// Error words: the server answered a 5xx status such as 502 or 503.
+  ///
+  /// In en, this message translates to:
+  /// **'The server had a problem (error {code}). Try again in a moment.'**
+  String productErrorServer(int code);
 }
 
 class _AppLocalizationsDelegate

@@ -19,6 +19,7 @@ import '../kit/kit_top_bar.dart';
 import '../kit/motion/kit_refresh.dart';
 import '../kit/motion/kit_reveal.dart';
 import '../widgets/run_result_view.dart';
+import '../widgets/product_states.dart' show productErrorDetails;
 import 'files_screen.dart' show deliverReviewPrompt, pushWorkingTreeReview;
 
 /// Loads a session's newest history pages and shows the latest run's
@@ -55,8 +56,9 @@ class _RunResultScreenState extends State<RunResultScreen> {
   bool _loading = true;
 
   /// The failure as the app says it (a [ProductException]'s own words), or
-  /// null when only a raw error is known; the raw text is [_error], shown
-  /// only behind Details (COPY-14).
+  /// null for the screen's own sentence; the redacted technical text is
+  /// [_error] (empty when there is none), shown only behind Details
+  /// (COPY-14).
   String? _errorWords;
   String? _error;
   Object? _errorObject;
@@ -166,7 +168,7 @@ class _RunResultScreenState extends State<RunResultScreen> {
       setState(() {
         _errorObject = error;
         _errorWords = error is ProductException ? error.message : null;
-        _error = error is ProductException ? error.message : '$error';
+        _error = productErrorDetails(error) ?? '';
         _loading = false;
       });
     }
@@ -230,7 +232,7 @@ class _RunResultScreenState extends State<RunResultScreen> {
         body: _errorWords ?? l10n.reviewRunResultsErrorBody,
         bodyKey: const Key('run-result-error-state'),
         error: _errorObject,
-        details: _errorWords == null ? _error : null,
+        details: _error!.isEmpty ? null : _error,
         retry: retry,
       );
     } else if (result == null) {
@@ -265,7 +267,7 @@ class _RunResultScreenState extends State<RunResultScreen> {
           key: const Key('run-result-refresh-error'),
           message: l10n.reviewRunResultsRefreshFailed,
           error: _errorObject,
-          details: _error,
+          details: _error!.isEmpty ? null : _error,
           retry: retry,
         ),
       if (running)

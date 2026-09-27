@@ -92,7 +92,9 @@ class ProjectFolderActions {
           }
           return null;
         } on BuiltinLinuxException catch (error) {
-          return l10n.projectFolderCreateFailed(error.message);
+          return l10n.projectFolderCreateFailed(
+            productErrorText(error, l10n: l10n),
+          );
         } catch (error) {
           return productErrorText(error);
         }
@@ -221,7 +223,7 @@ class ProjectFolderActions {
         await _alert(
           context,
           l10n.projectFolderCreateFailedTitle,
-          l10n.projectFolderCreateFailed(error.toString()),
+          l10n.projectFolderCreateFailed(productErrorText(error, l10n: l10n)),
         );
       }
       return null;
@@ -287,7 +289,9 @@ class ProjectFolderActions {
           try {
             missing = !await inApp.exists(path);
           } on BuiltinLinuxException catch (error) {
-            return l10n.projectFolderCheckFailed(error.message);
+            return l10n.projectFolderCheckFailed(
+              productErrorText(error, l10n: l10n),
+            );
           }
           return null;
         },
@@ -330,7 +334,7 @@ class ProjectFolderActions {
         await _alert(
           context,
           l10n.projectFolderCreateFailedTitle,
-          l10n.projectFolderCreateFailed(error.message),
+          l10n.projectFolderCreateFailed(productErrorText(error, l10n: l10n)),
         );
       }
       return null;

@@ -1101,7 +1101,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('chat-load-older')));
     await tester.pumpAndSettle();
-    expect(find.text('Older request failed'), findsOneWidget);
+    // Said in words; the raw ApiException text is details only.
+    expect(find.text('Older request failed'), findsNothing);
+    expect(
+      find.text(
+        "The server's answer didn't make sense to the app. Try again, or "
+        'report the problem.',
+      ),
+      findsOneWidget,
+    );
     expect(find.byKey(const ValueKey('message-newest')), findsOneWidget);
     fail = false;
     await tester.tap(find.byKey(const ValueKey('chat-load-older')));
@@ -2045,7 +2053,15 @@ void main() {
     }
 
     expect(api.abortCalls, 1);
-    expect(find.text('server refused to stop'), findsOneWidget);
+    // Said in words; the raw ApiException text is details only.
+    expect(find.text('server refused to stop'), findsNothing);
+    expect(
+      find.text(
+        "The server's answer didn't make sense to the app. Try again, or "
+        'report the problem.',
+      ),
+      findsOneWidget,
+    );
   });
 
   test(

@@ -197,7 +197,7 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
     if (!mounted) return;
     setState(
       () => _notice = _WorktreesNotice(
-        error is String ? error : productErrorText(error),
+        productErrorText(error),
         tone: AppStatusTone.failure,
       ),
     );

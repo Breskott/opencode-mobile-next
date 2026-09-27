@@ -26071,4 +26071,61 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get removeFromPhoneDeleteLost =>
       'Project files not saved anywhere else are lost for good';
+
+  @override
+  String get productErrorTimedOut =>
+      'The server took too long to answer. Try again.';
+
+  @override
+  String get productErrorCertificate =>
+      'The server\'s security certificate isn\'t trusted, so the app stopped. Check the server address.';
+
+  @override
+  String get productErrorSignIn =>
+      'The server didn\'t accept the sign-in. Check the password in the server\'s settings.';
+
+  @override
+  String get productErrorNotFound =>
+      'The server couldn\'t find it. It may have been moved or deleted.';
+
+  @override
+  String get productErrorConflict =>
+      'It changed on the server in the meantime. Refresh, then try again.';
+
+  @override
+  String get productErrorBusy =>
+      'The server is busy. Wait a moment, then try again.';
+
+  @override
+  String get productErrorRejected =>
+      'The server didn\'t accept the request. Try again, or report the problem.';
+
+  @override
+  String get productErrorUnexpected =>
+      'The server\'s answer didn\'t make sense to the app. Try again, or report the problem.';
+
+  @override
+  String get productErrorDevice =>
+      'Something on this device didn\'t work. Try again.';
+
+  @override
+  String get productErrorStorage =>
+      'The app couldn\'t read or save a file on this device.';
+
+  @override
+  String get productErrorTermux =>
+      'Termux didn\'t finish that. Check that Termux is installed and open, then try again.';
+
+  @override
+  String get productErrorDetailsLabel => 'Error details';
+
+  @override
+  String productErrorRejectedBecause(String reason) {
+    return 'The server didn\'t accept it: $reason';
+  }
+
+  @override
+  String productErrorServer(int code) {
+    return 'The server had a problem (error $code). Try again in a moment.';
+  }
 }
