@@ -27568,5 +27568,25 @@
   "localTerminalSetUpLinux": "Set up Linux on this phone",
   "@localTerminalSetUpLinux": {
     "description": "Phone terminal before Linux is installed: opens phone setup."
+  },
+  "providerQuotaProviderLabel": "Provider",
+  "@providerQuotaProviderLabel": {
+    "description": "Remaining usage: the name of the choice of provider account (Codex, Claude, MiniMax, GLM), read by assistive technology."
+  },
+  "providerQuotaRouteLabel": "Collector route",
+  "@providerQuotaRouteLabel": {
+    "description": "Remaining usage Details: label of the collector route path on the server (a technical value)."
+  },
+  "providerQuotaThresholdStale": "Refresh remaining usage to change this threshold.",
+  "@providerQuotaThresholdStale": {
+    "description": "Remaining usage: why a window's alert threshold cannot be changed while the shown reading is out of date."
+  },
+  "usageHubUnavailableTitle": "No usage to show",
+  "@usageHubUnavailableTitle": {
+    "description": "Usage screen, when neither Spent nor Remaining applies to the current connection: the state's title."
+  },
+  "usageHubUnavailableBody": "Connect to a saved server to see what it spent and what your provider accounts have left.",
+  "@usageHubUnavailableBody": {
+    "description": "Usage screen, when neither section applies: what to do to see usage."
   }
 }

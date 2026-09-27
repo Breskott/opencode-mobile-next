@@ -23889,4 +23889,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get localTerminalSetUpLinux => 'Set up Linux on this phone';
+
+  @override
+  String get providerQuotaProviderLabel => 'Provider';
+
+  @override
+  String get providerQuotaRouteLabel => 'Collector route';
+
+  @override
+  String get providerQuotaThresholdStale =>
+      'Refresh remaining usage to change this threshold.';
+
+  @override
+  String get usageHubUnavailableTitle => 'No usage to show';
+
+  @override
+  String get usageHubUnavailableBody =>
+      'Connect to a saved server to see what it spent and what your provider accounts have left.';
 }

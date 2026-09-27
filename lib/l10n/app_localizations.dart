@@ -37820,6 +37820,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set up Linux on this phone'**
   String get localTerminalSetUpLinux;
+
+  /// Remaining usage: the name of the choice of provider account (Codex, Claude, MiniMax, GLM), read by assistive technology.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get providerQuotaProviderLabel;
+
+  /// Remaining usage Details: label of the collector route path on the server (a technical value).
+  ///
+  /// In en, this message translates to:
+  /// **'Collector route'**
+  String get providerQuotaRouteLabel;
+
+  /// Remaining usage: why a window's alert threshold cannot be changed while the shown reading is out of date.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh remaining usage to change this threshold.'**
+  String get providerQuotaThresholdStale;
+
+  /// Usage screen, when neither Spent nor Remaining applies to the current connection: the state's title.
+  ///
+  /// In en, this message translates to:
+  /// **'No usage to show'**
+  String get usageHubUnavailableTitle;
+
+  /// Usage screen, when neither section applies: what to do to see usage.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to a saved server to see what it spent and what your provider accounts have left.'**
+  String get usageHubUnavailableBody;
 }
 
 class _AppLocalizationsDelegate

@@ -4,6 +4,8 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/provider_quota_overview.dart';
 import '../../state/usage_overview.dart';
+import '../app_iconography.dart';
+import '../kit/kit.dart';
 import 'provider_quota_screen.dart';
 import 'usage_screen.dart';
 
@@ -15,12 +17,13 @@ enum UsageSection { spent, remaining }
 ///
 /// The sections are tabs, not one scroll. Spent is a long report (ranges,
 /// charts, budgets) that would bury Remaining below several screens of
-/// content, and each section loads, fails and refreshes on its own; a tab
-/// keeps each one's pull-to-refresh and keeps Remaining one tap away.
+/// content, and each section loads, fails and refreshes on its own (each
+/// has its own loading bar and pull to refresh); a tab keeps Remaining one
+/// tap away.
 ///
 /// A section the connection cannot serve is absent, and with only one section
-/// left there is no tab bar at all.
-class UsageHubScreen extends StatelessWidget {
+/// left there is no tab strip at all.
+class UsageHubScreen extends StatefulWidget {
   final ConnectionController controller;
 
   /// The section an entry point means (a quota alert opens Remaining).
@@ -45,66 +48,80 @@ class UsageHubScreen extends StatelessWidget {
     if (controller.profile != null) UsageSection.remaining,
   ];
 
-  Widget _body(UsageSection section) => switch (section) {
-    UsageSection.spent => UsageScreen(
-      controller: controller,
-      overview: usageOverview,
-      embedded: true,
-    ),
-    UsageSection.remaining => ProviderQuotaScreen(
-      controller: controller,
-      overview: quotaOverview,
-      embedded: true,
-    ),
-  };
+  @override
+  State<UsageHubScreen> createState() => _UsageHubScreenState();
+}
+
+class _UsageHubScreenState extends State<UsageHubScreen> {
+  /// The chosen section, by name, so a section that comes or goes keeps the
+  /// person on the one they chose.
+  UsageSection? _chosen;
+
+  @override
+  void initState() {
+    super.initState();
+    _chosen = widget.initialSection;
+  }
+
+  Widget _body(UsageSection section) => KeyedSubtree(
+    key: ValueKey('usage-section-${section.name}'),
+    child: switch (section) {
+      UsageSection.spent => UsageScreen(
+        controller: widget.controller,
+        overview: widget.usageOverview,
+        embedded: true,
+      ),
+      UsageSection.remaining => ProviderQuotaScreen(
+        controller: widget.controller,
+        overview: widget.quotaOverview,
+        embedded: true,
+      ),
+    },
+  );
 
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final sections = sectionsFor(controller);
-    final title = Text(l10n.settingsHubGroupUsage);
-    if (sections.length < 2) {
-      return Scaffold(
-        appBar: AppBar(title: title),
-        body: sections.isEmpty
-            ? const SizedBox.shrink()
-            : KeyedSubtree(
-                key: ValueKey('usage-section-${sections.single.name}'),
-                child: _body(sections.single),
-              ),
+    final sections = UsageHubScreen.sectionsFor(widget.controller);
+    final topBar = KitTopBar(title: l10n.settingsHubGroupUsage);
+    if (sections.isEmpty) {
+      // The Settings row is absent in this case; a deep link or search
+      // result that still lands here says why instead of a blank page.
+      return KitScreen(
+        topBar: topBar,
+        body: KitStateView(
+          key: const ValueKey('usage-hub-unavailable'),
+          icon: AppIconography.usage,
+          title: l10n.usageHubUnavailableTitle,
+          body: l10n.usageHubUnavailableBody,
+        ),
       );
     }
-    final initial = sections.indexOf(initialSection ?? sections.first);
-    return DefaultTabController(
-      length: sections.length,
-      initialIndex: initial < 0 ? 0 : initial,
-      child: Scaffold(
-        appBar: AppBar(
-          title: title,
-          bottom: TabBar(
-            tabs: [
-              for (final section in sections)
-                Tab(
-                  key: ValueKey('usage-tab-${section.name}'),
-                  // The default height clips the label at large text sizes.
-                  height: MediaQuery.textScalerOf(context).scale(20) + 26,
-                  text: switch (section) {
-                    UsageSection.spent => l10n.usageSectionSpent,
-                    UsageSection.remaining => l10n.usageSectionRemaining,
-                  },
-                ),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            for (final section in sections)
-              KeyedSubtree(
-                key: ValueKey('usage-section-${section.name}'),
-                child: _body(section),
-              ),
-          ],
-        ),
+    if (sections.length == 1) {
+      return KitScreen(topBar: topBar, body: _body(sections.single));
+    }
+    final found = sections.indexOf(_chosen ?? sections.first);
+    final index = found < 0 ? 0 : found;
+    return KitScreen(
+      topBar: topBar,
+      // The strip lines up with the sections' reading column on wide
+      // windows instead of sitting at the window's edge.
+      width: KitScreenWidth.reading,
+      body: KitTabSwitcher.tabs(
+        semanticsLabel: l10n.settingsHubGroupUsage,
+        index: index,
+        onSelected: (next) => setState(() => _chosen = sections[next]),
+        tabs: [
+          for (final section in sections)
+            KitTab(
+              key: ValueKey('usage-tab-${section.name}'),
+              label: switch (section) {
+                UsageSection.spent => l10n.usageSectionSpent,
+                UsageSection.remaining => l10n.usageSectionRemaining,
+              },
+            ),
+        ],
+        children: [for (final section in sections) _body(section)],
       ),
     );
   }
