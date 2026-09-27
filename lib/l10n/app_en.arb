@@ -30180,10 +30180,6 @@
   "@thisPhoneInstalled": {
     "description": "This phone: the folded row that lists what setup installed"
   },
-  "thisPhoneShowLog": "Show the server log",
-  "@thisPhoneShowLog": {
-    "description": "This phone: the row that opens the OpenCode server's log"
-  },
   "thisPhoneTerminal": "Open a terminal on this phone",
   "@thisPhoneTerminal": {
     "description": "This phone: the row that opens a shell in this phone's Linux"

@@ -406,14 +406,20 @@ void main() {
     await tester.pumpAndSettle();
     await _expandOtherWays(tester);
 
-    await _tapVisible(
-      tester,
-      find.byKey(const ValueKey('phone-setup-start-use-termux')),
-    );
+    final termux = find.byKey(const ValueKey('phone-setup-start-use-termux'));
+    await tester.ensureVisible(termux);
+    await tester.pumpAndSettle();
+    await tester.tap(termux);
+    // Termux's own checks keep a working mark moving: frames, not settle.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     // Termux is a host of phone setup (P1.3): its checklist, not a wizard.
     expect(find.byType(PhoneSetupTermuxScreen), findsOneWidget);
     await tester.pageBack();
-    await tester.pumpAndSettle();
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
 
     await _tapVisible(
       tester,

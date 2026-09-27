@@ -35,7 +35,6 @@ const _shared = [
   'this-phone-add-tools',
   'this-phone-installed',
   'this-phone-keep-running',
-  'this-phone-log',
 ];
 
 final _termuxProfile = ServerProfile(
@@ -118,7 +117,7 @@ void main() {
     // Every act names what it acts on.
     expect(find.text(_l10n.thisPhoneStop), findsOneWidget);
     expect(
-      find.text(_l10n.phoneServerCardConnect(_l10n.phoneServerCardTitle)),
+      find.text(_l10n.phoneServerCardConnect(_l10n.phoneServerNameInSentence)),
       findsOneWidget,
     );
     // Only the in-app Linux has a terminal and Remove.
@@ -129,6 +128,12 @@ void main() {
     );
     expect(find.byKey(const ValueKey('this-phone-terminal')), findsOneWidget);
     expect(find.text(_l10n.thisPhoneRemove), findsOneWidget);
+    // The technical fold is last, after Remove.
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('this-phone-details')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.byKey(const ValueKey('termux-procs-row')), findsNothing);
     await unmountPhone(tester);
   });
@@ -150,8 +155,40 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.byKey(const ValueKey('termux-storage-row')), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('this-phone-details')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.byKey(const ValueKey('this-phone-terminal')), findsNothing);
     expect(find.byKey(const ValueKey('this-phone-remove')), findsNothing);
+    await unmountPhone(tester);
+  });
+
+  testWidgets('the server log waits folded under Details, last', (
+    tester,
+  ) async {
+    await pumpPhone(
+      tester,
+      home: const ThisPhoneScreen(kind: PhoneHostKind.inApp),
+      linux: PhoneLinux(running: true, log: 'INFO  session created\n'),
+      profiles: [inAppProfile],
+    );
+    await _settle(tester);
+    expect(find.byKey(const ValueKey('this-phone-log')), findsNothing);
+    final details = find.byKey(const ValueKey('this-phone-details'));
+    await tester.scrollUntilVisible(
+      details,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(details);
+    await _settle(tester);
+    expect(find.byKey(const ValueKey('this-phone-log')), findsOneWidget);
+    expect(find.textContaining('session created'), findsOneWidget);
+    // The panel names the server; "Server log" is not said a second time.
+    expect(find.text(_l10n.phoneServerCardVersion('1.18.29')), findsOneWidget);
+    expect(find.text(_l10n.builtinServerLogTitle), findsNothing);
     await unmountPhone(tester);
   });
 

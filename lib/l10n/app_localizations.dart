@@ -40653,12 +40653,6 @@ abstract class AppLocalizations {
   /// **'Installed on this phone'**
   String get thisPhoneInstalled;
 
-  /// This phone: the row that opens the OpenCode server's log
-  ///
-  /// In en, this message translates to:
-  /// **'Show the server log'**
-  String get thisPhoneShowLog;
-
   /// This phone: the row that opens a shell in this phone's Linux
   ///
   /// In en, this message translates to:

@@ -1,5 +1,5 @@
 {
- "generatedFrom": "e0eed59003ea48001bbad284918c36988c8adf35",
+ "generatedFrom": "f08abebaad308f2d2b09fb0e84d48ae4466c61d5",
  "pages": [
   {
    "id": "system",
@@ -1883,57 +1883,6 @@
      "effect": "Navigator.pop(context, true) then controller.rejectQuestion(question.id, expectedRequest: request) and routes.close().",
      "gates": [],
      "destructive": true
-    }
-   ]
-  },
-  {
-   "id": "attention-overview",
-   "title": "Server attention",
-   "kind": "screen",
-   "area": "shell",
-   "file": "lib/ui/screens/attention_overview_screen.dart",
-   "widget": "AttentionOverviewScreen",
-   "presentedBy": [],
-   "line": 12,
-   "purpose": "Local per-saved-server overview (selected/inactive, data source, pending/running/unread counts or 'unknown'); never switches profiles itself.",
-   "reachedFrom": [
-    {
-     "page": "servers",
-     "element": "servers-attention"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "attention-overview-monitor-settings",
-     "type": "icon-button",
-     "label": "Monitoring settings",
-     "key": null,
-     "file": "lib/ui/screens/attention_overview_screen.dart",
-     "line": 34,
-     "action": "navigate",
-     "target": "profile-monitor",
-     "targetWidget": "ProfileMonitorScreen",
-     "effect": "Pushes ProfileMonitorScreen(controller).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "attention-overview-open-profile",
-     "type": "button",
-     "label": "Open server / Choose server…",
-     "key": null,
-     "file": "lib/ui/screens/attention_overview_screen.dart",
-     "line": 141,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Per profile card: when the profile is still readable and saved calls host onOpenProfile(profileID); ServersScreen's host pops this route with the id and runs its own safe switch flow. Disabled (with 'navigation unavailable' text) when onOpenProfile == null.",
-     "gates": [
-      "onOpenProfile != null",
-      "controller.isProfileReadable(item.profileID)"
-     ],
-     "destructive": false
     }
    ]
   },
@@ -20800,7 +20749,7 @@
   },
   {
    "id": "profile-monitor",
-   "title": "Saved-server attention",
+   "title": "Background checks",
    "kind": "screen",
    "area": "servers",
    "file": "lib/ui/screens/profile_monitor_screen.dart",
@@ -20810,12 +20759,8 @@
    "purpose": "Live saved-server attention list: each readable server with its monitor status, last and next check, pending requests and observed busy intervals. Its settings live in Notifications, one link away.",
    "reachedFrom": [
     {
-     "page": "attention-overview",
-     "element": "attention-overview-monitor-settings"
-    },
-    {
-     "page": "embedded-profile-monitor-inbox",
-     "element": "embedded-profile-monitor-inbox-summary"
+     "page": "servers",
+     "element": "servers-background-checks"
     }
    ],
    "gates": [],
@@ -20893,7 +20838,7 @@
    "widget": "ProfileMonitorInbox",
    "presentedBy": [],
    "line": 134,
-   "purpose": "Embedded inbox of pending requests and due check-ins from other monitored saved servers, plus a summary row that opens the monitor screen.",
+   "purpose": "Embedded inbox rows: pending requests and due check-ins from other monitored saved servers.",
    "reachedFrom": [
     {
      "page": "activity",
@@ -20916,20 +20861,6 @@
     "activity"
    ],
    "elements": [
-    {
-     "id": "embedded-profile-monitor-inbox-summary",
-     "type": "list-tile",
-     "label": "Saved servers (compact) | Saved-server attention — pending/unknown counts",
-     "key": null,
-     "file": "lib/ui/screens/profile_monitor_screen.dart",
-     "line": 147,
-     "action": "navigate",
-     "target": "profile-monitor",
-     "targetWidget": "ProfileMonitorScreen",
-     "effect": "Pushes ProfileMonitorScreen(controller). Rendered first when !compact, last when compact.",
-     "gates": [],
-     "destructive": false
-    },
     {
      "id": "embedded-profile-monitor-inbox-request-row",
      "type": "list-tile",
@@ -21415,6 +21346,37 @@
    ],
    "elements": [
     {
+     "id": "servers-background-checks",
+     "type": "list-tile",
+     "label": "Background checks · Last checked {when}",
+     "key": "servers-background-checks",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "action": "navigate",
+     "target": "profile-monitor",
+     "targetWidget": "ProfileMonitorScreen",
+     "effect": "Pushes ProfileMonitorScreen(controller): each saved server's last and next check and \"Check monitored servers\". The row says \"Off for every server\" when none is monitored.",
+     "gates": [
+      "bootstrap.store.profiles.isNotEmpty",
+      "!connection.isIsolated"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-report-bug",
+     "type": "menu-item",
+     "label": "Report a bug",
+     "key": "servers-report-bug",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "action": "external-link",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Top-bar menu: openBugReport(context), the same flow as Settings › Report a bug.",
+     "gates": [
+      "the page is the root route (no shell, so no Settings)"
+     ],
+     "destructive": false
+    },
+    {
      "id": "servers-termux-setup",
      "type": "list-tile",
      "label": "This phone (Manage on the phone server rows; the runtime-choice detour)",
@@ -21427,23 +21389,6 @@
      "effect": "_openTermuxSetup(): openThisPhone(context, kind: termux); on return bumps _termuxRevision so the phone entries re-read. Called by the Termux and Claude Code entries' Manage and by _connect's runtime-choice detour.",
      "gates": [
       "platformCapabilities.supportsTermux"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "servers-attention",
-     "type": "icon-button",
-     "label": "Server attention",
-     "key": null,
-     "file": "lib/ui/screens/servers_screen.dart",
-     "line": 385,
-     "action": "navigate",
-     "target": "attention-overview",
-     "targetWidget": "AttentionOverviewScreen",
-     "effect": "Pushes AttentionOverviewScreen(controller: connProvider, onOpenProfile pops with the profile id); when a readable profile id comes back it calls _connect(profile) for that saved profile.",
-     "gates": [
-      "bootstrap.store.profiles.isNotEmpty",
-      "disabled while _busy"
      ],
      "destructive": false
     },
@@ -21463,17 +21408,17 @@
     },
     {
      "id": "servers-guide",
-     "type": "icon-button",
+     "type": "menu-item",
      "label": "Setup guide",
-     "key": null,
+     "key": "servers-setup-guide",
      "file": "lib/ui/screens/servers_screen.dart",
      "line": 422,
      "action": "navigate",
      "target": "guide",
-     "targetWidget": "/guide",
-     "effect": "Navigator.pushNamed(context, '/guide').",
+     "targetWidget": "GuideScreen",
+     "effect": "Top-bar menu: pushes GuideScreen(embedded: false).",
      "gates": [
-      "bootstrap.store.profiles.isNotEmpty (absent on the first-run welcome)"
+      "the page is the root route (no shell, so no Settings)"
      ],
      "destructive": false
     },
@@ -24752,6 +24697,21 @@
    ],
    "elements": [
     {
+     "id": "termux-setup-installed-details",
+     "type": "button",
+     "label": "Details",
+     "key": "this-phone-details",
+     "file": "lib/ui/screens/this_phone_screen.dart",
+     "action": "other",
+     "target": null,
+     "targetWidget": "KitDetailsFold",
+     "effect": "Last on the page, collapsed by default (P1.5): opening it reads host.readLog() (in app BuiltinLinux.serverLog; Termux the manager install log and server output) into the one KitLogPanel ('this-phone-log'), titled by the server (\"OpenCode 1.18.29\") and re-read while the server runs.",
+     "gates": [
+      "installed"
+     ],
+     "destructive": false
+    },
+    {
      "id": "termux-setup-installed-set-up",
      "type": "button",
      "label": "Set up OpenCode on this phone",
@@ -24997,22 +24957,6 @@
      "destructive": false
     },
     {
-     "id": "termux-setup-installed-log",
-     "type": "list-tile",
-     "label": "Show the server log",
-     "key": "this-phone-log",
-     "file": "lib/ui/screens/this_phone_screen.dart",
-     "line": 674,
-     "action": "open-sheet",
-     "target": "builtin-server-log-sheet",
-     "targetWidget": "_showLog",
-     "effect": "_showLog: reads host.readLog() (in app BuiltinLinux.serverLog; Termux the manager install log and server output) into the log sheet.",
-     "gates": [
-      "installed"
-     ],
-     "destructive": false
-    },
-    {
      "id": "termux-setup-installed-terminal",
      "type": "list-tile",
      "label": "Open a terminal on this phone",
@@ -25185,45 +25129,6 @@
     }
    ],
    "key": "this-phone-termux-tools"
-  },
-  {
-   "id": "builtin-server-log-sheet",
-   "title": "Server log",
-   "kind": "sheet",
-   "area": "termux",
-   "file": "lib/ui/screens/this_phone_screen.dart",
-   "widget": "_showLog",
-   "presentedBy": [
-    "_showLog"
-   ],
-   "line": 352,
-   "purpose": "The server log of OpenCode on this phone (in app or Termux) in the one KitLogPanel, re-read while the server runs.",
-   "reachedFrom": [
-    {
-     "page": "termux-setup-installed",
-     "element": "termux-setup-installed-log"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "builtin-server-log-refresh",
-     "type": "button",
-     "label": "Refresh",
-     "key": "this-phone-log",
-     "file": "lib/ui/screens/this_phone_screen.dart",
-     "line": 364,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "KitLogPanel.onRefresh: reads host.readLog() again (only while the server runs).",
-     "gates": [
-      "host.state == running"
-     ],
-     "destructive": false
-    }
-   ],
-   "key": "this-phone-log-sheet"
   },
   {
    "id": "embedded-local-agent-onboarding-block",
@@ -32054,27 +31959,6 @@
    ]
   },
   {
-   "id": "catalog",
-   "title": "Models and agents",
-   "kind": "screen",
-   "area": "settings",
-   "file": "lib/ui/screens/library/catalog_screen.dart",
-   "widget": "CatalogScreen",
-   "presentedBy": [],
-   "line": 51,
-   "purpose": "Full-screen host for the shared ModelCatalogView (lib/ui/widgets/pickers.dart:113, showHeader: false) where the default model and agent for new chats are browsed and chosen.",
-   "reachedFrom": [
-    {
-     "page": "settings",
-     "element": "settings-models"
-    }
-   ],
-   "gates": [
-    "controller.capabilities.serverCatalog (SettingsScreen row gate, library_screen.dart:91)"
-   ],
-   "elements": []
-  },
-  {
    "id": "command-auth-sheet",
    "title": "<provider name> / <method label>",
    "kind": "sheet",
@@ -32748,11 +32632,6 @@
    "line": 8,
    "purpose": "Provider connections (connect via API key / OAuth / server command, disconnect, manage accounts, recover pending sign-ins) and MCP servers (connect, disconnect, authenticate, remove, add) plus MCP resources; mode selects providers, mcp or both.",
    "reachedFrom": [
-    {
-     "page": "catalog",
-     "element": null,
-     "note": "opener id 'catalog-legacy-provider-row' not found; page-level edge"
-    },
     {
      "page": "chat",
      "element": "chat-message-error-open-providers"
@@ -35711,10 +35590,10 @@
      "key": "settings-models",
      "file": "lib/ui/screens/settings_screen.dart",
      "line": 354,
-     "action": "navigate",
-     "target": "catalog",
-     "targetWidget": "CatalogScreen",
-     "effect": "Pushes CatalogScreen(controller) via _open. Subtitle shows the default model label (defaultModelLabel).",
+     "action": "open-sheet",
+     "target": "model-picker-sheet",
+     "targetWidget": "showModelPicker",
+     "effect": "Search result (Models & agents): opens the model picker sheet, which is the catalogue.",
      "gates": [
       "capabilities.serverCatalog",
       "row hidden when it does not match the search query (_HubRow.matches(_query))"
@@ -36976,6 +36855,10 @@
     {
      "page": "settings",
      "element": "settings-model-and-mode"
+    },
+    {
+     "page": "settings",
+     "element": "settings-models"
     },
     {
      "page": "tools",
@@ -38942,11 +38825,6 @@
     "to": "references"
    },
    {
-    "from": "attention-overview",
-    "element": "attention-overview-monitor-settings",
-    "to": "profile-monitor"
-   },
-   {
     "from": "chat",
     "element": "chat-watching-message",
     "to": "chat-watching-message-sheet"
@@ -40203,8 +40081,8 @@
    },
    {
     "from": "servers",
-    "element": "servers-attention",
-    "to": "attention-overview"
+    "element": "servers-background-checks",
+    "to": "profile-monitor"
    },
    {
     "from": "servers",
@@ -40458,11 +40336,6 @@
    },
    {
     "from": "embedded-profile-monitor-inbox",
-    "element": "embedded-profile-monitor-inbox-summary",
-    "to": "profile-monitor"
-   },
-   {
-    "from": "embedded-profile-monitor-inbox",
     "element": "embedded-profile-monitor-inbox-request-row",
     "to": "permission-sheet"
    },
@@ -40560,11 +40433,6 @@
     "from": "termux-setup-installed",
     "element": "termux-setup-installed-keep-running",
     "to": "keep-running"
-   },
-   {
-    "from": "termux-setup-installed",
-    "element": "termux-setup-installed-log",
-    "to": "builtin-server-log-sheet"
    },
    {
     "from": "termux-setup-installed",
@@ -41279,7 +41147,7 @@
    {
     "from": "settings",
     "element": "settings-models",
-    "to": "catalog"
+    "to": "model-picker-sheet"
    },
    {
     "from": "settings",
@@ -42773,11 +42641,6 @@
     "from": "chat",
     "element": null,
     "to": "tools"
-   },
-   {
-    "from": "catalog",
-    "element": null,
-    "to": "integrations"
    },
    {
     "from": "chat",

@@ -510,15 +510,17 @@ final hTermuxArea = CensusArea(
       await kit.tapKey('this-phone-switch');
       kit.expectText('Switch version');
     }),
-    CensusShot('builtin-server-log-sheet', (kit) async {
+    CensusShot('termux-setup-installed', state: 'details-log', (kit) async {
       await _builtin(
         kit,
         _CensusLinux(installed: true, openCode: true, running: true),
       );
-      await kit.scrollTo(find.byKey(const ValueKey('this-phone-log')));
-      await kit.tapKey('this-phone-log');
+      // The log is folded under Details, last on This phone (P1.5).
+      await kit.scrollTo(find.byKey(const ValueKey('this-phone-details')));
+      await kit.tapKey('this-phone-details');
       await kit.realWait();
-      kit.expectVisible(find.byKey(const ValueKey('this-phone-log-sheet')));
+      await kit.scrollTo(find.byKey(const ValueKey('this-phone-log')));
+      kit.expectVisible(find.byKey(const ValueKey('this-phone-log')));
     }),
     CensusShot('this-phone-add-tools-sheet', (kit) async {
       await _installedRunning(kit);

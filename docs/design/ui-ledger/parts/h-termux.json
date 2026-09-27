@@ -314,22 +314,6 @@
           "file": "lib/ui/screens/this_phone_screen.dart"
         },
         {
-          "id": "termux-setup-installed-log",
-          "type": "list-tile",
-          "label": "Show the server log",
-          "key": "this-phone-log",
-          "line": 674,
-          "action": "open-sheet",
-          "target": "builtin-server-log-sheet",
-          "targetWidget": "_showLog",
-          "effect": "_showLog: reads host.readLog() (in app BuiltinLinux.serverLog; Termux the manager install log and server output) into the log sheet.",
-          "gates": [
-            "installed"
-          ],
-          "destructive": false,
-          "file": "lib/ui/screens/this_phone_screen.dart"
-        },
-        {
           "id": "termux-setup-installed-terminal",
           "type": "list-tile",
           "label": "Open a terminal on this phone",
@@ -360,6 +344,21 @@
             "off while setting up, starting or stopping"
           ],
           "destructive": true,
+          "file": "lib/ui/screens/this_phone_screen.dart"
+        },
+        {
+          "id": "termux-setup-installed-details",
+          "type": "expand",
+          "label": "Details",
+          "key": "this-phone-details",
+          "action": "other",
+          "target": null,
+          "targetWidget": "KitDetailsFold",
+          "effect": "Last on the page, collapsed by default (P1.5): opening it reads host.readLog() (in app BuiltinLinux.serverLog; Termux the manager install log and server output) into the one KitLogPanel ('this-phone-log'), titled by the server (\"OpenCode 1.18.29\") and re-read while the server runs.",
+          "gates": [
+            "installed"
+          ],
+          "destructive": false,
           "file": "lib/ui/screens/this_phone_screen.dart"
         }
       ]
@@ -2157,39 +2156,6 @@
           "destructive": false
         }
       ]
-    },
-    {
-      "id": "builtin-server-log-sheet",
-      "title": "Server log",
-      "kind": "sheet",
-      "file": "lib/ui/screens/this_phone_screen.dart",
-      "widget": "_showLog",
-      "presentedBy": [
-        "_showLog"
-      ],
-      "line": 352,
-      "purpose": "The server log of OpenCode on this phone (in app or Termux) in the one KitLogPanel, re-read while the server runs.",
-      "reachedFrom": [],
-      "gates": [],
-      "elements": [
-        {
-          "id": "builtin-server-log-refresh",
-          "type": "button",
-          "label": "Refresh",
-          "key": "this-phone-log",
-          "line": 364,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "KitLogPanel.onRefresh: reads host.readLog() again (only while the server runs).",
-          "gates": [
-            "host.state == running"
-          ],
-          "destructive": false,
-          "file": "lib/ui/screens/this_phone_screen.dart"
-        }
-      ],
-      "key": "this-phone-log-sheet"
     },
     {
       "id": "phone-setup-start",

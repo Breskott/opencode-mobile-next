@@ -78,6 +78,10 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
   bool _connecting = false;
   bool _removing = false;
 
+  /// The server log under Details (P1.5): folded until someone opens it.
+  final _log = KitLogBuffer();
+  bool _detailsOpen = false;
+
   AppLocalizations get _l10n =>
       lookupAppLocalizations(Localizations.localeOf(context));
 
@@ -130,6 +134,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
   void dispose() {
     _host.removeListener(_changed);
     if (_ownsHost) _host.dispose();
+    _log.dispose();
     super.dispose();
   }
 
@@ -334,38 +339,19 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     );
   }
 
-  /// The server's log in the one log view (KIT-31), re-read while the sheet
-  /// is open and the server runs.
-  Future<void> _showLog() async {
-    final lines = KitLogBuffer();
-    Future<void> read() async {
-      lines.replaceText((await _host.readLog()).trimRight());
+  /// The server's log, read when Details opens and again while it stays
+  /// open and the server runs.
+  Future<void> _readLog() async {
+    try {
+      _log.replaceText((await _host.readLog()).trimRight());
+    } catch (_) {
+      // Nothing to show is said by the panel's empty words.
     }
+  }
 
-    await read();
-    if (!mounted) {
-      lines.dispose();
-      return;
-    }
-    final l10n = _l10n;
-    final running = _host.state == PhoneHostState.running;
-    await showKitSheet<void>(
-      context,
-      title: l10n.builtinServerLogTitle,
-      icon: AppIconography.text,
-      height: KitSheetHeight.full,
-      sheetKey: const ValueKey('this-phone-log-sheet'),
-      body: (_) => KitLogPanel(
-        lines: lines,
-        panelKey: const ValueKey('this-phone-log'),
-        title: l10n.builtinServerLogTitle,
-        emptyText: l10n.phoneServerCardLogEmpty,
-        live: running,
-        onRefresh: running ? read : null,
-        ended: running ? null : const KitLogEnd(),
-      ),
-    );
-    lines.dispose();
+  void _details(bool open) {
+    setState(() => _detailsOpen = open);
+    if (open) unawaited(_readLog());
   }
 
   // --- The page --------------------------------------------------------------
@@ -391,6 +377,8 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
           if (_host.installed) ...[
             SizedBox(height: tokens.sectionGap),
             _list(context, l10n),
+            SizedBox(height: tokens.sectionGap),
+            _logFold(context, l10n),
           ],
         ],
       ),
@@ -433,7 +421,6 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     final failure = _removing ? null : _host.failure;
     final switchTarget = _host.switchTarget;
     final switchPrevious = _host.switchPrevious;
-    final name = l10n.phoneServerCardTitle;
 
     KitAction? primary;
     KitAction? secondary;
@@ -480,7 +467,9 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
           if (!connected && _host.profile != null) {
             primary = KitAction(
               key: const ValueKey('this-phone-connect'),
-              label: l10n.phoneServerCardConnect(name),
+              label: l10n.phoneServerCardConnect(
+                l10n.phoneServerNameInSentence,
+              ),
               onPressed: () => unawaited(_connect()),
             );
           }
@@ -660,13 +649,6 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
           trailing: const KitChevron(),
           onTap: () => unawaited(openKeepRunningScreen(context)),
         ),
-        KitRow(
-          key: const ValueKey('this-phone-log'),
-          leading: icon(AppIconography.article),
-          title: l10n.thisPhoneShowLog,
-          trailing: const KitChevron(),
-          onTap: () => unawaited(_showLog()),
-        ),
         if (inApp)
           KitRow(
             key: const ValueKey('this-phone-terminal'),
@@ -687,6 +669,34 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
             onTap: () => unawaited(_inApp(PhoneServerAction.remove)),
           ),
       ],
+    );
+  }
+
+  /// The technical truth, last and folded (KIT-33): the server's log in
+  /// the one log view (KIT-31), titled by the server it comes from so it
+  /// does not repeat "Details".
+  Widget _logFold(BuildContext context, AppLocalizations l10n) {
+    final tokens = KitTokens.of(context);
+    final running = _host.state == PhoneHostState.running;
+    final version = _host.version;
+    return Padding(
+      padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
+      child: KitDetailsFold(
+        foldKey: const ValueKey('this-phone-details'),
+        expanded: _detailsOpen,
+        onExpansionChanged: _details,
+        child: KitLogPanel(
+          lines: _log,
+          panelKey: const ValueKey('this-phone-log'),
+          title: version == null
+              ? _runtimeName(_host.runtime)
+              : l10n.phoneServerCardVersion(version),
+          emptyText: l10n.phoneServerCardLogEmpty,
+          live: running,
+          onRefresh: running ? _readLog : null,
+          ended: running ? null : const KitLogEnd(),
+        ),
+      ),
     );
   }
 

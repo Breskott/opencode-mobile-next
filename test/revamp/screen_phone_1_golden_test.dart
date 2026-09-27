@@ -342,7 +342,9 @@ void main() {
       });
     }
 
-    testWidgets('this phone server log ($theme)', (tester) async {
+    testWidgets('this phone details with the server log ($theme)', (
+      tester,
+    ) async {
       final linux = PhoneLinux(
         running: true,
         log:
@@ -351,16 +353,20 @@ void main() {
       );
       await _shot(
         tester,
-        'phone_this_phone_log_sheet',
+        'phone_this_phone_details_log',
         light: light,
         home: const ThisPhoneScreen(kind: PhoneHostKind.inApp),
         linux: linux,
         profiles: [inAppProfile],
         act: () async {
-          final log = find.byKey(const ValueKey('this-phone-log'));
-          await tester.ensureVisible(log);
+          final details = find.byKey(const ValueKey('this-phone-details'));
+          await tester.ensureVisible(details);
           await _settle(tester);
-          await tester.tap(log);
+          await tester.tap(details);
+          await _settle(tester);
+          await tester.ensureVisible(
+            find.byKey(const ValueKey('this-phone-log')),
+          );
         },
       );
     });

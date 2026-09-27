@@ -257,10 +257,11 @@ Future<bool> _removePhoneServer(
   int? bytesUsed,
   VoidCallback? onRemoving,
 }) async {
-  // Measured afresh: sizes come from a real reading or are not said.
+  // Measured afresh: sizes come from a real reading or are not said. A
+  // slow reading (many projects) does not hold the question back.
   BuiltinProjectStorage? storage;
   try {
-    storage = await linux.projectStorage();
+    storage = await linux.projectStorage().timeout(const Duration(seconds: 3));
   } catch (_) {
     storage = null;
   }

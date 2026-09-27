@@ -25738,9 +25738,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get thisPhoneInstalled => 'Installed on this phone';
 
   @override
-  String get thisPhoneShowLog => 'Show the server log';
-
-  @override
   String get thisPhoneTerminal => 'Open a terminal on this phone';
 
   @override
