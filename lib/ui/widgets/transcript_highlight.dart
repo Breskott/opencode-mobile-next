@@ -1,9 +1,13 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../domain/transcript_search.dart';
 import '../../l10n/app_localizations.dart';
+import '../kit/chat/kit_find_mark.dart';
+import '../kit/kit_surface.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
 
-/// Adds search color at rendering time without reparsing Markdown or changing
+/// Adds the find mark ([KitFindMark]) at rendering time without reparsing Markdown or changing
 /// selection, link recognizers, code content, or clipboard data.
 class TranscriptHighlight extends InheritedWidget {
   const TranscriptHighlight({
@@ -38,11 +42,7 @@ class TranscriptHighlight extends InheritedWidget {
             ranges.length) {
       return span;
     }
-    final scheme = Theme.of(context).colorScheme;
-    final style = TextStyle(
-      backgroundColor: scheme.tertiaryContainer,
-      color: scheme.onTertiaryContainer,
-    );
+    final style = KitFindMark.style(context);
     var offset = 0;
     var rangeIndex = 0;
     InlineSpan visit(InlineSpan value) {
@@ -110,7 +110,10 @@ class TranscriptHighlight extends InheritedWidget {
 }
 
 /// The active occurrence stays visible even inside a very long message, code
-/// block, or Markdown markup whose source is not rendered as prose.
+/// block, or Markdown markup whose source is not rendered as prose: a
+/// surface2 panel above the transcript saying which match it is and where
+/// ("Match 2 of 5 · Tool"), with up to five lines around the hit in the
+/// active find mark.
 class TranscriptMatchExcerpt extends StatelessWidget {
   const TranscriptMatchExcerpt({
     super.key,
@@ -121,6 +124,7 @@ class TranscriptMatchExcerpt extends StatelessWidget {
   final String label;
   @override
   Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
     final from = match.previewStart;
     final to = match.previewEnd;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
@@ -131,53 +135,49 @@ class TranscriptMatchExcerpt extends StatelessWidget {
       _ => null,
     };
     String compact(String value) => value.replaceAll(RegExp(r'\s+'), ' ');
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
+    return Padding(
       key: ValueKey('transcript-match-${match.key}'),
-      width: double.infinity,
-      padding: const EdgeInsets.all(10),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: scheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            source == null ? label : '$label · $source',
-            style: TextStyle(
-              color: scheme.onSecondaryContainer,
-              fontWeight: FontWeight.w600,
-            ),
+      padding: EdgeInsetsDirectional.only(bottom: tokens.space2),
+      child: SizedBox(
+        width: double.infinity,
+        child: KitSurface(
+          level: KitSurfaceLevel.surface2,
+          padding: KitSurfacePadding.compact,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              KitText(
+                source == null ? label : '$label · $source',
+                role: KitTextRole.label,
+              ),
+              SizedBox(height: tokens.space1),
+              KitText.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text:
+                          '${from > 0 ? '…' : ''}${compact(match.text.substring(from, match.start))}',
+                    ),
+                    TextSpan(
+                      text: compact(
+                        match.text.substring(match.start, match.end),
+                      ),
+                      style: KitFindMark.style(context, active: true),
+                    ),
+                    TextSpan(
+                      text:
+                          '${compact(match.text.substring(match.end, to))}${to < match.text.length ? '…' : ''}',
+                    ),
+                  ],
+                ),
+                role: KitTextRole.secondary,
+                tone: KitTextTone.primary,
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text:
-                      '${from > 0 ? '…' : ''}${compact(match.text.substring(from, match.start))}',
-                ),
-                TextSpan(
-                  text: compact(match.text.substring(match.start, match.end)),
-                  style: TextStyle(
-                    backgroundColor: scheme.primary,
-                    color: scheme.onPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                TextSpan(
-                  text:
-                      '${compact(match.text.substring(match.end, to))}${to < match.text.length ? '…' : ''}',
-                ),
-              ],
-            ),
-            style: TextStyle(color: scheme.onSecondaryContainer),
-            maxLines: 5,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+        ),
       ),
     );
   }

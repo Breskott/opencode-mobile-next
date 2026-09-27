@@ -1,205 +1,187 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../domain/mobile_tool_view.dart';
 import '../../l10n/app_localizations.dart';
-import '../app_theme.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_chip.dart';
+import '../kit/kit_icon_button.dart';
+import '../kit/kit_progress.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_task_mark.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
 
+/// The agent's plan inside the opened Work step of a reply
+/// (embedded-mobile-task-list): one readout ("2 of 4 done" and its bar),
+/// then one list in the plan's own order, each task with the team's step
+/// mark ([KitTaskMark]) and its state in words. "High priority" is a small
+/// chip, never a colour; the other priorities are words in the supporting
+/// line.
+///
+/// A long plan (more than [collapsedCount] tasks) shows a window that starts
+/// just before the first unfinished task, with "Show all N tasks" to unfold
+/// the rest in place (never a nested scroll inside the transcript).
+///
 /// Bundled presentation only. Filtering changes the local view, never tasks.
-/// Copying writes the parsed list to the local clipboard and nothing else.
-/// There is deliberately no transport, URL, callback or credential form API.
+/// Copying writes the parsed list to the local clipboard (through the kit's
+/// one copy service) and nothing else. There is deliberately no transport,
+/// URL, callback or credential form API.
 class MobileTaskList extends StatefulWidget {
   const MobileTaskList({super.key, required this.view});
   final MobileTaskView view;
+
+  /// How many tasks a long plan shows before "Show all N tasks".
+  static const int collapsedCount = 8;
+
   @override
   State<MobileTaskList> createState() => _MobileTaskListState();
 }
 
 class _MobileTaskListState extends State<MobileTaskList> {
   bool _unfinishedOnly = false;
-  bool _copying = false;
+  bool _showAll = false;
 
-  /// Copies the FULL server-reported list, regardless of the local filter:
-  /// the filter is a viewing aid and the button label says "all tasks".
-  /// A clipboard failure is reported in place instead of surfacing as an
-  /// unhandled async error.
-  Future<void> _copyAll(AppLocalizations l10n) async {
-    if (_copying) return;
-    setState(() => _copying = true);
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    String message;
-    try {
-      await Clipboard.setData(ClipboardData(text: widget.view.toPlainText()));
-      message = l10n.mobileTasksCopied;
-    } catch (_) {
-      message = l10n.mobileTasksCopyFailed;
-    }
-    if (!mounted) return;
-    setState(() => _copying = false);
-    messenger?.showSnackBar(SnackBar(content: Text(message)));
-  }
+  static bool _unfinished(MobileTaskItem task) =>
+      task.status == MobileTaskStatus.pending ||
+      task.status == MobileTaskStatus.inProgress;
 
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     final view = widget.view;
-    final tasks = view.tasks.where(
-      (task) =>
-          !_unfinishedOnly ||
-          task.status == MobileTaskStatus.pending ||
-          task.status == MobileTaskStatus.inProgress,
-    );
+    final tasks = [
+      for (final task in view.tasks)
+        if (!_unfinishedOnly || _unfinished(task)) task,
+    ];
     final tracked = view.trackedCount;
     final done = view.completedCount;
-    final progressText = l10n.mobileTasksProgress(done, tracked);
+
+    // A long plan folds to a window around where the work is.
+    var shown = tasks;
+    final folded = !_showAll && tasks.length > MobileTaskList.collapsedCount;
+    if (folded) {
+      final firstOpen = tasks.indexWhere(_unfinished);
+      final start = firstOpen <= 0
+          ? 0
+          : (firstOpen - 1).clamp(
+              0,
+              tasks.length - MobileTaskList.collapsedCount,
+            );
+      shown = tasks.sublist(start, start + MobileTaskList.collapsedCount);
+    }
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(l10n.mobileTasksDescription, style: theme.textTheme.labelSmall),
-        // Progress counts only tracked (non-cancelled) tasks and ignores the
-        // local filter. The indicator carries the accessible label and value
-        // so the visible caption is not announced twice.
+        // One readout: completed out of tracked (cancelled tasks are not
+        // tracked), whatever the local filter shows.
         if (tracked > 0) ...[
-          const SizedBox(height: 4),
-          ExcludeSemantics(
-            child: Text(
-              progressText,
-              key: const Key('mobile-tasks-progress'),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
+          KitProgressView(
+            progress: KitProgress.known(
+              done / tracked,
+              caption: l10n.mobileTasksProgress(done, tracked),
+              key: const Key('mobile-tasks-progress-bar'),
+            ),
+          ),
+          SizedBox(height: tokens.space2),
+        ],
+        Row(
+          children: [
+            Expanded(
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: KitChip.action(
+                  key: const Key('mobile-tasks-filter'),
+                  label: l10n.mobileTasksUnfinished,
+                  selected: _unfinishedOnly,
+                  onPressed: () => setState(() {
+                    _unfinishedOnly = !_unfinishedOnly;
+                    _showAll = false;
+                  }),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 4),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: LinearProgressIndicator(
-              key: const Key('mobile-tasks-progress-bar'),
-              value: done / tracked,
-              minHeight: 6,
-              semanticsLabel: progressText,
-              semanticsValue: '${(done * 100 / tracked).round()}%',
-            ),
-          ),
-        ],
-        const SizedBox(height: 6),
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            _filterToggle(l10n),
-            TextButton.icon(
+            SizedBox(width: tokens.space2),
+            // Copies the FULL server-reported list, regardless of the local
+            // filter: the filter is a viewing aid and the label says "all".
+            KitIconButton.copy(
               key: const Key('mobile-tasks-copy-all'),
-              onPressed: _copying ? null : () => _copyAll(l10n),
-              icon: const Icon(AppIconography.copy, size: 16),
-              label: Text(l10n.mobileTasksCopyAll),
+              text: view.toPlainText,
+              tooltip: l10n.mobileTasksCopyAll,
             ),
           ],
         ),
-        if (tasks.isEmpty) Text(l10n.mobileTasksNoUnfinished),
-        for (final task in tasks)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  switch (task.status) {
-                    MobileTaskStatus.pending => AppIconography.radioEmpty,
-                    MobileTaskStatus.inProgress => AppIconography.waitingStart,
-                    MobileTaskStatus.completed => AppIconography.checkCircle,
-                    MobileTaskStatus.cancelled => AppIconography.error,
-                  },
-                  size: 18,
-                  color: task.status == MobileTaskStatus.completed
-                      ? AppTheme.successOf(theme)
-                      : AppTheme.mutedOf(theme),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(task.text, style: theme.textTheme.bodySmall),
-                      _caption(l10n, theme, task),
-                    ],
-                  ),
-                ),
-              ],
+        SizedBox(height: tokens.space2),
+        if (tasks.isEmpty)
+          KitText(
+            l10n.mobileTasksNoUnfinished,
+            key: const Key('mobile-tasks-empty'),
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
+          )
+        else
+          KitRowGroup(
+            margin: EdgeInsets.zero,
+            leadingIcons: false,
+            children: [for (final task in shown) _TaskRow(task: task)],
+          ),
+        if (folded)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: KitButton.tertiary(
+              key: const Key('mobile-tasks-show-all'),
+              label: l10n.mobileTasksShowAll(tasks.length),
+              onPressed: () => setState(() => _showAll = true),
             ),
           ),
       ],
     );
   }
+}
 
-  /// The local "unfinished only" filter. A button rather than a FilterChip:
-  /// chips lay their label out on a single line and fade it once it no
-  /// longer fits (visible at 320 px with 2x text), whereas a button label
-  /// wraps, so the full wording stays readable at any text scale. The
-  /// selected state is still announced like a chip's.
-  Widget _filterToggle(AppLocalizations l10n) {
-    final label = Text(
-      l10n.mobileTasksUnfinished,
-      key: const Key('mobile-tasks-filter-label'),
-    );
-    void toggle() => setState(() => _unfinishedOnly = !_unfinishedOnly);
-    return MergeSemantics(
-      child: Semantics(
-        selected: _unfinishedOnly,
-        child: _unfinishedOnly
-            ? FilledButton.tonalIcon(
-                key: const Key('mobile-tasks-filter'),
-                onPressed: toggle,
-                icon: const Icon(AppIconography.check, size: 16),
-                label: label,
-              )
-            : OutlinedButton.icon(
-                key: const Key('mobile-tasks-filter'),
-                onPressed: toggle,
-                icon: const Icon(AppIconography.filter, size: 16),
-                label: label,
-              ),
-      ),
-    );
-  }
+/// One task: the team's step mark, the task's words (up to three lines),
+/// its state in words, and "High priority" as a chip at the end.
+class _TaskRow extends StatelessWidget {
+  const _TaskRow({required this.task});
 
-  /// `Status · Priority` on one wrapping line. High priority is tinted so it
-  /// stands out at a glance; the words carry the meaning for everyone else.
-  Widget _caption(AppLocalizations l10n, ThemeData theme, MobileTaskItem task) {
-    final muted = theme.textTheme.labelSmall?.copyWith(
-      color: AppTheme.mutedOf(theme),
-    );
+  final MobileTaskItem task;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final status = switch (task.status) {
       MobileTaskStatus.pending => l10n.mobileTaskPending,
       MobileTaskStatus.inProgress => l10n.mobileTaskInProgress,
       MobileTaskStatus.completed => l10n.mobileTaskCompleted,
       MobileTaskStatus.cancelled => l10n.mobileTaskCancelled,
     };
+    final mark = switch (task.status) {
+      MobileTaskStatus.pending => KitTaskState.waiting,
+      MobileTaskStatus.inProgress => KitTaskState.working,
+      MobileTaskStatus.completed => KitTaskState.done,
+      MobileTaskStatus.cancelled => KitTaskState.stopped,
+    };
+    final high = task.priority == MobileTaskPriority.high;
     final priority = switch (task.priority) {
-      null => null,
-      MobileTaskPriority.high => l10n.mobileTaskPriorityHigh,
+      null || MobileTaskPriority.high => null,
       MobileTaskPriority.medium => l10n.mobileTaskPriorityMedium,
       MobileTaskPriority.low => l10n.mobileTaskPriorityLow,
     };
-    if (priority == null) return Text(status, style: muted);
-    return Text.rich(
-      TextSpan(
-        style: muted,
-        children: [
-          TextSpan(text: '$status · '),
-          TextSpan(
-            text: priority,
-            style: task.priority == MobileTaskPriority.high
-                ? TextStyle(
-                    color: theme.colorScheme.tertiary,
-                    fontWeight: FontWeight.w600,
-                  )
-                : null,
-          ),
-        ],
+    // At the end of the row; under the words at large text, so the badge
+    // never squeezes the task's own words (A11Y-8).
+    final badge = high ? KitChip(label: l10n.mobileTaskPriorityHigh) : null;
+    final large = MediaQuery.textScalerOf(context).scale(1) >= 1.3;
+    return KitRow(
+      leading: KitTaskMark(state: mark, label: status),
+      title: task.text,
+      titleMaxLines: 3,
+      supporting: TextSpan(
+        text: priority == null ? status : '$status · $priority',
       ),
+      trailing: large ? null : badge,
+      below: large ? badge : null,
     );
   }
 }
