@@ -164,6 +164,18 @@ class ChannelSetupEngine implements SetupEngine {
   bool _handoverUncertain = false;
   String? _handoverError;
   String? _finishing;
+
+  /// App-side components ([SetupComponent.app]) this engine has started,
+  /// as `job/component`, so a poll never starts one twice.
+  final _appStarted = <String>{};
+
+  /// The app-side install running now, if any.
+  ({String jobId, String id, SetupAppComponent app})? _appRun;
+
+  /// Its latest progress, laid over the job's record (the native runner
+  /// only waits for an app step and knows nothing of its bytes).
+  SetupAppProgress? _appLive;
+  DateTime? _appLiveShown;
   Timer? _poll;
   bool _polling = false;
   bool _disposed = false;
@@ -357,6 +369,16 @@ class ChannelSetupEngine implements SetupEngine {
         },
       };
     }
+    if (component.app != null) {
+      // The native job waits while the app installs it (see _runApp); a
+      // download can take longer than a start, so it waits longer.
+      return {
+        ...base,
+        'step': true,
+        'stage': l10n.setupAppStageDownloading,
+        'data': {'waitMinutes': '$appStepWaitMinutes'},
+      };
+    }
     if (component.native) {
       return {
         ...base,
@@ -383,11 +405,16 @@ class ChannelSetupEngine implements SetupEngine {
   Future<Map<String, SetupCheckResult>> _checkUntraced(
     List<SetupComponent> job,
   ) async {
+    // App-side components do not live in Linux: asked even before it is
+    // there.
+    final apps = await _checkApps(job);
     final status = await _linux.status();
-    if (!status.installed) return const {};
+    if (!status.installed) return apps;
     final scripts = <String, String>{
       for (final component in job)
-        if (!component.jobStep && component.checkScript.trim().isNotEmpty)
+        if (!component.jobStep &&
+            component.app == null &&
+            component.checkScript.trim().isNotEmpty)
           component.id: component.checkScript,
     };
     final results = scripts.isEmpty
@@ -406,7 +433,24 @@ class ChannelSetupEngine implements SetupEngine {
         version: results[component.id]?.version,
       );
     }
-    return results;
+    return {...results, ...apps};
+  }
+
+  Future<Map<String, SetupCheckResult>> _checkApps(
+    List<SetupComponent> components,
+  ) async => {
+    for (final component in components)
+      if (component.app case final app?) component.id: await _checkApp(app),
+  };
+
+  /// A check that cannot answer says "not installed": the install is
+  /// idempotent, so the worst case is a quick no-op.
+  static Future<SetupCheckResult> _checkApp(SetupAppComponent app) async {
+    try {
+      return await app.check();
+    } catch (_) {
+      return (ok: false, version: null);
+    }
   }
 
   Map<String, ComponentProgress> _afterChecks(
@@ -451,6 +495,7 @@ class ChannelSetupEngine implements SetupEngine {
     if (_starting && _handedOver != _progress.value.jobId) return;
     final current = _progress.value;
     if (current.state != SetupState.running) return;
+    _appRun?.app.cancel();
     try {
       await _linux.cancelSetup();
     } on BuiltinLinuxException {
@@ -489,14 +534,25 @@ class ChannelSetupEngine implements SetupEngine {
         if (!component.required && !component.jobStep) component,
     ];
     if (optional.isEmpty) return {};
+    final apps = await _checkApps(optional);
+    final installed = {
+      for (final entry in apps.entries)
+        if (entry.value.ok) entry.key,
+    };
+    final inLinux = [
+      for (final component in optional)
+        if (component.app == null) component,
+    ];
+    if (inLinux.isEmpty) return installed;
     try {
-      final checks = await _check(optional);
+      final checks = await _check(inLinux);
       return {
-        for (final component in optional)
+        ...installed,
+        for (final component in inLinux)
           if (checks[component.id]?.ok == true) component.id,
       };
     } on BuiltinLinuxException {
-      return {};
+      return installed;
     }
   }
 
@@ -551,6 +607,7 @@ class ChannelSetupEngine implements SetupEngine {
     }
     if (record == null) return;
     _show(record);
+    _followAppStep(record);
     if (host == SetupHostKind.termux &&
         record.state == 'running' &&
         _cancelRequested) {
@@ -568,6 +625,97 @@ class ChannelSetupEngine implements SetupEngine {
         unawaited(_finish(record, step));
       }
     }
+  }
+
+  /// Starts the app-side component the native job is waiting on, once per
+  /// job, and stops one the job no longer waits on (cancelled, or the
+  /// native side gave up on it).
+  void _followAppStep(SetupJobRecord record) {
+    final run = _appRun;
+    if (run != null &&
+        (record.jobId != run.jobId ||
+            record.state != 'running' ||
+            record.current != run.id)) {
+      run.app.cancel();
+    }
+    final id = record.current;
+    if (record.state != 'running' || id == null) return;
+    final step = record.component(id);
+    if (step == null || step.state != 'running') return;
+    SetupAppComponent? app;
+    for (final component in _jobComponents) {
+      if (component.id == id) app = component.app;
+    }
+    if (app == null || !_appStarted.add('${record.jobId}/$id')) return;
+    unawaited(_runApp(record.jobId, id, app));
+  }
+
+  /// Installs an app-side component and tells the native job how it went.
+  Future<void> _runApp(String jobId, String id, SetupAppComponent app) async {
+    _appRun = (jobId: jobId, id: id, app: app);
+    _appLive = null;
+    String? error;
+    String? version;
+    try {
+      version = await app.install(
+        onProgress: (progress) => _appProgress(jobId, progress),
+      );
+    } on SetupAppFailure catch (failure) {
+      if (failure.kind == SetupAppFailureKind.cancelled) {
+        // The job was cancelled or gave up on it: nothing to report.
+        _appDone(jobId, id);
+        return;
+      }
+      error = appFailureReason(failure.kind);
+    } catch (_) {
+      error = appFailureReason(SetupAppFailureKind.failed);
+    }
+    _appDone(jobId, id);
+    try {
+      await _linux.completeSetupStep(
+        jobId: jobId,
+        id: id,
+        ok: error == null,
+        error: error,
+        version: version == null ? null : KitRedact.text(version),
+      );
+    } on BuiltinLinuxException {
+      // Lost on the way: the next poll starts it again, which finds it
+      // installed (or resumes the download) and reports again.
+      _appStarted.remove('$jobId/$id');
+      return;
+    }
+    try {
+      await _refresh();
+    } on BuiltinLinuxException {
+      // The next poll reads the job.
+    } on TimeoutException {
+      // Likewise.
+    }
+  }
+
+  void _appDone(String jobId, String id) {
+    final run = _appRun;
+    if (run != null && run.jobId == jobId && run.id == id) _appRun = null;
+    _appLive = null;
+  }
+
+  /// Shows an app-side install's bytes at most four times a second, and at
+  /// once when its stage changes.
+  void _appProgress(String jobId, SetupAppProgress progress) {
+    if (_appRun?.jobId != jobId) return;
+    final previous = _appLive;
+    _appLive = progress;
+    final now = _clock();
+    final shown = _appLiveShown;
+    if (previous?.stage == progress.stage &&
+        shown != null &&
+        now.difference(shown) < const Duration(milliseconds: 250)) {
+      return;
+    }
+    _appLiveShown = now;
+    final record = _record;
+    if (record != null && record.jobId == jobId && !_disposed) _show(record);
   }
 
   Future<void> _finish(SetupJobRecord record, SetupJobComponent step) async {
@@ -681,11 +829,49 @@ class ChannelSetupEngine implements SetupEngine {
     _resetFloors(record.jobId);
     _traceFinished(record);
     _progress.value = progressFromRecord(
-      record,
+      _withAppLive(record, l10n),
       _jobComponents,
       l10n,
       now: _clock(),
       floors: _floors,
+    );
+  }
+
+  /// [record] with the running app-side install's own progress on its row.
+  SetupJobRecord _withAppLive(SetupJobRecord record, AppLocalizations l10n) {
+    final run = _appRun;
+    final live = _appLive;
+    if (run == null || live == null || run.jobId != record.jobId) {
+      return record;
+    }
+    return SetupJobRecord(
+      jobId: record.jobId,
+      host: record.host,
+      state: record.state,
+      current: record.current,
+      startedAt: record.startedAt,
+      updatedAt: record.updatedAt,
+      error: record.error,
+      logTail: record.logTail,
+      params: record.params,
+      components: [
+        for (final component in record.components)
+          component.id == run.id && component.state == 'running'
+              ? SetupJobComponent(
+                  id: component.id,
+                  state: component.state,
+                  weight: component.weight,
+                  stage: switch (live.stage) {
+                    SetupAppStage.downloading => l10n.setupAppStageDownloading,
+                    SetupAppStage.verifying => l10n.setupAppStageVerifying,
+                  },
+                  done: live.bytesDone,
+                  total: live.bytesTotal,
+                  startedAt: component.startedAt,
+                  data: component.data,
+                )
+              : component,
+      ],
     );
   }
 
@@ -766,6 +952,23 @@ class _WatchedProgress extends ValueNotifier<SetupProgress> {
 }
 
 // ---- pure parts, tested directly --------------------------------------------
+
+/// How long the native job waits for an app-side component: a download on
+/// a slow network can take far longer than starting OpenCode.
+const appStepWaitMinutes = 120;
+
+/// An app-side failure in words the failure matcher
+/// ([describeSetupFailure]) turns into the right plain message; it is the
+/// component's recorded error, never an exception's text.
+String appFailureReason(SetupAppFailureKind kind) => switch (kind) {
+  SetupAppFailureKind.offline => 'Could not connect to the download server',
+  SetupAppFailureKind.noSpace => 'No space left on device',
+  SetupAppFailureKind.checksum => 'The download did not match its checksum',
+  SetupAppFailureKind.unsupported => 'This phone cannot run it',
+  SetupAppFailureKind.busy => 'Another download of it is running',
+  SetupAppFailureKind.cancelled => 'cancelled',
+  SetupAppFailureKind.failed => 'The download failed',
+};
 
 /// The params a new run gets. Continue keeps what the stopped job was for
 /// (OpenCode 2, a version) unless the caller asks for something else; job

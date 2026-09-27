@@ -188,7 +188,7 @@ class SetupRunner private constructor(private val context: Context) {
             val error = try {
                 when {
                     spec.native -> runNative(spec, component)
-                    spec.step -> waitForStep(component)
+                    spec.step -> waitForStep(spec, component)
                     else -> runScript(spec, component)
                 }
             } catch (e: Throwable) {
@@ -303,9 +303,13 @@ class SetupRunner private constructor(private val context: Context) {
         return if (code == 0) null else (last ?: "exit $code").take(300)
     }
 
-    /** Waits for the app to report the step, for at most ten minutes. */
-    private fun waitForStep(component: SetupComponentStatus): String? {
-        val deadline = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(10)
+    /**
+     * Waits for the app to report the step: ten minutes, or the step's own
+     * `waitMinutes` (an app-side download, up to four hours).
+     */
+    private fun waitForStep(spec: Spec, component: SetupComponentStatus): String? {
+        val minutes = spec.data["waitMinutes"]?.toLongOrNull()?.coerceIn(1L, 240L) ?: 10L
+        val deadline = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(minutes)
         synchronized(lock) {
             while (stepResult == null && !cancelled) {
                 val left = deadline - System.currentTimeMillis()

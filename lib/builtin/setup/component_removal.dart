@@ -85,8 +85,10 @@ class ComponentRemovalService {
     }
     final presence = <String, ComponentPresence>{};
     for (final component in _registry.where((c) => !c.jobStep)) {
-      presence[component.id] =
-          status == null || status.phase == BuiltinLinuxPhase.installing
+      presence[component.id] = component.app != null
+          // In the app's own storage: Linux's state says nothing about it.
+          ? await _presence(component)
+          : status == null || status.phase == BuiltinLinuxPhase.installing
           ? ComponentPresence.unknown
           : !status.installed
           ? ComponentPresence.absent
@@ -126,6 +128,8 @@ class ComponentRemovalService {
       block = ComponentRemovalBlock.dependencyUnknown;
     } else if (component.required) {
       block = ComponentRemovalBlock.requiredComponent;
+    } else if (component.app != null) {
+      block = null;
     } else if (component.native ||
         component.removeScript == null ||
         component.removeScript!.trim().isEmpty ||
@@ -155,6 +159,15 @@ class ComponentRemovalService {
   }
 
   Future<ComponentPresence> _presence(SetupComponent component) async {
+    if (component.app case final app?) {
+      try {
+        return (await app.check()).ok
+            ? ComponentPresence.installed
+            : ComponentPresence.absent;
+      } catch (_) {
+        return ComponentPresence.unknown;
+      }
+    }
     final script = component.presenceScript;
     if (script == null || script.trim().isEmpty) {
       return ComponentPresence.unknown;
@@ -229,7 +242,9 @@ class ComponentRemovalService {
       final entry = matches.single;
       if (entry.block != null) throw ComponentRemovalException(entry.block!);
       await _checkSetup();
-      if (id == SetupComponentIds.aiTeam) {
+      if (entry.component.app case final app?) {
+        await app.remove();
+      } else if (id == SetupComponentIds.aiTeam) {
         await _team.remove();
       } else {
         final result = await _linux.run(

@@ -593,7 +593,10 @@ void main() {
         seen.add(component.id);
       }
       expect(registry.where((c) => c.jobStep).map((c) => c.id), ['start']);
-      expect(registry.last.id, 'start');
+      // The start follows everything installed inside Linux; only what the
+      // app installs into its own storage (voice typing) may come after it.
+      final start = registry.indexWhere((c) => c.id == 'start');
+      expect(registry.skip(start + 1).every((c) => c.app != null), isTrue);
     });
   });
 

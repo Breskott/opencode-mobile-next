@@ -101,6 +101,18 @@ The initial set, in dependency order:
 | `node` | Node.js | yes | Official pinned tarball (`TermuxBridge.localAgentsPins`). Byte progress, SHA-256. `npm config set prefix /usr/local`. |
 | `opencode` | OpenCode | yes | Pinned `TermuxRuntime.openCode1.pinnedVersion` by default, via the shared `openCodeUbuntuSetupScript` path. Stage progress. |
 | `aiteam` | AI Team | no, off by default | Install only: upstream Gas City, Beads and Dolt Linux releases, pinned by SHA-256. The team is turned on later, per project, from Settings › Plugins, and runs as the app's second service (docs/qa/aiteam-builtin-2026-09-24/README.md). No engine change was needed. |
+| `voice` | Voice typing | no, off by default | App-side (below): the on-device speech model, in the app's own storage. Offered only when the phone can run a pack (total RAM, CPU), at that pack's size. Runs after `start`. (docs/qa/voice-in-setup-2026-09-27/README.md) |
+
+**App-side components** (2026-09-27). A component with `app` set
+(`SetupAppComponent`: `offer`, `check`, `install`, `cancel`, `remove`) is
+installed by Dart code, not a script inside Linux, so it works on either host
+and is checked even before Linux is there. The engine checks it with a call,
+hands it to the native job as a `step` (with `data.waitMinutes`, so the
+native runner waits up to that long instead of the start's ten minutes), runs
+the install when the job reaches it, lays its bytes over the job's row, and
+completes the step. Cancel stops it; a killed app finds the job waiting (Termux)
+or interrupted (built-in) and runs it again, and the install resumes its own
+partial download.
 
 Which OpenCode: the engine installs the recommended runtime (OpenCode 1 today) without
 asking. Switching to OpenCode 2 is a setting on the "This phone" card (screen D). It is
