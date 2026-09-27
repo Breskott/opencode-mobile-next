@@ -987,12 +987,14 @@ class _KitViewerState extends State<KitViewer> {
         ],
       ],
     );
+    // The primary's own row follows the name directly: no bottom inset.
+    final topBottom = primary == null ? tokens.space2 : 0.0;
     final top = Padding(
       padding: EdgeInsetsDirectional.fromSTEB(
         tokens.gutter,
         widget.onClose == null ? tokens.space3 : tokens.space1,
         tokens.space2,
-        primary == null ? tokens.space2 : 0,
+        topBottom,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

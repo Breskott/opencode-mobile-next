@@ -1511,12 +1511,14 @@ class _KitDiffViewState extends State<KitDiffView> {
         l10n.kitDiffFilePositionSpoken(_file + 1, widget.files.length),
       if (status.isNotEmpty) status,
     ].join(', ');
+    // Without the switcher the file list follows at once: no bottom inset.
+    final rowBottom = switcher ? tokens.space2 : 0.0;
     final row = Padding(
       padding: EdgeInsetsDirectional.only(
         start: tokens.gutter,
         top: tokens.space2,
         end: tokens.gutter,
-        bottom: switcher ? tokens.space2 : 0,
+        bottom: rowBottom,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

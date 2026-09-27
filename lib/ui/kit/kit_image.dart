@@ -510,11 +510,12 @@ class _KitAvatarState extends State<KitAvatar> {
     // A failed image's badge sits on the square's bottom-end corner; the
     // initials step a ring's width towards the top start, so the badge
     // never covers the second initial (R8).
+    const badgeStep = 2 * KitTokens.avatarBadgeRing;
     final identity = failed
         ? Padding(
             padding: const EdgeInsetsDirectional.only(
-              end: 2 * KitTokens.avatarBadgeRing,
-              bottom: 2 * KitTokens.avatarBadgeRing,
+              end: badgeStep,
+              bottom: badgeStep,
             ),
             child: identityMark,
           )
