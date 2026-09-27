@@ -1331,10 +1331,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Connect to a server and the shared text opens in a new conversation.';
 
   @override
-  String get shareSessionFailed =>
-      'Shared text kept. Could not open a conversation. Retry when the connection is ready.';
-
-  @override
   String get webSourcesDisclosure =>
       'Web search is not available through this server’s app gateway. Paste a public URL and optionally an excerpt you want to include. No page is fetched. Nothing is sent to the model here.';
 
@@ -3447,11 +3443,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not connect to the saved server. Choose or fix a server, then start a new conversation.';
 
   @override
-  String launchShortcutNewTaskFailed(String error) {
-    return 'Could not start a new conversation. $error';
-  }
-
-  @override
   String get launchUiPinnedUntitled => 'Untitled conversation';
 
   @override
@@ -4791,16 +4782,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7ConnectionFailure9 => 'Codex endpoint unreachable';
 
   @override
-  String e7ConnectionFailure10(String hostLabel, int port) {
-    return '$hostLabel:$port is a local Codex listener, but nothing answered.';
-  }
-
-  @override
-  String e7ConnectionFailure11(String hostLabel, int port) {
-    return 'Nothing answered at the remote Codex endpoint $hostLabel:$port.';
-  }
-
-  @override
   String get e7ConnectionFailure12 =>
       'Start the Codex listener on this device.';
 
@@ -4850,11 +4831,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7ConnectionFailure24 => 'Nothing is listening on this device';
 
   @override
-  String e7ConnectionFailure25(String hostLabel, int port) {
-    return '$hostLabel:$port means the server should be running on this device, or reached through a tunnel that ends here. Neither answered.';
-  }
-
-  @override
   String get e7ConnectionFailure26 =>
       'Running OpenCode in Termux? Open Termux and check that the server is still running.';
 
@@ -4870,11 +4846,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7ConnectionFailure29 => 'The server did not answer in time';
 
   @override
-  String e7ConnectionFailure30(String hostLabel) {
-    return 'Something is at $hostLabel, but it did not reply. Usually the network in between, not the server.';
-  }
-
-  @override
   String get e7ConnectionFailure31 =>
       'Are you on the same network or VPN (for example Tailscale) as the computer?';
 
@@ -4885,11 +4856,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7ConnectionFailure33 => 'Server not reachable';
-
-  @override
-  String e7ConnectionFailure34(String hostLabel, int port) {
-    return 'Nothing answered at $hostLabel:$port. Either the server is not running or this device cannot reach that address.';
-  }
 
   @override
   String get e7ConnectionFailure35 =>
@@ -4920,11 +4886,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7ConnectionFailure42 => 'Could not connect';
-
-  @override
-  String e7ConnectionFailure43(String hostLabel) {
-    return 'The connection to $hostLabel failed. Details below.';
-  }
 
   @override
   String get e7ConnectionFailure44 =>
@@ -5569,18 +5530,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Language could not be saved. Your previous choice is still active. Select a language to try again.';
 
   @override
-  String get e7LocaleUiStarting => 'Starting OpenCode…';
-
-  @override
-  String get e7LocaleUiStartFailed => 'OpenCode could not start';
-
-  @override
-  String get e7LocaleUiUnknownStartupError => 'Unknown startup error';
-
-  @override
-  String get e7LocaleUiRetry => 'Try again';
-
-  @override
   String get e7LocaleUiNewSession => 'New conversation';
 
   @override
@@ -5668,9 +5617,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LocaleUiContextKeys => 'Right click / Shift + F10 / Menu';
-
-  @override
-  String get e7LocaleUiShareScopeChanged => 'Shared conversation scope changed';
 
   @override
   String get e7LocaleUiConnectionChanged => 'The server changed.';
@@ -13292,11 +13238,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String teamUiUsageChip(String usage) {
-    return 'Team today · $usage';
-  }
-
-  @override
   String teamUiUsageCostEstimated(String cost) {
     return '$cost est.';
   }
@@ -14026,15 +13967,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String teamUiHomeUpkeepToggle(int count) {
-    return 'Show team upkeep ($count)';
-  }
-
-  @override
-  String get teamUiHomeUpkeepHint =>
-      'Patrols and chores the host runs for itself';
-
-  @override
   String teamUiHomeSuspendedGroup(int count) {
     return 'Suspended on the host ($count)';
   }
@@ -14493,7 +14425,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiPhoneContinue => 'Continue';
 
   @override
-  String get teamUiPhoneSuccessTitle => 'AI team is running on this phone';
+  String get teamUiPhoneSuccessTitle => 'AI Team is running on this phone';
 
   @override
   String get teamUiPhoneRetry => 'Try again';
@@ -14691,7 +14623,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiPhoneRemove => 'Delete from this phone';
 
   @override
-  String get teamUiPhoneRemoveTitle => 'Delete the AI team from this phone?';
+  String get teamUiPhoneRemoveTitle => 'Delete AI Team from this phone?';
 
   @override
   String get teamUiPhoneRemoveBody =>
@@ -14701,7 +14633,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiPhoneRemoveConfirm => 'Delete';
 
   @override
-  String get teamUiPhoneRemoved => 'The AI team was deleted from this phone.';
+  String get teamUiPhoneRemoved => 'AI Team was deleted from this phone.';
 
   @override
   String teamUiPhoneActionFailed(String reason) {
@@ -14711,20 +14643,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamUiPhoneNotAvailable =>
       'Not available on this phone. Running a team needs the 64-bit Linux environment; this device or build can\'t provide it.';
-
-  @override
-  String get teamUiPhoneReofferTitle =>
-      'Let a team of agents work on this phone too';
-
-  @override
-  String get teamUiPhoneReofferBody =>
-      'The optional step you skipped during setup. Several coding agents work on your project while you supervise from Work; Android may stop them when the app is away.';
-
-  @override
-  String get teamUiPhoneReofferDismiss => 'Not now';
-
-  @override
-  String get teamUiPhoneReofferAction => 'Set up';
 
   @override
   String teamUiPhoneFailedNoSpace(String detail) {
@@ -15582,11 +15500,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'A phone on a USB cable reaches it with:';
 
   @override
-  String get firstRunNotifyTitle => 'Notify you when a reply is ready?';
+  String get firstRunNotifyTitle => 'Notify you when the agent needs you?';
 
   @override
   String get firstRunNotifyBody =>
-      'Leave the app while the agent works. You get a notification when it finishes or needs you. Android shows a small ongoing notification while it stays connected.';
+      'Leave the app while the agent works. You get a notification when it needs your answer. Android shows a small ongoing notification while it stays connected.';
 
   @override
   String get firstRunNotifyAccept => 'Notify me';
@@ -17271,9 +17189,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get workServerRestartBody =>
       'A running agent turn will stop. Your conversations are kept.';
-
-  @override
-  String get workChooseAnotherServer => 'Choose another server';
 
   @override
   String get workStale => 'This may be out of date';
@@ -22123,7 +22038,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamHostFormCancelTest => 'Cancel test';
 
   @override
-  String get teamHostFormSaveAnyway => 'Save without an answer';
+  String get teamHostFormSaveAnyway => 'Save the address anyway';
 
   @override
   String teamAgentScreenPause(String agent) {
@@ -22276,11 +22191,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamAgentsPausedHint => 'switched off until someone wakes it';
-
-  @override
-  String teamAgentsWake(String name) {
-    return 'Wake $name';
-  }
 
   @override
   String get teamWorkSheetMissingTitle => 'Work item gone';
@@ -25691,11 +25601,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamHomeSpentHint =>
-      'The whole team since midnight where it runs, estimated';
+      'The whole team since midnight where it runs, estimated. The host doesn’t report what each task cost.';
 
   @override
   String get teamHomeSpentPartial =>
-      'Some of today’s use has no price yet, so it cost more than this';
+      'Some of today’s use has no price yet, so it cost more than this.';
 
   @override
   String teamIntroNotFound(String server) {
@@ -26334,4 +26244,301 @@ class AppLocalizationsEn extends AppLocalizations {
   String voiceAutoSetupDetailMemoryValue(int required, int available) {
     return 'Needs $required MB; this phone has $available MB';
   }
+
+  @override
+  String get teamUiTurnOffConfirm => 'Turn off AI Team';
+
+  @override
+  String get teamHostFormSaveAnywayNote =>
+      'AI Team shows the team as not answering until the computer answers.';
+
+  @override
+  String get teamHostFormConnectionDetails => 'Connection details';
+
+  @override
+  String get consentBatteryTitle => 'Keep the server running?';
+
+  @override
+  String get consentBatteryBody =>
+      'Android may stop the server on this phone while the app is closed. Allow background running and Android asks you to confirm.';
+
+  @override
+  String get consentBatteryAllow => 'Allow background running';
+
+  @override
+  String get consentMakerTitle => 'Restart the server automatically?';
+
+  @override
+  String consentMakerBody(String maker) {
+    return '$maker phones stop apps that aren\'t allowed to start by themselves, and the server then stays off. Turn on auto-start for this app on the screen that opens.';
+  }
+
+  @override
+  String get consentMakerBodyUnnamed =>
+      'Some phones stop apps that aren\'t allowed to start by themselves, and the server then stays off. Turn on auto-start for this app on the screen that opens.';
+
+  @override
+  String get consentMakerAllow => 'Open auto-start settings';
+
+  @override
+  String get consentNotNow => 'Not now';
+
+  @override
+  String get consentSaveFailed =>
+      'Your answer couldn\'t be saved on this phone, so nothing was changed. Try again.';
+
+  @override
+  String get consentStorageFailed =>
+      'Your earlier answers on this server couldn\'t be read, so the app won\'t ask them again for now. Reopen this page to try again.';
+
+  @override
+  String get consentGroupLabel => 'Your answers';
+
+  @override
+  String get consentRowBattery => 'Background running';
+
+  @override
+  String get consentRowMaker => 'Start again by itself';
+
+  @override
+  String get consentRowNeedsYou => 'Tell me when the agent needs me';
+
+  @override
+  String get consentRowAlwaysAllow => 'Always allow offers';
+
+  @override
+  String get consentWhyBattery =>
+      'Android may stop the server on this phone while the app is closed.';
+
+  @override
+  String get consentWhyMaker =>
+      'This phone may not start the server again after it stops.';
+
+  @override
+  String get consentWhyNeedsYou =>
+      'You won\'t get a notification when the agent waits for your answer.';
+
+  @override
+  String get consentWhyUnfinished =>
+      'The question closed before you answered. Tap to answer now.';
+
+  @override
+  String get consentAllowedSystem =>
+      'The phone\'s own setting decides. Tap to check it or turn it off.';
+
+  @override
+  String get consentAllowedNeedsYou => 'Tap to change it in Notifications.';
+
+  @override
+  String get consentWhyAlwaysAllow =>
+      'Still asked each time. Tap to be offered Always allow again.';
+
+  @override
+  String get consentValueAllowed => 'Allowed';
+
+  @override
+  String get consentValueDeclined => 'Declined';
+
+  @override
+  String get consentValueUnanswered => 'Not answered';
+
+  @override
+  String consentValueDeclinedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count declined',
+      one: '1 declined',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get consentAlwaysAgainTitle => 'Ask to always allow?';
+
+  @override
+  String get consentAlwaysAgainBody =>
+      'After 3 more identical asks, the app offers to always allow them again. Nothing is allowed until you say so.';
+
+  @override
+  String get consentAlwaysAgainConfirm => 'Offer again';
+
+  @override
+  String consentAlwaysAllowQuestion(String what) {
+    return 'Asked 3 times. Always allow $what?';
+  }
+
+  @override
+  String get consentAlwaysAllowDecline => 'Keep asking';
+
+  @override
+  String get consentAlwaysAllowFailed =>
+      'The server didn\'t save Always allow. The request is still waiting; try again or answer it once.';
+
+  @override
+  String get consentAlwaysAllowTitle => 'Always allow this request?';
+
+  @override
+  String get consentNeedsYouAllow => 'Turn on notifications';
+
+  @override
+  String get bootstrapOpeningTitle => 'Opening…';
+
+  @override
+  String get bootstrapOpeningBody => 'Reading your saved servers.';
+
+  @override
+  String get bootstrapFailedTitle => 'Can\'t read saved servers';
+
+  @override
+  String get bootstrapFailedBody =>
+      'If your phone just restarted, unlock it, then try again.';
+
+  @override
+  String get shareFailedLine =>
+      'Shared text saved · couldn\'t open a conversation';
+
+  @override
+  String get shareFailedAgainLine =>
+      'Still couldn\'t open a conversation · shared text saved';
+
+  @override
+  String get shareFailedCopy => 'Copy shared text';
+
+  @override
+  String get shareFailedDiscard => 'Discard shared text';
+
+  @override
+  String get shareDiscarded => 'Shared text discarded';
+
+  @override
+  String get shareConnectionChanged =>
+      'The server or project changed while it opened. Try again.';
+
+  @override
+  String get appNewConversationFailed => 'Couldn\'t start a new conversation';
+
+  @override
+  String get rootPhoneServerStartFailed =>
+      'OpenCode on this phone didn\'t start';
+
+  @override
+  String get connectionFailureLocalCodexBody =>
+      'A local Codex listener should answer on this phone, but nothing did.';
+
+  @override
+  String get connectionFailureRemoteCodexBody =>
+      'Nothing answered at the Codex endpoint.';
+
+  @override
+  String get connectionFailureLoopbackBody =>
+      'This address means the server runs on this phone, or is reached through a tunnel that ends here. Neither answered.';
+
+  @override
+  String get connectionFailureTimedOutBody =>
+      'Something is at that address, but it did not reply. Usually the network in between, not the server.';
+
+  @override
+  String get connectionFailureNothingAnsweredBody =>
+      'Nothing answered. Either the server is not running, or this phone cannot reach its address.';
+
+  @override
+  String get connectionFailureUnknownBody =>
+      'The connection failed. What went wrong is under Details.';
+
+  @override
+  String get connectionFailureTailnetCheck =>
+      'This is a Tailscale address: is Tailscale on, on this phone and on the server?';
+
+  @override
+  String get teamHomeSpentHistoryMissing =>
+      'Part of today’s history is missing, so it cost more than this.';
+
+  @override
+  String get teamHomeSpentNotRecording =>
+      'The team isn’t counting new use right now.';
+
+  @override
+  String get teamRunCostUnreported =>
+      'Not reported for one task. The AI Team page shows today’s estimate for the whole team.';
+
+  @override
+  String teamHomeAgentsRowCrashed(int count) {
+    return '$count crashed';
+  }
+
+  @override
+  String teamHomeAgentsRowPaused(int count) {
+    return '$count paused';
+  }
+
+  @override
+  String teamHomeAgentsRowKeptOff(int count) {
+    return '$count kept off on this phone';
+  }
+
+  @override
+  String get teamHomeUpkeepTitle => 'Team upkeep';
+
+  @override
+  String get teamHomeUpkeepPatrol => 'Patrol';
+
+  @override
+  String get teamHomeUpkeepChore => 'Chore';
+
+  @override
+  String teamHomeUpkeepGroup(int count, String kind, String state) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$kind ×$count · $state',
+      one: '$kind · $state',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamAgentLooksAfterTeam => 'whole team';
+
+  @override
+  String get teamAgentLooksAfterWatchdog => 'watchdog';
+
+  @override
+  String get teamAgentLooksAfterWorkers => 'workers';
+
+  @override
+  String get teamAgentsKeptOff => 'Off on this phone';
+
+  @override
+  String get teamAgentsKeptOffHint => 'kept off so the phone can run the team';
+
+  @override
+  String teamAgentsWakePaused(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Wake the $count paused agents',
+      one: 'Wake the paused agent',
+      zero: 'Wake the paused agents',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamAgentsWakePausedHint =>
+      'They start again one at a time and pick up waiting work.';
+
+  @override
+  String get teamAgentsWakeUnconfirmed =>
+      'The team didn’t answer in time. Starting agents can keep it busy for a minute or two, so no more were woken. Check again in a minute.';
+
+  @override
+  String get teamAgentsWakeRefused =>
+      'The team didn’t wake them. Open an agent to see how it stands, or try again later.';
+
+  @override
+  String get teamAgentsWaking => 'Waking…';
+
+  @override
+  String get teamAgentsWakeCheckAgain => 'Check again';
 }

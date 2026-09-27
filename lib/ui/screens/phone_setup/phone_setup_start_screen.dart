@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../builtin/app_exit_recovery.dart'
+    show appLifecycleBridgeProvider;
 import '../../../builtin/builtin_server.dart';
 import '../../../builtin/setup/phone_setup.dart';
 import '../../../builtin/setup/preflight.dart';
@@ -17,6 +19,7 @@ import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../kit/scenes/setup_phone_scene.dart';
 import '../../kit/scenes/setup_unplugged_scene.dart';
+import '../../widgets/phone_server_consents.dart';
 import '../../widgets/product_states.dart' show productErrorText;
 import '../../widgets/setup_progress_view.dart';
 import '../servers_screen.dart' show ServersRouteRequest;
@@ -333,6 +336,17 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
           if (startFailure != null) failure = startFailure.reason(l10n);
         }
         if (failure == null) {
+          // The first start is the moment keeping it alive matters (P6.7):
+          // asked once per server, before connecting; later starts ask
+          // nothing.
+          if (!mounted) return;
+          await askPhoneServerConsents(
+            context,
+            connection: connection,
+            bridge: ref.read(appLifecycleBridgeProvider),
+            profileId: profile.id,
+          );
+          if (!mounted) return;
           await connection.connect(profile);
           if (!connection.hasConnectedServer) {
             final error = connection.lastError;

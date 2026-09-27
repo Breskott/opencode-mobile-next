@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../builtin/setup/phone_setup.dart';
 import '../../../builtin/setup/setup_contract.dart';
+import '../../kit/kit.dart';
 import 'phone_setup_customize_sheet.dart';
 import 'phone_setup_progress_screen.dart';
 import 'phone_setup_ready_screen.dart';
@@ -16,7 +17,7 @@ import 'phone_setup_start_screen.dart';
 /// Screen A: "On this phone".
 Future<void> openPhoneSetupStart(BuildContext context) =>
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      KitPageRoute<void>(
         settings: const RouteSettings(name: 'phone-setup-start'),
         builder: (_) => const PhoneSetupStartScreen(),
       ),
@@ -57,13 +58,13 @@ Future<void> openPhoneSetupProgress(
 const phoneSetupProgressRouteName = 'phone-setup-progress';
 const phoneSetupReadyRouteName = 'phone-setup-ready';
 
-Route<void> _progressRoute(bool firstSetup) => MaterialPageRoute<void>(
+Route<void> _progressRoute(bool firstSetup) => KitPageRoute<void>(
   settings: const RouteSettings(name: phoneSetupProgressRouteName),
   builder: (_) => PhoneSetupProgressScreen(firstSetup: firstSetup),
 );
 
 Route<void> _readyRoute([SetupHostKind host = SetupHostKind.builtin]) =>
-    MaterialPageRoute<void>(
+    KitPageRoute<void>(
       settings: const RouteSettings(name: phoneSetupReadyRouteName),
       builder: (_) => PhoneSetupReadyScreen(host: host),
     );
