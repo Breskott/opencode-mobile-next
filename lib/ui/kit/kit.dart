@@ -118,6 +118,7 @@ export 'motion/kit_reveal.dart';
 export 'motion/kit_tab_switcher.dart';
 export 'glass/kit_glass.dart';
 export 'chat/kit_message.dart';
+export 'chat/kit_turn.dart';
 export 'kit_request_sheet.dart';
 export 'kit_context_region.dart';
 export 'kit_scrollbar.dart';
