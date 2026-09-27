@@ -452,50 +452,34 @@ class SdkProductRepository extends ProductRepository
   }
 
   @override
-  Future<String> upgradeServer(String target) => _guard(
-    'Could not upgrade OpenCode',
-    () async {
-      final exactTarget = target.trim();
-      if (target != exactTarget || !isExactServerVersion(exactTarget)) {
-        throw const ProductException(
-          'OpenCode supplied an invalid update version',
-        );
-      }
-      final response = await () async {
-        try {
-          return await _client.getGlobalApi().globalUpgrade(
-            globalUpgradeRequest: sdk.GlobalUpgradeRequest(target: exactTarget),
+  Future<String> upgradeServer(String target) =>
+      _guard('Could not upgrade OpenCode', () async {
+        final exactTarget = target.trim();
+        if (target != exactTarget || !isExactServerVersion(exactTarget)) {
+          throw const ProductException(
+            'OpenCode supplied an invalid update version',
           );
-        } on sdk.OpenCodeApiException catch (error) {
-          final payload = error.rawPayload;
-          final detail = payload is Map
-              ? payload['error']?.toString().trim()
-              : null;
-          if (detail?.isNotEmpty == true) throw ProductException(detail!);
-          rethrow;
         }
-      }();
-      final result = response.data?.objectValue;
-      if (result == null) {
-        throw const ProductException(
-          'OpenCode returned an invalid upgrade result',
+        final response = await _client.getGlobalApi().globalUpgrade(
+          globalUpgradeRequest: sdk.GlobalUpgradeRequest(target: exactTarget),
         );
-      }
-      if (result['success'] != true) {
-        final error = result['error']?.toString().trim();
-        throw ProductException(
-          error?.isNotEmpty == true ? error! : 'OpenCode could not upgrade',
-        );
-      }
-      final installed = result['version']?.toString().trim() ?? '';
-      if (installed != exactTarget) {
-        throw const ProductException(
-          'OpenCode did not confirm the requested version',
-        );
-      }
-      return installed;
-    },
-  );
+        final result = response.data?.objectValue;
+        if (result == null) {
+          throw const ProductException(
+            'OpenCode returned an invalid upgrade result',
+          );
+        }
+        if (result['success'] != true) {
+          throw ProductException('Could not upgrade OpenCode', cause: result);
+        }
+        final installed = result['version']?.toString().trim() ?? '';
+        if (installed != exactTarget) {
+          throw const ProductException(
+            'OpenCode did not confirm the requested version',
+          );
+        }
+        return installed;
+      });
 
   @override
   Future<void> writeClientLog({
@@ -2550,30 +2534,11 @@ class SdkProductRepository extends ProductRepository
       return await action();
     } on ProductException {
       rethrow;
-    } on sdk.OpenCodeApiException catch (error) {
-      final detail = _deepErrorMessage(error.rawPayload);
-      if (detail?.isNotEmpty == true) throw ProductException(detail!);
-      throw ProductException(message, cause: error);
     } catch (error) {
+      // A typed server payload is still untrusted prose. Preserve its full
+      // cause for redacted Details, never as the authored product message.
       throw ProductException(message, cause: error);
     }
-  }
-
-  static String? _deepErrorMessage(Object? value) {
-    if (value is Map) {
-      final direct = value['message']?.toString().trim();
-      if (direct?.isNotEmpty == true) return direct;
-      for (final nested in value.values) {
-        final found = _deepErrorMessage(nested);
-        if (found != null) return found;
-      }
-    } else if (value is List) {
-      for (final nested in value) {
-        final found = _deepErrorMessage(nested);
-        if (found != null) return found;
-      }
-    }
-    return null;
   }
 
   static Future<T> _guard<T>(
