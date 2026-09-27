@@ -369,5 +369,12 @@ rm -f /usr/local/bin/gc /usr/local/bin/bd /usr/local/bin/dolt
 rm -rf $home $cache /root/aiteam /root/.gc
 ''';
 
+  /// What [removeScript] would delete, in kilobytes (disk usage, links
+  /// not followed). Missing paths count nothing.
+  static const sizeScript =
+      '''set -u
+du -sk $home $cache /root/aiteam /root/.gc 2>/dev/null | awk '{s+=\$1} END {print s+0}'
+''';
+
   static String _quote(String value) => "'${value.replaceAll("'", "'\"'\"'")}'";
 }

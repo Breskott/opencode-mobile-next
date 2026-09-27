@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import '../../termux/bridge.dart' show TermuxBridgeException;
+import '../../termux/team_runtime.dart';
 import '../builtin_linux.dart';
 import '../team/builtin_team.dart';
 import 'aiteam_scripts.dart';
@@ -61,10 +63,12 @@ class ComponentRemovalService {
   ComponentRemovalService({
     required BuiltinLinux linux,
     required List<SetupComponent> registry,
-    required BuiltinTeam team,
+    BuiltinTeam? team,
+    Future<void> Function()? removeTeam,
   }) : _linux = linux,
        _registry = List.unmodifiable(registry),
-       _team = team {
+       _team = team,
+       _removeTeam = removeTeam {
     if (_registry.map((c) => c.id).toSet().length != _registry.length) {
       throw ArgumentError('Component ids must be unique.');
     }
@@ -72,7 +76,12 @@ class ComponentRemovalService {
 
   final BuiltinLinux _linux;
   final List<SetupComponent> _registry;
-  final BuiltinTeam _team;
+  final BuiltinTeam? _team;
+
+  /// Removes AI Team on a host whose team is not the in-app [BuiltinTeam]
+  /// (Termux: [termuxTeamRemover]). Without it or [_team], AI Team is
+  /// [ComponentRemovalBlock.unsupported].
+  final Future<void> Function()? _removeTeam;
   final _busy = ValueNotifier(false);
   ValueListenable<bool> get busy => _busy;
 
@@ -134,7 +143,8 @@ class ComponentRemovalService {
         component.removeScript == null ||
         component.removeScript!.trim().isEmpty ||
         (component.id == SetupComponentIds.aiTeam &&
-            component.removeScript != AiTeamScripts.removeScript)) {
+            (component.removeScript != AiTeamScripts.removeScript ||
+                (_team == null && _removeTeam == null)))) {
       block = ComponentRemovalBlock.unsupported;
     } else {
       block = null;
@@ -245,7 +255,12 @@ class ComponentRemovalService {
       if (entry.component.app case final app?) {
         await app.remove();
       } else if (id == SetupComponentIds.aiTeam) {
-        await _team.remove();
+        final removeTeam = _removeTeam;
+        if (removeTeam != null) {
+          await removeTeam();
+        } else {
+          await _team!.remove();
+        }
       } else {
         final result = await _linux.run(
           entry.component.removeScript!,
@@ -267,4 +282,60 @@ class ComponentRemovalService {
       _busy.value = false;
     }
   }
+
+  /// What removing [id] gives back, in bytes, measured now: the app-side
+  /// component's own size, or the component's [SetupComponent.sizeScript]
+  /// (kilobytes on its last line). Null when it cannot be measured or
+  /// measures nothing: callers then leave the figure out, never "0 B".
+  Future<int?> freedBytes(String id, {Duration timeout = _sizeTimeout}) async {
+    final matches = _registry.where((c) => c.id == id);
+    if (matches.isEmpty) return null;
+    final component = matches.first;
+    try {
+      if (component.app case final app?) {
+        final offer = await app.offer().timeout(timeout);
+        if (offer == null || !offer.installed) return null;
+        return offer.downloadBytes > 0 ? offer.downloadBytes : null;
+      }
+      final script = component.sizeScript;
+      if (script == null || script.trim().isEmpty) return null;
+      final result = await _linux.run(script, timeout: timeout);
+      if (!result.ok) return null;
+      final lines = result.output.trim().split('\n');
+      final kilobytes = int.tryParse(lines.last.trim());
+      if (kilobytes == null || kilobytes <= 0) return null;
+      return kilobytes * 1024;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static const _sizeTimeout = Duration(seconds: 20);
+
+  /// AI Team's removal on the Termux host: the Termux team manager stops
+  /// the supervisor and deletes its programs and store (`aiteam.sh
+  /// remove`), then the component's own [AiTeamScripts.removeScript] runs
+  /// in the same Ubuntu through [host], so both hosts leave the same
+  /// nothing behind (the presence probe then finds no trace). Throws on a
+  /// failed step; no manager text crosses this API.
+  static Future<void> Function() termuxTeamRemover({
+    required TermuxTeamRuntime runtime,
+    required BuiltinLinux host,
+  }) => () async {
+    try {
+      final status = await runtime.remove();
+      if (status.phase == TeamRuntimePhase.failed) {
+        throw const ComponentRemovalException(ComponentRemovalBlock.failed);
+      }
+    } on TermuxBridgeException {
+      throw const ComponentRemovalException(ComponentRemovalBlock.failed);
+    }
+    final result = await host.run(
+      AiTeamScripts.removeScript,
+      timeout: const Duration(minutes: 5),
+    );
+    if (!result.ok) {
+      throw const ComponentRemovalException(ComponentRemovalBlock.failed);
+    }
+  };
 }

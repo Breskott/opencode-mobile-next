@@ -4685,7 +4685,6 @@
   "aiteamComponentStopped": "الفريق الذكي · متوقف",
   "aiteamComponentProjects": "يعمل على {projects}",
   "aiteamComponentStart": "بدء الفريق الذكي",
-  "aiteamComponentStop": "إيقاف الفريق الذكي",
   "aiteamComponentFailed": "تعذّر بدء الفريق الذكي: {reason}",
   "aiteamComponentFailedExited": "توقف من تلقاء نفسه",
   "aiteamComponentFailedTimeout": "لم يرد في الوقت المحدد",

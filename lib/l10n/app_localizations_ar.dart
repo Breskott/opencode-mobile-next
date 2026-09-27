@@ -17562,9 +17562,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get aiteamComponentStart => 'بدء الفريق الذكي';
 
   @override
-  String get aiteamComponentStop => 'إيقاف الفريق الذكي';
-
-  @override
   String aiteamComponentFailed(String reason) {
     return 'تعذّر بدء الفريق الذكي: $reason';
   }
@@ -25140,12 +25137,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String removeFromPhoneKeepBody(String size) {
-    return 'OpenCode and its tools are removed and $size comes back. Your projects stay on this phone and come back when you set up again.';
+    return 'OpenCode and its tools are removed and $size comes back.';
   }
 
   @override
   String get removeFromPhoneKeepBodyUnmeasured =>
-      'OpenCode and its tools are removed. Your projects stay on this phone and come back when you set up again.';
+      'OpenCode and its tools are removed.';
 
   @override
   String get removeFromPhoneKeepConfirm => 'Remove OpenCode, keep my projects';
@@ -26231,4 +26228,106 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get whileAwayMark => 'Done by itself';
+
+  @override
+  String get aiteamComponentTurnOff => 'Turn off AI Team';
+
+  @override
+  String get aiteamComponentTurnOffTitle => 'Turn off AI Team?';
+
+  @override
+  String get aiteamComponentTurnOffBody =>
+      'The team stops and stays off until you turn it on again.';
+
+  @override
+  String get aiteamComponentTurnOffKept =>
+      'Its tasks and settings, and your projects, stay';
+
+  @override
+  String get aiteamComponentTurnOffFailed =>
+      'AI Team could not be turned off. Try again, or restart the app.';
+
+  @override
+  String thisPhoneRemoveTool(String tool) {
+    return 'Remove $tool';
+  }
+
+  @override
+  String thisPhoneRemoveToolTitle(String tool) {
+    return 'Remove $tool from this phone?';
+  }
+
+  @override
+  String thisPhoneRemoveToolBody(String size) {
+    return 'About $size comes back. You can add it again from Add tools.';
+  }
+
+  @override
+  String get thisPhoneRemoveToolBodyUnmeasured =>
+      'You can add it again from Add tools.';
+
+  @override
+  String thisPhoneRemoveToolNeededBy(String tools) {
+    return 'Needed by $tools';
+  }
+
+  @override
+  String get thisPhoneRemoveToolDetail =>
+      'Deletes it from this phone. Your projects stay.';
+
+  @override
+  String get thisPhoneRemovePythonDetail =>
+      'Deletes pip and venv. Python and your projects stay.';
+
+  @override
+  String get thisPhoneRemovePythonLost =>
+      'pip and venv are deleted, with the packages only they used';
+
+  @override
+  String get thisPhoneRemovePythonKept =>
+      'Python itself and your projects stay';
+
+  @override
+  String get thisPhoneRemoveTeamDetail =>
+      'Deletes the team\'s programs, tasks and settings. Projects stay.';
+
+  @override
+  String get thisPhoneRemoveTeamLost =>
+      'The team\'s programs, tasks and settings are deleted';
+
+  @override
+  String get thisPhoneRemoveTeamLostWork =>
+      'Team work not yet brought into your projects is lost';
+
+  @override
+  String get thisPhoneRemoveTeamKept =>
+      'Your project files and their git history stay';
+
+  @override
+  String get thisPhoneRemoveVoiceDetail =>
+      'Deletes the speech model. Voice typing stops until you add it again.';
+
+  @override
+  String get thisPhoneRemoveVoiceLost =>
+      'Voice typing stops until you add it again';
+
+  @override
+  String get thisPhoneRemoveToolKept => 'Your projects stay';
+
+  @override
+  String get removeFromPhoneKeepLost =>
+      'Conversations and settings inside OpenCode are deleted';
+
+  @override
+  String get removeFromPhoneKeepKept =>
+      'Your projects stay and come back when you set up again';
+
+  @override
+  String removeFromPhoneKeepKeptSize(String size) {
+    return 'Your projects ($size) stay and come back when you set up again';
+  }
+
+  @override
+  String get removeFromPhoneDeleteLost =>
+      'Project files not saved anywhere else are lost for good';
 }

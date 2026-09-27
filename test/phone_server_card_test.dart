@@ -538,9 +538,17 @@ void main() {
       // What survives is said first: the default keeps the projects.
       expect(
         find.text(
-          'OpenCode and its tools are removed and 700.0 MB comes back. Your '
-          'projects stay on this phone and come back when you set up again.',
+          'OpenCode and its tools are removed and 700.0 MB comes back.',
         ),
+        findsOneWidget,
+      );
+      // What goes and what stays, line by line, with the projects' size.
+      expect(
+        find.text('Conversations and settings inside OpenCode are deleted'),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('phone-server-remove-kept')),
         findsOneWidget,
       );
       expect(

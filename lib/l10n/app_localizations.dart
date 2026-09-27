@@ -28037,12 +28037,6 @@ abstract class AppLocalizations {
   /// **'Start AI Team'**
   String get aiteamComponentStart;
 
-  /// Button that stops the in-app team
-  ///
-  /// In en, this message translates to:
-  /// **'Stop AI Team'**
-  String get aiteamComponentStop;
-
   /// A failed turn-on or start, with the reason
   ///
   /// In en, this message translates to:
@@ -39330,13 +39324,13 @@ abstract class AppLocalizations {
   /// Remove from this phone: the default choice's body, with the space freed, e.g. '1.2 GB'
   ///
   /// In en, this message translates to:
-  /// **'OpenCode and its tools are removed and {size} comes back. Your projects stay on this phone and come back when you set up again.'**
+  /// **'OpenCode and its tools are removed and {size} comes back.'**
   String removeFromPhoneKeepBody(String size);
 
   /// Remove from this phone: the default choice's body when the space could not be measured
   ///
   /// In en, this message translates to:
-  /// **'OpenCode and its tools are removed. Your projects stay on this phone and come back when you set up again.'**
+  /// **'OpenCode and its tools are removed.'**
   String get removeFromPhoneKeepBodyUnmeasured;
 
   /// Remove from this phone: the default confirm button
@@ -40880,6 +40874,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Done by itself'**
   String get whileAwayMark;
+
+  /// In-app AI Team section: the quiet action that stops the team for good, until it is turned on again (asks first)
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off AI Team'**
+  String get aiteamComponentTurnOff;
+
+  /// In-app AI Team section: the turn-off question's title
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off AI Team?'**
+  String get aiteamComponentTurnOffTitle;
+
+  /// In-app AI Team section: the turn-off question's body
+  ///
+  /// In en, this message translates to:
+  /// **'The team stops and stays off until you turn it on again.'**
+  String get aiteamComponentTurnOffBody;
+
+  /// In-app AI Team section: the turn-off question's line saying what stays
+  ///
+  /// In en, this message translates to:
+  /// **'Its tasks and settings, and your projects, stay'**
+  String get aiteamComponentTurnOffKept;
+
+  /// In-app AI Team section: turning the team off failed; the technical text is folded under Details
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team could not be turned off. Try again, or restart the app.'**
+  String get aiteamComponentTurnOffFailed;
+
+  /// This phone: the destructive row, and its question's confirm button, that removes one installed tool, e.g. 'Remove Python'
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {tool}'**
+  String thisPhoneRemoveTool(String tool);
+
+  /// This phone: the title of the question before one tool is removed
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {tool} from this phone?'**
+  String thisPhoneRemoveToolTitle(String tool);
+
+  /// This phone: the remove-a-tool question's body with the measured space it frees, e.g. '180.2 MB'. The title names the tool.
+  ///
+  /// In en, this message translates to:
+  /// **'About {size} comes back. You can add it again from Add tools.'**
+  String thisPhoneRemoveToolBody(String size);
+
+  /// This phone: the remove-a-tool question's body when the space could not be measured. The title names the tool.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add it again from Add tools.'**
+  String get thisPhoneRemoveToolBodyUnmeasured;
+
+  /// This phone: why a tool cannot be removed now: what still uses it, e.g. 'Needed by AI Team'
+  ///
+  /// In en, this message translates to:
+  /// **'Needed by {tools}'**
+  String thisPhoneRemoveToolNeededBy(String tools);
+
+  /// This phone: under 'Remove <tool>' for a tool with no line of its own: what removing does
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes it from this phone. Your projects stay.'**
+  String get thisPhoneRemoveToolDetail;
+
+  /// This phone: under 'Remove Python': what removing does
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes pip and venv. Python and your projects stay.'**
+  String get thisPhoneRemovePythonDetail;
+
+  /// Remove Python question: what goes
+  ///
+  /// In en, this message translates to:
+  /// **'pip and venv are deleted, with the packages only they used'**
+  String get thisPhoneRemovePythonLost;
+
+  /// Remove Python question: what stays
+  ///
+  /// In en, this message translates to:
+  /// **'Python itself and your projects stay'**
+  String get thisPhoneRemovePythonKept;
+
+  /// This phone: under 'Remove AI Team': what removing does
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes the team\'s programs, tasks and settings. Projects stay.'**
+  String get thisPhoneRemoveTeamDetail;
+
+  /// Remove AI Team question: what goes
+  ///
+  /// In en, this message translates to:
+  /// **'The team\'s programs, tasks and settings are deleted'**
+  String get thisPhoneRemoveTeamLost;
+
+  /// Remove AI Team question: the team's own copies of the projects on this phone go too
+  ///
+  /// In en, this message translates to:
+  /// **'Team work not yet brought into your projects is lost'**
+  String get thisPhoneRemoveTeamLostWork;
+
+  /// Remove AI Team question: what stays
+  ///
+  /// In en, this message translates to:
+  /// **'Your project files and their git history stay'**
+  String get thisPhoneRemoveTeamKept;
+
+  /// This phone: under 'Remove Voice typing': what removing does
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes the speech model. Voice typing stops until you add it again.'**
+  String get thisPhoneRemoveVoiceDetail;
+
+  /// Remove Voice typing question: what goes with the model
+  ///
+  /// In en, this message translates to:
+  /// **'Voice typing stops until you add it again'**
+  String get thisPhoneRemoveVoiceLost;
+
+  /// Remove a tool question: what stays, for a tool with no line of its own
+  ///
+  /// In en, this message translates to:
+  /// **'Your projects stay'**
+  String get thisPhoneRemoveToolKept;
+
+  /// Remove from this phone: the default choice's line saying what it deletes
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations and settings inside OpenCode are deleted'**
+  String get removeFromPhoneKeepLost;
+
+  /// Remove from this phone: the default choice's line saying what stays, before the projects were measured
+  ///
+  /// In en, this message translates to:
+  /// **'Your projects stay and come back when you set up again'**
+  String get removeFromPhoneKeepKept;
+
+  /// Remove from this phone: the default choice's line saying what stays, with the projects' measured size, e.g. '1.2 GB'
+  ///
+  /// In en, this message translates to:
+  /// **'Your projects ({size}) stay and come back when you set up again'**
+  String removeFromPhoneKeepKeptSize(String size);
+
+  /// Remove from this phone: the heavy delete's line naming the loss
+  ///
+  /// In en, this message translates to:
+  /// **'Project files not saved anywhere else are lost for good'**
+  String get removeFromPhoneDeleteLost;
 }
 
 class _AppLocalizationsDelegate
