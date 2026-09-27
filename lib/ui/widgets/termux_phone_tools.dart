@@ -64,9 +64,7 @@ class _TermuxPhoneToolsRowsState extends State<TermuxPhoneToolsRows> {
   }
 
   Future<void> _open(Widget screen) async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => screen));
+    await pushKitPage<void>(context, (_) => screen);
     if (mounted) unawaited(_load());
   }
 
@@ -217,10 +215,9 @@ class _TermuxRunawayWatcherState extends State<TermuxRunawayWatcher> {
         onDismiss: () =>
             setState(() => TermuxRunawayWatcher._dismissed.add(identity)),
         onOpen: () async {
-          await Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const TermuxProcessesScreen(),
-            ),
+          await pushKitPage<void>(
+            context,
+            (_) => const TermuxProcessesScreen(),
           );
           unawaited(_check());
         },

@@ -272,8 +272,12 @@ void main() {
       find.descendant(of: current, matching: find.text('Work server')),
       findsOneWidget,
     );
+    // One current mark: its line starts with the state word.
     expect(
-      find.descendant(of: current, matching: find.text('Connected')),
+      find.descendant(
+        of: current,
+        matching: find.textContaining('Connected · ', findRichText: true),
+      ),
       findsOneWidget,
     );
     // Saved servers: every other profile, never the current one twice.
@@ -287,23 +291,35 @@ void main() {
       findsNothing,
     );
     expect(
-      inSheet(find.text('https://home.example.test:4096')),
+      inSheet(
+        find.textContaining(
+          'https://home.example.test:4096',
+          findRichText: true,
+        ),
+      ),
       findsOneWidget,
     );
 
-    // Order: current, saved, Add, Manage, and Disconnect last.
+    // Order: current, saved, Add, Manage.
     double top(String key) => tester.getTopLeft(find.byKey(ValueKey(key))).dy;
     final order = [
       top('server-switcher-current'),
       top('server-switcher-profile-home'),
       top('server-switcher-add'),
       top('server-switcher-manage'),
-      top('server-switcher-disconnect'),
     ];
     expect(order, [...order]..sort());
+    expect(find.text('Servers'), findsOneWidget);
     expect(inSheet(find.text('Add server')), findsOneWidget);
     expect(inSheet(find.text('Manage servers')), findsOneWidget);
-    expect(inSheet(find.text('Disconnect')), findsOneWidget);
+    // Disconnect is in the current row's menu, which a tap opens.
+    expect(find.text('Disconnect'), findsNothing);
+    await tester.tap(current);
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('server-switcher-disconnect')),
+      findsOneWidget,
+    );
     // No Termux on this platform: the phone card has nothing to show.
     expect(find.byKey(const ValueKey('termux-running-server')), findsNothing);
   });
@@ -368,13 +384,15 @@ void main() {
   ) async {
     final connection = await pumpShell(tester, profiles: [work]);
     await openSwitcher(tester);
-    expect(inSheet(find.text('Connected')), findsOneWidget);
+    Finder word(String text) =>
+        inSheet(find.textContaining('$text · ', findRichText: true));
+    expect(word('Connected'), findsOneWidget);
     expect(inSheet(find.text('Saved servers')), findsNothing);
     connection.status = StreamStatus.reconnecting;
     connection.notifyListeners();
     await tester.pump();
-    expect(inSheet(find.text('Reconnecting')), findsOneWidget);
-    expect(inSheet(find.text('Connected')), findsNothing);
+    expect(word('Reconnecting'), findsOneWidget);
+    expect(word('Connected'), findsNothing);
   });
 
   testWidgets('tapping a saved server runs the Servers connect flow', (
@@ -460,8 +478,16 @@ void main() {
   ) async {
     final connection = await pumpShell(tester, profiles: [work, home]);
     await openSwitcher(tester);
-    await tester.tap(find.byKey(const ValueKey('server-switcher-disconnect')));
-    await tester.pumpAndSettle();
+    Future<void> disconnect() async {
+      await tester.tap(find.byKey(const ValueKey('server-switcher-current')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('server-switcher-disconnect')),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await disconnect();
     expect(
       find.byKey(const ValueKey('disconnect-confirm-sheet')),
       findsOneWidget,
@@ -480,8 +506,7 @@ void main() {
     expect(find.byKey(const ValueKey('server-switcher-sheet')), findsOneWidget);
     expect(find.byType(ServersScreen), findsNothing);
 
-    await tester.tap(find.byKey(const ValueKey('server-switcher-disconnect')));
-    await tester.pumpAndSettle();
+    await disconnect();
     await tester.tap(find.byKey(const ValueKey('confirm-disconnect')));
     await tester.pumpAndSettle();
     expect(connection.disconnects, 1);
@@ -626,7 +651,9 @@ void main() {
           locale: locale,
         );
         expect(tester.takeException(), isNull);
-        final bar = tester.getRect(find.byType(AppBar));
+        // The shell's top controls have no AppBar since the shell revamp:
+        // the button stays inside the window.
+        final bar = Offset.zero & const Size(320, 640);
         final button = tester.getRect(
           find.byKey(const ValueKey('server-switcher-button')),
         );
@@ -644,7 +671,6 @@ void main() {
           'server-switcher-profile-work',
           'server-switcher-add',
           'server-switcher-manage',
-          'server-switcher-disconnect',
         ]) {
           final finder = find.byKey(ValueKey(key));
           await tester.ensureVisible(finder);
