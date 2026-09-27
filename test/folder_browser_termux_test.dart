@@ -13,6 +13,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/termux/termux_folders.dart';
+import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/screens/project_folder_actions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -172,9 +173,10 @@ void main() {
     return (controller, picked);
   }
 
+  // The folder shown is a mono KitText (the browser is kit-only).
   String shownPath(WidgetTester tester) => tester
-      .widget<Text>(find.byKey(const ValueKey('folder-browser-path')))
-      .data!;
+      .widget<KitText>(find.byKey(const ValueKey('folder-browser-path')))
+      .text;
 
   testWidgets('the Termux server browses its folders through Termux', (
     tester,

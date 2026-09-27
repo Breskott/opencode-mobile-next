@@ -199,16 +199,30 @@ void main() {
     expect(find.text('Cloud runner'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
+    // Discover existing lives in the top bar's overflow (map rationale).
+    await tester.tap(find.byKey(const ValueKey('managed-workspaces-menu')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('sync-managed-workspaces')));
     await tester.pumpAndSettle();
     expect(repository.syncCalls, 1);
+    // The outcome is said at the top of the list, not in a snackbar.
+    await tester.scrollUntilVisible(
+      find.text('Discovery finished'),
+      -240,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('managed-workspaces-list')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(find.text('Discovery finished'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.byKey(const ValueKey('create-managed-workspace')));
     await tester.pumpAndSettle();
     expect(find.text('New cloud environment'), findsOneWidget);
     expect(tester.takeException(), isNull);
-    await tester.tap(find.text('Cancel'));
+    // The sheet closes with its Close button (KIT-19).
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
   });
 
@@ -254,26 +268,19 @@ void main() {
       ManagedWorkspacesScreen(controller: controller, project: _project),
     );
 
+    // The row's rarer acts are on long-press (KIT-28), one verb: Remove.
     final tile = find.byKey(const ValueKey('managed-workspace-wrk_remote'));
+    await tester.longPress(tile);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('environment-menu-remove')));
+    await tester.pumpAndSettle();
+    // Nothing is removed until the name is typed.
     await tester.tap(
-      find.descendant(of: tile, matching: find.byType(PopupMenuButton<String>)),
+      find.byKey(const ValueKey('confirm-remove-managed-workspace')),
+      warnIfMissed: false,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
-    expect(
-      tester
-          .widget<FilledButton>(
-            find.descendant(
-              of: find.byKey(
-                const ValueKey('confirm-remove-managed-workspace'),
-              ),
-              matching: find.byType(FilledButton),
-            ),
-          )
-          .onPressed,
-      isNull,
-    );
+    expect(repository.removedID, isNull);
     await tester.enterText(
       find.byKey(const ValueKey('kit-confirm-typed-name')),
       'Phone runner',

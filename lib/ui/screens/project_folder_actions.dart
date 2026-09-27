@@ -8,8 +8,10 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../termux/bridge.dart';
 import '../../termux/termux_folders.dart';
+import '../app_iconography.dart';
+import '../kit/kit.dart';
 import '../widgets/folder_browser.dart';
-import '../widgets/product_states.dart';
+import '../widgets/product_states.dart' show productErrorText;
 import '../widgets/termux_running_server_entry.dart' show isManagedPhoneProfile;
 
 /// The ways a workspace gets a project folder: create one on a server this
@@ -52,34 +54,52 @@ class ProjectFolderActions {
   /// Asks for a folder name, creates `/root/projects/<name>` on the managed
   /// server, and opens it. Returns the opened directory, or null when the
   /// user cancelled or the folder could not be created or opened.
+  ///
+  /// The folder is made while the dialog is open, so a failure is said
+  /// under the name with the name kept (map project-folder-new-dialog,
+  /// "create fails").
   static Future<String?> createFolder(
     BuildContext context,
     ConnectionController controller,
   ) async {
-    final name = await showDialog<String>(
-      context: context,
-      builder: (_) => const _NewFolderDialog(),
-    );
-    if (name == null || !context.mounted) return null;
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     // Termux never serves 4097, so the address alone picks the right
     // creator here; were Ubuntu missing, the bridge says so itself.
-    if (looksLikeInAppServer(controller.profile)) {
-      return _createInApp(
-        context,
-        controller,
-        BuiltinProjectFolders(_linux),
-        BuiltinProjectFolders.pathFor(name),
-      );
-    }
-    final create = createFolderOverride ?? TermuxBridge.createProjectFolder;
-    String path;
-    try {
-      path = await create(name);
-    } catch (error) {
-      if (context.mounted) _notify(context, productErrorText(error));
-      return null;
-    }
-    if (!context.mounted) return null;
+    final inApp = looksLikeInAppServer(controller.profile);
+    String? made;
+    final name = await showKitInputDialog(
+      context,
+      title: l10n.projectFolderCreate,
+      label: l10n.projectFolderNameLabel,
+      confirmLabel: l10n.projectFolderCreateAction,
+      hint: l10n.projectFolderNameHint,
+      helper: l10n.projectFolderCreateHelper(managedProjectsDirectory),
+      cancelLabel: l10n.projectFolderCancel,
+      validate: projectFolderNameProblem,
+      fieldKey: const ValueKey('new-folder-name'),
+      confirmKey: const ValueKey('new-folder-create'),
+      onSubmit: (value) async {
+        final name = value.trim();
+        try {
+          if (inApp) {
+            made = (await BuiltinProjectFolders(
+              _linux,
+            ).create(BuiltinProjectFolders.pathFor(name))).path;
+          } else {
+            final create =
+                createFolderOverride ?? TermuxBridge.createProjectFolder;
+            made = await create(name);
+          }
+          return null;
+        } on BuiltinLinuxException catch (error) {
+          return l10n.projectFolderCreateFailed(error.message);
+        } catch (error) {
+          return productErrorText(error);
+        }
+      },
+    );
+    final path = made;
+    if (name == null || path == null || !context.mounted) return null;
     return _open(context, controller, path);
   }
 
@@ -198,7 +218,11 @@ class ProjectFolderActions {
       made = await termux.create(path);
     } on FolderListException catch (error) {
       if (context.mounted) {
-        _notify(context, l10n.projectFolderCreateFailed(error.toString()));
+        await _alert(
+          context,
+          l10n.projectFolderCreateFailedTitle,
+          l10n.projectFolderCreateFailed(error.toString()),
+        );
       }
       return null;
     }
@@ -223,25 +247,67 @@ class ProjectFolderActions {
     };
   }
 
+  /// Asks for a path and opens it once it is confirmed to exist: in the
+  /// app's own Ubuntu for OpenCode inside the app, otherwise on the server.
+  /// A missing folder inside the app is offered "Create it" (declining goes
+  /// back to the path); another server's answer is said under the path.
   static Future<String?> _openByPath(
     BuildContext context,
     ConnectionController controller,
     BuiltinProjectFolders? inApp, {
     String? startPath,
   }) async {
-    final picked = await showDialog<({String path, bool create})>(
-      context: context,
-      builder: (_) => _OpenFolderDialog(
-        controller: controller,
-        inApp: inApp,
-        startPath: startPath,
-      ),
-    );
-    if (picked == null || !context.mounted) return null;
-    if (picked.create && inApp != null) {
-      return _createInApp(context, controller, inApp, picked.path);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    var initial = switch (startPath) {
+      null => '',
+      '/' => '/',
+      final start => '$start/',
+    };
+    while (true) {
+      var missing = false;
+      final typed = await showKitInputDialog(
+        context,
+        title: l10n.projectFolderOpen,
+        label: l10n.projectFolderPathLabel,
+        confirmLabel: l10n.projectFolderOpenAction,
+        initial: initial.isEmpty ? null : initial,
+        kind: KitFieldKind.path,
+        hint: l10n.projectFolderPathHint(managedProjectsDirectory),
+        helper: l10n.projectFolderOpenMessage,
+        cancelLabel: l10n.projectFolderCancel,
+        validate: (value) => workspaceDirectoryProblem(value.trim()),
+        fieldKey: const ValueKey('open-folder-path'),
+        confirmKey: const ValueKey('open-folder-confirm'),
+        onSubmit: (value) async {
+          final path = value.trim();
+          if (inApp == null) return controller.probeProjectFolder(path);
+          // Checked in Ubuntu, not by asking OpenCode: OpenCode would
+          // remember a missing folder as broken and keep failing there
+          // after it is made.
+          try {
+            missing = !await inApp.exists(path);
+          } on BuiltinLinuxException catch (error) {
+            return l10n.projectFolderCheckFailed(error.message);
+          }
+          return null;
+        },
+      );
+      if (typed == null || !context.mounted) return null;
+      final path = typed.trim();
+      if (!missing || inApp == null) return _open(context, controller, path);
+      final create = await showKitConfirm(
+        context,
+        title: l10n.projectFolderMissingTitle,
+        body: l10n.projectFolderMissing,
+        confirmLabel: l10n.projectFolderCreateIt,
+        icon: AppIconography.folderAdd,
+        details: [KitTechnicalValue(l10n.projectFolderPathLabel, path)],
+        confirmKey: const ValueKey('open-folder-create-missing'),
+      );
+      if (!context.mounted) return null;
+      if (create) return _createInApp(context, controller, inApp, path);
+      initial = path;
     }
-    return _open(context, controller, picked.path);
   }
 
   /// Makes [path] inside the app's Ubuntu (a new git project, or the folder
@@ -261,7 +327,11 @@ class ProjectFolderActions {
       made = await folders.create(path);
     } on BuiltinLinuxException catch (error) {
       if (context.mounted) {
-        _notify(context, l10n.projectFolderCreateFailed(error.message));
+        await _alert(
+          context,
+          l10n.projectFolderCreateFailedTitle,
+          l10n.projectFolderCreateFailed(error.message),
+        );
       }
       return null;
     }
@@ -274,242 +344,28 @@ class ProjectFolderActions {
     ConnectionController controller,
     String path,
   ) async {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     await controller.selectLocation(directory: path);
     final problem = controller.locationError;
     if (problem != null) {
-      if (context.mounted) _notify(context, problem);
+      if (context.mounted) {
+        await _alert(context, l10n.projectFolderOpenFailedTitle, problem);
+      }
       return null;
     }
     return path;
   }
 
-  static void _notify(BuildContext context, String message) =>
-      ScaffoldMessenger.maybeOf(
-        context,
-      )?.showSnackBar(SnackBar(content: Text(message)));
-}
-
-class _NewFolderDialog extends StatefulWidget {
-  const _NewFolderDialog();
-
-  @override
-  State<_NewFolderDialog> createState() => _NewFolderDialogState();
-}
-
-class _NewFolderDialogState extends State<_NewFolderDialog> {
-  final _name = TextEditingController();
-  String? _problem;
-
-  @override
-  void dispose() {
-    _name.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final problem = projectFolderNameProblem(_name.text);
-    if (problem != null) {
-      setState(() => _problem = problem);
-      return;
-    }
-    Navigator.of(context).pop(_name.text.trim());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return AlertDialog(
-      title: Text(l10n.projectFolderCreate),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(l10n.projectFolderCreateMessage(managedProjectsDirectory)),
-          const SizedBox(height: 12),
-          TextField(
-            key: const ValueKey('new-folder-name'),
-            controller: _name,
-            autofocus: true,
-            textInputAction: TextInputAction.done,
-            onChanged: (_) {
-              if (_problem != null) setState(() => _problem = null);
-            },
-            onSubmitted: (_) => _submit(),
-            decoration: InputDecoration(
-              labelText: l10n.projectFolderNameLabel,
-              hintText: l10n.projectFolderNameHint,
-              errorText: _problem,
-              errorMaxLines: 3,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.projectFolderCancel),
-        ),
-        FilledButton(
-          key: const ValueKey('new-folder-create'),
-          onPressed: _submit,
-          child: Text(l10n.projectFolderCreateAction),
-        ),
-      ],
-    );
-  }
-}
-
-class _OpenFolderDialog extends StatefulWidget {
-  const _OpenFolderDialog({
-    required this.controller,
-    this.inApp,
-    this.startPath,
-  });
-
-  final ConnectionController controller;
-
-  /// The folder the browser was showing: the path starts there.
-  final String? startPath;
-
-  /// Given for OpenCode inside the app: the path is checked, and a missing
-  /// folder created, through the app's own Ubuntu instead of OpenCode.
-  final BuiltinProjectFolders? inApp;
-
-  @override
-  State<_OpenFolderDialog> createState() => _OpenFolderDialogState();
-}
-
-class _OpenFolderDialogState extends State<_OpenFolderDialog> {
-  late final _path = TextEditingController(
-    text: switch (widget.startPath) {
-      null => '',
-      '/' => '/',
-      final start => '$start/',
-    },
+  /// A failure with nowhere else to be said: the flow has left its
+  /// dialog, so a blocking alert names what did not happen and why.
+  static Future<void> _alert(
+    BuildContext context,
+    String title,
+    String message,
+  ) => showKitAlert(
+    context,
+    title: title,
+    body: message,
+    icon: AppIconography.error,
   );
-  String? _problem;
-  bool _checking = false;
-
-  /// The typed folder does not exist and this app can make it.
-  bool _canCreateMissing = false;
-
-  @override
-  void dispose() {
-    _path.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (_checking) return;
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final path = _path.text.trim();
-    final problem = workspaceDirectoryProblem(path);
-    if (problem != null) {
-      setState(() => _problem = problem);
-      return;
-    }
-    setState(() {
-      _checking = true;
-      _problem = null;
-    });
-    final inApp = widget.inApp;
-    if (inApp != null) {
-      // Checked in Ubuntu, not by asking OpenCode: OpenCode would remember a
-      // missing folder as broken and keep failing there after it is made.
-      String? failure;
-      var exists = false;
-      try {
-        exists = await inApp.exists(path);
-      } on BuiltinLinuxException catch (error) {
-        failure = l10n.projectFolderCheckFailed(error.message);
-      }
-      if (!mounted) return;
-      if (failure != null || !exists) {
-        setState(() {
-          _checking = false;
-          _problem = failure ?? l10n.projectFolderMissing;
-          _canCreateMissing = failure == null;
-        });
-        return;
-      }
-      Navigator.of(context).pop((path: path, create: false));
-      return;
-    }
-    final serverProblem = await widget.controller.probeProjectFolder(path);
-    if (!mounted) return;
-    if (serverProblem != null) {
-      setState(() {
-        _checking = false;
-        _problem = serverProblem;
-      });
-      return;
-    }
-    Navigator.of(context).pop((path: path, create: false));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return AlertDialog(
-      title: Text(l10n.projectFolderOpen),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(l10n.projectFolderOpenMessage),
-          const SizedBox(height: 12),
-          TextField(
-            key: const ValueKey('open-folder-path'),
-            controller: _path,
-            autofocus: true,
-            enabled: !_checking,
-            keyboardType: TextInputType.url,
-            autocorrect: false,
-            textInputAction: TextInputAction.done,
-            onChanged: (_) {
-              if (_problem != null || _canCreateMissing) {
-                setState(() {
-                  _problem = null;
-                  _canCreateMissing = false;
-                });
-              }
-            },
-            onSubmitted: (_) => _submit(),
-            decoration: InputDecoration(
-              labelText: l10n.projectFolderPathLabel,
-              hintText: l10n.projectFolderPathHint(managedProjectsDirectory),
-              errorText: _problem,
-              errorMaxLines: 4,
-            ),
-          ),
-          if (_checking) ...[
-            const SizedBox(height: 12),
-            const LinearProgressIndicator(minHeight: 2),
-          ],
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: _checking ? null : () => Navigator.of(context).pop(),
-          child: Text(l10n.projectFolderCancel),
-        ),
-        // A missing folder turns the one action into making it; editing the
-        // path turns it back.
-        if (_canCreateMissing)
-          FilledButton(
-            key: const ValueKey('open-folder-create-missing'),
-            onPressed: () => Navigator.of(
-              context,
-            ).pop((path: _path.text.trim(), create: true)),
-            child: Text(l10n.projectFolderCreateIt),
-          )
-        else
-          FilledButton(
-            key: const ValueKey('open-folder-confirm'),
-            onPressed: _checking ? null : _submit,
-            child: Text(l10n.projectFolderOpenAction),
-          ),
-      ],
-    );
-  }
 }

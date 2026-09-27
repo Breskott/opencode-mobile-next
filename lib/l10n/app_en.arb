@@ -24947,5 +24947,203 @@
   "workspaceChooserLoadFailedBody": "You can still open a folder by its path.",
   "@workspaceChooserLoadFailedBody": {
     "description": "Folder chooser: body when the project list failed to load"
+  },
+  "managedWorkspacesRefresh": "Refresh",
+  "@managedWorkspacesRefresh": {
+    "description": "Cloud environments top bar: reload the environments and providers."
+  },
+  "managedWorkspacesDiscovered": "Discovery finished",
+  "@managedWorkspacesDiscovered": {
+    "description": "Cloud environments: the server finished looking for environments its providers already have."
+  },
+  "managedWorkspacesDiscoverFailed": "Couldn’t discover environments",
+  "@managedWorkspacesDiscoverFailed": {
+    "description": "Cloud environments: title when looking for existing environments failed."
+  },
+  "managedWorkspacesCreateFailed": "Couldn’t create the environment",
+  "@managedWorkspacesCreateFailed": {
+    "description": "Cloud environments: title when creating an environment failed."
+  },
+  "managedWorkspacesOpenFailed": "Couldn’t open {name}",
+  "@managedWorkspacesOpenFailed": {
+    "description": "Cloud environments: title when switching to an environment failed.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "managedWorkspacesRemoveTitle": "Remove {name}?",
+  "@managedWorkspacesRemoveTitle": {
+    "description": "Cloud environments: the remove confirmation question.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "managedWorkspacesRemoveBody": "The server asks {provider} to delete this environment and what is in it.",
+  "@managedWorkspacesRemoveBody": {
+    "description": "Cloud environments: what removing does; provider is the provider name.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "managedWorkspacesRemoveLeavesFirst": "It is open now, so the app goes back to the project folder first.",
+  "@managedWorkspacesRemoveLeavesFirst": {
+    "description": "Cloud environments remove confirmation: consequence when the environment is the open one."
+  },
+  "managedWorkspacesRemoveHistoryStays": "Conversations stay in history but can no longer open it.",
+  "@managedWorkspacesRemoveHistoryStays": {
+    "description": "Cloud environments remove confirmation: what happens to conversations."
+  },
+  "managedWorkspacesRemoveAction": "Remove",
+  "@managedWorkspacesRemoveAction": {
+    "description": "Cloud environments: the one verb for removing an environment (menu item and confirm button)."
+  },
+  "managedWorkspacesRemoved": "{name} was removed",
+  "@managedWorkspacesRemoved": {
+    "description": "Cloud environments: an environment was removed.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "managedWorkspacesProviders": "Providers",
+  "@managedWorkspacesProviders": {
+    "description": "Cloud environments: section of the server providers that can make environments."
+  },
+  "managedWorkspacesProvider": "Provider",
+  "@managedWorkspacesProvider": {
+    "description": "Cloud environments create sheet: label above the provider choice."
+  },
+  "managedWorkspacesProvidersFailed": "Couldn’t load providers",
+  "@managedWorkspacesProvidersFailed": {
+    "description": "Cloud environments: the providers could not be read."
+  },
+  "managedWorkspacesNoProviderTitle": "No provider set up",
+  "@managedWorkspacesNoProviderTitle": {
+    "description": "Cloud environments: the server has no provider that can make environments."
+  },
+  "managedWorkspacesNoProviderBody": "This server has no cloud environment provider. Add one to OpenCode’s config on the server, then refresh.",
+  "@managedWorkspacesNoProviderBody": {
+    "description": "Cloud environments: where a provider is set up."
+  },
+  "managedWorkspacesEmptyBody": "Environments for {project} appear here. Create one, or discover the ones a provider already has.",
+  "@managedWorkspacesEmptyBody": {
+    "description": "Cloud environments: empty state body.",
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "managedWorkspacesLoadFailed": "Couldn’t load cloud environments",
+  "@managedWorkspacesLoadFailed": {
+    "description": "Cloud environments: the list could not be read."
+  },
+  "managedWorkspacesCreating": "Creating a cloud environment",
+  "@managedWorkspacesCreating": {
+    "description": "Cloud environments: an environment is being made."
+  },
+  "managedWorkspacesCreatingBody": "This usually takes a few minutes. It opens here when it’s ready.",
+  "@managedWorkspacesCreatingBody": {
+    "description": "Cloud environments: how long creating takes."
+  },
+  "managedWorkspacesCreateTakes": "Creating one usually takes a few minutes. It opens here when it’s ready.",
+  "@managedWorkspacesCreateTakes": {
+    "description": "Cloud environments create sheet: how long creating takes, before it starts."
+  },
+  "managedWorkspacesBranchLabel": "Branch",
+  "@managedWorkspacesBranchLabel": {
+    "description": "Cloud environments create sheet: branch field label."
+  },
+  "managedWorkspacesBranchHelper": "Leave empty to use the provider’s default branch.",
+  "@managedWorkspacesBranchHelper": {
+    "description": "Cloud environments create sheet: branch field helper."
+  },
+  "managedWorkspacesInUse": "In use",
+  "@managedWorkspacesInUse": {
+    "description": "Cloud environments: state word for the environment open now."
+  },
+  "managedWorkspacesCopyId": "Copy ID",
+  "@managedWorkspacesCopyId": {
+    "description": "Cloud environments row menu: copy the environment id."
+  },
+  "projectHealthGitInitSupporting": "Runs git init here. Nothing is committed.",
+  "@projectHealthGitInitSupporting": {
+    "description": "Project health: what Initialize Git does."
+  },
+  "projectHealthSetUp": "Set up",
+  "@projectHealthSetUp": {
+    "description": "Project health: the Initialize Git row action."
+  },
+  "projectHealthRunningOf": "{running} of {total} running",
+  "@projectHealthRunningOf": {
+    "description": "Project health: language servers running out of all.",
+    "placeholders": {
+      "running": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthOnOf": "{on} of {total} on",
+  "@projectHealthOnOf": {
+    "description": "Project health: formatters turned on out of all.",
+    "placeholders": {
+      "on": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthRunning": "Running",
+  "@projectHealthRunning": {
+    "description": "Project health: a language server is running."
+  },
+  "projectHealthNotRunning": "Not running",
+  "@projectHealthNotRunning": {
+    "description": "Project health: a language server is not running."
+  },
+  "projectHealthLineCounts": "{added} lines added, {removed} removed",
+  "@projectHealthLineCounts": {
+    "description": "Project health: spoken form of +added -removed line counts.",
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "projectFolderCreateHelper": "Made in {directory} on this phone and opened as the project.",
+  "@projectFolderCreateHelper": {
+    "description": "New folder dialog: where the folder is made.",
+    "placeholders": {
+      "directory": {
+        "type": "String"
+      }
+    }
+  },
+  "projectFolderMissingTitle": "No folder there",
+  "@projectFolderMissingTitle": {
+    "description": "Open folder: the typed folder does not exist."
+  },
+  "projectFolderCreateFailedTitle": "Couldn’t create the folder",
+  "@projectFolderCreateFailedTitle": {
+    "description": "Folder flows: title when making a folder failed."
+  },
+  "projectFolderOpenFailedTitle": "Couldn’t open the folder",
+  "@projectFolderOpenFailedTitle": {
+    "description": "Folder flows: title when opening a folder failed."
   }
 }
