@@ -32,9 +32,16 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/profiles.dart';
 import '../app_theme.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_details_fold.dart';
 import '../kit/kit_illustration.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_progress.dart';
 import '../kit/kit_row.dart';
 import '../kit/kit_status_mark.dart';
+import '../kit/kit_surface.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
 import '../kit/scenes/team_scenes.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/phone_setup/phone_setup_selection.dart' show setupSizeText;
@@ -165,7 +172,6 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
   bool _busy = false;
   String? _error;
   String? _detail;
-  bool _showDetail = false;
   bool _jobWasRunning = false;
 
   /// Moves the stage times on while the job runs.
@@ -251,7 +257,6 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
       _busy = true;
       _error = null;
       _detail = null;
-      _showDetail = false;
     });
     try {
       await work();
@@ -332,64 +337,45 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = theme.textTheme.bodyMedium?.copyWith(
-      color: AppTheme.mutedOf(theme),
-      height: 1.4,
-    );
+    final tokens = KitTokens.of(context);
     final state = _state;
-    final children = <Widget>[
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            AppIconography.phone,
-            size: 20,
-            color: theme.colorScheme.primary,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              l10n.aiteamComponentSectionTitle,
-              style: theme.textTheme.titleMedium,
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 6),
-    ];
+    final children = <Widget>[];
     if (_loading || state == null) {
-      children.add(const LinearProgressIndicator());
+      children.add(
+        KitLoadingBar(loading: true, label: l10n.aiteamComponentSectionTitle),
+      );
     } else if (!state.installed) {
+      // The cost is said before the one action that spends it (KIT-37).
       children
         ..add(
-          Text(
+          KitText(
             l10n.aiteamComponentOfferBody(
               setupSizeText(l10n, AiTeamPins.deviceDownloadBytes),
             ),
             key: const ValueKey('builtin-team-offer'),
-            style: muted,
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
           ),
         )
-        ..add(const SizedBox(height: 8))
+        ..add(SizedBox(height: tokens.space3))
         ..add(
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: FilledButton.tonal(
+          KitActionBlock(
+            primary: KitAction(
               key: const ValueKey('builtin-team-add'),
+              label: l10n.aiteamComponentAdd,
+              icon: AppIconography.add,
               onPressed: _add,
-              child: Text(l10n.aiteamComponentAdd),
             ),
           ),
         );
     } else {
-      children.addAll(_installed(context, l10n, state, muted));
+      children.addAll(_installed(context, l10n, state));
     }
     final job = _job;
     final jobError = job.running ? null : job.error;
     if (job.running) {
       children
-        ..add(const SizedBox(height: 10))
+        ..add(SizedBox(height: tokens.space3))
         ..add(
           Row(
             children: [
@@ -397,28 +383,36 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
               const KitIllustration(
                 key: ValueKey('builtin-team-waking'),
                 scene: TeamWakingScene(),
-                width: 72,
+                width: KitTokens.illustrationInline,
                 ambient: true,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: tokens.space3),
               Expanded(
-                child: Text(
+                child: KitText(
                   job.stages.contains(BuiltinTeamStage.preparing)
                       ? l10n.aiteamComponentTurnOnExpectation
                       : l10n.aiteamComponentStartExpectation,
                   key: const ValueKey('builtin-team-expectation'),
-                  style: muted,
+                  role: KitTextRole.secondary,
+                  tone: KitTextTone.secondary,
                 ),
               ),
             ],
           ),
         )
-        ..add(const SizedBox(height: 6))
-        ..add(const LinearProgressIndicator());
+        ..add(SizedBox(height: tokens.space2))
+        ..add(
+          KitLoadingBar(
+            loading: true,
+            label: job.stages.contains(BuiltinTeamStage.preparing)
+                ? l10n.aiteamComponentTurnOnExpectation
+                : l10n.aiteamComponentStartExpectation,
+          ),
+        );
     }
     if (job.stages.isNotEmpty && (job.running || jobError != null)) {
       children
-        ..add(const SizedBox(height: 4))
+        ..add(SizedBox(height: tokens.space1))
         ..addAll(_stageRows(l10n, job, failed: jobError != null));
     }
     final error =
@@ -435,47 +429,33 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
         : null;
     if (error != null) {
       children
-        ..add(const SizedBox(height: 10))
+        ..add(SizedBox(height: tokens.space3))
         ..add(
-          Text(
-            error,
-            key: const ValueKey('builtin-team-error'),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.error,
-            ),
+          KitNotice(
+            key: const ValueKey('builtin-team-error-notice'),
+            tone: AppStatusTone.failure,
+            message: error,
+            messageKey: const ValueKey('builtin-team-error'),
           ),
         );
+      // The raw output, last and folded (KIT-33).
       if (detail != null && detail.trim().isNotEmpty) {
         children.add(
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: TextButton(
-              onPressed: () => setState(() => _showDetail = !_showDetail),
-              child: Text(l10n.aiteamComponentShowDetails),
-            ),
+          KitDetailsFold(
+            label: l10n.aiteamComponentShowDetails,
+            text: detail,
+            foldKey: const ValueKey('builtin-team-details'),
           ),
         );
-        if (_showDetail) {
-          children.add(
-            SelectableText(
-              detail,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontFamily: AppTheme.monoFamily,
-              ),
-            ),
-          );
-        }
       }
     }
-    return Card(
+    return KitSurface.panel(
       key: const ValueKey('builtin-team-section'),
-      margin: const EdgeInsets.fromLTRB(4, 8, 4, 8),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: children,
-        ),
+      title: l10n.aiteamComponentSectionTitle,
+      icon: AppIconography.phone,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
       ),
     );
   }
@@ -535,8 +515,8 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
     BuildContext context,
     AppLocalizations l10n,
     BuiltinTeamState state,
-    TextStyle? muted,
   ) {
+    final tokens = KitTokens.of(context);
     final project = _project;
     final projectOn = project != null && state.hasProject(project);
     final on = _configured && state.rigs.isNotEmpty;
@@ -544,28 +524,30 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
     if (on) {
       widgets
         ..add(
-          Text(
+          KitText(
             state.running
                 ? l10n.aiteamComponentRunning
                 : l10n.aiteamComponentStopped,
             key: const ValueKey('builtin-team-status'),
-            style: Theme.of(context).textTheme.bodyLarge,
+            role: KitTextRole.rowTitle,
           ),
         )
         ..add(
-          Text(
+          KitText(
             l10n.aiteamComponentProjects(state.rigs.join(', ')),
-            style: muted,
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
           ),
         );
     } else {
       widgets.add(
-        Text(
+        KitText(
           project == null
               ? l10n.aiteamComponentNoProject
               : l10n.aiteamComponentTurnOnBody,
           key: const ValueKey('builtin-team-turn-on-body'),
-          style: muted,
+          role: KitTextRole.secondary,
+          tone: KitTextTone.secondary,
         ),
       );
     }
@@ -573,76 +555,91 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
     if (bringIn != null) {
       final name = builtinTeamProjectName(project!);
       widgets
-        ..add(const SizedBox(height: 8))
+        ..add(SizedBox(height: tokens.space2))
         ..add(
-          Text(
+          KitText(
             builtinTeamBringInText(l10n, bringIn, name),
             key: const ValueKey('builtin-team-bring-in'),
-            style: bringIn.leftBehind
-                ? Theme.of(context).textTheme.bodyMedium
-                : muted,
+            role: KitTextRole.secondary,
+            tone: bringIn.leftBehind
+                ? KitTextTone.primary
+                : KitTextTone.secondary,
           ),
         );
     }
     // While something runs, its stages say what is happening; no action is
-    // offered beside them, never a disabled one (design standard §2).
-    final actions = <Widget>[
-      if (!_working) ...[
-        if (bringIn != null &&
-            (bringIn.outcome == BuiltinTeamBringInOutcome.dirty ||
-                bringIn.outcome == BuiltinTeamBringInOutcome.failed))
-          TextButton(
-            key: const ValueKey('builtin-team-bring-in-action'),
-            onPressed: () => _bringIn(project),
-            child: Text(
-              l10n.aiteamBringInAction(builtinTeamProjectName(project!)),
-            ),
-          ),
-        if (on && state.running)
-          TextButton(
+    // offered beside them, never a disabled one (design standard §2). Each
+    // action names what it acts on: "Stop AI Team", "Turn on AI Team for
+    // my-app", "Bring the team's work into my-app".
+    KitAction? primary;
+    KitAction? secondary;
+    final tertiary = <KitAction>[];
+    if (!_working) {
+      if (project != null && !(on && projectOn)) {
+        primary = KitAction(
+          key: const ValueKey('builtin-team-turn-on'),
+          label: l10n.aiteamComponentTurnOn(builtinTeamProjectName(project)),
+          onPressed: () => _turnOn(project),
+        );
+      }
+      if (on && !state.running) {
+        final start = KitAction(
+          key: const ValueKey('builtin-team-start'),
+          label: l10n.aiteamComponentStart,
+          icon: AppIconography.play,
+          onPressed: _start,
+        );
+        if (primary == null) {
+          primary = start;
+        } else {
+          secondary = start;
+        }
+      }
+      if (bringIn != null &&
+          (bringIn.outcome == BuiltinTeamBringInOutcome.dirty ||
+              bringIn.outcome == BuiltinTeamBringInOutcome.failed)) {
+        final bring = KitAction(
+          key: const ValueKey('builtin-team-bring-in-action'),
+          label: l10n.aiteamBringInAction(builtinTeamProjectName(project!)),
+          onPressed: () => _bringIn(project),
+        );
+        if (primary == null) {
+          primary = bring;
+        } else {
+          tertiary.add(bring);
+        }
+      }
+      // Stopping ends the team's work on this phone: a quiet action, last.
+      if (on && state.running) {
+        tertiary.add(
+          KitAction(
             key: const ValueKey('builtin-team-stop'),
+            label: l10n.aiteamComponentStop,
+            icon: AppIconography.stop,
             onPressed: _stop,
-            child: Text(l10n.aiteamComponentStop),
-          ),
-        if (on && !state.running)
-          FilledButton.tonal(
-            key: const ValueKey('builtin-team-start'),
-            onPressed: _start,
-            child: Text(l10n.aiteamComponentStart),
-          ),
-        if (project != null && !(on && projectOn))
-          FilledButton.tonal(
-            key: const ValueKey('builtin-team-turn-on'),
-            onPressed: () => _turnOn(project),
-            child: Text(
-              l10n.aiteamComponentTurnOn(builtinTeamProjectName(project)),
-            ),
-          ),
-      ],
-    ];
-    if (actions.isNotEmpty) {
-      widgets
-        ..add(const SizedBox(height: 8))
-        ..add(
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            alignment: WrapAlignment.end,
-            children: actions,
           ),
         );
+      }
+    }
+    final actions = KitActionBlock(
+      primary: primary,
+      secondary: secondary,
+      tertiary: tertiary,
+    );
+    if (!actions.isEmpty) {
+      widgets
+        ..add(SizedBox(height: tokens.space3))
+        ..add(actions);
     }
     if (on || _configured) {
       widgets
-        ..add(const SizedBox(height: 10))
+        ..add(SizedBox(height: tokens.space3))
         ..add(
-          Text(
+          KitText(
             l10n.aiteamComponentChildProcesses,
             key: const ValueKey('builtin-team-child-processes'),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedOf(Theme.of(context)),
-              height: 1.4,
-            ),
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
           ),
         );
     }

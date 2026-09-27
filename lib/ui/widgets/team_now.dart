@@ -230,30 +230,38 @@ OrchestrationAgent? teamSleepingWorker(Iterable<OrchestrationAgent> agents) {
   return found;
 }
 
-/// Wakes [agents] (resume), then says what the host answered.
-Future<void> teamWake(
+/// Wakes [agents] (resume). Waking is harmless, so it neither asks nor
+/// offers Undo (DATA-11): the Now line itself changes once an agent is up.
+/// Only a refusal is said, with the host's own words, in the kit's
+/// technical-details sheet (no snackbar: KIT-34 keeps those for Undo).
+/// Returns the host's last answer, or null when there was nothing to wake.
+Future<MutationRecord?> teamWake(
   BuildContext context,
   OrchestrationController controller,
   Iterable<OrchestrationAgent> agents,
 ) async {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-  final messenger = ScaffoldMessenger.maybeOf(context);
   final records = [
     for (final agent in agents)
       await controller.controlAgent(agent.id, AgentControlAction.resume),
   ];
-  if (records.isEmpty) return;
+  if (records.isEmpty) return null;
   final record = records.last;
-  messenger?.showSnackBar(
-    SnackBar(
-      content: Text(
-        [
-          teamControlWord(l10n, record.request),
-          teamControlReceiptWord(l10n, record.status),
-        ].join(teamUsageSeparator),
+  final reason = record.receipt?.message?.trim();
+  if (record.status == MutationStatus.rejected && context.mounted) {
+    await showKitTechnicalDetails(
+      context,
+      sheetKey: const ValueKey('team-now-wake-refused'),
+      title: l10n.teamUiControlReceiptLine(
+        teamControlWord(l10n, record.request),
+        teamControlReceiptWord(l10n, record.status),
       ),
-    ),
-  );
+      text: reason == null || reason.isEmpty
+          ? l10n.teamNowWakeRefusedNoReason
+          : reason,
+    );
+  }
+  return record;
 }
 
 /// The one action for a team that cannot go on by itself: wake what is
@@ -307,7 +315,7 @@ Widget? teamNowLine(
     return KitStatusLine(
       key: ValueKey('$keyPrefix-paused'),
       icon: AppIconography.pause,
-      tone: AppStatusTone.attention,
+      tone: AppStatusTone.neutral,
       message: l10n.teamNowPausedLine,
       action: teamUnstickAction(
         context,
@@ -338,7 +346,7 @@ Widget? teamNowLine(
     return KitStatusLine(
       key: ValueKey('$keyPrefix-stuck'),
       icon: AppIconography.warning,
-      tone: AppStatusTone.attention,
+      tone: AppStatusTone.neutral,
       message: l10n.teamNowStuckLine(run.title, teamElapsedLabel(l10n, age)),
       action: teamUnstickAction(
         context,

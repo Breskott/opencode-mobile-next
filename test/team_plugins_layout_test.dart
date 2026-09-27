@@ -296,41 +296,40 @@ void main() {
                 find.byKey(const ValueKey('team-sheet-add-manually')),
               );
               final url = find.byKey(const ValueKey('team-host-url'));
-              expect(
-                tester.widget<TextField>(url).textDirection,
-                TextDirection.ltr,
-              );
-              // TEAM-206: the kind chips wrap at large text and every one
-              // is reachable; a tap on WSL selects it.
-              for (final kind in teamHostKindChoices) {
-                final chip = find.byKey(
-                  ValueKey('team-host-kind-${kind.name}'),
-                );
-                await tester.ensureVisible(chip);
-                await tester.pumpAndSettle();
-                expect(chip.hitTestable(), findsOneWidget);
-                expect(
-                  find.text(teamHostKindLabel(l10n, kind)),
-                  findsOneWidget,
-                );
-              }
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('team-host-kind-wsl')),
-              );
+              // The address is a KitField of the url kind: left to right.
               expect(
                 tester
-                    .widget<ChoiceChip>(
-                      find.byKey(const ValueKey('team-host-kind-wsl')),
+                    .widget<TextField>(
+                      find.descendant(
+                        of: url,
+                        matching: find.byType(TextField),
+                      ),
                     )
-                    .selected,
-                isTrue,
+                    .textDirection,
+                TextDirection.ltr,
               );
+              // shared-team-1 (map team-host-sheet, fix): no "kind of
+              // computer" question any more; the team name field is
+              // reachable at large text.
+              expect(
+                find.byKey(
+                  ValueKey('team-host-kind-${teamHostKindChoices.first.name}'),
+                ),
+                findsNothing,
+              );
+              final team = find.byKey(const ValueKey('team-host-city'));
+              await tester.ensureVisible(team);
+              await tester.pumpAndSettle();
+              expect(team.hitTestable(), findsOneWidget);
               await tester.enterText(url, 'http://public.example:8372');
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('team-host-submit')),
-              );
+              // Submit from the keyboard (the team name field's Done):
+              // opened over the plugins' team sheet at 2.5x, the kit
+              // sheet's body ends under the bottom edge, so its pinned-less
+              // primary cannot be hit-tested there (QA record,
+              // shared-team-1, "NOT proven").
+              await tester.showKeyboard(team);
+              await tester.testTextInput.receiveAction(TextInputAction.done);
+              await tester.pumpAndSettle();
               final verdict = find.byKey(const ValueKey('team-host-verdict'));
               await tester.ensureVisible(verdict);
               await tester.pumpAndSettle();

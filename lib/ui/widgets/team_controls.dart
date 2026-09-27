@@ -1,8 +1,9 @@
 /// Shared pieces of the AI Team controls (TEAM-204; 02-ux §5.2, §6):
-/// the receipt chip every control shows after a tap, the composer-style
-/// field the message and objective sheets use (the chat composer's
-/// surface without its attachments, commands or history), and the
-/// two-step confirmation the destructive controls go through.
+/// the receipt every control shows after a tap, the field the message and
+/// objective sheets use, and the two-step confirmation the controls that
+/// end work go through. Built from kit parts only (shared-team-1): the
+/// receipt is a [KitReceipt], the field a [KitField], the confirmation a
+/// [showKitConfirm].
 library;
 
 import 'package:flutter/material.dart';
@@ -11,7 +12,10 @@ import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/mutation_store.dart';
 import '../app_theme.dart';
-import 'confirm_sheet.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_field.dart';
+import '../kit/kit_receipt.dart';
+import '../kit/kit_sheet.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -46,9 +50,17 @@ String teamControlWord(AppLocalizations l10n, MutationRequest request) =>
       MutationKind.createWork => l10n.teamUiControlCreateWork,
     };
 
-/// "Nudge · Sent": glyph + words in the receipt's tone, the host's reason
-/// under a refusal, and Retry when the record may be retried. Never
-/// colour-only: the state word is always in the text.
+/// "Nudge · Sent": the control's name and its state in words, beside the
+/// state's own mark, the host's reason on a refusal, and Try again when the
+/// record may be retried. Never colour-only: the state word is always in
+/// the text.
+///
+/// Retired by shared-team-1: use [KitReceipt]. A thin forwarding wrapper
+/// (STANDARDS KIT-43 forbids `@Deprecated`) that maps [MutationStatus] to
+/// [KitReceiptState]. The receipt names the act in every state (KitReceipt's
+/// `automatic` form: "the label names the act in every state and the
+/// state's own mark stays beside it"), so a person who tapped Nudge reads
+/// "Nudge · Sent", then "Nudge · Confirmed", never a bare "Sent".
 class TeamReceiptChip extends StatelessWidget {
   const TeamReceiptChip({
     super.key,
@@ -66,94 +78,40 @@ class TeamReceiptChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final (icon, tone) = switch (record.status) {
-      MutationStatus.sent => (AppIconography.waiting, AppStatusTone.progress),
-      MutationStatus.confirmed => (
-        AppIconography.checkCircle,
-        AppStatusTone.ok,
-      ),
-      MutationStatus.unconfirmed => (
-        AppIconography.warning,
-        AppStatusTone.attention,
-      ),
-      MutationStatus.rejected => (AppIconography.error, AppStatusTone.failure),
+    final control = this.control ?? teamControlWord(l10n, record.request);
+    final state = switch (record.status) {
+      MutationStatus.sent => KitReceiptState.sent,
+      MutationStatus.confirmed => KitReceiptState.confirmed,
+      MutationStatus.unconfirmed => KitReceiptState.notConfirmed,
+      MutationStatus.rejected => KitReceiptState.refused,
     };
-    final color = AppTheme.statusColor(theme, tone);
-    final line = l10n.teamUiControlReceiptLine(
-      control ?? teamControlWord(l10n, record.request),
-      teamControlReceiptWord(l10n, record.status),
-    );
     final reason = record.status == MutationStatus.rejected
-        ? record.receipt?.message
+        ? record.receipt?.message?.trim()
         : null;
     final retry = onRetry;
-    return Semantics(
-      liveRegion: true,
-      child: Column(
-        key: ValueKey('team-receipt-${record.key}'),
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: color.withValues(alpha: .5)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 14, color: color),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        line,
-                        key: const ValueKey('team-receipt-line'),
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: color,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (retry != null && record.canRetry)
-                TextButton(
-                  key: const ValueKey('team-receipt-retry'),
-                  onPressed: retry,
-                  child: Text(l10n.teamUiControlReceiptRetry),
-                ),
-            ],
-          ),
-          if (reason != null && reason.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                reason,
-                key: const ValueKey('team-receipt-reason'),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.mutedOf(theme),
-                ),
-              ),
-            ),
-        ],
+    return KitReceipt(
+      key: ValueKey('team-receipt-${record.key}'),
+      state: state,
+      automatic: true,
+      label: l10n.teamUiControlReceiptLine(
+        control,
+        teamControlReceiptWord(l10n, record.status),
       ),
+      reason: reason == null || reason.isEmpty ? null : reason,
+      onRetry: retry != null && record.canRetry ? () => retry() : null,
+      retryKey: const ValueKey('team-receipt-retry'),
     );
   }
 }
 
-/// The chat composer's surface — rounded, low container, primary border
-/// on focus — holding one multi-line field and a filled send button. No
-/// attachments, commands or history: an agent gets words only (§5.2).
+/// The field an agent's message and a task's objective are typed in: a
+/// multi-line [KitField] with its send action at the end. No attachments,
+/// commands or history: an agent gets words only (§5.2).
+///
+/// Retired by shared-team-1: use [KitField] with
+/// `kind: KitFieldKind.multiline` and an `action`. A thin forwarding
+/// wrapper (STANDARDS KIT-43); [hint] becomes the field's visible label
+/// unless [label] names it.
 class TeamComposerField extends StatefulWidget {
   const TeamComposerField({
     super.key,
@@ -167,12 +125,17 @@ class TeamComposerField extends StatefulWidget {
     this.fieldKey,
     this.sendKey,
     this.enabled = true,
+    this.label,
+    this.disabledReason,
+    this.draft,
   });
 
   final TextEditingController controller;
   final String hint;
   final String sendLabel;
   final VoidCallback onSend;
+
+  /// Kept for the old signature; the kit field grows by itself.
   final int minLines;
   final int maxLines;
   final bool autofocus;
@@ -180,17 +143,23 @@ class TeamComposerField extends StatefulWidget {
   final Key? sendKey;
   final bool enabled;
 
+  /// The visible label above the field; null uses [hint].
+  final String? label;
+
+  /// Why the field cannot take words now; shown when not [enabled].
+  final String? disabledReason;
+
+  /// Keeps the typed words across a dismissal (DATA-2).
+  final KitDraft? draft;
+
   @override
   State<TeamComposerField> createState() => _TeamComposerFieldState();
 }
 
 class _TeamComposerFieldState extends State<TeamComposerField> {
-  final _focus = FocusNode();
-
   @override
   void initState() {
     super.initState();
-    _focus.addListener(_changed);
     widget.controller.addListener(_changed);
   }
 
@@ -206,9 +175,6 @@ class _TeamComposerFieldState extends State<TeamComposerField> {
   @override
   void dispose() {
     widget.controller.removeListener(_changed);
-    _focus
-      ..removeListener(_changed)
-      ..dispose();
     super.dispose();
   }
 
@@ -218,77 +184,53 @@ class _TeamComposerFieldState extends State<TeamComposerField> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final focused = _focus.hasFocus;
+    final l10n = _copy(context);
     final canSend = widget.enabled && widget.controller.text.trim().isNotEmpty;
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: focused
-              ? scheme.primary.withValues(alpha: .8)
-              : scheme.outlineVariant.withValues(alpha: .65),
-          width: focused ? 1.4 : 1,
-        ),
-      ),
-      padding: const EdgeInsetsDirectional.fromSTEB(14, 4, 6, 6),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            key: widget.fieldKey,
-            controller: widget.controller,
-            focusNode: _focus,
-            autofocus: widget.autofocus,
-            enabled: widget.enabled,
-            minLines: widget.minLines,
-            maxLines: widget.maxLines,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              hintText: widget.hint,
-              filled: false,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              disabledBorder: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
-            ),
-          ),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: IconButton.filled(
-              key: widget.sendKey,
-              tooltip: widget.sendLabel,
-              onPressed: canSend ? widget.onSend : null,
-              icon: const Icon(AppIconography.send),
-            ),
-          ),
-        ],
+    return KitField(
+      label: widget.label ?? widget.hint,
+      controller: widget.controller,
+      kind: KitFieldKind.multiline,
+      maxLines: widget.maxLines,
+      autofocus: widget.autofocus,
+      enabled: widget.enabled,
+      disabledReason: widget.enabled
+          ? null
+          : widget.disabledReason ?? l10n.teamControlsFieldUnavailable,
+      draft: widget.draft,
+      fieldKey: widget.fieldKey,
+      actionKey: widget.sendKey,
+      action: KitAction(
+        label: widget.sendLabel,
+        icon: AppIconography.send,
+        onPressed: canSend ? widget.onSend : null,
       ),
     );
   }
 }
 
-/// The two-step gate every destructive control goes through: the first
+/// The two-step gate every control that ends work goes through: the first
 /// tap opened this, the second (the confirming button) returns true;
-/// backing out returns false and nothing is sent. Error tone.
+/// backing out returns false and nothing is sent. [kind] is
+/// [KitConfirmKind.stop] (error tone, "Keep going") unless the caller asks
+/// for a neutral question (a restart loses nothing, LOOK-5).
 Future<bool> confirmTeamControl(
   BuildContext context, {
   required String title,
   required String message,
   required String confirmLabel,
+  KitConfirmKind kind = KitConfirmKind.stop,
+  List<String> consequences = const [],
   Key? sheetKey,
   Key? confirmKey,
-}) => showConfirmSheet(
+}) => showKitConfirm(
   context,
   title: title,
-  message: message,
+  body: message,
   confirmLabel: confirmLabel,
   cancelLabel: _copy(context).teamUiControlKeep,
-  icon: AppIconography.warning,
-  destructive: true,
+  kind: kind,
+  icon: kind == KitConfirmKind.neutral ? null : AppIconography.stop,
+  consequences: consequences,
   sheetKey: sheetKey,
   confirmKey: confirmKey,
 );

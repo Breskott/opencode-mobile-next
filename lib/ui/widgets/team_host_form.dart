@@ -1,5 +1,5 @@
 /// Shared pieces of the AI Team plugin's enablement UI (TEAM-106): the
-/// manual-add sheet (address + city, probe on submit), the verdict copy for
+/// manual-add sheet (address + team name, probe on submit), the verdict copy for
 /// every [ProbeVerdict], the host guide sheet and the turn-off confirmation.
 /// Used by Settings › Plugins, the discovery card and the server editor so
 /// the three entry points share one form and one set of words.
@@ -15,7 +15,13 @@ import '../../l10n/app_localizations.dart';
 import '../../orchestration/adapters/gascity/gascity_probe.dart';
 import '../../state/profiles.dart';
 import '../app_theme.dart';
-import 'confirm_sheet.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_details_fold.dart';
+import '../kit/kit_field.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_sheet.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
 
 export '../../orchestration/adapters/gascity/gascity_probe.dart'
     show
@@ -137,34 +143,42 @@ String teamFoundCopy(AppLocalizations l10n, ProbeFound found) {
 }
 
 /// Opens the manual-add sheet. Returns the config to save once the probe
-/// found a host, null when the person left without one.
+/// found a host (or the person chose to save an address that did not
+/// answer), null when the person left without one.
 Future<OrchestrationConfig?> showTeamHostSheet(
   BuildContext context, {
   String initialUrl = '',
   String initialCity = '',
   OrchestrationHostKind? initialHostKind,
   TeamHostProbe? probe,
-}) => showModalBottomSheet<OrchestrationConfig>(
-  context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
-  builder: (context) => Padding(
-    padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-    child: TeamHostForm(
+}) {
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  return showKitSheet<OrchestrationConfig>(
+    context,
+    title: l10n.teamUiAddTitle,
+    icon: AppIconography.computer,
+    body: (sheetContext) => TeamHostForm(
       initialUrl: initialUrl,
       initialCity: initialCity,
       initialHostKind: initialHostKind,
       probe: probe ?? teamHostProbe,
       onFound: (config) => Navigator.of(context).pop(config),
     ),
-  ),
-);
+  );
+}
 
-/// Address + city + kind of computer, one submit that probes and reports
-/// the verdict.
+/// Address and team name, one submit that tests the address and reports
+/// the verdict (the manual fallback to discovery).
+///
+/// Map `team-host-sheet` (fix): the test is progress while it runs, with
+/// Cancel test; a failed test says why in one notice and keeps the raw
+/// error under Details; an address that did not answer can be saved
+/// anyway (the team page then says it is not answering). The "kind of
+/// computer" question is gone: the kind comes from [initialHostKind] or the
+/// host itself.
 class TeamHostForm extends StatefulWidget {
   const TeamHostForm({
-    super.key,
+    super.key = const ValueKey('team-host-form'),
     required this.probe,
     required this.onFound,
     this.initialUrl = '',
@@ -177,8 +191,8 @@ class TeamHostForm extends StatefulWidget {
   final String initialUrl;
   final String initialCity;
 
-  /// The kind preselected in the form; null (or a kind the form does not
-  /// offer, such as the phone) starts at [OrchestrationHostKind.pc].
+  /// The kind the config carries for the disclaimer; null (or a kind the
+  /// form does not offer, such as the phone) is [OrchestrationHostKind.pc].
   final OrchestrationHostKind? initialHostKind;
 
   @override
@@ -192,17 +206,24 @@ class _TeamHostFormState extends State<TeamHostForm> {
   late final TextEditingController _city = TextEditingController(
     text: widget.initialCity,
   );
-  late OrchestrationHostKind _kind =
+  late final OrchestrationHostKind _kind =
       teamHostKindChoices.contains(widget.initialHostKind)
       ? widget.initialHostKind!
       : OrchestrationHostKind.pc;
   bool _testing = false;
+
+  /// Bumped by every test and by Cancel test: an answer for an older test
+  /// is dropped.
+  int _test = 0;
   String? _failure;
   bool _failureIsUnavailable = false;
 
-  /// The raw platform error behind an unreachable verdict, shown small
-  /// under the sentence so a real cause ("Connection refused", a cleartext
-  /// block, a DNS miss) is visible instead of guessed.
+  /// The address that did not answer, when it may be saved anyway.
+  String? _unanswered;
+
+  /// The raw platform error behind an unreachable verdict, kept under
+  /// Details so a real cause ("Connection refused", a cleartext block, a
+  /// DNS miss) is there when someone needs it.
   String? _failureDetail;
 
   @override
@@ -212,16 +233,22 @@ class _TeamHostFormState extends State<TeamHostForm> {
     super.dispose();
   }
 
+  void _fail(String message, {bool unavailable = false}) {
+    setState(() {
+      _failure = message;
+      _failureIsUnavailable = unavailable;
+      _failureDetail = null;
+      _unanswered = null;
+    });
+  }
+
   Future<void> _submit() async {
     if (_testing) return;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final url = _url.text.trim();
     final city = _city.text.trim();
     if (url.isEmpty) {
-      setState(() {
-        _failure = l10n.teamUiAddressRequired;
-        _failureIsUnavailable = false;
-      });
+      _fail(l10n.teamUiAddressRequired);
       return;
     }
     // The transport rule is decided before any request, with the tailnet
@@ -230,22 +257,23 @@ class _TeamHostFormState extends State<TeamHostForm> {
     if (parsed == null ||
         !parsed.hasAuthority ||
         (parsed.scheme == 'http' && !isOrchestrationUrlAllowed(parsed))) {
-      setState(() {
-        _failure = parsed != null && parsed.scheme == 'http'
+      _fail(
+        parsed != null && parsed.scheme == 'http'
             ? l10n.teamUiTailnetRequired
-            : l10n.teamUiVerdictUnreachable;
-        _failureIsUnavailable = false;
-      });
+            : l10n.teamUiVerdictUnreachable,
+      );
       return;
     }
     FocusScope.of(context).unfocus();
+    final test = ++_test;
     setState(() {
       _testing = true;
       _failure = null;
       _failureDetail = null;
+      _unanswered = null;
     });
     final verdict = await widget.probe(url, city: city.isEmpty ? null : city);
-    if (!mounted) return;
+    if (!mounted || test != _test) return;
     if (verdict is ProbeFound) {
       setState(() => _testing = false);
       widget.onFound(
@@ -257,6 +285,7 @@ class _TeamHostFormState extends State<TeamHostForm> {
       _testing = false;
       _failure = teamVerdictCopy(l10n, verdict);
       _failureIsUnavailable = verdict is ProbeNotGasCity;
+      _unanswered = verdict is ProbeUnreachable ? url : null;
       _failureDetail = switch (verdict) {
         ProbeUnreachable(:final error) => _errorDetail(error),
         _ => null,
@@ -264,259 +293,191 @@ class _TeamHostFormState extends State<TeamHostForm> {
     });
   }
 
+  /// Cancel test, or an edit while the test runs: the answer, when it
+  /// comes, is dropped (it would be for the old words).
+  void _cancelTest() {
+    if (!_testing) return;
+    setState(() {
+      _test++;
+      _testing = false;
+    });
+  }
+
+  /// Saves an address that did not answer (the computer may be asleep):
+  /// read-only until it answers, like any team that is not answering.
+  void _saveAnyway() {
+    final url = _unanswered;
+    if (url == null) return;
+    widget.onFound(
+      OrchestrationConfig(
+        provider: OrchestrationProvider.gascity,
+        url: url,
+        city: _city.text.trim(),
+        hostKind: _kind,
+        enabledAt: DateTime.now().toUtc(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    return SingleChildScrollView(
-      key: const ValueKey('team-host-form'),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(l10n.teamUiAddTitle, style: theme.textTheme.titleLarge),
-          const SizedBox(height: 16),
-          TextField(
-            key: const ValueKey('team-host-url'),
-            controller: _url,
-            enabled: !_testing,
-            autofocus: widget.initialUrl.isEmpty,
-            textDirection: TextDirection.ltr,
-            keyboardType: TextInputType.url,
-            autocorrect: false,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              labelText: l10n.teamUiAddAddressLabel,
-              hintText: l10n.teamUiAddAddressHint,
-              hintTextDirection: TextDirection.ltr,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            key: const ValueKey('team-host-city'),
-            controller: _city,
-            enabled: !_testing,
-            textDirection: TextDirection.ltr,
-            autocorrect: false,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _submit(),
-            decoration: InputDecoration(labelText: l10n.teamUiAddCityLabel),
-          ),
-          const SizedBox(height: 16),
-          // The kind only picks the disclaimer line (03-onboarding §4);
-          // chips wrap, so three labels at large text stack instead of
-          // squeezing.
-          Text(
-            l10n.teamUiHostKindLabel,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: AppTheme.mutedOf(theme),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            key: const ValueKey('team-host-kind'),
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final kind in teamHostKindChoices)
-                ChoiceChip(
-                  key: ValueKey('team-host-kind-${kind.name}'),
-                  label: Text(teamHostKindLabel(l10n, kind)),
-                  selected: _kind == kind,
-                  onSelected: _testing
-                      ? null
-                      : (selected) {
-                          if (selected) setState(() => _kind = kind);
-                        },
+    final tokens = KitTokens.of(context);
+    final failure = _failure;
+    final detail = _failureDetail;
+    final gap = SizedBox(height: tokens.space4);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KitField(
+          label: l10n.teamUiAddAddressLabel,
+          hint: l10n.teamUiAddAddressHint,
+          controller: _url,
+          kind: KitFieldKind.url,
+          onChanged: (_) => _cancelTest(),
+          autofocus: widget.initialUrl.isEmpty,
+          textInputAction: TextInputAction.next,
+          fieldKey: const ValueKey('team-host-url'),
+        ),
+        gap,
+        KitField(
+          label: l10n.teamHostFormTeamLabel,
+          helper: l10n.teamHostFormTeamHelper,
+          controller: _city,
+          kind: KitFieldKind.mono,
+          onChanged: (_) => _cancelTest(),
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _submit(),
+          fieldKey: const ValueKey('team-host-city'),
+        ),
+        if (failure != null) ...[
+          gap,
+          KitNotice(
+            key: const ValueKey('team-host-verdict'),
+            tone: AppStatusTone.failure,
+            message: failure,
+            actions: [
+              if (_failureIsUnavailable)
+                KitAction(
+                  key: const ValueKey('team-host-verdict-how'),
+                  label: l10n.teamHostFormHowAction,
+                  onPressed: () => showTeamHostGuideSheet(context),
                 ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            l10n.teamUiHostKindHint,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedOf(theme),
-              height: 1.35,
-            ),
-          ),
-          if (_failure != null) ...[
-            const SizedBox(height: 12),
-            _VerdictNote(
-              key: const ValueKey('team-host-verdict'),
-              text: _failure!,
-              trailingAction: _failureIsUnavailable
-                  ? TextButton(
-                      key: const ValueKey('team-host-verdict-how'),
-                      onPressed: () => showTeamHostGuideSheet(context),
-                      child: Text(l10n.teamUiHow),
-                    )
-                  : null,
-            ),
-            if (_failureDetail != null) ...[
-              const SizedBox(height: 6),
-              Directionality(
-                textDirection: TextDirection.ltr,
-                child: SelectableText(
-                  _failureDetail!,
-                  key: const ValueKey('team-host-verdict-detail'),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontFamily: AppTheme.monoFamily,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          ],
-          const SizedBox(height: 16),
-          FilledButton(
+        ],
+        gap,
+        KitActionBlock(
+          primary: KitAction(
             key: const ValueKey('team-host-submit'),
-            onPressed: _testing ? null : _submit,
-            child: Text(
-              _testing ? l10n.teamUiAddTesting : l10n.teamUiAddSubmit,
-            ),
+            label: _testing ? l10n.teamUiAddTesting : l10n.teamUiAddSubmit,
+            working: _testing,
+            onPressed: _submit,
           ),
-        ],
-      ),
+          secondary: _testing
+              ? KitAction(
+                  key: const ValueKey('team-host-cancel-test'),
+                  label: l10n.teamHostFormCancelTest,
+                  onPressed: _cancelTest,
+                )
+              : _unanswered != null
+              ? KitAction(
+                  key: const ValueKey('team-host-save-anyway'),
+                  label: l10n.teamHostFormSaveAnyway,
+                  onPressed: _saveAnyway,
+                )
+              : null,
+        ),
+        // The raw error, last and folded (KIT-33).
+        if (detail != null && detail.isNotEmpty)
+          KitDetailsFold(
+            text: detail,
+            textKey: const ValueKey('team-host-verdict-detail'),
+          ),
+      ],
     );
   }
 }
 
-/// A verdict line in the amber "blocked" tone (02a: amber for blocked, red
-/// only for failed runs), never colour-only: it carries a glyph and text.
-class _VerdictNote extends StatelessWidget {
-  const _VerdictNote({super.key, required this.text, this.trailingAction});
-
-  final String text;
-  final Widget? trailingAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tone = AppTheme.statusColor(theme, AppStatusTone.attention);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-      decoration: BoxDecoration(
-        color: tone.withValues(alpha: .10),
-        borderRadius: BorderRadius.circular(AppTheme.radiusControl),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(AppIconography.warning, size: 18, color: tone),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  text,
-                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.35),
-                ),
-              ),
-            ],
-          ),
-          if (trailingAction != null)
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: trailingAction,
-            )
-          else
-            const SizedBox(height: 4),
-        ],
-      ),
-    );
-  }
-}
-
+// revamp: redesign (slice-P3.4)
 /// The four host steps of docs/ai-team-host.md, as a sheet; the app has no
-/// bundled markdown viewer for repository docs.
-Future<void> showTeamHostGuideSheet(
-  BuildContext context,
-) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
-  builder: (context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    final steps = [
-      l10n.teamUiHostGuideStep1,
-      l10n.teamUiHostGuideStep2,
-      l10n.teamUiHostGuideStep3,
-      l10n.teamUiHostGuideStep4,
-    ];
-    return SingleChildScrollView(
-      key: const ValueKey('team-host-guide'),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-      child: Column(
+/// bundled markdown viewer for repository docs. Map `team-host-guide-sheet`
+/// is a redesign (copyable commands, the published guide, "Enter the
+/// address" as the next step), deferred to slice-P3.4; this is the kit-only
+/// rebuild of today's steps.
+Future<void> showTeamHostGuideSheet(BuildContext context) {
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  final steps = [
+    l10n.teamUiHostGuideStep1,
+    l10n.teamUiHostGuideStep2,
+    l10n.teamUiHostGuideStep3,
+    l10n.teamUiHostGuideStep4,
+  ];
+  return showKitSheet<void>(
+    context,
+    sheetKey: const ValueKey('team-host-guide'),
+    title: l10n.teamUiHostGuideTitle,
+    body: (sheetContext) {
+      final tokens = KitTokens.of(sheetContext);
+      return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(l10n.teamUiHostGuideTitle, style: theme.textTheme.titleLarge),
-          const SizedBox(height: 6),
-          Text(
-            l10n.teamUiHostGuideIntro,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.mutedOf(theme),
-              height: 1.35,
+          Padding(
+            padding: EdgeInsetsDirectional.only(bottom: tokens.space4),
+            child: KitText(
+              l10n.teamUiHostGuideIntro,
+              role: KitTextRole.secondary,
+              tone: KitTextTone.secondary,
             ),
           ),
-          const SizedBox(height: 12),
           for (final (i, step) in steps.indexed)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
+              padding: EdgeInsetsDirectional.only(bottom: tokens.space3),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    width: 28,
-                    child: Text(
+                    width: KitTokens.markSlotSize,
+                    child: KitText(
                       _stepNumber(i),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        height: 1.35,
-                      ),
+                      role: KitTextRole.rowTitle,
+                      tabular: true,
                     ),
                   ),
-                  Expanded(
-                    child: Text(
-                      step,
-                      style: theme.textTheme.bodyMedium?.copyWith(height: 1.35),
-                    ),
-                  ),
+                  Expanded(child: KitText(step)),
                 ],
               ),
             ),
-          const SizedBox(height: 8),
-          Text(
+          KitText(
             l10n.teamUiHostGuideDocs,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedOf(theme),
-              height: 1.35,
-            ),
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
           ),
         ],
-      ),
-    );
-  },
-);
+      );
+    },
+  );
+}
 
 /// "1." … for the guide steps; digits stay Western in every locale, as the
 /// commands beside them do.
 String _stepNumber(int index) => '${index + 1}.';
 
 /// The turn-off confirmation of 02-ux §1.3. True when the person confirmed.
+/// It removes the team's data from this phone, so it is the destructive
+/// question; the host itself is untouched.
 Future<bool> showTeamTurnOffSheet(BuildContext context, String serverName) {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-  return showConfirmSheet(
+  return showKitConfirm(
     context,
     title: l10n.teamUiTurnOffTitle(serverName),
-    message: l10n.teamUiTurnOffBody,
+    body: l10n.teamUiTurnOffBody,
     confirmLabel: l10n.teamUiTurnOff,
     cancelLabel: l10n.teamUiKeep,
+    kind: KitConfirmKind.destructive,
     icon: AppIconography.unlink,
-    destructive: true,
     sheetKey: const ValueKey('team-turn-off-sheet'),
     confirmKey: const ValueKey('team-turn-off-confirm'),
   );

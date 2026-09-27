@@ -5,7 +5,11 @@
 /// confirmation before cancelling, and "Add to backlog".
 ///
 /// No gesture moves a card by itself: every move is a row here, and the one
-/// that ends work (Cancel task) is error-toned and asks first (§2).
+/// that ends work (Cancel task) sits last, apart, and asks first (§2).
+///
+/// Built from kit parts only (shared-team-1): each sheet is a
+/// [showKitSheet] frame, the moves are [KitRow]s in one [KitRowGroup], the
+/// priority is a [KitChoiceList], the question is a [showKitConfirm].
 library;
 
 import 'package:flutter/material.dart';
@@ -13,8 +17,14 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/team_board.dart';
 import '../app_theme.dart';
-import '../kit/kit.dart';
-import 'confirm_sheet.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_choice_list.dart';
+import '../kit/kit_field.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_row_parts.dart';
+import '../kit/kit_sheet.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
 import 'team_board_card.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -34,28 +44,34 @@ class TeamBoardChoseOpen extends TeamBoardSheetChoice {
   const TeamBoardChoseOpen();
 }
 
-/// Opens the move sheet for [card]; null when dismissed.
+/// Opens the move sheet for [card]; null when dismissed. The sheet is named
+/// by the task's own title and says which column it is in.
 Future<TeamBoardSheetChoice?> showTeamBoardMoveSheet(
   BuildContext context, {
   required TeamBoardCard card,
   required List<TeamBoardMove> moves,
   required bool readOnly,
   required bool hasConversation,
-}) => showModalBottomSheet<TeamBoardSheetChoice>(
-  context: context,
-  showDragHandle: true,
-  isScrollControlled: true,
-  useSafeArea: true,
-  builder: (context) => _MoveSheet(
-    card: card,
-    moves: moves,
-    readOnly: readOnly,
-    hasConversation: hasConversation,
-  ),
-);
+}) {
+  final l10n = _copy(context);
+  return showKitSheet<TeamBoardSheetChoice>(
+    context,
+    sheetKey: const ValueKey('team-board-move-sheet'),
+    title: card.item.title,
+    subtitle: l10n.teamBoardMoveSheetWhere(
+      teamBoardColumnWord(l10n, card.column),
+    ),
+    body: (sheetContext) => _MoveSheetBody(
+      card: card,
+      moves: moves,
+      readOnly: readOnly,
+      hasConversation: hasConversation,
+    ),
+  );
+}
 
-class _MoveSheet extends StatelessWidget {
-  const _MoveSheet({
+class _MoveSheetBody extends StatelessWidget {
+  const _MoveSheetBody({
     required this.card,
     required this.moves,
     required this.readOnly,
@@ -70,9 +86,7 @@ class _MoveSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    final error = theme.colorScheme.error;
+    final tokens = KitTokens.of(context);
 
     Widget row(TeamBoardMove move) {
       final (icon, title, hint) = switch (move) {
@@ -102,27 +116,23 @@ class _MoveSheet extends StatelessWidget {
           l10n.teamBoardMoveReopenHint,
         ),
       };
-      final destructive = move == TeamBoardMove.cancel;
       return KitRow(
         key: ValueKey('team-board-move-${move.name}'),
         // Priority leads with the current level's own bars.
         leading: move == TeamBoardMove.priority
             ? SizedBox.square(
-                dimension: 32,
+                dimension: KitTokens.markSlotSize,
                 child: Center(
                   child: TeamBoardPriorityGlyph(priority: card.priority),
                 ),
               )
-            : KitRow.icon(
-                context,
-                icon,
-                color: destructive ? error : theme.colorScheme.primary,
-              ),
+            : KitRow.icon(context, icon),
         title: title,
         supporting: TextSpan(text: hint),
-        destructive: destructive,
+        supportingMaxLines: 2,
+        destructive: move == TeamBoardMove.cancel,
         trailing: move == TeamBoardMove.priority ? const KitChevron() : null,
-        onTap: () => Navigator.of(context).pop(TeamBoardChoseMove(move)),
+        onTap: () => KitSheet.close(context, TeamBoardChoseMove(move)),
       );
     }
 
@@ -131,58 +141,40 @@ class _MoveSheet extends StatelessWidget {
         : readOnly
         ? l10n.teamBoardReadOnlyNote
         : l10n.teamBoardTeamMoves;
-    return SingleChildScrollView(
-      key: const ValueKey('team-board-move-sheet'),
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (note != null)
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-            child: Text(
-              card.item.title,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleMedium,
+            padding: EdgeInsetsDirectional.only(bottom: tokens.space3),
+            child: KitText(
+              note,
+              key: const ValueKey('team-board-move-note'),
+              role: KitTextRole.secondary,
+              tone: KitTextTone.secondary,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Text(
-              l10n.teamBoardMoveSheetWhere(
-                teamBoardColumnWord(l10n, card.column),
-              ),
-              style: theme.textTheme.bodySmall?.copyWith(color: muted),
+        // The group puts the one move that ends work (Cancel task) last,
+        // after a divider (§2, KIT-28).
+        KitRowGroup(
+          margin: EdgeInsets.zero,
+          children: [
+            for (final move in moves)
+              if (move != TeamBoardMove.cancel) row(move),
+            KitRow(
+              key: const ValueKey('team-board-move-open'),
+              leading: KitRow.icon(context, AppIconography.chat),
+              title: hasConversation
+                  ? l10n.teamBoardOpenConversation
+                  : l10n.teamBoardOpenDetails,
+              trailing: const KitChevron(),
+              onTap: () => KitSheet.close(context, const TeamBoardChoseOpen()),
             ),
-          ),
-          if (note != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-              child: Text(
-                note,
-                key: const ValueKey('team-board-move-note'),
-                style: theme.textTheme.bodyMedium?.copyWith(color: muted),
-              ),
-            ),
-          for (final move in moves)
-            if (move != TeamBoardMove.cancel) row(move),
-          KitRow(
-            key: const ValueKey('team-board-move-open'),
-            leading: KitRow.icon(context, AppIconography.chat),
-            title: hasConversation
-                ? l10n.teamBoardOpenConversation
-                : l10n.teamBoardOpenDetails,
-            trailing: const KitChevron(),
-            onTap: () => Navigator.of(context).pop(const TeamBoardChoseOpen()),
-          ),
-          // The one move that ends work sits last, apart (§2).
-          if (moves.contains(TeamBoardMove.cancel)) ...[
-            const Divider(height: 16, indent: 16, endIndent: 16),
-            row(TeamBoardMove.cancel),
+            if (moves.contains(TeamBoardMove.cancel)) row(TeamBoardMove.cancel),
           ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -191,157 +183,129 @@ class _MoveSheet extends StatelessWidget {
 Future<WorkPriority?> showTeamBoardPrioritySheet(
   BuildContext context, {
   required WorkPriority current,
-}) => showModalBottomSheet<WorkPriority>(
-  context: context,
-  showDragHandle: true,
-  useSafeArea: true,
-  builder: (context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    return SingleChildScrollView(
-      key: const ValueKey('team-board-priority-sheet'),
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Text(
-              l10n.teamBoardPriorityTitle,
-              style: theme.textTheme.titleMedium,
-            ),
-          ),
-          for (final priority in WorkPriority.values)
-            Semantics(
-              selected: priority == current,
-              child: KitRow(
-                key: ValueKey('team-board-priority-${priority.name}'),
-                leading: SizedBox.square(
-                  dimension: 32,
-                  child: Center(
-                    child: TeamBoardPriorityGlyph(priority: priority),
-                  ),
-                ),
-                title: teamBoardPriorityWord(l10n, priority),
-                trailing: priority == current
-                    ? Padding(
-                        padding: const EdgeInsetsDirectional.only(end: 12),
-                        child: Icon(
-                          AppIconography.check,
-                          color: theme.colorScheme.primary,
-                        ),
-                      )
-                    : null,
-                onTap: () => Navigator.of(
-                  context,
-                ).pop(priority == current ? null : priority),
-              ),
-            ),
-        ],
-      ),
-    );
-  },
-);
+}) async {
+  final l10n = _copy(context);
+  final chosen = await showKitChoiceSheet<WorkPriority>(
+    context,
+    sheetKey: const ValueKey('team-board-priority-sheet'),
+    title: l10n.teamBoardPriorityTitle,
+    selected: current,
+    choices: [
+      for (final priority in WorkPriority.values)
+        KitChoice(
+          key: ValueKey('team-board-priority-${priority.name}'),
+          value: priority,
+          title: teamBoardPriorityWord(l10n, priority),
+          leading: TeamBoardPriorityGlyph(priority: priority),
+        ),
+    ],
+  );
+  return chosen == current ? null : chosen;
+}
 
-/// Asks before cancelling [title] (§2: destructive, confirmed).
+/// Asks before cancelling [title] (§2: ends work, confirmed). The task can
+/// be put back later (Reopen), so the body says so.
 Future<bool> confirmTeamBoardCancel(BuildContext context, String title) {
   final l10n = _copy(context);
-  return showConfirmSheet(
+  return showKitConfirm(
     context,
     title: l10n.teamBoardCancelTitle(title),
-    message: l10n.teamBoardCancelBody,
+    body: l10n.teamBoardCancelBody,
     confirmLabel: l10n.teamBoardMoveCancel,
     cancelLabel: l10n.teamBoardCancelKeep,
+    kind: KitConfirmKind.stop,
     icon: AppIconography.stopCircle,
-    destructive: true,
     sheetKey: const ValueKey('team-board-cancel-sheet'),
     confirmKey: const ValueKey('team-board-cancel-confirm'),
   );
 }
 
-/// "Add to backlog": the task's words; null when dismissed or empty.
-Future<String?> showTeamBoardAddSheet(BuildContext context) =>
-    showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => const _AddSheet(),
-    );
+// revamp: merge-into:start-run-sheet (slice-P3.5)
+/// "Add to backlog": the task's words; null when dismissed or empty. An
+/// empty submit says what is missing under the field instead of a dead
+/// button.
+Future<String?> showTeamBoardAddSheet(BuildContext context) {
+  final l10n = _copy(context);
+  final form = _AddForm();
+  void submit() {
+    final words = form.text.trim();
+    if (words.isEmpty) {
+      form.error?.value = l10n.teamBoardMoveSheetAddEmpty;
+      return;
+    }
+    Navigator.of(context).pop(words);
+  }
 
-class _AddSheet extends StatefulWidget {
-  const _AddSheet();
-
-  @override
-  State<_AddSheet> createState() => _AddSheetState();
+  return showKitSheet<String>(
+    context,
+    sheetKey: const ValueKey('team-board-add-sheet'),
+    title: l10n.teamBoardAddTooltip,
+    subtitle: l10n.teamBoardAddNote,
+    icon: AppIconography.add,
+    primary: KitAction(
+      key: const ValueKey('team-board-add-submit'),
+      label: l10n.teamBoardAddButton,
+      icon: AppIconography.add,
+      onPressed: submit,
+    ),
+    body: (_) => _AddSheetBody(form: form, onSubmit: submit),
+  );
 }
 
-class _AddSheetState extends State<_AddSheet> {
+/// What the add sheet's body holds, read by its pinned action. The body's
+/// state owns the controller and the notifier, so they live exactly as
+/// long as the field does.
+class _AddForm {
+  String text = '';
+  ValueNotifier<String?>? error;
+}
+
+class _AddSheetBody extends StatefulWidget {
+  const _AddSheetBody({required this.form, required this.onSubmit});
+
+  final _AddForm form;
+  final VoidCallback onSubmit;
+
+  @override
+  State<_AddSheetBody> createState() => _AddSheetBodyState();
+}
+
+class _AddSheetBodyState extends State<_AddSheetBody> {
   final _text = TextEditingController();
+  final _error = ValueNotifier<String?>(null);
 
   @override
   void initState() {
     super.initState();
-    _text.addListener(() => setState(() {}));
+    widget.form.error = _error;
   }
 
   @override
   void dispose() {
+    if (widget.form.error == _error) widget.form.error = null;
     _text.dispose();
+    _error.dispose();
     super.dispose();
-  }
-
-  void _submit() {
-    final text = _text.text.trim();
-    if (text.isEmpty) return;
-    Navigator.of(context).pop(text);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        0,
-        16,
-        16 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: Column(
-        key: const ValueKey('team-board-add-sheet'),
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(l10n.teamBoardAddTooltip, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 12),
-          TextField(
-            key: const ValueKey('team-board-add-field'),
-            controller: _text,
-            autofocus: true,
-            minLines: 1,
-            maxLines: 4,
-            textCapitalization: TextCapitalization.sentences,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _submit(),
-            decoration: InputDecoration(hintText: l10n.teamBoardAddHint),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.teamBoardAddNote,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedOf(theme),
-            ),
-          ),
-          const SizedBox(height: 16),
-          KitButton.primary(
-            key: const ValueKey('team-board-add-submit'),
-            label: l10n.teamBoardAddButton,
-            icon: AppIconography.add,
-            onPressed: _text.text.trim().isEmpty ? null : _submit,
-          ),
-        ],
+    return ValueListenableBuilder<String?>(
+      valueListenable: _error,
+      builder: (context, message, _) => KitField(
+        label: l10n.teamBoardAddHint,
+        controller: _text,
+        maxLines: 4,
+        autofocus: true,
+        error: message,
+        textInputAction: TextInputAction.done,
+        onChanged: (value) {
+          widget.form.text = value;
+          if (_error.value != null) _error.value = null;
+        },
+        onSubmitted: (_) => widget.onSubmit(),
+        fieldKey: const ValueKey('team-board-add-field'),
       ),
     );
   }

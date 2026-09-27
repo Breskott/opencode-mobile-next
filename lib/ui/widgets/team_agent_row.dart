@@ -17,7 +17,6 @@ import 'package:flutter/material.dart';
 
 import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
-import '../app_theme.dart';
 import '../kit/kit.dart';
 import 'relative_time.dart';
 import 'team_vocabulary.dart';
@@ -25,17 +24,26 @@ import 'team_vocabulary.dart';
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
-/// "ctx 63%" with the tone of [teamContextTone], for the agent's header.
+/// "ctx 63%" in the tone of [teamContextTone], for the agent's header: the
+/// kit's status tones (text2 when fine, text1 once it runs high), tabular
+/// figures, never colour-only (the number is the state).
 class TeamContextNumber extends StatelessWidget {
   const TeamContextNumber({
     super.key,
     required this.percent,
     this.style,
     this.label,
+    this.role,
   });
 
   final int percent;
+
+  /// Retired by shared-team-1: pass [role]. A non-null style reads as the
+  /// body role, the size its callers passed.
   final TextStyle? style;
+
+  /// The type role; null is [KitTextRole.secondary] (or body with [style]).
+  final KitTextRole? role;
 
   /// Longer wording ("Context use 63%") for the detail header; the short
   /// form otherwise.
@@ -44,21 +52,16 @@ class TeamContextNumber extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     final tone = teamContextTone(percent);
-    final color = tone == AppStatusTone.neutral
-        ? AppTheme.mutedOf(theme)
-        : AppTheme.statusColor(theme, tone);
     return Semantics(
       label: l10n.teamUiAgentContextSemantics(percent),
       excludeSemantics: true,
-      child: Text(
+      child: KitText(
         label ?? l10n.teamUiAgentContextShort(percent),
-        style: (style ?? theme.textTheme.bodySmall)?.copyWith(
-          color: color,
-          fontWeight: tone == AppStatusTone.neutral ? null : FontWeight.w600,
-          fontFeatures: const [FontFeature.tabularFigures()],
-        ),
+        role:
+            role ?? (style == null ? KitTextRole.secondary : KitTextRole.body),
+        tone: KitTokens.toneFor(tone),
+        tabular: true,
       ),
     );
   }
@@ -107,14 +110,13 @@ class TeamAgentRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     final (icon, tone) = teamAgentGlyph(agent.state);
     return KitRow(
       key: ValueKey('$keyPrefix-${agent.id}'),
       leading: KitRow.icon(
         context,
         icon,
-        color: AppTheme.statusColor(theme, tone),
+        color: KitTokens.toneColor(KitTokens.of(context).roles, tone),
       ),
       title: teamAgentRoleWord(l10n, teamAgentRole(agent)),
       supporting: TextSpan(text: teamAgentLine(l10n, agent, work, now)),
