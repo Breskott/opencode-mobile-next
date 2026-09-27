@@ -1,0 +1,154 @@
+{
+  "decision": "NO-GO",
+  "scope": "ARM64 owner physical phone; signed-out preview-only feasibility attempt",
+  "candidateBase": "01c3e7a2b13651b688b59d639c7122c34be861fc",
+  "device": {
+    "abi": "arm64-v8a",
+    "android": "15",
+    "api": "35",
+    "kernel": "6.1.145-android14-11-g11c274d0441f-ab14259673",
+    "selinux": "Enforcing",
+    "memTotal": "MemTotal:       15715596 kB",
+    "phantomLimit": "max_phantom_processes=32"
+  },
+  "previewPackage": "io.github.eslamasabry.opencode_mobile.preview",
+  "previewUid": 10430,
+  "apk": {
+    "apkBytes": 48585889,
+    "apkSha256": "23dae5d9a1b3d30c2fd13f8483ec4a28e6f3da4176946d768239e5467d689c69",
+    "installOutput": "Performing Streamed Install\nSuccess\n",
+    "installSeconds": 12.414950172000317
+  },
+  "build": {
+    "exitCode": 0,
+    "elapsedSeconds": 417.18845389199987
+  },
+  "ubuntu": {
+    "readySeconds": 13.13278131900006,
+    "freshRootfsKiB": 111331,
+    "androidUid": 10430,
+    "selinuxDomain": "untrusted_app",
+    "seccomp": 2
+  },
+  "essentials": {
+    "exitCode": 0,
+    "elapsedMs": 152415,
+    "gitVersion": "2.43.0"
+  },
+  "nodeAttempts": [
+    {
+      "id": "node",
+      "exitCode": 6,
+      "elapsedMs": 23088,
+      "failure": "curl could not resolve nodejs.org",
+      "reportedDownloadedBytes": 0
+    },
+    {
+      "id": "node_retry",
+      "exitCode": 6,
+      "elapsedMs": 22785,
+      "failure": "curl could not resolve nodejs.org",
+      "reportedDownloadedBytes": 0
+    }
+  ],
+  "networkDiagnostic": {
+    "elapsedMs": 1829,
+    "ipv4LookupsSucceeded": [
+      "nodejs.org",
+      "registry.npmjs.org",
+      "ports.ubuntu.com"
+    ],
+    "curlIpv4HeadSucceeded": true,
+    "androidNativePingResolvedAndSucceeded": true,
+    "ipv6SpecificCauseProven": false
+  },
+  "cancelledIpv4Variant": {
+    "executed": false,
+    "reason": "Request stayed queued while preview polling was stopped; phone found in Doze. Cancelled before delivery to retest unchanged installer awake."
+  },
+  "powerObservation": {
+    "wakefulness": "Dozing",
+    "deviceIdleMode": true,
+    "settingsChanged": false,
+    "awakeRepeatCompleted": false,
+    "causeOfDnsFailuresProven": false
+  },
+  "processSamples": {
+    "method": "Approximately once per second; adb ps numeric UID/PID/PPID/RSS/NAME filtered to preview UID on device; Flutter included in RSS and excluded from child count",
+    "essentials": {
+      "samples": 112,
+      "maxChildren": 12,
+      "maxRssKiB": 319188
+    },
+    "nodeFirstFailedAttempt": {
+      "samples": 45,
+      "maxChildren": 6,
+      "maxRssKiB": 220792
+    },
+    "nodeSecondFailedAttempt": null,
+    "gapsOver3Seconds": [
+      4.9,
+      3.4,
+      3.5,
+      3.7,
+      4.7,
+      3.7,
+      208.3,
+      4.0,
+      3.7,
+      4.1,
+      4.3
+    ],
+    "maximumGapSeconds": 208.3,
+    "peakGuarantee": false,
+    "rssIsPss": false
+  },
+  "unverified": [
+    "Node installed version/checksum/size",
+    "Claude ARM64 version/checksum/launches",
+    "Paseo ARM64 install/version/checksum",
+    "non-root Linux oc execution",
+    "Claude auth status and signed-out prompt",
+    "Paseo health/start/stop/restart",
+    "Dart Paseo gateway proof",
+    "node-pty",
+    "daemon/prompt RSS and process counts",
+    "idle PSS/SwapPss",
+    "final full rootfs size",
+    "authentication"
+  ],
+  "cleanup": {
+    "previewProcessesBeforeUninstall": [
+      "10430 23930  1669 198112 io.github.eslamasabry.opencode_mobile.preview"
+    ],
+    "reverseRemoval": "",
+    "uninstall": "Success",
+    "previewPackageAfter": "",
+    "stableMetadataIdentical": true,
+    "stableVersionCode2055": true,
+    "stablePackagePresent": true,
+    "previewUidProcessesAfter": [],
+    "completedAtUnix": 1790551409.3633666
+  },
+  "verification": {
+    "flutterAnalyze": "No issues found; 111.0 seconds",
+    "flutterVersion": "3.47.1",
+    "java": "Ubuntu OpenJDK 17.0.20; Temurin vendor gate not run",
+    "dartFormatting": true,
+    "pythonSyntax": true,
+    "hostAuthIdleAndChunkedResponseChecks": true,
+    "productFullSuiteRun": false,
+    "gatewayTestRun": false
+  },
+  "hostCleanup": {
+    "privateScratchRemoved": true,
+    "temporarySigningKeyAndPropertiesRemoved": true,
+    "apkAndLocalBuildCachesRemoved": true,
+    "ownedHostServerAndObserverStopped": true
+  },
+  "sourceSha256": {
+    "tool/qa/p16a_emulator_probe.dart": "c185c12c65993ad2e8c27f62c3aa6879271994811d4948e04d89d454a07e6ee6",
+    "tool/qa/p16a_paseo_probe_test.dart": "b6c32dccfb83c08dda87b7b1ba0d366a42bc693941d74308e52421bf6b12c042",
+    "tool/qa/p16a_phone_host.py": "90892bf7c957ebb68c7f5a1e92f3c6b18ebd6d5114c7243c65bc0de4af5d9686"
+  }
+}
