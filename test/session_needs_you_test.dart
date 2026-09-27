@@ -143,12 +143,15 @@ void main() {
     expect(subtitle, findsOneWidget);
     final theme = Theme.of(tester.element(subtitle));
     final span = tester.widget<Text>(subtitle).textSpan! as TextSpan;
+    // The one "Needs you" word leads, in the attention tone (KitNeedsYou,
+    // LOOK-24), then the blocker by name.
     final status = span.children!.first as TextSpan;
-    expect(status.text, 'Permission needed');
+    expect(status.text, 'Needs you · ');
     expect(
       status.style?.color,
       AppTheme.statusColor(theme, AppStatusTone.attention),
     );
+    expect((span.children![1] as TextSpan).text, 'Permission needed');
     expect(
       find.byKey(const ValueKey('session-attention-icon-session-1')),
       findsOneWidget,

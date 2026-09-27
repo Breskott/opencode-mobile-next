@@ -5046,6 +5046,61 @@ class AppLocalizationsAr extends AppLocalizations {
   String get workspaceManage => 'إدارة';
 
   @override
+  String get workspaceArchivedInAll => 'In All conversations';
+
+  @override
+  String get workspaceDetailEmptyTitle => 'Choose a conversation';
+
+  @override
+  String get workspaceDetailEmptyBody =>
+      'Open a conversation from the list to read and reply here.';
+
+  @override
+  String workspaceContextOn(String server) {
+    return 'On $server';
+  }
+
+  @override
+  String get workspaceContextCurrent => 'In use';
+
+  @override
+  String get workspaceContextNewProject => 'New project';
+
+  @override
+  String get workspaceContextRunsOn => 'Runs on';
+
+  @override
+  String get workspaceContextFolder => 'Folder';
+
+  @override
+  String get workspaceSessionSharedLink => 'Shared link';
+
+  @override
+  String workspaceArchiveFailed(String title) {
+    return 'Couldn\'t archive “$title”. It is back in the list.';
+  }
+
+  @override
+  String get workspaceShareCopiesLink =>
+      'The link is copied once sharing starts.';
+
+  @override
+  String get workspaceDeleteSharedLink => 'Its shared link stops working.';
+
+  @override
+  String get workspaceChooserEnterPath => 'Enter a folder path';
+
+  @override
+  String get workspaceChooserRecentProjects => 'Recent projects';
+
+  @override
+  String get workspaceChooserLoadFailedTitle => 'Couldn\'t load your projects';
+
+  @override
+  String get workspaceChooserLoadFailedBody =>
+      'You can still open a folder by its path.';
+
+  @override
   String get reviewCopiedFile => 'تم نسخ الملف المحدّث';
 
   @override

@@ -8377,6 +8377,102 @@ abstract class AppLocalizations {
   /// **'Manage'**
   String get workspaceManage;
 
+  /// Work: the Archived conversations row opens All conversations, where archived ones are a filter
+  ///
+  /// In en, this message translates to:
+  /// **'In All conversations'**
+  String get workspaceArchivedInAll;
+
+  /// Work on a wide window: title of the empty detail pane beside the list
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a conversation'**
+  String get workspaceDetailEmptyTitle;
+
+  /// Work on a wide window: body of the empty detail pane
+  ///
+  /// In en, this message translates to:
+  /// **'Open a conversation from the list to read and reply here.'**
+  String get workspaceDetailEmptyBody;
+
+  /// Work project sheet subtitle: the server the project is on
+  ///
+  /// In en, this message translates to:
+  /// **'On {server}'**
+  String workspaceContextOn(String server);
+
+  /// Work project sheet: the word beside the current place the project runs on
+  ///
+  /// In en, this message translates to:
+  /// **'In use'**
+  String get workspaceContextCurrent;
+
+  /// Work project sheet: row that creates a new project folder
+  ///
+  /// In en, this message translates to:
+  /// **'New project'**
+  String get workspaceContextNewProject;
+
+  /// Work project sheet: section label for where the project's conversations run
+  ///
+  /// In en, this message translates to:
+  /// **'Runs on'**
+  String get workspaceContextRunsOn;
+
+  /// Label of a folder path under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Folder'**
+  String get workspaceContextFolder;
+
+  /// Conversation details: label of the conversation's public share link
+  ///
+  /// In en, this message translates to:
+  /// **'Shared link'**
+  String get workspaceSessionSharedLink;
+
+  /// Work: an archive that failed after its Undo window closed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t archive “{title}”. It is back in the list.'**
+  String workspaceArchiveFailed(String title);
+
+  /// Share confirmation: where the share link goes
+  ///
+  /// In en, this message translates to:
+  /// **'The link is copied once sharing starts.'**
+  String get workspaceShareCopiesLink;
+
+  /// Delete confirmation for a shared conversation: what else is lost
+  ///
+  /// In en, this message translates to:
+  /// **'Its shared link stops working.'**
+  String get workspaceDeleteSharedLink;
+
+  /// Folder chooser: open an existing folder by typing its path
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a folder path'**
+  String get workspaceChooserEnterPath;
+
+  /// Folder chooser: pick one of the projects already opened on this server
+  ///
+  /// In en, this message translates to:
+  /// **'Recent projects'**
+  String get workspaceChooserRecentProjects;
+
+  /// Folder chooser: title when the project list failed to load
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your projects'**
+  String get workspaceChooserLoadFailedTitle;
+
+  /// Folder chooser: body when the project list failed to load
+  ///
+  /// In en, this message translates to:
+  /// **'You can still open a folder by its path.'**
+  String get workspaceChooserLoadFailedBody;
+
   /// No description provided for @reviewCopiedFile.
   ///
   /// In en, this message translates to:
