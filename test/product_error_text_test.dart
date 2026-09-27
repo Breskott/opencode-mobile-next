@@ -11,7 +11,8 @@ import 'package:opencode_mobile/builtin/builtin_linux.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/bridge.dart' show TermuxBridgeException;
-import 'package:opencode_mobile/ui/kit/kit_notice.dart' show KitErrorKind;
+import 'package:opencode_mobile/ui/kit/kit.dart'
+    show KitAction, KitErrorKind, KitStateView;
 import 'package:opencode_mobile/ui/widgets/product_states.dart';
 
 void main() {
@@ -306,16 +307,17 @@ void main() {
       statusCode: 502,
     );
 
-    testWidgets('ProductErrorState: words, Try again, raw text only under '
+    testWidgets('an error state: words, Try again, raw text only under '
         'Details', (tester) async {
       var retried = 0;
       await tester.pumpWidget(
         app(
-          ProductErrorState(
+          KitStateView.error(
             title: 'Could not load older conversations',
-            message: productErrorText(bad),
+            body: productErrorText(bad),
             error: bad,
-            onRetry: () async => retried++,
+            details: productErrorDetails(bad),
+            retry: KitAction(label: 'Try again', onPressed: () => retried++),
           ),
         ),
       );

@@ -22,7 +22,7 @@ npm install -g @getpaseo/cli
 paseo start --no-relay
 
 # A phone over Tailscale: listen on the Tailscale address and require a password
-PASEO_PASSWORD='choose-a-long-secret' \
+PASEO_PASSWORD=<a long password> \
   paseo start --no-relay --listen "$(tailscale ip -4):6767"
 ```
 

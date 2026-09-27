@@ -12,6 +12,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/orchestration/models/work.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
+import 'package:opencode_mobile/ui/kit/kit_work_graph.dart';
 import 'package:opencode_mobile/ui/screens/team/work_graph.dart';
 
 /// a ← b ← c(blocked) ← d, a ← e, f alone.
@@ -55,11 +57,25 @@ Future<void> _tapThroughZoom(WidgetTester tester, Offset point) async {
   await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 1));
 }
 
+/// The Graph view's geometry for [nodes], as `KitWorkGraph`'s layers form
+/// lays it out (ids deduplicated, first kept, as the Work tab passes them).
+KitWorkGraphGeometry _layout(
+  List<WorkGraphNode> nodes, {
+  Size nodeSize = const Size(KitTokens.graphNodeWidth, 44),
+}) {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+  final seen = <String>{};
+  return KitWorkGraphGeometry.layers([
+    for (final node in nodes)
+      if (seen.add(node.id)) node.toKit(l10n),
+  ], nodeSize: nodeSize);
+}
+
 void main() {
-  group('WorkGraphLayout', () {
+  group('the Graph view geometry', () {
     test('lays the six-node graph out the same way twice', () {
-      final first = WorkGraphLayout.compute(_six);
-      final second = WorkGraphLayout.compute(_six);
+      final first = _layout(_six);
+      final second = _layout(_six);
       const w = 156.0, h = 44.0;
       final expected = {
         'a': const Rect.fromLTWH(16, 16, w, h),
@@ -70,7 +86,7 @@ void main() {
         'd': const Rect.fromLTWH(106, 292, w, h),
       };
       for (final layout in [first, second]) {
-        expect(layout.layers, [
+        expect(layout.layerRows, [
           ['a', 'f'],
           ['b', 'e'],
           ['c'],
@@ -104,7 +120,7 @@ void main() {
     });
 
     test('names the critical path and draws its edges thicker', () {
-      final layout = WorkGraphLayout.compute(_six);
+      final layout = _layout(_six);
       expect(layout.criticalPath, ['a', 'b', 'c', 'd']);
       expect(layout.criticalEdges, {('a', 'b'), ('b', 'c'), ('c', 'd')});
       expect({
@@ -118,7 +134,7 @@ void main() {
     });
 
     test('the blocked chain is the stuck item, its open need, its waiters', () {
-      final layout = WorkGraphLayout.compute(_six);
+      final layout = _layout(_six);
       expect(layout.blockedChain, {'b', 'c', 'd'});
       expect(
         {
@@ -129,7 +145,7 @@ void main() {
       );
       // A completed need is not part of the chain; a stuck item with no
       // links stands alone in it.
-      final alone = WorkGraphLayout.compute(const [
+      final alone = _layout(const [
         WorkGraphNode(id: 'x', title: 'x', state: WorkState.completed),
         WorkGraphNode(
           id: 'y',
@@ -143,7 +159,7 @@ void main() {
     });
 
     test('unknown ids, self links, duplicates and cycles do not break it', () {
-      final layout = WorkGraphLayout.compute(const [
+      final layout = _layout(const [
         WorkGraphNode(
           id: 'a',
           title: 'a',
@@ -162,19 +178,16 @@ void main() {
       expect(layout.nodes.first.title, 'a');
       // One edge of the cycle is dropped; both nodes keep a place.
       expect(layout.edges.length, 1);
-      expect(layout.layers.expand((r) => r).toSet(), {'a', 'b'});
+      expect(layout.layerRows.expand((r) => r).toSet(), {'a', 'b'});
       expect(layout.criticalPath.length, 2);
-      final empty = WorkGraphLayout.compute(const []);
+      final empty = _layout(const []);
       expect(empty.nodes, isEmpty);
       expect(empty.criticalPath, isEmpty);
       expect(empty.size, const Size(32, 32));
     });
 
     test('a larger chip size moves every rect and grows the canvas', () {
-      final layout = WorkGraphLayout.compute(
-        _six,
-        nodeSize: const Size(200, 60),
-      );
+      final layout = _layout(_six, nodeSize: const Size(200, 60));
       expect(layout.rects['a'], const Rect.fromLTWH(16, 16, 200, 60));
       expect(layout.rects['f'], const Rect.fromLTWH(240, 16, 200, 60));
       expect(layout.rects['c'], const Rect.fromLTWH(128, 232, 200, 60));
@@ -235,10 +248,7 @@ void main() {
       expect(fitted.getTranslation().x, closeTo((800 - 368) / 2, 1e-9));
       expect(fitted.getTranslation().y, closeTo((600 - 408) / 2, 1e-9));
 
-      final layout = WorkGraphLayout.compute(
-        _six,
-        nodeSize: const Size(156, 58),
-      );
+      final layout = _layout(_six, nodeSize: const Size(156, 58));
       final origin = tester.getTopLeft(find.byType(WorkGraph));
       Offset onScreen(String id) =>
           origin +

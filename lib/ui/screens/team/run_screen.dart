@@ -61,6 +61,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
+import '../../widgets/product_states.dart' show SectionLabel;
 import '../../widgets/relative_time.dart';
 import '../../widgets/team_agent_row.dart';
 import '../../widgets/team_controls.dart';

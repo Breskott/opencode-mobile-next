@@ -2,15 +2,13 @@
 // swipe, a tap outside and cancel; the typed name enables the confirm only
 // on an exact match; the commit haptic only for stop, destructive and
 // discard, never with Vibration off; a confirm raised from a KitSheet adds
-// no route. Also the §8.2 shapes per window, and the showConfirmSheet
-// wrapper's mapping.
+// no route. Also the §8.2 shapes per window.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
-import 'package:opencode_mobile/ui/widgets/confirm_sheet.dart';
 
 import 'kit_harness.dart';
 
@@ -235,27 +233,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(haptics, isEmpty);
     });
-
-    testWidgets('showConfirmSheet obeys Vibration off too', (tester) async {
-      final haptics = recordHaptics(tester);
-      final context = await pumpKitHost(
-        tester,
-        effects: const KitEffects(haptics: false),
-      );
-      unawaited(
-        showConfirmSheet(
-          context,
-          title: 'Remove server?',
-          message: 'Its saved sign-in is removed.',
-          confirmLabel: 'Remove server',
-          destructive: true,
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Remove server'));
-      await tester.pumpAndSettle();
-      expect(haptics, isEmpty);
-    });
   });
 
   testWidgets('a confirm raised from a KitSheet adds no route', (tester) async {
@@ -455,32 +432,5 @@ void main() {
         );
       });
     }
-  });
-
-  testWidgets('showConfirmSheet maps onto the kit confirmation', (
-    tester,
-  ) async {
-    final context = await pumpKitHost(tester);
-    bool? result;
-    unawaited(
-      showConfirmSheet(
-        context,
-        title: 'Remove server?',
-        message: 'Its saved sign-in is removed.',
-        confirmLabel: 'Remove server',
-        destructive: true,
-        sheetKey: const ValueKey('legacy-sheet'),
-        confirmKey: const ValueKey('legacy-confirm'),
-      ).then((v) => result = v),
-    );
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('legacy-sheet')), findsOneWidget);
-    expect(find.byType(KitConfirmSheet), findsOneWidget);
-    expect(find.byIcon(AppIconography.question), findsNothing);
-    expect(find.byIcon(AppIconography.delete), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('legacy-confirm')));
-    await tester.pumpAndSettle();
-    expect(result, isTrue);
   });
 }

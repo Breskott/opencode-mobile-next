@@ -24,6 +24,7 @@ import '../kit/kit_row.dart';
 import '../kit/kit_row_parts.dart';
 import '../kit/kit_sheet.dart';
 import '../kit/kit_text.dart';
+import '../kit/kit_task_card.dart' show KitPriorityGlyph;
 import '../kit/kit_tokens.dart';
 import 'team_board_card.dart';
 
@@ -123,7 +124,9 @@ class _MoveSheetBody extends StatelessWidget {
             ? SizedBox.square(
                 dimension: KitTokens.markSlotSize,
                 child: Center(
-                  child: TeamBoardPriorityGlyph(priority: card.priority),
+                  child: KitPriorityGlyph(
+                    priority: teamBoardKitPriority(card.priority),
+                  ),
                 ),
               )
             : KitRow.icon(context, icon),
@@ -196,7 +199,7 @@ Future<WorkPriority?> showTeamBoardPrioritySheet(
           key: ValueKey('team-board-priority-${priority.name}'),
           value: priority,
           title: teamBoardPriorityWord(l10n, priority),
-          leading: TeamBoardPriorityGlyph(priority: priority),
+          leading: KitPriorityGlyph(priority: teamBoardKitPriority(priority)),
         ),
     ],
   );

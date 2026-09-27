@@ -1,5 +1,4 @@
-// Golden renders of shared-system-1's pages (wave 2a): the shared product
-// states (embedded-product-states), the external-link gate
+// Golden renders of shared-system-1's pages (wave 2a): the external-link gate
 // (external-link-dialog) and the run-command sheet (run-command-dialog),
 // now built from kit parts only. Phone 412x915 and one wide window
 // (1280x800), dark and light (owner decision 2026-09-27: no Arabic), with
@@ -9,17 +8,13 @@
 //   flutter test --update-goldens test/revamp/shared_system_1_golden_test.dart
 // and look at every changed image before committing it.
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
-import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/kit/kit_row_parts.dart';
 import 'package:opencode_mobile/ui/widgets/external_link.dart';
-import 'package:opencode_mobile/ui/widgets/product_states.dart';
 import 'package:opencode_mobile/ui/widgets/run_command_dialog.dart';
 
 import '../../tool/capture/fixtures.dart' show captureTheme, loadCaptureFonts;
@@ -99,84 +94,6 @@ void main() {
     final theme = light ? 'light' : 'dark';
     for (final size in [_phone, _wide]) {
       final where = '$theme, ${size.width.toInt()}x${size.height.toInt()}';
-
-      testWidgets('product error, unexpected ($where)', (tester) async {
-        await _shot(
-          tester,
-          'system_embedded-product-states_error',
-          light: light,
-          size: size,
-          body: ProductErrorState(
-            title: "Couldn't load skills",
-            message: 'The server answered with something this app cannot read.',
-            details: 'GET /skill 500\n{"error":"skills index corrupt"}',
-            onRetry: () async {},
-          ),
-        );
-      });
-
-      testWidgets('product error, network ($where)', (tester) async {
-        await _shot(
-          tester,
-          'system_embedded-product-states_network-error',
-          light: light,
-          size: size,
-          body: ProductErrorState(
-            message: 'OpenCode is unreachable. Try again.',
-            error: const SocketException('Connection refused'),
-            onSwitchServer: () {},
-            onRetry: () async {},
-          ),
-        );
-      });
-
-      testWidgets('product empty ($where)', (tester) async {
-        await _shot(
-          tester,
-          'system_embedded-product-states_empty',
-          light: light,
-          size: size,
-          body: ProductEmptyState(
-            icon: AppIconography.checklist,
-            title: 'No skills yet',
-            message: 'Skills this server knows show here.',
-            actionLabel: 'Reload skills',
-            onAction: () {},
-          ),
-        );
-      });
-
-      testWidgets('refresh notice, section, gated row, inline empty '
-          '($where)', (tester) async {
-        await _shot(
-          tester,
-          'system_embedded-product-states_rows',
-          light: light,
-          size: size,
-          body: ProductRefreshBody(
-            message: 'The server did not answer in 30 s.',
-            onRetry: () {},
-            child: ListView(
-              children: const [
-                SectionLabel('Server'),
-                GatedRow(
-                  feature: 'shell',
-                  title: 'Default shell',
-                  explainer: gatedOnV2Explainer,
-                  leading: KitRowIcon(AppIconography.terminal),
-                ),
-                SectionLabel('Todos'),
-                ProductInlineEmpty(
-                  icon: AppIconography.checklist,
-                  title: 'No todos in this conversation',
-                  message:
-                      'When the assistant plans work, the steps show here.',
-                ),
-              ],
-            ),
-          ),
-        );
-      });
 
       testWidgets('external link, https ($where)', (tester) async {
         await _shot(

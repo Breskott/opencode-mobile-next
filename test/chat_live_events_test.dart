@@ -8,7 +8,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart'
-    show KitCodeBlock, KitMarkdown, KitMotion, KitTurn, KitUndo;
+    show
+        KitCodeBlock,
+        KitMarkdown,
+        KitMotion,
+        KitSkeletonTranscript,
+        KitStateView,
+        KitTurn,
+        KitUndo;
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
@@ -27,8 +34,6 @@ import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_context_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/tools_screen.dart';
-import 'package:opencode_mobile/ui/widgets/product_states.dart';
-import 'package:opencode_mobile/ui/widgets/markdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/state/prompt_photos.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -1769,7 +1774,7 @@ void main() {
 
     final controller = await _pumpChat(tester, api);
     expect(find.text('Retained response'), findsOneWidget);
-    expect(find.byType(LoadingList), findsNothing);
+    expect(find.byType(KitSkeletonTranscript), findsNothing);
 
     controller.signalDataRefreshForTesting();
     await tester.pump();
@@ -1779,15 +1784,15 @@ void main() {
     // skeleton and no full-screen error.
     expect(loads, 2);
     expect(find.text('Retained response'), findsOneWidget);
-    expect(find.byType(LoadingList), findsNothing);
-    expect(find.byType(ProductErrorState), findsNothing);
+    expect(find.byType(KitSkeletonTranscript), findsNothing);
+    expect(find.byType(KitStateView), findsNothing);
 
     // Even a failed refresh keeps the transcript instead of a dead end.
     pending!.completeError(StateError('stream reset during rehydrate'));
     await tester.pumpAndSettle();
     expect(find.text('Retained response'), findsOneWidget);
-    expect(find.byType(LoadingList), findsNothing);
-    expect(find.byType(ProductErrorState), findsNothing);
+    expect(find.byType(KitSkeletonTranscript), findsNothing);
+    expect(find.byType(KitStateView), findsNothing);
   });
 
   testWidgets('renders current OpenCode unified patches and server counts', (
@@ -3904,7 +3909,7 @@ void main() {
       final controller = await _pumpChat(tester, api);
       await tester.pumpAndSettle();
       final horizontal = find.descendant(
-        of: find.byType(CodeBlock),
+        of: find.byType(KitCodeBlock),
         matching: find.byWidgetPredicate(
           (w) =>
               w is SingleChildScrollView &&

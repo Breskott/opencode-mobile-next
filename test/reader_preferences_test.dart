@@ -220,7 +220,7 @@ void main() {
     await _pump(
       tester,
       _RefusingPreferences(),
-      const Scaffold(body: CodeBlock(code: 'code')),
+      const Scaffold(body: MarkdownText('```\ncode\n```')),
     );
     await _chooseCodeAction(tester, 'Wrap lines');
     await tester.pumpAndSettle();
@@ -296,7 +296,7 @@ void main() {
         tester,
         prefs,
         Scaffold(
-          body: SingleChildScrollView(child: CodeBlock(code: code)),
+          body: SingleChildScrollView(child: MarkdownText('```\n$code\n```')),
         ),
         rtl: true,
         scale: 2.5,
@@ -345,7 +345,7 @@ void main() {
       });
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      const home = Scaffold(body: CodeBlock(code: 'code'));
+      const home = Scaffold(body: MarkdownText('```\ncode\n```'));
       await _pump(tester, prefs, home);
       expect(_horizontal(), findsNothing);
       await _pump(tester, prefs, home, profile: 'b');

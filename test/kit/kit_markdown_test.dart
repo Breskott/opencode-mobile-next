@@ -370,22 +370,6 @@ void main() {
     MarkdownText.debugParseCount = 7;
     expect(KitMarkdown.debugParseCount, 7);
 
-    await _pump(
-      tester,
-      const CodeBlock(
-        code: 'npm run dev',
-        originalSource: 'npm run dev\n',
-        language: 'bash',
-        highlightEnabled: false,
-        canExpand: false,
-      ),
-    );
-    final block = tester.widget<KitCodeBlock>(find.byType(KitCodeBlock));
-    expect(block.text, 'npm run dev');
-    expect(block.copyText, 'npm run dev\n');
-    expect(block.language, 'bash');
-    expect(block.highlight, isFalse);
-    expect(block.maxLines, isNull);
     expect(
       markdownProseForSpeech('# Hi\n\n```\ncode\n```\n[a](https://x.y)'),
       'Hi\n\na',

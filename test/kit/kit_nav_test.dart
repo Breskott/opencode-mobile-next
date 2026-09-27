@@ -14,7 +14,6 @@ import 'package:opencode_mobile/ui/kit/kit_layout.dart';
 import 'package:opencode_mobile/ui/kit/kit_nav.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
-import 'package:opencode_mobile/ui/widgets/glass_surface.dart';
 
 import '../goldens/kit/kit_gallery.dart' show loadKitGalleryFonts;
 
@@ -346,16 +345,5 @@ void main() {
     expect(after.left, greaterThan(before.left));
     await tester.pumpAndSettle();
     expect(tester.getRect(lens), after);
-  });
-
-  testWidgets('GlassSurface forwards to KitGlass at radius 22', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.dark(),
-        home: const GlassSurface(child: SizedBox(width: 100, height: 60)),
-      ),
-    );
-    final glass = tester.widget<KitGlass>(find.byType(KitGlass));
-    expect(glass.borderRadius, BorderRadius.circular(22));
   });
 }
