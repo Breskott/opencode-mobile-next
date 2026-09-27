@@ -112,7 +112,7 @@ Surfaces, attention and danger never change with the pack, so meaning stays cons
 
 - **Buttons:**
   - primary: `accent` filled, with `onAccent` text;
-  - secondary: `surface3`;
+  - tertiary: text in `accent` (`danger` when destructive, `text3` when disabled; R5 2026-09-27: `text2` read as disabled beside muted text);
   - tertiary: text in `text2`;
   - destructive: `dangerFill`, used only inside a confirmation.
 

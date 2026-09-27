@@ -270,6 +270,8 @@ void main() {
         find.byType(CircularProgressIndicator),
       );
       expect(indicator.color, roles.accent);
+      // The kit's one spinner stroke, in logical pixels (R5).
+      expect(indicator.strokeWidth, KitTokens.spinnerStroke);
     });
 
     testWidgets('needsYou paints attention', (tester) async {
