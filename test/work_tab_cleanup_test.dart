@@ -18,6 +18,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/widgets/saved_server_connection_card.dart';
@@ -249,8 +250,8 @@ void main() {
       expect(find.text('Create a new folder'), findsNothing);
       expect(
         tester
-            .widget<Text>(find.byKey(const ValueKey('current-project-name')))
-            .data,
+            .widget<KitText>(find.byKey(const ValueKey('current-project-name')))
+            .text,
         'FinanceHub3',
       );
       // The saved one is opened, never another project.
@@ -270,8 +271,8 @@ void main() {
       expect(controller.selected, [_current]);
       expect(
         tester
-            .widget<Text>(find.byKey(const ValueKey('current-project-name')))
-            .data,
+            .widget<KitText>(find.byKey(const ValueKey('current-project-name')))
+            .text,
         'FinanceHub3',
       );
       await _dispose(tester, controller);
@@ -301,8 +302,8 @@ void main() {
     await _pumpWork(tester, controller);
     expect(
       tester
-          .widget<Text>(find.byKey(const ValueKey('current-project-name')))
-          .data,
+          .widget<KitText>(find.byKey(const ValueKey('current-project-name')))
+          .text,
       'FinanceHub3',
     );
     await _dispose(tester, controller);
@@ -502,7 +503,7 @@ void main() {
       final button = tester.getRect(
         find.byKey(const ValueKey('workspace-quick-ask')),
       );
-      final tabs = tester.getRect(find.byType(NavigationBar));
+      final tabs = tester.getRect(find.byKey(const ValueKey('home-shell-nav')));
       expect(underneath(tester, button), isEmpty, reason: 'under the button');
       expect(underneath(tester, tabs), isEmpty, reason: 'under the tab bar');
 
@@ -597,7 +598,9 @@ void main() {
 
       await tester.tap(find.text('Try again'));
       expect(retries, 1);
-      await tester.tap(find.text('Choose another server'));
+      await tester.tap(
+        find.byKey(const ValueKey('saved-server-choose-another')),
+      );
       expect(changes, 1);
       await tester.tap(find.text('Restart'));
       await tester.pump();

@@ -198,7 +198,10 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.descendant(of: card, matching: find.text('2 models')),
+        find.descendant(
+          of: card,
+          matching: find.textContaining('2 models', findRichText: true),
+        ),
         findsOneWidget,
       );
       expect(find.text('gpt-5.6-sol'), findsOneWidget);
@@ -519,10 +522,11 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('usage-total-cost')))
-            .data,
-        r'$3.42',
+        find.descendant(
+          of: find.byKey(const ValueKey('usage-total-cost')),
+          matching: find.text(r'$3.42'),
+        ),
+        findsOneWidget,
       );
       expect(find.text('Timezone: Asia/Dubai'), findsOneWidget);
       if (preview != null) {
@@ -537,10 +541,11 @@ void main() {
         findsOneWidget,
       );
       expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('usage-total-cost')))
-            .data,
-        r'$3.42',
+        find.descendant(
+          of: find.byKey(const ValueKey('usage-total-cost')),
+          matching: find.text(r'$3.42'),
+        ),
+        findsOneWidget,
       );
       expect(tester.takeException(), isNull);
     },

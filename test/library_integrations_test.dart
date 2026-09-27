@@ -9,6 +9,7 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
 import 'package:opencode_mobile/ui/screens/mcp_setup_screen.dart';
 import 'package:opencode_mobile/ui/widgets/provider_logo.dart';
@@ -252,6 +253,16 @@ Future<void> _finishSignIn(WidgetTester tester, String name) async {
   await tester.tap(find.text('Finish signing in to $name'));
 }
 
+/// Connected providers expose account actions in their row menu.
+Future<void> _openProviderDisconnect(WidgetTester tester) async {
+  final row = find.byKey(const ValueKey('provider-cloud'));
+  await tester.ensureVisible(row);
+  await tester.tap(row);
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('disconnect-provider-cloud')));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const secureStorage = MethodChannel(
@@ -404,8 +415,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('My LLM'), findsOneWidget);
-      expect(find.text('Configured on the server'), findsOneWidget);
-      expect(find.textContaining('2 models'), findsOneWidget);
+      expect(
+        find.textContaining('Server-managed', findRichText: true),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('2 models', findRichText: true),
+        findsOneWidget,
+      );
       expect(
         find.byKey(const ValueKey('connect-provider-my-llm')),
         findsNothing,
@@ -421,8 +438,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Disabled'), findsNothing);
-      // The summary counts the configured provider as connected.
-      expect(find.text('1 connected · 1 available'), findsOneWidget);
+      // R18 removed the aggregate count; each row carries its own state.
+      expect(find.text('1 connected · 1 available'), findsNothing);
     },
   );
 
@@ -453,11 +470,23 @@ void main() {
     expect(find.text('Z.AI Coding Plan · Global'), findsOneWidget);
     expect(find.text('Z.AI Coding Plan · China'), findsOneWidget);
     expect(find.text('Zhipu AI Coding Plan'), findsNothing);
-    expect(find.text('Server-managed'), findsOneWidget);
-    expect(find.text('Connected'), findsOneWidget);
-    expect(find.text('Not connected'), findsOneWidget);
-    expect(find.text('Connect'), findsOneWidget);
-    expect(find.text('1 connected · 1 available'), findsOneWidget);
+    expect(
+      find.textContaining('Server-managed', findRichText: true),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Connected · Server-managed', findRichText: true),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Not connected', findRichText: true),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('connect-provider-zai-coding-plan')),
+      findsOneWidget,
+    );
+    expect(find.text('1 connected · 1 available'), findsNothing);
     // Connected providers lead the list regardless of alias order.
     expect(
       tester.getTopLeft(find.text('Z.AI Coding Plan · China')).dy,
@@ -490,21 +519,25 @@ void main() {
       await tester.pumpWidget(_app(controller));
       await tester.pumpAndSettle();
 
-      expect(find.text('Stored credential: Personal key'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('disconnect-provider-cloud')));
-      await tester.pumpAndSettle();
+      expect(
+        find.textContaining(
+          'Stored credential: Personal key',
+          findRichText: true,
+        ),
+        findsOneWidget,
+      );
+      await _openProviderDisconnect(tester);
 
       expect(find.text('Disconnect Cloud Provider?'), findsOneWidget);
       expect(
-        find.textContaining('An active response is not stopped'),
+        find.textContaining('A reply already running finishes first'),
         findsOneWidget,
       );
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(repository.providerDisconnectCalls, 0);
 
-      await tester.tap(find.byKey(const ValueKey('disconnect-provider-cloud')));
-      await tester.pumpAndSettle();
+      await _openProviderDisconnect(tester);
       await tester.tap(
         find.byKey(const ValueKey('confirm-provider-disconnect')),
       );
@@ -516,7 +549,10 @@ void main() {
         'credential-1',
       ]);
       expect(find.text('Cloud Provider disconnected'), findsOneWidget);
-      expect(find.text('Connect'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('connect-provider-cloud')),
+        findsOneWidget,
+      );
     },
   );
 
@@ -546,15 +582,17 @@ void main() {
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('disconnect-provider-cloud')));
-    await tester.pumpAndSettle();
+    await _openProviderDisconnect(tester);
     await tester.tap(find.byKey(const ValueKey('confirm-provider-disconnect')));
     await tester.pumpAndSettle();
 
     expect(repository.providerDisconnectCalls, 1);
     expect(repository.disconnectedIntegration?.credentialIDs, isEmpty);
     expect(find.text('Cloud Provider disconnected'), findsOneWidget);
-    expect(find.text('Connect'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('connect-provider-cloud')),
+      findsOneWidget,
+    );
   });
 
   testWidgets(
@@ -584,9 +622,27 @@ void main() {
       await tester.pumpWidget(_app(controller));
       await tester.pumpAndSettle();
 
-      expect(find.text('Server environment: PROVIDER_TOKEN'), findsOneWidget);
-      expect(find.text('Server environment'), findsOneWidget);
-      expect(find.text('Disconnect'), findsNothing);
+      expect(
+        find.textContaining('Server environment', findRichText: true),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('provider-environment-provider')),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<KitRow>(
+              find.byKey(const ValueKey('provider-environment-provider')),
+            )
+            .menu
+            .where(
+              (item) =>
+                  item.key ==
+                  const ValueKey('disconnect-provider-environment-provider'),
+            ),
+        isEmpty,
+      );
       expect(repository.providerDisconnectCalls, 0);
     },
   );
@@ -618,8 +674,7 @@ void main() {
 
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('disconnect-provider-cloud')));
-    await tester.pumpAndSettle();
+    await _openProviderDisconnect(tester);
     expect(
       find.textContaining('server environment, which mobile cannot remove'),
       findsOneWidget,
@@ -634,7 +689,12 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Server environment: CLOUD_TOKEN'), findsOneWidget);
+    expect(
+      find.textContaining('Server environment', findRichText: true),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('provider-cloud')));
+    await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('disconnect-provider-cloud')),
       findsOneWidget,
@@ -668,8 +728,7 @@ void main() {
 
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('disconnect-provider-cloud')));
-    await tester.pumpAndSettle();
+    await _openProviderDisconnect(tester);
     await tester.tap(find.byKey(const ValueKey('confirm-provider-disconnect')));
     await tester.pumpAndSettle();
 
@@ -680,10 +739,12 @@ void main() {
       ),
       findsOneWidget,
     );
+    await _openProviderDisconnect(tester);
     expect(
-      find.byKey(const ValueKey('disconnect-provider-cloud')),
+      find.byKey(const ValueKey('confirm-provider-disconnect')),
       findsOneWidget,
     );
+    expect(repository.providerDisconnectCalls, 1);
   });
 
   testWidgets(
@@ -714,27 +775,11 @@ void main() {
 
       await tester.pumpWidget(_app(controller, textScale: 2));
       await tester.pumpAndSettle();
-      final disconnect = find.byKey(
-        const ValueKey('disconnect-provider-cloud'),
-      );
-      // The list is not the only scrollable: the provider search field
-      // brings its own, so drag the ListView itself.
-      await tester.dragUntilVisible(
-        disconnect,
-        find.byType(ListView),
-        const Offset(0, -160),
-      );
-      await Scrollable.ensureVisible(
-        tester.element(disconnect),
-        alignment: 0.5,
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(disconnect);
-      await tester.pumpAndSettle();
+      await _openProviderDisconnect(tester);
 
       expect(find.text('Disconnect Cloud Provider?'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Disconnect provider'), findsOneWidget);
+      expect(find.text('Disconnect Cloud Provider'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -774,8 +819,13 @@ void main() {
     await tester.pumpAndSettle();
 
     Future<void> tapDisconnect() async {
-      await tester.ensureVisible(find.widgetWithText(TextButton, 'Disconnect'));
-      await tester.tap(find.widgetWithText(TextButton, 'Disconnect'));
+      final row = find.byKey(const ValueKey('mcp-server-remote-tools'));
+      await tester.ensureVisible(row);
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('mcp-disconnect-remote-tools')),
+      );
       await tester.pumpAndSettle();
     }
 
@@ -821,13 +871,15 @@ void main() {
 
     await tester.pumpWidget(_app(await _controller(repository)));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Authenticate'));
+    await tester.tap(find.text('Sign in to remote-tools'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Open authorization page?'), findsOneWidget);
-    expect(find.text('Destination host'), findsOneWidget);
-    expect(find.text('mcp-auth.example.com:8443'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('authorization-launch-sheet')),
+      findsOneWidget,
+    );
+    expect(find.text('Sign in at mcp-auth.example.com:8443?'), findsOneWidget);
     expect(find.textContaining('state=secret'), findsNothing);
 
     await tester.tap(find.text('Cancel'));
@@ -848,11 +900,16 @@ void main() {
 
     await tester.pumpWidget(_app(await _controller(repository)));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Authenticate'));
+    await tester.tap(find.text('Sign in to remote-tools'));
     await tester.pump();
 
-    expect(find.text('Open authorization page?'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('authorization-launch-sheet')),
+      findsNothing,
+    );
     expect(find.textContaining('unsafe authorization link'), findsOneWidget);
+    expect(find.textContaining('opencode://authorize'), findsNothing);
+    expect(repository.mcpCompleteCalls, 0);
   });
 
   testWidgets('MCP authorization completes from a state-validated callback URL', (
@@ -880,7 +937,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Authenticate'));
+    await tester.tap(find.text('Sign in to remote-tools'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Open browser'));
@@ -914,7 +971,13 @@ void main() {
     expect(repository.mcpCompleteCalls, 1);
     expect(repository.mcpCompletionCode, 'code-1');
     expect(find.byKey(const ValueKey('pending-mcp-oauth')), findsNothing);
-    expect(find.text('Connected and tools are available'), findsOneWidget);
+    expect(
+      find.textContaining(
+        'Connected and tools are available',
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
     expect(find.text('remote-tools authenticated'), findsOneWidget);
   });
 
@@ -939,7 +1002,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Authenticate'));
+      await tester.tap(find.text('Sign in to remote-tools'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Open browser'));
@@ -964,7 +1027,7 @@ void main() {
 
       expect(find.textContaining('state does not match'), findsOneWidget);
       expect(repository.mcpCompleteCalls, 0);
-      await tester.tap(find.text('Back'));
+      await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(
         find.byKey(const ValueKey('cancel-mcp-oauth')),
@@ -1007,13 +1070,13 @@ void main() {
     expect(tester.takeException(), isNull);
     // Providers lead the screen now, so the MCP row starts below the fold.
     await tester.scrollUntilVisible(
-      find.text('Authenticate'),
+      find.text('Sign in to remote-tools'),
       120,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.ensureVisible(find.text('Authenticate'));
+    await tester.ensureVisible(find.text('Sign in to remote-tools'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Authenticate'));
+    await tester.tap(find.text('Sign in to remote-tools'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(tester.takeException(), isNull);
@@ -1072,7 +1135,8 @@ void main() {
 
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Connect').first);
+    await tester.ensureVisible(find.text('Connect remote-tools'));
+    await tester.tap(find.text('Connect remote-tools'));
     await tester.pump();
 
     expect(retainedRepository.mcpConnectCalls, 0);
@@ -1083,7 +1147,13 @@ void main() {
 
     expect(retainedRepository.mcpConnectCalls, 0);
     expect(replacementRepository.mcpConnectCalls, 1);
-    expect(find.text('Connected and tools are available'), findsOneWidget);
+    expect(
+      find.textContaining(
+        'Connected and tools are available',
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets(
@@ -1116,14 +1186,14 @@ void main() {
 
       await tester.pumpWidget(_app(await _controller(repository)));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Connect'));
+      await tester.tap(find.byKey(const ValueKey('connect-provider-cloud')));
       await tester.pumpAndSettle();
 
       await tester.enterText(
         find.byKey(const ValueKey('oauth-prompt-tenant')),
         '   ',
       );
-      await tester.tap(find.text('Continue'));
+      await tester.tap(find.byKey(const ValueKey('oauth-inputs-continue')));
       await tester.pump();
 
       expect(find.text('Enter a value'), findsOneWidget);
@@ -1133,13 +1203,16 @@ void main() {
         find.byKey(const ValueKey('oauth-prompt-tenant')),
         'acme',
       );
-      await tester.tap(find.text('Continue'));
+      await tester.tap(find.byKey(const ValueKey('oauth-inputs-continue')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(repository.oauthCalls, 1);
       expect(repository.oauthInputs, {'tenant': 'acme', 'label': ''});
-      expect(find.text('Open authorization page?'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('authorization-launch-sheet')),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
@@ -1204,11 +1277,9 @@ void main() {
 
       await tester.pumpWidget(_app(await _controller(repository)));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Connect'));
+      await tester.tap(find.byKey(const ValueKey('connect-provider-cloud')));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('oauth-prompt-mode')));
-      await tester.pumpAndSettle();
       await tester.tap(find.text('Advanced').last);
       await tester.pumpAndSettle();
 
@@ -1219,17 +1290,13 @@ void main() {
         find.byKey(const ValueKey('oauth-prompt-secret')),
         'do-not-submit',
       );
-      await tester.tap(find.text('Continue'));
+      await tester.tap(find.byKey(const ValueKey('oauth-inputs-continue')));
       await tester.pump();
 
       expect(find.text('Select an option'), findsOneWidget);
       expect(repository.oauthCalls, 0);
 
-      await tester.tap(find.byKey(const ValueKey('oauth-prompt-workspace')));
-      await tester.pumpAndSettle();
       await tester.tap(find.text('Production').last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('oauth-prompt-mode')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Basic').last);
       await tester.pumpAndSettle();
@@ -1241,7 +1308,7 @@ void main() {
         find.byKey(const ValueKey('oauth-prompt-note')),
         'visible value',
       );
-      await tester.tap(find.text('Continue'));
+      await tester.tap(find.byKey(const ValueKey('oauth-inputs-continue')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -1250,8 +1317,14 @@ void main() {
         'mode': 'basic',
         'note': 'visible value',
       });
-      expect(find.text('provider-auth.example.com'), findsOneWidget);
-      expect(find.text('Open authorization page?'), findsOneWidget);
+      expect(
+        find.text('Sign in at provider-auth.example.com?'),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('authorization-launch-sheet')),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
@@ -1291,13 +1364,13 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Connect'));
+      await tester.tap(find.byKey(const ValueKey('connect-provider-cloud')));
       await tester.pumpAndSettle();
-      expect(find.text('OpenCode instructions'), findsOneWidget);
+      expect(find.textContaining('The server says:'), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.text('Enter code: ABCD-EFGH'),
+          of: find.byKey(const ValueKey('authorization-launch-sheet')),
+          matching: find.textContaining('Enter code: ABCD-EFGH'),
         ),
         findsOneWidget,
       );
@@ -1358,7 +1431,7 @@ void main() {
       _app(controller, authorizationLauncher: (_) async => true),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Connect'));
+    await tester.tap(find.byKey(const ValueKey('connect-provider-cloud')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Open browser'));
     await tester.pump(const Duration(milliseconds: 300));
@@ -1372,7 +1445,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     // While the check runs, the row opens nothing: no Cancel mid-callback.
-    await tester.tap(find.byKey(const ValueKey('pending-provider-oauth')));
+    final pendingRow = find.byKey(const ValueKey('pending-provider-oauth'));
+    expect(tester.widget<KitRow>(pendingRow).onTap, isNull);
+    await tester.tapAt(tester.getCenter(pendingRow));
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.byKey(const ValueKey('sign-in-sheet')), findsNothing);
 
@@ -1420,7 +1495,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Connect'));
+    await tester.tap(find.byKey(const ValueKey('connect-provider-cloud')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Open browser'));
     await tester.pump(const Duration(milliseconds: 300));
@@ -1435,7 +1510,7 @@ void main() {
       find.byKey(const ValueKey('oauth-completion-code')),
       'https://provider-auth.example.com/callback?code=returned-code&state=state-1',
     );
-    await tester.tap(find.text('Complete'));
+    await tester.tap(find.widgetWithText(KitButton, 'Finish signing in'));
     await tester.pumpAndSettle();
 
     expect(repository.oauthCompleteCalls, 1);
@@ -1508,7 +1583,8 @@ void main() {
 
     // Case-insensitive on the presented name.
     await tester.enterText(search, 'ANTH');
-    await tester.pump();
+    await tester.pump(KitMotion.typingSettle);
+    await tester.pumpAndSettle();
     expect(find.text('Anthropic'), findsOneWidget);
     expect(find.text('OpenAI'), findsNothing);
     expect(find.text('Z.AI · Global'), findsNothing);
@@ -1519,37 +1595,42 @@ void main() {
 
     // A model id the provider serves.
     await tester.enterText(search, 'gpt');
-    await tester.pump();
+    await tester.pump(KitMotion.typingSettle);
+    await tester.pumpAndSettle();
     expect(find.text('OpenAI'), findsOneWidget);
     expect(find.text('Anthropic'), findsNothing);
 
     // A consolidated alias: the China route id finds the Z.AI family.
     await tester.enterText(search, 'zhipuai');
-    await tester.pump();
+    await tester.pump(KitMotion.typingSettle);
+    await tester.pumpAndSettle();
     expect(find.text('Z.AI · Global'), findsOneWidget);
     expect(find.text('OpenAI'), findsNothing);
     expect(find.text('Anthropic'), findsNothing);
 
-    // The section header and summary survive filtering.
-    expect(find.text('PROVIDERS'), findsOneWidget);
-    expect(find.text('1 connected · 2 available'), findsOneWidget);
+    // The explained section label survives filtering; R18 removes counts.
+    expect(find.text('Providers'), findsOneWidget);
+    expect(find.text('1 connected · 2 available'), findsNothing);
 
     // Nothing matches: a small empty state with a Clear search action.
     await tester.enterText(search, 'no-such-provider');
-    await tester.pump();
+    await tester.pump(KitMotion.typingSettle);
+    await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('providers-search-empty')),
       findsOneWidget,
     );
     expect(
-      find.text('No providers match \u201cno-such-provider\u201d'),
+      find.text(
+        'Nothing in ${KitBidi.auto('Providers')} matches “${KitBidi.auto('no-such-provider')}”',
+      ),
       findsOneWidget,
     );
     expect(find.text('Anthropic'), findsNothing);
     expect(find.text('OpenAI'), findsNothing);
 
     await tester.tap(find.text('Clear search'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('providers-search-empty')), findsNothing);
     expect(tester.widget<TextField>(search).controller!.text, isEmpty);
     expect(find.text('Anthropic'), findsOneWidget);
@@ -1558,10 +1639,11 @@ void main() {
 
     // The field's own clear button restores the list too.
     await tester.enterText(search, 'open');
-    await tester.pump();
+    await tester.pump(KitMotion.typingSettle);
+    await tester.pumpAndSettle();
     expect(find.text('Anthropic'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('providers-search-clear')));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('Anthropic'), findsOneWidget);
     expect(find.text('OpenAI'), findsOneWidget);
     expect(find.text('Z.AI · Global'), findsOneWidget);
@@ -1596,7 +1678,7 @@ void main() {
       _app(controller, authorizationLauncher: (_) async => true),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Connect'));
+    await tester.tap(find.byKey(const ValueKey('connect-provider-cloud')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Open browser'));
     await tester.pump(const Duration(milliseconds: 300));

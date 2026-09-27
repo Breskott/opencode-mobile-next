@@ -16,6 +16,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/provider_quota_monitor.dart';
 import 'package:opencode_mobile/state/usage_overview.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/provider_quota_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/usage_hub_screen.dart';
@@ -160,7 +161,7 @@ void main() {
 
     expect(
       find.descendant(
-        of: find.byType(AppBar),
+        of: find.byType(KitTopBar),
         matching: find.text(_en.settingsHubGroupUsage),
       ),
       findsOneWidget,
@@ -178,16 +179,16 @@ void main() {
     expect(find.byType(UsageScreen), findsOneWidget);
     expect(_key('usage-content'), findsOneWidget);
     expect(_key('refresh-usage'), findsOneWidget);
-    expect(_key('usage-range-today'), findsOneWidget);
+    expect(_key('usage-range-thirtyDays'), findsOneWidget);
     expect(_key('usage-total-cost'), findsOneWidget);
-    // One app bar: the sections do not bring their own.
-    expect(find.byType(AppBar), findsOneWidget);
+    // One top bar: the sections do not bring their own.
+    expect(find.byType(KitTopBar), findsOneWidget);
 
     await tester.tap(remaining);
     await tester.pumpAndSettle();
     expect(find.byType(ProviderQuotaScreen), findsOneWidget);
     expect(find.text(_en.quotaNeedsCollector('Workstation')), findsOneWidget);
-    expect(find.byType(AppBar), findsOneWidget);
+    expect(find.byType(KitTopBar), findsOneWidget);
     overview.dispose();
     await _finish(tester, h.connection);
   });
@@ -218,7 +219,7 @@ void main() {
     expect(UsageHubScreen.sectionsFor(h.connection), [UsageSection.remaining]);
     await tester.pumpWidget(_app(UsageHubScreen(controller: h.connection)));
     await tester.pumpAndSettle();
-    expect(find.byType(TabBar), findsNothing);
+    expect(find.byType(KitTabSwitcher), findsNothing);
     expect(_key('usage-section-remaining'), findsOneWidget);
     expect(_key('usage-section-spent'), findsNothing);
     await _finish(tester, h.connection);
@@ -231,7 +232,7 @@ void main() {
       _app(UsageHubScreen(controller: h.connection, usageOverview: overview)),
     );
     await tester.pumpAndSettle();
-    expect(find.byType(TabBar), findsNothing);
+    expect(find.byType(KitTabSwitcher), findsNothing);
     expect(_key('usage-section-spent'), findsOneWidget);
     expect(_key('usage-section-remaining'), findsNothing);
     overview.dispose();
@@ -307,7 +308,13 @@ void main() {
       findsOneWidget,
     );
     // The three notification toggles moved to Notifications.
-    expect(find.byType(Switch), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(QuotaMonitorSection),
+        matching: find.byType(Switch),
+      ),
+      findsNothing,
+    );
 
     // Changing the threshold leaves the record's other fields alone.
     await tester.tap(threshold);
@@ -363,17 +370,24 @@ void main() {
           Directionality.of(tester.element(_key('usage-tab-spent'))),
           locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
         );
-        // Both tab labels fit the bar.
+        // The kit scrolls long tab labels at large text; each remains reachable.
         for (final key in ['usage-tab-spent', 'usage-tab-remaining']) {
+          await tester.ensureVisible(_key(key));
+          await tester.pumpAndSettle();
+          expect(_key(key).hitTestable(), findsOneWidget);
           final box = tester.getRect(_key(key));
           expect(box.left, greaterThanOrEqualTo(0), reason: key);
           expect(box.right, lessThanOrEqualTo(phone.width), reason: key);
         }
 
+        await tester.ensureVisible(_key('usage-tab-spent'));
+        await tester.pumpAndSettle();
         // Walk Spent to its end, then Remaining to its end.
         await tester.drag(_key('usage-content'), const Offset(0, -20000));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
+        await tester.ensureVisible(_key('usage-tab-remaining'));
+        await tester.pumpAndSettle();
         await tester.tap(_key('usage-tab-remaining'));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
