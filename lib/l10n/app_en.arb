@@ -26964,5 +26964,76 @@
         "type": "String"
       }
     }
+  },
+  "reviewWorkspaceScopes": "Changes to show",
+  "@reviewWorkspaceScopes": {
+    "description": "Review changes page (review_workspace.dart): the accessible name of the view picker (This conversation / Uncommitted / Whole branch)."
+  },
+  "reviewWorkspaceRefreshFailed": "Couldn't refresh the changes",
+  "@reviewWorkspaceRefreshFailed": {
+    "description": "Review changes page (review_workspace.dart): title of the notice when a refresh failed and the earlier changes stay on screen; the reason follows."
+  },
+  "reviewWorkspaceSlowTitle": "Still reading the changes",
+  "@reviewWorkspaceSlowTitle": {
+    "description": "Review changes page (review_workspace.dart): title shown when the first read of the changes takes longer than 8 seconds."
+  },
+  "reviewWorkspaceSlowBody": "The server runs git to compare the files. A big project can take a minute.",
+  "@reviewWorkspaceSlowBody": {
+    "description": "Review changes page (review_workspace.dart): body under the slow-read title: why it takes a while."
+  },
+  "reviewWorkspaceAllViewedTitle": "You've seen every file",
+  "@reviewWorkspaceAllViewedTitle": {
+    "description": "Review changes page (review_workspace.dart): finished moment: every changed file has been on screen and notes are waiting on the prompt."
+  },
+  "reviewWorkspaceAllViewedMessage": "{count, plural, =1{1 note is on the prompt, ready to send from the conversation.} other{{count} notes are on the prompt, ready to send from the conversation.}}",
+  "@reviewWorkspaceAllViewedMessage": {
+    "description": "Review changes page (review_workspace.dart): under the finished-moment title: how many review notes wait on the conversation prompt.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewWorkspaceBackToChat": "Back to the conversation",
+  "@reviewWorkspaceBackToChat": {
+    "description": "Review changes page (review_workspace.dart): action in the finished moment: returns to the conversation whose prompt holds the review notes."
+  },
+  "reviewWorkspaceCommentOnFile": "Comment on {file}",
+  "@reviewWorkspaceCommentOnFile": {
+    "description": "Review changes page (review_workspace.dart): file menu item and comment sheet title; {file} is the file name, shown left to right.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewWorkspaceAddFileToPrompt": "Add {file} to the prompt",
+  "@reviewWorkspaceAddFileToPrompt": {
+    "description": "Review changes page (review_workspace.dart): file menu item: puts a reference to the whole changed file on the conversation prompt.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewWorkspaceAddComment": "Add comment to prompt",
+  "@reviewWorkspaceAddComment": {
+    "description": "Review changes page (review_workspace.dart): comment sheet's primary: puts the typed comment on the conversation prompt."
+  },
+  "reviewWorkspaceCommentEmpty": "Type a comment first.",
+  "@reviewWorkspaceCommentEmpty": {
+    "description": "Review changes page (review_workspace.dart): why the comment sheet's primary is disabled."
+  },
+  "reviewWorkspaceCommentLabel": "Your comment",
+  "@reviewWorkspaceCommentLabel": {
+    "description": "Review changes page (review_workspace.dart): label above the comment field."
+  },
+  "reviewWorkspaceCommentHint": "What should the agent check or change?",
+  "@reviewWorkspaceCommentHint": {
+    "description": "Review changes page (review_workspace.dart): example text inside the empty comment field; agent-neutral (works for every server)."
+  },
+  "reviewWorkspaceCommentHelper": "Kept if you close this, until you add it.",
+  "@reviewWorkspaceCommentHelper": {
+    "description": "Review changes page (review_workspace.dart): helper under the comment field: typed text survives closing the sheet."
   }
 }
