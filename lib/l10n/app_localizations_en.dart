@@ -25972,4 +25972,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whileAwayMark => 'Done by itself';
+
+  @override
+  String defaultProjectOnlyNotice(String project) {
+    return 'Opened $project, the only project on this server.';
+  }
+
+  @override
+  String defaultProjectLastUsedNotice(String project) {
+    return 'Opened $project, the project worked on most recently.';
+  }
+
+  @override
+  String get defaultProjectChange => 'Choose another project';
+
+  @override
+  String defaultReviewScopeNotice(String scope) {
+    return 'Showing $scope: it is the view with changes.';
+  }
+
+  @override
+  String defaultModelNotice(String model) {
+    return 'Using $model, this server\'s default model.';
+  }
+
+  @override
+  String get defaultModelChange => 'Choose another model';
 }

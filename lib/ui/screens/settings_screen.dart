@@ -12,6 +12,7 @@ import '../../diagnostics/report_problem_startup.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/automation_policy.dart';
+import '../../state/interaction_defaults.dart' show DefaultReason;
 import '../../state/connection.dart';
 import '../../state/offline_queue.dart';
 import '../../state/profile_monitor.dart';
@@ -24,6 +25,7 @@ import '../early_l10n.dart';
 import '../kit/kit.dart';
 import '../theme_packs.dart';
 import '../widgets/appearance_picker.dart';
+import '../widgets/default_notices.dart' show modelDefaultOf;
 import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/product_states.dart';
 import '../widgets/safety_confirms.dart';
@@ -264,12 +266,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ) {
     final copy = _settingsCopy(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    _HubRow? row(String id, {String? value, WidgetBuilder? builder}) {
+    _HubRow? row(
+      String id, {
+      String? value,
+      String? subtitle,
+      WidgetBuilder? builder,
+    }) {
       final entry = entries[id];
       if (entry == null) return null;
       return _HubRow(
         entry: entry,
         value: value,
+        subtitle: subtitle,
         builder: builder,
         onTap: () => _openEntry(entry, scope),
       );
@@ -298,7 +306,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         row('settings-this-phone'),
       ],
       SettingsGroup.agent: [
-        row('settings-model-and-mode', value: _modelSummary(controller)),
+        // The model the app uses without having asked (P6.6): its name,
+        // and why it is that one when the person did not pick it. The row
+        // opens the model sheet to change it.
+        row(
+          'settings-model-and-mode',
+          value: _modelSummary(controller),
+          subtitle:
+              controller.selectedModel != null &&
+                  modelDefaultOf(controller).reason ==
+                      DefaultReason.serverDefault
+              ? copy.modelServerDefault
+              : null,
+        ),
         row('settings-providers'),
         row('settings-tools'),
         // The AI Team is findable here whether it is on or off, in the
@@ -748,6 +768,9 @@ class _HubRow {
 
   /// What the row is set to now, at its end ("Claude Sonnet 4").
   final String? value;
+
+  /// Why it is set so, under the title ("Server default").
+  final String? subtitle;
   final VoidCallback onTap;
 
   /// A row that draws itself (live status or its own loading state) but is
@@ -758,6 +781,7 @@ class _HubRow {
     required this.entry,
     required this.onTap,
     this.value,
+    this.subtitle,
     this.builder,
   });
 
@@ -772,6 +796,7 @@ class _HubRow {
           rowKey: entry.id,
           icon: entry.icon,
           title: entry.title,
+          subtitle: subtitle,
           value: value,
           onTap: onTap,
         ),

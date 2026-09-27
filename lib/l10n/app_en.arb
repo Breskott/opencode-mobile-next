@@ -30942,5 +30942,53 @@
   "whileAwayMark": "Done by itself",
   "@whileAwayMark": {
     "description": "Inbox, While you were away: what the done mark of an automatic act says to a screen reader."
+  },
+  "defaultProjectOnlyNotice": "Opened {project}, the only project on this server.",
+  "@defaultProjectOnlyNotice": {
+    "description": "Work tab: said once per server when the app opened the server's only project by itself instead of asking which one.",
+    "placeholders": {
+      "project": {
+        "type": "String",
+        "example": "my-app"
+      }
+    }
+  },
+  "defaultProjectLastUsedNotice": "Opened {project}, the project worked on most recently.",
+  "@defaultProjectLastUsedNotice": {
+    "description": "Work tab: said once per server when the app opened the most recently used project by itself instead of asking which one.",
+    "placeholders": {
+      "project": {
+        "type": "String",
+        "example": "my-app"
+      }
+    }
+  },
+  "defaultProjectChange": "Choose another project",
+  "@defaultProjectChange": {
+    "description": "Work tab: the action on the notice about the project opened by itself; opens the projects list."
+  },
+  "defaultReviewScopeNotice": "Showing {scope}: it is the view with changes.",
+  "@defaultReviewScopeNotice": {
+    "description": "Review changes: said once when the page opened a view other than this conversation's because only that view has changes. {scope} is the view's name as the picker above shows it.",
+    "placeholders": {
+      "scope": {
+        "type": "String",
+        "example": "Uncommitted"
+      }
+    }
+  },
+  "defaultModelNotice": "Using {model}, this server's default model.",
+  "@defaultModelNotice": {
+    "description": "Conversation: said once per server when the app picked the server's default model by itself instead of asking which model to use.",
+    "placeholders": {
+      "model": {
+        "type": "String",
+        "example": "Claude Sonnet 4"
+      }
+    }
+  },
+  "defaultModelChange": "Choose another model",
+  "@defaultModelChange": {
+    "description": "Conversation: the action on the notice about the model picked by itself; opens the model sheet."
   }
 }
