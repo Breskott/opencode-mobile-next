@@ -102,7 +102,10 @@ Conventions worth knowing before querying:
    derived `reachedFrom` from element targets, synthesized the `system` page,
    computed tap depth and rendered `pages.md` and `navigation.md`.
 
-## Coverage
+## Original coverage (historical)
+
+These statistics describe the initial inventory. Use the generated `pages.md`
+and `navigation.md` for current counts; the September 28 repair is described below.
 
 Covered: every Dart file under `lib/ui/` (170 files), and the UI-bearing files
 outside it listed above. 335 pages and 1,720 elements (53 of them `hostWiring`
@@ -144,7 +147,7 @@ Known limits:
   elements with a `ValueKey` have that key within 25 lines of the recorded line;
   the rest are dynamic key patterns.
 
-### Not a page
+## Not a page
 
 Files with no surface of their own and no interactive element (also in
 `ledger.json` under `notPages`). Those under `lib/ui/screens/`:
@@ -216,6 +219,9 @@ resolved target.
   rebuild.
 
 ### September 28 source-anchor repair
+
+The rebuilt inventory has 293 pages and 1,690 elements. The structural validator
+reports 0 errors and 52 existing warnings; 97 gestures have 97 audit rows.
 
 The September 27 kit extraction moved controls out of the old screen and
 wrapper implementations. The parts now point affected anchors at their current
