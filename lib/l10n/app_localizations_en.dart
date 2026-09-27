@@ -23889,4 +23889,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get localTerminalSetUpLinux => 'Set up Linux on this phone';
+
+  @override
+  String get messageViewSendAgain => 'Send this message again';
+
+  @override
+  String get messageViewContinueReply => 'Continue this reply';
 }
