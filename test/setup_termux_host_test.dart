@@ -97,7 +97,7 @@ void main() {
         if (call.method != 'setupStatus') throw MissingPluginException();
         return jsonEncode({
           'jobId': 'setup-old',
-          if (savedHost != null) 'host': savedHost,
+          'host': ?savedHost,
           'state': 'interrupted',
           'components': <String, Object?>{},
         });
