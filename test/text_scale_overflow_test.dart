@@ -193,6 +193,15 @@ const _widgetBases = {'InheritedNotifier', 'InheritedModel', 'InheritedTheme'};
 /// part that extends `ListTile`, `Builder` or `ValueListenableBuilder` cannot
 /// quietly drop out of the matrix. A class with no `extends` is an `Object`
 /// and never a widget.
+// These framework bases are configuration, input transforms and observable
+// data. Classifying the inheritance chain keeps newly exported subclasses
+// visible to the parser without requiring a drawn scene for a non-widget.
+const _nonWidgetBases = {
+  'MaterialScrollBehavior',
+  'TextInputFormatter',
+  'ValueNotifier',
+};
+
 const _nonWidgetClasses = {
   'KitTokens',
   'KitPageTransitionsBuilder',
@@ -352,7 +361,10 @@ KitManifest readKitManifest({String kitFile = '$_kitDir/kit.dart'}) {
       parts.add(name);
       continue;
     }
-    if (classes.any(_nonWidgetClasses.contains)) continue;
+    if (_nonWidgetBases.contains(outside) ||
+        classes.any(_nonWidgetClasses.contains)) {
+      continue;
+    }
     problems.add(
       '$name extends ${classes.length > 1 ? '${classes.skip(1).join(' → ')} → ' : ''}'
       '$outside, which is neither a widget, a kit class nor a known '
@@ -496,10 +508,10 @@ Widget _kitApp({
 // KIT-24.
 
 bool _isKitSegmented(Widget widget) =>
-    widget.runtimeType.toString() == 'KitSegmented';
+    widget.runtimeType.toString().split('<').first == 'KitSegmented';
 
 bool _isKitChoiceRow(Widget widget) =>
-    widget.runtimeType.toString() == 'KitChoiceRow';
+    widget.runtimeType.toString().split('<').first == 'KitChoiceRow';
 
 /// KIT-24 on the pumped tree, for a scene whose labels do not fit: every
 /// KitSegmented is full width and is a vertical stack of at least two
@@ -876,7 +888,8 @@ void main() {
         isEmpty,
         reason:
             'Kit parts with no scene in test/kit/kit_overflow_scenes.dart '
-            '(add one per declared state at the end of kitOverflowScenes)',
+            '(add one per declared state at the end of kitOverflowScenes):\n'
+            '${missing.join('\n')}',
       );
       expect(
         stale,
@@ -915,6 +928,7 @@ void main() {
           File('${dir.path}/$name').writeAsStringSync(text);
       write('kit.dart', '''
 export 'fine.dart';
+export 'utilities.dart';
 export 'hidden.dart' hide KitHidden;
 export "quoted.dart";
 export 'io.dart' if (dart.library.html) 'web.dart';
@@ -932,9 +946,20 @@ KitHandle showKitThing(BuildContext context) => KitHandle();
 class KitHidden extends StatelessWidget {}
 class KitShown extends StatelessWidget {}
 ''');
+      File('${dir.path}/utilities.dart').writeAsStringSync('''
+class KitScrollBehavior extends MaterialScrollBehavior {}
+class KitNumberFormatter extends TextInputFormatter {}
+class KitLogBuffer extends ValueNotifier<List<String>> {}
+class KitUtilityView extends StatelessWidget {}
+''');
       final manifest = readKitManifest(kitFile: '${dir.path}/kit.dart');
       // `hide` is read (the hidden class drops out), unlike the forms below.
-      expect(manifest.parts, {'KitFine', 'showKitThing', 'KitShown'});
+      expect(manifest.parts, {
+        'KitFine',
+        'showKitThing',
+        'KitShown',
+        'KitUtilityView',
+      });
       expect(
         manifest.problems,
         unorderedEquals([

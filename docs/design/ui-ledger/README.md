@@ -102,7 +102,10 @@ Conventions worth knowing before querying:
    derived `reachedFrom` from element targets, synthesized the `system` page,
    computed tap depth and rendered `pages.md` and `navigation.md`.
 
-## Coverage
+## Original coverage (historical)
+
+These statistics describe the initial inventory. Use the generated `pages.md`
+and `navigation.md` for current counts; the September 28 repair is described below.
 
 Covered: every Dart file under `lib/ui/` (170 files), and the UI-bearing files
 outside it listed above. 335 pages and 1,720 elements (53 of them `hostWiring`
@@ -144,12 +147,14 @@ Known limits:
   elements with a `ValueKey` have that key within 25 lines of the recorded line;
   the rest are dynamic key patterns.
 
-### Not a page
+## Not a page
 
 Files with no surface of their own and no interactive element (also in
 `ledger.json` under `notPages`). Those under `lib/ui/screens/`:
 
 - `lib/ui/screens/chat/form_flow.dart`: `presentConnectionForm` is glue that calls `presentForm` from `lib/ui/widgets/form_renderer.dart` (page `form-sheet`) and routes submit/cancel.
+- `lib/ui/screens/usage_refresh_slot.dart`: a nonvisual ChangeNotifier holding Usage refresh callbacks.
+- `lib/ui/screens/library/pending_auth_recovery.dart`: `_authSourceFor` is a nonvisual equality identity for authentication actions; the sign-in confirmation lives in `integrations_screen.dart`.
 - `lib/ui/screens/library_screen.dart`: no surface since UX phase 2 (the More tab merged into the Settings hub); it only hosts the library part files and `defaultModelLabel()`.
 - `lib/ui/screens/team/team_page.dart`: `TeamPage` / `openTeamPage`, the one AI Team route (P3.4): it shows `team-home` while the server's team is on and `team-intro` while it is off, following the connection; no surface of its own.
 - `lib/ui/screens/team/policy_block.dart`: `TeamPolicyBlock` / `TeamBoundariesRow` are read-only rendering blocks embedded in the run overview and the start-run sheet; no taps.
@@ -158,13 +163,22 @@ Files with no surface of their own and no interactive element (also in
 - `lib/ui/screens/phone_setup/phone_setup_selection.dart`: pure arithmetic over the setup component registry (selection, totals, size and time text).
 - `lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart`: the first-run welcome's status line about an existing setup job, embedded in `servers-welcome`.
 
+- `lib/ui/screens/chat/chat_states.dart`: part of chat_screen.dart (design standard §9 step 5): the chat page's own loading/error states and its one status line, not a surface of their own; shown inline on the chat page.
+- `lib/ui/screens/chat/empty_chat.dart`: part of chat_screen.dart: ChatStartFacts plus the empty-conversation starters/body shown inline on the chat page before the first message, not a surface of their own.
+- `lib/ui/screens/chat/watching.dart`: part of chat_screen.dart (design standard §9 step 5): how the chat page shows a conversation someone else drives (an AI Team worker's own OpenCode session) — the same 'chat' page and route, not a surface of its own. Its status banner and empty state are read-only; its composer (chat-watching-composer), send, receipt and the About <name> action are recorded on the chat page. _openWatchedChild (a child session delegated to, watched the same way) is wired from chat_screen.dart.
+- `lib/ui/screens/local_terminal_screen.dart`: LocalTerminalView: the "This phone" source of the Terminal page (terminal_screen.dart, same route), a shell in the built-in Ubuntu with its key bar and the shell list in the top bar's menu; not a page of its own (docs/design/local-terminal-2026-09-24.md).
+- `lib/ui/screens/perf_trace_section.dart`: PerfTraceSection is the 'Performance' block of App diagnostics (embedded via lib/ui/screens/app_diagnostics_screen.dart:252, host page app-diagnostics), not a surface of its own; its Copy report and Clear buttons are recorded on app-diagnostics with `file` set here.
+- `lib/ui/screens/team/team_needs_you.dart`: Embedded blocks, not pages of their own: TeamNeedsYouCard (one question as a request block) is shown on team-home, where it is also its task's row, and on team-run-overview-tab (run_screen.dart:780); TeamGateRow (a question whose task is not listed) is a row of team-home's one list. Both open the Gate sheet.
+- `lib/ui/screens/team/team_states.dart`: Shared helper (design standard §3, §4), not a page: teamScreenState/teamScreenLoading/teamScreenFailed/teamStatusLine render the AI Team screens' connecting/error/stale states and one status line; its retry buttons are recorded as elements of the host pages (team-home, team-run, team-agent, team-agents) with `file` set here.
+- `lib/ui/screens/team_conversation/team_conversation.dart`: The routing API for the task conversation, not a page of its own: TeamConversation.open/start push TeamConversationScreen (team-conversation, chat/team_conversation_view.dart). TeamTaskConversationRow (the Overview's 'Open conversation' row) is recorded as team-run-overview-open-conversation on team-run-overview-tab; TeamAgentTranscript and TeamOpenConversationRow are re-exports of chat/team_conversation_view.dart (see team-conversation's own elements and team-agent-output).
+
 Outside `lib/ui/screens/`:
 
 - `lib/feedback/bug_report.dart`: no surface; `openBugReport()` launches a prefilled GitHub issue URL.
 - `lib/ui/app_iconography.dart`, `lib/ui/app_theme.dart`, `lib/ui/theme_packs.dart`, `lib/ui/early_l10n.dart`, `lib/ui/permission_presentation.dart`: theme, icon and string helpers.
 - `lib/ui/navigation/chat_route.dart`: `ChatRouteArguments` value class.
 - `lib/ui/desktop/desktop_interaction.dart`: scroll/selection/cursor behaviour wrappers.
-- `lib/ui/widgets/agent_color.dart`, `code_highlight.dart`, `connect_methods.dart`, `connection_failure.dart`, `entrance.dart`, `glass_surface.dart`, `provider_logo.dart`, `relative_time.dart`, `request_routes.dart`, `retained_tab_view.dart`, `session_read_state.dart`, `session_title.dart`, `setup_ui_messages.dart`, `team_vocabulary.dart`, `technical_direction.dart`, `transcript_highlight.dart`: pure rendering, formatting or non-visual helpers.
+- `lib/ui/widgets/agent_color.dart`, `code_highlight.dart`, `connect_methods.dart`, `connection_failure.dart`, `entrance.dart`, `glass_surface.dart`, `provider_logo.dart`, `relative_time.dart`, `request_routes.dart`, `session_read_state.dart`, `session_title.dart`, `setup_ui_messages.dart`, `team_vocabulary.dart`, `technical_direction.dart`, `transcript_highlight.dart`: pure rendering, formatting or non-visual helpers.
 
 ## Validation
 
@@ -203,3 +217,33 @@ resolved target.
   `parts/_assignments.json` to an agent and replace that part file.
 - `findings.md` is hand-written; re-check its numbers against `--stats` after a
   rebuild.
+
+### September 28 source-anchor repair
+
+The rebuilt inventory has 293 pages and 1,690 elements. The structural validator
+reports 0 errors and 52 existing warnings; 97 gestures have 97 audit rows.
+
+The September 27 kit extraction moved controls out of the old screen and
+wrapper implementations. The parts now point affected anchors at their current
+widget keys or callback wiring (including KitDiffView, KitViewer, KitCodeBlock,
+KitDialog, KitConfirmSheet and KitContextRegion). These are source repairs,
+not a new end-to-end inventory of every unchanged entry.
+
+Retired surfaces were removed rather than pointed at unrelated lines:
+
+- The Tasks sheet became `_openPlan` navigation within the transcript
+  (`chat/session_sheets.dart`).
+- Team discovery is now Settings → TeamPage / TeamIntroScreen;
+  `team_discover.dart` contains helpers only.
+- The agent details sheet became the inline Technical details fold.
+- The separate Always allow confirmation dialog became the request sheet's
+  inline risky switch, with its scope shown before the choice.
+- The separate team project chooser delegates to
+  `ProjectFolderActions.openFolder`.
+
+Retired controls were removed: the permission rejection back step and separate
+full-diff opener, the code block overflow menu and duplicate wrap action,
+manual unified/split selectors (the diff follows available width), the old
+agent step groups, and the theme preview's chip/button actions (the whole
+preview is now an ignored-pointer image in KitThemePreview). References that
+still open an action now point to that action's current host.

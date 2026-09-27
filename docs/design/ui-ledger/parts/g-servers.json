@@ -1255,7 +1255,7 @@
           "type": "gesture",
           "label": "[point camera at pairing QR]",
           "key": "pairing-scanner-preview",
-          "line": 277,
+          "line": 243,
           "action": "submit",
           "target": null,
           "targetWidget": null,
@@ -1263,14 +1263,15 @@
           "gates": [
             "_stage == _ScanStage.scanning"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/pairing_scanner_screen.dart"
         },
         {
           "id": "pairing-scanner-retry",
           "type": "button",
           "label": "Try again",
           "key": "pairing-scanner-primary",
-          "line": 371,
+          "line": 229,
           "action": "other",
           "target": null,
           "targetWidget": null,
@@ -1278,14 +1279,15 @@
           "gates": [
             "_stage == denied (pairing-scanner-denied) or failed (pairing-scanner-failed)"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/pairing_scanner_screen.dart"
         },
         {
           "id": "pairing-scanner-open-settings",
           "type": "button",
           "label": "Open app settings",
           "key": "pairing-scanner-primary",
-          "line": 371,
+          "line": 202,
           "action": "external-link",
           "target": null,
           "targetWidget": null,
@@ -1293,14 +1295,15 @@
           "gates": [
             "_stage == permanentlyDenied (pairing-scanner-blocked)"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/pairing_scanner_screen.dart"
         },
         {
           "id": "pairing-scanner-paste-instead-primary",
           "type": "button",
           "label": "Paste it instead",
           "key": "pairing-scanner-primary",
-          "line": 371,
+          "line": 215,
           "action": "dismiss",
           "target": null,
           "targetWidget": null,
@@ -1308,14 +1311,15 @@
           "gates": [
             "_stage == noCamera (pairing-scanner-no-camera)"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/pairing_scanner_screen.dart"
         },
         {
           "id": "pairing-scanner-paste-instead",
           "type": "button",
           "label": "Paste it instead",
           "key": "pairing-scanner-secondary",
-          "line": 378,
+          "line": 157,
           "action": "dismiss",
           "target": null,
           "targetWidget": null,
@@ -1323,7 +1327,8 @@
           "gates": [
             "_stage == denied, permanentlyDenied or failed"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/pairing_scanner_screen.dart"
         }
       ]
     },
@@ -1493,13 +1498,14 @@
           "type": "icon-button",
           "label": "Copy command: {label}",
           "key": "copy-host-command-<label>",
-          "line": 262,
+          "line": 189,
           "action": "copy",
           "target": null,
           "targetWidget": null,
           "effect": "_HostCommandTile: Clipboard.setData(command) + 'copied' snackbar. One per command tile: Install OpenCode as a background service, Keep it running after logout, Read the server password for this app, Reach it from this phone over USB (adb reverse; only when platformCapabilities.supportsUsbHostBridge, Key host-command-adb-reverse), Service status, Restart the server, Follow the server log, Update OpenCode on the host.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/host_management_screen.dart"
         },
         {
           "id": "host-management-docs",

@@ -1,5 +1,7 @@
 // KitJumpPill (docs/ux-system/kit-api/KitJumpPill.md): the frozen "Tests
 // required" contract, items 1-9.
+import 'kit_motion_still.dart';
+
 import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
@@ -137,6 +139,40 @@ Color _fillColor(WidgetTester tester) =>
     (tester.widget<DecoratedBox>(_fill).decoration as ShapeDecoration).color!;
 
 void main() {
+  KitJumpPill motionPill(bool visible) =>
+      KitJumpPill(label: 'Jump to latest', onPressed: () {}, visible: visible);
+  Widget motionLayer(bool visible) => KitJumpPillLayer(
+    pill: motionPill(visible),
+    child: const SizedBox.expand(child: Text('Log output')),
+  );
+  kitMotionStillTests(
+    'KitJumpPill',
+    builds: {'visible': () => motionPill(true)},
+    changes: {
+      'appears': KitMotionChange(
+        build: () => motionPill(false),
+        act: (tester, stage) => stage.rebuild(motionPill(true)),
+        shows: 'Jump to latest',
+      ),
+      'disappears': KitMotionChange(
+        build: () => motionPill(true),
+        act: (tester, stage) => stage.rebuild(motionPill(false)),
+        hides: 'Jump to latest',
+      ),
+    },
+  );
+  kitMotionStillTests(
+    'KitJumpPillLayer',
+    builds: {'over log': () => motionLayer(true)},
+    changes: {
+      'new output shows jump': KitMotionChange(
+        build: () => motionLayer(false),
+        act: (tester, stage) => stage.rebuild(motionLayer(true)),
+        shows: 'Jump to latest',
+      ),
+    },
+  );
+
   group('1. visible', () {
     testWidgets('shows the label and icon; tap calls onPressed once', (
       tester,

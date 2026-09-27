@@ -552,21 +552,6 @@
           "destructive": false
         },
         {
-          "id": "team-agent-details",
-          "type": "icon-button",
-          "label": "Technical details",
-          "key": "team-agent-details",
-          "line": 205,
-          "action": "open-sheet",
-          "target": "team-agent-details-sheet",
-          "targetWidget": "_AgentDetailsSheet",
-          "effect": "_openDetails(agent): showModalBottomSheet(_AgentDetailsSheet) (line 135).",
-          "gates": [
-            "agent != null"
-          ],
-          "destructive": false
-        },
-        {
           "id": "team-agent-error-retry",
           "type": "button",
           "label": "Try again",
@@ -623,20 +608,6 @@
           "effect": "RefreshIndicator.onRefresh -> _refresh().",
           "gates": [
             "agent != null && controller.phase == OrchestrationPhase.ready && snapshot.hasData"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-agent-step-group",
-          "type": "list-tile",
-          "label": "Tools · <step summary>",
-          "key": "team-agent-step-group-header",
-          "line": 1281,
-          "action": "other",
-          "target": null,
-          "effect": "Expands/collapses one tool step group in Activity: setState(_expanded = !_expanded).",
-          "gates": [
-            "Activity has step groups parsed from the output tail's `[tool: …]` markers"
           ],
           "destructive": false
         },
@@ -752,14 +723,15 @@
           "type": "list-tile",
           "label": "Technical details",
           "key": "team-agent-technical",
-          "line": 1476,
+          "line": 642,
           "action": "other",
           "target": null,
           "effect": "ExpansionTile: expands the raw provider fields inline.",
           "gates": [
             "agent != null && controller.phase == OrchestrationPhase.ready && snapshot.hasData"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/team/agent_screen.dart"
         },
         {
           "id": "team-agent-technical-copy-value",
@@ -778,45 +750,6 @@
           "destructive": false
         }
       ]
-    },
-    {
-      "id": "team-agent-details-sheet",
-      "title": "Technical details",
-      "kind": "sheet",
-      "file": "lib/ui/screens/team/agent_screen.dart",
-      "widget": "_AgentDetailsSheet",
-      "presentedBy": [
-        "_openDetails"
-      ],
-      "line": 1525,
-      "purpose": "The agent's raw provider fields, reachable from the app bar without scrolling.",
-      "reachedFrom": [
-        {
-          "page": "team-agent",
-          "element": "team-agent-details"
-        }
-      ],
-      "gates": [
-        "agent != null"
-      ],
-      "elements": [
-        {
-          "id": "team-agent-details-sheet-copy-value",
-          "type": "icon-button",
-          "label": "Copy",
-          "key": null,
-          "file": "lib/ui/widgets/team_technical_details.dart",
-          "line": 229,
-          "action": "copy",
-          "target": null,
-          "effect": "TeamTechnicalValue: Clipboard.setData(value) + 'Copied' snackbar; one per raw field.",
-          "gates": [
-            "value.isNotEmpty"
-          ],
-          "destructive": false
-        }
-      ],
-      "sheetKey": "team-agent-details-sheet"
     },
     {
       "id": "team-agent-stop-confirm-sheet",
@@ -1027,7 +960,7 @@
           "type": "button",
           "label": "Refresh",
           "key": "team-cycle-action-refresh",
-          "line": 713,
+          "line": 328,
           "action": "mutate",
           "target": null,
           "effect": "_refresh -> controller.refresh(); disabled while busy.",
@@ -1035,14 +968,15 @@
             "non-compact strip only (`!widget.compact`); `cycle.stalled && cycle.stallReason != null`",
             "stallReason in {hostNotStarted, agentCannotStart, mergeWaiting without (canControl && refinery != null)}"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/widgets/team_cycle_strip.dart"
         },
         {
           "id": "embedded-team-cycle-strip-how",
           "type": "button",
           "label": "How the host dispatches",
           "key": "team-cycle-action-how",
-          "line": 719,
+          "line": 335,
           "action": "open-sheet",
           "target": "team-cycle-how-sheet",
           "targetWidget": "showTeamCycleHowSheet",
@@ -1051,14 +985,15 @@
             "non-compact strip only (`!widget.compact`); `cycle.stalled && cycle.stallReason != null`",
             "stallReason in {hostNotStarted, agentCannotStart}"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/widgets/team_cycle_strip.dart"
         },
         {
           "id": "embedded-team-cycle-strip-open-output",
           "type": "button",
           "label": "Watch the agent",
           "key": "team-cycle-action-output",
-          "line": 725,
+          "line": 342,
           "action": "navigate",
           "target": "chat",
           "targetWidget": "openTeamAgentConversationById",
@@ -1067,14 +1002,15 @@
             "non-compact strip only (`!widget.compact`); `cycle.stalled && cycle.stallReason != null`",
             "stallReason in {providerLimit, workingLong}"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/widgets/team_cycle_strip.dart"
         },
         {
           "id": "embedded-team-cycle-strip-stop",
           "type": "button",
           "label": "Stop",
           "key": "team-cycle-action-stop",
-          "line": 744,
+          "line": 356,
           "action": "open-sheet",
           "target": "team-cycle-stop-confirm-sheet",
           "targetWidget": "confirmTeamControl",
@@ -1083,14 +1019,15 @@
             "non-compact strip only (`!widget.compact`); `cycle.stalled && cycle.stallReason != null`",
             "stallReason == providerLimit && controller.capabilities.controlAgent && !_busy && agent != null"
           ],
-          "destructive": true
+          "destructive": true,
+          "file": "lib/ui/widgets/team_cycle_strip.dart"
         },
         {
           "id": "embedded-team-cycle-strip-nudge-refinery",
           "type": "button",
           "label": "Nudge refinery",
           "key": "team-cycle-action-nudge",
-          "line": 756,
+          "line": 367,
           "action": "mutate",
           "target": null,
           "effect": "_nudge(refineryId): controller.controlAgent(refineryId, AgentControlAction.nudge).",
@@ -1098,7 +1035,8 @@
             "non-compact strip only (`!widget.compact`); `cycle.stalled && cycle.stallReason != null`",
             "stallReason == mergeWaiting && controller.capabilities.controlAgent && !_busy && controller.cycleRefineryFor(workId) != null"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/widgets/team_cycle_strip.dart"
         }
       ],
       "embeddedIn": [
@@ -1244,72 +1182,6 @@
       ]
     },
     {
-      "id": "embedded-team-discover",
-      "title": "AI Team (off)",
-      "kind": "overlay",
-      "file": "lib/ui/widgets/team_discover.dart",
-      "widget": "TeamDiscoverEntry",
-      "presentedBy": [],
-      "line": 156,
-      "purpose": "The Work tab's door to the AI Team while it is off, where the TeamCard goes when it is on (after the person's conversations): a small drawing and one line of value the first time, one quiet row once opened or hidden.",
-      "reachedFrom": [],
-      "gates": [
-        "WorkspaceScreen: `controller.orchestration == null` (else TeamCard)",
-        "absent without a profile, with an AI Team config, and on a Termux phone whose runtime cannot run a team",
-        "folded when the global preference oc.teamDiscover.folded is true (TeamDiscoverMemory)"
-      ],
-      "embeddedIn": [
-        "WorkspaceScreen"
-      ],
-      "elements": [
-        {
-          "id": "embedded-team-discover-open",
-          "type": "list-tile",
-          "label": "Give a bigger job to a team",
-          "key": "team-discover-open",
-          "line": 257,
-          "action": "navigate",
-          "target": "team-intro",
-          "targetWidget": "TeamIntroScreen",
-          "effect": "Folds the entry (seen) and opens the intro.",
-          "gates": [
-            "not folded"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "embedded-team-discover-hide",
-          "type": "icon-button",
-          "label": "[Not now]",
-          "key": "team-discover-hide",
-          "line": 270,
-          "action": "toggle-setting",
-          "target": null,
-          "targetWidget": null,
-          "effect": "TeamDiscoverMemory.fold: the entry folds to the quiet row, for good.",
-          "gates": [
-            "not folded"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "embedded-team-discover-row",
-          "type": "list-tile",
-          "label": "AI Team · Off · A team of agents for bigger jobs",
-          "key": "team-discover-row",
-          "line": 240,
-          "action": "navigate",
-          "target": "team-intro",
-          "targetWidget": "TeamIntroScreen",
-          "effect": "Opens the intro.",
-          "gates": [
-            "folded"
-          ],
-          "destructive": false
-        }
-      ]
-    },
-    {
       "id": "team-board",
       "title": "Board",
       "kind": "screen",
@@ -1339,28 +1211,30 @@
           "type": "icon-button",
           "label": "Choose project",
           "key": "team-board-project",
-          "line": 696,
+          "line": 392,
           "action": "other",
           "target": null,
           "effect": "_ProjectSwitcher: PopupMenuButton opener; opens the project menu (shown only when the host reports more than one project).",
           "gates": [
             "projects.length > 1"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/team/team_board_screen.dart"
         },
         {
           "id": "team-board-project-item",
           "type": "menu-item",
           "label": "<project name>",
           "key": "team-board-project-<id>",
-          "line": 703,
+          "line": 233,
           "action": "other",
           "target": null,
           "effect": "_ProjectSwitcher.onSelect(id): setState(() => _project = id); clears pending moves and their hold timers.",
           "gates": [
             "projects.length > 1"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/team/team_board_screen.dart"
         },
         {
           "id": "team-board-tabs",
@@ -1470,7 +1344,7 @@
           "label": "[long press on a card]",
           "key": "team-board-card-<id>",
           "file": "lib/ui/widgets/team_board_card.dart",
-          "line": 322,
+          "line": 248,
           "action": "open-sheet",
           "target": "team-board-move-sheet",
           "targetWidget": "showTeamBoardMoveSheet",

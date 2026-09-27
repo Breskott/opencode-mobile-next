@@ -1,5 +1,7 @@
 // Behaviour tests for KitTabSwitcher v2 and KitTabStrip
 // (docs/ux-system/kit-api/KitTabSwitcher.md "Tests required").
+import 'kit_motion_still.dart';
+
 import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
@@ -94,6 +96,18 @@ class _PageState extends State<_Page> {
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitTabStrip',
+    builds: {'selected work': () => _strip()},
+    changes: {
+      'selection moves': KitMotionChange(
+        build: () => _strip(selected: 0),
+        act: (tester, stage) => stage.rebuild(_strip(selected: 3)),
+        shows: 'Review',
+      ),
+    },
+  );
+
   group('strip', () {
     testWidgets('another tab calls onSelected once; the selected one nothing', (
       tester,

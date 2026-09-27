@@ -824,7 +824,7 @@
           "type": "gesture",
           "label": "[drop files onto composer (desktop)]",
           "key": null,
-          "line": 6369,
+          "line": 6745,
           "action": "other",
           "target": null,
           "targetWidget": null,
@@ -833,7 +833,8 @@
             "!_conn.isIsolated",
             "_conn.capabilities promptAttachments (_supportsPromptAttachments)"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/chat_screen.dart"
         },
         {
           "id": "chat-composer-select-command",
@@ -969,22 +970,6 @@
           "destructive": false
         },
         {
-          "id": "chat-composer-legacy-drafts",
-          "type": "icon-button",
-          "label": "[recover legacy drafts]",
-          "key": null,
-          "line": 7216,
-          "action": "navigate",
-          "target": "legacy-drafts",
-          "targetWidget": "LegacyDraftsScreen",
-          "effect": "Host wiring of _ChatComposer (chat/composer.dart:21): onLegacyDrafts -> _recoverLegacyDraft() (line 3034) pushes LegacyDraftsScreen(controller: _conn).",
-          "gates": [
-            "_conn.store.profiles.length >= 2",
-            "_conn.legacySessionDrafts.isNotEmpty"
-          ],
-          "destructive": false
-        },
-        {
           "id": "chat-composer-restore-history-draft",
           "type": "button",
           "label": "[restore draft after prompt-history browse]",
@@ -1064,13 +1049,14 @@
           "type": "gesture",
           "label": "[IME image/GIF insertion or clipboard-image paste chip]",
           "key": null,
-          "line": 7282,
+          "line": 7303,
           "action": "other",
           "target": null,
           "targetWidget": null,
           "effect": "Host wiring of _ChatComposer (chat/composer.dart:21): onContentInserted -> _handleInsertedContent(content) (line 3232) attaches the inserted image.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/chat_screen.dart"
         },
         {
           "id": "chat-composer-voice",
@@ -1203,7 +1189,7 @@
           "type": "gesture",
           "label": "Ctrl+K (OpenCommandPaletteIntent)",
           "key": null,
-          "line": 4975,
+          "line": 5342,
           "action": "open-sheet",
           "target": "chat-command-launcher-sheet",
           "targetWidget": "_CommandLauncherSheet",
@@ -1211,7 +1197,8 @@
           "gates": [
             "!_conn.isIsolated"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/chat_screen.dart"
         },
         {
           "id": "chat-shortcut-find",
@@ -2406,14 +2393,14 @@
         {
           "id": "chat-session-menu-todos",
           "type": "list-tile",
-          "label": "Todos",
+          "label": "Tasks",
           "key": null,
-          "file": "lib/ui/screens/chat/attention_card.dart",
-          "line": 614,
-          "action": "open-sheet",
-          "target": "todos-sheet",
-          "targetWidget": "_TodosSheet",
-          "effect": "Row pops the sheet with its value (attention_card.dart:764); _openSessionMenu (chat_screen.dart:5541) dispatches: 'todos' -> _showTodos() shows _TodosSheet(conn, sessionID) (chat/session_sheets.dart:3) in a modal bottom sheet (line 5683).",
+          "file": "lib/ui/screens/chat/session_sheets.dart",
+          "line": 28,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Tasks now opens the latest plan in the transcript via _openPlan; there is no Tasks sheet (chat/session_sheets.dart).",
           "gates": [
             "todosAvailable: _conn.capabilities.sessionTodos"
           ],

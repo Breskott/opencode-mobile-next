@@ -5,7 +5,7 @@
 // - the phone's server is one row on Servers, not a card, a saved row and a
 //   health block;
 // - the server in use is marked in its row;
-// - On this phone stacks Update and Stop, and Stop asks first;
+// - This phone puts its status action before management, and Stop asks first;
 // - crash recovery lives on On this phone, not on the servers list;
 // - Plugins shows plain names, the raw id only under Details, and folds the
 //   built-in plugins into one row.
@@ -136,24 +136,28 @@ void main() {
   });
 
   group('On this phone', () {
-    testWidgets('one status line, stacked actions, and Stop confirms', (
+    testWidgets('one status row, Stop before management, and Stop confirms', (
       tester,
     ) async {
       final done = await mount(tester, PhoneServerScene.phoneRunning);
-      expect(find.text('OpenCode on this phone'), findsOneWidget);
+      // P1.5 replaced the old Termux screen with This phone: runtime is
+      // the title, the version/host are its detail, and state has one word.
+      expect(find.text('This phone'), findsOneWidget);
+      expect(find.text('OpenCode 2'), findsOneWidget);
+      expect(find.text('Running'), findsOneWidget);
       expect(
-        find.text('Running · OpenCode 2 · version 2.0.10'),
+        find.textContaining('2.0.10 · In Termux', findRichText: true),
         findsOneWidget,
       );
-      final update = find.byKey(const Key('update-managed-opencode'));
-      final stop = find.byKey(const Key('stop-managed-opencode'));
-      // Update and Stop each on a line of their own, aligned, never side
-      // by side.
+      final management = find.byKey(const ValueKey('this-phone-list'));
+      final stop = find.byKey(const ValueKey('this-phone-stop'));
+      // P1.5 keeps the current action before management. This fixture has
+      // the pinned version, so there is no redundant Update action.
+      expect(find.byKey(const ValueKey('this-phone-update')), findsNothing);
       expect(
-        tester.getTopLeft(stop).dy,
-        greaterThanOrEqualTo(tester.getBottomLeft(update).dy),
+        tester.getTopLeft(management).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(stop).dy),
       );
-      expect(tester.getTopLeft(stop).dx, tester.getTopLeft(update).dx);
 
       await tester.tap(stop);
       await tester.pumpAndSettle();
@@ -163,10 +167,8 @@ void main() {
       );
       await tester.tap(find.text('Keep running'));
       await tester.pumpAndSettle();
-      expect(
-        find.text('Running · OpenCode 2 · version 2.0.10'),
-        findsOneWidget,
-      );
+      expect(find.text('Running'), findsOneWidget);
+      expect(stop, findsOneWidget);
       await done();
     });
 
@@ -191,15 +193,16 @@ void main() {
 
     testWidgets('stopped, the same place offers Start first', (tester) async {
       final done = await mount(tester, PhoneServerScene.phoneStopped);
-      expect(find.text('OpenCode is stopped'), findsOneWidget);
-      final start = find.byKey(const Key('termux-start-installed'));
-      final reinstall = find.byKey(const Key('termux-reinstall'));
+      expect(find.text('Stopped'), findsOneWidget);
+      final start = find.byKey(const ValueKey('this-phone-start'));
+      final management = find.byKey(const ValueKey('this-phone-list'));
       expect(start, findsOneWidget);
+      expect(find.byKey(const ValueKey('this-phone-update')), findsNothing);
       expect(
-        tester.getTopLeft(reinstall).dy,
-        greaterThan(tester.getTopLeft(start).dy),
+        tester.getTopLeft(management).dy,
+        greaterThan(tester.getBottomLeft(start).dy),
       );
-      expect(find.byKey(const Key('stop-managed-opencode')), findsNothing);
+      expect(find.byKey(const ValueKey('this-phone-stop')), findsNothing);
       await done();
     });
   });

@@ -8,6 +8,8 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/kit/kit_page_route.dart';
 
+import 'kit_motion_still.dart';
+
 /// Pumps an empty [MaterialApp] at [theme] and [locale] and returns a
 /// context under its Navigator to push from. [disableAnimations] seeds
 /// `MediaQuery.disableAnimationsOf` (the "remove animations" setting);
@@ -73,6 +75,57 @@ Finder _underB(Finder matching) =>
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  for (final still in KitStill.values) {
+    testWidgets('page push and pop settle in one pump under ${still.name}', (
+      tester,
+    ) async {
+      late BuildContext context;
+      await tester.pumpWidget(
+        kitStillApp(
+          Builder(
+            builder: (inner) {
+              context = inner;
+              return const Text('Home');
+            },
+          ),
+          still,
+        ),
+      );
+      final navigator = Navigator.of(context);
+      final route = KitPageRoute<void>(
+        builder: (_) => const Scaffold(body: Text('Details page')),
+      );
+      unawaited(navigator.push(route));
+      await tester.pump();
+      expect(find.text('Details page'), findsOneWidget);
+      expect(tester.hasRunningAnimations, isFalse);
+      expect(route.transitionDuration, Duration.zero);
+      navigator.pop();
+      await tester.pump();
+      expect(find.text('Details page'), findsNothing);
+      expect(find.text('Home'), findsOneWidget);
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+  }
+
+  testWidgets(
+    'turning reduced motion on while a page is open settles its exit',
+    (tester) async {
+      final reduced = ValueNotifier(false);
+      addTearDown(reduced.dispose);
+      final context = await _pumpApp(tester, toggleAnimations: reduced);
+      final navigator = Navigator.of(context);
+      unawaited(pushKitPage<void>(context, (_) => const Text('Details page')));
+      await tester.pumpAndSettle();
+      reduced.value = true;
+      await tester.pump();
+      navigator.pop();
+      await tester.pump();
+      expect(find.text('Details page'), findsNothing);
+      expect(tester.hasRunningAnimations, isFalse);
+    },
+  );
 
   test(
     'transitionDuration and reverseTransitionDuration are KitMotion.standard',

@@ -4,6 +4,8 @@
 //
 // These tests use the test font, where every glyph is as wide as the font
 // size (14 dp for KitText.secondary), so the collapse widths are exact.
+import 'kit_motion_still.dart';
+
 import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
@@ -97,6 +99,34 @@ String? _focusedLabel() {
 }
 
 void main() {
+  kitMotionStillTests(
+    'KitBreadcrumb',
+    builds: {
+      'path': () => KitBreadcrumb(
+        rootLabel: 'Project',
+        segments: const ['lib', 'state'],
+        onSelected: (_) {},
+      ),
+    },
+    changes: {
+      'directory changes': KitMotionChange(
+        build: () => KitBreadcrumb(
+          rootLabel: 'Project',
+          segments: const ['lib'],
+          onSelected: (_) {},
+        ),
+        act: (tester, stage) => stage.rebuild(
+          KitBreadcrumb(
+            rootLabel: 'Project',
+            segments: const ['test'],
+            onSelected: (_) {},
+          ),
+        ),
+        shows: KitBidi.auto('test'),
+      ),
+    },
+  );
+
   testWidgets('1. select: root is -1, an ancestor its index, current nothing', (
     tester,
   ) async {

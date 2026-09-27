@@ -18,6 +18,7 @@ import 'package:opencode_mobile/ui/kit/kit_page_route.dart';
 import 'package:opencode_mobile/ui/kit/kit_viewer.dart';
 
 import 'kit_harness.dart';
+import 'kit_motion_still.dart';
 
 const _phone = Size(412, 915);
 const _pc = Size(1280, 800);
@@ -158,6 +159,34 @@ String _countText(WidgetTester tester) => tester
     .data!;
 
 void main() {
+  const motionSource = KitViewerSource(KitViewerContent.text('Project notes'));
+  kitMotionStillTests(
+    'KitViewer',
+    builds: {
+      'loaded': () => const KitViewer(name: 'notes.txt', source: motionSource),
+    },
+    changes: {
+      'content replaced': KitMotionChange(
+        build: () => const KitViewer(name: 'notes.txt', source: motionSource),
+        act: (tester, stage) => stage.rebuild(
+          const KitViewer(
+            name: 'notes.txt',
+            source: KitViewerSource(KitViewerContent.text('Updated notes')),
+          ),
+        ),
+        shows: 'Updated notes',
+      ),
+    },
+  );
+  Future<void> openMotionViewer(BuildContext context) =>
+      showKitViewer(context, name: 'notes.txt', source: motionSource);
+  kitMotionStillTests(
+    'showKitViewer',
+    opens: {'text': KitMotionOpen(openMotionViewer, shows: 'notes.txt')},
+    changes: {
+      'dismissed': kitModalDismiss(openMotionViewer, shows: 'notes.txt'),
+    },
+  );
   testWidgets('1. frame: name, path, one primary, More and Close', (
     tester,
   ) async {

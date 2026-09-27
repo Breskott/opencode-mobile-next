@@ -676,25 +676,32 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
     ];
 
     return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Expanded(
-          child: Row(
-            children: [
-              if (name != null) Flexible(child: name),
-              if (counts != null)
-                Padding(
-                  padding: name != null
-                      ? EdgeInsetsDirectional.only(start: tokens.space2)
-                      : EdgeInsetsDirectional.zero,
-                  child: counts,
-                ),
-            ],
+        if (name != null || counts != null)
+          Expanded(
+            child: Row(
+              children: [
+                if (name != null) Flexible(child: name),
+                if (counts != null)
+                  Padding(
+                    padding: name != null
+                        ? EdgeInsetsDirectional.only(start: tokens.space2)
+                        : EdgeInsetsDirectional.zero,
+                    child: counts,
+                  ),
+              ],
+            ),
           ),
-        ),
         for (var i = 0; i < trailing.length; i++) ...[
           if (i > 0 || name != null || counts != null)
             SizedBox(width: tokens.space2),
-          trailing[i],
+          // Icon controls keep their target size. A labelled copy action
+          // needs a width bound so its words can wrap at large text sizes.
+          if (showCopy && _labelledCopy && i == trailing.length - 1)
+            Flexible(child: trailing[i])
+          else
+            trailing[i],
         ],
       ],
     );

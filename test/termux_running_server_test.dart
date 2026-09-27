@@ -226,21 +226,26 @@ void main() {
         home: Scaffold(
           body: RepaintBoundary(
             key: const ValueKey('capture'),
-            child: MediaQuery(
-              data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
-              child: SingleChildScrollView(
-                child: TermuxRunningServerEntry(
-                  profiles: profiles ?? [remote, local],
-                  busy: false,
-                  revision: 0,
-                  onConnect: onConnect ?? (_) {},
-                  onEnterCredentials: onCredentials ?? (_, _) {},
-                  actions: actions,
-                  connectedProfileID: connectedProfileID,
-                  onDisconnect: onDisconnect,
-                  onForget: onForget,
-                  onManage: onManage,
-                  busyConversations: busyConversations,
+            child: Builder(
+              builder: (context) => MediaQuery(
+                // Preserve the simulated viewport for KitRow's trailing bound.
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: TextScaler.linear(textScale)),
+                child: SingleChildScrollView(
+                  child: TermuxRunningServerEntry(
+                    profiles: profiles ?? [remote, local],
+                    busy: false,
+                    revision: 0,
+                    onConnect: onConnect ?? (_) {},
+                    onEnterCredentials: onCredentials ?? (_, _) {},
+                    actions: actions,
+                    connectedProfileID: connectedProfileID,
+                    onDisconnect: onDisconnect,
+                    onForget: onForget,
+                    onManage: onManage,
+                    busyConversations: busyConversations,
+                  ),
                 ),
               ),
             ),
@@ -588,7 +593,7 @@ void main() {
       await tester.ensureVisible(connect);
       await tester.tap(connect);
       await tester.pumpAndSettle();
-      final url = tester.widget<TextField>(
+      final url = tester.widget<TextFormField>(
         find.byKey(const ValueKey('server-url-field')),
       );
       expect(url.controller!.text, TermuxBridge.managedServerUrl);
@@ -759,8 +764,14 @@ void main() {
         find.byKey(const ValueKey('confirm-restart-local-server')),
       );
       await tester.pumpAndSettle();
-      // The manager's own words when it gave any.
-      expect(find.text('proot is missing'), findsOneWidget);
+      // Native diagnostics are classified into authored recovery copy.
+      expect(find.text('proot is missing'), findsNothing);
+      expect(
+        find.text(
+          lookupAppLocalizations(const Locale('en')).productErrorTermux,
+        ),
+        findsOneWidget,
+      );
       await tester.tap(key('menu'));
       await tester.pumpAndSettle();
       expect(key('restart'), findsOneWidget);

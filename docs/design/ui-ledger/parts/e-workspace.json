@@ -1199,39 +1199,42 @@
           "type": "text-field",
           "label": "Project name",
           "key": "project-name-input",
-          "line": 457,
+          "line": 185,
           "action": "submit",
           "target": null,
           "targetWidget": null,
           "effect": "onSubmitted -> _submit() pops with the text.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/projects_screen.dart"
         },
         {
           "id": "projects-rename-dialog-cancel",
           "type": "button",
           "label": "Cancel",
           "key": null,
-          "line": 482,
+          "line": 619,
           "action": "dismiss",
           "target": null,
           "targetWidget": null,
           "effect": "Navigator.pop().",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_dialog.dart"
         },
         {
           "id": "projects-rename-dialog-save",
           "type": "button",
           "label": "Save",
           "key": "confirm-rename-project",
-          "line": 487,
+          "line": 186,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
           "effect": "_submit() pops with the text; ProjectsScreen._rename calls repository.renameProject(projectID, projectDirectory, name) (empty name resets to the folder name).",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/projects_screen.dart"
         }
       ]
     },
@@ -1333,7 +1336,7 @@
           "type": "text-field",
           "label": "Folder path",
           "key": "open-folder-path",
-          "line": 462,
+          "line": 305,
           "action": "submit",
           "target": null,
           "targetWidget": null,
@@ -1341,14 +1344,15 @@
           "gates": [
             "disabled while _checking"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/project_folder_actions.dart"
         },
         {
           "id": "project-folder-open-dialog-cancel",
           "type": "button",
           "label": "Cancel",
           "key": null,
-          "line": 494,
+          "line": 619,
           "action": "dismiss",
           "target": null,
           "targetWidget": null,
@@ -1356,14 +1360,15 @@
           "gates": [
             "disabled while _checking"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_dialog.dart"
         },
         {
           "id": "project-folder-open-dialog-open",
           "type": "button",
           "label": "Open",
           "key": "open-folder-confirm",
-          "line": 508,
+          "line": 306,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
@@ -1371,7 +1376,8 @@
           "gates": [
             "disabled while _checking"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/project_folder_actions.dart"
         }
       ]
     },
@@ -1572,7 +1578,7 @@
           "type": "button",
           "label": "Try again (on a 'Status unavailable' row)",
           "key": null,
-          "line": 596,
+          "line": 240,
           "action": "other",
           "target": null,
           "targetWidget": null,
@@ -1581,7 +1587,8 @@
             "section error != null",
             "disabled while _refreshing"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/project_health_screen.dart"
         },
         {
           "id": "project-health-git-init-gated",
@@ -2010,20 +2017,21 @@
           "type": "button",
           "label": "Cancel",
           "key": null,
-          "line": 724,
+          "line": 431,
           "action": "dismiss",
           "target": null,
           "targetWidget": null,
           "effect": "Navigator.pop(context, false).",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_confirm_sheet.dart"
         },
         {
           "id": "managed-workspaces-remove-dialog-confirm",
           "type": "button",
           "label": "Remove permanently",
           "key": "confirm-remove-managed-workspace",
-          "line": 736,
+          "line": 276,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
@@ -2031,7 +2039,8 @@
           "gates": [
             "enabled only when the typed text == workspace.name"
           ],
-          "destructive": true
+          "destructive": true,
+          "file": "lib/ui/screens/managed_workspaces_screen.dart"
         }
       ]
     },
@@ -2190,7 +2199,7 @@
           "type": "menu-item",
           "label": "Open",
           "key": null,
-          "line": 718,
+          "line": 655,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
@@ -2198,14 +2207,15 @@
           "gates": [
             "!current && !preparing && failure == null"
           ],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/worktrees_screen.dart"
         },
         {
           "id": "worktrees-tile-menu-reset",
           "type": "menu-item",
           "label": "Reset",
           "key": null,
-          "line": 727,
+          "line": 675,
           "action": "open-dialog",
           "target": "worktrees-reset-dialog",
           "targetWidget": "_confirmReset",
@@ -2214,20 +2224,22 @@
             "widget.controller.capabilities.worktreeReset",
             "!preparing && failure == null"
           ],
-          "destructive": true
+          "destructive": true,
+          "file": "lib/ui/screens/worktrees_screen.dart"
         },
         {
           "id": "worktrees-tile-menu-remove",
           "type": "menu-item",
           "label": "Remove",
           "key": null,
-          "line": 735,
+          "line": 682,
           "action": "open-dialog",
           "target": "worktrees-remove-dialog",
           "targetWidget": "_RemoveWorktreeDialog",
           "effect": "onRemove -> _remove(worktree): inspects changes, then opens _RemoveWorktreeDialog.",
           "gates": [],
-          "destructive": true
+          "destructive": true,
+          "file": "lib/ui/screens/worktrees_screen.dart"
         },
         {
           "id": "worktrees-tile-context-open",

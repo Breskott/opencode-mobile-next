@@ -17,6 +17,10 @@ import 'package:flutter/material.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 
+import 'kit_chat_overflow_scenes.dart';
+import 'kit_core_overflow_scenes.dart';
+import 'kit_forms_overflow_scenes.dart';
+
 /// Where the matrix puts a scene.
 enum KitOverflowHost {
   /// In a padded scrolling list, as rows and panels sit on a screen.
@@ -158,6 +162,9 @@ Future<void> _confirm(
 
 /// Every scene in the matrix, one block per part, appended at the end.
 final kitOverflowScenes = <KitOverflowScene>[
+  ...kitChatOverflowScenes,
+  ...kitCoreOverflowScenes,
+  ...kitFormsOverflowScenes,
   // kit_action_stack.dart
   KitOverflowScene(
     const ['KitActionStack'],
@@ -1393,6 +1400,162 @@ final kitOverflowScenes = <KitOverflowScene>[
       child: const SizedBox.expand(),
     ),
   ),
+  // Infrastructure parts introduced by the September 27 kit migration.
+  for (final segments in <String, List<String>>{
+    'root': [],
+    'default': ['lib', 'screens'],
+    'collapsed': ['lib', 'features', 'projects', 'screens'],
+    'long': ['a-long-project-folder-name', 'a-long-screen-file-name'],
+  }.entries)
+    KitOverflowScene(
+      const ['KitBreadcrumb'],
+      segments.key,
+      build: (_, c) => KitBreadcrumb(
+        rootLabel: c.t('Project root', 'جذر المشروع'),
+        segments: segments.value,
+        onSelected: (_) {},
+      ),
+    ),
+  KitOverflowScene(
+    const ['KitGroupNote'],
+    'default',
+    build: (_, c) => KitGroupNote(
+      message: c.t(
+        'Two settings are not available on this server.',
+        'إعدادان غير متاحين على هذا الخادم.',
+      ),
+      action: KitAction(label: c.t('Why', 'لماذا'), onPressed: _noop),
+    ),
+  ),
+  for (final state in ['default', 'filled', 'error', 'disabled'])
+    KitOverflowScene(
+      const ['KitField'],
+      state,
+      build: (_, c) => _OverflowTextController(
+        text: state == 'default' ? '' : 'release-notes',
+        builder: (controller) => KitField(
+          label: c.t('Project name', 'اسم المشروع'),
+          controller: controller,
+          helper: c.t(
+            'Used to find this project later.',
+            'للعثور على المشروع لاحقاً.',
+          ),
+          error: state == 'error'
+              ? c.t(
+                  'Choose a name that is not already used.',
+                  'اختر اسماً غير مستخدم.',
+                )
+              : null,
+          enabled: state != 'disabled',
+          disabledReason: state == 'disabled'
+              ? c.t(
+                  'Reconnect to rename the project.',
+                  'أعد الاتصال لتغيير اسم المشروع.',
+                )
+              : null,
+        ),
+      ),
+    ),
+  for (final state in ['default', 'filled', 'partial', 'disabled'])
+    KitOverflowScene(
+      const ['KitSearchField'],
+      state,
+      build: (_, c) => _OverflowTextController(
+        text: state == 'default' ? '' : 'release',
+        builder: (controller) => KitSearchField(
+          controller: controller,
+          label: c.t('Search conversations', 'ابحث في المحادثات'),
+          onChanged: (_) {},
+          resultCount: state == 'default' ? null : 12,
+          partial: state == 'partial',
+          enabled: state != 'disabled',
+          disabledReason: state == 'disabled'
+              ? c.t(
+                  'Connect to search conversations.',
+                  'اتصل للبحث في المحادثات.',
+                )
+              : null,
+        ),
+      ),
+    ),
+  KitOverflowScene(
+    const ['KitSearchNoMatch'],
+    'no-match',
+    build: (_, c) => KitSearchNoMatch(
+      query: 'release-notes',
+      what: c.t('conversations', 'المحادثات'),
+      onClear: _noop,
+    ),
+  ),
+  KitOverflowScene(
+    const ['KitScrollArea', 'KitScrollbar', 'KitOwnScrollbar'],
+    'scrollable',
+    host: KitOverflowHost.fill,
+    build: (_, c) => _OverflowScrollFrame(copy: c),
+  ),
+  for (final layout in KitShellControlsLayout.values)
+    KitOverflowScene(
+      const ['KitTopBar', 'KitShellControls'],
+      layout.name,
+      build: (_, c) => KitTopBar.shell(
+        controls: KitShellControls(
+          server: c.t('Office computer', 'حاسوب المكتب'),
+          serverStatus: c.t('Reconnecting', 'جارٍ إعادة الاتصال'),
+          onServer: _noop,
+          onSearch: _noop,
+          needsYou: 2,
+          project: 'opencode',
+          onProject: _noop,
+          layout: layout,
+        ),
+      ),
+    ),
+  KitOverflowScene(
+    const ['KitStatusScope', 'KitStatusLineSlot', 'KitStatusContribution'],
+    'contributed',
+    host: KitOverflowHost.fill,
+    build: (_, c) => _OverflowStatusFrame(copy: c),
+  ),
+  KitOverflowScene(
+    const ['KitTabStrip'],
+    'counts-and-attention',
+    build: (_, c) => KitTabStrip(
+      selected: 1,
+      onSelected: (_) {},
+      tabs: [
+        KitTab(label: c.t('Working', 'قيد العمل'), count: 12),
+        KitTab(
+          label: c.t('Needs your answer', 'بانتظار إجابتك'),
+          count: 3,
+          needsYou: 3,
+        ),
+        KitTab(label: c.t('Finished', 'مكتمل'), count: 48),
+      ],
+    ),
+  ),
+  for (final enabled in [true, false])
+    KitOverflowScene(
+      const ['KitTappable'],
+      enabled ? 'enabled' : 'disabled',
+      build: (_, c) => KitTappable(
+        onTap: enabled ? _noop : null,
+        disabledReason: enabled
+            ? null
+            : c.t('Reconnect first.', 'أعد الاتصال أولاً.'),
+        child: KitText(c.t('Open project details', 'افتح تفاصيل المشروع')),
+      ),
+    ),
+  for (final kind in KitCodeKind.values)
+    KitOverflowScene(
+      const ['KitCodeBlock'],
+      kind.name,
+      build: (_, c) => KitCodeBlock(
+        text: 'flutter test test/project_settings_test.dart\nAll tests passed.',
+        kind: kind,
+        language: kind == KitCodeKind.code ? 'dart' : null,
+        caption: c.t('Project checks', 'فحوصات المشروع'),
+      ),
+    ),
 ];
 
 /// A valid 1x1 opaque PNG (the fixture kit_image_test.dart uses).
@@ -1406,3 +1569,92 @@ const _onePixelPng = <int>[
   0x18, 0xDD, 0x8D, 0xB0,
   0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82, //
 ];
+
+/// Owns the editing state for one matrix mount and releases it on teardown.
+class _OverflowTextController extends StatefulWidget {
+  const _OverflowTextController({required this.text, required this.builder});
+  final String text;
+  final Widget Function(TextEditingController) builder;
+  @override
+  State<_OverflowTextController> createState() =>
+      _OverflowTextControllerState();
+}
+
+class _OverflowTextControllerState extends State<_OverflowTextController> {
+  late final controller = TextEditingController(text: widget.text);
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(controller);
+}
+
+class _OverflowScrollFrame extends StatefulWidget {
+  const _OverflowScrollFrame({required this.copy});
+  final KitSceneCopy copy;
+  @override
+  State<_OverflowScrollFrame> createState() => _OverflowScrollFrameState();
+}
+
+class _OverflowScrollFrameState extends State<_OverflowScrollFrame> {
+  final controller = ScrollController();
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => KitScrollArea(
+    builder: (_) => KitScrollbar(
+      controller: controller,
+      child: ListView.builder(
+        controller: controller,
+        itemCount: 30,
+        itemBuilder: (_, i) =>
+            KitRow(title: widget.copy.t('Conversation $i', 'المحادثة $i')),
+      ),
+    ),
+  );
+}
+
+class _OverflowStatusFrame extends StatefulWidget {
+  const _OverflowStatusFrame({required this.copy});
+  final KitSceneCopy copy;
+  @override
+  State<_OverflowStatusFrame> createState() => _OverflowStatusFrameState();
+}
+
+class _OverflowStatusFrameState extends State<_OverflowStatusFrame> {
+  final conditions = ValueNotifier<List<KitStatus>>(const []);
+  @override
+  void dispose() {
+    conditions.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => KitStatusScope(
+    conditions: conditions,
+    child: KitStatusLineSlot(
+      child: KitStatusContribution(
+        status: KitStatus(
+          kind: KitStatusKind.info,
+          icon: AppIconography.info,
+          message: widget.copy.t(
+            'Your settings were saved on this phone.',
+            'حُفظت إعداداتك على هذا الهاتف.',
+          ),
+        ),
+        child: ListView(
+          children: [
+            KitText(widget.copy.t('Project settings', 'إعدادات المشروع')),
+          ],
+        ),
+      ),
+    ),
+  );
+}
