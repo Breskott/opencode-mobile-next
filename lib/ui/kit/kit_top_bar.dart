@@ -6,6 +6,7 @@ import 'glass/kit_glass.dart';
 import 'kit_screen.dart';
 import 'kit_bidi.dart';
 import 'kit_buttons.dart';
+import 'kit_divider.dart';
 import 'kit_icon.dart';
 import 'kit_icon_button.dart';
 import 'kit_layout.dart';
@@ -235,7 +236,14 @@ class KitTopBar extends StatelessWidget {
               exitButton(AppIconography.back, l10n.kitTopBarBack),
               SizedBox(width: tokens.space1),
             ] else
-              SizedBox(width: tokens.gutter - tokens.space1),
+              // No exit: the title starts on the gutter, like the page's
+              // first content row. A switcher's tappable pads its words by
+              // space2, so its box starts that much earlier.
+              SizedBox(
+                width: onTitleTap == null
+                    ? tokens.gutter
+                    : tokens.gutter - tokens.space2,
+              ),
             Expanded(
               child: _KitTopBarTitle(
                 title: title,
@@ -277,10 +285,15 @@ class KitTopBar extends StatelessWidget {
       },
     );
     if (toolbar) {
-      // On PC the bar is the pane's toolbar, a glass surface (VL §6).
-      return Padding(
-        padding: EdgeInsets.all(tokens.space2),
-        child: KitGlass(dim: true, child: bar),
+      // On PC the bar is the pane's toolbar: flat on the ground with a
+      // hairline below. Glass stays on the floating navigation layer.
+      return ColoredBox(
+        color: tokens.roles.ground,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [bar, const KitDivider()],
+        ),
       );
     }
     return ColoredBox(color: tokens.roles.ground, child: bar);
@@ -644,7 +657,9 @@ enum KitShellControlsLayout {
 /// BackdropGroup provided by the shell.
 ///
 /// States: connected, reconnecting (word + working mark), not answering,
-/// needs-you badge. The status word is always visible (STATE-9).
+/// needs-you badge. In the bar the status word is always visible (STATE-9).
+/// In the sidebar the name is never cut and the status is a second line;
+/// "Connected" is left to the green dot there, and stays in the label.
 class KitShellControls extends StatelessWidget {
   const KitShellControls({
     super.key,
@@ -665,7 +680,8 @@ class KitShellControls extends StatelessWidget {
   /// The server's display name.
   final String server;
 
-  /// The status word, always visible: "Connected", "Reconnecting".
+  /// The status word: "Connected", "Reconnecting". Always in the label; on
+  /// screen except for [AppStatusTone.ok] in the sidebar layout.
   final String serverStatus;
   final AppStatusTone serverTone;
 
@@ -880,6 +896,50 @@ class _KitServerPillContent extends StatelessWidget {
               ),
             ),
           );
+    // The PC sidebar (296 dp) never cuts the name: it wraps, and the status
+    // takes a second line. "Connected" is left to the green dot there (the
+    // pill's label still says it); Offline and Reconnecting keep the word.
+    if (expand) {
+      final word = tone == AppStatusTone.ok ? null : status;
+      return ConstrainedBox(
+        constraints: BoxConstraints(minHeight: tokens.minTarget),
+        child: Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: tokens.space3,
+            end: tokens.space2,
+            top: tokens.space1,
+            bottom: tokens.space1,
+          ),
+          child: Row(
+            children: [
+              mark,
+              SizedBox(width: tokens.space2),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    KitText(KitBidi.auto(server), role: KitTextRole.rowTitle),
+                    if (word != null)
+                      KitText(
+                        word,
+                        role: KitTextRole.caption,
+                        tone: KitTextTone.secondary,
+                      ),
+                  ],
+                ),
+              ),
+              SizedBox(width: tokens.space1),
+              Icon(
+                AppIconography.chevronDown,
+                size: tokens.iconSize(context, tokens.smallIconSize),
+                color: roles.text2,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     // Only the name gives way; the status word always shows (STATE-9).
     final label = Row(
       mainAxisSize: MainAxisSize.min,
@@ -910,14 +970,11 @@ class _KitServerPillContent extends StatelessWidget {
           bottom: tokens.space1,
         ),
         child: Row(
-          mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,
           children: [
             mark,
             SizedBox(width: tokens.space2),
-            // Expanded (the PC sidebar), the name and status take the
-            // whole width and push the chevron to the end; no Spacer shares
-            // the flex, so the name is cut only when it truly does not fit.
-            if (expand) Expanded(child: label) else Flexible(child: label),
+            Flexible(child: label),
             SizedBox(width: tokens.space1),
             Icon(
               AppIconography.chevronDown,
