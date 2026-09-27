@@ -174,7 +174,12 @@ class KitComposer extends StatefulWidget {
     this.voiceButtonKey,
     this.editorKey,
     this.deliveryKey,
+    this.hasAttachments = false,
   });
+
+  /// The message carries attachments or references, so Send is live (and
+  /// the editor button shows) even with an empty field (chat-3).
+  final bool hasAttachments;
 
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -314,12 +319,14 @@ class _KitComposerState extends State<KitComposer> {
     }
   }
 
+  bool get _hasContent => _hasText || widget.hasAttachments;
+
   bool get _readOnly => widget.readOnlyReason != null;
 
   bool get _canSendNow =>
       !_readOnly &&
       widget.voice == null &&
-      _hasText &&
+      _hasContent &&
       !widget.sending &&
       (!widget.busy || widget.canSendWhileBusy);
 
@@ -363,13 +370,13 @@ class _KitComposerState extends State<KitComposer> {
       return widget.busy && stop ? _Trailing.stopAndSend : _Trailing.sending;
     }
     if (widget.busy) {
-      if (!_hasText) return stop ? _Trailing.stop : _Trailing.sendDisabled;
+      if (!_hasContent) return stop ? _Trailing.stop : _Trailing.sendDisabled;
       if (widget.canSendWhileBusy) {
         return stop ? _Trailing.stopAndSend : _Trailing.send;
       }
       return stop ? _Trailing.stop : _Trailing.none;
     }
-    if (_hasText) return _Trailing.send;
+    if (_hasContent) return _Trailing.send;
     return widget.onVoice != null ? _Trailing.mic : _Trailing.sendDisabled;
   }
 
@@ -387,7 +394,7 @@ class _KitComposerState extends State<KitComposer> {
   bool get _deliveryShown =>
       !_readOnly &&
       widget.busy &&
-      _hasText &&
+      _hasContent &&
       widget.canSendWhileBusy &&
       widget.onDeliveryChanged != null;
 
@@ -398,10 +405,10 @@ class _KitComposerState extends State<KitComposer> {
       if (widget.note case final note? when note.isNotEmpty) note,
       if (widget.toolsDisabledReason case final r? when r.isNotEmpty) r,
       if (widget.offline) l10n.kitComposerOffline,
-      if (widget.busy && _hasText && !widget.canSendWhileBusy)
+      if (widget.busy && _hasContent && !widget.canSendWhileBusy)
         l10n.kitComposerCannotSendYet,
       if (widget.busy &&
-          _hasText &&
+          _hasContent &&
           widget.canSendWhileBusy &&
           widget.onDeliveryChanged == null)
         widget.delivery == KitComposerDelivery.addToThisTurn
@@ -516,7 +523,7 @@ class _KitComposerState extends State<KitComposer> {
         )
       else
         const Spacer(),
-      if (!readOnly && _hasText && widget.onOpenEditor != null)
+      if (!readOnly && _hasContent && widget.onOpenEditor != null)
         KitIconButton(
           key: widget.editorKey,
           icon: AppIconography.expand,
@@ -586,6 +593,9 @@ class _KitComposerState extends State<KitComposer> {
             child: widget.attachments!,
           ),
         Padding(
+          // Keyed so a note, suggestions or attachments appearing above it
+          // never re-create the field (focus and the keyboard stay).
+          key: const ValueKey<String>('kit-composer-field-slot'),
           padding: EdgeInsetsDirectional.only(
             start: tokens.space3,
             end: tokens.space3,

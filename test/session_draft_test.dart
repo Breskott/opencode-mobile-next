@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/sse.dart';
@@ -114,7 +115,11 @@ Future<void> _pumpChat(WidgetTester tester, ConnectionController conn) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [connProvider.overrideWithValue(conn)],
-      child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ChatScreen(sessionID: 'session-1'),
+      ),
     ),
   );
   await tester.pump();
@@ -325,7 +330,7 @@ void main() {
       await _pumpChat(tester, c);
       await tester.pumpAndSettle();
       expect(find.textContaining('server.txt'), findsWidgets);
-      await tester.tap(find.byTooltip('Remove attachment server.txt'));
+      await tester.tap(find.bySemanticsLabel('Remove server.txt'));
       await tester.pump(const Duration(milliseconds: 700));
       await tester.pumpAndSettle();
       expect(c.savedSessionDraft('session-1'), isNull);
@@ -357,9 +362,16 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         tester
-            .widget<TextField>(find.byKey(const Key('chat-composer-field')))
-            .readOnly,
-        isTrue,
+            .widget<TextField>(
+              _inner(find.byKey(const Key('chat-composer-field'))),
+            )
+            .enabled,
+        isFalse,
+      );
+      // The pill says why typing waits.
+      expect(
+        find.textContaining('Answer the question about this draft first'),
+        findsOneWidget,
       );
       await tester.pump(const Duration(milliseconds: 700));
       expect(c.savedSessionDraft('session-1')!.text, 'Keep text');
@@ -535,6 +547,8 @@ void main() {
       ProviderScope(
         overrides: [connProvider.overrideWithValue(c)],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
               context,
@@ -576,7 +590,9 @@ void main() {
     expect(find.byKey(const ValueKey('draft-save-error')), findsOneWidget);
     expect(
       tester
-          .widget<TextField>(find.byKey(const Key('chat-composer-field')))
+          .widget<TextField>(
+            _inner(find.byKey(const Key('chat-composer-field'))),
+          )
           .controller!
           .text,
       'Keep this draft',
@@ -676,12 +692,18 @@ void main() {
     await _pumpChat(tester, c);
     await tester.tap(find.byKey(const Key('composer-tools-button')));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('composer-tools-prompts')));
+    await Scrollable.ensureVisible(
+      tester.element(find.byKey(const Key('composer-tools-prompts'))),
+      alignment: .5,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('composer-tools-prompts')));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(
-      find.byKey(const Key('composer-tool-legacy-drafts')),
+    await Scrollable.ensureVisible(
+      tester.element(find.byKey(const Key('composer-tool-legacy-drafts'))),
+      alignment: .5,
     );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('composer-tool-legacy-drafts')));
     await tester.pumpAndSettle();
     await tester.pumpAndSettle();
@@ -769,7 +791,9 @@ void main() {
     await _pumpChat(tester, controller);
     expect(
       tester
-          .widget<TextField>(find.byKey(const Key('chat-composer-field')))
+          .widget<TextField>(
+            _inner(find.byKey(const Key('chat-composer-field'))),
+          )
           .controller
           ?.text,
       'unsent thought',
@@ -791,7 +815,7 @@ void main() {
       'send me',
     );
     await tester.pump();
-    await tester.tap(find.byTooltip('Send'));
+    await tester.tap(find.byTooltip('Send when back online'));
     await tester.pump();
     await tester.pump();
 
@@ -800,3 +824,8 @@ void main() {
     expect(controller.sessionDraft('session-1'), isNull);
   });
 }
+
+/// The composer's field is a KitField (a TextFormField); its TextField
+/// holds the controller and focus node.
+Finder _inner(Finder field) =>
+    find.descendant(of: field, matching: find.byType(TextField));
