@@ -967,7 +967,61 @@ void main() {
         find.byKey(const ValueKey('quick-add-builtin-card')),
         findsNothing,
       );
+      // R15: This phone is a row of the one list (the row variant), not a
+      // card of its own above it, and leads it while nothing is urgent.
+      final list = find.byKey(const ValueKey('servers-list'));
+      expect(
+        find.descendant(
+          of: list,
+          matching: find.byKey(const ValueKey('phone-server-row')),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('phone-server-card')), findsNothing);
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('phone-server-row'))).dy,
+        lessThan(tester.getTopLeft(find.text('Work server')).dy),
+      );
+      // The server in use leaves from its own row's menu.
+      await tester.tap(find.byKey(const ValueKey('phone-server-menu')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('phone-server-disconnect')),
+        findsNothing,
+        reason: 'not connected: nothing to leave',
+      );
       expectNoForbiddenText();
+    });
+
+    testWidgets('a working server ranks above This phone in the one list', (
+      tester,
+    ) async {
+      store.saved.addAll([phone(), work]);
+      store.selected = 'work';
+      connection
+        ..api = OpenCodeApi(baseUrl: work.baseUrl)
+        ..busySessions = {'s1'};
+      tester.view
+        ..physicalSize = const Size(400, 1600)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(app(const ServersScreen()));
+      await tester.pumpAndSettle();
+      final list = find.byKey(const ValueKey('servers-list'));
+      final phoneRow = find.descendant(
+        of: list,
+        matching: find.byKey(const ValueKey('phone-server-row')),
+      );
+      final workRow = find.descendant(
+        of: list,
+        matching: find.byKey(const ValueKey('server-row-work')),
+      );
+      expect(phoneRow, findsOneWidget);
+      expect(workRow, findsOneWidget);
+      expect(
+        tester.getTopLeft(workRow).dy,
+        lessThan(tester.getTopLeft(phoneRow).dy),
+      );
     });
   });
 }

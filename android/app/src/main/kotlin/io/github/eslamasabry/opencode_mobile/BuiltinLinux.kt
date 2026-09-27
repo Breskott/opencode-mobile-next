@@ -250,6 +250,103 @@ class BuiltinLinux(private val context: Context) {
 
     private val services = LinkedHashMap<String, Service>()
 
+    // Device-wide private state: the runtime is shared by local profiles.
+    // Never infer intent from an old crash report or a missing preference.
+    private val recoveryPreferences =
+        context.getSharedPreferences("builtin_server_recovery", Context.MODE_PRIVATE)
+    private val recoveryLock = Any()
+    private var activityResumed = false
+    private var recoveryGeneration = 0L
+    private var wantedRevision = 0L
+    private var restartWanted = recoveryPreferences.getBoolean("wanted", false)
+    private data class RecoveryAttempt(val process: Process, val generation: Long)
+    private var recoveryAttempt: RecoveryAttempt? = null
+    private var confirmedRecoveryAttempt: RecoveryAttempt? = null
+
+    val serverRestartWanted: Boolean get() = synchronized(recoveryLock) { restartWanted }
+    val serverRecoveryGeneration: Long get() = synchronized(recoveryLock) { recoveryGeneration }
+
+    /** Called on the main thread: invalidation never waits for runtime I/O. */
+    fun setActivityResumed(resumed: Boolean) {
+        synchronized(recoveryLock) { activityResumed = resumed }
+        if (!resumed) cancelServerRecovery()
+    }
+
+    /** Revokes admission immediately, before an asynchronous explicit stop. */
+    fun requestServerStop() {
+        synchronized(recoveryLock) {
+            restartWanted = false
+            wantedRevision++
+        }
+        cancelServerRecovery()
+    }
+
+    /** Cancels only an unconfirmed automatic process, never a manual replacement. */
+    fun cancelServerRecovery() {
+        val attempt = synchronized(recoveryLock) {
+            recoveryGeneration++
+            confirmedRecoveryAttempt = null
+            recoveryAttempt.also { recoveryAttempt = null }
+        }
+        if (attempt != null) Thread {
+            synchronized(this) {
+                if (services[SERVER]?.process === attempt.process) {
+                    removeService(SERVER)
+                }
+            }
+        }.start()
+    }
+
+    fun confirmServerRecovery(expectedGeneration: Long) {
+        synchronized(recoveryLock) {
+            // Idempotence lets the controller retry durable act recording after
+            // the starter already confirmed this exact automatic process.
+            val attempt = recoveryAttempt ?: confirmedRecoveryAttempt
+            check(activityResumed && restartWanted &&
+                recoveryGeneration == expectedGeneration &&
+                attempt != null && attempt.generation == expectedGeneration && attempt.process.isAlive) {
+                "The phone server could not restart."
+            }
+            confirmedRecoveryAttempt = attempt
+            recoveryAttempt = null
+        }
+    }
+
+    private fun setServerWanted(wanted: Boolean) {
+        val revision = synchronized(recoveryLock) {
+            restartWanted = false
+            wantedRevision++
+            recoveryGeneration++
+            recoveryAttempt = null
+            confirmedRecoveryAttempt = null
+            wantedRevision
+        }
+        // Persist before launch, without making main-thread invalidation wait
+        // for storage. Service mutations are serialized by the runtime lock.
+        check(recoveryPreferences.edit().putBoolean("wanted", wanted).commit()) {
+            "The phone server setting could not be saved."
+        }
+        synchronized(recoveryLock) {
+            if (wantedRevision == revision) restartWanted = wanted
+        }
+    }
+
+    @Synchronized
+    fun restartServer(script: String, port: Int, expectedGeneration: Long) {
+        fun admitted() = activityResumed && restartWanted &&
+            recoveryGeneration == expectedGeneration
+        synchronized(recoveryLock) {
+            check(admitted()) { "The phone server could not restart." }
+        }
+        check(!serverRunning) { "The phone server is already running." }
+        launchService(SERVER, script, port, null, expectedGeneration)
+        val accepted = synchronized(recoveryLock) { admitted() }
+        if (!accepted) {
+            removeService(SERVER)
+            error("The phone server could not restart.")
+        }
+    }
+
     val serverLog = File(home, "server.log")
 
     val serverRunning: Boolean get() = serviceRunning(SERVER)
@@ -283,14 +380,45 @@ class BuiltinLinux(private val context: Context) {
     fun startService(name: String, script: String, port: Int?, notice: String?) {
         check(installed) { "Ubuntu is not installed in the app yet" }
         require(NAME.matches(name)) { "Invalid service name: $name" }
-        stopService(name)
+        if (name == SERVER) setServerWanted(true)
+        launchService(name, script, port, notice)
+    }
+
+    private fun launchService(
+        name: String,
+        script: String,
+        port: Int?,
+        notice: String?,
+        expectedGeneration: Long? = null,
+    ): Process {
+        removeService(name)
         val log = serviceLogFile(name)
         // One log per run; the previous one stays for a look after a crash.
         if (log.isFile) log.renameTo(File(home, "$name.previous.log"))
-        val process = start(script, log).also { it.outputStream.close() }
+        val process = if (expectedGeneration == null) {
+            start(script, log)
+        } else synchronized(recoveryLock) {
+            // The final admission check and process creation are one operation.
+            // onPause never waits for tree shutdown, FGS work or a health probe.
+            check(activityResumed && restartWanted &&
+                recoveryGeneration == expectedGeneration) {
+                "The phone server could not restart."
+            }
+            start(script, log).also {
+                confirmedRecoveryAttempt = null
+                recoveryAttempt = RecoveryAttempt(it, expectedGeneration)
+            }
+        }
+        process.outputStream.close()
         services[name] = Service(process, port, notice)
         recordRunning()
-        BuiltinServerService.start(context, currentNotice())
+        try {
+            BuiltinServerService.start(context, currentNotice())
+        } catch (error: Exception) {
+            // A refused foreground service must not leave an unsupervised child.
+            removeService(name)
+            throw error
+        }
         // A service that exits on its own (a crash, a bad config) takes its
         // share of the "running" notification with it.
         Thread {
@@ -302,10 +430,19 @@ class BuiltinLinux(private val context: Context) {
                 }
             }
         }.start()
+        return process
     }
 
     @Synchronized
     fun stopService(name: String) {
+        try {
+            if (name == SERVER) setServerWanted(false)
+        } finally {
+            removeService(name)
+        }
+    }
+
+    private fun removeService(name: String) {
         val service = services.remove(name) ?: return
         stopTree(service.process)
         serviceSetChanged()
@@ -314,7 +451,12 @@ class BuiltinLinux(private val context: Context) {
     /** Stops every service; Stop in the notification and uninstall use it. */
     @Synchronized
     fun stopAllServices() {
-        for (name in services.keys.toList()) stopService(name)
+        // Clear even if a crash already removed the server from the map.
+        try {
+            setServerWanted(false)
+        } finally {
+            for (name in services.keys.toList()) removeService(name)
+        }
     }
 
     /** Keeps the foreground service exactly as long as any service runs. */

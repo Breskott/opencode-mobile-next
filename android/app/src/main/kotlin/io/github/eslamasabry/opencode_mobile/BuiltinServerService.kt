@@ -26,8 +26,10 @@ class BuiltinServerService : Service() {
         if (intent?.action == ACTION_STOP) {
             // Storage measurement/removal can hold the runtime lifecycle lock.
             // Waiting for that lock (and stopping process trees) must not block UI.
+            val linux = BuiltinLinux.get(applicationContext)
+            linux.requestServerStop()
             Thread {
-                BuiltinLinux.get(applicationContext).stopAllServices()
+                linux.stopAllServices()
                 stopSelf(startId)
             }.start()
             return START_NOT_STICKY
@@ -44,6 +46,16 @@ class BuiltinServerService : Service() {
             startForeground(NOTIFICATION_ID, notification)
         }
         return START_NOT_STICKY
+    }
+
+    // Currently specialUse, not dataSync: never assume any FGS is unbounded.
+    // If Android revokes its budget, discard intent as well as the children.
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        val linux = BuiltinLinux.get(applicationContext)
+        linux.requestServerStop()
+        Thread { linux.stopAllServices() }.start()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

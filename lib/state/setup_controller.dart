@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/setup_assistant.dart';
 import '../ui/kit/kit_redact.dart';
+import 'setup_audit_store.dart';
 
 /// Profile-and-location-bound review coordinator. Recreate on location change;
 /// dispose before deleting a profile. Nothing queues writes while offline.
@@ -14,7 +16,9 @@ class SetupController {
     required this.prefs,
     required this.profileId,
     required this.locationId,
-  }) {
+    bool Function()? isCurrent,
+  }) : _isCurrent = isCurrent ?? (() => true),
+       _auditStore = SetupAuditStore.forProfile(prefs, profileId) {
     if (profileId.isEmpty || locationId.isEmpty) {
       throw ArgumentError('Setup requires a profile and location.');
     }
@@ -23,18 +27,44 @@ class SetupController {
   final SharedPreferences prefs;
   final String profileId;
   final String locationId;
+  final bool Function() _isCurrent;
+  final SetupAuditStore _auditStore;
   String get auditKey => 'oc.setupAudit.$profileId';
   final _events = StreamController<SetupSnapshot>.broadcast();
   Stream<SetupSnapshot> get changes => _events.stream;
   SetupSnapshot get snapshot => _snapshot;
-  SetupSupport get support => gateway.support;
+  SetupSupport get support {
+    final advertised = gateway.support;
+    if (!advertised.writeConfig || _transactional != null) return advertised;
+    return SetupSupport(
+      readConfig: advertised.readConfig,
+      mcpInventory: advertised.mcpInventory,
+      assistant: advertised.assistant,
+      reason:
+          'This server has no verified atomic configuration restore endpoint. Apply and Undo are unavailable.',
+    );
+  }
+
   SetupSnapshot _snapshot = const SetupSnapshot();
   Map<String, Object?>? _base;
-  Map<String, Object?>? _expected;
+  SetupConfigRevision? _baseRevision;
+  SetupConfigCommit? _undo;
   List<SetupEdit> _edits = const [];
-  List<SetupEdit> _inverse = const [];
+
   bool _online = true, _busy = false, _disposed = false;
-  int _sequence = 0;
+  static final _random = Random.secure();
+  String _id() => List.generate(
+    24,
+    (_) => _random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+  ).join();
+  SetupTransactionalConfigGateway? get _transactional =>
+      gateway is SetupTransactionalConfigGateway
+      ? gateway as SetupTransactionalConfigGateway
+      : null;
+  bool get _writable => support.writeConfig && _transactional != null;
+  String get _writeReason => !support.writeConfig
+      ? support.reason
+      : 'This server has no verified atomic configuration restore endpoint. Apply and Undo are unavailable.';
   Completer<void>? _finished;
 
   void setOnline(bool online) {
@@ -57,12 +87,21 @@ class SetupController {
       throw SetupFailure(SetupFailureCode.unsupported, support.reason);
     }
     _emit(const SetupSnapshot(phase: SetupPhase.loading));
-    final config = await gateway.readConfig();
+    final revision = await _transactional?.readSnapshot();
+    _requireOnline();
+    if (revision != null) {
+      KitRedact.registerCredentialValues(revision.config);
+      _validateRevision(revision);
+    }
+    final config = revision?.config ?? await gateway.readConfig();
+    _requireOnline();
     final servers = support.mcpInventory
         ? await gateway.listMcpServers()
         : <SetupMcpStatus>[];
     _requireOnline();
+    KitRedact.registerCredentialValues(config);
     _base = _clone(config);
+    _baseRevision = revision;
     _edits = const [];
     _emit(
       SetupSnapshot(
@@ -78,7 +117,7 @@ class SetupController {
             ),
           ),
         ),
-        canUndo: _inverse.isNotEmpty,
+        canUndo: _undo != null,
       ),
     );
   });
@@ -86,6 +125,7 @@ class SetupController {
   /// Returns a reviewable diff. Validation is local and cannot prove that a
   /// server accepts a schema or that a package can run on its host.
   Future<SetupProposal> propose(List<SetupEdit> edits) => _run(() async {
+    _requireCurrent();
     if (_base == null) {
       throw const SetupFailure(
         SetupFailureCode.invalid,
@@ -111,16 +151,9 @@ class SetupController {
           ),
         )
         .toList(growable: false);
-    final reversible = _edits.every(
-      (e) =>
-          !e.remove &&
-          _has(_base!, e.path) &&
-          _at(_base!, e.path) != null &&
-          _at(_base!, e.path) is! Map &&
-          e.value is! Map,
-    );
+    final unavailable = _mutationReason(_edits);
     final proposal = SetupProposal(
-      id: 'proposal-${++_sequence}',
+      id: _id(),
       changes: _edits
           .map(
             (e) => SetupDiff(
@@ -128,30 +161,80 @@ class SetupController {
               before: setupRedact(_at(_base!, e.path), e.path.last),
               after: setupRedact(e.value, e.path.last),
               remove: e.remove,
+              beforePresent: _has(_base!, e.path),
+              afterPresent: !e.remove,
             ),
           )
           .toList(),
-      canApply: support.writeConfig && reversible && _online,
-      reason: !support.writeConfig
-          ? support.reason
-          : !reversible
-          ? 'This change needs a reversible config-write endpoint before it can be applied.'
-          : !_online
-          ? 'Reconnect to your server before applying.'
-          : null,
+      canApply: _writable && unavailable == null && _online && _isCurrent(),
+      reason: !_writable
+          ? _writeReason
+          : unavailable ??
+                (!_online ? 'Reconnect to your server before applying.' : null),
     );
     await _audit(proposal.id, 'proposed');
+    _requireCurrent();
     _emit(
       SetupSnapshot(
         phase: _online ? SetupPhase.ready : SetupPhase.offline,
         config: _snapshot.config,
         servers: _snapshot.servers,
         proposal: proposal,
-        canUndo: _inverse.isNotEmpty,
+        canUndo: _undo != null,
       ),
     );
     return proposal;
   });
+
+  String? _mutationReason(List<SetupEdit> edits) {
+    for (final edit in edits) {
+      Object? ancestor = _base;
+      for (final segment in edit.path.take(edit.path.length - 1)) {
+        if (ancestor is! Map || !ancestor.containsKey(segment)) {
+          break;
+        }
+        ancestor = ancestor[segment];
+        if (ancestor is! Map) {
+          return 'This change would replace a containing setting. Review that setting separately before continuing.';
+        }
+      }
+      final root = edit.path.first;
+      if (const {'model', 'small_model', 'default_agent'}.contains(root) &&
+          !edit.remove &&
+          edit.path.length == 1) {
+        continue;
+      }
+      if (root == 'permission' && !edit.remove && edit.path.length == 2) {
+        continue;
+      }
+      if (root == 'mcp' && edit.path.length == 2) {
+        final previous = _at(_base!, edit.path);
+        final exists =
+            (_base!['mcp'] is Map) &&
+            (_base!['mcp'] as Map).containsKey(edit.path.last);
+        if (exists &&
+            (previous is! Map ||
+                previous['type'] != 'remote' ||
+                previous['enabled'] != false)) {
+          return 'Only disabled remote MCP definitions can be changed here. Runtime connections and sign-in state are not restored.';
+        }
+        if (edit.remove) {
+          if (exists) {
+            continue;
+          }
+          return 'The MCP definition is absent. Refresh and review a current definition.';
+        }
+        if (edit.value is Map &&
+            (edit.value as Map)['type'] == 'remote' &&
+            (edit.value as Map)['enabled'] == false) {
+          continue;
+        }
+        return 'Local MCP commands require a separate command review. They cannot be applied here.';
+      }
+      return 'This setting has no reviewed reversible setup action. Use the existing server configuration or secure sign-in flow.';
+    }
+    return null;
+  }
 
   List<String> validate(List<SetupEdit> edits) {
     if (edits.isEmpty || edits.length > 32) {
@@ -267,15 +350,14 @@ class SetupController {
     return const [];
   }
 
-  /// Explicit confirmation of this exact, controller-owned proposal is needed.
-  /// Current production adapters deliberately reject all writes.
+  /// Only an atomic source transaction can make a reviewed proposal writable.
   Future<void> apply(
     String proposalId, {
     required bool confirmed,
   }) => _run(() async {
     _requireOnline();
-    if (!support.writeConfig) {
-      throw SetupFailure(SetupFailureCode.unsupported, support.reason);
+    if (!_writable) {
+      throw SetupFailure(SetupFailureCode.unsupported, _writeReason);
     }
     final proposal = _snapshot.proposal;
     if (!confirmed ||
@@ -287,94 +369,137 @@ class SetupController {
         'Review and confirm the current proposal first.',
       );
     }
-    final current = await gateway.readConfig();
-    if (!_same(current, _base)) {
+    _operationPhase(SetupPhase.applying);
+    final current = await _transactional!.readSnapshot();
+    KitRedact.registerCredentialValues(current.config);
+    _requireOnline();
+    if (!_sameRevision(current, _baseRevision)) {
       throw const SetupFailure(
         SetupFailureCode.conflict,
         'Configuration changed on the server. Refresh and review a new proposal.',
       );
     }
-    final inverse = _edits
-        .map((e) => SetupEdit(path: e.path, value: _at(current, e.path)))
-        .toList();
-    await _write(proposalId, _edits, current);
-    _inverse = inverse;
-    _emit(
-      SetupSnapshot(
-        phase: SetupPhase.ready,
-        config: setupRedact(_expected) as Map<String, Object?>,
-        servers: _snapshot.servers,
-        canUndo: true,
+    final expected = _clone(current.config);
+    for (final edit in _edits) {
+      if (edit.remove) {
+        _remove(expected, edit.path);
+      } else {
+        _put(expected, edit.path, edit.value);
+      }
+    }
+    final edits = _edits;
+    final result = await _transact(
+      proposal.id,
+      'apply',
+      current,
+      expected,
+      () => _transactional!.commit(
+        expected: current,
+        edits: edits,
+        operationId: proposal.id,
       ),
     );
+    _undo = result;
+    _requireOnline();
+    _publishReady();
   });
 
   Future<void> undo({required bool confirmed}) => _run(() async {
     _requireOnline();
-    if (!support.writeConfig) {
-      throw SetupFailure(SetupFailureCode.unsupported, support.reason);
+    if (!_writable) {
+      throw SetupFailure(SetupFailureCode.unsupported, _writeReason);
     }
-    if (!confirmed || _inverse.isEmpty) {
+    final previous = _undo;
+    if (!confirmed || previous == null) {
       throw const SetupFailure(
         SetupFailureCode.invalid,
         'There is no confirmed change to undo in this setup session.',
       );
     }
-    final current = await gateway.readConfig();
-    if (!_same(current, _expected)) {
+    _operationPhase(SetupPhase.undoing);
+    final current = await _transactional!.readSnapshot();
+    KitRedact.registerCredentialValues(current.config);
+    _requireOnline();
+    if (!_sameRevision(current, previous.after)) {
       throw const SetupFailure(
         SetupFailureCode.conflict,
         'Configuration changed after Apply. Refresh before making another change.',
       );
     }
-    final inverse = _inverse;
-    await _write('undo-${++_sequence}', inverse, current);
-    _inverse = const [];
-    _emit(
-      SetupSnapshot(
-        phase: SetupPhase.ready,
-        config: setupRedact(_expected) as Map<String, Object?>,
-        servers: _snapshot.servers,
-      ),
+    final id = _id();
+    await _transact(
+      id,
+      'undo',
+      current,
+      previous.before.config,
+      () => _transactional!.restore(commit: previous, operationId: id),
     );
+    _undo = null;
+    _requireOnline();
+    _publishReady();
   });
 
-  Future<void> _write(
+  Future<SetupConfigCommit> _transact(
     String id,
-    List<SetupEdit> edits,
-    Map<String, Object?> current,
+    String operation,
+    SetupConfigRevision current,
+    Map<String, Object?> expected,
+    Future<SetupConfigCommit> Function() send,
   ) async {
-    await _audit(
-      id,
-      'pending',
-    ); // Fail before mutation if durable audit is unavailable.
+    await _audit(id, 'pending', operation: operation);
     _requireOnline();
-    final patch = <String, Object?>{};
-    final expected = _clone(current);
-    for (final edit in edits) {
-      _put(patch, edit.path, edit.value);
-      _put(expected, edit.path, edit.value);
-    }
+    var acknowledged = false;
     try {
-      await gateway.patchConfig(patch);
-      final actual = await gateway.readConfig();
-      if (!_same(actual, expected)) {
+      final result = await send();
+      acknowledged = true;
+      KitRedact.registerCredentialValues(result.before.config);
+      KitRedact.registerCredentialValues(result.after.config);
+      // After dispatch reconcile the original captured host even if its screen
+      // closes. Never send another mutation or publish ready to a stale owner.
+      await _audit(id, 'accepted', operation: operation);
+      _validateRevision(result.before);
+      _validateRevision(result.after);
+      if (!_sameRevision(result.before, current) ||
+          result.after.targetId != current.targetId ||
+          result.after.revision == current.revision ||
+          result.undoHandle.isEmpty ||
+          !_same(result.after.config, expected)) {
         throw const SetupFailure(
           SetupFailureCode.uncertain,
-          'Refresh to inspect the server configuration.',
+          'The configuration change could not be verified.',
         );
       }
-      await _audit(id, 'verified');
-      _base = _clone(actual);
-      _expected = _clone(actual);
-    } catch (_) {
-      _base = null;
-      _inverse = const [];
-      try {
-        await _audit(id, 'uncertain');
-      } catch (_) {
-        /* pending remains durable */
+      if (_canPublish) _operationPhase(SetupPhase.verifying);
+      final actual = await _transactional!.readSnapshot();
+      KitRedact.registerCredentialValues(actual.config);
+      if (!_sameRevision(actual, result.after)) {
+        throw const SetupFailure(
+          SetupFailureCode.uncertain,
+          'The configuration change could not be verified.',
+        );
       }
+      await _audit(id, 'verified', operation: operation);
+      _base = _clone(actual.config);
+      _baseRevision = actual;
+      return result;
+    } catch (error) {
+      _base = null;
+      _baseRevision = null;
+      _undo = null;
+      final rejected =
+          !acknowledged &&
+          error is SetupFailure &&
+          error.code == SetupFailureCode.conflict;
+      try {
+        await _audit(
+          id,
+          rejected ? 'rejected' : 'uncertain',
+          operation: operation,
+        );
+      } catch (_) {
+        /* durable pending remains */
+      }
+      if (rejected) rethrow;
       throw const SetupFailure(
         SetupFailureCode.uncertain,
         'The change outcome is unknown. Refresh before trying again.',
@@ -384,55 +509,42 @@ class SetupController {
     }
   }
 
-  /// Audit stores metadata only, never configs, prompts, diffs, or credentials.
-  List<Map<String, Object?>> get audit {
-    try {
-      final list = jsonDecode(prefs.getString(auditKey) ?? '[]') as List;
-      return List.unmodifiable(
-        list.whereType<Map>().map(
-          (e) => Map<String, Object?>.unmodifiable({
-            'id': KitRedact.text(e['id'] is String ? e['id'] as String : ''),
-            'action': KitRedact.text(
-              e['action'] is String ? e['action'] as String : '',
-            ),
-            'at': KitRedact.text(e['at'] is String ? e['at'] as String : ''),
-          }),
-        ),
+  bool get _canPublish =>
+      !_disposed && _online && _isCurrent() && _auditStore.isAvailable;
+  void _operationPhase(SetupPhase phase) => _emit(
+    SetupSnapshot(
+      phase: phase,
+      config: _snapshot.config,
+      servers: _snapshot.servers,
+    ),
+  );
+  void _publishReady() => _emit(
+    SetupSnapshot(
+      phase: SetupPhase.ready,
+      config: setupRedact(_base) as Map<String, Object?>,
+      servers: _snapshot.servers,
+      canUndo: _undo != null,
+    ),
+  );
+  void _validateRevision(SetupConfigRevision revision) {
+    if (revision.targetId.isEmpty || revision.revision.isEmpty) {
+      throw const SetupFailure(
+        SetupFailureCode.invalid,
+        'The server returned an unsupported configuration snapshot.',
       );
-    } catch (_) {
-      return const [];
     }
   }
 
-  Future<void> _audit(String id, String action) async {
-    if (_disposed) {
-      throw const SetupFailure(SetupFailureCode.offline, 'Setup is closed.');
-    }
-    final records = [
-      ...audit,
-      {
-        'id': KitRedact.text(id),
-        'action': KitRedact.text(action),
-        'at': DateTime.now().toUtc().toIso8601String(),
-      },
-    ];
-    final bounded = records.length > 100
-        ? records.sublist(records.length - 100)
-        : records;
-    try {
-      if (!await prefs.setString(
-        auditKey,
-        KitRedact.text(jsonEncode(bounded)),
-      )) {
-        throw StateError('storage');
-      }
-    } catch (_) {
-      throw const SetupFailure(
-        SetupFailureCode.storage,
-        'The setup audit could not be saved. No new change was started.',
-      );
-    }
-  }
+  static bool _sameRevision(SetupConfigRevision a, SetupConfigRevision? b) =>
+      b != null &&
+      a.targetId == b.targetId &&
+      a.revision == b.revision &&
+      _same(a.config, b.config);
+
+  /// Only bounded metadata is stored; never snapshots or restore handles.
+  List<Map<String, Object?>> get audit => _auditStore.records;
+  Future<void> _audit(String id, String action, {String? operation}) =>
+      _auditStore.append(id, action, operation: operation);
 
   Future<T> _run<T>(Future<T> Function() action) async {
     if (_disposed || _busy) {
@@ -456,6 +568,7 @@ class SetupController {
         SetupFailureCode.offline => SetupPhase.offline,
         SetupFailureCode.unsupported => SetupPhase.unsupported,
         SetupFailureCode.needsSignIn => SetupPhase.needsSignIn,
+        SetupFailureCode.uncertain => SetupPhase.uncertain,
         _ => SetupPhase.error,
       };
       _emit(
@@ -473,8 +586,24 @@ class SetupController {
     }
   }
 
+  void _requireCurrent() {
+    if (_disposed || !_isCurrent()) {
+      throw const SetupFailure(
+        SetupFailureCode.offline,
+        'Setup is closed or the selected server changed.',
+      );
+    }
+    if (!_auditStore.isAvailable) {
+      throw const SetupFailure(
+        SetupFailureCode.storage,
+        'Setup history is unavailable. Refresh before trying again.',
+      );
+    }
+  }
+
   void _requireOnline() {
-    if (!_online || _disposed) {
+    _requireCurrent();
+    if (!_online) {
       throw const SetupFailure(
         SetupFailureCode.offline,
         'Reconnect to your server before continuing.',
@@ -483,7 +612,7 @@ class SetupController {
   }
 
   void _emit(SetupSnapshot value) {
-    if (!_disposed) {
+    if (!_disposed && _isCurrent()) {
       _snapshot = value;
       _events.add(value);
     }
@@ -493,9 +622,9 @@ class SetupController {
     _disposed = true;
     await _finished?.future;
     _base = null;
-    _expected = null;
+    _baseRevision = null;
     _edits = const [];
-    _inverse = const [];
+    _undo = null;
     _snapshot = const SetupSnapshot();
     await _events.close();
   }
@@ -554,11 +683,20 @@ class SetupController {
 
   static bool _has(Map<String, Object?> map, List<String> path) {
     Object? at = map;
-    for (final part in path) {
-      if (at is! Map || !at.containsKey(part)) return false;
-      at = at[part];
+    for (final key in path) {
+      if (at is! Map || !at.containsKey(key)) return false;
+      at = at[key];
     }
     return true;
+  }
+
+  static void _remove(Map<String, Object?> map, List<String> path) {
+    Object? at = map;
+    for (final part in path.take(path.length - 1)) {
+      if (at is! Map) return;
+      at = at[part];
+    }
+    if (at is Map) at.remove(path.last);
   }
 
   static void _put(Map<String, Object?> map, List<String> path, Object? value) {

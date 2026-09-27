@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
+import '../../../domain/orchestration_gateway.dart' show OrchestrationRun;
 import '../../../termux/team_runtime.dart';
 import '../../../voice/device.dart';
 import '../../kit/kit.dart';
@@ -25,7 +26,9 @@ import '../../widgets/team_host_form.dart' show TeamHostProbe;
 import 'team_home_screen.dart';
 import 'team_intro_screen.dart';
 
-/// Opens the AI Team page for the connected server.
+/// Opens the AI Team page for the connected server. [onOpenRun] replaces
+/// what a task row opens (a task's conversation that opened this page
+/// takes its own task back instead of stacking a second copy).
 Future<void> openTeamPage(
   BuildContext context,
   ConnectionController connection, {
@@ -33,6 +36,7 @@ Future<void> openTeamPage(
   TermuxTeamRuntime? runtime,
   Future<VoiceDeviceInfo> Function()? deviceProbe,
   DateTime Function()? now,
+  ValueChanged<OrchestrationRun>? onOpenRun,
 }) => pushKitPage<void>(
   context,
   (_) => TeamPage(
@@ -41,6 +45,7 @@ Future<void> openTeamPage(
     runtime: runtime,
     deviceProbe: deviceProbe,
     now: now,
+    onOpenRun: onOpenRun,
   ),
 );
 
@@ -52,6 +57,7 @@ class TeamPage extends StatelessWidget {
     this.runtime,
     this.deviceProbe,
     this.now,
+    this.onOpenRun,
   });
 
   final ConnectionController connection;
@@ -68,6 +74,9 @@ class TeamPage extends StatelessWidget {
 
   /// Clock for the team's ages; tests pin it.
   final DateTime Function()? now;
+
+  /// What a task row opens; its conversation when null.
+  final ValueChanged<OrchestrationRun>? onOpenRun;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -87,6 +96,7 @@ class TeamPage extends StatelessWidget {
           probe: probe,
           teamRuntime: runtime,
           now: now,
+          onOpenRun: onOpenRun,
           // This page follows the connection by itself.
           onTeamChanged: () {},
         );

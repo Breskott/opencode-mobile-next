@@ -5,7 +5,6 @@ import '../../platform/platform_capabilities.dart';
 import '../app_theme.dart';
 import '../kit/kit_buttons.dart';
 import '../kit/kit_code_block.dart';
-import '../kit/kit_icon.dart';
 import '../kit/kit_notice.dart';
 import '../kit/kit_page_route.dart';
 import '../kit/kit_row.dart';
@@ -25,9 +24,10 @@ import 'servers_screen.dart' show ServersRouteRequest;
 /// internals) behind an "Advanced" disclosure so nobody has to pick a path
 /// before they know what the app does.
 ///
-/// Step 2 acts as well as explains ("Add server", the Servers button of the
-/// same name), and on a phone that can host its own server the guide says
-/// so: no computer is needed.
+/// Step 2 acts as well as explains: its words name the buttons of the Add
+/// server flow and its "Add server" button opens that flow, so nothing
+/// sends the reader to find Servers first. On a phone that can host its
+/// own server the guide says so: no computer is needed.
 class GuideScreen extends StatelessWidget {
   final bool embedded;
   const GuideScreen({super.key, this.embedded = false});
@@ -128,7 +128,7 @@ class GuideScreen extends StatelessWidget {
                 titleMaxLines: 2,
                 supporting: TextSpan(text: l10n.guidePhonePathBody),
                 supportingMaxLines: 2,
-                trailing: const _Chevron(),
+                trailing: const KitChevron(),
                 onTap: () => openPhoneSetupStart(context),
               ),
             ],
@@ -147,7 +147,7 @@ class GuideScreen extends StatelessWidget {
                 title: l10n.settingsTryDemo,
                 supporting: TextSpan(text: l10n.demoScreenSimulated),
                 supportingMaxLines: 2,
-                trailing: const _Chevron(),
+                trailing: const KitChevron(),
                 onTap: () =>
                     pushKitPage<void>(context, (_) => const DemoScreen()),
               ),
@@ -378,21 +378,6 @@ class Bullet extends StatelessWidget {
       ],
     );
   }
-}
-
-/// A row's trailing "opens a page" mark.
-class _Chevron extends StatelessWidget {
-  const _Chevron();
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: EdgeInsetsDirectional.only(end: KitTokens.of(context).space3),
-    child: const KitIcon(
-      AppIconography.chevronRight,
-      size: KitIconSize.small,
-      tone: KitTextTone.tertiary,
-    ),
-  );
 }
 
 AppLocalizations _sharedCopy(BuildContext context) =>

@@ -119,14 +119,6 @@
     },
     "lib/ui/screens/settings/server_settings_screen.dart": {},
     "lib/ui/screens/settings_screen.dart": {},
-    "lib/ui/screens/team/agent_output_screen.dart": {
-      "G1 SnackBar(": 1,
-      "G1 showSnackBar(": 1,
-      "G17 .textTheme.": 3,
-      "G2 Clipboard.setData(": 1,
-      "G2 duration: Duration(": 1,
-      "G21 EdgeInsets(<n>)": 4
-    },
     "lib/ui/screens/team/agent_screen.dart": {},
     "lib/ui/screens/team/gate_sheet.dart": {},
     "lib/ui/screens/team/merge_section.dart": {},

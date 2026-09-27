@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
@@ -52,6 +54,28 @@ abstract final class KitLayout {
   static const double pcListPane = paneListWidth;
   static const double pcDetailPane = paneDetailMaxWidth;
   static const double pcSidePane = paneSideWidth;
+
+  /// The PC sidebar's widest, and its largest share of the window
+  /// ([sidebarWidth]).
+  static const double sidebarMaxWidth = 400;
+  static const double sidebarMaxShare = 1 / 3;
+
+  /// The PC sidebar's width (KitNav.md): [paneListWidth] at 1.0 text, and
+  /// wider with larger text — the list width times the text scale, up to
+  /// [sidebarMaxWidth] and never past [sidebarMaxShare] of the window — so
+  /// its header, rows and pinned primary keep their words whole at 2.0
+  /// instead of cutting or breaking them (A11Y-2, A11Y-8).
+  static double sidebarWidth(BuildContext context) {
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+    final cap = math.min(
+      sidebarMaxWidth,
+      MediaQuery.sizeOf(context).width * sidebarMaxShare,
+    );
+    return (paneListWidth * scale).clamp(
+      paneListWidth,
+      math.max(paneListWidth, cap),
+    );
+  }
 
   /// The navigation rail on a medium window (KitNav.md, KitBottomInset.md).
   static const double railWidth = 80;

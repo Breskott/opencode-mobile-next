@@ -12,6 +12,7 @@ import 'package:opencode_mobile/orchestration/models/work.dart';
 import 'package:opencode_mobile/state/team_board.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
+import 'package:opencode_mobile/ui/kit/kit_icon.dart';
 import 'package:opencode_mobile/ui/kit/kit_icon_button.dart';
 import 'package:opencode_mobile/ui/kit/kit_menu.dart';
 import 'package:opencode_mobile/ui/kit/kit_receipt.dart';
@@ -19,6 +20,8 @@ import 'package:opencode_mobile/ui/kit/kit_task_card.dart';
 import 'package:opencode_mobile/ui/kit/kit_task_mark.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 import 'package:opencode_mobile/ui/widgets/team_board_card.dart';
+
+import '../goldens/kit/kit_gallery.dart' show loadKitGalleryFonts;
 
 final _dark = AppTheme.dark();
 
@@ -525,5 +528,69 @@ void main() {
         }
       }
     }
+  });
+
+  // Real faces for the line-break case (the test font is one em per
+  // glyph, which breaks "12 min ago" by width alone). Last, so the tests
+  // above keep the test font.
+  group('with the app fonts', () {
+    setUpAll(loadKitGalleryFonts);
+
+    testWidgets('12 meta pieces stay whole at text 2.0: "12 min ago" moves to '
+        'the next line as one, and a glyph stays with its word', (
+      tester,
+    ) async {
+      for (final width in [320.0, 412.0]) {
+        await _pump(
+          tester,
+          _card(
+            meta: const [
+              KitTaskMeta('High', priority: KitPriority.high, strong: true),
+              KitTaskMeta('Bug', icon: AppIconography.bug),
+              KitTaskMeta('fox'),
+              KitTaskMeta('12 min ago'),
+            ],
+            // The gallery's card: the action narrows the words' column.
+            action: KitAction(
+              label: 'Move or change',
+              icon: AppIconography.swap,
+              onPressed: () {},
+            ),
+          ),
+          width: width,
+          textScale: 2,
+        );
+        final meta = find.byKey(const ValueKey('meta'));
+        Finder piece(String label) => find.descendant(
+          of: meta,
+          matching: find.byWidgetPredicate(
+            (w) => w is RichText && w.text.toPlainText() == label,
+          ),
+        );
+        // Each piece keeps its words on one line.
+        for (final label in ['High', 'Bug', 'fox', '12 min ago']) {
+          final paragraph = tester.renderObject<RenderParagraph>(piece(label));
+          final tops = {
+            for (final box in paragraph.getBoxesForSelection(
+              TextSelection(baseOffset: 0, extentOffset: label.length),
+            ))
+              box.top,
+          };
+          expect(tops, hasLength(1), reason: '"$label" breaks at $width dp');
+        }
+        // The type glyph shares the line of its word.
+        final glyph = tester.getRect(
+          find.descendant(of: meta, matching: find.byType(KitIcon)),
+        );
+        final bug = tester.getRect(piece('Bug'));
+        expect(
+          glyph.top < bug.bottom && bug.top < glyph.bottom,
+          isTrue,
+          reason: 'glyph split from "Bug" at $width dp',
+        );
+        expect(glyph.right, lessThanOrEqualTo(bug.left));
+        expect(tester.takeException(), isNull);
+      }
+    });
   });
 }

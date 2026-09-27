@@ -56,13 +56,37 @@ class _FakeLinux extends BuiltinLinux {
   bool serverRunning = false;
   bool serverDies = false;
   int starts = 0;
+  int generation = 0;
+  bool wanted = true;
 
   @override
   Future<BuiltinLinuxStatus> status() async => BuiltinLinuxStatus(
     installed: true,
     phase: BuiltinLinuxPhase.ready,
     serverRunning: serverRunning,
+    serverRestartWanted: wanted,
+    serverRecoveryGeneration: generation,
   );
+
+  @override
+  Future<void> cancelServerRecovery() async {
+    generation++;
+  }
+
+  @override
+  Future<void> confirmServerRecovery({required int expectedGeneration}) async {}
+
+  @override
+  Future<void> restartServer(
+    String script, {
+    int port = 4097,
+    required int expectedGeneration,
+  }) async {
+    if (!wanted || expectedGeneration != generation) {
+      throw const BuiltinLinuxException('The phone server could not restart.');
+    }
+    await startServer(script, port: port);
+  }
 
   @override
   Future<BuiltinLinuxRunResult> run(
@@ -105,6 +129,7 @@ void main() {
   tearDown(() => serverProbe = probeServerConnection);
 
   Future<void> mount(WidgetTester tester) async {
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     tester.view
       ..physicalSize = const Size(900, 1800)
       ..devicePixelRatio = 1;
@@ -139,7 +164,7 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('opening on a stopped in-app server starts it once, then '
+  testWidgets('opening after a confirmed in-app crash starts it once, then '
       'connects; Start and connect on the card starts it again', (
     tester,
   ) async {
@@ -159,6 +184,20 @@ void main() {
     await settle(tester);
     expect(connection.log, ['start', 'connect', 'start', 'connect']);
 
+    await unmount(tester);
+  });
+
+  testWidgets('explicit Stop intent stays stopped on launch and resume', (
+    tester,
+  ) async {
+    linux.wanted = false;
+    await mount(tester);
+    await settle(tester);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump(const Duration(seconds: 20));
+    await settle(tester);
+    expect(linux.starts, 0);
     await unmount(tester);
   });
 
@@ -221,12 +260,12 @@ void main() {
       )?.settings.name,
       'phone-setup-start',
     );
-    // Let the start screen's probes run out before leaving.
-    await tester.pump(const Duration(seconds: 12));
+    // The native device-info probe has a bounded five-second timeout.
+    await tester.pump(const Duration(seconds: 6));
     await unmount(tester);
   });
 
-  testWidgets('coming back to the app starts a stopped server once more', (
+  testWidgets('resume preserves backoff before healing a later crash', (
     tester,
   ) async {
     await mount(tester);
@@ -238,7 +277,7 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await settle(tester);
-    expect(connection.log, ['start', 'connect', 'start', 'connect']);
+    expect(connection.log, ['start', 'connect']);
 
     await unmount(tester);
   });

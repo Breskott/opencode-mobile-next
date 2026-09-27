@@ -26,8 +26,10 @@ export '../chat_screen.dart'
         TeamControllerScope,
         TeamOpenConversationRow,
         TeamPendingTask,
+        TeamWatchLiveScreen,
         lookupTeamAgentConversation,
         openTeamAgentConversation,
+        openTeamAgentConversationById,
         teamAgentConversationMissNote,
         teamAgentWatch;
 

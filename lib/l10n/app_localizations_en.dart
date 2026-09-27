@@ -1863,7 +1863,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your phone\'s speech engine reads the reply aloud. Code and tool details are skipped.';
 
   @override
-  String get readAloudContinue => 'Choose voice';
+  String get readAloudContinue => 'Read aloud';
 
   @override
   String get readAloudUnsupported =>
@@ -3693,7 +3693,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tailscaleIntro =>
-      'Reach OpenCode on another computer through your own Tailscale network. You control sign-in and VPN access in the official Tailscale app.';
+      'Reach OpenCode on another computer through your own Tailscale network.';
 
   @override
   String get tailscaleAppStep => '1. Open your private network';
@@ -3736,7 +3736,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tailscaleInstall => 'Get official Android app';
 
   @override
-  String get tailscaleCheckAgain => 'Check app again';
+  String get tailscaleCheckAgain => 'Check Tailscale again';
 
   @override
   String get tailscaleAddressStep => '2. Review your server address';
@@ -5821,13 +5821,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SettingsUi53 => 'an unknown version';
 
   @override
-  String get e7SettingsUi54 => 'Server updates are managed externally';
-
-  @override
-  String get e7SettingsUi55 =>
-      'Copy the official upgrade and model-refresh commands to run on the server host.';
-
-  @override
   String get e7SettingsUi56 => 'Not connected';
 
   @override
@@ -5856,7 +5849,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SettingsUi66 =>
-      'Keep OpenCode running on your computer after you close the terminal; copy setup, status, restart, log, and update commands';
+      'Keep OpenCode running after you close the terminal.';
 
   @override
   String get e7SettingsUi67 => 'Server updates';
@@ -10285,9 +10278,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SetupConnectionClosed => 'Connection closed';
 
   @override
-  String get e7SetupNotConnected => 'Not connected';
-
-  @override
   String get e7SetupTokenBanner =>
       'Connection token re-entry required for the active server. Edit the server and save its token before connecting.';
 
@@ -10533,9 +10523,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SetupStartConnect => 'Start & connect';
 
   @override
-  String get e7SetupThisServer => 'This server';
-
-  @override
   String get e7SetupUbuntuOnly =>
       'Ubuntu is installed. OpenCode is not installed yet.';
 
@@ -10604,11 +10591,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String e7SetupTerminalStatus(String status) {
     return 'Terminal status: $status';
-  }
-
-  @override
-  String e7SetupServerVersion(String version) {
-    return 'Server version $version';
   }
 
   @override
@@ -12790,9 +12772,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiAgentOutputCopy => 'Copy output';
 
   @override
-  String get teamUiAgentOutputEmpty => 'Nothing yet';
-
-  @override
   String get teamUiAgentOutputEnded =>
       'Session ended · output no longer on the host';
 
@@ -13345,7 +13324,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiGateAnswerRunAgent => 'Restart or reassign';
 
   @override
-  String get teamUiGateAnswerRunLogs => 'View logs';
+  String get teamUiGateAnswerRunLogs => 'Watch the agent';
 
   @override
   String get teamUiGateAnswerRunCancel => 'Stop work';
@@ -13420,17 +13399,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiControlCreateWork => 'Task sent to an agent';
-
-  @override
-  String teamUiControlMessageTitle(String agent) {
-    return 'Message $agent';
-  }
-
-  @override
-  String get teamUiControlMessageHint => 'Tell the agent what to do next';
-
-  @override
-  String get teamUiControlMessageSend => 'Send';
 
   @override
   String teamUiControlStopConfirmTitle(String agent) {
@@ -13625,7 +13593,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiStartRunPlannerOutput => 'Planner output';
+  String get teamUiStartRunPlannerOutput => 'Watch the planner';
 
   @override
   String get teamUiStartRunDismiss => 'Dismiss';
@@ -13899,7 +13867,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiCycleActionHow => 'How the host dispatches';
 
   @override
-  String get teamUiCycleActionOpenOutput => 'Open agent output';
+  String get teamUiCycleActionOpenOutput => 'Watch the agent';
 
   @override
   String get teamUiCycleActionNudgeRefinery => 'Nudge refinery';
@@ -17785,28 +17753,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'This conversation fills in as the agent works.';
 
   @override
-  String teamWatchBanner(String name, String role) {
-    return 'Watching $name · $role · AI Team';
+  String teamWatchBanner(String name, String role, String state) {
+    return 'Watching $name · $role · $state';
   }
 
   @override
-  String teamWatchBannerRole(String role) {
-    return 'Watching the $role · AI Team';
+  String teamWatchBannerRole(String role, String state) {
+    return 'Watching the $role · $state';
   }
-
-  @override
-  String get teamWatchNote =>
-      'You\'re watching. Your message goes to it through the AI Team, never into this conversation.';
-
-  @override
-  String get teamWatchNoteNoMessage =>
-      'You\'re watching. This team can\'t be messaged from here.';
-
-  @override
-  String get teamWatchMessageWorker => 'Message the worker';
-
-  @override
-  String get teamWatchMessageAgent => 'Message this agent';
 
   @override
   String get teamWatchFallbackUnreadable =>
@@ -21011,11 +20965,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideStepTwoScan =>
-      'Open Servers, tap Add server, then Scan code and point the camera at the QR, or copy the code and tap Paste code. The address, username and password fill in together.';
+      'Tap Add server, then Scan code and point the camera at the QR, or Paste code.';
 
   @override
   String get guideStepTwoPaste =>
-      'Copy the printed code, open Servers, tap Add server, then Paste code. The address, username and password fill in together.';
+      'Copy the printed code, then tap Add server and Paste code.';
 
   @override
   String get guidePhonePathTitle => 'Use this phone instead';
@@ -21071,7 +21025,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serverSettingsUpgradeKeepsData => 'Server data stays in place';
 
   @override
-  String get serverSettingsCopyUpdateCommands => 'Copy update commands';
+  String serverSettingsCopyUpdateCommands(String server) {
+    return 'Copy update commands for $server';
+  }
 
   @override
   String get serverSettingsPasswordInServers => 'Add or change it in Servers';
@@ -21098,7 +21054,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tailscaleSetupAddressHelper =>
-      'OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.';
+      'Paste the HTTPS address Tailscale Serve printed.';
 
   @override
   String get tailscaleSetupGetApp => 'Get Tailscale';
@@ -21851,9 +21807,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamAgentScreenMessageLabel => 'Your message';
-
-  @override
   String get gateSheetDestructiveBody =>
       'The host marks this action as destructive. Approving it can\'t be undone from the phone.';
 
@@ -21906,9 +21859,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamAgentScreenLabelId => 'Agent id';
-
-  @override
-  String get teamAgentScreenMessageFirst => 'Type a message first';
 
   @override
   String get gateSheetSendNeedsText => 'Type an answer first';
@@ -24011,13 +23961,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamChatRefusedTitle => 'The team didn\'t take this task';
+  String get teamChatRefusedTitle => 'Task not taken';
 
   @override
   String get teamChatRefusedRetry => 'Send the task again';
 
   @override
-  String get teamChatGoneTitle => 'This task is no longer on the team';
+  String get teamChatGoneTitle => 'Task no longer listed';
 
   @override
   String get teamChatGoneBody =>
@@ -24423,7 +24373,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Not connected to the server, so this can’t be answered here.';
 
   @override
-  String get chatRequestAlwaysTitle => 'Always allow requests like this';
+  String get chatRequestAlwaysTitle => 'Always allow these requests';
 
   @override
   String chatRequestAlwaysScope(String patterns, String context) {
@@ -26409,6 +26359,54 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get serverSettingsUpdateCommandsDetail =>
+      'Run them in a terminal on the server\'s computer; this app can\'t update it.';
+
+  @override
+  String get serverSettingsUpdateCommandsCopied =>
+      'Copied. Run them in a terminal on the server\'s computer.';
+
+  @override
+  String hostServiceTitle(String server) {
+    return 'Linux service for $server';
+  }
+
+  @override
+  String hostServiceIntro(String server) {
+    return 'These commands run on $server\'s computer; copy each into a terminal there.';
+  }
+
+  @override
+  String tailscaleSetupToDo(String detail) {
+    return 'To do · $detail';
+  }
+
+  @override
+  String get tailscaleSetupNoDeviceList =>
+      'OpenCode can’t list the devices on your tailnet.';
+
+  @override
   String get productErrorStagedRevert =>
       'Review the staged revert before sending this queued prompt.';
+
+  @override
+  String teamWatchComposerHint(String name) {
+    return 'Message $name…';
+  }
+
+  @override
+  String get teamWatchComposerHintWorker => 'Message the worker…';
+
+  @override
+  String get teamWatchComposerHintAgent => 'Message this agent…';
+
+  @override
+  String teamWatchAbout(String name) {
+    return 'About $name';
+  }
+
+  @override
+  String teamWatchAboutRole(String role) {
+    return 'About the $role';
+  }
 }

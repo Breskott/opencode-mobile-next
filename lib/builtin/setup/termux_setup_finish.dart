@@ -7,6 +7,7 @@ import '../../state/profiles.dart';
 import '../../state/termux_host_setup.dart'
     show ManagedRuntimeFlavor, restoreManagedTermuxProfile;
 import '../../termux/bridge.dart';
+import '../../termux/managed_server_recovery.dart';
 import '../../ui/kit/kit_redact.dart';
 import 'setup_engine.dart';
 
@@ -204,13 +205,22 @@ class TermuxSetupFinisher {
           now.isReady &&
           now.runtime == runtime &&
           isConnectedTo(profile)) {
+        await ManagedServerRecovery.resumeAfterManualStartForProfile(
+          store.prefs,
+          profile.id,
+        );
         return null;
       }
+      await ManagedServerRecovery.suspendForProfile(store.prefs, profile.id);
       await server.stage(runtime: runtime, password: profile.password);
       final ended = await server.restart();
       if (!ended.isReady) {
         return l10n.e7SetupRestartFailed(KitRedact.text(ended.message));
       }
+      await ManagedServerRecovery.resumeAfterManualStartForProfile(
+        store.prefs,
+        profile.id,
+      );
       final version = ended.version.trim().isNotEmpty
           ? ended.version.trim()
           : request.version;
@@ -226,6 +236,8 @@ class TermuxSetupFinisher {
         'restart_unconfirmed' => l10n.e7SetupRestartUnconfirmed,
         _ => l10n.e7SetupRestartFailed(KitRedact.text(error.message)),
       };
+    } catch (_) {
+      return l10n.phoneSetupErrorCannotStart;
     }
   }
 
