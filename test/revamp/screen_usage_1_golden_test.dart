@@ -99,7 +99,7 @@ Future<void> _setBudget(WidgetTester tester, String amount) async {
     amount,
   );
   await tester.pump();
-  await tester.tap(find.text('Save'));
+  await tester.tap(find.text('Save USD budget'));
   await tester.pumpAndSettle();
 }
 
