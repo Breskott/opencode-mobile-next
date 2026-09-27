@@ -24180,4 +24180,268 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get localTerminalSetUpLinux => 'Set up Linux on this phone';
+
+  @override
+  String get capabilitiesToolsMissingTitle =>
+      'This server doesn\'t list its tools';
+
+  @override
+  String capabilitiesToolsMissingOnServer(String server) {
+    return '$server doesn\'t list its tools';
+  }
+
+  @override
+  String get mcpSetupWhere => 'Where it goes';
+
+  @override
+  String get mcpSetupHowItRuns => 'How it runs';
+
+  @override
+  String get mcpSetupHeaders => 'Headers';
+
+  @override
+  String get mcpSetupAdvanced => 'Advanced';
+
+  @override
+  String get mcpSetupAdvancedRemote => 'Sign-in detection and timeout';
+
+  @override
+  String get mcpSetupAdvancedLocal => 'Working folder, environment and timeout';
+
+  @override
+  String get mcpSetupNoProject => 'Open a project first';
+
+  @override
+  String get mcpSetupRuntimeNote =>
+      'It connects now and is gone when OpenCode restarts. For a lasting setup, edit the server configuration.';
+
+  @override
+  String mcpSetupSaveNamed(String name) {
+    return 'Save $name';
+  }
+
+  @override
+  String mcpSetupAddNamed(String name) {
+    return 'Add $name';
+  }
+
+  @override
+  String get mcpSetupLocationChangedShort => 'The server or project changed';
+
+  @override
+  String get mcpSetupSaveFailed => 'Couldn\'t add the MCP server';
+
+  @override
+  String get mcpSetupDiscardTitle => 'Discard this MCP server?';
+
+  @override
+  String get mcpSetupDiscardBody =>
+      'What you typed here isn\'t saved and will be lost.';
+
+  @override
+  String get mcpSetupDiscardConfirm => 'Discard server';
+
+  @override
+  String get externalAgentsEmptyTitle => 'No outside agents yet';
+
+  @override
+  String get externalAgentsEmptyBody =>
+      'Add one by its web address. You see what it says about itself before anything is saved.';
+
+  @override
+  String get externalAgentsBoundary =>
+      'Only the text you send reaches an outside agent. Your projects, files and other conversations stay on this phone.';
+
+  @override
+  String get externalAgentsRemovalIncomplete =>
+      'Removal didn\'t finish · tap to try again';
+
+  @override
+  String externalAgentsRemoveNamed(String name) {
+    return 'Remove $name from this phone';
+  }
+
+  @override
+  String externalAgentsRemoveTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get externalAgentsRemoveBody =>
+      'Its saved tasks and key leave this phone. Work it already started carries on, and what it keeps stays with it.';
+
+  @override
+  String get externalAgentsBusy => 'Wait for the current step to finish';
+
+  @override
+  String get externalAgentsAddressHelper =>
+      'Its web address, or the address of its Agent Card.';
+
+  @override
+  String get externalAgentsCheck => 'Check agent';
+
+  @override
+  String get externalAgentsCheckNeedsAddress => 'Type the agent address first';
+
+  @override
+  String get externalAgentsStopChecking => 'Stop checking';
+
+  @override
+  String get externalAgentsCheckFailedTitle => 'Couldn\'t check this agent';
+
+  @override
+  String externalAgentsSaveNamed(String name) {
+    return 'Save $name';
+  }
+
+  @override
+  String get externalAgentsSaveNeedsKey => 'Enter the agent key first';
+
+  @override
+  String get externalAgentsAboutLabel => 'What it says about itself';
+
+  @override
+  String get externalAgentsNoSkills => 'It lists no skills';
+
+  @override
+  String get externalAgentsUnverified =>
+      'The agent describes itself. This app hasn\'t verified who runs it, what it can do or what it costs.';
+
+  @override
+  String get externalAgentsUnsupportedTitle =>
+      'This agent can\'t be used from this app';
+
+  @override
+  String get externalAgentsUnsupportedBody =>
+      'It doesn\'t offer text tasks over A2A 1.0 JSON-RPC on its own address, or it asks for a sign-in this app doesn\'t support.';
+
+  @override
+  String get externalAgentsKeyLabel => 'Agent key';
+
+  @override
+  String get externalAgentsKeyHelper =>
+      'The key its owner gave you. It stays in this phone\'s secure storage and is sent only to this agent.';
+
+  @override
+  String get externalAgentsNoKey =>
+      'This agent asks for no key. Don\'t send private information unless you trust it.';
+
+  @override
+  String get externalAgentsDetailCard => 'Agent Card';
+
+  @override
+  String get externalAgentsDetailEndpoint => 'Endpoint';
+
+  @override
+  String get externalAgentsDetailVersion => 'Version';
+
+  @override
+  String get externalAgentsDetailConnection => 'Connection';
+
+  @override
+  String externalAgentsNewTaskNamed(String name) {
+    return 'New task for $name';
+  }
+
+  @override
+  String externalAgentsReplaceKeyNamed(String name) {
+    return 'Replace key for $name';
+  }
+
+  @override
+  String externalAgentsReplaceKeyTitle(String name) {
+    return 'Replace the key for $name';
+  }
+
+  @override
+  String get externalAgentsSaveKey => 'Save key';
+
+  @override
+  String get externalAgentsTasksLabel => 'Tasks';
+
+  @override
+  String get externalAgentsNoTasksTitle => 'No tasks yet';
+
+  @override
+  String get externalAgentsNoTasksBody =>
+      'Write a task and read it over before it\'s sent. Opening a sent task checks on it; it is never sent twice.';
+
+  @override
+  String get externalAgentsUntitledTask => 'New task';
+
+  @override
+  String externalAgentsSendNamed(String name) {
+    return 'Send to $name';
+  }
+
+  @override
+  String externalAgentsReplyNamed(String name) {
+    return 'Reply to $name';
+  }
+
+  @override
+  String get externalAgentsSendNeedsText => 'Write the task first';
+
+  @override
+  String get externalAgentsReplyNeedsText => 'Write your reply first';
+
+  @override
+  String get externalAgentsSendNote =>
+      'Only this text is sent. The agent may use its own services and charge for them; check its terms.';
+
+  @override
+  String externalAgentsCheckedAt(String age) {
+    return 'Checked with the agent $age ago';
+  }
+
+  @override
+  String get externalAgentsPullToCheck =>
+      'Saved on this phone · pull down to check with the agent';
+
+  @override
+  String externalAgentsStopMenu(String name) {
+    return 'Ask $name to stop this task';
+  }
+
+  @override
+  String get externalAgentsStopUnavailable =>
+      'Check with the agent first; pull down to refresh';
+
+  @override
+  String get externalAgentsStopTitle => 'Stop this task?';
+
+  @override
+  String get externalAgentsForgetMenu => 'Forget this task on this phone';
+
+  @override
+  String get externalAgentsForgetTitle => 'Forget this task?';
+
+  @override
+  String get externalAgentsForgetBody =>
+      'It leaves this phone. Work the agent already started carries on, and its own copy stays with it.';
+
+  @override
+  String get externalAgentsForgetConfirm => 'Forget task';
+
+  @override
+  String mcpSetupSavedNamed(String name) {
+    return 'Saved $name in OpenCode';
+  }
+
+  @override
+  String mcpSetupSavedNotConnectedBody(String reason) {
+    return 'The app didn\'t reconnect afterwards. $reason';
+  }
+
+  @override
+  String get mcpSetupSavedElsewhere =>
+      'The server or project changed after saving, so this page can\'t reconnect for it. Close it and check MCP servers.';
+
+  @override
+  String get mcpSetupUnavailableTitle =>
+      'This server can\'t add MCP servers from here';
+
+  @override
+  String get mcpSetupUnavailableBody =>
+      'It doesn\'t accept new MCP servers from the app. Add them in its configuration on the computer; they then show under MCP servers.';
 }

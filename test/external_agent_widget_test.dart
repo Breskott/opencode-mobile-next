@@ -9,6 +9,7 @@ import 'package:opencode_mobile/domain/external_agent.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/external_agents.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitButton;
 import 'package:opencode_mobile/ui/screens/external_agents_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -115,71 +116,127 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets(
-    'inspect save explicit task input result reopen and delete journey',
-    (tester) async {
-      await tester.pumpWidget(
-        app(ExternalAgentsScreen(store: store, gatewayFactory: () => gateway)),
-      );
-      await tap(tester, 'Add agent');
-      await tester.enterText(
-        find.byType(TextField).first,
-        'https://agent.example',
-      );
-      await tap(tester, 'Inspect Agent Card');
-      expect(find.text('Advertised skills'), findsOneWidget);
-      final bearer = find.widgetWithText(TextField, 'Agent bearer credential');
-      await tester.scrollUntilVisible(
-        bearer,
-        250,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.enterText(bearer, 'fixture-token');
-      await tap(tester, 'Save agent');
-      expect(store.profiles.length, 1);
-      await tap(tester, 'Color agent');
-      await tap(tester, 'New task');
-      await tester.enterText(find.byType(TextField), 'Choose a color');
-      await tap(tester, 'Review task');
-      expect(gateway.sends, 0);
-      final edited =
-          'Choose a color. ${'Keep the full design requirement. ' * 20}';
-      await tester.enterText(find.byType(TextField), edited);
-      await tester.pumpAndSettle();
-      await tester.pageBack();
-      await tester.pumpAndSettle();
-      await tap(tester, 'Choose a color');
-      expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        edited,
-      );
-      expect(store.tasks(store.profiles.single.id).single.draft, edited);
-      expect(gateway.sends, 0);
-      await tap(tester, 'Send to agent');
-      expect(gateway.sends, 1);
-      expect(store.tasks(store.profiles.single.id).single.draft, isEmpty);
-      expect(find.text('Your input is needed'), findsOneWidget);
-      await tester.enterText(find.byType(TextField), 'Blue');
-      gateway.next = completeTask;
-      await tap(tester, 'Reply to this task');
-      expect(gateway.continuation?.id, waitingTask.id);
-      expect(find.text('Blue result'), findsOneWidget);
-      await tester.pageBack();
-      await tester.pumpAndSettle();
-      await tap(tester, 'Choose a color');
-      expect(gateway.queries, greaterThanOrEqualTo(1));
-      expect(gateway.sends, 2);
-      await tap(tester, 'Forget saved task');
-      await tap(tester, 'Remove from this phone');
-      expect(store.tasks(store.profiles.single.id), isEmpty);
-      await tap(tester, 'Remove agent');
-      await tap(tester, 'Remove from this phone');
-      expect(store.profiles, isEmpty);
-      await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-    },
+  Future<void> tapKey(WidgetTester tester, Key key) async {
+    final target = find.byKey(key);
+    await tester.ensureVisible(target);
+    await tester.pumpAndSettle();
+    await tester.tap(target);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> menu(WidgetTester tester, Key menuKey, String item) async {
+    await tester.tap(find.byKey(menuKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(item));
+    await tester.pumpAndSettle();
+  }
+
+  String fieldText(WidgetTester tester) =>
+      tester.widget<TextField>(find.byType(TextField)).controller!.text;
+
+  VoidCallback? sendPressed(WidgetTester tester, String label) =>
+      tester.widget<KitButton>(find.widgetWithText(KitButton, label)).onPressed;
+
+  Future<void> openTask(WidgetTester tester, String profileId) => tapKey(
+    tester,
+    ValueKey('external-task-${store.tasks(profileId).single.localId}'),
   );
+
+  testWidgets('check save draft task input result reopen and remove journey', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      app(ExternalAgentsScreen(store: store, gatewayFactory: () => gateway)),
+    );
+    await tap(tester, 'Add agent');
+    await tester.enterText(
+      find.byKey(const ValueKey('external-agent-address')),
+      'https://agent.example',
+    );
+    await tester.pump();
+    await tap(tester, 'Check agent');
+    expect(find.text('What it says about itself'), findsOneWidget);
+    final key = find.byKey(const ValueKey('external-agent-key'));
+    await tester.ensureVisible(key);
+    await tester.enterText(key, 'fixture-token');
+    await tester.pump();
+    await tap(tester, 'Save Color agent');
+    expect(store.profiles.length, 1);
+    final id = store.profiles.single.id;
+    await tap(tester, 'Color agent');
+    // New task opens the task page as a draft directly: nothing sent.
+    await tap(tester, 'New task for Color agent');
+    expect(find.byType(ExternalTaskScreen), findsOneWidget);
+    expect(gateway.sends, 0);
+    final edited =
+        'Choose a color. ${'Keep the full design requirement. ' * 20}';
+    await tester.enterText(find.byType(TextField), edited);
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await openTask(tester, id);
+    expect(fieldText(tester), edited);
+    expect(store.tasks(id).single.draft, edited);
+    expect(gateway.sends, 0);
+    await tap(tester, 'Send to Color agent');
+    expect(gateway.sends, 1);
+    expect(store.tasks(id).single.draft, isEmpty);
+    // The sent task keeps what was asked as its name.
+    expect(store.tasks(id).single.title, startsWith('Choose a color.'));
+    expect(find.text('Your input is needed'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Blue');
+    await tester.pump();
+    gateway.next = completeTask;
+    await tap(tester, 'Reply to Color agent');
+    expect(gateway.continuation?.id, waitingTask.id);
+    expect(find.text('Blue result'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await openTask(tester, id);
+    expect(gateway.queries, greaterThanOrEqualTo(1));
+    expect(gateway.sends, 2);
+    await menu(
+      tester,
+      const ValueKey('external-task-menu'),
+      'Forget this task on this phone',
+    );
+    await tapKey(tester, const ValueKey('external-task-forget-confirm'));
+    expect(store.tasks(id), isEmpty);
+    await menu(
+      tester,
+      const ValueKey('external-agent-menu'),
+      'Remove Color agent from this phone',
+    );
+    await tapKey(tester, const ValueKey('external-agent-remove-confirm'));
+    expect(store.profiles, isEmpty);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('a new task left empty leaves no row behind', (tester) async {
+    final profile = await store.add(agentCard, 'fixture-token');
+    await tester.pumpWidget(
+      app(
+        ExternalAgentDetailScreen(
+          store: store,
+          profile: profile,
+          gatewayFactory: () => gateway,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tap(tester, 'New task for Color agent');
+    expect(store.tasks(profile.id), hasLength(1));
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.byType(ExternalTaskScreen), findsNothing);
+    expect(store.tasks(profile.id), isEmpty);
+    expect(
+      find.byKey(const ValueKey('external-agent-no-tasks')),
+      findsOneWidget,
+    );
+    await tester.pumpWidget(const SizedBox());
+  });
   testWidgets(
     'uncertain delivery has no enabled send and restart does not resend',
     (tester) async {
@@ -203,7 +260,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Delivery unconfirmed'), findsOneWidget);
-      expect(find.text('Send to agent'), findsNothing);
+      expect(find.text('Send to Color agent'), findsNothing);
       expect(gateway.sends, 0);
       expect(gateway.queries, 0);
       await tester.pumpWidget(const SizedBox());
@@ -232,8 +289,13 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tap(tester, 'Stop task');
-    await tap(tester, 'Ask to stop');
+    await menu(
+      tester,
+      const ValueKey('external-task-menu'),
+      'Ask Color agent to stop this task',
+    );
+    expect(find.text('Stop this task?'), findsOneWidget);
+    await tapKey(tester, const ValueKey('external-task-stop-confirm'));
     expect(gateway.cancels, 1);
     expect(
       find.textContaining('Cancellation is not confirmed'),
@@ -270,30 +332,16 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.textContaining('Draft changes could not be saved'),
-        findsOneWidget,
+        findsWidgets,
       );
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(find.byType(ExternalTaskScreen), findsOneWidget);
-      await tester.scrollUntilVisible(
-        find.text('Send to agent'),
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      final send = tester.widget<FilledButton>(
-        find.ancestor(
-          of: find.text('Send to agent'),
-          matching: find.byWidgetPredicate((widget) => widget is FilledButton),
-        ),
-      );
-      expect(send.onPressed, isNull);
+      expect(sendPressed(tester, 'Send to Color agent'), isNull);
       expect(gateway.sends, 0);
-      expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        'Edited draft to keep',
-      );
+      expect(fieldText(tester), 'Edited draft to keep');
       refusing.refuse = false;
-      await tap(tester, 'Try saving draft again');
+      await tapKey(tester, const ValueKey('external-task-draft-retry'));
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(store.tasks(profile.id).single.draft, 'Edited draft to keep');
@@ -329,18 +377,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'A');
       await tester.pump();
       expect(held.writes, 2);
-      await tester.scrollUntilVisible(
-        find.text('Send to agent'),
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      final send = tester.widget<FilledButton>(
-        find.ancestor(
-          of: find.text('Send to agent'),
-          matching: find.byWidgetPredicate((widget) => widget is FilledButton),
-        ),
-      );
-      expect(send.onPressed, isNull);
+      expect(sendPressed(tester, 'Send to Color agent'), isNull);
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(find.byType(ExternalTaskScreen), findsOneWidget);
@@ -348,10 +385,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(store.tasks(profile.id).single.draft, 'B');
       expect(find.byType(ExternalTaskScreen), findsOneWidget);
-      expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        'A',
-      );
+      expect(fieldText(tester), 'A');
       held.gates[1].complete();
       await tester.pumpAndSettle();
       expect(find.byType(ExternalTaskScreen), findsNothing);
@@ -416,7 +450,7 @@ void main() {
           });
           if (state == 'input' && mode == 'large') {
             await tester.scrollUntilVisible(
-              find.text('Reply to this task'),
+              find.text('Reply to Color agent'),
               250,
               scrollable: find.byType(Scrollable).first,
             );

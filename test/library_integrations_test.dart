@@ -340,7 +340,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(McpSetupScreen), findsOneWidget);
-    expect(find.text('Persisted configuration'), findsOneWidget);
+    // A persistent write offers where to save it (this project or all).
+    expect(find.byKey(const ValueKey('mcp-scope')), findsOneWidget);
   });
 
   testWidgets(

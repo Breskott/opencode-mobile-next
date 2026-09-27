@@ -37820,6 +37820,432 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set up Linux on this phone'**
   String get localTerminalSetUpLinux;
+
+  /// screen-library-2: Commands & tools, Tools tab title when the server does not list its tools (no server name known).
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t list its tools'**
+  String get capabilitiesToolsMissingTitle;
+
+  /// screen-library-2: Commands & tools, Tools tab title when the server does not list its tools.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} doesn\'t list its tools'**
+  String capabilitiesToolsMissingOnServer(String server);
+
+  /// screen-library-2: Add MCP server: label of the where-to-save choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Where it goes'**
+  String get mcpSetupWhere;
+
+  /// screen-library-2: Add MCP server: label of the remote address / local command choice.
+  ///
+  /// In en, this message translates to:
+  /// **'How it runs'**
+  String get mcpSetupHowItRuns;
+
+  /// screen-library-2: Add MCP server: label above the HTTP header rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Headers'**
+  String get mcpSetupHeaders;
+
+  /// screen-library-2: Add MCP server: the folded row holding the rarer settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get mcpSetupAdvanced;
+
+  /// screen-library-2: Add MCP server: what the Advanced fold holds for a remote server.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in detection and timeout'**
+  String get mcpSetupAdvancedRemote;
+
+  /// screen-library-2: Add MCP server: what the Advanced fold holds for a local command.
+  ///
+  /// In en, this message translates to:
+  /// **'Working folder, environment and timeout'**
+  String get mcpSetupAdvancedLocal;
+
+  /// screen-library-2: Add MCP server: why "This project" cannot be chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a project first'**
+  String get mcpSetupNoProject;
+
+  /// screen-library-2: Add MCP server: what a runtime add means, under the location row.
+  ///
+  /// In en, this message translates to:
+  /// **'It connects now and is gone when OpenCode restarts. For a lasting setup, edit the server configuration.'**
+  String get mcpSetupRuntimeNote;
+
+  /// screen-library-2: Add MCP server: the pinned primary once a name is typed (configuration write).
+  ///
+  /// In en, this message translates to:
+  /// **'Save {name}'**
+  String mcpSetupSaveNamed(String name);
+
+  /// screen-library-2: Add MCP server: the pinned primary once a name is typed (added until restart).
+  ///
+  /// In en, this message translates to:
+  /// **'Add {name}'**
+  String mcpSetupAddNamed(String name);
+
+  /// screen-library-2: Add MCP server: short reason under a disabled field or button after the location changed.
+  ///
+  /// In en, this message translates to:
+  /// **'The server or project changed'**
+  String get mcpSetupLocationChangedShort;
+
+  /// screen-library-2: Add MCP server: status line when saving failed; the reason follows.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t add the MCP server'**
+  String get mcpSetupSaveFailed;
+
+  /// screen-library-2: Add MCP server: question when leaving with unsaved input.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this MCP server?'**
+  String get mcpSetupDiscardTitle;
+
+  /// screen-library-2: Add MCP server: body of the discard question.
+  ///
+  /// In en, this message translates to:
+  /// **'What you typed here isn\'t saved and will be lost.'**
+  String get mcpSetupDiscardBody;
+
+  /// screen-library-2: Add MCP server: confirm button of the discard question.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard server'**
+  String get mcpSetupDiscardConfirm;
+
+  /// screen-library-2: External agents: empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'No outside agents yet'**
+  String get externalAgentsEmptyTitle;
+
+  /// screen-library-2: External agents: empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Add one by its web address. You see what it says about itself before anything is saved.'**
+  String get externalAgentsEmptyBody;
+
+  /// screen-library-2: External agents: note under the list.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the text you send reaches an outside agent. Your projects, files and other conversations stay on this phone.'**
+  String get externalAgentsBoundary;
+
+  /// screen-library-2: External agents: supporting line of an agent whose removal did not finish.
+  ///
+  /// In en, this message translates to:
+  /// **'Removal didn\'t finish · tap to try again'**
+  String get externalAgentsRemovalIncomplete;
+
+  /// screen-library-2: External agents: row and page menu item that removes the agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name} from this phone'**
+  String externalAgentsRemoveNamed(String name);
+
+  /// screen-library-2: External agents: removal question title.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String externalAgentsRemoveTitle(String name);
+
+  /// screen-library-2: External agents: removal question body.
+  ///
+  /// In en, this message translates to:
+  /// **'Its saved tasks and key leave this phone. Work it already started carries on, and what it keeps stays with it.'**
+  String get externalAgentsRemoveBody;
+
+  /// screen-library-2: External agents: why an action cannot run while another one runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the current step to finish'**
+  String get externalAgentsBusy;
+
+  /// screen-library-2: Add agent: helper under the address field.
+  ///
+  /// In en, this message translates to:
+  /// **'Its web address, or the address of its Agent Card.'**
+  String get externalAgentsAddressHelper;
+
+  /// screen-library-2: Add agent: the pinned primary before the agent is checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Check agent'**
+  String get externalAgentsCheck;
+
+  /// screen-library-2: Add agent: why Check agent cannot run yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the agent address first'**
+  String get externalAgentsCheckNeedsAddress;
+
+  /// screen-library-2: Add agent: stops waiting for the agent to answer.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop checking'**
+  String get externalAgentsStopChecking;
+
+  /// screen-library-2: Add agent: notice title when the check failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check this agent'**
+  String get externalAgentsCheckFailedTitle;
+
+  /// screen-library-2: Add agent: the pinned primary after the check.
+  ///
+  /// In en, this message translates to:
+  /// **'Save {name}'**
+  String externalAgentsSaveNamed(String name);
+
+  /// screen-library-2: Add agent and Replace key: why saving cannot run yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the agent key first'**
+  String get externalAgentsSaveNeedsKey;
+
+  /// screen-library-2: Add agent and the agent's page: label above the agent's own description and skills.
+  ///
+  /// In en, this message translates to:
+  /// **'What it says about itself'**
+  String get externalAgentsAboutLabel;
+
+  /// screen-library-2: Add agent: row when the agent lists no skills.
+  ///
+  /// In en, this message translates to:
+  /// **'It lists no skills'**
+  String get externalAgentsNoSkills;
+
+  /// screen-library-2: Add agent: note under the agent's description.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent describes itself. This app hasn\'t verified who runs it, what it can do or what it costs.'**
+  String get externalAgentsUnverified;
+
+  /// screen-library-2: Add agent: notice title when the card is not supported.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent can\'t be used from this app'**
+  String get externalAgentsUnsupportedTitle;
+
+  /// screen-library-2: Add agent: why the card is not supported.
+  ///
+  /// In en, this message translates to:
+  /// **'It doesn\'t offer text tasks over A2A 1.0 JSON-RPC on its own address, or it asks for a sign-in this app doesn\'t support.'**
+  String get externalAgentsUnsupportedBody;
+
+  /// screen-library-2: Add agent and Replace key: the secret field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent key'**
+  String get externalAgentsKeyLabel;
+
+  /// screen-library-2: Add agent and Replace key: helper under the key field.
+  ///
+  /// In en, this message translates to:
+  /// **'The key its owner gave you. It stays in this phone\'s secure storage and is sent only to this agent.'**
+  String get externalAgentsKeyHelper;
+
+  /// screen-library-2: Add agent: notice when the agent needs no key.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent asks for no key. Don\'t send private information unless you trust it.'**
+  String get externalAgentsNoKey;
+
+  /// screen-library-2: Agent details fold: the card address label.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Card'**
+  String get externalAgentsDetailCard;
+
+  /// screen-library-2: Agent details fold: the endpoint label.
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoint'**
+  String get externalAgentsDetailEndpoint;
+
+  /// screen-library-2: Agent details fold: the agent's version label.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get externalAgentsDetailVersion;
+
+  /// screen-library-2: Agent details fold: the protocol label.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get externalAgentsDetailConnection;
+
+  /// screen-library-2: Agent page: the pinned primary; opens a draft task.
+  ///
+  /// In en, this message translates to:
+  /// **'New task for {name}'**
+  String externalAgentsNewTaskNamed(String name);
+
+  /// screen-library-2: Agent page: menu item that replaces the stored key.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace key for {name}'**
+  String externalAgentsReplaceKeyNamed(String name);
+
+  /// screen-library-2: Replace key dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the key for {name}'**
+  String externalAgentsReplaceKeyTitle(String name);
+
+  /// screen-library-2: Replace key dialog confirm button.
+  ///
+  /// In en, this message translates to:
+  /// **'Save key'**
+  String get externalAgentsSaveKey;
+
+  /// screen-library-2: Agent page: label above the task rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get externalAgentsTasksLabel;
+
+  /// screen-library-2: Agent page: no tasks title.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks yet'**
+  String get externalAgentsNoTasksTitle;
+
+  /// screen-library-2: Agent page: no tasks body.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a task and read it over before it\'s sent. Opening a sent task checks on it; it is never sent twice.'**
+  String get externalAgentsNoTasksBody;
+
+  /// screen-library-2: A task that has no text yet.
+  ///
+  /// In en, this message translates to:
+  /// **'New task'**
+  String get externalAgentsUntitledTask;
+
+  /// screen-library-2: Task page: the pinned primary for a draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to {name}'**
+  String externalAgentsSendNamed(String name);
+
+  /// screen-library-2: Task page: the pinned primary when the agent asks a question.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to {name}'**
+  String externalAgentsReplyNamed(String name);
+
+  /// screen-library-2: Task page: why Send cannot run yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the task first'**
+  String get externalAgentsSendNeedsText;
+
+  /// screen-library-2: Task page: why Reply cannot run yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Write your reply first'**
+  String get externalAgentsReplyNeedsText;
+
+  /// screen-library-2: Task page: helper under the draft field.
+  ///
+  /// In en, this message translates to:
+  /// **'Only this text is sent. The agent may use its own services and charge for them; check its terms.'**
+  String get externalAgentsSendNote;
+
+  /// screen-library-2: Task page: status line supporting text after a check.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked with the agent {age} ago'**
+  String externalAgentsCheckedAt(String age);
+
+  /// screen-library-2: Task page: status line supporting text before a check.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this phone · pull down to check with the agent'**
+  String get externalAgentsPullToCheck;
+
+  /// screen-library-2: Task page: menu item that asks the agent to stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask {name} to stop this task'**
+  String externalAgentsStopMenu(String name);
+
+  /// screen-library-2: Task page: why stopping cannot be asked now.
+  ///
+  /// In en, this message translates to:
+  /// **'Check with the agent first; pull down to refresh'**
+  String get externalAgentsStopUnavailable;
+
+  /// screen-library-2: Stop question title.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop this task?'**
+  String get externalAgentsStopTitle;
+
+  /// screen-library-2: Task page: menu item that removes the saved task from the phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget this task on this phone'**
+  String get externalAgentsForgetMenu;
+
+  /// screen-library-2: Forget question title.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget this task?'**
+  String get externalAgentsForgetTitle;
+
+  /// screen-library-2: Forget question body.
+  ///
+  /// In en, this message translates to:
+  /// **'It leaves this phone. Work the agent already started carries on, and its own copy stays with it.'**
+  String get externalAgentsForgetBody;
+
+  /// screen-library-2: Forget question confirm button.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget task'**
+  String get externalAgentsForgetConfirm;
+
+  /// screen-library-2: Add MCP server: saved state title when the page stays open after saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved {name} in OpenCode'**
+  String mcpSetupSavedNamed(String name);
+
+  /// screen-library-2: Add MCP server: saved state body when reconnecting failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The app didn\'t reconnect afterwards. {reason}'**
+  String mcpSetupSavedNotConnectedBody(String reason);
+
+  /// screen-library-2: Add MCP server: saved state body when the location changed after saving.
+  ///
+  /// In en, this message translates to:
+  /// **'The server or project changed after saving, so this page can\'t reconnect for it. Close it and check MCP servers.'**
+  String get mcpSetupSavedElsewhere;
+
+  /// screen-library-2: Add MCP server: title on a server that accepts neither configuration writes nor runtime adds.
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t add MCP servers from here'**
+  String get mcpSetupUnavailableTitle;
+
+  /// screen-library-2: Add MCP server: why the page cannot add one here.
+  ///
+  /// In en, this message translates to:
+  /// **'It doesn\'t accept new MCP servers from the app. Add them in its configuration on the computer; they then show under MCP servers.'**
+  String get mcpSetupUnavailableBody;
 }
 
 class _AppLocalizationsDelegate

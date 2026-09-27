@@ -4,11 +4,25 @@ import 'package:flutter/services.dart';
 import '../../api/product_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../kit/kit.dart' show KitButton, KitIconButton, KitSecretField;
-import '../widgets/product_states.dart';
-import '../widgets/info_label.dart';
 import '../app_iconography.dart';
+import '../app_theme.dart' show AppStatusTone;
+import '../kit/kit.dart';
+import '../widgets/info_label.dart' show Glossary;
+import '../widgets/product_states.dart' show productErrorText;
 
+AppLocalizations _l10nOf(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));
+
+/// The technical way to add an MCP server (map `mcp-setup`, proposal fix):
+/// where it goes, its name and address first, headers as a name plus an
+/// obscured value, and the rarer settings under Advanced. Built from kit
+/// parts only (screen-library-2).
+///
+/// States: form; saving; save failed (the reason on the status line, the
+/// draft kept); saved but the app did not reconnect (Try reconnecting
+/// again); location changed while open (the draft kept, saving stopped);
+/// not available on this server (explained, P7.4); discard question when
+/// leaving with unsaved input.
 class McpSetupScreen extends StatefulWidget {
   final ConnectionController controller;
 
@@ -19,15 +33,12 @@ class McpSetupScreen extends StatefulWidget {
 }
 
 class _McpSetupScreenState extends State<McpSetupScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _url = TextEditingController();
   final _command = TextEditingController();
   final _cwd = TextEditingController();
-  // P0.1: a header's value is a secret (Authorization: Bearer …). Kept as
-  // one row per pair, each with its own obscured value field, rather than
-  // the old single multi-line "KEY=VALUE per line" box that rendered every
-  // value in clear. The value is a KitSecretField.
+  // P0.1: a header's value is a secret (Authorization: Bearer …). One row
+  // per pair, each value a secret KitField.
   final List<_HeaderRow> _headerRows = [_HeaderRow()];
   final _environment = TextEditingController();
   final _timeout = TextEditingController();
@@ -37,15 +48,26 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
   late final int _location;
   late final String? _directory, _workspace;
   late final bool _runtime;
+
+  /// The server can add an MCP server at all (config write or runtime add)
+  /// when the page opened; otherwise the page explains why (P7.4).
+  late final bool _supported;
   bool _detached = false;
   McpServerKind _kind = McpServerKind.remote;
   bool _detectOAuth = true;
   bool _saving = false;
   bool _configurationSaved = false;
+  bool _submitted = false;
+  bool _advancedOpen = false;
+  bool _leaving = false;
   String? _saveError;
 
   bool get _hasProject => _directory?.trim().isNotEmpty == true;
-  bool get _editable => !_saving && !_configurationSaved && !_detached;
+
+  /// The form's fields stay editable while it is shown: a location change
+  /// only stops Save (the status line says why), and a saved server
+  /// replaces the form with its saved state.
+  bool get _editable => !_configurationSaved;
   bool get _scopeMatches =>
       widget.controller.profile?.id == _profileId &&
       widget.controller.locationRevision == _location &&
@@ -57,26 +79,40 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
           ? widget.controller.capabilities.mcpRuntimeAdds
           : widget.controller.capabilities.mcpConfigWrites);
 
+  /// Something typed that leaving would lose.
+  bool get _hasInput =>
+      !_configurationSaved &&
+      [
+        _name,
+        _url,
+        _command,
+        _cwd,
+        _environment,
+        _timeout,
+        for (final row in _headerRows) ...[row.key, row.value],
+      ].any((controller) => controller.text.trim().isNotEmpty);
+
   @override
   void initState() {
     super.initState();
+    final capabilities = widget.controller.capabilities;
     _profileId = widget.controller.profile?.id;
     _location = widget.controller.locationRevision;
     _directory = widget.controller.directory;
     _workspace = widget.controller.workspace;
-    _runtime =
-        !widget.controller.capabilities.mcpConfigWrites &&
-        widget.controller.capabilities.mcpRuntimeAdds;
+    _supported = capabilities.mcpConfigWrites || capabilities.mcpRuntimeAdds;
+    _runtime = !capabilities.mcpConfigWrites && capabilities.mcpRuntimeAdds;
     _scope = _runtime
         ? McpConfigScope.runtimeLocation
         : _hasProject
         ? McpConfigScope.project
         : McpConfigScope.global;
-    _detached = !_locationMatches;
+    _detached = _supported && !_locationMatches;
     widget.controller.addListener(_connectionChanged);
   }
 
   void _connectionChanged() {
+    if (!_supported) return;
     final matches = _configurationSaved ? _scopeMatches : _locationMatches;
     if (!_detached && !matches && mounted) {
       setState(() => _detached = true);
@@ -98,14 +134,83 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
     super.dispose();
   }
 
+  // --- validation -----------------------------------------------------------
+
+  String? get _nameError => _name.text.trim().isEmpty
+      ? _l10nOf(context).e7LibraryEnterAServerName
+      : null;
+
+  String? get _urlError {
+    if (_kind != McpServerKind.remote) return null;
+    final uri = Uri.tryParse(_url.text.trim());
+    if (uri == null ||
+        !uri.hasAuthority ||
+        (uri.scheme != 'https' && uri.scheme != 'http') ||
+        uri.userInfo.isNotEmpty) {
+      return _l10nOf(context).e7LibraryEnterAValidHTTPOrHTTPSURL;
+    }
+    return null;
+  }
+
+  String? get _commandError =>
+      _kind == McpServerKind.local && _lines(_command.text).isEmpty
+      ? _l10nOf(context).e7LibraryEnterACommand
+      : null;
+
+  String? get _headersError => _kind == McpServerKind.remote
+      ? _pairError(_headersDraftText(), _l10nOf(context).e7LibraryHTTPHeader)
+      : null;
+
+  String? get _environmentError => _kind == McpServerKind.local
+      ? _pairError(
+          _environment.text,
+          _l10nOf(context).e7LibraryEnvironmentVariable,
+        )
+      : null;
+
+  String? get _timeoutError {
+    final text = _timeout.text.trim();
+    if (text.isEmpty) return null;
+    final timeout = int.tryParse(text);
+    return timeout == null || timeout <= 0
+        ? _l10nOf(context).e7LibraryEnterAValueGreaterThanZero
+        : null;
+  }
+
+  /// Errors under Advanced: it opens so the reason is never hidden.
+  bool get _advancedHasError =>
+      _timeoutError != null ||
+      (_kind == McpServerKind.local && _environmentError != null);
+
+  bool get _formValid =>
+      _nameError == null &&
+      _urlError == null &&
+      _commandError == null &&
+      _headersError == null &&
+      _environmentError == null &&
+      _timeoutError == null;
+
+  /// Only after the first Save, so an untouched form is never red.
+  String? _shown(String? error) => _submitted ? error : null;
+
+  void _edited([String _ = '']) => setState(() {});
+
+  // --- save -----------------------------------------------------------------
+
   Future<void> _save() async {
-    if (!_editable || !_formKey.currentState!.validate()) {
+    if (!_editable || _saving || _detached) return;
+    if (!_formValid) {
+      setState(() {
+        _submitted = true;
+        if (_advancedHasError) _advancedOpen = true;
+      });
       return;
     }
     final route = ModalRoute.of(context);
     final navigator = Navigator.of(context);
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final l10n = _l10nOf(context);
     setState(() {
+      _submitted = true;
       _saving = true;
       _saveError = null;
     });
@@ -120,25 +225,15 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
             : const [],
         cwd: _kind == McpServerKind.local ? _cwd.text : null,
         headers: _kind == McpServerKind.remote
-            ? _pairs(
-                _headersDraftText(),
-                lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryHTTPHeader,
-              )
+            ? _pairs(_headersDraftText(), l10n.e7LibraryHTTPHeader)
             : const {},
         environment: _kind == McpServerKind.local
-            ? _pairs(
-                _environment.text,
-                lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryEnvironmentVariable,
-              )
+            ? _pairs(_environment.text, l10n.e7LibraryEnvironmentVariable)
             : const {},
         detectOAuth: _detectOAuth,
         timeoutMs: timeoutText.isEmpty ? null : int.parse(timeoutText),
       );
-      // Keep repository validation authoritative even if a field validator is
+      // Keep repository validation authoritative even if a field check is
       // changed later.
       draft.toConfigJson();
       final repository = await widget.controller.prepareActionRepository();
@@ -149,9 +244,7 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
       }
       if (repository == null) {
         throw ProductException(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryOpenCodeIsReconnectingTryAgainShortly,
+          l10n.e7LibraryOpenCodeIsReconnectingTryAgainShortly,
         );
       }
       await repository.addMcpServer(draft, scope: _scope);
@@ -183,16 +276,7 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
           setState(() => _detached = true);
           return;
         }
-        setState(() {
-          _saveError = _configurationSaved
-              ? lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryButTheAppCouldNotReconnect(
-                  (l10n.mcpSavedStatus).toString(),
-                  (productErrorText(error)).toString(),
-                )
-              : productErrorText(error);
-        });
+        setState(() => _saveError = productErrorText(error));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -203,7 +287,7 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
     if (!_configurationSaved || _saving || _detached) return;
     final route = ModalRoute.of(context);
     final navigator = Navigator.of(context);
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final l10n = _l10nOf(context);
     if (!_routeIsCurrent(route) || !_scopeMatches) {
       if (mounted && !_scopeMatches) setState(() => _detached = true);
       return;
@@ -231,13 +315,7 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
           setState(() => _detached = true);
           return;
         }
-        setState(() {
-          _saveError = lookupAppLocalizations(Localizations.localeOf(context))
-              .e7LibraryButTheAppCouldNotReconnect(
-                (l10n.mcpSavedStatus).toString(),
-                (productErrorText(error)).toString(),
-              );
-        });
+        setState(() => _saveError = productErrorText(error));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -259,298 +337,157 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
     }
   }
 
+  /// Back with unsaved input asks first (map actionsMissing "discard
+  /// guard"); "Keep editing" is the default.
+  Future<void> _confirmLeave() async {
+    if (_leaving) return;
+    final l10n = _l10nOf(context);
+    final navigator = Navigator.of(context);
+    final discard = await showKitConfirm(
+      context,
+      kind: KitConfirmKind.discard,
+      icon: AppIconography.delete,
+      title: l10n.mcpSetupDiscardTitle,
+      body: l10n.mcpSetupDiscardBody,
+      confirmLabel: l10n.mcpSetupDiscardConfirm,
+    );
+    if (!discard || !mounted) return;
+    setState(() => _leaving = true);
+    navigator.pop();
+  }
+
+  // --- build ----------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          lookupAppLocalizations(Localizations.localeOf(context)).mcpAdd,
-        ),
-        actions: [
-          // A full-size info target instead of an inline label: the form is
-          // a lazy list and a header row would push its fields below the
-          // fold on a narrow large-text phone.
-          IconButton(
-            key: const ValueKey('mcp-glossary'),
-            tooltip: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryWhatIsMCP,
-            icon: const Icon(AppIconography.info),
-            onPressed: () => InfoLabel.show(
-              context,
-              term: Glossary.mcp.term,
-              explanation: Glossary.mcp.explanation,
-            ),
-          ),
-        ],
+    final l10n = _l10nOf(context);
+    final glossary = KitAction(
+      key: const ValueKey('mcp-glossary'),
+      icon: AppIconography.info,
+      label: l10n.e7LibraryWhatIsMCP,
+      onPressed: () => showKitTerm(
+        context,
+        term: Glossary.mcp.term,
+        explanation: Glossary.mcp.explanation,
       ),
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (_detached && !_configurationSaved && _saveError == null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(l10n.mcpLocationChanged),
-              ),
-            if (_configurationSaved) ...[
-              Text(l10n.mcpSavedStatus, key: ValueKey('mcp-saved-status')),
-              if (_saveError != null)
-                Padding(
-                  padding: EdgeInsets.only(top: 4),
-                  child: Text(
-                    l10n.mcpConnectionUnconfirmed,
-                    key: ValueKey('mcp-connection-status'),
-                  ),
-                ),
-              const SizedBox(height: 8),
-            ],
-            if (_saveError case final error?) ...[
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  error,
-                  key: const ValueKey('mcp-save-error'),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-            if (_configurationSaved && _saveError != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: OutlinedButton.icon(
-                  key: const ValueKey('mcp-retry-reconnect'),
-                  onPressed: _saving || _detached || !_scopeMatches
-                      ? null
-                      : _retryReconnect,
-                  icon: const Icon(AppIconography.retry),
-                  label: Text(l10n.mcpRetryReconnect),
-                ),
-              ),
-            FilledButton.icon(
-              key: const ValueKey('mcp-save'),
-              onPressed: _saving || (_detached && !_configurationSaved)
-                  ? null
-                  : _configurationSaved
-                  ? () => Navigator.pop(context, true)
-                  : _save,
-              icon: _saving
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Icon(
-                      _configurationSaved
-                          ? AppIconography.check
-                          : AppIconography.save,
-                    ),
-              label: Text(
-                _saving
-                    ? (_configurationSaved
-                          ? l10n.mcpReconnecting
-                          : (_runtime
-                                ? l10n.mcpAdding
-                                : lookupAppLocalizations(
-                                    Localizations.localeOf(context),
-                                  ).e7LibrarySavingConfiguration))
-                    : _configurationSaved
-                    ? lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).isolatedTaskClose
-                    : (_runtime
-                          ? l10n.mcpAdd
-                          : lookupAppLocalizations(
-                              Localizations.localeOf(context),
-                            ).e7LibrarySaveMCPServer),
-              ),
-            ),
-          ],
+    );
+    if (!_supported) {
+      return KitScreen(
+        width: KitScreenWidth.list,
+        topBar: KitTopBar(
+          title: l10n.mcpAdd,
+          subtitle: widget.controller.profile?.name,
+          actions: [glossary],
         ),
-      ),
-      body: Form(
-        key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        child: ListView(
+        body: KitStateView.missing(
+          key: const ValueKey('mcp-setup-unavailable'),
+          capability: 'mcp.any',
+          icon: AppIconography.extensions,
+          title: l10n.mcpSetupUnavailableTitle,
+          why: l10n.mcpSetupUnavailableBody,
+          size: KitStateSize.page,
+        ),
+      );
+    }
+    if (_configurationSaved) return _savedScreen(context, l10n);
+    return PopScope<Object?>(
+      canPop: _leaving || !_hasInput,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmLeave();
+      },
+      child: KitScreen(
+        width: KitScreenWidth.list,
+        topBar: KitTopBar(
+          title: l10n.mcpAdd,
+          subtitle: widget.controller.profile?.name,
+          actions: [glossary],
+        ),
+        status: _status(l10n),
+        bottom: KitActionBlock(primary: _primary(l10n)),
+        body: ListView(
           key: const ValueKey('mcp-setup-form'),
-          padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 24),
+          padding: KitScreen.padding(context),
           children: [
-            Text(
-              _runtime
-                  ? l10n.mcpRuntimeTitle
-                  : lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7LibraryPersistedConfiguration,
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _runtime
-                  ? l10n.mcpRuntimeDescription
-                  : lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7LibrarySavedByOpenCodeOnTheServerIt,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (_runtime) ...[
-              Text(l10n.mcpCurrentLocation, style: theme.textTheme.labelMedium),
-              const SizedBox(height: 4),
-              Text(
-                [
-                  if (_hasProject) _directory!,
-                  if (_workspace?.isNotEmpty == true)
-                    l10n.mcpWorkspaceLocation(_workspace!),
-                  if (!_hasProject && _workspace?.isNotEmpty != true)
-                    l10n.mcpDefaultLocation,
-                ].join('\n'),
-                key: const ValueKey('mcp-location'),
-              ),
-            ] else ...[
-              SegmentedButton<McpConfigScope>(
-                direction: MediaQuery.textScalerOf(context).scale(14) > 20
-                    ? Axis.vertical
-                    : Axis.horizontal,
-                key: const ValueKey('mcp-scope'),
-                showSelectedIcon: false,
-                segments: [
-                  ButtonSegment(
-                    value: McpConfigScope.project,
-                    enabled: _hasProject,
-                    icon: const Icon(AppIconography.files),
-                    label: Text(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7LibraryThisProject,
-                    ),
-                  ),
-                  ButtonSegment(
-                    value: McpConfigScope.global,
-                    icon: Icon(AppIconography.globe),
-                    label: Text(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).usageAllProjects,
-                    ),
-                  ),
-                ],
-                selected: {_scope},
-                onSelectionChanged: !_editable
-                    ? null
-                    : (value) => setState(() => _scope = value.single),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _scope == McpConfigScope.project
-                    ? lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7LibraryWritesOnlyTo((_directory).toString())
-                    : lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7LibraryWritesToThisOpenCodeServerSGlobal,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            const SizedBox(height: 20),
-            const Divider(),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: const ValueKey('mcp-name'),
+            ..._whereSection(context, l10n),
+            _gap(context),
+            KitField(
+              label: l10n.e7LibraryServerName,
               controller: _name,
-              textDirection: TextDirection.ltr,
+              kind: KitFieldKind.mono,
+              hint: l10n.e7LibraryDocsOrBrowserTools,
+              helper: l10n.e7LibraryUniqueWithinTheSelectedConfiguration,
+              error: _shown(_nameError),
               enabled: _editable,
+              disabledReason: _disabledReason(l10n),
               textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                labelText: lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryServerName,
-                hintText: lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryDocsOrBrowserTools,
-                helperText: lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryUniqueWithinTheSelectedConfiguration,
-              ),
-              validator: (value) => value?.trim().isEmpty == true
-                  ? lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7LibraryEnterAServerName
-                  : null,
+              onChanged: _edited,
+              fieldKey: const ValueKey('mcp-name'),
             ),
-            const SizedBox(height: 20),
-            SegmentedButton<McpServerKind>(
-              direction: MediaQuery.textScalerOf(context).scale(14) > 20
-                  ? Axis.vertical
-                  : Axis.horizontal,
+            _gap(context),
+            _label(context, l10n.mcpSetupHowItRuns),
+            KitSegmented<McpServerKind>(
               key: const ValueKey('mcp-kind'),
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(
-                  value: McpServerKind.remote,
-                  icon: Icon(AppIconography.cloud),
-                  label: Text(
-                    lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7LibraryRemoteURL,
-                  ),
-                ),
-                ButtonSegment(
-                  value: McpServerKind.local,
-                  icon: Icon(AppIconography.terminal),
-                  label: Text(
-                    lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7LibraryLocalCommand,
-                  ),
-                ),
-              ],
-              selected: {_kind},
-              onSelectionChanged: !_editable
+              semanticsLabel: l10n.mcpSetupHowItRuns,
+              selected: _kind,
+              disabledReason: _disabledReason(l10n),
+              onChanged: !_editable
                   ? null
                   : (value) => setState(() {
-                      _kind = value.single;
+                      _kind = value;
                       _saveError = null;
                     }),
+              segments: [
+                KitSegment(
+                  value: McpServerKind.remote,
+                  icon: AppIconography.cloud,
+                  label: l10n.e7LibraryRemoteURL,
+                ),
+                KitSegment(
+                  value: McpServerKind.local,
+                  icon: AppIconography.terminal,
+                  label: l10n.e7LibraryLocalCommand,
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            if (_kind == McpServerKind.remote) ..._remoteFields(),
-            if (_kind == McpServerKind.local) ..._localFields(),
-            const SizedBox(height: 16),
-            TextFormField(
-              key: const ValueKey('mcp-timeout'),
-              controller: _timeout,
-              textDirection: TextDirection.ltr,
-              enabled: _editable,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(
-                labelText: lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryTimeoutInMilliseconds,
-                hintText: lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryOptional,
+            _gap(context),
+            // Both sets stay mounted so switching back keeps what was
+            // typed, and a header's secret field is never remounted with
+            // a value in it (SEC-3).
+            Visibility(
+              visible: _kind == McpServerKind.remote,
+              maintainState: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: _remoteFields(context, l10n),
               ),
-              validator: (value) {
-                final text = value?.trim() ?? '';
-                if (text.isEmpty) return null;
-                final timeout = int.tryParse(text);
-                return timeout == null || timeout <= 0
-                    ? lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7LibraryEnterAValueGreaterThanZero
-                    : null;
-              },
+            ),
+            Visibility(
+              visible: _kind == McpServerKind.local,
+              maintainState: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: _localFields(context, l10n),
+              ),
+            ),
+            _gap(context),
+            KitRowGroup(
+              margin: EdgeInsets.zero,
+              children: [
+                KitExpandRow(
+                  headerKey: const ValueKey('mcp-advanced'),
+                  title: l10n.mcpSetupAdvanced,
+                  supporting: TextSpan(
+                    text: _kind == McpServerKind.remote
+                        ? l10n.mcpSetupAdvancedRemote
+                        : l10n.mcpSetupAdvancedLocal,
+                  ),
+                  maintainState: true,
+                  expanded: _advancedOpen,
+                  onExpansionChanged: (open) =>
+                      setState(() => _advancedOpen = open),
+                  children: [_advanced(context, l10n)],
+                ),
+              ],
             ),
           ],
         ),
@@ -558,78 +495,216 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
     );
   }
 
-  List<Widget> _remoteFields() => [
-    TextFormField(
-      key: const ValueKey('mcp-url'),
-      controller: _url,
-      textDirection: TextDirection.ltr,
-      enabled: _editable,
-      keyboardType: TextInputType.url,
-      textInputAction: TextInputAction.next,
-      autocorrect: false,
-      decoration: InputDecoration(
-        labelText: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryMCPEndpointURL,
-        hintText: 'https://server.example/mcp',
-        helperText: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryHTTPIsAcceptedForLocalDevelopmentServers,
-      ),
-      validator: (value) {
-        final uri = Uri.tryParse(value?.trim() ?? '');
-        if (uri == null ||
-            !uri.hasAuthority ||
-            (uri.scheme != 'https' && uri.scheme != 'http') ||
-            uri.userInfo.isNotEmpty) {
-          return lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryEnterAValidHTTPOrHTTPSURL;
-        }
-        return null;
-      },
-    ),
-    const SizedBox(height: 16),
-    ..._headerFields(),
-    const SizedBox(height: 8),
-    SwitchListTile.adaptive(
-      key: const ValueKey('mcp-oauth-detection'),
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryDetectOAuthAutomatically,
-      ),
-      subtitle: Text(
-        lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryTurnThisOffWhenTheServerUses,
-      ),
-      value: _detectOAuth,
-      onChanged: !_editable
-          ? null
-          : (value) => setState(() => _detectOAuth = value),
-    ),
-  ];
+  Widget _gap(BuildContext context) =>
+      SizedBox(height: KitTokens.of(context).space5);
 
-  /// One row per header pair: the key is plain text, the value is obscured
-  /// with a reveal-on-press toggle (P0.1). Never prefilled from a saved
-  /// server — this screen only ever adds a new one (there is no edit entry
-  /// point today; see docs/qa/p0-secure-settings-2026-09-26/README.md).
-  List<Widget> _headerFields() {
-    final label = lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).e7LibraryHTTPHeader;
+  Widget _label(BuildContext context, String text) => Padding(
+    padding: EdgeInsetsDirectional.only(bottom: KitTokens.of(context).space2),
+    child: KitText(text, role: KitTextRole.label, tone: KitTextTone.secondary),
+  );
+
+  String? _disabledReason(AppLocalizations l10n) => _editable
+      ? null
+      : _configurationSaved
+      ? l10n.mcpSavedStatus
+      : _detached
+      ? l10n.mcpSetupLocationChangedShort
+      : l10n.e7LibrarySavingConfiguration;
+
+  /// Saved in OpenCode, but the page is still open: the app did not
+  /// reconnect, or the location changed after the write. The form gives
+  /// way to what happened and the one thing left to do.
+  Widget _savedScreen(BuildContext context, AppLocalizations l10n) {
+    final error = _saveError;
+    final name = _name.text.trim();
+    return KitScreen(
+      width: KitScreenWidth.list,
+      topBar: KitTopBar(
+        title: l10n.mcpAdd,
+        subtitle: widget.controller.profile?.name,
+      ),
+      bottom: KitActionBlock(
+        primary: KitAction(
+          key: const ValueKey('mcp-save'),
+          label: l10n.isolatedTaskClose,
+          icon: AppIconography.check,
+          onPressed: _saving ? null : () => Navigator.pop(context, true),
+          disabledReason: _saving ? l10n.mcpReconnecting : null,
+        ),
+        secondary: error == null
+            ? null
+            : KitAction(
+                key: const ValueKey('mcp-retry-reconnect'),
+                label: l10n.mcpRetryReconnect,
+                icon: AppIconography.retry,
+                working: _saving,
+                disabledReason: _detached || !_scopeMatches
+                    ? l10n.mcpSetupLocationChangedShort
+                    : null,
+                onPressed: _saving || _detached || !_scopeMatches
+                    ? null
+                    : _retryReconnect,
+              ),
+      ),
+      body: ListView(
+        padding: KitScreen.padding(context),
+        children: [
+          KitStateView(
+            key: const ValueKey('mcp-saved-status'),
+            icon: error == null
+                ? AppIconography.checkCircle
+                : AppIconography.warning,
+            tone: error == null ? AppStatusTone.ok : AppStatusTone.failure,
+            title: name.isEmpty
+                ? l10n.mcpSavedStatus
+                : l10n.mcpSetupSavedNamed(name),
+            body: error != null
+                ? l10n.mcpSetupSavedNotConnectedBody(error)
+                : l10n.mcpSetupSavedElsewhere,
+            size: KitStateSize.inline,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The one condition on the form, on the screen's status line.
+  KitStatus? _status(AppLocalizations l10n) {
+    final error = _saveError;
+    if (_detached) {
+      return KitStatus(
+        id: 'mcp-setup:detached',
+        kind: KitStatusKind.info,
+        icon: AppIconography.warning,
+        message: l10n.mcpLocationChanged,
+      );
+    }
+    if (error != null) {
+      return KitStatus(
+        id: 'mcp-setup:save-failed',
+        kind: KitStatusKind.info,
+        icon: AppIconography.warning,
+        tone: AppStatusTone.failure,
+        message: l10n.mcpSetupSaveFailed,
+        supporting: error,
+      );
+    }
+    return null;
+  }
+
+  KitAction _primary(AppLocalizations l10n) {
+    final name = _name.text.trim();
+    return KitAction(
+      key: const ValueKey('mcp-save'),
+      label: _saving
+          ? (_runtime ? l10n.mcpAdding : l10n.e7LibrarySavingConfiguration)
+          : name.isEmpty
+          ? (_runtime ? l10n.mcpAdd : l10n.e7LibrarySaveMCPServer)
+          : (_runtime
+                ? l10n.mcpSetupAddNamed(name)
+                : l10n.mcpSetupSaveNamed(name)),
+      icon: _runtime ? AppIconography.add : AppIconography.save,
+      working: _saving,
+      disabledReason: _detached ? l10n.mcpSetupLocationChangedShort : null,
+      onPressed: _detached ? null : _save,
+    );
+  }
+
+  List<Widget> _whereSection(BuildContext context, AppLocalizations l10n) {
+    final tokens = KitTokens.of(context);
+    if (_runtime) {
+      final place = [
+        if (_hasProject) _directory!,
+        if (_workspace?.isNotEmpty == true)
+          l10n.mcpWorkspaceLocation(_workspace!),
+        if (!_hasProject && _workspace?.isNotEmpty != true)
+          l10n.mcpDefaultLocation,
+      ].join('\n');
+      return [
+        KitRowGroup(
+          margin: EdgeInsets.zero,
+          label: l10n.mcpSetupWhere,
+          children: [
+            KitRow(
+              key: const ValueKey('mcp-location'),
+              leading: KitRow.icon(context, AppIconography.clock),
+              title: l10n.mcpRuntimeTitle,
+              supporting: TextSpan(text: place),
+              supportingMaxLines: 3,
+            ),
+          ],
+        ),
+        SizedBox(height: tokens.space2),
+        KitText(
+          l10n.mcpSetupRuntimeNote,
+          role: KitTextRole.caption,
+          tone: KitTextTone.secondary,
+        ),
+      ];
+    }
     return [
-      for (var index = 0; index < _headerRows.length; index++)
-        _headerRow(index, label),
+      _label(context, l10n.mcpSetupWhere),
+      KitSegmented<McpConfigScope>(
+        key: const ValueKey('mcp-scope'),
+        semanticsLabel: l10n.mcpSetupWhere,
+        selected: _scope,
+        disabledReason: _disabledReason(l10n),
+        onChanged: !_editable
+            ? null
+            : (value) => setState(() => _scope = value),
+        segments: [
+          KitSegment(
+            value: McpConfigScope.project,
+            icon: AppIconography.files,
+            label: l10n.e7LibraryThisProject,
+            enabled: _hasProject,
+            disabledReason: _hasProject ? null : l10n.mcpSetupNoProject,
+          ),
+          KitSegment(
+            value: McpConfigScope.global,
+            icon: AppIconography.globe,
+            label: l10n.usageAllProjects,
+          ),
+        ],
+      ),
+      SizedBox(height: tokens.space2),
+      KitText(
+        _scope == McpConfigScope.project
+            ? l10n.e7LibraryWritesOnlyTo(_directory ?? '')
+            : l10n.e7LibraryWritesToThisOpenCodeServerSGlobal,
+        role: KitTextRole.caption,
+        tone: KitTextTone.secondary,
+      ),
+    ];
+  }
+
+  List<Widget> _remoteFields(BuildContext context, AppLocalizations l10n) {
+    final tokens = KitTokens.of(context);
+    return [
+      KitField(
+        label: l10n.e7LibraryMCPEndpointURL,
+        controller: _url,
+        kind: KitFieldKind.url,
+        hint: 'https://server.example/mcp',
+        helper: l10n.e7LibraryHTTPIsAcceptedForLocalDevelopmentServers,
+        error: _shown(_urlError),
+        enabled: _editable,
+        disabledReason: _disabledReason(l10n),
+        textInputAction: TextInputAction.next,
+        onChanged: _edited,
+        fieldKey: const ValueKey('mcp-url'),
+      ),
+      _gap(context),
+      _label(context, l10n.mcpSetupHeaders),
+      for (var index = 0; index < _headerRows.length; index++) ...[
+        _headerRow(context, l10n, index),
+        SizedBox(height: tokens.space4),
+      ],
       Align(
         alignment: AlignmentDirectional.centerStart,
         child: KitButton.tertiary(
           key: const ValueKey('mcp-header-add'),
-          label: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).mcpAddHeader,
+          label: l10n.mcpAddHeader,
           icon: AppIconography.add,
           onPressed: !_editable
               ? null
@@ -639,62 +714,146 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
     ];
   }
 
-  // A header's name stays visible; its value is a KitSecretField.
-  Widget _headerRow(int index, String label) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  /// One header: its name stays visible; its value is a secret field that
+  /// is never prefilled (P0.1, SEC-3). The pair's error sits under the
+  /// value.
+  Widget _headerRow(BuildContext context, AppLocalizations l10n, int index) {
+    final tokens = KitTokens.of(context);
     final row = _headerRows[index];
     final denyNewlines = [FilteringTextInputFormatter.deny(RegExp(r'[\r\n]'))];
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: TextFormField(
-              key: ValueKey('mcp-header-key-$index'),
-              controller: row.key,
-              textDirection: TextDirection.ltr,
-              enabled: _editable,
-              autocorrect: false,
-              inputFormatters: denyNewlines,
-              decoration: InputDecoration(
-                labelText: l10n.mcpHeaderName,
-                hintText: index == 0 ? 'Authorization' : null,
+    final last = index == _headerRows.length - 1;
+    return Column(
+      key: ObjectKey(row),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: KitField(
+                label: l10n.mcpHeaderName,
+                controller: row.key,
+                kind: KitFieldKind.mono,
+                hint: index == 0 ? 'Authorization' : null,
+                enabled: _editable,
+                disabledReason: _disabledReason(l10n),
+                inputFormatters: denyNewlines,
+                onChanged: _edited,
+                fieldKey: ValueKey('mcp-header-key-$index'),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 3,
-            child: KitSecretField(
-              key: ObjectKey(row),
-              fieldKey: ValueKey('mcp-header-value-$index'),
-              revealKey: ValueKey('mcp-header-reveal-$index'),
-              controller: row.value,
-              enabled: _editable,
-              inputFormatters: denyNewlines,
-              label: l10n.mcpHeaderValue,
-              hint: index == 0 ? 'Bearer token' : null,
-              showLabel: l10n.mcpShowHeaderValue,
-              hideLabel: l10n.mcpHideHeaderValue,
-              validator: (_) => _pairError(_headersDraftText(), label),
-            ),
-          ),
-          if (_headerRows.length > 1) ...[
-            const SizedBox(width: 4),
-            KitIconButton(
-              key: ValueKey('mcp-header-remove-$index'),
-              icon: AppIconography.close,
-              label: l10n.mcpRemoveHeader,
-              onPressed: !_editable
+            if (_headerRows.length > 1) ...[
+              SizedBox(width: tokens.space1),
+              KitIconButton(
+                key: ValueKey('mcp-header-remove-$index'),
+                icon: AppIconography.close,
+                tooltip: l10n.mcpRemoveHeader,
+                onPressed: !_editable
+                    ? null
+                    : () => setState(() {
+                        _headerRows[index].dispose();
+                        _headerRows.removeAt(index);
+                      }),
+              ),
+            ],
+          ],
+        ),
+        SizedBox(height: tokens.space2),
+        KitField.secret(
+          label: l10n.mcpHeaderValue,
+          controller: row.value,
+          hint: index == 0 ? 'Bearer token' : null,
+          error: last ? _shown(_headersError) : null,
+          enabled: _editable,
+          disabledReason: _disabledReason(l10n),
+          inputFormatters: denyNewlines,
+          onChanged: _edited,
+          fieldKey: ValueKey('mcp-header-value-$index'),
+          revealKey: ValueKey('mcp-header-reveal-$index'),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _localFields(BuildContext context, AppLocalizations l10n) => [
+    KitField(
+      label: l10n.e7LibraryCommandAndArguments,
+      controller: _command,
+      kind: KitFieldKind.mono,
+      maxLines: 8,
+      hint: 'npx\n-y\n@package/mcp-server',
+      helper: l10n.e7LibraryRunsOnTheOpenCodeServerNotThis,
+      error: _shown(_commandError),
+      enabled: _editable,
+      disabledReason: _disabledReason(l10n),
+      onChanged: _edited,
+      fieldKey: const ValueKey('mcp-command'),
+    ),
+  ];
+
+  /// The rarer settings, folded (map proposal "the rest under Advanced").
+  Widget _advanced(BuildContext context, AppLocalizations l10n) {
+    final tokens = KitTokens.of(context);
+    final gap = SizedBox(height: tokens.space4);
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.space4,
+        end: tokens.space4,
+        bottom: tokens.space4,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_kind == McpServerKind.remote)
+            KitSwitchRow(
+              switchKey: const ValueKey('mcp-oauth-detection'),
+              title: l10n.e7LibraryDetectOAuthAutomatically,
+              supporting: l10n.e7LibraryTurnThisOffWhenTheServerUses,
+              value: _detectOAuth,
+              disabledReason: _disabledReason(l10n),
+              onChanged: !_editable
                   ? null
-                  : () => setState(() {
-                      _headerRows[index].dispose();
-                      _headerRows.removeAt(index);
-                    }),
+                  : (value) => setState(() => _detectOAuth = value),
+            )
+          else ...[
+            KitField(
+              label: l10n.e7LibraryWorkingDirectory,
+              controller: _cwd,
+              kind: KitFieldKind.path,
+              hint: l10n.e7LibraryOptionalServerPath,
+              enabled: _editable,
+              disabledReason: _disabledReason(l10n),
+              textInputAction: TextInputAction.next,
+              onChanged: _edited,
+              fieldKey: const ValueKey('mcp-cwd'),
+            ),
+            gap,
+            KitField(
+              label: l10n.e7LibraryEnvironmentVariables,
+              controller: _environment,
+              kind: KitFieldKind.mono,
+              maxLines: 5,
+              hint: 'LOG_LEVEL=warn',
+              helper: l10n.e7LibraryOptionalEnterOneKEYVALUEPairPer,
+              error: _shown(_environmentError),
+              enabled: _editable,
+              disabledReason: _disabledReason(l10n),
+              onChanged: _edited,
+              fieldKey: const ValueKey('mcp-environment'),
             ),
           ],
+          gap,
+          KitField(
+            label: l10n.e7LibraryTimeoutInMilliseconds,
+            controller: _timeout,
+            kind: KitFieldKind.number,
+            hint: l10n.e7LibraryOptional,
+            error: _shown(_timeoutError),
+            enabled: _editable,
+            disabledReason: _disabledReason(l10n),
+            onChanged: _edited,
+            fieldKey: const ValueKey('mcp-timeout'),
+          ),
         ],
       ),
     );
@@ -711,77 +870,6 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
       .map((row) => '${row.key.text}=${row.value.text}')
       .join('\n');
 
-  List<Widget> _localFields() => [
-    TextFormField(
-      key: const ValueKey('mcp-command'),
-      controller: _command,
-      textDirection: TextDirection.ltr,
-      enabled: _editable,
-      minLines: 4,
-      maxLines: 8,
-      keyboardType: TextInputType.multiline,
-      autocorrect: false,
-      decoration: InputDecoration(
-        labelText: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryCommandAndArguments,
-        hintText: 'npx\n-y\n@package/mcp-server',
-        helperText: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryRunsOnTheOpenCodeServerNotThis,
-        alignLabelWithHint: true,
-      ),
-      validator: (value) => _lines(value ?? '').isEmpty
-          ? lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryEnterACommand
-          : null,
-    ),
-    const SizedBox(height: 16),
-    TextFormField(
-      key: const ValueKey('mcp-cwd'),
-      controller: _cwd,
-      textDirection: TextDirection.ltr,
-      enabled: _editable,
-      textInputAction: TextInputAction.next,
-      decoration: InputDecoration(
-        labelText: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryWorkingDirectory,
-        hintText: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryOptionalServerPath,
-      ),
-    ),
-    const SizedBox(height: 16),
-    TextFormField(
-      key: const ValueKey('mcp-environment'),
-      controller: _environment,
-      textDirection: TextDirection.ltr,
-      enabled: _editable,
-      minLines: 2,
-      maxLines: 5,
-      keyboardType: TextInputType.multiline,
-      autocorrect: false,
-      decoration: InputDecoration(
-        labelText: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryEnvironmentVariables,
-        hintText: 'LOG_LEVEL=warn',
-        helperText: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryOptionalEnterOneKEYVALUEPairPer,
-        alignLabelWithHint: true,
-      ),
-      validator: (value) => _pairError(
-        value ?? '',
-        lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryEnvironmentVariable,
-      ),
-    ),
-  ];
-
   static List<String> _lines(String value) => value
       .split('\n')
       .map((line) => line.trim())
@@ -789,6 +877,7 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
       .toList();
 
   Map<String, String> _pairs(String value, String label) {
+    final l10n = _l10nOf(context);
     final result = <String, String>{};
     final lines = value.split('\n');
     for (var index = 0; index < lines.length; index++) {
@@ -797,32 +886,18 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
       final separator = line.indexOf('=');
       if (separator < 1) {
         throw ProductException(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryInvalidOnLineUseKEYVALUE(
-            (label).toString(),
-            (index + 1).toString(),
-          ),
+          l10n.e7LibraryInvalidOnLineUseKEYVALUE(label, '${index + 1}'),
         );
       }
       final key = line.substring(0, separator).trim();
       final content = line.substring(separator + 1).trim();
       if (key.isEmpty || key.contains(RegExp(r'[\r\n=]'))) {
         throw ProductException(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryInvalidNameOnLine(
-            (label).toString(),
-            (index + 1).toString(),
-          ),
+          l10n.e7LibraryInvalidNameOnLine(label, '${index + 1}'),
         );
       }
       if (result.containsKey(key)) {
-        throw ProductException(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryDuplicateName((label).toString(), (key).toString()),
-        );
+        throw ProductException(l10n.e7LibraryDuplicateName(label, key));
       }
       result[key] = content;
     }
@@ -840,7 +915,7 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
 }
 
 /// One HTTP header pair's editing state (P0.1). Its value field masks
-/// itself (KitSecretField) until the person presses show for that row.
+/// itself (KitField.secret) until the person presses show for that row.
 class _HeaderRow {
   _HeaderRow() : key = TextEditingController(), value = TextEditingController();
 
