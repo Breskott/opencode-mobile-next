@@ -593,9 +593,6 @@ void main() {
     );
     await pumpHost(tester, controller, 'oc-loy');
     expect(textOf(tester, 'team-work-sheet-owner'), 'wolf');
-    expect(workOwnerInitial('ocproof/gastown.refinery'), 'R');
-    expect(workOwnerInitial('wolf'), 'W');
-    expect(workOwnerInitial(''), '');
     expect(tester.takeException(), isNull);
   });
 }

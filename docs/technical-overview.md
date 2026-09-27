@@ -41,7 +41,7 @@ like SSH access, and do not put one on a network you do not control.
 Start OpenCode on the machine with your code, bound to loopback:
 
 ```bash
-OPENCODE_SERVER_PASSWORD=your-secret \
+OPENCODE_SERVER_PASSWORD=<your password> \
   opencode serve --hostname 127.0.0.1 --port 4096
 ```
 

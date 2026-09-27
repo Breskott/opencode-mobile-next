@@ -28,7 +28,8 @@ import '../kit/kit.dart';
 import '../kit/scenes/servers_link_scene.dart';
 import '../kit/scenes/servers_welcome_scene.dart';
 import '../setup_commands.dart';
-import '../widgets/product_states.dart' show productErrorText;
+import '../widgets/product_states.dart'
+    show productErrorDetails, productErrorText;
 import '../widgets/team_host_form.dart';
 import '../widgets/local_agent_server_entry.dart';
 import '../widgets/phone_server_card.dart';
@@ -108,10 +109,12 @@ class ServersRouteRequest {
     String this.profileID, {
     this.detectedRunning = false,
   }) : kind = ServersRouteRequestKind.connect,
+       backend = null,
        openCode2 = false;
 
-  /// Open the editor for a new server.
-  const ServersRouteRequest.add()
+  /// Open a new server editor, optionally starting with the requested kind.
+  /// This is an editable choice, never permission to connect or save.
+  const ServersRouteRequest.add({this.backend})
     : kind = ServersRouteRequestKind.add,
       profileID = null,
       detectedRunning = false,
@@ -122,15 +125,18 @@ class ServersRouteRequest {
     this.profileID,
     required this.openCode2,
   }) : kind = ServersRouteRequestKind.enterPhoneCredentials,
+       backend = null,
        detectedRunning = true;
 
   /// Confirm and forget the saved server [profileID].
   const ServersRouteRequest.forget(String this.profileID)
     : kind = ServersRouteRequestKind.forget,
+      backend = null,
       detectedRunning = false,
       openCode2 = false;
 
   final ServersRouteRequestKind kind;
+  final ServerBackend? backend;
   final String? profileID;
   final bool detectedRunning;
   final bool openCode2;
@@ -154,6 +160,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   /// rows in the same verdict style the editor uses — never a red snackbar
   /// carrying a raw exception.
   String? _listFailure;
+  String? _listFailureDetails;
 
   /// Bumped after Termux setup returns so the running-server entry re-reads
   /// the phone instead of trusting what it saw before the user left.
@@ -209,7 +216,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     }
     switch (request.kind) {
       case ServersRouteRequestKind.add:
-        await _edit();
+        await _edit(initialBackend: request.backend);
       case ServersRouteRequestKind.connect:
         if (target != null) {
           await _connect(target, detectedRunning: request.detectedRunning);
@@ -226,9 +233,12 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
 
   /// A removal that did not finish, said where the list is: the same inline
   /// notice a failed connect uses, never a snackbar (KIT-34, STATE-3).
-  void _showFailure(String message) {
+  void _showFailure(String message, {String? details}) {
     if (!mounted) return;
-    setState(() => _listFailure = message);
+    setState(() {
+      _listFailure = message;
+      _listFailureDetails = details;
+    });
   }
 
   /// This phone for the Termux server: its status, versions, tools and log.
@@ -394,6 +404,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     setState(() {
       _busy = true;
       _listFailure = null;
+      _listFailureDetails = null;
     });
     final conn = ref.read(connProvider);
     Object? failure;
@@ -430,6 +441,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   /// computer", the server switcher's Add or phone setup: one path.
   Future<bool> _edit({
     ServerProfile? existing,
+    ServerBackend? initialBackend,
     bool focusPassword = false,
     String? initialUrl,
     bool openCode2Intent = false,
@@ -451,6 +463,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       KitPageRoute<ServerProfile>(
         builder: (_) => _ProfileEditorScreen(
           existing: existing,
+          initialBackend: initialBackend,
           reconnectOnSave:
               connectOnSave ||
               existing?.id == ref.read(bootstrapProvider).store.activeId,
@@ -499,6 +512,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     setState(() {
       _busy = true;
       _listFailure = null;
+      _listFailureDetails = null;
     });
     try {
       await store.upsert(result);
@@ -591,8 +605,11 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     final QueuedPromptRemovalPlan queued;
     try {
       queued = connection.inspectQueuedPromptsForRemoval(p.id);
-    } catch (_) {
-      _showFailure(copy.serversRemoveQueuedNotKept(p.name));
+    } catch (error) {
+      _showFailure(
+        copy.serversRemoveQueuedUnreadable(p.name),
+        details: productErrorDetails(error),
+      );
       return;
     }
     var deleteQueued = false;
@@ -628,6 +645,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     setState(() {
       _busy = true;
       _listFailure = null;
+      _listFailureDetails = null;
     });
     try {
       // The cascade verifies every store it writes and reports what refused.
@@ -649,9 +667,12 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       }
     } on QueuedPromptRemovalException catch (error) {
       _showFailure(
-        error.changed
+        error.unreadable
+            ? copy.serversRemoveQueuedUnreadable(p.name)
+            : error.changed
             ? copy.serversRemoveQueuedChanged(p.name)
             : copy.serversRemoveQueuedNotKept(p.name),
+        details: error.unreadable ? productErrorDetails(error) : null,
       );
     } catch (error) {
       if (removed) {
@@ -819,11 +840,21 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
             key: const ValueKey('server-connect-failure-slot'),
             child: switch (_listFailure) {
               final failure? => _Rails(
-                child: KitNotice(
-                  key: const ValueKey('server-connect-failure'),
-                  tone: AppStatusTone.failure,
-                  message: failure,
-                  onDismiss: () => setState(() => _listFailure = null),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    KitNotice(
+                      key: const ValueKey('server-connect-failure'),
+                      tone: AppStatusTone.failure,
+                      message: failure,
+                      onDismiss: () => setState(() {
+                        _listFailure = null;
+                        _listFailureDetails = null;
+                      }),
+                    ),
+                    if (_listFailureDetails != null)
+                      KitDetailsFold(text: _listFailureDetails),
+                  ],
                 ),
               ),
               null => null,
@@ -1369,6 +1400,7 @@ class _PhoneSetupEntry extends StatelessWidget {
 
 class _ProfileEditorScreen extends StatefulWidget {
   final ServerProfile? existing;
+  final ServerBackend? initialBackend;
   final bool tailscale;
   final bool reconnectOnSave;
   final bool openCode2Intent;
@@ -1400,6 +1432,7 @@ class _ProfileEditorScreen extends StatefulWidget {
   final Future<String?> Function()? secureStorageProbe;
   const _ProfileEditorScreen({
     this.existing,
+    this.initialBackend,
     this.tailscale = false,
     this.reconnectOnSave = false,
     this.openCode2Intent = false,
@@ -1424,7 +1457,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       widget.existing?.orchestration != null;
 
   late ServerBackend _backend =
-      widget.existing?.backend ?? ServerBackend.openCode;
+      widget.existing?.backend ??
+      widget.initialBackend ??
+      ServerBackend.openCode;
 
   /// A new server with nothing preset is added in steps (P3.9): what runs
   /// there, then Tailscale when that is the way, then the address or the
@@ -1436,7 +1471,11 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       widget.initialUrl == null &&
       !widget.focusPassword;
 
-  late _AddStep _step = _stepped ? _AddStep.kind : _AddStep.connect;
+  // An explicit entry point already answered the first question. Keep the
+  // stepped flow so Back can change that answer without saving anything.
+  late _AddStep _step = _stepped && widget.initialBackend == null
+      ? _AddStep.kind
+      : _AddStep.connect;
 
   /// The server is reached through Tailscale: the address must be a
   /// tailnet one, and the save remembers the way for the next edit.

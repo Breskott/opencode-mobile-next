@@ -13,7 +13,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
-import 'package:opencode_mobile/ui/widgets/glass_surface.dart';
 
 import 'fixtures.dart';
 
@@ -41,51 +40,60 @@ Widget _scene({required bool light, required KitEffects effects}) {
           body: ListView(
             padding: EdgeInsets.zero,
             children: [
-              const SectionLabel('Running now'),
-              for (var i = 0; i < 9; i++) ...[
-                KitRow(
-                  title: 'Fix the reconnect loop in the chat · step ${i + 1}',
-                  supporting: const TextSpan(
-                    text: 'opencode · 2 files changed · a minute ago',
-                  ),
-                  leading: KitRowIcon(
-                    AppIconography.workspace,
-                    color: _swatches[i % _swatches.length],
-                  ),
-                  onTap: () {},
-                ),
-                if (i % 3 == 1)
-                  Container(
-                    height: 34,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      gradient: LinearGradient(
-                        colors: [
-                          _swatches[i % _swatches.length],
-                          _swatches[(i + 2) % _swatches.length],
-                        ],
+              KitRowGroup(
+                label: 'Running now',
+                children: [
+                  for (var i = 0; i < 9; i++) ...[
+                    KitRow(
+                      title:
+                          'Fix the reconnect loop in the chat · step ${i + 1}',
+                      supporting: const TextSpan(
+                        text: 'opencode · 2 files changed · a minute ago',
                       ),
+                      leading: KitRowIcon(
+                        AppIconography.workspace,
+                        color: _swatches[i % _swatches.length],
+                      ),
+                      onTap: () {},
                     ),
-                  ),
-              ],
+                    if (i % 3 == 1)
+                      Container(
+                        height: 34,
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          gradient: LinearGradient(
+                            colors: [
+                              _swatches[i % _swatches.length],
+                              _swatches[(i + 2) % _swatches.length],
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ],
+              ),
             ],
           ),
           bottomNavigationBar: SafeArea(
             top: false,
             minimum: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-            child: GlassSurface(
+            child: KitGlass(
+              dim: true,
+              borderRadius: BorderRadius.circular(
+                KitTokens.of(context).navRadius,
+              ),
               child: NavigationBarTheme(
                 data: NavigationBarThemeData(
                   backgroundColor: Colors.transparent,
                   labelTextStyle: WidgetStatePropertyAll(
                     Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: GlassSurface.foregroundColor(Theme.of(context)),
+                      color: KitGlass.foregroundColor(Theme.of(context)),
                     ),
                   ),
                   iconTheme: WidgetStatePropertyAll(
                     IconThemeData(
-                      color: GlassSurface.foregroundColor(Theme.of(context)),
+                      color: KitGlass.foregroundColor(Theme.of(context)),
                     ),
                   ),
                 ),

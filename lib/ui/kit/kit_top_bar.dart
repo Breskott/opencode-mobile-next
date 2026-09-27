@@ -942,25 +942,55 @@ class _KitServerPillContent extends StatelessWidget {
         ),
       );
     }
-    // Only the name gives way; the status word always shows (STATE-9).
-    final label = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Flexible(
-          child: KitText(
-            KitBidi.auto(server),
-            role: KitTextRole.rowTitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+    // Keep the status in full (STATE-9). At large text it may be wider
+    // than the whole pill, so let it wrap below the name instead.
+    final label = LayoutBuilder(
+      builder: (context, constraints) {
+        final statusText = ' · $status';
+        final painter = TextPainter(
+          text: TextSpan(
+            text: statusText,
+            style: KitText.styleOf(context, KitTextRole.caption),
           ),
-        ),
-        KitText(
-          ' · $status',
-          role: KitTextRole.caption,
-          tone: KitTextTone.secondary,
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
           maxLines: 1,
-        ),
-      ],
+        )..layout();
+        final stack = painter.width + tokens.minTarget > constraints.maxWidth;
+        painter.dispose();
+        final name = KitText(
+          KitBidi.auto(server),
+          role: KitTextRole.rowTitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+        if (stack) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              name,
+              KitText(
+                status,
+                role: KitTextRole.caption,
+                tone: KitTextTone.secondary,
+              ),
+            ],
+          );
+        }
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(child: name),
+            KitText(
+              statusText,
+              role: KitTextRole.caption,
+              tone: KitTextTone.secondary,
+              maxLines: 1,
+            ),
+          ],
+        );
+      },
     );
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: tokens.minTarget),

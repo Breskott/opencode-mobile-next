@@ -162,17 +162,6 @@ String? workOwnerName(OrchestrationSnapshot snapshot, WorkItem item) {
   return assignee;
 }
 
-/// Retired by screen-team-3: use KitAvatar(name:), which draws the
-/// initials; kept for the run screen's owner glyph until it moves.
-///
-/// The letter of an owner glyph: the first letter of the last segment of
-/// the name ("ocproof/gastown.refinery" → "R").
-String workOwnerInitial(String name) {
-  final last = name.split(RegExp(r'[/.\s]+')).where((s) => s.isNotEmpty);
-  final word = last.isEmpty ? name : last.last;
-  return word.isEmpty ? '' : word.substring(0, 1).toUpperCase();
-}
-
 /// The output excerpt the host attached to an item, if any.
 String? workOutputExcerpt(WorkItem item) {
   final metadata = _map(item.raw['metadata']);

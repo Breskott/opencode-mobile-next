@@ -167,7 +167,7 @@ void main() {
       },
     );
 
-    testWidgets('share waiting: the app line over connecting ${size.width}', (
+    testWidgets('share waiting: connection has priority ${size.width}', (
       tester,
     ) async {
       final messenger = tester.binding.defaultBinaryMessenger;
@@ -230,9 +230,11 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
         expect(
-          find.byKey(const ValueKey('kit-status-app:share-waiting')),
+          find.byKey(const ValueKey('connection-status-banner')),
           findsOneWidget,
         );
+        expect(find.byType(KitStatusLine), findsOneWidget);
+        expect(share.pending.value, isNotNull);
         await expectLater(
           find.byKey(boundary),
           matchesGoldenFile(
@@ -240,6 +242,7 @@ void main() {
           ),
         );
       });
+      controller.dispose();
     });
 
     // The line main.dart shows when the shared text could not open a

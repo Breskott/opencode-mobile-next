@@ -20,14 +20,18 @@ const _size = Size(412, 915);
 
 Widget _list(String title, int seed) => ListView(
   children: [
-    SectionLabel(title),
-    for (var i = 0; i < 12; i++)
-      KitRow(
-        title: '$title row ${i + seed}',
-        supporting: const TextSpan(text: 'Updated a minute ago'),
-        leading: const KitRowIcon(AppIconography.workspace),
-        onTap: () {},
-      ),
+    KitRowGroup(
+      label: title,
+      children: [
+        for (var i = 0; i < 12; i++)
+          KitRow(
+            title: '$title row ${i + seed}',
+            supporting: const TextSpan(text: 'Updated a minute ago'),
+            leading: const KitRowIcon(AppIconography.workspace),
+            onTap: () {},
+          ),
+      ],
+    ),
   ],
 );
 

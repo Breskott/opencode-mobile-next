@@ -260,28 +260,3 @@ class _ContinueOnPhoneBody extends StatelessWidget {
     );
   }
 }
-
-/// Retired by shared-chat-1: use [KitQr]. Forwards to it, [size] capping
-/// the width the code may take.
-class SessionLinkQr extends StatelessWidget {
-  const SessionLinkQr({
-    super.key,
-    required this.data,
-    required this.size,
-    this.semanticsLabel,
-  });
-
-  final String data;
-  final double size;
-  final String? semanticsLabel;
-
-  @override
-  Widget build(BuildContext context) => ConstrainedBox(
-    constraints: BoxConstraints(maxWidth: size < 0 ? 0 : size),
-    child: KitQr(
-      data: data,
-      semanticsLabel: semanticsLabel ?? _l10n(context).handoffUiPhoneQrLabel,
-      qrKey: const Key('session-link-qr'),
-    ),
-  );
-}

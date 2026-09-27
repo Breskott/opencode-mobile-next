@@ -13,6 +13,8 @@ import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/widgets/termux_phone_tools.dart';
+import 'package:opencode_mobile/ui/widgets/app_connection_status.dart';
+import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:opencode_mobile/ui/widgets/work_status_line.dart';
 
 import 'support/work_tab_fixture.dart';
@@ -296,12 +298,28 @@ void main() {
           ),
         );
       }
+      controller.notifyListeners();
       await tester.pumpWidget(
         _app(
-          WorkspaceScreen(
-            controller: controller,
-            serverOnThisPhone: phone,
-            onRestartServer: restart,
+          ListenableBuilder(
+            listenable: controller,
+            builder: (context, _) => AppConditionsScope(
+              conditions: [
+                connectionKitStatus(
+                  context,
+                  controller,
+                  serverOnThisPhone: phone,
+                  onRestartServer: restart,
+                ),
+              ],
+              child: KitScreen(
+                body: WorkspaceScreen(
+                  controller: controller,
+                  serverOnThisPhone: phone,
+                  onRestartServer: restart,
+                ),
+              ),
+            ),
           ),
         ),
       );
@@ -309,22 +327,31 @@ void main() {
       return controller;
     }
 
-    Finder line(String id) => find.byKey(ValueKey('work-status-$id'));
+    Finder line(String id) => find.byKey(
+      ValueKey(id == 'server' ? 'connection-status-banner' : 'work-status-$id'),
+    );
 
-    testWidgets('a normal start says nothing', (tester) async {
+    testWidgets('a normal start says connecting in the shared slot', (
+      tester,
+    ) async {
       final controller = await pumpWork(
         tester,
         status: StreamStatus.connecting,
       );
-      await tester.pump(const Duration(seconds: 7));
-      expect(find.byType(KitStatusLine), findsNothing);
-      controller
-        ..status = StreamStatus.connected
-        ..notifyListeners();
-      await tester.pump(const Duration(seconds: 5));
-      expect(find.byType(KitStatusLine), findsNothing);
-      await tester.pumpWidget(const SizedBox());
-      controller.dispose();
+      try {
+        await tester.pump(const Duration(seconds: 7));
+        expect(line('server'), findsOneWidget);
+        expect(find.textContaining('Connecting to '), findsOneWidget);
+        controller
+          ..status = StreamStatus.connected
+          ..notifyListeners();
+        await tester.pump(const Duration(seconds: 5));
+        await _settle(tester);
+        expect(find.byType(KitStatusLine), findsNothing);
+      } finally {
+        await tester.pumpWidget(const SizedBox());
+        controller.dispose();
+      }
     });
 
     testWidgets('a server that stopped answering outranks a leftover '
@@ -334,20 +361,25 @@ void main() {
         status: StreamStatus.reconnecting,
         runaway: true,
       );
-      // During the grace time the lower line still shows.
-      expect(line('runaway'), findsOneWidget);
-      await tester.pump(const Duration(seconds: 9));
-      await _settle(tester);
-      expect(line('server'), findsOneWidget);
-      expect(line('runaway'), findsNothing);
-      controller
-        ..status = StreamStatus.connected
-        ..notifyListeners();
-      await _settle(tester);
-      expect(line('runaway'), findsOneWidget);
-      expect(find.byType(KitStatusLine), findsOneWidget);
-      await tester.pumpWidget(const SizedBox());
-      controller.dispose();
+      try {
+        // Reconnecting itself is the highest-priority shared condition.
+        expect(line('server'), findsOneWidget);
+        expect(find.textContaining('Reconnecting to '), findsOneWidget);
+        expect(line('runaway'), findsNothing);
+        await tester.pump(const Duration(seconds: 9));
+        await _settle(tester);
+        expect(line('server'), findsOneWidget);
+        expect(line('runaway'), findsNothing);
+        controller
+          ..status = StreamStatus.connected
+          ..notifyListeners();
+        await _settle(tester);
+        expect(line('runaway'), findsOneWidget);
+        expect(find.byType(KitStatusLine), findsOneWidget);
+      } finally {
+        await tester.pumpWidget(const SizedBox());
+        controller.dispose();
+      }
     });
 
     testWidgets('a failed attempt says so at once', (tester) async {
@@ -356,9 +388,12 @@ void main() {
         status: StreamStatus.disconnected,
         error: 'Cannot reach http://127.0.0.1:4096: timed out',
       );
-      expect(line('server'), findsOneWidget);
-      await tester.pumpWidget(const SizedBox());
-      controller.dispose();
+      try {
+        expect(line('server'), findsOneWidget);
+      } finally {
+        await tester.pumpWidget(const SizedBox());
+        controller.dispose();
+      }
     });
 
     testWidgets('Restart asks first, and only then restarts', (tester) async {
@@ -368,23 +403,30 @@ void main() {
         status: StreamStatus.reconnecting,
         restart: () async => restarts++,
       );
-      await tester.pump(const Duration(seconds: 9));
-      await _settle(tester);
-      await tester.tap(find.byKey(const ValueKey('work-status-restart')));
-      await _settle(tester);
-      expect(find.text('Restart OpenCode on this phone?'), findsOneWidget);
-      await tester.tap(find.text('Cancel'));
-      await _settle(tester);
-      expect(restarts, 0);
-      await tester.tap(find.byKey(const ValueKey('work-status-restart')));
-      await _settle(tester);
-      await tester.tap(
-        find.byKey(const ValueKey('work-server-restart-confirm')),
-      );
-      await _settle(tester);
-      expect(restarts, 1);
-      await tester.pumpWidget(const SizedBox());
-      controller.dispose();
+      try {
+        await tester.pump(const Duration(seconds: 9));
+        await _settle(tester);
+        await tester.tap(
+          find.byKey(const ValueKey('connection-banner-restart')),
+        );
+        await _settle(tester);
+        expect(find.text('Restart OpenCode on this phone?'), findsOneWidget);
+        await tester.tap(find.text('Cancel'));
+        await _settle(tester);
+        expect(restarts, 0);
+        await tester.tap(
+          find.byKey(const ValueKey('connection-banner-restart')),
+        );
+        await _settle(tester);
+        await tester.tap(
+          find.byKey(const ValueKey('work-server-restart-confirm')),
+        );
+        await _settle(tester);
+        expect(restarts, 1);
+      } finally {
+        await tester.pumpWidget(const SizedBox());
+        controller.dispose();
+      }
     });
 
     testWidgets('a remote server is named, with Try again and Details and '
@@ -394,45 +436,63 @@ void main() {
         status: StreamStatus.reconnecting,
         phone: false,
       );
-      await tester.pump(const Duration(seconds: 9));
-      await _settle(tester);
-      expect(find.text("Laptop isn't answering"), findsOneWidget);
-      expect(find.byKey(const ValueKey('work-status-retry')), findsOneWidget);
-      expect(find.byKey(const ValueKey('work-status-restart')), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('kit-status-more')));
-      await _settle(tester);
-      expect(find.byKey(const ValueKey('work-status-details')), findsOneWidget);
-      await tester.pumpWidget(const SizedBox());
-      controller.dispose();
+      try {
+        await tester.pump(const Duration(seconds: 9));
+        await _settle(tester);
+        expect(find.text("Laptop isn't answering"), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('connection-banner-retry')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('connection-banner-restart')),
+          findsNothing,
+        );
+        await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+        await _settle(tester);
+        expect(
+          find.byKey(const ValueKey('connection-banner-details')),
+          findsOneWidget,
+        );
+      } finally {
+        await tester.pumpWidget(const SizedBox());
+        controller.dispose();
+      }
     });
 
     testWidgets('requests that could not be refreshed: "may be out of date" '
         'with Refresh, only while connected', (tester) async {
       final controller = await pumpWork(tester);
-      expect(find.byType(KitStatusLine), findsNothing);
-      controller
-        ..permissionsError = 'timed out'
-        ..notifyListeners();
-      await _settle(tester);
-      expect(line('stale'), findsOneWidget);
-      expect(find.text('This may be out of date'), findsOneWidget);
-      expect(find.text('Last observed state.'), findsNothing);
-      await tester.pumpWidget(const SizedBox());
-      controller.dispose();
+      try {
+        expect(find.byType(KitStatusLine), findsNothing);
+        controller
+          ..permissionsError = 'timed out'
+          ..notifyListeners();
+        await _settle(tester);
+        expect(line('stale'), findsOneWidget);
+        expect(find.text('This may be out of date'), findsOneWidget);
+        expect(find.text('Last observed state.'), findsNothing);
+      } finally {
+        await tester.pumpWidget(const SizedBox());
+        controller.dispose();
+      }
     });
 
     testWidgets('the line is one live region', (tester) async {
       final controller = await pumpWork(tester, runaway: true);
-      final live = find.descendant(
-        of: line('runaway'),
-        matching: find.byWidgetPredicate(
-          (widget) =>
-              widget is Semantics && widget.properties.liveRegion == true,
-        ),
-      );
-      expect(live, findsOneWidget);
-      await tester.pumpWidget(const SizedBox());
-      controller.dispose();
+      try {
+        final live = find.descendant(
+          of: line('runaway'),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics && widget.properties.liveRegion == true,
+          ),
+        );
+        expect(live, findsOneWidget);
+      } finally {
+        await tester.pumpWidget(const SizedBox());
+        controller.dispose();
+      }
     });
   });
 

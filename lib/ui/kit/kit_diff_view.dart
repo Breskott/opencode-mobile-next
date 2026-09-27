@@ -1425,15 +1425,31 @@ class _KitDiffViewState extends State<KitDiffView> {
       }
     }
     final selection = _selecting ? _selectionBar(tokens, l10n) : null;
-    final linesColumn = Column(
+    Widget linesColumnBody({double? selectionMaxHeight}) => Column(
       mainAxisSize: bounded ? MainAxisSize.max : MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (bounded) Expanded(child: body) else body,
         ?footer,
-        ?selection,
+        if (selection != null)
+          if (selectionMaxHeight == null)
+            selection
+          else
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: selectionMaxHeight),
+              child: SingleChildScrollView(child: selection),
+            ),
       ],
     );
+    // Large text can make the selection actions taller than the space left
+    // below the file header. Keep source visible and let those actions scroll;
+    // a footer that fits still takes only its natural height.
+    final linesColumn = bounded
+        ? LayoutBuilder(
+            builder: (context, constraints) =>
+                linesColumnBody(selectionMaxHeight: constraints.maxHeight / 2),
+          )
+        : linesColumnBody();
     // A large box: the header spans the top, the file list sits at the
     // start of the lines (read after the header, top to bottom, A11Y-4).
     final Widget main = fileList == null

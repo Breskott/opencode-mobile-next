@@ -38,6 +38,7 @@ class AutomationPolicyController extends ChangeNotifier {
   late AutomationPolicy _value;
   Future<void> _pending = Future<void>.value();
   bool _closed = false;
+  bool _pausedForDeletion = false;
 
   static String keyFor(String profileId) => 'oc.automation.$profileId';
 
@@ -68,9 +69,16 @@ class AutomationPolicyController extends ChangeNotifier {
     SharedPreferences preferences,
     String profileId,
   ) async {
-    final controller = _shared[preferences]?.remove(profileId);
+    final byProfile = _shared[preferences];
+    final controller = byProfile?[profileId];
     if (controller == null) return;
-    await controller.prepareForDeletion();
+    try {
+      await controller.prepareForDeletion();
+    } finally {
+      if (identical(byProfile?[profileId], controller)) {
+        byProfile!.remove(profileId);
+      }
+    }
   }
 
   /// Forgets every shared controller; tests only.
@@ -105,7 +113,9 @@ class AutomationPolicyController extends ChangeNotifier {
   Future<void> disableAll() => _change((_) => AutomationPolicy.disabled());
 
   Future<void> _change(AutomationPolicy Function(AutomationPolicy) update) {
-    if (_closed) return Future.error(StateError('Automation policy is closed'));
+    if (_closed || _pausedForDeletion) {
+      return Future.error(StateError('Automation policy is unavailable'));
+    }
     final writing = _pending.then((_) async {
       if (_closed) throw StateError('Automation policy is closed');
       final next = update(_value);
@@ -141,6 +151,19 @@ class AutomationPolicyController extends ChangeNotifier {
   Future<void> prepareForDeletion() {
     _closed = true;
     return _pending;
+  }
+
+  /// Stops new edits and drains edits already admitted without closing this
+  /// shared owner. Keep it registered until deletion commits or is cancelled.
+  Future<void> pauseForDeletion() {
+    _pausedForDeletion = true;
+    return _pending;
+  }
+
+  /// Restores editing after deletion validation or preservation aborts.
+  /// A permanently closed controller remains closed.
+  void cancelDeletion() {
+    if (!_closed) _pausedForDeletion = false;
   }
 
   @override

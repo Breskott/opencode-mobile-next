@@ -11,8 +11,6 @@ library;
 
 import 'dart:async';
 
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../builtin/setup/components.dart' show SetupComponentIds;
 import '../../builtin/setup/setup_contract.dart';
 import '../../l10n/app_localizations.dart';
@@ -20,8 +18,6 @@ import '../../state/connection.dart';
 import '../../state/profiles.dart';
 import '../screens/settings/plugins_screen.dart'
     show teamPhoneProfile, teamRowSubtitle;
-import '../screens/new_conversation_sheet.dart'
-    show NewConversationChoice, NewConversationKind, NewConversationMemory;
 import '../screens/team/team_intro_screen.dart' show TeamIntroScreen;
 import '../screens/team/team_page.dart' show TeamPage;
 import 'builtin_team_section.dart' show BuiltinTeamSection;
@@ -55,32 +51,6 @@ TeamServerKind teamServerKindOf(ServerProfile profile) {
 /// opens the intro, whose pre-flight says why and offers a computer
 /// (programme P1.7).
 Future<bool> teamPossibleOn(ServerProfile profile) async => true;
-
-/// New conversation's Solo · Team choice, remembered per server.
-///
-/// Retired by slice-P4.5: New conversation's chooser remembers every way to
-/// start (Solo, Team, a separate copy, a cloud machine) under the same key;
-/// use [NewConversationMemory].
-@Deprecated('Retired by slice-P4.5: use NewConversationMemory')
-abstract final class TeamNewMode {
-  static String key(String profileId) => NewConversationMemory.key(profileId);
-
-  static bool isTeam(SharedPreferences prefs, String profileId) =>
-      NewConversationMemory.read(prefs, profileId)?.kind ==
-      NewConversationKind.team;
-
-  static Future<void> set(
-    SharedPreferences prefs,
-    String profileId, {
-    required bool team,
-  }) => NewConversationMemory.remember(
-    prefs,
-    profileId,
-    team
-        ? const NewConversationChoice.team()
-        : const NewConversationChoice.solo(),
-  );
-}
 
 /// Whether [progress] is a setup job that installs the AI Team (Add tools
 /// with AI Team, on OpenCode inside the app).

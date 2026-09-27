@@ -9,8 +9,10 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/builtin/builtin_folders.dart';
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/global_sessions_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_folder_actions.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
@@ -209,6 +211,8 @@ Future<_ProjectsController> _controller(_ProjectsRepository repository) async {
 }
 
 Widget _direct(ProjectsScreen screen, {double textScale = 1}) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
   builder: (context, child) => MediaQuery(
     data: MediaQuery.of(
       context,
@@ -219,6 +223,8 @@ Widget _direct(ProjectsScreen screen, {double textScale = 1}) => MaterialApp(
 );
 
 Widget _host(ProjectsScreen screen) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
   home: Builder(
     builder: (context) => Scaffold(
       body: Center(
@@ -233,6 +239,16 @@ Widget _host(ProjectsScreen screen) => MaterialApp(
     ),
   ),
 );
+
+// Kit fields rebuild validation and button state on the next frame; sheet
+// actions may need scrolling after the keyboard or an error changes the body.
+Future<void> _tapAction(WidgetTester tester, String key) async {
+  await tester.pump();
+  final action = find.byKey(ValueKey(key));
+  await tester.ensureVisible(action);
+  await tester.pumpAndSettle();
+  await tester.tap(action);
+}
 
 void main() {
   testWidgets(
@@ -260,6 +276,8 @@ void main() {
       await controller.refreshSessions();
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: WorkspaceScreen(controller: controller)),
         ),
       );
@@ -313,11 +331,8 @@ void main() {
     expect(find.byKey(const ValueKey('project-project-1')), findsOneWidget);
     expect(tester.takeException(), isNull);
 
-    // The create/open folder entries above the list push the row lower at
-    // large text; bring the rename control fully on screen before tapping.
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('rename-project-project-1')),
-    );
+    // Rename lives in the project's row menu (screen-work-4).
+    await tester.longPress(find.byKey(const ValueKey('project-project-1')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('rename-project-project-1')));
     await tester.pumpAndSettle();
@@ -429,13 +444,15 @@ void main() {
 
     await tester.enterText(find.byKey(const ValueKey('project-search')), '');
     await tester.pump();
+    await tester.longPress(find.byKey(const ValueKey('project-project-1')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('rename-project-project-1')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('project-name-input')),
       'app',
     );
-    await tester.tap(find.byKey(const ValueKey('confirm-rename-project')));
+    await _tapAction(tester, 'confirm-rename-project');
     await tester.pumpAndSettle();
 
     expect(repository.renamedID, 'project-1');
@@ -477,6 +494,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -522,6 +541,8 @@ void main() {
     };
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -570,6 +591,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -599,6 +622,8 @@ void main() {
     };
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -606,8 +631,12 @@ void main() {
 
     final row = find.byKey(const ValueKey('session-dismiss-session-1'));
     expect(row, findsOneWidget);
-    // The trailing popup menu remains alongside the swipe affordance.
-    expect(find.byType(PopupMenuButton<String>), findsWidgets);
+    // The row's long-press menu remains alongside the swipe affordance.
+    await tester.longPress(find.text('Swipe target'));
+    await tester.pumpAndSettle();
+    expect(find.text('Archive'), findsOneWidget);
+    await tester.tapAt(const Offset(4, 4));
+    await tester.pumpAndSettle();
 
     // Swipe hides the row at once and offers Undo; nothing reaches the
     // server yet.
@@ -619,17 +648,20 @@ void main() {
     expect(api.deleteCalls, isEmpty);
 
     // Undo brings the row back untouched.
-    await tester.tap(find.widgetWithText(SnackBarAction, 'Undo'));
+    await tester.tap(find.text('Undo'));
     await tester.pumpAndSettle();
     expect(find.text('Swipe target'), findsOneWidget);
     expect(repository.archiveCalls, isEmpty);
 
-    // Letting the snackbar expire commits the archive.
+    // Letting the undo window expire commits the archive.
     await tester.drag(row, const Offset(-400, 0));
     await tester.pumpAndSettle();
     expect(find.text('Swipe target'), findsNothing);
     expect(find.text('Archived “Swipe target”'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 6));
+    // KitUndo's documented window is eight seconds (the old snackbar
+    // expired after six). The server is still untouched before it ends.
+    expect(repository.archiveCalls, isEmpty);
+    await tester.pump(KitUndo.window);
     await tester.pumpAndSettle();
     expect(find.text('Archived “Swipe target”'), findsNothing);
     expect(repository.archiveCalls, ['session-1']);
@@ -654,17 +686,21 @@ void main() {
     };
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Conversation actions'));
+    await tester.longPress(find.text('Menu target'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
     expect(find.text('Delete conversation?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.tap(
+      find.byKey(const ValueKey('workspace-delete-confirm-button')),
+    );
     await tester.pumpAndSettle();
 
     expect(api.deleteCalls, ['session-1']);
@@ -684,12 +720,14 @@ void main() {
     await controller.refreshSessions();
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
     await tester.pump();
     expect(find.text('Swipe target'), findsOneWidget);
-    expect(find.text('All conversations'), findsOneWidget);
+    expect(find.text('Search all conversations'), findsOneWidget);
     expect(find.byKey(const ValueKey('search-all-sessions')), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
     // The one remaining search action works while project discovery is pending.
@@ -753,6 +791,8 @@ void main() {
       await controller.refreshSessions();
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           routes: {
             '/chat/older-chat': (_) =>
                 const Scaffold(body: Text('Previous chat opened')),
@@ -767,7 +807,12 @@ void main() {
       // One status line: Try again on it, Search all behind its menu.
       await tester.tap(find.byKey(const ValueKey('kit-status-more')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Search all conversations'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(KitMenuPanel),
+          matching: find.text('Search all conversations'),
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Previous conversation'));
       await tester.pumpAndSettle();
@@ -799,6 +844,8 @@ void main() {
       await controller.refreshSessions();
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: WorkspaceScreen(controller: controller)),
         ),
       );
@@ -834,6 +881,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -878,6 +927,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -902,6 +953,8 @@ void main() {
     await controller.refreshSessions();
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         routes: {
           '/chat/session-1': (_) =>
               const Scaffold(body: Text('Previous chat opened')),
@@ -962,6 +1015,8 @@ void main() {
     await controller.store.setActiveId('server');
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         routes: {
           '/chat/older-chat': (_) =>
               const Scaffold(body: Text('Previous chat opened')),
@@ -1006,6 +1061,8 @@ void main() {
     await controller.refreshSessions();
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -1034,6 +1091,8 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           onGenerateRoute: (settings) => MaterialPageRoute<void>(
             settings: settings,
             builder: (_) => Scaffold(
@@ -1055,7 +1114,7 @@ void main() {
         find.byKey(const ValueKey('open-folder-path')),
         '/root',
       );
-      await tester.tap(find.byKey(const ValueKey('open-folder-confirm')));
+      await _tapAction(tester, 'open-folder-confirm');
       await tester.pumpAndSettle();
       expect(find.textContaining('home folder'), findsWidgets);
       expect(controller.probed, isEmpty);
@@ -1067,7 +1126,7 @@ void main() {
         find.byKey(const ValueKey('open-folder-path')),
         '/root/projects/missing',
       );
-      await tester.tap(find.byKey(const ValueKey('open-folder-confirm')));
+      await _tapAction(tester, 'open-folder-confirm');
       await tester.pumpAndSettle();
       expect(controller.probed, ['/root/projects/missing']);
       expect(
@@ -1087,7 +1146,7 @@ void main() {
         find.byKey(const ValueKey('open-folder-path')),
         '/root/projects/app',
       );
-      await tester.tap(find.byKey(const ValueKey('open-folder-confirm')));
+      await _tapAction(tester, 'open-folder-confirm');
       await tester.pumpAndSettle();
       expect(controller.locations, [
         (directory: '/root/projects/app', workspace: null),
@@ -1127,6 +1186,8 @@ void main() {
     });
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -1138,7 +1199,7 @@ void main() {
       find.byKey(const ValueKey('new-folder-name')),
       '../etc',
     );
-    await tester.tap(find.byKey(const ValueKey('new-folder-create')));
+    await _tapAction(tester, 'new-folder-create');
     await tester.pumpAndSettle();
     expect(created, isEmpty);
     expect(find.textContaining('single folder name'), findsOneWidget);
@@ -1147,7 +1208,7 @@ void main() {
       find.byKey(const ValueKey('new-folder-name')),
       'my-app',
     );
-    await tester.tap(find.byKey(const ValueKey('new-folder-create')));
+    await _tapAction(tester, 'new-folder-create');
     await tester.pumpAndSettle();
     expect(created, ['my-app']);
     expect(controller.locations, [
@@ -1174,6 +1235,8 @@ void main() {
     addTearDown(() => ProjectFolderActions.canCreateOverride = null);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -1214,6 +1277,8 @@ void main() {
     Future<void> openSheet(WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: WorkspaceScreen(controller: controller)),
         ),
       );
@@ -1243,9 +1308,7 @@ void main() {
           find.byKey(const ValueKey('in-app-new-project-name')),
           bad,
         );
-        await tester.tap(
-          find.byKey(const ValueKey('in-app-new-project-create')),
-        );
+        await _tapAction(tester, 'in-app-new-project-create');
         await tester.pumpAndSettle();
         expect(linux.created, isEmpty, reason: bad);
         expect(find.text('Open a project'), findsOneWidget, reason: bad);
@@ -1255,7 +1318,7 @@ void main() {
         find.byKey(const ValueKey('in-app-new-project-name')),
         'hello',
       );
-      await tester.tap(find.byKey(const ValueKey('in-app-new-project-create')));
+      await _tapAction(tester, 'in-app-new-project-create');
       await tester.pumpAndSettle();
       expect(linux.created, ['/root/projects/hello']);
       expect(
@@ -1275,7 +1338,7 @@ void main() {
         find.byKey(const ValueKey('in-app-new-project-name')),
         'hello',
       );
-      await tester.tap(find.byKey(const ValueKey('in-app-new-project-create')));
+      await _tapAction(tester, 'in-app-new-project-create');
       await tester.pumpAndSettle();
       expect(linux.created, isEmpty);
       expect(controller.folderEvents, ['open:/root/projects/hello']);
@@ -1291,7 +1354,7 @@ void main() {
         find.byKey(const ValueKey('open-folder-path')),
         '/root/projects/missing',
       );
-      await tester.tap(find.byKey(const ValueKey('open-folder-confirm')));
+      await _tapAction(tester, 'open-folder-confirm');
       await tester.pumpAndSettle();
       expect(find.text('That folder does not exist yet.'), findsOneWidget);
       expect(controller.probed, isEmpty, reason: 'checked in Ubuntu only');
@@ -1308,6 +1371,8 @@ void main() {
     testWidgets('Create a new folder makes it inside the app', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: WorkspaceScreen(controller: controller)),
         ),
       );
@@ -1318,7 +1383,7 @@ void main() {
         find.byKey(const ValueKey('new-folder-name')),
         'app',
       );
-      await tester.tap(find.byKey(const ValueKey('new-folder-create')));
+      await _tapAction(tester, 'new-folder-create');
       await tester.pumpAndSettle();
       expect(linux.created, ['/root/projects/app']);
       expect(controller.folderEvents, ['open:/root/projects/app']);

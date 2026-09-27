@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
@@ -131,6 +132,8 @@ class _WorkspaceLocationController extends ConnectionController {
 }
 
 Widget _app(Widget home, {double textScale = 1}) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
   home: Builder(
     builder: (context) => MediaQuery(
       data: MediaQuery.of(
@@ -270,6 +273,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.gitInitializationCalls, 1);
+    // The result is now a notice at the top of the list, rather than a
+    // snackbar. Return to it from the large-text setup row.
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('git-initialized')),
+      -80,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Git repository initialized'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('master'),
@@ -458,6 +468,9 @@ void main() {
     expect(find.text('/tmp/runtime-probe'), findsNothing);
     expect(find.text('OpenCode Mobile'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('current-project-entry')));
+    await tester.pumpAndSettle();
+    expect(find.text('/tmp/runtime-probe'), findsNothing);
+    await tester.tap(find.text('Details'));
     await tester.pumpAndSettle();
     expect(find.text('/tmp/runtime-probe'), findsOneWidget);
     expect(find.text('OpenCode Mobile'), findsNothing);

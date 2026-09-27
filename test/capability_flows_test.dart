@@ -1,5 +1,6 @@
 // coord-main (C20): every capabilities.json enable flow resolves to a
 // registered handler at runtime, and the handlers open the right door.
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -105,5 +106,53 @@ void main() {
     expect(opened.single.name, '/servers');
     final request = opened.single.arguments! as ServersRouteRequest;
     expect(request.kind, ServersRouteRequestKind.add);
+    expect(request.backend, isNull);
   });
+
+  for (final (flow, backend) in [
+    (KitEnableFlows.addServer, null),
+    (KitEnableFlows.addServerCodex, ServerBackend.codex),
+    (KitEnableFlows.addServerPaseo, ServerBackend.paseo),
+  ]) {
+    testWidgets('$flow carries only its selected backend to Add server', (
+      tester,
+    ) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      final handlers = capabilityFlowHandlers(
+        controller,
+        platform: const PlatformCapabilities.linuxDesktop(),
+      );
+      final opened = <RouteSettings>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => unawaited(
+                handlers[flow]!(
+                  context,
+                  KitEnableRequest(capability: 'server.any', flow: flow),
+                ),
+              ),
+              child: const Text('Open selected server setup'),
+            ),
+          ),
+          onGenerateRoute: (settings) {
+            opened.add(settings);
+            return MaterialPageRoute<void>(
+              settings: settings,
+              builder: (_) => const Scaffold(body: Text('Server setup')),
+            );
+          },
+        ),
+      );
+      await tester.tap(find.text('Open selected server setup'));
+      await tester.pumpAndSettle();
+      expect(opened.single.name, '/servers');
+      final request = opened.single.arguments! as ServersRouteRequest;
+      expect(request.kind, ServersRouteRequestKind.add);
+      expect(request.backend, backend);
+      expect(request.profileID, isNull);
+    });
+  }
 }

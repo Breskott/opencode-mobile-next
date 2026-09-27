@@ -143,6 +143,44 @@ void main() {
     },
   );
 
+  test(
+    'reversible deletion pause drains admitted edits and resumes the same owner',
+    () async {
+      final shared = AutomationPolicyController.forProfile(prefs, 'shared-a');
+      addTearDown(AutomationPolicyController.resetShared);
+      addTearDown(shared.dispose);
+      storage.gate = Completer<void>();
+      storage.started = Completer<void>();
+      final started = storage.started!.future;
+      final first = shared.setBehavior(AutomationBehavior.reconnect, false);
+      await started;
+      final second = shared.setBehavior(AutomationBehavior.monitorQuota, true);
+      final paused = shared.pauseForDeletion();
+      await expectLater(shared.disableAll(), throwsStateError);
+      expect(
+        AutomationPolicyController.forProfile(prefs, 'shared-a'),
+        same(shared),
+      );
+      storage.gate!.complete();
+      await Future.wait([first, second, paused]);
+      expect(shared.value.allows(AutomationBehavior.reconnect), isFalse);
+      expect(shared.value.allows(AutomationBehavior.monitorQuota), isTrue);
+
+      shared.cancelDeletion();
+      await shared.setBehavior(AutomationBehavior.reconnect, true);
+      expect(shared.value.allows(AutomationBehavior.reconnect), isTrue);
+      expect(shared.value.allows(AutomationBehavior.monitorQuota), isTrue);
+      await prefs.reload();
+      expect(
+        jsonDecode(prefs.getString('oc.automation.shared-a')!)['behaviors'],
+        containsPair('monitorQuota', true),
+      );
+      await shared.prepareForDeletion();
+      shared.cancelDeletion();
+      await expectLater(shared.disableAll(), throwsStateError);
+    },
+  );
+
   test('refused and throwing writes preserve truth and permit retry', () async {
     await controller.setBehavior(AutomationBehavior.reconnect, false);
     var notifications = 0;

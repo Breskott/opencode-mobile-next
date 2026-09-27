@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/widgets/agent_blocks.dart';
+import 'package:opencode_mobile/ui/kit/kit_code_block.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 
 /// Captures Clipboard.setData payloads so tests can assert on copies.
@@ -66,7 +67,7 @@ void main() {
     await tester.tap(find.byKey(const Key('agent-choice-1')));
     await tester.pump();
     expect(chosen, ['Refactor the parser']);
-    expect(find.byType(CodeBlock), findsNothing);
+    expect(find.byType(KitCodeBlock), findsNothing);
   });
 
   testWidgets('```choices without a handler copies the option and says so', (
@@ -131,7 +132,7 @@ void main() {
   testWidgets('unknown fences keep the plain code block', (tester) async {
     await _pump(tester, '```dart\nvoid main() {}\n```');
 
-    expect(find.byType(CodeBlock), findsOneWidget);
+    expect(find.byType(KitCodeBlock), findsOneWidget);
     expect(find.byKey(const Key('agent-choices-block')), findsNothing);
     expect(find.byKey(const Key('agent-checklist-block')), findsNothing);
     expect(find.byKey(const Key('agent-command-block')), findsNothing);

@@ -324,6 +324,10 @@ void main() {
   testWidgets(
     'unsent voice conversation is never persisted or sent and is cleared on background',
     (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final voice = _Voice(models: await readyVoiceModelManager());
       addTearDown(voice.dispose);
       final api = _Api();

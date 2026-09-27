@@ -449,6 +449,159 @@ void main() {
   );
 
   test(
+    'reversible deletion preparation preserves shared owner history and Undo',
+    () async {
+      final shared = AutomaticActivityController.forProfile(
+        preferences,
+        'shared-alpha',
+        isProfilePresent: () => profilePresent,
+      )!;
+      addTearDown(AutomaticActivityController.resetShared);
+      var inverseCalls = 0;
+      await shared.record(
+        eventId: 'undoable',
+        location: '/project/one',
+        kind: AutomaticActKind.reconnect,
+        summary: 'Reconnected automatically',
+        occurredAt: time,
+        undo: () async {
+          inverseCalls++;
+          return true;
+        },
+      );
+      final id = shared.acts.single.id;
+      final original = preferences.getString(shared.storageKey);
+
+      await shared.prepareForDeletion();
+      expect(shared.acts.single.id, id);
+      expect(preferences.getString(shared.storageKey), original);
+      expect(shared.canUndo(id), isFalse);
+      expect(await shared.undo(id), AutomaticUndoResult.unavailable);
+      expect(
+        AutomaticActivityController.forProfile(
+          preferences,
+          'shared-alpha',
+          isProfilePresent: () => profilePresent,
+        ),
+        same(shared),
+      );
+
+      shared.cancelDeletion();
+      expect(shared.canUndo(id), isTrue);
+      expect(await shared.undo(id), AutomaticUndoResult.undone);
+      expect(inverseCalls, 1);
+      await preferences.reload();
+      expect(
+        preferences.getString(shared.storageKey),
+        contains('"undone":true'),
+      );
+    },
+  );
+
+  test(
+    'deletion preparation drains admitted records and retains their Undo',
+    () async {
+      disk.gate = Completer<void>();
+      disk.writeStarted = Completer<void>();
+      var inverseCalls = 0;
+      final first = record('first');
+      await disk.writeStarted!.future;
+      final second = record(
+        'second',
+        occurredAt: time.add(const Duration(seconds: 1)),
+        undo: () async {
+          inverseCalls++;
+          return true;
+        },
+      );
+      var drained = false;
+      final preparation = controller.prepareForDeletion();
+      final observedPreparation = preparation.then((_) => drained = true);
+      expect(await record('not-admitted'), isFalse);
+      expect(drained, isFalse);
+      disk.gate!.complete();
+      expect(await first, isTrue);
+      expect(await second, isTrue);
+      await observedPreparation;
+      expect(controller.acts, hasLength(2));
+      final id = controller.acts.first.id;
+      expect(controller.canUndo(id), isFalse);
+
+      controller.cancelDeletion();
+      expect(controller.canUndo(id), isTrue);
+      expect(await controller.undo(id), AutomaticUndoResult.undone);
+      expect(inverseCalls, 1);
+      expect(await record('after-cancel'), isTrue);
+    },
+  );
+
+  test(
+    'deletion preparation persists confirmed in-flight Undo before cancellation',
+    () async {
+      final started = Completer<void>();
+      final completion = Completer<bool>();
+      await record(
+        'undoable',
+        undo: () async {
+          started.complete();
+          return completion.future;
+        },
+      );
+      final id = controller.acts.single.id;
+      final undo = controller.undo(id);
+      await started.future;
+      var drained = false;
+      final preparation = controller.prepareForDeletion();
+      final observedPreparation = preparation.then((_) => drained = true);
+      await Future<void>.delayed(Duration.zero);
+      expect(drained, isFalse);
+      completion.complete(true);
+      expect(await undo, AutomaticUndoResult.undone);
+      await observedPreparation;
+      controller.cancelDeletion();
+      expect(controller.acts.single.undone, isTrue);
+      expect(controller.canUndo(id), isFalse);
+      await preferences.reload();
+      final restored = createController();
+      addTearDown(restored.dispose);
+      expect(restored.acts.single.undone, isTrue);
+      expect(await record('after-cancel'), isTrue);
+    },
+  );
+
+  test(
+    'deletion preparation drains Undo admitted behind a pending record',
+    () async {
+      var inverseCalls = 0;
+      await record(
+        'undoable',
+        undo: () async {
+          inverseCalls++;
+          return true;
+        },
+      );
+      final id = controller.acts.single.id;
+      disk.gate = Completer<void>();
+      disk.writeStarted = Completer<void>();
+      final pendingRecord = record('pending');
+      await disk.writeStarted!.future;
+      final undo = controller.undo(id);
+      final preparation = controller.prepareForDeletion();
+      disk.gate!.complete();
+      expect(await pendingRecord, isTrue);
+      expect(await undo, AutomaticUndoResult.undone);
+      await preparation;
+      controller.cancelDeletion();
+      expect(inverseCalls, 1);
+      expect(controller.acts.singleWhere((act) => act.id == id).undone, isTrue);
+      await preferences.reload();
+      final restored = createController();
+      addTearDown(restored.dispose);
+      expect(restored.acts.singleWhere((act) => act.id == id).undone, isTrue);
+    },
+  );
+
+  test(
     'deletion waits for pending write and permanently prevents resurrection',
     () async {
       disk.gate = Completer<void>();
