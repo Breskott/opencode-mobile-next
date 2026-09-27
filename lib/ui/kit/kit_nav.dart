@@ -54,7 +54,8 @@ enum KitNavLayout {
   /// medium: a floating glass rail at the start, icons with labels.
   rail,
 
-  /// expanded and large: the 296 dp sidebar at the start.
+  /// expanded and large: the 296 dp sidebar at the start (wider with larger text,
+  /// KitLayout.sidebarWidth).
   sidebar,
 }
 
@@ -198,7 +199,7 @@ class KitNav extends StatelessWidget {
             Expanded(
               child: KitBottomInset.add(
                 extraBottom: 0,
-                start: KitLayout.paneListWidth,
+                start: KitLayout.sidebarWidth(context),
                 child: _KitNavScope(
                   hostsPane: destinations[selected].pane != null,
                   child: child,
@@ -293,7 +294,7 @@ class KitNavRail extends StatelessWidget {
   final int selected;
   final ValueChanged<int> onSelected;
 
-  /// The 296 dp sidebar instead of the glass rail.
+  /// The sidebar (296 dp, wider with larger text) instead of the glass rail.
   final bool extended;
 
   /// Sidebar only: the top controls (glass, VL §6).
@@ -339,7 +340,8 @@ class KitNavRail extends StatelessWidget {
     final pane = destinations[selected].pane;
     final action = primary;
     return Container(
-      width: KitLayout.paneListWidth,
+      // 296 dp, wider with larger text (KitLayout.sidebarWidth).
+      width: KitLayout.sidebarWidth(context),
       decoration: BoxDecoration(
         color: roles.ground,
         border: BorderDirectional(

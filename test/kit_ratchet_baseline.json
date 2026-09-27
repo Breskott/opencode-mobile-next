@@ -118,12 +118,6 @@
     "lib/diagnostics/app_diagnostics.dart": {
       "Color(0x": 2
     },
-    "lib/ui/screens/library/integration_tiles.dart": {
-      "attention roles": 2
-    },
-    "lib/ui/screens/provider_quota_screen.dart": {
-      "attention roles": 1
-    },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "attention roles": 2
     },

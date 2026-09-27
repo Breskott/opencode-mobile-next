@@ -1,6 +1,6 @@
 # KitCodeBlock — API freeze (wave 0)
 
-> **Copy (SEC-13, coordinator 2026-09-27):** this part copies verbatim: `KitCopy.copy(context, text, redact: false)`. Code, diffs and messages are the person's own content.
+> **Copy (SEC-13, coordinator 2026-09-27; corrected by kit-polish 2026-09-27 to match the code and G12):** this part redacts. Copy goes through `KitIconButton.copy` / `KitAction.copy` with the default `redact: true`, so what reaches the clipboard is the same masked text the block shows (`KitRedact.text(copyText ?? text)`). A block is often tool output or a command, where a pasted key would leak; the person's own prose (messages, markdown) copies verbatim through its own part.
 
 Unit: `kit-KitCodeBlock` (wave 1, tier 1b, kind `kit-part`). Write set (work-units.json): `lib/ui/kit/kit_code_block.dart` (new), `lib/ui/widgets/code_highlight.dart` (moves into the kit, C24), `test/kit/kit_code_block_test.dart`, `test/goldens/kit/kit_code_block_golden_test.dart`. Spec: kit-v2.md §1.9, §4.10, §8.2 (`KitCodeBlock` row); VL §5 ("code blocks have a file header with `+n −n` and a copy button"), §3 (code roles); C24, C25. Rules: KIT-23, KIT-32, LOOK-16, LOOK-26, COPY-11, COPY-30, SEC-2, SEC-4, PERF-2, MOT-5, LAY-8, A11Y-8.
 
@@ -203,7 +203,7 @@ Loading, error and disabled are the host's (a code block shows text it was given
 
 - **Redaction (G12, SEC-2).** Displayed and copied text passes through `KitRedact.text` (`copyText ?? text`). A fake provider key in any kind never reaches the screen, the clipboard or a golden.
 - **Commands (SEC-4).** A `command` block asserts in debug that `KitRedact.containsSecret(text)` is false: commands carry placeholders (`<your key>`), never a real token. kit-gates-manifest's G12 test feeds fake keys through every caller that builds command strings.
-- **Exact copy.** Copy copies `copyText ?? text` exactly (no `$`, no line numbers, no display normalisation), so a pasted command runs as shown.
+- **Exact copy.** Copy copies `copyText ?? text` exactly apart from redaction (no `$`, no line numbers, no display normalisation), so a pasted command runs as shown; a secret in it is masked in the copy as on screen (SEC-13, G12).
 - **Honest cap.** A capped block always says how many lines exist; it never silently truncates.
 
 ## Depends on
