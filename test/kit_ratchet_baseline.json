@@ -21,14 +21,6 @@
     "lib/ui/screens/project_folder_actions.dart": {
       "showModalBottomSheet(": 2
     },
-    "lib/ui/screens/settings/server_plugins_section.dart": {
-      "AlertDialog(": 1,
-      "SnackBar(": 1,
-      "showConfirmSheet(": 1,
-      "showDialog(": 1,
-      "showModalBottomSheet(": 1,
-      "showSnackBar(": 1
-    },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "SnackBar(": 1,
       "showSnackBar(": 1
@@ -57,8 +49,7 @@
       "showSnackBar(": 1
     }
   },
-  "G15": {
-  },
+  "G15": {},
   "G16": {
     "lib/main.dart": {
       "MaterialPageRoute": 9
@@ -147,15 +138,6 @@
     "lib/ui/screens/phone_setup/phone_setup_routes.dart": {
       "MaterialPageRoute": 3
     },
-    "lib/ui/screens/settings/server_plugins_section.dart": {
-      "AlertDialog": 1,
-      "CheckboxListTile": 1,
-      "SelectableText": 1,
-      "SingleChildScrollView": 1,
-      "SnackBar": 1,
-      "Text": 15,
-      "TextButton": 1
-    },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "AppBar": 1,
       "Divider": 1,
@@ -218,18 +200,6 @@
       "SnackBar": 1,
       "Text": 7,
       "TextButton": 1
-    },
-    "lib/ui/widgets/session_inventory_footer.dart": {
-      "LinearProgressIndicator": 1,
-      "Text": 3,
-      "TextButton": 2
-    },
-    "lib/ui/widgets/team_card.dart": {
-      "Icon": 1,
-      "InkWell": 2,
-      "Material": 1,
-      "Opacity": 1,
-      "Text": 3
     },
     "lib/ui/widgets/team_phone_onboarding.dart": {
       "CircularProgressIndicator": 1,
@@ -304,9 +274,6 @@
     "lib/ui/screens/library/integrations_screen.dart": {
       "launchUrl(": 1
     },
-    "lib/ui/screens/settings/server_plugins_section.dart": {
-      "showConfirmSheet(": 1
-    },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "Clipboard.setData(": 1,
       "duration: Duration(": 1
@@ -366,10 +333,6 @@
     "lib/ui/screens/legacy_drafts_screen.dart": {
       ".textTheme": 1
     },
-    "lib/ui/screens/settings/server_plugins_section.dart": {
-      ".colorScheme": 4,
-      ".textTheme": 4
-    },
     "lib/ui/screens/team/agent_output_screen.dart": {
       ".textTheme": 3,
       "attention roles": 2
@@ -399,16 +362,8 @@
     "lib/ui/widgets/session_handoff.dart": {
       ".textTheme": 1
     },
-    "lib/ui/widgets/session_inventory_footer.dart": {
-      ".colorScheme": 1
-    },
     "lib/ui/widgets/team_board_card.dart": {
       "attention roles": 2
-    },
-    "lib/ui/widgets/team_card.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 4,
-      "attention roles": 1
     },
     "lib/ui/widgets/team_phone_onboarding.dart": {
       ".colorScheme": 5,
@@ -541,9 +496,7 @@
     },
     "lib/ui/screens/settings/server_plugins_section.dart": {
       ".toUpperCase()": 2,
-      "EdgeInsets numeric": 1,
-      "SizedBox numeric": 7,
-      "TextStyle(": 4
+      "TextStyle(": 2
     },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "EdgeInsets numeric": 4
@@ -574,15 +527,6 @@
       "icon size not 20/22/24": 5
     },
     "lib/ui/widgets/session_handoff.dart": {
-      "SizedBox numeric": 2
-    },
-    "lib/ui/widgets/session_inventory_footer.dart": {
-      "EdgeInsets numeric": 1,
-      "SizedBox numeric": 1,
-      "TextStyle(": 1
-    },
-    "lib/ui/widgets/team_card.dart": {
-      "EdgeInsets numeric": 4,
       "SizedBox numeric": 2
     },
     "lib/ui/widgets/team_phone_onboarding.dart": {

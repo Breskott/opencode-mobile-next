@@ -16,7 +16,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
-import 'package:opencode_mobile/ui/widgets/team_card.dart';
 
 import '../../test/support/team_golden_fixture.dart';
 import 'fixtures.dart';
@@ -33,8 +32,7 @@ enum _Shot {
   planning('planning', TeamScene.empty),
   homeStarting('home-starting', TeamScene.starting),
   runMerged('run-merged', TeamScene.loaded),
-  runNeedsYou('run-needs-you', TeamScene.loaded),
-  cardIdle('card-idle', TeamScene.empty);
+  runNeedsYou('run-needs-you', TeamScene.loaded);
 
   const _Shot(this.name, this.scene);
 
@@ -75,13 +73,6 @@ void main() {
             controller: controller,
             runId: teamSceneRunId,
             now: now,
-          ),
-          _Shot.cardIdle => Scaffold(
-            body: SafeArea(
-              child: ListView(
-                children: [TeamCard(controller: controller, onOpen: () {})],
-              ),
-            ),
           ),
           _ => TeamHomeScreen(controller: controller, now: now),
         };

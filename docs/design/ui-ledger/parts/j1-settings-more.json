@@ -1088,16 +1088,17 @@
       "elements": [
         {
           "id": "appearance-settings-mode",
-          "type": "list-tile",
-          "label": "Light or dark",
+          "type": "toggle",
+          "label": "Light or dark (Auto · Light · Dark)",
           "key": "appearance-settings-entry",
-          "line": 18,
-          "action": "open-sheet",
-          "target": "appearance-picker-sheet",
-          "targetWidget": "showAppearancePicker",
-          "effect": "showAppearancePicker(context, controller:) — the sheet writes controller.setAppearance(...). Subtitle is the current appearanceLabel.",
+          "line": 99,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": "KitSegmented",
+          "effect": "Inline segments; a tap calls controller.setAppearance(value) at once. The separate light-or-dark sheet (appearance-picker-sheet) was removed by slice-P3.1.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/screens/settings/personal_settings_screens.dart"
         },
         {
           "id": "appearance-settings-language",
@@ -1129,100 +1130,6 @@
           "destructive": false
         }
       ]
-    },
-    {
-      "id": "appearance-picker-sheet",
-      "title": "Appearance",
-      "kind": "sheet",
-      "file": "lib/ui/widgets/appearance_picker.dart",
-      "widget": "_AppearancePreviewSheet",
-      "presentedBy": [
-        "showAppearancePicker"
-      ],
-      "line": 71,
-      "purpose": "Preview-then-apply sheet for light/dark/system appearance (pack == null).",
-      "reachedFrom": [
-        {
-          "page": "appearance-settings",
-          "element": "appearance-settings-mode"
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "_executeMobileCommand",
-          "file": "lib/ui/screens/chat_screen.dart",
-          "line": 5287
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "appearance-picker-sheet-mode-option",
-          "type": "list-tile",
-          "label": "Follow Android | Follow system | Light | Dark",
-          "key": "appearance-<appearance.name>",
-          "line": 156,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Sets the local draft _appearance (live preview only; nothing persisted). One tile per AppAppearance.values.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "appearance-picker-sheet-preview-chip",
-          "type": "chip",
-          "label": "Selected option",
-          "key": null,
-          "line": 295,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "ThemeComponentPreview sample FilterChip: toggles local _selected only.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "appearance-picker-sheet-preview-button",
-          "type": "button",
-          "label": "Try a control",
-          "key": null,
-          "line": 301,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "ThemeComponentPreview sample button: flips local _selected only.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "appearance-picker-sheet-apply",
-          "type": "button",
-          "label": "Apply / Current appearance / Saving…",
-          "key": null,
-          "line": 207,
-          "action": "toggle-setting",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_apply(): await controller.setAppearance(_appearance) then pops; on error shows \"Could not save the appearance. Your previous setting is unchanged. Try again.\" and keeps the sheet. Enabled only when changed && available && !_saving.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "appearance-picker-sheet-close",
-          "type": "button",
-          "label": "Close",
-          "key": null,
-          "line": 217,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop without saving (disabled while _saving; PopScope canPop: !_saving).",
-          "gates": [],
-          "destructive": false
-        }
-      ],
-      "sheetKey": "appearance-picker"
     },
     {
       "id": "theme-pack-preview-sheet",
@@ -1586,23 +1493,6 @@
           "file": "lib/ui/screens/settings/server_plugins_section.dart"
         },
         {
-          "id": "plugins-clear-mappings",
-          "type": "button",
-          "label": "Clear personal links",
-          "key": null,
-          "line": 209,
-          "action": "open-sheet",
-          "target": "plugins-clear-mappings-sheet",
-          "targetWidget": "showConfirmSheet",
-          "effect": "_clearMappings() opens the destructive confirm sheet. Disabled while _editingMapping.",
-          "gates": [
-            "section \"On the server\": capabilities.pluginInventory",
-            "_mappingStore != null (controller.profile?.id != null)"
-          ],
-          "destructive": true,
-          "file": "lib/ui/screens/settings/server_plugins_section.dart"
-        },
-        {
           "id": "plugins-retry",
           "type": "button",
           "label": "Try again",
@@ -1616,42 +1506,6 @@
             "section \"On the server\": capabilities.pluginInventory",
             "_failed",
             "_supported && _connected"
-          ],
-          "destructive": false,
-          "file": "lib/ui/screens/settings/server_plugins_section.dart"
-        },
-        {
-          "id": "plugins-review-command",
-          "type": "button",
-          "label": "Review /{command}",
-          "key": null,
-          "line": 559,
-          "action": "open-dialog",
-          "target": "run-command-dialog",
-          "targetWidget": "showRunCommandDialog",
-          "effect": "_reviewCommand(plugin, name): re-validates plugin active + command present + mapping still stored, then showRunCommandDialog(context, controller:, command: CommandInfo(name), validateCommand:); if it returns a session id, Navigator.pushNamed('/chat/$sessionID').",
-          "gates": [
-            "section \"On the server\": capabilities.pluginInventory",
-            "one per mapped command name of a plugin with an id",
-            "enabled only when _connected && !_editingMapping && plugin.status == PluginStatus.active"
-          ],
-          "destructive": false,
-          "file": "lib/ui/screens/settings/server_plugins_section.dart"
-        },
-        {
-          "id": "plugins-manage-mapping",
-          "type": "button",
-          "label": "Link commands",
-          "key": null,
-          "line": 573,
-          "action": "open-dialog",
-          "target": "plugins-mapping-dialog",
-          "targetWidget": "_editMapping",
-          "effect": "_editMapping(plugin): loads controller.repository.listCommands() then opens the mapping dialog.",
-          "gates": [
-            "section \"On the server\": capabilities.pluginInventory",
-            "plugin.id != null && PluginCommandMappings.validName(id)",
-            "enabled only when _connected && !_editingMapping"
           ],
           "destructive": false,
           "file": "lib/ui/screens/settings/server_plugins_section.dart"
@@ -1795,111 +1649,6 @@
             "teamPhoneProfile(profile)"
           ],
           "contract": "onRemoved pops this sheet"
-        }
-      ]
-    },
-    {
-      "id": "plugins-clear-mappings-sheet",
-      "title": "Clear all personal command links?",
-      "kind": "sheet",
-      "file": "lib/ui/screens/settings/server_plugins_section.dart",
-      "widget": "_clearMappings",
-      "presentedBy": [
-        "showConfirmSheet"
-      ],
-      "line": 259,
-      "purpose": "Confirms clearing every personal plugin command mapping for this profile.",
-      "reachedFrom": [
-        {
-          "page": "plugins-settings",
-          "element": "plugins-clear-mappings"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "plugins-clear-mappings-sheet-confirm",
-          "type": "button",
-          "label": "Clear links",
-          "key": null,
-          "line": 245,
-          "action": "mutate",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Returns true; _clearMappings awaits PluginCommandMappings.clear() (shared preferences for this profile) and empties _mappings; failure snackbar \"Personal links could not be cleared. Check that this server profile is still selected and try again.\".",
-          "gates": [],
-          "destructive": true
-        },
-        {
-          "id": "plugins-clear-mappings-sheet-cancel",
-          "type": "button",
-          "label": "Cancel",
-          "key": null,
-          "line": 246,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "MaterialLocalizations cancelButtonLabel; pops false.",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "plugins-mapping-dialog",
-      "title": "Link commands",
-      "kind": "dialog",
-      "file": "lib/ui/screens/settings/server_plugins_section.dart",
-      "widget": "_editMapping",
-      "presentedBy": [],
-      "line": 315,
-      "purpose": "Checkbox list of server slash commands to associate with one plugin (personal, on-device mapping).",
-      "reachedFrom": [
-        {
-          "page": "plugins-settings",
-          "element": "plugins-manage-mapping"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "plugins-mapping-dialog-command-checkbox",
-          "type": "toggle",
-          "label": "/<command name>",
-          "key": null,
-          "line": 318,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Adds/removes the name in the local selected set; refuses beyond PluginCommandMappings.maxCommands with \"Choose up to 16 commands for this plugin.\". Nothing is persisted until Save.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "plugins-mapping-dialog-cancel",
-          "type": "button",
-          "label": "Cancel",
-          "key": null,
-          "line": 355,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop(dialogContext); disabled while saving.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "plugins-mapping-dialog-save",
-          "type": "button",
-          "label": "Save links",
-          "key": null,
-          "line": 361,
-          "action": "toggle-setting",
-          "target": null,
-          "targetWidget": null,
-          "effect": "await PluginCommandMappings.set(mappingScope, plugin.id, selected) (profile-scoped shared preferences), pops true and the screen reloads _mappings; on error shows \"Links could not be saved. Check that this server location is still selected and try again.\".",
-          "gates": [],
-          "destructive": false
         }
       ]
     },

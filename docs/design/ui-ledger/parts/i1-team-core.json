@@ -12,10 +12,6 @@
       "purpose": "AI Team (Gas City orchestration) home: host chip, Runs / Agents / Needs you segments, refresh and Start a run.",
       "reachedFrom": [
         {
-          "page": "embedded-team-card",
-          "element": "embedded-team-card-open"
-        },
-        {
           "page": "?",
           "element": null,
           "widget": "_openTeamHome (WorkspaceScreen state)",
@@ -1936,119 +1932,6 @@
         "WorkSheet"
       ],
       "hostNotes": "Also embedded in RunScreen's Overview (elements duplicated on team-run-overview-tab) and, compact with no buttons, in TeamCard (team_card.dart:612). WorkSheet host: lib/ui/screens/team/work_sheet.dart:319 (key team-work-sheet-cycle)."
-    },
-    {
-      "id": "embedded-team-card",
-      "title": "AI Team · Gas City",
-      "kind": "overlay",
-      "file": "lib/ui/widgets/team_card.dart",
-      "widget": "TeamCard",
-      "presentedBy": [],
-      "line": 36,
-      "purpose": "Workspace card summarising the AI Team: hero percentage, sentence, progress bar, up to three run rows, agent constellation, Open and Refresh.",
-      "reachedFrom": [],
-      "gates": [
-        "`if (widget.controller.orchestration case final team?)` (lib/ui/screens/workspace_screen.dart:619): the card is not in the tree while the connected profile has no AI Team plugin config",
-        "ConnectionController.orchestration != null (lib/state/connection.dart:712); _syncOrchestration (connection.dart:746) returns without building the controller when `config == null || selected == null || isIsolated || _disposed`, where `config = selected?.orchestration` (the connected ServerProfile's AI Team plugin config)"
-      ],
-      "elements": [
-        {
-          "id": "embedded-team-card-retry",
-          "type": "button",
-          "label": "Retry",
-          "key": "team-card-retry",
-          "line": 477,
-          "action": "mutate",
-          "target": null,
-          "effect": "_refresh(): controller.retry() when phase == failed, else controller.refresh().",
-          "gates": [
-            "`controller.phase == OrchestrationPhase.failed`, or `ready && !snapshot.hasData && controller.lastError != null`"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "embedded-team-card-run-row",
-          "type": "list-tile",
-          "label": "<run title> · <state word> [Needs you]",
-          "key": "team-card-run-<run.id>",
-          "line": 828,
-          "action": "navigate",
-          "target": "team-home",
-          "targetWidget": "TeamHomeScreen",
-          "effect": "onTap -> widget.onOpen -> WorkspaceScreen _openTeamHome(team): Navigator.push(TeamHomeScreen(controller: team)) (the row opens the home, not the run).",
-          "gates": [
-            "data state; up to 3 rows (_maxRunRows)",
-            "tap enabled only when `tapsAllowed = !stale`"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "embedded-team-card-completed-runs",
-          "type": "list-tile",
-          "label": "{count} completed runs",
-          "key": "team-card-completed-runs",
-          "line": 876,
-          "action": "navigate",
-          "target": "team-home",
-          "targetWidget": "TeamHomeScreen",
-          "effect": "_CollapsedRow.onTap -> onOpen -> TeamHomeScreen.",
-          "gates": [
-            "completed > 0",
-            "!stale"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "embedded-team-card-more-runs",
-          "type": "list-tile",
-          "label": "{count} more runs",
-          "key": "team-card-more-runs",
-          "line": 876,
-          "action": "navigate",
-          "target": "team-home",
-          "targetWidget": "TeamHomeScreen",
-          "effect": "_CollapsedRow.onTap -> onOpen -> TeamHomeScreen.",
-          "gates": [
-            "more > 0",
-            "!stale"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "embedded-team-card-open",
-          "type": "button",
-          "label": "Open",
-          "key": "team-card-open",
-          "line": 1009,
-          "action": "navigate",
-          "target": "team-home",
-          "targetWidget": "TeamHomeScreen",
-          "effect": "onOpen -> WorkspaceScreen _openTeamHome(team): Navigator.push(MaterialPageRoute(TeamHomeScreen(controller: team))).",
-          "gates": [
-            "empty or data state (not loading/error)",
-            "disabled when the data is stale (`tapsAllowed = !stale`)"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "embedded-team-card-refresh",
-          "type": "button",
-          "label": "Refresh",
-          "key": "team-card-refresh",
-          "line": 1015,
-          "action": "mutate",
-          "target": null,
-          "effect": "_refresh(): controller.retry()/controller.refresh(); disabled while _refreshing. Stays enabled when stale.",
-          "gates": [
-            "empty or data state"
-          ],
-          "destructive": false
-        }
-      ],
-      "embeddedIn": [
-        "WorkspaceScreen"
-      ],
-      "hostNotes": "Constructed at lib/ui/screens/workspace_screen.dart:621 with onOpen: () => _openTeamHome(team) (line 854). Sits below ReturnBriefPanel and above the session sections."
     },
     {
       "id": "embedded-team-receipt-chip",

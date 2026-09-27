@@ -24,7 +24,7 @@ import '../widgets/product_states.dart' show productErrorText;
 import '../widgets/relative_time.dart';
 import '../widgets/session_title.dart';
 import '../widgets/request_routes.dart';
-import '../widgets/session_inventory_footer.dart';
+import '../widgets/older_sessions_pager.dart';
 import '../widgets/team_task_row.dart';
 import '../widgets/team_discover.dart' show TeamNewMode, teamPossibleOn;
 import '../widgets/team_vocabulary.dart' show teamGatedRuns;
@@ -910,14 +910,15 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 itemBuilder: (context, index) => row(recent[index]),
               ),
             ],
-            // Older pages: skeletons while one loads, and the footer
-            // (Load more, or an error with Try again) only when
-            // nothing is loading.
-            if (controller.sessionsLoadingMore)
-              const SliverToBoxAdapter(child: KitSkeletonRows(count: 2))
-            else if (!controller.sessionsLoading)
-              SliverToBoxAdapter(
-                child: SessionInventoryFooter(controller: controller),
+            // Older pages: the list pages itself as its end comes near
+            // (target-ia §1.4), with skeletons while a page loads and a
+            // failed page said in place. Built lazily, so a long list asks
+            // for the next page only once it is scrolled to.
+            if (OlderSessionsPager.showsFor(controller))
+              SliverList.builder(
+                itemCount: 1,
+                itemBuilder: (context, _) =>
+                    OlderSessionsPager(controller: controller),
               ),
             // One way to every other conversation (R3, R4): All
             // conversations spans every project on the server and holds the

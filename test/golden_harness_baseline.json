@@ -116,8 +116,6 @@
       "test/goldens/team_agent_light.png",
       "test/goldens/team_agents_dark.png",
       "test/goldens/team_agents_light.png",
-      "test/goldens/team_card_dark.png",
-      "test/goldens/team_card_light.png",
       "test/goldens/team_merge_dark.png",
       "test/goldens/team_merge_light.png",
       "test/goldens/termux_setup_dark.png",

@@ -934,28 +934,6 @@ final eWorkspaceArea = CensusArea(
     }),
 
     // -- Embedded parts -----------------------------------------------------------
-    CensusShot('embedded-session-inventory-footer', state: 'more', (kit) async {
-      final conn = await eController()
-        ..moreSessions = true;
-      await _work(kit, controller: conn);
-      final more = find.byKey(const ValueKey('session-inventory-more'));
-      await kit.scrollTo(more);
-      await kit.settle();
-      kit.expectVisible(more);
-    }, note: 'Host: the Work tab, scrolled to the end of a partial list.'),
-    CensusShot('embedded-session-inventory-footer', state: 'error', (
-      kit,
-    ) async {
-      final conn = await eController()
-        ..moreSessions = true
-        ..sessionsMoreError =
-            'Could not load older conversations: the server took too long';
-      await _work(kit, controller: conn);
-      final more = find.byKey(const ValueKey('session-inventory-more'));
-      await kit.scrollTo(more);
-      await kit.settle();
-      kit.expectTextContaining('older conversations');
-    }, note: 'Host: the Work tab; the next page failed.'),
     CensusShot('embedded-mobile-task-list', (kit) async {
       await _chat(kit, transcript: _todoTranscript);
       final tasks = find.text('Tasks');

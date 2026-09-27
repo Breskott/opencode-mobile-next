@@ -10,7 +10,6 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
-import 'package:opencode_mobile/ui/widgets/team_card.dart';
 
 import 'support/team_golden_fixture.dart';
 
@@ -73,12 +72,6 @@ Future<OrchestrationController> _pump(
 Widget _home(OrchestrationController controller) =>
     TeamHomeScreen(controller: controller, now: () => teamSceneClock);
 
-Widget _card(OrchestrationController controller) => Scaffold(
-  body: ListView(
-    children: [TeamCard(controller: controller, onOpen: () {})],
-  ),
-);
-
 Widget _run(OrchestrationController controller) => RunScreen(
   controller: controller,
   runId: teamSceneRunId,
@@ -90,13 +83,10 @@ void main() {
 
   for (final onPhone in [false, true]) {
     final where = onPhone ? 'on this phone' : 'on a computer';
-    testWidgets('no engine words on the home, its rows, the card or the '
+    testWidgets('no engine words on the home, its rows or the '
         'run\'s Overview and Steps ($where)', (tester) async {
       await _pump(tester, _home, onPhone: onPhone);
       expect(_engineWordsIn(find.byType(TeamHomeScreen)), isEmpty);
-
-      await _pump(tester, _card, onPhone: onPhone);
-      expect(_engineWordsIn(find.byType(TeamCard)), isEmpty);
 
       await _pump(tester, _run, onPhone: onPhone);
       expect(_engineWordsIn(find.byType(RunScreen)), isEmpty);
@@ -107,8 +97,8 @@ void main() {
     });
   }
 
-  testWidgets('Needs you comes first: the question heads the home and the '
-      'card, above every task, without a tap', (tester) async {
+  testWidgets('Needs you comes first: the question heads the home, above '
+      'every task, without a tap', (tester) async {
     await _pump(tester, _home);
     final question = find.text(_question);
     expect(question, findsOneWidget);
@@ -121,22 +111,6 @@ void main() {
       lessThan(_top(tester, _key('team-home-run-mol-upgrade'))),
     );
 
-    await _pump(tester, _card);
-    final line = find.text(_question);
-    expect(line, findsOneWidget);
-    final rows = find.byWidgetPredicate(
-      (w) => switch (w.key) {
-        ValueKey<String>(:final value) => value.startsWith('team-card-run-'),
-        _ => false,
-      },
-    );
-    expect(rows, findsWidgets);
-    for (final row in rows.evaluate()) {
-      expect(
-        _top(tester, line),
-        lessThan(tester.getTopLeft(find.byWidget(row.widget)).dy),
-      );
-    }
     expect(tester.takeException(), isNull);
   });
 
@@ -174,30 +148,6 @@ void main() {
     expect(_key('team-home-run-oc-xru'), findsNothing);
     expect(tester.takeException(), isNull);
   });
-
-  for (final scene in [TeamScene.loaded, TeamScene.busy]) {
-    testWidgets('the card is one section of at most three rows '
-        '(${scene.name})', (tester) async {
-      await _pump(tester, _card, scene: scene);
-      final card = find.byType(TeamCard);
-      // The header ("AI Team · On this phone ›") opens the team; under it
-      // at most three rows: what needs you and up to two running tasks.
-      final rows = find
-          .descendant(of: card, matching: find.byType(InkWell))
-          .evaluate()
-          .where((row) => row.widget.key != const ValueKey('team-card-open'))
-          .toList();
-      expect(rows.length, lessThanOrEqualTo(3));
-      // No percentage, no bar, no dots: the rows say it in words.
-      expect(
-        find.descendant(of: card, matching: find.textContaining('%')),
-        findsNothing,
-      );
-      // A header (48) and three list rows, a question's two lines included.
-      expect(tester.getSize(card).height, lessThanOrEqualTo(48 + 3 * 64));
-      expect(tester.takeException(), isNull);
-    });
-  }
 
   testWidgets('the agents list names agents by role, not by engine name', (
     tester,

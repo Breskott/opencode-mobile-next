@@ -7,7 +7,6 @@ import '../../state/connection.dart';
 import '../app_iconography.dart';
 import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit.dart';
-import '../widgets/info_label.dart' show Glossary;
 import '../widgets/product_states.dart' show productErrorText;
 
 AppLocalizations _l10nOf(BuildContext context) =>
@@ -367,8 +366,8 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
       label: l10n.e7LibraryWhatIsMCP,
       onPressed: () => showKitTerm(
         context,
-        term: Glossary.mcp.term,
-        explanation: Glossary.mcp.explanation,
+        term: l10n.libraryMcpTitle,
+        explanation: l10n.e7GlossaryMcpExplanation,
       ),
     );
     if (!_supported) {

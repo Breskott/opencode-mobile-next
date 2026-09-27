@@ -267,18 +267,13 @@ void main() {
       await tester.pumpAndSettle();
       // Nothing contradicts the pager: no "no conversations" text, and no
       // Archived row until an archived conversation is actually known
-      // (work-tab cleanup item 4). Load more is the way on.
+      // (work-tab cleanup item 4). The list pages itself, and archived
+      // conversations are a filter of All conversations (R3, R4): the
+      // older page loads, and Work grows no archived row of its own.
       expect(
         find.text('No recent conversations in loaded results'),
         findsNothing,
       );
-      expect(find.text('Archived conversations'), findsNothing);
-      await tester.tap(
-        find.byKey(const ValueKey('session-inventory-more')).hitTestable(),
-      );
-      await tester.pumpAndSettle();
-      // Archived conversations are a filter of All conversations (R3, R4):
-      // the older page loads, and Work grows no archived row of its own.
       expect(find.text('Archived conversations'), findsNothing);
       expect(controller.archivedSessions(), isNotEmpty);
     },
@@ -983,12 +978,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Session list unavailable'), findsOneWidget);
+    // Said in words at the end of the list; the raw error is under Details.
+    expect(find.text('Could not load your conversations.'), findsOneWidget);
+    expect(find.textContaining('Session list unavailable'), findsNothing);
     fail = false;
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Load more conversations'));
-    await tester.pumpAndSettle();
+    // The list pages itself once it can: the older page loads.
     expect(find.text('Older conversation'), findsOneWidget);
     expect(controller.hasMoreSessions, isFalse);
   });

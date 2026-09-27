@@ -13,6 +13,7 @@
 // Each of these fails on the code before the cleanup (df81ce51).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/ui/kit/kit_text.dart';
 
 import 'support/phone_server_scenes.dart';
 
@@ -224,10 +225,7 @@ void main() {
       await tester.pumpAndSettle();
       final id = find.byKey(const ValueKey('plugin-details-id'));
       expect(id, findsOneWidget);
-      expect(
-        tester.widget<SelectableText>(id).data,
-        'opencode.tool.input.repair',
-      );
+      expect(tester.widget<KitText>(id).text, 'opencode.tool.input.repair');
       await done();
     });
 
@@ -254,27 +252,23 @@ void main() {
       await done();
     });
 
-    testWidgets(
-      'actions are in menus: Link commands and Clear personal command links',
-      (tester) async {
-        final done = await mount(tester, PhoneServerScene.plugins);
-        await tester.tap(
-          find.byKey(const ValueKey('plugin-menu-@acme/opencode-wakatime')),
-        );
-        await tester.pumpAndSettle();
-        expect(find.text('Link commands'), findsOneWidget);
-        expect(find.text('Details'), findsOneWidget);
-        await tester.tapAt(const Offset(5, 5));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const ValueKey('plugins-section-menu')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Clear personal command links'));
-        await tester.pumpAndSettle();
-        // Destructive: it asks first.
-        expect(find.text('Clear all personal command links?'), findsOneWidget);
-        await done();
-      },
-    );
+    testWidgets('a plugin row opens its details; it has no menu', (
+      tester,
+    ) async {
+      final done = await mount(tester, PhoneServerScene.plugins);
+      expect(
+        find.byKey(const ValueKey('plugin-menu-@acme/opencode-wakatime')),
+        findsNothing,
+      );
+      expect(find.byKey(const ValueKey('plugins-section-menu')), findsNothing);
+      await tester.tap(find.text('Wakatime'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('plugin-details-sheet')),
+        findsOneWidget,
+      );
+      await done();
+    });
 
     testWidgets('the AI Team row reads "AI Team · Off"', (tester) async {
       final done = await mount(tester, PhoneServerScene.plugins);

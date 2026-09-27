@@ -3057,21 +3057,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppearanceSettingsScreen), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('appearance-settings-entry')));
+    // Light or dark is chosen inline and applies at once (the separate
+    // light-or-dark sheet was removed by slice-P3.1).
+    final light = find.byKey(const ValueKey('appearance-mode-light'));
+    await tester.ensureVisible(light);
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('appearance-picker')), findsOneWidget);
-    await tester.ensureVisible(find.byKey(const Key('appearance-light')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('appearance-light')));
-    await tester.pumpAndSettle();
-    // Browsing previews; nothing changes until Apply.
-    expect(controller.appearance.value, isNot(AppAppearance.light));
-    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Apply'));
-    await tester.tap(find.widgetWithText(FilledButton, 'Apply'));
+    await tester.tap(light);
     await tester.pumpAndSettle();
 
     expect(controller.appearance.value, AppAppearance.light);
-    expect(find.byKey(const Key('appearance-picker')), findsNothing);
   });
 
   testWidgets('the menu\'s Tasks lands on the plan in the transcript, open', (

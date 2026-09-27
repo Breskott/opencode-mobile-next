@@ -1026,21 +1026,6 @@
      "destructive": false
     },
     {
-     "id": "integrations-mcp-glossary",
-     "type": "link",
-     "label": "MCP (info label)",
-     "key": null,
-     "line": 896,
-     "action": "open-sheet",
-     "target": "info-label-sheet",
-     "targetWidget": "InfoLabel.show",
-     "effect": "InfoLabel.glossary(Glossary.mcp) in the 'MCP SERVERS' header; tap calls InfoLabel.show (glossary bottom sheet, lib/ui/widgets/info_label.dart:138).",
-     "gates": [
-      "_showMcp (widget.mode != IntegrationsMode.providers)"
-     ],
-     "destructive": false
-    },
-    {
      "id": "integrations-mcp-load-retry",
      "type": "button",
      "label": "Try again",
@@ -2110,11 +2095,11 @@
      "type": "icon-button",
      "label": "What is MCP?",
      "key": "mcp-glossary",
-     "line": 268,
-     "action": "open-sheet",
-     "target": "info-label-sheet",
-     "targetWidget": "InfoLabel.show",
-     "effect": "InfoLabel.show(context, term: Glossary.mcp.term, explanation: ...).",
+     "line": 367,
+     "action": "other",
+     "target": null,
+     "targetWidget": "showKitTerm",
+     "effect": "showKitTerm(context, term: MCP, explanation: e7GlossaryMcpExplanation): a bubble anchored to the button (the info-label sheet was removed by slice-P3.1).",
      "gates": [],
      "destructive": false
     },
@@ -2313,7 +2298,6 @@
   "CommandsScreen, SkillsScreen, ReferencesScreen and ToolsScreen are never pushed standalone from SettingsScreen; they are embedded tab bodies of CapabilitiesScreen (lib/ui/screens/capabilities_screen.dart:29-42, not assigned; opened from library_screen.dart:138 'Commands & tools'). CommandsScreen has no standalone opener anywhere in lib/. Coordinator may want to treat them as capabilities-<tab>-tab pages.",
   "lib/ui/screens/library/commands_screen.dart:152 showRunCommandDialog lives in lib/ui/widgets/run_command_dialog.dart:10 (not assigned); target id guessed as 'run-command-dialog'.",
   "lib/ui/screens/tools_screen.dart:110 showModelPicker (lib/ui/widgets/pickers.dart) target id guessed as 'model-picker'.",
-  "InfoLabel.show glossary sheet (lib/ui/widgets/info_label.dart:138) target id guessed as 'info-label-sheet' (integrations_screen.dart:896, mcp_setup_screen.dart:274).",
   "openBugReport (called from shared ProductErrorState, lib/ui/widgets/product_states.dart:250) not resolved to a page; targetWidget set, target null.",
   "lib/ui/screens/library/integrations_screen.dart:1312 _connectIntegration skips the method sheet when only one method is usable, so integrations-provider-connect / integrations-provider-server-signin can lead directly to integrations-connect-key-dialog, integrations-oauth-inputs-dialog, integrations-authorization-launch-dialog or command-auth-sheet; those pages list both openers in reachedFrom.",
   "lib/ui/screens/library/integrations_screen.dart:193 disconnecting a connected MCP server has no confirmation step (direct repository.disconnectMcp).",

@@ -1,5 +1,5 @@
 {
- "generatedFrom": "f08abebaad308f2d2b09fb0e84d48ae4466c61d5",
+ "generatedFrom": "e1ccfc4228a5a1db4e81a83077647da54ad47b3b",
  "pages": [
   {
    "id": "system",
@@ -14988,23 +14988,6 @@
      "widgetFile": "lib/ui/widgets/termux_phone_tools.dart"
     },
     {
-     "id": "workspace-inventory-footer",
-     "type": "banner",
-     "label": "[session inventory footer: Load more sessions / Retry / Reload]",
-     "key": null,
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 765,
-     "action": "other",
-     "target": "embedded-session-inventory-footer",
-     "targetWidget": "SessionInventoryFooter",
-     "effect": "Embeds SessionInventoryFooter(controller) under Recent sessions (and at line 1286 in the archived sheet); its buttons are listed on page embedded-session-inventory-footer.",
-     "gates": [
-      "renders only when controller.hasMoreSessions || a sessions error || loading"
-     ],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/session_inventory_footer.dart"
-    },
-    {
      "id": "workspace-archived-sessions",
      "type": "list-tile",
      "label": "Archived sessions / {count} archived sessions",
@@ -15036,6 +15019,23 @@
      ],
      "destructive": false,
      "widgetFile": "lib/ui/widgets/team_card.dart"
+    },
+    {
+     "id": "workspace-inventory-footer",
+     "type": "banner",
+     "label": "[end of the list: older conversations load as it comes near; a failed page says so with Try again]",
+     "key": null,
+     "file": "lib/ui/screens/workspace_screen.dart",
+     "line": 921,
+     "action": "other",
+     "target": null,
+     "targetWidget": "OlderSessionsPager",
+     "effect": "The list pages itself (target-ia §1.4): OlderSessionsPager asks for the next page as the end comes within reach, shows skeleton rows while it loads, and a failed page, a changed list or a failed refresh as one KitNotice.error with Try again or Refresh recent conversations. Replaces the session inventory footer (removed by slice-P3.1).",
+     "gates": [
+      "renders only when controller.hasMoreSessions || a sessions error || loading"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/older_sessions_pager.dart"
     },
     {
      "id": "workspace-team-door",
@@ -16119,6 +16119,20 @@
      "destructive": false
     },
     {
+     "id": "worktrees-glossary-label",
+     "type": "link",
+     "label": "Worktrees (term)",
+     "key": "worktrees-section-label",
+     "file": "lib/ui/screens/worktrees_screen.dart",
+     "line": 553,
+     "action": "other",
+     "target": null,
+     "targetWidget": "KitTerm",
+     "effect": "KitTerm: a tap, long-press or hover shows the worktree explanation in a bubble anchored to the word (the info-label sheet was removed by slice-P3.1).",
+     "gates": [],
+     "destructive": false
+    },
+    {
      "id": "worktrees-primary-tile",
      "type": "list-tile",
      "label": "<project folder> / Default project · {directory}",
@@ -16133,21 +16147,6 @@
       "disabled when busy or already current"
      ],
      "destructive": false
-    },
-    {
-     "id": "worktrees-glossary-label",
-     "type": "link",
-     "label": "Worktrees (info label)",
-     "key": "worktrees-section-label",
-     "file": "lib/ui/screens/worktrees_screen.dart",
-     "line": 623,
-     "action": "open-sheet",
-     "target": "info-label-sheet",
-     "targetWidget": "InfoLabel.show",
-     "effect": "InfoLabel with Glossary.worktree.explanation opens the explanation sheet (InfoLabel.show).",
-     "gates": [],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/info_label.dart"
     },
     {
      "id": "worktrees-tile",
@@ -16616,79 +16615,6 @@
      "targetWidget": null,
      "effect": "toggle(): setState(_unfinishedOnly = !_unfinishedOnly) (local view filter; button variants at 154/160).",
      "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "embedded-session-inventory-footer",
-   "title": "[Session inventory footer]",
-   "kind": "overlay",
-   "area": "workspace",
-   "file": "lib/ui/widgets/session_inventory_footer.dart",
-   "widget": "SessionInventoryFooter",
-   "presentedBy": [],
-   "line": 7,
-   "purpose": "Continuation controls under session lists when the inventory is partial, loading or failed.",
-   "reachedFrom": [
-    {
-     "page": "workspace",
-     "element": "workspace-inventory-footer"
-    },
-    {
-     "page": "run-command-dialog",
-     "element": null,
-     "via": "embedded"
-    },
-    {
-     "page": "workspace",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
-   "gates": [],
-   "embeddedIn": [
-    "WorkspaceScreen",
-    "WorkspaceScreen._showArchived",
-    "RunCommandDialog (lib/ui/widgets/run_command_dialog.dart:186)"
-   ],
-   "hostPages": [
-    "run-command-dialog",
-    "workspace"
-   ],
-   "elements": [
-    {
-     "id": "embedded-session-inventory-footer-reload",
-     "type": "button",
-     "label": "Reload recent sessions",
-     "key": null,
-     "file": "lib/ui/widgets/session_inventory_footer.dart",
-     "line": 46,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.refreshSessions().",
-     "gates": [
-      "(controller.sessionsError != null || controller.pinnedSessionsLoadFailed) && controller.hasMoreSessions",
-      "disabled while loading"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-session-inventory-footer-more",
-     "type": "button",
-     "label": "Load more sessions | Retry | Reload recent sessions",
-     "key": "session-inventory-more",
-     "file": "lib/ui/widgets/session_inventory_footer.dart",
-     "line": 51,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.loadMoreSessions(), or controller.refreshSessions() when the inventory failed and there is nothing to continue.",
-     "gates": [
-      "footer shown when controller.hasMoreSessions || error != null || loading",
-      "disabled while loading"
-     ],
      "destructive": false
     }
    ]
@@ -19560,15 +19486,6 @@
    "line": 10,
    "purpose": "Runs a slash command in a new or existing chat with optional arguments; returns the session id.",
    "reachedFrom": [
-    {
-     "page": "plugins-clear-mappings-sheet",
-     "element": null,
-     "evidence": "lib/ui/screens/settings/server_plugins_section.dart:477"
-    },
-    {
-     "page": "plugins-settings",
-     "element": "plugins-review-command"
-    },
     {
      "page": "commands",
      "element": "commands-row"
@@ -28870,28 +28787,12 @@
    "purpose": "AI Team (Gas City orchestration) home: host chip, Runs / Agents / Needs you segments, refresh and Start a run.",
    "reachedFrom": [
     {
-     "page": "embedded-team-card",
-     "element": "embedded-team-card-open"
-    },
-    {
      "page": "workspace",
      "element": "workspace-team-card"
     },
     {
      "page": "workspace",
      "element": "workspace-team-door"
-    },
-    {
-     "page": "embedded-team-card",
-     "element": "embedded-team-card-run-row"
-    },
-    {
-     "page": "embedded-team-card",
-     "element": "embedded-team-card-completed-runs"
-    },
-    {
-     "page": "embedded-team-card",
-     "element": "embedded-team-card-more-runs"
     },
     {
      "page": "team-conversation",
@@ -29954,135 +29855,6 @@
      "destructive": false
     }
    ]
-  },
-  {
-   "id": "embedded-team-card",
-   "title": "AI Team · Gas City",
-   "kind": "overlay",
-   "area": "team",
-   "file": "lib/ui/widgets/team_card.dart",
-   "widget": "TeamCard",
-   "presentedBy": [],
-   "line": 36,
-   "purpose": "Workspace card summarising the AI Team: hero percentage, sentence, progress bar, up to three run rows, agent constellation, Open and Refresh.",
-   "reachedFrom": [
-    {
-     "page": "workspace",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
-   "gates": [
-    "`if (widget.controller.orchestration case final team?)` (lib/ui/screens/workspace_screen.dart:619): the card is not in the tree while the connected profile has no AI Team plugin config",
-    "ConnectionController.orchestration != null (lib/state/connection.dart:712); _syncOrchestration (connection.dart:746) returns without building the controller when `config == null || selected == null || isIsolated || _disposed`, where `config = selected?.orchestration` (the connected ServerProfile's AI Team plugin config)"
-   ],
-   "embeddedIn": [
-    "WorkspaceScreen"
-   ],
-   "hostPages": [
-    "workspace"
-   ],
-   "elements": [
-    {
-     "id": "embedded-team-card-retry",
-     "type": "button",
-     "label": "Retry",
-     "key": "team-card-retry",
-     "file": "lib/ui/widgets/team_card.dart",
-     "line": 477,
-     "action": "mutate",
-     "target": null,
-     "effect": "_refresh(): controller.retry() when phase == failed, else controller.refresh().",
-     "gates": [
-      "`controller.phase == OrchestrationPhase.failed`, or `ready && !snapshot.hasData && controller.lastError != null`"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-team-card-run-row",
-     "type": "list-tile",
-     "label": "<run title> · <state word> [Needs you]",
-     "key": "team-card-run-<run.id>",
-     "file": "lib/ui/widgets/team_card.dart",
-     "line": 828,
-     "action": "navigate",
-     "target": "team-home",
-     "targetWidget": "TeamHomeScreen",
-     "effect": "onTap -> widget.onOpen -> WorkspaceScreen _openTeamHome(team): Navigator.push(TeamHomeScreen(controller: team)) (the row opens the home, not the run).",
-     "gates": [
-      "data state; up to 3 rows (_maxRunRows)",
-      "tap enabled only when `tapsAllowed = !stale`"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-team-card-completed-runs",
-     "type": "list-tile",
-     "label": "{count} completed runs",
-     "key": "team-card-completed-runs",
-     "file": "lib/ui/widgets/team_card.dart",
-     "line": 876,
-     "action": "navigate",
-     "target": "team-home",
-     "targetWidget": "TeamHomeScreen",
-     "effect": "_CollapsedRow.onTap -> onOpen -> TeamHomeScreen.",
-     "gates": [
-      "completed > 0",
-      "!stale"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-team-card-more-runs",
-     "type": "list-tile",
-     "label": "{count} more runs",
-     "key": "team-card-more-runs",
-     "file": "lib/ui/widgets/team_card.dart",
-     "line": 876,
-     "action": "navigate",
-     "target": "team-home",
-     "targetWidget": "TeamHomeScreen",
-     "effect": "_CollapsedRow.onTap -> onOpen -> TeamHomeScreen.",
-     "gates": [
-      "more > 0",
-      "!stale"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-team-card-open",
-     "type": "button",
-     "label": "Open",
-     "key": "team-card-open",
-     "file": "lib/ui/widgets/team_card.dart",
-     "line": 1009,
-     "action": "navigate",
-     "target": "team-home",
-     "targetWidget": "TeamHomeScreen",
-     "effect": "onOpen -> WorkspaceScreen _openTeamHome(team): Navigator.push(MaterialPageRoute(TeamHomeScreen(controller: team))).",
-     "gates": [
-      "empty or data state (not loading/error)",
-      "disabled when the data is stale (`tapsAllowed = !stale`)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-team-card-refresh",
-     "type": "button",
-     "label": "Refresh",
-     "key": "team-card-refresh",
-     "file": "lib/ui/widgets/team_card.dart",
-     "line": 1015,
-     "action": "mutate",
-     "target": null,
-     "effect": "_refresh(): controller.retry()/controller.refresh(); disabled while _refreshing. Stays enabled when stale.",
-     "gates": [
-      "empty or data state"
-     ],
-     "destructive": false
-    }
-   ],
-   "hostNotes": "Constructed at lib/ui/screens/workspace_screen.dart:621 with onOpen: () => _openTeamHome(team) (line 854). Sits below ReturnBriefPanel and above the session sections."
   },
   {
    "id": "team-cycle-how-sheet",
@@ -33077,22 +32849,6 @@
      "destructive": false
     },
     {
-     "id": "integrations-mcp-glossary",
-     "type": "link",
-     "label": "MCP (info label)",
-     "key": null,
-     "file": "lib/ui/screens/library/integrations_screen.dart",
-     "line": 896,
-     "action": "open-sheet",
-     "target": "info-label-sheet",
-     "targetWidget": "InfoLabel.show",
-     "effect": "InfoLabel.glossary(Glossary.mcp) in the 'MCP SERVERS' header; tap calls InfoLabel.show (glossary bottom sheet, lib/ui/widgets/info_label.dart:138).",
-     "gates": [
-      "_showMcp (widget.mode != IntegrationsMode.providers)"
-     ],
-     "destructive": false
-    },
-    {
      "id": "integrations-providers-load-retry",
      "type": "button",
      "label": "Try again",
@@ -33910,20 +33666,6 @@
    ],
    "elements": [
     {
-     "id": "mcp-setup-glossary",
-     "type": "icon-button",
-     "label": "What is MCP?",
-     "key": "mcp-glossary",
-     "file": "lib/ui/screens/mcp_setup_screen.dart",
-     "line": 268,
-     "action": "open-sheet",
-     "target": "info-label-sheet",
-     "targetWidget": "InfoLabel.show",
-     "effect": "InfoLabel.show(context, term: Glossary.mcp.term, explanation: ...).",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "mcp-setup-retry-reconnect",
      "type": "button",
      "label": "Retry reconnect",
@@ -33950,6 +33692,20 @@
      "target": null,
      "targetWidget": null,
      "effect": "_save(): validates, builds McpServerDraft, repository.addMcpServer(draft, scope: _scope); for persisted config also controller.reloadAfterConfigurationChange(); pops true. After a save whose reconnect failed the label becomes 'Close' and it just Navigator.pop(context, true). Disabled while saving or when detached before saving.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "mcp-setup-glossary",
+     "type": "icon-button",
+     "label": "What is MCP?",
+     "key": "mcp-glossary",
+     "file": "lib/ui/screens/mcp_setup_screen.dart",
+     "line": 367,
+     "action": "other",
+     "target": null,
+     "targetWidget": "showKitTerm",
+     "effect": "showKitTerm(context, term: MCP, explanation: e7GlossaryMcpExplanation): a bubble anchored to the button (the info-label sheet was removed by slice-P3.1).",
      "gates": [],
      "destructive": false
     },
@@ -34664,20 +34420,6 @@
    "gates": [],
    "elements": [
     {
-     "id": "appearance-settings-mode",
-     "type": "list-tile",
-     "label": "Light or dark",
-     "key": "appearance-settings-entry",
-     "file": "lib/ui/screens/settings/personal_settings_screens.dart",
-     "line": 18,
-     "action": "open-sheet",
-     "target": "appearance-picker-sheet",
-     "targetWidget": "showAppearancePicker",
-     "effect": "showAppearancePicker(context, controller:) — the sheet writes controller.setAppearance(...). Subtitle is the current appearanceLabel.",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "appearance-settings-theme-pack",
      "type": "list-tile",
      "label": "<theme pack name> (opencode, catppuccin, gruvbox, solarized, dynamic)",
@@ -34691,6 +34433,20 @@
      "gates": [
       "dynamic pack disabled unless harvestedDynamicPack.value != null (subtitle \"Material You colors are not available on this device.\")"
      ],
+     "destructive": false
+    },
+    {
+     "id": "appearance-settings-mode",
+     "type": "toggle",
+     "label": "Light or dark (Auto · Light · Dark)",
+     "key": "appearance-settings-entry",
+     "file": "lib/ui/screens/settings/personal_settings_screens.dart",
+     "line": 99,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": "KitSegmented",
+     "effect": "Inline segments; a tap calls controller.setAppearance(value) at once. The separate light-or-dark sheet (appearance-picker-sheet) was removed by slice-P3.1.",
+     "gates": [],
      "destructive": false
     },
     {
@@ -34952,23 +34708,6 @@
      "destructive": false
     },
     {
-     "id": "plugins-clear-mappings",
-     "type": "button",
-     "label": "Clear personal links",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 209,
-     "action": "open-sheet",
-     "target": "plugins-clear-mappings-sheet",
-     "targetWidget": "showConfirmSheet",
-     "effect": "_clearMappings() opens the destructive confirm sheet. Disabled while _editingMapping.",
-     "gates": [
-      "section \"On the server\": capabilities.pluginInventory",
-      "_mappingStore != null (controller.profile?.id != null)"
-     ],
-     "destructive": true
-    },
-    {
      "id": "plugins-retry",
      "type": "button",
      "label": "Try again",
@@ -34983,42 +34722,6 @@
       "section \"On the server\": capabilities.pluginInventory",
       "_failed",
       "_supported && _connected"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "plugins-review-command",
-     "type": "button",
-     "label": "Review /{command}",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 559,
-     "action": "open-dialog",
-     "target": "run-command-dialog",
-     "targetWidget": "showRunCommandDialog",
-     "effect": "_reviewCommand(plugin, name): re-validates plugin active + command present + mapping still stored, then showRunCommandDialog(context, controller:, command: CommandInfo(name), validateCommand:); if it returns a session id, Navigator.pushNamed('/chat/$sessionID').",
-     "gates": [
-      "section \"On the server\": capabilities.pluginInventory",
-      "one per mapped command name of a plugin with an id",
-      "enabled only when _connected && !_editingMapping && plugin.status == PluginStatus.active"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "plugins-manage-mapping",
-     "type": "button",
-     "label": "Link commands",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 573,
-     "action": "open-dialog",
-     "target": "plugins-mapping-dialog",
-     "targetWidget": "_editMapping",
-     "effect": "_editMapping(plugin): loads controller.repository.listCommands() then opens the mapping dialog.",
-     "gates": [
-      "section \"On the server\": capabilities.pluginInventory",
-      "plugin.id != null && PluginCommandMappings.validName(id)",
-      "enabled only when _connected && !_editingMapping"
      ],
      "destructive": false
     }
@@ -35172,118 +34875,6 @@
       "teamPhoneProfile(profile)"
      ],
      "contract": "onRemoved pops this sheet"
-    }
-   ]
-  },
-  {
-   "id": "plugins-clear-mappings-sheet",
-   "title": "Clear all personal command links?",
-   "kind": "sheet",
-   "area": "settings",
-   "file": "lib/ui/screens/settings/server_plugins_section.dart",
-   "widget": "_clearMappings",
-   "presentedBy": [
-    "showConfirmSheet"
-   ],
-   "line": 259,
-   "purpose": "Confirms clearing every personal plugin command mapping for this profile.",
-   "reachedFrom": [
-    {
-     "page": "plugins-settings",
-     "element": "plugins-clear-mappings"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "plugins-clear-mappings-sheet-confirm",
-     "type": "button",
-     "label": "Clear links",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 245,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Returns true; _clearMappings awaits PluginCommandMappings.clear() (shared preferences for this profile) and empties _mappings; failure snackbar \"Personal links could not be cleared. Check that this server profile is still selected and try again.\".",
-     "gates": [],
-     "destructive": true
-    },
-    {
-     "id": "plugins-clear-mappings-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 246,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "MaterialLocalizations cancelButtonLabel; pops false.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "plugins-mapping-dialog",
-   "title": "Link commands",
-   "kind": "dialog",
-   "area": "settings",
-   "file": "lib/ui/screens/settings/server_plugins_section.dart",
-   "widget": "_editMapping",
-   "presentedBy": [],
-   "line": 315,
-   "purpose": "Checkbox list of server slash commands to associate with one plugin (personal, on-device mapping).",
-   "reachedFrom": [
-    {
-     "page": "plugins-settings",
-     "element": "plugins-manage-mapping"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "plugins-mapping-dialog-command-checkbox",
-     "type": "toggle",
-     "label": "/<command name>",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 318,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Adds/removes the name in the local selected set; refuses beyond PluginCommandMappings.maxCommands with \"Choose up to 16 commands for this plugin.\". Nothing is persisted until Save.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "plugins-mapping-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 355,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(dialogContext); disabled while saving.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "plugins-mapping-dialog-save",
-     "type": "button",
-     "label": "Save links",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 361,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "await PluginCommandMappings.set(mappingScope, plugin.id, selected) (profile-scoped shared preferences), pops true and the screen reloads _mappings; on error shows \"Links could not be saved. Check that this server location is still selected and try again.\".",
-     "gates": [],
-     "destructive": false
     }
    ]
   },
@@ -36556,104 +36147,6 @@
    ]
   },
   {
-   "id": "appearance-picker-sheet",
-   "title": "Appearance",
-   "kind": "sheet",
-   "area": "settings",
-   "file": "lib/ui/widgets/appearance_picker.dart",
-   "widget": "_AppearancePreviewSheet",
-   "presentedBy": [
-    "showAppearancePicker"
-   ],
-   "line": 71,
-   "purpose": "Preview-then-apply sheet for light/dark/system appearance (pack == null).",
-   "reachedFrom": [
-    {
-     "page": "appearance-settings",
-     "element": "appearance-settings-mode"
-    },
-    {
-     "page": "chat",
-     "element": null,
-     "evidence": "lib/ui/screens/chat_screen.dart:5287"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "appearance-picker-sheet-mode-option",
-     "type": "list-tile",
-     "label": "Follow Android | Follow system | Light | Dark",
-     "key": "appearance-<appearance.name>",
-     "file": "lib/ui/widgets/appearance_picker.dart",
-     "line": 156,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Sets the local draft _appearance (live preview only; nothing persisted). One tile per AppAppearance.values.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "appearance-picker-sheet-apply",
-     "type": "button",
-     "label": "Apply / Current appearance / Saving…",
-     "key": null,
-     "file": "lib/ui/widgets/appearance_picker.dart",
-     "line": 207,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_apply(): await controller.setAppearance(_appearance) then pops; on error shows \"Could not save the appearance. Your previous setting is unchanged. Try again.\" and keeps the sheet. Enabled only when changed && available && !_saving.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "appearance-picker-sheet-close",
-     "type": "button",
-     "label": "Close",
-     "key": null,
-     "file": "lib/ui/widgets/appearance_picker.dart",
-     "line": 217,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop without saving (disabled while _saving; PopScope canPop: !_saving).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "appearance-picker-sheet-preview-chip",
-     "type": "chip",
-     "label": "Selected option",
-     "key": null,
-     "file": "lib/ui/widgets/appearance_picker.dart",
-     "line": 295,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "ThemeComponentPreview sample FilterChip: toggles local _selected only.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "appearance-picker-sheet-preview-button",
-     "type": "button",
-     "label": "Try a control",
-     "key": null,
-     "file": "lib/ui/widgets/appearance_picker.dart",
-     "line": 301,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "ThemeComponentPreview sample button: flips local _selected only.",
-     "gates": [],
-     "destructive": false
-    }
-   ],
-   "sheetKey": "appearance-picker"
-  },
-  {
    "id": "theme-pack-preview-sheet",
    "title": "<theme pack name>",
    "kind": "sheet",
@@ -37906,109 +37399,6 @@
      "target": null,
      "targetWidget": null,
      "effect": "Navigator.pop(context, true) then launchUrl(uri, mode: LaunchMode.externalApplication); snackbar when no handler or on failure.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "embedded-info-label",
-   "title": "[Info label: term with info glyph]",
-   "kind": "overlay",
-   "area": "misc",
-   "file": "lib/ui/widgets/info_label.dart",
-   "widget": "InfoLabel",
-   "presentedBy": [],
-   "line": 110,
-   "purpose": "Inline term + info icon; tapping opens the explanation sheet.",
-   "reachedFrom": [
-    {
-     "page": "embedded-prompt-error-banner",
-     "element": null,
-     "via": "embedded"
-    },
-    {
-     "page": "integrations",
-     "element": null,
-     "via": "embedded"
-    },
-    {
-     "page": "worktrees",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
-   "gates": [],
-   "embeddedIn": [
-    "lib/ui/screens/worktrees_screen.dart:623 (Glossary.worktree)",
-    "lib/ui/screens/library/integrations_screen.dart:896 (Glossary.mcp)",
-    "lib/ui/screens/chat/message_view.dart:2233 (Glossary.reasoning)"
-   ],
-   "hostPages": [
-    "embedded-prompt-error-banner",
-    "integrations",
-    "worktrees"
-   ],
-   "elements": [
-    {
-     "id": "embedded-info-label-term",
-     "type": "link",
-     "label": "<term> [info icon] (semantics: '{term}. Tap for an explanation.')",
-     "key": null,
-     "file": "lib/ui/widgets/info_label.dart",
-     "line": 208,
-     "action": "open-sheet",
-     "target": "info-label-sheet",
-     "targetWidget": "InfoLabel.show",
-     "effect": "InkWell.onTap (and Semantics.onTap line 205) calls InfoLabel.show(context, term, explanation).",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "info-label-sheet",
-   "title": "<glossary term> (MCP, Worktree, Provider, Context, Agent, Reasoning, Permission, Variant)",
-   "kind": "sheet",
-   "area": "misc",
-   "file": "lib/ui/widgets/info_label.dart",
-   "widget": "InfoLabel.show",
-   "presentedBy": [
-    "InfoLabel.show"
-   ],
-   "line": 150,
-   "purpose": "Short plain-language explanation of a glossary term.",
-   "reachedFrom": [
-    {
-     "page": "embedded-info-label",
-     "element": "embedded-info-label-term"
-    },
-    {
-     "page": "worktrees",
-     "element": "worktrees-glossary-label"
-    },
-    {
-     "page": "integrations",
-     "element": "integrations-mcp-glossary"
-    },
-    {
-     "page": "mcp-setup",
-     "element": "mcp-setup-glossary"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "info-label-sheet-got-it",
-     "type": "button",
-     "label": "Got it",
-     "key": null,
-     "file": "lib/ui/widgets/info_label.dart",
-     "line": 174,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.of(context).pop().",
      "gates": [],
      "destructive": false
     }
@@ -39706,11 +39096,6 @@
    },
    {
     "from": "workspace",
-    "element": "workspace-inventory-footer",
-    "to": "embedded-session-inventory-footer"
-   },
-   {
-    "from": "workspace",
     "element": "workspace-team-task-row",
     "to": "team-conversation"
    },
@@ -39828,11 +39213,6 @@
     "from": "worktrees",
     "element": "worktrees-empty-create",
     "to": "worktrees-create-dialog"
-   },
-   {
-    "from": "worktrees",
-    "element": "worktrees-glossary-label",
-    "to": "info-label-sheet"
    },
    {
     "from": "worktrees",
@@ -40820,26 +40200,6 @@
     "to": "team-cycle-stop-confirm-sheet"
    },
    {
-    "from": "embedded-team-card",
-    "element": "embedded-team-card-run-row",
-    "to": "team-home"
-   },
-   {
-    "from": "embedded-team-card",
-    "element": "embedded-team-card-completed-runs",
-    "to": "team-home"
-   },
-   {
-    "from": "embedded-team-card",
-    "element": "embedded-team-card-more-runs",
-    "to": "team-home"
-   },
-   {
-    "from": "embedded-team-card",
-    "element": "embedded-team-card-open",
-    "to": "team-home"
-   },
-   {
     "from": "embedded-team-receipt-chip",
     "element": "embedded-team-receipt-chip-open",
     "to": "gate-sheet"
@@ -41256,11 +40616,6 @@
    },
    {
     "from": "appearance-settings",
-    "element": "appearance-settings-mode",
-    "to": "appearance-picker-sheet"
-   },
-   {
-    "from": "appearance-settings",
     "element": "appearance-settings-language",
     "to": "language-sheet"
    },
@@ -41288,21 +40643,6 @@
     "from": "plugins-settings",
     "element": "plugins-settings-ai-team-row",
     "to": "team-plugin-sheet"
-   },
-   {
-    "from": "plugins-settings",
-    "element": "plugins-clear-mappings",
-    "to": "plugins-clear-mappings-sheet"
-   },
-   {
-    "from": "plugins-settings",
-    "element": "plugins-review-command",
-    "to": "run-command-dialog"
-   },
-   {
-    "from": "plugins-settings",
-    "element": "plugins-manage-mapping",
-    "to": "plugins-mapping-dialog"
    },
    {
     "from": "team-plugin-sheet",
@@ -41446,11 +40786,6 @@
    },
    {
     "from": "integrations",
-    "element": "integrations-mcp-glossary",
-    "to": "info-label-sheet"
-   },
-   {
-    "from": "integrations",
     "element": "integrations-mcp-empty-add",
     "to": "mcp-setup"
    },
@@ -41498,11 +40833,6 @@
     "from": "credential-management-sheet",
     "element": "credential-management-sheet-remove",
     "to": "credential-management-sheet-remove-sheet"
-   },
-   {
-    "from": "mcp-setup",
-    "element": "mcp-setup-glossary",
-    "to": "info-label-sheet"
    },
    {
     "from": "session-context",
@@ -41558,11 +40888,6 @@
     "from": "continue-on-computer-sheet",
     "element": "continue-on-computer-sheet-export",
     "to": "session-export"
-   },
-   {
-    "from": "embedded-info-label",
-    "element": "embedded-info-label-term",
-    "to": "info-label-sheet"
    },
    {
     "from": "activity",
@@ -42317,18 +41642,6 @@
     "to": "console-organization-sheet"
    },
    {
-    "from": "run-command-dialog",
-    "element": null,
-    "to": "embedded-session-inventory-footer",
-    "via": "embedded"
-   },
-   {
-    "from": "workspace",
-    "element": null,
-    "to": "embedded-session-inventory-footer",
-    "via": "embedded"
-   },
-   {
     "from": "embedded-tool-card",
     "element": null,
     "to": "embedded-mobile-task-list",
@@ -42377,11 +41690,6 @@
     "from": "todos-sheet",
     "element": null,
     "to": "diff-view"
-   },
-   {
-    "from": "plugins-clear-mappings-sheet",
-    "element": null,
-    "to": "run-command-dialog"
    },
    {
     "from": "profile-editor",
@@ -42489,12 +41797,6 @@
     "from": "work-sheet",
     "element": null,
     "to": "embedded-team-cycle-strip",
-    "via": "embedded"
-   },
-   {
-    "from": "workspace",
-    "element": null,
-    "to": "embedded-team-card",
     "via": "embedded"
    },
    {
@@ -42615,11 +41917,6 @@
    {
     "from": "chat",
     "element": null,
-    "to": "appearance-picker-sheet"
-   },
-   {
-    "from": "chat",
-    "element": null,
     "to": "app-diagnostics"
    },
    {
@@ -42666,24 +41963,6 @@
     "from": "chat",
     "element": null,
     "to": "continue-on-phone-sheet"
-   },
-   {
-    "from": "embedded-prompt-error-banner",
-    "element": null,
-    "to": "embedded-info-label",
-    "via": "embedded"
-   },
-   {
-    "from": "integrations",
-    "element": null,
-    "to": "embedded-info-label",
-    "via": "embedded"
-   },
-   {
-    "from": "worktrees",
-    "element": null,
-    "to": "embedded-info-label",
-    "via": "embedded"
    }
   ]
  },
@@ -43438,10 +42717,6 @@
   },
   {
    "part": "j2-library",
-   "note": "InfoLabel.show glossary sheet (lib/ui/widgets/info_label.dart:138) target id guessed as 'info-label-sheet' (integrations_screen.dart:896, mcp_setup_screen.dart:274)."
-  },
-  {
-   "part": "j2-library",
    "note": "openBugReport (called from shared ProductErrorState, lib/ui/widgets/product_states.dart:250) not resolved to a page; targetWidget set, target null."
   },
   {
@@ -43483,10 +42758,6 @@
   {
    "part": "k-session-misc",
    "note": "session-relations tiles pop the screen with the selected Session; actual navigation happens in the opener (chat _openRelatedSession chat_screen.dart:5714, global_sessions_screen.dart:419 onward)."
-  },
-  {
-   "part": "k-session-misc",
-   "note": "embedded-info-label embeddedIn lists host files/lines rather than class names; host widget classes not resolved (worktrees_screen.dart:623, library/integrations_screen.dart:896, chat/message_view.dart:2233). chat_screen.dart:53 and library_screen.dart:23 import info_label.dart but do not use InfoLabel."
   },
   {
    "part": "k-session-misc",

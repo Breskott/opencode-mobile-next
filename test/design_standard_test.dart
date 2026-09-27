@@ -67,15 +67,9 @@ const _migrated = <String, List<String>>{
     'work_not_answering',
     'work_runaway',
   ],
-  // Step 2 leftovers (test/goldens/work_parts_golden_test.dart): the AI
-  // Team section, the one-time tip, the other servers and the shell's
-  // connection line on the other tabs.
-  'lib/ui/widgets/team_card.dart': [
-    'work_team',
-    'team_card',
-    'team_card_phone',
-    'team_card_idle',
-  ],
+  // Step 2 leftovers (test/goldens/work_parts_golden_test.dart): the
+  // one-time tip, the other servers and the shell's connection line on the
+  // other tabs.
   'lib/ui/widgets/nudge_card.dart': ['work_nudge'],
   'lib/ui/widgets/other_servers_panel.dart': ['work_other_servers'],
   'lib/ui/widgets/connection_status_banner.dart': ['shell_reconnecting'],
@@ -391,7 +385,6 @@ const _grandfathered = <String>{
   'lib/ui/widgets/saved_server_connection_card.dart',
   'lib/ui/widgets/setup_progress_view.dart',
   'lib/ui/widgets/team_agent_row.dart',
-  'lib/ui/widgets/team_card.dart',
   'lib/ui/widgets/team_discover.dart',
   'lib/ui/widgets/team_moments.dart',
   'lib/ui/widgets/termux_phone_tools.dart',

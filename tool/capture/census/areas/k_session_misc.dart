@@ -19,7 +19,6 @@ import 'package:opencode_mobile/ui/screens/session_export_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_import_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_note_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_relations_screen.dart';
-import 'package:opencode_mobile/ui/widgets/info_label.dart';
 import 'package:opencode_mobile/ui/widgets/session_handoff.dart';
 import 'package:opencode_mobile/ui/widgets/session_handoff_sheets.dart';
 
@@ -444,9 +443,7 @@ final kSessionMiscArea = CensusArea(
       );
       await kit.tapText('Choose JSON file');
       await kit.tapKey('import-destination');
-      kit.expectVisible(
-        find.byKey(const ValueKey('import-destination-sheet')),
-      );
+      kit.expectVisible(find.byKey(const ValueKey('import-destination-sheet')));
       kit.expectText('shopfront');
     }),
 
@@ -644,47 +641,6 @@ final kSessionMiscArea = CensusArea(
       );
       kit.expectText('Open on another phone');
     }),
-
-    // -- info-label-sheet -------------------------------------------------------------
-    CensusShot('info-label-sheet', (kit) async {
-      final controller = await kit.connected();
-      await kit.pumpApp(_backdrop('Worktrees'), controller: controller);
-      await kit.present(
-        (context) => InfoLabel.show(
-          context,
-          term: Glossary.worktree.term,
-          explanation: Glossary.worktree.explanation,
-        ),
-      );
-      kit.expectText('Worktree');
-      kit.expectText('Got it');
-    }),
-
-    // -- embedded-info-label -----------------------------------------------------------
-    CensusShot(
-      'embedded-info-label',
-      (kit) async {
-        final controller = await kit.connected();
-        await kit.pumpApp(
-          Scaffold(
-            appBar: AppBar(title: const Text('Worktrees')),
-            body: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Text('Base '),
-                  InfoLabel.glossary(Glossary.worktree),
-                ],
-              ),
-            ),
-          ),
-          controller: controller,
-        );
-        kit.expectText('Worktree');
-      },
-      note:
-          'InfoLabel inline in a stand-in Worktrees row; the real screen belongs to another area.',
-    ),
   ],
   notRendered: const {},
 );

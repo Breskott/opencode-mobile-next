@@ -100,22 +100,6 @@ Widget _app(ConnectionController controller, {double textScale = 1}) =>
       ),
     );
 
-/// Opens the reviewer plugin's row menu and chooses [label].
-Future<void> _rowMenu(WidgetTester tester, String label) async {
-  await tester.tap(find.byKey(const ValueKey('plugin-menu-reviewer')));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text(label).last);
-  await tester.pumpAndSettle();
-}
-
-/// Opens the "On the server" section menu and chooses [label].
-Future<void> _sectionMenu(WidgetTester tester, String label) async {
-  await tester.tap(find.byKey(const ValueKey('plugins-section-menu')));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text(label).last);
-  await tester.pumpAndSettle();
-}
-
 /// Opens the reviewer plugin's Details (tapping its row).
 Future<void> _details(WidgetTester tester) async {
   await tester.tap(find.text('Reviewer'));
@@ -139,108 +123,28 @@ void main() {
         .setMockMethodCallHandler(storage, null),
   );
 
-  testWidgets(
-    'personal command links persist and open review without running',
-    (tester) async {
-      final repository = _Repository()..plugins = [_plugin];
-      final controller = await _controller(repository);
-      await tester.pumpWidget(_app(controller));
-      await tester.pumpAndSettle();
-      await _rowMenu(tester, 'Link commands');
-      expect(find.textContaining('personal links apply only'), findsOneWidget);
-      await tester.tap(find.text('/review'));
-      await tester.tap(find.text('Save links'));
-      await tester.pumpAndSettle();
-      await _details(tester);
-      expect(
-        find.text('Your command links · not verified plugin ownership'),
-        findsOneWidget,
-      );
-      await _closeSheet(tester);
-      expect(
-        controller.store.prefs.getString('oc.pluginCommandMappings.plugins'),
-        contains('review'),
-      );
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpWidget(_app(controller));
-      await tester.pumpAndSettle();
-      await _rowMenu(tester, 'Review /review');
-      expect(find.byKey(const ValueKey('command-arguments')), findsOneWidget);
-      expect(find.byKey(const ValueKey('command-submit')), findsOneWidget);
-      expect(controller.sortedSessions(), isEmpty);
-    },
-  );
-
-  testWidgets('command removed after review is checked again before Run', (
+  testWidgets('a plugin row opens its details; nothing offers command links '
+      '(slice-P3.1: plugins-mapping-dialog and its clear sheet are gone)', (
     tester,
   ) async {
     final repository = _Repository()..plugins = [_plugin];
     final controller = await _controller(repository);
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
-    await _rowMenu(tester, 'Link commands');
-    await tester.tap(find.text('/review'));
-    await tester.tap(find.text('Save links'));
-    await tester.pumpAndSettle();
-    await _rowMenu(tester, 'Review /review');
-    await tester.enterText(
-      find.byKey(const ValueKey('command-arguments')),
-      'keep this draft',
-    );
-    repository.commands = [];
-    await tester.tap(find.byKey(const ValueKey('command-submit')));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('no longer available here'), findsOneWidget);
-    expect(find.byKey(const ValueKey('command-arguments')), findsOneWidget);
-    expect(controller.sortedSessions(), isEmpty);
-  });
-
-  testWidgets('clearing personal links requires confirmation', (tester) async {
-    final repository = _Repository()..plugins = [_plugin];
-    final controller = await _controller(repository);
-    await tester.pumpWidget(_app(controller));
-    await tester.pumpAndSettle();
-    await _rowMenu(tester, 'Link commands');
-    await tester.tap(find.text('/review'));
-    await tester.tap(find.text('Save links'));
-    await tester.pumpAndSettle();
-    await _sectionMenu(tester, 'Clear personal command links');
-    expect(find.text('Clear all personal command links?'), findsOneWidget);
-    await tester.tap(find.text('Cancel').hitTestable());
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('plugin-menu-reviewer')));
-    await tester.pumpAndSettle();
-    expect(find.text('Review /review'), findsOneWidget);
+    // The row is the one way in: no row menu, no page menu.
+    expect(find.byKey(const ValueKey('plugin-menu-reviewer')), findsNothing);
+    expect(find.byKey(const ValueKey('plugins-section-menu')), findsNothing);
+    expect(find.text('Link commands'), findsNothing);
+    expect(find.text('Clear personal command links'), findsNothing);
+    await _details(tester);
+    expect(find.byKey(const ValueKey('plugin-details-sheet')), findsOneWidget);
+    expect(find.text('Package · @example/reviewer'), findsOneWidget);
+    expect(find.text('reviewer'), findsOneWidget);
+    expect(find.textContaining('command links'), findsNothing);
+    // Reading the inventory never asks for the server's commands.
+    expect(repository.commandCalls, 0);
     await _closeSheet(tester);
-    await _sectionMenu(tester, 'Clear personal command links');
-    await tester.tap(find.text('Clear links').hitTestable());
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('plugin-menu-reviewer')));
-    await tester.pumpAndSettle();
-    expect(find.text('Review /review'), findsNothing);
-    await _closeSheet(tester);
-    expect(find.text('Reviewer'), findsOneWidget);
-    expect(
-      controller.store.prefs.containsKey('oc.pluginCommandMappings.plugins'),
-      isFalse,
-    );
-  });
-
-  testWidgets('removed command never opens a stale mapped action', (
-    tester,
-  ) async {
-    final repository = _Repository()..plugins = [_plugin];
-    final controller = await _controller(repository);
-    await tester.pumpWidget(_app(controller));
-    await tester.pumpAndSettle();
-    await _rowMenu(tester, 'Link commands');
-    await tester.tap(find.text('/review'));
-    await tester.tap(find.text('Save links'));
-    await tester.pumpAndSettle();
-    repository.commands = [];
-    await _rowMenu(tester, 'Review /review');
-    expect(find.byKey(const ValueKey('command-submit')), findsNothing);
-    expect(find.textContaining('no longer available here'), findsOneWidget);
+    expect(find.byKey(const ValueKey('plugin-details-sheet')), findsNothing);
   });
 
   testWidgets('one Plugins screen: "In this app" above "On the server"', (
@@ -277,13 +181,6 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Loaded by the server for this project.'), findsNothing);
-    expect(
-      find.descendant(
-        of: find.byType(KitTopBar),
-        matching: find.byKey(const ValueKey('plugins-section-menu')),
-      ),
-      findsOneWidget,
-    );
     expect(find.byTooltip('Refresh plugins'), findsOneWidget);
   });
 
@@ -354,34 +251,6 @@ void main() {
     lateResponse.complete([_plugin]);
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('late review validation cannot open a prior-location dialog', (
-    tester,
-  ) async {
-    final repository = _Repository()..plugins = [_plugin];
-    final controller = await _controller(repository);
-    await tester.pumpWidget(_app(controller));
-    await tester.pumpAndSettle();
-    await _rowMenu(tester, 'Link commands');
-    await tester.tap(find.text('/review'));
-    await tester.tap(find.text('Save links'));
-    await tester.pumpAndSettle();
-
-    repository.commandGate = Completer<List<CommandInfo>>();
-    await tester.tap(find.byKey(const ValueKey('plugin-menu-reviewer')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Review /review').last);
-    await tester.pump();
-    controller.directory = '/new-location';
-    controller.locationRevision++;
-    controller.notifyListeners();
-    repository.commandGate!.complete(repository.commands);
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const ValueKey('command-arguments')), findsNothing);
-    expect(find.byType(AlertDialog), findsNothing);
-    expect(find.textContaining('no longer available here'), findsNothing);
   });
 
   testWidgets('plugin events and reconnect refetch current inventory', (
