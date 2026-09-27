@@ -14,10 +14,11 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/kit/kit.dart' show KitTappable;
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitButton, KitTappable;
 import 'package:opencode_mobile/ui/screens/about_screen.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_destination_sheet.dart';
 import 'package:opencode_mobile/ui/widgets/external_link.dart';
@@ -151,7 +152,7 @@ Future<void> _pumpSharedChat(
   await tester.pumpAndSettle();
   await tester.tap(find.text('Share conversation'));
   await tester.pumpAndSettle();
-  await tester.tap(find.widgetWithText(FilledButton, 'Share conversation'));
+  await tester.tap(find.widgetWithText(KitButton, 'Share conversation'));
   await tester.pumpAndSettle();
   expect(repository.shared, isTrue);
   expect(repository.unshared, isFalse);
@@ -502,6 +503,22 @@ void main() {
   testWidgets('sharing requires privacy consent and exposes stop sharing', (
     tester,
   ) async {
+    final copiedLinks = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copiedLinks.add((call.arguments as Map)['text'] as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
     final semantics = tester.ensureSemantics();
     final repository = _ReleaseRepository();
     final controller = await _controller(repository: repository);
@@ -526,17 +543,20 @@ void main() {
     expect(find.text('Share this conversation?'), findsOneWidget);
     expect(find.textContaining('Anyone with the link'), findsOneWidget);
     expect(repository.shared, isFalse);
-    await tester.tap(find.widgetWithText(FilledButton, 'Share conversation'));
+    await tester.tap(find.widgetWithText(KitButton, 'Share conversation'));
     await tester.pumpAndSettle();
     expect(repository.shared, isTrue);
     expect(
-      find.bySemanticsLabel(
-        RegExp(
-          'Shared conversation link https://share.example/session/session-1',
-        ),
-      ),
+      find.bySemanticsLabel(RegExp('Shared: anyone with the link can view')),
       findsOneWidget,
     );
+    await tester.tap(find.byKey(const ValueKey('chat-status-copy-share-link')));
+    await tester.pumpAndSettle();
+    expect(copiedLinks.last, 'https://share.example/session/session-1');
+    // Chat-6 exposes the public URL through Copy link; stopping lives under
+    // the status line's More menu and still asks before revoking the link.
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
     expect(find.text('Stop sharing'), findsOneWidget);
     // The banner's Stop sharing asks first; the link is live for other people.
     await tester.tap(find.text('Stop sharing'));
@@ -549,6 +569,8 @@ void main() {
     await tester.tap(find.text('Keep sharing'));
     await tester.pumpAndSettle();
     expect(repository.unshared, isFalse);
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
     expect(find.text('Stop sharing'), findsOneWidget);
 
     await tester.tap(find.text('Stop sharing'));
@@ -683,8 +705,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    final send = find.byTooltip('Send');
-    expect(send, findsOneWidget);
+    final microphone = find.byKey(const ValueKey('kit-composer-mic'));
+    expect(microphone.hitTestable(), findsOneWidget);
     expect(find.byKey(const Key('chat-composer-surface')), findsOneWidget);
     // UX-P0-03: Commands, Attach, and Voice collapsed into one leading
     // tools button; all three stay reachable from its sheet.
@@ -699,14 +721,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('chat-workbench')), findsNothing);
     final sendButton = find.byKey(const Key('chat-send-button'));
-    expect(tester.widget<IconButton>(sendButton).onPressed, isNull);
+    expect(sendButton, findsNothing);
     await tester.enterText(
       find.byKey(const Key('chat-composer-field')),
       '/mod',
     );
     await tester.pump();
     expect(find.byKey(const Key('inline-command-suggestions')), findsNothing);
-    expect(tester.widget<IconButton>(sendButton).onPressed, isNotNull);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(
+      tester.getSemantics(sendButton),
+      isSemantics(isEnabled: true, hasTapAction: true),
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -755,7 +781,14 @@ void main() {
       'A draft to expand and finish',
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('prompt-editor-button')));
+    final editor = find.byKey(const Key('prompt-editor-button'));
+    expect(
+      editor.hitTestable(),
+      findsOneWidget,
+      reason:
+          'The prompt editor must be reachable at 320dp with 2x text and the keyboard open. ${_hitTestOwners(tester, editor)}',
+    );
+    await tester.tap(editor);
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('prompt-editor-screen')), findsOneWidget);
@@ -898,11 +931,15 @@ void main() {
   testWidgets('bundled privacy policy and open source notices render in app', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: AboutScreen()));
+    await tester.pumpWidget(
+      const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AboutScreen(),
+      ),
+    );
     await tester.pumpAndSettle();
-    expect(find.text('About and open source notices'), findsOneWidget);
-    expect(find.text('Privacy Policy'), findsOneWidget);
-    expect(find.text('Where your data goes'), findsOneWidget);
+    expect(find.text('About'), findsOneWidget);
 
     // Upstream asks third-party projects that use the OpenCode name to say
     // plainly that they are not the official project. It has to be on the tab
@@ -914,18 +951,44 @@ void main() {
       contains('not built, maintained, endorsed by, or affiliated with'),
     );
 
-    await tester.tap(find.text('Open source'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('about-non-affiliation')), findsOneWidget);
+    // P3.10 folded the Open source tab into the About page.
     // The bundled document sits below the build, alpha and original-language
     // notes, so the lazy list only builds it once the reader scrolls.
     await tester.scrollUntilVisible(
-      find.text('Third-Party Notices'),
+      find.text('Bundled components'),
       200,
       scrollable: find.byType(Scrollable).last,
     );
-    expect(find.text('Third-Party Notices'), findsOneWidget);
+    expect(find.text('Bundled components'), findsOneWidget);
     expect(find.text('sherpa-onnx'), findsWidgets);
+
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PrivacySettingsScreen(controller: controller),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final policy = find.byKey(const ValueKey('privacy-policy'));
+    await tester.scrollUntilVisible(
+      policy,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(policy);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('privacy-policy-viewer')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('privacy-policy-viewer')),
+        matching: find.text('Privacy policy'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Where your data goes'), findsOneWidget);
 
     // The same sentence is the public README's opening claim, so the two
     // cannot drift apart.
@@ -967,3 +1030,11 @@ void main() {
     controller.dispose();
   });
 }
+
+String _hitTestOwners(WidgetTester tester, Finder finder) => tester
+    .hitTestOnBinding(tester.getCenter(finder))
+    .path
+    .where((entry) => entry.target is RenderObject)
+    .take(5)
+    .map((entry) => (entry.target as RenderObject).debugCreator)
+    .join('\n');
