@@ -74,18 +74,6 @@ const _allowed = <String, Map<String, String>>{
     "out.write('> \${_chatL10n(context).chatUiError}: \$error\\n');":
         'transcript export text, not UI copy (chat lane to review)',
   },
-  'screens/phone_setup/phone_setup_termux_job_screen.dart': {
-    ": failure.message;": 'pending: phone setup owner (P5.3)',
-    "error = failure.message ?? l10n.e7SetupInspectTermuxFailed;":
-        'pending: phone setup owner (P5.3)',
-    "error = '\$failure';": 'pending: phone setup owner (P5.3)',
-    "error = failure.message ?? l10n.termuxGuideCopyOpenFailed;":
-        'pending: phone setup owner (P5.3)',
-  },
-  'screens/phone_setup/phone_setup_ready_screen.dart': {
-    'failure = _l10n.phoneSetupReadyCreateFailed(error.message);':
-        'pending: phone setup owner (P5.3)',
-  },
 };
 
 class _Hit {
