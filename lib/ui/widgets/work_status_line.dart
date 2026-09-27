@@ -19,10 +19,14 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsService;
 
 import '../../api/sse.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
+import '../../termux/bridge.dart' show TermuxBridgeException;
+import '../../termux/processes.dart'
+    show TermuxProcessStopResult, TermuxProcesses;
 import '../app_theme.dart';
 import '../kit/kit.dart';
 import 'connection_status_banner.dart' show showConnectionDetailsSheet;
@@ -56,17 +60,27 @@ class WorkStatus {
 
 /// A process on the phone that keeps using the CPU with nothing waiting on
 /// it, as a platform watcher reports it (see `termux_phone_tools.dart`).
+///
+/// Its one action stops that process ("Stop java"): the line already says
+/// what it is doing, so the act that ends it lives on it, asked first with
+/// [stopRunawayHelper]. A stop that did not end it keeps the line, in the
+/// failure tone, with the same action to try again.
 class WorkRunawayNotice {
   const WorkRunawayNotice({
     required this.identity,
+    required this.helper,
     required this.busyFor,
-    required this.onOpen,
+    required this.onStop,
     required this.onDismiss,
     this.project,
+    this.stopFailed = false,
   });
 
   /// Changes when the process does; a dismissal holds only for one identity.
   final Object identity;
+
+  /// The process's own name ("java", "node"), as the phone reports it.
+  final String helper;
 
   /// The project folder's name when the process runs inside one; null means
   /// the server or its projects folder, which is called "OpenCode".
@@ -74,23 +88,93 @@ class WorkRunawayNotice {
 
   /// Already formatted ("10 min").
   final String busyFor;
-  final VoidCallback onOpen;
+
+  /// Asks and stops; the watcher runs [stopRunawayHelper] with its context.
+  final VoidCallback onStop;
   final VoidCallback onDismiss;
+
+  /// The last stop did not end the process.
+  final bool stopFailed;
 
   WorkStatus status(AppLocalizations l10n) => WorkStatus(
     id: 'runaway',
-    icon: AppIconography.processor,
-    tone: AppStatusTone.neutral,
-    message: project == null
+    icon: stopFailed ? AppIconography.warning : AppIconography.processor,
+    tone: stopFailed ? AppStatusTone.failure : AppStatusTone.neutral,
+    message: stopFailed
+        ? l10n.workRunawayStopFailed(helper)
+        : project == null
         ? l10n.workRunaway(busyFor)
         : l10n.workRunawayInProject(project!, busyFor),
     action: KitAction(
-      key: const ValueKey('work-status-runaway-open'),
-      label: l10n.workRunawaySee,
-      onPressed: onOpen,
+      key: const ValueKey('work-status-runaway-stop'),
+      label: l10n.termuxProcsStopSemantics(helper),
+      onPressed: onStop,
     ),
     onDismiss: onDismiss,
   );
+}
+
+/// How [stopRunawayHelper] ended.
+enum RunawayStopOutcome {
+  /// The person kept it running (cancelled the question).
+  kept,
+
+  /// The process ended.
+  stopped,
+
+  /// The stop did not end it (still running, refused, or the phone's tools
+  /// did not answer).
+  failed,
+}
+
+/// Asks before stopping the leftover process [pid] named [helper], stops
+/// exactly that one with [TermuxProcesses.stopPid] ([stop] in tests), and
+/// announces the result once to a screen reader: "Stopped java" or "Couldn't
+/// stop java…". The line itself shows the rest: it goes away, or stays in
+/// the failure tone.
+Future<RunawayStopOutcome> stopRunawayHelper(
+  BuildContext context, {
+  required int pid,
+  required String helper,
+  Future<TermuxProcessStopResult> Function(int pid)? stop,
+}) async {
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  final confirmed = await showKitConfirm(
+    context,
+    title: l10n.termuxProcsStopOneTitle(helper),
+    body: l10n.safetyStopOrphanBody,
+    confirmLabel: l10n.termuxProcsStopSemantics(helper),
+    icon: AppIcons.stop,
+    kind: KitConfirmKind.stop,
+    // No undo, and it says so.
+    consequenceItems: [KitConsequence(l10n.termuxProcsNoRestart)],
+    sheetKey: const ValueKey('work-runaway-stop-confirm'),
+    confirmKey: const ValueKey('work-runaway-stop-confirm-stop'),
+  );
+  if (!confirmed || !context.mounted) return RunawayStopOutcome.kept;
+  final view = View.of(context);
+  final direction = Directionality.maybeOf(context) ?? TextDirection.ltr;
+  RunawayStopOutcome outcome;
+  try {
+    final result = await (stop ?? TermuxProcesses.stopPid)(pid);
+    outcome =
+        result.remaining.isEmpty &&
+            (result.endedCount > 0 || result.refused.isEmpty)
+        ? RunawayStopOutcome.stopped
+        : RunawayStopOutcome.failed;
+  } on TermuxBridgeException {
+    outcome = RunawayStopOutcome.failed;
+  } on FormatException {
+    outcome = RunawayStopOutcome.failed;
+  }
+  await SemanticsService.sendAnnouncement(
+    view,
+    outcome == RunawayStopOutcome.stopped
+        ? l10n.workRunawayStopped(helper)
+        : l10n.workRunawayStopFailed(helper),
+    direction,
+  );
+  return outcome;
 }
 
 class WorkStatusLine extends StatelessWidget {

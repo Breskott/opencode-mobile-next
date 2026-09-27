@@ -314,13 +314,7 @@ const _verbatimFindings = <String, (int, String)>{
     'owner: coordinator (workspace page): the share link is a '
         'server-issued URL, not the person\'s own text',
   ),
-  'lib/ui/widgets/external_link.dart': (
-    1,
-    'owner: coordinator (security invariant file): Copy link copies an '
-        'address from a server or message; the comment argues masking '
-        'could change it, but a token in its query would reach the '
-        'clipboard verbatim',
-  ),
+
   'lib/ui/screens/phone_setup/phone_setup_termux_screen.dart': (
     1,
     'owner: phone setup agent: copies the app-authored Termux setup '

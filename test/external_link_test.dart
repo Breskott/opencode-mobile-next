@@ -264,6 +264,61 @@ void main() {
       expect(outcome, ExternalLinkOutcome.cancelled);
     });
 
+    testWidgets('credential link copy masks its secret and opens '
+        'nothing', (tester) async {
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      var launched = false;
+      ExternalLinkOutcome? outcome;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () async {
+                  outcome = await openExternalLink(
+                    context,
+                    'https://example.com/a?api_key=AUDIT_FAKE_KEY',
+                    launcher: (_) async {
+                      launched = true;
+                      return true;
+                    },
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('external-link-copy')));
+      await tester.pumpAndSettle();
+      expect(copied, isNotNull);
+      expect(
+        copied!.contains('AUDIT_FAKE_KEY'),
+        isFalse,
+        reason: 'credential reached clipboard',
+      );
+      expect(launched, isFalse);
+      expect(outcome, ExternalLinkOutcome.cancelled);
+    });
+
     testWidgets('the full address is one tap away under Details', (
       tester,
     ) async {

@@ -4,6 +4,7 @@ import 'package:dio/dio.dart' show CancelToken;
 
 import 'models.dart';
 import 'transport.dart';
+import '../ui/kit/kit_redact.dart';
 
 /// Typed client for the OpenCode 2 server API (Phase-1 read + basic-write
 /// surface). Location-scoped endpoints automatically carry the pinned
@@ -342,6 +343,7 @@ class Api2Client {
 
   Future<List<Api2ProviderInfo>> providers() async {
     final json = await transport.getJson('/provider', query: _loc());
+    KitRedact.registerCredentialValues(json);
     return _dataList(json, Api2ProviderInfo.fromJson);
   }
 

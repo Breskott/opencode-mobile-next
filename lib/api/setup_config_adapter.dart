@@ -64,6 +64,7 @@ class OpenCode1SetupConfigGateway implements SetupConfigGateway {
   @override
   Future<Map<String, Object?>> readConfig() async {
     final data = await _get('/config');
+    KitRedact.registerCredentialValues(data);
     if (data is! Map<String, dynamic>) {
       throw const SetupFailure(
         SetupFailureCode.invalid,

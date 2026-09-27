@@ -3,9 +3,11 @@
 // line's wording and dismissal, the kit's loading bar, skeletons and button
 // block. Old-code comparisons are in work_tab_cleanup_test.dart.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/termux/bridge.dart' show TermuxBridgeException;
 import 'package:opencode_mobile/termux/processes.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
@@ -73,9 +75,8 @@ void main() {
       );
     });
 
-    testWidgets('the phone case reads "OpenCode has been busy", with See '
-        "what's running, and its dismissal lasts until the process "
-        'changes', (tester) async {
+    testWidgets('the phone case reads "OpenCode has been busy", and its '
+        'dismissal lasts until the process changes', (tester) async {
       var report = TermuxProcessReport([_orphan()]);
       var scans = 0;
       await tester.pumpWidget(
@@ -133,6 +134,135 @@ void main() {
       );
       await tester.pumpWidget(const SizedBox());
     });
+
+    // slice-R14: the line's one action stops the process it talks about.
+    Widget stopLine({
+      required TermuxProcessReport Function() report,
+      required Future<TermuxProcessStopResult> Function(int pid) stop,
+    }) => _app(
+      TermuxRunawayWatcher(
+        scan: () async => report(),
+        stop: stop,
+        builder: (context, notice) {
+          if (notice == null) return const SizedBox.shrink();
+          final status = notice.status(
+            lookupAppLocalizations(const Locale('en')),
+          );
+          return KitStatusLine(
+            icon: status.icon,
+            tone: status.tone,
+            message: status.message,
+            action: status.action,
+            onDismiss: status.onDismiss,
+          );
+        },
+      ),
+    );
+
+    List<String> announcements(WidgetTester tester) {
+      final said = <String>[];
+      tester.binding.defaultBinaryMessenger
+          .setMockDecodedMessageHandler<dynamic>(SystemChannels.accessibility, (
+            message,
+          ) async {
+            final data = (message as Map)['data'] as Map?;
+            if (message['type'] == 'announce') said.add('${data?['message']}');
+            return null;
+          });
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<dynamic>(
+              SystemChannels.accessibility,
+              null,
+            ),
+      );
+      return said;
+    }
+
+    testWidgets('Stop node asks first, stops exactly that process, hides the '
+        'line and says so once', (tester) async {
+      final said = announcements(tester);
+      var report = TermuxProcessReport([_orphan(name: 'node')]);
+      final stopped = <int>[];
+      await tester.pumpWidget(
+        stopLine(
+          report: () => report,
+          stop: (pid) async {
+            stopped.add(pid);
+            report = TermuxProcessReport(const []);
+            return TermuxProcessStopResult(
+              stopped: [pid],
+              killed: const [],
+              remaining: const [],
+              refused: const [],
+            );
+          },
+        ),
+      );
+      await _settle(tester);
+      final stop = find.byKey(const ValueKey('work-status-runaway-stop'));
+      expect(
+        find.descendant(of: stop, matching: find.text('Stop node')),
+        findsOneWidget,
+      );
+      expect(find.text("See what's running"), findsNothing);
+
+      // Keep: nothing stops, the line stays.
+      await tester.tap(stop);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('work-runaway-stop-confirm')),
+        findsOneWidget,
+      );
+      expect(find.text('Stop node?'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('kit-confirm-cancel')));
+      await tester.pumpAndSettle();
+      expect(stopped, isEmpty);
+      expect(find.byType(KitStatusLine), findsOneWidget);
+
+      await tester.tap(stop);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('work-runaway-stop-confirm-stop')),
+      );
+      await tester.pumpAndSettle();
+      expect(stopped, [4242]);
+      expect(find.byType(KitStatusLine), findsNothing);
+      expect(said, ['Stopped node']);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a stop that did not end it keeps the line in plain failure '
+        'words, with the same Stop to try again', (tester) async {
+      final said = announcements(tester);
+      await tester.pumpWidget(
+        stopLine(
+          report: () => TermuxProcessReport([_orphan(name: 'node')]),
+          stop: (pid) async => throw const TermuxBridgeException(
+            'procs-stop: kill(4242) EPERM',
+            code: 'tool_failed',
+          ),
+        ),
+      );
+      await _settle(tester);
+      await tester.tap(find.byKey(const ValueKey('work-status-runaway-stop')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('work-runaway-stop-confirm-stop')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text("Couldn't stop node. Try again, or stop it from Termux."),
+        findsOneWidget,
+      );
+      expect(find.textContaining('EPERM'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('work-status-runaway-stop')),
+        findsOneWidget,
+      );
+      expect(said, ["Couldn't stop node. Try again, or stop it from Termux."]);
+      await tester.pumpWidget(const SizedBox());
+    });
   });
 
   group('one status line, most urgent first', () {
@@ -159,8 +289,9 @@ void main() {
           context,
           WorkRunawayNotice(
             identity: 1,
+            helper: 'node',
             busyFor: '10 min',
-            onOpen: () {},
+            onStop: () {},
             onDismiss: () {},
           ),
         );

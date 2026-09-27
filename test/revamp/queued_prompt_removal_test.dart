@@ -338,9 +338,10 @@ void main() {
         );
         expect(find.byKey(const ValueKey('server-row-studio')), findsOne);
         expect(
-          find.textContaining(
-            'The queued prompts for Studio Mac cannot be read.',
-            findRichText: true,
+          find.text(
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).serversRemoveQueuedUnreadable('Studio Mac'),
           ),
           findsOne,
         );

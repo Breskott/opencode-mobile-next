@@ -274,3 +274,9 @@ flutter analyze --no-pub
 Implemented and verified: F2/F3 controller and Servers behavior, with the required
 gates passing. The separate base failures above remain outside these fixes.
 Local commit only; no push.
+
+## Audit merge integration — 2026-09-28
+
+Merged `feat/phone-setup-v2` at `98c4c67a`. Kept one Servers queue-read blocker and its recoverable Details flow, the audit credential-registration and product-failure mapping, and the F2 reversible-owner/committed-erasure transaction. English localization keeps both sets of keys without duplicate removal copy. The raw-error allowlist has no additions.
+
+Pinned Flutter verification: 328 focused controller, credential-ingress, persistence and gate tests passed; all 7 Servers removal behavior tests passed; `flutter analyze` found no issues (57.0s). `dart format --language-version=3.10` and the staged diff whitespace check passed. No push or release performed.

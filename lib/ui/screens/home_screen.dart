@@ -172,7 +172,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         _selectTab(_projectTab);
         (tool == ProjectTool.files ? _openFiles : _findInFiles).value++;
         return true;
-      case OpenTerminalIntent() when capabilities.terminal:
+      // Always the Terminal page, even on a server that keeps no terminals:
+      // the page says why (the terminal capability) and offers this phone's
+      // terminal where there is one, instead of the keystroke doing nothing.
+      case OpenTerminalIntent():
         unawaited(
           pushKitPage<void>(
             context,
@@ -396,15 +399,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     final content = KitScreen(
       // Compact and medium: the glass top controls; the dock or rail names
-      // the tab. The PC sidebar holds the controls, so the content pane
-      // names its destination instead.
-      topBar: sidebar
-          ? KitTopBar(
-              title: _titles[activeTab],
-              titleKey: const ValueKey('current-tab-title'),
-              exit: KitTopBarExit.none,
-            )
-          : KitTopBar.shell(controls: controls),
+      // the tab. The PC sidebar holds the controls and highlights the
+      // destination, so the pane has no bar at all: it starts with the
+      // destination's own header (the project on Work, visual language
+      // Desktop.png), never a title repeating the sidebar (slice-R14).
+      topBar: sidebar ? null : KitTopBar.shell(controls: controls),
+      page: sidebar,
       status: _backExitHint == null
           ? null
           : KitStatus(
@@ -605,13 +605,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       });
     });
   }
-
-  List<String> get _titles => [
-    _l10n(context).shellTabWork,
-    _l10n(context).shellTabInbox,
-    _l10n(context).shellTabProject,
-    _l10n(context).librarySettingsTitle,
-  ];
 }
 
 AppLocalizations _l10n(BuildContext context) =>

@@ -67,6 +67,7 @@ class OpenCode2SetupConfigGateway implements SetupConfigGateway {
   @override
   Future<Map<String, Object?>> readConfig() async {
     final data = await _get('/config');
+    KitRedact.registerCredentialValues(data);
     final sources = data is Map ? data['data'] : data;
     if (sources is! List ||
         sources.any((entry) => entry is! Map || entry['type'] is! String)) {
