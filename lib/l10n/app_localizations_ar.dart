@@ -2051,6 +2051,14 @@ class AppLocalizationsAr extends AppLocalizations {
       'سيُرسل نص الرد المحمّل إلى محرّك النطق في نظامك. تُعرض فقط الأصوات الموسومة بأنها تعمل دون اتصال، لكن المحرّك برنامج مستقل وتسري ممارسات الخصوصية الخاصة به. تُستبعد كتل الشيفرة وتفاصيل الأدوات. قد يسمع الآخرون الصوت. تتوقف القراءة عند فتح شاشة تغطي هذه المحادثة أو انتقال التطبيق إلى الخلفية.';
 
   @override
+  String get readAloudConsentEngine =>
+      'Only offline voices are offered, but the speech engine is separate software with its own privacy terms.';
+
+  @override
+  String get readAloudConsentHeard =>
+      'People near you may hear it. Reading stops when you leave this conversation or the app.';
+
+  @override
   String get readAloudContinue => 'اختيار صوت';
 
   @override
@@ -2317,6 +2325,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get transcriptFindAll => 'البحث في السجل كاملًا';
+
+  @override
+  String get transcriptFindStopSearchingAll => 'Stop searching older messages';
 
   @override
   String get skillMenu => 'استخدام مهارة';
@@ -16643,6 +16654,17 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get nudgeReviewChanges =>
       'غيّر هذا التشغيل ملفات: راجع ما تغيّر قبل أن تتابع.';
+
+  @override
+  String nudgeReviewChangesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'OpenCode changed $count files. Look them over before you go on.',
+      one: 'OpenCode changed 1 file. Look it over before you go on.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get nudgeLeave =>

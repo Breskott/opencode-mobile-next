@@ -11,6 +11,7 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/domain/transcript_search.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart' show ServerPage;
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
@@ -135,6 +136,9 @@ Future<void> _pump(
         key: const ValueKey('find-preview'),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
+          // The kit's search field reads the app's strings.
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: captureTheme(),
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
@@ -299,10 +303,8 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('transcript-find-older')));
       await tester.pumpAndSettle();
       expect(find.text('6 of 6 matches'), findsWidgets);
-      expect(
-        find.text('All available message content searched.'),
-        findsOneWidget,
-      );
+      // Nothing is left to load, so nothing is said about it.
+      expect(find.textContaining('Loaded messages only.'), findsNothing);
       await tester.tap(find.byKey(const ValueKey('transcript-find-next')));
       await tester.pumpAndSettle();
       expect(find.text('1 of 6 matches'), findsOneWidget);
@@ -359,7 +361,7 @@ void main() {
     await _query(tester, 'cache');
     await tester.tap(find.byKey(const ValueKey('transcript-find-older')));
     await tester.pump();
-    await tester.tap(find.text('Cancel'));
+    await tester.tap(find.text('Stop searching older messages'));
     await tester.pump();
     api.olderGate!.complete(ServerPage(items: [], nextCursor: 'oldest'));
     await tester.pumpAndSettle();

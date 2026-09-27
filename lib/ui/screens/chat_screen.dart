@@ -58,7 +58,6 @@ import '../widgets/diff_view.dart';
 import '../widgets/file_preview.dart';
 import '../widgets/first_reply_notify_card.dart';
 import '../widgets/markdown.dart';
-import '../widgets/nudge_card.dart';
 import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/pickers.dart';
 import '../widgets/model_shortcuts.dart';
@@ -6040,7 +6039,9 @@ class _ChatScreenState extends State<ChatScreen>
             ),
             reasoningExpanded: _conn.transcriptReasoningExpanded,
             timestampsVisible: _conn.transcriptTimestampsVisible,
-            todosAvailable: _conn.capabilities.sessionTodos,
+            // The plan lives in the transcript; the entry is offered when
+            // there is one to land on.
+            todosAvailable: _latestPlan != null,
             changesAvailable: _conn.capabilities.sessionDiff,
             forkAvailable: _conn.capabilities.sessionFork,
             revertAvailable: _conn.capabilities.sessionRevert,
@@ -6109,7 +6110,7 @@ class _ChatScreenState extends State<ChatScreen>
       case 'changes':
         _showDiff();
       case 'todos':
-        _showTodos();
+        _openPlan();
       case 'subagents':
         await _showSubagents();
       case 'thinking':
@@ -6200,14 +6201,6 @@ class _ChatScreenState extends State<ChatScreen>
           child: ContinueOnPhoneSheet(link: link),
         ),
       ),
-    );
-  }
-
-  void _showTodos() {
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (_) => _TodosSheet(conn: _conn, sessionID: widget.sessionID),
     );
   }
 

@@ -3461,14 +3461,26 @@ abstract class AppLocalizations {
   /// Consent before any system speech engine access
   ///
   /// In en, this message translates to:
-  /// **'Use the system speech engine?'**
+  /// **'Read replies aloud?'**
   String get readAloudConsentTitle;
 
   /// Discloses external engine access and audible output without promising network isolation
   ///
   /// In en, this message translates to:
-  /// **'The loaded reply prose will be sent to your system speech engine. Only voices marked offline are offered, but the engine is separate software and its privacy practices apply. Code blocks and tool details are omitted. Others may hear the audio. Playback stops when this conversation is covered or the app goes into the background.'**
+  /// **'Your phone\'s speech engine reads the reply aloud. Code and tool details are skipped.'**
   String get readAloudConsentDetail;
+
+  /// Read-aloud consent: a caveat under the two-sentence body. The engine is not part of this app; no promise of network isolation.
+  ///
+  /// In en, this message translates to:
+  /// **'Only offline voices are offered, but the speech engine is separate software with its own privacy terms.'**
+  String get readAloudConsentEngine;
+
+  /// Read-aloud consent: a caveat under the two-sentence body about audible output and when playback stops.
+  ///
+  /// In en, this message translates to:
+  /// **'People near you may hear it. Reading stops when you leave this conversation or the app.'**
+  String get readAloudConsentHeard;
 
   /// Accept speech disclosure and request installed voice metadata
   ///
@@ -3889,6 +3901,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search all history'**
   String get transcriptFindAll;
+
+  /// Find in conversation: stops loading older history to search it; what is already loaded stays searched.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop searching older messages'**
+  String get transcriptFindStopSearchingAll;
 
   /// No description provided for @skillMenu.
   ///
@@ -14773,10 +14791,10 @@ abstract class AppLocalizations {
   /// **'Todo list'**
   String get chatUiTodoList;
 
-  /// Chat journey: Todos
+  /// Conversation menu entry that jumps to the agent's latest task list in the transcript (the Tasks step).
   ///
   /// In en, this message translates to:
-  /// **'Todos'**
+  /// **'Tasks'**
   String get chatUiTodos;
 
   /// Chat journey: Toggle creation times beside transcript entries
@@ -15175,10 +15193,10 @@ abstract class AppLocalizations {
   /// **'{position} of {total}'**
   String chatUiPositionOfTotal(Object position, Object total);
 
-  /// Chat journey: Subagent · {count}
+  /// Status line of a conversation another agent delegated: its place among its siblings, such as 2 of 3.
   ///
   /// In en, this message translates to:
-  /// **'Subagent · {count}'**
+  /// **'Delegated conversation · {count}'**
   String chatUiSubagentCount(Object count);
 
   /// Chat journey: Shared session link {url}
@@ -26510,8 +26528,14 @@ abstract class AppLocalizations {
   /// One-time tip above the composer when a run that edited files finishes. Its button opens Review changes.
   ///
   /// In en, this message translates to:
-  /// **'This run changed files: review what changed before you continue.'**
+  /// **'OpenCode changed files. Look them over before you go on.'**
   String get nudgeReviewChanges;
+
+  /// One-time tip above the composer when a turn that edited files finishes and the server counted them. Its button opens Review changes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{OpenCode changed 1 file. Look it over before you go on.} other{OpenCode changed {count} files. Look them over before you go on.}}'**
+  String nudgeReviewChangesCount(int count);
 
   /// One-time tip above the composer after a run has kept the person waiting for a minute while finished-run notifications are on.
   ///
