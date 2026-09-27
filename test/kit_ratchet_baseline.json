@@ -1,18 +1,9 @@
 {
   "G1": {
-    "lib/feedback/bug_report.dart": {
-      "SnackBar(": 1,
-      "showSnackBar(": 1
-    },
     "lib/main.dart": {
       "MaterialBanner(": 2,
       "SnackBar(": 6,
       "showSnackBar(": 6
-    },
-    "lib/ui/screens/app_diagnostics_screen.dart": {
-      "SnackBar(": 3,
-      "showConfirmSheet(": 1,
-      "showSnackBar(": 3
     },
     "lib/ui/screens/chat/approvals_sheet.dart": {
       "SnackBar(": 2,
@@ -76,10 +67,6 @@
       "showDialog(": 1,
       "showSnackBar(": 1
     },
-    "lib/ui/screens/keep_running_screen.dart": {
-      "SnackBar(": 1,
-      "showSnackBar(": 1
-    },
     "lib/ui/screens/legacy_drafts_screen.dart": {
       "SnackBar(": 1,
       "showConfirmSheet(": 1,
@@ -107,21 +94,8 @@
     "lib/ui/screens/library/skills_screen.dart": {
       "showModalBottomSheet(": 2
     },
-    "lib/ui/screens/perf_trace_section.dart": {
-      "SnackBar(": 1,
-      "showSnackBar(": 1
-    },
     "lib/ui/screens/project_folder_actions.dart": {
       "showModalBottomSheet(": 2
-    },
-    "lib/ui/screens/provider_quota_screen.dart": {
-      "AlertDialog(": 1,
-      "SnackBar(": 1,
-      "showDialog(": 1,
-      "showSnackBar(": 1
-    },
-    "lib/ui/screens/run_result_screen.dart": {
-      "MaterialBanner(": 1
     },
     "lib/ui/screens/running_work_sheet.dart": {
       "SnackBar(": 3,
@@ -145,9 +119,6 @@
       "showDialog(": 1,
       "showModalBottomSheet(": 1,
       "showSnackBar(": 1
-    },
-    "lib/ui/screens/staged_revert_screen.dart": {
-      "showModalBottomSheet(": 2
     },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "SnackBar(": 1,
@@ -189,17 +160,6 @@
       "SnackBar(": 1,
       "showModalBottomSheet(": 1,
       "showSnackBar(": 1
-    },
-    "lib/update/desktop_release_check.dart": {
-      "SnackBar(": 1,
-      "showSnackBar(": 1
-    },
-    "lib/update/shorebird_update_notice.dart": {
-      "SnackBar(": 2,
-      "showSnackBar(": 2
-    },
-    "lib/voice/voice_ui.dart": {
-      "showModalBottomSheet(": 2
     }
   },
   "G15": {
@@ -217,20 +177,6 @@
     "lib/ui/app_theme.dart": {
       "AppBarTheme": 1,
       "InputDecorationTheme": 1
-    },
-    "lib/ui/screens/about_screen.dart": {
-      "AppBar": 1,
-      "DefaultTabController": 1,
-      "Divider": 2,
-      "Icon": 4,
-      "IconButton": 1,
-      "ListTile": 1,
-      "Scaffold": 1,
-      "SelectionArea": 1,
-      "Tab": 2,
-      "TabBar": 1,
-      "TabBarView": 1,
-      "Text": 8
     },
     "lib/ui/screens/active_context_screen.dart": {
       "AppBar": 2,
@@ -252,15 +198,6 @@
       "Scaffold": 1,
       "SingleChildScrollView": 1,
       "Text": 3
-    },
-    "lib/ui/screens/app_diagnostics_screen.dart": {
-      "AppBar": 1,
-      "Divider": 2,
-      "ExpansionTile": 1,
-      "Scaffold": 1,
-      "SelectionArea": 1,
-      "SnackBar": 3,
-      "Text": 10
     },
     "lib/ui/screens/attention_overview_screen.dart": {
       "AppBar": 1,
@@ -541,15 +478,6 @@
       "TextButton": 5,
       "TextField": 4
     },
-    "lib/ui/screens/keep_running_screen.dart": {
-      "AppBar": 1,
-      "Icon": 2,
-      "MaterialPageRoute": 1,
-      "Scaffold": 1,
-      "SnackBar": 1,
-      "Text": 4,
-      "Tooltip": 1
-    },
     "lib/ui/screens/legacy_drafts_screen.dart": {
       "AppBar": 1,
       "FilledButton": 1,
@@ -651,43 +579,8 @@
       "Text": 18,
       "TextFormField": 7
     },
-    "lib/ui/screens/perf_trace_section.dart": {
-      "SnackBar": 1,
-      "Text": 7
-    },
     "lib/ui/screens/phone_setup/phone_setup_routes.dart": {
       "MaterialPageRoute": 3
-    },
-    "lib/ui/screens/provider_quota_screen.dart": {
-      "AlertDialog": 1,
-      "AppBar": 1,
-      "Card": 1,
-      "CheckboxListTile": 1,
-      "ChoiceChip": 1,
-      "Divider": 1,
-      "DropdownButton": 2,
-      "DropdownMenuItem": 3,
-      "FilledButton": 2,
-      "Icon": 2,
-      "IconButton": 1,
-      "LinearProgressIndicator": 2,
-      "MaterialPageRoute": 1,
-      "Scaffold": 1,
-      "SelectableText": 1,
-      "SingleChildScrollView": 1,
-      "SnackBar": 1,
-      "SwitchListTile": 1,
-      "Text": 42,
-      "TextButton": 5
-    },
-    "lib/ui/screens/run_result_screen.dart": {
-      "AppBar": 1,
-      "CircularProgressIndicator": 1,
-      "FilledButton": 1,
-      "MaterialBanner": 1,
-      "Scaffold": 1,
-      "Text": 7,
-      "TextButton": 1
     },
     "lib/ui/screens/running_work_sheet.dart": {
       "AppBar": 1,
@@ -708,13 +601,6 @@
       "SwitchListTile": 1,
       "Text": 25,
       "TextButton": 4
-    },
-    "lib/ui/screens/server_capabilities_screen.dart": {
-      "AppBar": 1,
-      "Icon": 1,
-      "ListTile": 1,
-      "Scaffold": 1,
-      "Text": 5
     },
     "lib/ui/screens/session_context_screen.dart": {
       "AppBar": 1,
@@ -804,20 +690,6 @@
       "Text": 17,
       "TextButton": 1
     },
-    "lib/ui/screens/staged_revert_screen.dart": {
-      "AppBar": 1,
-      "CheckboxListTile": 1,
-      "FilledButton": 3,
-      "Icon": 1,
-      "LinearProgressIndicator": 1,
-      "ListTile": 1,
-      "MaterialPageRoute": 1,
-      "OutlinedButton": 1,
-      "Scaffold": 1,
-      "SingleChildScrollView": 2,
-      "Text": 30,
-      "TextButton": 3
-    },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "AppBar": 1,
       "Divider": 1,
@@ -885,15 +757,6 @@
       "Text": 12,
       "TextButton": 1,
       "TextField": 1
-    },
-    "lib/ui/screens/usage_hub_screen.dart": {
-      "AppBar": 2,
-      "DefaultTabController": 1,
-      "Scaffold": 2,
-      "Tab": 1,
-      "TabBar": 1,
-      "TabBarView": 1,
-      "Text": 1
     },
     "lib/ui/screens/web_sources_screen.dart": {
       "AppBar": 1,
@@ -1015,14 +878,10 @@
     "lib/ui/widgets/transcript_highlight.dart": {
       "Container": 1,
       "Text": 2
-    },
-    "lib/voice/notices.dart": {
-      "MaterialPageRoute": 1
     }
   },
   "G2": {
     "lib/feedback/bug_report.dart": {
-      "Clipboard.setData(": 1,
       "launchUrl(": 1
     },
     "lib/ui/kit/scenes/folders_open_scene.dart": {
@@ -1064,10 +923,6 @@
     "lib/ui/screens/active_context_screen.dart": {
       "Clipboard.setData(": 1,
       "ProductErrorState(": 1
-    },
-    "lib/ui/screens/app_diagnostics_screen.dart": {
-      "Clipboard.setData(": 1,
-      "showConfirmSheet(": 1
     },
     "lib/ui/screens/attention_overview_screen.dart": {
       "ProductEmptyState(": 1
@@ -1151,9 +1006,6 @@
     "lib/ui/screens/mcp_setup_screen.dart": {
       "KitSecretField(": 1
     },
-    "lib/ui/screens/perf_trace_section.dart": {
-      "Clipboard.setData(": 1
-    },
     "lib/ui/screens/running_work_sheet.dart": {
       "Clipboard.setData(": 1
     },
@@ -1203,17 +1055,11 @@
     },
     "lib/ui/widgets/team_phone_onboarding.dart": {
       "Clipboard.setData(": 1
-    },
-    "lib/voice/notices.dart": {
-      "ProductErrorState(": 1
     }
   },
   "G7": {
     "lib/ui/screens/active_context_screen.dart": {
       "EdgeInsets.only(left|right:)": 1
-    },
-    "lib/ui/screens/app_diagnostics_screen.dart": {
-      "bidi literal": 2
     },
     "lib/ui/screens/chat_screen.dart": {
       "Positioned(left|right:)": 1
@@ -1243,9 +1089,6 @@
     "lib/ui/kit/glass/kit_glass.dart": {
       "Colors.*": 2
     },
-    "lib/ui/screens/about_screen.dart": {
-      ".textTheme": 5
-    },
     "lib/ui/screens/active_context_screen.dart": {
       ".colorScheme": 1,
       ".textTheme": 3
@@ -1253,10 +1096,6 @@
     "lib/ui/screens/agent_choice_screen.dart": {
       ".colorScheme": 1,
       ".textTheme": 2
-    },
-    "lib/ui/screens/app_diagnostics_screen.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 4
     },
     "lib/ui/screens/attention_overview_screen.dart": {
       ".textTheme": 2
@@ -1341,10 +1180,6 @@
       ".colorScheme": 3,
       ".textTheme": 12
     },
-    "lib/ui/screens/keep_running_screen.dart": {
-      ".textTheme": 2,
-      "attention roles": 1
-    },
     "lib/ui/screens/legacy_drafts_screen.dart": {
       ".textTheme": 1
     },
@@ -1368,18 +1203,6 @@
     "lib/ui/screens/mcp_setup_screen.dart": {
       ".colorScheme": 3,
       ".textTheme": 5
-    },
-    "lib/ui/screens/perf_trace_section.dart": {
-      ".colorScheme": 3,
-      ".textTheme": 4
-    },
-    "lib/ui/screens/provider_quota_screen.dart": {
-      ".colorScheme": 1,
-      ".textTheme": 9,
-      "attention roles": 2
-    },
-    "lib/ui/screens/run_result_screen.dart": {
-      ".textTheme": 1
     },
     "lib/ui/screens/running_work_sheet.dart": {
       ".colorScheme": 4,
@@ -1413,10 +1236,6 @@
     "lib/ui/screens/settings/server_plugins_section.dart": {
       ".colorScheme": 4,
       ".textTheme": 6
-    },
-    "lib/ui/screens/staged_revert_screen.dart": {
-      ".colorScheme": 3,
-      ".textTheme": 4
     },
     "lib/ui/screens/team/agent_output_screen.dart": {
       ".textTheme": 3,
@@ -1496,10 +1315,6 @@
     },
     "lib/ui/widgets/transcript_highlight.dart": {
       ".colorScheme": 2
-    },
-    "lib/voice/voice_ui.dart": {
-      ".colorScheme": 23,
-      ".textTheme": 7
     }
   },
   "G21": {
@@ -1577,10 +1392,6 @@
     "lib/ui/kit/terminal_key_bar.dart": {
       "EdgeInsets numeric": 1
     },
-    "lib/ui/screens/about_screen.dart": {
-      "EdgeInsets numeric": 3,
-      "SizedBox numeric": 7
-    },
     "lib/ui/screens/active_context_screen.dart": {
       "EdgeInsets numeric": 10,
       "SizedBox numeric": 2,
@@ -1589,12 +1400,6 @@
     "lib/ui/screens/agent_choice_screen.dart": {
       "EdgeInsets numeric": 1,
       "SizedBox numeric": 2
-    },
-    "lib/ui/screens/app_diagnostics_screen.dart": {
-      "EdgeInsets numeric": 4,
-      "SizedBox numeric": 6,
-      "TextStyle(": 1,
-      "fontSize:": 1
     },
     "lib/ui/screens/attention_overview_screen.dart": {
       "EdgeInsets numeric": 4,
@@ -1721,10 +1526,6 @@
       "TextStyle(": 1,
       "icon size not 20/22/24": 2
     },
-    "lib/ui/screens/keep_running_screen.dart": {
-      "EdgeInsets numeric": 2,
-      "SizedBox numeric": 3
-    },
     "lib/ui/screens/legacy_drafts_screen.dart": {
       "EdgeInsets numeric": 3,
       "SizedBox numeric": 3
@@ -1768,23 +1569,8 @@
       "EdgeInsets numeric": 6,
       "SizedBox numeric": 17
     },
-    "lib/ui/screens/perf_trace_section.dart": {
-      "EdgeInsets numeric": 2,
-      "SizedBox numeric": 6,
-      "TextStyle(": 1,
-      "fontSize:": 1
-    },
     "lib/ui/screens/project_health_screen.dart": {
       "EdgeInsets numeric": 1
-    },
-    "lib/ui/screens/provider_quota_screen.dart": {
-      "EdgeInsets numeric": 2,
-      "SizedBox numeric": 21,
-      "TextStyle(": 1
-    },
-    "lib/ui/screens/run_result_screen.dart": {
-      "EdgeInsets numeric": 3,
-      "SizedBox numeric": 1
     },
     "lib/ui/screens/running_work_sheet.dart": {
       "BorderRadius.circular(<n>": 1,
@@ -1792,9 +1578,6 @@
       "SizedBox numeric": 10,
       "fontSize:": 1,
       "icon size not 20/22/24": 2
-    },
-    "lib/ui/screens/server_capabilities_screen.dart": {
-      "EdgeInsets numeric": 3
     },
     "lib/ui/screens/session_context_screen.dart": {
       "BorderRadius.circular(<n>": 2,
@@ -1831,11 +1614,6 @@
       "EdgeInsets numeric": 5,
       "SizedBox numeric": 7,
       "TextStyle(": 4
-    },
-    "lib/ui/screens/staged_revert_screen.dart": {
-      "EdgeInsets numeric": 3,
-      "SizedBox numeric": 16,
-      "TextStyle(": 1
     },
     "lib/ui/screens/team/agent_output_screen.dart": {
       "EdgeInsets numeric": 4
@@ -1934,23 +1712,6 @@
       "EdgeInsets numeric": 2,
       "SizedBox numeric": 1,
       "TextStyle(": 4
-    },
-    "lib/update/shorebird_update_notice.dart": {
-      "SizedBox numeric": 1
-    },
-    "lib/voice/notices.dart": {
-      "EdgeInsets numeric": 1,
-      "TextStyle(": 1,
-      "fontSize:": 1
-    },
-    "lib/voice/voice_ui.dart": {
-      "Border.all(": 3,
-      "BorderRadius.circular(<n>": 6,
-      "EdgeInsets numeric": 11,
-      "SizedBox numeric": 28,
-      "TextStyle(": 4,
-      "disableAnimationsOf": 1,
-      "icon size not 20/22/24": 2
     }
   },
   "G48": {
