@@ -1,13 +1,6 @@
-import '../../l10n/app_localizations.dart';
-import '../widgets/setup_ui_messages.dart';
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-
-import '../app_theme.dart';
-import '../widgets/confirm_sheet.dart';
-
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:xterm/xterm.dart' as xterm;
@@ -16,15 +9,16 @@ import '../../api/product_repository.dart';
 import '../../builtin/builtin_linux.dart';
 import '../../builtin/builtin_server.dart' show builtinLinuxProvider;
 import '../../builtin/local_terminal.dart';
-import '../../state/connection.dart';
-import '../desktop/context_menu.dart';
-import '../desktop/desktop_interaction.dart';
-import '../kit/kit_progress.dart';
 import '../../feedback/bug_report.dart';
-import '../kit/kit.dart'
-    show KitAction, KitAnimatedRows, KitRefresh, KitReveal, KitStateView;
+import '../../l10n/app_localizations.dart';
+import '../../state/connection.dart';
+import '../app_theme.dart';
+import '../desktop/desktop_interaction.dart';
+import '../kit/kit.dart';
 import '../kit/scenes/states_scenes.dart';
-import '../widgets/product_states.dart';
+import '../kit/terminal_key_bar.dart';
+import '../widgets/product_states.dart' show productErrorText;
+import '../widgets/setup_ui_messages.dart';
 import 'local_terminal_screen.dart';
 
 /// Serialises terminal keystrokes into one ordered write per flush.
@@ -84,6 +78,12 @@ bool terminalKeyEventText(KeyEvent event) {
   return !keyboard.isControlPressed && !keyboard.isMetaPressed;
 }
 
+AppLocalizations _l10nOf(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));
+
+/// The capability a server's terminals need (docs/ux-system/capabilities.json).
+const _terminalCapability = 'flag:fileBrowsing+terminal';
+
 /// [TerminalScreen] as its own pushed route. Every entry point that leaves
 /// the shell for the terminal — the More hub, the Workspace header, the
 /// desktop shortcut — pushes this one page so they all land identically.
@@ -91,7 +91,8 @@ bool terminalKeyEventText(KeyEvent event) {
 /// On Android it offers two sources (docs/design/local-terminal-2026-09-24.md
 /// §4): "This phone", a shell in the app's built-in Ubuntu that needs no
 /// OpenCode server, and "OpenCode server", the server's own terminals. This
-/// phone is the default once its Linux is installed.
+/// phone is the default once its Linux is installed; without it the phone
+/// choice stays offered and explains how to set Linux up (P7.4).
 class TerminalPage extends ConsumerStatefulWidget {
   final ConnectionController controller;
 
@@ -144,121 +145,188 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
     );
   }
 
+  void _choose(TerminalSource source) => setState(() => _source = source);
+
   @override
   Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final title = Text(l10n.libraryTerminalTitle);
+    final l10n = _l10nOf(context);
     if (!_local) {
-      return Scaffold(
+      return KeyedSubtree(
         key: const ValueKey('terminal-page'),
-        appBar: AppBar(title: title),
-        body: TerminalScreen(controller: widget.controller),
+        child: TerminalScreen(controller: widget.controller, page: true),
       );
     }
-    final choice = _SourceChoice(
-      source: _source,
-      onChanged: (source) => setState(() => _source = source),
-    );
+    final source = _source;
+    final choice = source == null
+        ? null
+        : _SourceChoice(source: source, onChanged: _choose);
     return KeyedSubtree(
       key: const ValueKey('terminal-page'),
-      child: switch (_source) {
+      child: switch (source) {
         TerminalSource.phone => LocalTerminalView(
           header: choice,
           linux: widget.linux,
           sessions: widget.sessions,
         ),
-        TerminalSource.server => Scaffold(
-          appBar: AppBar(
-            title: title,
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(_SourceChoice.height),
-              child: choice,
-            ),
-          ),
-          body: TerminalScreen(controller: widget.controller),
+        TerminalSource.server => TerminalScreen(
+          controller: widget.controller,
+          page: true,
+          header: [?choice],
+          onUsePhone: () => _choose(TerminalSource.phone),
         ),
-        null => Scaffold(
-          appBar: AppBar(
-            title: title,
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(_SourceChoice.height + 2),
-              child: Column(
-                children: [
-                  choice,
-                  KitLoadingBar(
-                    loading: true,
-                    label: l10n.localTerminalStarting,
-                  ),
-                ],
-              ),
-            ),
-          ),
+        null => KitScreen(
+          topBar: KitTopBar(title: l10n.libraryTerminalTitle),
+          loading: true,
+          loadingLabel: l10n.localTerminalStarting,
+          body: const SizedBox.shrink(),
         ),
       },
     );
   }
 }
 
+/// Where the shell runs: this phone or the OpenCode server.
 class _SourceChoice extends StatelessWidget {
   const _SourceChoice({required this.source, required this.onChanged});
 
-  static const height = 56.0;
-
-  final TerminalSource? source;
+  final TerminalSource source;
   final ValueChanged<TerminalSource> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return SizedBox(
-      height: height,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-        child: SizedBox(
-          width: double.infinity,
-          child: SegmentedButton<TerminalSource>(
-            key: const ValueKey('terminal-source'),
-            showSelectedIcon: false,
-            emptySelectionAllowed: true,
-            segments: [
-              ButtonSegment(
-                value: TerminalSource.phone,
-                label: Text(
-                  l10n.localTerminalSourcePhone,
-                  key: const ValueKey('terminal-source-phone'),
-                ),
-              ),
-              ButtonSegment(
-                value: TerminalSource.server,
-                label: Text(
-                  l10n.localTerminalSourceServer,
-                  key: const ValueKey('terminal-source-server'),
-                ),
-              ),
-            ],
-            selected: {?source},
-            onSelectionChanged: (selected) {
-              if (selected.isNotEmpty) onChanged(selected.first);
-            },
+    final l10n = _l10nOf(context);
+    final tokens = KitTokens.of(context);
+    return Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(
+        tokens.gutter,
+        tokens.space1,
+        tokens.gutter,
+        tokens.space2,
+      ),
+      child: KitSegmented<TerminalSource>(
+        key: const ValueKey('terminal-source'),
+        semanticsLabel: l10n.terminalScreenSourceLabel,
+        segments: [
+          KitSegment(
+            key: const ValueKey('terminal-source-phone'),
+            value: TerminalSource.phone,
+            label: l10n.localTerminalSourcePhone,
           ),
-        ),
+          KitSegment(
+            key: const ValueKey('terminal-source-server'),
+            value: TerminalSource.server,
+            label: l10n.localTerminalSourceServer,
+          ),
+        ],
+        selected: source,
+        onChanged: onChanged,
       ),
     );
   }
 }
 
+/// Asks for a terminal's new name and renames it on the server. A failure
+/// stays in the dialog under the field, with the typed name kept. Returns
+/// the new name, or null when nothing changed.
+Future<String?> _renameTerminal(
+  BuildContext context,
+  TerminalProcess process,
+  Future<ServerOperationsGateway?> Function() repository,
+) {
+  final l10n = _l10nOf(context);
+  return showKitInputDialog(
+    context,
+    title: l10n.e7SetupRenameTerminal,
+    label: l10n.terminalScreenNameLabel,
+    confirmLabel: l10n.terminalScreenRenameConfirm,
+    initial: process.title,
+    validate: (value) =>
+        value.trim().isEmpty ? l10n.terminalScreenNameEmpty : null,
+    fieldKey: const ValueKey('terminal-rename-field'),
+    confirmKey: const ValueKey('terminal-rename-confirm'),
+    onSubmit: (value) async {
+      try {
+        final gateway = await repository();
+        if (gateway == null) return l10n.e7SetupServerDisconnected;
+        await gateway.renameTerminal(process.id, value.trim());
+        return null;
+      } catch (error) {
+        return setupUiMessage(l10n, productErrorText(error));
+      }
+    },
+  );
+}
+
+/// Asks before stopping (a running terminal) or removing (an ended one) and
+/// does it inside the question, so a failure keeps it open with Try again.
+/// True once the terminal is gone.
+Future<bool> _removeTerminal(
+  BuildContext context,
+  TerminalProcess process,
+  Future<ServerOperationsGateway?> Function() repository,
+) {
+  final l10n = _l10nOf(context);
+  final running = process.running;
+  return showKitConfirm(
+    context,
+    title: running
+        ? l10n.terminalScreenStopTitle(process.title)
+        : l10n.terminalScreenRemoveTitle(process.title),
+    body: running ? l10n.terminalScreenStopBody : l10n.terminalScreenRemoveBody,
+    confirmLabel: running
+        ? l10n.terminalScreenStopConfirm
+        : l10n.terminalScreenRemoveConfirm,
+    kind: running ? KitConfirmKind.stop : KitConfirmKind.destructive,
+    icon: running ? AppIconography.stop : AppIconography.delete,
+    confirmKey: const ValueKey('terminal-remove-confirm'),
+    action: () async {
+      final gateway = await repository();
+      if (gateway == null) {
+        throw ProductException(l10n.e7SetupServerDisconnected);
+      }
+      await gateway.removeTerminal(process.id);
+    },
+  );
+}
+
+/// The server's terminals: one list, running first, each row opening its
+/// terminal, with rename and stop or remove in the row's menu.
 class TerminalScreen extends StatefulWidget {
   final ConnectionController controller;
-  const TerminalScreen({super.key, required this.controller});
+
+  /// Draws its own top bar ("Terminal"). Null decides by where it sits: a
+  /// page of its own when nothing above it already frames it.
+  final bool? page;
+
+  /// Fixed rows under the top bar (the terminal page's source choice).
+  final List<Widget> header;
+
+  /// Offered when this server has no terminals: switch to this phone's.
+  final VoidCallback? onUsePhone;
+
+  const TerminalScreen({
+    super.key,
+    required this.controller,
+    this.page,
+    this.header = const [],
+    this.onUsePhone,
+  });
 
   @override
   State<TerminalScreen> createState() => _TerminalScreenState();
 }
 
+/// A failure about the list that keeps the rows: a refresh or a start that
+/// did not work, with the step that tries again.
+typedef _ListFailure = ({String title, String message, VoidCallback retry});
+
 class _TerminalScreenState extends State<TerminalScreen> {
   List<TerminalProcess>? _processes;
   String? _error;
+  _ListFailure? _failure;
   bool _creating = false;
+  bool _removingEnded = false;
+  DateTime _loadStartedAt = DateTime.now();
   ServerOperationsGateway? _activeRepository;
   int _locationRevision = -1;
   int _dataRefreshRevision = -1;
@@ -316,6 +384,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
       setState(() {
         _processes = null;
         _error = null;
+        _failure = null;
         _creating = false;
       });
     }
@@ -334,59 +403,98 @@ class _TerminalScreenState extends State<TerminalScreen> {
       identical(repository, _repository) &&
       revision == _revisionOf(repository);
 
+  /// The repository for an act started at [locationRevision]; null (and the
+  /// act fails in words) once the person has moved to another place.
+  Future<ServerOperationsGateway?> Function() _actionRepository(
+    int locationRevision,
+  ) => () async {
+    if (locationRevision != widget.controller.locationRevision) return null;
+    final repository = await widget.controller.prepareActionRepository();
+    if (locationRevision != widget.controller.locationRevision) return null;
+    return repository;
+  };
+
   Future<void> _load() async {
     final generation = ++_loadGeneration;
-    if (_processes == null) setState(() => _error = null);
+    // A server with no terminals is explained, not asked.
+    if (!widget.controller.capabilities.terminal) return;
+    if (_processes == null) {
+      setState(() {
+        _error = null;
+        _loadStartedAt = DateTime.now();
+      });
+    }
     try {
       final repository = await widget.controller.prepareActionRepository();
       if (!mounted || generation != _loadGeneration) return;
       if (repository == null) {
-        throw ProductException(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7SetupServerDisconnected,
-        );
+        throw ProductException(_l10nOf(context).e7SetupServerDisconnected);
       }
       final processes = await repository.listTerminals();
       if (mounted && generation == _loadGeneration) {
         setState(() {
           _processes = processes;
           _error = null;
+          _failure = null;
         });
       }
     } catch (error) {
       if (mounted && generation == _loadGeneration) {
-        setState(() => _error = productErrorText(error));
+        final message = productErrorText(error);
+        setState(() {
+          _error = message;
+          if (_processes != null) {
+            _failure = (
+              title: _l10nOf(context).refreshFailed,
+              message: setupUiMessage(_l10nOf(context), message),
+              retry: () => unawaited(_load()),
+            );
+          }
+        });
       }
     }
   }
 
   Future<void> _create() async {
     if (_creating) return;
-    setState(() => _creating = true);
+    setState(() {
+      _creating = true;
+      _failure = null;
+    });
+    final l10n = _l10nOf(context);
     final repository = await widget.controller.prepareActionRepository();
     if (!mounted) return;
     if (repository == null) {
-      setState(() => _creating = false);
+      setState(() {
+        _creating = false;
+        _failure = (
+          title: l10n.terminalScreenCreateFailed,
+          message: l10n.e7SetupServerDisconnected,
+          retry: () => unawaited(_create()),
+        );
+      });
       return;
     }
     final revision = _revisionOf(repository);
     try {
       final process = await repository.createTerminal(
-        title: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7SetupTerminalNumber((_processes?.length ?? 0) + 1),
+        title: l10n.e7SetupTerminalNumber((_processes?.length ?? 0) + 1),
       );
       if (!_isCurrentLocation(repository, revision)) return;
+      setState(() => _creating = false);
       await _open(process, repository);
-      if (!_isCurrentLocation(repository, revision)) return;
-      await _load();
     } catch (error) {
       if (_isCurrentLocation(repository, revision)) {
-        _showError(error);
+        setState(
+          () => _failure = (
+            title: l10n.terminalScreenCreateFailed,
+            message: setupUiMessage(l10n, productErrorText(error)),
+            retry: () => unawaited(_create()),
+          ),
+        );
       }
     } finally {
-      if (_isCurrentLocation(repository, revision)) {
+      if (_isCurrentLocation(repository, revision) && _creating) {
         setState(() => _creating = false);
       }
     }
@@ -396,258 +504,197 @@ class _TerminalScreenState extends State<TerminalScreen> {
     TerminalProcess process, [
     ServerOperationsGateway? repository,
   ]) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => TerminalSurface(
-          repository: repository ?? _repository!,
-          repositoryResolver: () => widget.controller.repository,
-          dataRefreshRevisionResolver: () =>
-              widget.controller.dataRefreshRevision,
-          keepLiveInBackgroundResolver: () =>
-              widget.controller.keepLiveInBackground,
-          repositoryChanges: widget.controller,
-          process: process,
-        ),
+    final gateway = repository ?? _repository;
+    if (gateway == null) return;
+    await pushKitPage<void>(
+      context,
+      (_) => TerminalSurface(
+        repository: gateway,
+        repositoryResolver: () => widget.controller.repository,
+        dataRefreshRevisionResolver: () =>
+            widget.controller.dataRefreshRevision,
+        keepLiveInBackgroundResolver: () =>
+            widget.controller.keepLiveInBackground,
+        repositoryChanges: widget.controller,
+        process: process,
       ),
     );
+    // A rename, a stop or a new terminal on the page shows in the list.
+    if (mounted) await _load();
   }
 
   Future<void> _rename(TerminalProcess process) async {
-    final locationRevision = widget.controller.locationRevision;
-    var editedTitle = process.title;
-    final title = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7SetupRenameTerminal,
-        ),
-        content: TextFormField(
-          initialValue: process.title,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupTitle,
-          ),
-          onChanged: (value) => editedTitle = value,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).projectFolderCancel,
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, editedTitle.trim()),
-            child: Text(
-              lookupAppLocalizations(Localizations.localeOf(context)).fileSave,
-            ),
-          ),
-        ],
-      ),
+    final renamed = await _renameTerminal(
+      context,
+      process,
+      _actionRepository(widget.controller.locationRevision),
     );
-    if (title?.isNotEmpty != true ||
-        locationRevision != widget.controller.locationRevision) {
-      return;
-    }
-    final repository = await widget.controller.prepareActionRepository();
-    if (!mounted ||
-        repository == null ||
-        locationRevision != widget.controller.locationRevision) {
-      return;
-    }
-    final revision = _revisionOf(repository);
-    try {
-      await repository.renameTerminal(process.id, title!);
-      if (!_isCurrentLocation(repository, revision)) return;
-      await _load();
-    } catch (error) {
-      if (_isCurrentLocation(repository, revision)) {
-        _showError(error);
-      }
-    }
+    if (renamed != null && mounted) await _load();
   }
 
   Future<void> _remove(TerminalProcess process) async {
-    final locationRevision = widget.controller.locationRevision;
-    final confirmed = await showConfirmSheet(
+    final removed = await _removeTerminal(
       context,
-      icon: process.running ? AppIcons.stop : AppIconography.delete,
-      title: process.running
-          ? lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupStopTerminal
-          : lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupRemoveTerminal,
-      message: process.running
-          ? lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupStopTerminalDetail
-          : lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupRemoveTerminalDetail,
-      confirmLabel: process.running
-          ? lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).voiceConversationStopReply
-          : lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).capsuleRemove,
-      destructive: true,
+      process,
+      _actionRepository(widget.controller.locationRevision),
     );
-    if (!confirmed || locationRevision != widget.controller.locationRevision) {
-      return;
-    }
-    final repository = await widget.controller.prepareActionRepository();
-    if (!mounted ||
-        repository == null ||
-        locationRevision != widget.controller.locationRevision) {
-      return;
-    }
-    final revision = _revisionOf(repository);
+    if (removed && mounted) await _load();
+  }
+
+  /// Removes every ended terminal after one question; running ones stay.
+  Future<void> _removeEnded(List<TerminalProcess> ended) async {
+    if (_removingEnded || ended.isEmpty) return;
+    final l10n = _l10nOf(context);
+    final repository = _actionRepository(widget.controller.locationRevision);
+    setState(() => _removingEnded = true);
     try {
-      await repository.removeTerminal(process.id);
-      if (!_isCurrentLocation(repository, revision)) return;
-      await _load();
-    } catch (error) {
-      if (_isCurrentLocation(repository, revision)) {
-        _showError(error);
-      }
+      final removed = await showKitConfirm(
+        context,
+        title: l10n.terminalScreenRemoveEndedTitle(ended.length),
+        body: l10n.terminalScreenRemoveEndedBody,
+        confirmLabel: l10n.terminalScreenRemoveEnded(ended.length),
+        kind: KitConfirmKind.destructive,
+        icon: AppIconography.delete,
+        confirmKey: const ValueKey('terminal-remove-ended-confirm'),
+        action: () async {
+          final gateway = await repository();
+          if (gateway == null) {
+            throw ProductException(l10n.e7SetupServerDisconnected);
+          }
+          for (final process in ended) {
+            await gateway.removeTerminal(process.id);
+          }
+        },
+      );
+      if (removed && mounted) await _load();
+    } finally {
+      if (mounted) setState(() => _removingEnded = false);
     }
   }
 
-  @override
-  Widget build(BuildContext context) => ProductRefreshBody(
-    message: _processes == null || _error == null
-        ? null
-        : setupUiMessage(
-            lookupAppLocalizations(Localizations.localeOf(context)),
-            _error!,
-          ),
-    onRetry: _load,
-    child: _body(context),
-  );
+  bool _standalone(BuildContext context) =>
+      !KitStatusLineSlot.existsAbove(context) &&
+      Scaffold.maybeOf(context) == null;
 
-  /// One terminal session's row: open on tap, rename or remove from its
-  /// menu (or a right click on desktop).
-  Widget _processRow(BuildContext context, TerminalProcess process) {
-    final tile = ListTile(
-      minTileHeight: 68,
-      leading: _ProcessIndicator(running: process.running),
-      title: Row(
-        children: [
-          Flexible(
-            child: Text(
-              process.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 8),
-          _ProcessStatusChip(running: process.running),
-        ],
-      ),
-      subtitle: Text(
-        process.running
-            ? lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7SetupProcessRunning(process.command, process.pid)
-            : lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7SetupProcessExited(
-                process.command,
-                process.exitCode?.toString() ?? '',
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _l10nOf(context);
+    final processes = _processes;
+    final supported = widget.controller.capabilities.terminal;
+    final listed = supported && processes != null && processes.isNotEmpty;
+    return KitScreen(
+      topBar: (widget.page ?? _standalone(context))
+          ? KitTopBar(title: l10n.libraryTerminalTitle)
+          : null,
+      header: widget.header,
+      width: KitScreenWidth.list,
+      // One new-terminal action per state: the empty state has its own.
+      bottom: listed
+          ? KitActionBlock(
+              primary: KitAction(
+                key: const ValueKey('terminal-new'),
+                label: l10n.e7SetupNewTerminal,
+                icon: AppIconography.add,
+                working: _creating,
+                onPressed: _create,
               ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          fontFamily: AppTheme.monoFamily,
-          fontSize: AppTheme.codeFontSize,
-        ),
-      ),
-      trailing: PopupMenuButton<String>(
-        tooltip: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7SetupTerminalActions,
-        onSelected: (value) {
-          if (value == 'rename') _rename(process);
-          if (value == 'remove') _remove(process);
-        },
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'rename',
-            child: Text(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7SetupRename,
-            ),
-          ),
-          PopupMenuItem(
-            value: 'remove',
-            child: Text(
-              process.running
-                  ? lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).voiceConversationStopReply
-                  : lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).capsuleRemove,
-            ),
-          ),
-        ],
-      ),
-      onTap: () => _open(process),
+            )
+          : null,
+      body: supported ? _body(context, l10n) : _unsupported(context, l10n),
     );
-    // The overflow menu's entries, on a right click. A
-    // pass-through off desktop.
-    return ContextMenuRegion(
-      actions: () => [
-        ContextMenuAction(
-          menuKey: const ValueKey('terminal-menu-open'),
-          label: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).globalSessionsOpen,
+  }
+
+  /// This server keeps no terminals: say so instead of an empty list, and
+  /// offer this phone's terminal where there is one.
+  Widget _unsupported(BuildContext context, AppLocalizations l10n) {
+    final onUsePhone = widget.onUsePhone;
+    return KitStateView.missing(
+      key: const ValueKey('terminal-unavailable'),
+      capability: _terminalCapability,
+      title: KitCapabilityExplainer.titleOf(context, _terminalCapability),
+      why: KitCapabilityExplainer.whyOf(context, _terminalCapability),
+      size: KitStateSize.page,
+      icon: AppIconography.terminal,
+      enableKey: const ValueKey('terminal-use-phone'),
+      enable: onUsePhone == null
+          ? null
+          : KitAction(
+              label: l10n.terminalScreenUsePhone,
+              onPressed: onUsePhone,
+            ),
+    );
+  }
+
+  /// One terminal's row: open on tap; rename and stop or remove from its
+  /// menu (long-press or right click).
+  Widget _processRow(BuildContext context, TerminalProcess process) {
+    final l10n = _l10nOf(context);
+    final roles = KitTokens.of(context).roles;
+    final running = process.running;
+    final code = process.exitCode;
+    final state = running
+        ? l10n.terminalScreenRowRunning(process.command)
+        : code == null
+        ? l10n.terminalScreenRowEndedNoCode(process.command)
+        : l10n.terminalScreenRowEnded('$code', process.command);
+    return KitRow(
+      key: ValueKey('terminal-session-${process.id}'),
+      leading: KitRow.icon(
+        context,
+        AppIconography.terminal,
+        color: running ? roles.success : null,
+      ),
+      title: process.title,
+      supporting: TextSpan(text: state),
+      trailing: const KitChevron(),
+      onTap: () => unawaited(_open(process)),
+      menuLabel: l10n.terminalScreenMenuLabel(process.title),
+      menu: [
+        KitMenuItem(
+          key: const ValueKey('terminal-menu-open'),
+          label: l10n.terminalScreenOpen(process.title),
           icon: AppIconography.terminal,
           onSelected: () => unawaited(_open(process)),
         ),
-        ContextMenuAction(
-          menuKey: const ValueKey('terminal-menu-rename'),
-          label: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7SetupRename,
+        KitMenuItem(
+          key: const ValueKey('terminal-menu-rename'),
+          label: l10n.terminalScreenRename(process.title),
           icon: AppIconography.edit,
           onSelected: () => unawaited(_rename(process)),
         ),
-        ContextMenuAction(
-          menuKey: const ValueKey('terminal-menu-remove'),
-          label: process.running
-              ? lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).voiceConversationStopReply
-              : lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).capsuleRemove,
-          icon: process.running
-              ? AppIconography.stopCircle
-              : AppIconography.delete,
+        KitMenuItem(
+          key: const ValueKey('terminal-menu-remove'),
+          label: running
+              ? l10n.terminalScreenStop(process.title)
+              : l10n.terminalScreenRemove(process.title),
+          icon: running ? AppIconography.stopCircle : AppIconography.delete,
           destructive: true,
           onSelected: () => unawaited(_remove(process)),
         ),
       ],
-      child: tile,
     );
   }
 
-  Widget _body(BuildContext context) {
-    if (_processes == null && _error == null) return const LoadingList();
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    if (_error != null && _processes == null) {
+  Widget _body(BuildContext context, AppLocalizations l10n) {
+    final processes = _processes;
+    final error = _error;
+    if (processes == null && error == null) {
+      // A wait that runs past 8 s says so and offers Try again (STATE-5).
+      return KitStateView(
+        key: const ValueKey('terminal-loading'),
+        icon: AppIconography.terminal,
+        title: l10n.terminalScreenLoading,
+        progress: const KitProgress.waiting(),
+        since: _loadStartedAt,
+        onSlow: [
+          KitAction(
+            label: l10n.commonRetry,
+            onPressed: () => unawaited(_load()),
+          ),
+        ],
+      );
+    }
+    if (processes == null) {
       // Every load failure draws the unplugged cable (design standard §10).
       return KitStateView(
         key: const ValueKey('terminal-list-failed'),
@@ -655,7 +702,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
         tone: AppStatusTone.failure,
         illustration: const StatesUnpluggedScene(),
         title: l10n.terminalListFailedTitle,
-        body: setupUiMessage(l10n, _error!),
+        body: setupUiMessage(l10n, error!),
         primary: KitAction(
           label: l10n.commonRetry,
           onPressed: () => unawaited(_load()),
@@ -669,84 +716,108 @@ class _TerminalScreenState extends State<TerminalScreen> {
         ],
       );
     }
-    return Stack(
+    // Running first (they are what the person is using), then the ended
+    // ones, each group in the server's order.
+    final running = [
+      for (final process in processes)
+        if (process.running) process,
+    ];
+    final ended = [
+      for (final process in processes)
+        if (!process.running) process,
+    ];
+    final failure = _failure;
+    final tokens = KitTokens.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_processes!.isEmpty)
-          KitRefresh(
+        // A failed refresh or start unfolds over the kept rows and folds
+        // away once it works (design standard §10).
+        KitReveal(
+          child: failure == null
+              ? null
+              : Padding(
+                  padding: EdgeInsetsDirectional.symmetric(
+                    horizontal: tokens.gutter,
+                    vertical: tokens.space2,
+                  ),
+                  child: KitNotice(
+                    key: const ValueKey('terminal-list-notice'),
+                    tone: AppStatusTone.failure,
+                    title: failure.title,
+                    message: failure.message,
+                    actions: [
+                      KitAction(
+                        label: l10n.refreshRetry,
+                        onPressed: failure.retry,
+                      ),
+                    ],
+                  ),
+                ),
+        ),
+        Expanded(
+          key: const ValueKey('refresh-content'),
+          child: KitRefresh(
             onRefresh: _load,
-            // The terminal window with its prompt: the same drawing as
-            // This phone's terminal before it is set up.
-            child: KitStateView(
-              key: const ValueKey('terminal-none'),
-              icon: AppIconography.terminal,
-              illustration: const StatesTerminalScene(),
-              title: l10n.e7SetupNoTerminals,
-              body: l10n.e7SetupNewTerminalDetail,
-              secondary: KitAction(
-                label: l10n.e7SetupNewTerminal,
-                onPressed: _create,
-              ),
-            ),
-          )
-        else
-          KitRefresh(
-            onRefresh: _load,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.only(top: 8, bottom: 92),
-              children: [
-                // A session started or removed while the list is open
-                // unfolds in or folds away where it was (design standard
-                // §10); the first paint shows the rows at once. A handful
-                // of rows, so building them all is cheap.
-                KitAnimatedRows(
-                  key: const ValueKey('terminal-session-rows'),
-                  children: [
-                    for (final (index, process) in _processes!.indexed)
-                      Column(
-                        key: ValueKey('terminal-session-${process.id}'),
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: processes.isEmpty
+                ? KitStateView(
+                    // The terminal window with its prompt: the same drawing
+                    // as This phone's terminal before it is set up.
+                    key: const ValueKey('terminal-none'),
+                    icon: AppIconography.terminal,
+                    illustration: const StatesTerminalScene(),
+                    title: l10n.e7SetupNoTerminals,
+                    body: l10n.e7SetupNewTerminalDetail,
+                    primary: KitAction(
+                      key: const ValueKey('terminal-new'),
+                      label: l10n.e7SetupNewTerminal,
+                      icon: AppIconography.add,
+                      working: _creating,
+                      onPressed: _create,
+                    ),
+                  )
+                : ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsetsDirectional.only(
+                      top: tokens.space2,
+                      bottom: KitScreen.endPadding(context),
+                    ),
+                    children: [
+                      KitRowGroup(
+                        key: const ValueKey('terminal-session-rows'),
                         children: [
-                          if (index > 0) const Divider(height: 1, indent: 68),
-                          _processRow(context, process),
+                          for (final process in [...running, ...ended])
+                            _processRow(context, process),
                         ],
                       ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        PositionedDirectional(
-          end: 16,
-          bottom: 16,
-          child: FloatingActionButton.extended(
-            heroTag: 'new-terminal',
-            onPressed: _creating ? null : _create,
-            icon: _creating
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(AppIconography.add),
-            label: Text(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).libraryTerminalTitle,
-            ),
+                      if (ended.isNotEmpty)
+                        Padding(
+                          padding: EdgeInsetsDirectional.only(
+                            start: tokens.gutter,
+                            top: tokens.space3,
+                            end: tokens.gutter,
+                          ),
+                          child: KitActionBlock(
+                            tertiary: [
+                              KitAction(
+                                key: const ValueKey('terminal-remove-ended'),
+                                label: l10n.terminalScreenRemoveEnded(
+                                  ended.length,
+                                ),
+                                icon: AppIconography.clearAll,
+                                working: _removingEnded,
+                                onPressed: () => unawaited(_removeEnded(ended)),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
           ),
         ),
       ],
     );
   }
-
-  void _showError(Object error) => showProductError(
-    context,
-    setupUiMessage(
-      lookupAppLocalizations(Localizations.localeOf(context)),
-      productErrorText(error),
-    ),
-  );
 
   @override
   void dispose() {
@@ -756,70 +827,9 @@ class _TerminalScreenState extends State<TerminalScreen> {
   }
 }
 
-class _ProcessIndicator extends StatelessWidget {
-  final bool running;
-  const _ProcessIndicator({required this.running});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = AppTheme.statusColor(
-      theme,
-      running ? AppStatusTone.ok : AppStatusTone.neutral,
-    );
-    return Semantics(
-      label: running
-          ? lookupAppLocalizations(Localizations.localeOf(context)).workRunning
-          : lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupExited,
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: .12),
-          border: Border.all(color: color.withValues(alpha: .55)),
-          borderRadius: BorderRadius.circular(AppTheme.radiusControl),
-        ),
-        child: Icon(AppIconography.terminal, size: 20, color: color),
-      ),
-    );
-  }
-}
-
-/// A compact live/ended chip on terminal rows, mirroring the status-chip
-/// treatment in docs/design-inspiration.md's terminal section.
-class _ProcessStatusChip extends StatelessWidget {
-  final bool running;
-  const _ProcessStatusChip({required this.running});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = AppTheme.statusColor(
-      theme,
-      running ? AppStatusTone.ok : AppStatusTone.neutral,
-    );
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .14),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        running
-            ? lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).workRunning
-            : lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7SetupExited,
-        style: theme.textTheme.labelSmall?.copyWith(color: color),
-      ),
-    );
-  }
-}
-
+/// One server terminal, live: the shell with the kit's key bar, one status
+/// line only while it is not connected, Copy in the bar and the rest
+/// (readable text, paste, reconnect, rename, details, stop) in its menu.
 class TerminalSurface extends StatefulWidget {
   final ServerOperationsGateway repository;
   final ServerOperationsGateway? Function()? repositoryResolver;
@@ -848,12 +858,20 @@ class _TerminalSurfaceState extends State<TerminalSurface>
   final _terminalController = xterm.TerminalController();
   final _scrollController = ScrollController();
   final _focus = FocusNode();
+  final _keys = TerminalKeyBarController();
   final _accessibleInput = TextEditingController();
   TerminalChannel? _channel;
   late final TerminalInputQueue _input = TerminalInputQueue(_sendNow);
   StreamSubscription<String>? _subscription;
   String? _error;
   bool _connecting = true;
+  DateTime _connectingSince = DateTime.now();
+
+  /// The connection has taken longer than [KitMotion.escalateAfter]: the
+  /// loading bar alone would hide a stuck wait (STATE-5), so the line says
+  /// so and offers Reconnect.
+  bool _slowConnect = false;
+  Timer? _slowTimer;
   bool _closed = false;
   int _connectionGeneration = 0;
   Timer? _resizeTimer;
@@ -864,6 +882,11 @@ class _TerminalSurfaceState extends State<TerminalSurface>
   int? _terminalCursor;
   ServerOperationsGateway? _activeRepository;
   int _activeDataRefreshRevision = -1;
+
+  /// The name shown; a rename here changes it at once.
+  String? _renamed;
+
+  String get _title => _renamed ?? widget.process.title;
 
   ServerOperationsGateway? get _repository => widget.repositoryResolver == null
       ? widget.repository
@@ -904,6 +927,7 @@ class _TerminalSurfaceState extends State<TerminalSurface>
       oldWidget.repositoryChanges?.removeListener(_repositoryChanged);
       widget.repositoryChanges?.addListener(_repositoryChanged);
     }
+    if (oldWidget.process.id != widget.process.id) _renamed = null;
     _repositoryChanged(
       forceReconnect: oldWidget.process.id != widget.process.id,
     );
@@ -936,9 +960,7 @@ class _TerminalSurfaceState extends State<TerminalSurface>
         setState(() {
           _connecting = false;
           _closed = true;
-          _error = lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7SetupTransportReconnecting;
+          _error = _l10nOf(context).e7SetupTransportReconnecting;
         });
       }
       unawaited(_closeConnection(subscription, channel).catchError((_) {}));
@@ -953,7 +975,15 @@ class _TerminalSurfaceState extends State<TerminalSurface>
     final repository = _repository;
     setState(() {
       _connecting = true;
+      _connectingSince = DateTime.now();
+      _slowConnect = false;
       _error = null;
+    });
+    _slowTimer?.cancel();
+    _slowTimer = Timer(KitMotion.escalateAfter, () {
+      if (mounted && _connecting && generation == _connectionGeneration) {
+        setState(() => _slowConnect = true);
+      }
     });
     final previousSubscription = _subscription;
     final previousChannel = _channel;
@@ -969,11 +999,7 @@ class _TerminalSurfaceState extends State<TerminalSurface>
         return;
       }
       if (repository == null) {
-        throw ProductException(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7SetupTransportReconnecting,
-        );
+        throw ProductException(_l10nOf(context).e7SetupTransportReconnecting);
       }
       _activeRepository = repository;
       _transcriptSanitizer.reset();
@@ -1097,9 +1123,11 @@ class _TerminalSurfaceState extends State<TerminalSurface>
     }
   }
 
+  /// Everything the terminal sends (typing, the key bar, a paste). Text from
+  /// the phone's keyboard takes the key bar's latched Ctrl or Alt.
   void _write(String value) {
     if (!_canWrite) return;
-    _input.write(value);
+    _input.write(_keys.apply(value));
   }
 
   void _sendNow(String value) {
@@ -1119,11 +1147,6 @@ class _TerminalSurfaceState extends State<TerminalSurface>
   void _rememberCursor(TerminalChannel? channel) {
     final cursor = channel?.cursor;
     if (cursor != null && cursor >= 0) _terminalCursor = cursor;
-  }
-
-  void _sendControl(String value) {
-    _write(value);
-    _focus.requestFocus();
   }
 
   void _appendTranscript(String chunk) {
@@ -1158,251 +1181,214 @@ class _TerminalSurfaceState extends State<TerminalSurface>
     });
   }
 
-  Future<void> _copyOutput() async {
-    final selection = _terminal.buffer.getText(_terminalController.selection);
-    final text = selection.isNotEmpty ? selection : _transcript;
-    if (text.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: text));
+  /// The selection, or the whole readable output when nothing is selected.
+  String _copyText() {
+    final selection = KitTerminalView.selectedText(
+      _terminal,
+      _terminalController,
+    );
+    return selection.isNotEmpty ? selection : _transcript;
+  }
+
+  Future<void> _paste() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text;
+    if (text == null || text.isEmpty || !mounted) return;
+    _terminal.paste(text);
+    _focus.requestFocus();
+  }
+
+  Future<void> _rename() async {
+    final renamed = await _renameTerminal(
+      context,
+      widget.process,
+      () async => _repository,
+    );
+    if (renamed != null && mounted) setState(() => _renamed = renamed.trim());
+  }
+
+  Future<void> _remove() async {
+    final process = widget.process;
+    final removed = await _removeTerminal(
+      context,
+      TerminalProcess(
+        id: process.id,
+        title: _title,
+        command: process.command,
+        arguments: process.arguments,
+        directory: process.directory,
+        running: process.running && !_closed,
+        pid: process.pid,
+        exitCode: process.exitCode,
+      ),
+      () async => _repository,
+    );
+    if (removed && mounted) await Navigator.of(context).maybePop();
+  }
+
+  Future<void> _details() {
+    final l10n = _l10nOf(context);
+    final process = widget.process;
+    final command = [process.command, ...process.arguments].join(' ');
+    return showKitTechnicalDetails(
+      context,
+      title: l10n.terminalScreenDetailsTitle(_title),
+      text: '',
+      values: [
+        KitTechnicalValue(l10n.terminalScreenDetailCommand, command),
+        if (process.directory.isNotEmpty)
+          KitTechnicalValue(l10n.terminalScreenDetailFolder, process.directory),
+        KitTechnicalValue(l10n.terminalScreenDetailPid, '${process.pid}'),
+        if (process.exitCode != null)
+          KitTechnicalValue(
+            l10n.terminalScreenDetailExit,
+            '${process.exitCode}',
+          ),
+      ],
+    );
+  }
+
+  /// The one line, shown only while the terminal is not connected.
+  KitStatus? _status(AppLocalizations l10n) {
+    final reconnect = KitAction(
+      key: const ValueKey('terminal-status-reconnect'),
+      label: l10n.e7SetupReconnect,
+      onPressed: () => unawaited(_connect()),
+    );
+    if (_lifecycleSuspended) {
+      return KitStatus(
+        kind: KitStatusKind.connection,
+        id: 'terminal-connection',
+        icon: AppIconography.pause,
+        message: l10n.terminalScreenPaused,
+      );
+    }
+    if (_connecting) {
+      if (!_slowConnect) return null;
+      return KitStatus(
+        kind: KitStatusKind.connection,
+        id: 'terminal-connection',
+        icon: AppIconography.sync,
+        tone: AppStatusTone.progress,
+        message: l10n.terminalScreenConnecting,
+        since: _connectingSince,
+        onSlow: [reconnect],
+      );
+    }
+    final error = _error;
+    if (error != null) {
+      return KitStatus(
+        kind: KitStatusKind.connection,
+        id: 'terminal-connection',
+        icon: AppIconography.error,
+        tone: AppStatusTone.failure,
+        message: setupUiMessage(l10n, error),
+        action: reconnect,
+      );
+    }
+    if (_closed) {
+      return KitStatus(
+        kind: KitStatusKind.connection,
+        id: 'terminal-connection',
+        icon: AppIconography.cloudOff,
+        message: l10n.e7SetupConnectionClosed,
+        action: reconnect,
+      );
+    }
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final status = _lifecycleSuspended
-        ? lookupAppLocalizations(Localizations.localeOf(context)).e7SetupPaused
-        : _connecting
-        ? lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7SetupConnecting
-        : _error != null
-        ? lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7SetupUnavailable
-        : _closed
-        ? lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7SetupConnectionClosed
-        : lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7SetupConnectedPid(widget.process.pid);
+    final l10n = _l10nOf(context);
     final canWrite = _canWrite;
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: Text(
-          widget.process.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+    final running = widget.process.running && !_closed;
+    return KitScreen(
+      status: _status(l10n),
+      loading: _connecting,
+      loadingLabel: l10n.terminalScreenConnecting,
+      topBar: KitTopBar(
+        title: _title,
+        menuKey: const ValueKey('terminal-surface-menu'),
         actions: [
-          IconButton(
-            tooltip: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupCopyTerminal,
-            onPressed: _copyOutput,
-            icon: const Icon(AppIcons.copy),
+          KitAction.copy(
+            key: const ValueKey('terminal-copy'),
+            label: l10n.terminalScreenCopy,
+            text: _copyText,
           ),
-          IconButton(
+        ],
+        menu: [
+          KitMenuItem(
             key: const Key('terminal-accessible-mode'),
-            tooltip: _accessibleMode
-                ? lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7SetupInteractiveTerminal
-                : lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7SetupAccessibleTerminal,
-            onPressed: () => setState(() => _accessibleMode = !_accessibleMode),
-            icon: Icon(
-              _accessibleMode
-                  ? AppIconography.terminal
-                  : AppIconography.accessibility,
-            ),
+            label: _accessibleMode
+                ? l10n.terminalScreenLiveMode
+                : l10n.terminalScreenReadableMode,
+            icon: _accessibleMode
+                ? AppIconography.terminal
+                : AppIconography.article,
+            onSelected: () =>
+                setState(() => _accessibleMode = !_accessibleMode),
           ),
-          IconButton(
+          KitMenuItem(
+            key: const ValueKey('terminal-paste'),
+            label: l10n.terminalScreenPaste(_title),
+            icon: AppIconography.paste,
+            enabled: canWrite,
+            disabledReason: l10n.e7SetupInputDisconnected,
+            onSelected: () => unawaited(_paste()),
+          ),
+          KitMenuItem(
             key: const Key('terminal-reconnect'),
-            tooltip: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupReconnect,
-            onPressed: _connecting || _lifecycleSuspended ? null : _connect,
-            icon: const Icon(AppIconography.retry),
+            label: l10n.e7SetupReconnect,
+            icon: AppIconography.retry,
+            enabled: !_connecting && !_lifecycleSuspended,
+            disabledReason: l10n.terminalScreenConnecting,
+            onSelected: () => unawaited(_connect()),
+          ),
+          KitMenuItem(
+            key: const ValueKey('terminal-rename'),
+            label: l10n.terminalScreenRename(_title),
+            icon: AppIconography.edit,
+            onSelected: () => unawaited(_rename()),
+          ),
+          KitMenuItem(
+            key: const ValueKey('terminal-details'),
+            label: l10n.terminalScreenDetails,
+            icon: AppIconography.info,
+            onSelected: () => unawaited(_details()),
+          ),
+          KitMenuItem(
+            key: const ValueKey('terminal-remove'),
+            label: running
+                ? l10n.terminalScreenStop(_title)
+                : l10n.terminalScreenRemove(_title),
+            icon: running ? AppIconography.stopCircle : AppIconography.delete,
+            destructive: true,
+            onSelected: () => unawaited(_remove()),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 8),
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Semantics(
-                liveRegion: true,
-                label: lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7SetupTerminalStatus(status),
-                excludeSemantics: true,
-                child: Text(
-                  status,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.mutedOf(theme),
-                  ),
-                ),
-              ),
+      body: _accessibleMode
+          ? _AccessibleTerminal(
+              transcript: _transcript,
+              input: _accessibleInput,
+              enabled: canWrite,
+              onSend: _sendAccessibleInput,
+            )
+          : KitTerminalView.live(
+              terminal: _terminal,
+              semanticsLabel: l10n.e7SetupTerminalSemantics,
+              controller: _terminalController,
+              scrollController: _scrollController,
+              focusNode: _focus,
+              readOnly: !canWrite,
+              keys: _keys,
+              interruptKeys: true,
+              // Desktop: hardware keys only, so a keystroke is never
+              // delivered twice (key event + IME delta).
+              onKeyEvent: desktopInteractions ? _onTerminalKey : null,
+              keysKey: const ValueKey('terminal-keys'),
             ),
-          ),
-          if (_connecting) const LinearProgressIndicator(minHeight: 2),
-          // A lost connection unfolds over the terminal and folds away once
-          // it is back (design standard §10).
-          KitReveal(
-            child: _error == null
-                ? null
-                : MaterialBanner(
-                    forceActionsBelow: true,
-                    content: Text(
-                      setupUiMessage(
-                        lookupAppLocalizations(Localizations.localeOf(context)),
-                        _error!,
-                      ),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: _connect,
-                        child: Text(
-                          lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ).isolatedTaskRetryOpen,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-          Expanded(
-            child: _accessibleMode
-                ? _AccessibleTerminal(
-                    transcript: _transcript,
-                    input: _accessibleInput,
-                    enabled: canWrite,
-                    onSend: _sendAccessibleInput,
-                  )
-                : ColoredBox(
-                    color: const Color(0xFF0A0C0F),
-                    child: Semantics(
-                      label: lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupTerminalSemantics,
-                      child: ExcludeSemantics(
-                        child: Directionality(
-                          textDirection: TextDirection.ltr,
-                          child: xterm.TerminalView(
-                            _terminal,
-                            controller: _terminalController,
-                            scrollController: _scrollController,
-                            focusNode: _focus,
-                            autofocus: true,
-                            autoResize: true,
-                            keyboardType: TextInputType.text,
-                            keyboardAppearance: Brightness.dark,
-                            deleteDetection: true,
-                            // Desktop: hardware keys only, so a keystroke is
-                            // never delivered twice (key event + IME delta).
-                            hardwareKeyboardOnly: desktopInteractions,
-                            onKeyEvent: desktopInteractions
-                                ? _onTerminalKey
-                                : null,
-                            readOnly: !canWrite,
-                            padding: const EdgeInsets.all(10),
-                            textStyle: const xterm.TerminalStyle(
-                              fontFamily: AppTheme.monoFamily,
-                              fontSize: AppTheme.codeFontSize,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-          ),
-          SafeArea(
-            top: false,
-            child: Semantics(
-              container: true,
-              label: lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7SetupControlKeys,
-              child: SizedBox(
-                height: (MediaQuery.textScalerOf(context).scale(14) + 32).clamp(
-                  56,
-                  double.infinity,
-                ),
-                child: ListView(
-                  key: const Key('terminal-control-strip'),
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  children: [
-                    _TerminalKey(
-                      label: 'Ctrl-C',
-                      semanticLabel: lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupInterruptKey,
-                      onTap: canWrite ? () => _sendControl('\x03') : null,
-                    ),
-                    _TerminalKey(
-                      label: 'Ctrl-D',
-                      semanticLabel: lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupEndInputKey,
-                      onTap: canWrite ? () => _sendControl('\x04') : null,
-                    ),
-                    _TerminalKey(
-                      label: 'Esc',
-                      semanticLabel: lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupEscapeKey,
-                      onTap: canWrite ? () => _sendControl('\x1b') : null,
-                    ),
-                    _TerminalKey(
-                      label: 'Tab',
-                      semanticLabel: lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupTabKey,
-                      onTap: canWrite ? () => _sendControl('\t') : null,
-                    ),
-                    _TerminalKey(
-                      label: '↑',
-                      semanticLabel: lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupUpKey,
-                      onTap: canWrite ? () => _sendControl('\x1b[A') : null,
-                    ),
-                    _TerminalKey(
-                      label: '↓',
-                      semanticLabel: lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupDownKey,
-                      onTap: canWrite ? () => _sendControl('\x1b[B') : null,
-                    ),
-                    _TerminalKey(
-                      label: '←',
-                      semanticLabel: lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupLeftKey,
-                      onTap: canWrite ? () => _sendControl('\x1b[D') : null,
-                    ),
-                    _TerminalKey(
-                      label: '→',
-                      semanticLabel: lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupRightKey,
-                      onTap: canWrite ? () => _sendControl('\x1b[C') : null,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1412,51 +1398,21 @@ class _TerminalSurfaceState extends State<TerminalSurface>
     widget.repositoryChanges?.removeListener(_repositoryChanged);
     _connectionGeneration++;
     _resizeTimer?.cancel();
+    _slowTimer?.cancel();
     unawaited(_subscription?.cancel().catchError((_) {}));
     unawaited(_channel?.close().catchError((_) {}));
     _terminalController.dispose();
     _scrollController.dispose();
     _input.close();
     _focus.dispose();
+    _keys.dispose();
     _accessibleInput.dispose();
     super.dispose();
   }
 }
 
-class _TerminalKey extends StatelessWidget {
-  final String label;
-  final String semanticLabel;
-  final VoidCallback? onTap;
-
-  const _TerminalKey({
-    required this.label,
-    required this.semanticLabel,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 2),
-    child: Semantics(
-      button: true,
-      enabled: onTap != null,
-      label: semanticLabel,
-      hint: onTap == null
-          ? lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupKeyUnavailable
-          : lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7SetupSendKey,
-      excludeSemantics: true,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-        child: OutlinedButton(onPressed: onTap, child: Text(label)),
-      ),
-    ),
-  );
-}
-
+/// The terminal for a screen reader: the readable output (control codes
+/// stripped) and one labelled command field that sends a line.
 class _AccessibleTerminal extends StatelessWidget {
   final String transcript;
   final TextEditingController input;
@@ -1472,78 +1428,56 @@ class _AccessibleTerminal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = _l10nOf(context);
+    final tokens = KitTokens.of(context);
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsetsDirectional.fromSTEB(
+        tokens.gutter,
+        tokens.space2,
+        tokens.gutter,
+        tokens.space2,
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
             child: Semantics(
-              label: lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7SetupTranscript,
+              label: l10n.e7SetupTranscript,
               textField: true,
               readOnly: true,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(10),
-                color: const Color(0xFF0A0C0F),
-                child: SingleChildScrollView(
+              child: KitSurface(
+                level: KitSurfaceLevel.surface1,
+                child: ListView(
                   reverse: true,
-                  child: SelectableText(
-                    textDirection: transcript.isEmpty
-                        ? Directionality.of(context)
-                        : TextDirection.ltr,
-                    transcript.isEmpty
-                        ? lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ).e7SetupNoOutput
-                        : transcript,
-                    style: const TextStyle(fontFamily: AppTheme.monoFamily),
-                  ),
+                  children: [
+                    if (transcript.isEmpty)
+                      KitText(l10n.e7SetupNoOutput, tone: KitTextTone.secondary)
+                    else
+                      KitText.mono(transcript, selectable: true),
+                  ],
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  key: const Key('terminal-accessible-input'),
-                  textDirection: TextDirection.ltr,
-                  controller: input,
-                  enabled: enabled,
-                  decoration: InputDecoration(
-                    labelText: lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7SetupCommandInput,
-                    hintText: lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7SetupCommandHint,
-                    helperText: enabled
-                        ? null
-                        : lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ).e7SetupInputDisconnected,
-                    border: const OutlineInputBorder(),
-                  ),
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (_) => onSend(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton.filled(
-                tooltip: enabled
-                    ? lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupSendCommand
-                    : lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupInputUnavailable,
-                onPressed: enabled ? onSend : null,
-                icon: const Icon(AppIconography.returnKey),
-              ),
-            ],
+          SizedBox(height: tokens.space2),
+          KitField(
+            label: l10n.e7SetupCommandInput,
+            hint: l10n.e7SetupCommandHint,
+            kind: KitFieldKind.mono,
+            controller: input,
+            enabled: enabled,
+            disabledReason: enabled ? null : l10n.e7SetupInputDisconnected,
+            textInputAction: TextInputAction.send,
+            onSubmitted: (_) => onSend(),
+            fieldKey: const Key('terminal-accessible-input'),
+            action: KitAction(
+              key: const ValueKey('terminal-accessible-send'),
+              label: enabled
+                  ? l10n.e7SetupSendCommand
+                  : l10n.e7SetupInputUnavailable,
+              icon: AppIconography.returnKey,
+              onPressed: enabled ? onSend : null,
+            ),
           ),
         ],
       ),
