@@ -1,8 +1,9 @@
 // Golden renders of screen-phone-2's pages (wave 2b), rebuilt from kit
 // parts: phone setup progress (wide window; the phone renders are
 // test/goldens/setup_progress_*.png) and its "Stop setup?" sheet, and
-// Running now (loaded, empty, could not read) with its details sheet and the
-// AI Team group stop. Phone 412x915 and one wide window (1280x800), dark and
+// Running on this phone (P5.3: loaded with Busy/Idle measured between two
+// readings, empty, could not read) with its details sheet, the orphan stop
+// and one kind's stop. Phone 412x915 and one wide window (1280x800), dark and
 // light (owner decision 2026-09-27: no Arabic), with the app's real fonts at
 // DPR 1.
 //
@@ -75,7 +76,27 @@ Future<void> _progress(
   }
 }
 
-String _listing() => jsonEncode([
+/// The owner's phone; [later] is the second reading, 10 s on, with the
+/// orphan and one team agent busy.
+String _listing({bool later = false}) => jsonEncode([
+  for (final process in _processList)
+    if (!later)
+      process
+    else
+      {
+        ...process,
+        'cpu_seconds':
+            (process['cpu_seconds']! as int) +
+            switch (process['pid']) {
+              200 => 10,
+              402 => 4,
+              _ => 0,
+            },
+        'elapsed_s': (process['elapsed_s']! as int) + 10,
+      },
+]);
+
+const _processList = <Map<String, Object?>>[
   {
     'pid': 101,
     'ppid': 100,
@@ -146,7 +167,36 @@ String _listing() => jsonEncode([
     'orphan_reason': null,
     'protected': false,
   },
-]);
+  {
+    'pid': 900,
+    'ppid': 700,
+    'group': 'build_daemons',
+    'name': 'claude-code',
+    'cmd':
+        'node /data/data/com.termux/files/usr/lib/node_modules/@anthropic-ai/claude-code/cli.js',
+    'cpu_pct': 12.0,
+    'cpu_seconds': 90,
+    'rss_kb': 180000,
+    'elapsed_s': 1500,
+    'cwd': '/root/projects/shopfront',
+    'orphan_reason': null,
+    'protected': false,
+  },
+  {
+    'pid': 700,
+    'ppid': 1,
+    'group': 'other',
+    'name': 'bash',
+    'cmd': 'bash',
+    'cpu_pct': 0.0,
+    'cpu_seconds': 1,
+    'rss_kb': 4000,
+    'elapsed_s': 1600,
+    'cwd': '/root',
+    'orphan_reason': null,
+    'protected': false,
+  },
+];
 
 Future<void> _processes(
   WidgetTester tester,
@@ -160,11 +210,12 @@ Future<void> _processes(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   const channel = MethodChannel('oc/termux');
-  final body = listing ?? _listing();
+  var scans = 0;
   tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
     call,
   ) async {
     if (call.method != 'runInTermux') return true;
+    final body = listing ?? _listing(later: scans++ > 0);
     return {
       'stdout': '$body\n',
       'stderr': '',
@@ -195,10 +246,14 @@ Future<void> _processes(
           ),
           home: const TermuxProcessesScreen(
             refreshInterval: Duration(hours: 1),
+            sampleDelay: Duration(milliseconds: 10),
           ),
         ),
       ),
     );
+    await tester.pumpAndSettle();
+    // The second reading: Busy and Idle.
+    await tester.pump(const Duration(milliseconds: 20));
     await tester.pumpAndSettle();
     if (then != null) await then();
     expect(tester.takeException(), isNull);
@@ -277,6 +332,19 @@ void main() {
         light: light,
         then: () async {
           await tester.tap(find.byKey(const Key('termux-proc-300')));
+          await tester.pumpAndSettle();
+        },
+      );
+    });
+    testWidgets('running now stop a kind · $mode', (tester) async {
+      await _processes(
+        tester,
+        'phone_termux_processes_stop_kind_sheet',
+        light: light,
+        then: () async {
+          await tester.longPress(find.byKey(const Key('termux-proc-402')));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Stop all 2 AI Team processes'));
           await tester.pumpAndSettle();
         },
       );

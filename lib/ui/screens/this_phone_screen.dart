@@ -18,6 +18,7 @@ import '../../state/phone_host.dart';
 import '../../state/profiles.dart' show OrchestrationHostKind;
 import '../../state/termux_host_setup.dart';
 import '../../termux/bridge.dart';
+import '../../termux/processes.dart';
 import '../app_iconography.dart';
 import '../kit/kit.dart';
 import '../widgets/builtin_team_section.dart' show forgetBuiltinTeam;
@@ -32,6 +33,7 @@ import 'phone_setup/phone_setup_routes.dart';
 import 'phone_setup/phone_setup_selection.dart';
 import 'phone_setup/phone_setup_termux_job_screen.dart';
 import 'phone_setup/phone_setup_termux_screen.dart';
+import 'termux_processes_screen.dart';
 
 /// Which host This phone shows when nobody said: the one in use, else the
 /// in-app one when it is saved, else Termux.
@@ -63,7 +65,9 @@ Future<void> openThisPhone(BuildContext context, {PhoneHostKind? kind}) =>
 /// One list ordered by what is most likely needed: the status with the one
 /// act it needs now (start, connect, finish a switch), then update, switch
 /// between OpenCode 1 and 2, add tools, what is installed, storage, what
-/// runs, keeping it running, the log, and removing it last. Each act names
+/// runs (Running on this phone, where the host can list it; left out when
+/// the list cannot be read), keeping it running, the log, and removing it
+/// last. Each act names
 /// what it acts on ("Stop the server on this phone"). Installing, updating,
 /// switching and adding tools run through phone setup's progress screen.
 ///
@@ -73,7 +77,13 @@ Future<void> openThisPhone(BuildContext context, {PhoneHostKind? kind}) =>
 /// measured space that comes back. A tool something else still uses is
 /// named with what uses it and cannot be removed.
 class ThisPhoneScreen extends ConsumerStatefulWidget {
-  const ThisPhoneScreen({super.key, this.kind, this.host, this.removal});
+  const ThisPhoneScreen({
+    super.key,
+    this.kind,
+    this.host,
+    this.removal,
+    this.scanProcesses,
+  });
 
   /// Which host; null picks [defaultPhoneHostKind].
   final PhoneHostKind? kind;
@@ -84,6 +94,10 @@ class ThisPhoneScreen extends ConsumerStatefulWidget {
   /// Removes the host's tools one by one; tests pass their own, the app
   /// makes one for the host.
   final ComponentRemovalService? removal;
+
+  /// Reads what runs in Termux for the Running on this phone row; tests
+  /// pass their own, the app reads through the tools script.
+  final Future<TermuxProcessReport> Function()? scanProcesses;
 
   @override
   ConsumerState<ThisPhoneScreen> createState() => _ThisPhoneScreenState();
@@ -103,6 +117,12 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
 
   /// The tool whose removal runs now.
   String? _removingTool;
+
+  /// What runs in Termux (P5.3), for the Running on this phone row: null
+  /// until read. When it cannot be read the row is left out of the list
+  /// (the owner's review: no dead "Not available right now" row).
+  TermuxProcessReport? _processes;
+  bool _processesUnavailable = false;
 
   /// The server log under Details (P1.5): folded until someone opens it.
   final _log = KitLogBuffer();
@@ -188,8 +208,34 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
       if (mounted) setState(() => _removable = null);
       return;
     }
-    // Both reads run in the host's Linux; neither waits for the other.
-    await Future.wait([_readInstalled(), _readRemovable()]);
+    // The reads run in the host's Linux; none waits for another.
+    await Future.wait([_readInstalled(), _readRemovable(), _readProcesses()]);
+  }
+
+  /// Termux's process list: only Termux's tools can list what runs there
+  /// (the in-app Linux has no process inventory yet, so its page has no
+  /// such row).
+  Future<void> _readProcesses() async {
+    if (_host.kind != PhoneHostKind.termux) return;
+    try {
+      final report = await (widget.scanProcesses ?? TermuxProcesses.scan)();
+      if (!mounted) return;
+      setState(() {
+        _processes = report;
+        _processesUnavailable = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _processes = null;
+        _processesUnavailable = true;
+      });
+    }
+  }
+
+  Future<void> _openProcesses() async {
+    await pushKitPage<void>(context, (_) => const TermuxProcessesScreen());
+    if (mounted) unawaited(_readProcesses());
   }
 
   Future<void> _readInstalled() async {
@@ -830,8 +876,14 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
                   ),
           )
         else ...[
-          const TermuxPhoneToolsRows(only: TermuxPhoneTool.storage),
-          const TermuxPhoneToolsRows(only: TermuxPhoneTool.processes),
+          const TermuxStorageRow(),
+          // Left out, not dead, when the list cannot be read: the group
+          // then draws no hairline for it either.
+          if (!_processesUnavailable)
+            PhoneProcessesRow(
+              report: _processes,
+              onTap: () => unawaited(_openProcesses()),
+            ),
         ],
         if (recoveryProfile != null)
           ManagedServerRecoveryOption(

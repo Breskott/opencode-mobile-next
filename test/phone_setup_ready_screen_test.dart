@@ -288,10 +288,15 @@ void main() {
     linux.failCreate = 'No space left on device';
     await mount(tester);
     await create(tester);
+    // Plain words for the device's failure; its own text never shows.
+    final l10n = lookupAppLocalizations(const Locale('en'));
     expect(
-      find.text('The project could not be created: No space left on device'),
+      find.text(
+        'The project could not be created: ${l10n.productErrorStorage}',
+      ),
       findsOneWidget,
     );
+    expect(find.textContaining('No space left on device'), findsNothing);
     expect(connection.sessions, 0);
     expect(find.byType(PhoneSetupReadyScreen), findsOneWidget);
   });
