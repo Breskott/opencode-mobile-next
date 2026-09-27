@@ -25,6 +25,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/team_runtime.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/new_conversation_sheet.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
@@ -336,33 +337,42 @@ void main() {
       return controller;
     }
 
-    testWidgets('Team is offered, remembered per server, and with the team '
-        'off it opens the intro', (tester) async {
+    testWidgets('Team is offered in the New conversation chooser, remembered '
+        'per server, and with the team off it opens the intro', (tester) async {
       final controller = await pumpWork(tester);
-      expect(_key('workspace-new-mode'), findsOneWidget);
+      // One New conversation; how to start is asked by its chooser.
+      expect(_key('workspace-new-mode'), findsNothing);
       expect(find.text(_en.workspaceNewSession), findsOneWidget);
-      await tester.tap(_key('workspace-new-mode-team'));
+      await tester.tap(_key('workspace-new'));
       await _settle(tester);
-      expect(find.text(_en.teamNewTask), findsOneWidget);
+      expect(_key('new-conversation-team'), findsOneWidget);
+      await tester.tap(_key('new-conversation-team'));
+      await _settle(tester);
+      expect(find.byType(TeamIntroScreen), findsOneWidget);
       expect(
-        controller.store.prefs.getString(TeamNewMode.key('phone')),
+        controller.store.prefs.getString(NewConversationMemory.key('phone')),
         'team',
       );
-      // Remembered: a fresh Work tab opens on Team.
+      // Remembered: a fresh Work tab's chooser marks Team.
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(
         _app(Scaffold(body: WorkspaceScreen(controller: controller))),
       );
       await _settle(tester);
-      expect(find.text(_en.teamNewTask), findsOneWidget);
+      await tester.tap(_key('workspace-new'));
+      await _settle(tester);
+      expect(
+        find.descendant(
+          of: _key('new-conversation-team'),
+          matching: find.textContaining(_en.newConversationLastUsed),
+        ),
+        findsOneWidget,
+      );
       // Swept with the server.
       expect(
         controller.store.profileScopedPreferenceKeys('phone'),
-        contains(TeamNewMode.key('phone')),
+        contains(NewConversationMemory.key('phone')),
       );
-      await tester.tap(_key('workspace-new'));
-      await _settle(tester);
-      expect(find.byType(TeamIntroScreen), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
@@ -396,9 +406,14 @@ void main() {
       expect(find.byType(TeamConversationScreen), findsOneWidget);
       await tester.pageBack();
       await _settle(tester);
-      await tester.tap(_key('workspace-new-mode-team'));
-      await _settle(tester);
       await tester.tap(_key('workspace-new'));
+      await _settle(tester);
+      expect(
+        find.text(_en.newConversationTeamDetail),
+        findsOneWidget,
+        reason: 'with the team on, Team says what it starts',
+      );
+      await tester.tap(_key('new-conversation-team'));
       await _settle(tester);
       expect(_key('team-start-run-sheet'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());

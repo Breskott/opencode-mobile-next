@@ -42,6 +42,8 @@ import '../kit/motion/kit_animated_rows.dart';
 import '../kit/scenes/team_discover_scenes.dart';
 import '../screens/settings/plugins_screen.dart'
     show teamPhoneProfile, teamRowSubtitle;
+import '../screens/new_conversation_sheet.dart'
+    show NewConversationChoice, NewConversationKind, NewConversationMemory;
 import '../screens/team/team_intro_screen.dart';
 import 'builtin_team_section.dart' show BuiltinTeamSection;
 import 'product_states.dart' show SectionLabel;
@@ -94,19 +96,30 @@ Future<bool> teamPossibleOn(
     ? teamTermuxSupported(runtime)
     : true;
 
-/// New conversation's Solo · Team choice, remembered per server
-/// (`oc.newConversationMode.<profileId>`, swept with the profile).
+/// New conversation's Solo · Team choice, remembered per server.
+///
+/// Retired by slice-P4.5: New conversation's chooser remembers every way to
+/// start (Solo, Team, a separate copy, a cloud machine) under the same key;
+/// use [NewConversationMemory].
+@Deprecated('Retired by slice-P4.5: use NewConversationMemory')
 abstract final class TeamNewMode {
-  static String key(String profileId) => 'oc.newConversationMode.$profileId';
+  static String key(String profileId) => NewConversationMemory.key(profileId);
 
   static bool isTeam(SharedPreferences prefs, String profileId) =>
-      prefs.getString(key(profileId)) == 'team';
+      NewConversationMemory.read(prefs, profileId)?.kind ==
+      NewConversationKind.team;
 
   static Future<void> set(
     SharedPreferences prefs,
     String profileId, {
     required bool team,
-  }) => prefs.setString(key(profileId), team ? 'team' : 'solo');
+  }) => NewConversationMemory.remember(
+    prefs,
+    profileId,
+    team
+        ? const NewConversationChoice.team()
+        : const NewConversationChoice.solo(),
+  );
 }
 
 /// Whether [progress] is a setup job that installs the AI Team (Add tools

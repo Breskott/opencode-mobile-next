@@ -40580,6 +40580,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.'**
   String get quotaMonitorConsentDetails;
+
+  /// New conversation chooser: marks the way the person started their last conversation on this server
+  ///
+  /// In en, this message translates to:
+  /// **'Last used'**
+  String get newConversationLastUsed;
+
+  /// New conversation chooser: what the Solo row starts, when no project is known
+  ///
+  /// In en, this message translates to:
+  /// **'You and the assistant'**
+  String get newConversationSoloDetail;
+
+  /// New conversation chooser: what the Solo row starts and where
+  ///
+  /// In en, this message translates to:
+  /// **'You and the assistant, in {project}'**
+  String newConversationSoloDetailIn(String project);
+
+  /// New conversation chooser: what the Team row starts while the AI Team is on
+  ///
+  /// In en, this message translates to:
+  /// **'The AI Team plans the work and shares it out'**
+  String get newConversationTeamDetail;
+
+  /// New conversation chooser: the Team row while the AI Team is off; tapping it opens the team's off state
+  ///
+  /// In en, this message translates to:
+  /// **'Off on this server · opens the AI Team to set it up'**
+  String get newConversationTeamOffDetail;
+
+  /// New conversation chooser: starts the conversation in a fresh worktree of the project
+  ///
+  /// In en, this message translates to:
+  /// **'In a separate copy of {project}'**
+  String newConversationCopyTitle(String project);
+
+  /// New conversation chooser: starts the conversation on this cloud machine (a managed workspace)
+  ///
+  /// In en, this message translates to:
+  /// **'On {machine}'**
+  String newConversationCloudTitle(String machine);
+
+  /// New conversation chooser: what a cloud machine row is
+  ///
+  /// In en, this message translates to:
+  /// **'A cloud machine for this project'**
+  String get newConversationCloudDetail;
 }
 
 class _AppLocalizationsDelegate

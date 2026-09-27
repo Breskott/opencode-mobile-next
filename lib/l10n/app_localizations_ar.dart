@@ -25978,4 +25978,36 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get quotaMonitorConsentDetails =>
       'This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.';
+
+  @override
+  String get newConversationLastUsed => 'Last used';
+
+  @override
+  String get newConversationSoloDetail => 'You and the assistant';
+
+  @override
+  String newConversationSoloDetailIn(String project) {
+    return 'You and the assistant, in $project';
+  }
+
+  @override
+  String get newConversationTeamDetail =>
+      'The AI Team plans the work and shares it out';
+
+  @override
+  String get newConversationTeamOffDetail =>
+      'Off on this server · opens the AI Team to set it up';
+
+  @override
+  String newConversationCopyTitle(String project) {
+    return 'In a separate copy of $project';
+  }
+
+  @override
+  String newConversationCloudTitle(String machine) {
+    return 'On $machine';
+  }
+
+  @override
+  String get newConversationCloudDetail => 'A cloud machine for this project';
 }

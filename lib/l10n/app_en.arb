@@ -30113,5 +30113,55 @@
   "quotaMonitorConsentDetails": "This app keeps reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. No service is started here.",
   "@quotaMonitorConsentDetails": {
     "description": "Full terms of quota monitoring, under Details on the monitoring sheet"
+  },
+  "newConversationLastUsed": "Last used",
+  "@newConversationLastUsed": {
+    "description": "New conversation chooser: marks the way the person started their last conversation on this server"
+  },
+  "newConversationSoloDetail": "You and the assistant",
+  "@newConversationSoloDetail": {
+    "description": "New conversation chooser: what the Solo row starts, when no project is known"
+  },
+  "newConversationSoloDetailIn": "You and the assistant, in {project}",
+  "@newConversationSoloDetailIn": {
+    "description": "New conversation chooser: what the Solo row starts and where",
+    "placeholders": {
+      "project": {
+        "type": "String",
+        "example": "shopfront"
+      }
+    }
+  },
+  "newConversationTeamDetail": "The AI Team plans the work and shares it out",
+  "@newConversationTeamDetail": {
+    "description": "New conversation chooser: what the Team row starts while the AI Team is on"
+  },
+  "newConversationTeamOffDetail": "Off on this server · opens the AI Team to set it up",
+  "@newConversationTeamOffDetail": {
+    "description": "New conversation chooser: the Team row while the AI Team is off; tapping it opens the team's off state"
+  },
+  "newConversationCopyTitle": "In a separate copy of {project}",
+  "@newConversationCopyTitle": {
+    "description": "New conversation chooser: starts the conversation in a fresh worktree of the project",
+    "placeholders": {
+      "project": {
+        "type": "String",
+        "example": "shopfront"
+      }
+    }
+  },
+  "newConversationCloudTitle": "On {machine}",
+  "@newConversationCloudTitle": {
+    "description": "New conversation chooser: starts the conversation on this cloud machine (a managed workspace)",
+    "placeholders": {
+      "machine": {
+        "type": "String",
+        "example": "feature-login"
+      }
+    }
+  },
+  "newConversationCloudDetail": "A cloud machine for this project",
+  "@newConversationCloudDetail": {
+    "description": "New conversation chooser: what a cloud machine row is"
   }
 }
