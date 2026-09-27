@@ -226,6 +226,55 @@ void main() {
     expect(_header('a.dart'), findsOneWidget);
   });
 
+  // slice-R18: one reload on screen at a time.
+  testWidgets('R18: no top-bar Refresh while the error or the slow wait '
+      'shows; Try again is the one reload', (tester) async {
+    final slow = Completer<List<FileDiff>>();
+    var loads = 0;
+    await _pumpReview(tester, () {
+      loads++;
+      if (loads == 1) return slow.future;
+      if (loads == 2) throw const ProductException('server unavailable');
+      return Future.value([diff('a.dart')]);
+    }, settle: false);
+    await tester.pump(const Duration(seconds: 9));
+    expect(find.byKey(const Key('review-slow')), findsOneWidget);
+    expect(find.byKey(const Key('review-refresh')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('review-slow-retry')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('review-error')), findsOneWidget);
+    expect(find.byKey(const Key('review-refresh')), findsNothing);
+    expect(find.text('Try again'), findsOneWidget);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+    expect(_header('a.dart'), findsOneWidget);
+    expect(find.byKey(const Key('review-refresh')), findsOneWidget);
+    slow.complete(const []);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('R18: what a view covers is said only when it is empty', (
+    tester,
+  ) async {
+    var session = [diff('a.dart')];
+    await _pumpReview(
+      tester,
+      () async => session,
+      workingTreeLoader: () async => [diff('b.dart')],
+    );
+    expect(find.byKey(const Key('review-scope-picker')), findsOneWidget);
+    expect(find.byKey(const Key('review-scope-hint')), findsNothing);
+    expect(find.text('Files this conversation changed.'), findsNothing);
+
+    session = const [];
+    await tester.tap(find.byKey(const Key('review-refresh')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('review-empty')), findsOneWidget);
+    expect(find.text('Files this conversation changed.'), findsOneWidget);
+  });
+
   testWidgets('switches among session, working tree and branch views', (
     tester,
   ) async {

@@ -380,19 +380,14 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
   bool _isViewed(FileDiff diff) =>
       _sameReviewDiff(_viewedFiles[_viewedKey(diff.file)], diff);
 
-  /// The diff drew its header for [file]: that file is on screen. Marks it
-  /// viewed after the frame (a build never sets state).
-  void _observeShown(KitDiffFile file) {
-    final diff = _diffFor(file);
-    if (diff == null) return;
+  /// The diff moved to [diff] (KitDiffView.onFileChanged): that file is on
+  /// screen, so it counts as viewed.
+  void _observeShown(FileDiff diff) {
+    if (!mounted || !(_diffs?.contains(diff) ?? false)) return;
     if (_shownPath == diff.file && _isViewed(diff)) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !(_diffs?.contains(diff) ?? false)) return;
-      if (_shownPath == diff.file && _isViewed(diff)) return;
-      setState(() {
-        _shownPath = diff.file;
-        _viewedFiles[_viewedKey(diff.file)] = diff;
-      });
+    setState(() {
+      _shownPath = diff.file;
+      _viewedFiles[_viewedKey(diff.file)] = diff;
     });
   }
 
@@ -443,14 +438,17 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
       topBar: KitTopBar(
         title: l10n.demoReviewChanges,
         subtitle: subtitle.isEmpty ? null : subtitle,
+        // One reload at a time: until a diff shows, the body's own Try
+        // again (error, slow wait) is the way to load again.
         actions: [
-          KitAction(
-            key: const Key('review-refresh'),
-            label: l10n.readerUiRefreshChanges,
-            icon: AppIconography.retry,
-            working: _refreshing && diffs != null,
-            onPressed: _load,
-          ),
+          if (diffs != null)
+            KitAction(
+              key: const Key('review-refresh'),
+              label: l10n.readerUiRefreshChanges,
+              icon: AppIconography.retry,
+              working: _refreshing,
+              onPressed: _load,
+            ),
         ],
       ),
       header: [
@@ -459,6 +457,9 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
             scopes: _availableScopes,
             selected: _scope,
             onSelected: _selectScope,
+            // What the view covers is said only when it has nothing to
+            // show; with files listed the files say it.
+            explain: diffs != null && diffs.isEmpty,
           ),
         if (_defaultNotice case final said?)
           onRails(
@@ -589,6 +590,7 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
         files: [for (final diff in diffs) _kitFileOf(diff)],
         initialFile: shown < 0 ? 0 : shown,
         readOnly: false,
+        onFileChanged: (index) => _observeShown(diffs[index]),
         onComment: (selection) =>
             _openCommentComposer(selection.file, selection),
         onAddToPrompt: widget.handoff == null ? null : _stageSelection,
@@ -603,7 +605,6 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
 
   /// The file header's More menu, each entry naming the file it acts on.
   List<KitMenuItem> _fileActions(KitDiffFile file) {
-    _observeShown(file);
     final l10n = _l10n;
     final name = KitBidi.ltr(_basename(file.path));
     final patch = file.patch;
@@ -844,18 +845,23 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
   }
 }
 
-/// Which changes to show: 2–3 views, each with its meaning in words under
-/// the control (a tooltip is out of reach on a phone).
+/// Which changes to show: 2–3 views. When the chosen view is empty its
+/// meaning is said in words under the control (a tooltip is out of reach on
+/// a phone).
 class _ReviewScopePicker extends StatelessWidget {
   const _ReviewScopePicker({
     required this.scopes,
     required this.selected,
     required this.onSelected,
+    required this.explain,
   });
 
   final List<ReviewDiffScope> scopes;
   final ReviewDiffScope selected;
   final ValueChanged<ReviewDiffScope> onSelected;
+
+  /// Says under the control what the chosen view covers.
+  final bool explain;
 
   @override
   Widget build(BuildContext context) {
@@ -880,12 +886,14 @@ class _ReviewScopePicker extends StatelessWidget {
             selected: selected,
             onChanged: onSelected,
           ),
-          SizedBox(height: tokens.space1),
-          KitText(
-            _scopeDescription(l10n, selected),
-            key: const Key('review-scope-hint'),
-            role: KitTextRole.secondary,
-          ),
+          if (explain) ...[
+            SizedBox(height: tokens.space1),
+            KitText(
+              _scopeDescription(l10n, selected),
+              key: const Key('review-scope-hint'),
+              role: KitTextRole.secondary,
+            ),
+          ],
         ],
       ),
     );

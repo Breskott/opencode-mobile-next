@@ -3886,10 +3886,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get a2aSavedTasks => 'Saved tasks';
 
   @override
-  String get a2aReopenDetail =>
-      'Reopening checks the existing task. It never sends your task again.';
-
-  @override
   String get a2aDeliveryUnconfirmed => 'Delivery unconfirmed';
 
   @override
@@ -3914,9 +3910,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get a2aCancelDetail =>
       'Ask this agent to stop this task. Work may already have finished, and the agent decides whether stopping is possible.';
-
-  @override
-  String get a2aRequestCancel => 'Ask to stop';
 
   @override
   String get a2aForgetTask => 'Forget saved task';
@@ -9228,9 +9221,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String e7LibrarySchemaCopied(String detail1) {
     return '$detail1 schema copied';
   }
-
-  @override
-  String get e7LibraryParameterSchema => 'Parameter schema';
 
   @override
   String get e7LibraryNoProjectSelected => 'No project selected';
@@ -22323,11 +22313,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get integrationsMcpServersLabel => 'MCP servers';
 
   @override
-  String integrationsProvidersSummary(int connected, int total) {
-    return '$connected of $total connected';
-  }
-
-  @override
   String integrationsModelCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -22456,10 +22441,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String integrationsMcpRemoveUntilRestart(String name) {
     return 'Remove $name until restart';
   }
-
-  @override
-  String get integrationsMcpRemoveUnavailable =>
-      'This server can\'t remove MCP servers from the app. Edit its configuration on the computer.';
 
   @override
   String integrationsMcpRemoveTitle(String name) {
@@ -23756,9 +23737,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get externalAgentsAboutLabel => 'What it says about itself';
 
   @override
-  String get externalAgentsNoSkills => 'It lists no skills';
-
-  @override
   String get externalAgentsUnverified =>
       'The agent describes itself. This app hasn\'t verified who runs it, what it can do or what it costs.';
 
@@ -23860,9 +23838,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get externalAgentsStopUnavailable =>
       'Check with the agent first; pull down to refresh';
-
-  @override
-  String get externalAgentsStopTitle => 'Stop this task?';
 
   @override
   String get externalAgentsForgetMenu => 'Forget this task on this phone';
@@ -26472,5 +26447,42 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String voiceAutoSetupDetailMemoryValue(int required, int available) {
     return 'Needs $required MB; this phone has $available MB';
+  }
+
+  @override
+  String get terminalScreenEmptyTitle => 'No terminals yet';
+
+  @override
+  String terminalScreenEmptyBody(String project) {
+    return 'Start one in $project.';
+  }
+
+  @override
+  String get terminalScreenEmptyBodyNoProject => 'Start one in this project.';
+
+  @override
+  String get integrationsProvidersExplanation =>
+      'The model providers this server can use. Connect one to start chatting.';
+
+  @override
+  String get integrationsResourcesExplanation =>
+      'Files and data that connected MCP servers give the agent.';
+
+  @override
+  String externalAgentsStopTaskTitle(String task) {
+    return 'Stop “$task”?';
+  }
+
+  @override
+  String externalAgentsStopTaskConfirm(String agent) {
+    return 'Ask $agent to stop';
+  }
+
+  @override
+  String get externalAgentsStopTaskKeep => 'Keep running';
+
+  @override
+  String toolsDetailMenu(String tool) {
+    return '$tool actions';
   }
 }

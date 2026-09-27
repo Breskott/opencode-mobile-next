@@ -82,7 +82,7 @@ AppLocalizations _l10nOf(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
 /// The capability a server's terminals need (docs/ux-system/capabilities.json).
-const _terminalCapability = 'flag:fileBrowsing+terminal';
+const _terminalCapability = 'flag:terminal';
 
 /// [TerminalScreen] as its own pushed route. Every entry point that leaves
 /// the shell for the terminal — the More hub, the Workspace header, the
@@ -590,15 +590,37 @@ class _TerminalScreenState extends State<TerminalScreen> {
       !KitStatusLineSlot.existsAbove(context) &&
       Scaffold.maybeOf(context) == null;
 
+  bool _hasTopBar(BuildContext context) => widget.page ?? _standalone(context);
+
   @override
   Widget build(BuildContext context) {
     final l10n = _l10nOf(context);
     final processes = _processes;
     final supported = widget.controller.capabilities.terminal;
     final listed = supported && processes != null && processes.isNotEmpty;
+    final ended = [
+      if (supported)
+        for (final process in processes ?? const <TerminalProcess>[])
+          if (!process.running) process,
+    ];
     return KitScreen(
-      topBar: (widget.page ?? _standalone(context))
-          ? KitTopBar(title: l10n.libraryTerminalTitle)
+      topBar: _hasTopBar(context)
+          ? KitTopBar(
+              title: l10n.libraryTerminalTitle,
+              menuKey: const ValueKey('terminal-list-menu'),
+              // Clearing up is occasional: it waits in the bar's menu
+              // rather than under the list.
+              menu: [
+                if (ended.isNotEmpty)
+                  KitMenuItem(
+                    key: const ValueKey('terminal-remove-ended'),
+                    label: l10n.terminalScreenRemoveEnded(ended.length),
+                    icon: AppIconography.clearAll,
+                    destructive: true,
+                    onSelected: () => unawaited(_removeEnded(ended)),
+                  ),
+              ],
+            )
           : null,
       header: widget.header,
       width: KitScreenWidth.list,
@@ -627,8 +649,6 @@ class _TerminalScreenState extends State<TerminalScreen> {
     final name = widget.controller.profile?.name.trim();
     return KitStateView.missing(
       key: const ValueKey('terminal-unavailable'),
-      // The registry entry is shared with Files (no terminal-only id yet);
-      // the words here are the terminal's own.
       capability: _terminalCapability,
       title: name == null || name.isEmpty
           ? l10n.terminalScreenNoTerminalThisServer
@@ -787,8 +807,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
                     key: const ValueKey('terminal-none'),
                     icon: AppIconography.terminal,
                     illustration: const StatesTerminalScene(),
-                    title: l10n.e7SetupNoTerminals,
-                    body: l10n.e7SetupNewTerminalDetail,
+                    title: l10n.terminalScreenEmptyTitle,
+                    body: _emptyBody(l10n),
                     primary: KitAction(
                       key: const ValueKey('terminal-new'),
                       label: l10n.e7SetupNewTerminal,
@@ -811,7 +831,9 @@ class _TerminalScreenState extends State<TerminalScreen> {
                             _processRow(context, process),
                         ],
                       ),
-                      if (ended.isNotEmpty)
+                      // Framed by a page without this bar: the clear-up
+                      // stays under the list (the bar's menu otherwise).
+                      if (ended.isNotEmpty && !_hasTopBar(context))
                         Padding(
                           padding: EdgeInsetsDirectional.only(
                             start: tokens.gutter,
@@ -838,6 +860,21 @@ class _TerminalScreenState extends State<TerminalScreen> {
         ),
       ],
     );
+  }
+
+  /// "Start one in oc_app." — the project the new terminal opens in.
+  String _emptyBody(AppLocalizations l10n) {
+    final directory = widget.controller.directory?.trim();
+    final name = directory == null || directory.isEmpty
+        ? null
+        : directory
+              .replaceAll('\\', '/')
+              .split('/')
+              .where((part) => part.isNotEmpty)
+              .lastOrNull;
+    return name == null
+        ? l10n.terminalScreenEmptyBodyNoProject
+        : l10n.terminalScreenEmptyBody(KitBidi.ltr(name));
   }
 
   @override

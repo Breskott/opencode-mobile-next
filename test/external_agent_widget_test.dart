@@ -294,7 +294,11 @@ void main() {
       const ValueKey('external-task-menu'),
       'Ask Color agent to stop this task',
     );
-    expect(find.text('Stop this task?'), findsOneWidget);
+    // The question names the task, the answer the agent; the other keeps
+    // it running.
+    expect(find.text('Stop \u201cChoose a color\u201d?'), findsOneWidget);
+    expect(find.text('Ask Color agent to stop'), findsOneWidget);
+    expect(find.text('Keep running'), findsOneWidget);
     await tapKey(tester, const ValueKey('external-task-stop-confirm'));
     expect(gateway.cancels, 1);
     expect(
@@ -505,6 +509,65 @@ void main() {
         () => File('$captureDir/inspected-agent.png').writeAsBytes(bytes),
       );
     }
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  // slice-R18: the agent's page shows each thing once and only when it has
+  // something to say.
+  testWidgets('R18 agent page: no empty skills group, no reopen caption, '
+      'the unverified line only on Add agent, a section gap under the bar', (
+    tester,
+  ) async {
+    const unverified =
+        "The agent describes itself. This app hasn't verified who runs it, "
+        'what it can do or what it costs.';
+    // Add agent is where the person decides to trust it: said there, once.
+    await tester.pumpWidget(
+      app(ExternalAgentsScreen(store: store, gatewayFactory: () => gateway)),
+    );
+    await tap(tester, 'Add agent');
+    await tester.enterText(
+      find.byKey(const ValueKey('external-agent-address')),
+      'https://agent.example',
+    );
+    await tester.pump();
+    await tap(tester, 'Check agent');
+    expect(find.text(unverified), findsOneWidget);
+    expect(find.text('It lists no skills'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+
+    final profile = await store.add(agentCard, 'fixture-token');
+    await store.saveTask(
+      profile.id,
+      ExternalTaskRecord(
+        localId: 'task',
+        title: 'Choose a color',
+        created: DateTime(2026, 9, 8),
+        task: waitingTask,
+      ),
+    );
+    await tester.pumpWidget(
+      app(
+        ExternalAgentDetailScreen(
+          store: store,
+          profile: profile,
+          gatewayFactory: () => gateway,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Choose a color'), findsOneWidget);
+    // The card lists no skills: no group saying so.
+    expect(find.text('Advertised skills'), findsNothing);
+    expect(find.text('It lists no skills'), findsNothing);
+    expect(find.textContaining('Reopening checks'), findsNothing);
+    expect(find.text(unverified), findsNothing);
+    // The description starts a section gap under the host line.
+    final host = tester.getBottomLeft(find.text('agent.example')).dy;
+    final description = tester.getTopLeft(find.text('Synthetic fixture')).dy;
+    expect(description - host, greaterThanOrEqualTo(20));
+
     await tester.pumpWidget(const SizedBox());
   });
 }

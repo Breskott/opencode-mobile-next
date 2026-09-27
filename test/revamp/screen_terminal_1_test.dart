@@ -13,6 +13,7 @@ import 'package:opencode_mobile/builtin/builtin_server.dart';
 import 'package:opencode_mobile/builtin/local_terminal.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/ui/kit/kit_state_view.dart';
 import 'package:opencode_mobile/ui/screens/local_terminal_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/terminal_screen.dart';
@@ -90,6 +91,25 @@ void main() {
       expect(find.byKey(const ValueKey('kit-screen-bottom')), findsNothing);
     });
 
+    testWidgets('R18: an empty list says No terminals yet and names the '
+        'project a new one opens in', (tester) async {
+      await _phone(tester);
+      final controller = await terminalController(
+        TerminalServer(processes: []),
+      );
+      addTearDown(() => disposeTerminalController(controller));
+      controller.directory = '/srv/shopfront';
+      await tester.pumpWidget(
+        _app(TerminalPage(controller: controller, localSupported: false)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('No terminals yet'), findsOneWidget);
+      expect(find.textContaining('Start one in'), findsOneWidget);
+      expect(find.textContaining('shopfront'), findsOneWidget);
+      // Nothing has ended: the bar has no clear-up menu.
+      expect(find.byKey(const ValueKey('terminal-list-menu')), findsNothing);
+    });
+
     testWidgets('the row menu names the terminal it acts on', (tester) async {
       await _list(tester);
       await _openRowMenu(tester, 'build-server');
@@ -102,8 +122,11 @@ void main() {
       tester,
     ) async {
       final (server, _) = await _list(tester);
-      expect(find.text('Remove 2 ended terminals'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('terminal-remove-ended')));
+      // Occasional clear-up: in the bar's menu, not under the list.
+      expect(find.text('Remove 2 ended terminals'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('terminal-list-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Remove 2 ended terminals'));
       await tester.pumpAndSettle();
       expect(find.text('Remove 2 ended terminals?'), findsOneWidget);
       expect(server.removed, isEmpty, reason: 'nothing before the yes');
@@ -114,7 +137,9 @@ void main() {
       expect(server.removed, ['pty-2', 'pty-3']);
       expect(find.text('build-server'), findsOneWidget);
       expect(find.text('tests'), findsNothing);
-      expect(find.byKey(const ValueKey('terminal-remove-ended')), findsNothing);
+      // Nothing ended is left: the menu no longer offers it.
+      expect(find.byKey(const ValueKey('terminal-list-menu')), findsNothing);
+      expect(find.text('Remove 2 ended terminals'), findsNothing);
     });
 
     testWidgets('a stop that fails keeps the question open with the reason', (
@@ -197,8 +222,17 @@ void main() {
         find.byKey(const ValueKey('terminal-unavailable')),
         findsOneWidget,
       );
-      // The Terminal page talks about the terminal, not Files.
+      // The Terminal page talks about the terminal, not Files, and is
+      // gated on the terminal-only registry entry (slice-R18).
       expect(find.text("This server doesn't share a terminal"), findsOneWidget);
+      expect(
+        tester
+            .widget<KitStateView>(
+              find.byKey(const ValueKey('terminal-unavailable')),
+            )
+            .capability,
+        'flag:terminal',
+      );
       expect(find.text('Files and terminal'), findsNothing);
       expect(find.byKey(const ValueKey('terminal-session-rows')), findsNothing);
       // One control for the switch: the source choice, no second button.

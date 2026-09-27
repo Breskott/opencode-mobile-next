@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
@@ -169,28 +170,27 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('tool search and schema use server-returned truth', (
+  testWidgets('the tool sheet copies the schema the server returned', (
     tester,
   ) async {
+    final copied = _clipboard(tester);
     final repository = _ToolsRepository();
     final controller = await _controller(repository);
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(ToolsScreen(controller: controller)));
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.byKey(const ValueKey('tools-search')),
-      'filesystem',
-    );
-    await tester.pump();
-    expect(find.byKey(const ValueKey('coding-tool-bash')), findsNothing);
-    expect(find.byKey(const ValueKey('coding-tool-read')), findsOneWidget);
-
-    await tester.ensureVisible(find.byKey(const ValueKey('coding-tool-read')));
     await tester.tap(find.byKey(const ValueKey('coding-tool-read')));
     await tester.pumpAndSettle();
-    expect(find.text('Parameter schema'), findsOneWidget);
-    expect(find.textContaining('"filePath": {'), findsOneWidget);
+    // No JSON on the sheet: the schema is one Copy away in its menu.
+    expect(find.text('Parameter schema'), findsNothing);
+    expect(find.textContaining('"filePath": {'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('tool-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy parameter schema'));
+    await tester.pumpAndSettle();
+    expect(copied, hasLength(1));
+    expect(copied.single, contains('"filePath": {'));
     expect(tester.takeException(), isNull);
   });
 
@@ -211,7 +211,7 @@ void main() {
     expect(find.byKey(const ValueKey('coding-tool-read')), findsOneWidget);
   });
 
-  testWidgets('long server descriptions keep parameter schema reachable', (
+  testWidgets('long server descriptions keep Copy parameter schema reachable', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 520);
@@ -239,21 +239,18 @@ void main() {
     await tester.pumpWidget(_app(ToolsScreen(controller: controller)));
     await tester.pumpAndSettle();
 
+    final copied = _clipboard(tester);
     await tester.tap(find.byKey(const ValueKey('coding-tool-apply_patch')));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('tool-parameter-schema')),
-      200,
-      scrollable: find
-          .descendant(
-            of: find.byKey(const ValueKey('tool-detail-scroll')),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    expect(find.byKey(const ValueKey('tool-parameter-schema')), findsOneWidget);
-    expect(find.textContaining('"patch": {'), findsOneWidget);
+    // Below a long description, the menu is still reachable by scrolling.
+    await tester.ensureVisible(find.byKey(const ValueKey('tool-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('tool-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy parameter schema'));
+    await tester.pumpAndSettle();
+    expect(copied.single, contains('"patch": {'));
     expect(tester.takeException(), isNull);
   });
 
@@ -289,4 +286,24 @@ void main() {
     expect(find.byType(ToolsScreen), findsOneWidget);
     expect(find.byKey(const ValueKey('coding-tools-list')), findsOneWidget);
   });
+}
+
+List<String> _clipboard(WidgetTester tester) {
+  final copied = <String>[];
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+    SystemChannels.platform,
+    (call) async {
+      if (call.method == 'Clipboard.setData') {
+        copied.add((call.arguments as Map)['text'] as String);
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      null,
+    ),
+  );
+  return copied;
 }

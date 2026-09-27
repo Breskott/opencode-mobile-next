@@ -38,8 +38,10 @@ class _Repository implements ProductRepository {
     return servers;
   }
 
+  List<McpResourceInfo> resources = const [];
+
   @override
-  Future<List<McpResourceInfo>> listMcpResources() async => const [];
+  Future<List<McpResourceInfo>> listMcpResources() async => resources;
 
   @override
   Future<List<IntegrationInfo>> listIntegrations() async {
@@ -223,7 +225,7 @@ void main() {
     expect(find.text('OpenAI disconnected'), findsOneWidget);
   });
 
-  testWidgets('MCP rows: urgent first, the act named, Remove explained', (
+  testWidgets('MCP rows: urgent first, the act named, no dead Remove', (
     tester,
   ) async {
     final repository = _Repository()
@@ -253,17 +255,73 @@ void main() {
     await tester.pumpAndSettle();
     expect(repository.connectedMcp, ['github']);
 
-    // Runtime removal is not on this server: the item says why.
+    // Runtime removal is not on this server: the menu leaves Remove out
+    // instead of listing a dead item.
     await tester.tap(find.byKey(const ValueKey('mcp-server-browser')));
     await tester.pumpAndSettle();
     expect(find.text('Disconnect browser'), findsOneWidget);
-    expect(find.text('Remove browser until restart'), findsOneWidget);
-    expect(
-      find.text(
-        'This server can\'t remove MCP servers from the app. Edit its '
-        'configuration on the computer.',
+    expect(find.text('Remove browser until restart'), findsNothing);
+  });
+
+  // slice-R18: the group names explain themselves on tap, and the
+  // Providers page carries no count in its bar.
+  testWidgets('R18: Providers, MCP servers and Resources explain themselves; '
+      'the Providers page has no connected count', (tester) async {
+    final repository = _Repository()
+      ..servers = const [McpServerInfo(name: 'browser', status: 'connected')]
+      ..resources = const [
+        McpResourceInfo(
+          name: 'Schema',
+          server: 'browser',
+          uri: 'file:///schema.sql',
+        ),
+      ]
+      ..integrations = const [_anthropic, _openaiConnected];
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(IntegrationsScreen(controller: controller)));
+    await tester.pumpAndSettle();
+
+    Future<void> explains(String label, String words) async {
+      final term = find.text(label);
+      await tester.ensureVisible(term);
+      await tester.pumpAndSettle();
+      await tester.tap(term);
+      await tester.pumpAndSettle();
+      expect(find.text(words), findsOneWidget, reason: label);
+      await tester.tapAt(Offset.zero);
+      await tester.pumpAndSettle();
+    }
+
+    await explains(
+      'Providers',
+      'The model providers this server can use. Connect one to start '
+          'chatting.',
+    );
+    await explains(
+      'MCP servers',
+      'Model Context Protocol. Small add-on servers that give the agent '
+          'extra tools, like a browser, a database, or a design tool. You '
+          'connect them once and every conversation can use them.',
+    );
+    await explains(
+      'Resources',
+      'Files and data that connected MCP servers give the agent.',
+    );
+
+    await tester.pumpWidget(
+      _app(
+        IntegrationsScreen(
+          controller: controller,
+          mode: IntegrationsMode.providers,
+        ),
       ),
-      findsOneWidget,
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('provider-openai')), findsOneWidget);
+    expect(
+      find.textContaining(RegExp(r'\d+ of \d+ connected'), findRichText: true),
+      findsNothing,
     );
   });
 
