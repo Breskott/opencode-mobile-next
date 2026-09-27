@@ -148,23 +148,6 @@ const _maxAggregateAttachmentBytes = 20 * 1024 * 1024;
 AppLocalizations _chatL10n(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
-// Zero-duration AnimatedSize still restarts its controller during layout.
-// Reduced motion uses the final layout directly, with no size animator.
-Widget _chatSizeTransition({
-  required bool reduceMotion,
-  required Duration duration,
-  required Widget child,
-  Curve curve = Curves.linear,
-  AlignmentGeometry alignment = Alignment.center,
-}) => reduceMotion
-    ? child
-    : AnimatedSize(
-        duration: duration,
-        curve: curve,
-        alignment: alignment,
-        child: child,
-      );
-
 @visibleForTesting
 Future<Uint8List?> readAttachmentBytesWithinLimit(
   PlatformFile file, {
@@ -210,15 +193,6 @@ Future<Uint8List?> readAttachmentBytesWithinLimit(
 /// burst of N part deltas produces a bounded number of transcript rebuilds.
 @visibleForTesting
 int debugChatStreamFlushes = 0;
-
-/// Below this logical width the chat app bar is treated as a phone: the
-/// Tasks shortcut drops its visible label. Conversation titles stay one line.
-const double _titleBarWide = 600;
-
-/// [AppBar] scales its title by at most this factor (Material's own ceiling
-/// for keeping the toolbar hierarchy readable); the toolbar height follows
-/// the same figure so the title is never clipped at large text.
-const double _titleTextScaleCeiling = 1.34;
 
 String _fmtSessionTime(int ms, BuildContext context) {
   final date = DateTime.fromMillisecondsSinceEpoch(ms);
@@ -380,6 +354,9 @@ class _ChatScreenState extends State<ChatScreen>
   final _messagePositions = ItemPositionsListener.create();
   final _historyChanges = ValueNotifier<int>(0);
   bool _awayFromLatest = false;
+
+  /// What the earlier-messages pill last said, kept while it fades out.
+  int _earlierPillCount = 0;
 
   /// What Send does while a turn is running, on servers that support the
   /// inbox. Steer matches the server default; the visible delivery control
@@ -6068,6 +6045,8 @@ class _ChatScreenState extends State<ChatScreen>
         await _openCommandLauncher();
       case 'reload':
         await _load();
+      case 'export':
+        await _exportTranscript();
       case 'continue-computer':
         await _continueOnComputer();
       case 'continue-phone':
@@ -6079,8 +6058,10 @@ class _ChatScreenState extends State<ChatScreen>
   /// running the server. The CLI name follows the server's product
   /// generation (the only thing the flavor is used for here — copy), the
   /// availability follows [ServerCapabilities.cliSessionResume]. The sheet
-  /// only offers a copy; the cross-server route hands over to the existing
-  /// export screen instead of duplicating it.
+  /// only offers a copy; Export lives in the conversation menu. When the
+  /// server did not report the folder, the sheet offers a reload: the
+  /// conversation and its details are fetched again and the sheet reopens
+  /// with what the server says now.
   Future<void> _continueOnComputer() async {
     final session = _conn.sessionsById[widget.sessionID];
     final command = SessionResumeCommand.build(
@@ -6091,18 +6072,16 @@ class _ChatScreenState extends State<ChatScreen>
       directory: session?.directory ?? _conn.directory,
       workspaceID: session?.workspaceID ?? _conn.workspace,
     );
-    final repository = _conn.repository;
-    final exportAvailable =
-        _conn.capabilities.sessionImportExport &&
-        repository is SessionExportGateway &&
-        (repository as SessionExportGateway).sessionExportSupported;
     final action = await showContinueOnComputerSheet(
       context,
       command: command,
-      exportAvailable: exportAvailable,
+      offerReload: true,
     );
-    if (!mounted || action != continueOnComputerExport) return;
-    await _exportTranscript();
+    if (!mounted || action != continueOnComputerReload) return;
+    await _conn.refreshSessions();
+    await _load();
+    if (!mounted) return;
+    await _continueOnComputer();
   }
 
   /// F4-S2: the QR / link that opens this exact session in the app on
@@ -6797,13 +6776,602 @@ class _ChatScreenState extends State<ChatScreen>
       ? child
       : DesktopFileDropTarget(onDrop: _handleDroppedFiles, child: child);
 
+  /// The conversation's bar (kit-v2.md §1.18): the title, the server when
+  /// more than one could be meant, and the few actions, most urgent first.
+  /// On a phone the first shows and the rest wait in the overflow; on a PC
+  /// they carry their words (§8.2).
+  KitTopBar _chatTopBar({
+    required Session? session,
+    required String? serverName,
+    required bool shared,
+    required int runningWorkCount,
+  }) {
+    final l10n = _chatL10n(context);
+    return KitTopBar(
+      titleKey: const Key('chat-title'),
+      title: presentedSessionTitle(session, fallback: l10n.commandDestination),
+      // Which server (and so which agent) this conversation is with, when
+      // there is more than one to be with.
+      subtitle: serverName,
+      actions: [
+        if (_readAloudRequestBusy || _readAloud?.speaking == true)
+          KitAction(
+            icon: AppIconography.stopCircle,
+            label: l10n.readAloudStop,
+            onPressed: () => unawaited(_stopReading()),
+          ),
+        if (!_conn.isIsolated &&
+            !_watching &&
+            _conn.capabilities.projectManagement &&
+            runningWorkCount > 0)
+          KitAction(
+            key: const Key('running-work-indicator'),
+            icon: AppIconography.branch,
+            label: l10n.workCount(runningWorkCount),
+            onPressed: _openRunningWork,
+          ),
+        if (_conn.isIsolated)
+          KitAction(
+            icon: AppIconography.review,
+            label: l10n.demoReviewChanges,
+            onPressed: _showDiff,
+          ),
+        // Watching: the conversation is the worker's; nothing in the menu
+        // (share, fork, revert, rename, delete) is ours.
+        if (!_conn.isIsolated && !_watching)
+          KitAction(
+            key: const ValueKey('session-actions-button'),
+            icon: AppIconography.menu,
+            label: l10n.chatUiSessionMenu,
+            onPressed: () => unawaited(
+              _openSessionMenu(
+                reverted: session?.reverted == true,
+                shared: shared,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// The transcript: the newest turn at the bottom, clear of the floating
+  /// composer ([floating]: under [KitComposer.layer]), with the two jump
+  /// pills over it.
+  Widget _transcript({
+    required bool floating,
+    required int queuedAfterIndex,
+    required List<List<Part>> displayParts,
+    required Set<String> waitingLocalIDs,
+    required Set<int> turnActionOwners,
+  }) {
+    final Widget list = Builder(
+      builder: (context) {
+        final tokens = KitTokens.of(context);
+        final clearance = floating ? KitBottomInset.of(context).bottom : 0.0;
+        return Center(
+          child: ConstrainedBox(
+            // The conversation's cap (VL §5, LAY-5), its gutters inside.
+            constraints: BoxConstraints(
+              maxWidth: KitLayout.paneDetailMaxWidth + 2 * tokens.gutter,
+            ),
+            // Scrolling repaints up to the nearest boundary; without one
+            // that is the whole route, so every scroll frame redrew the
+            // composer and its glass.
+            child: RepaintBoundary(
+              key: const ValueKey('transcript-repaint-boundary'),
+              child: ScrollablePositionedList.builder(
+                reverse: true,
+                itemScrollController: _messageScroll,
+                itemPositionsListener: _messagePositions,
+                padding: EdgeInsets.fromLTRB(
+                  tokens.gutter,
+                  tokens.space2,
+                  tokens.gutter,
+                  tokens.space2 + clearance,
+                ),
+                itemCount:
+                    _renderedMessageCount + (_olderCursor == null ? 0 : 1),
+                itemBuilder: (context, i) => _transcriptRow(
+                  context,
+                  i,
+                  queuedAfterIndex: queuedAfterIndex,
+                  displayParts: displayParts,
+                  waitingLocalIDs: waitingLocalIDs,
+                  turnActionOwners: turnActionOwners,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    final latest = KitJumpPillLayer(
+      clearBottomInset: floating,
+      pill: KitJumpPill(
+        pillKey: const ValueKey('jump-to-latest'),
+        label: KitJumpPill.latestLabel(context),
+        onPressed: _jumpToLatest,
+        visible: _awayFromLatest,
+      ),
+      child: list,
+    );
+    // Only while reading history, and counting only the messages that
+    // actually sit above the viewport.
+    return ValueListenableBuilder<Iterable<ItemPosition>>(
+      valueListenable: _messagePositions.itemPositions,
+      child: latest,
+      builder: (context, positions, child) {
+        final earlier = _awayFromLatest && _messages.length > 30
+            ? _earlierMessageCount(positions)
+            : 0;
+        // A leaving pill keeps its last words while it fades.
+        if (earlier > 0) _earlierPillCount = earlier;
+        return KitJumpPillLayer(
+          pill: KitJumpPill.older(
+            pillKey: const ValueKey('earlier-messages-pill'),
+            label: _chatL10n(
+              context,
+            ).chatUiEarlierMessageCount(_earlierPillCount),
+            onPressed: () => unawaited(_openTimeline()),
+            visible: earlier > 0,
+          ),
+          child: child!,
+        );
+      },
+    );
+  }
+
+  /// Row [i] of the reversed transcript: item 0 is the newest turn. The
+  /// composer, not a transcript row, says when a run is active.
+  Widget _transcriptRow(
+    BuildContext context,
+    int i, {
+    required int queuedAfterIndex,
+    required List<List<Part>> displayParts,
+    required Set<String> waitingLocalIDs,
+    required Set<int> turnActionOwners,
+  }) {
+    if (i == _renderedMessageCount) return _olderHistoryRow();
+    final index = _renderedMessageCount - 1 - i;
+    final m = _messages[index];
+    if (waitingLocalIDs.contains(m.info.id) || _isFoldedNotice(m)) {
+      return const SizedBox.shrink();
+    }
+    if (v2VariantPart(m) case final tagged?) {
+      return V2TranscriptRow(
+        key: ValueKey('message-${m.info.id}'),
+        part: tagged,
+        messageId: m.info.id,
+        parentSessionID: widget.sessionID,
+        knownSessions: _conn.sessionsById,
+        onCompactAgain: !_watching && _canCompactAgain(index)
+            ? () => unawaited(_compact())
+            : null,
+        onOpenChild: _watching
+            ? _openWatchedChild
+            : _conn.capabilities.projectManagement
+            ? (id) => _openSubagentSession(id, requireChild: true)
+            : null,
+      );
+    }
+    final rawMeta = _messageMeta(_messages, index);
+    final meta = rawMeta.withModelLabel(_catalogModelNames(rawMeta.modelLabel));
+    final parts = displayParts[index];
+    if (parts.isEmpty && meta.isEmpty && m.info.errorText == null) {
+      return const SizedBox.shrink();
+    }
+    final hit =
+        _findHits.isNotEmpty && _findHits[_findCursor].messageID == m.info.id
+        ? _findHits[_findCursor]
+        : null;
+    final offline = _conn.isIsolated || _watching;
+    return _MessageView(
+      key: ValueKey('message-${m.info.id}'),
+      queued:
+          queuedAfterIndex >= 0 &&
+          m.info.role == 'user' &&
+          index > queuedAfterIndex,
+      m: m,
+      meta: meta,
+      parts: parts,
+      reasoningExpanded: _conn.transcriptReasoningExpanded,
+      expansionStore: _transcriptExpansion,
+      showTimestamp: _conn.transcriptTimestampsVisible,
+      highlighted: hit != null || _highlightedMessageID == m.info.id,
+      searchQuery: _findQuery,
+      onSearchExcerptContext: (context) {
+        if (_findHits.isNotEmpty &&
+            _findHits[_findCursor].messageID == m.info.id) {
+          _findExcerptContext = context;
+        }
+      },
+      searchMatch: hit,
+      searchLabel: _findHits.isEmpty
+          ? ''
+          : _chatL10n(
+              context,
+            ).transcriptFindCount(_findCursor + 1, _findHits.length),
+      // One "more" control per turn: under the message that ends a reply,
+      // never under each step of it or under the prompt. An error with
+      // more of the turn after it was got over.
+      errorRecovered: m.info.errorText != null && !_endsTurn(_messages, index),
+      showActions: turnActionOwners.contains(index),
+      onCopy: _conn.isIsolated || _messageCopy(m).text.isEmpty
+          ? null
+          : () => unawaited(_copyMessageText(m)),
+      // Watching: copy is the one message action; revert and fork are not
+      // the person's.
+      contextActions: offline ? null : () => _messageContextActions(m),
+      filePreviewLoader: _loadToolOutputFile,
+      onAttachFile: _supportsPromptAttachments && !_watching
+          ? _attachToolOutputFile
+          : null,
+      onDownloadFile: _downloadToolOutputFile,
+      onCompact: offline || !_supportsSessionCompact ? null : _compact,
+      onOpenProviders: offline ? null : _openProviders,
+      onContinue: offline ? null : _continueTruncated,
+      onChooseModel: offline
+          ? null
+          : () => showModelPicker(
+              context,
+              applyScope: _modelApplyScope,
+              sessionID: widget.sessionID,
+            ),
+      onOpenSession: _watching
+          ? _openWatchedChild
+          : _conn.isIsolated || !_conn.capabilities.projectManagement
+          ? null
+          : _openSubagentSession,
+    );
+  }
+
+  /// What sits over the composer, most urgent first: find, then what needs
+  /// the person, then what the draft is waiting on. Solid parts on the
+  /// ground; only the composer below them is glass.
+  Widget _aboveComposer({
+    required BoxConstraints bodyConstraints,
+    required bool compactComposer,
+    required List<PermissionRequest> pendingPermissions,
+  }) {
+    final l10n = _chatL10n(context);
+    final tokens = KitTokens.of(context);
+    final short = bodyConstraints.maxHeight < 420;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Find sits by the keyboard it is typed with (owner review), over
+        // the conversation it searches.
+        if (_findOpen)
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: bodyConstraints.maxHeight * .38,
+            ),
+            child: _TranscriptFindBar(
+              controller: _findController,
+              focusNode: _findFocus,
+              count: _findHits.length,
+              current: _findCursor,
+              hasOlder: _olderCursor != null,
+              loading: _loading || _loadingOlder || _findAllLoading,
+              searchingAll: _findAllLoading,
+              onCancelLoading: () => setState(() => _findAllLoading = false),
+              error: _olderError,
+              needsReload: _olderNeedsReload || _resetHistoryOnLoad,
+              onChanged: _changeFind,
+              onNext: () => _navigateFind(1),
+              onPrevious: () => _navigateFind(-1),
+              onClose: _closeFind,
+              onLoadOlder: _searchAllHistory,
+            ),
+          ),
+        if (_conn.sessionNoteReceipt(widget.sessionID) case final saved?)
+          Padding(
+            padding: EdgeInsetsDirectional.symmetric(
+              horizontal: tokens.gutter,
+              vertical: tokens.space1,
+            ),
+            child: KitNotice(
+              icon: AppIconography.note,
+              message: [
+                saved ? l10n.sessionNoteSaved : l10n.sessionNoteRemoved,
+                l10n.sessionNotePending,
+              ].join('. '),
+              onDismiss: () =>
+                  _conn.dismissSessionNoteReceipt(widget.sessionID),
+            ),
+          ),
+        // On short keyboard layouts the request shares the remaining height
+        // with the rest, after the composer is measured. Keep its actions
+        // reachable by scrolling instead of pushing Send off screen.
+        if (short &&
+            (pendingPermissions.isNotEmpty ||
+                _conn.questionForSession(widget.sessionID) != null ||
+                _retryState != null ||
+                (!_conn.isIsolated &&
+                    _conn.autoApprovalFor(widget.sessionID).automatic)))
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              reverse: true,
+              padding: EdgeInsets.zero,
+              children: [_attentionRegion(pendingPermissions)],
+            ),
+          )
+        else
+          _attentionRegion(pendingPermissions),
+        // §7 rule 5: v2-only surfaces stay silent on v1. The map is already
+        // empty there, but the gate is explicit so a stale entry cannot leak
+        // a form card onto a server that cannot answer it.
+        if (_conn.formForSession(widget.sessionID) case final pendingForm?
+            when _conn.capabilities.forms)
+          _FormRequestCard(
+            key: ValueKey('form-request-card-${pendingForm.id}'),
+            form: pendingForm,
+            onAnswer: () => unawaited(_openForm(pendingForm)),
+          ),
+        // The one nudge slot: below whatever needs the person. It gives way
+        // to a short (keyboard) layout like every quiet strip. At large text
+        // the sentence is tall: it takes at most a third of the body and
+        // scrolls, ending on its two controls.
+        if (!short)
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: bodyConstraints.maxHeight / 3,
+            ),
+            child: ListView(
+              shrinkWrap: true,
+              reverse: true,
+              padding: EdgeInsets.zero,
+              children: [_nudgeSlot(context)],
+            ),
+          ),
+        // The offline-draft half of the strip is v1-safe; only the inbox
+        // bubbles are v2-only (§7 rule 5). Always in place, empty when
+        // nothing waits, so the first queued message unfolds in and the last
+        // one folds away (design standard §10).
+        _PendingSendsStrip(
+          key: const ValueKey('pending-sends-strip'),
+          drafts: _conn.queuedPromptsFor(widget.sessionID),
+          inboxItems: _conn.capabilities.inbox
+              // What you sent and is waiting. The server's own pending
+              // context updates are a standing fact and live in the chip
+              // strip.
+              ? _conn
+                    .inboxItemsFor(widget.sessionID)
+                    .where((item) => item.type == 'user')
+                    .toList()
+              : const <Api2InboxItem>[],
+          isSending: (entry) => _conn.queuedPromptSending(entry.id),
+          isAcceptedUnrecorded: (entry) =>
+              _conn.queuedPromptAcceptedUnrecorded(entry.id),
+          onEdit: _editQueuedPrompt,
+          onResend: _resendQueuedPrompt,
+          onDiscard: _discardQueuedPrompt,
+          onCancelInbox: _cancelInboxSend,
+          onFlipDelivery: _flipInboxDelivery,
+        ),
+        if (!_conn.isIsolated)
+          if (_conn.promptPhotos.pending case final photo?
+              when photo.profileID == _draftProfileID &&
+                  photo.sessionID == widget.sessionID)
+            KitRow(
+              key: const ValueKey('pending-photo-recovery'),
+              leading: const KitRowIcon(AppIconography.image),
+              title: photo.name ?? l10n.photoPendingTitle,
+              titleMaxLines: 2,
+              onTap: _photoBusy ? null : () => _reviewPendingPhoto(photo),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  KitIconButton(
+                    icon: AppIconography.add,
+                    tooltip: l10n.photoAddToDraft,
+                    onPressed: _promptShelfBusy
+                        ? null
+                        : () => _applyPendingPhoto(photo),
+                  ),
+                  KitIconButton(
+                    icon: AppIconography.close,
+                    tooltip: l10n.photoDiscard,
+                    onPressed: _photoBusy
+                        ? null
+                        : () => _discardPendingPhoto(photo),
+                  ),
+                ],
+              ),
+            ),
+        if (_draftSaveFailure case final failure?)
+          Padding(
+            key: const ValueKey('draft-save-error'),
+            padding: EdgeInsetsDirectional.fromSTEB(
+              tokens.gutter,
+              tokens.space2,
+              tokens.gutter,
+              tokens.space1,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Semantics(
+                    container: true,
+                    liveRegion: true,
+                    label: _draftFailureText(failure),
+                    excludeSemantics: true,
+                    child: KitText(
+                      compactComposer
+                          ? l10n.draftUnsaved
+                          : _draftFailureText(failure),
+                      role: KitTextRole.secondary,
+                      tone: KitTextTone.danger,
+                    ),
+                  ),
+                ),
+                KitIconButton(
+                  icon: AppIconography.copy,
+                  tooltip: l10n.chatDraftCopy,
+                  // The person's own words, copied as written.
+                  onPressed: _composer.text.isEmpty
+                      ? null
+                      : () => unawaited(
+                          KitCopy.copy(context, _composer.text, redact: false),
+                        ),
+                ),
+                KitIconButton(
+                  icon: AppIconography.retry,
+                  tooltip: l10n.draftRetrySave,
+                  onPressed: _restoringDraftAttachments
+                      ? null
+                      : _retryDraftPersistence,
+                ),
+              ],
+            ),
+          ),
+        KitReveal(
+          child: _composerNote == null
+              ? null
+              : _ComposerNote(key: _composerNoteKey, text: _composerNote!),
+        ),
+        _composerStatusStrip(),
+        if (_voiceConversation) _voiceConversationControls(),
+        // First run's one notification question; the card is absent for
+        // everyone it is not due for.
+        FirstReplyNotifyCard(
+          controller: _conn,
+          compact: compactComposer,
+          replyCompleted:
+              !_conn.busySessions.contains(widget.sessionID) &&
+              // A reply that failed (or a message that was not sent) is not
+              // the moment to offer "get told when it's done".
+              _promptError == null &&
+              _sendError == null &&
+              _messages.any(
+                (message) =>
+                    message.info.role == 'assistant' &&
+                    message.info.errorText == null,
+              ),
+        ),
+      ],
+    );
+  }
+
+  /// The glass composer, as it floats over the transcript.
+  Widget _floatingComposer({
+    required BoxConstraints bodyConstraints,
+    required bool compactComposer,
+    required bool busy,
+    required bool showAttachmentNote,
+  }) => _composerDropTarget(
+    child: _ChatComposer(
+      // The prompt goes to the agent this server runs, and says so.
+      agentName: switch (_conn.profile?.backend) {
+        ServerBackend.paseo => 'Claude Code',
+        ServerBackend.codex => 'Codex',
+        _ => null,
+      },
+      isolated: _conn.isIsolated,
+      compact: compactComposer,
+      // The multiline field scrolls within its budget at large text scales,
+      // leaving room for the model context and Send controls.
+      maxInputHeight: compactComposer
+          ? bodyConstraints.maxHeight * .45
+          : double.infinity,
+      allowInlineCommands:
+          !_conn.isIsolated &&
+          !_voiceConversation &&
+          bodyConstraints.maxHeight >= 300,
+      controller: _composer,
+      focusNode: _focus,
+      commands: _chatCommands,
+      agents: _supportsPromptAgentMentions
+          ? _subagents
+          : const <CatalogAgent>[],
+      onSelectCommand: _selectChatCommand,
+      onSelectAgent: _insertAgentMention,
+      onOpenCommands: _openCommandLauncher,
+      onOpenAgents: () =>
+          _openCommandLauncher(initialTab: _ComposerToolTab.agents),
+      onOpenEditor: _openPromptEditor,
+      onReusePrompt: _recentPrompts.isEmpty ? null : _reusePrompt,
+      onClearText: _clearDraftText,
+      onStashPrompt: _conn.canUsePromptShelf && !_sending && !_promptShelfBusy
+          ? _stashCurrentPrompt
+          : null,
+      onLegacyDrafts:
+          _conn.store.profiles.length < 2 || _conn.legacySessionDrafts.isEmpty
+          ? null
+          : _recoverLegacyDraft,
+      onOpenStash: _conn.canUsePromptShelf && !_sending && !_promptShelfBusy
+          ? _openPromptStash
+          : null,
+      onRestoreHistoryDraft: _promptHistory.original == null
+          ? null
+          : _restoreHistoryDraft,
+      shelfBusy: _promptShelfBusy,
+      shelfLoading:
+          _photoBusy || _promptShelfOperationBusy || _restoringDraftAttachments,
+      attachments: _attachments,
+      promptAttachmentsSupported: _supportsPromptAttachments,
+      webSourcesSupported: _conn.capabilities.webSearch,
+      busy: busy,
+      sending: _sending,
+      // OpenCode 1 runs a send made mid-turn after that turn; OpenCode 2
+      // steers or queues it. Either way Send stays live.
+      canSendWhileBusy: !_voiceConversation,
+      canChooseDelivery: _conn.supportsInbox,
+      delivery: _delivery,
+      onDeliveryChanged: (delivery) => setState(() => _delivery = delivery),
+      voiceOpening: _voiceOpening,
+      selectedAgent: _conn.agentForSession(widget.sessionID),
+      defaultAgent: _defaultAgentName,
+      selectedModel: _conn.modelForSession(widget.sessionID),
+      modelLabel: _presentedModelLabel,
+      selectionFallback: !_conn.serverOwnsSessionSelection
+          ? null
+          : _conn.selectionForSession(widget.sessionID).modelKnown
+          ? _chatL10n(context).modelServerDefault
+          : _chatL10n(context).modelSelectionLoading,
+      selectedCatalogModel: _selectedCatalogModel,
+      selectedVariant: _conn.variantForSession(widget.sessionID),
+      showAttachmentNote: showAttachmentNote,
+      onAttach: _pickAttachment,
+      onPhotoLibrary: () => _pickPhoto(ImageSource.gallery),
+      onCamera: () => _pickPhoto(ImageSource.camera),
+      onContentInserted: (content) =>
+          unawaited(_handleInsertedContent(content)),
+      onVoice: _openVoice,
+      onConversation: _startVoiceConversation,
+      onWebSources: _addWebSources,
+      onContextCapsule: _addContextCapsule,
+      conversationMode: _voiceConversation,
+      onSend: _send,
+      onStop: _abort,
+      stopping: _aborting,
+      onChooseModel: () {
+        if (!_conn.isIsolated) {
+          showModelPicker(
+            context,
+            applyScope: _modelApplyScope,
+            sessionID: widget.sessionID,
+          );
+        }
+      },
+      contextUsage: _contextWindowUsage(),
+      modelSwitch: _modelCycleButton(),
+      onRemoveAttachment: (attachment) =>
+          setState(() => _attachments.remove(attachment)),
+      // UX-103 review handoff (start).
+      references: _stagedReferences,
+      onRemoveReference: _removeStagedReference,
+      // UX-103 review handoff (end).
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     _syncFind();
     _queueNudgeObservation();
-    final theme = Theme.of(context);
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    // Read above the Scaffold: its body sees the keyboard inset removed,
+    // Read above the page frame: its body sees the keyboard inset removed,
     // having already shrunk to make room for it.
     final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
     final busy = _conn.busySessions.contains(widget.sessionID);
@@ -6894,16 +7462,6 @@ class _ChatScreenState extends State<ChatScreen>
             )
             .length;
 
-    // The conversation is the reading surface, not a page heading. Keep the
-    // title compact; its full value remains in the tooltip and details sheet.
-    final narrowTitleBar = MediaQuery.sizeOf(context).width < _titleBarWide;
-    const titleLines = 1;
-    final titleStyle = theme.textTheme.titleMedium;
-    final titleLineHeight =
-        (titleStyle?.fontSize ?? 24) * (titleStyle?.height ?? 1.25);
-    final titleScaler = MediaQuery.textScalerOf(
-      context,
-    ).clamp(maxScaleFactor: _titleTextScaleCeiling);
     // Which server (and so which agent) this conversation is with, when
     // there is more than one to be with: OpenCode and Claude Code can both be
     // running on this phone, and their conversations look alike.
@@ -6916,1056 +7474,216 @@ class _ChatScreenState extends State<ChatScreen>
             // the line must say which one this conversation is on.
             among: _conn.store.profiles,
           );
-    final serverStyle = theme.textTheme.labelSmall?.copyWith(
-      color: AppTheme.mutedOf(theme),
-    );
-    final serverLine = serverName == null
-        ? 0.0
-        : titleScaler.scale(
-            (serverStyle?.fontSize ?? 11) * (serverStyle?.height ?? 1.4),
-          );
-    final titleBlock =
-        titleScaler.scale(titleLineHeight) * titleLines + serverLine + 4;
-    final toolbarHeight = math.max(
-      theme.appBarTheme.toolbarHeight ?? kToolbarHeight,
-      titleBlock,
-    );
+    final reconnecting = _ChatStatusLine.reconnecting(_conn);
 
     final screen = PopScope(
       canPop: _conn.isIsolated || _allowRoutePop || _watching,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) unawaited(_leaveChat());
       },
-      child: Scaffold(
-        appBar: widget.showAppBar
-            ? AppBar(
-                toolbarHeight: toolbarHeight,
-                title: Tooltip(
-                  message: presentedSessionTitle(
-                    session,
-                    fallback: _chatL10n(context).commandDestination,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        presentedSessionTitle(
-                          session,
-                          fallback: _chatL10n(context).commandDestination,
-                        ),
-                        key: const Key('chat-title'),
-                        style: titleStyle,
-                        maxLines: titleLines,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (serverName != null)
-                        Text(
-                          serverName,
-                          key: const Key('chat-server-name'),
-                          style: serverStyle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                    ],
-                  ),
-                ),
-                actions: [
-                  if (_readAloudRequestBusy || _readAloud?.speaking == true)
-                    IconButton(
-                      tooltip: _chatL10n(context).readAloudStop,
-                      icon: const Icon(AppIconography.stopCircle),
-                      onPressed: () => unawaited(_stopReading()),
-                    ),
-                  if (!_conn.isIsolated &&
-                      !_watching &&
-                      _conn.capabilities.projectManagement &&
-                      runningWorkCount > 0)
-                    if (narrowTitleBar)
-                      IconButton(
-                        key: const Key('running-work-indicator'),
-                        tooltip: _chatL10n(context).workCount(runningWorkCount),
-                        onPressed: _openRunningWork,
-                        icon: Badge(
-                          isLabelVisible: runningWorkCount > 0,
-                          label: Text('$runningWorkCount'),
-                          child: const Icon(AppIconography.branch),
-                        ),
-                      )
-                    else
-                      Tooltip(
-                        message: _chatL10n(context).workCount(runningWorkCount),
-                        child: TextButton.icon(
-                          key: const Key('running-work-indicator'),
-                          onPressed: _openRunningWork,
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size(48, 48),
-                          ),
-                          icon: Badge(
-                            isLabelVisible: runningWorkCount > 0,
-                            label: Text('$runningWorkCount'),
-                            child: const Icon(AppIconography.branch, size: 20),
-                          ),
-                          label: Text(_chatL10n(context).workTitle),
-                        ),
-                      ),
-                  if (_conn.isIsolated)
-                    IconButton(
-                      tooltip: _chatL10n(context).demoReviewChanges,
-                      icon: const Icon(AppIconography.review),
-                      onPressed: _showDiff,
-                    ),
-                  // Watching: the conversation is the worker's; nothing in
-                  // the menu (share, fork, revert, rename, delete) is ours.
-                  if (!_conn.isIsolated && !_watching)
-                    IconButton(
-                      key: const ValueKey('session-actions-button'),
-                      tooltip: _chatL10n(context).chatUiSessionMenu,
-                      icon: const Icon(AppIconography.menu),
-                      onPressed: () => unawaited(
-                        _openSessionMenu(
-                          reverted: session?.reverted == true,
-                          shared: shareUrl != null,
-                        ),
-                      ),
-                    ),
-                ],
+      // The page frame (kit-v2.md §8.2): full width on a phone, the
+      // conversation centred at its cap from a tablet up, and the detail
+      // pane of Work's two panes on a PC (no Back there).
+      child: KitScreen(
+        topBar: widget.showAppBar
+            ? _chatTopBar(
+                session: session,
+                serverName: serverName,
+                shared: shareUrl != null,
+                runningWorkCount: runningWorkCount,
               )
             : null,
-        body: Column(
-          children: [
-            // The screen's one loading bar (design standard §4): the
-            // conversation's first load, and a reconnect.
-            KitLoadingBar(
-              loading:
-                  (_loading && _messages.isEmpty) ||
-                  _ChatStatusLine.reconnecting(_conn),
-              label: _ChatStatusLine.reconnecting(_conn)
-                  ? _chatL10n(context).e7BannerReconnectingServerSemantic(
-                      _conn.profile?.name ?? 'OpenCode',
-                    )
-                  : _chatL10n(context).chatLoadingConversation,
-            ),
-            if (!widget.showAppBar && _conn.isIsolated && _messages.isNotEmpty)
-              Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: Tooltip(
-                  message: _chatL10n(context).demoReviewChanges,
-                  child: TextButton.icon(
-                    onPressed: _showDiff,
-                    icon: const Icon(AppIconography.review, size: 18),
-                    label: Text(_chatL10n(context).demoReviewChanges),
+        // The screen's one loading bar (design standard §4): the
+        // conversation's first load, and a reconnect.
+        loading: (_loading && _messages.isEmpty) || reconnecting,
+        loadingLabel: reconnecting
+            ? _chatL10n(context).e7BannerReconnectingServerSemantic(
+                _conn.profile?.name ?? 'OpenCode',
+              )
+            : _chatL10n(context).chatLoadingConversation,
+        header: [
+          // One status line (design standard §5), most urgent first: the
+          // connection, a message that was not sent, a prompt error with no
+          // home in the transcript (one a reply already carries is shown
+          // there, once, with its actions), a staged revert, the subagent
+          // context, sharing (also in the conversation menu).
+          _ChatStatusLine(
+            controller: _conn,
+            queuedNote: _queuedNote(),
+            others: [
+              if (widget.watch case final watch?) _watchingStatus(watch),
+              if (!_watching) ...[
+                if (_sendError case final error?)
+                  _sendErrorStatus(
+                    context,
+                    error: error,
+                    onDismiss: () => setState(() => _sendError = null),
                   ),
-                ),
-              ),
-            // One status line (design standard §5), most urgent first: the
-            // connection, a message that was not sent, a prompt error with no
-            // home in the transcript (one a reply already carries is shown
-            // there, once, with its actions), a staged revert, the subagent
-            // context, sharing (also in the conversation menu).
-            _ChatStatusLine(
-              controller: _conn,
-              queuedNote: _queuedNote(),
-              others: [
-                if (widget.watch case final watch?) _watchingStatus(watch),
-                if (!_watching) ...[
-                  if (_sendError case final error?)
-                    _sendErrorStatus(
-                      context,
-                      error: error,
-                      onDismiss: () => setState(() => _sendError = null),
-                    ),
-                  if (_promptError case final promptError?
-                      when !_messages.any(
-                        (message) =>
-                            _sameError(message.info.errorText, promptError),
-                      ))
-                    _promptErrorStatus(
-                      context,
-                      message: promptError,
-                      onDismiss: () => setState(() => _promptError = null),
-                      onChooseModel: _conn.isIsolated
-                          ? null
-                          : () => showModelPicker(
-                              context,
-                              applyScope: _modelApplyScope,
-                              sessionID: widget.sessionID,
-                            ),
-                    ),
-                  if (!_conn.isIsolated &&
-                      _conn.supportsStagedRevert &&
-                      session?.reverted == true)
-                    _stagedRevertStatus(
-                      context,
-                      onReview: () => unawaited(_reviewStagedRevert()),
-                    ),
-                  if (!_conn.isIsolated && parentID != null)
-                    _subagentStatus(
-                      context,
-                      position: siblingIndex < 0 ? null : siblingIndex + 1,
-                      total: siblings.isEmpty ? null : siblings.length,
-                      onParent: _openParentSession,
-                      onAll: _showSubagents,
-                    ),
-                  if (!_conn.isIsolated && shareUrl != null)
-                    _sharedStatus(context, url: shareUrl, onStop: _stopSharing),
-                ],
-              ],
-            ),
-            Expanded(
-              // Rehydrates and refreshes must not flash a skeleton or a
-              // full-screen error over an already-visible transcript.
-              // A permission card must not wait for the transcript: it is
-              // pinned to the bottom of the skeleton and error states too.
-              child: _loading && _messages.isEmpty
-                  ? Column(
-                      children: [
-                        const Expanded(child: _ChatLoadingBody()),
-                        if (!_watching) _attentionRegion(pendingPermissions),
-                      ],
-                    )
-                  : _error != null && _messages.isEmpty
-                  ? Column(
-                      children: [
-                        Expanded(
-                          child: _ChatLoadError(
-                            error: _error!,
-                            onRetry: () => unawaited(_load()),
+                if (_promptError case final promptError?
+                    when !_messages.any(
+                      (message) =>
+                          _sameError(message.info.errorText, promptError),
+                    ))
+                  _promptErrorStatus(
+                    context,
+                    message: promptError,
+                    onDismiss: () => setState(() => _promptError = null),
+                    onChooseModel: _conn.isIsolated
+                        ? null
+                        : () => showModelPicker(
+                            context,
+                            applyScope: _modelApplyScope,
+                            sessionID: widget.sessionID,
                           ),
-                        ),
-                        if (!_watching) _attentionRegion(pendingPermissions),
-                      ],
-                    )
-                  : LayoutBuilder(
-                      builder: (context, bodyConstraints) {
-                        // The composer keeps one editor structure. A keyboard
-                        // or short window reduces its line budget without
-                        // reparenting the focused field or moving its controls.
-                        final compactComposer =
-                            MediaQuery.viewInsetsOf(context).bottom > 0 ||
-                            bodyConstraints.maxHeight < 420;
-                        final startEmpty =
-                            _visibleHistory.isEmpty &&
-                            _olderCursor == null &&
-                            widget.emptyState == null &&
-                            !_watching;
-                        if (startEmpty) _requestStartFacts();
-                        final showStarters = startEmpty && !_voiceConversation;
-                        return Column(
-                          children: [
-                            if (_findOpen)
-                              ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxHeight: bodyConstraints.maxHeight * .38,
-                                ),
-                                child: _TranscriptFindBar(
-                                  controller: _findController,
-                                  focusNode: _findFocus,
-                                  count: _findHits.length,
-                                  current: _findCursor,
-                                  hasOlder: _olderCursor != null,
-                                  loading:
-                                      _loading ||
-                                      _loadingOlder ||
-                                      _findAllLoading,
-                                  searchingAll: _findAllLoading,
-                                  onCancelLoading: () =>
-                                      setState(() => _findAllLoading = false),
-                                  error: _olderError,
-                                  needsReload:
-                                      _olderNeedsReload || _resetHistoryOnLoad,
-                                  onChanged: _changeFind,
-                                  onNext: () => _navigateFind(1),
-                                  onPrevious: () => _navigateFind(-1),
-                                  onClose: _closeFind,
-                                  onLoadOlder: _searchAllHistory,
-                                ),
-                              ),
-                            Expanded(
-                              child:
-                                  _visibleHistory.isEmpty &&
-                                      _olderCursor == null
-                                  ? widget.emptyState ??
-                                        (widget.watch != null
-                                            ? const _WatchingEmpty()
-                                            : null) ??
-                                        _ChatStartArea(
-                                          header:
-                                              ValueListenableBuilder<
-                                                ChatStartFacts?
-                                              >(
-                                                valueListenable: _startFacts,
-                                                builder: (context, _, _) =>
-                                                    _ChatStartHeader(
-                                                      facts:
-                                                          _currentStartFacts(),
-                                                      compact:
-                                                          keyboardUp ||
-                                                          compactComposer,
-                                                    ),
-                                              ),
-                                          starters: showStarters
-                                              ? _startersRow()
-                                              : null,
-                                        )
-                                  : _transcriptSelectionArea(
-                                      child: MarkdownFileLinks(
-                                        validate: _validatePathLink,
-                                        open: _openPathLink,
-                                        child: NotificationListener<ScrollNotification>(
-                                          onNotification: _onTranscriptScroll,
-                                          child: Stack(
-                                            alignment: Alignment.topCenter,
-                                            children: [
-                                              ConstrainedBox(
-                                                constraints:
-                                                    const BoxConstraints(
-                                                      maxWidth: 860,
-                                                    ),
-                                                // Scrolling repaints up to the nearest boundary; without one that is
-                                                // the whole route, so every scroll frame redrew the composer and its
-                                                // soft shadow.
-                                                child: RepaintBoundary(
-                                                  key: const ValueKey(
-                                                    'transcript-repaint-boundary',
-                                                  ),
-                                                  child: ScrollablePositionedList.builder(
-                                                    reverse: true,
-                                                    itemScrollController:
-                                                        _messageScroll,
-                                                    itemPositionsListener:
-                                                        _messagePositions,
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 6,
-                                                          vertical: 10,
-                                                        ),
-                                                    itemCount:
-                                                        _renderedMessageCount +
-                                                        (_olderCursor == null
-                                                            ? 0
-                                                            : 1),
-                                                    itemBuilder: (context, i) {
-                                                      if (i ==
-                                                          _renderedMessageCount) {
-                                                        return _olderHistoryRow();
-                                                      }
-                                                      // Reversed list: item 0 is
-                                                      // the newest turn. The
-                                                      // composer, not a
-                                                      // transcript row, says
-                                                      // when a run is active.
-                                                      final index =
-                                                          _renderedMessageCount -
-                                                          1 -
-                                                          i;
-                                                      final m =
-                                                          _messages[index];
-                                                      if (waitingLocalIDs
-                                                          .contains(
-                                                            m.info.id,
-                                                          )) {
-                                                        return const SizedBox.shrink();
-                                                      }
-                                                      if (_isFoldedNotice(m)) {
-                                                        return const SizedBox.shrink();
-                                                      }
-                                                      if (v2VariantPart(m)
-                                                          case final tagged?) {
-                                                        return V2TranscriptRow(
-                                                          key: ValueKey(
-                                                            'message-${m.info.id}',
-                                                          ),
-                                                          part: tagged,
-                                                          messageId: m.info.id,
-                                                          parentSessionID:
-                                                              widget.sessionID,
-                                                          knownSessions: _conn
-                                                              .sessionsById,
-                                                          onCompactAgain:
-                                                              !_watching &&
-                                                                  _canCompactAgain(
-                                                                    index,
-                                                                  )
-                                                              ? () => unawaited(
-                                                                  _compact(),
-                                                                )
-                                                              : null,
-                                                          onOpenChild: _watching
-                                                              ? _openWatchedChild
-                                                              : _conn
-                                                                    .capabilities
-                                                                    .projectManagement
-                                                              ? (
-                                                                  id,
-                                                                ) => _openSubagentSession(
-                                                                  id,
-                                                                  requireChild:
-                                                                      true,
-                                                                )
-                                                              : null,
-                                                        );
-                                                      }
-                                                      final rawMeta =
-                                                          _messageMeta(
-                                                            _messages,
-                                                            index,
-                                                          );
-                                                      final meta = rawMeta
-                                                          .withModelLabel(
-                                                            _catalogModelNames(
-                                                              rawMeta
-                                                                  .modelLabel,
-                                                            ),
-                                                          );
-                                                      final parts =
-                                                          displayParts[index];
-                                                      if (parts.isEmpty &&
-                                                          meta.isEmpty &&
-                                                          m.info.errorText ==
-                                                              null) {
-                                                        return const SizedBox.shrink();
-                                                      }
-                                                      return _MessageView(
-                                                        key: ValueKey(
-                                                          'message-${m.info.id}',
-                                                        ),
-                                                        queued:
-                                                            queuedAfterIndex >=
-                                                                0 &&
-                                                            m.info.role ==
-                                                                'user' &&
-                                                            index >
-                                                                queuedAfterIndex,
-                                                        m: m,
-                                                        meta: meta,
-                                                        parts: parts,
-                                                        reasoningExpanded: _conn
-                                                            .transcriptReasoningExpanded,
-                                                        expansionStore:
-                                                            _transcriptExpansion,
-                                                        showTimestamp: _conn
-                                                            .transcriptTimestampsVisible,
-                                                        highlighted:
-                                                            (_findHits
-                                                                    .isNotEmpty &&
-                                                                _findHits[_findCursor]
-                                                                        .messageID ==
-                                                                    m
-                                                                        .info
-                                                                        .id) ||
-                                                            _highlightedMessageID ==
-                                                                m.info.id,
-                                                        searchQuery: _findQuery,
-                                                        onSearchExcerptContext: (context) {
-                                                          if (_findHits
-                                                                  .isNotEmpty &&
-                                                              _findHits[_findCursor]
-                                                                      .messageID ==
-                                                                  m.info.id) {
-                                                            _findExcerptContext =
-                                                                context;
-                                                          }
-                                                        },
-                                                        searchMatch:
-                                                            _findHits
-                                                                    .isNotEmpty &&
-                                                                _findHits[_findCursor]
-                                                                        .messageID ==
-                                                                    m.info.id
-                                                            ? _findHits[_findCursor]
-                                                            : null,
-                                                        searchLabel:
-                                                            _findHits.isEmpty
-                                                            ? ''
-                                                            : _chatL10n(
-                                                                context,
-                                                              ).transcriptFindCount(
-                                                                _findCursor + 1,
-                                                                _findHits
-                                                                    .length,
-                                                              ),
-                                                        // One "more" control
-                                                        // per turn: under the
-                                                        // message that ends a
-                                                        // reply, never under
-                                                        // each step of it or
-                                                        // under the prompt.
-                                                        // An error with more of the
-                                                        // turn after it was got over.
-                                                        errorRecovered:
-                                                            m.info.errorText !=
-                                                                null &&
-                                                            !_endsTurn(
-                                                              _messages,
-                                                              index,
-                                                            ),
-                                                        showActions:
-                                                            turnActionOwners
-                                                                .contains(
-                                                                  index,
-                                                                ),
-                                                        onCopy:
-                                                            _conn.isIsolated ||
-                                                                _messageCopy(
-                                                                  m,
-                                                                ).text.isEmpty
-                                                            ? null
-                                                            : () => unawaited(
-                                                                _copyMessageText(
-                                                                  m,
-                                                                ),
-                                                              ),
-                                                        // Watching: copy is the
-                                                        // one message action;
-                                                        // revert and fork are
-                                                        // not the person's.
-                                                        contextActions:
-                                                            _conn.isIsolated ||
-                                                                _watching
-                                                            ? null
-                                                            : () =>
-                                                                  _messageContextActions(
-                                                                    m,
-                                                                  ),
-                                                        filePreviewLoader:
-                                                            _loadToolOutputFile,
-                                                        onAttachFile:
-                                                            _supportsPromptAttachments &&
-                                                                !_watching
-                                                            ? _attachToolOutputFile
-                                                            : null,
-                                                        onDownloadFile:
-                                                            _downloadToolOutputFile,
-                                                        onCompact:
-                                                            _conn.isIsolated ||
-                                                                _watching ||
-                                                                !_supportsSessionCompact
-                                                            ? null
-                                                            : _compact,
-                                                        onOpenProviders:
-                                                            _conn.isIsolated ||
-                                                                _watching
-                                                            ? null
-                                                            : _openProviders,
-                                                        onContinue:
-                                                            _conn.isIsolated ||
-                                                                _watching
-                                                            ? null
-                                                            : _continueTruncated,
-                                                        onChooseModel:
-                                                            _conn.isIsolated ||
-                                                                _watching
-                                                            ? null
-                                                            : () => showModelPicker(
-                                                                context,
-                                                                applyScope:
-                                                                    _modelApplyScope,
-                                                                sessionID: widget
-                                                                    .sessionID,
-                                                              ),
-                                                        onOpenSession: _watching
-                                                            ? _openWatchedChild
-                                                            : _conn.isIsolated ||
-                                                                  !_conn
-                                                                      .capabilities
-                                                                      .projectManagement
-                                                            ? null
-                                                            : _openSubagentSession,
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
-                                              ),
-                                              if (_awayFromLatest)
-                                                Positioned(
-                                                  right: 6,
-                                                  bottom: 8,
-                                                  child: _JumpToLatestButton(
-                                                    onTap: _jumpToLatest,
-                                                  ),
-                                                ),
-                                              // Only while reading history, and
-                                              // counting only the messages that
-                                              // actually sit above the viewport.
-                                              if (_awayFromLatest &&
-                                                  _messages.length > 30)
-                                                Positioned(
-                                                  top: 8,
-                                                  child: ValueListenableBuilder(
-                                                    valueListenable:
-                                                        _messagePositions
-                                                            .itemPositions,
-                                                    builder: (context, positions, _) {
-                                                      final earlier =
-                                                          _earlierMessageCount(
-                                                            positions,
-                                                          );
-                                                      if (earlier <= 0) {
-                                                        return const SizedBox.shrink();
-                                                      }
-                                                      return _EarlierMessagesPill(
-                                                        count: earlier,
-                                                        onTap: () => unawaited(
-                                                          _openTimeline(),
-                                                        ),
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                            ),
-                            // Watching: the one action where the composer
-                            // was; nothing above it asks the person to act
-                            // on the worker's session.
-                            if (widget.watch case final watch?)
-                              _WatchingComposer(watch: watch)
-                            else ...[
-                              if (_conn.sessionNoteReceipt(widget.sessionID)
-                                  case final saved?)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 6,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(AppIconography.note, size: 18),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Semantics(
-                                          liveRegion: true,
-                                          child: Text(
-                                            [
-                                              saved
-                                                  ? _chatL10n(
-                                                      context,
-                                                    ).sessionNoteSaved
-                                                  : _chatL10n(
-                                                      context,
-                                                    ).sessionNoteRemoved,
-                                              _chatL10n(
-                                                context,
-                                              ).sessionNotePending,
-                                            ].join('. '),
-                                          ),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        tooltip: MaterialLocalizations.of(
-                                          context,
-                                        ).closeButtonTooltip,
-                                        onPressed: () =>
-                                            _conn.dismissSessionNoteReceipt(
-                                              widget.sessionID,
-                                            ),
-                                        icon: const Icon(AppIconography.close),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              // On short keyboard layouts the request shares the
-                              // remaining height with the transcript, after the
-                              // composer is measured. Keep its actions reachable
-                              // by scrolling instead of pushing Send off screen.
-                              if (bodyConstraints.maxHeight < 420 &&
-                                  (pendingPermissions.isNotEmpty ||
-                                      _conn.questionForSession(
-                                            widget.sessionID,
-                                          ) !=
-                                          null ||
-                                      _retryState != null ||
-                                      (!_conn.isIsolated &&
-                                          _conn
-                                              .autoApprovalFor(widget.sessionID)
-                                              .automatic)))
-                                Flexible(
-                                  fit: FlexFit.loose,
-                                  child: SingleChildScrollView(
-                                    reverse: true,
-                                    child: _attentionRegion(pendingPermissions),
-                                  ),
-                                )
-                              else
-                                _attentionRegion(pendingPermissions),
-                              // §7 rule 5: v2-only surfaces stay silent on v1.
-                              // The map is already empty there, but the gate is
-                              // explicit so a stale entry cannot leak a form
-                              // card onto a server that cannot answer it.
-                              if (_conn.formForSession(widget.sessionID)
-                                  case final pendingForm?
-                                  when _conn.capabilities.forms)
-                                _FormRequestCard(
-                                  key: ValueKey(
-                                    'form-request-card-${pendingForm.id}',
-                                  ),
-                                  form: pendingForm,
-                                  onAnswer: () =>
-                                      unawaited(_openForm(pendingForm)),
-                                ),
-                              // The one nudge slot: below whatever needs the
-                              // person, above the composer. It gives way to a
-                              // short (keyboard) layout like every quiet strip.
-                              // At large text the sentence is tall: it takes at
-                              // most a third of the body and scrolls, ending on
-                              // its two controls.
-                              if (bodyConstraints.maxHeight >= 420)
-                                ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxHeight: bodyConstraints.maxHeight / 3,
-                                  ),
-                                  child: SingleChildScrollView(
-                                    reverse: true,
-                                    child: _nudgeSlot(context),
-                                  ),
-                                ),
-                              // The offline-draft half of the strip is v1-safe;
-                              // only the inbox bubbles are v2-only (§7 rule 5).
-                              // Always in place, empty when nothing waits, so
-                              // the first queued message unfolds in and the
-                              // last one folds away (design standard §10).
-                              _PendingSendsStrip(
-                                key: const ValueKey('pending-sends-strip'),
-                                drafts: _conn.queuedPromptsFor(
-                                  widget.sessionID,
-                                ),
-                                inboxItems: _conn.capabilities.inbox
-                                    // What you sent and is waiting. The
-                                    // server's own pending context updates
-                                    // are a standing fact and live in the
-                                    // chip strip.
-                                    ? _conn
-                                          .inboxItemsFor(widget.sessionID)
-                                          .where((item) => item.type == 'user')
-                                          .toList()
-                                    : const <Api2InboxItem>[],
-                                isSending: (entry) =>
-                                    _conn.queuedPromptSending(entry.id),
-                                isAcceptedUnrecorded: (entry) => _conn
-                                    .queuedPromptAcceptedUnrecorded(entry.id),
-                                onEdit: _editQueuedPrompt,
-                                onResend: _resendQueuedPrompt,
-                                onDiscard: _discardQueuedPrompt,
-                                onCancelInbox: _cancelInboxSend,
-                                onFlipDelivery: _flipInboxDelivery,
-                              ),
-                              if (!_conn.isIsolated)
-                                if (_conn.promptPhotos.pending case final photo?
-                                    when photo.profileID == _draftProfileID &&
-                                        photo.sessionID == widget.sessionID)
-                                  Padding(
-                                    key: const ValueKey(
-                                      'pending-photo-recovery',
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 4,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: TextButton(
-                                            onPressed: _photoBusy
-                                                ? null
-                                                : () => _reviewPendingPhoto(
-                                                    photo,
-                                                  ),
-                                            child: Text(
-                                              photo.name ??
-                                                  _chatL10n(
-                                                    context,
-                                                  ).photoPendingTitle,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ),
-                                        IconButton(
-                                          tooltip: _chatL10n(
-                                            context,
-                                          ).photoAddToDraft,
-                                          onPressed: _promptShelfBusy
-                                              ? null
-                                              : () => _applyPendingPhoto(photo),
-                                          icon: const Icon(
-                                            Icons.add_photo_alternate_outlined,
-                                          ),
-                                        ),
-                                        IconButton(
-                                          tooltip: _chatL10n(
-                                            context,
-                                          ).photoDiscard,
-                                          onPressed: _photoBusy
-                                              ? null
-                                              : () =>
-                                                    _discardPendingPhoto(photo),
-                                          icon: const Icon(
-                                            AppIconography.close,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              if (_draftSaveFailure case final failure?)
-                                Padding(
-                                  key: const ValueKey('draft-save-error'),
-                                  padding: const EdgeInsetsDirectional.fromSTEB(
-                                    16,
-                                    8,
-                                    16,
-                                    4,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Tooltip(
-                                          message: _draftFailureText(failure),
-                                          child: Semantics(
-                                            container: true,
-                                            liveRegion: true,
-                                            label: _draftFailureText(failure),
-                                            excludeSemantics: true,
-                                            child: Text(
-                                              compactComposer
-                                                  ? _chatL10n(
-                                                      context,
-                                                    ).draftUnsaved
-                                                  : _draftFailureText(failure),
-                                              style: TextStyle(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.error,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        tooltip: MaterialLocalizations.of(
-                                          context,
-                                        ).copyButtonLabel,
-                                        onPressed: _composer.text.isEmpty
-                                            ? null
-                                            : () => Clipboard.setData(
-                                                ClipboardData(
-                                                  text: _composer.text,
-                                                ),
-                                              ),
-                                        icon: const Icon(AppIconography.copy),
-                                      ),
-                                      IconButton(
-                                        tooltip: _chatL10n(
-                                          context,
-                                        ).draftRetrySave,
-                                        onPressed: _restoringDraftAttachments
-                                            ? null
-                                            : _retryDraftPersistence,
-                                        icon: const Icon(AppIconography.retry),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              _chatSizeTransition(
-                                reduceMotion: reduceMotion,
-                                duration: const Duration(milliseconds: 160),
-                                curve: Curves.easeOutCubic,
-                                child: _composerNote == null
-                                    ? const SizedBox.shrink()
-                                    : _ComposerNote(
-                                        key: _composerNoteKey,
-                                        text: _composerNote!,
-                                      ),
-                              ),
-                              _composerStatusStrip(),
-                              if (_voiceConversation)
-                                _voiceConversationControls(),
-                              // First run's one notification question; the card
-                              // is absent for everyone it is not due for.
-                              FirstReplyNotifyCard(
-                                controller: _conn,
-                                compact: compactComposer,
-                                replyCompleted:
-                                    !_conn.busySessions.contains(
-                                      widget.sessionID,
-                                    ) &&
-                                    // A reply that failed (or a message that
-                                    // was not sent) is not the moment to offer
-                                    // "get told when it's done".
-                                    _promptError == null &&
-                                    _sendError == null &&
-                                    _messages.any(
-                                      (message) =>
-                                          message.info.role == 'assistant' &&
-                                          message.info.errorText == null,
-                                    ),
-                              ),
-                              Center(
-                                child: ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    maxWidth: 860,
-                                  ),
-                                  child: _composerDropTarget(
-                                    child: _ChatComposer(
-                                      // The prompt goes to the agent this
-                                      // server runs, and says so.
-                                      agentName: switch (_conn
-                                          .profile
-                                          ?.backend) {
-                                        ServerBackend.paseo => 'Claude Code',
-                                        ServerBackend.codex => 'Codex',
-                                        _ => null,
-                                      },
-                                      isolated: _conn.isIsolated,
-                                      compact: compactComposer,
-                                      // The multiline field scrolls within its
-                                      // budget at large text scales, leaving room
-                                      // for the model context and Send controls.
-                                      maxInputHeight: compactComposer
-                                          ? bodyConstraints.maxHeight * .45
-                                          : double.infinity,
-                                      allowInlineCommands:
-                                          !_conn.isIsolated &&
-                                          !_voiceConversation &&
-                                          bodyConstraints.maxHeight >= 300,
-                                      controller: _composer,
-                                      focusNode: _focus,
-                                      commands: _chatCommands,
-                                      agents: _supportsPromptAgentMentions
-                                          ? _subagents
-                                          : const <CatalogAgent>[],
-                                      onSelectCommand: _selectChatCommand,
-                                      onSelectAgent: _insertAgentMention,
-                                      onOpenCommands: _openCommandLauncher,
-                                      onOpenAgents: () => _openCommandLauncher(
-                                        initialTab: _ComposerToolTab.agents,
-                                      ),
-                                      onOpenEditor: _openPromptEditor,
-                                      onReusePrompt: _recentPrompts.isEmpty
-                                          ? null
-                                          : _reusePrompt,
-                                      onClearText: _clearDraftText,
-                                      onStashPrompt:
-                                          _conn.canUsePromptShelf &&
-                                              !_sending &&
-                                              !_promptShelfBusy
-                                          ? _stashCurrentPrompt
-                                          : null,
-                                      onLegacyDrafts:
-                                          _conn.store.profiles.length < 2 ||
-                                              _conn.legacySessionDrafts.isEmpty
-                                          ? null
-                                          : _recoverLegacyDraft,
-                                      onOpenStash:
-                                          _conn.canUsePromptShelf &&
-                                              !_sending &&
-                                              !_promptShelfBusy
-                                          ? _openPromptStash
-                                          : null,
-                                      onRestoreHistoryDraft:
-                                          _promptHistory.original == null
-                                          ? null
-                                          : _restoreHistoryDraft,
-                                      shelfBusy: _promptShelfBusy,
-                                      shelfLoading:
-                                          _photoBusy ||
-                                          _promptShelfOperationBusy ||
-                                          _restoringDraftAttachments,
-                                      attachments: _attachments,
-                                      promptAttachmentsSupported:
-                                          _supportsPromptAttachments,
-                                      webSourcesSupported:
-                                          _conn.capabilities.webSearch,
-                                      busy: busy,
-                                      sending: _sending,
-                                      // OpenCode 1 runs a send made mid-turn
-                                      // after that turn; OpenCode 2 steers or
-                                      // queues it. Either way Send stays live.
-                                      canSendWhileBusy: !_voiceConversation,
-                                      canChooseDelivery: _conn.supportsInbox,
-                                      delivery: _delivery,
-                                      onDeliveryChanged: (delivery) =>
-                                          setState(() => _delivery = delivery),
-                                      voiceOpening: _voiceOpening,
-                                      selectedAgent: _conn.agentForSession(
-                                        widget.sessionID,
-                                      ),
-                                      defaultAgent: _defaultAgentName,
-                                      selectedModel: _conn.modelForSession(
-                                        widget.sessionID,
-                                      ),
-                                      modelLabel: _presentedModelLabel,
-                                      selectionFallback:
-                                          !_conn.serverOwnsSessionSelection
-                                          ? null
-                                          : _conn
-                                                .selectionForSession(
-                                                  widget.sessionID,
-                                                )
-                                                .modelKnown
-                                          ? _chatL10n(
-                                              context,
-                                            ).modelServerDefault
-                                          : _chatL10n(
-                                              context,
-                                            ).modelSelectionLoading,
-                                      selectedCatalogModel:
-                                          _selectedCatalogModel,
-                                      selectedVariant: _conn.variantForSession(
-                                        widget.sessionID,
-                                      ),
-                                      showAttachmentNote: showAttachmentNote,
-                                      onAttach: _pickAttachment,
-                                      onPhotoLibrary: () =>
-                                          _pickPhoto(ImageSource.gallery),
-                                      onCamera: () =>
-                                          _pickPhoto(ImageSource.camera),
-                                      onContentInserted: (content) => unawaited(
-                                        _handleInsertedContent(content),
-                                      ),
-                                      onVoice: _openVoice,
-                                      onConversation: _startVoiceConversation,
-                                      onWebSources: _addWebSources,
-                                      onContextCapsule: _addContextCapsule,
-                                      conversationMode: _voiceConversation,
-                                      onSend: _send,
-                                      onStop: _abort,
-                                      stopping: _aborting,
-                                      onChooseModel: () {
-                                        if (!_conn.isIsolated) {
-                                          showModelPicker(
-                                            context,
-                                            applyScope: _modelApplyScope,
-                                            sessionID: widget.sessionID,
-                                          );
-                                        }
-                                      },
-                                      contextUsage: _contextWindowUsage(),
-                                      modelSwitch: _modelCycleButton(),
-                                      onRemoveAttachment: (attachment) =>
-                                          setState(
-                                            () =>
-                                                _attachments.remove(attachment),
-                                          ),
-                                      // UX-103 review handoff (start).
-                                      references: _stagedReferences,
-                                      onRemoveReference: _removeStagedReference,
-                                      // UX-103 review handoff (end).
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        );
-                      },
-                    ),
+                  ),
+                if (!_conn.isIsolated &&
+                    _conn.supportsStagedRevert &&
+                    session?.reverted == true)
+                  _stagedRevertStatus(
+                    context,
+                    onReview: () => unawaited(_reviewStagedRevert()),
+                  ),
+                if (!_conn.isIsolated && parentID != null)
+                  _subagentStatus(
+                    context,
+                    position: siblingIndex < 0 ? null : siblingIndex + 1,
+                    total: siblings.isEmpty ? null : siblings.length,
+                    onParent: _openParentSession,
+                    onAll: _showSubagents,
+                  ),
+                if (!_conn.isIsolated && shareUrl != null)
+                  _sharedStatus(context, url: shareUrl, onStop: _stopSharing),
+              ],
+            ],
+          ),
+          // The demo has no bar of its own here; its one extra action sits
+          // under the host's bar.
+          if (!widget.showAppBar && _conn.isIsolated && _messages.isNotEmpty)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: KitButton.tertiary(
+                icon: AppIconography.review,
+                label: _chatL10n(context).demoReviewChanges,
+                onPressed: _showDiff,
+              ),
             ),
-          ],
-        ),
+        ],
+        // Rehydrates and refreshes must not flash a skeleton or a
+        // full-screen error over an already-visible transcript. A
+        // permission card must not wait for the transcript: it is pinned to
+        // the bottom of the skeleton and error states too.
+        body: _loading && _messages.isEmpty
+            ? Column(
+                children: [
+                  const Expanded(child: _ChatLoadingBody()),
+                  if (!_watching) _attentionRegion(pendingPermissions),
+                ],
+              )
+            : _error != null && _messages.isEmpty
+            ? Column(
+                children: [
+                  Expanded(
+                    child: _ChatLoadError(
+                      error: _error!,
+                      onRetry: () => unawaited(_load()),
+                    ),
+                  ),
+                  if (!_watching) _attentionRegion(pendingPermissions),
+                ],
+              )
+            : LayoutBuilder(
+                builder: (context, bodyConstraints) {
+                  // The composer keeps one editor structure. A keyboard or
+                  // short window reduces its line budget without reparenting
+                  // the focused field or moving its controls.
+                  final compactComposer =
+                      keyboardUp || bodyConstraints.maxHeight < 420;
+                  final startEmpty =
+                      _visibleHistory.isEmpty &&
+                      _olderCursor == null &&
+                      widget.emptyState == null &&
+                      !_watching;
+                  if (startEmpty) _requestStartFacts();
+                  final showStarters = startEmpty && !_voiceConversation;
+                  final watch = widget.watch;
+                  final floating = watch == null;
+                  final Widget conversation =
+                      _visibleHistory.isEmpty && _olderCursor == null
+                      ? Builder(
+                          // Clear of the floating composer.
+                          builder: (context) => Padding(
+                            padding: floating
+                                ? EdgeInsetsDirectional.only(
+                                    bottom: KitBottomInset.of(context).bottom,
+                                  )
+                                : EdgeInsets.zero,
+                            child:
+                                widget.emptyState ??
+                                (watch != null
+                                    ? const _WatchingEmpty()
+                                    : null) ??
+                                _ChatStartArea(
+                                  header:
+                                      ValueListenableBuilder<ChatStartFacts?>(
+                                        valueListenable: _startFacts,
+                                        builder: (context, _, _) =>
+                                            _ChatStartHeader(
+                                              facts: _currentStartFacts(),
+                                              compact: compactComposer,
+                                            ),
+                                      ),
+                                  starters: showStarters
+                                      ? _startersRow()
+                                      : null,
+                                ),
+                          ),
+                        )
+                      : _transcriptSelectionArea(
+                          child: MarkdownFileLinks(
+                            validate: _validatePathLink,
+                            open: _openPathLink,
+                            child: NotificationListener<ScrollNotification>(
+                              onNotification: _onTranscriptScroll,
+                              child: _transcript(
+                                floating: floating,
+                                queuedAfterIndex: queuedAfterIndex,
+                                displayParts: displayParts,
+                                waitingLocalIDs: waitingLocalIDs,
+                                turnActionOwners: turnActionOwners,
+                              ),
+                            ),
+                          ),
+                        );
+                  // Watching: the one action where the composer was;
+                  // nothing above it asks the person to act on the
+                  // worker's session.
+                  if (watch != null) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(child: conversation),
+                        _WatchingComposer(watch: watch),
+                      ],
+                    );
+                  }
+                  // The floating layer (VL §6): the transcript scrolls under
+                  // the glass composer, the only glass on the page.
+                  return KitComposer.layer(
+                    body: conversation,
+                    above: _aboveComposer(
+                      bodyConstraints: bodyConstraints,
+                      compactComposer: compactComposer,
+                      pendingPermissions: pendingPermissions,
+                    ),
+                    composer: _floatingComposer(
+                      bodyConstraints: bodyConstraints,
+                      compactComposer: compactComposer,
+                      busy: busy,
+                      showAttachmentNote: showAttachmentNote,
+                    ),
+                  );
+                },
+              ),
       ),
     );
     if (_conn.isIsolated) {

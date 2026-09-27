@@ -14491,6 +14491,18 @@ abstract class AppLocalizations {
   /// **'Conversation menu'**
   String get chatUiSessionMenu;
 
+  /// Conversation menu row: save this conversation as a file (JSON where the server exports, Markdown otherwise)
+  ///
+  /// In en, this message translates to:
+  /// **'Export this conversation'**
+  String get chatUiExportThisConversation;
+
+  /// Chat, draft not saved: copies the unsaved draft text
+  ///
+  /// In en, this message translates to:
+  /// **'Copy draft'**
+  String get chatDraftCopy;
+
   /// Chat journey: Session shared. Copy the visible link manually.
   ///
   /// In en, this message translates to:

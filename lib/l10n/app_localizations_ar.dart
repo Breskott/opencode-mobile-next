@@ -8860,6 +8860,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiSessionMenu => 'قائمة المحادثة';
 
   @override
+  String get chatUiExportThisConversation => 'Export this conversation';
+
+  @override
+  String get chatDraftCopy => 'Copy draft';
+
+  @override
   String get chatUiSessionSharedCopyTheVisibleLinkManually =>
       'شُوركت المحادثة. انسخ الرابط الظاهر يدويًا.';
 

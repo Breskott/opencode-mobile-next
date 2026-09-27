@@ -11,7 +11,8 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/kit/kit.dart' show KitMenuPanel;
+import 'package:opencode_mobile/ui/kit/kit.dart'
+    show KitIconButton, KitMenuPanel, KitTopBar;
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -157,8 +158,7 @@ void main() {
         expect(_tasks, findsNothing);
         expect(find.byTooltip('Tasks · 0 running'), findsNothing);
         final titleRect = tester.getRect(_title);
-        expect(tester.widget<Text>(_title).maxLines, 1);
-        final appBar = tester.getRect(find.byType(AppBar));
+        final appBar = tester.getRect(find.byType(KitTopBar));
         expect(titleRect.top, greaterThanOrEqualTo(appBar.top));
         expect(titleRect.bottom, lessThanOrEqualTo(appBar.bottom + .5));
 
@@ -187,17 +187,23 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(_tasks, findsNothing);
     expect(find.text('Tasks'), findsNothing);
-    expect(tester.widget<Text>(_title).maxLines, 1);
+    expect(
+      find.descendant(of: find.byType(KitTopBar), matching: _title),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('a short title stays on one line in the 64dp toolbar at 1x', (
+  testWidgets('a short title stays on one line in a one-row bar at 1x', (
     tester,
   ) async {
     final conn = await _controller(_Api(title: 'Fix CI'));
     addTearDown(conn.dispose);
     await _pumpChat(tester, conn, size: const Size(390, 844));
     expect(tester.takeException(), isNull);
-    expect(tester.getSize(find.byType(AppBar)).height, 64);
+    expect(
+      tester.getSize(find.byType(KitTopBar)).height,
+      lessThanOrEqualTo(64),
+    );
     expect(tester.getSize(_title).height, lessThanOrEqualTo(31));
   });
 
@@ -253,7 +259,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         expect(tester.takeException(), isNull);
         const visibleBottom = 640.0 - 300;
-        final appBarBottom = tester.getRect(find.byType(AppBar)).bottom;
+        final appBarBottom = tester.getRect(find.byType(KitTopBar)).bottom;
         expect(tester.getRect(_field).top, greaterThanOrEqualTo(appBarBottom));
         expect(tester.getRect(_field).bottom, lessThanOrEqualTo(visibleBottom));
         expect(tester.getRect(_send).bottom, lessThanOrEqualTo(visibleBottom));
@@ -316,40 +322,38 @@ void main() {
     );
   }
 
-  testWidgets(
-    'rotating from phone to wide width swaps the Tasks shortcut without '
-    'remounting the editor or losing the draft',
-    (tester) async {
-      final conn = await _controller(_Api(title: _longTitle));
-      addTearDown(conn.dispose);
-      await _pumpChat(tester, conn, size: const Size(360, 740));
-      // The shortcut is contextual now: rotate while a related task is active.
-      conn.sessionsById['child-task'] = Session(
-        id: 'child-task',
-        parentID: _sessionID,
-        title: 'Run checkout tests',
-      );
-      conn.busySessions.add('child-task');
-      conn.notifyListeners();
-      await tester.pumpAndSettle();
-      await tester.enterText(_field, 'Still writing');
-      await tester.pump();
-      final editable = find.descendant(
-        of: _field,
-        matching: find.byType(EditableText),
-      );
-      final editor = tester.state<EditableTextState>(editable);
-      expect(tester.widget(_tasks), isA<IconButton>());
+  testWidgets('rotating a phone keeps the Tasks shortcut in the bar without '
+      'remounting the editor or losing the draft', (tester) async {
+    final conn = await _controller(_Api(title: _longTitle));
+    addTearDown(conn.dispose);
+    await _pumpChat(tester, conn, size: const Size(360, 740));
+    // The shortcut is contextual now: rotate while a related task is active.
+    conn.sessionsById['child-task'] = Session(
+      id: 'child-task',
+      parentID: _sessionID,
+      title: 'Run checkout tests',
+    );
+    conn.busySessions.add('child-task');
+    conn.notifyListeners();
+    await tester.pumpAndSettle();
+    await tester.enterText(_field, 'Still writing');
+    await tester.pump();
+    final editable = find.descendant(
+      of: _field,
+      matching: find.byType(EditableText),
+    );
+    final editor = tester.state<EditableTextState>(editable);
+    expect(tester.widget(_tasks), isA<KitIconButton>());
 
-      tester.view.physicalSize = const Size(740, 360);
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      expect(tester.widget(_tasks), isA<TextButton>());
-      expect(find.text('Tasks'), findsOneWidget);
-      expect(tester.state<EditableTextState>(editable), same(editor));
-      expect(_draftText(tester), 'Still writing');
-      await tester.pump(const Duration(milliseconds: 700));
-      expect(conn.sessionDraft(_sessionID), 'Still writing');
-    },
-  );
+    // A phone on its side is short: the bar keeps its phone arrangement
+    // (KitTopBar, kit-v2.md §8.1).
+    tester.view.physicalSize = const Size(740, 360);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(tester.widget(_tasks), isA<KitIconButton>());
+    expect(tester.state<EditableTextState>(editable), same(editor));
+    expect(_draftText(tester), 'Still writing');
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(conn.sessionDraft(_sessionID), 'Still writing');
+  });
 }

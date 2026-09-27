@@ -136,8 +136,12 @@ class KitComposer extends StatefulWidget {
   /// floating navigation layer: [body] scrolls under the glass, and the
   /// composer's height is published with KitBottomInset.add so the last
   /// message, KitJumpPill and KitUndo stay clear of it. The keyboard lifts
-  /// the composer; nothing else moves.
-  static Widget layer({Key? key, required Widget body, required KitComposer composer});
+  /// the composer; nothing else moves. [composer] is the KitComposer or the
+  /// host's widget that builds one; [above] is solid content pinned over it
+  /// (request cards, notes, find) on the ground, edge to edge, so the body
+  /// passes under it unseen and the composer stays the only glass. The
+  /// published height counts both; [above] gets the room the composer leaves.
+  static Widget layer({Key? key, required Widget body, required Widget composer, Widget? above});
 }
 ```
 

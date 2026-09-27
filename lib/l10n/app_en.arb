@@ -7584,6 +7584,14 @@
   "@chatUiSessionMenu": {
     "description": "Chat journey: Session menu"
   },
+  "chatUiExportThisConversation": "Export this conversation",
+  "@chatUiExportThisConversation": {
+    "description": "Conversation menu row: save this conversation as a file (JSON where the server exports, Markdown otherwise)"
+  },
+  "chatDraftCopy": "Copy draft",
+  "@chatDraftCopy": {
+    "description": "Chat, draft not saved: copies the unsaved draft text"
+  },
   "chatUiSessionSharedCopyTheVisibleLinkManually": "Conversation shared. Copy the visible link manually.",
   "@chatUiSessionSharedCopyTheVisibleLinkManually": {
     "description": "Chat journey: Session shared. Copy the visible link manually."

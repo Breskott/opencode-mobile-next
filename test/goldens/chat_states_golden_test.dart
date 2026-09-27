@@ -336,6 +336,35 @@ void main() {
       );
     });
 
+    // chat-9: find sits over the composer, by the keyboard it is typed with.
+    testWidgets('chat · find · $mode', (tester) async {
+      await _golden(
+        tester,
+        'chat_find',
+        light: light,
+        api: _Api()
+          ..busy = {}
+          ..messagesHandler = (_) async => _turn(),
+        before: (_) async {
+          await tester.tap(
+            find.byKey(const ValueKey('session-actions-button')),
+          );
+          await _frames(tester);
+          await tester.tap(find.byKey(const ValueKey('session-menu-find')));
+          await _frames(tester);
+          await tester.enterText(
+            find.byKey(const ValueKey('transcript-find-input')),
+            'total',
+          );
+          await _frames(tester);
+          expect(
+            find.byKey(const ValueKey('transcript-find-bar')),
+            findsOneWidget,
+          );
+        },
+      );
+    });
+
     testWidgets('chat · notify me · $mode', (tester) async {
       await _golden(
         tester,

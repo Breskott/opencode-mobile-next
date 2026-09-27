@@ -8762,6 +8762,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiSessionMenu => 'Conversation menu';
 
   @override
+  String get chatUiExportThisConversation => 'Export this conversation';
+
+  @override
+  String get chatDraftCopy => 'Copy draft';
+
+  @override
   String get chatUiSessionSharedCopyTheVisibleLinkManually =>
       'Conversation shared. Copy the visible link manually.';
 

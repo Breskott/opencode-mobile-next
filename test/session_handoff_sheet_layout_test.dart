@@ -110,7 +110,7 @@ void main() {
     ) async {
       await pumpSheet(
         tester,
-        ContinueOnComputerSheet(command: command, exportAvailable: true),
+        ContinueOnComputerSheet(command: command),
         large: variant.large,
       );
       expect(
@@ -208,7 +208,7 @@ void main() {
   ) async {
     await pumpSheet(
       tester,
-      ContinueOnComputerSheet(command: command, exportAvailable: true),
+      ContinueOnComputerSheet(command: command),
       rtl: false,
       large: false,
     );
@@ -242,7 +242,6 @@ void main() {
           directory: '/workspace/acme',
           workspaceID: 'wrk_1',
         ),
-        exportAvailable: true,
       ),
       rtl: false,
       large: false,
@@ -268,7 +267,6 @@ void main() {
           sessionID: 'ses_1',
           directory: null,
         ),
-        exportAvailable: true,
       ),
       rtl: false,
       large: false,

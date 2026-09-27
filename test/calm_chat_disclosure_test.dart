@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitTopBar;
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 
 import '../tool/capture/fixtures.dart';
@@ -49,9 +50,13 @@ void main() {
       expect(find.byKey(const Key('running-work-indicator')), findsNothing);
       expect(find.byKey(const Key('prompt-editor-button')), findsNothing);
       expect(find.byKey(const Key('composer-model-context')), findsOneWidget);
+      // The title is the bar's (KitTopBar): a header naming the route.
       expect(
-        tester.widget<Text>(find.byKey(const Key('chat-title'))).maxLines,
-        1,
+        find.descendant(
+          of: find.byType(KitTopBar),
+          matching: find.byKey(const Key('chat-title')),
+        ),
+        findsOneWidget,
       );
       await tester.tap(find.byKey(const ValueKey('session-actions-button')));
       await tester.pumpAndSettle();

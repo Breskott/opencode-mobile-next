@@ -746,6 +746,13 @@ class SessionMenuSheet extends StatelessWidget {
                 label: l10n.runResultsCommandsTitle,
                 value: 'slash',
               ),
+              // Every server can: a complete JSON copy where the server
+              // exports, the loaded transcript as Markdown everywhere.
+              _SessionMenuRow(
+                icon: AppIconography.download,
+                label: l10n.chatUiExportThisConversation,
+                value: 'export',
+              ),
               if (continueOnComputerAvailable)
                 _SessionMenuRow(
                   icon: AppIconography.computer,

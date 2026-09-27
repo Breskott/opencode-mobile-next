@@ -380,7 +380,6 @@ void main() {
                   await showContinueOnComputerSheet(
                     context,
                     command: command,
-                    exportAvailable: true,
                     offerReload: offerReload,
                   ),
                 ),

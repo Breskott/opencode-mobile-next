@@ -241,11 +241,8 @@ void main() {
           'chat_continue_on_computer_sheet_available',
           light: light,
           size: size,
-          open: (context) => showContinueOnComputerSheet(
-            context,
-            command: _command,
-            exportAvailable: true,
-          ),
+          open: (context) =>
+              showContinueOnComputerSheet(context, command: _command),
         );
       });
 
@@ -315,7 +312,6 @@ void main() {
             sessionID: 'ses_1',
             directory: null,
           ),
-          exportAvailable: true,
           offerReload: true,
         ),
       );
