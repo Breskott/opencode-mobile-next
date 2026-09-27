@@ -662,19 +662,27 @@ List<List<Part>> _timelineDisplayParts(
   return display;
 }
 
+/// [_mergeTextParts] for its parity test (a streamed reply's fragments
+/// joined the way the transcript draws them).
+@visibleForTesting
+Part debugMergeTextParts(List<Part> parts) => _mergeTextParts(parts);
+
 Part _mergeTextParts(List<Part> parts) {
   assert(parts.isNotEmpty);
   if (parts.length == 1) return parts.single;
   final first = parts.first;
   final buffer = StringBuffer();
+  // What the buffer ends with, tracked from the last fragment written:
+  // reading it back from the buffer would copy the whole prefix per
+  // fragment, quadratic in a long streamed reply (codex-perf chat.md #1).
+  var endsWithNewline = false;
   for (final part in parts) {
     if (part.text.trim().isEmpty) continue;
-    if (buffer.isNotEmpty &&
-        !buffer.toString().endsWith('\n') &&
-        !part.text.startsWith('\n')) {
+    if (buffer.isNotEmpty && !endsWithNewline && !part.text.startsWith('\n')) {
       buffer.write('\n\n');
     }
     buffer.write(part.text);
+    endsWithNewline = part.text.endsWith('\n');
   }
   final merged = Part(
     id: first.id,

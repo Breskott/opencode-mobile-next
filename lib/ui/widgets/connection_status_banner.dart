@@ -7,6 +7,7 @@ import '../../state/connection.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
+import 'connection_failure.dart';
 import 'phone_server_card.dart' show serverDisplayName;
 import 'work_status_line.dart' show confirmPhoneServerRestart;
 
@@ -184,13 +185,16 @@ class ConnectionStatusBanner extends StatelessWidget {
   );
 }
 
-/// The connection's details: what is going on, the raw error, Try again and
-/// (optionally) Change server. Shared by the shell banner and the Work tab's
-/// status line.
+/// The connection's details: what is going on, what to check, the raw
+/// error under Details, Try again and (optionally) Switch server. Shared by
+/// every status line (the shell, a chat, the Work tab).
 ///
-/// The shared status line opens this kit sheet for technical details. Its
-/// phase comes from the same controller snapshot; the raw error stays in
-/// a [KitDetailsFold] (KIT-33), open and copyable here.
+/// A failed connection is diagnosed the way root-connecting's card
+/// diagnoses it ([ConnectionFailure.diagnose]): the same title, the same
+/// explanation and the same list of what to check, so the line's Details
+/// and the page the app opens on never tell two stories (P4.4). The phase
+/// comes from the controller's one snapshot; the raw error stays in a
+/// [KitDetailsFold] (KIT-33), open and copyable here.
 Future<void> showConnectionDetailsSheet(
   BuildContext context,
   ConnectionController controller, {
@@ -202,9 +206,21 @@ Future<void> showConnectionDetailsSheet(
   final error = controller.connectionError?.trim();
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   final navigator = Navigator.of(context);
+  final profile = controller.profile;
+  final failure = reconnecting || error == null || error.isEmpty
+      ? null
+      : ConnectionFailure.diagnose(
+          l10n: l10n,
+          error: error,
+          baseUrl: profile?.baseUrl ?? '',
+          supportsTermux: false,
+          usesConnectionToken: snapshot.usesToken,
+        );
   return showKitSheet<void>(
     context,
-    title: reconnecting ? l10n.mcpReconnecting : l10n.e7BannerLost,
+    title: reconnecting
+        ? l10n.mcpReconnecting
+        : failure?.title ?? l10n.e7BannerLost,
     icon: reconnecting ? AppIconography.sync : AppIconography.cloudOff,
     // While a Try again is in flight nothing here would help: the words
     // say it is reconnecting.
@@ -227,24 +243,34 @@ Future<void> showConnectionDetailsSheet(
           },
         ),
     ],
-    body: (sheetContext) => Column(
-      key: const ValueKey('connection-banner-details-sheet'),
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        KitText(
-          reconnecting
-              ? l10n.e7BannerCheckingExplanation
-              : l10n.e7BannerStaleExplanation,
-          tone: KitTextTone.secondary,
-        ),
-        if (error != null && error.isNotEmpty) ...[
-          SizedBox(height: KitTokens.of(sheetContext).space3),
-          // This sheet exists to show the details, so the fold starts
-          // open; it gives the raw error its copy action (tinkerer).
-          KitDetailsFold(text: error, initiallyExpanded: true),
+    body: (sheetContext) {
+      final gap = SizedBox(height: KitTokens.of(sheetContext).space3);
+      return Column(
+        key: const ValueKey('connection-banner-details-sheet'),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          KitText(
+            reconnecting
+                ? l10n.e7BannerCheckingExplanation
+                : failure?.explanation ?? l10n.e7BannerStaleExplanation,
+            key: const ValueKey('connection-details-explanation'),
+            tone: KitTextTone.secondary,
+          ),
+          if (failure != null && failure.checks.isNotEmpty) ...[
+            gap,
+            KitText(l10n.e7SetupWhatToCheck),
+            for (final check in failure.checks)
+              KitText('\u2022 $check', tone: KitTextTone.secondary),
+          ],
+          if (error != null && error.isNotEmpty) ...[
+            gap,
+            // This sheet exists to show the details, so the fold starts
+            // open; it gives the raw error its copy action (tinkerer).
+            KitDetailsFold(text: error, initiallyExpanded: true),
+          ],
         ],
-      ],
-    ),
+      );
+    },
   );
 }

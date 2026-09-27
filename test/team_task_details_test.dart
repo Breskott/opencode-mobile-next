@@ -27,6 +27,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
@@ -928,6 +929,60 @@ void main() {
             alwaysUse24HourFormat: true,
           );
       expect(find.text(time), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+    // audit2 A2: the host's own words (an activity summary, a request's
+    // error) are server text. Under Details or not, a credential in them
+    // never renders: neither a registered opaque secret nor a named token.
+    testWidgets('what the host reported is redacted', (tester) async {
+      const opaque = 'opaque-Hunter2-9f81c7';
+      KitRedact.registerKnownSecret(opaque);
+      addTearDown(KitRedact.clearKnownSecrets);
+      final (controller, gateway) = await boot(configure: richShape);
+      await pumpDetails(tester, controller, 'oc-xru');
+      await push(
+        tester,
+        gateway,
+        ActivityAppended(
+          event: ActivityEvent(
+            type: 'order.fired',
+            seq: s(21),
+            subject: 'nudge-on-route',
+            summary: 'retried w3 with password=$opaque',
+            payload: const {'bead_id': 'w3'},
+            timestamp: clock,
+          ),
+          seq: s(21),
+        ),
+      );
+      await push(
+        tester,
+        gateway,
+        RequestResult(
+          requestId: 'req-1',
+          ok: false,
+          errorMessage: 'upstream refused token=ghp_abcdefghijklmnopqrstuvwx',
+          payload: const {'bead_id': 'w3'},
+          seq: s(22),
+        ),
+      );
+      await openTechnical(tester);
+      expect(
+        key('team-task-details-event-${s(21)}'),
+        findsOneWidget,
+        reason: 'the activity line is shown, redacted',
+      );
+      expect(key('team-task-details-event-${s(22)}'), findsOneWidget);
+      final shown = [
+        for (final widget in tester.widgetList<Text>(find.byType(Text)))
+          widget.data ?? widget.textSpan?.toPlainText() ?? '',
+        for (final widget in tester.widgetList<RichText>(find.byType(RichText)))
+          widget.text.toPlainText(),
+      ].join('\n');
+      expect(shown, isNot(contains(opaque)));
+      expect(shown, isNot(contains('ghp_abcdefghijklmnopqrstuvwx')));
+      expect(shown, contains('retried w3 with password='));
+      expect(shown, contains(KitRedact.mask));
       expect(tester.takeException(), isNull);
     });
   });

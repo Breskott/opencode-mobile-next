@@ -7,7 +7,6 @@ import '../kit/kit.dart';
 import '../kit/scenes/setup_phone_scene.dart';
 import '../kit/scenes/setup_unplugged_scene.dart';
 import 'connection_failure.dart';
-import 'grace_timer.dart';
 import 'work_status_line.dart' show confirmPhoneServerRestart;
 
 /// What the app shows while it reconnects to a saved server, and what that
@@ -20,7 +19,8 @@ import 'work_status_line.dart' show confirmPhoneServerRestart;
 /// - **starting** (the phone's own server is being started): "Starting
 ///   OpenCode…" with progress. The title never says "stopped" while it
 ///   starts, and no button pretends to be the progress (§2);
-/// - **not answering** (still connecting after [notAnsweringGrace]): says
+/// - **not answering** ([notAnswering]: still connecting once the
+///   connection's own eight-second wait ran out): says
 ///   so, keeps the progress, and offers Restart for the phone's own server,
 ///   Try again, and Switch server;
 /// - **stopped** (the phone's own server): Start as the one action, never
@@ -55,6 +55,7 @@ class SavedServerConnectionCard extends StatelessWidget {
     this.startingInAppServer = false,
     this.inAppStartFailed = false,
     this.onOpenInAppSetup,
+    this.notAnswering = false,
   });
 
   final String profileName;
@@ -94,6 +95,12 @@ class SavedServerConnectionCard extends StatelessWidget {
   /// start failed, when the log is what the person needs.
   final VoidCallback? onOpenInAppSetup;
 
+  /// The connection's eight-second wait ran out with no answer yet. The
+  /// controller owns that clock (ConnectionController.connectionStatus), so
+  /// this page and every status line escalate at the same moment; the card
+  /// never starts a clock of its own.
+  final bool notAnswering;
+
   /// The server is the phone's own: it is named "OpenCode on this phone".
   bool get _onThisPhone => inAppServer || onStartPhoneServer != null;
 
@@ -108,23 +115,16 @@ class SavedServerConnectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final waiting = !_starting && error == null && !requiresTokenReentry;
-    // Nothing is said during an ordinary connect; after the grace time the
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    if (_starting) return _startingState(l10n);
+    if (requiresTokenReentry || error != null) {
+      return _failedState(context, l10n);
+    }
+    // Nothing is said during an ordinary connect; once the wait ran out the
     // screen says the server is not answering and offers the ways out
     // (work-tab cleanup item 10, standard §4).
-    return GraceTimer(
-      waiting: waiting,
-      restartKey: attempts,
-      builder: (context, overdue) {
-        final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-        if (_starting) return _startingState(l10n);
-        if (requiresTokenReentry || error != null) {
-          return _failedState(context, l10n);
-        }
-        if (overdue) return _notAnsweringState(context, l10n);
-        return _connectingState(l10n);
-      },
-    );
+    if (notAnswering) return _notAnsweringState(context, l10n);
+    return _connectingState(l10n);
   }
 
   Widget _connectingState(AppLocalizations l10n) => KitStateView(

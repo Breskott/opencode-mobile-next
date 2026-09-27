@@ -24,6 +24,7 @@ import 'desktop/window_state.dart';
 import 'diagnostics/app_diagnostics.dart';
 import 'diagnostics/perf_trace.dart';
 import 'diagnostics/report_problem_startup.dart';
+import 'domain/connection_status.dart';
 import 'domain/server_gateway.dart' show ProductException;
 import 'l10n/app_localizations.dart';
 import 'platform/launch_shortcut.dart';
@@ -1939,10 +1940,13 @@ class _RootState extends ConsumerState<_Root> {
     final inApp = _builtin.recognises(profile);
     final startFailure = _builtin.failureFor(profile);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final status = conn.connectionStatus;
     // A KitScreen, so the app's line (a share waiting for this server)
-    // shows above the card (map page root-connecting).
+    // shows above the card (map page root-connecting). The card is the
+    // connection's status here: the line never repeats it (P4.4).
     return _Ground(
       child: KitScreen(
+        bodySays: const {KitStatusKind.connection},
         body: SavedServerConnectionCard(
           profileName: serverDisplayName(
             profile,
@@ -1958,6 +1962,11 @@ class _RootState extends ConsumerState<_Root> {
               ? l10n.builtinServerStartFailed(startFailure.reason(l10n))
               : conn.lastError,
           attempts: _attempts,
+          // The controller's one eight-second clock, shared with every
+          // status line; `since` is set once an attempt actually began.
+          notAnswering:
+              status.phase == ConnectionStatusPhase.notAnswering &&
+              status.since != null,
           inAppServer: inApp,
           startingInAppServer: inApp && _builtin.starting,
           inAppStartFailed: startFailure != null,

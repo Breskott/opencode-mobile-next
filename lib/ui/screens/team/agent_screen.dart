@@ -387,15 +387,14 @@ class _AgentScreenState extends State<AgentScreen> {
           menu: [if (ready) ..._controls(context, agent, work)],
           menuKey: const ValueKey('team-agent-more'),
         ),
-        header: [
-          if (ready)
-            ?teamStatusLine(
-              context,
-              controller: _controller,
-              keyPrefix: 'team-agent',
-              onRetry: onRetry,
-            ),
-        ],
+        status: ready
+            ? teamStatusLine(
+                context,
+                controller: _controller,
+                keyPrefix: 'team-agent',
+                onRetry: onRetry,
+              )
+            : null,
         loading: teamScreenLoading(_controller) || _refreshing,
         loadingLabel: l10n.teamUiCardLoading,
         body:

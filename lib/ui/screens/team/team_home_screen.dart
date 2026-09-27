@@ -504,8 +504,8 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           search: _searchOpen && ready ? _searchField(l10n) : null,
           // Android stopped the phone's Termux team: said here, with
           // Start the team again (map: team-phone-onboarding-killed).
+          status: line,
           header: [
-            ?line,
             if (_offFailed)
               Padding(
                 padding: EdgeInsetsDirectional.symmetric(

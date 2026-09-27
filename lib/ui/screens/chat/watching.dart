@@ -233,8 +233,17 @@ class _WatchComposerState extends State<_WatchComposer> {
     super.dispose();
   }
 
+  /// Counts edits to the words (not cursor moves), so a send can tell
+  /// whether the person typed on while the host acknowledged it.
+  int _revision = 0;
+  String _lastText = '';
+
   void _changed() {
     if (!mounted) return;
+    if (_text.text != _lastText) {
+      _lastText = _text.text;
+      _revision++;
+    }
     setState(() {});
     final draft = _draft;
     if (draft == null) return;
@@ -248,10 +257,18 @@ class _WatchComposerState extends State<_WatchComposer> {
     final send = widget.watch.onSend;
     final text = _text.text.trim();
     if (send == null || text.isEmpty || _sending) return;
+    // The field stays editable while the host answers: only the words
+    // that were sent are cleared, and only if nothing was typed since
+    // (audit2 A4). Newer words stay, and so does their saved draft.
+    final sentRevision = _revision;
     setState(() => _sending = true);
     try {
       final taken = await send(text);
       if (!mounted || !taken) return;
+      if (_revision != sentRevision) {
+        unawaited(_draft?.save());
+        return;
+      }
       _save?.cancel();
       _text.clear();
       unawaited(_draft?.clear());

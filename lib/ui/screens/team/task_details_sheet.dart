@@ -710,7 +710,17 @@ DateTime? _eventTime(OrchestrationEvent event) {
 
 /// One line for an event: server text for activity lines, product copy
 /// for the modelled changes.
+/// One timeline event in words, redacted at this presentation boundary
+/// (audit2 A2): an activity summary or a request error is the host's text
+/// and may echo a credential, and a work title or agent name is server
+/// data too. Being under Details does not waive redaction.
 String _eventText(
+  AppLocalizations l10n,
+  OrchestrationSnapshot snapshot,
+  OrchestrationEvent event,
+) => KitRedact.text(_eventWords(l10n, snapshot, event));
+
+String _eventWords(
   AppLocalizations l10n,
   OrchestrationSnapshot snapshot,
   OrchestrationEvent event,
