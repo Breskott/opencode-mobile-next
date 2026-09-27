@@ -1,4 +1,4 @@
-// Explicit signed-out emulator proof; not part of the normal test suite.
+// Explicit signed-out preview proof; not part of the normal test suite.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -12,7 +12,7 @@ void main() {
   final secretFile = Platform.environment['P16A_SECRET_FILE'];
   final outputFile = Platform.environment['P16A_REPORT_FILE'];
   test(
-    'signed-out emulator Paseo uses the app gateway',
+    'signed-out preview Paseo uses the app gateway',
     () async {
       final password = File(secretFile!).readAsStringSync().trim();
       const endpoint = 'ws://127.0.0.1:16767/ws';
@@ -109,7 +109,7 @@ void main() {
       await again.close();
     },
     skip: secretFile == null || outputFile == null
-        ? 'Explicit emulator probe only'
+        ? 'Explicit preview probe only'
         : false,
     timeout: const Timeout(Duration(minutes: 3)),
   );
