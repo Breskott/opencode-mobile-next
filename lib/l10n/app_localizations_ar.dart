@@ -21267,4 +21267,21 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get folderBrowserFirstProject => 'Name your first project';
+
+  @override
+  String get kitMarkdownOpenLink => 'Open link';
+
+  @override
+  String get kitMarkdownOpenFile => 'Open file';
+
+  @override
+  String kitMarkdownTable(int rows) {
+    String _temp0 = intl.Intl.pluralLogic(
+      rows,
+      locale: localeName,
+      other: 'Table, $rows rows',
+      one: 'Table, 1 row',
+    );
+    return '$_temp0';
+  }
 }
