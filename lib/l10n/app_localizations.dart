@@ -8377,102 +8377,6 @@ abstract class AppLocalizations {
   /// **'Manage'**
   String get workspaceManage;
 
-  /// Work: the Archived conversations row opens All conversations, where archived ones are a filter
-  ///
-  /// In en, this message translates to:
-  /// **'In All conversations'**
-  String get workspaceArchivedInAll;
-
-  /// Work on a wide window: title of the empty detail pane beside the list
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a conversation'**
-  String get workspaceDetailEmptyTitle;
-
-  /// Work on a wide window: body of the empty detail pane
-  ///
-  /// In en, this message translates to:
-  /// **'Open a conversation from the list to read and reply here.'**
-  String get workspaceDetailEmptyBody;
-
-  /// Work project sheet subtitle: the server the project is on
-  ///
-  /// In en, this message translates to:
-  /// **'On {server}'**
-  String workspaceContextOn(String server);
-
-  /// Work project sheet: the word beside the current place the project runs on
-  ///
-  /// In en, this message translates to:
-  /// **'In use'**
-  String get workspaceContextCurrent;
-
-  /// Work project sheet: row that creates a new project folder
-  ///
-  /// In en, this message translates to:
-  /// **'New project'**
-  String get workspaceContextNewProject;
-
-  /// Work project sheet: section label for where the project's conversations run
-  ///
-  /// In en, this message translates to:
-  /// **'Runs on'**
-  String get workspaceContextRunsOn;
-
-  /// Label of a folder path under Details
-  ///
-  /// In en, this message translates to:
-  /// **'Folder'**
-  String get workspaceContextFolder;
-
-  /// Conversation details: label of the conversation's public share link
-  ///
-  /// In en, this message translates to:
-  /// **'Shared link'**
-  String get workspaceSessionSharedLink;
-
-  /// Work: an archive that failed after its Undo window closed
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t archive “{title}”. It is back in the list.'**
-  String workspaceArchiveFailed(String title);
-
-  /// Share confirmation: where the share link goes
-  ///
-  /// In en, this message translates to:
-  /// **'The link is copied once sharing starts.'**
-  String get workspaceShareCopiesLink;
-
-  /// Delete confirmation for a shared conversation: what else is lost
-  ///
-  /// In en, this message translates to:
-  /// **'Its shared link stops working.'**
-  String get workspaceDeleteSharedLink;
-
-  /// Folder chooser: open an existing folder by typing its path
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a folder path'**
-  String get workspaceChooserEnterPath;
-
-  /// Folder chooser: pick one of the projects already opened on this server
-  ///
-  /// In en, this message translates to:
-  /// **'Recent projects'**
-  String get workspaceChooserRecentProjects;
-
-  /// Folder chooser: title when the project list failed to load
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t load your projects'**
-  String get workspaceChooserLoadFailedTitle;
-
-  /// Folder chooser: body when the project list failed to load
-  ///
-  /// In en, this message translates to:
-  /// **'You can still open a folder by its path.'**
-  String get workspaceChooserLoadFailedBody;
-
   /// No description provided for @reviewCopiedFile.
   ///
   /// In en, this message translates to:
@@ -10486,7 +10390,7 @@ abstract class AppLocalizations {
   /// App shell command menu or routing: FindSurface
   ///
   /// In en, this message translates to:
-  /// **'Find in this surface'**
+  /// **'Find on this screen'**
   String get e7LocaleUiFindSurface;
 
   /// App shell command menu or routing: Destinations
@@ -34708,6 +34612,798 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not now'**
   String get kitCapNotNow;
+
+  /// Desktop file drop: the words on the composer while files are dragged over it
+  ///
+  /// In en, this message translates to:
+  /// **'Drop to attach'**
+  String get desktopDropHint;
+
+  /// Search: title of the alert that explains why Claude Code on this phone cannot open here (at most four words)
+  ///
+  /// In en, this message translates to:
+  /// **'Not on this device'**
+  String get searchClaudeCodeGateTitle;
+
+  /// Search: why Claude Code on this phone is unavailable on a phone without the Termux bridge, and where it is available
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code runs on a phone only through Termux, which this device doesn\'t have. Run it on a computer with Paseo and add that computer as a server.'**
+  String get searchClaudeCodeGateDevice;
+
+  /// Search on a desktop: why Claude Code on this phone is not here, and where Claude Code is available instead
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code on this phone is for Android phones with Termux. On a computer, run Claude Code with Paseo and add it as a server.'**
+  String get searchClaudeCodeGateDesktop;
+
+  /// Search: the action of the Claude Code explanation; opens the servers list where a Paseo server is added
+  ///
+  /// In en, this message translates to:
+  /// **'Open servers'**
+  String get searchClaudeCodeGateServers;
+
+  /// Inbox: the section of conversations that finished while the person was away (completion digests)
+  ///
+  /// In en, this message translates to:
+  /// **'Finished while you were away'**
+  String get activityFinishedAway;
+
+  /// Inbox: the undo message after hiding one finished conversation's digest
+  ///
+  /// In en, this message translates to:
+  /// **'Digest hidden'**
+  String get activityDigestHidden;
+
+  /// Inbox: alert title when a conversation could not be opened
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open conversation'**
+  String get activityOpenFailedTitle;
+
+  /// Inbox: screen reader label of the loading bar
+  ///
+  /// In en, this message translates to:
+  /// **'Loading the Inbox'**
+  String get activityLoading;
+
+  /// Inbox on a wide window: the empty detail pane while requests wait
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a request'**
+  String get activityPickRequest;
+
+  /// Inbox on a wide window: the empty detail pane's line under Pick a request
+  ///
+  /// In en, this message translates to:
+  /// **'Choose one from the list to answer it here.'**
+  String get activityPickRequestDetail;
+
+  /// Inbox: a permission row's line when Allow once did not go through; reason is the error in words
+  ///
+  /// In en, this message translates to:
+  /// **'Not sent: {reason}'**
+  String activityAllowOnceFailed(String reason);
+
+  /// Inbox and question sheet: why answering is not possible while the connection is down
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect to the server to answer.'**
+  String get activitySendOffline;
+
+  /// Inbox: the state word of a running conversation while the connection is down (not live)
+  ///
+  /// In en, this message translates to:
+  /// **'Last seen running'**
+  String get activityLastSeenRunning;
+
+  /// Inbox answer card: what happens if nobody answers the request
+  ///
+  /// In en, this message translates to:
+  /// **'The agent waits; nothing is lost.'**
+  String get activityIfIgnored;
+
+  /// Inbox answer card: what a screen reader says when a permission is shown
+  ///
+  /// In en, this message translates to:
+  /// **'Permission needed: {title}'**
+  String activityPermissionAnnouncement(String title);
+
+  /// Inbox answer card: what a screen reader says when a form request is shown
+  ///
+  /// In en, this message translates to:
+  /// **'Input requested: {title}'**
+  String activityFormAnnouncement(String title);
+
+  /// Question sheet: why Send answers cannot send yet
+  ///
+  /// In en, this message translates to:
+  /// **'Answer every question first.'**
+  String get activityAnswerEveryQuestion;
+
+  /// Question sheet: why the choices and the own answer are locked while the answer is sent
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get activitySending;
+
+  /// Question sheet: where a prompt sits in a question with several prompts
+  ///
+  /// In en, this message translates to:
+  /// **'Question {index} of {total}'**
+  String activityQuestionProgress(int index, int total);
+
+  /// Question sheet: the label of the free answer field under the choices
+  ///
+  /// In en, this message translates to:
+  /// **'Or write your own answer'**
+  String get activityOwnAnswer;
+
+  /// Command launcher: the search field's label and hint
+  ///
+  /// In en, this message translates to:
+  /// **'Search commands and settings'**
+  String get shortcutsPaletteSearch;
+
+  /// Keyboard shortcuts sheet: section of shortcuts that work on every screen
+  ///
+  /// In en, this message translates to:
+  /// **'Anywhere'**
+  String get shortcutsHelpAnywhere;
+
+  /// Keyboard shortcuts sheet: section of shortcuts that work inside a conversation
+  ///
+  /// In en, this message translates to:
+  /// **'In a conversation'**
+  String get shortcutsHelpConversation;
+
+  /// Shell: title of the row and sheet explaining why the Project tab is missing on this server
+  ///
+  /// In en, this message translates to:
+  /// **'Project isn\'t available'**
+  String get homeShellProjectUnavailable;
+
+  /// Shell: why the Project tab is missing; {server} is the server's display name
+  ///
+  /// In en, this message translates to:
+  /// **'{server} doesn\'t offer files, changes or code search. Connect to an OpenCode server to use them.'**
+  String homeShellProjectUnavailableReason(String server);
+
+  /// Shell: the one-line reason on the row shown after the Project tab went away (a server switch); {server} is the server's display name
+  ///
+  /// In en, this message translates to:
+  /// **'{server} has no project tools.'**
+  String homeShellProjectUnavailableShort(String server);
+
+  /// Work: the Archived conversations row opens All conversations, where archived ones are a filter
+  ///
+  /// In en, this message translates to:
+  /// **'In All conversations'**
+  String get workspaceArchivedInAll;
+
+  /// Work on a wide window: title of the empty detail pane beside the list
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a conversation'**
+  String get workspaceDetailEmptyTitle;
+
+  /// Work on a wide window: body of the empty detail pane
+  ///
+  /// In en, this message translates to:
+  /// **'Open a conversation from the list to read and reply here.'**
+  String get workspaceDetailEmptyBody;
+
+  /// Work project sheet subtitle: the server the project is on
+  ///
+  /// In en, this message translates to:
+  /// **'On {server}'**
+  String workspaceContextOn(String server);
+
+  /// Work project sheet: the word beside the current place the project runs on
+  ///
+  /// In en, this message translates to:
+  /// **'In use'**
+  String get workspaceContextCurrent;
+
+  /// Work project sheet: row that creates a new project folder
+  ///
+  /// In en, this message translates to:
+  /// **'New project'**
+  String get workspaceContextNewProject;
+
+  /// Work project sheet: section label for where the project's conversations run
+  ///
+  /// In en, this message translates to:
+  /// **'Runs on'**
+  String get workspaceContextRunsOn;
+
+  /// Label of a folder path under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Folder'**
+  String get workspaceContextFolder;
+
+  /// Conversation details: label of the conversation's public share link
+  ///
+  /// In en, this message translates to:
+  /// **'Shared link'**
+  String get workspaceSessionSharedLink;
+
+  /// Work: an archive that failed after its Undo window closed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t archive “{title}”. It is back in the list.'**
+  String workspaceArchiveFailed(String title);
+
+  /// Share confirmation: where the share link goes
+  ///
+  /// In en, this message translates to:
+  /// **'The link is copied once sharing starts.'**
+  String get workspaceShareCopiesLink;
+
+  /// Delete confirmation for a shared conversation: what else is lost
+  ///
+  /// In en, this message translates to:
+  /// **'Its shared link stops working.'**
+  String get workspaceDeleteSharedLink;
+
+  /// Folder chooser: open an existing folder by typing its path
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a folder path'**
+  String get workspaceChooserEnterPath;
+
+  /// Folder chooser: pick one of the projects already opened on this server
+  ///
+  /// In en, this message translates to:
+  /// **'Recent projects'**
+  String get workspaceChooserRecentProjects;
+
+  /// Folder chooser: title when the project list failed to load
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your projects'**
+  String get workspaceChooserLoadFailedTitle;
+
+  /// Folder chooser: body when the project list failed to load
+  ///
+  /// In en, this message translates to:
+  /// **'You can still open a folder by its path.'**
+  String get workspaceChooserLoadFailedBody;
+
+  /// Cloud environments top bar: reload the environments and providers.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get managedWorkspacesRefresh;
+
+  /// Cloud environments: the server finished looking for environments its providers already have.
+  ///
+  /// In en, this message translates to:
+  /// **'Discovery finished'**
+  String get managedWorkspacesDiscovered;
+
+  /// Cloud environments: title when looking for existing environments failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t discover environments'**
+  String get managedWorkspacesDiscoverFailed;
+
+  /// Cloud environments: title when creating an environment failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t create the environment'**
+  String get managedWorkspacesCreateFailed;
+
+  /// Cloud environments: title when switching to an environment failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t open {name}'**
+  String managedWorkspacesOpenFailed(String name);
+
+  /// Cloud environments: the remove confirmation question.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String managedWorkspacesRemoveTitle(String name);
+
+  /// Cloud environments: what removing does; provider is the provider name.
+  ///
+  /// In en, this message translates to:
+  /// **'The server asks {provider} to delete this environment and what is in it.'**
+  String managedWorkspacesRemoveBody(String provider);
+
+  /// Cloud environments remove confirmation: consequence when the environment is the open one.
+  ///
+  /// In en, this message translates to:
+  /// **'It is open now, so the app goes back to the project folder first.'**
+  String get managedWorkspacesRemoveLeavesFirst;
+
+  /// Cloud environments remove confirmation: what happens to conversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations stay in history but can no longer open it.'**
+  String get managedWorkspacesRemoveHistoryStays;
+
+  /// Cloud environments: the one verb for removing an environment (menu item and confirm button).
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get managedWorkspacesRemoveAction;
+
+  /// Cloud environments: an environment was removed.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was removed'**
+  String managedWorkspacesRemoved(String name);
+
+  /// Cloud environments: section of the server providers that can make environments.
+  ///
+  /// In en, this message translates to:
+  /// **'Providers'**
+  String get managedWorkspacesProviders;
+
+  /// Cloud environments create sheet: label above the provider choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get managedWorkspacesProvider;
+
+  /// Cloud environments: the providers could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t load providers'**
+  String get managedWorkspacesProvidersFailed;
+
+  /// Cloud environments: the server has no provider that can make environments.
+  ///
+  /// In en, this message translates to:
+  /// **'No provider set up'**
+  String get managedWorkspacesNoProviderTitle;
+
+  /// Cloud environments: where a provider is set up.
+  ///
+  /// In en, this message translates to:
+  /// **'This server has no cloud environment provider. Add one to OpenCode’s config on the server, then refresh.'**
+  String get managedWorkspacesNoProviderBody;
+
+  /// Cloud environments: empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Environments for {project} appear here. Create one, or discover the ones a provider already has.'**
+  String managedWorkspacesEmptyBody(String project);
+
+  /// Cloud environments: the list could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t load cloud environments'**
+  String get managedWorkspacesLoadFailed;
+
+  /// Cloud environments: an environment is being made.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating a cloud environment'**
+  String get managedWorkspacesCreating;
+
+  /// Cloud environments: how long creating takes.
+  ///
+  /// In en, this message translates to:
+  /// **'This usually takes a few minutes. It opens here when it’s ready.'**
+  String get managedWorkspacesCreatingBody;
+
+  /// Cloud environments create sheet: how long creating takes, before it starts.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating one usually takes a few minutes. It opens here when it’s ready.'**
+  String get managedWorkspacesCreateTakes;
+
+  /// Cloud environments create sheet: branch field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get managedWorkspacesBranchLabel;
+
+  /// Cloud environments create sheet: branch field helper.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to use the provider’s default branch.'**
+  String get managedWorkspacesBranchHelper;
+
+  /// Cloud environments: state word for the environment open now.
+  ///
+  /// In en, this message translates to:
+  /// **'In use'**
+  String get managedWorkspacesInUse;
+
+  /// Cloud environments row menu: copy the environment id.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy ID'**
+  String get managedWorkspacesCopyId;
+
+  /// Project health: what Initialize Git does.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs git init here. Nothing is committed.'**
+  String get projectHealthGitInitSupporting;
+
+  /// Project health: the Initialize Git row action.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up'**
+  String get projectHealthSetUp;
+
+  /// Project health: language servers running out of all.
+  ///
+  /// In en, this message translates to:
+  /// **'{running} of {total} running'**
+  String projectHealthRunningOf(int running, int total);
+
+  /// Project health: formatters turned on out of all.
+  ///
+  /// In en, this message translates to:
+  /// **'{on} of {total} on'**
+  String projectHealthOnOf(int on, int total);
+
+  /// Project health: a language server is running.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get projectHealthRunning;
+
+  /// Project health: a language server is not running.
+  ///
+  /// In en, this message translates to:
+  /// **'Not running'**
+  String get projectHealthNotRunning;
+
+  /// Project health: spoken form of +added -removed line counts.
+  ///
+  /// In en, this message translates to:
+  /// **'{added} lines added, {removed} removed'**
+  String projectHealthLineCounts(int added, int removed);
+
+  /// New folder dialog: where the folder is made.
+  ///
+  /// In en, this message translates to:
+  /// **'Made in {directory} on this phone and opened as the project.'**
+  String projectFolderCreateHelper(String directory);
+
+  /// Open folder: the typed folder does not exist.
+  ///
+  /// In en, this message translates to:
+  /// **'No folder there'**
+  String get projectFolderMissingTitle;
+
+  /// Folder flows: title when making a folder failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t create the folder'**
+  String get projectFolderCreateFailedTitle;
+
+  /// Folder flows: title when opening a folder failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t open the folder'**
+  String get projectFolderOpenFailedTitle;
+
+  /// Projects, on a server that cannot switch projects (Codex, Paseo): the state title
+  ///
+  /// In en, this message translates to:
+  /// **'This server works in one folder'**
+  String get projectsOneFolderTitle;
+
+  /// Development services: the undo bar after Start; its action is Stop
+  ///
+  /// In en, this message translates to:
+  /// **'{name} started'**
+  String servicesStarted(String name);
+
+  /// Development services: the undo bar after removing a saved service
+  ///
+  /// In en, this message translates to:
+  /// **'{name} removed'**
+  String servicesRemoved(String name);
+
+  /// Development services: the question before stopping a running command
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {name}?'**
+  String servicesStopTitle(String name);
+
+  /// Development services: the question before restarting a running command
+  ///
+  /// In en, this message translates to:
+  /// **'Restart {name}?'**
+  String servicesRestartTitle(String name);
+
+  /// Development services: the question before clearing an unconfirmed run record
+  ///
+  /// In en, this message translates to:
+  /// **'Forget the last run of {name}?'**
+  String servicesForgetTitle(String name);
+
+  /// Development services: the question before removing a service whose command may still be running
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String servicesRemoveTitle(String name);
+
+  /// Development services: what happens to a running command when its saved service is removed
+  ///
+  /// In en, this message translates to:
+  /// **'Its command keeps running on the server, and this app can no longer stop it. Stop it first to end it.'**
+  String get servicesRemoveRunningHint;
+
+  /// Development services: the empty state title; the body explains saving does not start anything
+  ///
+  /// In en, this message translates to:
+  /// **'No dev commands yet'**
+  String get servicesEmptyTitle;
+
+  /// Development services: notice while the server connection is down
+  ///
+  /// In en, this message translates to:
+  /// **'The server is not answering. Commands cannot be started or checked until it reconnects.'**
+  String get servicesOffline;
+
+  /// Development services logs sheet: the log could not be fetched
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the log.'**
+  String get servicesLogFailed;
+
+  /// Development services: the label of the project path in Details
+  ///
+  /// In en, this message translates to:
+  /// **'Project folder'**
+  String get servicesProjectFolder;
+
+  /// Development services: the label of the workspace id in Details
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace'**
+  String get servicesWorkspace;
+
+  /// Development services editor: the name field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name.'**
+  String get servicesNameRequired;
+
+  /// Development services editor: another saved service in this project has the same name
+  ///
+  /// In en, this message translates to:
+  /// **'A service with this name already exists.'**
+  String get servicesDuplicateName;
+
+  /// Development services editor: the command field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a command, such as npm run dev.'**
+  String get servicesCommandRequired;
+
+  /// Development services editor: the preview address is not a safe link
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an http or https address without a user name or password.'**
+  String get servicesUrlInvalid;
+
+  /// New task in a fresh worktree: the label of the project path in Details
+  ///
+  /// In en, this message translates to:
+  /// **'Project folder'**
+  String get isolatedTaskProjectFolder;
+
+  /// New task in a fresh worktree: progress stage 1 of 3
+  ///
+  /// In en, this message translates to:
+  /// **'Creating the worktree'**
+  String get isolatedTaskStageCreate;
+
+  /// New task in a fresh worktree: progress stage 2 of 3
+  ///
+  /// In en, this message translates to:
+  /// **'Running the project setup'**
+  String get isolatedTaskStagePrepare;
+
+  /// New task in a fresh worktree: progress stage 3 of 3
+  ///
+  /// In en, this message translates to:
+  /// **'Opening a conversation'**
+  String get isolatedTaskStageOpen;
+
+  /// New task in a fresh worktree: how long creating and setting up a worktree usually takes
+  ///
+  /// In en, this message translates to:
+  /// **'Usually 1–3 minutes'**
+  String get isolatedTaskUsually;
+
+  /// Always allowed actions: one line under the bar saying what the page is for.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions the agent may take in this project without asking you first. Revoke one and the agent asks again.'**
+  String get savedPermissionsIntro;
+
+  /// Always allowed actions: how many actions are allowed in the current project.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 action} other{{count} actions}}'**
+  String savedPermissionsCount(int count);
+
+  /// Always allowed actions: title of the state when the list could not be loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the always allowed actions'**
+  String get savedPermissionsLoadFailed;
+
+  /// Always allowed actions: body of the destructive confirmation that revokes one action.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent will ask you again the next time it wants to do this. Work that is already running keeps going.'**
+  String get savedPermissionsRevokeBody;
+
+  /// Always allowed actions: the line after a revoke; action is the kind of action, such as "Run a shell command".
+  ///
+  /// In en, this message translates to:
+  /// **'{action} now asks you first again.'**
+  String savedPermissionsRevokedDetail(String action);
+
+  /// Always allowed actions: closes the notice that an action was revoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get savedPermissionsDismiss;
+
+  /// Always allowed actions: row menu item that copies the command or file pattern of an allowed action.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy pattern'**
+  String get savedPermissionsCopyPattern;
+
+  /// Always allowed actions: why refresh or revoke cannot run while another change is in progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the current change to finish'**
+  String get savedPermissionsBusy;
+
+  /// Always allowed actions: accessible name of the loading bar while the list refreshes.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading always allowed actions'**
+  String get savedPermissionsLoading;
+
+  /// Always allowed actions: shown for an allowed action that has no command or file pattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything this kind of action touches'**
+  String get savedPermissionsAllResources;
+
+  /// Settings on a wide window: the detail pane before a group is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a group of settings'**
+  String get settingsHubDetailEmpty;
+
+  /// Settings on a wide window: the detail pane while a search is showing results in the list pane.
+  ///
+  /// In en, this message translates to:
+  /// **'Search results are in the list'**
+  String get settingsHubDetailSearching;
+
+  /// Notifications: title of the time picker that sets the start of quiet hours.
+  ///
+  /// In en, this message translates to:
+  /// **'Set when quiet hours start'**
+  String get notifyQuietStartPicker;
+
+  /// Notifications: title of the time picker that sets the end of quiet hours.
+  ///
+  /// In en, this message translates to:
+  /// **'Set when quiet hours end'**
+  String get notifyQuietEndPicker;
+
+  /// Notifications: confirm button of the quiet hours time picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Set'**
+  String get notifyQuietSet;
+
+  /// Notifications: shown under quiet hours end when it equals the start.
+  ///
+  /// In en, this message translates to:
+  /// **'Start and end are the same, so notifications stay quiet all day.'**
+  String get notifyQuietAllDay;
+
+  /// Notifications: why the send test row is resting while a test is on its way.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending a test notification…'**
+  String get notifySendingTest;
+
+  /// Notifications: row in the saved servers section when there are none.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved servers to watch'**
+  String get notifyNoServersTitle;
+
+  /// Notifications: second line of the row shown when there are no saved servers.
+  ///
+  /// In en, this message translates to:
+  /// **'Servers you save can be watched from here, so a request on one reaches you.'**
+  String get notifyNoServersDetail;
+
+  /// Settings pages: closes a notice about a change that failed or finished.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get notifyDismiss;
+
+  /// Notifications: accessible name of the loading bar while a choice is saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get notifySaving;
+
+  /// Notifications: label of the folded details about saved-server monitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'How watching servers works'**
+  String get notifyMonitorDetails;
+
+  /// Notifications: icon button that turns the background connection back on after Android stopped it.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart the live connection'**
+  String get notifyRestartBackground;
+
+  /// Appearance: segment that makes light or dark follow the device.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get appearanceModeSystem;
+
+  /// Appearance › Effects: first tab of the miniature tab bar that shows glass.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get effectsPreviewWork;
+
+  /// Appearance › Effects: second tab of the miniature tab bar that shows glass.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get effectsPreviewSettings;
+
+  /// Privacy and local data: section holding choices that send something to the server.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with your server'**
+  String get privacySharedSection;
+
+  /// Privacy and local data: why the read state switch rests while it saves.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get privacySaving;
+
+  /// Privacy and local data: accessible name of the loading bar while a delete runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting'**
+  String get privacyDeleting;
+
+  /// Privacy and local data: confirm button that deletes the queued prompts, with their count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Delete} one{Delete 1 queued prompt} other{Delete {count} queued prompts}}'**
+  String privacyDeleteQueuedCount(int count);
+
+  /// Privacy and local data: confirm button that deletes the unsent drafts, with their count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Delete} one{Delete 1 draft} other{Delete {count} drafts}}'**
+  String privacyDeleteDraftsCount(int count);
 }
 
 class _AppLocalizationsDelegate

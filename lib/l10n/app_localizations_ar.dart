@@ -5046,61 +5046,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get workspaceManage => 'إدارة';
 
   @override
-  String get workspaceArchivedInAll => 'In All conversations';
-
-  @override
-  String get workspaceDetailEmptyTitle => 'Choose a conversation';
-
-  @override
-  String get workspaceDetailEmptyBody =>
-      'Open a conversation from the list to read and reply here.';
-
-  @override
-  String workspaceContextOn(String server) {
-    return 'On $server';
-  }
-
-  @override
-  String get workspaceContextCurrent => 'In use';
-
-  @override
-  String get workspaceContextNewProject => 'New project';
-
-  @override
-  String get workspaceContextRunsOn => 'Runs on';
-
-  @override
-  String get workspaceContextFolder => 'Folder';
-
-  @override
-  String get workspaceSessionSharedLink => 'Shared link';
-
-  @override
-  String workspaceArchiveFailed(String title) {
-    return 'Couldn\'t archive “$title”. It is back in the list.';
-  }
-
-  @override
-  String get workspaceShareCopiesLink =>
-      'The link is copied once sharing starts.';
-
-  @override
-  String get workspaceDeleteSharedLink => 'Its shared link stops working.';
-
-  @override
-  String get workspaceChooserEnterPath => 'Enter a folder path';
-
-  @override
-  String get workspaceChooserRecentProjects => 'Recent projects';
-
-  @override
-  String get workspaceChooserLoadFailedTitle => 'Couldn\'t load your projects';
-
-  @override
-  String get workspaceChooserLoadFailedBody =>
-      'You can still open a folder by its path.';
-
-  @override
   String get reviewCopiedFile => 'تم نسخ الملف المحدّث';
 
   @override
@@ -22158,4 +22103,498 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitCapNotNow => 'Not now';
+
+  @override
+  String get desktopDropHint => 'Drop to attach';
+
+  @override
+  String get searchClaudeCodeGateTitle => 'Not on this device';
+
+  @override
+  String get searchClaudeCodeGateDevice =>
+      'Claude Code runs on a phone only through Termux, which this device doesn\'t have. Run it on a computer with Paseo and add that computer as a server.';
+
+  @override
+  String get searchClaudeCodeGateDesktop =>
+      'Claude Code on this phone is for Android phones with Termux. On a computer, run Claude Code with Paseo and add it as a server.';
+
+  @override
+  String get searchClaudeCodeGateServers => 'Open servers';
+
+  @override
+  String get activityFinishedAway => 'Finished while you were away';
+
+  @override
+  String get activityDigestHidden => 'Digest hidden';
+
+  @override
+  String get activityOpenFailedTitle => 'Couldn\'t open conversation';
+
+  @override
+  String get activityLoading => 'Loading the Inbox';
+
+  @override
+  String get activityPickRequest => 'Pick a request';
+
+  @override
+  String get activityPickRequestDetail =>
+      'Choose one from the list to answer it here.';
+
+  @override
+  String activityAllowOnceFailed(String reason) {
+    return 'Not sent: $reason';
+  }
+
+  @override
+  String get activitySendOffline => 'Reconnect to the server to answer.';
+
+  @override
+  String get activityLastSeenRunning => 'Last seen running';
+
+  @override
+  String get activityIfIgnored => 'The agent waits; nothing is lost.';
+
+  @override
+  String activityPermissionAnnouncement(String title) {
+    return 'Permission needed: $title';
+  }
+
+  @override
+  String activityFormAnnouncement(String title) {
+    return 'Input requested: $title';
+  }
+
+  @override
+  String get activityAnswerEveryQuestion => 'Answer every question first.';
+
+  @override
+  String get activitySending => 'Sending…';
+
+  @override
+  String activityQuestionProgress(int index, int total) {
+    return 'Question $index of $total';
+  }
+
+  @override
+  String get activityOwnAnswer => 'Or write your own answer';
+
+  @override
+  String get shortcutsPaletteSearch => 'Search commands and settings';
+
+  @override
+  String get shortcutsHelpAnywhere => 'Anywhere';
+
+  @override
+  String get shortcutsHelpConversation => 'In a conversation';
+
+  @override
+  String get homeShellProjectUnavailable => 'Project isn\'t available';
+
+  @override
+  String homeShellProjectUnavailableReason(String server) {
+    return '$server doesn\'t offer files, changes or code search. Connect to an OpenCode server to use them.';
+  }
+
+  @override
+  String homeShellProjectUnavailableShort(String server) {
+    return '$server has no project tools.';
+  }
+
+  @override
+  String get workspaceArchivedInAll => 'In All conversations';
+
+  @override
+  String get workspaceDetailEmptyTitle => 'Choose a conversation';
+
+  @override
+  String get workspaceDetailEmptyBody =>
+      'Open a conversation from the list to read and reply here.';
+
+  @override
+  String workspaceContextOn(String server) {
+    return 'On $server';
+  }
+
+  @override
+  String get workspaceContextCurrent => 'In use';
+
+  @override
+  String get workspaceContextNewProject => 'New project';
+
+  @override
+  String get workspaceContextRunsOn => 'Runs on';
+
+  @override
+  String get workspaceContextFolder => 'Folder';
+
+  @override
+  String get workspaceSessionSharedLink => 'Shared link';
+
+  @override
+  String workspaceArchiveFailed(String title) {
+    return 'Couldn\'t archive “$title”. It is back in the list.';
+  }
+
+  @override
+  String get workspaceShareCopiesLink =>
+      'The link is copied once sharing starts.';
+
+  @override
+  String get workspaceDeleteSharedLink => 'Its shared link stops working.';
+
+  @override
+  String get workspaceChooserEnterPath => 'Enter a folder path';
+
+  @override
+  String get workspaceChooserRecentProjects => 'Recent projects';
+
+  @override
+  String get workspaceChooserLoadFailedTitle => 'Couldn\'t load your projects';
+
+  @override
+  String get workspaceChooserLoadFailedBody =>
+      'You can still open a folder by its path.';
+
+  @override
+  String get managedWorkspacesRefresh => 'Refresh';
+
+  @override
+  String get managedWorkspacesDiscovered => 'Discovery finished';
+
+  @override
+  String get managedWorkspacesDiscoverFailed =>
+      'Couldn’t discover environments';
+
+  @override
+  String get managedWorkspacesCreateFailed => 'Couldn’t create the environment';
+
+  @override
+  String managedWorkspacesOpenFailed(String name) {
+    return 'Couldn’t open $name';
+  }
+
+  @override
+  String managedWorkspacesRemoveTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String managedWorkspacesRemoveBody(String provider) {
+    return 'The server asks $provider to delete this environment and what is in it.';
+  }
+
+  @override
+  String get managedWorkspacesRemoveLeavesFirst =>
+      'It is open now, so the app goes back to the project folder first.';
+
+  @override
+  String get managedWorkspacesRemoveHistoryStays =>
+      'Conversations stay in history but can no longer open it.';
+
+  @override
+  String get managedWorkspacesRemoveAction => 'Remove';
+
+  @override
+  String managedWorkspacesRemoved(String name) {
+    return '$name was removed';
+  }
+
+  @override
+  String get managedWorkspacesProviders => 'Providers';
+
+  @override
+  String get managedWorkspacesProvider => 'Provider';
+
+  @override
+  String get managedWorkspacesProvidersFailed => 'Couldn’t load providers';
+
+  @override
+  String get managedWorkspacesNoProviderTitle => 'No provider set up';
+
+  @override
+  String get managedWorkspacesNoProviderBody =>
+      'This server has no cloud environment provider. Add one to OpenCode’s config on the server, then refresh.';
+
+  @override
+  String managedWorkspacesEmptyBody(String project) {
+    return 'Environments for $project appear here. Create one, or discover the ones a provider already has.';
+  }
+
+  @override
+  String get managedWorkspacesLoadFailed => 'Couldn’t load cloud environments';
+
+  @override
+  String get managedWorkspacesCreating => 'Creating a cloud environment';
+
+  @override
+  String get managedWorkspacesCreatingBody =>
+      'This usually takes a few minutes. It opens here when it’s ready.';
+
+  @override
+  String get managedWorkspacesCreateTakes =>
+      'Creating one usually takes a few minutes. It opens here when it’s ready.';
+
+  @override
+  String get managedWorkspacesBranchLabel => 'Branch';
+
+  @override
+  String get managedWorkspacesBranchHelper =>
+      'Leave empty to use the provider’s default branch.';
+
+  @override
+  String get managedWorkspacesInUse => 'In use';
+
+  @override
+  String get managedWorkspacesCopyId => 'Copy ID';
+
+  @override
+  String get projectHealthGitInitSupporting =>
+      'Runs git init here. Nothing is committed.';
+
+  @override
+  String get projectHealthSetUp => 'Set up';
+
+  @override
+  String projectHealthRunningOf(int running, int total) {
+    return '$running of $total running';
+  }
+
+  @override
+  String projectHealthOnOf(int on, int total) {
+    return '$on of $total on';
+  }
+
+  @override
+  String get projectHealthRunning => 'Running';
+
+  @override
+  String get projectHealthNotRunning => 'Not running';
+
+  @override
+  String projectHealthLineCounts(int added, int removed) {
+    return '$added lines added, $removed removed';
+  }
+
+  @override
+  String projectFolderCreateHelper(String directory) {
+    return 'Made in $directory on this phone and opened as the project.';
+  }
+
+  @override
+  String get projectFolderMissingTitle => 'No folder there';
+
+  @override
+  String get projectFolderCreateFailedTitle => 'Couldn’t create the folder';
+
+  @override
+  String get projectFolderOpenFailedTitle => 'Couldn’t open the folder';
+
+  @override
+  String get projectsOneFolderTitle => 'This server works in one folder';
+
+  @override
+  String servicesStarted(String name) {
+    return '$name started';
+  }
+
+  @override
+  String servicesRemoved(String name) {
+    return '$name removed';
+  }
+
+  @override
+  String servicesStopTitle(String name) {
+    return 'Stop $name?';
+  }
+
+  @override
+  String servicesRestartTitle(String name) {
+    return 'Restart $name?';
+  }
+
+  @override
+  String servicesForgetTitle(String name) {
+    return 'Forget the last run of $name?';
+  }
+
+  @override
+  String servicesRemoveTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get servicesRemoveRunningHint =>
+      'Its command keeps running on the server, and this app can no longer stop it. Stop it first to end it.';
+
+  @override
+  String get servicesEmptyTitle => 'No dev commands yet';
+
+  @override
+  String get servicesOffline =>
+      'The server is not answering. Commands cannot be started or checked until it reconnects.';
+
+  @override
+  String get servicesLogFailed => 'Could not read the log.';
+
+  @override
+  String get servicesProjectFolder => 'Project folder';
+
+  @override
+  String get servicesWorkspace => 'Workspace';
+
+  @override
+  String get servicesNameRequired => 'Enter a name.';
+
+  @override
+  String get servicesDuplicateName =>
+      'A service with this name already exists.';
+
+  @override
+  String get servicesCommandRequired => 'Enter a command, such as npm run dev.';
+
+  @override
+  String get servicesUrlInvalid =>
+      'Enter an http or https address without a user name or password.';
+
+  @override
+  String get isolatedTaskProjectFolder => 'Project folder';
+
+  @override
+  String get isolatedTaskStageCreate => 'Creating the worktree';
+
+  @override
+  String get isolatedTaskStagePrepare => 'Running the project setup';
+
+  @override
+  String get isolatedTaskStageOpen => 'Opening a conversation';
+
+  @override
+  String get isolatedTaskUsually => 'Usually 1–3 minutes';
+
+  @override
+  String get savedPermissionsIntro =>
+      'Actions the agent may take in this project without asking you first. Revoke one and the agent asks again.';
+
+  @override
+  String savedPermissionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actions',
+      one: '1 action',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get savedPermissionsLoadFailed =>
+      'Could not load the always allowed actions';
+
+  @override
+  String get savedPermissionsRevokeBody =>
+      'The agent will ask you again the next time it wants to do this. Work that is already running keeps going.';
+
+  @override
+  String savedPermissionsRevokedDetail(String action) {
+    return '$action now asks you first again.';
+  }
+
+  @override
+  String get savedPermissionsDismiss => 'Dismiss';
+
+  @override
+  String get savedPermissionsCopyPattern => 'Copy pattern';
+
+  @override
+  String get savedPermissionsBusy => 'Wait for the current change to finish';
+
+  @override
+  String get savedPermissionsLoading => 'Loading always allowed actions';
+
+  @override
+  String get savedPermissionsAllResources =>
+      'Anything this kind of action touches';
+
+  @override
+  String get settingsHubDetailEmpty => 'Choose a group of settings';
+
+  @override
+  String get settingsHubDetailSearching => 'Search results are in the list';
+
+  @override
+  String get notifyQuietStartPicker => 'Set when quiet hours start';
+
+  @override
+  String get notifyQuietEndPicker => 'Set when quiet hours end';
+
+  @override
+  String get notifyQuietSet => 'Set';
+
+  @override
+  String get notifyQuietAllDay =>
+      'Start and end are the same, so notifications stay quiet all day.';
+
+  @override
+  String get notifySendingTest => 'Sending a test notification…';
+
+  @override
+  String get notifyNoServersTitle => 'No saved servers to watch';
+
+  @override
+  String get notifyNoServersDetail =>
+      'Servers you save can be watched from here, so a request on one reaches you.';
+
+  @override
+  String get notifyDismiss => 'Dismiss';
+
+  @override
+  String get notifySaving => 'Saving';
+
+  @override
+  String get notifyMonitorDetails => 'How watching servers works';
+
+  @override
+  String get notifyRestartBackground => 'Restart the live connection';
+
+  @override
+  String get appearanceModeSystem => 'System';
+
+  @override
+  String get effectsPreviewWork => 'Work';
+
+  @override
+  String get effectsPreviewSettings => 'Settings';
+
+  @override
+  String get privacySharedSection => 'Shared with your server';
+
+  @override
+  String get privacySaving => 'Saving…';
+
+  @override
+  String get privacyDeleting => 'Deleting';
+
+  @override
+  String privacyDeleteQueuedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Delete $count queued prompts',
+      one: 'Delete 1 queued prompt',
+      zero: 'Delete',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String privacyDeleteDraftsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Delete $count drafts',
+      one: 'Delete 1 draft',
+      zero: 'Delete',
+    );
+    return '$_temp0';
+  }
 }
