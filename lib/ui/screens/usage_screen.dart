@@ -7,15 +7,48 @@ import '../../api2/transport.dart';
 import '../../domain/server_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../../state/usage_overview.dart';
 import '../../state/usage_budgets.dart';
+import '../../state/usage_overview.dart';
+import '../app_theme.dart';
+import '../kit/kit_bidi.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_capability_explainer.dart';
+import '../kit/kit_choice_list.dart';
+import '../kit/kit_sheet.dart';
+import '../kit/kit_details_fold.dart';
+import '../kit/kit_dialog.dart';
+import '../kit/kit_field.dart';
+import '../kit/kit_icon_button.dart';
+import '../kit/kit_menu.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_progress_row.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_screen.dart';
+import '../kit/kit_search_field.dart';
+import '../kit/kit_state_view.dart';
+import '../kit/kit_surface.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
+import '../kit/kit_top_bar.dart';
+import '../kit/motion/kit_refresh.dart';
 import '../widgets/product_states.dart';
-import '../app_iconography.dart';
-import '../kit/kit.dart';
 
 AppLocalizations _strings(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
+/// Spent: what the connected OpenCode 2 server reports it used, for a date
+/// range and a project scope, with the person's own budgets.
+///
+/// Order (map `usage`, owner verdict "Rethink"): the total first, then the
+/// range and scope that shape it, then the budgets, then the breakdowns
+/// (activity, tokens, providers, models, tools). The long explanations of
+/// what the numbers are and are not fold under one Details at the end; the
+/// one sentence that this is not the provider's bill stays visible.
+/// Deeper restructuring (sentences, filters in a sheet) is deferred to
+/// slice-P5.4.
+///
+/// A server without usage statistics is explained in place
+/// (KitCapabilityExplainer, `server.oc2`) instead of an error line.
 class UsageScreen extends StatefulWidget {
   final ConnectionController controller;
   final UsageOverview? overview;
@@ -37,6 +70,11 @@ class _UsageScreenState extends State<UsageScreen> {
   late final UsageOverview _overview =
       widget.overview ?? UsageOverview(widget.controller);
   late final UsageBudgets _budgets;
+  late final TextEditingController _search = TextEditingController(
+    text: _overview.modelSearch,
+  );
+  late int _filterRevision = _overview.filterRevision;
+
   @override
   void initState() {
     super.initState();
@@ -56,13 +94,25 @@ class _UsageScreenState extends State<UsageScreen> {
           widget.controller.isProfileReadable(id),
       isProfilePresent: () => widget.controller.isProfileReadable(id),
     );
+    _overview.addListener(_syncSearch);
     unawaited(_overview.refresh());
+  }
+
+  /// A new range or scope resets the inspection filters; the field follows.
+  void _syncSearch() {
+    if (_overview.filterRevision == _filterRevision) return;
+    _filterRevision = _overview.filterRevision;
+    if (_search.text != _overview.modelSearch) {
+      _search.text = _overview.modelSearch;
+    }
   }
 
   @override
   void dispose() {
+    _overview.removeListener(_syncSearch);
     if (widget.overview == null) _overview.dispose();
     _budgets.dispose();
+    _search.dispose();
     super.dispose();
   }
 
@@ -82,148 +132,296 @@ class _UsageScreenState extends State<UsageScreen> {
     listenable: Listenable.merge([_overview, _budgets]),
     builder: (context, _) {
       final l10n = _strings(context);
+      final tokens = KitTokens.of(context);
       final snapshot = _overview.snapshot;
       final unsupported = _overview.error is UsageUnsupported;
       final available = !_overview.detached && !unsupported;
-      final refresh = IconButton(
-        key: const ValueKey('refresh-usage'),
-        tooltip: l10n.usageRefresh,
-        onPressed: available && !_overview.loading ? _overview.refresh : null,
-        icon: const Icon(AppIconography.retry),
-      );
-      final description = Text(
+      final canRefresh = available && !_overview.loading;
+      final description = KitText(
         l10n.usageDescription,
-        style: Theme.of(context).textTheme.bodyMedium,
+        role: KitTextRole.secondary,
       );
-      final body = SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 860),
-            child: KitRefresh(
-              onRefresh: _overview.refresh,
-              child: ListView(
-                key: const ValueKey('usage-content'),
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      Widget gap([double? height]) => SizedBox(height: height ?? tokens.space4);
+      final body = KitRefresh(
+        onRefresh: _overview.refresh,
+        child: ListView(
+          key: const ValueKey('usage-content'),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: KitScreen.padding(context),
+          children: [
+            SizedBox(height: tokens.space3),
+            // Inside Usage there is no bar of its own to hold Refresh, so
+            // it sits beside the description.
+            if (widget.embedded)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Inside Usage there is no app bar of its own to hold
-                  // Refresh, so it sits beside the description.
-                  if (widget.embedded)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: description),
-                        refresh,
-                      ],
-                    )
-                  else
-                    description,
-                  const SizedBox(height: 16),
-                  if (available) ...[
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: [
-                        for (final range in UsageRange.values)
-                          ChoiceChip(
-                            key: ValueKey('usage-range-${range.name}'),
-                            showCheckmark: false,
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            labelPadding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                            ),
-                            label: Text(switch (range) {
-                              UsageRange.today => l10n.usageToday,
-                              UsageRange.thirtyDays => l10n.usageThirtyDays,
-                              UsageRange.year => l10n.usageYear,
-                              UsageRange.allTime => l10n.usageAllTime,
-                            }),
-                            selected: _overview.range == range,
-                            onSelected: (_) =>
-                                unawaited(_overview.setRange(range)),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<UsageScope>(
-                      key: ValueKey('usage-scope-${_overview.scope.name}'),
-                      initialValue: _overview.scope,
-                      isExpanded: true,
-                      decoration: InputDecoration(
-                        labelText: l10n.usageScope,
-                        border: const OutlineInputBorder(),
-                      ),
-                      items: [
-                        DropdownMenuItem(
-                          value: UsageScope.allProjects,
-                          child: Text(l10n.usageAllProjects),
-                        ),
-                        DropdownMenuItem(
-                          value: UsageScope.currentProject,
-                          child: Text(l10n.usageCurrentProject),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          unawaited(_overview.setScope(value));
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                  if (_overview.loading) ...[
-                    LinearProgressIndicator(semanticsLabel: l10n.usageLoading),
-                    if (snapshot != null) Text(l10n.usagePreviousResult),
-                    const SizedBox(height: 12),
-                  ],
-                  if (_overview.detached) Text(l10n.usageLocationChanged),
-                  if (_overview.error case final error?) ...[
-                    Text(
-                      _error(error, l10n),
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                    if (snapshot != null) Text(l10n.usagePreviousResult),
-                    if (available)
-                      Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: TextButton(
+                  Expanded(child: description),
+                  KitIconButton(
+                    key: const ValueKey('refresh-usage'),
+                    icon: AppIconography.retry,
+                    tooltip: l10n.usageRefresh,
+                    onPressed: canRefresh ? _overview.refresh : null,
+                    disabledReason: canRefresh ? null : l10n.usageLoading,
+                  ),
+                ],
+              )
+            else
+              description,
+            if (_overview.detached) ...[
+              gap(),
+              KitNotice(
+                icon: AppIconography.swap,
+                message: l10n.usageLocationChanged,
+              ),
+            ],
+            if (!unsupported)
+              if (_overview.error case final error?) ...[
+                gap(),
+                KitNotice.error(
+                  message: _error(error, l10n),
+                  error: error,
+                  reportSource: 'usage',
+                  retry: available
+                      ? KitAction(
+                          label: l10n.usageRefresh,
+                          icon: AppIconography.retry,
                           onPressed: _overview.loading
                               ? null
                               : _overview.refresh,
-                          child: Text(l10n.usageRefresh),
-                        ),
-                      ),
-                    const SizedBox(height: 12),
-                  ],
-                  if (snapshot != null && _budgets.available) ...[
-                    _UsageBudgetControls(
-                      budgets: _budgets,
-                      snapshot: snapshot,
-                      enabled:
-                          available &&
-                          !_overview.loading &&
-                          _overview.error == null,
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                  if (snapshot != null)
-                    _UsageReport(snapshot: snapshot, overview: _overview),
+                        )
+                      : null,
+                ),
+              ],
+            if (snapshot != null &&
+                (_overview.loading || _overview.error != null)) ...[
+              SizedBox(height: tokens.space2),
+              KitText(l10n.usagePreviousResult, role: KitTextRole.secondary),
+            ],
+            if (snapshot != null) ...[gap(), _UsageTotal(snapshot: snapshot)],
+            if (available) ...[
+              SizedBox(height: tokens.sectionGap),
+              _UsageFilters(overview: _overview),
+            ],
+            if (snapshot != null && _budgets.available) ...[
+              SizedBox(height: tokens.sectionGap),
+              _UsageBudgetControls(
+                budgets: _budgets,
+                snapshot: snapshot,
+                enabled:
+                    available && !_overview.loading && _overview.error == null,
+              ),
+            ],
+            if (snapshot != null && !snapshot.statistics.isEmpty)
+              _UsageReport(
+                snapshot: snapshot,
+                overview: _overview,
+                search: _search,
+              ),
+            if (snapshot != null) ...[
+              SizedBox(height: tokens.sectionGap),
+              KitText(
+                l10n.usageUpdated(
+                  DateFormat.Hm(
+                    Localizations.localeOf(context).toLanguageTag(),
+                  ).format(snapshot.fetchedAt.toLocal()),
+                ),
+                role: KitTextRole.caption,
+              ),
+              SizedBox(height: tokens.space2),
+              KitText(l10n.usageCostDisclosure, role: KitTextRole.secondary),
+              gap(),
+              KitDetailsFold(
+                label: l10n.usageAboutNumbers,
+                notes: [
+                  l10n.usageProviderScope,
+                  l10n.usageScopedProviderTotals,
+                  l10n.usageInspectionDisclosure,
+                  l10n.usageBudgetDescription,
                 ],
               ),
-            ),
-          ),
+            ],
+          ],
         ),
       );
-      if (widget.embedded) return body;
-      return Scaffold(
-        appBar: AppBar(title: Text(l10n.usageTitle), actions: [refresh]),
-        body: body,
+      return KitScreen(
+        topBar: widget.embedded
+            ? null
+            : KitTopBar(
+                title: l10n.usageTitle,
+                actions: [
+                  if (!unsupported)
+                    KitAction(
+                      key: const ValueKey('refresh-usage'),
+                      label: l10n.usageRefresh,
+                      icon: AppIconography.retry,
+                      onPressed: canRefresh ? _overview.refresh : null,
+                      disabledReason: canRefresh ? null : l10n.usageLoading,
+                    ),
+                ],
+              ),
+        width: KitScreenWidth.reading,
+        loading: _overview.loading,
+        loadingLabel: l10n.usageLoading,
+        // The whole page is the missing feature: say why, and offer the
+        // switch where this phone's server can make it.
+        body: unsupported
+            ? KitCapabilityExplainer.state(
+                key: const ValueKey('usage-unsupported'),
+                capability: 'server.oc2',
+                serverName: widget.controller.profile?.name,
+                size: KitStateSize.page,
+                source: 'usage',
+              )
+            : body,
       );
     },
   );
+}
+
+/// A section's name above its content (sentence case, a header for
+/// assistive technology): the label KitRowGroup draws, for content that is
+/// not a row panel.
+class _Label extends StatelessWidget {
+  const _Label(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.space1,
+        end: tokens.space1,
+        bottom: tokens.labelGap,
+      ),
+      child: Semantics(
+        header: true,
+        child: KitText(text, role: KitTextRole.label),
+      ),
+    );
+  }
+}
+
+/// The answer first: the reported cost for the range, and which days and
+/// project it covers.
+class _UsageTotal extends StatelessWidget {
+  const _UsageTotal({required this.snapshot});
+  final UsageSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _strings(context);
+    final tokens = KitTokens.of(context);
+    final stats = snapshot.statistics;
+    final date = DateFormat.yMMMd(
+      Localizations.localeOf(context).toLanguageTag(),
+    );
+    final period = l10n.usagePeriod(
+      date.format(DateTime.fromMillisecondsSinceEpoch(stats.from)),
+      date.format(
+        DateTime.fromMillisecondsSinceEpoch(
+          stats.to > stats.from ? stats.to - 1 : stats.to,
+        ),
+      ),
+    );
+    return KitSurface.panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          KitText(l10n.usageReportedCost, role: KitTextRole.label),
+          SizedBox(height: tokens.space1),
+          KitText(
+            _money(context, stats.cost),
+            key: const ValueKey('usage-total-cost'),
+            role: KitTextRole.largeTitle,
+            tabular: true,
+          ),
+          SizedBox(height: tokens.space2),
+          KitText(
+            [
+              if (snapshot.projectName case final name?) KitBidi.auto(name),
+              period,
+            ].join(' · '),
+            role: KitTextRole.secondary,
+          ),
+          KitText(
+            l10n.usageTimezone(snapshot.query.timezone),
+            role: KitTextRole.caption,
+          ),
+          if (stats.isEmpty) ...[
+            SizedBox(height: tokens.space3),
+            KitText(l10n.usageEmpty),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The range and the project scope: what the total above covers.
+class _UsageFilters extends StatelessWidget {
+  const _UsageFilters({required this.overview});
+  final UsageOverview overview;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _strings(context);
+    String rangeLabel(UsageRange range) => switch (range) {
+      UsageRange.today => l10n.usageToday,
+      UsageRange.thirtyDays => l10n.usageThirtyDays,
+      UsageRange.year => l10n.usageYear,
+      UsageRange.allTime => l10n.usageAllTime,
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        KitRowGroup(
+          margin: EdgeInsetsDirectional.zero,
+          leadingIcons: true,
+          children: [
+            // A picker, not a segmented control: four ranges do not fit
+            // one line at phone width until KitSegmented stacks (contract
+            // problem in the QA record).
+            KitPickerRow<UsageRange>(
+              rowKey: ValueKey('usage-range-${overview.range.name}'),
+              leading: KitRow.icon(context, AppIconography.calendar),
+              title: l10n.usageRangeLabel,
+              selected: overview.range,
+              onSelected: (range) => unawaited(overview.setRange(range)),
+              choices: [
+                for (final range in UsageRange.values)
+                  KitChoice(
+                    key: ValueKey('usage-range-choice-${range.name}'),
+                    value: range,
+                    title: rangeLabel(range),
+                  ),
+              ],
+            ),
+            KitPickerRow<UsageScope>(
+              rowKey: ValueKey('usage-scope-${overview.scope.name}'),
+              leading: KitRow.icon(context, AppIconography.projects),
+              title: l10n.usageScope,
+              selected: overview.scope,
+              onSelected: (scope) => unawaited(overview.setScope(scope)),
+              choices: [
+                KitChoice(
+                  value: UsageScope.allProjects,
+                  title: l10n.usageAllProjects,
+                ),
+                KitChoice(
+                  value: UsageScope.currentProject,
+                  title: l10n.usageCurrentProject,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
 class _UsageBudgetControls extends StatelessWidget {
@@ -236,172 +434,167 @@ class _UsageBudgetControls extends StatelessWidget {
     required this.enabled,
   });
 
+  BigInt get _tokenTotal {
+    final tokens = snapshot.statistics.tokens;
+    return [
+      tokens.input,
+      tokens.output,
+      tokens.reasoning,
+      tokens.cacheRead,
+      tokens.cacheWrite,
+    ].fold<BigInt>(BigInt.zero, (sum, value) => sum + BigInt.from(value));
+  }
+
+  bool _reached(UsageBudgetUnit unit, num limit) => unit == UsageBudgetUnit.usd
+      ? snapshot.statistics.cost >= limit
+      : _tokenTotal >= BigInt.from(limit);
+
+  /// The budget amount as one short text entry. Remove is offered only
+  /// when a budget exists; it can be set again, so it is not destructive.
   Future<void> _edit(BuildContext context, UsageBudgetUnit unit) async {
     final l10n = _strings(context);
-    final controller = TextEditingController(
-      text: budgets.limit(snapshot, unit)?.toString() ?? '',
-    );
-    final form = GlobalKey<FormState>();
-    final route = DialogRoute<num>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          unit == UsageBudgetUnit.usd
-              ? l10n.usageBudgetUsd
-              : l10n.usageBudgetTokens,
-        ),
-        content: SingleChildScrollView(
-          child: Form(
-            key: form,
-            child: TextFormField(
-              controller: controller,
-              autofocus: true,
-              keyboardType: TextInputType.numberWithOptions(
-                decimal: unit == UsageBudgetUnit.usd,
-              ),
-              decoration: InputDecoration(labelText: l10n.usageBudgetAmount),
-              validator: (value) =>
-                  UsageBudgets.validLimit(
-                    num.tryParse(value?.trim() ?? ''),
-                    unit,
-                  )
-                  ? null
-                  : l10n.usageBudgetInvalid,
+    final current = budgets.limit(snapshot, unit);
+    final usd = unit == UsageBudgetUnit.usd;
+    final text = await showKitInputDialog(
+      context,
+      title: usd ? l10n.usageBudgetUsd : l10n.usageBudgetTokens,
+      label: l10n.usageBudgetAmount,
+      confirmLabel: l10n.fileSave,
+      cancelLabel: l10n.workCancel,
+      // showKitInputDialog has no `decimal` switch yet, and the number
+      // kind is digits only: a dollar amount like 2.50 needs the text kind
+      // (contract problem in docs/qa/revamp-screen-usage-1).
+      kind: usd ? KitFieldKind.text : KitFieldKind.number,
+      initial: current?.toString(),
+      helper: usd ? l10n.usageBudgetHelperUsd : l10n.usageBudgetHelperTokens,
+      validate: (value) =>
+          UsageBudgets.validLimit(num.tryParse(value.trim()), unit)
+          ? null
+          : l10n.usageBudgetInvalid,
+      alternative: current == null
+          ? null
+          : KitAction(
+              key: ValueKey('usage-budget-remove-${unit.name}'),
+              label: l10n.usageBudgetRemove,
+              icon: AppIconography.removeCircle,
+              onPressed: () => unawaited(budgets.save(snapshot, unit, null)),
             ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, -1),
-            child: Text(l10n.usageBudgetRemove),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.workCancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (form.currentState!.validate()) {
-                Navigator.pop(context, num.parse(controller.text.trim()));
-              }
-            },
-            child: Text(l10n.fileSave),
-          ),
-        ],
-      ),
+      fieldKey: const ValueKey('usage-budget-amount'),
     );
-    final result = await Navigator.of(context).push(route);
-    await route.completed;
-    controller.dispose();
-    if (result != null) {
-      await budgets.save(snapshot, unit, result == -1 ? null : result);
-    }
+    if (text == null) return;
+    final value = num.tryParse(text.trim());
+    if (value != null) await budgets.save(snapshot, unit, value);
+  }
+
+  Future<void> _clear(BuildContext context) async {
+    final l10n = _strings(context);
+    final clear = await showKitConfirm(
+      context,
+      title: l10n.usageBudgetClearTitle,
+      body: l10n.usageBudgetClearDescription,
+      confirmLabel: l10n.usageBudgetClearConfirm,
+      icon: AppIconography.delete,
+      kind: KitConfirmKind.destructive,
+    );
+    if (clear) await budgets.clearAll();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = _strings(context);
+    final tokens = KitTokens.of(context);
+    final format = NumberFormat.decimalPattern(
+      Localizations.localeOf(context).toLanguageTag(),
+    );
+    final canEdit = enabled && !budgets.saving;
+    var reached = false;
+    final rows = <Widget>[];
+    for (final unit in UsageBudgetUnit.values) {
+      final usd = unit == UsageBudgetUnit.usd;
+      final limit = budgets.limit(snapshot, unit);
+      final key = ValueKey('usage-budget-${unit.name}');
+      if (limit == null) {
+        rows.add(
+          KitRow(
+            key: key,
+            leading: KitRow.icon(
+              context,
+              usd ? AppIconography.usage : AppIconography.dataObject,
+            ),
+            title: usd ? l10n.usageBudgetUsd : l10n.usageBudgetTokens,
+            trailing: KitRowValue(l10n.usageBudgetNotSet),
+            enabled: canEdit,
+            disabledReason: canEdit ? null : l10n.usageBudgetWaitReason,
+            onTap: canEdit ? () => _edit(context, unit) : null,
+          ),
+        );
+        continue;
+      }
+      final used = usd ? snapshot.statistics.cost : _tokenTotal.toDouble();
+      reached = reached || _reached(unit, limit);
+      rows.add(
+        KitProgressRow(
+          key: key,
+          leading: KitRow.icon(
+            context,
+            usd ? AppIconography.usage : AppIconography.dataObject,
+          ),
+          title: usd ? l10n.usageBudgetUsdTitle : l10n.usageBudgetTokensTitle,
+          value: limit > 0 ? used / limit : 1,
+          valueLabel: l10n.usageBudgetProgress(
+            usd
+                ? format.format(snapshot.statistics.cost)
+                : _count(format, _tokenTotal),
+            format.format(limit),
+            usd ? 'USD' : l10n.usageBudgetTokenUnit,
+          ),
+          onTap: canEdit ? () => _edit(context, unit) : null,
+        ),
+      );
+    }
+    rows.add(
+      KitRow(
+        key: const ValueKey('usage-budget-clear'),
+        leading: KitRow.icon(context, AppIconography.delete),
+        title: l10n.usageBudgetClearAll,
+        destructive: true,
+        enabled: !budgets.saving,
+        disabledReason: budgets.saving ? l10n.usageBudgetWaitReason : null,
+        onTap: budgets.saving ? null : () => _clear(context),
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          l10n.usageBudgetTitle,
-          style: Theme.of(context).textTheme.titleMedium,
+        if (budgets.failed) ...[
+          KitNotice.error(message: l10n.quotaBudgetSaveFailed),
+          SizedBox(height: tokens.space3),
+        ],
+        KitRowGroup(
+          margin: EdgeInsetsDirectional.zero,
+          label: l10n.usageBudgetTitle,
+          children: rows,
         ),
-        Text(l10n.usageBudgetDescription),
-        if (budgets.failed)
-          Text(
-            l10n.quotaBudgetSaveFailed,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
-          ),
-        for (final unit in UsageBudgetUnit.values) ...[
-          const SizedBox(height: 8),
-          Builder(
-            builder: (context) {
-              final limit = budgets.limit(snapshot, unit);
-              final tokens = snapshot.statistics.tokens;
-              final tokenTotal =
-                  [
-                    tokens.input,
-                    tokens.output,
-                    tokens.reasoning,
-                    tokens.cacheRead,
-                    tokens.cacheWrite,
-                  ].fold<BigInt>(
-                    BigInt.zero,
-                    (sum, value) => sum + BigInt.from(value),
-                  );
-              final format = NumberFormat.decimalPattern(
-                Localizations.localeOf(context).toLanguageTag(),
-              );
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (limit != null)
-                    Text(
-                      l10n.usageBudgetProgress(
-                        unit == UsageBudgetUnit.usd
-                            ? format.format(snapshot.statistics.cost)
-                            : tokenTotal.toString(),
-                        format.format(limit),
-                        unit == UsageBudgetUnit.usd
-                            ? 'USD'
-                            : l10n.usageBudgetTokenUnit,
-                      ),
-                    ),
-                  if (limit != null &&
-                      (unit == UsageBudgetUnit.usd
-                          ? snapshot.statistics.cost >= limit
-                          : tokenTotal >= BigInt.from(limit)))
-                    Text(
-                      enabled
-                          ? l10n.usageBudgetReached
-                          : l10n.usageBudgetPrevious,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: TextButton(
-                      key: ValueKey('usage-budget-${unit.name}'),
-                      onPressed: enabled && !budgets.saving
-                          ? () => _edit(context, unit)
-                          : null,
-                      child: Text(
-                        unit == UsageBudgetUnit.usd
-                            ? l10n.usageBudgetUsd
-                            : l10n.usageBudgetTokens,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
+        if (reached) ...[
+          SizedBox(height: tokens.space3),
+          KitNotice(
+            key: const ValueKey('usage-budget-reached'),
+            icon: AppIconography.warning,
+            message: enabled
+                ? l10n.usageBudgetReached
+                : l10n.usageBudgetPrevious,
           ),
         ],
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: TextButton(
-            onPressed: budgets.saving
-                ? null
-                : () async {
-                    final clear = await showKitConfirm(
-                      context,
-                      title: l10n.usageBudgetClearTitle,
-                      body: l10n.usageBudgetClearDescription,
-                      confirmLabel: l10n.usageBudgetClearAll,
-                      kind: KitConfirmKind.destructive,
-                    );
-                    if (clear) await budgets.clearAll();
-                  },
-            child: Text(l10n.usageBudgetClearAll),
-          ),
-        ),
       ],
     );
   }
 }
+
+/// A count grouped like the other figures; a sum too large for an int
+/// (never seen in practice) falls back to plain digits.
+String _count(NumberFormat number, BigInt value) =>
+    value.isValidInt ? number.format(value.toInt()) : value.toString();
 
 String _money(BuildContext context, double value) {
   final locale = Localizations.localeOf(context).toLanguageTag();
@@ -414,20 +607,26 @@ String _money(BuildContext context, double value) {
   ).format(value);
 }
 
+/// The breakdowns under the total: activity, tokens, providers, models and
+/// tool reliability.
 class _UsageReport extends StatelessWidget {
   final UsageSnapshot snapshot;
   final UsageOverview overview;
-  const _UsageReport({required this.snapshot, required this.overview});
+  final TextEditingController search;
+  const _UsageReport({
+    required this.snapshot,
+    required this.overview,
+    required this.search,
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = _strings(context);
+    final tokens = KitTokens.of(context);
     final stats = snapshot.statistics;
-    final theme = Theme.of(context);
     final locale = Localizations.localeOf(context).toLanguageTag();
     final number = NumberFormat.decimalPattern(locale);
-    final date = DateFormat.yMMMd(locale);
-    final time = DateFormat.Hm(locale);
+    final percent = NumberFormat.percentPattern(locale);
     final tools = stats.tools;
     final providers = stats.providers;
     final models = overview.matchingModels;
@@ -447,305 +646,219 @@ class _UsageReport extends StatelessWidget {
           BigInt.from(tokens.cacheRead) +
           BigInt.from(tokens.cacheWrite);
     });
+    final providerIds = {
+      ...providers.map((provider) => provider.providerID),
+      ?overview.providerFilter,
+    }.toList()..sort();
+    Widget section() => SizedBox(height: tokens.sectionGap);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        if (snapshot.projectName case final name?) ...[
-          Text(name, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-        ],
-        Text(
-          l10n.usagePeriod(
-            date.format(DateTime.fromMillisecondsSinceEpoch(stats.from)),
-            date.format(
-              DateTime.fromMillisecondsSinceEpoch(
-                stats.to > stats.from ? stats.to - 1 : stats.to,
-              ),
-            ),
+        section(),
+        _Label(l10n.usageScopedTotals),
+        KitSurface.panel(
+          child: _Metrics(
+            values: [
+              (l10n.usageSessions, number.format(stats.sessions)),
+              (l10n.usagePrompts, number.format(stats.prompts)),
+              (l10n.usageSteps, number.format(stats.steps)),
+              (l10n.usageSubagents, number.format(stats.subagents)),
+              (l10n.usageActiveDays, number.format(stats.activeDays)),
+              (l10n.usageStreak, number.format(stats.streak)),
+            ],
           ),
         ),
-        Text(
-          l10n.usageTimezone(snapshot.query.timezone),
-          style: theme.textTheme.bodySmall,
+        section(),
+        _Label(l10n.usageTokens),
+        KitSurface.panel(
+          child: _Metrics(
+            values: [
+              (l10n.usageTotalTokens, number.format(stats.tokens.total)),
+              (l10n.usageInput, number.format(stats.tokens.input)),
+              (l10n.usageOutput, number.format(stats.tokens.output)),
+              (l10n.usageReasoning, number.format(stats.tokens.reasoning)),
+              (l10n.usageCacheRead, number.format(stats.tokens.cacheRead)),
+              (l10n.usageCacheWrite, number.format(stats.tokens.cacheWrite)),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
-        Text(l10n.usageScopedTotals, style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
-        Card(
-          margin: EdgeInsets.zero,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.usageReportedCost, style: theme.textTheme.titleSmall),
-                const SizedBox(height: 8),
-                Text(
-                  _money(context, stats.cost),
-                  key: const ValueKey('usage-total-cost'),
-                  style: theme.textTheme.headlineLarge,
+        section(),
+        _Label(l10n.usageModels),
+        // Provider is the search field's filter: one place to narrow the
+        // provider and model lists, with the active filter in words.
+        KitSearchField(
+          fieldKey: const ValueKey('usage-search'),
+          label: l10n.usageSearchRecords,
+          controller: search,
+          onChanged: overview.setModelSearch,
+          resultCount: overview.hasInspectionFilters ? models.length : null,
+          filters: [
+            for (final id in providerIds)
+              KitMenuItem(
+                key: ValueKey('usage-filter-$id'),
+                label: id,
+                checked: overview.providerFilter == id,
+                onSelected: () => overview.setProviderFilter(
+                  overview.providerFilter == id ? null : id,
                 ),
-                const SizedBox(height: 16),
-                _MetricGrid(
+              ),
+          ],
+          activeFilter: overview.providerFilter,
+          onClearFilter: () => overview.setProviderFilter(null),
+        ),
+        SizedBox(height: tokens.space3),
+        if (providers.isEmpty)
+          KitText(l10n.usageNoModels, role: KitTextRole.secondary)
+        else if (matchingProviderIDs.isNotEmpty)
+          KitRowGroup(
+            margin: EdgeInsetsDirectional.zero,
+            label: l10n.usageProviders,
+            leadingIcons: false,
+            children: [
+              for (final provider in providers)
+                if (matchingProviderIDs.contains(provider.providerID))
+                  KitRow(
+                    key: ValueKey('usage-provider-${provider.providerID}'),
+                    title: provider.providerID,
+                    supporting: TextSpan(
+                      text: [
+                        l10n.usageProviderModelCount(provider.modelCount),
+                        if (provider.cost != null &&
+                            stats.cost > 0 &&
+                            provider.cost! <= stats.cost)
+                          l10n.usageProviderCostShare(
+                            percent.format(provider.cost! / stats.cost),
+                          ),
+                      ].join(' · '),
+                    ),
+                    trailing: KitRowValue(
+                      provider.cost == null
+                          ? l10n.usageProviderCostUnavailable
+                          : _money(context, provider.cost!),
+                      chevron: false,
+                    ),
+                  ),
+            ],
+          ),
+        SizedBox(height: tokens.space4),
+        if (models.isEmpty)
+          overview.hasInspectionFilters
+              ? KitSearchNoMatch(
+                  query: overview.modelSearch.isEmpty
+                      ? (overview.providerFilter ?? '')
+                      : overview.modelSearch,
+                  what: l10n.usageModels,
+                  onClear: overview.clearInspectionFilters,
+                )
+              : KitText(l10n.usageNoModels, role: KitTextRole.secondary)
+        else ...[
+          _Label(
+            [
+              l10n.usageMatchingRecords(number.format(models.length)),
+              subtotal.isFinite
+                  ? _money(context, subtotal)
+                  : l10n.usageProviderCostUnavailable,
+              l10n.usageModelSteps(_count(number, matchingSteps)),
+              l10n.usageModelTokens(_count(number, matchingTokens)),
+            ].join(' · '),
+          ),
+          KitRowGroup(
+            margin: EdgeInsetsDirectional.zero,
+            leadingIcons: false,
+            children: [
+              for (final model in models)
+                KitProgressRow(
+                  title: model.modelID,
+                  // Only a share of the total is a bar; a record the server
+                  // priced above the total has no honest share.
+                  value: stats.cost > 0 && model.cost <= stats.cost
+                      ? (model.cost / stats.cost).clamp(0, 1).toDouble()
+                      : 0,
+                  tone: AppStatusTone.progress,
+                  valueLabel: [
+                    model.providerID,
+                    if (model.variant?.isNotEmpty == true) model.variant!,
+                    _money(context, model.cost),
+                    l10n.usageModelSteps(number.format(model.steps)),
+                    l10n.usageModelTokens(number.format(model.tokens.total)),
+                  ].join(' · '),
+                ),
+            ],
+          ),
+        ],
+        section(),
+        _Label(l10n.usageToolReliability),
+        if (tools == null)
+          KitText(l10n.usageToolsUnavailable, role: KitTextRole.secondary)
+        else if (tools.calls == 0)
+          KitText(l10n.usageNoTools, role: KitTextRole.secondary)
+        else
+          KitSurface.panel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                KitText(
+                  tools.successRate == null
+                      ? l10n.usageNoFinishedTools
+                      : l10n.usageSuccessRate(
+                          percent.format(tools.successRate),
+                        ),
+                  role: KitTextRole.headline,
+                ),
+                SizedBox(height: tokens.space3),
+                _Metrics(
                   values: [
-                    (l10n.usageSessions, number.format(stats.sessions)),
-                    (l10n.usagePrompts, number.format(stats.prompts)),
-                    (l10n.usageSteps, number.format(stats.steps)),
-                    (l10n.usageSubagents, number.format(stats.subagents)),
-                    (l10n.usageActiveDays, number.format(stats.activeDays)),
-                    (l10n.usageStreak, number.format(stats.streak)),
+                    (l10n.usageToolCalls, number.format(tools.calls)),
+                    (l10n.usageSucceeded, number.format(tools.succeeded)),
+                    (l10n.usageFailed, number.format(tools.failed)),
+                    (l10n.usageUnfinished, number.format(tools.unfinished)),
                   ],
                 ),
               ],
             ),
           ),
-        ),
-        if (stats.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Text(l10n.usageEmpty),
-          ),
-        const SizedBox(height: 24),
-        Text(l10n.usageTokens, style: theme.textTheme.titleLarge),
-        const SizedBox(height: 12),
-        _MetricGrid(
-          values: [
-            (l10n.usageTotalTokens, number.format(stats.tokens.total)),
-            (l10n.usageInput, number.format(stats.tokens.input)),
-            (l10n.usageOutput, number.format(stats.tokens.output)),
-            (l10n.usageReasoning, number.format(stats.tokens.reasoning)),
-            (l10n.usageCacheRead, number.format(stats.tokens.cacheRead)),
-            (l10n.usageCacheWrite, number.format(stats.tokens.cacheWrite)),
-          ],
-        ),
-        const SizedBox(height: 24),
-        Text(l10n.usageProviders, style: theme.textTheme.titleLarge),
-        const SizedBox(height: 8),
-        Text(l10n.usageProviderScope, style: theme.textTheme.bodySmall),
-        const SizedBox(height: 8),
-        Text(l10n.usageInspectionDisclosure, style: theme.textTheme.bodySmall),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          key: ValueKey((overview.filterRevision, overview.providerFilter)),
-          initialValue: overview.providerFilter ?? '',
-          isExpanded: true,
-          decoration: InputDecoration(
-            labelText: l10n.usageProviderFilter,
-            border: const OutlineInputBorder(),
-          ),
-          items: [
-            DropdownMenuItem(value: '', child: Text(l10n.usageAllProviders)),
-            for (final id in {
-              ...providers.map((provider) => provider.providerID),
-              if (overview.providerFilter != null) overview.providerFilter!,
-            }.toList()..sort())
-              DropdownMenuItem(
-                value: id,
-                child: Text(id, overflow: TextOverflow.ellipsis),
-              ),
-          ],
-          onChanged: (value) =>
-              overview.setProviderFilter(value == '' ? null : value),
-        ),
-        const SizedBox(height: 12),
-        TextFormField(
-          key: ValueKey('usage-search-${overview.filterRevision}'),
-          initialValue: overview.modelSearch,
-          decoration: InputDecoration(
-            labelText: l10n.usageSearchRecords,
-            prefixIcon: const Icon(AppIconography.search),
-            border: const OutlineInputBorder(),
-          ),
-          onChanged: overview.setModelSearch,
-        ),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: TextButton.icon(
-            onPressed: overview.hasInspectionFilters
-                ? overview.clearInspectionFilters
-                : null,
-            icon: const Icon(AppIconography.filterOff),
-            label: Text(l10n.usageClearFilters),
-          ),
-        ),
-        Text(l10n.usageScopedProviderTotals, style: theme.textTheme.bodySmall),
-        const SizedBox(height: 12),
-        if (providers.isEmpty) Text(l10n.usageNoModels),
-        for (final provider in providers)
-          if (matchingProviderIDs.contains(provider.providerID))
-            Card(
-              key: ValueKey('usage-provider-${provider.providerID}'),
-              margin: const EdgeInsets.only(bottom: 10),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      provider.providerID,
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    Text(l10n.usageProviderModelCount(provider.modelCount)),
-                    const SizedBox(height: 8),
-                    Text(
-                      provider.cost == null
-                          ? l10n.usageProviderCostUnavailable
-                          : _money(context, provider.cost!),
-                      style: theme.textTheme.titleLarge,
-                    ),
-                    if (provider.cost != null &&
-                        stats.cost > 0 &&
-                        provider.cost! <= stats.cost)
-                      Text(
-                        l10n.usageProviderCostShare(
-                          NumberFormat.percentPattern(
-                            locale,
-                          ).format(provider.cost! / stats.cost),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-        const SizedBox(height: 24),
-        Text(l10n.usageModels, style: theme.textTheme.titleLarge),
-        const SizedBox(height: 12),
-        Text(l10n.usageMatchingSubtotal, style: theme.textTheme.titleMedium),
-        Text(l10n.usageMatchingRecords(number.format(models.length))),
-        Wrap(
-          spacing: 16,
-          runSpacing: 8,
-          children: [
-            Text(
-              subtotal.isFinite
-                  ? _money(context, subtotal)
-                  : l10n.usageProviderCostUnavailable,
-            ),
-            Text(l10n.usageModelSteps(matchingSteps.toString())),
-            Text(l10n.usageModelTokens(matchingTokens.toString())),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (models.isEmpty)
-          Text(
-            overview.hasInspectionFilters
-                ? l10n.usageNoMatchingRecords
-                : l10n.usageNoModels,
-          ),
-        for (final model in models)
-          Card(
-            margin: const EdgeInsets.only(bottom: 10),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(model.modelID, style: theme.textTheme.titleMedium),
-                  Text(
-                    [
-                      model.providerID,
-                      if (model.variant?.isNotEmpty == true) model.variant!,
-                    ].join(' · '),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 8,
-                    children: [
-                      Text(_money(context, model.cost)),
-                      Text(l10n.usageModelSteps(number.format(model.steps))),
-                      Text(
-                        l10n.usageModelTokens(
-                          number.format(model.tokens.total),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (stats.cost > 0 && model.cost <= stats.cost) ...[
-                    const SizedBox(height: 12),
-                    LinearProgressIndicator(
-                      value: (model.cost / stats.cost).clamp(0, 1),
-                      semanticsLabel: l10n.usageCostShare,
-                      semanticsValue: NumberFormat.percentPattern(
-                        locale,
-                      ).format(model.cost / stats.cost),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        const SizedBox(height: 24),
-        Text(l10n.usageToolReliability, style: theme.textTheme.titleLarge),
-        const SizedBox(height: 12),
-        if (tools == null)
-          Text(l10n.usageToolsUnavailable)
-        else if (tools.calls == 0)
-          Text(l10n.usageNoTools)
-        else ...[
-          Text(
-            tools.successRate == null
-                ? l10n.usageNoFinishedTools
-                : l10n.usageSuccessRate(
-                    NumberFormat.percentPattern(
-                      locale,
-                    ).format(tools.successRate),
-                  ),
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: 12),
-          _MetricGrid(
-            values: [
-              (l10n.usageToolCalls, number.format(tools.calls)),
-              (l10n.usageSucceeded, number.format(tools.succeeded)),
-              (l10n.usageFailed, number.format(tools.failed)),
-              (l10n.usageUnfinished, number.format(tools.unfinished)),
-            ],
-          ),
-        ],
-        const SizedBox(height: 24),
-        Text(
-          l10n.usageUpdated(time.format(snapshot.fetchedAt.toLocal())),
-          style: theme.textTheme.bodySmall,
-        ),
-        const SizedBox(height: 8),
-        Text(l10n.usageCostDisclosure, style: theme.textTheme.bodySmall),
       ],
     );
   }
 }
 
-class _MetricGrid extends StatelessWidget {
+/// Labelled figures in two columns (one at large text), inside a panel.
+class _Metrics extends StatelessWidget {
+  const _Metrics({required this.values});
   final List<(String, String)> values;
-  const _MetricGrid({required this.values});
+
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final columns =
-          constraints.maxWidth < 300 ||
-              MediaQuery.textScalerOf(context).scale(16) > 24
-          ? 1
-          : 2;
-      final width = (constraints.maxWidth - (columns - 1) * 16) / columns;
-      return Wrap(
-        spacing: 16,
-        runSpacing: 16,
-        children: [
-          for (final (label, value) in values)
-            SizedBox(
-              width: width,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: Theme.of(context).textTheme.bodySmall),
-                  const SizedBox(height: 4),
-                  Text(value, style: Theme.of(context).textTheme.titleMedium),
-                ],
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    final columns = MediaQuery.textScalerOf(context).scale(1) >= 1.5 ? 1 : 2;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width =
+            (constraints.maxWidth - (columns - 1) * tokens.space4) / columns;
+        return Wrap(
+          spacing: tokens.space4,
+          runSpacing: tokens.space4,
+          children: [
+            for (final (label, value) in values)
+              SizedBox(
+                width: width,
+                child: MergeSemantics(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      KitText(label, role: KitTextRole.secondary),
+                      SizedBox(height: tokens.space1),
+                      KitText(value, role: KitTextRole.headline, tabular: true),
+                    ],
+                  ),
+                ),
               ),
-            ),
-        ],
-      );
-    },
-  );
+          ],
+        );
+      },
+    );
+  }
 }

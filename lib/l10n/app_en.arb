@@ -26852,5 +26852,117 @@
         "type": "String"
       }
     }
+  },
+  "usageRangeLabel": "Time range",
+  "@usageRangeLabel": {
+    "description": "Usage (Spent): label above the Today / 30 days / This year / All time choice."
+  },
+  "usageAboutNumbers": "About these numbers",
+  "@usageAboutNumbers": {
+    "description": "Usage (Spent): the Details fold at the end holding what the figures include and exclude."
+  },
+  "usageBudgetHelperUsd": "In US dollars for this range. You’re told when the report reaches it; nothing is stopped.",
+  "@usageBudgetHelperUsd": {
+    "description": "Usage budget dialog: helper under the amount field for a USD budget, saying the currency and the effect."
+  },
+  "usageBudgetHelperTokens": "Whole tokens for this range. You’re told when the report reaches it; nothing is stopped.",
+  "@usageBudgetHelperTokens": {
+    "description": "Usage budget dialog: helper under the amount field for a token budget, saying the unit and the effect."
+  },
+  "usageBudgetClearConfirm": "Clear budgets",
+  "@usageBudgetClearConfirm": {
+    "description": "Usage: the destructive confirm button that removes every saved consumption budget for this server."
+  },
+  "usageBudgetNotSet": "Not set",
+  "@usageBudgetNotSet": {
+    "description": "Usage budgets: trailing value on a budget row with no budget saved."
+  },
+  "usageBudgetWaitReason": "Available once usage has loaded.",
+  "@usageBudgetWaitReason": {
+    "description": "Usage budgets: why a budget row cannot be opened right now (usage still loading, failed, or a save is running)."
+  },
+  "usageBudgetUsdTitle": "USD budget",
+  "@usageBudgetUsdTitle": {
+    "description": "Usage budgets: title of the row showing spend against a saved USD budget."
+  },
+  "usageBudgetTokensTitle": "Token budget",
+  "@usageBudgetTokensTitle": {
+    "description": "Usage budgets: title of the row showing tokens against a saved token budget."
+  },
+  "agentAccountScopeLostTitle": "This server changed",
+  "@agentAccountScopeLostTitle": {
+    "description": "Codex account: title of the state shown when the connection moved to another server after the page opened."
+  },
+  "agentAccountBackToServers": "Back to Servers",
+  "@agentAccountBackToServers": {
+    "description": "Codex account: button on the server-changed state that returns to the Servers page."
+  },
+  "agentAccountNotConnected": "Connect to this server to see its Codex account.",
+  "@agentAccountNotConnected": {
+    "description": "Codex account: body of the state shown when the server is not connected yet."
+  },
+  "agentAccountSignInMethod": "Signed in with",
+  "@agentAccountSignInMethod": {
+    "description": "Codex account: row title whose value is the sign-in method (ChatGPT, API key...)."
+  },
+  "agentAccountPlanTitle": "Plan",
+  "@agentAccountPlanTitle": {
+    "description": "Codex account: row title whose value is the account plan."
+  },
+  "agentAccountCopyCode": "Copy sign-in code",
+  "@agentAccountCopyCode": {
+    "description": "Codex account: label of the button that copies the one-time device sign-in code."
+  },
+  "agentAccountLimitReached": "You’ve reached a Codex limit. {reset}",
+  "@agentAccountLimitReached": {
+    "description": "Codex account: notice under the rate limits when a window is at 100 %; {reset} is when it resets, e.g. \"Resets in 3 h (Sep 20, 6:00 PM)\".",
+    "placeholders": {
+      "reset": {
+        "type": "String"
+      }
+    }
+  },
+  "agentAccountResetDue": "Resets any moment",
+  "@agentAccountResetDue": {
+    "description": "Codex account: a rate window whose reset time has passed."
+  },
+  "agentAccountResetInDays": "{days, plural, one{Resets in 1 day} other{Resets in {days} days}}",
+  "@agentAccountResetInDays": {
+    "description": "Codex account: time until a rate window resets, in days.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "agentAccountResetInHours": "{hours, plural, one{Resets in 1 h} other{Resets in {hours} h}}",
+  "@agentAccountResetInHours": {
+    "description": "Codex account: time until a rate window resets, in hours.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "agentAccountResetInMinutes": "{minutes, plural, one{Resets in 1 min} other{Resets in {minutes} min}}",
+  "@agentAccountResetInMinutes": {
+    "description": "Codex account: time until a rate window resets, in minutes.",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "agentAccountResetWhen": "{relative} ({time})",
+  "@agentAccountResetWhen": {
+    "description": "Codex account: relative reset time followed by the exact date and time.",
+    "placeholders": {
+      "relative": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
   }
 }
