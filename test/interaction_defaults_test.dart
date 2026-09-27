@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/interaction_defaults.dart';
@@ -9,7 +11,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 
 class _RefusingStore extends InMemorySharedPreferencesStore {
-  _RefusingStore() : super.withData({});
+  _RefusingStore()
+    : super.withData({
+        'flutter.oc.profiles': jsonEncode([
+          {'id': 'a'},
+        ]),
+      });
   bool refuse = true;
   @override
   Future<bool> setValue(String valueType, String key, Object value) async =>
@@ -45,7 +52,11 @@ CatalogModel model(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'oc.profiles': jsonEncode([
+        for (final id in ['a', 'b', 'safe']) {'id': id},
+      ]),
+    });
     KitRedact.clearKnownSecrets();
   });
   tearDown(KitRedact.clearKnownSecrets);
@@ -291,9 +302,9 @@ void main() {
       final profiles = ProfileStore(prefs: prefs);
       expect(await profiles.removeScopedPreferences('a'), isEmpty);
       expect(restarted.lastProjectID, isNull);
-      expect(
-        await restarted.takeAnnouncement(DefaultKind.delivery, choice),
-        'queue',
+      await expectLater(
+        restarted.takeAnnouncement(DefaultKind.delivery, choice),
+        throwsStateError,
       );
       expect(
         await other.takeAnnouncement(DefaultKind.delivery, choice),

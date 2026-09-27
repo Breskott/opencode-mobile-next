@@ -26669,4 +26669,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String workRunawayStopFailed(String helper) {
     return 'Couldn\'t stop $helper. Try again, or stop it from Termux.';
   }
+
+  @override
+  String get productErrorStagedRevert =>
+      'Review the staged revert before sending this queued prompt.';
 }

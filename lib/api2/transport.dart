@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 import 'dialect.dart';
 import '../diagnostics/perf_trace.dart';
+import '../ui/kit/kit_redact.dart';
 
 /// Transport layer for the OpenCode 2 server API (`/api/...`).
 ///
@@ -41,6 +42,7 @@ class Api2Transport {
     required this.password,
     this.username = 'opencode',
   }) : serverRoot = normalizeServerRoot(baseUrl) {
+    KitRedact.registerKnownSecret(password);
     _dio = Dio(
       BaseOptions(
         baseUrl: '${normalizeServerRoot(baseUrl)}/api',

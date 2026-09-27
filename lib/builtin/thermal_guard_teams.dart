@@ -179,16 +179,42 @@ class GasCityThermalTeams implements ThermalTeamPort {
       });
       if (resumed == null || !resumed.ok) return false;
     }
+    var allConfirmed = true;
     for (final id in hold.sessions) {
       if (!_allowsRecovery(team.id)) return false;
-      // A session that is gone was closed meanwhile; nothing to wake.
+      final sessionUri = _uri(
+        team,
+        city,
+        '/session/${Uri.encodeComponent(id)}',
+      );
+      final session = await _http('GET', sessionUri);
+      // Keep the full durable hold until all work is accounted for. On a
+      // retry (including after app restart), do not wake sessions that have
+      // already resumed. The session resource, not a failed wake endpoint,
+      // establishes that a session has been closed meanwhile.
+      if (session?.status == 404) continue;
+      if (session == null || !session.ok) {
+        allConfirmed = false;
+        continue;
+      }
+      final body = session.body;
+      if (body is Map && body['id'] == id && body['running'] == true) {
+        continue;
+      }
       final answer = await _http(
         'POST',
         _uri(team, city, '/session/${Uri.encodeComponent(id)}/wake'),
       );
-      if (answer == null || (!answer.ok && answer.status != 404)) return false;
+      if (answer != null && answer.ok) continue;
+      if (answer?.status == 404) {
+        // The session can disappear between the read and the wake. A 404
+        // from /wake alone can also mean that mutation is unavailable.
+        final after = await _http('GET', sessionUri);
+        if (after?.status == 404) continue;
+      }
+      allConfirmed = false;
     }
-    return true;
+    return allConfirmed;
   }
 
   bool _allowsRecovery(String profileId) =>

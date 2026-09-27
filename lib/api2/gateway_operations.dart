@@ -18,6 +18,7 @@ import '../api/mcp_oauth.dart';
 import '../api/models.dart';
 import '../api/product_repository.dart' show ProductRepository;
 import '../domain/server_gateway.dart';
+import '../ui/kit/kit_redact.dart';
 import '../domain/parallel_requests.dart';
 import '../domain/plugin_inventory.dart';
 import 'plugin_mapper.dart';
@@ -1420,14 +1421,14 @@ class Api2OperationsGateway extends ProductRepository
 
   @override
   Future<void> connectIntegrationKey(String id, String key, {String? label}) =>
-      _guard(
-        'Could not connect the integration',
-        () => _transport.postJson(
+      _guard('Could not connect the integration', () {
+        KitRedact.registerKnownSecret(key);
+        return _transport.postJson(
           '/integration/${Uri.encodeComponent(id)}/connect/key',
           query: _loc(),
           body: {'key': key, 'label': ?label},
-        ),
-      );
+        );
+      });
 
   @override
   Future<void> disconnectIntegration(IntegrationInfo integration) =>

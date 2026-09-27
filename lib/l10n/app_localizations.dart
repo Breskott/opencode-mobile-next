@@ -41600,6 +41600,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t stop {helper}. Try again, or stop it from Termux.'**
   String workRunawayStopFailed(String helper);
+
+  /// Safe app-authored explanation when a queued prompt needs staged revert review.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the staged revert before sending this queued prompt.'**
+  String get productErrorStagedRevert;
 }
 
 class _AppLocalizationsDelegate

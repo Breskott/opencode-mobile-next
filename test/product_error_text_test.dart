@@ -8,6 +8,7 @@ import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api2/transport.dart';
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
+import 'package:opencode_mobile/domain/product_failure.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/bridge.dart' show TermuxBridgeException;
@@ -72,28 +73,30 @@ void main() {
       );
     });
 
-    test('a refusal keeps the server\'s short reason, never its transport '
-        'text', () {
-      expect(
-        productErrorText(
-          ApiException(
-            'Send prompt failed (HTTP 400): Bad model',
-            statusCode: 400,
-          ),
-        ),
-        "The server didn't accept it: Bad model",
-      );
-      expect(
-        productErrorText(
-          ApiException(
-            'Send prompt failed (HTTP 400): <html><body>oops</body></html>',
-            statusCode: 400,
-          ),
-        ),
-        "The server didn't accept the request. Try again, or report the "
-        'problem.',
-      );
-    });
+    for (final status in [400, 422]) {
+      for (final protocol in ['v1', 'v2']) {
+        test('$protocol $status keeps server prose out of the body', () {
+          final message = 'Invalid apiKey=auditSyntheticCredential123';
+          final Object error = protocol == 'v1'
+              ? ApiException(
+                  'Send prompt failed (HTTP $status): $message',
+                  statusCode: status,
+                )
+              : Api2RequestError(message, statusCode: status);
+          expect(
+            productErrorText(error),
+            "The server didn't accept the request. Try again, or report the "
+            'problem.',
+          );
+          final failure = ProductFailure.from(error);
+          expect(failure.category, ProductFailureCategory.rejected);
+          expect(failure.authoredMessage, isNull);
+          final details = productErrorDetails(error);
+          expect(details, contains('Invalid'));
+          expect(details, isNot(contains('auditSyntheticCredential123')));
+        });
+      }
+    }
 
     test('keeps the app\'s own staged-revert sentence', () {
       expect(
@@ -105,6 +108,23 @@ void main() {
           ),
         ),
         'Review the staged revert before sending this queued prompt.',
+      );
+    });
+
+    test('a staged-revert tag never permits arbitrary protocol prose', () {
+      final error = ApiException(
+        'Invalid apiKey=auditSyntheticCredential123',
+        statusCode: 409,
+        errorTag: 'SessionRevertPending',
+      );
+      expect(ProductFailure.from(error).authoredMessage, isNull);
+      expect(
+        productErrorText(error),
+        'Review the staged revert before sending this queued prompt.',
+      );
+      expect(
+        productErrorDetails(error),
+        isNot(contains('auditSyntheticCredential123')),
       );
     });
 
@@ -334,6 +354,31 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('kit-state-details')));
       await tester.pumpAndSettle();
       expect(find.textContaining('upstream answered 502'), findsOneWidget);
+    });
+
+    testWidgets('a server refusal exposes only redacted Details', (
+      tester,
+    ) async {
+      const error = Api2RequestError(
+        'Invalid apiKey=auditSyntheticCredential123',
+        statusCode: 400,
+      );
+      await tester.pumpWidget(
+        app(
+          ProductErrorState(
+            title: 'Could not save',
+            onRetry: () async {},
+            message: productErrorText(error),
+            error: error,
+          ),
+        ),
+      );
+      expect(find.textContaining('Invalid'), findsNothing);
+      expect(find.textContaining('auditSyntheticCredential123'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('kit-state-details')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Invalid'), findsOneWidget);
+      expect(find.textContaining('auditSyntheticCredential123'), findsNothing);
     });
 
     testWidgets('showProductError: words in the body, the raw text folded', (

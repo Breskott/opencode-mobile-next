@@ -326,7 +326,9 @@ class ChannelSetupEngine implements SetupEngine {
         _afterChecks(job, checks),
         startedAt,
         state: SetupState.failed,
-        error: error.message,
+        error: error.code == 'setup_persistence'
+            ? l10n.phoneSetupErrorInstall('OpenCode')
+            : error.message,
       );
       return;
     }
@@ -1107,6 +1109,9 @@ int? estimateEta({
   return (remaining * pace).ceil();
 }
 
+/// Native failures whose category is safe to use independently of log text.
+enum SetupFailureKind { persistence }
+
 /// setup.json, read.
 @immutable
 class SetupJobRecord {
@@ -1121,7 +1126,10 @@ class SetupJobRecord {
     this.logTail = '',
     this.params = const {},
     this.host,
+    this.failureKind,
   });
+
+  final SetupFailureKind? failureKind;
 
   /// Missing only for legacy built-in jobs.
   final String? host;
@@ -1185,6 +1193,9 @@ class SetupJobRecord {
     return SetupJobRecord(
       jobId: jobId,
       host: _string(decoded['host']),
+      failureKind: decoded['errorCode'] == 'setup_persistence'
+          ? SetupFailureKind.persistence
+          : null,
       state: _string(decoded['state']) ?? 'interrupted',
       current: _string(decoded['current']),
       components: [
@@ -1339,7 +1350,9 @@ SetupProgress progressFromRecord(
           )
         : null,
     error: state == SetupState.failed
-        ? jobError ??
+        ? (record.failureKind == SetupFailureKind.persistence
+                  ? l10n.phoneSetupErrorInstall('OpenCode')
+                  : jobError) ??
               l10n.phoneSetupErrorInstall(
                 titles[record.current] ?? record.current ?? 'OpenCode',
               )
