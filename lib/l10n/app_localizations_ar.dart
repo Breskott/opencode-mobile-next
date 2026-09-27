@@ -4389,31 +4389,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'تُدار شبكة اتصالك في Tailscale. يفحص «اختبار الاتصال» خادم OpenCode هذا، لا شبكة VPN. أدخل هنا اسم مستخدم الخادم وكلمة مروره، لا بيانات دخول Tailscale. تحافظ مساعدة الإعداد على هذه الحقول.';
 
   @override
-  String get tailscaleSetupAppTitle => 'Tailscale app on this phone';
-
-  @override
-  String get tailscaleSetupVpnTitle => 'Sign in and turn on the VPN';
-
-  @override
-  String get tailscaleSetupVpnSupporting =>
-      'Sign in and connect. OpenCode can’t check this.';
-
-  @override
-  String get tailscaleSetupOpenFailed =>
-      'Tailscale didn’t open. Open it from your launcher, then come back.';
-
-  @override
-  String get tailscaleSetupAddressHelper =>
-      'OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.';
-
-  @override
-  String get tailscaleSetupGetApp => 'Get Tailscale';
-
-  @override
-  String get tailscaleSetupContinueReason =>
-      'Enter your server’s address first.';
-
-  @override
   String get a2aDraftSaveError =>
       'تعذّر حفظ تعديلات المسودة. أبقِ هذه الشاشة مفتوحة وأعد المحاولة قبل المغادرة.';
 
@@ -22665,4 +22640,139 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitRequestSendAnswers => 'Send answers';
+
+  @override
+  String get serversOtherWays => 'Other ways to connect';
+
+  @override
+  String get serversRemoveBody =>
+      'This phone forgets the server: its password, chosen model and agent, project and widget conversations.';
+
+  @override
+  String serversRemoveQueued(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count queued prompts will be deleted',
+      one: '1 queued prompt will be deleted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String serversRemoveDrafts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unsent drafts will be deleted',
+      one: '1 unsent draft will be deleted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get serversRemoveActiveNext =>
+      'You are connected to it: the app disconnects and shows your servers';
+
+  @override
+  String get serversRemoveServerKeeps =>
+      'Nothing is deleted on the server or at your AI providers';
+
+  @override
+  String get guideStepTwoScan =>
+      'Open Servers, tap Add server, then Scan code and point the camera at the QR, or copy the code and tap Paste code. The address, username and password fill in together.';
+
+  @override
+  String get guideStepTwoPaste =>
+      'Copy the printed code, open Servers, tap Add server, then Paste code. The address, username and password fill in together.';
+
+  @override
+  String get guidePhonePathTitle => 'No computer? Run it on this phone';
+
+  @override
+  String get guidePhonePathBody =>
+      'Install OpenCode on this phone and use it here, no computer needed';
+
+  @override
+  String get pairingScannerAllowCamera => 'Allow camera';
+
+  @override
+  String get pairingScannerStarting => 'Opening the camera…';
+
+  @override
+  String profileMonitorSwitchBody(String current, String target) {
+    return 'A run is going on $current. Switching shows $target in this app; the run on $current keeps going.';
+  }
+
+  @override
+  String get profileMonitorOpenFailedTitle => 'Couldn\'t open it';
+
+  @override
+  String get profileMonitorIfIgnored => 'The agent waits until you answer';
+
+  @override
+  String get serverSettingsRestartCommandLabel =>
+      'If it runs as a Linux service, run this there';
+
+  @override
+  String get serverSettingsRestartedIt => 'I restarted it';
+
+  @override
+  String serverSettingsUpgradeBody(
+    String target,
+    String server,
+    String current,
+  ) {
+    return 'Installs OpenCode $target on $server (now $current) with the server’s own installer.';
+  }
+
+  @override
+  String serverSettingsUpgradeKeepsRunning(String current) {
+    return 'The server keeps running $current while it installs';
+  }
+
+  @override
+  String serverSettingsUpgradeRestartAfter(String target) {
+    return 'The OpenCode process must be restarted on its host to use $target';
+  }
+
+  @override
+  String get serverSettingsUpgradeKeepsData => 'Server data stays in place';
+
+  @override
+  String get serverSettingsCopyUpdateCommands => 'Copy update commands';
+
+  @override
+  String get serverSettingsPasswordInServers => 'Add or change it in Servers';
+
+  @override
+  String get serverSettingsAddressLabel => 'Address';
+
+  @override
+  String get serverSettingsRunningVersionLabel => 'Running version';
+
+  @override
+  String get tailscaleSetupAppTitle => 'Tailscale app on this phone';
+
+  @override
+  String get tailscaleSetupVpnTitle => 'Sign in and turn on the VPN';
+
+  @override
+  String get tailscaleSetupVpnSupporting =>
+      'Sign in and connect. OpenCode can’t check this.';
+
+  @override
+  String get tailscaleSetupOpenFailed =>
+      'Tailscale didn’t open. Open it from your launcher, then come back.';
+
+  @override
+  String get tailscaleSetupAddressHelper =>
+      'OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.';
+
+  @override
+  String get tailscaleSetupGetApp => 'Get Tailscale';
+
+  @override
+  String get tailscaleSetupContinueReason =>
+      'Enter your server’s address first.';
 }

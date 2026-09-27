@@ -7249,48 +7249,6 @@ abstract class AppLocalizations {
   /// **'Your network connection is managed in Tailscale. Test connection checks this OpenCode server, not the VPN. Enter the server’s own username and password here, not your Tailscale login. Setup help keeps these fields intact.'**
   String get tailscaleEditorDetail;
 
-  /// Tailscale setup: the first checklist step, whether the official Tailscale app is installed on this phone
-  ///
-  /// In en, this message translates to:
-  /// **'Tailscale app on this phone'**
-  String get tailscaleSetupAppTitle;
-
-  /// Tailscale setup: the second checklist step, done by the person in the Tailscale app; the app cannot verify it
-  ///
-  /// In en, this message translates to:
-  /// **'Sign in and turn on the VPN'**
-  String get tailscaleSetupVpnTitle;
-
-  /// Tailscale setup: the short line under the VPN step; the full instructions are in the Details fold
-  ///
-  /// In en, this message translates to:
-  /// **'Sign in and connect. OpenCode can’t check this.'**
-  String get tailscaleSetupVpnSupporting;
-
-  /// Tailscale setup: the VPN step's short reason when the Tailscale app could not be opened
-  ///
-  /// In en, this message translates to:
-  /// **'Tailscale didn’t open. Open it from your launcher, then come back.'**
-  String get tailscaleSetupOpenFailed;
-
-  /// Tailscale setup: the helper under the server address field; says the app cannot pick the computer from the tailnet's devices
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.'**
-  String get tailscaleSetupAddressHelper;
-
-  /// Tailscale setup: the button on the app step that opens the official Play Store page (after the external-link review)
-  ///
-  /// In en, this message translates to:
-  /// **'Get Tailscale'**
-  String get tailscaleSetupGetApp;
-
-  /// Tailscale setup: why Continue to authentication is disabled while the address field is empty
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your server’s address first.'**
-  String get tailscaleSetupContinueReason;
-
   /// No description provided for @a2aDraftSaveError.
   ///
   /// In en, this message translates to:
@@ -35500,6 +35458,202 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send answers'**
   String get kitRequestSendAnswers;
+
+  /// Servers: section label above the rows that add a server another way (OpenCode 2, this phone, more setup options).
+  ///
+  /// In en, this message translates to:
+  /// **'Other ways to connect'**
+  String get serversOtherWays;
+
+  /// Servers › Remove server sheet: what removing a saved server deletes on this device, in one sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone forgets the server: its password, chosen model and agent, project and widget conversations.'**
+  String get serversRemoveBody;
+
+  /// Servers › Remove server sheet: unsent queued prompts lost with the server.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 queued prompt will be deleted} other{{count} queued prompts will be deleted}}'**
+  String serversRemoveQueued(int count);
+
+  /// Servers › Remove server sheet: unsent drafts lost with the server.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 unsent draft will be deleted} other{{count} unsent drafts will be deleted}}'**
+  String serversRemoveDrafts(int count);
+
+  /// Servers › Remove server sheet: removing the server in use says what shows next.
+  ///
+  /// In en, this message translates to:
+  /// **'You are connected to it: the app disconnects and shows your servers'**
+  String get serversRemoveActiveNext;
+
+  /// Servers › Remove server sheet: what is kept.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is deleted on the server or at your AI providers'**
+  String get serversRemoveServerKeeps;
+
+  /// Setup guide step 2 when this device can scan; names the real Servers buttons
+  ///
+  /// In en, this message translates to:
+  /// **'Open Servers, tap Add server, then Scan code and point the camera at the QR, or copy the code and tap Paste code. The address, username and password fill in together.'**
+  String get guideStepTwoScan;
+
+  /// Setup guide step 2 without a camera; names the real Servers buttons
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the printed code, open Servers, tap Add server, then Paste code. The address, username and password fill in together.'**
+  String get guideStepTwoPaste;
+
+  /// Setup guide row that opens phone setup, for people without a computer
+  ///
+  /// In en, this message translates to:
+  /// **'No computer? Run it on this phone'**
+  String get guidePhonePathTitle;
+
+  /// Setup guide phone-path row: what it does
+  ///
+  /// In en, this message translates to:
+  /// **'Install OpenCode on this phone and use it here, no computer needed'**
+  String get guidePhonePathBody;
+
+  /// Pairing scanner: primary action when camera access was denied; asks again
+  ///
+  /// In en, this message translates to:
+  /// **'Allow camera'**
+  String get pairingScannerAllowCamera;
+
+  /// Pairing scanner: the camera is starting
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the camera…'**
+  String get pairingScannerStarting;
+
+  /// Switch-server question: names both servers and what keeps running
+  ///
+  /// In en, this message translates to:
+  /// **'A run is going on {current}. Switching shows {target} in this app; the run on {current} keeps going.'**
+  String profileMonitorSwitchBody(String current, String target);
+
+  /// Alert title when a monitored request could not be opened
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open it'**
+  String get profileMonitorOpenFailedTitle;
+
+  /// Needs-you row on another server: what happens if it is not answered
+  ///
+  /// In en, this message translates to:
+  /// **'The agent waits until you answer'**
+  String get profileMonitorIfIgnored;
+
+  /// Restart sheet: label above the restart command
+  ///
+  /// In en, this message translates to:
+  /// **'If it runs as a Linux service, run this there'**
+  String get serverSettingsRestartCommandLabel;
+
+  /// Restart sheet primary: closes and checks the server again
+  ///
+  /// In en, this message translates to:
+  /// **'I restarted it'**
+  String get serverSettingsRestartedIt;
+
+  /// Server update question body
+  ///
+  /// In en, this message translates to:
+  /// **'Installs OpenCode {target} on {server} (now {current}) with the server’s own installer.'**
+  String serverSettingsUpgradeBody(
+    String target,
+    String server,
+    String current,
+  );
+
+  /// Server update question: what happens during the install
+  ///
+  /// In en, this message translates to:
+  /// **'The server keeps running {current} while it installs'**
+  String serverSettingsUpgradeKeepsRunning(String current);
+
+  /// Server update question: restart needed after the install
+  ///
+  /// In en, this message translates to:
+  /// **'The OpenCode process must be restarted on its host to use {target}'**
+  String serverSettingsUpgradeRestartAfter(String target);
+
+  /// Server update question: what is kept
+  ///
+  /// In en, this message translates to:
+  /// **'Server data stays in place'**
+  String get serverSettingsUpgradeKeepsData;
+
+  /// Server settings: copy button for the upgrade commands run on the host
+  ///
+  /// In en, this message translates to:
+  /// **'Copy update commands'**
+  String get serverSettingsCopyUpdateCommands;
+
+  /// Server settings authentication row: where the password is set
+  ///
+  /// In en, this message translates to:
+  /// **'Add or change it in Servers'**
+  String get serverSettingsPasswordInServers;
+
+  /// Server settings Details: the server address label
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get serverSettingsAddressLabel;
+
+  /// Server settings Details: the running OpenCode version label
+  ///
+  /// In en, this message translates to:
+  /// **'Running version'**
+  String get serverSettingsRunningVersionLabel;
+
+  /// Tailscale setup: the first checklist step, whether the official Tailscale app is installed on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Tailscale app on this phone'**
+  String get tailscaleSetupAppTitle;
+
+  /// Tailscale setup: the second checklist step, done by the person in the Tailscale app; the app cannot verify it
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in and turn on the VPN'**
+  String get tailscaleSetupVpnTitle;
+
+  /// Tailscale setup: the short line under the VPN step; the full instructions are in the Details fold
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in and connect. OpenCode can’t check this.'**
+  String get tailscaleSetupVpnSupporting;
+
+  /// Tailscale setup: the VPN step's short reason when the Tailscale app could not be opened
+  ///
+  /// In en, this message translates to:
+  /// **'Tailscale didn’t open. Open it from your launcher, then come back.'**
+  String get tailscaleSetupOpenFailed;
+
+  /// Tailscale setup: the helper under the server address field; says the app cannot pick the computer from the tailnet's devices
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.'**
+  String get tailscaleSetupAddressHelper;
+
+  /// Tailscale setup: the button on the app step that opens the official Play Store page (after the external-link review)
+  ///
+  /// In en, this message translates to:
+  /// **'Get Tailscale'**
+  String get tailscaleSetupGetApp;
+
+  /// Tailscale setup: why Continue to authentication is disabled while the address field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your server’s address first.'**
+  String get tailscaleSetupContinueReason;
 }
 
 class _AppLocalizationsDelegate
