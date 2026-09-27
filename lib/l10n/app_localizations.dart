@@ -24809,102 +24809,6 @@ abstract class AppLocalizations {
   /// **'{mb} MB'**
   String termuxProcsMemoryMb(int mb);
 
-  /// Running now: loading label while the process list is read
-  ///
-  /// In en, this message translates to:
-  /// **'Reading what runs on this phone'**
-  String get termuxProcsLoading;
-
-  /// Running now: title when the process list could not be read
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t read what\'s running'**
-  String get termuxProcsLoadFailedTitle;
-
-  /// Running now: body of the empty state
-  ///
-  /// In en, this message translates to:
-  /// **'When OpenCode, the AI Team or a build runs here, it shows up in this list.'**
-  String get termuxProcsEmptyBody;
-
-  /// Running now: title of the result when some processes did not stop
-  ///
-  /// In en, this message translates to:
-  /// **'Not everything stopped'**
-  String get termuxProcsNotStoppedTitle;
-
-  /// Copies a process's command line
-  ///
-  /// In en, this message translates to:
-  /// **'Copy command'**
-  String get termuxProcsCopyCommand;
-
-  /// Opens the phone server controls for a protected process
-  ///
-  /// In en, this message translates to:
-  /// **'Open On this phone'**
-  String get termuxProcsOpenControls;
-
-  /// Details label for a process's ID
-  ///
-  /// In en, this message translates to:
-  /// **'Process ID'**
-  String get termuxProcsProcessId;
-
-  /// Details label for the parent process's ID
-  ///
-  /// In en, this message translates to:
-  /// **'Parent process ID'**
-  String get termuxProcsParentId;
-
-  /// Process details: what a process in the OpenCode server group is
-  ///
-  /// In en, this message translates to:
-  /// **'Part of the OpenCode server on this phone.'**
-  String get termuxProcsAboutOpenCode;
-
-  /// Process details: what a process in the AI Team group is
-  ///
-  /// In en, this message translates to:
-  /// **'Part of the AI Team. Stopping it stops the work the team is doing.'**
-  String get termuxProcsAboutAiTeam;
-
-  /// Process details: what a build daemon is
-  ///
-  /// In en, this message translates to:
-  /// **'A build helper. The next build starts it again when it needs it.'**
-  String get termuxProcsAboutBuild;
-
-  /// Process details: why an orphan is safe to stop
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing is waiting on it, so stopping it is safe.'**
-  String get termuxProcsAboutOrphan;
-
-  /// Process details: what a process in the Other group is
-  ///
-  /// In en, this message translates to:
-  /// **'Started by something else on this phone.'**
-  String get termuxProcsAboutOther;
-
-  /// Stop confirmation: a stopped process has no undo
-  ///
-  /// In en, this message translates to:
-  /// **'It can\'t be started again from here.'**
-  String get termuxProcsNoRestart;
-
-  /// Stop AI Team group confirmation: what is lost
-  ///
-  /// In en, this message translates to:
-  /// **'Any task the team is working on stops too.'**
-  String get termuxProcsStopGroupTeamLost;
-
-  /// Stop AI Team group confirmation: how to start it again
-  ///
-  /// In en, this message translates to:
-  /// **'You can start the team again from AI Team.'**
-  String get termuxProcsStopGroupTeamRestart;
-
   /// On-device AI Team block: eyebrow label
   ///
   /// In en, this message translates to:
@@ -27904,12 +27808,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep going'**
   String get phoneSetupProgressKeepGoing;
-
-  /// In the Stop setup confirmation: where the person can pick setup up again
-  ///
-  /// In en, this message translates to:
-  /// **'Continue any time from On this phone.'**
-  String get phoneSetupProgressStopContinueLater;
 
   /// Title of the built-in (no Termux) server screen
   ///
@@ -36098,6 +35996,390 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That day can’t be chosen'**
   String get kitDateUnavailable;
+
+  /// Files: shown while a folder listing loads for the first time.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening folder…'**
+  String get filesLoadingFolder;
+
+  /// Files: shown while a file or symbol search runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching…'**
+  String get filesSearching;
+
+  /// Files: filter that also lists files and folders whose names start with a dot.
+  ///
+  /// In en, this message translates to:
+  /// **'Show hidden files'**
+  String get filesShowHidden;
+
+  /// Files: empty-folder body when every entry is hidden.
+  ///
+  /// In en, this message translates to:
+  /// **'This folder has only hidden files and folders.'**
+  String get filesOnlyHidden;
+
+  /// Files: row menu item that copies the file or folder name.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy name'**
+  String get filesCopyName;
+
+  /// All conversations: title of the Continue here question, naming the project it moves into.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to {project}?'**
+  String globalSessionsMoveTitle(String project);
+
+  /// All conversations: body of the Continue here question, naming both projects.
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” moves from {from} to {to} through the server’s sync system.'**
+  String globalSessionsMoveBody(String title, String from, String to);
+
+  /// All conversations: consequence line when the conversation being moved is working.
+  ///
+  /// In en, this message translates to:
+  /// **'It is working now. Moving it may interrupt the current step.'**
+  String get globalSessionsMoveWhileWorking;
+
+  /// All conversations: how to undo the move, naming the project it came from.
+  ///
+  /// In en, this message translates to:
+  /// **'To move it back, open {project} and choose Continue here in All conversations.'**
+  String globalSessionsMoveBack(String project);
+
+  /// All conversations: accessible name of the Active / Archived choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get globalSessionsFilterLabel;
+
+  /// All conversations: segment that shows conversations that are not archived.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get globalSessionsFilterActive;
+
+  /// All conversations: body when a search on the Archived filter finds nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived conversation has that title. Try a shorter search.'**
+  String get globalSessionsArchivedNoMatchMessage;
+
+  /// All conversations: title when the Archived filter has nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived conversations'**
+  String get globalSessionsArchivedEmptyTitle;
+
+  /// All conversations: body when the Archived filter has nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations you archive in Work appear here.'**
+  String get globalSessionsArchivedEmptyMessage;
+
+  /// All conversations: action on the empty Archived filter that goes back to Active.
+  ///
+  /// In en, this message translates to:
+  /// **'Show active conversations'**
+  String get globalSessionsShowActive;
+
+  /// All conversations: section name of the project Work has open now.
+  ///
+  /// In en, this message translates to:
+  /// **'{project} · In use'**
+  String globalSessionsProjectInUse(String project);
+
+  /// All conversations: row menu item that copies the conversation’s folder path.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy folder path'**
+  String get globalSessionsCopyFolder;
+
+  /// Worktrees: row menu item and ready notice action that starts a conversation in that worktree.
+  ///
+  /// In en, this message translates to:
+  /// **'New conversation here'**
+  String get worktreesStartConversation;
+
+  /// Worktrees: helper under the name field of New worktree.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode makes a separate branch and folder and runs the project’s startup tasks. Spaces become dashes.'**
+  String get worktreesCreateHelper;
+
+  /// Worktrees: label of the worktree folder path under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder'**
+  String get worktreesFolder;
+
+  /// Worktrees: supporting line of the project’s own folder row.
+  ///
+  /// In en, this message translates to:
+  /// **'Main copy'**
+  String get worktreesMainCopy;
+
+  /// Worktrees: row menu item that copies the folder path.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy folder path'**
+  String get worktreesCopyFolder;
+
+  /// Worktrees: title when the worktree list failed to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load worktrees'**
+  String get worktreesLoadFailedTitle;
+
+  /// Worktrees: state word that leads a worktree row whose setup failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup failed'**
+  String get worktreesSetupFailedWord;
+
+  /// Import conversation: why Import is not available yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a JSON file first.'**
+  String get importNeedsFile;
+
+  /// Import conversation: why Import is not available yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where to import it first.'**
+  String get importNeedsDestination;
+
+  /// Import conversation: section name of the chosen file, and its label under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get importFileLabel;
+
+  /// Import conversation: section name of the file’s preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation'**
+  String get importPreviewLabel;
+
+  /// Import conversation: how many messages the file holds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {1 message} other {{count} messages}}'**
+  String importMessages(int count);
+
+  /// Import conversation: title in the destination chooser when there is nowhere to import.
+  ///
+  /// In en, this message translates to:
+  /// **'No projects to import into'**
+  String get importNoDestinationsTitle;
+
+  /// Import conversation: supporting line of the destination row, naming the server.
+  ///
+  /// In en, this message translates to:
+  /// **'On {server}'**
+  String importOnServer(String server);
+
+  /// Import conversation: trailing word of the destination row that opens the chooser.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get importChangeDestinationShort;
+
+  /// Import conversation: label of the conversation id under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation ID'**
+  String get importConversationId;
+
+  /// Import conversation: label of the parent conversation id under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent conversation ID'**
+  String get importParentId;
+
+  /// Import conversation: label of the destination folder path under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder'**
+  String get importFolder;
+
+  /// Import conversation: label of the destination environment id under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud environment ID'**
+  String get importEnvironmentId;
+
+  /// All conversations: how many conversations are loaded and in how many projects, once every page is in.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {1 conversation} other {{count} conversations}} in {folders, plural, one {one project} other {{folders} projects}}'**
+  String globalSessionsSummaryCount(int count, int folders);
+
+  /// Built-in server, step 2: why the OpenCode 1 / OpenCode 2 choice is off while a step runs or the server is running.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the server and wait for the current step to switch.'**
+  String get builtinServerRuntimeLocked;
+
+  /// Built-in server log sheet: the log could not be read; the raw reason is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read the server log.'**
+  String get builtinServerLogReadFailed;
+
+  /// Phone setup screen A, Other ways, when OpenCode is ready in the app and also set up in Termux: connect to the Termux one instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the one in Termux'**
+  String get phoneSetupStartUseTermuxOne;
+
+  /// Phone setup screen A, Other ways: the supporting line of "Use the one in Termux".
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is also set up in Termux. Connect to it instead.'**
+  String get phoneSetupStartUseTermuxOneDetail;
+
+  /// Phone setup screen A, Other ways: supporting line of "Use Termux instead" when Termux is installed but has not granted the run-command permission.
+  ///
+  /// In en, this message translates to:
+  /// **'Termux is installed but hasn\'t let this app in yet. Finish its setup.'**
+  String get phoneSetupStartTermuxNotAllowed;
+
+  /// Add tools sheet: every optional tool is installed, so there is nothing to add.
+  ///
+  /// In en, this message translates to:
+  /// **'Every optional tool is already on this phone.'**
+  String get phoneSetupCustomizeAllInstalled;
+
+  /// Customize sheet: the word at the end of a required component's row, which cannot be switched off.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get phoneSetupCustomizeIncluded;
+
+  /// Running now: loading label while the process list is read
+  ///
+  /// In en, this message translates to:
+  /// **'Reading what runs on this phone'**
+  String get termuxProcsLoading;
+
+  /// Running now: title when the process list could not be read
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read what\'s running'**
+  String get termuxProcsLoadFailedTitle;
+
+  /// Running now: body of the empty state
+  ///
+  /// In en, this message translates to:
+  /// **'When OpenCode, the AI Team or a build runs here, it shows up in this list.'**
+  String get termuxProcsEmptyBody;
+
+  /// Running now: title of the result when some processes did not stop
+  ///
+  /// In en, this message translates to:
+  /// **'Not everything stopped'**
+  String get termuxProcsNotStoppedTitle;
+
+  /// Copies a process's command line
+  ///
+  /// In en, this message translates to:
+  /// **'Copy command'**
+  String get termuxProcsCopyCommand;
+
+  /// Opens the phone server controls for a protected process
+  ///
+  /// In en, this message translates to:
+  /// **'Open On this phone'**
+  String get termuxProcsOpenControls;
+
+  /// Details label for a process's ID
+  ///
+  /// In en, this message translates to:
+  /// **'Process ID'**
+  String get termuxProcsProcessId;
+
+  /// Details label for the parent process's ID
+  ///
+  /// In en, this message translates to:
+  /// **'Parent process ID'**
+  String get termuxProcsParentId;
+
+  /// Process details: what a process in the OpenCode server group is
+  ///
+  /// In en, this message translates to:
+  /// **'Part of the OpenCode server on this phone.'**
+  String get termuxProcsAboutOpenCode;
+
+  /// Process details: what a process in the AI Team group is
+  ///
+  /// In en, this message translates to:
+  /// **'Part of the AI Team. Stopping it stops the work the team is doing.'**
+  String get termuxProcsAboutAiTeam;
+
+  /// Process details: what a build daemon is
+  ///
+  /// In en, this message translates to:
+  /// **'A build helper. The next build starts it again when it needs it.'**
+  String get termuxProcsAboutBuild;
+
+  /// Process details: why an orphan is safe to stop
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is waiting on it, so stopping it is safe.'**
+  String get termuxProcsAboutOrphan;
+
+  /// Process details: what a process in the Other group is
+  ///
+  /// In en, this message translates to:
+  /// **'Started by something else on this phone.'**
+  String get termuxProcsAboutOther;
+
+  /// Stop confirmation: a stopped process has no undo
+  ///
+  /// In en, this message translates to:
+  /// **'It can\'t be started again from here.'**
+  String get termuxProcsNoRestart;
+
+  /// Stop AI Team group confirmation: what is lost
+  ///
+  /// In en, this message translates to:
+  /// **'Any task the team is working on stops too.'**
+  String get termuxProcsStopGroupTeamLost;
+
+  /// Stop AI Team group confirmation: how to start it again
+  ///
+  /// In en, this message translates to:
+  /// **'You can start the team again from AI Team.'**
+  String get termuxProcsStopGroupTeamRestart;
+
+  /// In the Stop setup confirmation: where the person can pick setup up again
+  ///
+  /// In en, this message translates to:
+  /// **'Continue any time from On this phone.'**
+  String get phoneSetupProgressStopContinueLater;
+
+  /// AI Team merge confirmation: one consequence line naming the task whose changes are merged. {title} is the task's own title.
+  ///
+  /// In en, this message translates to:
+  /// **'Task: {title}'**
+  String teamMergeConfirmTask(String title);
+
+  /// AI Team merge section: under a refused merge, what happened and the next step.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was merged. Fix what the host says, then try again, or review the changes.'**
+  String get teamMergeFailedNext;
+
+  /// AI Team start-a-task sheet: under the planner's refusal, says the typed task is kept so the person can edit and resend it.
+  ///
+  /// In en, this message translates to:
+  /// **'Your task is still here. Edit it and send it again.'**
+  String get teamStartRunRefusedKept;
 }
 
 class _AppLocalizationsDelegate

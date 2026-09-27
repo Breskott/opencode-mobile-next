@@ -15634,62 +15634,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get termuxProcsLoading => 'Reading what runs on this phone';
-
-  @override
-  String get termuxProcsLoadFailedTitle => 'Couldn\'t read what\'s running';
-
-  @override
-  String get termuxProcsEmptyBody =>
-      'When OpenCode, the AI Team or a build runs here, it shows up in this list.';
-
-  @override
-  String get termuxProcsNotStoppedTitle => 'Not everything stopped';
-
-  @override
-  String get termuxProcsCopyCommand => 'Copy command';
-
-  @override
-  String get termuxProcsOpenControls => 'Open On this phone';
-
-  @override
-  String get termuxProcsProcessId => 'Process ID';
-
-  @override
-  String get termuxProcsParentId => 'Parent process ID';
-
-  @override
-  String get termuxProcsAboutOpenCode =>
-      'Part of the OpenCode server on this phone.';
-
-  @override
-  String get termuxProcsAboutAiTeam =>
-      'Part of the AI Team. Stopping it stops the work the team is doing.';
-
-  @override
-  String get termuxProcsAboutBuild =>
-      'A build helper. The next build starts it again when it needs it.';
-
-  @override
-  String get termuxProcsAboutOrphan =>
-      'Nothing is waiting on it, so stopping it is safe.';
-
-  @override
-  String get termuxProcsAboutOther =>
-      'Started by something else on this phone.';
-
-  @override
-  String get termuxProcsNoRestart => 'It can\'t be started again from here.';
-
-  @override
-  String get termuxProcsStopGroupTeamLost =>
-      'Any task the team is working on stops too.';
-
-  @override
-  String get termuxProcsStopGroupTeamRestart =>
-      'You can start the team again from AI Team.';
-
-  @override
   String get teamUiPhoneOptionalTag => 'اختياري · تجريبي';
 
   @override
@@ -17524,10 +17468,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get phoneSetupProgressKeepGoing => 'متابعة';
-
-  @override
-  String get phoneSetupProgressStopContinueLater =>
-      'Continue any time from On this phone.';
 
   @override
   String get builtinServerTitle => 'OpenCode داخل التطبيق';
@@ -23032,4 +22972,250 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitDateUnavailable => 'That day can’t be chosen';
+
+  @override
+  String get filesLoadingFolder => 'Opening folder…';
+
+  @override
+  String get filesSearching => 'Searching…';
+
+  @override
+  String get filesShowHidden => 'Show hidden files';
+
+  @override
+  String get filesOnlyHidden =>
+      'This folder has only hidden files and folders.';
+
+  @override
+  String get filesCopyName => 'Copy name';
+
+  @override
+  String globalSessionsMoveTitle(String project) {
+    return 'Move to $project?';
+  }
+
+  @override
+  String globalSessionsMoveBody(String title, String from, String to) {
+    return '“$title” moves from $from to $to through the server’s sync system.';
+  }
+
+  @override
+  String get globalSessionsMoveWhileWorking =>
+      'It is working now. Moving it may interrupt the current step.';
+
+  @override
+  String globalSessionsMoveBack(String project) {
+    return 'To move it back, open $project and choose Continue here in All conversations.';
+  }
+
+  @override
+  String get globalSessionsFilterLabel => 'Show';
+
+  @override
+  String get globalSessionsFilterActive => 'Active';
+
+  @override
+  String get globalSessionsArchivedNoMatchMessage =>
+      'No archived conversation has that title. Try a shorter search.';
+
+  @override
+  String get globalSessionsArchivedEmptyTitle => 'No archived conversations';
+
+  @override
+  String get globalSessionsArchivedEmptyMessage =>
+      'Conversations you archive in Work appear here.';
+
+  @override
+  String get globalSessionsShowActive => 'Show active conversations';
+
+  @override
+  String globalSessionsProjectInUse(String project) {
+    return '$project · In use';
+  }
+
+  @override
+  String get globalSessionsCopyFolder => 'Copy folder path';
+
+  @override
+  String get worktreesStartConversation => 'New conversation here';
+
+  @override
+  String get worktreesCreateHelper =>
+      'OpenCode makes a separate branch and folder and runs the project’s startup tasks. Spaces become dashes.';
+
+  @override
+  String get worktreesFolder => 'Folder';
+
+  @override
+  String get worktreesMainCopy => 'Main copy';
+
+  @override
+  String get worktreesCopyFolder => 'Copy folder path';
+
+  @override
+  String get worktreesLoadFailedTitle => 'Couldn\'t load worktrees';
+
+  @override
+  String get worktreesSetupFailedWord => 'Setup failed';
+
+  @override
+  String get importNeedsFile => 'Choose a JSON file first.';
+
+  @override
+  String get importNeedsDestination => 'Choose where to import it first.';
+
+  @override
+  String get importFileLabel => 'File';
+
+  @override
+  String get importPreviewLabel => 'Conversation';
+
+  @override
+  String importMessages(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count messages',
+      one: '1 message',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importNoDestinationsTitle => 'No projects to import into';
+
+  @override
+  String importOnServer(String server) {
+    return 'On $server';
+  }
+
+  @override
+  String get importChangeDestinationShort => 'Change';
+
+  @override
+  String get importConversationId => 'Conversation ID';
+
+  @override
+  String get importParentId => 'Parent conversation ID';
+
+  @override
+  String get importFolder => 'Folder';
+
+  @override
+  String get importEnvironmentId => 'Cloud environment ID';
+
+  @override
+  String globalSessionsSummaryCount(int count, int folders) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conversations',
+      one: '1 conversation',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      folders,
+      locale: localeName,
+      other: '$folders projects',
+      one: 'one project',
+    );
+    return '$_temp0 in $_temp1';
+  }
+
+  @override
+  String get builtinServerRuntimeLocked =>
+      'Stop the server and wait for the current step to switch.';
+
+  @override
+  String get builtinServerLogReadFailed => 'Couldn\'t read the server log.';
+
+  @override
+  String get phoneSetupStartUseTermuxOne => 'Use the one in Termux';
+
+  @override
+  String get phoneSetupStartUseTermuxOneDetail =>
+      'OpenCode is also set up in Termux. Connect to it instead.';
+
+  @override
+  String get phoneSetupStartTermuxNotAllowed =>
+      'Termux is installed but hasn\'t let this app in yet. Finish its setup.';
+
+  @override
+  String get phoneSetupCustomizeAllInstalled =>
+      'Every optional tool is already on this phone.';
+
+  @override
+  String get phoneSetupCustomizeIncluded => 'Required';
+
+  @override
+  String get termuxProcsLoading => 'Reading what runs on this phone';
+
+  @override
+  String get termuxProcsLoadFailedTitle => 'Couldn\'t read what\'s running';
+
+  @override
+  String get termuxProcsEmptyBody =>
+      'When OpenCode, the AI Team or a build runs here, it shows up in this list.';
+
+  @override
+  String get termuxProcsNotStoppedTitle => 'Not everything stopped';
+
+  @override
+  String get termuxProcsCopyCommand => 'Copy command';
+
+  @override
+  String get termuxProcsOpenControls => 'Open On this phone';
+
+  @override
+  String get termuxProcsProcessId => 'Process ID';
+
+  @override
+  String get termuxProcsParentId => 'Parent process ID';
+
+  @override
+  String get termuxProcsAboutOpenCode =>
+      'Part of the OpenCode server on this phone.';
+
+  @override
+  String get termuxProcsAboutAiTeam =>
+      'Part of the AI Team. Stopping it stops the work the team is doing.';
+
+  @override
+  String get termuxProcsAboutBuild =>
+      'A build helper. The next build starts it again when it needs it.';
+
+  @override
+  String get termuxProcsAboutOrphan =>
+      'Nothing is waiting on it, so stopping it is safe.';
+
+  @override
+  String get termuxProcsAboutOther =>
+      'Started by something else on this phone.';
+
+  @override
+  String get termuxProcsNoRestart => 'It can\'t be started again from here.';
+
+  @override
+  String get termuxProcsStopGroupTeamLost =>
+      'Any task the team is working on stops too.';
+
+  @override
+  String get termuxProcsStopGroupTeamRestart =>
+      'You can start the team again from AI Team.';
+
+  @override
+  String get phoneSetupProgressStopContinueLater =>
+      'Continue any time from On this phone.';
+
+  @override
+  String teamMergeConfirmTask(String title) {
+    return 'Task: $title';
+  }
+
+  @override
+  String get teamMergeFailedNext =>
+      'Nothing was merged. Fix what the host says, then try again, or review the changes.';
+
+  @override
+  String get teamStartRunRefusedKept =>
+      'Your task is still here. Edit it and send it again.';
 }
