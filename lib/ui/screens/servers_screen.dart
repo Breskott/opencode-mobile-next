@@ -2973,12 +2973,13 @@ class _ComputerCommand extends StatelessWidget {
         tone: KitTextTone.secondary,
       ),
     );
-    Widget command(String text, {Key? key}) => Padding(
+    Widget command(String text, {Key? key, String? caption}) => Padding(
       padding: EdgeInsetsDirectional.only(top: tokens.space2),
       child: KitCodeBlock(
         key: key,
         text: text,
         kind: KitCodeKind.command,
+        caption: caption,
         copyLabel: copy.handoffCopyCommand,
       ),
     );
@@ -2990,16 +2991,12 @@ class _ComputerCommand extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Semantics(
-                header: true,
-                child: KitText(
-                  copy.firstRunRunOnComputer,
-                  role: KitTextRole.label,
-                ),
-              ),
+              // The block's header says what to do with it, beside its copy
+              // button.
               command(
                 SetupCommands.startFor(backend),
                 key: const ValueKey('connect-command'),
+                caption: copy.firstRunRunOnComputer,
               ),
               if (below case final below?) ...[
                 SizedBox(height: tokens.space3),
@@ -3259,6 +3256,8 @@ class _BackendChoice extends StatelessWidget {
           ),
           KitChoiceList<ServerBackend>.single(
             semanticsLabel: copy.addServerConnectTo,
+            // A tap only selects; Save & connect acts on the whole form.
+            actsOnTap: false,
             selected: selected,
             onSelected: onSelected,
             choices: [
