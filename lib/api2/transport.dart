@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import 'dialect.dart';
+import 'http_keep_alive.dart' if (dart.library.io) 'http_keep_alive_io.dart';
 import '../diagnostics/perf_trace.dart';
 import '../ui/kit/kit_redact.dart';
 
@@ -52,6 +53,7 @@ class Api2Transport {
         validateStatus: (s) => s != null && s >= 200 && s < 300,
       ),
     );
+    configureHttpKeepAlive(_dio);
     if (password.isNotEmpty) {
       _dio.options.headers['Authorization'] = 'Basic $basicToken';
     }
