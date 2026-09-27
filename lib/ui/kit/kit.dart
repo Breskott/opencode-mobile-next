@@ -48,6 +48,7 @@
 /// | [KitTerminalView] | kit v2 §9.2 the terminal: a live xterm session or a transcript, in the theme's colours |
 /// | [KitPageRoute] | §10 a pushed page with the kit's one transition |
 /// | [KitSwap], [KitSpin], [KitAnimatedBox], [KitDim], [KitAnimatedValue], [KitPace] | §10 the small motion parts: cross-fade, spin, surface change, dim, eased number |
+/// | [KitFindMark] | chat-2 the find-in-conversation mark: an accent wash behind a hit (passive .18, active .38, as [KitCodeBlock] marks), never a text colour |
 ///
 /// The older shared states in `product_states.dart` are re-exported here so
 /// a screen imports one library; new screens use [KitStateView] for them.
@@ -151,6 +152,7 @@ export 'kit_work_graph.dart';
 export 'chat/kit_agent_strip.dart';
 export 'chat/kit_composer.dart';
 export 'chat/kit_composer_chips.dart';
+export 'chat/kit_find_mark.dart';
 export 'chat/kit_work_line.dart';
 export 'chat/kit_queued_message.dart';
 export 'kit_dialog.dart';
