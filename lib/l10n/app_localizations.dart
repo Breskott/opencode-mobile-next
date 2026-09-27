@@ -2354,12 +2354,6 @@ abstract class AppLocalizations {
   /// **'Connect to a server and the shared text opens in a new conversation.'**
   String get shareWaitingForServer;
 
-  /// No description provided for @shareSessionFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Shared text kept. Could not open a conversation. Retry when the connection is ready.'**
-  String get shareSessionFailed;
-
   /// No description provided for @webSourcesDisclosure.
   ///
   /// In en, this message translates to:
@@ -5833,12 +5827,6 @@ abstract class AppLocalizations {
   /// **'Could not connect to the saved server. Choose or fix a server, then start a new conversation.'**
   String get launchShortcutConnectionFailed;
 
-  /// Snackbar shown when the New task shortcut reached a connected server but creating the session failed
-  ///
-  /// In en, this message translates to:
-  /// **'Could not start a new conversation. {error}'**
-  String launchShortcutNewTaskFailed(String error);
-
   /// Launcher shortcut label for a pinned session that has no title yet
   ///
   /// In en, this message translates to:
@@ -8074,18 +8062,6 @@ abstract class AppLocalizations {
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
   ///
   /// In en, this message translates to:
-  /// **'{hostLabel}:{port} is a local Codex listener, but nothing answered.'**
-  String e7ConnectionFailure10(String hostLabel, int port);
-
-  /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing answered at the remote Codex endpoint {hostLabel}:{port}.'**
-  String e7ConnectionFailure11(String hostLabel, int port);
-
-  /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
-  ///
-  /// In en, this message translates to:
   /// **'Start the Codex listener on this device.'**
   String get e7ConnectionFailure12;
 
@@ -8164,12 +8140,6 @@ abstract class AppLocalizations {
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
   ///
   /// In en, this message translates to:
-  /// **'{hostLabel}:{port} means the server should be running on this device, or reached through a tunnel that ends here. Neither answered.'**
-  String e7ConnectionFailure25(String hostLabel, int port);
-
-  /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
-  ///
-  /// In en, this message translates to:
   /// **'Running OpenCode in Termux? Open Termux and check that the server is still running.'**
   String get e7ConnectionFailure26;
 
@@ -8194,12 +8164,6 @@ abstract class AppLocalizations {
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
   ///
   /// In en, this message translates to:
-  /// **'Something is at {hostLabel}, but it did not reply. Usually the network in between, not the server.'**
-  String e7ConnectionFailure30(String hostLabel);
-
-  /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
-  ///
-  /// In en, this message translates to:
   /// **'Are you on the same network or VPN (for example Tailscale) as the computer?'**
   String get e7ConnectionFailure31;
 
@@ -8214,12 +8178,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Server not reachable'**
   String get e7ConnectionFailure33;
-
-  /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing answered at {hostLabel}:{port}. Either the server is not running or this device cannot reach that address.'**
-  String e7ConnectionFailure34(String hostLabel, int port);
 
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
   ///
@@ -8268,12 +8226,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not connect'**
   String get e7ConnectionFailure42;
-
-  /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
-  ///
-  /// In en, this message translates to:
-  /// **'The connection to {hostLabel} failed. Details below.'**
-  String e7ConnectionFailure43(String hostLabel);
 
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
   ///
@@ -9277,30 +9229,6 @@ abstract class AppLocalizations {
   /// **'Language could not be saved. Your previous choice is still active. Select a language to try again.'**
   String get e7LocaleUiSaveFailed;
 
-  /// Locale selection or app shell: Starting
-  ///
-  /// In en, this message translates to:
-  /// **'Starting OpenCode…'**
-  String get e7LocaleUiStarting;
-
-  /// Locale selection or app shell: StartFailed
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode could not start'**
-  String get e7LocaleUiStartFailed;
-
-  /// Locale selection or app shell: UnknownStartupError
-  ///
-  /// In en, this message translates to:
-  /// **'Unknown startup error'**
-  String get e7LocaleUiUnknownStartupError;
-
-  /// Locale selection or app shell: Retry
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get e7LocaleUiRetry;
-
   /// Locale selection or app shell: NewSession
   ///
   /// In en, this message translates to:
@@ -9468,12 +9396,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Right click / Shift + F10 / Menu'**
   String get e7LocaleUiContextKeys;
-
-  /// App shell command menu or routing: ShareScopeChanged
-  ///
-  /// In en, this message translates to:
-  /// **'Shared conversation scope changed'**
-  String get e7LocaleUiShareScopeChanged;
 
   /// App shell command menu or routing: ConnectionChanged
   ///
@@ -27923,12 +27845,6 @@ abstract class AppLocalizations {
   /// **'A running agent turn will stop. Your conversations are kept.'**
   String get workServerRestartBody;
 
-  /// Connecting card action once the server has not answered for 8 seconds
-  ///
-  /// In en, this message translates to:
-  /// **'Choose another server'**
-  String get workChooseAnotherServer;
-
   /// Status line when waiting requests could not be refreshed
   ///
   /// In en, this message translates to:
@@ -40365,108 +40281,6 @@ abstract class AppLocalizations {
   /// **'Give the team a first task'**
   String get teamPhoneReadyFirstTask;
 
-  /// AI Team screens: under 'The team isn’t answering' when the team runs on this phone.
-  ///
-  /// In en, this message translates to:
-  /// **'The app keeps trying while the team starts on this phone.'**
-  String get teamUiStateNotAnsweringPhone;
-
-  /// AI Team screens: under 'The team isn’t answering' when the team runs on a computer the app cannot name.
-  ///
-  /// In en, this message translates to:
-  /// **'The app keeps trying. Check that your computer is on and online.'**
-  String get teamUiStateNotAnsweringComputer;
-
-  /// AI Team screens: under 'The team isn’t answering'. {computer} is the computer's name, e.g. pop-os.
-  ///
-  /// In en, this message translates to:
-  /// **'The app keeps trying. Check that {computer} is on and online.'**
-  String teamUiStateNotAnsweringComputerNamed(String computer);
-
-  /// AI Team page menu: opens the form for the address the team is reached at (the page title names the team).
-  ///
-  /// In en, this message translates to:
-  /// **'Change address'**
-  String get teamHomeChangeAddress;
-
-  /// AI Team page: Turn off could not stop the team inside the app; nothing changed.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn’t stop the team on this phone, so it is still on. Try again.'**
-  String get teamHomeTurnOffFailed;
-
-  /// AI Team page subtitle, after the place: Android stopped the phone's team (the line under the bar offers Start the team again).
-  ///
-  /// In en, this message translates to:
-  /// **'Stopped'**
-  String get teamHomeHostStopped;
-
-  /// AI Team page subtitle, after the place: the heat guard paused the team because the phone is hot. Never the person's pause.
-  ///
-  /// In en, this message translates to:
-  /// **'Cooling down'**
-  String get teamHomeHostCooling;
-
-  /// AI Team page subtitle, after the place: the heat guard stopped the team because the phone is very hot.
-  ///
-  /// In en, this message translates to:
-  /// **'Stopped to cool down'**
-  String get teamHomeHostStoppedForHeat;
-
-  /// AI Team page: the heat guard's line. {time} is the clock time it paused, e.g. 14:02. No Resume: the guard resumes it.
-  ///
-  /// In en, this message translates to:
-  /// **'The phone got hot at {time}, so the team paused. It carries on by itself once the phone has cooled.'**
-  String teamHomeHeatPausedLine(String time);
-
-  /// AI Team page: the heat guard's line when it stopped the team. {time} is the clock time, e.g. 14:02.
-  ///
-  /// In en, this message translates to:
-  /// **'The phone got very hot at {time}, so the team stopped. Its work is kept, and it starts again once the phone has cooled.'**
-  String teamHomeHeatStoppedLine(String time);
-
-  /// AI Team page agents row, after the count: the heat guard paused the agents.
-  ///
-  /// In en, this message translates to:
-  /// **'resting while the phone cools'**
-  String get teamHomeAgentsCooling;
-
-  /// AI Team page row on the phone's Termux team: opens its own controls (keep running tips, stop, remove from this phone).
-  ///
-  /// In en, this message translates to:
-  /// **'Keep it running, stop it or remove it'**
-  String get teamHomePhoneControls;
-
-  /// AI Team page: what the whole team spent today. {usage} is e.g. '$0.42 est. · 12.4k tokens'.
-  ///
-  /// In en, this message translates to:
-  /// **'Today · {usage}'**
-  String teamHomeSpentToday(String usage);
-
-  /// AI Team page: under today's spend; never a task's cost.
-  ///
-  /// In en, this message translates to:
-  /// **'The whole team since midnight where it runs, estimated'**
-  String get teamHomeSpentHint;
-
-  /// AI Team page: under today's spend when part of it is unpriced or history is missing.
-  ///
-  /// In en, this message translates to:
-  /// **'Some of today’s use has no price yet, so it cost more than this'**
-  String get teamHomeSpentPartial;
-
-  /// AI Team page while off, on a computer: discovery found no team. {server} is the server's name.
-  ///
-  /// In en, this message translates to:
-  /// **'No AI Team found on {server}'**
-  String teamIntroNotFound(String server);
-
-  /// Settings › Plugins, OpenCode inside the app with its team on: opens the AI Team page.
-  ///
-  /// In en, this message translates to:
-  /// **'See the team’s tasks'**
-  String get pluginsTeamOpenPage;
-
   /// Chat: an agent error of the model-not-found kind whose server text the app does not recognise; the server's text is under Details
   ///
   /// In en, this message translates to:
@@ -41030,6 +40844,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Android did not turn background mode off.'**
   String get settingsBackgroundOffFailed;
+
+  /// Map page bootstrap-gate: the app is opening and reading its saved servers.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening…'**
+  String get bootstrapOpeningTitle;
+
+  /// Map page bootstrap-gate: under "Opening…".
+  ///
+  /// In en, this message translates to:
+  /// **'Reading your saved servers.'**
+  String get bootstrapOpeningBody;
+
+  /// Map page bootstrap-gate: the saved servers (preferences or the phone keystore) could not be read; the reason is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t read saved servers'**
+  String get bootstrapFailedTitle;
+
+  /// Map page bootstrap-gate: the likely fix for a locked keystore.
+  ///
+  /// In en, this message translates to:
+  /// **'If your phone just restarted, unlock it, then try again.'**
+  String get bootstrapFailedBody;
+
+  /// Map page share-session-failed-banner: the status line after text shared into the app could not open a conversation; the reason in words is under it.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared text saved · couldn\'t open a conversation'**
+  String get shareFailedLine;
+
+  /// Map page share-session-failed-banner: the same line after Try again failed again.
+  ///
+  /// In en, this message translates to:
+  /// **'Still couldn\'t open a conversation · shared text saved'**
+  String get shareFailedAgainLine;
+
+  /// Status line More action: copies the saved shared text.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy shared text'**
+  String get shareFailedCopy;
+
+  /// Status line More action: drops the saved shared text, with Undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard shared text'**
+  String get shareFailedDiscard;
+
+  /// Undo bar after Discard shared text.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared text discarded'**
+  String get shareDiscarded;
+
+  /// Why shared text did not open: the connection moved to another server or project meanwhile.
+  ///
+  /// In en, this message translates to:
+  /// **'The server or project changed while it opened. Try again.'**
+  String get shareConnectionChanged;
+
+  /// Status line when a new conversation (launcher shortcut, Ctrl+N) could not be created; the reason in words is under it.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t start a new conversation'**
+  String get appNewConversationFailed;
+
+  /// Status line on the connecting page when starting the phone server failed; the reason in words is under it.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode on this phone didn\'t start'**
+  String get rootPhoneServerStartFailed;
+
+  /// Map page root-connecting: the address is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'A local Codex listener should answer on this phone, but nothing did.'**
+  String get connectionFailureLocalCodexBody;
+
+  /// Map page root-connecting: the address is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing answered at the Codex endpoint.'**
+  String get connectionFailureRemoteCodexBody;
+
+  /// Map page root-connecting: the address is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'This address means the server runs on this phone, or is reached through a tunnel that ends here. Neither answered.'**
+  String get connectionFailureLoopbackBody;
+
+  /// Map page root-connecting: the address is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Something is at that address, but it did not reply. Usually the network in between, not the server.'**
+  String get connectionFailureTimedOutBody;
+
+  /// Map page root-connecting: the address is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing answered. Either the server is not running, or this phone cannot reach its address.'**
+  String get connectionFailureNothingAnsweredBody;
+
+  /// Map page root-connecting: an unrecognised failure.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection failed. What went wrong is under Details.'**
+  String get connectionFailureUnknownBody;
+
+  /// Map page root-connecting: first thing to check when a Tailscale address did not answer.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a Tailscale address: is Tailscale on, on this phone and on the server?'**
+  String get connectionFailureTailnetCheck;
+
+  /// AI Team screens: under 'The team isn’t answering' when the team runs on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'The app keeps trying while the team starts on this phone.'**
+  String get teamUiStateNotAnsweringPhone;
+
+  /// AI Team screens: under 'The team isn’t answering' when the team runs on a computer the app cannot name.
+  ///
+  /// In en, this message translates to:
+  /// **'The app keeps trying. Check that your computer is on and online.'**
+  String get teamUiStateNotAnsweringComputer;
+
+  /// AI Team screens: under 'The team isn’t answering'. {computer} is the computer's name, e.g. pop-os.
+  ///
+  /// In en, this message translates to:
+  /// **'The app keeps trying. Check that {computer} is on and online.'**
+  String teamUiStateNotAnsweringComputerNamed(String computer);
+
+  /// AI Team page menu: opens the form for the address the team is reached at (the page title names the team).
+  ///
+  /// In en, this message translates to:
+  /// **'Change address'**
+  String get teamHomeChangeAddress;
+
+  /// AI Team page: Turn off could not stop the team inside the app; nothing changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t stop the team on this phone, so it is still on. Try again.'**
+  String get teamHomeTurnOffFailed;
+
+  /// AI Team page subtitle, after the place: Android stopped the phone's team (the line under the bar offers Start the team again).
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get teamHomeHostStopped;
+
+  /// AI Team page subtitle, after the place: the heat guard paused the team because the phone is hot. Never the person's pause.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooling down'**
+  String get teamHomeHostCooling;
+
+  /// AI Team page subtitle, after the place: the heat guard stopped the team because the phone is very hot.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped to cool down'**
+  String get teamHomeHostStoppedForHeat;
+
+  /// AI Team page: the heat guard's line. {time} is the clock time it paused, e.g. 14:02. No Resume: the guard resumes it.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone got hot at {time}, so the team paused. It carries on by itself once the phone has cooled.'**
+  String teamHomeHeatPausedLine(String time);
+
+  /// AI Team page: the heat guard's line when it stopped the team. {time} is the clock time, e.g. 14:02.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone got very hot at {time}, so the team stopped. Its work is kept, and it starts again once the phone has cooled.'**
+  String teamHomeHeatStoppedLine(String time);
+
+  /// AI Team page agents row, after the count: the heat guard paused the agents.
+  ///
+  /// In en, this message translates to:
+  /// **'resting while the phone cools'**
+  String get teamHomeAgentsCooling;
+
+  /// AI Team page row on the phone's Termux team: opens its own controls (keep running tips, stop, remove from this phone).
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it running, stop it or remove it'**
+  String get teamHomePhoneControls;
+
+  /// AI Team page: what the whole team spent today. {usage} is e.g. '$0.42 est. · 12.4k tokens'.
+  ///
+  /// In en, this message translates to:
+  /// **'Today · {usage}'**
+  String teamHomeSpentToday(String usage);
+
+  /// AI Team page: under today's spend; never a task's cost.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole team since midnight where it runs, estimated'**
+  String get teamHomeSpentHint;
+
+  /// AI Team page: under today's spend when part of it is unpriced or history is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Some of today’s use has no price yet, so it cost more than this'**
+  String get teamHomeSpentPartial;
+
+  /// AI Team page while off, on a computer: discovery found no team. {server} is the server's name.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI Team found on {server}'**
+  String teamIntroNotFound(String server);
+
+  /// Settings › Plugins, OpenCode inside the app with its team on: opens the AI Team page.
+  ///
+  /// In en, this message translates to:
+  /// **'See the team’s tasks'**
+  String get pluginsTeamOpenPage;
 
   /// Work tab: said once per server when the app opened the server's only project by itself instead of asking which one.
   ///

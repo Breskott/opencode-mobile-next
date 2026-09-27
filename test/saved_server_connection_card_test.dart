@@ -323,6 +323,94 @@ void main() {
     );
     expect(find.byType(FilledButton), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    expect(find.text('Change server'), findsOneWidget);
+    expect(find.text('Switch server'), findsOneWidget);
   });
+
+  testWidgets('three failed tries lead with Switch server, Try again beside', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _card(
+        error: 'connection refused',
+        url: 'https://work.example',
+        attempts: 3,
+      ),
+    );
+    expect(
+      find.byKey(const ValueKey('saved-server-change-primary')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('saved-server-retry')), findsOneWidget);
+    // The address is under Details, not in the words.
+    expect(find.textContaining('work.example'), findsNothing);
+  });
+
+  testWidgets('a stopped phone server offers Start, never Try again', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: SavedServerConnectionCard(
+            profileName: 'This device (Termux)',
+            baseUrl: 'http://127.0.0.1:4096',
+            error: 'Cannot reach http://127.0.0.1:4096: Connection refused',
+            attempts: 1,
+            supportsTermux: true,
+            onChangeServer: () {},
+            onRetry: () {},
+            onStartPhoneServer: () {},
+          ),
+        ),
+      ),
+    );
+    expect(
+      find.byKey(const ValueKey('saved-server-start-phone')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('saved-server-retry')), findsNothing);
+  });
+
+  testWidgets('a Tailscale address offers its setup when the app has it', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    addTearDown(KitCapabilities.debugReset);
+    KitCapabilities.debugReset();
+    await tester.pumpWidget(
+      _card(error: 'connection refused', url: 'http://100.100.1.2:4096'),
+    );
+    // No flow registered: nothing that leads nowhere.
+    expect(find.byKey(const ValueKey('saved-server-tailscale')), findsNothing);
+
+    KitRequestCount.value = 0;
+    KitCapabilities.registerFlow(
+      KitEnableFlows.tailscaleSetup,
+      (context, request) async => KitRequestCount.value++,
+    );
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(
+      _card(error: 'connection refused', url: 'http://100.100.1.2:4096'),
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('saved-server-tailscale')),
+    );
+    await tester.tap(find.byKey(const ValueKey('saved-server-tailscale')));
+    await tester.pump();
+    expect(KitRequestCount.value, 1);
+  });
+}
+
+/// Counts enable-flow calls in the Tailscale test.
+abstract final class KitRequestCount {
+  static int value = 0;
 }

@@ -30907,7 +30907,7 @@
   "@bootstrapOpeningBody": {
     "description": "Map page bootstrap-gate: under \"Opening…\"."
   },
-  "bootstrapFailedTitle": "Can't read your saved servers",
+  "bootstrapFailedTitle": "Can't read saved servers",
   "@bootstrapFailedTitle": {
     "description": "Map page bootstrap-gate: the saved servers (preferences or the phone keystore) could not be read; the reason is under Details."
   },

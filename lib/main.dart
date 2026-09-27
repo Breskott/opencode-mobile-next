@@ -38,7 +38,6 @@ import 'termux/bridge.dart';
 import 'state/profiles.dart';
 import 'update/desktop_release_check.dart';
 import 'update/shorebird_update_notice.dart';
-import 'ui/app_iconography.dart';
 import 'ui/app_theme.dart';
 import 'ui/capability_flows.dart';
 import 'ui/desktop/desktop_interaction.dart';
@@ -209,9 +208,11 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Builder(
-        builder: (context) => KitScreen(
-          width: KitScreenWidth.reading,
-          body: _bootstrapState(context),
+        builder: (context) => _Ground(
+          child: KitScreen(
+            width: KitScreenWidth.reading,
+            body: _bootstrapState(context),
+          ),
         ),
       ),
     );
@@ -587,7 +588,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
             label: l10n.shareFailedCopy,
             icon: AppIconography.copy,
             onPressed: () {
-              final target = _navigatorKey.currentContext;
+              final target = _routeTracker.topContext;
               if (target == null) return;
               // The person's own words: copied as they are (SEC-13).
               unawaited(KitCopy.copy(target, text, redact: false));
@@ -616,7 +617,8 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   /// Discards the saved shared text with Undo: it is dropped only when the
   /// Undo bar goes.
   void _discardShare(String text) {
-    final context = _navigatorKey.currentContext;
+    // The top page's context: under the overlay the Undo bar goes into.
+    final context = _routeTracker.topContext;
     if (context == null) return;
     _clearNotice(_shareFailedNotice);
     showKitUndo(
@@ -1543,6 +1545,17 @@ class _TopRouteTracker extends NavigatorObserver {
 
   String? get topName => _stack.isEmpty ? null : _stack.last.settings.name;
 
+  /// A context inside the top page (below the navigator's overlay), for
+  /// the app-level parts that need one: the Undo bar, Copy.
+  BuildContext? get topContext {
+    for (final route in _stack.reversed) {
+      if (route is ModalRoute && route.subtreeContext != null) {
+        return route.subtreeContext;
+      }
+    }
+    return null;
+  }
+
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     _stack.add(route);
@@ -1786,70 +1799,72 @@ class _RootState extends ConsumerState<_Root> {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     // A KitScreen, so the app's line (a share waiting for this server)
     // shows above the card (map page root-connecting).
-    return KitScreen(
-      body: SavedServerConnectionCard(
-        profileName: serverDisplayName(
-          profile,
-          l10n,
-          among: conn.store.profiles,
+    return _Ground(
+      child: KitScreen(
+        body: SavedServerConnectionCard(
+          profileName: serverDisplayName(
+            profile,
+            l10n,
+            among: conn.store.profiles,
+          ),
+          usesConnectionToken: conn.usesConnectionToken,
+          requiresTokenReentry: profile.requiresCodexTokenReentry,
+          baseUrl: profile.baseUrl,
+          // The raw failure: the card diagnoses it into words and keeps
+          // the text itself under Details only.
+          error: startFailure != null
+              ? l10n.builtinServerStartFailed(startFailure.reason(l10n))
+              : conn.lastError,
+          attempts: _attempts,
+          inAppServer: inApp,
+          startingInAppServer: inApp && _builtin.starting,
+          inAppStartFailed: startFailure != null,
+          onOpenInAppSetup: startFailure != null
+              ? () => openPhoneSetupStart(context)
+              : null,
+          supportsTermux:
+              !inApp &&
+              !conn.usesConnectionToken &&
+              platformCapabilities.supportsTermux,
+          onChangeServer: () =>
+              navigator.pushNamedAndRemoveUntil('/servers', (_) => false),
+          onUpdateToken: () => navigator.pushNamedAndRemoveUntil(
+            '/servers',
+            (_) => false,
+            arguments: 'edit-active',
+          ),
+          onUpdatePassword: () => navigator.pushNamedAndRemoveUntil(
+            '/servers',
+            (_) => false,
+            arguments: 'edit-active',
+          ),
+          onOpenTermuxSetup:
+              !inApp &&
+                  !conn.usesConnectionToken &&
+                  platformCapabilities.supportsTermux
+              // The phone's own Termux server goes to This phone (Start is
+              // there); any other server on this phone goes to phone setup.
+              ? () => TermuxBridge.managesServerUrl(profile.baseUrl)
+                    ? openThisPhone(context, kind: PhoneHostKind.termux)
+                    : openPhoneSetupStart(context)
+              : null,
+          // The app's own phone server: when nothing answers, it is stopped
+          // (a phone restart, Android closing Termux, the app closed for
+          // OpenCode inside the app), and one tap starts it.
+          onStartPhoneServer: inApp
+              ? _startInAppServer
+              : !conn.usesConnectionToken &&
+                    platformCapabilities.supportsTermux &&
+                    TermuxBridge.managesServerUrl(profile.baseUrl)
+              ? _startPhoneServer
+              : null,
+          startingPhoneServer: inApp ? _builtin.starting : _startingPhoneServer,
+          onRetry: () {
+            _builtin.clearFailure();
+            _started = false;
+            _connectSaved();
+          },
         ),
-        usesConnectionToken: conn.usesConnectionToken,
-        requiresTokenReentry: profile.requiresCodexTokenReentry,
-        baseUrl: profile.baseUrl,
-        // The raw failure: the card diagnoses it into words and keeps
-        // the text itself under Details only.
-        error: startFailure != null
-            ? l10n.builtinServerStartFailed(startFailure.reason(l10n))
-            : conn.lastError,
-        attempts: _attempts,
-        inAppServer: inApp,
-        startingInAppServer: inApp && _builtin.starting,
-        inAppStartFailed: startFailure != null,
-        onOpenInAppSetup: startFailure != null
-            ? () => openPhoneSetupStart(context)
-            : null,
-        supportsTermux:
-            !inApp &&
-            !conn.usesConnectionToken &&
-            platformCapabilities.supportsTermux,
-        onChangeServer: () =>
-            navigator.pushNamedAndRemoveUntil('/servers', (_) => false),
-        onUpdateToken: () => navigator.pushNamedAndRemoveUntil(
-          '/servers',
-          (_) => false,
-          arguments: 'edit-active',
-        ),
-        onUpdatePassword: () => navigator.pushNamedAndRemoveUntil(
-          '/servers',
-          (_) => false,
-          arguments: 'edit-active',
-        ),
-        onOpenTermuxSetup:
-            !inApp &&
-                !conn.usesConnectionToken &&
-                platformCapabilities.supportsTermux
-            // The phone's own Termux server goes to This phone (Start is
-            // there); any other server on this phone goes to phone setup.
-            ? () => TermuxBridge.managesServerUrl(profile.baseUrl)
-                  ? openThisPhone(context, kind: PhoneHostKind.termux)
-                  : openPhoneSetupStart(context)
-            : null,
-        // The app's own phone server: when nothing answers, it is stopped
-        // (a phone restart, Android closing Termux, the app closed for
-        // OpenCode inside the app), and one tap starts it.
-        onStartPhoneServer: inApp
-            ? _startInAppServer
-            : !conn.usesConnectionToken &&
-                  platformCapabilities.supportsTermux &&
-                  TermuxBridge.managesServerUrl(profile.baseUrl)
-            ? _startPhoneServer
-            : null,
-        startingPhoneServer: inApp ? _builtin.starting : _startingPhoneServer,
-        onRetry: () {
-          _builtin.clearFailure();
-          _started = false;
-          _connectSaved();
-        },
       ),
     );
   }
@@ -1860,4 +1875,21 @@ class _RootState extends ConsumerState<_Root> {
     _builtin.removeListener(_changed);
     super.dispose();
   }
+}
+
+/// The page ground under a bar-less root page (the app opening, the saved
+/// server connecting): a KitScreen draws its ground only with a top bar.
+class _Ground extends StatelessWidget {
+  const _Ground({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => KitSurface(
+    level: KitSurfaceLevel.ground,
+    shape: KitShape.square,
+    padding: KitSurfacePadding.none,
+    clip: false,
+    child: child,
+  );
 }

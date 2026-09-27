@@ -24,9 +24,9 @@ import 'screens/phone_setup/phone_setup_termux_screen.dart';
 import 'screens/project_hub_screen.dart';
 import 'screens/projects_screen.dart';
 import 'screens/servers_screen.dart' show ServersRouteRequest;
-import 'screens/settings/notifications_settings_screen.dart';
+import 'screens/settings_screen.dart' show NotificationsSettingsScreen;
 import 'screens/tailscale_setup_screen.dart';
-import 'screens/team/team_intro_screen.dart';
+import 'screens/team/team_page.dart';
 import 'screens/this_phone_screen.dart';
 import 'screens/tools_hub_screen.dart';
 import 'screens/usage_hub_screen.dart';
@@ -70,8 +70,9 @@ Map<String, KitEnableFlowHandler> capabilityFlowHandlers(
     KitEnableFlows.serverGeneration: (context, request) =>
         _switchGeneration(context, request, phone: phone),
     KitEnableFlows.modelSignIn: (context, _) => _signIn(context, controller),
+    // The team page: its intro and turn-on while the team is off (P3.4).
     KitEnableFlows.teamTurnOn: (context, _) =>
-        openTeamIntro(context, controller),
+        openTeamPage(context, controller),
     KitEnableFlows.teamHostGuide: (context, _) =>
         showTeamHostGuideSheet(context),
     KitEnableFlows.mcpAdd: (context, _) => pushKitPage<void>(

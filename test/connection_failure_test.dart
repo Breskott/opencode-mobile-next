@@ -114,7 +114,9 @@ void main() {
       url: 'https://dev.tail.net:4096',
     );
     expect(f.title, 'Server not reachable');
-    expect(f.explanation, contains('dev.tail.net:4096'));
+    // The address is under Details (the card's), not in the words.
+    expect(f.explanation, isNot(contains('dev.tail.net')));
+    expect(f.tailnet, isFalse);
     expect(f.primary, ConnectionFailureAction.retry);
   });
 
@@ -211,6 +213,23 @@ void main() {
         inAppStartFailed: true,
       ).title,
       'OpenCode inside the app did not start',
+    );
+  });
+
+  test('a Tailscale address that did not answer says to check Tailscale', () {
+    final f = d(
+      'Health check failed: connection refused',
+      url: 'http://100.101.102.103:4096',
+    );
+    expect(f.tailnet, isTrue);
+    expect(f.checks.first, contains('Tailscale'));
+    expect(ConnectionFailure.isTailnetHost('laptop.tail1234.ts.net'), isTrue);
+    expect(ConnectionFailure.isTailnetHost('100.63.0.1'), isFalse);
+    expect(ConnectionFailure.isTailnetHost('192.168.1.2'), isFalse);
+    // A refused sign-in means Tailscale did its part.
+    expect(
+      d('Health check failed (HTTP 401)', url: 'http://100.64.0.2').tailnet,
+      isFalse,
     );
   });
 }

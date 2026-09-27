@@ -351,12 +351,7 @@ class SavedServerConnectionCard extends StatelessWidget {
         if (tailscale)
           KitAction(
             key: const ValueKey('saved-server-tailscale'),
-            label:
-                KitCapabilityExplainer.enableLabelOf(
-                  context,
-                  _tailscaleCapability,
-                ) ??
-                '',
+            label: l10n.kitCapNetworkTailscaleEnable,
             onPressed: () => KitCapabilities.enable(
               context,
               _tailscaleCapability,

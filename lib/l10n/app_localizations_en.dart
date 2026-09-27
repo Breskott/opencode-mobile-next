@@ -1331,10 +1331,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Connect to a server and the shared text opens in a new conversation.';
 
   @override
-  String get shareSessionFailed =>
-      'Shared text kept. Could not open a conversation. Retry when the connection is ready.';
-
-  @override
   String get webSourcesDisclosure =>
       'Web search is not available through this server’s app gateway. Paste a public URL and optionally an excerpt you want to include. No page is fetched. Nothing is sent to the model here.';
 
@@ -3447,11 +3443,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not connect to the saved server. Choose or fix a server, then start a new conversation.';
 
   @override
-  String launchShortcutNewTaskFailed(String error) {
-    return 'Could not start a new conversation. $error';
-  }
-
-  @override
   String get launchUiPinnedUntitled => 'Untitled conversation';
 
   @override
@@ -4791,16 +4782,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7ConnectionFailure9 => 'Codex endpoint unreachable';
 
   @override
-  String e7ConnectionFailure10(String hostLabel, int port) {
-    return '$hostLabel:$port is a local Codex listener, but nothing answered.';
-  }
-
-  @override
-  String e7ConnectionFailure11(String hostLabel, int port) {
-    return 'Nothing answered at the remote Codex endpoint $hostLabel:$port.';
-  }
-
-  @override
   String get e7ConnectionFailure12 =>
       'Start the Codex listener on this device.';
 
@@ -4850,11 +4831,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7ConnectionFailure24 => 'Nothing is listening on this device';
 
   @override
-  String e7ConnectionFailure25(String hostLabel, int port) {
-    return '$hostLabel:$port means the server should be running on this device, or reached through a tunnel that ends here. Neither answered.';
-  }
-
-  @override
   String get e7ConnectionFailure26 =>
       'Running OpenCode in Termux? Open Termux and check that the server is still running.';
 
@@ -4870,11 +4846,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7ConnectionFailure29 => 'The server did not answer in time';
 
   @override
-  String e7ConnectionFailure30(String hostLabel) {
-    return 'Something is at $hostLabel, but it did not reply. Usually the network in between, not the server.';
-  }
-
-  @override
   String get e7ConnectionFailure31 =>
       'Are you on the same network or VPN (for example Tailscale) as the computer?';
 
@@ -4885,11 +4856,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7ConnectionFailure33 => 'Server not reachable';
-
-  @override
-  String e7ConnectionFailure34(String hostLabel, int port) {
-    return 'Nothing answered at $hostLabel:$port. Either the server is not running or this device cannot reach that address.';
-  }
 
   @override
   String get e7ConnectionFailure35 =>
@@ -4920,11 +4886,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7ConnectionFailure42 => 'Could not connect';
-
-  @override
-  String e7ConnectionFailure43(String hostLabel) {
-    return 'The connection to $hostLabel failed. Details below.';
-  }
 
   @override
   String get e7ConnectionFailure44 =>
@@ -5569,18 +5530,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Language could not be saved. Your previous choice is still active. Select a language to try again.';
 
   @override
-  String get e7LocaleUiStarting => 'Starting OpenCode…';
-
-  @override
-  String get e7LocaleUiStartFailed => 'OpenCode could not start';
-
-  @override
-  String get e7LocaleUiUnknownStartupError => 'Unknown startup error';
-
-  @override
-  String get e7LocaleUiRetry => 'Try again';
-
-  @override
   String get e7LocaleUiNewSession => 'New conversation';
 
   @override
@@ -5668,9 +5617,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LocaleUiContextKeys => 'Right click / Shift + F10 / Menu';
-
-  @override
-  String get e7LocaleUiShareScopeChanged => 'Shared conversation scope changed';
 
   @override
   String get e7LocaleUiConnectionChanged => 'The server changed.';
@@ -17276,9 +17222,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'A running agent turn will stop. Your conversations are kept.';
 
   @override
-  String get workChooseAnotherServer => 'Choose another server';
-
-  @override
   String get workStale => 'This may be out of date';
 
   @override
@@ -25643,72 +25586,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamPhoneReadyFirstTask => 'Give the team a first task';
 
   @override
-  String get teamUiStateNotAnsweringPhone =>
-      'The app keeps trying while the team starts on this phone.';
-
-  @override
-  String get teamUiStateNotAnsweringComputer =>
-      'The app keeps trying. Check that your computer is on and online.';
-
-  @override
-  String teamUiStateNotAnsweringComputerNamed(String computer) {
-    return 'The app keeps trying. Check that $computer is on and online.';
-  }
-
-  @override
-  String get teamHomeChangeAddress => 'Change address';
-
-  @override
-  String get teamHomeTurnOffFailed =>
-      'Couldn’t stop the team on this phone, so it is still on. Try again.';
-
-  @override
-  String get teamHomeHostStopped => 'Stopped';
-
-  @override
-  String get teamHomeHostCooling => 'Cooling down';
-
-  @override
-  String get teamHomeHostStoppedForHeat => 'Stopped to cool down';
-
-  @override
-  String teamHomeHeatPausedLine(String time) {
-    return 'The phone got hot at $time, so the team paused. It carries on by itself once the phone has cooled.';
-  }
-
-  @override
-  String teamHomeHeatStoppedLine(String time) {
-    return 'The phone got very hot at $time, so the team stopped. Its work is kept, and it starts again once the phone has cooled.';
-  }
-
-  @override
-  String get teamHomeAgentsCooling => 'resting while the phone cools';
-
-  @override
-  String get teamHomePhoneControls => 'Keep it running, stop it or remove it';
-
-  @override
-  String teamHomeSpentToday(String usage) {
-    return 'Today · $usage';
-  }
-
-  @override
-  String get teamHomeSpentHint =>
-      'The whole team since midnight where it runs, estimated';
-
-  @override
-  String get teamHomeSpentPartial =>
-      'Some of today’s use has no price yet, so it cost more than this';
-
-  @override
-  String teamIntroNotFound(String server) {
-    return 'No AI Team found on $server';
-  }
-
-  @override
-  String get pluginsTeamOpenPage => 'See the team’s tasks';
-
-  @override
   String get chatErrorModelNotFound => 'The server doesn\'t have this model.';
 
   @override
@@ -26099,6 +25976,141 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsBackgroundOffFailed =>
       'Android did not turn background mode off.';
+
+  @override
+  String get bootstrapOpeningTitle => 'Opening…';
+
+  @override
+  String get bootstrapOpeningBody => 'Reading your saved servers.';
+
+  @override
+  String get bootstrapFailedTitle => 'Can\'t read saved servers';
+
+  @override
+  String get bootstrapFailedBody =>
+      'If your phone just restarted, unlock it, then try again.';
+
+  @override
+  String get shareFailedLine =>
+      'Shared text saved · couldn\'t open a conversation';
+
+  @override
+  String get shareFailedAgainLine =>
+      'Still couldn\'t open a conversation · shared text saved';
+
+  @override
+  String get shareFailedCopy => 'Copy shared text';
+
+  @override
+  String get shareFailedDiscard => 'Discard shared text';
+
+  @override
+  String get shareDiscarded => 'Shared text discarded';
+
+  @override
+  String get shareConnectionChanged =>
+      'The server or project changed while it opened. Try again.';
+
+  @override
+  String get appNewConversationFailed => 'Couldn\'t start a new conversation';
+
+  @override
+  String get rootPhoneServerStartFailed =>
+      'OpenCode on this phone didn\'t start';
+
+  @override
+  String get connectionFailureLocalCodexBody =>
+      'A local Codex listener should answer on this phone, but nothing did.';
+
+  @override
+  String get connectionFailureRemoteCodexBody =>
+      'Nothing answered at the Codex endpoint.';
+
+  @override
+  String get connectionFailureLoopbackBody =>
+      'This address means the server runs on this phone, or is reached through a tunnel that ends here. Neither answered.';
+
+  @override
+  String get connectionFailureTimedOutBody =>
+      'Something is at that address, but it did not reply. Usually the network in between, not the server.';
+
+  @override
+  String get connectionFailureNothingAnsweredBody =>
+      'Nothing answered. Either the server is not running, or this phone cannot reach its address.';
+
+  @override
+  String get connectionFailureUnknownBody =>
+      'The connection failed. What went wrong is under Details.';
+
+  @override
+  String get connectionFailureTailnetCheck =>
+      'This is a Tailscale address: is Tailscale on, on this phone and on the server?';
+
+  @override
+  String get teamUiStateNotAnsweringPhone =>
+      'The app keeps trying while the team starts on this phone.';
+
+  @override
+  String get teamUiStateNotAnsweringComputer =>
+      'The app keeps trying. Check that your computer is on and online.';
+
+  @override
+  String teamUiStateNotAnsweringComputerNamed(String computer) {
+    return 'The app keeps trying. Check that $computer is on and online.';
+  }
+
+  @override
+  String get teamHomeChangeAddress => 'Change address';
+
+  @override
+  String get teamHomeTurnOffFailed =>
+      'Couldn’t stop the team on this phone, so it is still on. Try again.';
+
+  @override
+  String get teamHomeHostStopped => 'Stopped';
+
+  @override
+  String get teamHomeHostCooling => 'Cooling down';
+
+  @override
+  String get teamHomeHostStoppedForHeat => 'Stopped to cool down';
+
+  @override
+  String teamHomeHeatPausedLine(String time) {
+    return 'The phone got hot at $time, so the team paused. It carries on by itself once the phone has cooled.';
+  }
+
+  @override
+  String teamHomeHeatStoppedLine(String time) {
+    return 'The phone got very hot at $time, so the team stopped. Its work is kept, and it starts again once the phone has cooled.';
+  }
+
+  @override
+  String get teamHomeAgentsCooling => 'resting while the phone cools';
+
+  @override
+  String get teamHomePhoneControls => 'Keep it running, stop it or remove it';
+
+  @override
+  String teamHomeSpentToday(String usage) {
+    return 'Today · $usage';
+  }
+
+  @override
+  String get teamHomeSpentHint =>
+      'The whole team since midnight where it runs, estimated';
+
+  @override
+  String get teamHomeSpentPartial =>
+      'Some of today’s use has no price yet, so it cost more than this';
+
+  @override
+  String teamIntroNotFound(String server) {
+    return 'No AI Team found on $server';
+  }
+
+  @override
+  String get pluginsTeamOpenPage => 'See the team’s tasks';
 
   @override
   String defaultProjectOnlyNotice(String project) {
