@@ -26512,4 +26512,130 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get termuxProcsCpuTime => 'Processor time';
+
+  @override
+  String get consentBatteryTitle => 'Keep the server running?';
+
+  @override
+  String get consentBatteryBody =>
+      'Android may stop the server on this phone while the app is closed. Allow background running and Android asks you to confirm.';
+
+  @override
+  String get consentBatteryAllow => 'Allow background running';
+
+  @override
+  String get consentMakerTitle => 'Restart the server automatically?';
+
+  @override
+  String consentMakerBody(String maker) {
+    return '$maker phones stop apps that aren\'t allowed to start by themselves, and the server then stays off. Turn on auto-start for this app on the screen that opens.';
+  }
+
+  @override
+  String get consentMakerBodyUnnamed =>
+      'Some phones stop apps that aren\'t allowed to start by themselves, and the server then stays off. Turn on auto-start for this app on the screen that opens.';
+
+  @override
+  String get consentMakerAllow => 'Open auto-start settings';
+
+  @override
+  String get consentNotNow => 'Not now';
+
+  @override
+  String get consentSaveFailed =>
+      'Your answer couldn\'t be saved on this phone, so nothing was changed. Try again.';
+
+  @override
+  String get consentStorageFailed =>
+      'Your earlier answers on this server couldn\'t be read, so the app won\'t ask them again for now. Reopen this page to try again.';
+
+  @override
+  String get consentGroupLabel => 'Your answers';
+
+  @override
+  String get consentRowBattery => 'Background running';
+
+  @override
+  String get consentRowMaker => 'Start again by itself';
+
+  @override
+  String get consentRowNeedsYou => 'Tell me when the agent needs me';
+
+  @override
+  String get consentRowAlwaysAllow => 'Always allow offers';
+
+  @override
+  String get consentWhyBattery =>
+      'Android may stop the server on this phone while the app is closed.';
+
+  @override
+  String get consentWhyMaker =>
+      'This phone may not start the server again after it stops.';
+
+  @override
+  String get consentWhyNeedsYou =>
+      'You won\'t get a notification when the agent waits for your answer.';
+
+  @override
+  String get consentWhyUnfinished =>
+      'The question closed before you answered. Tap to answer now.';
+
+  @override
+  String get consentAllowedSystem =>
+      'The phone\'s own setting decides. Tap to check it or turn it off.';
+
+  @override
+  String get consentAllowedNeedsYou => 'Tap to change it in Notifications.';
+
+  @override
+  String get consentWhyAlwaysAllow =>
+      'Still asked each time. Tap to be offered Always allow again.';
+
+  @override
+  String get consentValueAllowed => 'Allowed';
+
+  @override
+  String get consentValueDeclined => 'Declined';
+
+  @override
+  String get consentValueUnanswered => 'Not answered';
+
+  @override
+  String consentValueDeclinedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count declined',
+      one: '1 declined',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get consentAlwaysAgainTitle => 'Ask to always allow?';
+
+  @override
+  String get consentAlwaysAgainBody =>
+      'After 3 more identical asks, the app offers to always allow them again. Nothing is allowed until you say so.';
+
+  @override
+  String get consentAlwaysAgainConfirm => 'Offer again';
+
+  @override
+  String consentAlwaysAllowQuestion(String what) {
+    return 'Asked 3 times. Always allow $what?';
+  }
+
+  @override
+  String get consentAlwaysAllowDecline => 'Keep asking';
+
+  @override
+  String get consentAlwaysAllowFailed =>
+      'The server didn\'t save Always allow. The request is still waiting; try again or answer it once.';
+
+  @override
+  String get consentAlwaysAllowTitle => 'Always allow this request?';
+
+  @override
+  String get consentNeedsYouAllow => 'Turn on notifications';
 }
