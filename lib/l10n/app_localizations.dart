@@ -40940,6 +40940,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Spent · {period}'**
   String usageSpentPeriod(String period);
+
+  /// Settings: title of the page and hub row listing what the app and agent do on this server without asking.
+  ///
+  /// In en, this message translates to:
+  /// **'What runs by itself'**
+  String get automationTitle;
+
+  /// Settings search: extra words that find What runs by itself.
+  ///
+  /// In en, this message translates to:
+  /// **'automation automatic supervision auto approve approvals always allow permissions background watch monitor team level'**
+  String get automationSearchAliases;
+
+  /// What runs by itself: intro line. {server} is the server's shown name.
+  ///
+  /// In en, this message translates to:
+  /// **'What the app and the agent do on {server} without asking you first.'**
+  String automationIntro(String server);
+
+  /// What runs by itself: storage refused the chosen level.
+  ///
+  /// In en, this message translates to:
+  /// **'This choice wasn\'t saved on this phone. The level above is still the one in use; try again.'**
+  String get automationSaveFailed;
+
+  /// What runs by itself: a choice is being saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get automationSaving;
+
+  /// What runs by itself: this server has no team, no saved rules and can't be watched.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing runs by itself here'**
+  String get automationEmptyTitle;
+
+  /// What runs by itself: why the page is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'This server has no AI Team, doesn\'t keep always allowed actions and can\'t be watched in the background.'**
+  String get automationEmptyBody;
+
+  /// What runs by itself: label over the supervision levels.
+  ///
+  /// In en, this message translates to:
+  /// **'How much the AI Team decides alone'**
+  String get automationTeamLabel;
+
+  /// What runs by itself: what the chosen level changes.
+  ///
+  /// In en, this message translates to:
+  /// **'New team tasks start at this level. You can pick another level for one task when you start it.'**
+  String get automationTeamFootnote;
+
+  /// What runs by itself: label over the rows for saved rules and background watching.
+  ///
+  /// In en, this message translates to:
+  /// **'Without asking you'**
+  String get automationWithoutAskingLabel;
+
+  /// What runs by itself: the Always allowed actions row's line.
+  ///
+  /// In en, this message translates to:
+  /// **'What the agent may run here without asking you.'**
+  String get automationSavedRulesDetail;
+
+  /// What runs by itself: row that opens Notifications at the watched servers.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch in the background'**
+  String get automationWatchTitle;
+
+  /// What runs by itself: the watch row's line.
+  ///
+  /// In en, this message translates to:
+  /// **'Checks for requests while the app is closed. Set in Notifications.'**
+  String get automationWatchDetail;
+
+  /// What runs by itself: a door row's state value.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get automationValueOn;
+
+  /// What runs by itself: a door row's state value.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get automationValueOff;
 }
 
 class _AppLocalizationsDelegate

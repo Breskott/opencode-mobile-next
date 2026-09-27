@@ -26258,4 +26258,57 @@ class AppLocalizationsAr extends AppLocalizations {
   String usageSpentPeriod(String period) {
     return 'Spent · $period';
   }
+
+  @override
+  String get automationTitle => 'What runs by itself';
+
+  @override
+  String get automationSearchAliases =>
+      'automation automatic supervision auto approve approvals always allow permissions background watch monitor team level';
+
+  @override
+  String automationIntro(String server) {
+    return 'What the app and the agent do on $server without asking you first.';
+  }
+
+  @override
+  String get automationSaveFailed =>
+      'This choice wasn\'t saved on this phone. The level above is still the one in use; try again.';
+
+  @override
+  String get automationSaving => 'Saving…';
+
+  @override
+  String get automationEmptyTitle => 'Nothing runs by itself here';
+
+  @override
+  String get automationEmptyBody =>
+      'This server has no AI Team, doesn\'t keep always allowed actions and can\'t be watched in the background.';
+
+  @override
+  String get automationTeamLabel => 'How much the AI Team decides alone';
+
+  @override
+  String get automationTeamFootnote =>
+      'New team tasks start at this level. You can pick another level for one task when you start it.';
+
+  @override
+  String get automationWithoutAskingLabel => 'Without asking you';
+
+  @override
+  String get automationSavedRulesDetail =>
+      'What the agent may run here without asking you.';
+
+  @override
+  String get automationWatchTitle => 'Watch in the background';
+
+  @override
+  String get automationWatchDetail =>
+      'Checks for requests while the app is closed. Set in Notifications.';
+
+  @override
+  String get automationValueOn => 'On';
+
+  @override
+  String get automationValueOff => 'Off';
 }
