@@ -1,0 +1,36 @@
+{
+  "purpose": "Observed spike pins, not an approved component manifest",
+  "ubuntu": {
+    "version": "24.04.5",
+    "sha256": {
+      "amd64": "e77b6f10c2590cef872b33ee9f635a0e3fd1f57fb074c0e52b5c7f56147a0c86",
+      "arm64": "a91d5a93010193712d346d761372b7c9db6dfcf093893161c64ca107f05914f2"
+    }
+  },
+  "node": {
+    "version": "24.21.0",
+    "sha256": {
+      "x64": "6e1db87ef58b8819e5d5402eff1536491b18edd8eb7bee5ef7897876e88dc5ff",
+      "arm64": "724282c3b43aec998aa9527380465b45d229e021b58035f5f4f63095eabfe5d5"
+    }
+  },
+  "claude": {
+    "version": "2.1.283",
+    "manifestUrl": "https://downloads.claude.ai/claude-code-releases/2.1.283/manifest.json",
+    "sha256": {
+      "linux-x64": "1859583ce32920595c61ef868bee52e1b1594f7486db209935e01f1e5e804ae2",
+      "linux-arm64": "346d294f0103d6fc0de11ac953579b5c62dfa90698a4cfc486b6f927c615e697"
+    },
+    "arm64Executed": false
+  },
+  "paseo": {
+    "version": "0.9.2",
+    "tarball": "https://registry.npmjs.org/@getpaseo/cli/-/cli-0.9.2.tgz",
+    "archiveBytes": 121409,
+    "sha256": "e19f77c334b2eb00c7671897524d534dbda6b0908c8e81ac96357d8a0967799d",
+    "integrity": "sha512-7ikeESKFNBnr6q5TanwNu1tc5WmXwKc9Q7xSfOjL6ts7o1CKIhBC0hj1Laud+c9uhbK13OyF47O1cViap+9cCQ==",
+    "transitivesLocked": false
+  },
+  "claudeAgentSdk": "0.3.246",
+  "nodePty": "1.2.0-beta.15"
+}

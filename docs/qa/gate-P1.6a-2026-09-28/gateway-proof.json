@@ -1,0 +1,28 @@
+{
+  "wrongPasswordFailureKind": "authentication",
+  "wrongPasswordRejected": true,
+  "version": "Paseo daemon 0.9.2 (experimental)",
+  "handshakeMs": 267,
+  "providerIds": [
+    "claude"
+  ],
+  "sessionCountBefore": 1,
+  "draftCreated": true,
+  "promptAccepted": true,
+  "signedOutViaHistory": true,
+  "historyRoles": [
+    "user",
+    "assistant"
+  ],
+  "testSessionDeleted": true,
+  "eventTypes": [
+    "message.part.updated",
+    "message.updated",
+    "session.deleted",
+    "session.idle",
+    "session.status",
+    "session.updated"
+  ],
+  "daemonSaysSignedOut": false,
+  "reconnectSucceeded": true
+}
