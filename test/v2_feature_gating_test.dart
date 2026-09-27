@@ -6,7 +6,8 @@
 /// must see exactly what it saw before this layer existed — and the v2 half
 /// asserts the locked treatment for that surface class:
 ///
-/// - nav destinations, tiles and menu actions with no v2 backend: **hidden**
+/// - unsupported tiles and menu actions: **hidden**
+/// - catalog Tools tab: retained with an explainer (screen-library-2 revamp)
 /// - settings rows: **shown disabled** with a one-line explainer
 /// - v2-only features on a v1 server: **hidden**, no explainer
 library;
@@ -14,6 +15,7 @@ library;
 import 'support/complete_message_history.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
@@ -212,6 +214,15 @@ EventEnvelope _formCreated() => EventEnvelope(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  const storage = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(storage, (_) async => null);
+  });
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(storage, null);
+  });
 
   group('the accessor reports transport truth', () {
     test('an unattached controller reports the v1 superset', () async {
@@ -238,7 +249,7 @@ void main() {
     });
   });
 
-  group('hidden: nav destination with no v2 backend (§7 row 20)', () {
+  group('catalog navigation preserves the explained Tools gate', () {
     testWidgets('catalog tabs stay reachable on a narrow large-text phone', (
       tester,
     ) async {
@@ -269,7 +280,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(references);
       await tester.pumpAndSettle();
-      expect(DefaultTabController.of(tester.element(references)).index, 3);
+      expect(
+        tester.widget<KitTabSwitcher>(find.byType(KitTabSwitcher)).index,
+        3,
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -284,27 +298,37 @@ void main() {
         find.byKey(const ValueKey('capabilities-tab-Tools')),
         findsOneWidget,
       );
-      expect(find.byType(Tab), findsNWidgets(4));
-    });
-
-    testWidgets('v2 drops the tab and keeps the screen', (tester) async {
-      final controller = await _controller(v2: true);
-      addTearDown(controller.dispose);
-
-      await tester.pumpWidget(_app(CapabilitiesScreen(controller: controller)));
-      await tester.pump();
-
-      expect(
-        find.byKey(const ValueKey('capabilities-tab-Tools')),
-        findsNothing,
-      );
-      expect(find.byType(ToolsScreen), findsNothing);
-      // The surviving catalogs still have their tabs — the screen lives on.
-      expect(find.byType(Tab), findsNWidgets(3));
-      for (final tab in const ['Commands', 'Skills', 'References']) {
-        expect(find.byKey(ValueKey('capabilities-tab-$tab')), findsOneWidget);
+      for (final label in const ['Commands', 'Tools', 'Skills', 'References']) {
+        expect(find.byKey(ValueKey('capabilities-tab-$label')), findsOneWidget);
       }
     });
+
+    testWidgets(
+      'v2 keeps the Tools tab and explains its unavailable inventory',
+      (tester) async {
+        final controller = await _controller(v2: true);
+        addTearDown(controller.dispose);
+
+        await tester.pumpWidget(
+          _app(CapabilitiesScreen(controller: controller)),
+        );
+        await tester.pump();
+
+        final tools = find.byKey(const ValueKey('capabilities-tab-Tools'));
+        expect(tools, findsOneWidget);
+        await tester.tap(tools);
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('capabilities-tools-unavailable')),
+          findsOneWidget,
+        );
+        expect(find.byType(ToolsScreen), findsNothing);
+        // The other catalogs remain reachable beside the explanation.
+        for (final tab in const ['Commands', 'Skills', 'References']) {
+          expect(find.byKey(ValueKey('capabilities-tab-$tab')), findsOneWidget);
+        }
+      },
+    );
   });
 
   group('hidden: More tile whose screen has no backend (§7 row 1)', () {
@@ -367,10 +391,10 @@ void main() {
     setUp(() => _useTallSurface());
 
     Future<void> openSessionMenu(WidgetTester tester) async {
-      // Workspace also has a section menu; open the session's labeled control.
-      final actions = find.byTooltip('Conversation actions').hitTestable();
-      expect(actions, findsOneWidget);
-      await tester.tap(actions);
+      // KIT-28 moved row actions to the long-press menu.
+      final row = find.byKey(const ValueKey('session-row-session-1'));
+      expect(row, findsOneWidget);
+      await tester.longPress(row);
       await tester.pumpAndSettle();
     }
 
@@ -516,22 +540,22 @@ void main() {
       expect(find.text('Default shell'), findsNothing);
       // Not a dead search result either.
       await tester.enterText(find.byKey(const Key('library-search')), 'shell');
-      await tester.pump();
+      await tester.pump(KitMotion.typingSettle);
+      await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('default-shell-settings-entry')),
         findsNothing,
       );
       // "shell" is one of the words that find the explanation instead.
       // It is a Help row now, so the hub lists it as a search result.
-      final help = find.byKey(
-        const ValueKey('search-result-settings-server-capabilities'),
-      );
+      final help = find.byKey(const ValueKey('settings-server-capabilities'));
       expect(help, findsOneWidget);
 
       await tester.tap(help);
       await tester.pumpAndSettle();
+      // R16 puts missing features first in one list, each with its own state.
       final unavailable = find.byKey(
-        const ValueKey('capabilities-unavailable'),
+        const ValueKey('capability-unavailable-shell'),
       );
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('capability-unavailable-shell')),
@@ -545,6 +569,16 @@ void main() {
       );
       expect(
         find.descendant(of: unavailable, matching: find.text('Default shell')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: unavailable,
+          matching: find.textContaining(
+            'Not on this server',
+            findRichText: true,
+          ),
+        ),
         findsOneWidget,
       );
       expect(

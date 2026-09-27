@@ -229,7 +229,10 @@ void main() {
           await tester.tap(action);
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
-          expect(find.text('Cancel'), findsOneWidget);
+          final dismiss = entry.key == 'cloud-environments'
+              ? find.byTooltip('Close')
+              : find.text('Cancel');
+          expect(dismiss, findsOneWidget);
           if (output != null) {
             File(
               '$output/${entry.key}-create-${variant.name}.png',
@@ -237,12 +240,18 @@ void main() {
               await capturePng(tester, boundary, pixelRatio: 1),
             );
           }
-          await tester.tap(find.text('Cancel'));
+          await tester.tap(dismiss);
           await tester.pumpAndSettle();
           expect(repository.mutations, 0);
         }
         if (entry.key == 'permissions') {
-          await tester.tap(find.byTooltip('Revoke bash access'));
+          final revoke = find.byKey(
+            const ValueKey('revoke-saved-permission-layout-permission'),
+          );
+          await tester.ensureVisible(revoke);
+          await tester.pumpAndSettle();
+          expect(revoke.hitTestable(), findsOneWidget);
+          await tester.tap(revoke);
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
           expect(find.text('Revoke access'), findsOneWidget);

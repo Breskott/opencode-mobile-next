@@ -1183,15 +1183,6 @@
       }
     }
   },
-  "quotaWindowRemainingLabel": "{window}: remaining percentage",
-  "@quotaWindowRemainingLabel": {
-    "description": "Progress-bar semantics label; its numeric value is expressed separately",
-    "placeholders": {
-      "window": {
-        "type": "String"
-      }
-    }
-  },
   "quotaUsed": "{percent} used",
   "@quotaUsed": {
     "description": "Provider-reported percentage used within one window",

@@ -3590,12 +3590,6 @@ abstract class AppLocalizations {
   /// **'{percent} remaining'**
   String quotaRemaining(String percent);
 
-  /// Progress-bar semantics label; its numeric value is expressed separately
-  ///
-  /// In en, this message translates to:
-  /// **'{window}: remaining percentage'**
-  String quotaWindowRemainingLabel(String window);
-
   /// Provider-reported percentage used within one window
   ///
   /// In en, this message translates to:

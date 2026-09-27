@@ -2131,11 +2131,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String quotaWindowRemainingLabel(String window) {
-    return '$window: النسبة المتبقية';
-  }
-
-  @override
   String quotaUsed(String percent) {
     return 'المستخدم $percent';
   }

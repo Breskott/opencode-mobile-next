@@ -140,7 +140,7 @@ changed except the setup commands' placeholder text.
 
 ## Merge with the integration tip (2026-09-28)
 
-`feat/phone-setup-v2` (dbac9c48: P3.5, P3.6, the Codex audit F1, kit-polish,
+`feat/phone-setup-v2` (dbac9c48, then 6627d50b: P3.5, P3.6, the Codex audit F1, kit-polish,
 R13–R15, P10.4) was merged in, and the conflicts were resolved:
 - `team/run_screen.dart` stays deleted (P3.5).
 - `product_states.dart` keeps the audit's domain-owned error mapping
@@ -158,7 +158,7 @@ R13–R15, P10.4) was merged in, and the conflicts were resolved:
   (technical_direction.dart), `SessionLinkQr`, `ProviderMonogram`,
   `BrandTile`, `TeamComposerField`, `workOwnerInitial`. Their tests now use
   `KitEntrance` and `KitLtr`; the wrapper-only tests were dropped.
-- ARB sweep redone: 3 more keys deleted (teamControlsFieldUnavailable,
+- ARB sweep redone: 4 more keys deleted (teamControlsFieldUnavailable, quotaWindowRemainingLabel,
   productErrorRejectedBecause, teamUiPhoneRemoved). 5 unused keys are kept
   for open slices (P0.7, shared-chat-2).
 

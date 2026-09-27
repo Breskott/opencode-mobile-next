@@ -12,6 +12,7 @@ import 'package:opencode_mobile/paseo/gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/managed_workspaces_screen.dart';
@@ -126,12 +127,7 @@ void _phone(WidgetTester tester, [Size size = const Size(390, 844)]) {
 }
 
 Future<void> _openProjectTab(WidgetTester tester) async {
-  await tester.tap(
-    find.descendant(
-      of: find.byType(NavigationBar),
-      matching: find.byIcon(AppIconography.files),
-    ),
-  );
+  await tester.tap(find.byKey(const ValueKey('home-shell-tab-project')));
   await tester.pumpAndSettle();
 }
 
@@ -221,12 +217,8 @@ void main() {
         await tester.pumpAndSettle();
 
         final labels = tester
-            .widgetList<NavigationDestination>(
-              find.descendant(
-                of: find.byType(NavigationBar),
-                matching: find.byType(NavigationDestination),
-              ),
-            )
+            .widget<KitNav>(find.byType(KitNav))
+            .destinations
             .map((destination) => destination.label)
             .toList();
         if (tools.isEmpty) {
@@ -236,18 +228,15 @@ void main() {
         }
         expect(labels, ['Work', 'Inbox', 'Project', 'Settings']);
         await _openProjectTab(tester);
-        expect(
-          tester
-              .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-              .data,
-          'Project',
-        );
+        final navigation = tester.widget<KitNav>(find.byType(KitNav));
+        expect(navigation.destinations[navigation.selected].label, 'Project');
         for (final tool in everyTool) {
           // Terminal stays listed, dimmed with its reason, on a server
           // without one (slice-P3.11a).
           expect(
             _tool(tool),
-            tools.contains(tool) || tool == ProjectTool.terminal
+            tool != ProjectTool.search &&
+                    (tools.contains(tool) || tool == ProjectTool.terminal)
                 ? findsOneWidget
                 : findsNothing,
             reason: '${entry.key}: ${tool.name}',
@@ -264,13 +253,32 @@ void main() {
             findsOneWidget,
           );
         }
-        // Top to bottom in the declared order.
+        // The hub puts Changes first and keeps Search inside Files. The
+        // registry still exposes Search for the command launcher.
+        final displayed = [
+          for (final tool in const [
+            ProjectTool.changes,
+            ProjectTool.files,
+            ProjectTool.terminal,
+            ProjectTool.health,
+            ProjectTool.worktrees,
+            ProjectTool.services,
+            ProjectTool.workspaces,
+          ])
+            if (tools.contains(tool) || tool == ProjectTool.terminal) tool,
+        ];
         final tops = [
-          for (final tool in tools) tester.getTopLeft(_tool(tool)).dy,
+          for (final tool in displayed) tester.getTopLeft(_tool(tool)).dy,
         ];
         expect(tops, [...tops]..sort());
         expect(find.text('app'), findsOneWidget);
-        expect(find.text('/srv/app'), findsOneWidget);
+        expect(find.text('/srv/app'), findsNothing);
+        await tester.tap(find.byKey(const ValueKey('project-hub-menu')));
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('project-hub-copy-path')),
+          findsOneWidget,
+        );
       });
     }
   });
@@ -290,7 +298,7 @@ void main() {
         await tester.tap(_tool(ProjectTool.files));
         await tester.pumpAndSettle();
         expect(find.byType(FilesScreen), findsOneWidget);
-        expect(find.byType(NavigationBar), findsOneWidget);
+        expect(find.byKey(const ValueKey('home-shell-nav')), findsOneWidget);
         expect(_tool(ProjectTool.files).hitTestable(), findsNothing);
 
         await tester.tap(find.byKey(const ValueKey('project-hub-files-back')));
@@ -303,7 +311,7 @@ void main() {
       },
     );
 
-    testWidgets('Search files opens Files with the find field focused', (
+    testWidgets('Files exposes its own search field without a second hub row', (
       tester,
     ) async {
       _phone(tester);
@@ -313,9 +321,12 @@ void main() {
       await tester.pumpAndSettle();
       await _openProjectTab(tester);
 
-      await tester.tap(_tool(ProjectTool.search));
+      expect(_tool(ProjectTool.search), findsNothing);
+      await tester.tap(_tool(ProjectTool.files));
       await tester.pumpAndSettle();
       expect(find.byType(FilesScreen), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('files-search-field')));
+      await tester.pumpAndSettle();
       expect(
         tester.binding.focusManager.primaryFocus?.debugLabel,
         'files-search',
@@ -333,6 +344,8 @@ void main() {
       await _openProjectTab(tester);
 
       Future<void> opens(ProjectTool tool, Type screen) async {
+        await tester.ensureVisible(_tool(tool));
+        await tester.pumpAndSettle();
         await tester.tap(_tool(tool));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
@@ -378,10 +391,12 @@ void main() {
         scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
         await tester.pumpAndSettle();
       }
-      expect(_tool(ProjectTool.search).hitTestable(), findsOneWidget);
+      expect(_tool(ProjectTool.workspaces).hitTestable(), findsOneWidget);
       expect(
-        tester.getRect(_tool(ProjectTool.search)).bottom,
-        lessThanOrEqualTo(tester.getRect(find.byType(NavigationBar)).top),
+        tester.getRect(_tool(ProjectTool.workspaces)).bottom,
+        lessThanOrEqualTo(
+          tester.getRect(find.byKey(const ValueKey('home-shell-nav'))).top,
+        ),
       );
       expect(tester.takeException(), isNull);
     });
