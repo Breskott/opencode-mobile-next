@@ -7,6 +7,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/notification_preferences.dart';
 import 'package:opencode_mobile/state/profile_monitor.dart';
 import 'package:opencode_mobile/ui/screens/profile_monitor_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit_row_parts.dart' show KitSwitchRow;
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'support/profile_monitor_fixture.dart';
@@ -134,7 +135,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     final quiet = find.descendant(
-      of: find.widgetWithText(SwitchListTile, 'Quiet hours'),
+      of: find.widgetWithText(KitSwitchRow, 'Quiet hours'),
       matching: find.byType(Switch),
     );
     await _reveal(tester, quiet);

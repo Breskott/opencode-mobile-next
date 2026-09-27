@@ -35588,6 +35588,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some saved sign-ins could not be removed. Try again.'**
   String get bootstrapResetFailedBody;
+
+  /// No description provided for @workStalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Stalled'**
+  String get workStalled;
 }
 
 class _AppLocalizationsDelegate

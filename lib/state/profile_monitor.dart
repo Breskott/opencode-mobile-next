@@ -8,6 +8,8 @@ import 'package:crypto/crypto.dart';
 import '../api2/models.dart' show Api2FormInfo;
 import '../api/models.dart';
 import '../domain/profile_monitor.dart';
+import '../domain/attention_feed.dart';
+import 'automation_policy.dart';
 import '../domain/server_gateway.dart';
 import 'notification_preferences.dart';
 import 'profiles.dart';
@@ -29,6 +31,19 @@ typedef MonitorAlert =
       String token,
     );
 
+class MonitorAttentionDetails {
+  const MonitorAttentionDetails({
+    required this.items,
+    required this.complete,
+    this.checkedSessionIDs = const {},
+    this.teamComplete = false,
+  });
+  final List<AttentionObservation> items;
+  final bool complete;
+  final Set<String> checkedSessionIDs;
+  final bool teamComplete;
+}
+
 /// Sequential, bounded snapshots: no subscriptions, active-connection mutation,
 /// persistent session titles, or background-service ownership.
 class ProfileMonitor extends ChangeNotifier {
@@ -43,11 +58,20 @@ class ProfileMonitor extends ChangeNotifier {
     required this.alert,
     required this.dismiss,
     this.alertsAllowed,
+    this.readAttention,
     DateTime Function()? now,
     this.foregroundInterval = const Duration(minutes: 1),
     this.backgroundInterval = const Duration(minutes: 5),
     this.timeout = const Duration(seconds: 8),
   }) : _now = now ?? DateTime.now;
+  final Future<MonitorAttentionDetails> Function(
+    ServerProfile profile,
+    MonitorGatewayPair pair,
+    List<Session> sessions,
+    Map<String, String> statuses,
+    bool Function() current,
+  )?
+  readAttention;
   final ProfileStore store;
   final MonitorGatewayFactory createGateway;
   final bool Function(String) isReadable;
@@ -68,7 +92,16 @@ class ProfileMonitor extends ChangeNotifier {
   String _source(ServerProfile p) => Hmac(sha256, _identitySalt)
       .convert(
         utf8.encode(
-          jsonEncode([p.baseUrl, p.username, p.password, p.flavor.name]),
+          jsonEncode([
+            p.baseUrl,
+            p.username,
+            p.password,
+            p.flavor.name,
+            p.backend.name,
+            p.codexToken,
+            p.codexDirectory,
+            p.orchestration?.toJson(),
+          ]),
         ),
       )
       .toString();
@@ -108,10 +141,14 @@ class ProfileMonitor extends ChangeNotifier {
   ServerGateway? _activeGateway;
   bool _foreground = true, _backgroundAllowed = false, _disposed = false;
   int _cursor = 0;
+  int _runtimeGeneration = 0;
   bool get refreshing => _refresh != null;
   bool get runningAllowed => _foreground || _backgroundAllowed;
-  Map<String, ProfileAttentionSnapshot> get snapshots =>
-      Map.unmodifiable(_snapshots);
+  Map<String, ProfileAttentionSnapshot> get snapshots => Map.unmodifiable({
+    for (final profile in store.profiles)
+      if (!_blocked.contains(profile.id) && isReadable(profile.id))
+        profile.id: snapshotFor(profile.id),
+  });
 
   /// Background attention needs a pollable pending-request surface. Codex
   /// sessions do not expose one, so an enabled legacy rule remains stored but
@@ -122,10 +159,8 @@ class ProfileMonitor extends ChangeNotifier {
   bool supportsProfile(ServerProfile profile) =>
       profile.backend != ServerBackend.codex;
 
-  /// A server on this phone (the managed OpenCode server, the Claude Code
-  /// daemon). Reading it costs no network, and a person running two agents
-  /// here expects to hear from the one they are not looking at, so with two
-  /// of them each is watched unless they turned that off.
+  /// Loopback servers use no network, so Wi-Fi restrictions do not apply.
+  /// They still need explicit monitor automation consent before any read.
   static bool isOnThisPhone(ServerProfile profile) {
     final host = Uri.tryParse(profile.baseUrl)?.host.toLowerCase();
     return host == '127.0.0.1' ||
@@ -258,6 +293,101 @@ class ProfileMonitor extends ChangeNotifier {
     } catch (_) {}
   }
 
+  final _policies = <String, AutomationPolicyController>{};
+  final _policyListeners = <String, VoidCallback>{};
+
+  AutomationPolicyController _policy(String id) {
+    return _policies.putIfAbsent(id, () {
+      final policy = AutomationPolicyController.forProfile(store.prefs, id);
+      var allowed = policy.value.allows(AutomationBehavior.monitorOtherServers);
+      void changed() {
+        final nextAllowed = policy.value.allows(
+          AutomationBehavior.monitorOtherServers,
+        );
+        if (_disposed || _blocked.contains(id) || nextAllowed == allowed) {
+          return;
+        }
+        allowed = nextAllowed;
+        _invalidatePoll(id);
+        _next.remove(id);
+        final prior = _snapshots[id];
+        if (prior != null) {
+          _snapshots[id] = _stale(
+            id,
+            nextAllowed
+                ? ProfileMonitorStatus.waiting
+                : ProfileMonitorStatus.disabled,
+            prior,
+          );
+        }
+        if (_activeProfileID == id) _activeGateway?.close();
+        if (!policy.value.allows(AutomationBehavior.monitorOtherServers)) {
+          unawaited(_dismissProfile(id));
+        }
+        notifyListeners();
+        _schedule();
+      }
+
+      _policyListeners[id] = changed;
+      policy.addListener(changed);
+      return policy;
+    });
+  }
+
+  bool _allows(String id) =>
+      _policy(id).value.allows(AutomationBehavior.monitorOtherServers);
+
+  void _detachPolicy(String id) {
+    final callback = _policyListeners.remove(id);
+    final policy = _policies.remove(id);
+    if (callback != null) policy?.removeListener(callback);
+  }
+
+  Future<void> _migrateConsent(ServerProfile profile) async {
+    if (_blocked.contains(profile.id) || !supportsProfile(profile)) return;
+    if (store.prefs.containsKey(
+      AutomationPolicyController.keyFor(profile.id),
+    )) {
+      return;
+    }
+    // Only a stored rule is prior consent; the old two-phone-server fallback
+    // was an implicit default and cannot grant automation permission.
+    final raw = store.prefs.getString(rulesKey(profile.id));
+    if (raw == null) return;
+    try {
+      final rules = ProfileNotifyRules.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+      if (rules.enabled) {
+        await _policy(
+          profile.id,
+        ).setBehavior(AutomationBehavior.monitorOtherServers, true);
+      }
+    } catch (_) {
+      // A failed migration leaves monitoring off; explicit opt-in can retry.
+    }
+  }
+
+  ProfileAttentionSnapshot _stale(
+    String id,
+    ProfileMonitorStatus status,
+    ProfileAttentionSnapshot? prior,
+  ) => ProfileAttentionSnapshot(
+    profileID: id,
+    status: status,
+    checkedAt: prior?.checkedAt,
+    directory: prior?.directory,
+    workspace: prior?.workspace,
+    requests: prior?.requests ?? const [],
+    attention: [
+      for (final item in prior?.attention ?? const <AttentionObservation>[])
+        item.copyWith(isFresh: false),
+    ],
+    busyIntervals: prior?.busyIntervals ?? const [],
+    runningCount: prior?.runningCount,
+    nextCheckAt: _next[id],
+  );
+
   Future<bool> _claimCheckIn(
     String id,
     MonitoredRequest request,
@@ -303,7 +433,10 @@ class ProfileMonitor extends ChangeNotifier {
   }
 
   MonitoredRoute? routeForToken(String id, String token) {
-    if (!isReadable(id) || _blocked.contains(id) || !rulesFor(id).enabled) {
+    if (!isReadable(id) ||
+        _blocked.contains(id) ||
+        !rulesFor(id).enabled ||
+        !_allows(id)) {
       return null;
     }
     try {
@@ -381,8 +514,9 @@ class ProfileMonitor extends ChangeNotifier {
         );
       }
     } catch (_) {}
-    // Two agents on this phone (OpenCode and Claude Code): each is watched
-    // while you look at the other. One alone has nothing to be watched from.
+    // Preserve the old two-phone-server settings default for compatibility.
+    // It is not stored consent: _allows still blocks every automatic read
+    // until the person opts in through monitoring settings or the policy.
     final profile = _profile(id);
     return profile != null &&
             isOnThisPhone(profile) &&
@@ -426,34 +560,29 @@ class ProfileMonitor extends ChangeNotifier {
         status: ProfileMonitorStatus.unavailable,
       );
     }
-    final value = _sameSource(id) ? _snapshots[id] : null;
+    final location = store.locationFor(id);
+    final stored = _sameSource(id) ? _snapshots[id] : null;
+    final value =
+        stored != null &&
+            stored.directory == location?.directory &&
+            stored.workspace == location?.workspace
+        ? stored
+        : null;
+    if (!_allows(id)) {
+      return _stale(id, ProfileMonitorStatus.disabled, value);
+    }
     if (!runningAllowed) {
-      return ProfileAttentionSnapshot(
-        profileID: id,
-        status: ProfileMonitorStatus.paused,
-        checkedAt: value?.checkedAt,
-      );
+      return _stale(id, ProfileMonitorStatus.paused, value);
     }
     if (value == null) {
-      return ProfileAttentionSnapshot(
-        profileID: id,
-        status: ProfileMonitorStatus.waiting,
-      );
+      return _stale(id, ProfileMonitorStatus.waiting, null);
     }
-    final location = store.locationFor(id);
     final maxAge = (_foreground ? foregroundInterval : backgroundInterval) * 2;
     if (value.isCurrent &&
-        (location?.directory != value.directory ||
-            location?.workspace != value.workspace ||
-            value.checkedAt == null ||
+        (value.checkedAt == null ||
             value.checkedAt!.isAfter(_now()) ||
             _now().difference(value.checkedAt!) > maxAge)) {
-      return ProfileAttentionSnapshot(
-        profileID: id,
-        status: ProfileMonitorStatus.waiting,
-        checkedAt: value.checkedAt,
-        nextCheckAt: _next[id],
-      );
+      return _stale(id, ProfileMonitorStatus.waiting, value);
     }
     return value;
   }
@@ -477,8 +606,12 @@ class ProfileMonitor extends ChangeNotifier {
     _foreground = foreground;
     _backgroundAllowed = backgroundAllowed;
     if (!runningAllowed) {
+      _runtimeGeneration++;
       _timer?.cancel();
       _timer = null;
+      for (final id in _pollGenerations.keys.toList()) {
+        _invalidatePoll(id);
+      }
       _activeGateway?.close();
     } else if (changed) {
       if (foreground) _next.clear();
@@ -494,7 +627,11 @@ class ProfileMonitor extends ChangeNotifier {
         !runningAllowed ||
         !store.profiles.any(
           (p) =>
-              rulesFor(p.id).enabled && isReadable(p.id) && supportsProfile(p),
+              rulesFor(p.id).enabled &&
+              isReadable(p.id) &&
+              supportsProfile(p) &&
+              !_blocked.contains(p.id) &&
+              _allows(p.id),
         )) {
       return;
     }
@@ -504,9 +641,19 @@ class ProfileMonitor extends ChangeNotifier {
     });
   }
 
-  Future<void> setEnabled(String id, bool enabled) =>
-      setRules(id, rulesFor(id).copyWith(enabled: enabled));
-  Future<void> setRules(String id, ProfileNotifyRules value) {
+  /// An explicit opt-in can restore monitoring after policy revocation.
+  Future<void> setEnabled(String id, bool enabled) => _setRules(
+    id,
+    rulesFor(id).copyWith(enabled: enabled),
+    explicitConsent: enabled,
+  );
+  Future<void> setRules(String id, ProfileNotifyRules value) =>
+      _setRules(id, value);
+  Future<void> _setRules(
+    String id,
+    ProfileNotifyRules value, {
+    bool explicitConsent = false,
+  }) {
     final profile = store.profiles.where((p) => p.id == id).firstOrNull;
     if (_disposed ||
         _blocked.contains(id) ||
@@ -525,6 +672,18 @@ class ProfileMonitor extends ChangeNotifier {
             jsonEncode(value.toJson()),
           )) {
             throw StateError('Could not save monitoring settings');
+          }
+          final grantsConsent =
+              value.enabled && (explicitConsent || !before.enabled);
+          if (!value.enabled ||
+              grantsConsent ||
+              !store.prefs.containsKey(AutomationPolicyController.keyFor(id))) {
+            // An unrelated edit cannot revive a revoked policy. A new record
+            // also fences legacy migration of an implicit phone-server rule.
+            await _policy(id).setBehavior(
+              AutomationBehavior.monitorOtherServers,
+              grantsConsent,
+            );
           }
           _epochs[id] = (_epochs[id] ?? 0) + 1;
           _invalidatePoll(id);
@@ -553,6 +712,7 @@ class ProfileMonitor extends ChangeNotifier {
   void removeProfile(String id, {bool retainIdentity = false}) {
     if (_activeProfileID == id) _activeGateway?.close();
     _blocked.add(id);
+    _detachPolicy(id);
     _epochs[id] = (_epochs[id] ?? 0) + 1;
     _invalidatePoll(id);
     _snapshots.remove(id);
@@ -635,10 +795,19 @@ class ProfileMonitor extends ChangeNotifier {
   }
 
   Future<void> _run() async {
+    final runtime = _runtimeGeneration;
+    bool admitted() =>
+        !_disposed && runningAllowed && runtime == _runtimeGeneration;
+    for (final profile in store.profiles.toList()) {
+      if (!admitted()) return;
+      await _migrateConsent(profile);
+    }
+    if (!admitted()) return;
     final profiles = store.profiles
         .where(
           (p) =>
               rulesFor(p.id).enabled &&
+              _allows(p.id) &&
               isReadable(p.id) &&
               supportsProfile(p) &&
               !_blocked.contains(p.id),
@@ -658,20 +827,23 @@ class ProfileMonitor extends ChangeNotifier {
       }
     }
     for (var n = 0; n < profiles.length && n < 8; n++) {
-      if (_disposed || !runningAllowed) return;
+      if (!admitted()) return;
       final profile = profiles[(_cursor + n) % profiles.length];
       await _reconcileSource(profile);
+      if (!admitted()) return;
       if (_disposed ||
           !isReadable(profile.id) ||
+          !_allows(profile.id) ||
           _blocked.contains(profile.id)) {
         continue;
       }
       if (_next[profile.id]?.isAfter(_now()) == true) continue;
       final rules = rulesFor(profile.id);
       if (rules.wifiOnly && wifi != true) {
-        _snapshots[profile.id] = ProfileAttentionSnapshot(
-          profileID: profile.id,
-          status: ProfileMonitorStatus.wifiRequired,
+        _snapshots[profile.id] = _stale(
+          profile.id,
+          ProfileMonitorStatus.wifiRequired,
+          snapshotFor(profile.id),
         );
         continue;
       }
@@ -689,12 +861,15 @@ class ProfileMonitor extends ChangeNotifier {
 
   static Future<List<PermissionRequest>> readPermissions(
     ServerGateway gateway,
-    Duration timeout,
-  ) async {
+    Duration timeout, {
+    bool Function()? current,
+  }) async {
     List<PermissionRequest>? legacy, modern;
+    if (current != null && !current()) throw StateError('Monitoring paused');
     try {
       legacy = await gateway.pendingPermissions().timeout(timeout);
     } catch (_) {}
+    if (current != null && !current()) throw StateError('Monitoring paused');
     try {
       modern = await gateway.pendingPermissionsV2().timeout(timeout);
     } catch (_) {}
@@ -710,12 +885,15 @@ class ProfileMonitor extends ChangeNotifier {
   static Future<List<PendingQuestion>> readQuestions(
     ServerGateway gateway,
     ServerOperationsGateway operations,
-    Duration timeout,
-  ) async {
+    Duration timeout, {
+    bool Function()? current,
+  }) async {
     List<PendingQuestion>? legacy, modern;
+    if (current != null && !current()) throw StateError('Monitoring paused');
     try {
       legacy = await operations.listQuestions().timeout(timeout);
     } catch (_) {}
+    if (current != null && !current()) throw StateError('Monitoring paused');
     try {
       modern = (await gateway.pendingQuestionsV2().timeout(
         timeout,
@@ -734,33 +912,22 @@ class ProfileMonitor extends ChangeNotifier {
     if (!supportsProfile(profile)) return;
     final id = profile.id, epoch = _epochs[profile.id] ?? 0;
     final location = store.locationFor(id);
-    final address = (
-      profile.baseUrl,
-      profile.username,
-      profile.password,
-      profile.flavor,
-    );
+    final source = _source(profile);
     bool current() =>
         !_disposed &&
         runningAllowed &&
         !_blocked.contains(id) &&
         isReadable(id) &&
         rulesFor(id).enabled &&
+        _allows(id) &&
         (_pollGenerations[id] ?? 0) == generation &&
         (_epochs[id] ?? 0) == epoch &&
-        store.profiles.any(
-          (p) =>
-              p.id == id &&
-              (p.baseUrl, p.username, p.password, p.flavor) == address,
-        ) &&
+        store.profiles.any((p) => p.id == id && _source(p) == source) &&
         store.locationFor(id)?.directory == location?.directory &&
         store.locationFor(id)?.workspace == location?.workspace;
-    final prior = _snapshots[id];
-    _snapshots[id] = ProfileAttentionSnapshot(
-      profileID: id,
-      status: ProfileMonitorStatus.checking,
-      checkedAt: prior?.checkedAt,
-    );
+    if (!current()) return;
+    final prior = snapshotFor(id);
+    _snapshots[id] = _stale(id, ProfileMonitorStatus.checking, prior);
     notifyListeners();
     MonitorGatewayPair? pair;
     try {
@@ -777,6 +944,7 @@ class ProfileMonitor extends ChangeNotifier {
                     ) !=
                     null;
       if (unusable) throw StateError('Unavailable');
+      if (!current()) return;
       pair = createGateway(profile);
       _activeGateway = pair.gateway;
       _activeProfileID = id;
@@ -799,12 +967,69 @@ class ProfileMonitor extends ChangeNotifier {
       // The list first: a Paseo daemon reports each conversation's waiting
       // requests and status with it, and has nothing to say before.
       final page = await gateway.sessionPage(limit: 100).timeout(timeout);
-      final permissions = await readPermissions(gateway, timeout);
-      final questions = await readQuestions(gateway, pair.operations, timeout);
+      if (!current()) return;
+      final permissions = await readPermissions(
+        gateway,
+        timeout,
+        current: current,
+      );
+      if (!current()) return;
+      final questions = await readQuestions(
+        gateway,
+        pair.operations,
+        timeout,
+        current: current,
+      );
+      if (!current()) return;
       final forms = gateway.capabilities.forms
           ? await gateway.pendingForms().timeout(timeout)
           : const <Api2FormInfo>[];
+      if (!current()) return;
       final statuses = await gateway.sessionStatuses().timeout(timeout);
+      if (!current()) return;
+      var details = MonitorAttentionDetails(
+        items: [
+          for (final item in prior.attention) item.copyWith(isFresh: false),
+        ],
+        complete: false,
+      );
+      if (readAttention != null) {
+        try {
+          final observed = await readAttention!(
+            profile,
+            pair,
+            page.items,
+            statuses,
+            current,
+          ).timeout(timeout);
+          final complete = observed.complete && !page.hasMore;
+          details = MonitorAttentionDetails(
+            items: complete
+                ? observed.items
+                : [
+                    ...observed.items,
+                    for (final old in prior.attention)
+                      if (!observed.items.any(
+                            (item) => item.identity == old.identity,
+                          ) &&
+                          !(old.kind == AttentionKind.failedRun &&
+                              old.taskID == null &&
+                              old.runID == null &&
+                              observed.checkedSessionIDs.contains(
+                                old.sessionID,
+                              )) &&
+                          !((old.kind == AttentionKind.teamGate ||
+                                  old.taskID != null ||
+                                  old.runID != null) &&
+                              observed.teamComplete))
+                        old.copyWith(isFresh: false),
+                  ],
+            complete: complete,
+          );
+        } catch (_) {
+          // A failed enrichment does not make its retained observations fresh.
+        }
+      }
       if (!current()) return;
       final sessions = {for (final s in page.items) s.id: s};
       MonitoredRequest row(
@@ -860,6 +1085,8 @@ class ProfileMonitor extends ChangeNotifier {
         directory: location?.directory,
         workspace: location?.workspace,
         requests: List.unmodifiable(unique),
+        attention: List.unmodifiable(details.items.take(256)),
+        attentionComplete: details.complete && details.items.length <= 256,
         busyIntervals: List.unmodifiable(busy),
         complete: requests.length <= 256,
         runningCount: statuses.values.where((v) => v != 'idle').length,
@@ -893,12 +1120,7 @@ class ProfileMonitor extends ChangeNotifier {
                   (1 << attempts.clamp(0, 6)))
               .clamp(60, 900);
       _next[id] = _now().add(Duration(seconds: seconds));
-      _snapshots[id] = ProfileAttentionSnapshot(
-        profileID: id,
-        status: ProfileMonitorStatus.unavailable,
-        checkedAt: prior?.checkedAt,
-        nextCheckAt: _next[id],
-      );
+      _snapshots[id] = _stale(id, ProfileMonitorStatus.unavailable, prior);
     } finally {
       pair?.gateway.close();
       if (identical(_activeGateway, pair?.gateway)) {
@@ -1004,7 +1226,9 @@ class ProfileMonitor extends ChangeNotifier {
   }
 
   bool _notificationPolicyCurrent(String id) {
-    if (_disposed || !runningAllowed || _blocked.contains(id)) return false;
+    if (_disposed || !runningAllowed || _blocked.contains(id) || !_allows(id)) {
+      return false;
+    }
     try {
       final rules = rulesFor(id);
       return rules.enabled &&
@@ -1022,7 +1246,9 @@ class ProfileMonitor extends ChangeNotifier {
   /// connection posts its own request alerts, and it has no reminder of its
   /// own to duplicate. The rule's duration must be set as well.
   bool _checkInPolicyCurrent(String id) {
-    if (_disposed || !runningAllowed || _blocked.contains(id)) return false;
+    if (_disposed || !runningAllowed || _blocked.contains(id) || !_allows(id)) {
+      return false;
+    }
     try {
       final rules = rulesFor(id);
       return rules.enabled &&
@@ -1044,6 +1270,9 @@ class ProfileMonitor extends ChangeNotifier {
     }
     _timer?.cancel();
     _activeGateway?.close();
+    for (final id in _policies.keys.toList()) {
+      _detachPolicy(id);
+    }
     super.dispose();
   }
 }
