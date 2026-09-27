@@ -15,7 +15,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/widgets/language_picker.dart';
-import 'package:opencode_mobile/ui/widgets/technical_direction.dart';
+import 'package:opencode_mobile/ui/kit/kit_text.dart' show KitLtr;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 
@@ -195,7 +195,7 @@ void main() {
           child: Column(
             children: [
               Text('رسالة'),
-              TechnicalDirection(child: Text('/work/main.dart')),
+              KitLtr(child: Text('/work/main.dart')),
             ],
           ),
         ),

@@ -18,7 +18,8 @@ import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
-import 'package:opencode_mobile/ui/widgets/glass_surface.dart';
+import 'package:opencode_mobile/ui/kit/glass/kit_glass.dart';
+import 'package:opencode_mobile/ui/kit/kit_nav.dart' show KitNavBar;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _ShellApi extends OpenCodeApi {
@@ -177,7 +178,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final dock = tester.getRect(find.byType(GlassSurface));
+      final dock = tester.getRect(find.byType(KitNavBar));
       final icon = tester.getRect(
         find.byIcon(AppIconography.workspaceSelected),
       );
@@ -491,11 +492,11 @@ void main() {
       await tester.pump();
       expect(
         tester.getRect(last).bottom,
-        lessThanOrEqualTo(tester.getRect(find.byType(GlassSurface)).top),
+        lessThanOrEqualTo(tester.getRect(find.byType(KitNavBar)).top),
       );
       tester.view.viewInsets = const FakeViewPadding(bottom: 300);
       await tester.pumpAndSettle();
-      expect(find.byType(GlassSurface), findsNothing);
+      expect(find.byType(KitNavBar), findsNothing);
       expect(
         tester.widget<Scaffold>(find.byType(Scaffold).first).extendBody,
         isFalse,
@@ -504,7 +505,7 @@ void main() {
       expect(tester.getRect(search).bottom, lessThanOrEqualTo(544));
       tester.view.resetViewInsets();
       await tester.pumpAndSettle();
-      expect(find.byType(GlassSurface), findsOneWidget);
+      expect(find.byType(KitNavBar), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -520,8 +521,8 @@ void main() {
     await _pumpShell(tester, controller);
 
     expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.byType(GlassSurface), findsOneWidget);
-    final dock = tester.getRect(find.byType(GlassSurface));
+    expect(find.byType(KitNavBar), findsOneWidget);
+    final dock = tester.getRect(find.byType(KitNavBar));
     expect(dock.left, 16);
     expect(dock.right, 374);
     expect(dock.height, 60);
@@ -533,13 +534,13 @@ void main() {
     ]) {
       expect(
         navigation.labelTextStyle!.resolve(states)!.color,
-        GlassSurface.foregroundColor(Theme.of(navigationContext)),
+        KitGlass.foregroundColor(Theme.of(navigationContext)),
       );
       expect(
         NavigationBarTheme.of(
           navigationContext,
         ).iconTheme!.resolve(states)!.color,
-        GlassSurface.foregroundColor(Theme.of(navigationContext)),
+        KitGlass.foregroundColor(Theme.of(navigationContext)),
       );
     }
     for (final glyph in [
@@ -550,7 +551,7 @@ void main() {
       expect(tester.widget<Icon>(iconFinder).color, isNull);
       expect(
         IconTheme.of(tester.element(iconFinder)).color,
-        GlassSurface.foregroundColor(Theme.of(navigationContext)),
+        KitGlass.foregroundColor(Theme.of(navigationContext)),
       );
     }
     final icon = tester.getRect(find.byIcon(AppIconography.workspaceSelected));

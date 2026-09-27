@@ -3,9 +3,6 @@ import 'package:flutter/widgets.dart';
 import '../../api/provider_presentation.dart';
 import '../app_theme.dart';
 import '../kit/kit_image.dart';
-import '../kit/kit_shape.dart';
-import '../kit/kit_surface.dart';
-import '../kit/kit_text.dart';
 
 /// A provider's identity mark: a [KitAvatar] (KitImage.md, "Replaces").
 ///
@@ -78,68 +75,4 @@ class ProviderLogo extends StatelessWidget {
       child: FittedBox(child: avatar),
     );
   }
-}
-
-/// Retired by kit-KitImage: [KitAvatar] draws the initials itself. A thin
-/// forwarding wrapper kept for callers (STANDARDS KIT-43: no `@Deprecated`,
-/// which would put infos into every caller's analyze).
-///
-/// The two-letter stand-in for a provider's logo, in the label role.
-class ProviderMonogram extends StatelessWidget {
-  const ProviderMonogram(this.providerID, {super.key, required this.size});
-
-  final String providerID;
-
-  /// Unused: the label role sets the size. Kept for callers.
-  final double size;
-
-  @override
-  Widget build(BuildContext context) => ExcludeSemantics(
-    child: KitText(
-      providerMonogram(providerID),
-      role: KitTextRole.label,
-      tone: KitTextTone.secondary,
-      maxLines: 1,
-      softWrap: false,
-    ),
-  );
-}
-
-/// Retired by kit-KitImage: use [KitSurface.tile] for an icon, or
-/// [KitAvatar] for an identity. A thin forwarding wrapper kept for callers
-/// (STANDARDS KIT-43: no `@Deprecated`).
-///
-/// A [size] square of `surface3` in the kit's tile shape, with [child]
-/// centred. Decorative: excluded from semantics, as before.
-class BrandTile extends StatelessWidget {
-  const BrandTile({
-    super.key,
-    required this.size,
-    required this.child,
-    this.color,
-  });
-
-  final double size;
-  final Widget child;
-
-  /// Unused: the fill is always `surface3` (a colour never encodes
-  /// identity). Kept for callers.
-  final Color? color;
-
-  /// Retired: the kit's tile shape sets the corners. Kept for callers.
-  static double radiusFor(double size) =>
-      AppTheme.radiusControl * .6 * (size / 28).clamp(.6, 1.0);
-
-  @override
-  Widget build(BuildContext context) => ExcludeSemantics(
-    child: KitSurface(
-      level: KitSurfaceLevel.surface3,
-      shape: KitShape.tile,
-      padding: KitSurfacePadding.none,
-      child: SizedBox.square(
-        dimension: size,
-        child: Center(child: child),
-      ),
-    ),
-  );
 }

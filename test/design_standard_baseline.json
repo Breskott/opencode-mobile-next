@@ -137,7 +137,6 @@
     "lib/ui/widgets/folder_browser.dart": {},
     "lib/ui/widgets/local_server_row.dart": {},
     "lib/ui/widgets/managed_server_recovery_option.dart": {},
-    "lib/ui/widgets/nudge_card.dart": {},
     "lib/ui/widgets/other_projects_panel.dart": {},
     "lib/ui/widgets/other_servers_panel.dart": {},
     "lib/ui/widgets/phone_server_card.dart": {},

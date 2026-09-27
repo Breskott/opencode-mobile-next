@@ -304,7 +304,7 @@ final fFilesReviewTerminalArea = CensusArea(
     CensusShot('files', state: 'error', (kit) async {
       await _filesTab(kit, api: _FilesApi(failing: true));
       kit.expectTextContaining("Couldn't");
-    }, note: 'ProductErrorState from a listFiles failure.'),
+    }, note: 'the error state from a listFiles failure.'),
 
     // -- files-row-actions-sheet -----------------------------------------------
     CensusShot('files-row-actions-sheet', (kit) async {

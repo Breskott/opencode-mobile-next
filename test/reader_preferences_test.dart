@@ -222,7 +222,7 @@ void main() {
     await _pump(
       tester,
       _RefusingPreferences(),
-      Scaffold(body: CodeBlock(code: 'long_value_' * 20)),
+      Scaffold(body: MarkdownText('```\n${'long_value_' * 20}\n```')),
     );
     // Compact readers wrap by default; a refused save must keep that state.
     expect(_horizontal(), findsNothing);
@@ -335,7 +335,7 @@ void main() {
       });
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      const home = Scaffold(body: CodeBlock(code: 'code'));
+      const home = Scaffold(body: MarkdownText('```\ncode\n```'));
       await _pump(tester, prefs, home);
       expect(_horizontal(), findsNothing);
       await _pump(tester, prefs, home, profile: 'b');

@@ -67,10 +67,8 @@ const _migrated = <String, List<String>>{
     'work_not_answering',
     'work_runaway',
   ],
-  // Step 2 leftovers (test/goldens/work_parts_golden_test.dart): the
-  // one-time tip, the other servers and the shell's connection line on the
-  // other tabs.
-  'lib/ui/widgets/nudge_card.dart': ['work_nudge'],
+  // Step 2 leftovers (test/goldens/work_parts_golden_test.dart): the other
+  // servers and the shell's connection line on the other tabs.
   'lib/ui/widgets/other_servers_panel.dart': ['work_other_servers'],
   'lib/ui/widgets/connection_status_banner.dart': ['shell_reconnecting'],
   // §9 step 3: phone setup (start, customize, progress, ready, the welcome's
@@ -370,7 +368,6 @@ const _grandfathered = <String>{
   'lib/ui/widgets/folder_browser.dart',
   'lib/ui/widgets/local_server_row.dart',
   'lib/ui/widgets/managed_server_recovery_option.dart',
-  'lib/ui/widgets/nudge_card.dart',
   'lib/ui/widgets/other_projects_panel.dart',
   'lib/ui/widgets/other_servers_panel.dart',
   'lib/ui/widgets/phone_server_card.dart',

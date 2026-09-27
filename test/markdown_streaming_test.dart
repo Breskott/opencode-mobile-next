@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/ui/kit/kit_code_block.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 
 Widget _host(String data) => MaterialApp(
@@ -44,7 +45,7 @@ void main() {
     // Settled blocks come back as the same widget instances, so Flutter
     // skips them: no re-highlighting of the closed fence, no re-parse of the
     // heading, list or earlier paragraph on each delta.
-    expect(counts['CodeBlock'], isNull);
+    expect(counts['KitCodeBlock'], isNull);
     expect(counts['_Heading'], isNull);
     expect(counts['_List'], isNull);
     // Only the growing paragraph rebuilds, once per delta.
@@ -72,7 +73,7 @@ void main() {
     await tester.pumpWidget(_host('```dart\nfinal a = 1;\n```'));
 
     expect(
-      tester.widget<CodeBlock>(find.byType(CodeBlock)).highlightEnabled,
+      tester.widget<KitCodeBlock>(find.byType(KitCodeBlock)).highlight,
       isTrue,
     );
   });

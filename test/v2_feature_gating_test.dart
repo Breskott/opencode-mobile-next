@@ -35,7 +35,6 @@ import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/tools_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
-import 'package:opencode_mobile/ui/widgets/product_states.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A transport that speaks v1 and reports the v1 superset, like today's
@@ -666,48 +665,6 @@ void main() {
       // Silently hidden: no explainer for a feature the user has never seen.
       expect(find.textContaining('OpenCode 2'), findsNothing);
       expect(find.text('All clear here'), findsOneWidget);
-    });
-  });
-
-  group('GatedRow copy', () {
-    testWidgets('names the generation the feature needs', (tester) async {
-      await tester.pumpWidget(
-        _app(
-          Scaffold(
-            body: ListView(
-              children: const [
-                GatedRowTile(
-                  feature: 'example',
-                  title: 'Example',
-                  explainer: gatedOnV2Explainer,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final row = find.byKey(const ValueKey('gated-example'));
-      expect(row, findsOneWidget);
-      expect(tester.widget<KitRow>(row).enabled, isFalse);
-      expect(find.text('Not available on OpenCode 2 servers'), findsOneWidget);
-      // Capability gating, not plan gating: no upsell, no call to action.
-      expect(find.byType(KitButton), findsNothing);
-
-      // The generation is spoken with the row; a tap says nothing more (a
-      // snackbar is only for Undo, KIT-34).
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Semantics &&
-              widget.properties.hint == 'Needs an OpenCode 1 server',
-        ),
-        findsOneWidget,
-      );
-      await tester.tapAt(tester.getCenter(row));
-      await tester.pumpAndSettle();
-      expect(find.byType(SnackBar), findsNothing);
     });
   });
 }

@@ -47,7 +47,7 @@ enum KitFieldKind {
   secret,
 }
 
-enum _KitFieldMode { plain, composer, secret, legacySecret }
+enum _KitFieldMode { plain, composer, secret }
 
 enum _CounterPhase { hidden, near, limit }
 
@@ -115,9 +115,7 @@ class KitField extends StatefulWidget {
        revealKey = null,
        pasteKey = null,
        replaceKey = null,
-       _mode = _KitFieldMode.plain,
-       _showLabel = null,
-       _hideLabel = null;
+       _mode = _KitFieldMode.plain;
 
   /// The chat composer's field (KitComposer.md, decision D18): multiline,
   /// [label] is the accessible name but is not drawn, no helper, error or
@@ -158,9 +156,7 @@ class KitField extends StatefulWidget {
        revealKey = null,
        pasteKey = null,
        replaceKey = null,
-       _mode = _KitFieldMode.composer,
-       _showLabel = null,
-       _hideLabel = null;
+       _mode = _KitFieldMode.composer;
 
   /// Obscured, with a reveal toggle and a Paste button. Never prefilled:
   /// the field asserts an empty controller when it mounts. No suggestions,
@@ -203,50 +199,7 @@ class KitField extends StatefulWidget {
        selectAllOnFocus = false,
        contentInsertion = null,
        actionKey = null,
-       _mode = _KitFieldMode.secret,
-       _showLabel = null,
-       _hideLabel = null;
-
-  /// [KitSecretField]'s forward: the caller's reveal labels, a prefilled
-  /// controller allowed, a disabled field without a reason allowed (its one
-  /// caller is fixed by its screen unit).
-  const KitField._legacySecret({
-    required TextEditingController this.controller,
-    required this.label,
-    required String showLabel,
-    required String hideLabel,
-    this.hint,
-    this.enabled = true,
-    this.validator,
-    this.inputFormatters = const [],
-    this.fieldKey,
-    this.revealKey,
-  }) : kind = KitFieldKind.secret,
-       helper = null,
-       error = null,
-       maxLength = null,
-       maxLines = null,
-       decimal = false,
-       draft = null,
-       disabledReason = null,
-       checkingSince = null,
-       onSlow = const [],
-       action = null,
-       saved = false,
-       onReplace = null,
-       onChanged = null,
-       onSubmitted = null,
-       textInputAction = null,
-       focusNode = null,
-       autofocus = false,
-       selectAllOnFocus = false,
-       contentInsertion = null,
-       actionKey = null,
-       pasteKey = null,
-       replaceKey = null,
-       _mode = _KitFieldMode.legacySecret,
-       _showLabel = showLabel,
-       _hideLabel = hideLabel;
+       _mode = _KitFieldMode.secret;
 
   /// Shown above the field; the field's semantic label.
   final String label;
@@ -323,11 +276,8 @@ class KitField extends StatefulWidget {
   final Key? replaceKey;
 
   final _KitFieldMode _mode;
-  final String? _showLabel;
-  final String? _hideLabel;
 
-  bool get _isSecret =>
-      _mode == _KitFieldMode.secret || _mode == _KitFieldMode.legacySecret;
+  bool get _isSecret => _mode == _KitFieldMode.secret;
 
   @override
   State<KitField> createState() => _KitFieldState();
@@ -682,8 +632,7 @@ class _KitFieldState extends State<KitField> {
         widget.kind == KitFieldKind.text ||
         widget.kind == KitFieldKind.multiline;
     // A TextFormField (a TextField inside a FormField), so the field takes
-    // part in a framework Form and [fieldKey] finds the same widget type
-    // KitSecretField's callers and tests find today.
+    // part in a framework Form and [fieldKey] finds a TextFormField.
     Widget editable = TextFormField(
       key: widget.fieldKey,
       controller: _editController,
@@ -818,15 +767,14 @@ class _KitFieldState extends State<KitField> {
           icon: _revealed ? AppIconography.hidden : AppIconography.visible,
           size: 20,
           tooltip: _revealed
-              ? (widget._hideLabel ?? l10n.kitFieldHideNamed(widget.label))
-              : (widget._showLabel ?? l10n.kitFieldShowNamed(widget.label)),
+              ? l10n.kitFieldHideNamed(widget.label)
+              : l10n.kitFieldShowNamed(widget.label),
           selected: _revealed,
           disabledReason: widget.enabled ? null : widget.disabledReason,
           onPressed: widget.enabled
               ? () => setState(() => _revealed = !_revealed)
               : null,
         ),
-        // KitSecretField keeps exactly its old controls (KIT-43): no Paste.
         if (widget._mode == _KitFieldMode.secret)
           KitIconButton(
             key: widget.pasteKey,
@@ -1137,53 +1085,6 @@ class KitNumberFormatter extends TextInputFormatter {
       ),
     );
   }
-}
-
-/// Retired by kit-KitField: use KitField.secret. Same constructor as
-/// before; forwards to the secret kind, keeps the caller's reveal labels,
-/// and does not assert an empty controller (its one caller, mcp-setup, is
-/// fixed by its screen unit).
-class KitSecretField extends StatelessWidget {
-  const KitSecretField({
-    super.key,
-    required this.controller,
-    required this.label,
-    required this.showLabel,
-    required this.hideLabel,
-    this.hint,
-    this.enabled = true,
-    this.validator,
-    this.inputFormatters = const [],
-    this.fieldKey,
-    this.revealKey,
-  });
-
-  final TextEditingController controller;
-  final String label;
-
-  /// The reveal button's label while masked ("Show value") and while shown.
-  final String showLabel;
-  final String hideLabel;
-  final String? hint;
-  final bool enabled;
-  final FormFieldValidator<String>? validator;
-  final List<TextInputFormatter> inputFormatters;
-  final Key? fieldKey;
-  final Key? revealKey;
-
-  @override
-  Widget build(BuildContext context) => KitField._legacySecret(
-    controller: controller,
-    label: label,
-    showLabel: showLabel,
-    hideLabel: hideLabel,
-    hint: hint,
-    enabled: enabled,
-    validator: validator,
-    inputFormatters: inputFormatters,
-    fieldKey: fieldKey,
-    revealKey: revealKey,
-  );
 }
 
 /// The kit's words: the app's bound [AppLocalizations], else the locale's

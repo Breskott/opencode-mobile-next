@@ -126,7 +126,6 @@ void main() {
     expect(_bar, findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
     expect(find.byKey(const ValueKey('chat-loading')), findsOneWidget);
-    expect(find.byType(LoadingList), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
 
     hold.complete(_turn());

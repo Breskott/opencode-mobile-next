@@ -12,7 +12,7 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/widgets/entrance.dart';
+import 'package:opencode_mobile/ui/kit/motion/kit_reveal.dart' show KitEntrance;
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -245,7 +245,7 @@ void main() {
       expect(
         find.ancestor(
           of: find.text('recent-0'),
-          matching: find.byType(EntranceReveal),
+          matching: find.byType(KitEntrance),
         ),
         findsNothing,
       );

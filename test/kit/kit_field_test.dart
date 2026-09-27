@@ -677,28 +677,6 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('11. KitSecretField keeps its contract: prefilled allowed, the '
-      "caller's labels as tooltips", (tester) async {
-    final controller = TextEditingController(text: 'Bearer abc');
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(
-      _host(
-        KitSecretField(
-          controller: controller,
-          label: 'Value',
-          showLabel: 'Show value',
-          hideLabel: 'Hide value',
-        ),
-      ),
-    );
-    expect(tester.takeException(), isNull);
-    expect(find.text('Value'), findsOneWidget);
-    await tester.tap(find.byTooltip('Show value'));
-    await tester.pump();
-    expect(_textField(tester).obscureText, isFalse);
-    expect(find.byTooltip('Hide value'), findsOneWidget);
-  });
-
   testWidgets('12. selectAllOnFocus selects the initial text', (tester) async {
     final controller = TextEditingController(text: 'feature-branch');
     final focus = FocusNode();

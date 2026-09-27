@@ -65,9 +65,6 @@ class MarkdownFileLinks extends InheritedWidget {
       validate != oldWidget.validate || open != oldWidget.open;
 }
 
-/// Retired by kit-KitMarkdown: use KitMarkdown.looksLikeFilePath.
-bool looksLikeFilePath(String code) => KitMarkdown.looksLikeFilePath(code);
-
 /// Retired by kit-KitMarkdown: use KitMarkdown.stripPathLineSuffix.
 String stripPathLineSuffix(String code) =>
     KitMarkdown.stripPathLineSuffix(code);
@@ -249,56 +246,6 @@ class _CodeReaderPageState extends State<_CodeReaderPage> {
             wrap: wrap,
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Retired by kit-KitMarkdown: use KitCodeBlock.
-///
-/// Selectable local code with independent display wrapping and exact
-/// copying, forwarded to [KitCodeBlock].
-class CodeBlock extends StatelessWidget {
-  const CodeBlock({
-    super.key,
-    required this.code,
-    this.originalSource,
-    this.language,
-    this.highlightEnabled = true,
-    this.initialWrap = false,
-    this.canExpand = true,
-  });
-  final String code;
-
-  /// Original fence body, before line-ending/indent display normalization.
-  /// Direct callers omit this: their [code] is already the exact source.
-  final String? originalSource;
-  final String? language;
-  final bool highlightEnabled;
-  final bool initialWrap;
-  final bool canExpand;
-
-  @override
-  Widget build(BuildContext context) {
-    final interactive = MarkdownInteractionScope.enabledOf(context);
-    final preferences = ReaderPreferencesScope.maybeOf(context);
-    // A fixed `wrap` would freeze the block's own toggle, so wrap is only
-    // pinned by the reader preference or by a caller that starts wrapped.
-    final wrap = preferences?.value.wrapCode ?? (initialWrap ? true : null);
-    return IgnorePointer(
-      ignoring: !interactive,
-      child: KitCodeBlock(
-        text: code,
-        copyText: originalSource,
-        language: language,
-        highlight: highlightEnabled,
-        wrap: wrap,
-        onWrapChanged: preferences == null
-            ? null
-            : (value) => saveReaderPreferences(context, wrapCode: value),
-        maxLines: canExpand ? 12 : null,
-        copyable: interactive,
-        showWrapToggle: interactive,
       ),
     );
   }
