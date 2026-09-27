@@ -101,6 +101,8 @@ export 'kit_level_meter.dart';
 export 'kit_menu.dart';
 export 'kit_page_route.dart';
 export 'kit_qr.dart';
+export 'kit_date_time_picker.dart';
+export 'kit_scanner.dart';
 export 'kit_segmented.dart';
 export 'kit_since.dart';
 export 'kit_surface.dart';

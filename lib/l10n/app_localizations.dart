@@ -32129,30 +32129,6 @@ abstract class AppLocalizations {
   /// **'{minutes, plural, =0{less than a minute} =1{1 min} other{{minutes} min}}'**
   String kitSinceAge(int minutes);
 
-  /// KitScanner: the line under the progress bar while the camera opens
-  ///
-  /// In en, this message translates to:
-  /// **'Opening the camera…'**
-  String get kitScannerStarting;
-
-  /// KitScanner: the line once the camera has taken more than 8 seconds to open; ways out follow it
-  ///
-  /// In en, this message translates to:
-  /// **'Still opening the camera'**
-  String get kitScannerSlow;
-
-  /// KitScanner: shown where the preview was while the app is in the background; the camera restarts by itself on return
-  ///
-  /// In en, this message translates to:
-  /// **'Camera paused'**
-  String get kitScannerPaused;
-
-  /// KitScanner: the screen-reader label of the live camera preview (its hint is the host's instruction)
-  ///
-  /// In en, this message translates to:
-  /// **'Camera view'**
-  String get kitScannerPreview;
-
   /// Kit status mark: the default word for the waiting state, in semantics and beside the mark
   ///
   /// In en, this message translates to:
@@ -35900,6 +35876,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stops live updates from {serverName}. Conversations stay on {serverName}; unsent messages stay on this phone until you reconnect.'**
   String serverSettingsDisconnectDetail(String serverName);
+
+  /// KitScanner: the line under the progress bar while the camera opens
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the camera…'**
+  String get kitScannerStarting;
+
+  /// KitScanner: the line once the camera has taken more than 8 seconds to open; ways out follow it
+  ///
+  /// In en, this message translates to:
+  /// **'Still opening the camera'**
+  String get kitScannerSlow;
+
+  /// KitScanner: shown where the preview was while the app is in the background; the camera restarts by itself on return
+  ///
+  /// In en, this message translates to:
+  /// **'Camera paused'**
+  String get kitScannerPaused;
+
+  /// KitScanner: the screen-reader label of the live camera preview (its hint is the host's instruction)
+  ///
+  /// In en, this message translates to:
+  /// **'Camera view'**
+  String get kitScannerPreview;
+
+  /// Date picker (KitDateTimePicker): the default primary button that sets the chosen day
+  ///
+  /// In en, this message translates to:
+  /// **'Set date'**
+  String get kitDateSet;
+
+  /// Time picker (KitDateTimePicker): the default primary button that sets the typed time
+  ///
+  /// In en, this message translates to:
+  /// **'Set time'**
+  String get kitTimeSet;
+
+  /// Date and time picker (KitDateTimePicker): the default primary button that sets the chosen day and time
+  ///
+  /// In en, this message translates to:
+  /// **'Set'**
+  String get kitDateTimeSet;
+
+  /// Date picker: the button that swaps the calendar for a field where the date is typed
+  ///
+  /// In en, this message translates to:
+  /// **'Type a date'**
+  String get kitDateType;
+
+  /// Date picker: the button that swaps the typed-date field back to the calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Show calendar'**
+  String get kitDateCalendar;
+
+  /// Date picker: the example shown in the empty typed-date field, in the locale's short date format
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. {example}'**
+  String kitDateFormatHint(String example);
+
+  /// Date picker: the label of the typed-date field
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get kitDateField;
+
+  /// Date picker: the reason under the typed-date field when the text is not a real date (for example 31 February)
+  ///
+  /// In en, this message translates to:
+  /// **'Not a date'**
+  String get kitDateInvalid;
+
+  /// Date picker: the reason when the typed or chosen date is outside the allowed range
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a date between {first} and {last}'**
+  String kitDateOutOfRange(String first, String last);
+
+  /// Time picker: the label of the hour field
+  ///
+  /// In en, this message translates to:
+  /// **'Hour'**
+  String get kitTimeHour;
+
+  /// Time picker: the label of the minute field
+  ///
+  /// In en, this message translates to:
+  /// **'Minute'**
+  String get kitTimeMinute;
+
+  /// Time picker: the spoken name of the AM/PM choice on a 12-hour clock
+  ///
+  /// In en, this message translates to:
+  /// **'Morning or afternoon'**
+  String get kitTimePeriod;
+
+  /// Time picker: the reason under an hour or minute field that holds an impossible value (hour 25, minute 61)
+  ///
+  /// In en, this message translates to:
+  /// **'Not a time'**
+  String get kitTimeInvalid;
+
+  /// Date or time row: the value shown when nothing is chosen yet
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get kitDateTimeNotSet;
+
+  /// Date or time row: the button that removes the chosen value; title is the row's name, e.g. Due date
+  ///
+  /// In en, this message translates to:
+  /// **'Clear {title}'**
+  String kitDateTimeClear(String title);
+
+  /// Date picker: the reason under the typed-date field when the date is in range but the caller does not allow that day
+  ///
+  /// In en, this message translates to:
+  /// **'That day can’t be chosen'**
+  String get kitDateUnavailable;
 }
 
 class _AppLocalizationsDelegate
