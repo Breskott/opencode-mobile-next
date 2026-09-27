@@ -841,8 +841,20 @@ void main() {
   String hostPhrase(WidgetTester tester) =>
       tester.widget<Text>(find.byKey(const ValueKey('team-home-host'))).data!;
 
+  // Technical details open from the page's "how it runs" row (P3.4).
   Future<void> openDetails(WidgetTester tester) async {
-    await tester.tap(find.byKey(const ValueKey('team-home-info')));
+    final row = find.byKey(const ValueKey('team-home-host-row'));
+    await tester.scrollUntilVisible(
+      row,
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('team-home-runs')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.tap(row);
     await tester.pumpAndSettle();
   }
 
@@ -853,7 +865,7 @@ void main() {
 
   group('host', () {
     testWidgets('one phrase under the title; the address, version and '
-        'engine are behind the info button', (tester) async {
+        'engine are behind Technical details', (tester) async {
       // The read path alone: no control capability, so read-only.
       final (controller, _) = await boot(
         configure: (g) =>

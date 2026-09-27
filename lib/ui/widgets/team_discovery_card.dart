@@ -58,10 +58,18 @@ class TeamDiscovery extends ChangeNotifier {
   bool _running = false;
   bool _probed = false;
   TeamDiscoveryResult? _result;
+  ProbeVerdict? _miss;
 
   /// The found host, null before the probe answered or when nothing was
   /// found.
   TeamDiscoveryResult? get result => _result;
+
+  /// Why nothing was found, once the probe answered without a team: the
+  /// most telling of the answers (a team that is starting, then a refused
+  /// plain address, then a server that is no team, then no answer at all).
+  /// Null while looking, when a team was found, and when no address could
+  /// be tried.
+  ProbeVerdict? get miss => _miss;
 
   /// True once the probe for the current profile answered (found or not).
   bool get probed => _probed;
@@ -87,6 +95,7 @@ class TeamDiscovery extends ChangeNotifier {
     final urls = teamDiscoveryUrlsForProfile(profile);
     _probedProfileId = profile.id;
     _result = null;
+    _miss = null;
     if (urls.isEmpty) {
       _probed = true;
       notifyListeners();
@@ -96,6 +105,7 @@ class TeamDiscovery extends ChangeNotifier {
     _probed = false;
     notifyListeners();
     TeamDiscoveryResult? result;
+    ProbeVerdict? miss;
     for (final url in urls) {
       ProbeVerdict verdict;
       try {
@@ -108,12 +118,24 @@ class TeamDiscovery extends ChangeNotifier {
         result = TeamDiscoveryResult(url: url, found: verdict);
         break;
       }
+      if (miss == null || _missRank(verdict) < _missRank(miss)) {
+        miss = verdict;
+      }
     }
     _running = false;
     _probed = true;
     _result = result;
+    _miss = result == null ? miss : null;
     notifyListeners();
   }
+
+  static int _missRank(ProbeVerdict verdict) => switch (verdict) {
+    ProbeCityNotRunning() => 0,
+    ProbePlainHttpRefused() => 1,
+    ProbeNotGasCity() => 2,
+    ProbeUnreachable() => 3,
+    ProbeFound() => 4,
+  };
 
   void _reset() {
     if (_probedProfileId == null && !_probed && _result == null) return;
@@ -121,6 +143,7 @@ class TeamDiscovery extends ChangeNotifier {
     _probed = false;
     _running = false;
     _result = null;
+    _miss = null;
     notifyListeners();
   }
 

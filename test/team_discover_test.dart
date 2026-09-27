@@ -29,6 +29,7 @@ import 'package:opencode_mobile/ui/screens/new_conversation_sheet.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/team_page.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/widgets/builtin_team_section.dart';
 import 'package:opencode_mobile/ui/widgets/team_discover.dart';
@@ -291,7 +292,9 @@ void main() {
     }
 
     testWidgets('Team is offered in the New conversation chooser, remembered '
-        'per server, and with the team off it opens the intro', (tester) async {
+        'per server, and with the team off it opens the team page, off', (
+      tester,
+    ) async {
       final controller = await pumpWork(tester);
       // One New conversation; how to start is asked by its chooser.
       expect(_key('workspace-new-mode'), findsNothing);
@@ -410,7 +413,7 @@ void main() {
             body: Builder(
               builder: (context) => Center(
                 child: TextButton(
-                  onPressed: () => openTeamIntro(
+                  onPressed: () => openTeamPage(
                     context,
                     controller,
                     runtime: runtime,
@@ -460,8 +463,12 @@ void main() {
       await tester.tap(_key('team-intro-turn-on'));
       await _settle(tester);
       expect(controller.profile!.orchestration, isNotNull);
-      // Back where the person came from, where the team now shows.
+      // The same page is now the team's (P3.4): no hop back, no second
+      // page.
       expect(find.byType(TeamIntroScreen), findsNothing);
+      expect(find.byType(TeamPage), findsOneWidget);
+      expect(find.byType(TeamHomeScreen), findsOneWidget);
+      expect(find.text('open'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
@@ -476,6 +483,10 @@ void main() {
         findsOneWidget,
       );
       expect(_key('team-intro-found'), findsNothing);
+      // Why nothing was found, in words (P3.4).
+      await reveal(tester, _key('team-intro-miss'));
+      expect(find.text(_en.teamIntroNotFound('Workstation')), findsOneWidget);
+      expect(find.text(_en.teamUiVerdictUnreachable), findsOneWidget);
       final before = probe.calls.length;
       await tester.tap(_key('team-intro-set-up'));
       await _settle(tester);
@@ -750,8 +761,8 @@ void main() {
       );
       await _settle(tester);
       expect(_key('plugins-ai-team-row'), findsNothing);
-      // Its technical details (and Turn off) are in the sheet, one row.
-      expect(find.text(_en.teamUiTechnicalDetails), findsOneWidget);
+      // One row to the team's own page (P3.4: no AI Team sheet).
+      expect(find.text(_en.pluginsTeamOpenPage), findsOneWidget);
       await tester.pumpWidget(_app(SettingsScreen(controller: controller)));
       await _settle(tester);
       await tester.ensureVisible(_key('settings-ai-team'));

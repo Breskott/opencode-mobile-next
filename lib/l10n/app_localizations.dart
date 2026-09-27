@@ -19592,12 +19592,6 @@ abstract class AppLocalizations {
   /// **'{server} also runs an AI team. Turn it on?'**
   String teamUiDiscoveryTitle(String server);
 
-  /// Discovery card action that turns the plugin on
-  ///
-  /// In en, this message translates to:
-  /// **'Turn on'**
-  String get teamUiDiscoveryTurnOn;
-
   /// One-line copy of the AI Team (optional) section in the server editor
   ///
   /// In en, this message translates to:
@@ -19615,42 +19609,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI Team (optional)'**
   String get teamUiEditorTitle;
-
-  /// Live-updates line when the event stream is closed
-  ///
-  /// In en, this message translates to:
-  /// **'Event stream closed'**
-  String get teamUiEventStreamClosed;
-
-  /// Live-updates line while the event stream connects
-  ///
-  /// In en, this message translates to:
-  /// **'Event stream connecting…'**
-  String get teamUiEventStreamConnecting;
-
-  /// Live-updates line with the last event sequence number
-  ///
-  /// In en, this message translates to:
-  /// **'Event stream connected · seq {seq}'**
-  String teamUiEventStreamLive(String seq);
-
-  /// Live-updates line before any numbered event arrived
-  ///
-  /// In en, this message translates to:
-  /// **'Event stream connected'**
-  String get teamUiEventStreamLiveNoSeq;
-
-  /// Live-updates line while the event stream reconnects
-  ///
-  /// In en, this message translates to:
-  /// **'Event stream reconnecting…'**
-  String get teamUiEventStreamReconnecting;
-
-  /// One-line explanation of the host front shown under a read-only verdict
-  ///
-  /// In en, this message translates to:
-  /// **'The front is a small helper on the computer that lets the phone answer and steer.'**
-  String get teamUiFrontLine;
 
   /// Closing line of the host guide sheet pointing at the repository guide
   ///
@@ -19886,54 +19844,6 @@ abstract class AppLocalizations {
   /// **'On · host unreachable since {minutes} min'**
   String teamUiRowUnreachable(String minutes);
 
-  /// Snackbar after the plugin was turned on for a server
-  ///
-  /// In en, this message translates to:
-  /// **'AI Team is on for {server}.'**
-  String teamUiSavedOn(String server);
-
-  /// Sheet status line when the host answers and the stream is live
-  ///
-  /// In en, this message translates to:
-  /// **'Connected'**
-  String get teamUiStatusConnected;
-
-  /// Sheet status line when the host cannot be used
-  ///
-  /// In en, this message translates to:
-  /// **'Not available'**
-  String get teamUiStatusNotAvailable;
-
-  /// Sheet status value when the plugin is off
-  ///
-  /// In en, this message translates to:
-  /// **'Off'**
-  String get teamUiStatusOff;
-
-  /// Sheet status value when the plugin is on
-  ///
-  /// In en, this message translates to:
-  /// **'On'**
-  String get teamUiStatusOn;
-
-  /// Sheet status line while the host is probed
-  ///
-  /// In en, this message translates to:
-  /// **'Checking the host…'**
-  String get teamUiStatusProbing;
-
-  /// Sheet status line while the stream reconnects
-  ///
-  /// In en, this message translates to:
-  /// **'Reconnecting…'**
-  String get teamUiStatusReconnecting;
-
-  /// Sheet status line when the host stopped answering
-  ///
-  /// In en, this message translates to:
-  /// **'Host unreachable'**
-  String get teamUiStatusUnreachable;
-
   /// Verdict when a plain http address is neither loopback nor a tailnet address
   ///
   /// In en, this message translates to:
@@ -20000,12 +19910,6 @@ abstract class AppLocalizations {
   /// **'Removes its card, attention items and cached team data from this phone. Nothing changes on the host.'**
   String get teamUiTurnOffBody;
 
-  /// Snackbar when the store refused to drop some keys during turn-off
-  ///
-  /// In en, this message translates to:
-  /// **'Turned off, but some cached data could not be removed from this phone.'**
-  String get teamUiTurnOffFailed;
-
   /// Title of the turn-off confirmation sheet
   ///
   /// In en, this message translates to:
@@ -20047,18 +19951,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'unknown'**
   String get teamUiVersionUnknown;
-
-  /// Sheet line under the status when the phone can answer and steer
-  ///
-  /// In en, this message translates to:
-  /// **'Watching and answering from this phone'**
-  String get teamUiWatchingAndAnswering;
-
-  /// Sheet line under the status when the phone can only watch
-  ///
-  /// In en, this message translates to:
-  /// **'Watching from this phone'**
-  String get teamUiWatchingOnly;
 
   /// Accessibility label of the agent dots on the Workspace AI Team card
   ///
@@ -20147,7 +20039,7 @@ abstract class AppLocalizations {
   /// AI Team screens: shown instead of 'Connecting to the team host…' once connecting has taken longer than 8 seconds (design standard 8 s rule)
   ///
   /// In en, this message translates to:
-  /// **'The team host isn’t answering'**
+  /// **'The team isn’t answering'**
   String get teamUiStateNotAnsweringTitle;
 
   /// Workspace AI Team card header: the team host runs on the computer
@@ -40568,6 +40460,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Give the team a first task'**
   String get teamPhoneReadyFirstTask;
+
+  /// AI Team screens: under 'The team isn’t answering' when the team runs on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'The app keeps trying while the team starts on this phone.'**
+  String get teamUiStateNotAnsweringPhone;
+
+  /// AI Team screens: under 'The team isn’t answering' when the team runs on a computer the app cannot name.
+  ///
+  /// In en, this message translates to:
+  /// **'The app keeps trying. Check that your computer is on and online.'**
+  String get teamUiStateNotAnsweringComputer;
+
+  /// AI Team screens: under 'The team isn’t answering'. {computer} is the computer's name, e.g. pop-os.
+  ///
+  /// In en, this message translates to:
+  /// **'The app keeps trying. Check that {computer} is on and online.'**
+  String teamUiStateNotAnsweringComputerNamed(String computer);
+
+  /// AI Team page menu: opens the form for the address the team is reached at (the page title names the team).
+  ///
+  /// In en, this message translates to:
+  /// **'Change address'**
+  String get teamHomeChangeAddress;
+
+  /// AI Team page: Turn off could not stop the team inside the app; nothing changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t stop the team on this phone, so it is still on. Try again.'**
+  String get teamHomeTurnOffFailed;
+
+  /// AI Team page subtitle, after the place: Android stopped the phone's team (the line under the bar offers Start the team again).
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get teamHomeHostStopped;
+
+  /// AI Team page subtitle, after the place: the heat guard paused the team because the phone is hot. Never the person's pause.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooling down'**
+  String get teamHomeHostCooling;
+
+  /// AI Team page subtitle, after the place: the heat guard stopped the team because the phone is very hot.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped to cool down'**
+  String get teamHomeHostStoppedForHeat;
+
+  /// AI Team page: the heat guard's line. {time} is the clock time it paused, e.g. 14:02. No Resume: the guard resumes it.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone got hot at {time}, so the team paused. It carries on by itself once the phone has cooled.'**
+  String teamHomeHeatPausedLine(String time);
+
+  /// AI Team page: the heat guard's line when it stopped the team. {time} is the clock time, e.g. 14:02.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone got very hot at {time}, so the team stopped. Its work is kept, and it starts again once the phone has cooled.'**
+  String teamHomeHeatStoppedLine(String time);
+
+  /// AI Team page agents row, after the count: the heat guard paused the agents.
+  ///
+  /// In en, this message translates to:
+  /// **'resting while the phone cools'**
+  String get teamHomeAgentsCooling;
+
+  /// AI Team page row on the phone's Termux team: opens its own controls (keep running tips, stop, remove from this phone).
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it running, stop it or remove it'**
+  String get teamHomePhoneControls;
+
+  /// AI Team page: what the whole team spent today. {usage} is e.g. '$0.42 est. · 12.4k tokens'.
+  ///
+  /// In en, this message translates to:
+  /// **'Today · {usage}'**
+  String teamHomeSpentToday(String usage);
+
+  /// AI Team page: under today's spend; never a task's cost.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole team since midnight where it runs, estimated'**
+  String get teamHomeSpentHint;
+
+  /// AI Team page: under today's spend when part of it is unpriced or history is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Some of today’s use has no price yet, so it cost more than this'**
+  String get teamHomeSpentPartial;
+
+  /// AI Team page while off, on a computer: discovery found no team. {server} is the server's name.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI Team found on {server}'**
+  String teamIntroNotFound(String server);
+
+  /// Settings › Plugins, OpenCode inside the app with its team on: opens the AI Team page.
+  ///
+  /// In en, this message translates to:
+  /// **'See the team’s tasks'**
+  String get pluginsTeamOpenPage;
 
   /// Chat: an agent error of the model-not-found kind whose server text the app does not recognise; the server's text is under Details
   ///

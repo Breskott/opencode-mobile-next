@@ -12065,9 +12065,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiDiscoveryTurnOn => 'Turn on';
-
-  @override
   String get teamUiEditorBody =>
       'If this computer runs Gas City, the app can find it automatically.';
 
@@ -12078,27 +12075,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiEditorTitle => 'AI Team (optional)';
-
-  @override
-  String get teamUiEventStreamClosed => 'Event stream closed';
-
-  @override
-  String get teamUiEventStreamConnecting => 'Event stream connecting…';
-
-  @override
-  String teamUiEventStreamLive(String seq) {
-    return 'Event stream connected · seq $seq';
-  }
-
-  @override
-  String get teamUiEventStreamLiveNoSeq => 'Event stream connected';
-
-  @override
-  String get teamUiEventStreamReconnecting => 'Event stream reconnecting…';
-
-  @override
-  String get teamUiFrontLine =>
-      'The front is a small helper on the computer that lets the phone answer and steer.';
 
   @override
   String get teamUiHostGuideDocs =>
@@ -12235,32 +12211,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String teamUiSavedOn(String server) {
-    return 'AI Team is on for $server.';
-  }
-
-  @override
-  String get teamUiStatusConnected => 'Connected';
-
-  @override
-  String get teamUiStatusNotAvailable => 'Not available';
-
-  @override
-  String get teamUiStatusOff => 'Off';
-
-  @override
-  String get teamUiStatusOn => 'On';
-
-  @override
-  String get teamUiStatusProbing => 'Checking the host…';
-
-  @override
-  String get teamUiStatusReconnecting => 'Reconnecting…';
-
-  @override
-  String get teamUiStatusUnreachable => 'Host unreachable';
-
-  @override
   String get teamUiTailnetRequired =>
       'AI Team works over your Tailscale network or on this device. Use the computer\'s Tailscale address (100.x.x.x or name.ts.net).';
 
@@ -12296,10 +12246,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Removes its card, attention items and cached team data from this phone. Nothing changes on the host.';
 
   @override
-  String get teamUiTurnOffFailed =>
-      'Turned off, but some cached data could not be removed from this phone.';
-
-  @override
   String teamUiTurnOffTitle(String server) {
     return 'Turn off AI Team for $server?';
   }
@@ -12328,13 +12274,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiVersionUnknown => 'unknown';
-
-  @override
-  String get teamUiWatchingAndAnswering =>
-      'Watching and answering from this phone';
-
-  @override
-  String get teamUiWatchingOnly => 'Watching from this phone';
 
   @override
   String teamUiCardAgentsSummary(
@@ -12405,7 +12344,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiStatePlainHttpTitle => 'AI Team can’t use this address';
 
   @override
-  String get teamUiStateNotAnsweringTitle => 'The team host isn’t answering';
+  String get teamUiStateNotAnsweringTitle => 'The team isn’t answering';
 
   @override
   String get teamUiCardHostComputer => 'On the computer';
@@ -25759,6 +25698,72 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamPhoneReadyFirstTask => 'Give the team a first task';
+
+  @override
+  String get teamUiStateNotAnsweringPhone =>
+      'The app keeps trying while the team starts on this phone.';
+
+  @override
+  String get teamUiStateNotAnsweringComputer =>
+      'The app keeps trying. Check that your computer is on and online.';
+
+  @override
+  String teamUiStateNotAnsweringComputerNamed(String computer) {
+    return 'The app keeps trying. Check that $computer is on and online.';
+  }
+
+  @override
+  String get teamHomeChangeAddress => 'Change address';
+
+  @override
+  String get teamHomeTurnOffFailed =>
+      'Couldn’t stop the team on this phone, so it is still on. Try again.';
+
+  @override
+  String get teamHomeHostStopped => 'Stopped';
+
+  @override
+  String get teamHomeHostCooling => 'Cooling down';
+
+  @override
+  String get teamHomeHostStoppedForHeat => 'Stopped to cool down';
+
+  @override
+  String teamHomeHeatPausedLine(String time) {
+    return 'The phone got hot at $time, so the team paused. It carries on by itself once the phone has cooled.';
+  }
+
+  @override
+  String teamHomeHeatStoppedLine(String time) {
+    return 'The phone got very hot at $time, so the team stopped. Its work is kept, and it starts again once the phone has cooled.';
+  }
+
+  @override
+  String get teamHomeAgentsCooling => 'resting while the phone cools';
+
+  @override
+  String get teamHomePhoneControls => 'Keep it running, stop it or remove it';
+
+  @override
+  String teamHomeSpentToday(String usage) {
+    return 'Today · $usage';
+  }
+
+  @override
+  String get teamHomeSpentHint =>
+      'The whole team since midnight where it runs, estimated';
+
+  @override
+  String get teamHomeSpentPartial =>
+      'Some of today’s use has no price yet, so it cost more than this';
+
+  @override
+  String teamIntroNotFound(String server) {
+    return 'No AI Team found on $server';
+  }
+
+  @override
+  String get pluginsTeamOpenPage => 'See the team’s tasks';
 
   @override
   String get chatErrorModelNotFound => 'The server doesn\'t have this model.';

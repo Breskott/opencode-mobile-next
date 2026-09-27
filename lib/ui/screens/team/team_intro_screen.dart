@@ -1,8 +1,12 @@
-/// The AI Team's intro, for a person who has not turned it on
-/// (docs/qa/team-discover-2026-09-25): what the team does, in four plain
-/// steps under a drawing of a task going from agent to agent, what it needs
-/// on this kind of server, and one primary action that hands over to that
-/// kind's own set-up. Nothing here sets anything up itself:
+/// The AI Team page while the team is off (programme P3.4: team-intro
+/// merged into team-home). [TeamPage] shows it in the team page's place
+/// until the team is on, then shows the team itself on the same page: the
+/// person is never sent back to where they came from.
+///
+/// What the team does, in four plain steps under a drawing of a task going
+/// from agent to agent, what it needs on this kind of server, and one
+/// primary action that hands over to that kind's own set-up. Nothing here
+/// sets anything up itself:
 ///
 /// - **This phone** (OpenCode inside the app or in Termux): "Set up AI
 ///   Team on this phone" is phone setup v2's Add tools › AI Team on that
@@ -13,9 +17,10 @@
 ///   cannot run a team is told why here, with the computer route, and is
 ///   never hidden.
 /// - **A computer**: the app looks for Gas City on the server's host
-///   ([TeamDiscovery]). Found: Turn on. Not found: Set it up shows the host
-///   guide and looks again when it closes; Enter its address is the manual
-///   form ([showTeamHostSheet]).
+///   ([TeamDiscovery]). Found: Turn on. Not found: why, in plain words
+///   ([TeamDiscovery.miss]), then Set it up (the host guide, which looks
+///   again when it closes). Enter its address is the manual form
+///   ([editTeamAddress]) either way.
 ///
 /// Built from kit parts only (screen-team-1): the top bar, the drawing,
 /// two row panels (how it works, what it needs), the cost before the
@@ -41,6 +46,7 @@ import '../../kit/scenes/team_discover_scenes.dart';
 import '../../widgets/team_discover.dart';
 import '../../widgets/team_discovery_card.dart' show TeamDiscovery;
 import '../../widgets/team_host_form.dart';
+import '../../widgets/team_switch.dart' show editTeamAddress;
 import '../../widgets/team_phone_onboarding.dart' show openTeamOnThisPhone;
 import '../phone_setup/phone_setup_selection.dart'
     show setupPreflightBody, setupPreflightHeadline, setupSizeText;
@@ -48,23 +54,8 @@ import '../phone_setup/phone_setup_selection.dart'
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
-/// Opens the intro for the connected server.
-Future<void> openTeamIntro(
-  BuildContext context,
-  ConnectionController controller, {
-  TeamHostProbe? probe,
-  TermuxTeamRuntime? runtime,
-  Future<VoiceDeviceInfo> Function()? deviceProbe,
-}) => pushKitPage<void>(
-  context,
-  (_) => TeamIntroScreen(
-    controller: controller,
-    probe: probe,
-    runtime: runtime,
-    deviceProbe: deviceProbe,
-  ),
-);
-
+// revamp: merge-into:team-home (slice-P3.4): the team page's off state;
+// [TeamPage] (team_page.dart) is its one route.
 class TeamIntroScreen extends StatefulWidget {
   const TeamIntroScreen({
     super.key,
@@ -182,24 +173,17 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
   }
 
   /// Add tools › AI Team on this phone's host, then its ready page. Once
-  /// the team is on, the intro has done its part: back to where the person
-  /// came from, where the team now shows.
-  Future<void> _setUpOnPhone() => _run(() async {
-    await openTeamOnThisPhone(
+  /// the team is on, [TeamPage] shows it here, in this page's place.
+  Future<void> _setUpOnPhone() => _run(
+    () => openTeamOnThisPhone(
       context,
       widget.controller,
       runtime: widget.runtime,
-    );
-    if (mounted && widget.controller.orchestration != null) {
-      Navigator.of(context).pop();
-    }
-  });
+    ),
+  );
 
   Future<void> _turnOn() => _run(() async {
     await _discovery?.turnOn();
-    if (mounted && widget.controller.orchestration != null) {
-      Navigator.of(context).pop();
-    }
   });
 
   Future<void> _showGuide() async {
@@ -208,23 +192,16 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
     if (mounted) setState(_look);
   }
 
-  Future<void> _enterAddress() async {
-    final profile = _profile;
-    if (profile == null) return;
-    final config = await showTeamHostSheet(
+  /// The manual form; a saved address turns the team on, and [TeamPage]
+  /// then shows it here.
+  Future<void> _enterAddress() => _run(() async {
+    await editTeamAddress(
       context,
-      initialUrl: teamDiscoveryUrlFor(profile.baseUrl) ?? '',
+      widget.controller,
       probe: widget.probe,
+      suggestedUrl: _discovery?.result?.url,
     );
-    if (config == null || !mounted) return;
-    await _run(() async {
-      final controller = widget.controller;
-      profile.orchestration = config;
-      await controller.store.upsert(profile);
-      controller.syncOrchestration();
-    });
-    if (mounted) Navigator.of(context).pop();
-  }
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -263,12 +240,14 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
             label: l10n.teamIntroSetUpOn(name),
             onPressed: _busy ? null : _showGuide,
           );
-          secondary = KitAction(
-            key: const ValueKey('team-intro-address'),
-            label: l10n.teamDiscoverEnterAddress,
-            onPressed: _busy ? null : _enterAddress,
-          );
         }
+        // Another address than the one found, or the one discovery could
+        // not reach: the manual form, in both states.
+        secondary = KitAction(
+          key: const ValueKey('team-intro-address'),
+          label: l10n.teamDiscoverEnterAddress,
+          onPressed: _busy ? null : _enterAddress,
+        );
     }
     final actions = KitActionBlock(primary: primary, secondary: secondary);
     final inset = EdgeInsetsDirectional.symmetric(
@@ -277,7 +256,12 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
     );
 
     return KitScreen(
-      topBar: KitTopBar(title: l10n.teamUiHomeTitle),
+      // The one state word under the page's name; what turning it on
+      // does is the page itself.
+      topBar: KitTopBar(
+        title: l10n.teamUiHomeTitle,
+        subtitle: l10n.teamUiRowOff,
+      ),
       width: KitScreenWidth.reading,
       loading: _looking,
       loadingLabel: l10n.teamDiscoverLooking(name),
@@ -461,6 +445,18 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
                 icon: AppIconography.checkCircle,
                 title: l10n.pluginsTeamRowFound(name),
                 message: l10n.teamDiscoverFoundBody,
+              ),
+            )
+          else if (_discovery?.miss case final miss?)
+            // Why nothing was found, in plain words (the host's own
+            // answer stays out of the copy).
+            Padding(
+              padding: inset,
+              child: KitNotice(
+                key: const ValueKey('team-intro-miss'),
+                icon: AppIconography.info,
+                title: l10n.teamIntroNotFound(name),
+                message: teamVerdictCopy(l10n, miss) ?? '',
               ),
             ),
         ];

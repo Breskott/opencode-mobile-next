@@ -8,31 +8,37 @@
       "file": "lib/ui/screens/team/team_home_screen.dart",
       "widget": "TeamHomeScreen",
       "presentedBy": [],
-      "line": 46,
-      "purpose": "AI Team (Gas City orchestration) home: host chip, Runs / Agents / Needs you segments, refresh and Start a run.",
+      "line": 110,
+      "purpose": "The one AI Team page while the team is on (P3.4, TeamPage): where it runs in the subtitle (the person's pause, a pause for heat and Android's stop said apart), one Now line (the heat guard's line instead while it holds the team), what needs the person, the tasks in one list by urgency, then the team itself: agents, how it runs (speed, opening Technical details) and what it spent today. Its menu holds Refresh, Change address, the phone team's controls and Turn off (the AI Team sheet's switches); Give the team a task is pinned below.",
       "reachedFrom": [
         {
-          "page": "?",
-          "element": null,
-          "widget": "_openTeamHome (WorkspaceScreen state)",
-          "file": "lib/ui/screens/workspace_screen.dart",
-          "line": 856
+          "page": "settings",
+          "element": "settings-ai-team"
+        },
+        {
+          "page": "plugins-settings",
+          "element": "plugins-settings-ai-team-row"
+        },
+        {
+          "page": "plugins-settings",
+          "element": "plugins-team-other"
         }
       ],
       "gates": [
-        "ConnectionController.orchestration != null (lib/state/connection.dart:712); _syncOrchestration (connection.dart:746) returns without building the controller when `config == null || selected == null || isIsolated || _disposed`, where `config = selected?.orchestration` (the connected ServerProfile's AI Team plugin config)",
-        "only constructed at lib/ui/screens/workspace_screen.dart:856 from the TeamCard's onOpen; the card exists only under `if (widget.controller.orchestration case final team?)` (workspace_screen.dart:619)"
+        "TeamPage shows it while ConnectionController.orchestration is the connected profile's team (profile.orchestration != null); off, the same page is team-intro",
+        "opened on its own (the team conversation's team page) it goes back to the first route after Change address or Turn off, since that team is gone"
       ],
       "elements": [
         {
           "id": "team-home-refresh",
-          "type": "icon-button",
+          "type": "menu-item",
           "label": "Refresh",
           "key": "team-home-refresh",
-          "line": 161,
+          "line": 459,
           "action": "mutate",
           "target": null,
-          "effect": "_refresh(): controller.retry() when phase == failed, else controller.refresh(); disabled while _refreshing.",
+          "targetWidget": "OrchestrationController.refresh",
+          "effect": "Top bar menu: refetches every scope from the host (pull to refresh does the same on a phone).",
           "gates": [],
           "destructive": false
         },
@@ -41,7 +47,7 @@
           "type": "fab",
           "label": "Start a run",
           "key": "team-home-start-run",
-          "line": 170,
+          "line": 532,
           "action": "open-sheet",
           "target": "start-run-sheet",
           "targetWidget": "showStartRunSheet",
@@ -83,65 +89,6 @@
           "destructive": false
         },
         {
-          "id": "team-home-host-chip",
-          "type": "chip",
-          "label": "{host} · {kind} · Gas City {version} · city {city} · read-only|controls",
-          "key": "team-home-host-chip",
-          "line": 359,
-          "action": "open-sheet",
-          "target": "team-host-details-sheet",
-          "targetWidget": "showTeamHostDetailsSheet",
-          "effect": "Opens the host Technical details sheet: showTeamHostDetailsSheet(context, controller).",
-          "gates": [
-            "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-home-segments",
-          "type": "tab",
-          "label": "Runs ({count}) | Agents ({count}) / Agents ({count} · {off} off) | Needs you ({count})",
-          "key": "team-home-segments",
-          "line": 562,
-          "action": "other",
-          "target": null,
-          "effect": "SegmentedButton.onSelectionChanged -> setState(_segment = s); swaps the list body.",
-          "gates": [
-            "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`",
-            "shown when `!AppTheme.stackedActions(context)` (normal text scale)"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-home-segments-menu",
-          "type": "icon-button",
-          "label": "[segment menu button showing the current segment]",
-          "key": "team-home-segments-menu",
-          "line": 462,
-          "action": "other",
-          "target": null,
-          "effect": "Opens overflow menu (PopupMenuButton via _CompactChoice, built at line 549) listing the three segments.",
-          "gates": [
-            "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`",
-            "shown when `AppTheme.stackedActions(context)` (large text)"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-home-segments-menu-item",
-          "type": "menu-item",
-          "label": "Runs ({count}) | Agents ({count}) | Needs you ({count})",
-          "key": "team-home-segment-runs | team-home-segment-agents | team-home-segment-needs-you",
-          "line": 468,
-          "action": "other",
-          "target": null,
-          "effect": "CheckedPopupMenuItem per TeamHomeSegment; onSelected -> setState(_segment = s).",
-          "gates": [
-            "AppTheme.stackedActions(context)"
-          ],
-          "destructive": false
-        },
-        {
           "id": "team-home-planning-card",
           "type": "card",
           "label": "[Planning… (Mayor) card per pending Start-a-run request]",
@@ -159,25 +106,11 @@
           "destructive": false
         },
         {
-          "id": "team-home-pull",
-          "type": "gesture",
-          "label": "[pull to refresh]",
-          "key": "team-home-pull",
-          "line": 306,
-          "action": "mutate",
-          "target": null,
-          "effect": "RefreshIndicator.onRefresh -> _refresh() (controller.retry()/refresh()).",
-          "gates": [
-            "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`"
-          ],
-          "destructive": false
-        },
-        {
           "id": "team-home-board",
           "type": "icon-button",
           "label": "Board",
           "key": "team-home-board",
-          "line": 266,
+          "line": 450,
           "action": "navigate",
           "target": "team-board",
           "targetWidget": "TeamBoardScreen",
@@ -186,45 +119,76 @@
             "ready (controller.phase == OrchestrationPhase.ready && snapshot.hasData)"
           ],
           "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "team-home-runs-tab",
-      "title": "Runs ({count})",
-      "kind": "tab",
-      "file": "lib/ui/screens/team/team_home_screen.dart",
-      "widget": "_RunsSegment",
-      "presentedBy": [],
-      "line": 601,
-      "purpose": "Runs segment: filter chips, title search, open runs, collapsed completed group and the hidden host-upkeep runs.",
-      "reachedFrom": [
-        {
-          "page": "team-home",
-          "element": "team-home-segments"
         },
         {
-          "page": "team-home",
-          "element": "team-home-segments-menu-item"
-        }
-      ],
-      "gates": [
-        "_segment == TeamHomeSegment.runs (default)",
-        "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`"
-      ],
-      "elements": [
-        {
-          "id": "team-home-runs-filter-chips",
-          "type": "chip",
-          "label": "Active | Blocked | Completed | All",
-          "key": "team-home-filter-<active|blocked|completed|all>",
-          "line": 749,
-          "action": "other",
-          "target": null,
-          "effect": "ChoiceChip.onSelected -> onFilter(f) -> setState(_filter = f); local filter only.",
+          "id": "team-home-change-address",
+          "type": "menu-item",
+          "label": "Change address",
+          "key": "team-home-change-address",
+          "line": 468,
+          "action": "open-sheet",
+          "target": "team-host-sheet",
+          "targetWidget": "editTeamAddress",
+          "effect": "Top bar menu: the address form prefilled with the saved address; a saved change replaces this team (saveTeamHost).",
           "gates": [
-            "!AppTheme.stackedActions(context)"
+            "the connected profile owns this team and it is not the team inside the app (BuiltinTeam.isBuiltinConfig)"
           ],
+          "destructive": false
+        },
+        {
+          "id": "team-home-phone-controls",
+          "type": "menu-item",
+          "label": "Keep it running, stop it or remove it",
+          "key": "team-home-phone-controls",
+          "line": 478,
+          "action": "open-sheet",
+          "target": null,
+          "targetWidget": "TeamPhoneSection",
+          "effect": "Top bar menu: a kit sheet holding the phone Termux team's own controls (embedded-team-phone-section), in every state of the page.",
+          "gates": [
+            "teamPhoneProfile(connection.profile)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-home-turn-off",
+          "type": "menu-item",
+          "label": "Turn off",
+          "key": "team-home-turn-off",
+          "line": 485,
+          "action": "open-sheet",
+          "target": "team-turn-off-sheet",
+          "targetWidget": "showTeamTurnOffSheet",
+          "effect": "Top bar menu: asks first; turnOffTeam stops the team inside the app (BuiltinTeam.turnOff) when it is that one, drops the cache and the config; TeamPage then shows the off state (team-intro) on the same page. A failed stop keeps it on and says so (team-home-turn-off-failed).",
+          "gates": [
+            "the connected profile owns this team"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "team-home-host-row",
+          "type": "list-tile",
+          "label": "Technical details · <how fast it runs there>",
+          "key": "team-home-host-row",
+          "line": 950,
+          "action": "open-sheet",
+          "target": "team-host-details-sheet",
+          "targetWidget": "showTeamHostDetailsSheet",
+          "effect": "How it runs where it runs (teamHostDisclaimer), opening the host's Technical details (address, version, access, terms).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-home-pull",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": "team-home-pull",
+          "line": 975,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": "OrchestrationController.refresh",
+          "effect": "Pull to refresh (retry when the probe failed).",
+          "gates": [],
           "destructive": false
         },
         {
@@ -232,7 +196,7 @@
           "type": "icon-button",
           "label": "Filters · <current filter>",
           "key": "team-home-filter-menu",
-          "line": 728,
+          "line": 573,
           "action": "other",
           "target": null,
           "effect": "Opens overflow menu (_CompactChoice PopupMenuButton, line 462) with the four filters.",
@@ -246,7 +210,7 @@
           "type": "menu-item",
           "label": "Active | Blocked | Completed | All",
           "key": "team-home-filter-<name>",
-          "line": 468,
+          "line": 561,
           "action": "other",
           "target": null,
           "effect": "CheckedPopupMenuItem; onSelected -> onFilter -> setState(_filter = f).",
@@ -260,7 +224,7 @@
           "type": "text-field",
           "label": "Search runs by title",
           "key": "team-home-search",
-          "line": 766,
+          "line": 571,
           "action": "other",
           "target": null,
           "effect": "TextEditingController listener -> setState; filters rows by run.title substring (local).",
@@ -272,7 +236,7 @@
           "type": "icon-button",
           "label": "Clear search",
           "key": "team-home-search-clear",
-          "line": 775,
+          "line": 572,
           "action": "other",
           "target": null,
           "effect": "search.clear().",
@@ -286,7 +250,7 @@
           "type": "list-tile",
           "label": "<run title> · <kind> · {done} of {total} done · <state word> [Needs you]",
           "key": "team-home-run-<run.id>",
-          "line": 935,
+          "line": 756,
           "action": "navigate",
           "target": "team-conversation",
           "targetWidget": "TeamConversationScreen",
@@ -295,25 +259,11 @@
           "destructive": false
         },
         {
-          "id": "team-home-runs-completed-group",
-          "type": "list-tile",
-          "label": "Completed today ({count}) / Completed ({count})",
-          "key": "team-home-completed-group",
-          "line": 801,
-          "action": "other",
-          "target": null,
-          "effect": "Expands/collapses the completed runs group: setState(_completedExpanded = !_completedExpanded).",
-          "gates": [
-            "completed.isNotEmpty (only under `filter == TeamRunFilter.all`)"
-          ],
-          "destructive": false
-        },
-        {
           "id": "team-home-runs-upkeep-toggle",
           "type": "toggle",
           "label": "Show team upkeep ({count})",
           "key": "team-home-upkeep-toggle",
-          "line": 845,
+          "line": 921,
           "action": "other",
           "target": null,
           "effect": "SwitchListTile.onChanged -> setState(_upkeepShown = shown); view state only, never persisted.",
@@ -323,133 +273,24 @@
           "destructive": false
         },
         {
-          "id": "team-home-runs-tab-empty-start-run",
-          "type": "button",
-          "label": "Start a run",
-          "key": null,
-          "line": 825,
-          "action": "open-sheet",
-          "target": "start-run-sheet",
-          "targetWidget": "showStartRunSheet",
-          "effect": "Action of the teaching empty state (key team-home-runs-empty): onStartRun -> _startRun(), the same as team-home-start-run.",
-          "gates": [
-            "the run list is empty (not failed)",
-            "controller.capabilities.controlMessage"
-          ],
-          "destructive": false
-        },
-        {
           "id": "team-home-runs-agents-row",
           "type": "list-tile",
-          "label": "{live} agents · {working} working",
+          "label": "{n} agents · {state}",
           "key": "team-home-agents-row",
-          "line": 550,
+          "line": 939,
           "action": "navigate",
           "target": "team-agents",
           "targetWidget": "TeamAgentsScreen",
-          "effect": "_AgentsRow.onTap -> _openAgents(): Navigator.push(TeamAgentsScreen(controller, onOpenAgent: widget.onOpenAgent, now: widget.now)) (team_home_screen.dart:142-152). \"3. The team itself: one row, not a tab.\"",
+          "effect": "The agents list; says \"resting while the phone cools\" while the heat guard holds the team.",
           "gates": [],
           "destructive": false
         },
-        {
-          "id": "team-home-board-row",
-          "type": "list-tile",
-          "label": "View board",
-          "key": "team-home-board-row",
-          "line": 575,
-          "action": "navigate",
-          "target": "team-board",
-          "targetWidget": "TeamBoardScreen",
-          "effect": "openTeamBoard(context, controller, now: widget.now): pushes the board (docs/design/team-board-2026-09-26.md); every task by where it stands.",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "team-home-agents-tab",
-      "title": "Agents ({count})",
-      "kind": "tab",
-      "file": "lib/ui/screens/team/team_home_screen.dart",
-      "widget": "_AgentsSegment",
-      "presentedBy": [],
-      "line": 986,
-      "purpose": "Agents segment: live fleet rows, then the collapsed 'Suspended on the host' group.",
-      "reachedFrom": [
-        {
-          "page": "team-home",
-          "element": "team-home-segments"
-        },
-        {
-          "page": "team-home",
-          "element": "team-home-segments-menu-item"
-        }
-      ],
-      "gates": [
-        "_segment == TeamHomeSegment.agents",
-        "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`"
-      ],
-      "elements": [
-        {
-          "id": "team-home-agents-row",
-          "type": "list-tile",
-          "label": "<agent name> · <role> · <provider / model> · <state word>",
-          "key": "team-home-agent-<agent.id>",
-          "file": "lib/ui/widgets/team_agent_row.dart",
-          "line": 113,
-          "action": "navigate",
-          "target": "team-agent",
-          "targetWidget": "AgentScreen",
-          "effect": "TeamAgentRow.onTap -> onOpenAgent(agent): widget.onOpenAgent ?? _openAgent -> Navigator.push(AgentScreen(controller, agentId: agent.id)) (team_home_screen.dart:114).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "team-home-agents-suspended-group",
-          "type": "list-tile",
-          "label": "Suspended on the host ({count})",
-          "key": "team-home-suspended-group",
-          "line": 1036,
-          "action": "other",
-          "target": null,
-          "effect": "Expands/collapses the suspended/stopped agents: setState(_suspendedExpanded = !_suspendedExpanded).",
-          "gates": [
-            "suspended.isNotEmpty (teamOffAgents(snapshot.agents))"
-          ],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "team-home-needs-you-tab",
-      "title": "Needs you ({count})",
-      "kind": "tab",
-      "file": "lib/ui/screens/team/team_home_screen.dart",
-      "widget": "_NeedsYouSegment",
-      "presentedBy": [],
-      "line": 1082,
-      "purpose": "Needs you segment: the host's open gates, ranked by kind then newest first; a row opens the Gate sheet.",
-      "reachedFrom": [
-        {
-          "page": "team-home",
-          "element": "team-home-segments"
-        },
-        {
-          "page": "team-home",
-          "element": "team-home-segments-menu-item"
-        }
-      ],
-      "gates": [
-        "_segment == TeamHomeSegment.needsYou",
-        "data body only when `controller.phase == OrchestrationPhase.ready && snapshot.hasData`"
-      ],
-      "elements": [
         {
           "id": "team-home-needs-you-gate-row",
           "type": "list-tile",
           "label": "<gate title> · <kind word> · <run/work link> · <age>",
           "key": "team-home-gate-<gate.id>",
-          "line": 1169,
+          "line": 895,
           "action": "open-sheet",
           "target": "gate-sheet",
           "targetWidget": "showGateSheet",
@@ -464,8 +305,7 @@
           "type": "chip",
           "label": "Sent | Unconfirmed | Not accepted",
           "key": "team-home-gate-<gate.id>-receipt",
-          "file": "lib/ui/widgets/team_receipt.dart",
-          "line": 125,
+          "line": 749,
           "action": "open-sheet",
           "target": "gate-sheet",
           "targetWidget": "showGateSheet",
@@ -473,6 +313,19 @@
           "gates": [
             "`record case final record? when record.status != MutationStatus.confirmed` (teamGateMutation(controller, gate)); replaces the chevron"
           ],
+          "destructive": false
+        },
+        {
+          "id": "team-home-completed-more",
+          "type": "list-tile",
+          "label": "Show {n} more",
+          "key": "team-home-completed-more",
+          "line": 906,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Shows the finished tasks past the first three, in the same list.",
+          "gates": [],
           "destructive": false
         }
       ]
@@ -1027,7 +880,7 @@
       "purpose": "What the home's '{live} agents · {working} working' row opens: the agents that are on, named by role, then the ones switched off on the host under one collapsed 'Suspended on the host' group. A row opens AgentScreen.",
       "reachedFrom": [
         {
-          "page": "team-home-runs-tab",
+          "page": "team-home",
           "element": "team-home-runs-agents-row"
         }
       ],
@@ -1105,10 +958,6 @@
       "line": 54,
       "purpose": "Agent detail: state header, identity, runtime, current work, activity step log, live output entry, capability-gated controls and technical details.",
       "reachedFrom": [
-        {
-          "page": "team-home-agents-tab",
-          "element": "team-home-agents-row"
-        },
         {
           "page": "team-run-agents-tab",
           "element": "team-run-agents-row"
@@ -1976,24 +1825,20 @@
       "widget": "TeamIntroScreen",
       "presentedBy": [],
       "line": 59,
-      "purpose": "The AI Team's intro while it is off: a drawing of a task going from agent to agent, what the team does in four steps (plans, works, checks, merges), what it needs on this kind of server, and one primary action that hands over to that kind's own set-up (docs/qa/team-discover-2026-09-25).",
+      "purpose": "The one AI Team page while the team is off (P3.4: team-intro merged into team-home; TeamPage shows it in that page's place): a drawing, what the team does in four steps, what it needs on this kind of server, why nothing was found on a computer (TeamDiscovery.miss), and one primary action for that kind's set-up; Enter its address on a computer either way. Once the team is on, the same page is the team (no hop back).",
       "reachedFrom": [
-        {
-          "page": "embedded-team-discover",
-          "element": "embedded-team-discover-open"
-        },
-        {
-          "page": "embedded-team-discover",
-          "element": "embedded-team-discover-row"
-        },
         {
           "page": "settings",
           "element": "settings-ai-team"
+        },
+        {
+          "page": "plugins-settings",
+          "element": "plugins-settings-ai-team-row"
         }
       ],
       "gates": [
-        "openTeamIntro(context, controller) from TeamDiscoverEntry (team off) or the Settings AI Team row when `controller.profile?.orchestration == null`",
-        "the server kind (teamServerKindOf): OpenCode inside the app, OpenCode in Termux (the phone's runtime supportsAiTeam decides between set-up and 'cannot run it'), or a computer (TeamDiscovery probes the host)"
+        "TeamPage while connection.profile?.orchestration == null (openTeamPage from Settings › AI Team, Plugins, search, New conversation's Team)",
+        "the server kind (teamServerKindOf): OpenCode inside the app, OpenCode in Termux (the phone's pre-flight decides between set-up and 'cannot run it'), or a computer (TeamDiscovery probes the host)"
       ],
       "elements": [
         {
@@ -2001,7 +1846,7 @@
           "type": "button",
           "label": "Set it up",
           "key": "team-intro-set-up",
-          "line": 239,
+          "line": 223,
           "action": "navigate",
           "target": "plugins-settings",
           "targetWidget": "PluginsSettingsScreen",
@@ -2016,7 +1861,7 @@
           "type": "button",
           "label": "Turn on",
           "key": "team-intro-turn-on",
-          "line": 255,
+          "line": 232,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
@@ -2031,11 +1876,11 @@
           "type": "button",
           "label": "Enter its address",
           "key": "team-intro-address",
-          "line": 267,
+          "line": 247,
           "action": "open-sheet",
-          "target": null,
+          "target": "team-host-sheet",
           "targetWidget": "showTeamHostSheet",
-          "effect": "The manual-add form (address, city, kind of computer; probes on submit). A found host's config is saved on the profile and the intro pops.",
+          "effect": "editTeamAddress: the address form (prefilled with what discovery found, else the server's host); a saved address turns the team on and the same page becomes the team's.",
           "gates": [
             "a computer, and nothing found"
           ],
@@ -2046,7 +1891,7 @@
           "type": "button",
           "label": "Run it on a computer",
           "key": "team-intro-on-computer",
-          "line": 399,
+          "line": 383,
           "action": "open-sheet",
           "target": null,
           "targetWidget": "showTeamHostGuideSheet",
@@ -2061,7 +1906,7 @@
           "type": "button",
           "label": "Set it up",
           "key": "team-intro-set-up",
-          "line": 266,
+          "line": 223,
           "action": "navigate",
           "target": "termux-setup-installed",
           "targetWidget": "ThisPhoneScreen",
@@ -2157,8 +2002,8 @@
           "element": "team-home-board"
         },
         {
-          "page": "team-home-runs-tab",
-          "element": "team-home-board-row"
+          "page": "team-home",
+          "element": "team-home-board"
         }
       ],
       "gates": [
@@ -2586,7 +2431,7 @@
           "element": "workspace-new-session"
         },
         {
-          "page": "team-home-runs-tab",
+          "page": "team-home",
           "element": "team-home-runs-row"
         },
         {
@@ -2838,7 +2683,7 @@
     },
     {
       "file": "lib/ui/screens/team/team_needs_you.dart",
-      "reason": "Embedded blocks, not pages of their own: TeamNeedsYouCard (one question as a request block) is shown on team-home-needs-you-tab (team_home_screen.dart:421) and team-run-overview-tab (run_screen.dart:780); TeamGateRow (one of several questions as a row) is shown on team-home-needs-you-tab (team_home_screen.dart:432). Both open the Gate sheet."
+      "reason": "Embedded blocks, not pages of their own: TeamNeedsYouCard (one question as a request block) is shown on team-home, where it is also its task's row, and on team-run-overview-tab (run_screen.dart:780); TeamGateRow (a question whose task is not listed) is a row of team-home's one list. Both open the Gate sheet."
     },
     {
       "file": "lib/ui/widgets/team_moments.dart",
@@ -2851,6 +2696,10 @@
     {
       "file": "lib/ui/screens/team_conversation/team_conversation.dart",
       "reason": "The routing API for the task conversation, not a page of its own: TeamConversation.open/start push TeamConversationScreen (team-conversation, chat/team_conversation_view.dart). TeamTaskConversationRow (the Overview's 'Open conversation' row) is recorded as team-run-overview-open-conversation on team-run-overview-tab; TeamAgentTranscript and TeamOpenConversationRow are re-exports of chat/team_conversation_view.dart (see team-conversation's own elements and team-agent-output)."
+    },
+    {
+      "file": "lib/ui/screens/team/team_page.dart",
+      "reason": "TeamPage/openTeamPage: the one AI Team route (P3.4). No surface of its own: it shows team-home while the connected server's team is on and team-intro while it is off, following the connection, plus a bare loading page for the frame between turning on and the team starting."
     }
   ],
   "notes": [

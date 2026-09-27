@@ -1234,14 +1234,11 @@
       "widget": "TeamPhoneSection",
       "presentedBy": [],
       "line": 80,
-      "purpose": "Section of the AI Team plugin sheet for the Termux profile: phone supervisor status, Start/Stop, keep-running tips, Remove.",
+      "purpose": "The phone Termux team's own controls (P3.4: a kit sheet from the AI Team page's menu, reachable in every state of the page): phone supervisor status, Start/Stop, keep-running tips, Remove.",
       "reachedFrom": [
         {
-          "page": "?",
-          "element": null,
-          "widget": "_TeamPluginSheetState",
-          "file": "lib/ui/screens/settings/plugins_screen.dart",
-          "line": 636
+          "page": "team-home",
+          "element": "team-home-phone-controls"
         }
       ],
       "gates": [
@@ -1249,7 +1246,7 @@
         "controls only when await runtime.supportsAiTeam; otherwise a \"not available\" text"
       ],
       "embeddedIn": [
-        "TeamPluginSheet"
+        "TeamHomeScreen (menu sheet)"
       ],
       "elements": [
         {
@@ -1343,6 +1340,9 @@
           ],
           "destructive": true
         }
+      ],
+      "hostPages": [
+        "team-home"
       ]
     },
     {
@@ -1493,11 +1493,12 @@
           "line": 1540
         },
         {
-          "page": "?",
-          "element": null,
-          "widget": "_TeamPluginSheetState",
-          "file": "lib/ui/screens/settings/plugins_screen.dart",
-          "line": 311
+          "page": "team-home",
+          "element": "team-home-change-address"
+        },
+        {
+          "page": "team-intro",
+          "element": "team-intro-address"
         }
       ],
       "gates": [],
@@ -1603,13 +1604,6 @@
           "widget": "_ProfileEditorScreenState",
           "file": "lib/ui/screens/servers_screen.dart",
           "line": 2397
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "_TeamPluginSheetState",
-          "file": "lib/ui/screens/settings/plugins_screen.dart",
-          "line": 555
         }
       ],
       "gates": [],
@@ -1628,11 +1622,8 @@
       "purpose": "Destructive confirmation before turning the AI Team plugin off for a server.",
       "reachedFrom": [
         {
-          "page": "?",
-          "element": null,
-          "widget": "_TeamPluginSheetState",
-          "file": "lib/ui/screens/settings/plugins_screen.dart",
-          "line": 351
+          "page": "team-home",
+          "element": "team-home-turn-off"
         }
       ],
       "gates": [],
@@ -1647,7 +1638,7 @@
           "action": "mutate",
           "target": null,
           "targetWidget": null,
-          "effect": "Pops true; the caller (TeamPluginSheet, plugins_screen.dart:351) turns the plugin off for the profile.",
+          "effect": "Pops true; the caller (the AI Team page's Turn off, team_home_screen.dart) runs turnOffTeam for the profile.",
           "gates": [],
           "destructive": true
         },
@@ -1779,8 +1770,7 @@
       "gates": [],
       "embeddedIn": [
         "AgentScreen",
-        "RunScreen",
-        "TeamPluginSheet"
+        "RunScreen"
       ],
       "elements": [
         {
@@ -1815,7 +1805,7 @@
     "gate-sheet-approve is recorded as mutate; for destructive prompts (teamGateIsDestructive) it first opens gate-sheet-confirm-sheet (gate_sheet.dart:641).",
     "team-phone-stop-sheet: call passes no destructive flag (team_phone_section.dart:191) but stopping the team is marked destructive: true per the brief's stop/kill rule.",
     "activity_screen.dart:320 opens showGateSheet automatically for an initial gate id; the upstream trigger (notification tap / deep link) was not traced.",
-    "embedded-team-technical-value hosts found by grep: agent_screen.dart, run_screen.dart, plugins_screen.dart (exact host widget inside plugins_screen assumed TeamPluginSheet).",
+    "embedded-team-technical-value hosts found by grep: agent_screen.dart, run_screen.dart, team_home_screen.dart's Technical details (TeamHostDetailsSheet); the AI Team sheet in plugins_screen.dart is gone (P3.4).",
     "slice P1.3/P1.5 (2026-09-27): the team phone onboarding block is hosted by This phone's Termux Add tools sheet (this-phone-add-tools-sheet) instead of the Termux wizard; the re-offer card (embedded-team-phone-reoffer-card) is removed; the section's Open setup opens This phone."
   ]
 }

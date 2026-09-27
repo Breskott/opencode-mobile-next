@@ -12238,9 +12238,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get teamUiDiscoveryTurnOn => 'تشغيل';
-
-  @override
   String get teamUiEditorBody =>
       'إذا كان هذا الحاسوب يشغّل Gas City، فسيعثر عليه التطبيق تلقائيًا.';
 
@@ -12251,28 +12248,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiEditorTitle => 'فريق الذكاء الاصطناعي (اختياري)';
-
-  @override
-  String get teamUiEventStreamClosed => 'أُغلق تدفق الأحداث';
-
-  @override
-  String get teamUiEventStreamConnecting => 'جارٍ الاتصال بتدفق الأحداث…';
-
-  @override
-  String teamUiEventStreamLive(String seq) {
-    return 'تدفق الأحداث متصل · التسلسل $seq';
-  }
-
-  @override
-  String get teamUiEventStreamLiveNoSeq => 'تدفق الأحداث متصل';
-
-  @override
-  String get teamUiEventStreamReconnecting =>
-      'جارٍ إعادة الاتصال بتدفق الأحداث…';
-
-  @override
-  String get teamUiFrontLine =>
-      'الواجهة الأمامية أداة صغيرة على الحاسوب تتيح للهاتف الإجابة والتوجيه.';
 
   @override
   String get teamUiHostGuideDocs =>
@@ -12409,32 +12384,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String teamUiSavedOn(String server) {
-    return 'فريق الذكاء الاصطناعي مفعّل لخادم $server.';
-  }
-
-  @override
-  String get teamUiStatusConnected => 'متصل';
-
-  @override
-  String get teamUiStatusNotAvailable => 'غير متاح';
-
-  @override
-  String get teamUiStatusOff => 'متوقف';
-
-  @override
-  String get teamUiStatusOn => 'مفعّل';
-
-  @override
-  String get teamUiStatusProbing => 'جارٍ فحص المضيف…';
-
-  @override
-  String get teamUiStatusReconnecting => 'جارٍ إعادة الاتصال…';
-
-  @override
-  String get teamUiStatusUnreachable => 'تعذّر الوصول إلى المضيف';
-
-  @override
   String get teamUiTailnetRequired =>
       'يعمل فريق الذكاء الاصطناعي عبر شبكة Tailscale الخاصة بك أو على هذا الجهاز. استخدم عنوان Tailscale الخاص بالحاسوب (100.x.x.x أو name.ts.net).';
 
@@ -12470,10 +12419,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'يزيل بطاقته وعناصر الانتباه وبيانات الفريق المخزّنة مؤقتًا من هذا الهاتف. لا يتغير شيء على المضيف.';
 
   @override
-  String get teamUiTurnOffFailed =>
-      'تم الإيقاف، لكن تعذّرت إزالة بعض البيانات المخزّنة مؤقتًا من هذا الهاتف.';
-
-  @override
   String teamUiTurnOffTitle(String server) {
     return 'هل تريد إيقاف فريق الذكاء الاصطناعي لخادم $server؟';
   }
@@ -12502,12 +12447,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiVersionUnknown => 'غير معروف';
-
-  @override
-  String get teamUiWatchingAndAnswering => 'المتابعة والإجابة من هذا الهاتف';
-
-  @override
-  String get teamUiWatchingOnly => 'المتابعة من هذا الهاتف';
 
   @override
   String teamUiCardAgentsSummary(
@@ -26018,6 +25957,72 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamPhoneReadyFirstTask => 'Give the team a first task';
+
+  @override
+  String get teamUiStateNotAnsweringPhone =>
+      'The app keeps trying while the team starts on this phone.';
+
+  @override
+  String get teamUiStateNotAnsweringComputer =>
+      'The app keeps trying. Check that your computer is on and online.';
+
+  @override
+  String teamUiStateNotAnsweringComputerNamed(String computer) {
+    return 'The app keeps trying. Check that $computer is on and online.';
+  }
+
+  @override
+  String get teamHomeChangeAddress => 'Change address';
+
+  @override
+  String get teamHomeTurnOffFailed =>
+      'Couldn’t stop the team on this phone, so it is still on. Try again.';
+
+  @override
+  String get teamHomeHostStopped => 'Stopped';
+
+  @override
+  String get teamHomeHostCooling => 'Cooling down';
+
+  @override
+  String get teamHomeHostStoppedForHeat => 'Stopped to cool down';
+
+  @override
+  String teamHomeHeatPausedLine(String time) {
+    return 'The phone got hot at $time, so the team paused. It carries on by itself once the phone has cooled.';
+  }
+
+  @override
+  String teamHomeHeatStoppedLine(String time) {
+    return 'The phone got very hot at $time, so the team stopped. Its work is kept, and it starts again once the phone has cooled.';
+  }
+
+  @override
+  String get teamHomeAgentsCooling => 'resting while the phone cools';
+
+  @override
+  String get teamHomePhoneControls => 'Keep it running, stop it or remove it';
+
+  @override
+  String teamHomeSpentToday(String usage) {
+    return 'Today · $usage';
+  }
+
+  @override
+  String get teamHomeSpentHint =>
+      'The whole team since midnight where it runs, estimated';
+
+  @override
+  String get teamHomeSpentPartial =>
+      'Some of today’s use has no price yet, so it cost more than this';
+
+  @override
+  String teamIntroNotFound(String server) {
+    return 'No AI Team found on $server';
+  }
+
+  @override
+  String get pluginsTeamOpenPage => 'See the team’s tasks';
 
   @override
   String get chatErrorModelNotFound => 'The server doesn\'t have this model.';
