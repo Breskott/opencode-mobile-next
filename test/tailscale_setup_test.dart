@@ -147,7 +147,10 @@ void main() {
         tester.widget<TextField>(find.byType(TextField)).controller!.text,
         'work.example.ts.net',
       );
-      expect(find.textContaining('Welcome back.'), findsOneWidget);
+      expect(
+        find.textContaining('Welcome back.', findRichText: true),
+        findsOneWidget,
+      );
     },
   );
 
@@ -157,7 +160,7 @@ void main() {
       final bridge = _Bridge()..state = TailscaleAppState.missing;
       await _show(tester, bridge);
       expect(find.textContaining('not installed'), findsOneWidget);
-      await _tap(tester, 'Get official Android app');
+      await _tap(tester, 'Get Tailscale');
       expect(find.text('Open external link?'), findsOneWidget);
       expect(find.text('play.google.com'), findsOneWidget);
       await tester.tap(find.text('Cancel'));
@@ -176,7 +179,7 @@ void main() {
     String? result;
     await _show(tester, bridge, result: (value) => result = value);
     await _tap(tester, 'Open Tailscale');
-    expect(find.textContaining('could not open'), findsOneWidget);
+    expect(find.textContaining('didn’t open'), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'http://100.64.0.1:4096');
     await _tap(tester, 'Continue to authentication');
     expect(result, isNull);
@@ -193,10 +196,123 @@ void main() {
     await tester.ensureVisible(find.text('Check app again'));
     await tester.tap(find.text('Check app again'));
     await tester.pump();
-    await tester.pageBack();
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     bridge.pending!.complete(TailscaleAppState.installed);
     await tester.pump();
     expect(tester.takeException(), isNull);
   });
+  testWidgets(
+    'Continue waits for an address and says why; the counter stays hidden',
+    (tester) async {
+      final bridge = _Bridge();
+      String? result;
+      await _show(tester, bridge, result: (value) => result = value);
+      expect(find.text('Enter your server’s address first.'), findsOneWidget);
+      await tester.tap(find.text('Continue to authentication'));
+      await tester.pumpAndSettle();
+      expect(result, isNull);
+      expect(find.textContaining('valid port'), findsNothing);
+      await tester.enterText(find.byType(TextField), 'work.example.ts.net');
+      await tester.pump();
+      expect(find.text('Enter your server’s address first.'), findsNothing);
+      expect(find.textContaining('/2048'), findsNothing);
+      expect(
+        find.textContaining('can’t list the devices on your tailnet'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('a failed app check offers Check app again on its row', (
+    tester,
+  ) async {
+    final bridge = _Bridge()..state = TailscaleAppState.unavailable;
+    await _show(tester, bridge);
+    expect(find.textContaining('Could not check the app'), findsOneWidget);
+    expect(find.text('Open Tailscale'), findsNothing);
+    bridge.state = TailscaleAppState.installed;
+    await _tap(tester, 'Check app again');
+    expect(find.text('Open Tailscale'), findsOneWidget);
+    expect(
+      find.text('Tailscale is installed. VPN connection is unverified.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('unsupported device explains and offers no app actions', (
+    tester,
+  ) async {
+    final bridge = _Bridge()..state = TailscaleAppState.unsupported;
+    await _show(tester, bridge);
+    expect(find.textContaining('cannot open the Android app'), findsOneWidget);
+    expect(find.text('Open Tailscale'), findsNothing);
+    expect(find.text('Get Tailscale'), findsNothing);
+    expect(find.text('Check app again'), findsNothing);
+  });
+
+  testWidgets('official guides fold under Details and open for review', (
+    tester,
+  ) async {
+    await _show(tester, _Bridge());
+    await tester.dragUntilVisible(
+      find.text('Tailscale setup and recovery'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
+    expect(find.text('Read the official Serve guide'), findsNothing);
+    await _tap(tester, 'Tailscale setup and recovery');
+    await _tap(tester, 'Read the official Serve guide');
+    expect(find.text('Open external link?'), findsOneWidget);
+    expect(find.text('tailscale.com'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+  });
+
+  for (final size in const [
+    Size(360, 800),
+    Size(412, 915),
+    Size(915, 412),
+    Size(800, 1280),
+    Size(1280, 800),
+  ]) {
+    for (final scale in const [1.0, 2.0]) {
+      testWidgets('lays out without overflow at $size, text $scale', (
+        tester,
+      ) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final bridge = _Bridge()..state = TailscaleAppState.missing;
+        await _show(tester, bridge);
+        expect(tester.takeException(), isNull);
+        bridge.state = TailscaleAppState.installed;
+        await tester.dragUntilVisible(
+          find.text('Check app again'),
+          find.byType(ListView),
+          const Offset(0, -200),
+        );
+        await _tap(tester, 'Check app again');
+        // Short windows may have scrolled the steps away: bring the row
+        // back into view, then check its button laid out cleanly.
+        await tester.dragUntilVisible(
+          find.text('Open Tailscale'),
+          find.byType(ListView),
+          const Offset(0, 200),
+        );
+        expect(find.text('Open Tailscale'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.dragUntilVisible(
+          find.byType(TextField),
+          find.byType(ListView),
+          const Offset(0, -200),
+        );
+        await tester.enterText(find.byType(TextField), 'http://bad');
+        await _tap(tester, 'Continue to authentication');
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
 }

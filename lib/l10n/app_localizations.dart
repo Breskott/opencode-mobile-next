@@ -7249,6 +7249,48 @@ abstract class AppLocalizations {
   /// **'Your network connection is managed in Tailscale. Test connection checks this OpenCode server, not the VPN. Enter the server’s own username and password here, not your Tailscale login. Setup help keeps these fields intact.'**
   String get tailscaleEditorDetail;
 
+  /// Tailscale setup: the first checklist step, whether the official Tailscale app is installed on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Tailscale app on this phone'**
+  String get tailscaleSetupAppTitle;
+
+  /// Tailscale setup: the second checklist step, done by the person in the Tailscale app; the app cannot verify it
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in and turn on the VPN'**
+  String get tailscaleSetupVpnTitle;
+
+  /// Tailscale setup: the short line under the VPN step; the full instructions are in the Details fold
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in and connect. OpenCode can’t check this.'**
+  String get tailscaleSetupVpnSupporting;
+
+  /// Tailscale setup: the VPN step's short reason when the Tailscale app could not be opened
+  ///
+  /// In en, this message translates to:
+  /// **'Tailscale didn’t open. Open it from your launcher, then come back.'**
+  String get tailscaleSetupOpenFailed;
+
+  /// Tailscale setup: the helper under the server address field; says the app cannot pick the computer from the tailnet's devices
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.'**
+  String get tailscaleSetupAddressHelper;
+
+  /// Tailscale setup: the button on the app step that opens the official Play Store page (after the external-link review)
+  ///
+  /// In en, this message translates to:
+  /// **'Get Tailscale'**
+  String get tailscaleSetupGetApp;
+
+  /// Tailscale setup: why Continue to authentication is disabled while the address field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your server’s address first.'**
+  String get tailscaleSetupContinueReason;
+
   /// No description provided for @a2aDraftSaveError.
   ///
   /// In en, this message translates to:

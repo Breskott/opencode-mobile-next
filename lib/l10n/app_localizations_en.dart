@@ -4342,6 +4342,31 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your network connection is managed in Tailscale. Test connection checks this OpenCode server, not the VPN. Enter the server’s own username and password here, not your Tailscale login. Setup help keeps these fields intact.';
 
   @override
+  String get tailscaleSetupAppTitle => 'Tailscale app on this phone';
+
+  @override
+  String get tailscaleSetupVpnTitle => 'Sign in and turn on the VPN';
+
+  @override
+  String get tailscaleSetupVpnSupporting =>
+      'Sign in and connect. OpenCode can’t check this.';
+
+  @override
+  String get tailscaleSetupOpenFailed =>
+      'Tailscale didn’t open. Open it from your launcher, then come back.';
+
+  @override
+  String get tailscaleSetupAddressHelper =>
+      'OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.';
+
+  @override
+  String get tailscaleSetupGetApp => 'Get Tailscale';
+
+  @override
+  String get tailscaleSetupContinueReason =>
+      'Enter your server’s address first.';
+
+  @override
   String get a2aDraftSaveError =>
       'Draft changes could not be saved. Keep this screen open and retry before leaving.';
 
