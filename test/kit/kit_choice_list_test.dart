@@ -170,13 +170,13 @@ void main() {
     expect(find.textContaining('Current'), findsNothing);
   });
 
-  testWidgets('a picker shows Current on the selected row; sends never does', (
+  testWidgets('the selected radio never says Current; sends never does', (
     tester,
   ) async {
     await _pump(tester, _Single(onSelected: (_) {}));
     await tester.tap(find.text('Staging'));
     await tester.pump();
-    expect(find.textContaining('Current'), findsOneWidget);
+    expect(find.textContaining('Current'), findsNothing);
 
     await _pump(
       tester,

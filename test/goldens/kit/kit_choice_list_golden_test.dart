@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_iconography.dart';
 import 'package:opencode_mobile/ui/kit/kit_choice_list.dart';
+import 'package:opencode_mobile/ui/kit/kit_menu.dart';
 import 'package:opencode_mobile/ui/kit/kit_receipt.dart';
 import 'package:opencode_mobile/ui/kit/kit_row.dart';
 import 'package:opencode_mobile/ui/kit/kit_sheet.dart';
@@ -127,6 +128,44 @@ Map<String, Widget Function()> _states() => {
     receipt: const KitReceipt(
       state: KitReceiptState.answeredElsewhere,
       where: 'the laptop',
+    ),
+  ),
+  // The applied value differs from the selection (a pending change):
+  // "Current" marks only the value in use now, and the installed choice
+  // carries its own actions in its row menu (R6).
+  'pending_change': () => _rails(
+    KitChoiceList<String>.single(
+      choices: [
+        KitChoice(
+          value: 'fast',
+          title: 'Fast',
+          supporting: 'On this phone',
+          menu: [
+            KitMenuItem(label: 'Download Fast again', onSelected: () {}),
+            KitMenuItem(
+              label: 'Delete Fast',
+              destructive: true,
+              onSelected: () {},
+            ),
+          ],
+        ),
+        const KitChoice(
+          value: 'balanced',
+          title: 'Balanced',
+          supporting: 'Not downloaded · 153 MB download',
+          recommended: true,
+        ),
+        const KitChoice(
+          value: 'accurate',
+          title: 'High accuracy',
+          supporting: 'Not downloaded · 480 MB download',
+        ),
+      ],
+      selected: 'balanced',
+      current: 'fast',
+      actsOnTap: false,
+      semanticsLabel: 'Voice model',
+      onSelected: _noop,
     ),
   ),
   'picker_row': () => const KitRowGroup(

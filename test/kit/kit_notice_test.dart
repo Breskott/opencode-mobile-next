@@ -196,8 +196,8 @@ void main() {
 
     for (final locale in const [Locale('en'), Locale('ar')]) {
       testWidgets(
-        'at 2.0 text the action and the close share the row under the '
-        'sentence (${locale.languageCode})',
+        'at 2.0 text the close ends the first line and the action starts '
+        'under the sentence at its text inset (${locale.languageCode})',
         (tester) async {
           await _pump(
             tester,
@@ -214,8 +214,18 @@ void main() {
           final close = tester.getRect(
             find.byKey(const ValueKey('team-offer-not-now')),
           );
-          expect(action.center.dy - close.center.dy, closeTo(0, 1));
+          // The close sits on the sentence's first line, not by the action.
+          expect(close.center.dy, lessThan(sentence.top + 48));
+          expect(close.center.dy, lessThan(action.top));
           expect(action.top, greaterThanOrEqualTo(sentence.bottom - 1));
+          // The action's words start where the sentence's words start.
+          final words = tester.getRect(find.text('Turn on'));
+          expect(
+            locale.languageCode == 'ar'
+                ? (words.right - sentence.right).abs()
+                : (words.left - sentence.left).abs(),
+            lessThanOrEqualTo(1),
+          );
           expect(close.height, greaterThanOrEqualTo(48));
           expect(close.width, greaterThanOrEqualTo(48));
           // The close sits at the end in both directions.
