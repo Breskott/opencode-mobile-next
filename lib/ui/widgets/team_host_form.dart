@@ -293,8 +293,8 @@ class _TeamHostFormState extends State<TeamHostForm> {
     });
   }
 
-  /// Cancel test: the form is editable again at once; the answer, when it
-  /// comes, is dropped.
+  /// Cancel test, or an edit while the test runs: the answer, when it
+  /// comes, is dropped (it would be for the old words).
   void _cancelTest() {
     if (!_testing) return;
     setState(() {
@@ -335,8 +335,7 @@ class _TeamHostFormState extends State<TeamHostForm> {
           hint: l10n.teamUiAddAddressHint,
           controller: _url,
           kind: KitFieldKind.url,
-          enabled: !_testing,
-          disabledReason: _testing ? l10n.teamUiAddTesting : null,
+          onChanged: (_) => _cancelTest(),
           autofocus: widget.initialUrl.isEmpty,
           textInputAction: TextInputAction.next,
           fieldKey: const ValueKey('team-host-url'),
@@ -347,21 +346,11 @@ class _TeamHostFormState extends State<TeamHostForm> {
           helper: l10n.teamHostFormTeamHelper,
           controller: _city,
           kind: KitFieldKind.mono,
-          enabled: !_testing,
-          disabledReason: _testing ? l10n.teamUiAddTesting : null,
+          onChanged: (_) => _cancelTest(),
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submit(),
           fieldKey: const ValueKey('team-host-city'),
         ),
-        if (_testing) ...[
-          gap,
-          KitNotice(
-            key: const ValueKey('team-host-testing'),
-            tone: AppStatusTone.progress,
-            icon: AppIconography.sync,
-            message: l10n.teamUiAddTesting,
-          ),
-        ],
         if (failure != null) ...[
           gap,
           KitNotice(
@@ -429,14 +418,20 @@ Future<void> showTeamHostGuideSheet(BuildContext context) {
     context,
     sheetKey: const ValueKey('team-host-guide'),
     title: l10n.teamUiHostGuideTitle,
-    subtitle: l10n.teamUiHostGuideIntro,
-    icon: AppIconography.computer,
     body: (sheetContext) {
       final tokens = KitTokens.of(sheetContext);
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Padding(
+            padding: EdgeInsetsDirectional.only(bottom: tokens.space4),
+            child: KitText(
+              l10n.teamUiHostGuideIntro,
+              role: KitTextRole.secondary,
+              tone: KitTextTone.secondary,
+            ),
+          ),
           for (final (i, step) in steps.indexed)
             Padding(
               padding: EdgeInsetsDirectional.only(bottom: tokens.space3),

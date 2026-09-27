@@ -65,7 +65,8 @@ MutationRecord _record(MutationStatus status, {String? reason}) =>
       receipt: reason == null ? null : MutationReceipt.rejected('k1', reason),
     );
 
-String _plain(String text) => text.replaceAll(RegExp('[⁦-⁩‎]'), '');
+String _plain(String text) =>
+    text.replaceAll(RegExp(r'[\u2066-\u2069\u200E]', unicode: true), '');
 
 bool _hasText(WidgetTester tester, String wanted) => tester
     .widgetList<Text>(find.byType(Text))
@@ -299,10 +300,11 @@ void main() {
       await tester.enterText(_key('team-host-url'), 'http://100.64.0.3:8372');
       await tester.tap(_key('team-host-submit'));
       await tester.pump();
-      expect(_key('team-host-testing'), findsOneWidget);
+      // Progress is the working primary, with Cancel test beside it.
+      expect(_key('team-host-cancel-test'), findsOneWidget);
       await tester.tap(_key('team-host-cancel-test'));
       await tester.pump();
-      expect(_key('team-host-testing'), findsNothing);
+      expect(_key('team-host-cancel-test'), findsNothing);
       answer.complete(
         const ProbeFound(
           host: OrchestrationHostIdentity(

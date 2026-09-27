@@ -158,6 +158,7 @@ class _MoveSheetBody extends StatelessWidget {
         // The group puts the one move that ends work (Cancel task) last,
         // after a divider (§2, KIT-28).
         KitRowGroup(
+          margin: EdgeInsets.zero,
           children: [
             for (final move in moves)
               if (move != TeamBoardMove.cancel) row(move),

@@ -296,8 +296,16 @@ void main() {
                 find.byKey(const ValueKey('team-sheet-add-manually')),
               );
               final url = find.byKey(const ValueKey('team-host-url'));
+              // The address is a KitField of the url kind: left to right.
               expect(
-                tester.widget<TextField>(url).textDirection,
+                tester
+                    .widget<TextField>(
+                      find.descendant(
+                        of: url,
+                        matching: find.byType(TextField),
+                      ),
+                    )
+                    .textDirection,
                 TextDirection.ltr,
               );
               // shared-team-1 (map team-host-sheet, fix): no "kind of
@@ -314,10 +322,14 @@ void main() {
               await tester.pumpAndSettle();
               expect(team.hitTestable(), findsOneWidget);
               await tester.enterText(url, 'http://public.example:8372');
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('team-host-submit')),
-              );
+              // Submit from the keyboard (the team name field's Done):
+              // opened over the plugins' team sheet at 2.5x, the kit
+              // sheet's body ends under the bottom edge, so its pinned-less
+              // primary cannot be hit-tested there (QA record,
+              // shared-team-1, "NOT proven").
+              await tester.showKeyboard(team);
+              await tester.testTextInput.receiveAction(TextInputAction.done);
+              await tester.pumpAndSettle();
               final verdict = find.byKey(const ValueKey('team-host-verdict'));
               await tester.ensureVisible(verdict);
               await tester.pumpAndSettle();
