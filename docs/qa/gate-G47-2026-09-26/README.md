@@ -90,3 +90,7 @@ PERMISSION_PRESENTATION_WRITE=1 $F test -j 1 test/permission_presentation_test.d
 | Verified | tests only | this record |
 | Committed | Yes | `gate/G47` |
 | Deployed | No | |
+
+## Merged 2026-09-27 (kit-gates-manifest), English only
+
+Arabic is dropped (owner decision), so the merged test checks English only. The Arabic locale, its import and the `ar` baseline count were removed, and the baseline is now `{"en": 4}`. The rest holds on `feat/phone-setup-v2` at `c3a2493f`: `lib/ui/permission_presentation.dart` still titles an unknown id "Use <id>". 5/5 pass; analyze clean.

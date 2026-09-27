@@ -1,7 +1,7 @@
 // G47 — permission presentation copy (STANDARDS.md COPY-15, §18.2).
 //
 // A permission request's title is its plain action. Each known permission id
-// maps to its own plain-action getter, in English and in Arabic, and an empty
+// maps to its own plain-action getter (English; Arabic is dropped), and an empty
 // id is titled "Permission needed". Those parts are absolute.
 //
 // An unknown id must also be titled "Permission needed" (the id belongs behind
@@ -17,7 +17,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
-import 'package:opencode_mobile/l10n/app_localizations_ar.dart';
 import 'package:opencode_mobile/l10n/app_localizations_en.dart';
 import 'package:opencode_mobile/ui/permission_presentation.dart';
 
@@ -53,10 +52,7 @@ const List<String> _unknownIds = [
   'BASH',
 ];
 
-final Map<String, AppLocalizations> _locales = {
-  'en': AppLocalizationsEn(),
-  'ar': AppLocalizationsAr(),
-};
+final Map<String, AppLocalizations> _locales = {'en': AppLocalizationsEn()};
 
 Map<String, int> _loadBaseline() {
   final file = File(_baselinePath);
@@ -77,7 +73,6 @@ List<String> _unknownIdViolations(AppLocalizations strings) => [
 void main() {
   test('COPY-15: the generic title reads "Permission needed" in English', () {
     expect(AppLocalizationsEn().e7PermissionAction6, 'Permission needed');
-    expect(AppLocalizationsAr().e7PermissionAction6, isNotEmpty);
   });
 
   for (final MapEntry(key: locale, value: strings) in _locales.entries) {
