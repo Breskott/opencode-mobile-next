@@ -12,7 +12,7 @@ import '../../api/product_repository.dart';
 import '../../state/connection.dart';
 import '../../state/pending_auth.dart';
 import '../app_theme.dart';
-import '../kit/motion/kit_refresh.dart';
+import '../kit/kit.dart';
 import '../widgets/file_preview.dart';
 import '../widgets/external_link.dart';
 import '../widgets/connect_methods.dart';

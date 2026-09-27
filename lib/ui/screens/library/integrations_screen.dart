@@ -5,6 +5,10 @@ part of '../library_screen.dart';
 /// surface.
 enum IntegrationsMode { providers, mcp, all }
 
+/// Providers and MCP servers of the current server, built from kit parts
+/// (screen-library-1). The map proposal for this page is `redesign`: the
+/// split into agent-driven and catalog MCP setup waits for its wave-3
+/// slice; this rebuild keeps today's structure in the visual language.
 class IntegrationsScreen extends StatefulWidget {
   final ConnectionController controller;
   final Future<bool> Function(Uri destination)? authorizationLauncher;
@@ -19,6 +23,14 @@ class IntegrationsScreen extends StatefulWidget {
 
   @override
   State<IntegrationsScreen> createState() => _IntegrationsScreenState();
+}
+
+/// A message about one act that just finished or failed, shown at the top
+/// of the list until dismissed (KIT-34: a toast is only done-with-undo).
+class _IntegrationsNotice {
+  final String message;
+  final AppStatusTone tone;
+  const _IntegrationsNotice(this.message, this.tone);
 }
 
 class _IntegrationsScreenState extends State<IntegrationsScreen>
@@ -45,11 +57,18 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   int _integrationLoadGeneration = 0;
   final TextEditingController _providerSearch = TextEditingController();
   String _providerQuery = '';
+  _IntegrationsNotice? _notice;
+
+  AppLocalizations get _l10n => _libraryCopy(context);
 
   // Used only for equality checks; never render or log this sign-in snapshot.
   Object get _mcpSource {
     return _integrationSourceFor(widget.controller);
   }
+
+  /// This server shares its providers and MCP servers with the app. Codex
+  /// and Paseo do not: the page explains that instead of failing to load.
+  bool get _catalogAvailable => widget.controller.capabilities.serverCatalog;
 
   @override
   void initState() {
@@ -63,15 +82,19 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     // Returning from a browser is not consent to poll or submit a code.
   }
 
+  void _say(String message, {AppStatusTone tone = AppStatusTone.ok}) {
+    if (!mounted) return;
+    setState(() => _notice = _IntegrationsNotice(message, tone));
+  }
+
   Future<void> _load() async {
+    if (!_catalogAvailable) return;
     await widget.controller.prunePendingIntegrationAuth();
     if (!mounted) return;
     final repository = await widget.controller.prepareActionRepository();
     if (!mounted) return;
     if (repository == null) {
-      final message = lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).e7LibraryOpenCodeIsReconnectingTryAgainShortly;
+      final message = _l10n.e7LibraryOpenCodeIsReconnectingTryAgainShortly;
       setState(() {
         _serverError = message;
         _resourceError = message;
@@ -112,11 +135,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
       }
     } catch (_) {
       if (currentScope() && generation == _serverLoadGeneration) {
-        setState(
-          () => _serverError = lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).mcpLoadFailed,
-        );
+        setState(() => _serverError = _l10n.mcpLoadFailed);
       }
     }
   }
@@ -136,11 +155,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
       if (mounted &&
           source == _mcpSource &&
           generation == _resourceLoadGeneration) {
-        setState(
-          () => _resourceError = lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).mcpLoadFailed,
-        );
+        setState(() => _resourceError = _l10n.mcpLoadFailed);
       }
     }
   }
@@ -216,12 +231,17 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
       }
       await _load();
     } catch (error) {
-      if (mounted) showProductError(context, error);
+      if (mounted) {
+        _say(productErrorText(error, l10n: _l10n), tone: AppStatusTone.failure);
+      }
     } finally {
       if (mounted) setState(() => _busy.remove(server.name));
     }
   }
 
+  /// "Remove {name} until restart": a runtime removal the server undoes on
+  /// restart when the server is in its configuration, so it is a neutral
+  /// confirmation, not a destructive one (map: integrations-remove-mcp-sheet).
   Future<void> _removeMcp(McpServerInfo server) async {
     final controller = widget.controller;
     final profile = controller.profile;
@@ -245,7 +265,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         _pendingMcpOAuth?.server.name == server.name) {
       return;
     }
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final l10n = _l10n;
     void changed() {
       if (!currentScope()) invalidated = true;
     }
@@ -255,14 +275,15 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     setState(() => _removingMcp.add(server.name));
     try {
       FocusManager.instance.primaryFocus?.unfocus();
-      final confirmed = await showConfirmSheet(
+      final confirmed = await showKitConfirm(
         context,
         icon: AppIconography.delete,
-        title: l10n.mcpRemoveTitle(server.name),
-        message: l10n.mcpRemoveRuntimeDetail,
-        confirmLabel: l10n.mcpRemove,
+        title: l10n.integrationsMcpRemoveTitle(server.name),
+        body: l10n.integrationsMcpRemoveBody,
+        confirmLabel: l10n.integrationsMcpRemoveConfirm,
         cancelLabel: l10n.workCancel,
-        destructive: true,
+        sheetKey: const ValueKey('mcp-remove-confirm-sheet'),
+        confirmKey: const ValueKey('confirm-mcp-remove'),
       );
       if (!confirmed ||
           !currentScope() ||
@@ -302,16 +323,19 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
       widget.controller.isProfileReadable(
         widget.controller.promptShelfProfileID,
       ) &&
-      widget.controller.capabilities.mcpRuntimeRemovals &&
-      widget.controller.repository is McpRemovalGateway &&
+      _removalSupported &&
       _serversLocationRevision == widget.controller.locationRevision &&
       identical(_serversRepository, widget.controller.repository);
+
+  bool get _removalSupported =>
+      widget.controller.capabilities.mcpRuntimeRemovals &&
+      widget.controller.repository is McpRemovalGateway;
 
   Future<void> _startMcpAuthentication(
     McpServerInfo server,
     ServerOperationsGateway repository,
   ) async {
-    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final actionL10n = _l10n;
     final source = _mcpSource;
     if (_pendingMcpOAuth != null) {
       throw ProductException(
@@ -342,7 +366,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         );
       } catch (_) {
         // A custom callback, occupied port, or Android network policy still has
-        // a manual code/URL path in the pending row below.
+        // a manual code/URL path in the pending notice.
       }
     }
     if (!mounted || source != _mcpSource) {
@@ -393,10 +417,17 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   Future<void> _enterMcpAuthorizationCode() async {
     final pending = _pendingMcpOAuth;
     if (pending == null || _finishingMcpOAuth) return;
-    final code = await showDialog<String>(
-      context: context,
-      builder: (context) =>
-          _McpOAuthCodeDialog(expectedState: pending.launch.oauthState),
+    final l10n = _l10n;
+    final code = await _showFinishSignInDialog(
+      context,
+      label: l10n.e7LibraryCallbackURLOrCode,
+      helper: l10n.integrationsFinishSignInMcpHelper,
+      fieldKey: const ValueKey('mcp-oauth-code-input'),
+      confirmKey: const ValueKey('complete-mcp-oauth'),
+      parse: (raw) => parseMcpAuthorizationCode(
+        raw,
+        expectedState: pending.launch.oauthState,
+      ),
     );
     if (code == null || !mounted || _pendingMcpOAuth != pending) return;
     await _completeMcpAuthentication(pending, code);
@@ -430,18 +461,11 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
       await Future.wait([_loadServers(repository), _loadResources(repository)]);
       if (!mounted) return;
       final connected = status.status == 'connected';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            connected
-                ? lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibraryAuthenticated((pending.server.name).toString())
-                : lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibraryCouldNotConfirmMCPAuthentication,
-          ),
-        ),
+      _say(
+        connected
+            ? _l10n.e7LibraryAuthenticated(pending.server.name)
+            : _l10n.e7LibraryCouldNotConfirmMCPAuthentication,
+        tone: connected ? AppStatusTone.ok : AppStatusTone.failure,
       );
     } catch (error) {
       if (mounted) _showError(error);
@@ -474,7 +498,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         widget.controller.capabilities.mcpRuntimeAdds &&
         !widget.controller.capabilities.mcpConfigWrites;
     final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
+      KitPageRoute<bool>(
         builder: (_) => McpSetupScreen(controller: widget.controller),
       ),
     );
@@ -485,23 +509,13 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     }
     await _load();
     if (!mounted || widget.controller.locationRevision != location) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          runtime
-              ? lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).mcpRuntimeAdded
-              : lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryMCPServerSavedInOpenCode,
-        ),
-      ),
+    _say(
+      runtime ? _l10n.mcpRuntimeAdded : _l10n.e7LibraryMCPServerSavedInOpenCode,
     );
   }
 
   Future<ServerOperationsGateway> _requireActionRepository() async {
-    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final actionL10n = _l10n;
     final repository = await widget.controller.prepareActionRepository();
     if (repository != null) return repository;
     throw ProductException(
@@ -510,7 +524,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   }
 
   Future<void> _retryServers() async {
-    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final actionL10n = _l10n;
     final controller = widget.controller;
     final profile = controller.profile;
     final location = controller.locationRevision;
@@ -563,26 +577,30 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   );
 
   Widget _buildScreen(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(switch (widget.mode) {
-          IntegrationsMode.providers => lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).usageProviders,
-          IntegrationsMode.mcp => 'MCP',
-          IntegrationsMode.all => lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryMCPAndIntegrations,
-        }),
+    final l10n = _l10n;
+    final tokens = KitTokens.of(context);
+    final rails = EdgeInsets.symmetric(horizontal: tokens.gutter);
+    final notice = _notice;
+    return KitScreen(
+      width: KitScreenWidth.list,
+      topBar: KitTopBar(
+        title: switch (widget.mode) {
+          IntegrationsMode.providers => l10n.usageProviders,
+          IntegrationsMode.mcp => l10n.integrationsMcpTitle,
+          IntegrationsMode.all => l10n.e7LibraryMCPAndIntegrations,
+        },
+        // On the Providers page the count moves up here instead of
+        // repeating the page's name as a section label.
+        subtitle: widget.mode == IntegrationsMode.providers
+            ? _providerSummary()
+            : null,
         actions: [
-          if (_showMcp)
-            IconButton(
+          if (_showMcp && _catalogAvailable)
+            KitAction(
               key: const ValueKey('add-mcp-server'),
-              tooltip: lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).mcpAdd,
+              label: l10n.mcpAdd,
+              icon: AppIconography.add,
               onPressed: _openMcpSetup,
-              icon: const Icon(AppIconography.add),
             ),
         ],
       ),
@@ -590,18 +608,82 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         onRefresh: _load,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 24),
+          padding: EdgeInsetsDirectional.only(
+            bottom: KitScreen.endPadding(context),
+          ),
           children: [
-            // Providers lead: a new user needs a model before anything else.
-            if (_showProviders) ..._providerSection(),
-            if (_showMcp) ...[..._mcpSection(), ..._resourceSection()],
+            if (!_catalogAvailable)
+              Padding(
+                padding: rails,
+                // Codex and Paseo keep their providers and tools to
+                // themselves: say so, and which servers can, instead of a
+                // load error (P7.4, explain instead of vanish).
+                child: KitCapabilityExplainer.state(
+                  key: const ValueKey('integrations-unavailable'),
+                  capability: 'flag:serverCatalog',
+                  serverName: widget.controller.profile?.name,
+                  source: 'integrations',
+                ),
+              )
+            else ...[
+              if (notice != null)
+                Padding(
+                  padding: rails.add(
+                    EdgeInsetsDirectional.only(bottom: tokens.space3),
+                  ),
+                  child: KitNotice(
+                    key: const ValueKey('integrations-notice'),
+                    message: notice.message,
+                    tone: notice.tone,
+                    icon: notice.tone == AppStatusTone.failure
+                        ? AppIconography.warning
+                        : AppIconography.checkCircle,
+                    onDismiss: () => setState(() => _notice = null),
+                    dismissLabel: l10n.workspaceDismissNotice,
+                  ),
+                ),
+              // Providers lead: a new user needs a model before anything else.
+              if (_showProviders) ..._providerSection(context),
+              if (_showMcp) ...[
+                ..._mcpSection(context),
+                ..._resourceSection(context),
+              ],
+            ],
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _providerSection() {
+  /// "2 of 14 connected", once the list has loaded.
+  String? _providerSummary() {
+    final loaded = _integrations;
+    if (loaded == null) return null;
+    final integrations = _withConfiguredProviders(loaded);
+    if (integrations.isEmpty) return null;
+    return _l10n.integrationsProvidersSummary(
+      integrations
+          .where((integration) => integration.connectionCount > 0)
+          .length,
+      integrations.length,
+    );
+  }
+
+  /// A block on the list's rails with the gap below it.
+  Widget _railed(Widget child) {
+    final tokens = KitTokens.of(context);
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.gutter,
+        end: tokens.gutter,
+        bottom: tokens.space3,
+      ),
+      child: child,
+    );
+  }
+
+  List<Widget> _providerSection(BuildContext context) {
+    final l10n = _l10n;
     final loaded = _integrations;
     final staleSource = loaded != null && _integrationsSource != _mcpSource;
     final integrations = loaded == null
@@ -621,58 +703,55 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
                 ),
               )
               .toList();
+    final commandAuthSupported =
+        widget.controller.capabilities.integrationCommandAuth &&
+        widget.controller.repository is IntegrationCommandGateway;
+    final credentialsSupported =
+        widget.controller.capabilities.integrationCredentials &&
+        widget.controller.repository is IntegrationCredentialGateway;
+    final connected = integrations
+        ?.where((integration) => integration.connectionCount > 0)
+        .length;
     return [
-      _SectionHeader(
-        text: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).usageProviders,
-        description: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryTheModelProvidersThisOpenCodeServerCan,
-      ),
+      if (widget.mode == IntegrationsMode.all)
+        _SectionLabel(
+          l10n.usageProviders,
+          explanation: l10n.e7LibraryTheModelProvidersThisOpenCodeServerCan,
+          trailing: integrations == null || integrations.isEmpty
+              ? null
+              : l10n.integrationsProvidersSummary(
+                  connected ?? 0,
+                  integrations.length,
+                ),
+          trailingKey: const ValueKey('provider-summary'),
+        )
+      else
+        SizedBox(height: KitTokens.of(context).space3),
+      // Sign-ins waiting on the person lead the section (urgency first).
       if (widget.controller.pendingAuthPersistenceUncertain)
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).pendingAuthSaveUncertain,
-              ),
-              TextButton(
+        _railed(
+          KitNotice(
+            key: const ValueKey('pending-auth-save-uncertain'),
+            tone: AppStatusTone.failure,
+            icon: AppIconography.warning,
+            message: l10n.pendingAuthSaveUncertain,
+            actions: [
+              KitAction(
+                label: l10n.pendingAuthRetrySave,
                 onPressed: () async {
                   try {
                     await widget.controller.retryPendingAuthPersistence();
                   } catch (_) {
                     if (mounted) {
-                      _showError(
-                        ProductException(
-                          lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ).e7LibraryCouldNotSaveSignInRecovery,
-                        ),
+                      _say(
+                        _l10n.e7LibraryCouldNotSaveSignInRecovery,
+                        tone: AppStatusTone.failure,
                       );
                     }
                   }
                 },
-                child: Text(
-                  lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).pendingAuthRetrySave,
-                ),
               ),
             ],
-          ),
-        ),
-      if (widget.controller.hasPendingAuthAtOtherSource)
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).pendingAuthOtherSource,
           ),
         ),
       for (final entry in widget.controller.uncertainIntegrationAuth)
@@ -690,154 +769,121 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
             await Future.wait([_load(), widget.controller.refreshCatalog()]);
           },
         ),
-      if (!widget.controller.integrationAuthRecoverySupported)
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).pendingAuthUnsupported,
+      if (_pendingOAuth case final pending?)
+        _railed(
+          _PendingOAuthNotice(
+            pending: pending,
+            checking: _checkingOAuth,
+            recoverable: widget.controller.integrationAuthRecoverySupported,
+            onContinue: pending.status?.state == IntegrationAuthState.complete
+                ? () => _finishOAuth(pending)
+                : pending.launch.mode == IntegrationAuthMode.code
+                ? _enterOAuthCode
+                : _checkOAuth,
+            onCancel: _cancelOAuth,
           ),
         ),
-      if (_pendingOAuth case final pending?)
-        _PendingOAuthTile(
-          pending: pending,
-          checking: _checkingOAuth,
-          onContinue: pending.status?.state == IntegrationAuthState.complete
-              ? () => _finishOAuth(pending)
-              : pending.launch.mode == IntegrationAuthMode.code
-              ? _enterOAuthCode
-              : _checkOAuth,
-          onCancel: _cancelOAuth,
-        ),
       if (_pendingOAuth != null && _pendingOAuth!.source != _mcpSource)
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).pendingAuthUnsupported,
+        _railed(
+          KitNotice(
+            icon: AppIconography.info,
+            message: l10n.e7LibraryTheSignInSourceChanged,
+          ),
+        ),
+      if (widget.controller.hasPendingAuthAtOtherSource)
+        _railed(
+          KitNotice(
+            key: const ValueKey('pending-auth-other-source'),
+            icon: AppIconography.info,
+            message: l10n.pendingAuthOtherSource,
           ),
         ),
       if (staleSource)
-        _SectionLoadError(
-          message: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).credentialScopeChanged,
-          onRetry: _retryIntegrations,
+        _railed(
+          KitStateView.error(
+            key: const ValueKey('providers-load-failed'),
+            title: l10n.e7LibraryCouldNotLoadThisSection,
+            body: l10n.credentialScopeChanged,
+            size: KitStateSize.inline,
+            retry: KitAction(
+              label: l10n.commonRetry,
+              onPressed: _retryIntegrations,
+            ),
+          ),
         )
       else if (_integrationError != null)
-        _SectionLoadError(
-          message: _integrationError!,
-          onRetry: _retryIntegrations,
+        _railed(
+          KitStateView.error(
+            key: const ValueKey('providers-load-failed'),
+            title: l10n.e7LibraryCouldNotLoadThisSection,
+            body: _integrationError,
+            size: KitStateSize.inline,
+            retry: KitAction(
+              label: l10n.commonRetry,
+              onPressed: _retryIntegrations,
+            ),
+          ),
         )
       else if (integrations == null)
-        _SectionLoading(
-          label: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryLoadingProviders,
-        )
+        const KitSkeletonRows(key: ValueKey('providers-loading'), count: 3)
       else if (integrations.isEmpty)
-        ProductInlineEmpty(
-          icon: AppIconography.unlink,
-          title: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryNoProviderConnectionsAvailable,
-          message: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryThisServerDidNotReturnAnyProvider,
-          actionLabel: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).globalSessionsRefresh,
-          onAction: _retryIntegrations,
+        _railed(
+          KitStateView(
+            key: const ValueKey('providers-empty'),
+            size: KitStateSize.inline,
+            icon: AppIconography.unlink,
+            title: l10n.e7LibraryNoProviderConnectionsAvailable,
+            body: l10n.e7LibraryThisServerDidNotReturnAnyProvider,
+            tertiary: [
+              KitAction(
+                label: l10n.globalSessionsRefresh,
+                onPressed: _retryIntegrations,
+              ),
+            ],
+          ),
         )
       else ...[
-        _providerSearchField(),
-        _ProviderSummaryRow(
-          connected: integrations
-              .where((integration) => integration.connectionCount > 0)
-              .length,
-          total: integrations.length,
+        _railed(
+          KitSearchField(
+            label: l10n.e7LibrarySearchProvidersOrModels,
+            controller: _providerSearch,
+            fieldKey: const ValueKey('providers-search'),
+            clearKey: const ValueKey('providers-search-clear'),
+            resultCount: _providerQuery.trim().isEmpty ? null : matching.length,
+            onChanged: (value) => setState(() => _providerQuery = value),
+          ),
         ),
         if (matching.isEmpty)
-          ProductInlineEmpty(
-            key: const ValueKey('providers-search-empty'),
-            icon: Icons.search_off_rounded,
-            title: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryNoProvidersMatch((_providerQuery.trim()).toString()),
-            message: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryTryAProviderNameItsIdOr,
-            actionLabel: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).commonClearSearch,
-            onAction: _clearProviderSearch,
+          _railed(
+            KitSearchNoMatch(
+              key: const ValueKey('providers-search-empty'),
+              query: _providerQuery.trim(),
+              what: l10n.usageProviders,
+              onClear: _clearProviderSearch,
+            ),
           )
         else
-          for (final presented in matching) ...[
-            _ProviderIntegrationTile(
-              commandAuthSupported:
-                  widget.controller.capabilities.integrationCommandAuth &&
-                  widget.controller.repository is IntegrationCommandGateway,
-              presented: presented,
-              subtitle: _integrationSubtitle(presented.integration),
-              modelCount: _modelCount(presented.integration.id),
-              busy: _busy.contains(presented.integration.id),
-              onConnect: () => _connectIntegration(presented.integration),
-              onDisconnect: () => _disconnectIntegration(presented),
-            ),
-            if (widget.controller.capabilities.integrationCommandAuth &&
-                widget.controller.repository is IntegrationCommandGateway &&
-                presented.integration.methods.any(
-                  (method) => method.type == 'command' && method.id != null,
-                ))
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: TextButton.icon(
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                    ),
-                    onPressed: _busy.contains(presented.integration.id)
-                        ? null
-                        : () => _connectIntegration(presented.integration),
-                    icon: const Icon(AppIconography.terminal),
-                    label: Text(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).commandAuthManage,
-                    ),
+          KitRowGroup(
+            children: [
+              for (final presented in matching)
+                _ProviderRow(
+                  commandAuthSupported: commandAuthSupported,
+                  credentialsSupported: credentialsSupported,
+                  presented: presented,
+                  subtitle: _integrationSubtitle(presented.integration),
+                  modelCount: _modelCount(presented.integration.id),
+                  busy: _busy.contains(presented.integration.id),
+                  onConnect: () => _connectIntegration(presented.integration),
+                  onDisconnect: () => _disconnectIntegration(presented),
+                  onManageAccounts: () =>
+                      _openCredentials(presented.integration, presented.name),
+                  onServerSignIn: () => _connectIntegration(
+                    presented.integration,
+                    onlyCommand: true,
                   ),
                 ),
-              ),
-            if (widget.controller.capabilities.integrationCredentials &&
-                widget.controller.repository is IntegrationCredentialGateway)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: TextButton.icon(
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                    ),
-                    onPressed: _busy.contains(presented.integration.id)
-                        ? null
-                        : () => _openCredentials(
-                            presented.integration,
-                            presented.name,
-                          ),
-                    icon: const Icon(AppIconography.manageAccount),
-                    label: Text(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).credentialManage,
-                    ),
-                  ),
-                ),
-              ),
-          ],
+            ],
+          ),
       ],
     ];
   }
@@ -848,12 +894,12 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   ) async {
     if (_integrationsSource != _mcpSource) return;
     final source = _mcpSource;
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder: (_) => _CredentialManagementSheet(
+    await showKitSheet<void>(
+      context,
+      title: _l10n.integrationsManageAccounts(name),
+      icon: AppIconography.manageAccount,
+      height: KitSheetHeight.full,
+      body: (_) => _CredentialManagementSheet(
         controller: widget.controller,
         integrationID: integration.id,
         integrationName: name,
@@ -862,211 +908,169 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     if (mounted && source == _mcpSource) await _retryIntegrations();
   }
 
-  /// Mirrors the model picker's search field: a dense filled field with a
-  /// leading search glyph and a clear button once there is text to clear.
-  Widget _providerSearchField() {
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 6),
-      child: TextField(
-        key: const ValueKey('providers-search'),
-        controller: _providerSearch,
-        textInputAction: TextInputAction.search,
-        onChanged: (value) => setState(() => _providerQuery = value),
-        decoration: InputDecoration(
-          hintText: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibrarySearchProvidersOrModels,
-          prefixIcon: const Icon(AppIconography.search),
-          isDense: true,
-          suffixIcon: _providerQuery.isEmpty
-              ? null
-              : IconButton(
-                  key: const ValueKey('providers-search-clear'),
-                  tooltip: lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibraryClearProviderSearch,
-                  onPressed: _clearProviderSearch,
-                  icon: const Icon(AppIconography.close),
-                ),
-        ),
-      ),
-    );
-  }
-
   void _clearProviderSearch() {
     _providerSearch.clear();
     setState(() => _providerQuery = '');
   }
 
-  List<Widget> _mcpSection() {
-    final servers = _servers;
+  List<Widget> _mcpSection(BuildContext context) {
+    final l10n = _l10n;
+    final servers = _servers == null
+        ? null
+        : ([..._servers!]..sort((a, b) {
+            final urgency = _mcpUrgency(
+              a.status,
+            ).compareTo(_mcpUrgency(b.status));
+            if (urgency != 0) return urgency;
+            return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }));
+    final pending = _pendingMcpOAuth;
+    final scopeChanged = _serversSource != null && _serversSource != _mcpSource;
     return [
-      _SectionHeader(
-        label: Builder(
-          builder: (context) {
-            final style = _SectionHeader.labelStyle(Theme.of(context));
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                InfoLabel.glossary(Glossary.mcp, style: style, iconSize: 13),
-                Text(
-                  lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibrarySERVERS,
-                  style: style,
-                ),
-              ],
-            );
-          },
+      if (widget.mode == IntegrationsMode.all)
+        _SectionLabel(
+          l10n.integrationsMcpServersLabel,
+          explanation: Glossary.mcp.explanation,
+          trailing: servers == null || servers.isEmpty
+              ? null
+              : '${servers.length}',
+        )
+      else
+        SizedBox(height: KitTokens.of(context).space3),
+      if (pending != null)
+        _railed(
+          _PendingMcpOAuthNotice(
+            pending: pending,
+            busy: _finishingMcpOAuth,
+            onEnterCode: _enterMcpAuthorizationCode,
+            onCancel: _cancelMcpAuthentication,
+          ),
         ),
-        description: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryAddOnServersThatGiveTheAgent,
-      ),
-      if (_serverError != null)
-        _SectionLoadError(message: _serverError!, onRetry: _retryServers),
       if (_removalError != null)
-        _SectionLoadError(message: _removalError!, onRetry: _retryServers),
-      if (_serversSource != null && _serversSource != _mcpSource)
-        _SectionLoadError(
-          message: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).mcpScopeChanged,
-          onRetry: _retryServers,
+        _railed(
+          KitNotice.error(
+            key: const ValueKey('mcp-remove-failed'),
+            message: _removalError!,
+            retry: KitAction(label: l10n.commonRetry, onPressed: _retryServers),
+          ),
+        ),
+      if (_serverError != null || scopeChanged)
+        _railed(
+          KitStateView.error(
+            key: const ValueKey('mcp-load-failed'),
+            title: l10n.e7LibraryCouldNotLoadThisSection,
+            body: _serverError ?? l10n.mcpScopeChanged,
+            size: KitStateSize.inline,
+            retry: KitAction(label: l10n.commonRetry, onPressed: _retryServers),
+          ),
         ),
       if (servers == null && _serverError == null)
-        _SectionLoading(
-          label: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryLoadingMCPServers,
-        )
+        const KitSkeletonRows(key: ValueKey('mcp-loading'), count: 2)
       else if (servers != null && servers.isEmpty)
-        ProductInlineEmpty(
-          icon: AppIconography.network,
-          title: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryNoMCPServersConfigured,
-          message: widget.controller.capabilities.mcpConfigWrites
-              ? lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibrarySaveOneForThisProjectOrEvery
-              : lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).mcpRuntimeEmpty,
-          actionLabel: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryAddAnMCPServer,
-          onAction: _openMcpSetup,
+        _railed(
+          KitStateView(
+            key: const ValueKey('mcp-empty'),
+            size: KitStateSize.inline,
+            icon: AppIconography.network,
+            title: l10n.e7LibraryNoMCPServersConfigured,
+            body: widget.controller.capabilities.mcpConfigWrites
+                ? l10n.e7LibrarySaveOneForThisProjectOrEvery
+                : l10n.mcpRuntimeEmpty,
+            secondary: KitAction(
+              key: const ValueKey('mcp-empty-add'),
+              label: l10n.e7LibraryAddAnMCPServer,
+              icon: AppIconography.add,
+              onPressed: _openMcpSetup,
+            ),
+          ),
         )
       else if (servers != null)
-        for (final server in servers) ...[
-          _McpServerTile(
-            server: server,
-            subtitle: _statusLabel(server.status),
-            actionLabel: _pendingMcpOAuth?.server.name == server.name
-                ? lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibraryAuthorizing
-                : _actionLabel(server.status),
-            busy:
-                _busy.contains(server.name) ||
-                _removingMcp.contains(server.name) ||
-                (_pendingMcpOAuth?.server.name == server.name &&
-                    _finishingMcpOAuth),
-            authGated: _mcpAuthGated(server.status),
-            onAction:
-                _serversSource != _mcpSource ||
-                    _pendingMcpOAuth?.server.name == server.name ||
-                    _mcpAuthGated(server.status)
-                ? null
-                : () => _action(server),
-          ),
-          if (_canRemoveMcp)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: TextButton.icon(
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size(48, 48),
-                    foregroundColor: Theme.of(context).colorScheme.error,
-                  ),
-                  onPressed:
-                      _busy.contains(server.name) ||
-                          _removingMcp.contains(server.name) ||
-                          _pendingMcpOAuth?.server.name == server.name
-                      ? null
-                      : () => _removeMcp(server),
-                  icon: const Icon(AppIconography.delete),
-                  label: Text(
-                    lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).mcpRemove,
-                  ),
-                ),
+        KitRowGroup(
+          children: [
+            for (final server in servers)
+              _McpServerRow(
+                server: server,
+                statusLabel: _statusLabel(server.status),
+                busy:
+                    _busy.contains(server.name) ||
+                    _removingMcp.contains(server.name) ||
+                    (pending?.server.name == server.name && _finishingMcpOAuth),
+                authorizing: pending?.server.name == server.name,
+                authGated: _mcpAuthGated(server.status),
+                actionsAllowed: !scopeChanged,
+                canRemove: _canRemoveMcp,
+                removalSupported: _removalSupported,
+                onAct: () => _action(server),
+                onRemove: () => _removeMcp(server),
               ),
-            ),
-          if (_pendingMcpOAuth case final pending?
-              when pending.server.name == server.name)
-            _PendingMcpOAuthTile(
-              pending: pending,
-              busy: _finishingMcpOAuth,
-              onEnterCode: _enterMcpAuthorizationCode,
-              onCancel: _cancelMcpAuthentication,
-            ),
-        ],
+          ],
+        ),
     ];
   }
 
-  List<Widget> _resourceSection() {
+  List<Widget> _resourceSection(BuildContext context) {
+    final l10n = _l10n;
     final resources = _resources;
     return [
-      _SectionHeader(
-        text: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryResources,
-        description: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).e7LibraryFilesAndDataThatConnectedMCPServers,
+      _SectionLabel(
+        l10n.e7LibraryResources,
+        explanation: l10n.e7LibraryFilesAndDataThatConnectedMCPServers,
+        trailing: resources == null || resources.isEmpty
+            ? null
+            : '${resources.length}',
       ),
       if (_resourceError != null)
-        _SectionLoadError(message: _resourceError!, onRetry: _retryResources),
-      if (resources == null && _resourceError == null)
-        _SectionLoading(
-          label: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryLoadingAvailableResources,
-        )
-      else if (resources != null && resources.isEmpty)
-        ProductInlineEmpty(
-          icon: AppIconography.fileText,
-          title: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryNoResourcesAvailable,
-          message: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryConnectedMCPServersHaveNotExposedAny,
-          actionLabel: _servers?.isEmpty == true
-              ? lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryAddAnMCPServer
-              : null,
-          onAction: _servers?.isEmpty == true ? _openMcpSetup : null,
-        )
-      else if (resources != null)
-        for (final resource in resources)
-          ListTile(
-            leading: const BrandTile(
-              size: 28,
-              child: Icon(AppIconography.fileText, size: 16),
-            ),
-            title: Text(resource.name),
-            subtitle: Text(
-              '${resource.server} - ${resource.uri}',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+        _railed(
+          KitStateView.error(
+            key: const ValueKey('resources-load-failed'),
+            title: l10n.e7LibraryCouldNotLoadThisSection,
+            body: _resourceError,
+            size: KitStateSize.inline,
+            retry: KitAction(
+              label: l10n.commonRetry,
+              onPressed: _retryResources,
             ),
           ),
+        ),
+      if (resources == null && _resourceError == null)
+        const KitSkeletonRows(key: ValueKey('resources-loading'), count: 2)
+      else if (resources != null && resources.isEmpty)
+        _railed(
+          KitStateView(
+            key: const ValueKey('resources-empty'),
+            size: KitStateSize.inline,
+            icon: AppIconography.fileText,
+            title: l10n.e7LibraryNoResourcesAvailable,
+            body: l10n.e7LibraryConnectedMCPServersHaveNotExposedAny,
+          ),
+        )
+      else if (resources != null)
+        KitRowGroup(
+          children: [
+            for (final resource in resources)
+              KitRow(
+                leading: KitRow.icon(context, AppIconography.fileText),
+                title: resource.name,
+                supporting: TextSpan(
+                  children: [
+                    TextSpan(text: '${resource.server} · '),
+                    TextSpan(
+                      text: resource.uri,
+                      style: KitText.styleOf(context, KitTextRole.mono),
+                    ),
+                  ],
+                ),
+                supportingMaxLines: 2,
+                menuLabel: resource.name,
+                menu: [
+                  KitMenuItem.copy(
+                    label: l10n.integrationsCopyResourceAddress,
+                    text: () => resource.uri,
+                  ),
+                ],
+              ),
+          ],
+        ),
     ];
   }
 
@@ -1093,10 +1097,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
             provider.id.isNotEmpty &&
             !known.contains(provider.id) &&
             !known.contains(provider.integrationID))
-          configuredProviderIntegration(
-            provider,
-            lookupAppLocalizations(Localizations.localeOf(context)),
-          ),
+          configuredProviderIntegration(provider, _l10n),
     ];
   }
 
@@ -1123,77 +1124,32 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         .length;
   }
 
+  /// Host first (the reference pattern): the sheet names where the person
+  /// is going before anything opens, says what to do there, and shows any
+  /// one-time device code the server sent (displayed for this launch only;
+  /// never persisted or logged).
   Future<bool> _confirmAuthorizationLaunch(
     Uri destination, {
     String instructions = '',
   }) async {
+    final l10n = _l10n;
     final host = destination.hasPort
         ? '${destination.host}:${destination.port}'
         : destination.host;
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            scrollable: true,
-            title: Text(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryOpenAuthorizationPage,
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibraryYouAreLeavingThisAppToAuthenticate,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibraryDestinationHost,
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
-                const SizedBox(height: 4),
-                SelectableText(host, textDirection: TextDirection.ltr),
-                if (instructions.trim().isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7LibraryOpenCodeInstructions,
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  // Auth instructions may contain a one-time device code.
-                  // Display only for this explicit launch; never persist/log.
-                  SelectableText(instructions.trim()),
-                ],
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(
-                  lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).projectFolderCancel,
-                ),
-              ),
-              FilledButton.icon(
-                onPressed: () => Navigator.pop(context, true),
-                icon: const Icon(AppIconography.browser),
-                label: Text(
-                  lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibraryOpenBrowser,
-                ),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+    return showKitConfirm(
+      context,
+      icon: AppIconography.browser,
+      title: l10n.integrationsSignInAtHost(host),
+      body: l10n.integrationsSignInBody,
+      consequences: [
+        if (instructions.trim().isNotEmpty)
+          l10n.integrationsSignInInstructions(instructions.trim()),
+      ],
+      confirmLabel: l10n.e7LibraryOpenBrowser,
+      cancelLabel: l10n.workCancel,
+      sheetKey: const ValueKey('authorization-launch-sheet'),
+      confirmKey: const ValueKey('confirm-authorization-launch'),
+    );
   }
 
   /// True when the server needs interactive MCP authorization that this
@@ -1203,139 +1159,112 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
       (status == 'needs_auth' || status == 'needs_client_registration');
 
   String _statusLabel(String status) => switch (status) {
-    'connected' => lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).e7LibraryConnectedAndToolsAreAvailable,
-    'disabled' => lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).e7LibraryDisconnected,
-    'failed' => lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).e7LibraryConnectionFailed,
-    'needs_auth' => lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).e7LibraryAuthenticationRequired,
-    'needs_client_registration' => lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).e7LibraryClientRegistrationRequired,
+    'connected' => _l10n.e7LibraryConnectedAndToolsAreAvailable,
+    'disabled' => _l10n.e7LibraryDisconnected,
+    'failed' => _l10n.e7LibraryConnectionFailed,
+    'needs_auth' => _l10n.e7LibraryAuthenticationRequired,
+    'needs_client_registration' => _l10n.e7LibraryClientRegistrationRequired,
     _ => status.replaceAll('_', ' '),
   };
 
-  String _actionLabel(String status) => switch (status) {
-    'connected' => lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).e7LibraryDisconnect,
-    'needs_auth' || 'needs_client_registration' => lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).e7LibraryAuthenticate,
-    'failed' => lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).isolatedTaskRetryOpen,
-    _ => lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).e7LibraryConnect,
-  };
-
   String _integrationSubtitle(IntegrationInfo integration) {
+    final l10n = _l10n;
     if (integration.connections.isNotEmpty) {
       return integration.connections
           .map((connection) {
             return switch (connection.type) {
-              'credential' => lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryStoredCredential((connection.label).toString()),
-              'env' => lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryServerEnvironment2((connection.label).toString()),
+              'credential' => l10n.e7LibraryStoredCredential(connection.label),
+              'env' => l10n.e7LibraryServerEnvironment2(connection.label),
               _ => connection.label,
             };
           })
-          .join(' - ');
+          .join(' · ');
     }
     if (integration.methods.isEmpty) {
-      return lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).e7LibraryNoConnectionMethodsAvailable;
+      return l10n.e7LibraryNoConnectionMethodsAvailable;
     }
     return integration.methods
         .map((method) {
           if (method.type == 'env') {
             final names = method.environmentNames.join(', ');
             return names.isEmpty
-                ? lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibraryConfiguredOnTheServer
-                : lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibraryServerEnvironment2((names).toString());
+                ? l10n.e7LibraryConfiguredOnTheServer
+                : l10n.e7LibraryServerEnvironment2(names);
           }
           return method.label;
         })
-        .join(' - ');
+        .join(' · ');
   }
 
   Future<void> _disconnectIntegration(PresentedIntegration presented) async {
+    final l10n = _l10n;
     final integration = presented.integration;
     final environmentRemains = integration.hasEnvironmentConnection;
-    final confirmed = await showConfirmSheet(
+    if (_busy.contains(integration.id)) return;
+    Object? failure;
+    final confirmed = await showKitConfirm(
       context,
       icon: AppIconography.unlink,
-      title: lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).e7LibraryDisconnect2((presented.name).toString()),
-      message: lookupAppLocalizations(Localizations.localeOf(context))
-          .e7LibraryTheStoredCredentialWillBeRemovedFrom(
-            (environmentRemains
-                    ? '\n\n${lookupAppLocalizations(Localizations.localeOf(context)).e7LibraryEnvironmentRemainsAfterDisconnect}'
-                    : '')
-                .toString(),
-          ),
-      confirmLabel: lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).e7LibraryDisconnectProvider,
+      title: l10n.e7LibraryDisconnect2(presented.name),
+      body: l10n.integrationsDisconnectBody(presented.name),
+      consequences: [
+        if (environmentRemains) l10n.e7LibraryEnvironmentRemainsAfterDisconnect,
+      ],
+      confirmLabel: l10n.integrationsDisconnectNamed(presented.name),
+      kind: KitConfirmKind.destructive,
       confirmKey: const ValueKey('confirm-provider-disconnect'),
-      destructive: true,
+      action: () async {
+        try {
+          final repository = await _requireActionRepository();
+          await repository.disconnectIntegration(integration);
+        } catch (error) {
+          failure = error;
+        }
+      },
     );
     if (!confirmed || !mounted) return;
-
+    if (failure != null) {
+      _showError(failure!);
+      return;
+    }
     await _runIntegrationAction(integration.id, () async {
       final repository = await _requireActionRepository();
-      await repository.disconnectIntegration(integration);
       await Future.wait([
         _loadIntegrations(repository),
         widget.controller.refreshCatalog(),
       ]);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            environmentRemains
-                ? lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibraryCredentialRemovedServerEnvironmentRemainsActive(
-                    (presented.name).toString(),
-                  )
-                : lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7LibraryDisconnected2((presented.name).toString()),
-          ),
-        ),
+      _say(
+        environmentRemains
+            ? _l10n.e7LibraryCredentialRemovedServerEnvironmentRemainsActive(
+                presented.name,
+              )
+            : _l10n.e7LibraryDisconnected2(presented.name),
       );
     });
   }
 
-  Future<void> _connectIntegration(IntegrationInfo integration) async {
-    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
+  /// "Connect {name}": one method goes straight to it; several open a
+  /// titled sheet whose rows say where each one goes. [onlyCommand] runs
+  /// the server sign-in command from the row menu.
+  Future<void> _connectIntegration(
+    IntegrationInfo integration, {
+    bool onlyCommand = false,
+  }) async {
+    final actionL10n = _l10n;
     final source = _mcpSource;
     final commandSupported =
         widget.controller.capabilities.integrationCommandAuth &&
         widget.controller.repository is IntegrationCommandGateway;
+    final name =
+        presentIntegrations([integration]).firstOrNull?.name ??
+        integration.name;
     final methods = orderConnectMethods(
       integration.methods
           .where(
             (method) =>
-                method.type == 'key' ||
-                method.type == 'oauth' ||
+                (!onlyCommand &&
+                    (method.type == 'key' || method.type == 'oauth')) ||
                 (commandSupported &&
                     method.type == 'command' &&
                     method.id != null),
@@ -1345,45 +1274,38 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     if (methods.isEmpty) return;
     final method = methods.length == 1
         ? methods.single
-        : await showModalBottomSheet<IntegrationMethodInfo>(
-            context: context,
-            showDragHandle: true,
-            builder: (context) => SafeArea(
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  for (final method in methods)
-                    ListTile(
-                      minTileHeight: 56,
-                      leading: Icon(
-                        method.type == 'key'
-                            ? AppIconography.permissions
-                            : method.type == 'command'
-                            ? AppIconography.terminal
-                            : AppIconography.browser,
-                      ),
-                      title: Text(method.label),
-                      subtitle: Text(
-                        method.type == 'command'
-                            ? actionL10n.commandAuthMethodHint
-                            : connectMethodHint(method, actionL10n),
-                      ),
-                      isThreeLine:
-                          connectMethodHint(method, actionL10n).length > 40,
-                      onTap: () => Navigator.pop(context, method),
-                    ),
-                ],
-              ),
-            ),
+        : await showKitChoiceSheet<IntegrationMethodInfo>(
+            context,
+            title: actionL10n.e7LibraryConnect2(name),
+            subtitle: actionL10n.integrationsConnectMethodSubtitle,
+            sheetKey: const ValueKey('connect-method-sheet'),
+            choices: [
+              for (final method in methods)
+                KitChoice<IntegrationMethodInfo>(
+                  value: method,
+                  title: method.label,
+                  leading: KitRow.icon(
+                    context,
+                    method.type == 'key'
+                        ? AppIconography.permissions
+                        : method.type == 'command'
+                        ? AppIconography.terminal
+                        : AppIconography.browser,
+                  ),
+                  supporting: method.type == 'command'
+                      ? actionL10n.commandAuthMethodHint
+                      : connectMethodHint(method, actionL10n),
+                ),
+            ],
           );
     if (method == null || !mounted || source != _mcpSource) return;
     if (method.type == 'command') {
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        showDragHandle: true,
-        builder: (_) => _CommandAuthSheet(
+      await showKitSheet<void>(
+        context,
+        title: actionL10n.integrationsServerSignIn(name),
+        icon: AppIconography.terminal,
+        height: KitSheetHeight.full,
+        body: (_) => _CommandAuthSheet(
           controller: widget.controller,
           integration: integration,
           method: method,
@@ -1391,70 +1313,63 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
       );
       if (mounted && source == _mcpSource) await _retryIntegrations();
     } else if (method.type == 'key') {
-      await _connectWithKey(integration, method);
+      await _connectWithKey(integration, method, name);
     } else {
-      await _connectWithOAuth(integration, method);
+      await _connectWithOAuth(integration, method, name);
     }
   }
 
+  /// The key goes straight to the server inside the dialog: it shows it is
+  /// working, a rejected key keeps the dialog open with the reason under
+  /// the field, and the key is never shown, logged or kept (SEC-3).
   Future<void> _connectWithKey(
     IntegrationInfo integration,
     IntegrationMethodInfo method,
+    String name,
   ) async {
-    final key = TextEditingController();
-    final value = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryConnect2((integration.name).toString()),
-        ),
-        content: TextField(
-          controller: key,
-          textDirection: TextDirection.ltr,
-          autofocus: true,
-          obscureText: true,
-          decoration: InputDecoration(labelText: method.label),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).projectFolderCancel,
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, key.text.trim()),
-            child: Text(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryConnect,
-            ),
-          ),
-        ],
-      ),
+    final l10n = _l10n;
+    if (_busy.contains(integration.id)) return;
+    final source = _mcpSource;
+    final value = await showKitInputDialog(
+      context,
+      title: l10n.e7LibraryConnect2(name),
+      label: method.label,
+      helper: l10n.integrationsKeyHelper,
+      kind: KitFieldKind.secret,
+      confirmLabel: l10n.e7LibraryConnect,
+      cancelLabel: l10n.workCancel,
+      fieldKey: const ValueKey('provider-key-field'),
+      confirmKey: const ValueKey('confirm-provider-key'),
+      validate: (value) =>
+          value.trim().isEmpty ? l10n.integrationsKeyEmpty : null,
+      onSubmit: (value) async {
+        try {
+          final repository = await _requireActionRepository();
+          await repository.connectIntegrationKey(integration.id, value.trim());
+          return null;
+        } catch (_) {
+          // The server's reply is not echoed: it could quote the key.
+          return l10n.integrationsKeyRejected;
+        }
+      },
     );
-    key.dispose();
-    if (value?.isNotEmpty != true) return;
+    if (value == null || !mounted || source != _mcpSource) return;
     await _runIntegrationAction(integration.id, () async {
-      final repository = await _requireActionRepository();
-      await repository.connectIntegrationKey(integration.id, value!);
       await Future.wait([_load(), widget.controller.refreshCatalog()]);
+      if (mounted) _say(_l10n.e7LibraryIsConnected(name));
     });
   }
 
   Future<void> _connectWithOAuth(
     IntegrationInfo integration,
     IntegrationMethodInfo method,
+    String name,
   ) async {
-    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final actionL10n = _l10n;
     if (method.id == null) return;
     final source = _authSourceFor(widget.controller);
     final location = widget.controller.locationRevision;
-    final inputs = await _oauthInputs(method);
+    final inputs = await _oauthInputs(method, name);
     if (inputs == null ||
         !mounted ||
         source != _authSourceFor(widget.controller)) {
@@ -1483,10 +1398,9 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         }
         final opened = await _openAuthorization(destination);
         if (!opened && mounted && source == _authSourceFor(widget.controller)) {
-          _showError(
-            ProductException(
-              actionL10n.e7LibraryAuthorizationWasNotOpenedThePendingAttempt,
-            ),
+          _say(
+            actionL10n.e7LibraryAuthorizationWasNotOpenedThePendingAttempt,
+            tone: AppStatusTone.failure,
           );
         }
       });
@@ -1505,7 +1419,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
       setState(() {
         _pendingOAuth = _PendingIntegrationOAuth(
           integrationID: integration.id,
-          integrationName: integration.name,
+          integrationName: name,
           launch: launch,
           source: legacySource,
         );
@@ -1564,12 +1478,17 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     if (pending == null || pending.launch.mode != IntegrationAuthMode.code) {
       return;
     }
-    final code = await showDialog<String>(
-      context: context,
-      builder: (context) => _OAuthCodeDialog(
-        integrationName: pending.integrationName,
-        instructions: pending.launch.instructions,
-      ),
+    final l10n = _l10n;
+    final instructions = pending.launch.instructions.trim();
+    final code = await _showFinishSignInDialog(
+      context,
+      label: l10n.e7LibraryAuthorizationCode,
+      helper: instructions.isNotEmpty
+          ? instructions
+          : l10n.integrationsFinishSignInProviderHelper,
+      fieldKey: const ValueKey('oauth-completion-code'),
+      confirmKey: const ValueKey('complete-provider-oauth'),
+      parse: providerOAuthCompletionCode,
     );
     if (code == null || !mounted || _pendingOAuth != pending) return;
     setState(() => _checkingOAuth = true);
@@ -1577,7 +1496,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
       final repository = await _requireOAuthRepository(pending);
       await repository.completeIntegrationOAuth(
         pending.launch.attemptID,
-        code: providerOAuthCompletionCode(code),
+        code: code,
       );
       if (!mounted || pending.source != _mcpSource) return;
       final status = await repository.integrationOAuthStatus(
@@ -1613,15 +1532,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     await Future.wait([_load(), widget.controller.refreshCatalog()]);
     if (!mounted || _pendingOAuth != pending) return;
     setState(() => _pendingOAuth = null);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryIsConnected((pending.integrationName).toString()),
-        ),
-      ),
-    );
+    _say(_l10n.e7LibraryIsConnected(pending.integrationName));
   }
 
   Future<void> _cancelOAuth({bool showError = true}) async {
@@ -1643,7 +1554,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   Future<ServerOperationsGateway> _requireOAuthRepository(
     _PendingIntegrationOAuth pending,
   ) async {
-    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final actionL10n = _l10n;
     if (pending.source != _mcpSource) {
       throw ProductException(actionL10n.e7LibraryTheSignInSourceChanged);
     }
@@ -1657,7 +1568,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   Future<ServerOperationsGateway> _requireMcpOAuthRepository(
     _PendingMcpOAuth pending,
   ) async {
-    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final actionL10n = _l10n;
     if (pending.source != _mcpSource) {
       throw ProductException(actionL10n.e7LibraryTheSignInSourceChanged);
     }
@@ -1673,7 +1584,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     final route = ModalRoute.of(context);
     final validated = parseAuthorizationUrl(
       destination.toString(),
-      l10n: lookupAppLocalizations(Localizations.localeOf(context)),
+      l10n: _l10n,
     );
     final result = await openExternalLink(
       context,
@@ -1697,22 +1608,22 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     return result == ExternalLinkOutcome.opened;
   }
 
-  void _showError(Object error) => showProductError(
-    context,
-    ProductException(
-      lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).e7LibraryCouldNotConfirmAuthenticationReturnToThe,
-    ),
+  /// A sign-in failure in words that never quote the server's reply (it
+  /// can carry a code or an address with a token).
+  void _showError(Object error) => _say(
+    _l10n.e7LibraryCouldNotConfirmAuthenticationReturnToThe,
+    tone: AppStatusTone.failure,
   );
 
   Future<Map<String, String>?> _oauthInputs(
     IntegrationMethodInfo method,
+    String providerName,
   ) async {
     if (method.prompts.isEmpty) return const {};
-    return showDialog<Map<String, String>>(
-      context: context,
-      builder: (context) => _OAuthInputsDialog(method: method),
+    return _showOAuthInputsSheet(
+      context,
+      method: method,
+      providerName: providerName,
     );
   }
 

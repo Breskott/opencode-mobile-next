@@ -1,53 +1,11 @@
 part of '../library_screen.dart';
 
-/// "Deprecated" / "Preview" lifecycle pill for a catalog model; null when
-/// the model is plainly active.
-class ModelStatusPill extends StatelessWidget {
-  const ModelStatusPill._(this.label, this.tone, {super.key});
-
-  static ModelStatusPill? forModel(
-    CatalogModel model,
-    AppLocalizations l10n, {
-    Key? key,
-  }) {
-    if (model.deprecated) {
-      return ModelStatusPill._(
-        l10n.e7LibraryDeprecated,
-        AppStatusTone.neutral,
-        key: key,
-      );
-    }
-    if (model.preview) {
-      return ModelStatusPill._(
-        l10n.e7LibraryPreview,
-        AppStatusTone.attention,
-        key: key,
-      );
-    }
-    return null;
-  }
-
-  final String label;
-  final AppStatusTone tone;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = AppTheme.statusColor(theme, tone);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: .6)),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(color: color),
-      ),
-    );
-  }
-}
-
+/// "Models": the server's model catalog as a page (map `catalog`, proposal
+/// fix), built from kit parts (screen-library-1). The list itself is the
+/// shared [ModelCatalogView] the chat's model picker also uses; this page
+/// adds what the map found missing around it: the offer to connect a
+/// provider when none is signed in, the loading bar, the offline line, and
+/// an explanation on servers that do not share a catalog.
 class CatalogScreen extends StatefulWidget {
   final ConnectionController controller;
   const CatalogScreen({super.key, required this.controller});
@@ -60,22 +18,99 @@ class _CatalogScreenState extends State<CatalogScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.controller.catalog == null) {
+    if (widget.controller.capabilities.serverCatalog &&
+        widget.controller.catalog == null) {
       widget.controller.refreshCatalog();
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryModelsAndAgents,
+  Future<void> _connectProvider() async {
+    await Navigator.of(context).push<void>(
+      KitPageRoute<void>(
+        builder: (_) => IntegrationsScreen(
+          controller: widget.controller,
+          mode: IntegrationsMode.providers,
         ),
       ),
-      body: ModelCatalogView(controller: widget.controller, showHeader: false),
+    );
+    if (mounted) await widget.controller.refreshCatalog();
+  }
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: widget.controller,
+    builder: (context, _) => _build(context),
+  );
+
+  Widget _build(BuildContext context) {
+    final l10n = _libraryCopy(context);
+    final tokens = KitTokens.of(context);
+    final controller = widget.controller;
+    final catalog = controller.catalog;
+    final available = controller.capabilities.serverCatalog;
+    final offline = controller.status != StreamStatus.connected;
+    final noProvider = catalog != null && catalog.models.isEmpty;
+    final rails = EdgeInsetsDirectional.only(
+      start: tokens.gutter,
+      end: tokens.gutter,
+      bottom: tokens.space3,
+    );
+    return KitScreen(
+      topBar: KitTopBar(title: l10n.catalogScreenTitle),
+      loading: available && controller.catalogLoading,
+      loadingLabel: l10n.catalogScreenLoading,
+      body: !available
+          ? ListView(
+              padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
+              children: [
+                // Codex and Paseo keep their models to themselves: say so
+                // and which servers can (P7.4), never an empty page.
+                KitCapabilityExplainer.state(
+                  key: const ValueKey('catalog-unavailable'),
+                  capability: 'flag:serverCatalog',
+                  serverName: controller.profile?.name,
+                  source: 'catalog',
+                ),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (offline)
+                  Padding(
+                    padding: rails,
+                    child: KitNotice(
+                      key: const ValueKey('catalog-offline'),
+                      icon: AppIconography.warning,
+                      message: catalog == null
+                          ? l10n.catalogScreenOffline
+                          : l10n.catalogScreenOfflineStale,
+                    ),
+                  ),
+                if (noProvider)
+                  Padding(
+                    padding: rails,
+                    child: KitNotice(
+                      key: const ValueKey('catalog-no-provider'),
+                      icon: AppIconography.login,
+                      message: l10n.catalogScreenNoProviderBody,
+                      actions: [
+                        KitAction(
+                          key: const ValueKey('catalog-connect-provider'),
+                          label: l10n.catalogScreenConnectProvider,
+                          onPressed: _connectProvider,
+                        ),
+                      ],
+                    ),
+                  ),
+                Expanded(
+                  child: ModelCatalogView(
+                    controller: controller,
+                    showHeader: false,
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

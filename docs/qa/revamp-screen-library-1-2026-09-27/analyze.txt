@@ -1,0 +1,9 @@
+Analyzing 2 items...                                            
+
+   info • The import of 'package:opencode_mobile/ui/kit/kit_tappable.dart' is unnecessary because all of the used elements are also provided by the import of 'package:opencode_mobile/ui/kit/kit.dart'. Try removing the import directive • test/goldens/kit/kit_tappable_golden_test.dart:27:8 • unnecessary_import
+   info • The import of 'package:opencode_mobile/ui/kit/kit_context_region.dart' is unnecessary because all of the used elements are also provided by the import of 'package:opencode_mobile/ui/kit/kit.dart'. Try removing the import directive • test/revamp/screen_shell_1_golden_test.dart:27:8 • unnecessary_import
+   info • The import of 'package:opencode_mobile/ui/kit/kit_scrollbar.dart' is unnecessary because all of the used elements are also provided by the import of 'package:opencode_mobile/ui/kit/kit.dart'. Try removing the import directive • test/revamp/screen_shell_1_golden_test.dart:28:8 • unnecessary_import
+   info • The import of 'package:opencode_mobile/ui/kit/kit_context_region.dart' is unnecessary because all of the used elements are also provided by the import of 'package:opencode_mobile/ui/kit/kit.dart'. Try removing the import directive • test/revamp/screen_shell_1_test.dart:22:8 • unnecessary_import
+   info • The import of 'package:opencode_mobile/ui/kit/kit_scrollbar.dart' is unnecessary because all of the used elements are also provided by the import of 'package:opencode_mobile/ui/kit/kit.dart'. Try removing the import directive • test/revamp/screen_shell_1_test.dart:23:8 • unnecessary_import
+
+5 issues found. (ran in 12.2s)
