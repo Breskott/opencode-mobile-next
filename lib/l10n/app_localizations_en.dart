@@ -12591,9 +12591,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiRunDetails => 'Details';
-
-  @override
   String teamUiRunElapsedDays(int count) {
     return '$count d';
   }
@@ -12635,9 +12632,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiRunLabelStarted => 'Started';
 
   @override
-  String get teamUiRunLabelState => 'State';
-
-  @override
   String get teamUiRunLabelTrackedWork => 'Tracked work';
 
   @override
@@ -12649,9 +12643,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiRunMissingTitle => 'This task is no longer on the host';
-
-  @override
-  String get teamUiRunNeedsYou => 'Needs you';
 
   @override
   String teamUiRunNeedsYouFrom(String name) {
@@ -12681,15 +12672,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiRunTabComingSoon => 'Coming with the next update';
 
   @override
-  String get teamUiRunTabOverview => 'Overview';
-
-  @override
-  String get teamUiRunTabTimeline => 'Timeline';
-
-  @override
-  String get teamUiRunTabWork => 'Steps';
-
-  @override
   String get teamUiRunTermBatch => 'Task · convoy';
 
   @override
@@ -12709,31 +12691,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiRunTimelineEmpty => 'Nothing has happened yet';
-
-  @override
-  String get teamUiRunTimelineEmptyFiltered => 'No events of this kind yet';
-
-  @override
-  String get teamUiRunTimelineEmptyFilteredHint => 'Try another filter.';
-
-  @override
-  String get teamUiRunTimelineEmptyHint =>
-      'Events appear here as the team works on this task.';
-
-  @override
-  String get teamUiRunTimelineFilterAgents => 'Agents';
-
-  @override
-  String get teamUiRunTimelineFilterAll => 'All';
-
-  @override
-  String get teamUiRunTimelineFilterDecisions => 'Decisions';
-
-  @override
-  String get teamUiRunTimelineFilterWork => 'Work';
-
-  @override
   String teamUiRunTimelineGateOpened(String title) {
     return 'Needs you: $title';
   }
@@ -12741,17 +12698,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String teamUiRunTimelineGateResolved(String title) {
     return 'Answered: $title';
-  }
-
-  @override
-  String teamUiRunTimelineJump(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count new · Jump to latest',
-      one: '1 new · Jump to latest',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -12868,13 +12814,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiAgentRecyclingSoon => 'Recycling soon · context nearly full';
-
-  @override
-  String get teamUiAgentRunEmpty => 'No agents on this run';
-
-  @override
-  String get teamUiAgentRunEmptyHint =>
-      'Agents appear here while they work on this run\'s items.';
 
   @override
   String get teamUiAgentSectionActivity => 'Activity';
@@ -13005,33 +12944,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiAgentWorkUnblocked => 'Nothing blocking it';
 
   @override
-  String get teamUiWorkEmpty => 'No work items yet';
-
-  @override
-  String get teamUiWorkEmptyHint => 'Work appears here once the run has items.';
-
-  @override
   String get teamUiWorkGraphFit => 'Fit';
 
   @override
   String teamUiWorkGraphNodeSemantics(String title, String state) {
     return '$title, $state';
-  }
-
-  @override
-  String teamUiWorkGraphSemantics(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Dependency graph of $count work items',
-      one: 'Dependency graph of 1 work item',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String teamUiWorkGroupHeader(String state, int count) {
-    return '$state · $count';
   }
 
   @override
@@ -13072,11 +12989,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiWorkOwnerNone => 'Unassigned';
-
-  @override
-  String teamUiWorkOwnerSemantics(String name) {
-    return 'Owner: $name';
-  }
 
   @override
   String get teamUiWorkSheetBlocking => 'Blocks';
@@ -13177,23 +13089,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String teamUiWorkTerm(String id) {
     return 'Work · bead $id';
-  }
-
-  @override
-  String get teamUiWorkViewGraph => 'Graph';
-
-  @override
-  String get teamUiWorkViewList => 'List';
-
-  @override
-  String teamUiWorkWaitsOn(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Waits on $count steps',
-      one: 'Waits on 1 step',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -13601,23 +13496,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiControlCancelRun => 'Stop run';
-
-  @override
-  String get teamUiControlCloseBatch => 'Close batch';
-
-  @override
-  String get teamUiControlCancelRunConfirmTitle => 'Stop this run?';
-
-  @override
-  String get teamUiControlCancelRunConfirmBody =>
-      'Running steps stop; finished work stays. The phone cannot undo this.';
-
-  @override
-  String get teamUiControlCloseBatchConfirmTitle => 'Close this batch?';
-
-  @override
-  String get teamUiControlCloseBatchConfirmBody =>
-      'The batch closes on the host. Its open work items stay open for another batch.';
 
   @override
   String get teamUiStartRunFab => 'Give the team a task';
@@ -17339,25 +17217,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiRunStepsHeading => 'Steps';
 
   @override
-  String teamUiRunStepsAll(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'See all $count steps',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String teamUiRunDetailsCounts(int done, int working, int blocked) {
-    return '$done done · $working working · $blocked held up';
-  }
-
-  @override
   String get teamUiRunDetailsUsage => 'Usage';
-
-  @override
-  String get teamUiRunDetailsStepsLabel => 'Steps';
 
   @override
   String get teamUiRunDetailsElapsed => 'Time';
@@ -18174,10 +18034,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'This team can\'t be messaged from here.';
 
   @override
-  String get teamOpenTaskConversationHint =>
-      'The task and its workers, in the chat';
-
-  @override
   String get teamBoardTitle => 'Board';
 
   @override
@@ -18420,18 +18276,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamBoardPriorityTitle => 'Priority';
-
-  @override
-  String get teamBoardAddTooltip => 'Add to backlog';
-
-  @override
-  String get teamBoardAddHint => 'What should the team do?';
-
-  @override
-  String get teamBoardAddButton => 'Add to backlog';
-
-  @override
-  String get teamBoardAddNote => 'It waits in the Backlog until you start it.';
 
   @override
   String get teamBoardAddFailed =>
@@ -20104,22 +19948,6 @@ class AppLocalizationsEn extends AppLocalizations {
       one: '1 minute',
     );
     return '$_temp0';
-  }
-
-  @override
-  String kitToolForMinutes(int count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$countString min',
-      one: '1 min',
-      zero: 'under a minute',
-    );
-    return 'for $_temp0';
   }
 
   @override
@@ -21932,9 +21760,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamNowWakeRefusedNoReason => 'The host didn\'t say why.';
-
-  @override
-  String get teamBoardMoveSheetAddEmpty => 'Say what the team should do first.';
 
   @override
   String get teamCycleStripNoAgentYet => 'No agent has taken this step yet.';
@@ -26485,4 +26310,100 @@ class AppLocalizationsEn extends AppLocalizations {
   String toolsDetailMenu(String tool) {
     return '$tool actions';
   }
+
+  @override
+  String kitDurationHours(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String kitDurationHoursMinutes(int hours, int minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
+  String kitDurationDays(int days) {
+    return '$days d';
+  }
+
+  @override
+  String kitDurationDaysHours(int days, int hours) {
+    return '$days d $hours h';
+  }
+
+  @override
+  String kitToolFor(String duration) {
+    return 'for $duration';
+  }
+
+  @override
+  String kitSinceWaitingForLong(String duration) {
+    return 'Waiting $duration';
+  }
+
+  @override
+  String get teamChatLeadRoutedIt => 'Sent it to the workers';
+
+  @override
+  String get teamChatLeadStartingIt => 'Started a worker on it';
+
+  @override
+  String teamChatLeadClaimedIt(String name) {
+    return '$name took it';
+  }
+
+  @override
+  String get teamChatLeadClaimedWorkerIt => 'A worker took it';
+
+  @override
+  String get teamChatLeadPushedIt => 'Its changes are on a branch';
+
+  @override
+  String get teamChatLeadReviewIt => 'Handed it to review';
+
+  @override
+  String get teamChatLeadMergedIt => 'Merged it';
+
+  @override
+  String get teamChatLeadStepFailedIt => 'It failed';
+
+  @override
+  String get teamChatLeadStepCancelledIt => 'It was cancelled';
+
+  @override
+  String teamChatNowWorkingIt(String name, String elapsed) {
+    return '$name is working on it · $elapsed';
+  }
+
+  @override
+  String teamChatNowNoProgress(String elapsed) {
+    return 'No progress for $elapsed';
+  }
+
+  @override
+  String teamChatNoProgressBody(String name, String time) {
+    return '$name hasn\'t moved this task since $time. Nudge it to carry on, restart it, or report the problem.';
+  }
+
+  @override
+  String teamChatNoProgressBodyNoControls(String name, String time) {
+    return '$name hasn\'t moved this task since $time. This host can\'t nudge or restart it from here; report the problem or check the team\'s computer.';
+  }
+
+  @override
+  String get teamChatNoProgressReport => 'Report the problem';
+
+  @override
+  String teamChatNoProgressReportTitle(String elapsed) {
+    return 'An AI Team task made no progress for $elapsed';
+  }
+
+  @override
+  String get teamTaskDetailsReported => 'What the host reported';
+
+  @override
+  String get kitToolOpenDetails => 'Open its details';
+
+  @override
+  String get teamStartRunKeepInBacklog => 'Keep in backlog';
 }
