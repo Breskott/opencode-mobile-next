@@ -37820,6 +37820,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set up Linux on this phone'**
   String get localTerminalSetUpLinux;
+
+  /// App-wide status line once a downloaded app update is ready to apply. No tool name.
+  ///
+  /// In en, this message translates to:
+  /// **'App update ready'**
+  String get shorebirdUpdateReadyTitle;
+
+  /// Supporting line of the app update status line: when the downloaded update applies.
+  ///
+  /// In en, this message translates to:
+  /// **'It takes effect when you fully close the app and open it again.'**
+  String get shorebirdUpdateReadyBody;
+
+  /// Desktop status line when a newer release exists on the project's release page.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode {tag} is available'**
+  String desktopReleaseAvailable(String tag);
+
+  /// Supporting line of the desktop release status line: what the release page offers.
+  ///
+  /// In en, this message translates to:
+  /// **'The release page lists what changed and has the downloads.'**
+  String get desktopReleaseWhatChanged;
+
+  /// Desktop release status line action: opens the release page in the browser after the external-link confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Open release page'**
+  String get desktopReleaseOpenPage;
+
+  /// Report a bug sheet, shown when no browser opened the bug form: the link was copied instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Your browser didn\'t open, so the link to the bug form is copied. Paste it into a browser to file the report.'**
+  String get bugReportBrowserDidNotOpen;
+
+  /// Report a bug sheet action: copies the bug form link again.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy bug form link'**
+  String get bugReportCopyLinkAgain;
+
+  /// Screen-reader announcement after the bug form link was copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Bug form link copied'**
+  String get bugReportLinkCopied;
 }
 
 class _AppLocalizationsDelegate

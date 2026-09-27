@@ -483,7 +483,9 @@ final aShellArea = CensusArea(
           child: const HomeScreen(),
         ),
       );
-      kit.expectText('Receiving Shorebird update…');
+      // screen-system-2: the download is silent (owner verdict); nothing
+      // about the update shows until it is ready.
+      expect(find.text('App update ready'), findsNothing);
     }),
     CensusShot('shorebird-update-notice', state: 'ready', (kit) async {
       final controller = await kit.connected();
@@ -496,7 +498,7 @@ final aShellArea = CensusArea(
           child: const HomeScreen(),
         ),
       );
-      kit.expectText('Shorebird update ready — restart to apply.');
+      kit.expectText('App update ready');
     }),
     CensusShot('desktop-release-notice', (kit) async {
       final controller = await kit.connected();

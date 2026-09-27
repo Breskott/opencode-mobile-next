@@ -1,11 +1,16 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
 import '../platform/platform_capabilities.dart';
+import '../ui/app_iconography.dart';
+import '../ui/kit/kit_buttons.dart';
+import '../ui/kit/kit_copy.dart';
+import '../ui/kit/kit_notice.dart';
+import '../ui/kit/kit_sheet.dart';
 
 /// One first-party destination for "something is broken": the GitHub bug
 /// report form, prefilled with the environment the report needs and nothing
@@ -76,21 +81,22 @@ Future<Uri> buildBugReportUrl({PackageInfo? info}) async {
 }
 
 /// Opens the bug form in the system browser. When no handler exists (bare
-/// desktop sessions without a browser default), the link is copied instead
-/// so the tap is never a dead end. Safe to call from anywhere: the messenger
-/// is captured before the first await.
-/// Opens the bug form in the system browser. When no handler exists (bare
 /// desktop sessions without a browser default, plugin failures, tests), the
-/// link is copied instead so the tap is never a dead end — and the snackbar
-/// confirms whichever path was taken. Every external dependency is bounded
-/// or guarded: a stuck plugin must not freeze the flow. Safe to call from
-/// anywhere: the messenger is captured before the first await.
+/// link is copied instead so the tap is never a dead end, and a sheet says
+/// so ("Your browser didn't open, so the link to the bug form is copied…")
+/// with a way to copy it again. Every external dependency is bounded or
+/// guarded: a stuck plugin must not freeze the flow. Safe to call from
+/// anywhere: the Navigator is captured before the first await, so the sheet
+/// still shows when the calling page went away meanwhile.
+///
+/// States: opened (the browser shows the form; nothing in the app), not
+/// opened (the copied-link sheet).
 Future<void> openBugReport(
   BuildContext context, {
   Future<Uri> Function()? urlBuilder,
   Future<bool> Function(Uri url)? launcher,
 }) async {
-  final messenger = ScaffoldMessenger.of(context);
+  final navigator = Navigator.maybeOf(context);
   final url = await (urlBuilder ?? buildBugReportUrl)();
   var opened = false;
   try {
@@ -101,18 +107,40 @@ Future<void> openBugReport(
   } catch (_) {
     opened = false;
   }
-  if (!opened) {
-    // Best-effort copy, never awaited: a dead clipboard channel must not
-    // hold the fallback hostage. The snackbar below is the guarantee.
-    unawaited(
-      Clipboard.setData(
-        ClipboardData(text: url.toString()),
-      ).then((_) {}).catchError((Object _) {}),
-    );
-    messenger.showSnackBar(
-      const SnackBar(
-        content: Text('Bug report link copied — open it in a browser.'),
-      ),
-    );
+  if (opened) return;
+  if (context.mounted) {
+    _showCopiedLink(context, url.toString());
+  } else if (navigator != null && navigator.mounted) {
+    _showCopiedLink(navigator.context, url.toString());
   }
+}
+
+/// The not-opened state: copies [link] and says so in a sheet.
+void _showCopiedLink(BuildContext context, String link) {
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  // Best-effort copy, never awaited: a dead clipboard channel must not hold
+  // the fallback hostage. The sheet below is the guarantee, and it offers
+  // the copy again.
+  unawaited(
+    KitCopy.copy(
+      context,
+      link,
+      announcement: l10n.bugReportLinkCopied,
+    ).catchError((Object _) {}),
+  );
+  unawaited(
+    showKitSheet<void>(
+      context,
+      title: l10n.e7LibraryReportABug,
+      icon: AppIconography.bug,
+      body: (_) => KitNotice(
+        icon: AppIconography.copy,
+        message: l10n.bugReportBrowserDidNotOpen,
+      ),
+      primary: KitAction.copy(
+        label: l10n.bugReportCopyLinkAgain,
+        text: () => link,
+      ),
+    ),
+  );
 }

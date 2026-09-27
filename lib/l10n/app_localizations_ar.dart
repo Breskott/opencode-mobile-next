@@ -24180,4 +24180,33 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get localTerminalSetUpLinux => 'Set up Linux on this phone';
+
+  @override
+  String get shorebirdUpdateReadyTitle => 'App update ready';
+
+  @override
+  String get shorebirdUpdateReadyBody =>
+      'It takes effect when you fully close the app and open it again.';
+
+  @override
+  String desktopReleaseAvailable(String tag) {
+    return 'OpenCode $tag is available';
+  }
+
+  @override
+  String get desktopReleaseWhatChanged =>
+      'The release page lists what changed and has the downloads.';
+
+  @override
+  String get desktopReleaseOpenPage => 'Open release page';
+
+  @override
+  String get bugReportBrowserDidNotOpen =>
+      'Your browser didn\'t open, so the link to the bug form is copied. Paste it into a browser to file the report.';
+
+  @override
+  String get bugReportCopyLinkAgain => 'Copy bug form link';
+
+  @override
+  String get bugReportLinkCopied => 'Bug form link copied';
 }

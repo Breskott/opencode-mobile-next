@@ -4,9 +4,14 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../platform/platform_capabilities.dart';
-import '../ui/widgets/external_link.dart';
 import '../diagnostics/perf_trace.dart';
+import '../l10n/app_localizations.dart';
+import '../platform/platform_capabilities.dart';
+import '../ui/app_iconography.dart';
+import '../ui/kit/kit_buttons.dart';
+import '../ui/kit/kit_status_line.dart';
+import '../ui/widgets/external_link.dart';
+import 'shorebird_update_notice.dart' show UpdateStatusScope;
 
 /// Desktop builds cannot receive Shorebird patches, so Linux and Windows
 /// check the project's GitHub releases instead and point at the release
@@ -143,13 +148,19 @@ Uri? _trustedReleaseUri(String? value) {
 bool get _runningOnDesktop => platformCapabilities.supportsDesktopReleaseCheck;
 
 /// Mirrors the Shorebird notice's lifecycle: checks on start and resume,
-/// throttled, showing one snackbar per run with a View action that opens the
-/// release page externally.
+/// throttled, and when a newer release exists says so in the app's one
+/// status line (map page `desktop-release-notice`): "OpenCode {tag} is
+/// available", that the release page lists what changed, and "Open release
+/// page", which goes through the external-link confirmation.
+///
+/// States: nothing shown (checking, up to date, not a desktop, a failed
+/// check), available (the status line). Its Dismiss hides the line for the
+/// rest of the run and changes nothing real; the next start checks again.
 class DesktopReleaseNotice extends StatefulWidget {
   const DesktopReleaseNotice({
     super.key,
-    required this.messengerKey,
     required this.child,
+    this.messengerKey,
     this.checker,
     this.enabledOverride,
     this.currentBuildNumberLoader,
@@ -158,7 +169,9 @@ class DesktopReleaseNotice extends StatefulWidget {
     this.now,
   });
 
-  final GlobalKey<ScaffoldMessengerState> messengerKey;
+  /// Not used: the notice speaks through the status line, never a
+  /// snackbar. Kept so existing callers compile (R11).
+  final GlobalKey<ScaffoldMessengerState>? messengerKey;
   final Widget child;
   final DesktopReleaseChecker? checker;
 
@@ -180,7 +193,8 @@ class DesktopReleaseNotice extends StatefulWidget {
 class _DesktopReleaseNoticeState extends State<DesktopReleaseNotice>
     with WidgetsBindingObserver {
   bool _checking = false;
-  bool _noticeShown = false;
+  DesktopReleaseInfo? _available;
+  bool _hidden = false;
   DateTime? _lastCheck;
 
   bool get _enabled => widget.enabledOverride ?? _runningOnDesktop;
@@ -206,7 +220,9 @@ class _DesktopReleaseNoticeState extends State<DesktopReleaseNotice>
   }
 
   Future<void> _check() async {
-    if (!_enabled || _checking || _noticeShown) return;
+    // One release line per run: once a newer release is known, it stays
+    // until dismissed and the next start checks again.
+    if (!_enabled || _checking || _available != null) return;
     final now = (widget.now ?? DateTime.now)();
     if (_lastCheck case final previous?
         when now.difference(previous) < const Duration(minutes: 15)) {
@@ -221,7 +237,7 @@ class _DesktopReleaseNoticeState extends State<DesktopReleaseNotice>
           .fetchLatest();
       if (latest == null || !mounted) return;
       if (isNewerRelease(currentBuildNumber: currentBuild, tag: latest.tag)) {
-        _showAvailable(context, latest);
+        setState(() => _available = latest);
       }
     } on Exception catch (error) {
       debugPrint('Desktop release check failed: $error');
@@ -230,46 +246,48 @@ class _DesktopReleaseNoticeState extends State<DesktopReleaseNotice>
     }
   }
 
-  void _showAvailable(BuildContext context, DesktopReleaseInfo release) {
-    if (_noticeShown) return;
-    final messenger = widget.messengerKey.currentState;
-    if (!mounted || messenger == null) {
-      // A check that could not reach the messenger did not deliver anything;
-      // let the next resume retry without waiting for the normal throttle.
-      _lastCheck = null;
+  void _openReleasePage(DesktopReleaseInfo release) {
+    final url =
+        _trustedReleaseUri(release.htmlUrl) ??
+        Uri.parse(desktopReleasesPageUrl);
+    if (widget.launcher case final launch?) {
+      // Keep the existing callback as a lightweight test seam. The
+      // production path below always goes through the app's external
+      // link confirmation and URL policy.
+      unawaited(launch(url));
       return;
     }
-    _noticeShown = true;
-    messenger.showSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 12),
-        content: Text('OpenCode ${release.tag} is available.'),
-        action: SnackBarAction(
-          label: 'View',
-          onPressed: () {
-            final url =
-                _trustedReleaseUri(release.htmlUrl) ??
-                Uri.parse(desktopReleasesPageUrl);
-            if (widget.launcher case final launch?) {
-              // Keep the existing callback as a lightweight test seam. The
-              // production path below always goes through the app's external
-              // link confirmation and URL policy.
-              unawaited(launch(url));
-            } else {
-              final linkContext =
-                  widget.navigatorKey?.currentContext ?? context;
-              if (linkContext.mounted) {
-                unawaited(openExternalLink(linkContext, url.toString()));
-              }
-            }
-          },
-        ),
+    // The notice sits above the Navigator; the confirmation needs a context
+    // under it.
+    final linkContext = widget.navigatorKey?.currentContext ?? context;
+    if (linkContext.mounted) {
+      unawaited(openExternalLink(linkContext, url.toString()));
+    }
+  }
+
+  KitStatus? _status(BuildContext context) {
+    final release = _available;
+    if (release == null || _hidden) return null;
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return KitStatus(
+      kind: KitStatusKind.update,
+      id: 'update:desktop-release',
+      icon: AppIconography.download,
+      message: l10n.desktopReleaseAvailable(release.tag),
+      supporting: l10n.desktopReleaseWhatChanged,
+      action: KitAction(
+        label: l10n.desktopReleaseOpenPage,
+        onPressed: () => _openReleasePage(release),
       ),
+      onDismiss: () {
+        if (mounted) setState(() => _hidden = true);
+      },
     );
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) =>
+      UpdateStatusScope(status: _status(context), child: widget.child);
 
   @override
   void dispose() {

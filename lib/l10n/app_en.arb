@@ -27568,5 +27568,43 @@
   "localTerminalSetUpLinux": "Set up Linux on this phone",
   "@localTerminalSetUpLinux": {
     "description": "Phone terminal before Linux is installed: opens phone setup."
+  },
+  "shorebirdUpdateReadyTitle": "App update ready",
+  "@shorebirdUpdateReadyTitle": {
+    "description": "App-wide status line once a downloaded app update is ready to apply. No tool name."
+  },
+  "shorebirdUpdateReadyBody": "It takes effect when you fully close the app and open it again.",
+  "@shorebirdUpdateReadyBody": {
+    "description": "Supporting line of the app update status line: when the downloaded update applies."
+  },
+  "desktopReleaseAvailable": "OpenCode {tag} is available",
+  "@desktopReleaseAvailable": {
+    "description": "Desktop status line when a newer release exists on the project's release page.",
+    "placeholders": {
+      "tag": {
+        "type": "String",
+        "example": "v1.0.45+46"
+      }
+    }
+  },
+  "desktopReleaseWhatChanged": "The release page lists what changed and has the downloads.",
+  "@desktopReleaseWhatChanged": {
+    "description": "Supporting line of the desktop release status line: what the release page offers."
+  },
+  "desktopReleaseOpenPage": "Open release page",
+  "@desktopReleaseOpenPage": {
+    "description": "Desktop release status line action: opens the release page in the browser after the external-link confirmation."
+  },
+  "bugReportBrowserDidNotOpen": "Your browser didn't open, so the link to the bug form is copied. Paste it into a browser to file the report.",
+  "@bugReportBrowserDidNotOpen": {
+    "description": "Report a bug sheet, shown when no browser opened the bug form: the link was copied instead."
+  },
+  "bugReportCopyLinkAgain": "Copy bug form link",
+  "@bugReportCopyLinkAgain": {
+    "description": "Report a bug sheet action: copies the bug form link again."
+  },
+  "bugReportLinkCopied": "Bug form link copied",
+  "@bugReportLinkCopied": {
+    "description": "Screen-reader announcement after the bug form link was copied."
   }
 }
