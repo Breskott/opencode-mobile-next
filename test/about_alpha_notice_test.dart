@@ -1,30 +1,209 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitSkeletonRows;
 import 'package:opencode_mobile/ui/screens/about_screen.dart'
     show AboutScreen, buildProvenanceBody;
+import 'package:opencode_mobile/update/shorebird_update_notice.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
-/// The build-provenance notice and the bug-report affordances on About. Runs
-/// in its own file because the document `ListView` builds lazily against a
-/// process-wide asset cache: reusing a file that already loaded the privacy
-/// documents leaves the 320dp fixture showing an empty first viewport.
+/// A scripted updater: answers [state], counts the downloads.
+class _Updater implements AppUpdateService {
+  _Updater(this.state, {this.available = true});
+
+  final AppUpdateState state;
+  final bool available;
+  int downloads = 0;
+
+  @override
+  bool get isAvailable => available;
+
+  @override
+  Future<AppUpdateState> checkForUpdate() async => state;
+
+  @override
+  Future<void> downloadUpdate() async => downloads++;
+}
+
+/// Settles the page, letting the package info and documents (real
+/// platform and asset futures) resolve first.
+Future<void> _settle(WidgetTester tester) async {
+  await tester.pumpAndSettle();
+  // The larger document decodes on a background isolate: give it real time.
+  for (var i = 0; i < 20; i++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    if (find.byType(KitSkeletonRows).evaluate().isEmpty) break;
+  }
+}
+
+Widget _app(Widget home) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: home,
+);
+
+/// The build-provenance notice, the build identity and the bug-report path
+/// on About. Runs in its own file because the documents load through a
+/// process-wide asset cache.
 void main() {
-  testWidgets('About shows build provenance and both report paths', (
+  setUp(() {
+    // The asset cache keeps a load started in an earlier test's zone, which
+    // never completes in this one: load the documents afresh.
+    rootBundle
+      ..evict('PRIVACY.md')
+      ..evict('THIRD_PARTY_NOTICES.md');
+    PackageInfo.setMockInitialValues(
+      appName: 'OpenCode Mobile',
+      packageName: 'com.example.opencode_mobile',
+      version: '1.0.44',
+      buildNumber: '52',
+      buildSignature: '',
+    );
+  });
+
+  testWidgets('About shows the build once, provenance and one report path', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: AboutScreen()));
-    await tester.pumpAndSettle();
+    tester.view
+      ..physicalSize = const Size(412, 915)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_app(const AboutScreen()));
+    await _settle(tester);
 
+    // Retitled "About"; the version is shown once, above the tabs.
+    expect(find.text('About'), findsOneWidget);
+    expect(find.text('OpenCode Mobile 1.0.44+52'), findsOneWidget);
+    // The app-bar bug icon is gone: the one report path is in the notice,
+    // and it says where it goes.
+    expect(find.byKey(const ValueKey('about-report-bug')), findsNothing);
     expect(
       find.byKey(const ValueKey('about-alpha-report-bug')),
       findsOneWidget,
     );
-    expect(find.byKey(const ValueKey('about-report-bug')), findsOneWidget);
+    expect(find.text('Report a bug on GitHub'), findsOneWidget);
     expect(find.text('About this build'), findsOneWidget);
     expect(
       find.textContaining('built heavily with AI assistance'),
       findsOneWidget,
     );
     expect(find.textContaining('not been hardware-tested'), findsOneWidget);
+    expect(find.byKey(const Key('about-non-affiliation')), findsOneWidget);
+    // The package id sits under Details, folded.
+    expect(find.text('com.example.opencode_mobile'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('about-details')));
+    await tester.pumpAndSettle();
+    expect(find.text('com.example.opencode_mobile'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the version copies in one tap', (tester) async {
+    String? clipboard;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') {
+            clipboard = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+    await tester.pumpWidget(_app(const AboutScreen()));
+    await _settle(tester);
+
+    await tester.tap(find.byKey(const ValueKey('about-copy-version')));
+    await tester.pumpAndSettle();
+    expect(clipboard, 'OpenCode Mobile 1.0.44+52');
+  });
+
+  testWidgets('check for updates: fetches an update and says to reopen', (
+    tester,
+  ) async {
+    final updater = _Updater(AppUpdateState.available);
+    await tester.pumpWidget(_app(AboutScreen(updateService: updater)));
+    await _settle(tester);
+
+    expect(find.text('Looks for a newer version of this app'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('about-check-updates')));
+    await tester.pumpAndSettle();
+    expect(updater.downloads, 1);
+    expect(
+      find.text('Update ready. Close and reopen the app to use it.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('check for updates: up to date, and a build that cannot', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(AboutScreen(updateService: _Updater(AppUpdateState.current))),
+    );
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('about-check-updates')));
+    await tester.pumpAndSettle();
+    expect(find.text('You have the latest version'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(
+      _app(
+        AboutScreen(
+          updateService: _Updater(AppUpdateState.current, available: false),
+        ),
+      ),
+    );
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('about-check-updates')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        "This build can't update itself. Install the newest release instead.",
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the tabs switch the document; Open source lists licenses', (
+    tester,
+  ) async {
+    // Tall, so the document under the identity is laid out.
+    tester.view
+      ..physicalSize = const Size(412, 2400)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_app(const AboutScreen()));
+    await _settle(tester);
+
+    expect(
+      find.byKey(const ValueKey('about-privacy-document')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('about-all-licences')), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('about-tab-open-source')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('about-privacy-document')), findsNothing);
+    expect(find.byKey(const ValueKey('about-all-licences')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('about-all-licences')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('about-licences-viewer')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('initialTab 1 opens on Open source', (tester) async {
+    tester.view
+      ..physicalSize = const Size(412, 2400)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_app(const AboutScreen(initialTab: 1)));
+    await _settle(tester);
+    expect(find.byKey(const ValueKey('about-all-licences')), findsOneWidget);
   });
 
   test(
@@ -35,11 +214,6 @@ void main() {
       expect(buildProvenanceBody, contains('Android is the primary supported'));
       expect(buildProvenanceBody, isNot(contains('public alpha')));
       expect(buildProvenanceBody, contains('not been hardware-tested'));
-      expect(
-        find.text('About this build'),
-        findsNothing,
-        reason: 'the title is a widget concern, asserted in the test above',
-      );
     },
   );
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -7,13 +8,13 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../feedback/bug_report.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
+import '../../update/shorebird_update_notice.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
-import '../widgets/markdown.dart';
 
 /// Upstream OpenCode asks third-party projects that use the OpenCode name to
 /// say plainly that they are not the official project. This is that statement,
-/// and it is shown on every tab of this screen rather than buried in a
+/// and it is shown once near the top of this screen rather than buried in a
 /// document the reader has to scroll.
 const String nonAffiliationDisclaimer =
     'OpenCode Mobile is an independent community project. It is not built, '
@@ -27,201 +28,70 @@ const String buildProvenanceBody =
     'experimental and have not been hardware-tested. '
     'Report what breaks to help improve the app.';
 
-class AboutScreen extends StatelessWidget {
-  const AboutScreen({super.key, this.initialTab = 0});
+/// Settings › About (and Settings › Privacy, which opens the Privacy tab):
+/// which build this is, what it is not, and the documents.
+///
+/// Built from kit parts only (screen-system-1). One scroll: the build's
+/// identity once, with its version copyable in one tap and an update check
+/// on builds that can update themselves; the package id and signer folded
+/// under Details; the non-affiliation statement; the build notice with its
+/// one action; then a [KitTabStrip] choosing the document shown under it,
+/// reflowed by [KitMarkdown]. The Open source tab also opens every bundled
+/// package licence in the [KitViewer].
+class AboutScreen extends StatefulWidget {
+  const AboutScreen({super.key, this.initialTab = 0, this.updateService});
 
   /// 0 opens Privacy, 1 opens Open source.
   final int initialTab;
 
-  Future<List<String>> _loadDocuments(BuildContext context) => Future.wait([
-    rootBundle.loadString(
-      Localizations.localeOf(context).languageCode == 'ar'
-          ? 'assets/l10n/PRIVACY.ar.md'
-          : 'PRIVACY.md',
-    ),
-    rootBundle.loadString('THIRD_PARTY_NOTICES.md'),
-  ]);
+  /// Checks for and fetches an update. Null: on Android the app's own
+  /// updater (made on the first check), elsewhere no update row.
+  final AppUpdateService? updateService;
 
   @override
-  Widget build(BuildContext context) {
-    final largeLabels = AppTheme.stackedActions(context);
-    final theme = Theme.of(context);
-    final labelStyle =
-        theme.tabBarTheme.labelStyle ?? theme.textTheme.titleSmall;
-    // Keep full-size labels and icon clearance rather than clipping text or
-    // shrinking the user's accessibility setting into the stock 72dp tab.
-    final tabHeight = largeLabels
-        ? 48 +
-              MediaQuery.textScalerOf(
-                    context,
-                  ).scale(labelStyle?.fontSize ?? AppTheme.bodyFontSize) *
-                  (labelStyle?.height ?? 1.4)
-        : null;
-    return DefaultTabController(
-      length: 2,
-      initialIndex: initialTab.clamp(0, 1),
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(_screenCopy(context).e7SettingsUi96),
-          actions: [
-            IconButton(
-              key: const ValueKey('about-report-bug'),
-              tooltip: _screenCopy(context).e7SettingsDetailUi16,
-              onPressed: () => unawaited(openBugReport(context)),
-              icon: const Icon(AppIconography.bug),
-            ),
-          ],
-          bottom: TabBar(
-            isScrollable: largeLabels,
-            tabAlignment: largeLabels ? TabAlignment.start : TabAlignment.fill,
-            tabs: [
-              Tab(
-                height: tabHeight,
-                icon: const Icon(Icons.privacy_tip_outlined),
-                text: _screenCopy(context).e7SettingsDetailUi17,
-              ),
-              Tab(
-                height: tabHeight,
-                icon: const Icon(AppIconography.code),
-                text: _screenCopy(context).e7SettingsDetailUi18,
-              ),
-            ],
-          ),
-        ),
-        body: FutureBuilder<List<String>>(
-          future: _loadDocuments(context),
-          builder: (context, snapshot) {
-            final loading = snapshot.connectionState != ConnectionState.done;
-            final documents = snapshot.data;
-            return KitScreen(
-              loading: loading,
-              loadingLabel: _screenCopy(context).settingsAboutLoading,
-              body: loading
-                  ? const Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: KitSkeletonRows(count: 6),
-                    )
-                  : snapshot.hasError || documents == null
-                  ? KitStateView(
-                      icon: AppIconography.error,
-                      tone: AppStatusTone.failure,
-                      title: _screenCopy(context).settingsAboutLoadFailed,
-                      body: _screenCopy(context).e7SettingsInformationFailed,
-                    )
-                  : TabBarView(
-                      children: [
-                        _DocumentView(data: documents[0]),
-                        _DocumentView(data: documents[1], showAppSummary: true),
-                      ],
-                    ),
-            );
-          },
-        ),
-      ),
-    );
-  }
+  State<AboutScreen> createState() => _AboutScreenState();
 }
 
-class _BuildData {
-  const _BuildData({required this.package, required this.signer});
-
-  final PackageInfo? package;
-  final String? signer;
+/// What the last update check found.
+enum _UpdateCheck {
+  idle,
+  checking,
+  current,
+  downloading,
+  ready,
+  cannot,
+  failed,
 }
 
-/// Provenance, stated plainly with its one action (a message, not a card:
-/// design standard §3).
-class _BuildProvenanceNotice extends StatelessWidget {
-  const _BuildProvenanceNotice();
-
-  @override
-  Widget build(BuildContext context) => KitNotice(
-    icon: AppIconography.experiments,
-    title: _screenCopy(context).e7SettingsDetailUi19,
-    message: _screenCopy(context).e7SettingsAlphaBody,
-    liveRegion: false,
-    actions: [
-      KitAction(
-        key: const ValueKey('about-alpha-report-bug'),
-        label: _screenCopy(context).e7SettingsDetailUi16,
-        icon: AppIconography.bug,
-        onPressed: () => unawaited(openBugReport(context)),
-      ),
-    ],
-  );
-}
-
-class _DocumentView extends StatelessWidget {
-  const _DocumentView({required this.data, this.showAppSummary = false});
-
-  final String data;
-  final bool showAppSummary;
-
-  @override
-  Widget build(BuildContext context) {
-    return SelectionArea(
-      child: ListView(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          8,
-          16,
-          KitScreen.endPadding(context) + 16,
-        ),
-        children: [
-          const _BuildIdentity(),
-          const SizedBox(height: 12),
-          const _NonAffiliationNotice(),
-          const SizedBox(height: 12),
-          // Scrolls with the document rather than sitting as fixed chrome:
-          // at 2x text a fixed notice would squeeze (or overflow) the very
-          // content the reader came for.
-          const _BuildProvenanceNotice(),
-          const Divider(height: 32),
-          if (showAppSummary) ...[
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: KitRow.icon(context, AppIconography.terminal),
-              // The desktop bundle is the same app, but naming it "for
-              // Android" and promising local voice recognition describes a
-              // build the reader is not running.
-              title: Text(
-                platformCapabilities.supportsVoice
-                    ? _screenCopy(context).e7SettingsDetailUi20
-                    : platformCapabilities.platform == TargetPlatform.iOS
-                    ? lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).iosAppTitle
-                    : _screenCopy(context).e7SettingsDetailUi21,
-              ),
-              subtitle: Text(
-                platformCapabilities.supportsVoice
-                    ? _screenCopy(context).e7SettingsDetailUi22
-                    : platformCapabilities.platform == TargetPlatform.iOS
-                    ? lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).iosRemoteSummary
-                    : _screenCopy(context).e7SettingsDetailUi23,
-              ),
-            ),
-            const Divider(height: 28),
-          ],
-          if (showAppSummary) ...[
-            Text(_screenCopy(context).e7SettingsOriginalLicenses),
-            const SizedBox(height: 12),
-          ],
-          MarkdownText(data),
-        ],
-      ),
-    );
-  }
-}
-
-class _BuildIdentity extends StatelessWidget {
-  const _BuildIdentity();
-
+class _AboutScreenState extends State<AboutScreen> {
   static const _platform = MethodChannel('oc/termux');
 
-  Future<_BuildData> _load() async {
+  late int _tab = widget.initialTab.clamp(0, 1);
+  Future<List<String>>? _documents;
+  String? _documentsLocale;
+  late final Future<_BuildData> _build = _loadBuild();
+  _UpdateCheck _update = _UpdateCheck.idle;
+  AppUpdateService? _service;
+
+  bool get _canCheckUpdates =>
+      widget.updateService != null || platformCapabilities.isAndroid;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final language = Localizations.localeOf(context).languageCode;
+    if (_documents == null || _documentsLocale != language) {
+      _documentsLocale = language;
+      _documents = Future.wait([
+        rootBundle.loadString(
+          language == 'ar' ? 'assets/l10n/PRIVACY.ar.md' : 'PRIVACY.md',
+        ),
+        rootBundle.loadString('THIRD_PARTY_NOTICES.md'),
+      ]).then((texts) => [for (final text in texts) reflowMarkdown(text)]);
+    }
+  }
+
+  Future<_BuildData> _loadBuild() async {
     PackageInfo? package;
     try {
       package = await PackageInfo.fromPlatform();
@@ -241,88 +111,325 @@ class _BuildIdentity extends StatelessWidget {
     return _BuildData(package: package, signer: signer);
   }
 
+  Future<void> _checkForUpdate() async {
+    if (_update == _UpdateCheck.checking ||
+        _update == _UpdateCheck.downloading) {
+      return;
+    }
+    setState(() => _update = _UpdateCheck.checking);
+    try {
+      final service = _service ??=
+          widget.updateService ?? ShorebirdAppUpdateService();
+      if (!service.isAvailable) {
+        if (mounted) setState(() => _update = _UpdateCheck.cannot);
+        return;
+      }
+      final state = await service.checkForUpdate();
+      if (!mounted) return;
+      switch (state) {
+        case AppUpdateState.current:
+          setState(() => _update = _UpdateCheck.current);
+        case AppUpdateState.restartRequired:
+          setState(() => _update = _UpdateCheck.ready);
+        case AppUpdateState.unavailable:
+          setState(() => _update = _UpdateCheck.cannot);
+        case AppUpdateState.available:
+          setState(() => _update = _UpdateCheck.downloading);
+          await service.downloadUpdate();
+          if (mounted) setState(() => _update = _UpdateCheck.ready);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _update = _UpdateCheck.failed);
+    }
+  }
+
+  String _updateLine(AppLocalizations l10n) => switch (_update) {
+    _UpdateCheck.idle => l10n.aboutUpdateIdle,
+    _UpdateCheck.checking => l10n.aboutUpdateChecking,
+    _UpdateCheck.current => l10n.aboutUpdateCurrent,
+    _UpdateCheck.downloading => l10n.aboutUpdateDownloading,
+    _UpdateCheck.ready => l10n.aboutUpdateReady,
+    _UpdateCheck.cannot => l10n.aboutUpdateCannot,
+    _UpdateCheck.failed => l10n.aboutUpdateFailed,
+  };
+
+  Future<String> _licenceText() async {
+    final out = StringBuffer();
+    await for (final entry in LicenseRegistry.licenses) {
+      out
+        ..writeln(entry.packages.join(', '))
+        ..writeln();
+      for (final paragraph in entry.paragraphs) {
+        out
+          ..writeln(paragraph.text)
+          ..writeln();
+      }
+      out.writeln();
+    }
+    return out.toString();
+  }
+
+  void _openLicences(AppLocalizations l10n) => unawaited(
+    showKitViewer(
+      context,
+      name: l10n.aboutAllLicences,
+      interactive: false,
+      viewerKey: const ValueKey('about-licences-viewer'),
+      source: KitViewerSource.load(
+        () async => KitViewerContent.text(await _licenceText()),
+      ),
+    ),
+  );
+
+  /// The platform line under the product name. The desktop bundle is the
+  /// same app, but promising local voice recognition would describe a
+  /// build the reader is not running.
+  String _summary(AppLocalizations l10n) => platformCapabilities.supportsVoice
+      ? l10n.e7SettingsDetailUi22
+      : platformCapabilities.platform == TargetPlatform.iOS
+      ? l10n.iosRemoteSummary
+      : l10n.e7SettingsDetailUi23;
+
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_BuildData>(
-      future: _load(),
-      builder: (context, snapshot) {
-        final data = snapshot.data;
-        final package = data?.package;
-        if (package == null) return const SizedBox.shrink();
-        final signer = data?.signer;
-        final l10n = AppLocalizations.of(context);
-        final theme = Theme.of(context);
-        // The build's identity is plain text on the page's rails, not a
-        // card around a message (design standard §3).
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 1),
-              child: Icon(
-                AppIconography.phone,
-                size: 20,
-                color: AppTheme.mutedOf(theme),
-              ),
+    final l10n = _screenCopy(context);
+    final tokens = KitTokens.of(context);
+    Widget rails(Widget child) => Padding(
+      padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
+      child: child,
+    );
+    return KitScreen(
+      topBar: KitTopBar(title: l10n.aboutTitle),
+      width: KitScreenWidth.reading,
+      body: FutureBuilder<List<String>>(
+        future: _documents,
+        builder: (context, documents) {
+          final loading = documents.connectionState != ConnectionState.done;
+          final texts = documents.data;
+          return ListView(
+            key: const ValueKey('about-page'),
+            padding: EdgeInsetsDirectional.only(
+              top: tokens.space4,
+              bottom: KitScreen.endPadding(context),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.aboutBuildVersion(
-                      package.version,
-                      package.buildNumber,
-                    ),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    package.packageName,
-                    textDirection: TextDirection.ltr,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppTheme.mutedOf(theme),
-                    ),
-                  ),
-                  if (signer != null && signer.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.aboutSigningCertificate,
-                      style: theme.textTheme.labelMedium,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      signer,
-                      textDirection: TextDirection.ltr,
-                      key: const ValueKey('about-signing-certificate'),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontFamily: AppTheme.monoFamily,
-                        color: AppTheme.mutedOf(theme),
-                      ),
+            children: [
+              FutureBuilder<_BuildData>(
+                future: _build,
+                builder: (context, snapshot) =>
+                    _identity(context, l10n, snapshot.data),
+              ),
+              SizedBox(height: tokens.space4),
+              rails(
+                KitNotice(
+                  key: const Key('about-non-affiliation'),
+                  message: l10n.e7SettingsNonAffiliation,
+                  liveRegion: false,
+                ),
+              ),
+              SizedBox(height: tokens.space3),
+              rails(
+                KitNotice(
+                  icon: AppIconography.experiments,
+                  title: l10n.e7SettingsDetailUi19,
+                  message: l10n.e7SettingsAlphaBody,
+                  liveRegion: false,
+                  actions: [
+                    KitAction(
+                      key: const ValueKey('about-alpha-report-bug'),
+                      label: l10n.aboutReportBugOnGithub,
+                      icon: AppIconography.bug,
+                      onPressed: () => unawaited(openBugReport(context)),
                     ),
                   ],
-                ],
+                ),
               ),
+              SizedBox(height: tokens.sectionGap),
+              rails(
+                KitTabStrip(
+                  stripKey: const ValueKey('about-tabs'),
+                  semanticsLabel: l10n.aboutDocuments,
+                  tabs: [
+                    KitTab(
+                      key: const ValueKey('about-tab-privacy'),
+                      icon: AppIconography.privacy,
+                      label: l10n.e7SettingsDetailUi17,
+                    ),
+                    KitTab(
+                      key: const ValueKey('about-tab-open-source'),
+                      icon: AppIconography.code,
+                      label: l10n.e7SettingsDetailUi18,
+                    ),
+                  ],
+                  selected: _tab,
+                  onSelected: (index) => setState(() => _tab = index),
+                ),
+              ),
+              SizedBox(height: tokens.space4),
+              if (loading)
+                const KitSkeletonRows(count: 6)
+              else if (documents.hasError || texts == null)
+                KitStateView(
+                  key: const ValueKey('about-documents-failed'),
+                  size: KitStateSize.inline,
+                  icon: AppIconography.error,
+                  tone: AppStatusTone.failure,
+                  title: l10n.settingsAboutLoadFailed,
+                  body: l10n.e7SettingsInformationFailed,
+                )
+              else if (_tab == 0)
+                rails(
+                  KitMarkdown(
+                    texts[0],
+                    key: const ValueKey('about-privacy-document'),
+                  ),
+                )
+              else ...[
+                KitRowGroup(
+                  children: [
+                    KitRow(
+                      key: const ValueKey('about-all-licences'),
+                      leading: KitRow.icon(context, AppIconography.article),
+                      title: l10n.aboutAllLicences,
+                      supporting: TextSpan(text: l10n.aboutAllLicencesDetail),
+                      supportingMaxLines: 2,
+                      trailing: const KitChevron(),
+                      onTap: () => _openLicences(l10n),
+                    ),
+                  ],
+                ),
+                SizedBox(height: tokens.space4),
+                rails(
+                  KitText(
+                    l10n.e7SettingsOriginalLicenses,
+                    role: KitTextRole.secondary,
+                  ),
+                ),
+                SizedBox(height: tokens.space3),
+                rails(
+                  KitMarkdown(
+                    texts[1],
+                    key: const ValueKey('about-notices-document'),
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// The build, once: product and version (copyable), the platform line,
+  /// the update check, and the package id and signer under Details.
+  Widget _identity(BuildContext context, AppLocalizations l10n, _BuildData? d) {
+    final tokens = KitTokens.of(context);
+    final package = d?.package;
+    final signer = d?.signer;
+    final version = package == null
+        ? l10n.appTitle
+        : l10n.aboutBuildVersion(package.version, package.buildNumber);
+    final checking =
+        _update == _UpdateCheck.checking || _update == _UpdateCheck.downloading;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KitRowGroup(
+          children: [
+            KitRow(
+              key: const ValueKey('about-version'),
+              leading: KitRow.icon(context, AppIconography.phone),
+              title: version,
+              titleMaxLines: 2,
+              supporting: TextSpan(text: _summary(l10n)),
+              supportingMaxLines: 3,
+              trailing: package == null
+                  ? null
+                  : KitIconButton.copy(
+                      key: const ValueKey('about-copy-version'),
+                      tooltip: l10n.aboutCopyVersion,
+                      text: () => version,
+                    ),
             ),
+            if (_canCheckUpdates)
+              KitRow(
+                key: const ValueKey('about-check-updates'),
+                leading: KitRow.icon(context, AppIconography.systemDownload),
+                title: l10n.aboutCheckUpdates,
+                supporting: TextSpan(text: _updateLine(l10n)),
+                supportingMaxLines: 2,
+                enabled: !checking,
+                disabledReason: checking ? _updateLine(l10n) : null,
+                onTap: () => unawaited(_checkForUpdate()),
+              ),
           ],
-        );
-      },
+        ),
+        if (package != null)
+          Padding(
+            padding: EdgeInsetsDirectional.only(
+              start: tokens.gutter,
+              end: tokens.gutter,
+              top: tokens.space2,
+            ),
+            child: KitDetailsFold(
+              foldKey: const ValueKey('about-details'),
+              values: [
+                KitTechnicalValue(l10n.aboutPackageId, package.packageName),
+                if (signer != null && signer.isNotEmpty)
+                  KitTechnicalValue(
+                    l10n.aboutSigningCertificate,
+                    signer,
+                    key: const ValueKey('about-signing-certificate'),
+                  ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
 
-class _NonAffiliationNotice extends StatelessWidget {
-  const _NonAffiliationNotice();
+/// Joins the hard-wrapped lines of a paragraph or list item into one line,
+/// so the documents reflow to the window instead of breaking mid-sentence
+/// (map: about-privacy-tab, about-open-source-tab). Headings, list starts,
+/// quotes, tables, blank lines, code fences and a line ending in two spaces
+/// (a deliberate break) are kept as they are.
+@visibleForTesting
+String reflowMarkdown(String source) {
+  final block = RegExp(r'^\s*(#|[-*+]\s|\d+[.)]\s|>|\||```|~~~|<)');
+  final out = <String>[];
+  var fenced = false;
+  var joinable = false;
+  for (final line in source.split('\n')) {
+    final trimmed = line.trimLeft();
+    if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+      fenced = !fenced;
+      out.add(line);
+      joinable = false;
+      continue;
+    }
+    if (fenced || trimmed.isEmpty) {
+      out.add(line);
+      joinable = false;
+      continue;
+    }
+    final starts = block.hasMatch(line);
+    if (joinable && !starts) {
+      out[out.length - 1] = '${out.last.trimRight()} $trimmed';
+    } else {
+      out.add(line);
+    }
+    final heading = trimmed.startsWith('#');
+    final table = trimmed.startsWith('|');
+    joinable = !heading && !table && !line.endsWith('  ');
+  }
+  return out.join('\n');
+}
 
-  @override
-  Widget build(BuildContext context) => KitNotice(
-    key: const Key('about-non-affiliation'),
-    message: _screenCopy(context).e7SettingsNonAffiliation,
-    liveRegion: false,
-  );
+class _BuildData {
+  const _BuildData({required this.package, required this.signer});
+
+  final PackageInfo? package;
+  final String? signer;
 }
 
 AppLocalizations _screenCopy(BuildContext context) =>

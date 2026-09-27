@@ -1,0 +1,258 @@
+// Golden renders of screen-system-1's pages (wave 2b), rebuilt from kit
+// parts: About (Privacy and Open source), App diagnostics with captured
+// errors and timings, its clear question, Keep running (steps left, and
+// all set), and Available on this server for a server that lacks things.
+// Phone 412x915 and one wide window (1280x800), dark and light (owner
+// decision 2026-09-27: no Arabic), with the app's real fonts at DPR 1.
+//
+// Regenerate deliberately:
+//   flutter test --update-goldens test/revamp/screen_system_1_golden_test.dart
+// and look at every changed image before committing it.
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/codex/gateway.dart';
+import 'package:opencode_mobile/diagnostics/perf_trace.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/platform/platform_capabilities.dart';
+import 'package:opencode_mobile/ui/screens/about_screen.dart';
+import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
+import 'package:opencode_mobile/ui/screens/keep_running_screen.dart';
+import 'package:opencode_mobile/ui/screens/server_capabilities_screen.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+import '../../tool/capture/fixtures.dart' show captureTheme, loadCaptureFonts;
+import 'screen_system_1_fixtures.dart';
+
+const _phone = Size(412, 915);
+const _wide = Size(1280, 800);
+
+String _name(String shot, Size size, bool light) => [
+  shot,
+  if (size != _phone) '${size.width.toInt()}x${size.height.toInt()}',
+  light ? 'light' : 'dark',
+].join('_');
+
+Future<void> _shot(
+  WidgetTester tester,
+  String shot, {
+  required bool light,
+  required Widget home,
+  Size size = _phone,
+  Future<void> Function()? then,
+}) async {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  debugDefaultTargetPlatformOverride = TargetPlatform.android;
+  final boundary = GlobalKey();
+  try {
+    await tester.pumpWidget(
+      RepaintBoundary(
+        key: boundary,
+        child: ProviderScope(
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: captureTheme(light: light),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: child!,
+            ),
+            home: home,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    // Package info and the documents resolve on real futures.
+    for (var i = 0; i < 5; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 60)),
+      );
+      await tester.pumpAndSettle();
+    }
+    if (then != null) await then();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await expectLater(
+      find.byKey(boundary),
+      matchesGoldenFile('goldens/${_name(shot, size, light)}.png'),
+    );
+  } finally {
+    await tester.pumpWidget(const SizedBox.shrink());
+    debugDefaultTargetPlatformOverride = null;
+  }
+}
+
+void main() {
+  setUpAll(loadCaptureFonts);
+  setUp(() {
+    debugPlatformCapabilities = const PlatformCapabilities.android();
+    rootBundle
+      ..evict('PRIVACY.md')
+      ..evict('THIRD_PARTY_NOTICES.md');
+    PackageInfo.setMockInitialValues(
+      appName: 'OpenCode Mobile',
+      packageName: 'com.opencode.mobile',
+      version: '1.0.44',
+      buildNumber: '52',
+      buildSignature: '',
+    );
+  });
+  tearDown(() {
+    debugPlatformCapabilities = null;
+    clearKeepAliveMock();
+    PerfTrace.clear();
+  });
+
+  for (final light in [false, true]) {
+    final theme = light ? 'light' : 'dark';
+
+    testWidgets('about ($theme)', (tester) async {
+      await _shot(
+        tester,
+        'system_about',
+        light: light,
+        home: const AboutScreen(),
+      );
+    });
+
+    testWidgets('about open source ($theme)', (tester) async {
+      await _shot(
+        tester,
+        'system_about_open_source',
+        light: light,
+        home: const AboutScreen(initialTab: 1),
+        then: () async {
+          await tester.scrollUntilVisible(
+            find.byKey(const ValueKey('about-all-licences')),
+            300,
+            scrollable: find
+                .descendant(
+                  of: find.byKey(const ValueKey('about-page')),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          );
+        },
+      );
+    });
+
+    testWidgets('app diagnostics ($theme)', (tester) async {
+      final controller = await systemController(codexServerCapabilities);
+      addTearDown(controller.dispose);
+      recordSampleErrors(controller);
+      recordSampleTimings();
+      await _shot(
+        tester,
+        'system_app_diagnostics',
+        light: light,
+        home: AppDiagnosticsScreen(controller: controller),
+      );
+    });
+
+    testWidgets('app diagnostics clear sheet ($theme)', (tester) async {
+      final controller = await systemController(codexServerCapabilities);
+      addTearDown(controller.dispose);
+      recordSampleErrors(controller);
+      await _shot(
+        tester,
+        'system_app_diagnostics_clear_sheet',
+        light: light,
+        home: AppDiagnosticsScreen(controller: controller),
+        then: () async {
+          await tester.tap(find.byKey(const ValueKey('clear-app-diagnostics')));
+          await tester.pumpAndSettle();
+        },
+      );
+    });
+
+    testWidgets('keep running ($theme)', (tester) async {
+      mockKeepAlive(maker: 'Xiaomi', battery: true);
+      await _shot(
+        tester,
+        'system_keep_running',
+        light: light,
+        home: const KeepRunningScreen(),
+      );
+    });
+
+    testWidgets('keep running all set ($theme)', (tester) async {
+      mockKeepAlive(maker: 'Google', battery: true);
+      await _shot(
+        tester,
+        'system_keep_running_set',
+        light: light,
+        home: const KeepRunningScreen(),
+      );
+    });
+
+    testWidgets('server capabilities ($theme)', (tester) async {
+      final controller = await systemController(
+        codexServerCapabilities,
+        usageStatistics: false,
+      );
+      addTearDown(controller.dispose);
+      await _shot(
+        tester,
+        'system_server_capabilities',
+        light: light,
+        home: ServerCapabilitiesScreen(controller: controller),
+      );
+    });
+  }
+
+  testWidgets('about wide (dark)', (tester) async {
+    await _shot(
+      tester,
+      'system_about',
+      light: false,
+      size: _wide,
+      home: const AboutScreen(),
+    );
+  });
+
+  testWidgets('app diagnostics wide (dark)', (tester) async {
+    final controller = await systemController(codexServerCapabilities);
+    addTearDown(controller.dispose);
+    recordSampleErrors(controller);
+    recordSampleTimings();
+    await _shot(
+      tester,
+      'system_app_diagnostics',
+      light: false,
+      size: _wide,
+      home: AppDiagnosticsScreen(controller: controller),
+    );
+  });
+
+  testWidgets('server capabilities wide (dark)', (tester) async {
+    final controller = await systemController(
+      codexServerCapabilities,
+      usageStatistics: false,
+    );
+    addTearDown(controller.dispose);
+    await _shot(
+      tester,
+      'system_server_capabilities',
+      light: false,
+      size: _wide,
+      home: ServerCapabilitiesScreen(controller: controller),
+    );
+  });
+
+  testWidgets('keep running wide (light)', (tester) async {
+    mockKeepAlive(maker: 'Xiaomi', battery: true);
+    await _shot(
+      tester,
+      'system_keep_running',
+      light: true,
+      size: _wide,
+      home: const KeepRunningScreen(),
+    );
+  });
+}

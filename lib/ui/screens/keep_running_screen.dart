@@ -12,9 +12,8 @@ import '../../platform/keep_alive_advice.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
 
-Future<void> openKeepRunningScreen(BuildContext context) => Navigator.of(
-  context,
-).push(MaterialPageRoute<void>(builder: (_) => const KeepRunningScreen()));
+Future<void> openKeepRunningScreen(BuildContext context) =>
+    pushKitPage<void>(context, (_) => const KeepRunningScreen());
 
 /// The step's words for [maker]'s phones.
 ({String title, String detail}) keepAliveStepText(
@@ -59,6 +58,13 @@ Future<void> openKeepRunningScreen(BuildContext context) => Navigator.of(
 /// so Android leaves the app (and the OpenCode and AI Team inside it)
 /// running. Reached from the Settings row and from the notice after Android
 /// closed the app; it never opens by itself.
+///
+/// Built from kit parts only (screen-system-1): one list of steps ordered
+/// by what is left to do (a step already allowed moves to the end with its
+/// word), "You're set" once nothing checkable is left, the heat pause, and
+/// the limits Android keeps even then (the daily background budget on
+/// Android 15 and newer). A settings screen the phone lacks is said in
+/// place, not in a snackbar.
 class KeepRunningScreen extends ConsumerStatefulWidget {
   const KeepRunningScreen({super.key});
 
@@ -69,6 +75,7 @@ class KeepRunningScreen extends ConsumerStatefulWidget {
 class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
     with WidgetsBindingObserver {
   KeepAliveInfo? _info;
+  bool _openFailed = false;
 
   @override
   void initState() {
@@ -95,24 +102,16 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
   }
 
   Future<void> _open(KeepAliveSetting setting) async {
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    final failed = lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).keepRunningOpenFailed;
     final opened = await ref
         .read(appLifecycleBridgeProvider)
         .openKeepAliveSetting(setting);
-    if (!opened) {
-      messenger
-        ?..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(failed)));
-    }
+    if (mounted) setState(() => _openFailed = !opened);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     final info = _info;
     final maker = info == null
         ? PhoneMaker.other
@@ -120,54 +119,109 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
     final makerName = (info?.manufacturer.trim().isNotEmpty ?? false)
         ? info!.manufacturer.trim()
         : l10n.keepRunningThisPhone;
-    final muted = theme.textTheme.bodyMedium?.copyWith(
-      color: AppTheme.mutedOf(theme),
-      height: 1.4,
-    );
+    final batteryAllowed = info?.batteryOptimizationIgnored ?? false;
+    // On stock Android, App info › Battery › Unrestricted is the same switch
+    // as the battery exemption, so once it is allowed nothing is left that
+    // the app cannot check. Other makers add their own screens, which the
+    // app cannot read, so they never get "You're set".
+    final allSet = maker == PhoneMaker.other && batteryAllowed;
+    final steps = [
+      for (final step in keepAliveSteps(maker))
+        if (!(allSet && step.kind == KeepAliveStepKind.background)) step,
+    ];
+    bool done(KeepAliveStep step) =>
+        step.kind == KeepAliveStepKind.battery && batteryAllowed;
+    // One list, what is left first; a done step keeps its place in the
+    // maker's order among the done ones (owner rule: no state sections).
+    final ordered = [
+      for (final step in steps)
+        if (!done(step)) step,
+      for (final step in steps)
+        if (done(step)) step,
+    ];
     Widget rails(Widget child) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
       child: child,
     );
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.keepRunningTitle)),
-      body: KitScreen(
-        loading: info == null,
-        loadingLabel: l10n.keepRunningTitle,
-        body: info == null
-            ? const SizedBox.shrink()
-            : ListView(
-                padding: EdgeInsets.only(
-                  top: 16,
-                  bottom: KitScreen.endPadding(context),
+    return KitScreen(
+      topBar: KitTopBar(title: l10n.keepRunningTitle),
+      width: KitScreenWidth.reading,
+      loading: info == null,
+      loadingLabel: l10n.keepRunningTitle,
+      body: info == null
+          ? const SizedBox.shrink()
+          : ListView(
+              key: const ValueKey('keep-running-list'),
+              padding: EdgeInsetsDirectional.only(
+                top: tokens.space4,
+                bottom: KitScreen.endPadding(context),
+              ),
+              children: [
+                rails(
+                  KitText(
+                    l10n.keepRunningIntro(KitBidi.auto(makerName)),
+                    key: const ValueKey('keep-running-intro'),
+                  ),
                 ),
-                children: [
+                if (allSet) ...[
+                  SizedBox(height: tokens.space3),
                   rails(
-                    Text(
-                      l10n.keepRunningIntro(makerName),
-                      key: const ValueKey('keep-running-intro'),
-                      style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+                    KitNotice(
+                      key: const ValueKey('keep-running-done'),
+                      tone: AppStatusTone.ok,
+                      icon: AppIconography.checkCircle,
+                      title: l10n.keepRunningAllSetTitle,
+                      message: l10n.keepRunningAllSetBody,
+                      liveRegion: false,
                     ),
                   ),
-                  if (maker.closesOnSwipe) ...[
-                    const SizedBox(height: 12),
-                    rails(
-                      KitNotice(
-                        key: const ValueKey('keep-running-swipe'),
-                        tone: AppStatusTone.attention,
-                        message: l10n.keepRunningSwipeWarning,
-                        liveRegion: false,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  for (final step in keepAliveSteps(maker))
-                    _stepRow(context, l10n, step, maker, info),
-                  _ThermalGuardRow(l10n: l10n),
-                  const SizedBox(height: 16),
-                  rails(Text(l10n.keepRunningFootnote, style: muted)),
                 ],
-              ),
-      ),
+                if (maker.closesOnSwipe) ...[
+                  SizedBox(height: tokens.space3),
+                  rails(
+                    KitNotice(
+                      key: const ValueKey('keep-running-swipe'),
+                      icon: AppIconography.warning,
+                      message: l10n.keepRunningSwipeWarning,
+                      liveRegion: false,
+                    ),
+                  ),
+                ],
+                SizedBox(height: tokens.space4),
+                KitRowGroup(
+                  children: [
+                    for (final step in ordered)
+                      _stepRow(context, l10n, step, maker, done(step)),
+                  ],
+                ),
+                if (_openFailed) ...[
+                  SizedBox(height: tokens.space3),
+                  rails(
+                    KitNotice(
+                      key: const ValueKey('keep-running-open-failed'),
+                      icon: AppIconography.info,
+                      message: l10n.keepRunningOpenFailed,
+                    ),
+                  ),
+                ],
+                _ThermalGuardGroup(l10n: l10n),
+                SizedBox(height: tokens.sectionGap),
+                rails(
+                  KitText(
+                    l10n.keepRunningDailyLimit,
+                    key: const ValueKey('keep-running-daily-limit'),
+                    role: KitTextRole.secondary,
+                  ),
+                ),
+                SizedBox(height: tokens.space2),
+                rails(
+                  KitText(
+                    l10n.keepRunningFootnote,
+                    role: KitTextRole.secondary,
+                  ),
+                ),
+              ],
+            ),
     );
   }
 
@@ -176,11 +230,9 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
     AppLocalizations l10n,
     KeepAliveStep step,
     PhoneMaker maker,
-    KeepAliveInfo info,
+    bool allowed,
   ) {
-    final allowed =
-        step.kind == KeepAliveStepKind.battery &&
-        info.batteryOptimizationIgnored;
+    final roles = KitTokens.of(context).roles;
     final text = keepAliveStepText(l10n, step, maker, batteryAllowed: allowed);
     final icon = switch (step.kind) {
       KeepAliveStepKind.battery =>
@@ -197,27 +249,21 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
       key: ValueKey('keep-running-${step.kind.name}'),
       leading: KitRow.icon(
         context,
-        icon,
-        color: allowed ? AppTheme.successOf(Theme.of(context)) : null,
+        allowed ? AppIconography.check : icon,
+        color: allowed ? roles.success : null,
       ),
       title: text.title,
       titleMaxLines: 2,
-      supporting: TextSpan(text: text.detail),
+      supporting: TextSpan(
+        text: text.detail,
+        style: allowed
+            ? KitTokens.of(context).rowSupporting.copyWith(color: roles.success)
+            : null,
+      ),
       supportingMaxLines: 4,
-      trailing: allowed
-          ? const SizedBox.square(
-              dimension: 48,
-              child: Icon(AppIconography.check, size: 20),
-            )
-          : opens
-          ? Tooltip(
-              message: l10n.keepRunningOpen,
-              child: const SizedBox.square(
-                dimension: 48,
-                child: Icon(AppIconography.externalLink, size: 20),
-              ),
-            )
-          : null,
+      // The row opens Android's own screen for this step; the value says
+      // so, since the chevron alone would promise a page in this app.
+      trailing: opens ? KitRowValue(l10n.keepRunningOpen) : null,
       onTap: opens ? () => unawaited(_open(setting)) : null,
     );
   }
@@ -226,27 +272,35 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
 /// "Pause the AI Team when the phone is hot" (on by default): Android keeps
 /// a hot phone running but slow, so the guard pauses the team instead and
 /// resumes it once the phone has cooled. Only where the guard runs.
-class _ThermalGuardRow extends ConsumerWidget {
-  const _ThermalGuardRow({required this.l10n});
+class _ThermalGuardGroup extends ConsumerWidget {
+  const _ThermalGuardGroup({required this.l10n});
 
   final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = KitTokens.of(context);
     return ValueListenableBuilder<ThermalGuard?>(
       valueListenable: ref.watch(thermalGuardSlotProvider),
       builder: (context, guard, _) {
         if (guard == null) return const SizedBox.shrink();
-        return ListenableBuilder(
-          listenable: guard,
-          builder: (context, _) => KitSwitchRow(
-            key: const ValueKey('keep-running-thermal'),
-            switchKey: const ValueKey('keep-running-thermal-switch'),
-            leading: KitRow.icon(context, AppIconography.pause),
-            title: l10n.thermalGuardSetting,
-            supporting: l10n.thermalGuardSettingDetail,
-            value: guard.enabled,
-            onChanged: (value) => unawaited(guard.setEnabled(value)),
+        return Padding(
+          padding: EdgeInsetsDirectional.only(top: tokens.sectionGap),
+          child: ListenableBuilder(
+            listenable: guard,
+            builder: (context, _) => KitRowGroup(
+              children: [
+                KitSwitchRow(
+                  key: const ValueKey('keep-running-thermal'),
+                  switchKey: const ValueKey('keep-running-thermal-switch'),
+                  leading: KitRow.icon(context, AppIconography.pause),
+                  title: l10n.thermalGuardSetting,
+                  supporting: l10n.thermalGuardSettingDetail,
+                  value: guard.enabled,
+                  onChanged: (value) => unawaited(guard.setEnabled(value)),
+                ),
+              ],
+            ),
           ),
         );
       },
