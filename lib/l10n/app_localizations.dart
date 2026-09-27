@@ -33688,6 +33688,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{rows, plural, =1{Table, 1 row} other{Table, {rows} rows}}'**
   String kitMarkdownTable(int rows);
+
+  /// Cloud environments top bar: reload the environments and providers.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get managedWorkspacesRefresh;
+
+  /// Cloud environments: the server finished looking for environments its providers already have.
+  ///
+  /// In en, this message translates to:
+  /// **'Discovery finished'**
+  String get managedWorkspacesDiscovered;
+
+  /// Cloud environments: title when looking for existing environments failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t discover environments'**
+  String get managedWorkspacesDiscoverFailed;
+
+  /// Cloud environments: title when creating an environment failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t create the environment'**
+  String get managedWorkspacesCreateFailed;
+
+  /// Cloud environments: title when switching to an environment failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t open {name}'**
+  String managedWorkspacesOpenFailed(String name);
+
+  /// Cloud environments: the remove confirmation question.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String managedWorkspacesRemoveTitle(String name);
+
+  /// Cloud environments: what removing does; provider is the provider name.
+  ///
+  /// In en, this message translates to:
+  /// **'The server asks {provider} to delete this environment and what is in it.'**
+  String managedWorkspacesRemoveBody(String provider);
+
+  /// Cloud environments remove confirmation: consequence when the environment is the open one.
+  ///
+  /// In en, this message translates to:
+  /// **'It is open now, so the app goes back to the project folder first.'**
+  String get managedWorkspacesRemoveLeavesFirst;
+
+  /// Cloud environments remove confirmation: what happens to conversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations stay in history but can no longer open it.'**
+  String get managedWorkspacesRemoveHistoryStays;
+
+  /// Cloud environments: the one verb for removing an environment (menu item and confirm button).
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get managedWorkspacesRemoveAction;
+
+  /// Cloud environments: an environment was removed.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was removed'**
+  String managedWorkspacesRemoved(String name);
+
+  /// Cloud environments: section of the server providers that can make environments.
+  ///
+  /// In en, this message translates to:
+  /// **'Providers'**
+  String get managedWorkspacesProviders;
+
+  /// Cloud environments create sheet: label above the provider choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get managedWorkspacesProvider;
+
+  /// Cloud environments: the providers could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t load providers'**
+  String get managedWorkspacesProvidersFailed;
+
+  /// Cloud environments: the server has no provider that can make environments.
+  ///
+  /// In en, this message translates to:
+  /// **'No provider set up'**
+  String get managedWorkspacesNoProviderTitle;
+
+  /// Cloud environments: where a provider is set up.
+  ///
+  /// In en, this message translates to:
+  /// **'This server has no cloud environment provider. Add one to OpenCode’s config on the server, then refresh.'**
+  String get managedWorkspacesNoProviderBody;
+
+  /// Cloud environments: empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Environments for {project} appear here. Create one, or discover the ones a provider already has.'**
+  String managedWorkspacesEmptyBody(String project);
+
+  /// Cloud environments: the list could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t load cloud environments'**
+  String get managedWorkspacesLoadFailed;
+
+  /// Cloud environments: an environment is being made.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating a cloud environment'**
+  String get managedWorkspacesCreating;
+
+  /// Cloud environments: how long creating takes.
+  ///
+  /// In en, this message translates to:
+  /// **'This usually takes a few minutes. It opens here when it’s ready.'**
+  String get managedWorkspacesCreatingBody;
+
+  /// Cloud environments create sheet: how long creating takes, before it starts.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating one usually takes a few minutes. It opens here when it’s ready.'**
+  String get managedWorkspacesCreateTakes;
+
+  /// Cloud environments create sheet: branch field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get managedWorkspacesBranchLabel;
+
+  /// Cloud environments create sheet: branch field helper.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to use the provider’s default branch.'**
+  String get managedWorkspacesBranchHelper;
+
+  /// Cloud environments: state word for the environment open now.
+  ///
+  /// In en, this message translates to:
+  /// **'In use'**
+  String get managedWorkspacesInUse;
+
+  /// Cloud environments row menu: copy the environment id.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy ID'**
+  String get managedWorkspacesCopyId;
+
+  /// Project health: what Initialize Git does.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs git init here. Nothing is committed.'**
+  String get projectHealthGitInitSupporting;
+
+  /// Project health: the Initialize Git row action.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up'**
+  String get projectHealthSetUp;
+
+  /// Project health: language servers running out of all.
+  ///
+  /// In en, this message translates to:
+  /// **'{running} of {total} running'**
+  String projectHealthRunningOf(int running, int total);
+
+  /// Project health: formatters turned on out of all.
+  ///
+  /// In en, this message translates to:
+  /// **'{on} of {total} on'**
+  String projectHealthOnOf(int on, int total);
+
+  /// Project health: a language server is running.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get projectHealthRunning;
+
+  /// Project health: a language server is not running.
+  ///
+  /// In en, this message translates to:
+  /// **'Not running'**
+  String get projectHealthNotRunning;
+
+  /// Project health: spoken form of +added -removed line counts.
+  ///
+  /// In en, this message translates to:
+  /// **'{added} lines added, {removed} removed'**
+  String projectHealthLineCounts(int added, int removed);
+
+  /// New folder dialog: where the folder is made.
+  ///
+  /// In en, this message translates to:
+  /// **'Made in {directory} on this phone and opened as the project.'**
+  String projectFolderCreateHelper(String directory);
+
+  /// Open folder: the typed folder does not exist.
+  ///
+  /// In en, this message translates to:
+  /// **'No folder there'**
+  String get projectFolderMissingTitle;
+
+  /// Folder flows: title when making a folder failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t create the folder'**
+  String get projectFolderCreateFailedTitle;
+
+  /// Folder flows: title when opening a folder failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t open the folder'**
+  String get projectFolderOpenFailedTitle;
 }
 
 class _AppLocalizationsDelegate

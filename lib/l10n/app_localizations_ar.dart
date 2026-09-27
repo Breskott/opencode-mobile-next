@@ -21505,4 +21505,138 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get managedWorkspacesRefresh => 'Refresh';
+
+  @override
+  String get managedWorkspacesDiscovered => 'Discovery finished';
+
+  @override
+  String get managedWorkspacesDiscoverFailed =>
+      'Couldn’t discover environments';
+
+  @override
+  String get managedWorkspacesCreateFailed => 'Couldn’t create the environment';
+
+  @override
+  String managedWorkspacesOpenFailed(String name) {
+    return 'Couldn’t open $name';
+  }
+
+  @override
+  String managedWorkspacesRemoveTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String managedWorkspacesRemoveBody(String provider) {
+    return 'The server asks $provider to delete this environment and what is in it.';
+  }
+
+  @override
+  String get managedWorkspacesRemoveLeavesFirst =>
+      'It is open now, so the app goes back to the project folder first.';
+
+  @override
+  String get managedWorkspacesRemoveHistoryStays =>
+      'Conversations stay in history but can no longer open it.';
+
+  @override
+  String get managedWorkspacesRemoveAction => 'Remove';
+
+  @override
+  String managedWorkspacesRemoved(String name) {
+    return '$name was removed';
+  }
+
+  @override
+  String get managedWorkspacesProviders => 'Providers';
+
+  @override
+  String get managedWorkspacesProvider => 'Provider';
+
+  @override
+  String get managedWorkspacesProvidersFailed => 'Couldn’t load providers';
+
+  @override
+  String get managedWorkspacesNoProviderTitle => 'No provider set up';
+
+  @override
+  String get managedWorkspacesNoProviderBody =>
+      'This server has no cloud environment provider. Add one to OpenCode’s config on the server, then refresh.';
+
+  @override
+  String managedWorkspacesEmptyBody(String project) {
+    return 'Environments for $project appear here. Create one, or discover the ones a provider already has.';
+  }
+
+  @override
+  String get managedWorkspacesLoadFailed => 'Couldn’t load cloud environments';
+
+  @override
+  String get managedWorkspacesCreating => 'Creating a cloud environment';
+
+  @override
+  String get managedWorkspacesCreatingBody =>
+      'This usually takes a few minutes. It opens here when it’s ready.';
+
+  @override
+  String get managedWorkspacesCreateTakes =>
+      'Creating one usually takes a few minutes. It opens here when it’s ready.';
+
+  @override
+  String get managedWorkspacesBranchLabel => 'Branch';
+
+  @override
+  String get managedWorkspacesBranchHelper =>
+      'Leave empty to use the provider’s default branch.';
+
+  @override
+  String get managedWorkspacesInUse => 'In use';
+
+  @override
+  String get managedWorkspacesCopyId => 'Copy ID';
+
+  @override
+  String get projectHealthGitInitSupporting =>
+      'Runs git init here. Nothing is committed.';
+
+  @override
+  String get projectHealthSetUp => 'Set up';
+
+  @override
+  String projectHealthRunningOf(int running, int total) {
+    return '$running of $total running';
+  }
+
+  @override
+  String projectHealthOnOf(int on, int total) {
+    return '$on of $total on';
+  }
+
+  @override
+  String get projectHealthRunning => 'Running';
+
+  @override
+  String get projectHealthNotRunning => 'Not running';
+
+  @override
+  String projectHealthLineCounts(int added, int removed) {
+    return '$added lines added, $removed removed';
+  }
+
+  @override
+  String projectFolderCreateHelper(String directory) {
+    return 'Made in $directory on this phone and opened as the project.';
+  }
+
+  @override
+  String get projectFolderMissingTitle => 'No folder there';
+
+  @override
+  String get projectFolderCreateFailedTitle => 'Couldn’t create the folder';
+
+  @override
+  String get projectFolderOpenFailedTitle => 'Couldn’t open the folder';
 }

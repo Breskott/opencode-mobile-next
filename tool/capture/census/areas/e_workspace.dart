@@ -637,13 +637,12 @@ final eWorkspaceArea = CensusArea(
         kit,
         (conn) => ManagedWorkspacesScreen(controller: conn, project: eProject),
       );
-      await kit.tap(
-        find.descendant(
-          of: find.byKey(const ValueKey('managed-workspace-wrk_perf')),
-          matching: find.byTooltip('Environment actions'),
-        ),
+      // The row's rarer acts open on long-press (screen-work-3, KIT-28).
+      await kit.tester.longPress(
+        find.byKey(const ValueKey('managed-workspace-wrk_perf')),
       );
-      await kit.tap(find.text('Delete').last);
+      await kit.tester.pumpAndSettle();
+      await kit.tapKey('environment-menu-remove');
       kit.expectVisible(
         find.byKey(const ValueKey('confirm-remove-managed-workspace')),
       );

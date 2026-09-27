@@ -10,6 +10,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/screens/project_folder_actions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -166,11 +167,15 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  // The folder shown is a mono KitText (the browser is kit-only).
   String shownPath(WidgetTester tester) => tester
-      .widget<Text>(find.byKey(const ValueKey('folder-browser-path')))
-      .data!;
+      .widget<KitText>(find.byKey(const ValueKey('folder-browser-path')))
+      .text;
 
   Future<void> tapKey(WidgetTester tester, String key) async {
+    // Controls below the folders sit in the sheet's scrolling body.
+    await tester.ensureVisible(find.byKey(ValueKey(key)));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(ValueKey(key)));
     await tester.pumpAndSettle();
   }
@@ -278,7 +283,8 @@ void main() {
   ) async {
     await openSheet(tester);
     final name = find.byKey(const ValueKey('in-app-new-project-name'));
-    await tester.tap(name);
+    await tester.ensureVisible(name);
+    await tester.showKeyboard(name);
     await tester.pump();
     tester.view.viewInsets = const FakeViewPadding(bottom: 320);
     addTearDown(tester.view.resetViewInsets);
@@ -343,10 +349,13 @@ void main() {
     await openSheet(tester);
     await tapKey(tester, 'folder-browse-work');
     await tapKey(tester, 'in-app-enter-path');
-    final field = tester.widget<TextField>(
-      find.byKey(const ValueKey('open-folder-path')),
+    final field = tester.widget<EditableText>(
+      find.descendant(
+        of: find.byKey(const ValueKey('open-folder-path')),
+        matching: find.byType(EditableText),
+      ),
     );
-    expect(field.controller!.text, '/root/projects/work/');
+    expect(field.controller.text, '/root/projects/work/');
   });
 
   testWidgets('fits 320 dp at twice the text size, in Arabic, paths left to '
@@ -356,19 +365,18 @@ void main() {
     addTearDown(tester.view.reset);
     await openSheet(tester, locale: const Locale('ar'), textScale: 2);
     expect(tester.takeException(), isNull);
-    final path = tester.widget<Text>(
-      find.byKey(const ValueKey('folder-browser-path')),
+    // Paths are laid out left to right even in Arabic.
+    final path = tester.widget<RichText>(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('folder-browser-path')),
+            matching: find.byType(RichText),
+          )
+          .first,
     );
     expect(path.textDirection, TextDirection.ltr);
-    // The folders scroll on their own, the actions stay below them.
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('folder-browse-work')),
-      60,
-      scrollable: find.descendant(
-        of: find.byKey(const ValueKey('folder-browser-list')),
-        matching: find.byType(Scrollable),
-      ),
-    );
+    // The folders sit in the sheet's scrolling body; its actions stay
+    // pinned below it.
     await tester.ensureVisible(
       find.byKey(const ValueKey('folder-browse-work')),
     );
