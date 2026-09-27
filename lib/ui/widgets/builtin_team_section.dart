@@ -21,6 +21,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../builtin/builtin_linux.dart' show BuiltinLinuxException;
 import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../builtin/setup/aiteam_scripts.dart';
 import '../../builtin/team/builtin_team.dart';
@@ -36,7 +37,9 @@ import '../kit/kit_details_fold.dart';
 import '../kit/kit_illustration.dart';
 import '../kit/kit_notice.dart';
 import '../kit/kit_progress.dart';
+import '../kit/kit_redact.dart';
 import '../kit/kit_row.dart';
+import '../kit/kit_sheet.dart';
 import '../kit/kit_status_mark.dart';
 import '../kit/kit_surface.dart';
 import '../kit/kit_text.dart';
@@ -58,6 +61,25 @@ BuiltinTeam? _team;
 /// The in-app team the phone's screens share (this section and the team's
 /// ready page, [TeamPhoneReadyScreen]), so one turn-on runs at a time.
 BuiltinTeam get sharedBuiltinTeam => _sharedTeam;
+
+/// After the in-app team was turned off or removed (P1.4): every saved
+/// profile whose AI Team config points at the in-app team loses it, with
+/// the plugin's cached state, so no screen keeps reading a team that is
+/// gone. A remote or Termux team is left as it is.
+Future<void> forgetBuiltinTeam(ConnectionController connection) async {
+  for (final profile in [...connection.store.profiles]) {
+    if (!BuiltinTeam.isBuiltinConfig(profile.orchestration)) continue;
+    final current = connection.orchestration;
+    if (current != null && current.profileId == profile.id) {
+      await current.remove();
+    } else {
+      await connection.orchestrationStore.sweep(profile.id);
+    }
+    profile.orchestration = null;
+    await connection.store.upsert(profile);
+  }
+  connection.syncOrchestration();
+}
 
 /// Opens Add tools with AI Team switched on and, when the person goes
 /// ahead, installs it and turns it on for the project: the one "Set up AI
@@ -367,7 +389,57 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
     );
   }
 
-  Future<void> _stop() => _run(_team.stop);
+  /// Turns the team off for good (P1.4): it stops, and stays off when the
+  /// app comes back, until the person turns it on again. Asks first; the
+  /// question says what stays. The profile then loses the team's config,
+  /// so the Team card and the AI Team screens stop reading a team that is
+  /// not running.
+  Future<void> _turnOff() async {
+    if (_working) return;
+    final l10n = _copy(context);
+    final confirmed = await showKitConfirm(
+      context,
+      title: l10n.aiteamComponentTurnOffTitle,
+      body: l10n.aiteamComponentTurnOffBody,
+      confirmLabel: l10n.aiteamComponentTurnOff,
+      kind: KitConfirmKind.stop,
+      icon: AppIconography.stop,
+      consequenceItems: [
+        KitConsequence(
+          l10n.aiteamComponentTurnOffKept,
+          mark: KitConsequenceMark.kept,
+        ),
+      ],
+      sheetKey: const ValueKey('builtin-team-turn-off-sheet'),
+      confirmKey: const ValueKey('builtin-team-turn-off-confirm'),
+    );
+    if (!confirmed || !mounted) return;
+    final connection = widget.connection;
+    setState(() {
+      _busy = true;
+      _error = null;
+      _detail = null;
+    });
+    try {
+      await _team.turnOff();
+      await forgetBuiltinTeam(connection);
+    } catch (error) {
+      // Plain words; the bridge's own (redacted) text only under Details.
+      if (mounted) {
+        setState(() {
+          _error = l10n.aiteamComponentTurnOffFailed;
+          _detail = error is BuiltinLinuxException
+              ? error.message
+              : KitRedact.text('$error');
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+        await _load();
+      }
+    }
+  }
 
   /// Tries again what the origin's hook does after every merge; the section
   /// then shows the new outcome (still left alone when it is not safe).
@@ -627,14 +699,15 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
           tertiary.add(bring);
         }
       }
-      // Stopping ends the team's work on this phone: a quiet action, last.
-      if (on && state.running) {
+      // Turning off ends the team's work on this phone until it is turned
+      // on again: a quiet action, last.
+      if (on) {
         tertiary.add(
           KitAction(
-            key: const ValueKey('builtin-team-stop'),
-            label: l10n.aiteamComponentStop,
+            key: const ValueKey('builtin-team-turn-off'),
+            label: l10n.aiteamComponentTurnOff,
             icon: AppIconography.stop,
-            onPressed: _stop,
+            onPressed: () => unawaited(_turnOff()),
           ),
         );
       }

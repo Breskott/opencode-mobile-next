@@ -19345,9 +19345,25 @@
   "@aiteamComponentStart": {
     "description": "Button that starts the in-app team"
   },
-  "aiteamComponentStop": "Stop AI Team",
-  "@aiteamComponentStop": {
-    "description": "Button that stops the in-app team"
+  "aiteamComponentTurnOff": "Turn off AI Team",
+  "@aiteamComponentTurnOff": {
+    "description": "In-app AI Team section: the quiet action that stops the team for good, until it is turned on again (asks first)"
+  },
+  "aiteamComponentTurnOffTitle": "Turn off AI Team?",
+  "@aiteamComponentTurnOffTitle": {
+    "description": "In-app AI Team section: the turn-off question's title"
+  },
+  "aiteamComponentTurnOffBody": "The team stops and stays off until you turn it on again.",
+  "@aiteamComponentTurnOffBody": {
+    "description": "In-app AI Team section: the turn-off question's body"
+  },
+  "aiteamComponentTurnOffKept": "Its tasks and settings, and your projects, stay",
+  "@aiteamComponentTurnOffKept": {
+    "description": "In-app AI Team section: the turn-off question's line saying what stays"
+  },
+  "aiteamComponentTurnOffFailed": "AI Team could not be turned off. Try again, or restart the app.",
+  "@aiteamComponentTurnOffFailed": {
+    "description": "In-app AI Team section: turning the team off failed; the technical text is folded under Details"
   },
   "aiteamComponentFailed": "AI Team could not start: {reason}",
   "@aiteamComponentFailed": {
@@ -29612,6 +29628,90 @@
   "@thisPhoneBusy": {
     "description": "This phone: why a row is off while OpenCode starts, stops or installs"
   },
+  "thisPhoneRemoveTool": "Remove {tool}",
+  "@thisPhoneRemoveTool": {
+    "description": "This phone: the destructive row, and its question's confirm button, that removes one installed tool, e.g. 'Remove Python'",
+    "placeholders": {
+      "tool": {
+        "type": "String"
+      }
+    }
+  },
+  "thisPhoneRemoveToolTitle": "Remove {tool} from this phone?",
+  "@thisPhoneRemoveToolTitle": {
+    "description": "This phone: the title of the question before one tool is removed",
+    "placeholders": {
+      "tool": {
+        "type": "String"
+      }
+    }
+  },
+  "thisPhoneRemoveToolBody": "About {size} comes back. You can add it again from Add tools.",
+  "@thisPhoneRemoveToolBody": {
+    "description": "This phone: the remove-a-tool question's body with the measured space it frees, e.g. '180.2 MB'. The title names the tool.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "thisPhoneRemoveToolBodyUnmeasured": "You can add it again from Add tools.",
+  "@thisPhoneRemoveToolBodyUnmeasured": {
+    "description": "This phone: the remove-a-tool question's body when the space could not be measured. The title names the tool."
+  },
+  "thisPhoneRemoveToolNeededBy": "Needed by {tools}",
+  "@thisPhoneRemoveToolNeededBy": {
+    "description": "This phone: why a tool cannot be removed now: what still uses it, e.g. 'Needed by AI Team'",
+    "placeholders": {
+      "tools": {
+        "type": "String"
+      }
+    }
+  },
+  "thisPhoneRemoveToolDetail": "Deletes it from this phone. Your projects stay.",
+  "@thisPhoneRemoveToolDetail": {
+    "description": "This phone: under 'Remove <tool>' for a tool with no line of its own: what removing does"
+  },
+  "thisPhoneRemovePythonDetail": "Deletes pip and venv. Python and your projects stay.",
+  "@thisPhoneRemovePythonDetail": {
+    "description": "This phone: under 'Remove Python': what removing does"
+  },
+  "thisPhoneRemovePythonLost": "pip and venv are deleted, with the packages only they used",
+  "@thisPhoneRemovePythonLost": {
+    "description": "Remove Python question: what goes"
+  },
+  "thisPhoneRemovePythonKept": "Python itself and your projects stay",
+  "@thisPhoneRemovePythonKept": {
+    "description": "Remove Python question: what stays"
+  },
+  "thisPhoneRemoveTeamDetail": "Deletes the team's programs, tasks and settings. Projects stay.",
+  "@thisPhoneRemoveTeamDetail": {
+    "description": "This phone: under 'Remove AI Team': what removing does"
+  },
+  "thisPhoneRemoveTeamLost": "The team's programs, tasks and settings are deleted",
+  "@thisPhoneRemoveTeamLost": {
+    "description": "Remove AI Team question: what goes"
+  },
+  "thisPhoneRemoveTeamLostWork": "Team work not yet brought into your projects is lost",
+  "@thisPhoneRemoveTeamLostWork": {
+    "description": "Remove AI Team question: the team's own copies of the projects on this phone go too"
+  },
+  "thisPhoneRemoveTeamKept": "Your project files and their git history stay",
+  "@thisPhoneRemoveTeamKept": {
+    "description": "Remove AI Team question: what stays"
+  },
+  "thisPhoneRemoveVoiceDetail": "Deletes the speech model. Voice typing stops until you add it again.",
+  "@thisPhoneRemoveVoiceDetail": {
+    "description": "This phone: under 'Remove Voice typing': what removing does"
+  },
+  "thisPhoneRemoveVoiceLost": "Voice typing stops until you add it again",
+  "@thisPhoneRemoveVoiceLost": {
+    "description": "Remove Voice typing question: what goes with the model"
+  },
+  "thisPhoneRemoveToolKept": "Your projects stay",
+  "@thisPhoneRemoveToolKept": {
+    "description": "Remove a tool question: what stays, for a tool with no line of its own"
+  },
   "phoneSetupTermuxAllowHow": "In Termux, paste the copied line and press Enter.",
   "@phoneSetupTermuxAllowHow": {
     "description": "Termux setup checklist: the instruction under 'Connect Termux once' while it waits for the person"
@@ -29636,7 +29736,7 @@
   "@phoneSetupTermuxCost": {
     "description": "Phone setup start: the cost line under 'Use Termux instead', said before anything installs"
   },
-  "removeFromPhoneKeepBody": "OpenCode and its tools are removed and {size} comes back. Your projects stay on this phone and come back when you set up again.",
+  "removeFromPhoneKeepBody": "OpenCode and its tools are removed and {size} comes back.",
   "@removeFromPhoneKeepBody": {
     "description": "Remove from this phone: the default choice's body, with the space freed, e.g. '1.2 GB'",
     "placeholders": {
@@ -29645,13 +29745,30 @@
       }
     }
   },
-  "removeFromPhoneKeepBodyUnmeasured": "OpenCode and its tools are removed. Your projects stay on this phone and come back when you set up again.",
+  "removeFromPhoneKeepBodyUnmeasured": "OpenCode and its tools are removed.",
   "@removeFromPhoneKeepBodyUnmeasured": {
     "description": "Remove from this phone: the default choice's body when the space could not be measured"
   },
   "removeFromPhoneKeepConfirm": "Remove OpenCode, keep my projects",
   "@removeFromPhoneKeepConfirm": {
     "description": "Remove from this phone: the default confirm button"
+  },
+  "removeFromPhoneKeepLost": "Conversations and settings inside OpenCode are deleted",
+  "@removeFromPhoneKeepLost": {
+    "description": "Remove from this phone: the default choice's line saying what it deletes"
+  },
+  "removeFromPhoneKeepKept": "Your projects stay and come back when you set up again",
+  "@removeFromPhoneKeepKept": {
+    "description": "Remove from this phone: the default choice's line saying what stays, before the projects were measured"
+  },
+  "removeFromPhoneKeepKeptSize": "Your projects ({size}) stay and come back when you set up again",
+  "@removeFromPhoneKeepKeptSize": {
+    "description": "Remove from this phone: the default choice's line saying what stays, with the projects' measured size, e.g. '1.2 GB'",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
   },
   "removeFromPhoneDeleteAll": "Delete everything",
   "@removeFromPhoneDeleteAll": {
@@ -29673,6 +29790,10 @@
   "removeFromPhoneDeleteBodyUnmeasured": "OpenCode, its tools and every project on this phone are deleted. This cannot be undone.",
   "@removeFromPhoneDeleteBodyUnmeasured": {
     "description": "Remove from this phone: the heavy delete's body when the space could not be measured"
+  },
+  "removeFromPhoneDeleteLost": "Project files not saved anywhere else are lost for good",
+  "@removeFromPhoneDeleteLost": {
+    "description": "Remove from this phone: the heavy delete's line naming the loss"
   },
   "thisPhoneManage": "Manage This phone",
   "@thisPhoneManage": {
