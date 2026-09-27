@@ -52,7 +52,6 @@ import '../desktop/file_drop.dart';
 import '../desktop/shortcuts.dart';
 import '../search/search_index.dart';
 import '../widgets/connection_status_banner.dart';
-import '../widgets/confirm_sheet.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/diff_view.dart';
 import '../widgets/file_preview.dart';
@@ -3679,7 +3678,7 @@ class _ChatScreenState extends State<ChatScreen>
     if (_conn.isIsolated) return;
     if (_promptShelfBusy) return;
     final result = await Navigator.of(context).push<_PromptEditorResult>(
-      MaterialPageRoute<_PromptEditorResult>(
+      KitPageRoute<_PromptEditorResult>(
         fullscreenDialog: true,
         builder: (_) => _PromptEditorScreen(
           initialValue: _composer.value,
@@ -3741,7 +3740,7 @@ class _ChatScreenState extends State<ChatScreen>
 
   Future<void> _abort() async {
     if (_aborting) return;
-    if (!_conn.isIsolated) unawaited(HapticFeedback.mediumImpact());
+    if (!_conn.isIsolated) KitHaptics.commit(context);
     final location = _conn.locationRevision;
     final profileID = _conn.profile?.id;
     setState(() => _aborting = true);
@@ -3771,11 +3770,11 @@ class _ChatScreenState extends State<ChatScreen>
 
   Future<void> _share() async {
     final strings = _chatL10n(context);
-    final confirmed = await showConfirmSheet(
+    final confirmed = await showKitConfirm(
       context,
       icon: AppIconography.globe,
       title: strings.chatUiShareThisSession,
-      message: strings.chatUiAnyoneWithTheLinkCanViewThis,
+      body: strings.chatUiAnyoneWithTheLinkCanViewThis,
       confirmLabel: strings.chatUiShareSession,
     );
     if (!confirmed) return;
@@ -3789,25 +3788,30 @@ class _ChatScreenState extends State<ChatScreen>
         setState(() => _localShareUrl = url);
         await _conn.refreshSessions();
         if (!mounted) return;
-        var copied = true;
-        try {
-          await Clipboard.setData(ClipboardData(text: url));
-        } catch (_) {
-          copied = false;
-        }
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              copied
-                  ? strings.chatUiShareLinkCopied
-                  : strings.chatUiSessionSharedCopyTheVisibleLinkManually,
-            ),
-          ),
-        );
+        // The share banner shows the link; the copy is confirmed by the
+        // kit's tick and announcement, and only a failed copy says more.
+        await _copyShareLink(url);
       }
     } catch (error) {
       if (mounted) _showActionError(error);
+    }
+  }
+
+  /// Copies the public link. A clipboard that refuses it points at the
+  /// share banner, where the link stays visible.
+  Future<void> _copyShareLink(String url) async {
+    try {
+      await KitCopy.copy(
+        context,
+        url,
+        redact: false,
+        announcement: _chatL10n(context).chatUiShareLinkCopied,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      _showComposerNote(
+        _chatL10n(context).chatUiSessionSharedCopyTheVisibleLinkManually,
+      );
     }
   }
 
@@ -3819,15 +3823,9 @@ class _ChatScreenState extends State<ChatScreen>
       final repository = await _requireActionRepository();
       await repository.unshareSession(widget.sessionID);
       if (!mounted) return;
+      // The share banner leaves with the link: that is the confirmation.
       setState(() => _localShareUrl = null);
       await _conn.refreshSessions();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_chatL10n(context).chatUiSessionIsNoLongerShared),
-          ),
-        );
-      }
     } catch (error) {
       if (mounted) _showActionError(error);
     }
@@ -4006,8 +4004,24 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
+  /// The slash commands' display toggles: the transcript changes at once,
+  /// and the bar says which way and offers the way back.
   Future<void> _toggleReasoningDisplay() async {
-    final expanded = !_conn.transcriptReasoningExpanded;
+    final expanded = await _setReasoningDisplay(
+      !_conn.transcriptReasoningExpanded,
+    );
+    if (!mounted || expanded == null) return;
+    showKitUndo(
+      context,
+      message: expanded
+          ? _chatL10n(context).chatUiReasoningExpandedInTheTranscript
+          : _chatL10n(context).chatUiLongReasoningCollapsedInTheTranscript,
+      onUndo: () => _setReasoningDisplay(!expanded),
+    );
+  }
+
+  Future<bool?> _setReasoningDisplay(bool expanded) async {
+    if (!mounted) return null;
     // The transcript-wide choice is the new default for every reasoning
     // block, so per-part overrides are dropped instead of being silently
     // rewritten with the toggle's value. Rewriting them meant one flip
@@ -4019,30 +4033,19 @@ class _ChatScreenState extends State<ChatScreen>
       ),
     );
     await _conn.setTranscriptReasoningExpanded(expanded);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          expanded
-              ? _chatL10n(context).chatUiReasoningExpandedInTheTranscript
-              : _chatL10n(context).chatUiLongReasoningCollapsedInTheTranscript,
-        ),
-      ),
-    );
+    return mounted ? expanded : null;
   }
 
   Future<void> _toggleTimestampDisplay() async {
     final visible = !_conn.transcriptTimestampsVisible;
     await _conn.setTranscriptTimestampsVisible(visible);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          visible
-              ? _chatL10n(context).chatUiMessageTimestampsShown
-              : _chatL10n(context).chatUiMessageTimestampsHidden,
-        ),
-      ),
+    showKitUndo(
+      context,
+      message: visible
+          ? _chatL10n(context).chatUiMessageTimestampsShown
+          : _chatL10n(context).chatUiMessageTimestampsHidden,
+      onUndo: () => _conn.setTranscriptTimestampsVisible(!visible),
     );
   }
 
@@ -4130,13 +4133,13 @@ class _ChatScreenState extends State<ChatScreen>
       _awayFromLatest = false;
       _pinnedMessageCount = null;
     });
-    if (MediaQuery.disableAnimationsOf(context)) {
+    if (KitMotion.reduced(context)) {
       _messageScroll.jumpTo(index: 0);
     } else {
       _messageScroll.scrollTo(
         index: 0,
-        duration: const Duration(milliseconds: 360),
-        curve: Curves.easeOutCubic,
+        duration: KitMotion.standard,
+        curve: KitMotion.enter,
       );
     }
   }
@@ -4302,10 +4305,10 @@ class _ChatScreenState extends State<ChatScreen>
         await _messageScroll.scrollTo(
           index: listIndex,
           alignment: alignment,
-          duration: MediaQuery.disableAnimationsOf(context)
+          duration: KitMotion.reduced(context)
               ? Duration.zero
-              : const Duration(milliseconds: 360),
-          curve: Curves.easeOutCubic,
+              : KitMotion.standard,
+          curve: KitMotion.enter,
         );
       }
       if (findKey == null) return;
@@ -4338,9 +4341,8 @@ class _ChatScreenState extends State<ChatScreen>
         position.pixels +
             (position.axisDirection == AxisDirection.up ? -delta : delta),
         clamp: false,
-        duration: MediaQuery.disableAnimationsOf(context)
-            ? Duration.zero
-            : const Duration(milliseconds: 160),
+        duration: KitMotion.reduced(context) ? Duration.zero : KitMotion.quick,
+        curve: KitMotion.enter,
       );
     });
     _highlightTimer = Timer(const Duration(seconds: 2), () {
@@ -4392,13 +4394,10 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  Future<void> _copyMessageText(MessageWithParts message) async {
-    await Clipboard.setData(ClipboardData(text: _messageCopy(message).text));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_chatL10n(context).chatUiMessageTextCopied)),
-    );
-  }
+  /// Copies verbatim (a reply is the person's to paste), confirmed by the
+  /// kit's tick and announcement, like the reply footer's Copy.
+  Future<void> _copyMessageText(MessageWithParts message) =>
+      KitCopy.copy(context, _messageCopy(message).text, redact: false);
 
   /// A transcript message's actions, one list for every way in: the reply
   /// footer's More, long-press, right-click, Shift+F10 and the screen
@@ -4451,13 +4450,13 @@ class _ChatScreenState extends State<ChatScreen>
   ];
 
   Future<void> _deleteMessage(MessageWithParts message) async {
-    final confirmed = await showConfirmSheet(
+    final confirmed = await showKitConfirm(
       context,
+      kind: KitConfirmKind.destructive,
       icon: AppIconography.delete,
       title: _chatL10n(context).chatUiDeleteThisMessage,
-      message: _chatL10n(context).chatUiTheMessageAndAllOfItsParts,
+      body: _chatL10n(context).chatUiTheMessageAndAllOfItsParts,
       confirmLabel: _chatL10n(context).chatUiDeleteMessage,
-      destructive: true,
     );
     if (!confirmed || !mounted) return;
     try {
@@ -4467,12 +4466,10 @@ class _ChatScreenState extends State<ChatScreen>
         messageID: message.info.id,
       );
       if (!mounted) return;
+      // The message leaving the transcript is the confirmation.
       setState(() {
         _messages.removeWhere((entry) => entry.info.id == message.info.id);
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_chatL10n(context).chatUiMessageDeleted)),
-      );
       await _load(resetHistory: true);
     } catch (error) {
       if (mounted) _showActionError(error);
@@ -4518,7 +4515,7 @@ class _ChatScreenState extends State<ChatScreen>
       await _conn.refreshSessions();
       if (!mounted) return;
       await Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
+        KitPageRoute<void>(
           builder: (_) => ChatScreen(
             sessionID: id,
             initialText: text,
@@ -4565,11 +4562,8 @@ class _ChatScreenState extends State<ChatScreen>
         providerID: model?.providerID ?? '',
         modelID: model?.modelID ?? '',
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_chatL10n(context).chatUiCompactionStarted)),
-        );
-      }
+      if (!mounted) return;
+      _showComposerNote(_chatL10n(context).chatUiCompactionStarted);
     } catch (error) {
       if (mounted) _showActionError(error);
     }
@@ -4580,9 +4574,7 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> _openProviders() async {
     if (_conn.isIsolated) return;
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => IntegrationsScreen(controller: _conn),
-      ),
+      KitPageRoute<void>(builder: (_) => IntegrationsScreen(controller: _conn)),
     );
   }
 
@@ -4616,11 +4608,11 @@ class _ChatScreenState extends State<ChatScreen>
       await _stageFromMessage(target);
       return;
     }
-    final confirmed = await showConfirmSheet(
+    final confirmed = await showKitConfirm(
       context,
       icon: AppIconography.history,
       title: _chatL10n(context).chatUiRevertFromThisPrompt,
-      message: _chatL10n(context).chatUiMessagesAndFileChangesAfterTheMost,
+      body: _chatL10n(context).chatUiMessagesAndFileChangesAfterTheMost,
       confirmLabel: _chatL10n(context).chatUiRevert,
     );
     if (!confirmed) return;
@@ -4661,6 +4653,9 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> _stageFromMessage(MessageWithParts message) async {
     if (!_canStageFrom(message)) return;
     final review = _conn.reviewSessionRevert(widget.sessionID);
+    // The sheet stages itself: its primary shows the work, and a failure
+    // stays in the sheet with the choice kept, instead of an alert after
+    // it closed.
     final applyFiles = await showStageRevertSheet(
       context,
       controller: _conn,
@@ -4669,25 +4664,20 @@ class _ChatScreenState extends State<ChatScreen>
           .where((part) => part.type == 'text')
           .map((part) => part.text)
           .join('\n'),
-    );
-    if (!mounted || applyFiles == null) return;
-    try {
-      await _conn.stageSessionRevert(
+      stage: (applyFiles) => _conn.stageSessionRevert(
         review,
         message.info.id,
         applyFiles: applyFiles,
-      );
-      if (mounted &&
-          review.scope == _conn.reviewSessionRevert(widget.sessionID).scope) {
-        await _reviewStagedRevert();
-      }
-    } catch (error) {
-      if (mounted) _showActionError(error);
+      ),
+    );
+    if (!mounted || applyFiles == null) return;
+    if (review.scope == _conn.reviewSessionRevert(widget.sessionID).scope) {
+      await _reviewStagedRevert();
     }
   }
 
   Future<void> _reviewStagedRevert() => Navigator.of(context).push<void>(
-    MaterialPageRoute<void>(
+    KitPageRoute<void>(
       builder: (_) =>
           StagedRevertScreen(controller: _conn, sessionID: widget.sessionID),
     ),
@@ -4883,8 +4873,8 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   /// Confirms a reconnect flush that delivered queued drafts, closing the
-  /// loop the "Queued — will send when reconnected" snackbar opened. Also
-  /// names drafts the flush deliberately left for other servers.
+  /// loop the "Queued — will send when reconnected" note opened. Also names
+  /// drafts the flush deliberately left for other servers.
   void _announceCompletedFlush() {
     if (_offlineFlushRevision == _conn.offlineFlushRevision) return;
     _offlineFlushRevision = _conn.offlineFlushRevision;
@@ -4895,9 +4885,8 @@ class _ChatScreenState extends State<ChatScreen>
     if (waiting > 0) {
       message.write(_chatL10n(context).chatUiOtherDraftsWaitingSuffix(waiting));
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message.toString())));
+    // About the person's own drafts, so it sits by the composer.
+    _showComposerNote(message.toString());
   }
 
   /// The Review path from the attention card: the full permission sheet,
@@ -4941,56 +4930,61 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> _showQuestionSheet(PendingQuestion question) =>
       showQuestionSheet(context, _conn, question);
 
-  Future<void> _runShellDialog() async {
+  /// "Run shell command" (map chat-run-shell-dialog): one command, run by
+  /// this conversation's agent in its project. It runs from inside the
+  /// dialog, so a failure stays under the field with the command kept.
+  /// [initial] prefills it: a shell step's "Run this command again" opens
+  /// the dialog with that command, to read or change before it runs.
+  Future<void> _runShellDialog({String? initial}) async {
+    if (_conn.isIsolated || !_conn.capabilities.terminal) return;
     final strings = _chatL10n(context);
-    if (!_conn.capabilities.terminal) return;
-    final ctrl = TextEditingController();
-    final cmd = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(strings.chatUiRunShellCommand),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'e.g. npm test',
-            prefixText: '\$ ',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(strings.projectFolderCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: Text(strings.commandRun),
-          ),
-        ],
-      ),
+    await showKitInputDialog(
+      context,
+      title: strings.chatUiRunShellCommand,
+      label: strings.chatRunShellLabel,
+      hint: strings.chatRunShellHint,
+      helper: strings.chatRunShellHelper,
+      confirmLabel: strings.commandRun,
+      kind: KitFieldKind.mono,
+      initial: initial,
+      dialogKey: const ValueKey('run-shell-dialog'),
+      fieldKey: const ValueKey('run-shell-command'),
+      confirmKey: const ValueKey('run-shell-confirm'),
+      validate: (value) =>
+          value.trim().isEmpty ? strings.chatRunShellEmpty : null,
+      onSubmit: (value) async {
+        try {
+          await _runShellCommand(value.trim());
+          return null;
+        } catch (error) {
+          return productErrorText(error, l10n: strings);
+        }
+      },
     );
-    if (cmd == null || cmd.isEmpty) return;
-    try {
-      final api = await _conn.prepareActionTransport();
-      if (api == null) {
-        throw ProductException(strings.chatUiOpenCodeIsReconnecting);
-      }
-      await _conn.waitForSessionSelection(widget.sessionID, expectedApi: api);
-      await api.shell(
-        widget.sessionID,
-        command: cmd,
-        agent: _conn.agentForSession(widget.sessionID).isNotEmpty
-            ? _conn.agentForSession(widget.sessionID)
-            : 'build',
-        model: _conn.modelForSession(widget.sessionID),
-        variant: _conn.variantForSession(widget.sessionID).isEmpty
-            ? null
-            : _conn.variantForSession(widget.sessionID),
-      );
-    } catch (e) {
-      if (mounted) showProductError(context, e);
-    }
   }
+
+  Future<void> _runShellCommand(String command) async {
+    final reconnecting = _chatL10n(context).chatUiOpenCodeIsReconnecting;
+    final api = await _conn.prepareActionTransport();
+    if (api == null) throw ProductException(reconnecting);
+    await _conn.waitForSessionSelection(widget.sessionID, expectedApi: api);
+    final agent = _conn.agentForSession(widget.sessionID);
+    final variant = _conn.variantForSession(widget.sessionID);
+    await api.shell(
+      widget.sessionID,
+      command: command,
+      agent: agent.isNotEmpty ? agent : 'build',
+      model: _conn.modelForSession(widget.sessionID),
+      variant: variant.isEmpty ? null : variant,
+    );
+  }
+
+  /// A shell step's "Run this command again"; null where this server has
+  /// no shell for the conversation.
+  ValueChanged<String>? get _rerunShellCommand =>
+      _conn.isIsolated || !_conn.capabilities.terminal
+      ? null
+      : (command) => unawaited(_runShellDialog(initial: command));
 
   Future<void> _loadServerCommands() {
     if (_conn.isIsolated || !_conn.capabilities.serverCatalog) {
@@ -5034,13 +5028,52 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
+  /// The app's actions this server can run, then its own commands.
   List<_ChatCommand> get _chatCommands {
+    final supported = _builtinChatCommands
+        .where(_chatCommandSupported)
+        .toList();
+    if (!_conn.capabilities.serverCatalog) return supported;
+    final dynamic = [
+      for (final command in _serverCommands ?? const <CommandInfo>[])
+        _ChatCommand.server(command, _chatL10n(context)),
+    ];
+    return [...supported, ...dynamic];
+  }
+
+  /// The app's actions this server cannot run, each with the capability
+  /// that says why (P7.4, explain instead of vanish): the launcher explains
+  /// them in place of the rows. Only gates the capability registry can
+  /// explain; the others (moving a conversation, forking, sharing) stay out
+  /// of the list as before.
+  List<(_ChatCommand, String)> get _unavailableChatCommands => [
+    for (final command in _builtinChatCommands)
+      if (!_chatCommandSupported(command))
+        if (_missingCapability(command.action) case final capability?)
+          (command, capability),
+  ];
+
+  static String? _missingCapability(_ChatCommandAction? action) =>
+      switch (action) {
+        _ChatCommandAction.files ||
+        _ChatCommandAction.terminal ||
+        _ChatCommandAction.references ||
+        _ChatCommandAction.workspaces ||
+        _ChatCommandAction.projectHealth => 'flag:fileBrowsing+terminal',
+        _ChatCommandAction.diff => 'flag:sessionDiff',
+        _ChatCommandAction.integrations ||
+        _ChatCommandAction.mcpServers ||
+        _ChatCommandAction.skills => 'flag:serverCatalog',
+        _ => null,
+      };
+
+  List<_ChatCommand> get _builtinChatCommands {
     final session = _conn.sessionsById[widget.sessionID];
     final hasUserMessage = _visibleHistory.any(
       (message) =>
           message.info.role == 'user' && !message.info.id.startsWith('local-'),
     );
-    final builtins = <_ChatCommand>[
+    return <_ChatCommand>[
       _ChatCommand.mobile(
         slash: 'new',
         aliases: const ['clear'],
@@ -5387,13 +5420,6 @@ class _ChatScreenState extends State<ChatScreen>
         action: _ChatCommandAction.help,
       ),
     ];
-    final supported = builtins.where(_chatCommandSupported).toList();
-    if (!_conn.capabilities.serverCatalog) return supported;
-    final dynamic = [
-      for (final command in _serverCommands ?? const <CommandInfo>[])
-        _ChatCommand.server(command, _chatL10n(context)),
-    ];
-    return [...supported, ...dynamic];
   }
 
   /// Ctrl+K in a session opens the session's own command launcher rather than
@@ -5420,19 +5446,15 @@ class _ChatScreenState extends State<ChatScreen>
         favoritesOnly: favoritesOnly,
       );
       if (!mounted || revision != _conn.connectionRevision) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              next == null
-                  ? _chatL10n(context).chatUiChooseAnotherModelInThePickerTo
-                  : _chatL10n(
-                      context,
-                    ).chatUiNextTurnsModel(_presentedModelLabel ?? ''),
-            ),
-          ),
-        );
+      // By the composer, whose model chip changes with it; a newer cycle
+      // replaces the note.
+      _showComposerNote(
+        next == null
+            ? _chatL10n(context).chatUiChooseAnotherModelInThePickerTo
+            : _chatL10n(
+                context,
+              ).chatUiNextTurnsModel(_presentedModelLabel ?? ''),
+      );
     } catch (error) {
       if (mounted) _showActionError(error);
     }
@@ -5480,6 +5502,7 @@ class _ChatScreenState extends State<ChatScreen>
         controller: _conn,
         initialTab: initialTab,
         commands: () => _chatCommands,
+        unavailable: () => _unavailableChatCommands,
         agents: () => _subagents,
         loading: () => _serverCommandsLoading,
         error: () => _serverCommandsError,
@@ -5530,25 +5553,21 @@ class _ChatScreenState extends State<ChatScreen>
         if (!await _persistDraft() || !mounted) return;
         final session = await _conn.createSession();
         if (mounted) {
-          final cleanupWarning = await _discardUntouchedMobileSession();
+          await _discardUntouchedMobileSession();
           if (!mounted) return;
           await _conn.refreshSessions();
           if (mounted) {
-            final messenger = ScaffoldMessenger.maybeOf(context);
             Navigator.of(context).pushReplacementNamed(
               '/chat/${session.id}',
               arguments: const ChatRouteArguments.newlyCreated(),
             );
-            if (cleanupWarning != null) {
-              messenger?.showSnackBar(SnackBar(content: Text(cleanupWarning)));
-            }
           }
         }
         return;
       case _ChatCommandAction.sessions:
         if (mounted) {
           await Navigator.of(context).push(
-            MaterialPageRoute<void>(
+            KitPageRoute<void>(
               builder: (_) => GlobalSessionsScreen(controller: _conn),
             ),
           );
@@ -5557,18 +5576,16 @@ class _ChatScreenState extends State<ChatScreen>
       case _ChatCommandAction.workspaces:
         if (mounted) {
           await Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const HomeScreen(initialTab: 0),
-            ),
+            KitPageRoute<void>(builder: (_) => const HomeScreen(initialTab: 0)),
           );
         }
         return;
       case _ChatCommandAction.files:
         if (mounted) {
           await Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => Scaffold(
-                appBar: AppBar(title: Text(strings.chatUiProjectFiles)),
+            KitPageRoute<void>(
+              builder: (_) => KitScreen(
+                topBar: KitTopBar(title: strings.chatUiProjectFiles),
                 body: FilesScreen(
                   controller: _conn,
                   onAttachFile: _attachProjectFile,
@@ -5587,7 +5604,7 @@ class _ChatScreenState extends State<ChatScreen>
         }
         if (mounted) {
           await Navigator.of(context).push(
-            MaterialPageRoute<void>(
+            KitPageRoute<void>(
               builder: (_) => ProjectHealthScreen(
                 repository: repository,
                 repositoryResolver: _conn.prepareActionRepository,
@@ -5623,7 +5640,7 @@ class _ChatScreenState extends State<ChatScreen>
       case _ChatCommandAction.terminal:
         if (mounted) {
           await Navigator.of(context).push(
-            MaterialPageRoute<void>(
+            KitPageRoute<void>(
               builder: (_) => TerminalScreen(controller: _conn),
             ),
           );
@@ -5643,7 +5660,7 @@ class _ChatScreenState extends State<ChatScreen>
       case _ChatCommandAction.integrations:
         if (mounted) {
           await Navigator.of(context).push(
-            MaterialPageRoute<void>(
+            KitPageRoute<void>(
               builder: (_) => IntegrationsScreen(
                 controller: _conn,
                 mode: IntegrationsMode.providers,
@@ -5655,7 +5672,7 @@ class _ChatScreenState extends State<ChatScreen>
       case _ChatCommandAction.mcpServers:
         if (mounted) {
           await Navigator.of(context).push(
-            MaterialPageRoute<void>(
+            KitPageRoute<void>(
               builder: (_) => IntegrationsScreen(
                 controller: _conn,
                 mode: IntegrationsMode.mcp,
@@ -5673,7 +5690,7 @@ class _ChatScreenState extends State<ChatScreen>
         if (mounted) {
           final location = _conn.locationRevision;
           final used = await Navigator.of(context).push<bool>(
-            MaterialPageRoute<bool>(
+            KitPageRoute<bool>(
               builder: (_) => SkillsScreen(
                 controller: _conn,
                 sessionID: _conn.supportsSessionSkills
@@ -5694,7 +5711,7 @@ class _ChatScreenState extends State<ChatScreen>
         // which is also the gate for this command).
         if (mounted) {
           await Navigator.of(context).push(
-            MaterialPageRoute<void>(
+            KitPageRoute<void>(
               builder: (_) =>
                   CapabilitiesScreen(controller: _conn, initialTab: 1),
             ),
@@ -5704,7 +5721,7 @@ class _ChatScreenState extends State<ChatScreen>
       case _ChatCommandAction.references:
         if (mounted) {
           await Navigator.of(context).push(
-            MaterialPageRoute<void>(
+            KitPageRoute<void>(
               builder: (_) => ReferencesScreen(
                 controller: _conn,
                 onSelected: _attachReference,
@@ -5718,7 +5735,7 @@ class _ChatScreenState extends State<ChatScreen>
         // the hub's Connection › This server screen.
         if (mounted) {
           await Navigator.of(context).push(
-            MaterialPageRoute<void>(
+            KitPageRoute<void>(
               builder: (_) => ServerSettingsScreen(controller: _conn),
             ),
           );
@@ -5727,7 +5744,7 @@ class _ChatScreenState extends State<ChatScreen>
       case _ChatCommandAction.diagnostics:
         if (mounted) {
           await Navigator.of(context).push(
-            MaterialPageRoute<void>(
+            KitPageRoute<void>(
               builder: (_) => AppDiagnosticsScreen(controller: _conn),
             ),
           );
@@ -5737,7 +5754,7 @@ class _ChatScreenState extends State<ChatScreen>
         // Settings › Appearance, the one home of theme and language.
         if (mounted) {
           await Navigator.of(context).push(
-            MaterialPageRoute<void>(
+            KitPageRoute<void>(
               builder: (_) => AppearanceSettingsScreen(controller: _conn),
             ),
           );
@@ -5750,15 +5767,10 @@ class _ChatScreenState extends State<ChatScreen>
         await _showContext();
         return;
       case _ChatCommandAction.share:
-        if (_shareUrl == null) {
-          await _share();
+        if (_shareUrl case final url?) {
+          await _copyShareLink(url);
         } else {
-          await Clipboard.setData(ClipboardData(text: _shareUrl!));
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(strings.chatUiShareLinkCopied)),
-            );
-          }
+          await _share();
         }
         return;
       case _ChatCommandAction.unshare:
@@ -5832,40 +5844,32 @@ class _ChatScreenState extends State<ChatScreen>
     _focus.requestFocus();
   }
 
+  /// "Rename conversation" (map chat-rename-session-dialog). The rename
+  /// runs from inside the dialog, so a failure stays under the field with
+  /// the new title kept.
   Future<void> _renameCurrentSession() async {
+    final strings = _chatL10n(context);
     final current = _conn.sessionsById[widget.sessionID]?.title ?? '';
-    final controller = TextEditingController(text: current);
-    final title = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(_chatL10n(context).chatUiRenameSession),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: _chatL10n(context).chatUiTitle,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(_chatL10n(context).projectFolderCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(_chatL10n(context).chatUiRename),
-          ),
-        ],
-      ),
+    await showKitInputDialog(
+      context,
+      title: strings.chatUiRenameSession,
+      label: strings.chatUiTitle,
+      confirmLabel: strings.chatUiRename,
+      initial: current,
+      dialogKey: const ValueKey('rename-session-dialog'),
+      fieldKey: const ValueKey('rename-session-title'),
+      validate: (value) =>
+          value.trim().isEmpty ? strings.chatRenameEmpty : null,
+      onSubmit: (value) async {
+        try {
+          await _conn.renameSession(widget.sessionID, value.trim());
+          await _conn.refreshSessions();
+          return null;
+        } catch (error) {
+          return productErrorText(error, l10n: strings);
+        }
+      },
     );
-    controller.dispose();
-    if (title == null || title.isEmpty) return;
-    try {
-      await _conn.renameSession(widget.sessionID, title);
-      await _conn.refreshSessions();
-    } catch (error) {
-      if (mounted) _showActionError(error);
-    }
   }
 
   String _transcriptMarkdown() {
@@ -5909,23 +5913,19 @@ class _ChatScreenState extends State<ChatScreen>
     return out.toString().trimRight();
   }
 
-  Future<void> _copyTranscript() async {
-    await Clipboard.setData(ClipboardData(text: _transcriptMarkdown()));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_chatL10n(context).chatUiTranscriptCopiedAsMarkdown),
-        ),
-      );
-    }
-  }
+  Future<void> _copyTranscript() => KitCopy.copy(
+    context,
+    _transcriptMarkdown(),
+    redact: false,
+    announcement: _chatL10n(context).chatUiTranscriptCopiedAsMarkdown,
+  );
 
   Future<void> _exportTranscript() async {
     final repository = _conn.repository;
     if (repository is SessionExportGateway &&
         (repository as SessionExportGateway).sessionExportSupported) {
       await Navigator.of(context).push(
-        MaterialPageRoute<void>(
+        KitPageRoute<void>(
           builder: (_) => SessionExportScreen(
             controller: _conn,
             sessionID: widget.sessionID,
@@ -5943,9 +5943,7 @@ class _ChatScreenState extends State<ChatScreen>
       bytes: Uint8List.fromList(utf8.encode(_transcriptMarkdown())),
     );
     if (mounted && path != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_chatL10n(context).chatUiTranscriptSaved)),
-      );
+      _showComposerNote(_chatL10n(context).chatUiTranscriptSaved);
     }
   }
 
@@ -6009,7 +6007,7 @@ class _ChatScreenState extends State<ChatScreen>
           return;
         }
         final used = await Navigator.of(context).push<bool>(
-          MaterialPageRoute<bool>(
+          KitPageRoute<bool>(
             builder: (_) =>
                 SkillsScreen(controller: _conn, sessionID: widget.sessionID),
           ),
@@ -6024,7 +6022,7 @@ class _ChatScreenState extends State<ChatScreen>
           return;
         }
         await Navigator.of(context).push(
-          MaterialPageRoute<void>(
+          KitPageRoute<void>(
             builder: (_) => SessionNoteScreen(
               controller: _conn,
               sessionID: widget.sessionID,
@@ -6098,21 +6096,12 @@ class _ChatScreenState extends State<ChatScreen>
         _conn.capabilities.sessionImportExport &&
         repository is SessionExportGateway &&
         (repository as SessionExportGateway).sessionExportSupported;
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) => LayoutBuilder(
-        builder: (context, constraints) => ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: constraints.maxHeight * .85),
-          child: ContinueOnComputerSheet(
-            command: command,
-            exportAvailable: exportAvailable,
-          ),
-        ),
-      ),
+    final action = await showContinueOnComputerSheet(
+      context,
+      command: command,
+      exportAvailable: exportAvailable,
     );
-    if (!mounted || action != 'export') return;
+    if (!mounted || action != continueOnComputerExport) return;
     await _exportTranscript();
   }
 
@@ -6124,22 +6113,12 @@ class _ChatScreenState extends State<ChatScreen>
       profileID: _conn.profile?.id,
       sessionID: widget.sessionID,
     );
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) => LayoutBuilder(
-        builder: (context, constraints) => ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: constraints.maxHeight * .85),
-          child: ContinueOnPhoneSheet(link: link),
-        ),
-      ),
-    );
+    await showContinueOnPhoneSheet(context, link: link);
   }
 
   Future<void> _showContext() async {
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      KitPageRoute<void>(
         builder: (_) => SessionContextScreen(
           controller: _conn,
           sessionID: widget.sessionID,
@@ -6153,7 +6132,7 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> _showSubagents() async {
     if (!_conn.capabilities.projectManagement) return;
     final target = await Navigator.of(context).push<Session>(
-      MaterialPageRoute<Session>(
+      KitPageRoute<Session>(
         builder: (_) => SessionRelationsScreen(
           controller: _conn,
           sessionID: widget.sessionID,
@@ -6251,14 +6230,14 @@ class _ChatScreenState extends State<ChatScreen>
       final diffs = await api.diff(widget.sessionID);
       if (!mounted) return;
       await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
+        KitPageRoute<void>(
           builder: (_) => DiffView(diffs: diffs, allowCopy: false),
         ),
       );
       return;
     }
     final prompt = await Navigator.of(context).push<String>(
-      MaterialPageRoute<String>(
+      KitPageRoute<String>(
         builder: (_) => ReviewWorkspace(
           handoff: _handoff, // UX-103 review handoff
           cacheKey:
@@ -6592,9 +6571,12 @@ class _ChatScreenState extends State<ChatScreen>
     setState(() => _attachments.add(attachment));
   }
 
-  Future<String?> _discardUntouchedMobileSession() async {
-    final strings = _chatL10n(context);
-    if (_conn.isIsolated) return null;
+  /// Deletes the conversation this screen made when the person leaves it
+  /// untouched. Best effort: when OpenCode cannot confirm it is still empty
+  /// (or cannot delete it), it stays, as an ordinary empty conversation in
+  /// the list, and nothing interrupts the person on their way out.
+  Future<void> _discardUntouchedMobileSession() async {
+    if (_conn.isIsolated) return;
     if (!widget.discardIfUntouched ||
         _messages.isNotEmpty ||
         _pendingSends.isNotEmpty ||
@@ -6608,16 +6590,14 @@ class _ChatScreenState extends State<ChatScreen>
         (_conn.promptPhotos.pending?.sessionID == widget.sessionID &&
             _conn.promptPhotos.pending?.profileID == _draftProfileID) ||
         _conn.busySessions.contains(widget.sessionID)) {
-      return null;
+      return;
     }
     try {
       final api = await _conn.prepareActionTransport();
-      if (api == null) {
-        throw ProductException(strings.chatUiOpenCodeIsReconnecting);
-      }
+      if (api == null) return;
       final currentMessages = await api.messagePage(widget.sessionID, limit: 1);
       if (currentMessages.items.isNotEmpty || currentMessages.hasMore) {
-        return null;
+        return;
       }
       await api.deleteSession(widget.sessionID);
       try {
@@ -6626,9 +6606,8 @@ class _ChatScreenState extends State<ChatScreen>
         // The exact empty session is already gone. The destination screen will
         // reconcile on its normal refresh even if this optional refresh fails.
       }
-      return null;
     } catch (_) {
-      return strings.chatUiEmptySessionWasKeptBecauseOpenCodeCould;
+      // Kept: an empty conversation is harmless and the list shows it.
     }
   }
 
@@ -6639,15 +6618,14 @@ class _ChatScreenState extends State<ChatScreen>
     final saved = await _persistDraft();
     if (!mounted) return;
     if (!saved) {
-      final leave = await showConfirmSheet(
+      final leave = await showKitConfirm(
         context,
         sheetKey: const ValueKey('leave-unsaved-draft'),
+        kind: KitConfirmKind.discard,
         icon: AppIconography.save,
         title: _chatL10n(context).draftLeaveTitle,
-        message: _chatL10n(context).draftLeaveMessage,
+        body: _chatL10n(context).draftLeaveMessage,
         confirmLabel: _chatL10n(context).draftLeaveAction,
-        cancelLabel: _chatL10n(context).draftKeepEditing,
-        destructive: true,
       );
       if (!mounted || !leave) return;
     }
@@ -6656,16 +6634,11 @@ class _ChatScreenState extends State<ChatScreen>
       return;
     }
     _leavingProvisionalSession = true;
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    final warning = await _discardUntouchedMobileSession();
+    await _discardUntouchedMobileSession();
     if (!mounted) return;
     setState(() => _allowRoutePop = true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      Navigator.of(context).maybePop();
-      if (warning != null) {
-        messenger?.showSnackBar(SnackBar(content: Text(warning)));
-      }
+      if (mounted) Navigator.of(context).maybePop();
     });
   }
 
@@ -6686,11 +6659,7 @@ class _ChatScreenState extends State<ChatScreen>
       bytes: bytes,
     );
     if (!mounted || savedPath == null) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(_chatL10n(context).chatUiFileSaved(file.displayName)),
-      ),
-    );
+    _showComposerNote(_chatL10n(context).chatUiFileSaved(file.displayName));
   }
 
   /// The offline banner's queue line: drafts the next flush will send,
@@ -6769,53 +6738,53 @@ class _ChatScreenState extends State<ChatScreen>
     return '';
   }
 
+  /// Whether a pending permission request is for this tool call: its step
+  /// then says "Waiting for you", never "Running" (AUTO-15).
+  bool _toolWaitsForYou(Part part) {
+    final callID = part.callID;
+    if (callID == null || callID.isEmpty) return false;
+    return _conn
+        .permissionsForSession(widget.sessionID)
+        .any((request) => request.tool?.callID == callID);
+  }
+
   /// A permission request lands as an inline card above the composer —
   /// oldest first, one at a time — instead of a modal sheet that steals the
-  /// keyboard mid-sentence. Animates in and out unless motion is reduced.
-  Widget _attentionRegion(
-    bool reduceMotion,
-    List<PermissionRequest> pendingPermissions,
-  ) {
+  /// keyboard mid-sentence; then a question, then a retry countdown. The
+  /// slot unfolds when one arrives and folds away when none is left
+  /// ([KitReveal], instant under reduced motion); one card replacing
+  /// another changes in place.
+  Widget _attentionRegion(List<PermissionRequest> pendingPermissions) {
     final permission = pendingPermissions.firstOrNull;
     final question = _conn.questionForSession(widget.sessionID);
+    final retry = _retryState;
     // Automatic approval is never silent, but it is a standing fact, not an
     // event: it lives in the chip strip above the composer
     // ([_composerStatusStrip]), not in this slot.
-    return _chatSizeTransition(
-      reduceMotion: reduceMotion,
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-      alignment: Alignment.bottomCenter,
-      child: AnimatedSwitcher(
-        duration: reduceMotion
-            ? Duration.zero
-            : const Duration(milliseconds: 180),
-        child: permission == null
-            ? (question != null
-                  ? _QuestionAttentionCard(
-                      key: ValueKey('question-card-${question.id}'),
-                      question: question,
-                      replying: _questionReplying,
-                      onAnswer: (answers) =>
-                          unawaited(_answerQuestion(question, answers)),
-                      onMore: () => unawaited(_showQuestionSheet(question)),
-                    )
-                  : _retryState != null
-                  ? _RetryAttentionCard(
-                      key: const ValueKey('retry-banner'),
-                      retry: _retryState!,
-                    )
-                  : const SizedBox.shrink(
-                      key: ValueKey('permission-card-none'),
-                    ))
-            : _PermissionAttentionCard(
-                key: ValueKey('permission-card-${permission.id}'),
-                permission: permission,
-                autoApprovalFailed:
-                    _conn.autoApprovalFailure(permission.id) != null,
-                onReview: () => unawaited(_showPermissionDialog(permission)),
-              ),
-      ),
+    return KitReveal(
+      child: permission != null
+          ? _PermissionAttentionCard(
+              key: ValueKey('permission-card-${permission.id}'),
+              permission: permission,
+              autoApprovalFailed:
+                  _conn.autoApprovalFailure(permission.id) != null,
+              onReview: () => unawaited(_showPermissionDialog(permission)),
+            )
+          : question != null
+          ? _QuestionAttentionCard(
+              key: ValueKey('question-card-${question.id}'),
+              question: question,
+              replying: _questionReplying,
+              onAnswer: (answers) =>
+                  unawaited(_answerQuestion(question, answers)),
+              onMore: () => unawaited(_showQuestionSheet(question)),
+            )
+          : retry != null
+          ? _RetryAttentionCard(
+              key: const ValueKey('retry-banner'),
+              retry: retry,
+            )
+          : null,
     );
   }
 
@@ -7152,8 +7121,7 @@ class _ChatScreenState extends State<ChatScreen>
                   ? Column(
                       children: [
                         const Expanded(child: _ChatLoadingBody()),
-                        if (!_watching)
-                          _attentionRegion(reduceMotion, pendingPermissions),
+                        if (!_watching) _attentionRegion(pendingPermissions),
                       ],
                     )
                   : _error != null && _messages.isEmpty
@@ -7165,8 +7133,7 @@ class _ChatScreenState extends State<ChatScreen>
                             onRetry: () => unawaited(_load()),
                           ),
                         ),
-                        if (!_watching)
-                          _attentionRegion(reduceMotion, pendingPermissions),
+                        if (!_watching) _attentionRegion(pendingPermissions),
                       ],
                     )
                   : LayoutBuilder(
@@ -7620,17 +7587,11 @@ class _ChatScreenState extends State<ChatScreen>
                                   fit: FlexFit.loose,
                                   child: SingleChildScrollView(
                                     reverse: true,
-                                    child: _attentionRegion(
-                                      reduceMotion,
-                                      pendingPermissions,
-                                    ),
+                                    child: _attentionRegion(pendingPermissions),
                                   ),
                                 )
                               else
-                                _attentionRegion(
-                                  reduceMotion,
-                                  pendingPermissions,
-                                ),
+                                _attentionRegion(pendingPermissions),
                               // §7 rule 5: v2-only surfaces stay silent on v1.
                               // The map is already empty there, but the gate is
                               // explicit so a stale entry cannot leak a form

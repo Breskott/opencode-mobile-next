@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart'
-    show KitCodeBlock, KitMarkdown, KitMotion, KitTurn;
+    show KitCodeBlock, KitMarkdown, KitMotion, KitTurn, KitUndo;
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
@@ -1483,12 +1483,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.deleteCalls, isEmpty);
-    expect(
-      find.text(
-        'Empty conversation was kept because OpenCode could not verify or remove it.',
-      ),
-      findsOneWidget,
-    );
+    // Kept quietly: an empty conversation is harmless and the list shows
+    // it, so nothing interrupts the way out.
+    expect(find.byType(SnackBar), findsNothing);
+    expect(find.byKey(const ValueKey('product-error-alert')), findsNothing);
   });
 
   testWidgets('leaving with a typed draft keeps it silently', (tester) async {
@@ -2745,6 +2743,11 @@ void main() {
 
     expect(controller.transcriptReasoningExpanded, isTrue);
     expect(find.text(reasoning), findsOneWidget);
+    // The toggle offers Undo; the bar floats above every sheet until its
+    // window ends.
+    expect(find.text('Reasoning expanded in the transcript'), findsOneWidget);
+    await tester.pump(KitUndo.window);
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
@@ -5032,7 +5035,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('message-menu-copy')));
     await tester.pumpAndSettle();
     expect(copiedText, 'Fix the login bug');
-    expect(find.text('Message text copied'), findsOneWidget);
+    // The kit's copy feedback (a tick and an announcement), not a snackbar.
+    expect(find.byType(SnackBar), findsNothing);
   });
 
   testWidgets('deleting a message confirms, calls the server, and prunes it', (

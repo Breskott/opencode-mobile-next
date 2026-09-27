@@ -8253,10 +8253,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Edit the current prompt in a focused full-screen view';
 
   @override
-  String get chatUiEmptySessionWasKeptBecauseOpenCodeCould =>
-      'Empty conversation was kept because OpenCode could not verify or remove it.';
-
-  @override
   String get chatUiErrorDetails => 'Error details';
 
   @override
@@ -8420,12 +8416,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiMessageActions => 'Message actions';
-
-  @override
-  String get chatUiMessageDeleted => 'Message deleted';
-
-  @override
-  String get chatUiMessageTextCopied => 'Message text copied';
 
   @override
   String get chatUiMessageTimeline => 'Message timeline';
@@ -8678,6 +8668,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiRunShellCommand => 'Run shell command';
 
   @override
+  String get chatRunShellLabel => 'Command';
+
+  @override
+  String get chatRunShellHint => 'npm test';
+
+  @override
+  String get chatRunShellHelper =>
+      'The agent runs it in this project, and its output joins the conversation.';
+
+  @override
+  String get chatRunShellEmpty => 'Type a command to run.';
+
+  @override
+  String get chatRenameEmpty => 'Type a title.';
+
+  @override
   String get chatUiRunningTools => 'Running tools';
 
   @override
@@ -8751,10 +8757,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiSessionContext => 'Conversation context';
-
-  @override
-  String get chatUiSessionIsNoLongerShared =>
-      'Conversation is no longer shared';
 
   @override
   String get chatUiSessionMenu => 'Conversation menu';

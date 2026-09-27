@@ -8349,10 +8349,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'تحرير الطلب الحالي في عرض مخصّص بملء الشاشة';
 
   @override
-  String get chatUiEmptySessionWasKeptBecauseOpenCodeCould =>
-      'احتُفظ بالمحادثة الفارغة لأن OpenCode لم يتمكن من التحقق منها أو إزالتها.';
-
-  @override
   String get chatUiErrorDetails => 'تفاصيل الخطأ';
 
   @override
@@ -8516,12 +8512,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiMessageActions => 'إجراءات الرسالة';
-
-  @override
-  String get chatUiMessageDeleted => 'حُذفت الرسالة';
-
-  @override
-  String get chatUiMessageTextCopied => 'نُسخ نص الرسالة';
 
   @override
   String get chatUiMessageTimeline => 'التسلسل الزمني للرسائل';
@@ -8775,6 +8765,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiRunShellCommand => 'تشغيل أمر صدفة';
 
   @override
+  String get chatRunShellLabel => 'Command';
+
+  @override
+  String get chatRunShellHint => 'npm test';
+
+  @override
+  String get chatRunShellHelper =>
+      'The agent runs it in this project, and its output joins the conversation.';
+
+  @override
+  String get chatRunShellEmpty => 'Type a command to run.';
+
+  @override
+  String get chatRenameEmpty => 'Type a title.';
+
+  @override
   String get chatUiRunningTools => 'الأدوات قيد التشغيل';
 
   @override
@@ -8849,9 +8855,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiSessionContext => 'سياق المحادثة';
-
-  @override
-  String get chatUiSessionIsNoLongerShared => 'لم تعد المحادثة مشتركة';
 
   @override
   String get chatUiSessionMenu => 'قائمة المحادثة';

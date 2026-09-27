@@ -986,6 +986,7 @@ class _AssistantMessagePart extends StatelessWidget {
         final raw = part.toolState.metadata?['shellID'];
         if (raw != null) shellID = raw.toString();
       }
+      final chat = context.findAncestorStateOfType<_ChatScreenState>();
       return ToolCard(
         key: shellID != null
             ? ValueKey('shell-card-$shellID')
@@ -1000,6 +1001,8 @@ class _AssistantMessagePart extends StatelessWidget {
         onAttachFile: onAttachFile,
         onDownloadFile: onDownloadFile,
         onOpenSession: onOpenSession,
+        waitingForYou: chat?._toolWaitsForYou(part) ?? false,
+        onRerunCommand: chat?._rerunShellCommand,
       );
     }
     if (part.type == 'file') {
@@ -1282,10 +1285,10 @@ class _MessageView extends StatelessWidget {
             expansionStore: expansionStore,
             waitingForYou: waiting,
             stopped: stopped,
-            buildRun: (run) => _stepWidgets(run, runs, streaming),
+            buildRun: (run) => _stepWidgets(run, runs, streaming, chat),
           )
         else
-          _runWidget(stretch.single, runs, streaming),
+          _runWidget(stretch.single, runs, streaming, chat),
       if (raw != null && !stopped)
         _AssistantErrorRow(
           info: m.info,
@@ -1416,8 +1419,9 @@ class _MessageView extends StatelessWidget {
     _AssistantPartRun run,
     List<_AssistantPartRun> all,
     bool streaming,
+    _ChatScreenState? chat,
   ) {
-    if (!run.grouped) return [_runWidget(run, all, streaming)];
+    if (!run.grouped) return [_runWidget(run, all, streaming, chat)];
     return [
       for (final (index, part) in run.parts.indexed)
         ToolCard(
@@ -1433,6 +1437,8 @@ class _MessageView extends StatelessWidget {
           onAttachFile: onAttachFile,
           onDownloadFile: onDownloadFile,
           onOpenSession: onOpenSession,
+          waitingForYou: chat?._toolWaitsForYou(part) ?? false,
+          onRerunCommand: chat?._rerunShellCommand,
         ),
     ];
   }
@@ -1441,6 +1447,7 @@ class _MessageView extends StatelessWidget {
     _AssistantPartRun run,
     List<_AssistantPartRun> all,
     bool streaming,
+    _ChatScreenState? chat,
   ) => run.parts.first.type == 'v2:notice'
       ? V2TranscriptRow(
           part: run.parts.first,
@@ -1450,7 +1457,7 @@ class _MessageView extends StatelessWidget {
       ? Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
-          children: _stepWidgets(run, all, streaming),
+          children: _stepWidgets(run, all, streaming, chat),
         )
       : _AssistantMessagePart(
           part: run.parts.single,

@@ -142,6 +142,7 @@ class _CommandLauncherSheet extends StatefulWidget {
     required this.controller,
     required this.initialTab,
     required this.commands,
+    this.unavailable,
     required this.agents,
     required this.loading,
     required this.error,
@@ -153,6 +154,10 @@ class _CommandLauncherSheet extends StatefulWidget {
   final ConnectionController controller;
   final _ComposerToolTab initialTab;
   final List<_ChatCommand> Function() commands;
+
+  /// The app's actions this server cannot run, each with the capability
+  /// that explains why; shown as explanations after the commands (P7.4).
+  final List<(_ChatCommand, String)> Function()? unavailable;
   final List<CatalogAgent> Function() agents;
   final bool Function() loading;
   final Object? Function() error;
@@ -241,6 +246,11 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet> {
       resultCount = commands.length + elsewhere.length;
       list = _CommandList(
         commands: commands,
+        unavailable: [
+          for (final entry in widget.unavailable?.call() ?? const [])
+            if (entry.$1.matchesQuery(query)) entry,
+        ],
+        serverName: widget.controller.profile?.name,
         elsewhere: elsewhere,
         query: query,
         onClearSearch: _search.clear,
@@ -365,11 +375,15 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet> {
   }
 }
 
-/// The commands, in their groups, then "Go to" places elsewhere in the app;
-/// "Nothing matches" with Clear search when a query finds neither.
+/// The commands, in their groups, then why the app's other actions are not
+/// here (one explanation per missing capability, P7.4), then "Go to"
+/// places elsewhere in the app; "Nothing matches" with Clear search when a
+/// query finds none of them.
 class _CommandList extends StatelessWidget {
   const _CommandList({
     required this.commands,
+    this.unavailable = const [],
+    this.serverName,
     required this.elsewhere,
     required this.query,
     required this.onClearSearch,
@@ -378,6 +392,8 @@ class _CommandList extends StatelessWidget {
   });
 
   final List<_ChatCommand> commands;
+  final List<(_ChatCommand, String)> unavailable;
+  final String? serverName;
   final List<SearchEntry> elsewhere;
   final String query;
   final VoidCallback onClearSearch;
@@ -387,7 +403,7 @@ class _CommandList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _chatL10n(context);
-    if (commands.isEmpty && elsewhere.isEmpty) {
+    if (commands.isEmpty && unavailable.isEmpty && elsewhere.isEmpty) {
       if (query.trim().isNotEmpty) {
         return KitSearchNoMatch(
           key: const Key('command-launcher-no-match'),
@@ -406,6 +422,10 @@ class _CommandList extends StatelessWidget {
     for (final command in commands) {
       groups.putIfAbsent(command.group, () => []).add(command);
     }
+    final missing = <String, List<_ChatCommand>>{};
+    for (final (command, capability) in unavailable) {
+      missing.putIfAbsent(capability, () => []).add(command);
+    }
     return Column(
       key: const Key('command-launcher-list'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -418,6 +438,24 @@ class _CommandList extends StatelessWidget {
             children: [
               for (final command in group.value)
                 _CommandRow(command: command, onSelected: onSelected),
+            ],
+          ),
+        // Dimmed, with the reason and, where the app can, the way to turn
+        // it on; a search for one such action names it.
+        if (missing.isNotEmpty)
+          KitRowGroup(
+            key: const Key('command-launcher-unavailable'),
+            margin: EdgeInsetsDirectional.zero,
+            children: [
+              for (final MapEntry(key: capability, value: actions)
+                  in missing.entries)
+                KitCapabilityExplainer.row(
+                  rowKey: ValueKey('command-unavailable-$capability'),
+                  capability: capability,
+                  title: actions.length == 1 ? actions.single.title : null,
+                  serverName: serverName,
+                  source: 'command-launcher-sheet',
+                ),
             ],
           ),
         if (elsewhere.isNotEmpty)
