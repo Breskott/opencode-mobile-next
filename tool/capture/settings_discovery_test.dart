@@ -72,12 +72,13 @@ void main() {
               home: page == 'more'
                   ? const HomeScreen(initialTab: 3)
                   // "coding" was its own screen when this capture was taken;
-                  // its rows are the hub's Conversation defaults group now.
+                  // its rows (model, tools, agent rules) are in the hub's
+                  // server group now.
                   : SettingsScreen(
                       controller: controller,
                       initialGroup: page == 'settings'
                           ? null
-                          : SettingsGroup.conversation,
+                          : SettingsGroup.server,
                     ),
               boundaryKey: boundary,
               controller: controller,
