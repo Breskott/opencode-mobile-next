@@ -115,6 +115,9 @@ void main() {
     await gesture.moveTo(box.centerRight - const Offset(2, 0));
     await tester.pump();
     await gesture.up();
+    // KitSelectable also enables selection for an attached mouse on touch
+    // platforms. Remove this test's mouse before the next touch-only case.
+    addTearDown(gesture.removePointer);
     await tester.pumpAndSettle();
 
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
@@ -126,9 +129,20 @@ void main() {
     expect(clipboard.single, contains('selectable transcript prose'));
   });
 
-  testWidgets('android keeps the transcript non-selectable', (tester) async {
-    // selectable: false exists so a long press reaches the actions sheet.
+  testWidgets('android selects reply prose without transcript-wide selection', (
+    tester,
+  ) async {
     await _pumpChat(tester);
-    expect(find.byType(SelectionArea), findsNothing);
+    final reply = find.byKey(const Key('assistant-text-block'));
+    // Chat-1 moved mobile prose selection from SelectableText into
+    // KitMarkdown's own KitSelectable. It must not wrap the whole transcript.
+    expect(
+      find.descendant(of: reply, matching: find.byType(SelectionArea)),
+      findsOneWidget,
+    );
+    expect(
+      find.ancestor(of: reply, matching: find.byType(SelectionArea)),
+      findsNothing,
+    );
   });
 }

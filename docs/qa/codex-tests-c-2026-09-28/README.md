@@ -70,3 +70,7 @@ Additional product issues exposed after restoring the interactions:
 ### Verified repair checkpoint 2
 
 Transcript search **9/9**, Codex chat capabilities **9/9**, transcript placement **17/17**, read-aloud **8/8**. States **5/6** and nudges **18/20** now fail only on the technical-details loss and approval overflow listed above. Search still verifies highlighting without reparsing, capability tests require disabled attachment actions and no unsupported transports, placement preserves alignment and nonoverlap, and read-aloud preserves consent and background draft disposal.
+
+### Verified repair checkpoint 3
+
+Offline queue **57/57**, pending sends **16/16**, stable chat layout **10/10**, desktop context menus **5/5**, desktop selection **2/2**. These retain queue refusal/durable deletion/payload assertions, explicit default delivery and remembered choice, keyboard/draft/focus bounds, actual file opening and clipboard behavior, and desktop-wide versus phone reply-local selection. Fixtures now wait for the documented Undo window and finish menu/scroll animations before interacting; no warnings or timers are suppressed.
