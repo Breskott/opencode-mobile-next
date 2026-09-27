@@ -757,7 +757,8 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
               );
             },
           ),
-          // The policy, from here as well as Help (map actionsMissing).
+          // The policy itself: About's old Privacy tab lives here now
+          // (P3.10), so what the app keeps and what it sends sit together.
           if (policy != null) ...[
             SizedBox(height: tokens.sectionGap),
             KitRowGroup(

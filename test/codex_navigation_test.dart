@@ -255,8 +255,9 @@ void main() {
       find.byKey(const ValueKey('settings-model-and-mode')),
       findsOneWidget,
     );
-    expect(find.text('Providers'), findsOneWidget);
-    expect(find.text('MCP'), findsOneWidget);
-    expect(find.text('Commands & tools'), findsOneWidget);
+    // The catalog stays: Providers and accounts, and Tools, which holds
+    // MCP and Commands & tools (slice-P3.10).
+    expect(find.text('Providers and accounts'), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings-tools')), findsOneWidget);
   });
 }

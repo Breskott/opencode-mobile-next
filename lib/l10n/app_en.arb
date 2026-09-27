@@ -4419,10 +4419,6 @@
   "@e7SettingsUi88": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsUi91": "Connect a computer or run OpenCode on this phone",
-  "@e7SettingsUi91": {
-    "description": "Settings and appearance user interface."
-  },
   "e7SettingsUi92": "Privacy and data use",
   "@e7SettingsUi92": {
     "description": "Settings and appearance user interface."
@@ -16591,7 +16587,7 @@
   "@settingsHubVoiceSubtitle": {
     "description": "Subtitle of the Voice row."
   },
-  "settingsHubPrivacyRow": "Privacy and local data",
+  "settingsHubPrivacyRow": "Privacy and data",
   "@settingsHubPrivacyRow": {
     "description": "Settings hub row and screen title: read-state sync and unsent work held on this device."
   },
@@ -16929,7 +16925,6 @@
   "@capabilityScreenTitle": {
     "description": "Settings > Help row and screen title: what the connected server supports."
   },
-  "capabilityScreenSubtitle": "What this server can and cannot do",
   "capabilityScreenAliases": "available supported not available missing feature hidden why can't capabilities server support shell",
   "capabilityScreenIntro": "{server} decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out.",
   "@capabilityScreenIntro": {
@@ -27203,10 +27198,6 @@
   "@aboutReportBugOnGithub": {
     "description": "screen-system-1: About: opens the prefilled GitHub bug form."
   },
-  "aboutDocuments": "Documents",
-  "@aboutDocuments": {
-    "description": "screen-system-1: About: accessible name of the Privacy / Open source tab strip."
-  },
   "aboutAllLicences": "All package licenses",
   "@aboutAllLicences": {
     "description": "screen-system-1: About › Open source: row that opens every bundled package license."
@@ -29148,18 +29139,6 @@
   "@serverSettingsUpdateHint": {
     "description": "Server settings: under the update row, what installing does."
   },
-  "settingsHubThisPhone": "This phone",
-  "@settingsHubThisPhone": {
-    "description": "Settings hub: the group of settings that belong to this phone and app."
-  },
-  "settingsHubHelpRow": "Help",
-  "@settingsHubHelpRow": {
-    "description": "Settings hub: the row that opens help, tips, shortcuts and diagnostics."
-  },
-  "settingsHubHelpSubtitle": "Guide, tips, shortcuts and diagnostics",
-  "@settingsHubHelpSubtitle": {
-    "description": "Settings hub: what the Help page holds."
-  },
   "settingsHubModelRow": "Model",
   "@settingsHubModelRow": {
     "description": "Settings hub: the default model row."
@@ -30821,5 +30800,74 @@
         "type": "String"
       }
     }
+  },
+  "settingsHubGroupAgent": "Agent",
+  "@settingsHubGroupAgent": {
+    "description": "Settings hub group label: the agent's model, providers, tools and AI Team."
+  },
+  "settingsHubGroupConversations": "Conversations",
+  "@settingsHubGroupConversations": {
+    "description": "Settings hub group label: how conversations run and show."
+  },
+  "settingsHubGroupThisApp": "This app",
+  "@settingsHubGroupThisApp": {
+    "description": "Settings hub group label: notifications, keep running, appearance, privacy and usage of this app."
+  },
+  "settingsHubProvidersRow": "Providers and accounts",
+  "@settingsHubProvidersRow": {
+    "description": "Settings hub row: model providers and their keys, or the Codex account on Codex."
+  },
+  "settingsHubToolsRow": "Tools",
+  "@settingsHubToolsRow": {
+    "description": "Settings hub row: MCP servers, commands, skills, tools, plugins and external agents."
+  },
+  "settingsHubShowReasoning": "Show reasoning",
+  "@settingsHubShowReasoning": {
+    "description": "Settings hub switch: open the model's reasoning under each answer in every conversation."
+  },
+  "settingsHubShowTimestamps": "Show timestamps and usage",
+  "@settingsHubShowTimestamps": {
+    "description": "Settings hub switch: show each message's time, tokens and cost in every conversation."
+  },
+  "settingsHubUnavailableCount": "{count, plural, =1{1 setting isn't available on this server} other{{count} settings aren't available on this server}}",
+  "@settingsHubUnavailableCount": {
+    "description": "Muted line under a Settings hub group: how many of its rows the connected server cannot serve.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHubUnavailableWhy": "Why",
+  "@settingsHubUnavailableWhy": {
+    "description": "Action on the Settings hub's unavailable line: opens Available on this server."
+  },
+  "toolsHubMcpSubtitle": "Servers that give the agent more tools",
+  "@toolsHubMcpSubtitle": {
+    "description": "Tools page: the MCP row's line."
+  },
+  "toolsHubCatalogSubtitle": "Slash commands, skills, the model's tools and references",
+  "@toolsHubCatalogSubtitle": {
+    "description": "Tools page: the commands and tools row's line."
+  },
+  "toolsHubPluginsSubtitle": "Add-ons on the server and in this app",
+  "@toolsHubPluginsSubtitle": {
+    "description": "Tools page: the Plugins row's line."
+  },
+  "toolsHubExternalAgentsSubtitle": "Agents on other services you can hand work to",
+  "@toolsHubExternalAgentsSubtitle": {
+    "description": "Tools page: the External agents row's line."
+  },
+  "privacyPolicyTitle": "Privacy policy",
+  "@privacyPolicyTitle": {
+    "description": "Privacy and data: the row that opens the privacy policy."
+  },
+  "aboutHelpSection": "Tips and shortcuts",
+  "@aboutHelpSection": {
+    "description": "About: label of the group with Show tips again and keyboard shortcuts."
+  },
+  "settingsHubSearchToolsAliases": "tools mcp integrations commands skills references slash capabilities plugins external agents a2a",
+  "@settingsHubSearchToolsAliases": {
+    "description": "Search aliases for the Tools row; preserve English terms to allow either language."
   }
 }

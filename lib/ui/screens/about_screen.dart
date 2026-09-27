@@ -7,8 +7,12 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
+import '../../state/connection.dart';
 import '../../update/shorebird_update_notice.dart';
+import '../../voice/notices.dart';
 import '../app_theme.dart';
+import '../desktop/desktop_interaction.dart';
+import '../desktop/shortcuts.dart';
 import '../kit/kit.dart';
 
 /// Upstream OpenCode asks third-party projects that use the OpenCode name to
@@ -27,21 +31,25 @@ const String buildProvenanceBody =
     'experimental and have not been hardware-tested. '
     'Report what breaks to help improve the app.';
 
-/// Settings › About (and Settings › Privacy, which opens the Privacy tab):
-/// which build this is, what it is not, and the documents.
+/// Settings › About (target-ia §1.3 row 22): which build this is, what it
+/// is not, the one-time tips and the keyboard shortcuts, and the open
+/// source notices. The privacy policy moved to Settings › Privacy and data
+/// (P3.10), so there are no tabs.
 ///
 /// Built from kit parts only (screen-system-1). One scroll: the build's
 /// identity once, with its version copyable in one tap and an update check
 /// on builds that can update themselves; the package id and signer folded
-/// under Details; the non-affiliation statement; the build notice with its
-/// one action; then a [KitTabStrip] choosing the document shown under it,
-/// reflowed by [KitMarkdown]. The Open source tab also opens every bundled
-/// package licence in the [KitViewer].
+/// under Details; the non-affiliation statement; the build notice; Show
+/// tips again (with a [controller]) and, on a desktop, the keyboard
+/// shortcuts; then Open source: every bundled package licence in the
+/// [KitViewer], the voice models' licences on Android, and the notices,
+/// reflowed by [KitMarkdown].
 class AboutScreen extends StatefulWidget {
-  const AboutScreen({super.key, this.initialTab = 0, this.updateService});
+  const AboutScreen({super.key, this.controller, this.updateService});
 
-  /// 0 opens Privacy, 1 opens Open source.
-  final int initialTab;
+  /// Where Show tips again puts the one-time tips back. Null (the named
+  /// route) leaves that row out.
+  final ConnectionController? controller;
 
   /// Checks for and fetches an update. Null: on Android the app's own
   /// updater (made on the first check), elsewhere no update row.
@@ -65,35 +73,30 @@ enum _UpdateCheck {
 class _AboutScreenState extends State<AboutScreen> {
   static const _platform = MethodChannel('oc/termux');
 
-  late int _tab = widget.initialTab.clamp(0, 1);
-  Future<List<String>>? _documents;
-  String? _documentsLocale;
+  Future<String>? _notices;
   late final Future<_BuildData> _build = _loadBuild();
   _UpdateCheck _update = _UpdateCheck.idle;
   AppUpdateService? _service;
+
+  /// Show tips again ran: the row says so in place of a snackbar (KIT-34).
+  bool _tipsReset = false;
 
   bool get _canCheckUpdates =>
       widget.updateService != null || platformCapabilities.isAndroid;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final language = Localizations.localeOf(context).languageCode;
-    if (_documents == null || _documentsLocale != language) {
-      _documentsLocale = language;
-      _documents =
-          Future.wait([
-            rootBundle.loadString(
-              language == 'ar' ? 'assets/l10n/PRIVACY.ar.md' : 'PRIVACY.md',
-            ),
-            rootBundle.loadString('THIRD_PARTY_NOTICES.md'),
-          ]).then(
-            (texts) => [
-              reflowMarkdown(texts[0]),
-              reflowMarkdown(aboutNoticesForReaders(texts[1])),
-            ],
-          );
-    }
+  void initState() {
+    super.initState();
+    _notices = rootBundle
+        .loadString('THIRD_PARTY_NOTICES.md')
+        .then((text) => reflowMarkdown(aboutNoticesForReaders(text)));
+  }
+
+  /// Puts every one-time tip back. The row itself then says so: there is
+  /// no way to take the reset back, so no Undo bar (KIT-34).
+  Future<void> _showTipsAgain(ConnectionController controller) async {
+    await controller.nudges.reset();
+    if (mounted) setState(() => _tipsReset = true);
   }
 
   Future<_BuildData> _loadBuild() async {
@@ -206,11 +209,13 @@ class _AboutScreenState extends State<AboutScreen> {
     return KitScreen(
       topBar: KitTopBar(title: l10n.aboutTitle),
       width: KitScreenWidth.reading,
-      body: FutureBuilder<List<String>>(
-        future: _documents,
-        builder: (context, documents) {
-          final loading = documents.connectionState != ConnectionState.done;
-          final texts = documents.data;
+      body: FutureBuilder<String>(
+        future: _notices,
+        builder: (context, notices) {
+          final loading = notices.connectionState != ConnectionState.done;
+          final text = notices.data;
+          final controller = widget.controller;
+          final shortcuts = desktopInteractions;
           return ListView(
             key: const ValueKey('about-page'),
             padding: EdgeInsetsDirectional.only(
@@ -241,31 +246,75 @@ class _AboutScreenState extends State<AboutScreen> {
                   liveRegion: false,
                 ),
               ),
-              SizedBox(height: tokens.sectionGap),
-              rails(
-                KitTabStrip(
-                  stripKey: const ValueKey('about-tabs'),
-                  semanticsLabel: l10n.aboutDocuments,
-                  tabs: [
-                    KitTab(
-                      key: const ValueKey('about-tab-privacy'),
-                      icon: AppIconography.privacy,
-                      label: l10n.e7SettingsDetailUi17,
-                    ),
-                    KitTab(
-                      key: const ValueKey('about-tab-open-source'),
-                      icon: AppIconography.code,
-                      label: l10n.e7SettingsDetailUi18,
-                    ),
+              if (controller != null || shortcuts) ...[
+                SizedBox(height: tokens.sectionGap),
+                KitRowGroup(
+                  key: const ValueKey('about-help'),
+                  label: l10n.aboutHelpSection,
+                  children: [
+                    // Each one-time tip fires once, at its moment. This puts
+                    // them all back, for a person who dismissed one too fast.
+                    if (controller != null)
+                      KitArrival(
+                        id: 'settings-show-tips-again',
+                        child: KitRow(
+                          key: const ValueKey('settings-show-tips-again'),
+                          leading: KitRow.icon(context, AppIconography.idea),
+                          title: l10n.discoverShowTipsAgain,
+                          supporting: TextSpan(
+                            text: _tipsReset
+                                ? l10n.discoverShowTipsDone
+                                : l10n.discoverShowTipsSubtitle,
+                          ),
+                          supportingMaxLines: 2,
+                          onTap: () => unawaited(_showTipsAgain(controller)),
+                        ),
+                      ),
+                    // The shortcut layer must be discoverable without
+                    // already knowing a shortcut, and means nothing without
+                    // a keyboard.
+                    if (shortcuts)
+                      KitRow(
+                        key: const ValueKey('library-keyboard-shortcuts'),
+                        leading: KitRow.icon(context, AppIconography.keyboard),
+                        title: l10n.e7LibraryKeyboardShortcuts,
+                        trailing: const KitChevron(),
+                        onTap: () => unawaited(showShortcutsHelp(context)),
+                      ),
                   ],
-                  selected: _tab,
-                  onSelected: (index) => setState(() => _tab = index),
                 ),
+              ],
+              SizedBox(height: tokens.sectionGap),
+              KitRowGroup(
+                key: const ValueKey('about-open-source'),
+                label: l10n.e7SettingsDetailUi18,
+                children: [
+                  KitRow(
+                    key: const ValueKey('about-all-licences'),
+                    leading: KitRow.icon(context, AppIconography.article),
+                    title: l10n.aboutAllLicences,
+                    supporting: TextSpan(text: l10n.aboutAllLicencesDetail),
+                    supportingMaxLines: 2,
+                    trailing: const KitChevron(),
+                    onTap: () => _openLicences(l10n),
+                  ),
+                  // The voice models' licences, where they can run.
+                  if (platformCapabilities.supportsVoice)
+                    KitRow(
+                      key: const ValueKey('settings-voice-notices'),
+                      leading: KitRow.icon(context, AppIconography.policy),
+                      title: l10n.e7SettingsUi94,
+                      supporting: TextSpan(text: l10n.e7SettingsUi95),
+                      supportingMaxLines: 2,
+                      trailing: const KitChevron(),
+                      onTap: () => unawaited(showVoiceNotices(context)),
+                    ),
+                ],
               ),
               SizedBox(height: tokens.space4),
               if (loading)
                 const KitSkeletonRows(count: 6)
-              else if (documents.hasError || texts == null)
+              else if (notices.hasError || text == null)
                 KitStateView(
                   key: const ValueKey('about-documents-failed'),
                   size: KitStateSize.inline,
@@ -274,35 +323,13 @@ class _AboutScreenState extends State<AboutScreen> {
                   title: l10n.settingsAboutLoadFailed,
                   body: l10n.e7SettingsInformationFailed,
                 )
-              else if (_tab == 0)
+              else
                 rails(
                   KitMarkdown(
-                    texts[0],
-                    key: const ValueKey('about-privacy-document'),
-                  ),
-                )
-              else ...[
-                KitRowGroup(
-                  children: [
-                    KitRow(
-                      key: const ValueKey('about-all-licences'),
-                      leading: KitRow.icon(context, AppIconography.article),
-                      title: l10n.aboutAllLicences,
-                      supporting: TextSpan(text: l10n.aboutAllLicencesDetail),
-                      supportingMaxLines: 2,
-                      trailing: const KitChevron(),
-                      onTap: () => _openLicences(l10n),
-                    ),
-                  ],
-                ),
-                SizedBox(height: tokens.space4),
-                rails(
-                  KitMarkdown(
-                    texts[1],
+                    text,
                     key: const ValueKey('about-notices-document'),
                   ),
                 ),
-              ],
             ],
           );
         },
@@ -441,4 +468,24 @@ String aboutNoticesForReaders(String markdown) {
     start,
   );
   return lines.sublist(start, end < 0 ? lines.length : end).join('\n').trim();
+}
+
+/// The privacy policy in the viewer, in the reader's language where it is
+/// translated. Settings › Privacy and data opens it (About's old Privacy
+/// tab, merged there by P3.10).
+Future<void> showPrivacyPolicy(BuildContext context) {
+  final l10n = _screenCopy(context);
+  final language = Localizations.localeOf(context).languageCode;
+  return showKitViewer(
+    context,
+    name: l10n.privacyPolicyTitle,
+    interactive: false,
+    viewerKey: const ValueKey('privacy-policy-viewer'),
+    source: KitViewerSource.load(() async {
+      final text = await rootBundle.loadString(
+        language == 'ar' ? 'assets/l10n/PRIVACY.ar.md' : 'PRIVACY.md',
+      );
+      return KitViewerContent.markdown(reflowMarkdown(text));
+    }),
+  );
 }

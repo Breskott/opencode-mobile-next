@@ -50,6 +50,7 @@
 /// | [KitSwap], [KitSpin], [KitAnimatedBox], [KitDim], [KitAnimatedValue], [KitPace] | §10 the small motion parts: cross-fade, spin, surface change, dim, eased number |
 /// | [KitFindMark] | chat-2 the find-in-conversation mark: an accent wash behind a hit (passive .18, active .38, as [KitCodeBlock] marks), never a text colour |
 /// | [KitArrival], [KitArrivalScope] | P9.4 a search result's arrival: the page opened for one row scrolls to it, focuses it and washes it once |
+/// | [KitGroupNote] | P3.10 one muted line under a row group: what it leaves out, and why |
 ///
 /// The older shared states in `product_states.dart` are re-exported here so
 /// a screen imports one library; new screens use [KitStateView] for them.
@@ -112,6 +113,7 @@ export 'kit_swatch.dart';
 export 'kit_term.dart';
 export 'kit_terminal_view.dart';
 export 'kit_undo.dart';
+export 'kit_group_note.dart';
 export 'scenes/portal_scene.dart';
 export 'motion/kit_animated_rows.dart';
 export 'motion/kit_haptics.dart';

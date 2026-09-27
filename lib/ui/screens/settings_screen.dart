@@ -30,6 +30,7 @@ import '../widgets/safety_confirms.dart';
 import 'app_diagnostics_screen.dart' show reportProblemErrorCount;
 import 'automation_settings_screen.dart' show AutomationSettingsSections;
 import 'host_management_screen.dart';
+import 'server_capabilities_screen.dart';
 import 'this_phone_screen.dart' show openThisPhone;
 import 'team/start_run_sheet.dart' show teamSupervisionCopy;
 import '../widgets/team_discover.dart';
@@ -40,25 +41,32 @@ part 'settings/server_settings_screen.dart';
 part 'settings/default_shell_row.dart';
 part 'settings/notifications_settings_screen.dart';
 part 'settings/personal_settings_screens.dart';
-part 'settings/help_settings_screen.dart';
 
 AppLocalizations _settingsCopy(BuildContext context) =>
     Localizations.of<AppLocalizations>(context, AppLocalizations) ??
     lookupAppLocalizations(const Locale('en'));
 
-/// The three groups of the Settings hub, as the approved canvas draws them
-/// (docs/design/visual-language-2026-09-26/Settings.png): what belongs to
-/// the connected server, under its name; what belongs to this phone; and a
-/// last, unlabelled panel with Report a problem, Help and About.
+/// The groups of the Settings hub (target-ia §1.3): at most five rows each,
+/// ordered as the page reads. The first is labelled with the connected
+/// server's name, as the approved canvas draws it
+/// (docs/design/visual-language-2026-09-26/Settings.png); the last panel,
+/// Help, has no label.
 enum SettingsGroup {
-  /// Model, tools, the AI Team, what agents may do and the server itself,
-  /// labelled with the server's name.
+  /// This server, every saved server, and this phone (Android).
   server('server'),
 
-  /// Notifications, voice, appearance, usage and privacy of this app.
-  thisPhone('this-phone'),
+  /// The model, providers and accounts, tools, and the AI Team.
+  agent('agent'),
 
-  /// Report a problem, Help and About; no label.
+  /// What runs by itself, the two transcript switches, the default
+  /// shell and voice.
+  conversations('conversations'),
+
+  /// Notifications, keep running, appearance, privacy and usage of this app.
+  thisApp('this-app'),
+
+  /// Setup guide, Report a problem, Available on this server and About; no
+  /// label.
   help('help');
 
   const SettingsGroup(this.slug);
@@ -67,16 +75,17 @@ enum SettingsGroup {
   final String slug;
 }
 
-/// The one Settings hub: a search field, then three groups of rows. It is the
+/// The one Settings hub: a search field, then five groups of rows. It is the
 /// fourth tab of the shell ([embedded]) and the screen every other entry
 /// point pushes, so a setting has exactly one home. Rows the connected server
-/// cannot serve are absent, and a group with no rows is absent.
+/// cannot serve are absent, and the group says how many under its panel in
+/// one muted line with a Why (target-ia §1.3); a group with no rows is
+/// absent.
 ///
 /// Kit only (screen-settings-1): a [KitScreen] with a pinned
 /// [KitSearchField] and one [KitRowGroup] panel per group. From expanded it
 /// is [KitScreen.twoPane]: the groups are the list pane and the chosen
-/// group's rows fill the detail pane; a row still opens its page. The new
-/// Settings structure waits for slice-P3.10 (map proposal "redesign").
+/// group's rows fill the detail pane; a row still opens its page.
 class SettingsScreen extends StatefulWidget {
   final ConnectionController controller;
 
@@ -272,20 +281,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
       SettingsGroup.server: profile == null
           ? copy.settingsHubThisServer
           : serverDisplayName(profile, l10n, among: controller.store.profiles),
-      SettingsGroup.thisPhone: copy.settingsHubThisPhone,
+      SettingsGroup.agent: copy.settingsHubGroupAgent,
+      SettingsGroup.conversations: copy.settingsHubGroupConversations,
+      SettingsGroup.thisApp: copy.settingsHubGroupThisApp,
       SettingsGroup.help: copy.settingsHubGroupHelp,
     };
     // Short values at the row's end instead of two-line subtitles (canvas):
     // "Claude Sonnet 4", "On", "Dark".
     final rows = <SettingsGroup, List<_HubRow?>>{
       SettingsGroup.server: [
+        row(
+          'settings-category-server',
+          builder: (_) => _thisServerRow(controller),
+        ),
+        row('settings-saved-servers'),
+        row('settings-this-phone'),
+      ],
+      SettingsGroup.agent: [
         row('settings-model-and-mode', value: _modelSummary(controller)),
         row('settings-providers'),
-        row('settings-mcp'),
-        row('settings-commands-tools'),
+        row('settings-tools'),
         // The AI Team is findable here whether it is on or off, in the
-        // state words Settings › Plugins uses (teamStateLine): "Turning
-        // on…" while this phone installs it, "On · This phone", "Off".
+        // state words Settings › Tools › Plugins uses (teamStateLine):
+        // "Turning on…" while this phone installs it, "On · This phone",
+        // "Off".
         row(
           'settings-ai-team',
           builder: (context) {
@@ -307,7 +326,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             );
           },
         ),
-        row('settings-category-plugins'),
+      ],
+      SettingsGroup.conversations: [
         // What runs by itself (P6.1): the team's level when there is a
         // team; Always allowed actions sits inside it.
         row(
@@ -326,21 +346,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ).$1
               : null,
         ),
-        // Absent where the server cannot change it, like every other row
-        // (rule 7); Help › "Available on this server" explains every
-        // hidden row at once.
+        // Two switches in place of the old Transcript display sheet: the
+        // same stored values the conversation menu flips, for every
+        // conversation on this device.
+        row(
+          'settings-show-reasoning',
+          builder: (context) => KitSwitchRow(
+            key: const ValueKey('settings-show-reasoning'),
+            leading: KitRow.icon(context, AppIconography.idea),
+            title: copy.settingsHubShowReasoning,
+            supporting: copy.transcriptTogglesReasoningOn,
+            value: controller.transcriptReasoningExpanded,
+            onChanged: (value) =>
+                unawaited(controller.setTranscriptReasoningExpanded(value)),
+          ),
+        ),
+        row(
+          'settings-show-timestamps',
+          builder: (context) => KitSwitchRow(
+            key: const ValueKey('settings-show-timestamps'),
+            leading: KitRow.icon(context, AppIconography.clock),
+            title: copy.settingsHubShowTimestamps,
+            supporting: copy.transcriptTogglesUsageOn,
+            value: controller.transcriptTimestampsVisible,
+            onChanged: (value) =>
+                unawaited(controller.setTranscriptTimestampsVisible(value)),
+          ),
+        ),
         row(
           'default-shell-settings-entry',
           builder: (_) => DefaultShellRow(controller: controller),
         ),
-        row('settings-accounts'),
-        row(
-          'settings-category-server',
-          builder: (_) => _thisServerRow(controller),
-        ),
-        row('settings-saved-servers'),
+        row('settings-voice'),
       ],
-      SettingsGroup.thisPhone: [
+      SettingsGroup.thisApp: [
         // One screen for everything that notifies. The key predates the
         // merge and is kept for tests and deep links.
         row(
@@ -350,12 +389,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               : null,
         ),
         row('settings-keep-running'),
-        row('settings-voice'),
         row(
           'settings-category-appearance',
           value: appearanceLabel(controller.appearance.value, context),
         ),
-        row('settings-transcript-display'),
+        row('settings-category-privacy'),
         // The value names the sections this connection really has.
         row(
           'settings-category-usage',
@@ -367,9 +405,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
           ].join(' · '),
         ),
-        row('settings-category-privacy'),
       ],
       SettingsGroup.help: [
+        row('settings-setup-guide'),
         // Report a problem: every failure state offers it too; this row is
         // the deliberate path, with the count of errors kept (P8.2).
         row(
@@ -380,34 +418,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onTap: () => _openEntry(entries['library-report-bug']!, scope),
           ),
         ),
-        row('settings-help'),
+        row('settings-server-capabilities'),
         row('settings-about-notices'),
       ],
     };
+    // Rows the connected server hides, counted per group for its one line.
+    // Without a saved server there is no server to blame.
+    final hidden = <SettingsGroup, int>{};
+    if (profile != null) {
+      for (final entry in allSearchEntries(copy)) {
+        final group = entry.group;
+        if (entry.kind == SearchEntryKind.hubRow &&
+            group != null &&
+            entry.hiddenByServer(scope)) {
+          hidden[group] = (hidden[group] ?? 0) + 1;
+        }
+      }
+    }
     return [
       for (final group in SettingsGroup.values)
-        _HubGroup(group, titles[group]!, rows[group]!.nonNulls.toList()),
+        _HubGroup(
+          group,
+          titles[group]!,
+          rows[group]!.nonNulls.toList(),
+          hidden: hidden[group] ?? 0,
+        ),
     ];
   }
 
   static IconData _groupIcon(SettingsGroup group) => switch (group) {
     SettingsGroup.server => AppIconography.server,
-    SettingsGroup.thisPhone => AppIconography.phone,
+    SettingsGroup.agent => AppIconography.model,
+    SettingsGroup.conversations => AppIconography.chat,
+    SettingsGroup.thisApp => AppIconography.phone,
     SettingsGroup.help => AppIconography.support,
   };
+
+  /// The group's one line for the rows the server hides: how many, and a
+  /// Why that opens Available on this server at the top.
+  Widget _unavailableNote(_HubGroup group) {
+    final copy = _settingsCopy(context);
+    return KitGroupNote(
+      key: ValueKey('settings-unavailable-${group.group.slug}'),
+      message: copy.settingsHubUnavailableCount(group.hidden),
+      action: KitAction(
+        key: ValueKey('settings-unavailable-why-${group.group.slug}'),
+        label: copy.settingsHubUnavailableWhy,
+        onPressed: () => unawaited(
+          _open(ServerCapabilitiesScreen(controller: widget.controller)),
+        ),
+      ),
+    );
+  }
 
   /// One group: its rows on a panel under the group's name.
   Widget _groupView(
     ({_HubGroup group, List<_HubRow> rows}) entry, {
     required bool scrollTarget,
+    bool note = true,
   }) {
     // Groups without a row are dropped before they get here.
-    final column = KitRowGroup(
+    final panel = KitRowGroup(
       key: ValueKey('settings-group-${entry.group.group.slug}'),
-      // The last panel needs no name: Report a problem, Help, About.
+      // The last panel needs no name: guide, Report a problem, About.
       label: entry.group.group == SettingsGroup.help ? null : entry.group.title,
       children: [for (final row in entry.rows) row.build(context)],
     );
+    final column = note && entry.group.hidden > 0
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [panel, _unavailableNote(entry.group)],
+          )
+        : panel;
     return scrollTarget
         ? KeyedSubtree(key: _groupKeys[entry.group.group], child: column)
         : column;
@@ -549,7 +631,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               for (final (index, entry) in groups.indexed) ...[
                 if (index > 0) SizedBox(height: tokens.sectionGap),
-                _groupView(entry, scrollTarget: scrollTargets),
+                _groupView(
+                  entry,
+                  scrollTarget: scrollTargets,
+                  // A search lists what it found, not what is missing.
+                  note: !searching,
+                ),
               ],
               for (final section in resultSections) ...[
                 SizedBox(height: tokens.sectionGap),
@@ -648,7 +735,10 @@ class _HubGroup {
   final String title;
   final List<_HubRow> rows;
 
-  const _HubGroup(this.group, this.title, this.rows);
+  /// How many of the group's rows the connected server hides.
+  final int hidden;
+
+  const _HubGroup(this.group, this.title, this.rows, {this.hidden = 0});
 }
 
 /// One hub row: a search-index entry plus what only the hub shows beside
@@ -671,15 +761,21 @@ class _HubRow {
     this.builder,
   });
 
-  Widget build(BuildContext context) =>
-      builder?.call(context) ??
-      _CategoryRow(
-        rowKey: entry.id,
-        icon: entry.icon,
-        title: entry.title,
-        value: value,
-        onTap: onTap,
-      );
+  /// The row, marked as the place a search result arrives at (KitArrival):
+  /// the switches and the shell choice act here, so their results open the
+  /// hub at them.
+  Widget build(BuildContext context) => KitArrival(
+    id: entry.id,
+    child:
+        builder?.call(context) ??
+        _CategoryRow(
+          rowKey: entry.id,
+          icon: entry.icon,
+          title: entry.title,
+          value: value,
+          onTap: onTap,
+        ),
+  );
 }
 
 /// One settings row on the kit (design standard §6): an icon, the title, an
@@ -695,8 +791,6 @@ class _CategoryRow extends StatelessWidget {
   final String? value;
   final VoidCallback? onTap;
 
-  /// False for a row that acts in place instead of opening something.
-  final bool chevron;
   final bool enabled;
 
   /// A count badge before the chevron, with [badgeLabel] as its words.
@@ -710,7 +804,6 @@ class _CategoryRow extends StatelessWidget {
     required this.onTap,
     this.subtitle,
     this.value,
-    this.chevron = true,
     this.enabled = true,
     this.badge,
     this.badgeLabel,
@@ -732,12 +825,10 @@ class _CategoryRow extends StatelessWidget {
       supporting: subtitle == null ? null : TextSpan(text: subtitle),
       supportingMaxLines: 2,
       trailing: (badge ?? 0) > 0
-          ? KitRowValue.count(badge!, badgeLabel ?? '$badge', chevron: chevron)
+          ? KitRowValue.count(badge!, badgeLabel ?? '$badge')
           : hasValue && !large
-          ? KitRowValue(value, chevron: chevron)
-          : chevron
-          ? const KitChevron()
-          : null,
+          ? KitRowValue(value)
+          : const KitChevron(),
       enabled: enabled,
       onTap: onTap,
     );
