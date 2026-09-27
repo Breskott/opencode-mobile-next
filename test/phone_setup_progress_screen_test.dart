@@ -389,6 +389,9 @@ void main() {
       final h = await _pump(tester, initial: _job(current: _nodeDownloading));
       expect(h.engine.restores, 1);
       expect(find.text('Setting up OpenCode on this phone'), findsOneWidget);
+      // The bar names the place, as the start screen does, with Back.
+      expect(find.text('On this phone'), findsOneWidget);
+      expect(find.byTooltip('Back'), findsOneWidget);
       expect(
         find.text("You can leave the app. We'll notify you when it's ready."),
         findsOneWidget,
@@ -401,6 +404,12 @@ void main() {
       await _settle(tester);
       expect(find.text('Stop setup?'), findsOneWidget);
       expect(find.text("What's finished stays installed."), findsOneWidget);
+      // Where to pick it up again (map infoMissing on the stop sheet).
+      expect(
+        find.text('Continue any time from On this phone.'),
+        findsOneWidget,
+      );
+      expect(find.text('Stop setup'), findsOneWidget);
       await tester.tap(find.text('Keep going'));
       await _settle(tester);
       expect(h.engine.cancels, 0);

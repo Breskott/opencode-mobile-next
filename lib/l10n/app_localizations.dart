@@ -24809,6 +24809,102 @@ abstract class AppLocalizations {
   /// **'{mb} MB'**
   String termuxProcsMemoryMb(int mb);
 
+  /// Running now: loading label while the process list is read
+  ///
+  /// In en, this message translates to:
+  /// **'Reading what runs on this phone'**
+  String get termuxProcsLoading;
+
+  /// Running now: title when the process list could not be read
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read what\'s running'**
+  String get termuxProcsLoadFailedTitle;
+
+  /// Running now: body of the empty state
+  ///
+  /// In en, this message translates to:
+  /// **'When OpenCode, the AI Team or a build runs here, it shows up in this list.'**
+  String get termuxProcsEmptyBody;
+
+  /// Running now: title of the result when some processes did not stop
+  ///
+  /// In en, this message translates to:
+  /// **'Not everything stopped'**
+  String get termuxProcsNotStoppedTitle;
+
+  /// Copies a process's command line
+  ///
+  /// In en, this message translates to:
+  /// **'Copy command'**
+  String get termuxProcsCopyCommand;
+
+  /// Opens the phone server controls for a protected process
+  ///
+  /// In en, this message translates to:
+  /// **'Open On this phone'**
+  String get termuxProcsOpenControls;
+
+  /// Details label for a process's ID
+  ///
+  /// In en, this message translates to:
+  /// **'Process ID'**
+  String get termuxProcsProcessId;
+
+  /// Details label for the parent process's ID
+  ///
+  /// In en, this message translates to:
+  /// **'Parent process ID'**
+  String get termuxProcsParentId;
+
+  /// Process details: what a process in the OpenCode server group is
+  ///
+  /// In en, this message translates to:
+  /// **'Part of the OpenCode server on this phone.'**
+  String get termuxProcsAboutOpenCode;
+
+  /// Process details: what a process in the AI Team group is
+  ///
+  /// In en, this message translates to:
+  /// **'Part of the AI Team. Stopping it stops the work the team is doing.'**
+  String get termuxProcsAboutAiTeam;
+
+  /// Process details: what a build daemon is
+  ///
+  /// In en, this message translates to:
+  /// **'A build helper. The next build starts it again when it needs it.'**
+  String get termuxProcsAboutBuild;
+
+  /// Process details: why an orphan is safe to stop
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is waiting on it, so stopping it is safe.'**
+  String get termuxProcsAboutOrphan;
+
+  /// Process details: what a process in the Other group is
+  ///
+  /// In en, this message translates to:
+  /// **'Started by something else on this phone.'**
+  String get termuxProcsAboutOther;
+
+  /// Stop confirmation: a stopped process has no undo
+  ///
+  /// In en, this message translates to:
+  /// **'It can\'t be started again from here.'**
+  String get termuxProcsNoRestart;
+
+  /// Stop AI Team group confirmation: what is lost
+  ///
+  /// In en, this message translates to:
+  /// **'Any task the team is working on stops too.'**
+  String get termuxProcsStopGroupTeamLost;
+
+  /// Stop AI Team group confirmation: how to start it again
+  ///
+  /// In en, this message translates to:
+  /// **'You can start the team again from AI Team.'**
+  String get termuxProcsStopGroupTeamRestart;
+
   /// On-device AI Team block: eyebrow label
   ///
   /// In en, this message translates to:
@@ -27808,6 +27904,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep going'**
   String get phoneSetupProgressKeepGoing;
+
+  /// In the Stop setup confirmation: where the person can pick setup up again
+  ///
+  /// In en, this message translates to:
+  /// **'Continue any time from On this phone.'**
+  String get phoneSetupProgressStopContinueLater;
 
   /// Title of the built-in (no Termux) server screen
   ///

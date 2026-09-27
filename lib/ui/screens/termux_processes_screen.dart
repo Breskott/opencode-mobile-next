@@ -2,8 +2,16 @@
 /// app's Termux user owns, grouped by what owns it, with CPU and memory,
 /// refreshed on pull and every 10 seconds while open. Orphans carry the
 /// reason they were flagged and a one-tap Stop; stopping a whole group is
-/// two-step; the OpenCode server and sshd are protected and send the user
-/// to the server controls instead.
+/// two-step and says what it ends; the OpenCode server and sshd are
+/// protected and send the user to the server controls instead.
+///
+/// Built from kit parts only (KIT-1): a [KitScreen] page with the refresh
+/// in its [KitTopBar], [KitSkeletonRows] while the first list is read,
+/// [KitStateView] for a list that could not be read or is empty, one
+/// [KitRowGroup] of [KitRow]s per owner (each row with the same menu:
+/// Details, Copy command, Stop), [KitNotice] for what a stop did, a
+/// [showKitSheet] for a process's details with its technical values in one
+/// [KitDetailsFold], and [showKitConfirm] for every stop.
 library;
 
 import 'dart:async';
@@ -14,12 +22,8 @@ import '../../l10n/app_localizations.dart';
 import '../../termux/bridge.dart';
 import '../../termux/processes.dart';
 import '../app_theme.dart';
-import '../desktop/desktop_interaction.dart';
-import '../widgets/confirm_sheet.dart';
-import '../widgets/safety_confirms.dart';
-import '../widgets/product_states.dart';
+import '../kit/kit.dart';
 import 'termux_setup_screen.dart';
-import '../kit/motion/kit_refresh.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -34,6 +38,17 @@ String termuxProcessGroupLabel(
   TermuxProcessGroup.orphans => l10n.termuxProcsGroupOrphans,
   TermuxProcessGroup.other => l10n.termuxProcsGroupOther,
 };
+
+/// What a process is, in the person's words (map infoMissing on
+/// termux-processes-details-sheet: "what it is, why it is safe to stop").
+String termuxProcessAbout(AppLocalizations l10n, TermuxProcess process) =>
+    switch (process.group) {
+      TermuxProcessGroup.opencodeServer => l10n.termuxProcsAboutOpenCode,
+      TermuxProcessGroup.aiTeam => l10n.termuxProcsAboutAiTeam,
+      TermuxProcessGroup.buildDaemons => l10n.termuxProcsAboutBuild,
+      TermuxProcessGroup.orphans => l10n.termuxProcsAboutOrphan,
+      TermuxProcessGroup.other => l10n.termuxProcsAboutOther,
+    };
 
 /// "42 s", "12 min", "3 h 5 min".
 String formatTermuxDuration(AppLocalizations l10n, int seconds) {
@@ -63,12 +78,23 @@ class TermuxProcessesScreen extends StatefulWidget {
   State<TermuxProcessesScreen> createState() => _TermuxProcessesScreenState();
 }
 
+/// What the last stop did: said in place, on the list (§4.8).
+class _StopOutcome {
+  const _StopOutcome(this.line, {required this.complete});
+
+  final String line;
+
+  /// False when something would not stop (map statesMissing: "a stop that
+  /// did not take").
+  final bool complete;
+}
+
 class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
   TermuxProcessReport? _report;
   String? _error;
   bool _loading = true;
   bool _busy = false;
-  String? _resultLine;
+  _StopOutcome? _outcome;
   Timer? _timer;
 
   @override
@@ -110,30 +136,58 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
     }
   }
 
-  Future<void> _stopProcess(TermuxProcess process) async {
-    final confirmed = await confirmStopProcess(
+  /// "Stop java?" (termux-processes-stop-one-sheet). Raised from the
+  /// details sheet it replaces that sheet's content in place (§4.7).
+  Future<bool> _confirmStop(BuildContext context, TermuxProcess process) {
+    final l10n = _copy(context);
+    return showKitConfirm(
       context,
-      processName: process.name,
-      orphan: process.isOrphan,
+      title: l10n.termuxProcsStopOneTitle(process.name),
+      body: process.isOrphan
+          ? l10n.safetyStopOrphanBody
+          : l10n.termuxProcsStopOneBody,
+      confirmLabel: l10n.termuxProcsStopSemantics(process.name),
+      icon: AppIcons.stop,
+      kind: KitConfirmKind.stop,
+      // No undo, and it says so (map actionsMissing).
+      consequenceItems: [KitConsequence(l10n.termuxProcsNoRestart)],
+      sheetKey: const Key('termux-procs-confirm'),
+      confirmKey: const Key('termux-procs-confirm-stop'),
     );
+  }
+
+  Future<void> _stopProcess(TermuxProcess process) async {
+    final confirmed = await _confirmStop(context, process);
     if (!confirmed || !mounted) return;
     await _runStop(() => TermuxProcesses.stopPid(process.pid));
   }
 
+  /// "Stop every process in AI Team?" (termux-processes-stop-group-sheet):
+  /// says what else ends and how to start it again (map infoMissing).
   Future<void> _stopGroup(TermuxProcessGroup group) async {
     final l10n = _copy(context);
     final count =
         _report?.inGroup(group).where((p) => !p.protected).length ?? 0;
-    final confirmed = await showConfirmSheet(
+    final confirmed = await showKitConfirm(
       context,
       title: l10n.termuxProcsStopGroupTitle(
         termuxProcessGroupLabel(l10n, group),
       ),
-      message: l10n.termuxProcsStopGroupBody(count),
+      body: l10n.termuxProcsStopGroupBody(count),
       confirmLabel: l10n.termuxProcsStopConfirm(count),
-      cancelLabel: l10n.termuxProcsKeep,
       icon: AppIcons.stop,
-      destructive: true,
+      kind: KitConfirmKind.stop,
+      consequenceItems: [
+        if (group == TermuxProcessGroup.aiTeam) ...[
+          KitConsequence(
+            l10n.termuxProcsStopGroupTeamLost,
+            mark: KitConsequenceMark.lost,
+            key: const Key('termux-procs-confirm-team-lost'),
+          ),
+          KitConsequence(l10n.termuxProcsStopGroupTeamRestart),
+        ] else
+          KitConsequence(l10n.termuxProcsNoRestart),
+      ],
       sheetKey: const Key('termux-procs-confirm'),
       confirmKey: const Key('termux-procs-confirm-stop'),
     );
@@ -147,7 +201,7 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
     final l10n = _copy(context);
     setState(() {
       _busy = true;
-      _resultLine = null;
+      _outcome = null;
       _error = null;
     });
     try {
@@ -163,7 +217,12 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
         if (result.refused.isNotEmpty)
           l10n.termuxProcsRefused(result.refused.length),
       ];
-      setState(() => _resultLine = parts.join(' · '));
+      setState(
+        () => _outcome = _StopOutcome(
+          parts.join(' · '),
+          complete: result.remaining.isEmpty,
+        ),
+      );
     } on TermuxBridgeException catch (error) {
       if (mounted) setState(() => _error = error.message);
     } on FormatException {
@@ -179,267 +238,259 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
       open();
       return;
     }
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const TermuxSetupScreen()));
+    unawaited(pushKitPage<void>(context, (_) => const TermuxSetupScreen()));
   }
 
+  /// termux-processes-details-sheet: what the process is in words, its
+  /// numbers, and its command, folder and IDs folded under Details, each
+  /// copyable; Copy command and a full-width "Stop java" below.
   Future<void> _showDetails(TermuxProcess process) async {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) => SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-          child: Column(
-            key: const Key('termux-procs-details'),
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(process.name, style: theme.textTheme.titleLarge),
-              const SizedBox(height: 4),
-              Text(
-                l10n.termuxProcsPid(process.pid, process.ppid),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.mutedOf(theme),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                l10n.termuxProcsCommand,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: AppTheme.mutedOf(theme),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SelectableText(
-                process.cmd,
-                textDirection: TextDirection.ltr,
-                style: TextStyle(fontFamily: AppTheme.monoFamily, fontSize: 12),
-              ),
-              if (process.cwd.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  l10n.termuxProcsFolder,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: AppTheme.mutedOf(theme),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SelectableText(
-                  process.cwd,
-                  textDirection: TextDirection.ltr,
-                  style: TextStyle(
-                    fontFamily: AppTheme.monoFamily,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              if (process.protected)
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(sheetContext);
-                    _openServerControls();
-                  },
-                  icon: const Icon(AppIconography.settings),
-                  label: Text(l10n.termuxProcsProtected),
-                )
-              else
-                FilledButton.icon(
-                  key: const Key('termux-procs-details-stop'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: theme.colorScheme.error,
-                    foregroundColor: theme.colorScheme.onError,
-                  ),
-                  onPressed: () {
-                    Navigator.pop(sheetContext);
-                    unawaited(_stopProcess(process));
-                  },
-                  icon: const Icon(AppIcons.stop),
-                  label: Text(l10n.termuxProcsStop),
-                ),
-            ],
-          ),
+    BuildContext? inside;
+    await showKitSheet<void>(
+      context,
+      title: process.name,
+      subtitle: l10n.termuxProcsPid(process.pid, process.ppid),
+      icon: _iconFor(process),
+      secondary: process.protected
+          ? KitAction(
+              label: l10n.termuxProcsOpenControls,
+              icon: AppIconography.settings,
+              onPressed: () {
+                final sheet = inside;
+                if (sheet != null) KitSheet.close<void>(sheet);
+                _openServerControls();
+              },
+            )
+          : KitAction(
+              key: const Key('termux-procs-details-stop'),
+              label: l10n.termuxProcsStopSemantics(process.name),
+              icon: AppIcons.stop,
+              destructive: true,
+              onPressed: _busy
+                  ? null
+                  : () async {
+                      final sheet = inside;
+                      if (sheet == null) return;
+                      final confirmed = await _confirmStop(sheet, process);
+                      if (!confirmed || !mounted) return;
+                      if (sheet.mounted) KitSheet.close<void>(sheet);
+                      await _runStop(
+                        () => TermuxProcesses.stopPid(process.pid),
+                      );
+                    },
+              disabledReason: _busy ? l10n.termuxProcsStopping : null,
+            ),
+      tertiary: [
+        KitAction.copy(
+          key: const Key('termux-procs-details-copy'),
+          label: l10n.termuxProcsCopyCommand,
+          text: () => process.cmd,
         ),
-      ),
+      ],
+      body: (sheetContext) {
+        inside = sheetContext;
+        return _ProcessDetails(process: process);
+      },
     );
   }
+
+  static IconData _iconFor(TermuxProcess process) => process.protected
+      ? AppIconography.locked
+      : process.isOrphan
+      ? AppIconography.warning
+      : AppIconography.processor;
 
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     final report = _report;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.termuxProcsTitle),
+    final error = _error;
+    final Widget body;
+    if (report == null && _loading) {
+      body = ListView(
+        key: const ValueKey('termux-procs-loading'),
+        padding: KitScreen.padding(context),
+        children: const [KitSkeletonRows()],
+      );
+    } else if (report == null) {
+      // Termux not answering or the bridge failed (map statesMissing).
+      body = KitStateView.error(
+        key: const ValueKey('termux-procs-load-error'),
+        title: l10n.termuxProcsLoadFailedTitle,
+        body: error ?? l10n.termuxProcsFailed,
+        bodyKey: const Key('termux-procs-error'),
+        retry: KitAction(label: l10n.commonRetry, onPressed: _refresh),
+      );
+    } else {
+      body = KitRefresh(
+        onRefresh: _refresh,
+        child: ListView(
+          key: const ValueKey('termux-procs-list'),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsetsDirectional.only(
+            top: KitTokens.of(context).space2,
+            bottom: KitScreen.endPadding(context),
+          ),
+          children: [_list(context, l10n, report)],
+        ),
+      );
+    }
+    return KitScreen(
+      topBar: KitTopBar(
+        title: l10n.termuxProcsTitle,
         actions: [
-          IconButton(
+          KitAction(
             key: const Key('termux-procs-refresh'),
-            tooltip: l10n.termuxProcsRefresh,
+            label: l10n.termuxProcsRefresh,
+            icon: AppIconography.retry,
             onPressed: _busy ? null : _refresh,
-            icon: const Icon(AppIconography.retry),
+            disabledReason: _busy ? l10n.termuxProcsStopping : null,
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : KitRefresh(
-              onRefresh: _refresh,
-              child: DesktopScrollbarArea(
-                builder: (controller) => ListView(
-                  controller: controller,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-                  children: [
-                    if (report != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.termuxProcsRowSubtitle(
-                                report.count,
-                                formatTermuxCpuPct(report.totalCpuPct),
-                              ),
-                              key: const Key('termux-procs-summary'),
-                              style: theme.textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              l10n.termuxProcsAutoRefresh,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppTheme.mutedOf(theme),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (_error != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
-                        child: Text(
-                          _error!,
-                          key: const Key('termux-procs-error'),
-                          style: TextStyle(color: theme.colorScheme.error),
-                        ),
-                      ),
-                    if (_resultLine != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
-                        child: Semantics(
-                          liveRegion: true,
-                          child: Text(
-                            _resultLine!,
-                            key: const Key('termux-procs-result'),
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.successOf(theme),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (report != null && report.count == 0)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 16, 4, 4),
-                        child: Text(
-                          l10n.termuxProcsEmpty,
-                          key: const Key('termux-procs-empty'),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.mutedOf(theme),
-                          ),
-                        ),
-                      ),
-                    if (report != null)
-                      for (final group in report.groups)
-                        ..._buildGroup(
-                          l10n,
-                          theme,
-                          group,
-                          report.inGroup(group),
-                        ),
-                  ],
-                ),
-              ),
-            ),
+      width: KitScreenWidth.reading,
+      loading: _busy,
+      loadingLabel: l10n.termuxProcsStopping,
+      body: body,
     );
   }
 
-  List<Widget> _buildGroup(
+  Widget _list(
+    BuildContext context,
     AppLocalizations l10n,
-    ThemeData theme,
+    TermuxProcessReport report,
+  ) {
+    final tokens = KitTokens.of(context);
+    final rails = EdgeInsetsDirectional.only(
+      start: tokens.gutter,
+      end: tokens.gutter,
+      bottom: tokens.sectionGap,
+    );
+    final error = _error;
+    final outcome = _outcome;
+    final groups = report.groups.toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (report.count > 0)
+          Padding(
+            padding: rails,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                KitText(
+                  l10n.termuxProcsRowSubtitle(
+                    report.count,
+                    formatTermuxCpuPct(report.totalCpuPct),
+                  ),
+                  key: const Key('termux-procs-summary'),
+                  role: KitTextRole.headline,
+                  tabular: true,
+                ),
+                SizedBox(height: tokens.space1),
+                KitText(l10n.termuxProcsAutoRefresh, role: KitTextRole.caption),
+              ],
+            ),
+          ),
+        if (error != null)
+          Padding(
+            padding: rails,
+            child: KitNotice.error(
+              message: error,
+              messageKey: const Key('termux-procs-error'),
+              retry: KitAction(label: l10n.commonRetry, onPressed: _refresh),
+            ),
+          ),
+        if (outcome != null)
+          Padding(
+            padding: rails,
+            child: KitNotice(
+              key: const ValueKey('termux-procs-outcome'),
+              tone: outcome.complete ? AppStatusTone.ok : AppStatusTone.failure,
+              icon: outcome.complete
+                  ? AppIconography.check
+                  : AppIconography.error,
+              title: outcome.complete ? null : l10n.termuxProcsNotStoppedTitle,
+              message: outcome.line,
+              messageKey: const Key('termux-procs-result'),
+            ),
+          ),
+        if (report.count == 0)
+          Padding(
+            padding: rails,
+            child: KitStateView(
+              key: const Key('termux-procs-empty'),
+              icon: AppIconography.processor,
+              title: l10n.termuxProcsEmpty,
+              body: l10n.termuxProcsEmptyBody,
+              size: KitStateSize.inline,
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        for (final group in groups)
+          Padding(
+            padding: EdgeInsetsDirectional.only(bottom: tokens.sectionGap),
+            child: _group(context, l10n, group, report.inGroup(group)),
+          ),
+      ],
+    );
+  }
+
+  Widget _group(
+    BuildContext context,
+    AppLocalizations l10n,
     TermuxProcessGroup group,
     List<TermuxProcess> members,
   ) {
+    final tokens = KitTokens.of(context);
     final stoppable = members.where((p) => !p.protected).length;
-    return [
-      SectionLabel(
-        '${termuxProcessGroupLabel(l10n, group)} · ${members.length}',
-        key: Key('termux-procs-group-${group.wireName}'),
-        padding: const EdgeInsets.fromLTRB(4, 20, 4, 4),
-        trailing: group.stoppable && stoppable > 0
-            ? TextButton.icon(
+    final hint = switch (group) {
+      TermuxProcessGroup.opencodeServer => l10n.termuxProcsGroupOpenCodeHint,
+      TermuxProcessGroup.orphans => l10n.termuxProcsOrphansHint,
+      _ => null,
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KitRowGroup(
+          key: Key('termux-procs-group-${group.wireName}'),
+          label: '${termuxProcessGroupLabel(l10n, group)} · ${members.length}',
+          children: [
+            for (final process in members) _row(context, l10n, process),
+            // Stop all sits last, behind the group's destructive hairline
+            // (kit-v2 §4.2), not in the label: there it would squeeze the
+            // group's name at large text.
+            if (group.stoppable && stoppable > 0)
+              KitRow(
                 key: Key('termux-procs-stop-group-${group.wireName}'),
-                onPressed: _busy ? null : () => _stopGroup(group),
-                style: TextButton.styleFrom(
-                  foregroundColor: theme.colorScheme.error,
-                ),
-                icon: const Icon(AppIcons.stop, size: 18),
-                label: Text(l10n.termuxProcsStopGroup),
-              )
-            : null,
-      ),
-      if (group == TermuxProcessGroup.opencodeServer)
-        _hint(theme, l10n.termuxProcsGroupOpenCodeHint),
-      if (group == TermuxProcessGroup.orphans)
-        _hint(theme, l10n.termuxProcsOrphansHint),
-      for (final process in members)
-        _ProcessRow(
-          process: process,
-          enabled: !_busy,
-          onOpen: () => _showDetails(process),
-          onStop: () => _stopProcess(process),
-          onProtected: _openServerControls,
+                leading: KitRow.icon(context, AppIcons.stop),
+                title: l10n.termuxProcsStopGroup,
+                destructive: true,
+                enabled: !_busy,
+                disabledReason: _busy ? l10n.termuxProcsStopping : null,
+                onTap: () => _stopGroup(group),
+              ),
+          ],
         ),
-    ];
+        if (hint != null)
+          Padding(
+            padding: EdgeInsetsDirectional.only(
+              start: tokens.gutter + tokens.space1,
+              end: tokens.gutter + tokens.space1,
+              top: tokens.space2,
+            ),
+            child: KitText(hint, role: KitTextRole.secondary),
+          ),
+      ],
+    );
   }
 
-  Widget _hint(ThemeData theme, String text) => Padding(
-    padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
-    child: Text(
-      text,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: AppTheme.mutedOf(theme),
-        height: 1.4,
-      ),
-    ),
-  );
-}
-
-class _ProcessRow extends StatelessWidget {
-  const _ProcessRow({
-    required this.process,
-    required this.enabled,
-    required this.onOpen,
-    required this.onStop,
-    required this.onProtected,
-  });
-
-  final TermuxProcess process;
-  final bool enabled;
-  final VoidCallback onOpen;
-  final VoidCallback onStop;
-  final VoidCallback onProtected;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final attention = AppTheme.statusColor(theme, AppStatusTone.attention);
+  Widget _row(
+    BuildContext context,
+    AppLocalizations l10n,
+    TermuxProcess process,
+  ) {
     final stats = l10n.termuxProcsStats(
       formatTermuxCpuPct(process.cpuPct),
       l10n.termuxProcsMemoryMb(process.rssKb ~/ 1024),
@@ -454,60 +505,138 @@ class _ProcessRow extends StatelessWidget {
       ),
       null => null,
     };
-    return ListTile(
+    final stopLabel = l10n.termuxProcsStopSemantics(process.name);
+    return KitRow(
       key: Key('termux-proc-${process.pid}'),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      minLeadingWidth: 32,
-      horizontalTitleGap: 12,
-      leading: SizedBox.square(
-        dimension: 32,
-        child: Icon(
-          process.protected
-              ? AppIconography.locked
-              : process.isOrphan
-              ? AppIconography.warning
-              : AppIconography.processor,
-          size: 24,
-          color: process.isOrphan ? attention : AppTheme.mutedOf(theme),
-        ),
-      ),
-      title: Text(process.name),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(stats, style: theme.textTheme.bodySmall),
-          if (reason != null)
-            Text(
-              reason,
-              key: Key('termux-proc-reason-${process.pid}'),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: attention,
-                fontWeight: FontWeight.w600,
-              ),
+      leading: KitRow.icon(context, _iconFor(process)),
+      title: process.name,
+      supporting: TextSpan(text: stats),
+      below: reason == null && !process.protected
+          ? null
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (reason != null)
+                  KitText(
+                    reason,
+                    key: Key('termux-proc-reason-${process.pid}'),
+                    role: KitTextRole.secondary,
+                    tone: KitTextTone.primary,
+                  ),
+                if (process.protected)
+                  KitText(
+                    l10n.termuxProcsProtected,
+                    key: Key('termux-proc-protected-${process.pid}'),
+                    role: KitTextRole.secondary,
+                  ),
+              ],
             ),
-          if (process.protected)
-            Text(
-              l10n.termuxProcsProtected,
-              key: Key('termux-proc-protected-${process.pid}'),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-              ),
-            ),
-        ],
-      ),
-      trailing: process.protected
-          ? const Icon(AppIconography.chevronRight, size: 20)
-          : process.isOrphan
-          ? IconButton(
+      trailing: process.isOrphan && !process.protected
+          ? KitIconButton(
               key: Key('termux-proc-stop-${process.pid}'),
-              tooltip: l10n.termuxProcsStopSemantics(process.name),
-              onPressed: enabled ? onStop : null,
-              color: theme.colorScheme.error,
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              icon: const Icon(AppIcons.stop),
+              icon: AppIcons.stop,
+              tooltip: stopLabel,
+              destructive: true,
+              onPressed: _busy ? null : () => _stopProcess(process),
+              disabledReason: _busy ? l10n.termuxProcsStopping : null,
             )
-          : const Icon(AppIconography.chevronRight, size: 20),
-      onTap: process.protected ? onProtected : onOpen,
+          : const KitChevron(),
+      onTap: process.protected
+          ? _openServerControls
+          : () => _showDetails(process),
+      // One menu per process (map proposal): the same acts as the row,
+      // its sheet and its stop button.
+      menu: [
+        if (process.protected)
+          KitMenuItem(
+            label: l10n.termuxProcsOpenControls,
+            icon: AppIconography.settings,
+            onSelected: _openServerControls,
+          )
+        else
+          KitMenuItem(
+            label: l10n.kitDetails,
+            icon: AppIconography.info,
+            onSelected: () => _showDetails(process),
+          ),
+        KitMenuItem.copy(
+          label: l10n.termuxProcsCopyCommand,
+          text: () => process.cmd,
+        ),
+        if (!process.protected)
+          KitMenuItem(
+            label: stopLabel,
+            icon: AppIcons.stop,
+            destructive: true,
+            enabled: !_busy,
+            disabledReason: _busy ? l10n.termuxProcsStopping : null,
+            onSelected: () => _stopProcess(process),
+          ),
+      ],
+    );
+  }
+}
+
+/// The details sheet's body: the words first, the numbers, then every
+/// technical value once, copyable, left to right, under one Details fold
+/// (§4.3).
+class _ProcessDetails extends StatelessWidget {
+  const _ProcessDetails({required this.process});
+
+  final TermuxProcess process;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _copy(context);
+    final tokens = KitTokens.of(context);
+    final reason = switch (process.orphanReason) {
+      TermuxOrphanReason.parentGone => l10n.termuxProcsOrphanParentGone(
+        formatTermuxDuration(l10n, process.elapsedSeconds),
+      ),
+      TermuxOrphanReason.cpuNoOwner => l10n.termuxProcsOrphanCpu(
+        formatTermuxDuration(l10n, process.cpuSeconds),
+      ),
+      null => null,
+    };
+    return Column(
+      key: const Key('termux-procs-details'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        KitText(
+          termuxProcessAbout(l10n, process),
+          key: const Key('termux-procs-details-about'),
+        ),
+        if (reason != null) ...[
+          SizedBox(height: tokens.space2),
+          KitText(reason, role: KitTextRole.secondary),
+        ],
+        SizedBox(height: tokens.space2),
+        KitText(
+          l10n.termuxProcsStats(
+            formatTermuxCpuPct(process.cpuPct),
+            l10n.termuxProcsMemoryMb(process.rssKb ~/ 1024),
+            formatTermuxDuration(l10n, process.elapsedSeconds),
+          ),
+          role: KitTextRole.secondary,
+          tabular: true,
+        ),
+        SizedBox(height: tokens.space4),
+        KitDetailsFold(
+          values: [
+            KitTechnicalValue(
+              l10n.termuxProcsCommand,
+              process.cmd,
+              key: const Key('termux-procs-details-command'),
+            ),
+            if (process.cwd.isNotEmpty)
+              KitTechnicalValue(l10n.termuxProcsFolder, process.cwd),
+            KitTechnicalValue(l10n.termuxProcsProcessId, '${process.pid}'),
+            KitTechnicalValue(l10n.termuxProcsParentId, '${process.ppid}'),
+          ],
+        ),
+      ],
     );
   }
 }

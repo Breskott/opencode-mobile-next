@@ -15375,6 +15375,62 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get termuxProcsLoading => 'Reading what runs on this phone';
+
+  @override
+  String get termuxProcsLoadFailedTitle => 'Couldn\'t read what\'s running';
+
+  @override
+  String get termuxProcsEmptyBody =>
+      'When OpenCode, the AI Team or a build runs here, it shows up in this list.';
+
+  @override
+  String get termuxProcsNotStoppedTitle => 'Not everything stopped';
+
+  @override
+  String get termuxProcsCopyCommand => 'Copy command';
+
+  @override
+  String get termuxProcsOpenControls => 'Open On this phone';
+
+  @override
+  String get termuxProcsProcessId => 'Process ID';
+
+  @override
+  String get termuxProcsParentId => 'Parent process ID';
+
+  @override
+  String get termuxProcsAboutOpenCode =>
+      'Part of the OpenCode server on this phone.';
+
+  @override
+  String get termuxProcsAboutAiTeam =>
+      'Part of the AI Team. Stopping it stops the work the team is doing.';
+
+  @override
+  String get termuxProcsAboutBuild =>
+      'A build helper. The next build starts it again when it needs it.';
+
+  @override
+  String get termuxProcsAboutOrphan =>
+      'Nothing is waiting on it, so stopping it is safe.';
+
+  @override
+  String get termuxProcsAboutOther =>
+      'Started by something else on this phone.';
+
+  @override
+  String get termuxProcsNoRestart => 'It can\'t be started again from here.';
+
+  @override
+  String get termuxProcsStopGroupTeamLost =>
+      'Any task the team is working on stops too.';
+
+  @override
+  String get termuxProcsStopGroupTeamRestart =>
+      'You can start the team again from AI Team.';
+
+  @override
   String get teamUiPhoneOptionalTag => 'Optional · experimental';
 
   @override
@@ -17209,6 +17265,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneSetupProgressKeepGoing => 'Keep going';
+
+  @override
+  String get phoneSetupProgressStopContinueLater =>
+      'Continue any time from On this phone.';
 
   @override
   String get builtinServerTitle => 'OpenCode inside the app';

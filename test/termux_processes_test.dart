@@ -347,7 +347,7 @@ void main() {
         find.textContaining('whatever it was still doing is lost'),
         findsOneWidget,
       );
-      await tester.tap(find.text('Keep'));
+      await tester.tap(find.text('Keep running'));
       await tester.pumpAndSettle();
       expect(fixture.stops, isEmpty);
 
@@ -379,7 +379,7 @@ void main() {
         expect(find.byKey(const Key('termux-procs-confirm')), findsOneWidget);
         expect(find.text('Stop every process in AI Team?'), findsOneWidget);
         expect(fixture.stops, isEmpty);
-        await tester.tap(find.text('Keep'));
+        await tester.tap(find.text('Keep running'));
         await tester.pumpAndSettle();
         expect(fixture.stops, isEmpty);
         await tester.tap(
@@ -413,6 +413,128 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets('stopping the AI Team says its tasks stop and how to restart', (
+      tester,
+    ) async {
+      await fixture.mount(tester);
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const Key('termux-procs-stop-group-ai_team')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Any task the team is working on stops too.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('You can start the team again from AI Team.'),
+        findsOneWidget,
+      );
+      expect(find.text('Stop 2'), findsOneWidget);
+      await tester.tap(find.text('Keep running'));
+      await tester.pumpAndSettle();
+      expect(fixture.stops, isEmpty);
+    });
+
+    testWidgets('a stop that did not take is said as a problem', (
+      tester,
+    ) async {
+      await fixture.mount(tester);
+      await tester.pump();
+      fixture.stopResult = jsonEncode({
+        'stopped': <int>[],
+        'killed': <int>[],
+        'remaining': [
+          {'pid': 200, 'name': 'minimax-coding-plan-mcp'},
+        ],
+        'refused': <Object>[],
+      });
+      await tester.tap(find.byKey(const Key('termux-proc-stop-200')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('termux-procs-confirm-stop')));
+      await tester.pumpAndSettle();
+      expect(find.text('Not everything stopped'), findsOneWidget);
+      expect(find.text('Stopped 0 · 1 would not stop'), findsOneWidget);
+    });
+
+    testWidgets('details say what the process is and copy its command', (
+      tester,
+    ) async {
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await fixture.mount(tester);
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('termux-proc-300')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'A build helper. The next build starts it again when it needs it.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Stop Gradle daemon'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('termux-procs-details-copy')));
+      await tester.pump();
+      expect(
+        copied,
+        'java -Xmx2g org.gradle.launcher.daemon.bootstrap.GradleDaemon 8.5',
+      );
+      // The command, folder and IDs sit under the one Details fold.
+      await tester.tap(find.byKey(const ValueKey('kit-details-toggle')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('termux-procs-details-command')),
+        findsOneWidget,
+      );
+      expect(find.text('/root/projects/IPTV_King'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('a list that cannot be read offers Try again', (tester) async {
+      fixture.listing = 'not json';
+      await fixture.mount(tester);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text("Couldn't read what's running"), findsOneWidget);
+      expect(find.text('Could not read the process list.'), findsOneWidget);
+      fixture.listing = _fixtureProcesses();
+      await tester.tap(find.text('Try again'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('6 processes · CPU 104%'), findsOneWidget);
+    });
+
+    testWidgets('an empty list says what would show here', (tester) async {
+      fixture.listing = '[]';
+      await fixture.mount(tester);
+      await tester.pump();
+      expect(
+        find.text('Nothing is running in the phone server'),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'When OpenCode, the AI Team or a build runs here, it shows up in '
+          'this list.',
+        ),
+        findsOneWidget,
+      );
+    });
 
     testWidgets('protected rows send the user to the server controls', (
       tester,
