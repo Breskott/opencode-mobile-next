@@ -58,6 +58,7 @@ const RULES = `
 Repository: ${REPO} (Flutter, Android first). Obey AGENTS.md.
 Owner decision 2026-09-27 (speed): do not spend time on tests. Write the part's behaviour tests and its gallery once, run ONLY your own new test files once (plus analyze on your files); do not re-run other suites, do not chase unrelated failures (list them), do not regenerate other units' goldens. Reviewers never run tests.
 Owner rule 2026-09-27 (rethink, not just restyle): for every item on your pages ask whether it belongs there at all; an action must name what it acts on ("Disconnect from Laptop", never a bare "Disconnect"), say what happens in one line, and live on the page of the thing it acts on. Move or remove stray items instead of restyling them, and list what you moved in your QA record.
+Owner rule 2026-09-27 (no state sections): do not split a list into sections by state ("Needs you", "Running", ...). Use one list ordered by urgency (needs you, then running, then the rest newest first); the row's mark plus its worded state carries the meaning.
 Owner decision 2026-09-27: Arabic is DROPPED — no Arabic/RTL galleries, no Arabic ARB entries for new copy (app_en.arb only), no RTL review. Galleries: phone 412x915 and one wide size (1280x800) only, light and dark.
 Staying alive (the harness kills an agent that shows no progress for 3 minutes):
 - No single command may run longer than 2 minutes. Run tests one or two files at a time as
