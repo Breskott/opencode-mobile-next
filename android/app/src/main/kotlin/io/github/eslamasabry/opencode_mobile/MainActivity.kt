@@ -377,7 +377,11 @@ class MainActivity : FlutterActivity() {
                     main.post { result.success(value) }
                 } catch (error: Throwable) {
                     main.post {
-                        result.error("builtin_linux", error.message ?: error.javaClass.simpleName, null)
+                        if (error is SetupPersistenceException) {
+                            result.error(SetupPersistenceException.CODE, null, null)
+                        } else {
+                            result.error("builtin_linux", error.message ?: error.javaClass.simpleName, null)
+                        }
                     }
                 }
             }.start()

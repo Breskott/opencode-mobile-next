@@ -67,7 +67,6 @@ class SetupRunner private constructor(private val context: Context) {
     // setup.json is written at most four times a second, the notification
     // at most once a second; state changes are written at once.
     private var dirty = false
-    private var lastWrite = 0L
     private var lastNotified = 0L
     private var lastNotifiedText = ""
 
@@ -77,7 +76,12 @@ class SetupRunner private constructor(private val context: Context) {
         read()?.let { stale ->
             if (stale.state == "running") {
                 stale.markInterrupted(System.currentTimeMillis())
-                writeFile(stale, params)
+                job = stale
+                try {
+                    synchronized(lock) { writeFile(stale, params) }
+                } catch (_: SetupPersistenceException) {
+                    persistenceFailed()
+                }
             }
         }
     }
@@ -87,7 +91,7 @@ class SetupRunner private constructor(private val context: Context) {
     /** The live job while one runs, else what setup.json says; null for none. */
     fun status(): String? = synchronized(lock) {
         val live = job
-        if (live != null && worker?.isAlive == true) {
+        if (live != null && (worker?.isAlive == true || live.errorCode == SetupPersistenceException.CODE)) {
             live.logTail = tail.value()
             return json(live, params).toString()
         }
@@ -128,7 +132,12 @@ class SetupRunner private constructor(private val context: Context) {
                 } catch (_: Exception) {
                     null
                 }
-                writeNow()
+                try {
+                    writeNow()
+                } catch (error: SetupPersistenceException) {
+                    persistenceFailed()
+                    throw error
+                }
                 lastNotifiedText = progressText(state.overall())
                 lastNotified = System.currentTimeMillis()
                 SetupService.start(context, texts.channel, texts.title, lastNotifiedText)
@@ -168,62 +177,78 @@ class SetupRunner private constructor(private val context: Context) {
             start()
         }
         var failure: String? = null
-        for (spec in specs) {
-            if (spec.skipped) continue
-            if (cancelled) break
-            val component = synchronized(lock) {
-                job!!.current = spec.id
-                job!!.component(spec.id).apply {
-                    state = "running"
-                    stage = spec.stage
-                    done = null
-                    total = null
-                    percent = null
-                    error = null
-                    startedAt = System.currentTimeMillis()
-                    endedAt = null
-                }
-            }
-            writeNow()
-            val error = try {
-                when {
-                    spec.native -> runNative(spec, component)
-                    spec.step -> waitForStep(spec, component)
-                    else -> runScript(spec, component)
-                }
-            } catch (e: Throwable) {
-                Log.e(BuiltinLinux.TAG, "setup ${spec.id} failed", e)
-                e.message ?: e.javaClass.simpleName
-            }
-            synchronized(lock) {
-                component.endedAt = System.currentTimeMillis()
-                when {
-                    cancelled -> component.state = "pending"
-                    error == null -> component.state = "done"
-                    else -> {
-                        component.state = "failed"
-                        component.error = error
+        try {
+            for (spec in specs) {
+                if (spec.skipped) continue
+                if (cancelled) break
+                val component = synchronized(lock) {
+                    job!!.current = spec.id
+                    job!!.component(spec.id).apply {
+                        state = "running"
+                        stage = spec.stage
+                        done = null
+                        total = null
+                        percent = null
+                        error = null
+                        startedAt = System.currentTimeMillis()
+                        endedAt = null
                     }
                 }
+                writeNow()
+                val error = try {
+                    when {
+                        spec.native -> runNative(spec, component)
+                        spec.step -> waitForStep(spec, component)
+                        else -> runScript(spec, component)
+                    }
+                } catch (error: SetupPersistenceException) {
+                    throw error
+                } catch (e: Throwable) {
+                    Log.e(BuiltinLinux.TAG, "setup ${spec.id} failed", e)
+                    e.message ?: e.javaClass.simpleName
+                }
+                synchronized(lock) {
+                    component.endedAt = System.currentTimeMillis()
+                    when {
+                        cancelled -> component.state = "pending"
+                        error == null -> component.state = "done"
+                        else -> {
+                            component.state = "failed"
+                            component.error = error
+                        }
+                    }
+                }
+                if (cancelled) break
+                if (error != null) {
+                    failure = error
+                    break
+                }
             }
-            if (cancelled) break
-            if (error != null) {
-                failure = error
-                break
-            }
+        } catch (_: SetupPersistenceException) {
+            persistenceFailed()
+        } finally {
+            // Stop admission and drain the periodic owner before the terminal
+            // snapshot. interrupt alone cannot cancel file IO already in flight.
+            writer.interrupt()
+            writer.join()
         }
         synchronized(lock) {
             val state = job!!
-            state.state = when {
-                cancelled -> "cancelled"
-                failure != null -> "failed"
-                else -> "done"
+            if (state.state == "running") {
+                state.state = when {
+                    cancelled -> "cancelled"
+                    failure != null -> "failed"
+                    else -> "done"
+                }
+                state.error = failure
+                if (state.state == "done") state.current = null
             }
-            state.error = failure
-            if (state.state == "done") state.current = null
         }
-        writeNow()
-        writer.interrupt()
+        try {
+            writeNow()
+        } catch (_: SetupPersistenceException) {
+            persistenceFailed()
+        }
         val ended = synchronized(lock) { job!!.state }
         val words = texts
         if (words == null || ended == "cancelled") {
@@ -294,6 +319,10 @@ class SetupRunner private constructor(private val context: Context) {
                     event(component, event)
                 }
             }
+        } catch (error: SetupPersistenceException) {
+            BuiltinLinux.stopTree(started)
+            synchronized(lock) { process = null }
+            throw error
         } catch (_: Exception) {
             // The stream closes under us when the script is cancelled.
         }
@@ -356,21 +385,37 @@ class SetupRunner private constructor(private val context: Context) {
                 if (due) writeNow() else notifyProgress()
             }
         } catch (_: InterruptedException) {
+        } catch (_: SetupPersistenceException) {
+            persistenceFailed()
         }
     }
 
+    private fun persistenceFailed() {
+        val running = synchronized(lock) {
+            cancelled = true
+            job?.apply {
+                state = "failed"
+                errorCode = SetupPersistenceException.CODE
+                error = null
+                components.filter { it.state == "running" }.forEach { it.state = "pending" }
+                updatedAt = System.currentTimeMillis()
+            }
+            (lock as Object).notifyAll()
+            process
+        }
+        running?.let { BuiltinLinux.stopTree(it) }
+    }
+
     private fun writeNow() {
-        val snapshot: SetupJobState
-        val paramsNow: JSONObject?
+        // One owner covers both the snapshot and the entire atomic commit.
+        // A mutable job reference must never escape this lock to a writer.
         synchronized(lock) {
-            snapshot = job ?: return
+            val snapshot = job ?: return
             snapshot.updatedAt = System.currentTimeMillis()
             snapshot.logTail = tail.value()
-            paramsNow = params
+            writeFile(snapshot, params)
             dirty = false
-            lastWrite = snapshot.updatedAt
         }
-        writeFile(snapshot, paramsNow)
         notifyProgress()
     }
 
@@ -403,15 +448,8 @@ class SetupRunner private constructor(private val context: Context) {
         state.toJson().apply { put("params", params ?: JSONObject()) }
 
     private fun writeFile(state: SetupJobState, params: JSONObject?) {
-        val text = synchronized(lock) { json(state, params).toString() }
-        try {
-            file.parentFile?.mkdirs()
-            val tmp = File(file.parentFile, "setup.json.tmp")
-            tmp.writeText(text)
-            if (!tmp.renameTo(file)) file.writeText(text)
-        } catch (error: Exception) {
-            Log.w(BuiltinLinux.TAG, "setup.json not written", error)
-        }
+        check(Thread.holdsLock(lock))
+        SetupPersistence.replace(file, json(state, params).toString())
     }
 
     private fun read(): SetupJobState? = try {
