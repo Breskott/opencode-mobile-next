@@ -22306,4 +22306,20 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get filesLoadingFolder => 'Opening folder…';
+
+  @override
+  String get filesSearching => 'Searching…';
+
+  @override
+  String get filesShowHidden => 'Show hidden files';
+
+  @override
+  String get filesOnlyHidden =>
+      'This folder has only hidden files and folders.';
+
+  @override
+  String get filesCopyName => 'Copy name';
 }

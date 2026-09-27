@@ -4,20 +4,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/state/review_handoff.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// UX plan 5.8 item 2: the file row's actions (Attach, Open review, Copy
-/// path, ...) used to be reachable only by a long press or a right click.
-/// The trailing button is the visible door to the very same sheet.
+/// screen-files-1 (map files-row-actions-sheet → merge-into:files, and
+/// files-file-viewer-sheet → the kit's one viewer): a row's actions are its
+/// KitRowMenu (long-press, right-click, semantic actions) instead of a per-row
+/// "..." button and a bespoke sheet; a file opens in KitViewer.
 class _FilesApi extends OpenCodeApi {
   _FilesApi() : super(baseUrl: 'http://localhost');
 
   @override
   Future<List<FileNode>> listFiles([String path = '']) async => [
     FileNode(name: 'lib', path: 'lib', isDir: true),
+    FileNode(name: '.env', path: '.env', isDir: false),
     FileNode(name: 'README.md', path: 'README.md', isDir: false),
   ];
 
@@ -26,7 +30,7 @@ class _FilesApi extends OpenCodeApi {
 
   @override
   Future<FileContent> fileContent(String path) async =>
-      const FileContent('content');
+      const FileContent('readme body', mimeType: 'text/plain');
 
   @override
   Future<List<Session>> sessions() async => const [];
@@ -43,135 +47,167 @@ Future<ConnectionController> _controller() async {
     ..status = StreamStatus.connected;
 }
 
-List<String> _sheetActionKeys(WidgetTester tester) => [
-  for (final key in const [
-    'file-menu-open',
-    'file-menu-attach',
-    'file-menu-reference',
-    'file-menu-review',
-    'file-menu-copy-path',
-  ])
-    if (find.byKey(ValueKey(key)).evaluate().isNotEmpty) key,
-];
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   Future<void> pump(
     WidgetTester tester, {
     ProjectFileAttachment? onAttachFile,
+    ReviewHandoffSession? handoff,
   }) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: FilesScreen(controller: controller, onAttachFile: onAttachFile),
+          body: FilesScreen(
+            controller: controller,
+            onAttachFile: onAttachFile,
+            handoff: handoff,
+          ),
         ),
       ),
     );
     await tester.pumpAndSettle();
   }
 
-  testWidgets('every file and folder row shows a labeled actions button', (
-    tester,
-  ) async {
-    await pump(tester);
+  String? mockClipboard(WidgetTester tester) {
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String?;
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    return copied;
+  }
 
-    for (final (path, name) in const [
-      ('lib', 'lib'),
-      ('README.md', 'README.md'),
-    ]) {
-      final button = find.byKey(ValueKey('project-file-actions-$path'));
-      expect(button, findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.byKey(ValueKey('project-file-$path')),
-          matching: button,
-        ),
-        findsOneWidget,
-      );
-      expect(tester.widget<IconButton>(button).tooltip, 'Actions for $name');
-      // The product's 48dp touch floor, in both directions.
-      expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
-      expect(tester.getSize(button).width, greaterThanOrEqualTo(48));
-    }
-  });
-
-  testWidgets('the button opens the same sheet as the long press', (
+  testWidgets('rows carry no per-row button; long-press opens the row menu', (
     tester,
   ) async {
     await pump(tester, onAttachFile: (_, _) async {});
 
-    await tester.longPress(find.text('README.md'));
-    await tester.pumpAndSettle();
     expect(
-      find.byKey(const ValueKey('file-row-actions-sheet')),
-      findsOneWidget,
+      find.byKey(const ValueKey('project-file-actions-lib')),
+      findsNothing,
     );
-    final fromGesture = _sheetActionKeys(tester);
-    expect(fromGesture, contains('file-menu-attach'));
-    expect(fromGesture, contains('file-menu-copy-path'));
-    Navigator.of(
-      tester.element(find.byKey(const ValueKey('file-row-actions-sheet'))),
-    ).pop();
-    await tester.pumpAndSettle();
+    expect(find.byType(IconButton), findsNothing);
     expect(find.byKey(const ValueKey('file-row-actions-sheet')), findsNothing);
 
-    await tester.tap(
-      find.byKey(const ValueKey('project-file-actions-README.md')),
-    );
+    await tester.longPress(find.text('README.md'));
     await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey('file-row-actions-sheet')),
-      findsOneWidget,
-    );
-    expect(_sheetActionKeys(tester), fromGesture);
+    expect(find.byKey(const ValueKey('file-menu-attach')), findsOneWidget);
+    expect(find.byKey(const ValueKey('file-menu-copy-path')), findsOneWidget);
+    expect(find.byKey(const ValueKey('file-menu-copy-name')), findsOneWidget);
+    // Opening is the row's own tap, so the menu does not repeat it.
+    expect(find.byKey(const ValueKey('file-menu-open')), findsNothing);
+    await tester.tapAt(Offset.zero);
+    await tester.pumpAndSettle();
+
+    // A folder: nothing to attach, but its path and name can be copied.
+    await tester.longPress(find.text('lib'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('file-menu-attach')), findsNothing);
+    expect(find.byKey(const ValueKey('file-menu-copy-path')), findsOneWidget);
   });
 
-  testWidgets(
-    'an action chosen from the button runs, and the row tap is kept',
-    (tester) async {
-      String? attached;
-      await pump(tester, onAttachFile: (path, _) async => attached = path);
-      String? copied;
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+  testWidgets('menu actions run: attach says so in place, copy copies', (
+    tester,
+  ) async {
+    String? attached;
+    await pump(tester, onAttachFile: (path, _) async => attached = path);
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String?;
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
-        (call) async {
-          if (call.method == 'Clipboard.setData') {
-            copied = (call.arguments as Map)['text'] as String?;
-          }
-          return null;
-        },
-      );
-      addTearDown(
-        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-          SystemChannels.platform,
-          null,
-        ),
-      );
+        null,
+      ),
+    );
 
-      await tester.tap(
-        find.byKey(const ValueKey('project-file-actions-README.md')),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('file-menu-attach')));
-      await tester.pumpAndSettle();
-      expect(attached, 'README.md');
+    await tester.longPress(find.text('README.md'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('file-menu-attach')));
+    await tester.pumpAndSettle();
+    expect(attached, 'README.md');
+    // No snackbar: an in-place notice under the search field.
+    expect(find.byType(SnackBar), findsNothing);
+    expect(find.byKey(const ValueKey('files-notice')), findsOneWidget);
+    expect(find.text('README.md attached.'), findsOneWidget);
 
-      // A folder has no other visible Copy path; the button supplies it.
-      await tester.tap(find.byKey(const ValueKey('project-file-actions-lib')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('file-menu-copy-path')));
-      await tester.pumpAndSettle();
-      expect(copied, 'lib');
+    await tester.longPress(find.text('lib'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('file-menu-copy-name')));
+    await tester.pumpAndSettle();
+    expect(copied, 'lib');
 
-      // Tapping the button did not open the file or enter the folder.
-      expect(
-        find.byKey(const ValueKey('project-file-README.md')),
-        findsOneWidget,
-      );
-      expect(find.byKey(const ValueKey('project-file-lib')), findsOneWidget);
-    },
-  );
+    // The menu did not open the file or enter the folder.
+    expect(find.byKey(const ValueKey('project-file-lib')), findsOneWidget);
+  });
+
+  testWidgets('dot entries stay hidden until Show hidden files', (
+    tester,
+  ) async {
+    await pump(tester);
+    expect(find.text('.env'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('file-surface-selector')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('files-show-hidden')));
+    await tester.pumpAndSettle();
+    expect(find.text('.env'), findsOneWidget);
+  });
+
+  testWidgets('a file opens in the kit viewer, with no second viewer sheet', (
+    tester,
+  ) async {
+    mockClipboard(tester);
+    await pump(tester, onAttachFile: (_, _) async {});
+
+    await tester.tap(find.text('README.md'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('files-viewer')), findsOneWidget);
+    expect(find.textContaining('readme body'), findsWidgets);
+    // Attach is the viewer's one labelled action.
+    expect(find.byKey(const Key('project-file-attach')), findsOneWidget);
+  });
+
+  testWidgets('Add to prompt stages a reference with Undo, not a snackbar', (
+    tester,
+  ) async {
+    final store = ReviewHandoffStore();
+    final handoff = ReviewHandoffSession(store: store, sessionID: 's1');
+    await pump(tester, handoff: handoff);
+
+    await tester.longPress(find.text('README.md'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('file-menu-reference')));
+    await tester.pumpAndSettle();
+    expect(handoff.references, hasLength(1));
+    expect(find.byType(SnackBar), findsNothing);
+    expect(find.byKey(const Key('files-staged-notice')), findsOneWidget);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(handoff.references, isEmpty);
+  });
 }

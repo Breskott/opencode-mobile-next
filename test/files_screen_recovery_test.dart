@@ -6,6 +6,7 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
@@ -99,6 +100,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: FilesScreen(controller: controller, backController: back),
         ),
@@ -135,6 +138,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );
@@ -143,6 +148,12 @@ void main() {
     await tester.drag(find.text('Folder is empty'), const Offset(0, 350));
     await tester.pumpAndSettle();
     expect(loads, 2);
+    expect(find.text('Folder is empty'), findsOneWidget);
+    // The same refresh is a visible button, not only a pull (map files,
+    // actionsMissing).
+    await tester.tap(find.byKey(const ValueKey('files-refresh')));
+    await tester.pumpAndSettle();
+    expect(loads, 3);
     expect(find.text('Folder is empty'), findsOneWidget);
   });
 
@@ -158,6 +169,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );
@@ -173,14 +186,16 @@ void main() {
     controller.notifyListeners();
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Server changed. Close and reopen this file.'),
-      findsOneWidget,
-    );
-    expect(find.text('Try again'), findsNothing);
     pending.complete(const FileContent('stale content'));
     await tester.pumpAndSettle();
-    expect(find.text('stale content'), findsNothing);
+    // The old server's answer never lands in the new scope: the viewer says
+    // it could not open the file (the reason in its Details) and Try again
+    // reads it from the server Files is on now.
+    expect(find.textContaining('stale content'), findsNothing);
+    expect(find.text("Couldn't open README.md"), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('kit-viewer-retry')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('current content'), findsWidgets);
   });
 
   testWidgets('failed file read exposes retry and recovers', (tester) async {
@@ -201,6 +216,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );
@@ -208,11 +225,10 @@ void main() {
     await tester.tap(find.text('README.md'));
     await tester.pumpAndSettle();
 
-    expect(find.text('File read temporarily unavailable'), findsOneWidget);
-    expect(find.text('Try again'), findsOneWidget);
-    await tester.tap(find.text('Try again'));
+    expect(find.text("Couldn't open README.md"), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('kit-viewer-retry')));
     await tester.pumpAndSettle();
-    expect(find.text('recovered content'), findsOneWidget);
+    expect(find.textContaining('recovered content'), findsWidgets);
   });
 
   testWidgets('late attach read cannot cross a transport switch', (
@@ -228,6 +244,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: FilesScreen(
             controller: controller,
@@ -276,6 +294,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );

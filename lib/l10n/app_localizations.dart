@@ -35404,6 +35404,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{Delete} one{Delete 1 draft} other{Delete {count} drafts}}'**
   String privacyDeleteDraftsCount(int count);
+
+  /// Files: shown while a folder listing loads for the first time.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening folder…'**
+  String get filesLoadingFolder;
+
+  /// Files: shown while a file or symbol search runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching…'**
+  String get filesSearching;
+
+  /// Files: filter that also lists files and folders whose names start with a dot.
+  ///
+  /// In en, this message translates to:
+  /// **'Show hidden files'**
+  String get filesShowHidden;
+
+  /// Files: empty-folder body when every entry is hidden.
+  ///
+  /// In en, this message translates to:
+  /// **'This folder has only hidden files and folders.'**
+  String get filesOnlyHidden;
+
+  /// Files: row menu item that copies the file or folder name.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy name'**
+  String get filesCopyName;
 }
 
 class _AppLocalizationsDelegate
