@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'automatic_setup.dart';
+import 'automatic_setup_platform.dart';
 import 'controller.dart';
 import 'presentation.dart';
 
@@ -21,10 +23,9 @@ bool _setupBusy(VoiceModelManager manager) =>
     manager.state == VoiceModelState.downloading ||
     manager.state == VoiceModelState.verifying;
 
-// revamp: redesign (slice-P10.4): automatic pack choice by total RAM and a
-// background download from the first mic tap wait for that slice.
-/// The voice model setup sheet (voice-model-setup-sheet) in the kit's one
-/// sheet frame. Completes with true when the person chose "Use Balanced" or
+/// The voice model setup sheet (voice-model-setup-sheet), Settings › Voice,
+/// in the kit's one sheet frame. The first mic tap does not open it: that is
+/// [showVoiceAutomaticSetupSheet], which picks the pack itself. Completes with true when the person chose "Use Balanced" or
 /// "Done" with the model on the phone, false otherwise (Not now, close,
 /// swipe).
 ///
@@ -101,7 +102,7 @@ KitAction? _setupPrimary(
     key: key,
     label: strings.voiceSetupDownloadPack(
       name,
-      formatModelBytes(pack.downloadBytes),
+      voiceSizeText(strings, pack.downloadBytes),
     ),
     icon: AppIconography.download,
     onPressed: support.supported
@@ -193,7 +194,7 @@ class _VoiceModelSetupBody extends StatelessWidget {
                   key: Key('voice-delete-${selected.id}'),
                   label: strings.voiceSetupDeletePack(
                     selectedName,
-                    formatModelBytes(selected.downloadBytes),
+                    voiceSizeText(strings, selected.downloadBytes),
                   ),
                   icon: AppIconography.delete,
                   destructive: true,
@@ -240,7 +241,7 @@ class _VoiceModelSetupBody extends StatelessWidget {
       manager.isInstalled(pack)
           ? strings.e7VoiceUiInstalled
           : strings.voiceSetupNotDownloaded(
-              formatModelBytes(pack.downloadBytes),
+              voiceSizeText(strings, pack.downloadBytes),
             ),
       voicePackDescription(pack, strings),
     ].join(' · ');
@@ -268,10 +269,12 @@ class _VoiceModelSetupBody extends StatelessWidget {
     final confirmed = await showKitConfirm(
       context,
       title: strings.e7VoiceUiDeletePack(name),
-      body: strings.e7VoiceUiDeleteDetail(formatModelBytes(pack.downloadBytes)),
+      body: strings.e7VoiceUiDeleteDetail(
+        voiceSizeText(strings, pack.downloadBytes),
+      ),
       confirmLabel: strings.voiceSetupDeletePack(
         name,
-        formatModelBytes(pack.downloadBytes),
+        voiceSizeText(strings, pack.downloadBytes),
       ),
       cancelLabel: strings.voiceSetupKeepPack(name),
       icon: AppIconography.delete,
@@ -322,16 +325,18 @@ class _VoiceDownloadProgress extends StatelessWidget {
               SizedBox(height: tokens.space2),
               KitProgressView(
                 progress: verifying || fraction == null
-                    ? KitProgress.waiting(
-                        caption: verifying
-                            ? strings.e7VoiceUiVerifyChecksum
-                            : null,
-                      )
+                    ? const KitProgress.waiting()
                     : KitProgress.known(
                         fraction.clamp(0.0, 1.0),
                         caption: strings.e7VoiceUiDownloadProgress(
-                          formatModelBytes(manager.progress?.received ?? 0),
-                          formatModelBytes(manager.selectedPack.downloadBytes),
+                          voiceSizeText(
+                            strings,
+                            manager.progress?.received ?? 0,
+                          ),
+                          voiceSizeText(
+                            strings,
+                            manager.selectedPack.downloadBytes,
+                          ),
                         ),
                       ),
               ),
@@ -348,6 +353,390 @@ class _VoiceDownloadProgress extends StatelessWidget {
             ),
           ),
         ],
+      ],
+    );
+  }
+}
+
+/// The first mic tap when no speech model is on the phone (P10.4): one
+/// sheet that picks the pack for this phone by total RAM (never Android's
+/// per-app memory class), says its size, asks before downloading (in so
+/// many words on mobile data), downloads with progress and a notification,
+/// and starts listening when the model is ready.
+///
+/// Completes with true once the microphone is starting: the recording is
+/// then [composer]'s, and the caller shows its recording surface (which
+/// finds the composer already listening). False when the person closed it,
+/// cancelled, or setup could not finish. Closing the sheet cancels the
+/// download (a partial file is kept, so the next attempt resumes); leaving
+/// the app does not, and a download that finishes meanwhile waits for the
+/// person instead of opening the microphone in the background.
+///
+/// [setup] is for tests; by default a controller is made for [composer]
+/// and disposed here.
+Future<bool> showVoiceAutomaticSetupSheet(
+  BuildContext context,
+  VoiceComposerController composer, {
+  VoiceAutomaticSetupController? setup,
+  VoiceSetupPlatform platform = const AndroidVoiceSetupPlatform(),
+}) async {
+  if (!platformCapabilities.supportsVoice) return false;
+  final strings = _voiceStrings(context);
+  final controller =
+      setup ??
+      VoiceAutomaticSetupController(composer: composer, platform: platform);
+  var started = false;
+  try {
+    unawaited(controller.requestMicrophone());
+    started =
+        await showKitSheet<bool>(
+          context,
+          title: strings.voiceAutoSetupTitle,
+          icon: AppIconography.mic,
+          sheetKey: const Key('voice-auto-setup'),
+          body: (context) => _VoiceAutomaticSetupBody(setup: controller),
+        ) ==
+        true;
+    return started;
+  } finally {
+    if (started) {
+      controller.handOff();
+    } else {
+      await controller.cancel();
+    }
+    if (setup == null) controller.dispose();
+  }
+}
+
+class _VoiceAutomaticSetupBody extends StatefulWidget {
+  const _VoiceAutomaticSetupBody({required this.setup});
+
+  final VoiceAutomaticSetupController setup;
+
+  @override
+  State<_VoiceAutomaticSetupBody> createState() =>
+      _VoiceAutomaticSetupBodyState();
+}
+
+class _VoiceAutomaticSetupBodyState extends State<_VoiceAutomaticSetupBody>
+    with WidgetsBindingObserver {
+  bool _closed = false;
+
+  VoiceAutomaticSetupController get _setup => widget.setup;
+  VoiceModelManager get _models => _setup.composer.models;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _setup.addListener(_changed);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _changed());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Only really leaving counts: a permission prompt makes the app
+    // inactive, not paused.
+    if (state == AppLifecycleState.resumed) {
+      _setup.setForeground(true);
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      _setup.setForeground(false);
+    }
+  }
+
+  void _changed() {
+    if (_closed || !mounted) return;
+    final stage = _setup.stage;
+    if (stage == VoiceSetupStage.starting ||
+        stage == VoiceSetupStage.listening) {
+      // The recording belongs to the composer's surface from here on.
+      _setup.handOff();
+      _close(true);
+    } else if (stage == VoiceSetupStage.cancelled) {
+      _close(false);
+    }
+  }
+
+  void _close(bool started) {
+    if (_closed) return;
+    _closed = true;
+    KitSheet.close<bool>(context, started);
+  }
+
+  /// Settings › Voice, for a choice this sheet does not make; a model made
+  /// ready there starts listening here.
+  Future<void> _openSettings() async {
+    await showVoiceModelSetupSheet(context, _models);
+    if (!mounted || _closed) return;
+    if (_models.isReady) unawaited(_setup.requestMicrophone());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _setup.removeListener(_changed);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Listenable.merge([_setup, _models]),
+    builder: (context, _) {
+      final strings = _voiceStrings(context);
+      final tokens = KitTokens.of(context);
+      final notNow = KitAction(
+        key: const Key('voice-auto-setup-not-now'),
+        label: strings.e7VoiceUiNotNow,
+        onPressed: () => _close(false),
+      );
+      final retry = KitAction(
+        key: const Key('voice-auto-setup-retry'),
+        label: strings.e7VoiceUiRetry,
+        icon: AppIconography.retry,
+        onPressed: () => unawaited(_setup.requestMicrophone()),
+      );
+      final children = <Widget>[];
+      KitAction? primary;
+      KitAction? secondary = notNow;
+      final tertiary = <KitAction>[];
+      switch (_setup.stage) {
+        case VoiceSetupStage.idle ||
+            VoiceSetupStage.checking ||
+            VoiceSetupStage.starting ||
+            VoiceSetupStage.listening ||
+            VoiceSetupStage.cancelled:
+          children.add(
+            KitProgressView(
+              progress: KitProgress.waiting(
+                caption: strings.voiceAutoSetupChecking,
+              ),
+            ),
+          );
+        case VoiceSetupStage.consentRequired:
+          final pack = _setup.pack!;
+          final size = voiceSizeText(strings, _setup.downloadBytes);
+          final unmetered = _setup.network == VoiceSetupNetwork.unmetered;
+          children.addAll([
+            KitText(strings.voiceAutoSetupOffer, role: KitTextRole.body),
+            SizedBox(height: tokens.space2),
+            KitText(
+              strings.voiceAutoSetupPicked(voicePackLabel(pack, strings)),
+              key: const Key('voice-auto-setup-pack'),
+              role: KitTextRole.secondary,
+              tone: KitTextTone.secondary,
+            ),
+            if (!unmetered) ...[
+              SizedBox(height: tokens.space3),
+              KitNotice(
+                key: const Key('voice-auto-setup-metered'),
+                icon: AppIconography.warning,
+                message: _setup.network == VoiceSetupNetwork.metered
+                    ? strings.voiceAutoSetupMobileData
+                    : strings.voiceAutoSetupMaybeMetered,
+              ),
+            ],
+            SizedBox(height: tokens.space3),
+            _packDetails(strings, pack),
+          ]);
+          primary = KitAction(
+            key: const Key('voice-auto-setup-download'),
+            label: unmetered
+                ? strings.voiceAutoSetupDownload(size)
+                : strings.voiceAutoSetupDownloadMobile(size),
+            icon: AppIconography.download,
+            onPressed: () =>
+                unawaited(_setup.confirmDownload(allowMetered: !unmetered)),
+          );
+          tertiary.add(
+            KitAction(
+              key: const Key('voice-auto-setup-other'),
+              label: strings.voiceAutoSetupOtherModel,
+              icon: AppIconography.settingsAdvanced,
+              onPressed: () => unawaited(_openSettings()),
+            ),
+          );
+        case VoiceSetupStage.downloading || VoiceSetupStage.verifying:
+          final verifying = _setup.stage == VoiceSetupStage.verifying;
+          final total = _setup.downloadBytes;
+          final received = _setup.receivedBytes;
+          final fraction = total > 0 ? received / total : null;
+          children.addAll([
+            Semantics(
+              liveRegion: true,
+              excludeSemantics: true,
+              label: verifying
+                  ? strings.e7VoiceUiVerifying
+                  : strings.e7VoiceUiDownloadPercent(
+                      ((fraction ?? 0) * 10).floor() * 10,
+                    ),
+              child: KitProgressView(
+                progress: verifying || fraction == null
+                    ? KitProgress.waiting(caption: strings.e7VoiceUiVerifying)
+                    : KitProgress.known(
+                        fraction.clamp(0.0, 1.0),
+                        caption: strings.e7VoiceUiDownloadProgress(
+                          voiceSizeText(strings, received),
+                          voiceSizeText(strings, total),
+                        ),
+                      ),
+              ),
+            ),
+            SizedBox(height: tokens.space3),
+            KitText(
+              _setup.notificationAvailable == true
+                  ? strings.voiceAutoSetupNotified
+                  : strings.voiceAutoSetupStartsAfter,
+              key: const Key('voice-auto-setup-note'),
+              role: KitTextRole.secondary,
+              tone: KitTextTone.secondary,
+            ),
+          ]);
+          secondary = verifying
+              ? null
+              : KitAction(
+                  key: const Key('voice-auto-setup-cancel'),
+                  label: strings.e7VoiceUiCancelDownload,
+                  onPressed: () => unawaited(_setup.cancel()),
+                );
+        case VoiceSetupStage.ready:
+          children.add(
+            KitNotice(
+              tone: AppStatusTone.ok,
+              message: strings.voiceAutoSetupReady,
+            ),
+          );
+          primary = KitAction(
+            key: const Key('voice-auto-setup-start'),
+            label: strings.e7VoiceUiStartListening,
+            icon: AppIconography.mic,
+            onPressed: () => unawaited(_setup.requestMicrophone()),
+          );
+        case VoiceSetupStage.blocked || VoiceSetupStage.failed:
+          final (message, action) = _problem(strings, retry);
+          final error = _setup.problem == VoiceSetupProblem.downloadFailed
+              ? _models.error
+              : _setup.problem == VoiceSetupProblem.listeningFailed
+              ? _setup.composer.error
+              : null;
+          children.addAll([
+            KitNotice(
+              key: const Key('voice-auto-setup-problem'),
+              tone: _setup.stage == VoiceSetupStage.failed
+                  ? AppStatusTone.failure
+                  : AppStatusTone.neutral,
+              message: message,
+            ),
+            if (error != null)
+              KitDetailsFold(
+                label: strings.e7VoiceUiTechnicalDetails,
+                text: error.toString(),
+              ),
+          ]);
+          primary = action;
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ...children,
+          SizedBox(height: tokens.space4),
+          KitActionBlock(
+            primary: primary,
+            secondary: secondary,
+            tertiary: tertiary,
+          ),
+        ],
+      );
+    },
+  );
+
+  /// What stopped setup, in plain words, and the one way forward.
+  (String, KitAction?) _problem(AppLocalizations strings, KitAction retry) {
+    final settings = KitAction(
+      key: const Key('voice-auto-setup-settings'),
+      label: strings.voiceAutoSetupChooseModel,
+      icon: AppIconography.settingsAdvanced,
+      onPressed: () => unawaited(_openSettings()),
+    );
+    switch (_setup.problem) {
+      case VoiceSetupProblem.unknownMemory:
+        return (strings.voiceAutoSetupUnknownMemory, settings);
+      case VoiceSetupProblem.noSupportedPack:
+        return (_noPackReason(strings), null);
+      case VoiceSetupProblem.offline:
+        return (strings.voiceAutoSetupOffline, retry);
+      case VoiceSetupProblem.busy:
+        return (
+          strings.voiceAutoSetupBusy,
+          KitAction(
+            key: const Key('voice-auto-setup-show-download'),
+            label: strings.voiceAutoSetupShowDownload,
+            onPressed: () => unawaited(_openSettings()),
+          ),
+        );
+      case VoiceSetupProblem.downloadFailed:
+        return (
+          voiceErrorText(_models.error, strings, manager: _models),
+          retry,
+        );
+      case VoiceSetupProblem.listeningFailed:
+        final error = _setup.composer.error;
+        if (error is VoicePermissionDenied && error.permanent) {
+          return (
+            voiceErrorText(error, strings),
+            KitAction(
+              key: const Key('voice-auto-setup-open-settings'),
+              label: strings.voiceAllowMicInSettings,
+              icon: AppIconography.settings,
+              onPressed: () => unawaited(voiceDevicePlatform.openAppSettings()),
+            ),
+          );
+        }
+        return (voiceErrorText(error, strings), retry);
+      case VoiceSetupProblem.unavailable
+          when _setup.stage == VoiceSetupStage.blocked:
+        return (strings.voiceAutoSetupNoCapture, null);
+      case VoiceSetupProblem.unavailable || null:
+        return (strings.e7VoiceUiInputFailed, retry);
+    }
+  }
+
+  /// Why no pack fits: the smallest pack's own reason (memory, storage or
+  /// the processor), which says what this phone lacks.
+  String _noPackReason(AppLocalizations strings) {
+    final smallest = [...voiceModelPacks]
+      ..sort((a, b) => a.minimumMemoryMb.compareTo(b.minimumMemoryMb));
+    final pack = smallest.first;
+    final support = _models.supportFor(pack);
+    return (support.supported
+            ? null
+            : voiceSupportReason(_models, pack, support, strings)) ??
+        strings.voiceAutoSetupNoCapture;
+  }
+
+  /// The technical facts behind the pick, folded: the exact files and size
+  /// and the memory rule. The only place a model file name or MiB appears.
+  Widget _packDetails(AppLocalizations strings, VoiceModelPack pack) {
+    final memory = _models.deviceInfo.totalMemoryMb;
+    return KitDetailsFold(
+      foldKey: const Key('voice-auto-setup-details'),
+      values: [
+        KitTechnicalValue(
+          strings.voiceAutoSetupDetailFiles,
+          pack.files.map((file) => file.name).join(', '),
+        ),
+        KitTechnicalValue(
+          strings.voiceAutoSetupDetailSize,
+          formatModelBytes(pack.downloadBytes),
+        ),
+        KitTechnicalValue(
+          strings.voiceAutoSetupDetailMemory,
+          strings.voiceAutoSetupDetailMemoryValue(
+            pack.minimumMemoryMb,
+            memory ?? 0,
+          ),
+        ),
       ],
     );
   }

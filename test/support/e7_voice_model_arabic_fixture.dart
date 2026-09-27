@@ -108,8 +108,6 @@ class E7VoiceModelArabicFixture extends AppLocalizationsEn {
   @override
   String get e7VoiceUiVerifying => 'جارٍ التحقّق من النموذج المنزّل';
   @override
-  String get e7VoiceUiVerifyChecksum => 'جارٍ التحقّق من الحجم وبصمة SHA-256…';
-  @override
   String get e7VoiceUiCancelDownload => 'إلغاء التنزيل';
   @override
   String get e7VoiceUiNotNow => 'ليس الآن';

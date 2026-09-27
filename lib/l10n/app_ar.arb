@@ -3119,7 +3119,6 @@
   "e7VoiceUiNoBuiltInMic": "يشير Android إلى عدم وجود ميكروفون مدمج. قد يعمل الإدخال الصوتي باستخدام ميكروفون سلكي أو USB.",
   "e7VoiceUiLanguage": "لغة تحويل الكلام إلى نص",
   "e7VoiceUiVerifying": "جارٍ التحقّق من النموذج المنزّل",
-  "e7VoiceUiVerifyChecksum": "جارٍ التحقّق من الحجم وبصمة SHA-256…",
   "e7VoiceUiCancelDownload": "إلغاء التنزيل",
   "e7VoiceUiNotNow": "ليس الآن",
   "e7VoiceUiUseModel": "استخدام النموذج",

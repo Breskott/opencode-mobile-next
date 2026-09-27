@@ -723,4 +723,48 @@ void main() {
       },
     );
   }
+
+  test('a download that finishes in the background waits at ready, and '
+      'the next mic tap starts listening', () async {
+    final f = await _fixture();
+    f.downloader.gate = Completer<void>();
+    await f.setup.requestMicrophone();
+    final finishing = f.setup.confirmDownload();
+    await _flush();
+    f.setup.setForeground(false);
+    f.downloader.gate!.complete();
+    await finishing;
+    expect(f.setup.stage, VoiceSetupStage.ready);
+    expect(f.models.isReady, isTrue);
+    expect(f.recorder.startCalls, 0, reason: 'no microphone behind the back');
+
+    f.setup.setForeground(true);
+    await f.setup.requestMicrophone();
+    expect(f.setup.stage, VoiceSetupStage.listening);
+    expect(f.recorder.startCalls, 1);
+    expect(f.downloader.downloadCalls, 1);
+  });
+
+  test('a handed-off recording survives the setup controller', () async {
+    final f = await _fixture(selected: 'tiny', installed: {'tiny'});
+    await f.setup.requestMicrophone();
+    expect(f.composer.state, VoiceComposerState.listening);
+    final cancels = f.recorder.cancelCalls;
+    f.setup.handOff();
+    await f.setup.cancel();
+    f.disposeSetup();
+    await _flush();
+    expect(f.composer.state, VoiceComposerState.listening);
+    expect(f.recorder.cancelCalls, cancels);
+  });
+
+  test(
+    'without the hand-off, cancelling stops the recording it started',
+    () async {
+      final f = await _fixture(selected: 'tiny', installed: {'tiny'});
+      await f.setup.requestMicrophone();
+      await f.setup.cancel();
+      expect(f.composer.state, isNot(VoiceComposerState.listening));
+    },
+  );
 }

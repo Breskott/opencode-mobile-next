@@ -11465,9 +11465,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7VoiceUiVerifying => 'Verifying downloaded model';
 
   @override
-  String get e7VoiceUiVerifyChecksum => 'Verifying size and SHA-256…';
-
-  @override
   String get e7VoiceUiCancelDownload => 'Cancel download';
 
   @override
@@ -26256,4 +26253,85 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termuxProcsCpuTime => 'Processor time';
+
+  @override
+  String get voiceAutoSetupTitle => 'Voice typing';
+
+  @override
+  String get voiceAutoSetupChecking => 'Checking what this phone can run';
+
+  @override
+  String get voiceAutoSetupOffer =>
+      'Speak instead of typing. Speech turns into text on this phone, even offline, and audio never leaves it. It needs a one-time download.';
+
+  @override
+  String voiceAutoSetupPicked(String model) {
+    return '$model speech model, picked for this phone\'s memory';
+  }
+
+  @override
+  String get voiceAutoSetupMobileData =>
+      'You\'re on mobile data. This download counts against your data plan.';
+
+  @override
+  String get voiceAutoSetupMaybeMetered =>
+      'This connection may count against a data plan.';
+
+  @override
+  String voiceAutoSetupDownload(String size) {
+    return 'Download $size';
+  }
+
+  @override
+  String voiceAutoSetupDownloadMobile(String size) {
+    return 'Download $size on mobile data';
+  }
+
+  @override
+  String get voiceAutoSetupOtherModel => 'Choose another speech model';
+
+  @override
+  String get voiceAutoSetupNotified =>
+      'Progress also shows in your notifications. Listening starts when it\'s done.';
+
+  @override
+  String get voiceAutoSetupStartsAfter => 'Listening starts when it\'s done.';
+
+  @override
+  String get voiceAutoSetupReady => 'The speech model is on this phone.';
+
+  @override
+  String get voiceAutoSetupChooseModel => 'Choose a speech model';
+
+  @override
+  String get voiceAutoSetupUnknownMemory =>
+      'This phone didn\'t say how much memory it has, so no speech model was picked.';
+
+  @override
+  String get voiceAutoSetupOffline =>
+      'No internet connection. Connect, then try again.';
+
+  @override
+  String get voiceAutoSetupBusy => 'A speech model is already downloading.';
+
+  @override
+  String get voiceAutoSetupShowDownload => 'Show the download';
+
+  @override
+  String get voiceAutoSetupNoCapture =>
+      'This phone can\'t record speech for voice typing.';
+
+  @override
+  String get voiceAutoSetupDetailFiles => 'Files';
+
+  @override
+  String get voiceAutoSetupDetailSize => 'Exact size';
+
+  @override
+  String get voiceAutoSetupDetailMemory => 'Memory';
+
+  @override
+  String voiceAutoSetupDetailMemoryValue(int required, int available) {
+    return 'Needs $required MB; this phone has $available MB';
+  }
 }

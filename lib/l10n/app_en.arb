@@ -11645,10 +11645,6 @@
   "@e7VoiceUiVerifying": {
     "description": "Shared voice or model selection UI: e7VoiceUiVerifying"
   },
-  "e7VoiceUiVerifyChecksum": "Verifying size and SHA-256…",
-  "@e7VoiceUiVerifyChecksum": {
-    "description": "Shared voice or model selection UI: e7VoiceUiVerifyChecksum"
-  },
   "e7VoiceUiCancelDownload": "Cancel download",
   "@e7VoiceUiCancelDownload": {
     "description": "Shared voice or model selection UI: e7VoiceUiCancelDownload"
@@ -31329,5 +31325,116 @@
   "termuxProcsCpuTime": "Processor time",
   "@termuxProcsCpuTime": {
     "description": "Running on this phone › Details: total CPU time the process used"
+  },
+  "voiceAutoSetupTitle": "Voice typing",
+  "@voiceAutoSetupTitle": {
+    "description": "First mic tap voice setup sheet (P10.4): sheet title"
+  },
+  "voiceAutoSetupChecking": "Checking what this phone can run",
+  "@voiceAutoSetupChecking": {
+    "description": "First mic tap voice setup sheet (P10.4): waiting line while the phone's memory and the model files are checked"
+  },
+  "voiceAutoSetupOffer": "Speak instead of typing. Speech turns into text on this phone, even offline, and audio never leaves it. It needs a one-time download.",
+  "@voiceAutoSetupOffer": {
+    "description": "First mic tap voice setup sheet (P10.4): what voice typing is and that it needs a download"
+  },
+  "voiceAutoSetupPicked": "{model} speech model, picked for this phone's memory",
+  "@voiceAutoSetupPicked": {
+    "description": "First mic tap voice setup sheet (P10.4): which model was picked and why; {model} is its plain name (Balanced)",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceAutoSetupMobileData": "You're on mobile data. This download counts against your data plan.",
+  "@voiceAutoSetupMobileData": {
+    "description": "First mic tap voice setup sheet (P10.4): warning on mobile data; the size is on the button"
+  },
+  "voiceAutoSetupMaybeMetered": "This connection may count against a data plan.",
+  "@voiceAutoSetupMaybeMetered": {
+    "description": "First mic tap voice setup sheet (P10.4): warning when the network type is unknown; the size is on the button"
+  },
+  "voiceAutoSetupDownload": "Download {size}",
+  "@voiceAutoSetupDownload": {
+    "description": "First mic tap voice setup sheet (P10.4): primary button on Wi-Fi; {size} is the download size",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceAutoSetupDownloadMobile": "Download {size} on mobile data",
+  "@voiceAutoSetupDownloadMobile": {
+    "description": "First mic tap voice setup sheet (P10.4): primary button off Wi-Fi; {size} is the download size",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceAutoSetupOtherModel": "Choose another speech model",
+  "@voiceAutoSetupOtherModel": {
+    "description": "First mic tap voice setup sheet (P10.4): opens Settings › Voice to pick a different model"
+  },
+  "voiceAutoSetupNotified": "Progress also shows in your notifications. Listening starts when it's done.",
+  "@voiceAutoSetupNotified": {
+    "description": "First mic tap voice setup sheet (P10.4): under the progress when the download notification is posted"
+  },
+  "voiceAutoSetupStartsAfter": "Listening starts when it's done.",
+  "@voiceAutoSetupStartsAfter": {
+    "description": "First mic tap voice setup sheet (P10.4): under the progress when no notification could be posted"
+  },
+  "voiceAutoSetupReady": "The speech model is on this phone.",
+  "@voiceAutoSetupReady": {
+    "description": "First mic tap voice setup sheet (P10.4): the download finished while the app was in the background"
+  },
+  "voiceAutoSetupChooseModel": "Choose a speech model",
+  "@voiceAutoSetupChooseModel": {
+    "description": "First mic tap voice setup sheet (P10.4): opens Settings › Voice when no model could be picked automatically"
+  },
+  "voiceAutoSetupUnknownMemory": "This phone didn't say how much memory it has, so no speech model was picked.",
+  "@voiceAutoSetupUnknownMemory": {
+    "description": "First mic tap voice setup sheet (P10.4): the phone's total memory is unknown"
+  },
+  "voiceAutoSetupOffline": "No internet connection. Connect, then try again.",
+  "@voiceAutoSetupOffline": {
+    "description": "First mic tap voice setup sheet (P10.4): offline before the download"
+  },
+  "voiceAutoSetupBusy": "A speech model is already downloading.",
+  "@voiceAutoSetupBusy": {
+    "description": "First mic tap voice setup sheet (P10.4): another download is running"
+  },
+  "voiceAutoSetupShowDownload": "Show the download",
+  "@voiceAutoSetupShowDownload": {
+    "description": "First mic tap voice setup sheet (P10.4): opens Settings › Voice, which shows the running download"
+  },
+  "voiceAutoSetupNoCapture": "This phone can't record speech for voice typing.",
+  "@voiceAutoSetupNoCapture": {
+    "description": "First mic tap voice setup sheet (P10.4): the phone has no usable microphone capture"
+  },
+  "voiceAutoSetupDetailFiles": "Files",
+  "@voiceAutoSetupDetailFiles": {
+    "description": "First mic tap voice setup sheet (P10.4): Details: label of the model file names"
+  },
+  "voiceAutoSetupDetailSize": "Exact size",
+  "@voiceAutoSetupDetailSize": {
+    "description": "First mic tap voice setup sheet (P10.4): Details: label of the exact download size in MiB"
+  },
+  "voiceAutoSetupDetailMemory": "Memory",
+  "@voiceAutoSetupDetailMemory": {
+    "description": "First mic tap voice setup sheet (P10.4): Details: label of the memory rule"
+  },
+  "voiceAutoSetupDetailMemoryValue": "Needs {required} MB; this phone has {available} MB",
+  "@voiceAutoSetupDetailMemoryValue": {
+    "description": "First mic tap voice setup sheet (P10.4): Details: the model's memory need and the phone's total memory",
+    "placeholders": {
+      "required": {
+        "type": "int"
+      },
+      "available": {
+        "type": "int"
+      }
+    }
   }
 }
