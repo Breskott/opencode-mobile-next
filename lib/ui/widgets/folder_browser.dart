@@ -22,7 +22,7 @@ import '../kit/kit_state_view.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import '../kit/scenes/folders_open_scene.dart';
-import 'product_states.dart' show SectionLabel;
+import 'product_states.dart' show SectionLabel, productErrorDetails;
 
 /// Lists the folders directly inside an absolute path.
 typedef FolderLister = Future<List<FolderEntry>> Function(String path);
@@ -505,7 +505,7 @@ class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
             onPressed: () => _load(parent),
           ),
       ],
-      details: error.toString(),
+      details: productErrorDetails(error),
     );
   }
 

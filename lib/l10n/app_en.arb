@@ -26022,6 +26022,72 @@
       }
     }
   },
+  "productErrorTimedOut": "The server took too long to answer. Try again.",
+  "@productErrorTimedOut": {
+    "description": "Error words: a request timed out."
+  },
+  "productErrorCertificate": "The server's security certificate isn't trusted, so the app stopped. Check the server address.",
+  "@productErrorCertificate": {
+    "description": "Error words: the TLS handshake or certificate check failed."
+  },
+  "productErrorSignIn": "The server didn't accept the sign-in. Check the password in the server's settings.",
+  "@productErrorSignIn": {
+    "description": "Error words: the server answered 401 or 403."
+  },
+  "productErrorNotFound": "The server couldn't find it. It may have been moved or deleted.",
+  "@productErrorNotFound": {
+    "description": "Error words: the server answered 404."
+  },
+  "productErrorConflict": "It changed on the server in the meantime. Refresh, then try again.",
+  "@productErrorConflict": {
+    "description": "Error words: the server answered 409 (conflict)."
+  },
+  "productErrorBusy": "The server is busy. Wait a moment, then try again.",
+  "@productErrorBusy": {
+    "description": "Error words: the server answered 429 (too many requests)."
+  },
+  "productErrorRejected": "The server didn't accept the request. Try again, or report the problem.",
+  "@productErrorRejected": {
+    "description": "Error words: the server answered another 4xx status."
+  },
+  "productErrorUnexpected": "The server's answer didn't make sense to the app. Try again, or report the problem.",
+  "@productErrorUnexpected": {
+    "description": "Error words: the server answered with something the app could not read."
+  },
+  "productErrorDevice": "Something on this device didn't work. Try again.",
+  "@productErrorDevice": {
+    "description": "Error words: a native (platform) call on the phone failed."
+  },
+  "productErrorStorage": "The app couldn't read or save a file on this device.",
+  "@productErrorStorage": {
+    "description": "Error words: a local file read or write failed (storage unavailable, full, or denied)."
+  },
+  "productErrorTermux": "Termux didn't finish that. Check that Termux is installed and open, then try again.",
+  "@productErrorTermux": {
+    "description": "Error words: a command the app sent to Termux failed (its output goes to details)."
+  },
+  "productErrorDetailsLabel": "Error details",
+  "@productErrorDetailsLabel": {
+    "description": "Label of the folded technical text under an error alert."
+  },
+  "productErrorRejectedBecause": "The server didn't accept it: {reason}",
+  "@productErrorRejectedBecause": {
+    "description": "Error words: the server refused a request (400/422) and gave a short reason for people.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "productErrorServer": "The server had a problem (error {code}). Try again in a moment.",
+  "@productErrorServer": {
+    "description": "Error words: the server answered a 5xx status such as 502 or 503.",
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
   "externalLinkBlockedTitle": "Link blocked",
   "@externalLinkBlockedTitle": {
     "description": "External link gate: title of the alert shown when a link was refused"

@@ -29,6 +29,7 @@ import '../../termux/bridge.dart';
 import '../../termux/processes.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
+import '../widgets/product_states.dart' show productErrorText;
 import '../../state/phone_host.dart' show PhoneHostKind;
 import 'this_phone_screen.dart';
 
@@ -131,7 +132,7 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
     } on TermuxBridgeException catch (error) {
       if (!mounted) return;
       setState(() {
-        _error = error.message;
+        _error = productErrorText(error);
         _loading = false;
       });
     } on FormatException {
@@ -223,7 +224,7 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
         ),
       );
     } on TermuxBridgeException catch (error) {
-      if (mounted) setState(() => _error = error.message);
+      if (mounted) setState(() => _error = productErrorText(error));
     } on FormatException {
       if (mounted) setState(() => _error = l10n.termuxProcsFailed);
     } finally {

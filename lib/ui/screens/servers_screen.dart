@@ -516,7 +516,12 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         final conn = ref.read(connProvider);
         await conn.connect(savedProfile);
         if (conn.api == null) {
-          throw ProductException(conn.lastError ?? copy.e7SetupDidNotConnect);
+          // The connection's raw failure is the cause (for details); the
+          // words say what it means.
+          throw ProductException(
+            productErrorText(conn.lastError ?? copy.e7SetupDidNotConnect),
+            cause: conn.lastError,
+          );
         }
       }
       return (saved: true, failure: null);

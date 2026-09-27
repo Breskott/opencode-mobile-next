@@ -1489,7 +1489,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   /// Says a failed act once, above the list (§4.8), until dismissed.
   void _say(Object error) {
     if (!mounted) return;
-    setState(() => _notice = error is String ? error : productErrorText(error));
+    setState(() => _notice = productErrorText(error));
   }
 
   /// A conversation's facts, from its row's menu: Conversation context,

@@ -477,6 +477,62 @@ void main() {
     expect(find.text('Session 2'), findsOneWidget);
   });
 
+  testWidgets('a 502 on the next page is said in words; the raw text is '
+      'only in the copied details', (tester) async {
+    // Owner bug report 2026-09-27: the list read "ApiException: upstream
+    // answered 502 while reading page 2" as its words.
+    final repository = _FinderRepository.pages((query) async {
+      if (query.cursor == null) {
+        return ServerPage(items: [_result(1)], nextCursor: 'page-2');
+      }
+      throw ApiException(
+        'List sessions failed (HTTP 502): upstream answered 502 while '
+        'reading page 2',
+        statusCode: 502,
+      );
+    });
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String?;
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('global-sessions-load-more')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Session 1'), findsOneWidget);
+    expect(find.text('Could not load more conversations'), findsOneWidget);
+    expect(
+      find.text('The server had a problem (error 502). Try again in a moment.'),
+      findsOneWidget,
+    );
+    expect(find.text('Try again'), findsOneWidget);
+    expect(find.textContaining('ApiException'), findsNothing);
+    expect(find.textContaining('upstream answered'), findsNothing);
+    expect(find.textContaining('HTTP 502'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('global-sessions-page-failed-copy')),
+    );
+    await tester.pump();
+    expect(copied, contains('upstream answered 502 while reading page 2'));
+    await tester.pumpAndSettle(const Duration(seconds: 3));
+  });
+
   testWidgets('failed refresh preserves rows and offers a refresh retry', (
     tester,
   ) async {

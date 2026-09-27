@@ -36,6 +36,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
+import '../../widgets/product_states.dart' show productErrorText;
 import '../../widgets/team_vocabulary.dart';
 import 'work_sheet.dart';
 
@@ -335,7 +336,9 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
                 KitText(
                   error == null
                       ? l10n.teamUiMergeNoRoles
-                      : l10n.teamUiMergeUnavailable('$error'),
+                      : l10n.teamUiMergeUnavailable(
+                          productErrorText(error, l10n: l10n),
+                        ),
                   key: const ValueKey('team-merge-unavailable'),
                   role: KitTextRole.secondary,
                   tone: KitTextTone.secondary,

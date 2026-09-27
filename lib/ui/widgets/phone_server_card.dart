@@ -323,7 +323,9 @@ Future<bool> _removePhoneServer(
       await linux.uninstall();
     }
   } on BuiltinLinuxException catch (error) {
-    await fail([l10n.phoneServerCardActionFailed(error.message)]);
+    await fail([
+      l10n.phoneServerCardActionFailed(productErrorText(error, l10n: l10n)),
+    ]);
     return false;
   }
   final saved = [
@@ -470,7 +472,7 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       setState(() => _status = status);
     } on BuiltinLinuxException catch (error) {
       if (!mounted) return;
-      setState(() => _failure = error.message);
+      setState(() => _failure = productErrorText(error));
     }
     final interval = widget.pollInterval;
     if (interval != null && mounted) {
@@ -509,7 +511,7 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
     try {
       await _linux.stopServer();
     } on BuiltinLinuxException catch (error) {
-      if (mounted) setState(() => _failure = error.message);
+      if (mounted) setState(() => _failure = productErrorText(error));
     }
     if (!mounted) return;
     await _refresh();

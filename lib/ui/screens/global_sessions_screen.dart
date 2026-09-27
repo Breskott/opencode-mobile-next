@@ -10,7 +10,8 @@ import '../../state/connection.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
 import '../kit/scenes/states_scenes.dart';
-import '../widgets/product_states.dart' show productErrorText;
+import '../widgets/product_states.dart'
+    show productErrorDetails, productErrorKind, productErrorText;
 import '../widgets/relative_time.dart';
 import '../widgets/session_handoff.dart';
 import '../widgets/session_title.dart';
@@ -781,6 +782,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
         illustration: const StatesUnpluggedScene(),
         title: l10n.globalSessionsLoadFailedTitle,
         body: productErrorText(_error!, l10n: l10n),
+        details: productErrorDetails(_error),
         primary: KitAction(
           label: l10n.commonRetry,
           onPressed: () => unawaited(retry()),
@@ -947,22 +949,25 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
   /// screen's one loading bar.
   Widget _footer(AppLocalizations l10n) {
     if (_error != null) {
-      return KitNotice(
+      // What failed in the title, why in words, the raw text only behind
+      // Copy details (never "ApiException: … page 2" as the words).
+      return KitNotice.error(
         key: const ValueKey('global-sessions-page-failed'),
         title: _errorWasRefresh
             ? l10n.globalSessionsRefreshFailed
             : l10n.globalSessionsLoadMoreFailed,
         message: productErrorText(_error!, l10n: l10n),
-        tone: AppStatusTone.failure,
-        icon: AppIconography.error,
-        actions: [
-          KitAction(
-            label: l10n.commonRetry,
-            onPressed: _errorWasRefresh || _restartPagination
-                ? () => unawaited(_reload())
-                : () => unawaited(_loadMore()),
-          ),
-        ],
+        error: _error,
+        errorKind: productErrorKind(_error),
+        details: productErrorDetails(_error),
+        reportSource: 'global-sessions',
+        copyDetailsKey: const ValueKey('global-sessions-page-failed-copy'),
+        retry: KitAction(
+          label: l10n.commonRetry,
+          onPressed: _errorWasRefresh || _restartPagination
+              ? () => unawaited(_reload())
+              : () => unawaited(_loadMore()),
+        ),
       );
     }
     if (_hasMore && !_loading && !_loadingMore) {

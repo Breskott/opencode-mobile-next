@@ -13,7 +13,8 @@ import '../../state/connection.dart';
 import '../app_iconography.dart';
 import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit.dart';
-import '../widgets/product_states.dart' show productErrorText;
+import '../widgets/product_states.dart'
+    show productErrorDetails, productErrorText;
 import 'active_context_screen.dart';
 
 enum SessionContextBreakdownKind { user, assistant, tool, other }
@@ -502,7 +503,7 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
         title: l10n.sessionContextLoadFailed,
         body: productErrorText(_error!),
         error: _error,
-        details: productErrorText(_error!),
+        details: productErrorDetails(_error!),
         retry: KitAction(label: l10n.isolatedTaskRetryOpen, onPressed: _load),
       );
     }
@@ -568,7 +569,7 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
               key: const ValueKey('session-context-inline-error'),
               message: l10n.sessionContextRefreshFailed,
               error: _error,
-              details: productErrorText(_error!),
+              details: productErrorDetails(_error!),
               retry: KitAction(
                 label: l10n.isolatedTaskRetryOpen,
                 onPressed: () => _load(older: _failedOlder),
