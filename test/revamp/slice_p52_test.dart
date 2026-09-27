@@ -42,7 +42,7 @@ String _fixturePath() {
 }
 
 class _Gateway extends FixtureOrchestrationGateway {
-  _Gateway({this.agentList, this.usageFigure})
+  _Gateway({this.agentList, this.usageFigure, this.extraRuns = const []})
     : super(
         fixturePath: _fixturePath(),
         hostMode: OrchestrationHostMode.phone,
@@ -51,23 +51,54 @@ class _Gateway extends FixtureOrchestrationGateway {
 
   final List<OrchestrationAgent>? agentList;
   final OrchestrationUsage? usageFigure;
+  final List<OrchestrationRun> extraRuns;
+
+  /// The agents a wake was sent for, in order; the host never confirms.
+  final woken = <String>[];
 
   @override
   Future<List<OrchestrationAgent>> agents() async =>
       agentList ?? await super.agents();
 
   @override
+  Future<List<OrchestrationRun>> runs({String? projectId}) async => [
+    ...await super.runs(projectId: projectId),
+    ...extraRuns,
+  ];
+
+  @override
   Future<OrchestrationUsage?> usage() async => usageFigure;
+
+  @override
+  Future<MutationReceipt> controlAgent(
+    String agentId,
+    AgentControlAction action, {
+    required String requestId,
+  }) async {
+    woken.add(agentId);
+    return MutationReceipt(
+      id: requestId,
+      status: MutationReceiptStatus.pending,
+      message: 'receive timeout',
+    );
+  }
 }
+
+late _Gateway _lastGateway;
 
 Future<OrchestrationController> _team({
   List<OrchestrationAgent>? agents,
   OrchestrationUsage? usage,
+  List<OrchestrationRun> runs = const [],
+  bool builtin = false,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final config = OrchestrationConfig(
-    provider: OrchestrationProvider.fixture,
+    // The team inside the app is a Gas City on the phone's own port.
+    provider: builtin
+        ? OrchestrationProvider.gascity
+        : OrchestrationProvider.fixture,
     url: 'http://127.0.0.1:8472',
     city: 'bright-lights',
     hostMode: OrchestrationHostMode.phone,
@@ -82,7 +113,24 @@ Future<OrchestrationController> _team({
     ),
     config: config,
     store: OrchestrationStore(prefs),
-    gatewayFactory: (_, _) => _Gateway(agentList: agents, usageFigure: usage),
+    gatewayFactory: (_, _) => _lastGateway = _Gateway(
+      agentList: agents,
+      usageFigure: usage,
+      extraRuns: runs,
+    ),
+    // The team inside the app would be probed over the network: answer
+    // here that it is there.
+    probe: builtin
+        ? (_) async => const ProbeFound(
+            host: OrchestrationHostIdentity(
+              provider: 'gascity',
+              url: 'http://127.0.0.1:8472',
+              hostMode: OrchestrationHostMode.phone,
+              city: 'bright-lights',
+            ),
+            city: 'bright-lights',
+          )
+        : null,
     now: () => _clock,
   );
   addTearDown(team.dispose);
@@ -211,9 +259,10 @@ void main() {
         ],
       );
       await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
+      // Every agent the list shows is counted (they agree); one works.
       expect(
         _agentsRow(tester),
-        '${_en.teamUiHomeAgentsRowCount(2)} · '
+        '${_en.teamUiHomeAgentsRowCount(3)} · '
         '${_en.teamUiHomeAgentsRowWorking(1)}',
       );
       await tester.pumpWidget(const SizedBox.shrink());
@@ -355,6 +404,219 @@ void main() {
       await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
       expect(_key('team-home-spent'), findsNothing);
       expect(find.textContaining(r'$0'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
+
+  group('owner, build 2055 (team on the phone)', () {
+    /// The lean phone team: one worker asleep, and the planner and the
+    /// three supervisors the app keeps off.
+    List<OrchestrationAgent> leanTeam() => [
+      _worker('demo-app/gastown.polecat', state: AgentState.stopped),
+      for (final name in [
+        'gastown.mayor',
+        'gastown.deacon',
+        'gastown.boot',
+        'demo-app/gastown.witness',
+      ])
+        OrchestrationAgent(
+          id: name,
+          name: name,
+          pool: name.split('/').last,
+          state: AgentState.stopped,
+          rawState: 'suspended',
+          suspended: true,
+        ),
+    ];
+
+    test('1. no two agents share a title', () {
+      final agents = [
+        ...leanTeam(),
+        // A second supervisor with nothing else to tell it apart.
+        const OrchestrationAgent(
+          id: 'gastown.deacon-2',
+          name: 'gastown.deacon-2',
+          pool: 'gastown.deacon',
+          state: AgentState.idle,
+        ),
+      ];
+      final titles = teamAgentTitles(_en, agents);
+      expect(titles.values.toSet(), hasLength(agents.length));
+      final supervisor = _en.teamUiAgentRoleSupervisor;
+      expect(titles['demo-app/gastown.witness'], '$supervisor · demo-app');
+      expect(titles['gastown.boot'], '$supervisor · watchdog');
+      expect(titles['gastown.deacon'], startsWith('$supervisor · whole team'));
+      expect(
+        titles['gastown.deacon-2'],
+        startsWith('$supervisor · whole team'),
+      );
+      // An agent whose title is its own keeps it bare.
+      expect(titles['gastown.mayor'], _en.teamUiAgentRolePlanner);
+    });
+
+    testWidgets('2. one Wake for the paused agents, no button per row', (
+      tester,
+    ) async {
+      final team = await _team(
+        agents: [
+          _worker('fox', state: AgentState.stopped, suspended: true),
+          _worker('nux', state: AgentState.stopped, suspended: true),
+          _worker('ace', sessionRunning: true),
+        ],
+      );
+      await _pump(
+        tester,
+        TeamAgentsScreen(controller: team, now: () => _clock),
+      );
+      expect(find.byType(KitButton), findsNothing);
+      expect(_key('team-agents-wake-paused'), findsOneWidget);
+      expect(find.text(_en.teamAgentsWakePaused(2)), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('3. a wake the team does not confirm stops, says so in words '
+        'and offers Check again', (tester) async {
+      final team = await _team(
+        agents: [
+          _worker('fox', state: AgentState.stopped, suspended: true),
+          _worker('nux', state: AgentState.stopped, suspended: true),
+        ],
+      );
+      await _pump(
+        tester,
+        TeamAgentsScreen(controller: team, now: () => _clock),
+      );
+      await tester.tap(_key('team-agents-wake-paused'));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      // One wake only: the team that did not answer is not sent more.
+      expect(_lastGateway.woken, hasLength(1));
+      expect(find.text(_en.teamAgentsWakeUnconfirmed), findsOneWidget);
+      expect(find.textContaining('receive timeout'), findsNothing);
+      expect(_key('team-agents-wake-check'), findsOneWidget);
+      await tester.tap(_key('team-agents-wake-check'));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text(_en.teamAgentsWakeUnconfirmed), findsNothing);
+      expect(find.text(_en.teamAgentsWakePausedHint), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('3. the phone team: the agents the app keeps off are never '
+        'offered a Wake, and the team is asleep, not Paused', (tester) async {
+      final team = await _team(agents: leanTeam(), builtin: true);
+      await _pump(
+        tester,
+        TeamAgentsScreen(controller: team, now: () => _clock),
+      );
+      expect(_key('team-agents-wake-paused'), findsNothing);
+      expect(find.textContaining(_en.teamAgentsKeptOff), findsNWidgets(4));
+      await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
+      expect(_subtitle(tester), isNot(contains(_en.teamUiHostPhrasePaused)));
+      expect(
+        _agentsRow(tester),
+        '${_en.teamUiHomeAgentsRowCount(5)} · ${_en.teamNowAgentsAsleep} · '
+        '${_en.teamHomeAgentsRowKeptOff(4)}',
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('4. the team page counts what the agents list shows', (
+      tester,
+    ) async {
+      final agents = [
+        _worker('ace', sessionRunning: true),
+        _worker('fox', state: AgentState.idle),
+        _worker('nux', state: AgentState.stopped),
+        _worker('max', state: AgentState.stopped, suspended: true),
+        _worker('bee', state: AgentState.stopped, suspended: true),
+        _worker('kit', state: AgentState.stopped),
+      ];
+      final team = await _team(agents: agents);
+      await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
+      expect(
+        _agentsRow(tester),
+        '${_en.teamUiHomeAgentsRowCount(6)} · '
+        '${_en.teamUiHomeAgentsRowWorking(1)} · '
+        '${_en.teamHomeAgentsRowPaused(2)}',
+      );
+      await _pump(
+        tester,
+        TeamAgentsScreen(controller: team, now: () => _clock),
+      );
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w.key is ValueKey<String> &&
+              (w.key! as ValueKey<String>).value.startsWith(
+                'team-home-agent-title-',
+              ),
+        ),
+        findsNWidgets(6),
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('5. nothing counted is not "\$0.00 · 0 tokens"', (
+      tester,
+    ) async {
+      final team = await _team(
+        agents: [_worker('ace', sessionRunning: true)],
+        usage: const OrchestrationUsage(
+          evidence: OrchestrationUsageEvidence(
+            available: true,
+            recording: true,
+            isEstimated: true,
+            partial: false,
+            today: OrchestrationUsageTotals(
+              inputTokens: 0,
+              outputTokens: 0,
+              costUsdEstimate: 0,
+            ),
+          ),
+        ),
+      );
+      await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
+      expect(_key('team-home-spent'), findsNothing);
+      expect(find.textContaining(r'$0.00'), findsNothing);
+      expect(find.textContaining('0 tokens'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('6. upkeep is one line in words, duplicates collapsed, no '
+        'switch', (tester) async {
+      final team = await _team(
+        runs: [
+          for (var i = 1; i <= 4; i++)
+            OrchestrationRun(
+              id: 'wisp-$i',
+              title: 'mol-witness-patrol',
+              formula: 'mol-witness-patrol',
+              state: RunState.planning,
+              kind: RunKind.formula,
+              isUpkeep: true,
+            ),
+          const OrchestrationRun(
+            id: 'order-1',
+            title: 'order:gate-sweep',
+            state: RunState.working,
+            kind: RunKind.formula,
+            isUpkeep: true,
+          ),
+        ],
+      );
+      await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
+      expect(find.byType(KitSwitchRow), findsNothing);
+      expect(_key('team-home-upkeep-row'), findsOneWidget);
+      final line = tester
+          .widget<KitRow>(_key('team-home-upkeep-row'))
+          .supporting!
+          .toPlainText();
+      expect(line, 'Patrol ×4 · planning; Chore · working');
+      expect(find.textContaining('mol-'), findsNothing);
+      expect(find.textContaining('order:'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });

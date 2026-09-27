@@ -259,14 +259,14 @@
           "destructive": false
         },
         {
-          "id": "team-home-runs-upkeep-toggle",
-          "type": "toggle",
-          "label": "Show team upkeep ({count})",
-          "key": "team-home-upkeep-toggle",
-          "line": 921,
+          "id": "team-home-upkeep-row",
+          "type": "list-tile",
+          "label": "Team upkeep · {kind} ×{count} · {state}",
+          "key": "team-home-upkeep-row",
+          "line": 1003,
           "action": "other",
           "target": null,
-          "effect": "SwitchListTile.onChanged -> setState(_upkeepShown = shown); view state only, never persisted.",
+          "effect": "Informational row in the team panel (slice-P5.2): the host's own upkeep runs in words, duplicates collapsed (teamUpkeepLine). Replaces the 'Show team upkeep' switch and its rows of engine names.",
           "gates": [
             "upkeep.isNotEmpty (teamUpkeepRuns(snapshot.runs))"
           ],
@@ -900,6 +900,20 @@
           "targetWidget": "AgentScreen",
           "effect": "TeamAgentRow.onTap -> row()'s onTap -> _openAgent(agent): widget.onOpenAgent ?? Navigator.push(AgentScreen(controller, agentId: agent.id, now: widget.now)) (team_agents_screen.dart:68-80, 151).",
           "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-agents-wake-paused",
+          "type": "list-tile",
+          "label": "Wake the {count} paused agents",
+          "key": "team-agents-wake-paused",
+          "line": 441,
+          "action": "mutate",
+          "target": null,
+          "effect": "slice-P5.2: one action for every paused agent (never the ones the app keeps off on its phone team): controller.controlAgent(id, resume) one at a time, stopping at the first the host does not accept; its KitReceipt below, and when not confirmed or refused a plain line with Check again (refresh).",
+          "gates": [
+            "controller.capabilities.controlAgent && (paused agents or a wake outcome)"
+          ],
           "destructive": false
         },
         {
@@ -1787,10 +1801,10 @@
       "title": "[Gate answer receipt chip]",
       "kind": "overlay",
       "file": "lib/ui/widgets/team_receipt.dart",
-      "widget": "TeamReceiptChip",
+      "widget": "teamGateRowReceipt",
       "presentedBy": [],
-      "line": 101,
-      "purpose": "Trailing chip on a needs-you gate row once an answer left this phone: Sent / Unconfirmed / Not accepted.",
+      "line": 86,
+      "purpose": "Trailing KitReceipt on a needs-you gate row once an answer left this phone: Sending / Not confirmed yet / Not accepted (teamGateRowReceipt; the TeamReceiptChip wrapper is deleted).",
       "reachedFrom": [],
       "gates": [
         "ConnectionController.orchestration != null (lib/state/connection.dart:712); _syncOrchestration (connection.dart:746) returns without building the controller when `config == null || selected == null || isIsolated || _disposed`, where `config = selected?.orchestration` (the connected ServerProfile's AI Team plugin config)"
@@ -1801,7 +1815,7 @@
           "type": "chip",
           "label": "Sent | Unconfirmed | Not accepted",
           "key": "activity-team-gate-<gate.id>-receipt",
-          "line": 125,
+          "line": 104,
           "action": "open-sheet",
           "target": "gate-sheet",
           "targetWidget": "showGateSheet",

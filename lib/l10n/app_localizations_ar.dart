@@ -14261,14 +14261,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String teamUiHomeUpkeepToggle(int count) {
-    return 'إظهار صيانة الفريق ($count)';
-  }
-
-  @override
-  String get teamUiHomeUpkeepHint => 'دوريات ومهام يشغّلها المضيف لنفسه';
-
-  @override
   String teamUiHomeSuspendedGroup(int count) {
     return 'موقوفون على المضيف ($count)';
   }
@@ -14587,36 +14579,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get termuxProcsTitle => 'يعمل الآن';
 
   @override
-  String termuxProcsRowSubtitle(int count, String cpu) {
-    return '$count عمليات · المعالج $cpu٪';
-  }
-
-  @override
   String get termuxProcsRowLoading => 'جارٍ التحقق…';
-
-  @override
-  String get termuxProcsRowUnavailable => 'غير متاح الآن';
 
   @override
   String get termuxProcsRefresh => 'تحديث';
 
   @override
   String get termuxProcsAutoRefresh => 'يتحدّث كل 10 ثوانٍ أثناء فتح الشاشة';
-
-  @override
-  String get termuxProcsGroupOpenCode => 'خادم OpenCode';
-
-  @override
-  String get termuxProcsGroupAiTeam => 'فريق الذكاء الاصطناعي';
-
-  @override
-  String get termuxProcsGroupBuild => 'خدمات البناء';
-
-  @override
-  String get termuxProcsGroupOrphans => 'عمليات يتيمة';
-
-  @override
-  String get termuxProcsGroupOther => 'أخرى';
 
   @override
   String get termuxProcsGroupOpenCodeHint => 'يُدار من «على هذا الهاتف»';
@@ -14677,11 +14646,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String termuxProcsStats(String cpu, String memory, String elapsed) {
-    return 'المعالج $cpu٪ · $memory · $elapsed';
-  }
-
-  @override
   String get termuxProcsStopping => 'جارٍ الإيقاف…';
 
   @override
@@ -14708,9 +14672,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get termuxProcsEmpty => 'لا شيء يعمل في خادم الهاتف';
 
   @override
-  String get termuxProcsFailed => 'تعذّر قراءة قائمة العمليات.';
-
-  @override
   String get termuxProcsAttentionLine => 'لا يزال شيء ما يعمل على هذا الهاتف';
 
   @override
@@ -14723,11 +14684,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get termuxProcsFolder => 'المجلد';
-
-  @override
-  String termuxProcsPid(int pid, int ppid) {
-    return 'المعرّف $pid · الأم $ppid';
-  }
 
   @override
   String termuxProcsDurationSeconds(int seconds) {
@@ -22119,7 +22075,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get termuxProcsCopyCommand => 'Copy command';
 
   @override
-  String get termuxProcsOpenControls => 'Open On this phone';
+  String get termuxProcsOpenControls => 'Open This phone';
 
   @override
   String get termuxProcsProcessId => 'Process ID';
@@ -22570,11 +22526,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamAgentsPausedHint => 'switched off until someone wakes it';
-
-  @override
-  String teamAgentsWake(String name) {
-    return 'Wake $name';
-  }
 
   @override
   String get teamWorkSheetMissingTitle => 'Work item gone';
@@ -26009,6 +25960,81 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String teamHomeAgentsRowPaused(int count) {
+    return '$count paused';
+  }
+
+  @override
+  String teamHomeAgentsRowKeptOff(int count) {
+    return '$count kept off on this phone';
+  }
+
+  @override
+  String get teamHomeUpkeepTitle => 'Team upkeep';
+
+  @override
+  String get teamHomeUpkeepPatrol => 'Patrol';
+
+  @override
+  String get teamHomeUpkeepChore => 'Chore';
+
+  @override
+  String teamHomeUpkeepGroup(int count, String kind, String state) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$kind ×$count · $state',
+      one: '$kind · $state',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamAgentLooksAfterTeam => 'whole team';
+
+  @override
+  String get teamAgentLooksAfterWatchdog => 'watchdog';
+
+  @override
+  String get teamAgentLooksAfterWorkers => 'workers';
+
+  @override
+  String get teamAgentsKeptOff => 'Off on this phone';
+
+  @override
+  String get teamAgentsKeptOffHint => 'kept off so the phone can run the team';
+
+  @override
+  String teamAgentsWakePaused(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Wake the $count paused agents',
+      one: 'Wake the paused agent',
+      zero: 'Wake the paused agents',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamAgentsWakePausedHint =>
+      'They start again one at a time and pick up waiting work.';
+
+  @override
+  String get teamAgentsWakeUnconfirmed =>
+      'The team didn’t answer in time. Starting agents can keep it busy for a minute or two, so no more were woken. Check again in a minute.';
+
+  @override
+  String get teamAgentsWakeRefused =>
+      'The team didn’t wake them. Open an agent to see how it stands, or try again later.';
+
+  @override
+  String get teamAgentsWaking => 'Waking…';
+
+  @override
+  String get teamAgentsWakeCheckAgain => 'Check again';
+
+  @override
   String teamIntroNotFound(String server) {
     return 'No AI Team found on $server';
   }
@@ -26453,4 +26479,115 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamGateCardIfIgnoredReview =>
       'The work waits for review. Nothing is lost.';
+
+  @override
+  String termuxProcsBudget(int count, int limit) {
+    return '$count of $limit background processes';
+  }
+
+  @override
+  String termuxProcsBudgetNote(int limit) {
+    return 'Android 12 and later may stop the oldest ones when all apps together run more than $limit.';
+  }
+
+  @override
+  String termuxProcsBudgetOver(int limit) {
+    return 'More than $limit: Android may stop the oldest of these at any time.';
+  }
+
+  @override
+  String get termuxProcsLoadFailedBody =>
+      'Termux did not answer. Open Termux, then try again.';
+
+  @override
+  String get termuxProcsRefreshFailed =>
+      'Couldn\'t read the list again, so it shows the last reading.';
+
+  @override
+  String get termuxProcsStopFailed =>
+      'Couldn\'t stop it. Try again, or stop it from Termux.';
+
+  @override
+  String get termuxProcsKindOpenCode => 'OpenCode server';
+
+  @override
+  String get termuxProcsKindAiTeam => 'AI Team';
+
+  @override
+  String get termuxProcsKindClaudeCode => 'Claude Code';
+
+  @override
+  String get termuxProcsKindDevService => 'Dev service';
+
+  @override
+  String get termuxProcsKindTerminal => 'Terminal';
+
+  @override
+  String get termuxProcsKindHelper => 'Helper';
+
+  @override
+  String get termuxProcsKindHostApp => 'Termux app';
+
+  @override
+  String get termuxProcsBusy => 'Busy';
+
+  @override
+  String get termuxProcsIdle => 'Idle';
+
+  @override
+  String termuxProcsRunningFor(String elapsed) {
+    return 'running $elapsed';
+  }
+
+  @override
+  String termuxProcsStopKindBody(String names) {
+    return '$names: each gets a polite stop, then a forced one after 5 seconds.';
+  }
+
+  @override
+  String termuxProcsStopKind(int count, String things) {
+    return 'Stop all $count $things';
+  }
+
+  @override
+  String termuxProcsStopKindTitle(int count, String things) {
+    return 'Stop all $count $things?';
+  }
+
+  @override
+  String get termuxProcsKindsAiTeam => 'AI Team processes';
+
+  @override
+  String get termuxProcsKindsClaudeCode => 'Claude Code processes';
+
+  @override
+  String get termuxProcsKindsDevServices => 'dev services';
+
+  @override
+  String get termuxProcsKindsTerminals => 'terminals';
+
+  @override
+  String get termuxProcsKindsHelpers => 'helpers';
+
+  @override
+  String get termuxProcsStopDevRestart =>
+      'The next build starts them again when it needs them.';
+
+  @override
+  String get termuxProcsAboutClaudeCode =>
+      'Claude Code, the coding agent. Stopping it ends the answer it is writing.';
+
+  @override
+  String get termuxProcsAboutTerminal =>
+      'A terminal. Stopping it closes it and whatever runs in it.';
+
+  @override
+  String get termuxProcsAboutHostApp =>
+      'The Termux app itself. It is not stopped from here.';
+
+  @override
+  String get termuxProcsAverageCpu => 'Average processor use';
+
+  @override
+  String get termuxProcsCpuTime => 'Processor time';
 }

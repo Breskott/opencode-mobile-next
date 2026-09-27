@@ -10,9 +10,17 @@
 /// work"), and is named "furiosa · Worker" when the host gives the agent a
 /// name of its own, so two workers are told apart.
 ///
-/// A paused agent (switched off on the host) offers "Wake furiosa" in its
-/// row when the host lets the phone control agents; the row then carries
-/// the answer's receipt. A row opens [AgentScreen].
+/// Two agents never share a title: a repeated role is told apart by its
+/// project, then by what it looks after ("Supervisor · whole team"), then
+/// by number ([teamAgentTitles]). The agents the app keeps off on its own
+/// phone team say so ("Off on this phone") and are never offered a Wake.
+///
+/// Paused agents (switched off on the host) are woken together by one
+/// "Wake the paused agents" row above the list when the host lets the
+/// phone control agents, one at a time, stopping at the first the host
+/// does not confirm; the row carries the receipt, and when the team does
+/// not answer it says so in words with Check again. A row opens
+/// [AgentScreen].
 ///
 /// The top bar says where the team runs and when the list was last
 /// checked ("On pop-os · checked 4 min ago"), so old data never passes as
@@ -30,10 +38,12 @@ import 'package:flutter/widgets.dart';
 import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
+import '../../../state/profiles.dart' show OrchestrationConfig;
 import '../../../state/team_conversation.dart' show teamSessionState;
 import '../../app_iconography.dart';
 import '../../kit/kit_buttons.dart';
 import '../../kit/kit_page_route.dart';
+import '../../kit/kit_receipt.dart';
 import '../../kit/kit_row.dart';
 import '../../kit/kit_screen.dart';
 import '../../kit/kit_since.dart';
@@ -44,8 +54,8 @@ import '../../kit/kit_top_bar.dart';
 import '../../kit/motion/kit_refresh.dart';
 import '../../kit/scenes/team_scenes.dart';
 import '../../widgets/relative_time.dart';
-import '../../widgets/team_now.dart' show teamAgentPaused;
-import '../../widgets/team_receipt.dart';
+import '../../widgets/team_now.dart'
+    show teamAgentKeptOff, teamAgentKind, teamAgentPaused;
 import '../../widgets/team_vocabulary.dart';
 import 'agent_screen.dart';
 import 'team_states.dart';
@@ -68,13 +78,23 @@ enum TeamAgentStanding {
   /// Switched off on purpose (suspended): nothing wakes it until someone
   /// does.
   paused,
+
+  /// Kept off by the app on its own phone team, to save the phone
+  /// ([teamAgentKeptOff]): not the person's pause, never woken from here.
+  keptOff,
 }
 
 /// [agent]'s place on the list, from its session first
 /// ([teamSessionState], ledger row 21): an agent the list calls working
 /// whose session the host reports stopped is asleep, never "Working"; one
 /// the list calls stopped whose session runs is at work.
-TeamAgentStanding teamAgentStanding(OrchestrationAgent agent) {
+TeamAgentStanding teamAgentStanding(
+  OrchestrationAgent agent, {
+  OrchestrationConfig? config,
+}) {
+  if (config != null && teamAgentKeptOff(config, agent)) {
+    return TeamAgentStanding.keptOff;
+  }
   if (!teamAgentIsLive(agent)) {
     return teamAgentPaused(agent)
         ? TeamAgentStanding.paused
@@ -92,8 +112,15 @@ TeamAgentStanding teamAgentStanding(OrchestrationAgent agent) {
 
 /// Urgency first (needs you, crashed, working, idle, asleep, paused), then
 /// the newest activity, then the name so the order is stable.
-int teamCompareAgentsByUrgency(OrchestrationAgent a, OrchestrationAgent b) {
-  final rank = teamAgentStanding(a).index.compareTo(teamAgentStanding(b).index);
+int teamCompareAgentsByUrgency(
+  OrchestrationAgent a,
+  OrchestrationAgent b, {
+  OrchestrationConfig? config,
+}) {
+  final rank = teamAgentStanding(
+    a,
+    config: config,
+  ).index.compareTo(teamAgentStanding(b, config: config).index);
   if (rank != 0) return rank;
   final at = a.lastActivity, bt = b.lastActivity;
   if (at != null && bt != null && at != bt) return bt.compareTo(at);
@@ -123,6 +150,61 @@ String teamAgentTitle(AppLocalizations l10n, OrchestrationAgent agent) {
   return nickname == null ? role : '$nickname$teamUsageSeparator$role';
 }
 
+/// The title of each of [agents] by id, none twice (owner, build 2055:
+/// three rows all called "Supervisor"). [teamAgentTitle] first; a title
+/// shared by several agents takes, where it tells them apart, the agent's
+/// project ("Supervisor · demo-app"), then what it looks after
+/// ("Supervisor · whole team", "Supervisor · watchdog"), and any title
+/// still shared ends with the agent's number in the list ("Worker 2").
+Map<String, String> teamAgentTitles(
+  AppLocalizations l10n,
+  List<OrchestrationAgent> agents,
+) {
+  final titles = {
+    for (final agent in agents) agent.id: teamAgentTitle(l10n, agent),
+  };
+  List<List<OrchestrationAgent>> shared() {
+    final groups = <String, List<OrchestrationAgent>>{};
+    for (final agent in agents) {
+      groups.putIfAbsent(titles[agent.id]!, () => []).add(agent);
+    }
+    return [
+      for (final group in groups.values)
+        if (group.length > 1) group,
+    ];
+  }
+
+  void qualify(String? Function(OrchestrationAgent) by) {
+    for (final group in shared()) {
+      for (final agent in group) {
+        final word = by(agent);
+        if (word == null || word.isEmpty) continue;
+        titles[agent.id] = '${titles[agent.id]}$teamUsageSeparator$word';
+      }
+    }
+  }
+
+  qualify((agent) {
+    final name = agent.name;
+    final slash = name.lastIndexOf('/');
+    return slash <= 0 ? null : name.substring(0, slash);
+  });
+  qualify(
+    (agent) => switch (teamAgentKind(agent)) {
+      'deacon' => l10n.teamAgentLooksAfterTeam,
+      'boot' => l10n.teamAgentLooksAfterWatchdog,
+      'witness' => l10n.teamAgentLooksAfterWorkers,
+      _ => null,
+    },
+  );
+  for (final group in shared()) {
+    for (final (index, agent) in group.indexed) {
+      titles[agent.id] = '${titles[agent.id]} ${index + 1}';
+    }
+  }
+  return titles;
+}
+
 class TeamAgentsScreen extends StatefulWidget {
   const TeamAgentsScreen({
     super.key,
@@ -146,8 +228,21 @@ class TeamAgentsScreen extends StatefulWidget {
 class _TeamAgentsScreenState extends State<TeamAgentsScreen> {
   bool _refreshing = false;
 
-  /// The agent a Wake is being sent for.
-  String? _waking;
+  /// "Wake the paused agents" is sending.
+  bool _waking = false;
+
+  /// The agents the last Wake was sent for, in order; their receipts are
+  /// the controller's latest records for them (a sent wake the host never
+  /// confirms turns "Not confirmed yet" there). Cleared by Check again.
+  List<String> _woken = const [];
+
+  List<MutationRecord> get _wokenRecords => [
+    for (final id in _woken)
+      ?widget.controller.latestMutation(
+        kind: MutationKind.controlAgent,
+        targetId: id,
+      ),
+  ];
 
   DateTime get _now => (widget.now ?? DateTime.now)();
 
@@ -166,14 +261,58 @@ class _TeamAgentsScreenState extends State<TeamAgentsScreen> {
     }
   }
 
-  Future<void> _wake(OrchestrationAgent agent) async {
-    if (_waking != null) return;
-    setState(() => _waking = agent.id);
+  /// Wakes [agents] one at a time and stops at the first the host does
+  /// not accept: a team that did not answer one wake is not sent more
+  /// (starting agents is what can keep a phone's team busy).
+  Future<void> _wake(List<OrchestrationAgent> agents) async {
+    if (_waking || agents.isEmpty) return;
+    setState(() {
+      _waking = true;
+      _woken = const [];
+    });
+    final sent = <String>[];
     try {
-      await widget.controller.controlAgent(agent.id, AgentControlAction.resume);
+      for (final agent in agents) {
+        sent.add(agent.id);
+        if (mounted) setState(() => _woken = List.unmodifiable(sent));
+        final record = await widget.controller.controlAgent(
+          agent.id,
+          AgentControlAction.resume,
+        );
+        if (!mounted) return;
+        final accepted =
+            record.status == MutationStatus.confirmed ||
+            (record.status == MutationStatus.sent &&
+                (record.receipt?.isAccepted ?? false));
+        if (!accepted) break;
+      }
     } finally {
-      if (mounted) setState(() => _waking = null);
+      if (mounted) setState(() => _waking = false);
     }
+  }
+
+  /// After a wake the team did not confirm: read the team again.
+  Future<void> _checkAgain() async {
+    await _refresh();
+    if (mounted) setState(() => _woken = const []);
+  }
+
+  /// The wake's receipt: sending while it runs, then the worst answer
+  /// (refused, then not confirmed); null once every answer was accepted.
+  KitReceiptState? get _wakeState {
+    if (_waking) return KitReceiptState.sending;
+    final records = _wokenRecords;
+    if (records.any((r) => r.status == MutationStatus.rejected)) {
+      return KitReceiptState.refused;
+    }
+    if (records.any((r) => r.status == MutationStatus.unconfirmed)) {
+      return KitReceiptState.notConfirmed;
+    }
+    // Sent and accepted, waiting for the host's echo.
+    if (records.any((r) => r.status == MutationStatus.sent)) {
+      return KitReceiptState.sent;
+    }
+    return null;
   }
 
   void _openAgent(OrchestrationAgent agent) {
@@ -258,7 +397,17 @@ class _TeamAgentsScreenState extends State<TeamAgentsScreen> {
     }
     final snapshot = controller.snapshot;
     final workById = {for (final item in snapshot.work) item.id: item};
-    final agents = [...snapshot.agents]..sort(teamCompareAgentsByUrgency);
+    final config = controller.config;
+    final agents = [...snapshot.agents]
+      ..sort((a, b) => teamCompareAgentsByUrgency(a, b, config: config));
+    final titles = teamAgentTitles(l10n, agents);
+    final paused = [
+      for (final agent in agents)
+        if (teamAgentStanding(agent, config: config) ==
+            TeamAgentStanding.paused)
+          agent,
+    ];
+    final wakeState = _wakeState;
     final canWake = controller.capabilities.controlAgent;
     return KitRefresh(
       key: const ValueKey('team-agents-pull'),
@@ -282,68 +431,115 @@ class _TeamAgentsScreenState extends State<TeamAgentsScreen> {
               title: l10n.teamUiHomeAgentsEmpty,
               body: l10n.teamUiHomeAgentsEmptyHint,
             )
-          else
+          else ...[
+            // One action for every paused agent, above the list (owner,
+            // build 2055: a Wake button in each row was noise).
+            if (canWake && (paused.isNotEmpty || wakeState != null)) ...[
+              KitRowGroup(
+                children: [
+                  KitRow(
+                    key: const ValueKey('team-agents-wake-paused'),
+                    leading: KitRow.icon(context, AppIconography.play),
+                    title: l10n.teamAgentsWakePaused(paused.length),
+                    titleMaxLines: 2,
+                    supporting: TextSpan(
+                      text: switch (wakeState) {
+                        KitReceiptState.notConfirmed =>
+                          l10n.teamAgentsWakeUnconfirmed,
+                        KitReceiptState.refused => l10n.teamAgentsWakeRefused,
+                        _ => l10n.teamAgentsWakePausedHint,
+                      },
+                    ),
+                    supportingKey: const ValueKey('team-agents-wake-line'),
+                    supportingMaxLines: 4,
+                    enabled: !_waking,
+                    onTap: _waking || paused.isEmpty
+                        ? null
+                        : () => _wake(paused),
+                    below: wakeState == null
+                        ? null
+                        : Padding(
+                            padding: EdgeInsetsDirectional.only(
+                              top: tokens.space2,
+                            ),
+                            child: Wrap(
+                              spacing: tokens.space2,
+                              runSpacing: tokens.space2,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                KitReceipt(
+                                  key: const ValueKey(
+                                    'team-agents-wake-receipt',
+                                  ),
+                                  state: wakeState,
+                                  sendingLabel: l10n.teamAgentsWaking,
+                                ),
+                                if (wakeState == KitReceiptState.notConfirmed ||
+                                    wakeState == KitReceiptState.refused)
+                                  KitButton.secondary(
+                                    key: const ValueKey(
+                                      'team-agents-wake-check',
+                                    ),
+                                    label: l10n.teamAgentsWakeCheckAgain,
+                                    icon: AppIconography.retry,
+                                    expand: false,
+                                    working: _refreshing,
+                                    onPressed: _refreshing ? null : _checkAgain,
+                                  ),
+                              ],
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+              SizedBox(height: tokens.sectionGap),
+            ],
             KitRowGroup(
               children: [
                 for (final agent in agents)
                   _AgentRow(
                     agent: agent,
+                    title: titles[agent.id]!,
+                    standing: teamAgentStanding(agent, config: config),
                     work: workById[agent.currentWorkId],
                     now: _now,
-                    receipt: controller.latestMutation(
-                      kind: MutationKind.controlAgent,
-                      targetId: agent.id,
-                    ),
-                    waking: _waking == agent.id,
-                    onWake:
-                        canWake &&
-                            teamAgentStanding(agent) ==
-                                TeamAgentStanding.paused &&
-                            (_waking == null || _waking == agent.id)
-                        ? () => _wake(agent)
-                        : null,
                     onTap: () => _openAgent(agent),
                   ),
               ],
             ),
+          ],
         ],
       ),
     );
   }
 }
 
-/// One agent: its mark, "furiosa · Worker", and "Working · Sync engine ·
-/// 1m ago" (or "Asleep · wakes when there is work"); a paused agent's Wake
-/// and the receipt of what the host did with it under the line.
+/// One agent: its mark, its title (never another agent's), and "Working ·
+/// Sync engine · 1m ago" (or "Asleep · wakes when there is work").
 class _AgentRow extends StatelessWidget {
   const _AgentRow({
     required this.agent,
+    required this.title,
+    required this.standing,
     required this.work,
     required this.now,
-    required this.receipt,
-    required this.waking,
-    required this.onWake,
     required this.onTap,
   });
 
   final OrchestrationAgent agent;
+  final String title;
+  final TeamAgentStanding standing;
   final WorkItem? work;
   final DateTime now;
-  final MutationRecord? receipt;
-  final bool waking;
-
-  /// Null when the agent cannot be woken from here.
-  final VoidCallback? onWake;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final tokens = KitTokens.of(context);
-    final standing = teamAgentStanding(agent);
     final word = switch (standing) {
       TeamAgentStanding.asleep => l10n.teamAgentsAsleep,
       TeamAgentStanding.paused => l10n.teamAgentsPaused,
+      TeamAgentStanding.keptOff => l10n.teamAgentsKeptOff,
       _ => teamAgentStateWord(l10n, teamSessionState(agent)),
     };
     final mark = switch (standing) {
@@ -362,7 +558,7 @@ class _AgentRow extends StatelessWidget {
         state: KitTaskState.waiting,
         label: word,
       ),
-      TeamAgentStanding.asleep => KitTaskMark(
+      TeamAgentStanding.asleep || TeamAgentStanding.keptOff => KitTaskMark(
         state: KitTaskState.stopped,
         label: word,
       ),
@@ -382,51 +578,19 @@ class _AgentRow extends StatelessWidget {
     final line = switch (standing) {
       TeamAgentStanding.asleep => [word, l10n.teamAgentsAsleepHint],
       TeamAgentStanding.paused => [word, l10n.teamAgentsPausedHint],
+      TeamAgentStanding.keptOff => [word, l10n.teamAgentsKeptOffHint],
       _ => [word, ?work?.title, ?activity],
     }.join(teamUsageSeparator);
-    final record = receipt;
-    final showReceipt =
-        record != null && record.status != MutationStatus.confirmed;
-    final wake = onWake;
-    final name = teamAgentNickname(agent) ?? teamAgentTitle(l10n, agent);
     return KitRow(
       key: ValueKey('team-home-agent-${agent.id}'),
       leading: mark,
-      title: teamAgentTitle(l10n, agent),
+      title: title,
       titleKey: ValueKey('team-home-agent-title-${agent.id}'),
       supporting: TextSpan(text: line),
       supportingKey: ValueKey('team-home-agent-state-${agent.id}'),
       // The step's title is the person's own words: two lines before it
       // ends, so the age is not cut off.
       supportingMaxLines: 2,
-      below: wake == null && !showReceipt
-          ? null
-          : Padding(
-              padding: EdgeInsetsDirectional.only(top: tokens.space2),
-              child: Wrap(
-                spacing: tokens.space2,
-                runSpacing: tokens.space2,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  if (wake != null)
-                    KitButton.secondary(
-                      key: ValueKey('team-agents-wake-${agent.id}'),
-                      label: l10n.teamAgentsWake(name),
-                      icon: AppIconography.play,
-                      expand: false,
-                      working: waking,
-                      onPressed: waking ? null : wake,
-                    ),
-                  if (showReceipt)
-                    ?teamGateRowReceipt(
-                      context,
-                      record,
-                      key: ValueKey('team-agents-receipt-${agent.id}'),
-                      onOpen: onTap,
-                    ),
-                ],
-              ),
-            ),
       onTap: onTap,
     );
   }
