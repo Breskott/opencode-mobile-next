@@ -12,7 +12,7 @@ abstract final class SetupCommands {
 
   /// Older servers that do not print a pairing code.
   static const legacyServe =
-      'OPENCODE_SERVER_PASSWORD=your-secret \\\n'
+      'OPENCODE_SERVER_PASSWORD=<your-password> \\\n'
       '  opencode serve --hostname 127.0.0.1 --port 4096';
 
   /// The Paseo daemon, kept off the relay. This app never uses the relay.
