@@ -16,6 +16,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/kit/kit_search_field.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -434,6 +435,7 @@ void main() {
         final search = find.byKey(const ValueKey('team-home-search'));
         await revealIn(tester, 'team-home-runs', search, up: true);
         await tester.enterText(search, 'Sync');
+        await tester.pump(KitMotion.typingSettle);
         await tester.pumpAndSettle();
         // r2 carries the failed-run gate, so it counts as blocked and
         // matches the search; the convoy's title does not. The questions
@@ -453,17 +455,12 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
 
-        // Technical details: with search in the top bar, the phone shows
-        // one action and the rest wait in its overflow (KitTopBar).
-        await tester.tap(find.byKey(const ValueKey('team-home-more')));
+        // P3.4 moved Technical details into the team's own panel.
+        final details = find.byKey(const ValueKey('team-home-host-row'));
+        await revealIn(tester, 'team-home-runs', details);
+        await tester.tap(details);
         await tester.pumpAndSettle();
-        await tester.tap(find.text(l10n.teamUiTechnicalDetails).last);
-        await tester.pumpAndSettle();
-        // Known, not this screen's: the Technical details sheet
-        // (widgets/team_technical_details.dart) overflows by 82 px at 2.5x
-        // with this fixture on the base too; recorded in
-        // docs/qa/revamp-screen-team-2-2026-09-27 for its owner.
-        tester.takeException();
+        expect(tester.takeException(), isNull);
         final sheet = find.byKey(const ValueKey('team-home-host-sheet'));
         expect(sheet, findsOneWidget);
         expect(
@@ -474,8 +471,8 @@ void main() {
         await tester.pumpAndSettle();
         expect(sheet, findsNothing);
 
-        // Agents: one row on the home opens the list; every live row, then
-        // the stopped dog under the collapsed group (TEAM-115).
+        // Agents: one list ordered by urgency, including the asleep dog
+        // at its end (screen-team-3).
         final agentsRow = find.byKey(const ValueKey('team-home-agents-row'));
         await revealIn(tester, 'team-home-runs', agentsRow);
         await tester.tap(agentsRow);
@@ -488,16 +485,10 @@ void main() {
             find.byKey(ValueKey('team-home-agent-$id')),
           );
         }
-        final suspended = find.byKey(
-          const ValueKey('team-home-suspended-group'),
-        );
-        await revealIn(tester, 'team-home-agents', suspended);
         expect(
-          find.byKey(const ValueKey('team-home-agent-dog-1')),
+          find.byKey(const ValueKey('team-home-suspended-group')),
           findsNothing,
         );
-        await tester.tap(suspended);
-        await tester.pumpAndSettle();
         await revealIn(
           tester,
           'team-home-agents',
