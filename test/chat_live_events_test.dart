@@ -4677,12 +4677,9 @@ void main() {
     );
     await _pumpEvent(tester);
     expect(find.byKey(const ValueKey('prompt-error-banner')), findsOneWidget);
-    expect(
-      find.text(
-        'Model not found: openai/gpt-5.6. Did you mean: gpt-5.6, gpt-5.6-pro?',
-      ),
-      findsOneWidget,
-    );
+    // Words on the line; the server's text only under Details.
+    expect(find.text("The server doesn't have this model."), findsOneWidget);
+    expect(find.textContaining('Did you mean'), findsNothing);
     expect(find.textContaining('at <anonymous>'), findsNothing);
     expect(
       find.byKey(const ValueKey('prompt-error-choose-model')),
@@ -4696,6 +4693,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('prompt-error-details')));
     await tester.pumpAndSettle();
     expect(find.textContaining('at <anonymous>'), findsOneWidget);
+    expect(find.textContaining('Did you mean'), findsOneWidget);
   });
 
   testWidgets('renders attachment-only and mixed user prompts accessibly', (

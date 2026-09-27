@@ -38,7 +38,6 @@ const _excluded = <String, String>{
   'active-context': 'needs an open conversation',
   'active-context-message': 'needs an open conversation and a message',
   'prompt-editor': 'needs an open conversation (composer)',
-  'context-capsule': 'needs an open conversation',
   'run-result': 'needs an open conversation',
   'session-context': 'needs an open conversation',
   'session-export': 'needs an open conversation',

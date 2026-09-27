@@ -161,6 +161,7 @@ class KitMenuPanel extends StatelessWidget {
 | checked | a check glyph in `accent` in the start slot; an unchecked checkable item leaves the slot empty |
 | groups | a 1-physical-pixel `hairline` divider between groups |
 | destructive | the label and glyph in `danger`, last, after a divider |
+| with supporting (slice-P3.3) | `supporting` is one `text2` (`secondary`) line under the label that says what choosing the item means ("Edits files and runs commands"), for a menu of choices whose names alone do not say it |
 | disabled | the label in `text3`, the `disabledReason` line in `text2` (`secondary`), not focusable for selection, but still read by a screen reader |
 | empty | not opened; the Future resolves to null |
 

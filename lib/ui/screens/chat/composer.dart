@@ -12,7 +12,6 @@ enum _PromptTool {
   commands,
   attach,
   webSources,
-  contextCapsule,
   gallery,
   camera,
   voice,
@@ -72,7 +71,6 @@ class _ChatComposer extends StatelessWidget {
     required this.onVoice,
     required this.onConversation,
     required this.onWebSources,
-    required this.onContextCapsule,
     this.conversationMode = false,
     required this.onSend,
     required this.onStop,
@@ -161,7 +159,6 @@ class _ChatComposer extends StatelessWidget {
   final VoidCallback onVoice;
   final VoidCallback onConversation;
   final VoidCallback onWebSources;
-  final VoidCallback onContextCapsule;
   final bool conversationMode;
   final VoidCallback onSend;
   final VoidCallback onStop;
@@ -550,8 +547,6 @@ class _ChatComposer extends StatelessWidget {
         onAttach();
       case _PromptTool.webSources:
         onWebSources();
-      case _PromptTool.contextCapsule:
-        onContextCapsule();
       case _PromptTool.gallery:
         onPhotoLibrary();
       case _PromptTool.camera:
@@ -751,14 +746,6 @@ class _PromptToolsList extends StatelessWidget {
           leading: const KitRowIcon(AppIconography.layers),
           title: l10n.composerToolsMore,
           children: [
-            tool(
-              _PromptTool.contextCapsule,
-              key: 'capsule',
-              icon: AppIconography.layers,
-              title: l10n.composerToolNotesTitle,
-              supporting: l10n.capsuleEntry,
-              blockedBy: voiceBlocked ? running : null,
-            ),
             if (webSourcesSupported)
               tool(
                 _PromptTool.webSources,

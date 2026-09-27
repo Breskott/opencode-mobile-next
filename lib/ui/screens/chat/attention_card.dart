@@ -419,12 +419,17 @@ class _RetryAttentionCard extends StatelessWidget {
     final tokens = KitTokens.of(context);
     final title = retryBannerHeadline(retry, l10n: _chatL10n(context));
     final raw = retry.message?.trim();
-    // The reason in plain words. A rate limit is already the title.
-    final message = raw == null || raw.isEmpty
+    // The reason in plain words, when the app knows it; never the server's
+    // own text. A rate limit is already the title.
+    final words = raw == null || raw.isEmpty
         ? null
-        : classifyAgentError(raw) == AgentErrorCause.rateLimited
+        : agentErrorWords(raw, _chatL10n(context));
+    final message =
+        words == null ||
+            !words.humanized ||
+            classifyAgentError(raw!) == AgentErrorCause.rateLimited
         ? null
-        : agentErrorWords(raw, _chatL10n(context)).headline;
+        : words.headline;
     final hasMessage = message != null && message.isNotEmpty;
     return Center(
       child: ConstrainedBox(

@@ -118,7 +118,6 @@
   "modelRecent": "Recent",
   "modelOptions": "Options",
   "modelThinkingMode": "Thinking mode",
-  "modelDefaultMode": "Default mode",
   "modelSessionScopeNote": "Applies to this conversation's next turns.",
   "modelSelectionLoading": "Loading conversation selection…",
   "modelServerDefault": "Server default",
@@ -2274,26 +2273,8 @@
   "returnBriefSaveFailed": "Dismissal was not saved. These items are still unreviewed. Try again.",
   "returnBriefSaving": "Saving dismissal...",
   "returnBriefDismiss": "Dismiss shown items",
-  "capsuleTitle": "Context capsule",
-  "capsuleEntry": "Collect notes, errors and screenshots for this conversation",
-  "capsuleDescription": "Build a bundle for this conversation. Applying adds it to your existing draft; nothing is sent. Unapplied edits are kept only while this screen is open.",
-  "capsuleNote": "Note",
   "capsuleError": "Error",
-  "capsuleCode": "Code",
-  "capsuleLabel": "Label",
-  "capsuleExcerpt": "Excerpt",
-  "capsulePaste": "Paste",
   "capsuleRemove": "Remove",
-  "capsuleAddImage": "Add screenshot or image",
-  "capsulePreview": "Tap to preview",
-  "capsuleApply": "Apply to draft",
-  "capsuleApplied": "Context added to your saved draft. Review it before sending.",
-  "capsuleScopeChanged": "The conversation, server or draft changed. Close this capsule and reopen it from the intended conversation.",
-  "capsuleTextOnly": "This server accepts text only. You can still collect notes, errors and code.",
-  "capsuleImagesOnly": "Choose a PNG, JPEG, GIF or WebP image. Paste text into an excerpt instead.",
-  "capsuleImageFailed": "Could not add that image. Use up to 5 attachments, 10 MB each and 20 MB total, including your existing draft.",
-  "capsulePasteFailed": "Clipboard text is unavailable. You can type or paste into the excerpt.",
-  "capsuleTextLimit": "Keep each excerpt under 16,000 characters and the bundle under 32,000.",
   "markdownCopyCode": "Copy code",
   "markdownCopied": "Code copied",
   "markdownCopyFailed": "Could not copy code. Try again.",
@@ -2779,18 +2760,7 @@
   "demoTaskTitle": "Try a small change",
   "demoTaskInstruction": "Send the sample prompt below, then review the proposed edit.",
   "reviewTitle": "Review",
-  "modelChoiceProvidersTitle": "Providers not loaded",
-  "modelChoiceProvidersSummary": "{count, plural, =1{1 signed-in provider not loaded. View details} other{{count} signed-in providers not loaded. View details}}",
-  "@modelChoiceProvidersSummary": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "modelChoiceReloadProviders": "Reload providers",
-  "modelChoiceStagedAgentHint": "Applied with your model choice",
-  "modelChoiceAgentTitle": "Choose an agent",
   "modelChoiceDone": "Done",
   "modelChoicePartialSaveError": "Model saved. Agent choice was not confirmed. Try again.",
   "modelChoiceModelSaveError": "Could not confirm the model choice. Check your selection and try again.",
@@ -11667,10 +11637,6 @@
   "@e7ModelUiAgent": {
     "description": "Shared voice or model selection UI: e7ModelUiAgent"
   },
-  "e7ModelUiNoAgents": "No agents available",
-  "@e7ModelUiNoAgents": {
-    "description": "Shared voice or model selection UI: e7ModelUiNoAgents"
-  },
   "e7ModelUiServerDefault": "Server default",
   "@e7ModelUiServerDefault": {
     "description": "Shared voice or model selection UI: e7ModelUiServerDefault"
@@ -12275,7 +12241,7 @@
   "@e7ModelUiListSeparator": {
     "description": "Voice/model presentation: e7ModelUiListSeparator"
   },
-  "e7ModelUiUnloadedProviders": "{count, plural, one{OpenCode is signed in to {providers} but has not loaded it yet, so its models fail with “Model not found”. Reload to pick up the sign-in.} other{OpenCode is signed in to {providers} but has not loaded them yet, so their models fail with “Model not found”. Reload to pick up the sign-in.}}",
+  "e7ModelUiUnloadedProviders": "{count, plural, one{Signed in to {providers}, but the server has not loaded it yet, so its models cannot answer.} other{Signed in to {providers}, but the server has not loaded them yet, so their models cannot answer.}}",
   "@e7ModelUiUnloadedProviders": {
     "description": "Voice/model presentation: e7ModelUiUnloadedProviders",
     "placeholders": {
@@ -17687,6 +17653,30 @@
   "agentErrorServerDiskFullHint": "Free some space there, then try again.",
   "@agentErrorServerDiskFullHint": {
     "description": "What to do when the server disk is full"
+  },
+  "chatErrorModelNotFound": "The server doesn't have this model.",
+  "@chatErrorModelNotFound": {
+    "description": "Chat: an agent error of the model-not-found kind whose server text the app does not recognise; the server's text is under Details"
+  },
+  "chatErrorContextOverflow": "This conversation is too long for the model.",
+  "@chatErrorContextOverflow": {
+    "description": "Chat: an agent error of the context-overflow kind; the server's text is under Details"
+  },
+  "chatErrorProviderAuth": "The model provider needs you to sign in again.",
+  "@chatErrorProviderAuth": {
+    "description": "Chat: an agent error of the provider-sign-in kind; the server's text is under Details"
+  },
+  "chatErrorOutputLength": "The reply reached the model's length limit.",
+  "@chatErrorOutputLength": {
+    "description": "Chat: an agent error of the output-length kind; the server's text is under Details"
+  },
+  "chatErrorContentFilter": "The provider's safety filter stopped this reply.",
+  "@chatErrorContentFilter": {
+    "description": "Chat: an agent error of the content-filter kind; the server's text is under Details"
+  },
+  "chatErrorUnknown": "The agent stopped because of an error.",
+  "@chatErrorUnknown": {
+    "description": "Chat: an agent or prompt error the app does not recognise; the server's text is under Details, never shown as the headline"
   },
   "agentErrorRecovered": "The agent carried on after this.",
   "@agentErrorRecovered": {
@@ -25779,18 +25769,6 @@
   "@handoffSheetPhoneServerNote": {
     "description": "Open on another phone sheet: what happens on a phone without this server"
   },
-  "modelPickerYourChoice": "Your choice",
-  "@modelPickerYourChoice": {
-    "description": "Model picker: section label above the chosen model, thinking level and agent"
-  },
-  "modelPickerNoneChosen": "No model chosen",
-  "@modelPickerNoneChosen": {
-    "description": "Model picker: the choice row when no model is chosen"
-  },
-  "modelPickerNoneChosenHint": "Pick one from the list below.",
-  "@modelPickerNoneChosenHint": {
-    "description": "Model picker: supporting line when no model is chosen"
-  },
   "modelPickerChooseFirst": "Choose a model first.",
   "@modelPickerChooseFirst": {
     "description": "Model picker: why the apply action cannot run"
@@ -25799,17 +25777,23 @@
   "@modelPickerThinking": {
     "description": "Model picker: the thinking level row title"
   },
-  "modelPickerThinkingExplain": "How much the model reasons before it answers. Deeper thinking is slower and uses more tokens.",
-  "@modelPickerThinkingExplain": {
-    "description": "Model picker: what the thinking level means"
+  "modelPickerThinkingChip": "Thinking: {level}",
+  "@modelPickerThinkingChip": {
+    "description": "Model picker footer: the chip that opens the thinking level menu, with the level chosen",
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
   },
-  "modelPickerThinkingOneLevel": "This model has one thinking level",
-  "@modelPickerThinkingOneLevel": {
-    "description": "Model picker: the model offers no thinking levels to choose from"
-  },
-  "modelPickerAgentExplain": "The agent decides what the model may do, such as edit files or only read and plan.",
-  "@modelPickerAgentExplain": {
-    "description": "Model picker: what the agent choice means"
+  "modelPickerAgentChip": "Agent: {agent}",
+  "@modelPickerAgentChip": {
+    "description": "Model picker footer: the chip that opens the agent menu, with the agent chosen",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
   },
   "modelPickerAgentBuild": "Edits files and runs commands",
   "@modelPickerAgentBuild": {
@@ -25818,15 +25802,6 @@
   "modelPickerAgentPlan": "Reads and plans; does not change files",
   "@modelPickerAgentPlan": {
     "description": "Model picker: what the built-in plan agent does"
-  },
-  "modelPickerDetailsContext": "{count} tokens of context",
-  "@modelPickerDetailsContext": {
-    "description": "Model picker details: context window in words",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
   },
   "modelPickerDetailsOutput": "Up to {count} tokens per answer",
   "@modelPickerDetailsOutput": {
@@ -25860,10 +25835,6 @@
   "modelPickerCanReadAttachments": "Reads images and files you attach",
   "@modelPickerCanReadAttachments": {
     "description": "Model picker details: the model accepts attachments"
-  },
-  "modelPickerModelId": "Model id",
-  "@modelPickerModelId": {
-    "description": "Model picker details: label of the provider/model id"
   },
   "modelPickerCopyId": "Copy model id",
   "@modelPickerCopyId": {
@@ -29163,10 +29134,6 @@
   "composerToolsMore": "More tools",
   "@composerToolsMore": {
     "description": "Composer + sheet: the fold holding the rarer tools."
-  },
-  "composerToolNotesTitle": "Notes for this conversation",
-  "@composerToolNotesTitle": {
-    "description": "Composer + sheet: the context capsule, in plain words."
   },
   "composerReturnedToDraft": "Returned to your draft",
   "@composerReturnedToDraft": {

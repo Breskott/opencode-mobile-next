@@ -211,9 +211,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelThinkingMode => 'Thinking mode';
 
   @override
-  String get modelDefaultMode => 'Default mode';
-
-  @override
   String get modelSessionScopeNote =>
       'Applies to this conversation\'s next turns.';
 
@@ -3762,73 +3759,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get returnBriefDismiss => 'Dismiss shown items';
 
   @override
-  String get capsuleTitle => 'Context capsule';
-
-  @override
-  String get capsuleEntry =>
-      'Collect notes, errors and screenshots for this conversation';
-
-  @override
-  String get capsuleDescription =>
-      'Build a bundle for this conversation. Applying adds it to your existing draft; nothing is sent. Unapplied edits are kept only while this screen is open.';
-
-  @override
-  String get capsuleNote => 'Note';
-
-  @override
   String get capsuleError => 'Error';
 
   @override
-  String get capsuleCode => 'Code';
-
-  @override
-  String get capsuleLabel => 'Label';
-
-  @override
-  String get capsuleExcerpt => 'Excerpt';
-
-  @override
-  String get capsulePaste => 'Paste';
-
-  @override
   String get capsuleRemove => 'Remove';
-
-  @override
-  String get capsuleAddImage => 'Add screenshot or image';
-
-  @override
-  String get capsulePreview => 'Tap to preview';
-
-  @override
-  String get capsuleApply => 'Apply to draft';
-
-  @override
-  String get capsuleApplied =>
-      'Context added to your saved draft. Review it before sending.';
-
-  @override
-  String get capsuleScopeChanged =>
-      'The conversation, server or draft changed. Close this capsule and reopen it from the intended conversation.';
-
-  @override
-  String get capsuleTextOnly =>
-      'This server accepts text only. You can still collect notes, errors and code.';
-
-  @override
-  String get capsuleImagesOnly =>
-      'Choose a PNG, JPEG, GIF or WebP image. Paste text into an excerpt instead.';
-
-  @override
-  String get capsuleImageFailed =>
-      'Could not add that image. Use up to 5 attachments, 10 MB each and 20 MB total, including your existing draft.';
-
-  @override
-  String get capsulePasteFailed =>
-      'Clipboard text is unavailable. You can type or paste into the excerpt.';
-
-  @override
-  String get capsuleTextLimit =>
-      'Keep each excerpt under 16,000 characters and the bundle under 32,000.';
 
   @override
   String get markdownCopyCode => 'Copy code';
@@ -4772,27 +4706,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reviewTitle => 'Review';
 
   @override
-  String get modelChoiceProvidersTitle => 'Providers not loaded';
-
-  @override
-  String modelChoiceProvidersSummary(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count signed-in providers not loaded. View details',
-      one: '1 signed-in provider not loaded. View details',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get modelChoiceReloadProviders => 'Reload providers';
-
-  @override
-  String get modelChoiceStagedAgentHint => 'Applied with your model choice';
-
-  @override
-  String get modelChoiceAgentTitle => 'Choose an agent';
 
   @override
   String get modelChoiceDone => 'Done';
@@ -11599,9 +11513,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7ModelUiAgent => 'Agent';
 
   @override
-  String get e7ModelUiNoAgents => 'No agents available';
-
-  @override
   String get e7ModelUiServerDefault => 'Server default';
 
   @override
@@ -12029,9 +11940,9 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'OpenCode is signed in to $providers but has not loaded them yet, so their models fail with “Model not found”. Reload to pick up the sign-in.',
+          'Signed in to $providers, but the server has not loaded them yet, so their models cannot answer.',
       one:
-          'OpenCode is signed in to $providers but has not loaded it yet, so its models fail with “Model not found”. Reload to pick up the sign-in.',
+          'Signed in to $providers, but the server has not loaded it yet, so its models cannot answer.',
     );
     return '$_temp0';
   }
@@ -16316,6 +16227,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get agentErrorServerDiskFullHint =>
       'Free some space there, then try again.';
+
+  @override
+  String get chatErrorModelNotFound => 'The server doesn\'t have this model.';
+
+  @override
+  String get chatErrorContextOverflow =>
+      'This conversation is too long for the model.';
+
+  @override
+  String get chatErrorProviderAuth =>
+      'The model provider needs you to sign in again.';
+
+  @override
+  String get chatErrorOutputLength =>
+      'The reply reached the model\'s length limit.';
+
+  @override
+  String get chatErrorContentFilter =>
+      'The provider\'s safety filter stopped this reply.';
+
+  @override
+  String get chatErrorUnknown => 'The agent stopped because of an error.';
 
   @override
   String get agentErrorRecovered => 'The agent carried on after this.';
@@ -22341,41 +22274,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'If the other phone does not have this server saved yet, it says so and offers to open Servers so you can add it.';
 
   @override
-  String get modelPickerYourChoice => 'Your choice';
-
-  @override
-  String get modelPickerNoneChosen => 'No model chosen';
-
-  @override
-  String get modelPickerNoneChosenHint => 'Pick one from the list below.';
-
-  @override
   String get modelPickerChooseFirst => 'Choose a model first.';
 
   @override
   String get modelPickerThinking => 'Thinking';
 
   @override
-  String get modelPickerThinkingExplain =>
-      'How much the model reasons before it answers. Deeper thinking is slower and uses more tokens.';
+  String modelPickerThinkingChip(String level) {
+    return 'Thinking: $level';
+  }
 
   @override
-  String get modelPickerThinkingOneLevel => 'This model has one thinking level';
-
-  @override
-  String get modelPickerAgentExplain =>
-      'The agent decides what the model may do, such as edit files or only read and plan.';
+  String modelPickerAgentChip(String agent) {
+    return 'Agent: $agent';
+  }
 
   @override
   String get modelPickerAgentBuild => 'Edits files and runs commands';
 
   @override
   String get modelPickerAgentPlan => 'Reads and plans; does not change files';
-
-  @override
-  String modelPickerDetailsContext(String count) {
-    return '$count tokens of context';
-  }
 
   @override
   String modelPickerDetailsOutput(String count) {
@@ -22396,9 +22314,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get modelPickerCanReadAttachments =>
       'Reads images and files you attach';
-
-  @override
-  String get modelPickerModelId => 'Model id';
 
   @override
   String get modelPickerCopyId => 'Copy model id';
@@ -24775,9 +24690,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composerToolsMore => 'More tools';
-
-  @override
-  String get composerToolNotesTitle => 'Notes for this conversation';
 
   @override
   String get composerReturnedToDraft => 'Returned to your draft';

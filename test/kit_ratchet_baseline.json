@@ -60,19 +60,6 @@
     "lib/ui/screens/chat_screen.dart": {
       "NotificationListener": 1
     },
-    "lib/ui/screens/context_capsule_screen.dart": {
-      "AppBar": 1,
-      "Card": 2,
-      "CircularProgressIndicator": 1,
-      "FilledButton": 1,
-      "Icon": 7,
-      "ListTile": 1,
-      "OutlinedButton": 2,
-      "Scaffold": 1,
-      "Text": 15,
-      "TextButton": 4,
-      "TextField": 2
-    },
     "lib/ui/screens/manage_project_screen.dart": {
       "AppBar": 1,
       "Divider": 1,
@@ -175,10 +162,6 @@
     },
     "lib/ui/screens/attention_overview_screen.dart": {
       ".textTheme": 2
-    },
-    "lib/ui/screens/context_capsule_screen.dart": {
-      ".colorScheme": 3,
-      ".textTheme": 1
     },
     "lib/ui/screens/team/agent_output_screen.dart": {
       ".textTheme": 3,
@@ -372,12 +355,6 @@
     "lib/ui/screens/attention_overview_screen.dart": {
       "EdgeInsets numeric": 4,
       "SizedBox numeric": 7
-    },
-    "lib/ui/screens/context_capsule_screen.dart": {
-      "EdgeInsets numeric": 5,
-      "SizedBox numeric": 6,
-      "TextStyle(": 2,
-      "icon size not 20/22/24": 4
     },
     "lib/ui/screens/manage_project_screen.dart": {
       "EdgeInsets numeric": 1
