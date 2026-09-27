@@ -35816,6 +35816,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t save file'**
   String get filePreviewSaveFailed;
+
+  /// This phone card menu: leaves the phone's own server, which is in use now; the server keeps running
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect from {server}'**
+  String phoneServerCardDisconnect(String server);
+
+  /// This phone card primary action: connects to the running phone server
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to {server}'**
+  String phoneServerCardConnect(String server);
+
+  /// This phone card: starts the stopped OpenCode server inside the app
+  ///
+  /// In en, this message translates to:
+  /// **'Start OpenCode'**
+  String get phoneServerCardStartOpenCode;
+
+  /// This phone card: stops the OpenCode server inside the app
+  ///
+  /// In en, this message translates to:
+  /// **'Stop OpenCode'**
+  String get phoneServerCardStopOpenCode;
+
+  /// This phone card: opens the OpenCode server's log
+  ///
+  /// In en, this message translates to:
+  /// **'Show server log'**
+  String get phoneServerCardShowServerLog;
+
+  /// This phone card menu: opens a shell in the phone's Linux
+  ///
+  /// In en, this message translates to:
+  /// **'Open terminal'**
+  String get phoneServerCardOpenTerminal;
+
+  /// Alert title when a This phone card action (update, add tools, remove) failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not finish'**
+  String get phoneServerCardFailedTitle;
+
+  /// Alert title when restarting the server on this phone failed
+  ///
+  /// In en, this message translates to:
+  /// **'Restart failed'**
+  String get phoneServerRestartFailedTitle;
+
+  /// Title of the setup log panel (live or finished output of a setup step)
+  ///
+  /// In en, this message translates to:
+  /// **'Setup output'**
+  String get setupTerminalTitle;
+
+  /// On this phone section: stops the AI team running on this phone (asks first)
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the team'**
+  String get teamPhoneStopTeam;
+
+  /// On this phone section: starts the stopped AI team on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Start the team'**
+  String get teamPhoneStartTeam;
+
+  /// On this phone section: starts the team Android stopped
+  ///
+  /// In en, this message translates to:
+  /// **'Start the team again'**
+  String get teamPhoneStartTeamAgain;
+
+  /// On this phone section: deletes the AI team from this phone (asks first)
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the team from this phone'**
+  String get teamPhoneDeleteTeam;
+
+  /// Delete the team sheet: what happens, in plain words
+  ///
+  /// In en, this message translates to:
+  /// **'The team stops, and the AI Team turns off for this server.'**
+  String get teamPhoneRemoveBody;
+
+  /// Delete the team sheet: what goes
+  ///
+  /// In en, this message translates to:
+  /// **'The team\'s programs, its city and its task list are deleted'**
+  String get teamPhoneRemoveLost;
+
+  /// Delete the team sheet: what stays
+  ///
+  /// In en, this message translates to:
+  /// **'Your project files and their git history stay'**
+  String get teamPhoneRemoveKept;
+
+  /// Delete the team sheet: the space the team's downloads take
+  ///
+  /// In en, this message translates to:
+  /// **'Frees about {size} MB'**
+  String teamPhoneRemoveFrees(int size);
+
+  /// Delete the team sheet: confirm button
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the team'**
+  String get teamPhoneRemoveConfirm;
+
+  /// Remove OpenCode from this phone sheet: confirm button
+  ///
+  /// In en, this message translates to:
+  /// **'Remove OpenCode'**
+  String get phoneServerCardRemoveOpenCode;
 }
 
 class _AppLocalizationsDelegate

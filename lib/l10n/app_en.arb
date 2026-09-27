@@ -25741,5 +25741,96 @@
   "filePreviewOpenInFiles": "Open in Files",
   "filePreviewViewMode": "Show file as",
   "filePreviewAttachFailed": "Couldn't attach file",
-  "filePreviewSaveFailed": "Couldn't save file"
+  "filePreviewSaveFailed": "Couldn't save file",
+  "phoneServerCardDisconnect": "Disconnect from {server}",
+  "@phoneServerCardDisconnect": {
+    "description": "This phone card menu: leaves the phone's own server, which is in use now; the server keeps running",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneServerCardConnect": "Connect to {server}",
+  "@phoneServerCardConnect": {
+    "description": "This phone card primary action: connects to the running phone server",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneServerCardStartOpenCode": "Start OpenCode",
+  "@phoneServerCardStartOpenCode": {
+    "description": "This phone card: starts the stopped OpenCode server inside the app"
+  },
+  "phoneServerCardStopOpenCode": "Stop OpenCode",
+  "@phoneServerCardStopOpenCode": {
+    "description": "This phone card: stops the OpenCode server inside the app"
+  },
+  "phoneServerCardShowServerLog": "Show server log",
+  "@phoneServerCardShowServerLog": {
+    "description": "This phone card: opens the OpenCode server's log"
+  },
+  "phoneServerCardOpenTerminal": "Open terminal",
+  "@phoneServerCardOpenTerminal": {
+    "description": "This phone card menu: opens a shell in the phone's Linux"
+  },
+  "phoneServerCardFailedTitle": "Could not finish",
+  "@phoneServerCardFailedTitle": {
+    "description": "Alert title when a This phone card action (update, add tools, remove) failed"
+  },
+  "phoneServerRestartFailedTitle": "Restart failed",
+  "@phoneServerRestartFailedTitle": {
+    "description": "Alert title when restarting the server on this phone failed"
+  },
+  "setupTerminalTitle": "Setup output",
+  "@setupTerminalTitle": {
+    "description": "Title of the setup log panel (live or finished output of a setup step)"
+  },
+  "teamPhoneStopTeam": "Stop the team",
+  "@teamPhoneStopTeam": {
+    "description": "On this phone section: stops the AI team running on this phone (asks first)"
+  },
+  "teamPhoneStartTeam": "Start the team",
+  "@teamPhoneStartTeam": {
+    "description": "On this phone section: starts the stopped AI team on this phone"
+  },
+  "teamPhoneStartTeamAgain": "Start the team again",
+  "@teamPhoneStartTeamAgain": {
+    "description": "On this phone section: starts the team Android stopped"
+  },
+  "teamPhoneDeleteTeam": "Delete the team from this phone",
+  "@teamPhoneDeleteTeam": {
+    "description": "On this phone section: deletes the AI team from this phone (asks first)"
+  },
+  "teamPhoneRemoveBody": "The team stops, and the AI Team turns off for this server.",
+  "@teamPhoneRemoveBody": {
+    "description": "Delete the team sheet: what happens, in plain words"
+  },
+  "teamPhoneRemoveLost": "The team's programs, its city and its task list are deleted",
+  "@teamPhoneRemoveLost": {
+    "description": "Delete the team sheet: what goes"
+  },
+  "teamPhoneRemoveKept": "Your project files and their git history stay",
+  "@teamPhoneRemoveKept": {
+    "description": "Delete the team sheet: what stays"
+  },
+  "teamPhoneRemoveFrees": "Frees about {size} MB",
+  "@teamPhoneRemoveFrees": {
+    "description": "Delete the team sheet: the space the team's downloads take",
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "teamPhoneRemoveConfirm": "Delete the team",
+  "@teamPhoneRemoveConfirm": {
+    "description": "Delete the team sheet: confirm button"
+  },
+  "phoneServerCardRemoveOpenCode": "Remove OpenCode",
+  "@phoneServerCardRemoveOpenCode": {
+    "description": "Remove OpenCode from this phone sheet: confirm button"
+  }
 }

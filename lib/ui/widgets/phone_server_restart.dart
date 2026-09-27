@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
 
 import '../../builtin/builtin_server.dart';
 import '../../l10n/app_localizations.dart';
@@ -6,6 +8,8 @@ import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/local_server_controls.dart';
 import '../../termux/bridge.dart';
+import '../app_iconography.dart';
+import '../kit/kit_dialog.dart';
 
 /// Whether the connected server is this phone's own, and how to restart it.
 ///
@@ -22,14 +26,18 @@ import '../../termux/bridge.dart';
   if (profile == null || connection.usesConnectionToken) {
     return (onThisPhone: false, restart: null);
   }
+  // A failed restart blocks nothing else, but it must be read: one alert
+  // that names what failed (KIT-15, KIT-34: a snack bar is only for Undo).
   void fail(String message) {
     if (!context.mounted) return;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(
-        content: Text(
-          message.isEmpty ? l10n.phoneServerRestartFailed : message,
-        ),
+    unawaited(
+      showKitAlert(
+        context,
+        title: l10n.phoneServerRestartFailedTitle,
+        body: message.isEmpty ? l10n.phoneServerRestartFailed : message,
+        icon: AppIconography.restart,
+        alertKey: const ValueKey('phone-server-restart-failed'),
       ),
     );
   }

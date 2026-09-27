@@ -163,9 +163,20 @@ void main() {
             }
           }
           if (page == 'output') {
+            // The setup output is a KitLogPanel: its lines read left to
+            // right in any interface direction.
+            final line = find.text('[oc] OpenCode is ready');
+            expect(line, findsOneWidget);
             expect(
               tester
-                  .widget<SelectableText>(find.byType(SelectableText))
+                  .widget<Directionality>(
+                    find
+                        .ancestor(
+                          of: line,
+                          matching: find.byType(Directionality),
+                        )
+                        .first,
+                  )
                   .textDirection,
               TextDirection.ltr,
             );

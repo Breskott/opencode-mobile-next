@@ -22869,4 +22869,70 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get filePreviewSaveFailed => 'Couldn\'t save file';
+
+  @override
+  String phoneServerCardDisconnect(String server) {
+    return 'Disconnect from $server';
+  }
+
+  @override
+  String phoneServerCardConnect(String server) {
+    return 'Connect to $server';
+  }
+
+  @override
+  String get phoneServerCardStartOpenCode => 'Start OpenCode';
+
+  @override
+  String get phoneServerCardStopOpenCode => 'Stop OpenCode';
+
+  @override
+  String get phoneServerCardShowServerLog => 'Show server log';
+
+  @override
+  String get phoneServerCardOpenTerminal => 'Open terminal';
+
+  @override
+  String get phoneServerCardFailedTitle => 'Could not finish';
+
+  @override
+  String get phoneServerRestartFailedTitle => 'Restart failed';
+
+  @override
+  String get setupTerminalTitle => 'Setup output';
+
+  @override
+  String get teamPhoneStopTeam => 'Stop the team';
+
+  @override
+  String get teamPhoneStartTeam => 'Start the team';
+
+  @override
+  String get teamPhoneStartTeamAgain => 'Start the team again';
+
+  @override
+  String get teamPhoneDeleteTeam => 'Delete the team from this phone';
+
+  @override
+  String get teamPhoneRemoveBody =>
+      'The team stops, and the AI Team turns off for this server.';
+
+  @override
+  String get teamPhoneRemoveLost =>
+      'The team\'s programs, its city and its task list are deleted';
+
+  @override
+  String get teamPhoneRemoveKept =>
+      'Your project files and their git history stay';
+
+  @override
+  String teamPhoneRemoveFrees(int size) {
+    return 'Frees about $size MB';
+  }
+
+  @override
+  String get teamPhoneRemoveConfirm => 'Delete the team';
+
+  @override
+  String get phoneServerCardRemoveOpenCode => 'Remove OpenCode';
 }

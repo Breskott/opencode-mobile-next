@@ -1,16 +1,48 @@
-import 'package:flutter/material.dart';
+import 'package:clock/clock.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../app_theme.dart';
-import '../desktop/desktop_interaction.dart';
+import '../app_iconography.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_log_panel.dart';
+import '../kit/kit_tokens.dart';
 
-/// A readable setup log. Copying is delegated to the caller so display-only
-/// cleanup never changes the original diagnostic output.
-class SetupTerminal extends StatelessWidget {
+/// A setup step's output (map: embedded-setup-terminal, proposal fix): one
+/// [KitLogPanel], mono and left to right in every locale, that follows the
+/// newest line until the person scrolls up (then a jump pill counts the new
+/// lines), says in words whether the step is still writing or has ended,
+/// and has its own Wrap and Copy all in its header (KIT-31).
+///
+/// Lines are cleaned of terminal control sequences before they are shown;
+/// error and warning lines carry the panel's neutral glyphs (never colour
+/// alone, LOOK-4, LOOK-5). What the panel copies is the shown text,
+/// redacted (SEC-2).
+///
+/// A host that copies more than the log (a failure report with the phone's
+/// diagnostics) names it with [copyTooltip]: that act is a tertiary button
+/// under the panel, labelled with those words. Without [copyTooltip], the
+/// panel's Copy all is the one copy.
+///
+/// Where the output sits (folded under Details, or the page's content) is
+/// the host's call: [expand] fills a host that gives it a bounded height;
+/// otherwise it is the folded panel, about twelve lines tall.
+///
+/// States: empty ("Waiting for Termux output…" while running), live,
+/// ended.
+class SetupTerminal extends StatefulWidget {
   final String output;
   final bool running;
+
+  /// Retired by shared-phone-1: the panel follows its own scroll (it jumps
+  /// to the newest line and offers a jump pill). Kept so hosts compile
+  /// (KIT-43); nothing reads it.
   final ScrollController controller;
+
+  /// The host's own copy (see [copyTooltip]).
   final VoidCallback? onCopy;
+
+  /// The words of the host's own copy ("Copy failure report"). Null leaves
+  /// copying to the panel's Copy all.
   final String? copyTooltip;
   final bool expand;
 
@@ -37,165 +69,109 @@ class SetupTerminal extends StatelessWidget {
     r'^(?:(?:npm|bun)\s+)?warn(?:ing)?\b|\bretrying\b',
     caseSensitive: false,
   );
-  static final _success = RegExp(
-    r'^(?:authenticated server ready\b|setup complete\b|installation complete\b)',
-    caseSensitive: false,
-  );
 
-  List<TextSpan> _lines(String text, ThemeData theme) {
-    final lines = text.split('\n');
-    return [
-      for (var i = 0; i < lines.length; i++)
-        TextSpan(
-          text: '${lines[i]}${i < lines.length - 1 ? '\n' : ''}',
-          style: _lineStyle(lines[i], theme),
-        ),
-    ];
+  /// The level of one output line: error and warning lines (also behind an
+  /// `[oc]` stage prefix) carry the panel's glyph; everything else is plain.
+  @visibleForTesting
+  static KitLogLevel levelOf(String line) {
+    final trimmed = line.trimLeft();
+    final message = trimmed.startsWith('[oc]')
+        ? trimmed.substring(4).trimLeft()
+        : trimmed;
+    if (_error.hasMatch(message)) return KitLogLevel.error;
+    if (_warning.hasMatch(message)) return KitLogLevel.warning;
+    return KitLogLevel.normal;
   }
 
-  TextStyle? _lineStyle(String line, ThemeData theme) {
-    final trimmed = line.trimLeft();
-    final stage = trimmed.startsWith('[oc]');
-    final message = stage ? trimmed.substring(4).trimLeft() : trimmed;
-    final scheme = theme.colorScheme;
-    if (_error.hasMatch(message)) {
-      return TextStyle(color: scheme.error, fontWeight: FontWeight.w600);
-    }
-    if (_warning.hasMatch(message)) {
-      return TextStyle(
-        color: AppTheme.statusColor(theme, AppStatusTone.attention),
-        fontWeight: FontWeight.w600,
-      );
-    }
-    if (stage && _success.hasMatch(message)) {
-      return TextStyle(
-        color: AppTheme.successOf(theme),
-        fontWeight: FontWeight.w600,
-      );
-    }
-    return stage
-        ? TextStyle(color: scheme.primary, fontWeight: FontWeight.w600)
-        : null;
+  /// [output] without terminal control sequences.
+  @visibleForTesting
+  static String visible(String output) => output.replaceAll(_ansi, '');
+
+  @override
+  State<SetupTerminal> createState() => _SetupTerminalState();
+}
+
+class _SetupTerminalState extends State<SetupTerminal> {
+  final _lines = ValueNotifier<List<KitLogLine>>(const []);
+
+  @override
+  void initState() {
+    super.initState();
+    _read(widget.output);
   }
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final visibleOutput = output.replaceAll(_ansi, '');
-    final empty = visibleOutput.trim().isEmpty;
+  void didUpdateWidget(SetupTerminal old) {
+    super.didUpdateWidget(old);
+    if (old.output != widget.output) _read(widget.output);
+  }
 
-    return SizedBox(
-      key: const Key('setup-live-output'),
-      height: expand
-          ? null
-          : (MediaQuery.sizeOf(context).height * .42).clamp(240.0, 420.0),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsetsDirectional.only(
-              start: 16,
-              end: 4,
-              top: 4,
-              bottom: 4,
-            ),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: scheme.outlineVariant)),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  running ? AppIconography.waveform : AppIconography.text,
-                  size: 20,
-                  color: scheme.primary,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    running
-                        ? lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ).e7SetupLiveOutput
-                        : lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ).e7SetupLastOutput,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: scheme.primary,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: .8,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                IconButton(
-                  constraints: const BoxConstraints(
-                    minWidth: 48,
-                    minHeight: 48,
-                  ),
-                  onPressed: onCopy,
-                  tooltip:
-                      copyTooltip ??
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).workCopyOutput,
-                  icon: const Icon(AppIcons.copy, size: 20),
-                  color: scheme.primary,
-                ),
-              ],
-            ),
+  @override
+  void dispose() {
+    _lines.dispose();
+    super.dispose();
+  }
+
+  /// Splits the output into lines, keeping each unchanged line (its
+  /// redaction and its arrival time) so a growing log only adds lines.
+  void _read(String output) {
+    final text = SetupTerminal.visible(output);
+    if (text.trim().isEmpty) {
+      _lines.value = const [];
+      return;
+    }
+    final raw = text.split('\n');
+    // A trailing newline ends the last line; it is not an empty line.
+    if (raw.length > 1 && raw.last.isEmpty) raw.removeLast();
+    final before = _lines.value;
+    final now = clock.now();
+    _lines.value = List.unmodifiable([
+      for (var i = 0; i < raw.length; i++)
+        if (i < before.length && before[i].text == _clean(raw[i]))
+          before[i]
+        else
+          KitLogLine(
+            _clean(raw[i]),
+            level: SetupTerminal.levelOf(raw[i]),
+            at: now,
           ),
-          Expanded(
-            child: Scrollbar(
-              controller: controller,
-              thumbVisibility: true,
-              child: OwnScrollbar(
-                child: SingleChildScrollView(
-                  controller: controller,
-                  padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: empty
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                lookupAppLocalizations(
-                                  Localizations.localeOf(context),
-                                ).setupOutputWaiting,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: scheme.onSurface,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                lookupAppLocalizations(
-                                  Localizations.localeOf(context),
-                                ).setupOutputWaitingDetail,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: scheme.onSurfaceVariant,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ],
-                          )
-                        : SelectableText.rich(
-                            textDirection: TextDirection.ltr,
-                            TextSpan(children: _lines(visibleOutput, theme)),
-                            style: TextStyle(
-                              color: scheme.onSurface,
-                              fontFamily: AppTheme.monoFamily,
-                              fontSize: 13,
-                              height: 1.6,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    ]);
+  }
+
+  static String _clean(String line) =>
+      line.endsWith('\r') ? line.substring(0, line.length - 1) : line;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
+    final hasLines = _lines.value.isNotEmpty;
+    final panel = KitLogPanel(
+      lines: _lines,
+      title: l10n.setupTerminalTitle,
+      live: widget.running,
+      ended: widget.running || !hasLines ? null : const KitLogEnd(),
+      emptyText: widget.running ? l10n.setupOutputWaiting : null,
+      size: widget.expand ? KitLogSize.fill : KitLogSize.folded,
     );
+    final report = widget.copyTooltip;
+    final onCopy = widget.onCopy;
+    final Widget body = report == null || onCopy == null
+        ? panel
+        : Column(
+            mainAxisSize: widget.expand ? MainAxisSize.max : MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.expand) Expanded(child: panel) else panel,
+              SizedBox(height: tokens.space2),
+              KitButton.tertiary(
+                key: const ValueKey('setup-copy-report'),
+                label: report,
+                icon: AppIconography.copy,
+                onPressed: onCopy,
+              ),
+            ],
+          );
+    return KeyedSubtree(key: const ValueKey('setup-live-output'), child: body);
   }
 }
