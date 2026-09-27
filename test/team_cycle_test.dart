@@ -1629,10 +1629,9 @@ void main() {
         tester.getTopLeft(key('team-work-sheet-cycle')).dy,
         lessThan(tester.getTopLeft(key('team-work-sheet-state')).dy),
       );
-      expect(
-        tester.getTopLeft(key('team-work-sheet-cycle')).dy,
-        greaterThan(tester.getTopLeft(key('team-work-sheet-title')).dy),
-      );
+      // The title is the kit sheet's own header (screen-team-3), so the
+      // strip is the body's first part.
+      expect(key('team-work-sheet-title'), findsNothing);
       expect(key('team-cycle-step-claimed'), findsOneWidget);
       expect(
         await semanticsOf(tester),

@@ -36380,6 +36380,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your task is still here. Edit it and send it again.'**
   String get teamStartRunRefusedKept;
+
+  /// AI Team agents list top bar: when the list was last checked, after where the team runs. {age} is a short age such as 'less than a minute' or '4 min'.
+  ///
+  /// In en, this message translates to:
+  /// **'checked {age} ago'**
+  String teamAgentsChecked(String age);
+
+  /// AI Team agents list: state word of an agent stopped on the host that wakes by itself when there is work.
+  ///
+  /// In en, this message translates to:
+  /// **'Asleep'**
+  String get teamAgentsAsleep;
+
+  /// AI Team agents list: after 'Asleep', says the agent needs nothing from the person.
+  ///
+  /// In en, this message translates to:
+  /// **'wakes when there is work'**
+  String get teamAgentsAsleepHint;
+
+  /// AI Team agents list: state word of an agent switched off on the host on purpose (suspended).
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get teamAgentsPaused;
+
+  /// AI Team agents list: after 'Paused', says nothing will start this agent by itself.
+  ///
+  /// In en, this message translates to:
+  /// **'switched off until someone wakes it'**
+  String get teamAgentsPausedHint;
+
+  /// AI Team agents list: button in a paused agent's row that asks the host to resume that agent. {name} is the agent's name or role, e.g. 'Wake furiosa'.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake {name}'**
+  String teamAgentsWake(String name);
+
+  /// AI Team work sheet title when the item the person opened is no longer listed by the host.
+  ///
+  /// In en, this message translates to:
+  /// **'Work item gone'**
+  String get teamWorkSheetMissingTitle;
+
+  /// AI Team work sheet: under 'This work item is no longer on the host.', says what may have happened and what to do.
+  ///
+  /// In en, this message translates to:
+  /// **'It may have been finished or removed. Close this sheet to see the task as it is now.'**
+  String get teamWorkSheetMissingBody;
+
+  /// AI Team work sheet: supporting line of a dependency row whose item the host no longer lists (the row cannot be opened).
+  ///
+  /// In en, this message translates to:
+  /// **'No longer listed'**
+  String get teamWorkSheetNotOnHost;
+
+  /// AI Team work sheet: button that opens the conversation (OpenCode session) linked to this work item.
+  ///
+  /// In en, this message translates to:
+  /// **'Open this step\'s conversation'**
+  String get teamWorkSheetOpenStepConversation;
+
+  /// AI Team work sheet: button that opens the conversation of the agent working on this item. {name} is the agent's name or role, e.g. 'furiosa'.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}\'s conversation'**
+  String teamWorkSheetOpenAgentConversation(String name);
 }
 
 class _AppLocalizationsDelegate

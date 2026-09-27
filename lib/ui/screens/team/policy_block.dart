@@ -9,13 +9,20 @@
 /// Nothing here is editable: the level and the boundaries are the host
 /// owner's config (`<state-dir>/rigs/<rig>.json`), and the helper line
 /// says so.
+///
+/// Kit only (KIT-1): [KitIcon], [KitText], [KitChip] on a [KitChipWrap];
+/// spacing from [KitTokens].
 library;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../app_theme.dart';
+import '../../app_iconography.dart';
+import '../../kit/kit_chip.dart';
+import '../../kit/kit_icon.dart';
+import '../../kit/kit_text.dart';
+import '../../kit/kit_tokens.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -42,8 +49,7 @@ class TeamPolicyBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final tokens = KitTokens.of(context);
     final level = teamPolicySupervisionName(l10n, policy.supervision);
     final rig = policy.rig;
     return Semantics(
@@ -60,44 +66,44 @@ class TeamPolicyBlock extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(AppIconography.policy, size: 16, color: muted),
-              const SizedBox(width: 6),
+              const KitIcon(
+                AppIconography.policy,
+                size: KitIconSize.small,
+                tone: KitTextTone.secondary,
+              ),
+              SizedBox(width: tokens.space2),
               Expanded(
                 child: Wrap(
-                  spacing: 6,
+                  spacing: tokens.space2,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Text(
+                    KitText(
                       l10n.teamUiPolicySupervision(level),
                       key: const ValueKey('team-run-policy-supervision'),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      role: KitTextRole.rowTitle,
                     ),
                     if (rig != null && rig.isNotEmpty)
-                      Text(
+                      KitText(
                         l10n.teamUiPolicyRig(rig),
                         key: const ValueKey('team-run-policy-rig'),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: muted,
-                        ),
+                        role: KitTextRole.secondary,
                       ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: tokens.space2),
           TeamBoundaryChips(
             key: const ValueKey('team-run-policy-boundaries'),
             boundaries: policy.boundaries,
             keyPrefix: 'team-run-policy-boundary',
           ),
-          const SizedBox(height: 4),
-          Text(
+          SizedBox(height: tokens.space1),
+          KitText(
             l10n.teamUiPolicyFromHost,
             key: const ValueKey('team-run-policy-from-host'),
-            style: theme.textTheme.bodySmall?.copyWith(color: muted),
+            role: KitTextRole.secondary,
           ),
         ],
       ),
@@ -121,28 +127,20 @@ class TeamBoundaryChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
     if (boundaries.isEmpty) {
-      return Text(
+      return KitText(
         l10n.teamUiPolicyBoundariesNone,
         key: ValueKey('$keyPrefix-none'),
-        style: theme.textTheme.bodySmall?.copyWith(color: muted),
+        role: KitTextRole.secondary,
       );
     }
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
+    return KitChipWrap(
       children: [
         for (final boundary in boundaries)
-          Chip(
+          KitChip(
             key: ValueKey('$keyPrefix-${boundary.key}'),
-            avatar: Icon(AppIconography.shield, size: 14, color: muted),
-            label: Text(boundary.text),
-            labelStyle: theme.textTheme.bodySmall,
-            visualDensity: VisualDensity.compact,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            icon: AppIconography.shield,
+            label: boundary.text,
           ),
       ],
     );
@@ -159,26 +157,22 @@ class TeamBoundariesRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final tokens = KitTokens.of(context);
     return Column(
       key: const ValueKey('team-start-run-boundaries'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          l10n.teamUiPolicyBoundariesLabel,
-          style: theme.textTheme.labelLarge?.copyWith(color: muted),
-        ),
-        const SizedBox(height: 6),
+        KitText(l10n.teamUiPolicyBoundariesLabel, role: KitTextRole.label),
+        SizedBox(height: tokens.space2),
         TeamBoundaryChips(
           boundaries: policy.boundaries,
           keyPrefix: 'team-start-run-boundary',
         ),
-        const SizedBox(height: 4),
-        Text(
+        SizedBox(height: tokens.space1),
+        KitText(
           l10n.teamUiPolicyFromHost,
           key: const ValueKey('team-start-run-boundaries-from-host'),
-          style: theme.textTheme.bodySmall?.copyWith(color: muted),
+          role: KitTextRole.secondary,
         ),
       ],
     );

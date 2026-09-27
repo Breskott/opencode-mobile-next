@@ -22927,4 +22927,45 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamStartRunRefusedKept =>
       'Your task is still here. Edit it and send it again.';
+
+  @override
+  String teamAgentsChecked(String age) {
+    return 'checked $age ago';
+  }
+
+  @override
+  String get teamAgentsAsleep => 'Asleep';
+
+  @override
+  String get teamAgentsAsleepHint => 'wakes when there is work';
+
+  @override
+  String get teamAgentsPaused => 'Paused';
+
+  @override
+  String get teamAgentsPausedHint => 'switched off until someone wakes it';
+
+  @override
+  String teamAgentsWake(String name) {
+    return 'Wake $name';
+  }
+
+  @override
+  String get teamWorkSheetMissingTitle => 'Work item gone';
+
+  @override
+  String get teamWorkSheetMissingBody =>
+      'It may have been finished or removed. Close this sheet to see the task as it is now.';
+
+  @override
+  String get teamWorkSheetNotOnHost => 'No longer listed';
+
+  @override
+  String get teamWorkSheetOpenStepConversation =>
+      'Open this step\'s conversation';
+
+  @override
+  String teamWorkSheetOpenAgentConversation(String name) {
+    return 'Open $name\'s conversation';
+  }
 }

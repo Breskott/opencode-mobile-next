@@ -1,11 +1,12 @@
 // TEAM-110: the Work sheet over the fixture's `oc-loy` bead (the recorded
 // state after the refinery took it) through the real mappers: title and
 // term, state and owner, the description as markdown, dependency and
-// blocking chips that jump to the other item's sheet, branch and worktree
-// in LTR mono, no "Open session" for Gas City (and one only with the
-// capability, a link and a handler), timestamps, output excerpt and
-// validation when present, the Technical details expander, and the line
-// for an item the host no longer lists.
+// blocking rows that open the other item's sheet in its place, no "Open
+// this step's conversation" for Gas City (and one only with the capability, a
+// link and a handler), timestamps, output excerpt and validation when
+// present, the Technical details fold holding branch, worktree and every
+// raw field in LTR mono (KIT-33), and the designed state for an item the
+// host no longer lists (screen-team-3: the sheet in the kit sheet frame).
 
 import 'dart:async';
 import 'dart:convert';
@@ -22,6 +23,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/screens/team/work_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -306,12 +308,25 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// The words of the kit text keyed [name].
+  String textOf(WidgetTester tester, String name) =>
+      tester.widget<KitText>(key(name)).text;
+
+  /// Opens the Technical details fold (it starts folded, KIT-33).
+  Future<void> openDetails(WidgetTester tester) async {
+    final fold = key('team-work-sheet-technical');
+    await reveal(tester, fold);
+    await tester.tap(fold);
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('oc-loy: title, term, state, owner, description, code', (
     tester,
   ) async {
     final (controller, _) = await boot();
     await pumpHost(tester, controller, 'oc-loy');
     expect(key('team-work-sheet-oc-loy'), findsOneWidget);
+    // The sheet's own title and its Gas City term.
     expect(
       inSheet(find.text('Add subtract function to calc.py')),
       findsOneWidget,
@@ -320,10 +335,11 @@ void main() {
       inSheet(find.text('Work · bead oc-loy', findRichText: true)),
       findsOneWidget,
     );
-    expect(tester.widget<Text>(key('team-work-sheet-state')).data, 'Blocked');
-    final owner = tester.widget<Text>(key('team-work-sheet-owner'));
-    expect(owner.data, 'ocproof/gastown.refinery');
-    expect(owner.textDirection, TextDirection.ltr);
+    expect(textOf(tester, 'team-work-sheet-state'), 'Blocked');
+    final owner = tester.widget<KitText>(key('team-work-sheet-owner'));
+    expect(owner.text, 'ocproof/gastown.refinery');
+    // A name the app did not write: mono, laid out left to right.
+    expect(owner.role, KitTextRole.mono);
 
     // The description renders as markdown.
     expect(key('team-work-sheet-description'), findsOneWidget);
@@ -332,7 +348,10 @@ void main() {
       findsWidgets,
     );
 
-    // Branch and worktree: LTR mono.
+    // Branch, worktree and merge target live in Technical details, mono
+    // and left to right (KIT-33): nothing technical above the fold.
+    expect(key('team-work-sheet-branch'), findsNothing);
+    await openDetails(tester);
     for (final (name, value) in [
       ('team-work-sheet-branch', 'polecat/oc-loy'),
       (
@@ -340,19 +359,17 @@ void main() {
         '/home/eslam/Storage/Code/gascity-spike/city2/.gc/worktrees/ocproof/'
             'polecats/gastown.furiosa',
       ),
+      ('team-work-sheet-target', 'master'),
     ]) {
       await reveal(tester, key(name));
-      final text = tester.widget<Text>(
-        find.descendant(of: key(name), matching: find.text(value)),
-      );
-      expect(text.textDirection, TextDirection.ltr);
-      expect(text.style?.fontFamily, AppTheme.monoFamily);
+      final text = tester.widget<KitText>(key(name));
+      expect(text.text, value);
+      expect(text.role, KitTextRole.mono);
     }
-    expect(inSheet(find.text('master')), findsOneWidget);
 
     // Gas City links no OpenCode session: nothing is offered.
     expect(key('team-work-sheet-open-session'), findsNothing);
-    expect(find.text('Open session'), findsNothing);
+    expect(find.text("Open this step's conversation"), findsNothing);
 
     // Timestamps: created 18:44Z the day before the 12:30Z clock.
     await reveal(tester, key('team-work-sheet-created'));
@@ -369,7 +386,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('dependency and blocking chips jump to the other sheet', (
+  testWidgets('dependency and blocking rows open the other sheet', (
     tester,
   ) async {
     final (controller, _) = await boot();
@@ -380,6 +397,14 @@ void main() {
       find.descendant(
         of: dependency,
         matching: find.text('Agree the calc.py API'),
+      ),
+      findsOneWidget,
+    );
+    // The row says where the other item stands, in words.
+    expect(
+      find.descendant(
+        of: dependency,
+        matching: find.text('Queued', findRichText: true),
       ),
       findsOneWidget,
     );
@@ -399,15 +424,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(key('team-work-sheet-oc-loy'), findsNothing);
     expect(key('team-work-sheet-oc-dep'), findsOneWidget);
-    expect(
-      tester.widget<Text>(key('team-work-sheet-title')).data,
-      'Agree the calc.py API',
-    );
-    expect(tester.widget<Text>(key('team-work-sheet-state')).data, 'Queued');
-    expect(
-      tester.widget<Text>(key('team-work-sheet-owner')).data,
-      'Unassigned',
-    );
+    expect(inSheet(find.text('Agree the calc.py API')), findsOneWidget);
+    expect(textOf(tester, 'team-work-sheet-state'), 'Queued');
+    expect(textOf(tester, 'team-work-sheet-owner'), 'Unassigned');
     // oc-dep has no dependencies; oc-loy waits on it.
     expect(key('team-work-dependency-oc-loy'), findsNothing);
     await reveal(tester, key('team-work-blocking-oc-loy'));
@@ -422,12 +441,12 @@ void main() {
   ) async {
     final (controller, _) = await boot();
     await pumpHost(tester, controller, 'oc-loy');
-    final expander = key('team-work-sheet-technical');
-    await reveal(tester, expander);
     expect(find.text('Technical details'), findsOneWidget);
-    expect(find.text('metadata.gc.session_id'), findsNothing);
-    await tester.tap(find.text('Technical details'));
-    await tester.pumpAndSettle();
+    expect(find.text('priority'), findsNothing);
+    await openDetails(tester);
+    // Each value once, under the first label that carries it (KIT-33):
+    // the raw metadata.gc.session_id repeats the Session id and is not
+    // listed twice.
     for (final label in const [
       'Work id',
       'Provider status',
@@ -437,21 +456,26 @@ void main() {
       'Session id',
       'Session name',
       'Depends on (ids)',
-      'metadata.gc.session_id',
       'metadata.merge_strategy',
       'priority',
     ]) {
       await reveal(tester, inSheet(find.text(label)));
     }
-    await reveal(tester, inSheet(find.text('bl-48k')).first);
-    expect(
-      tester
-          .widget<EditableText>(inSheet(find.text('bl-48k')).first)
-          .textDirection,
-      TextDirection.ltr,
+    final session = find.byWidgetPredicate(
+      (w) => w is KitText && w.text == 'bl-48k',
     );
-    expect(inSheet(find.text('gastown__polecat-bl-48k')), findsWidgets);
-    expect(inSheet(find.text('oc-dep')), findsOneWidget);
+    await reveal(tester, session.first);
+    expect(tester.widget<KitText>(session.first).role, KitTextRole.mono);
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is KitText && w.text == 'gastown__polecat-bl-48k',
+      ),
+      findsWidgets,
+    );
+    expect(
+      find.byWidgetPredicate((w) => w is KitText && w.text == 'oc-dep'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -472,7 +496,8 @@ void main() {
     await pumpHost(tester, controller, 'oc-loy', onOpenSession: opened.add);
     final button = key('team-work-sheet-open-session');
     await reveal(tester, button);
-    expect(find.text('Open session'), findsOneWidget);
+    // The action names what it opens.
+    expect(find.text("Open this step's conversation"), findsOneWidget);
     await tester.tap(button);
     await tester.pump();
     expect(opened, ['ses_42']);
@@ -520,15 +545,17 @@ void main() {
       ),
     );
     await pumpHost(tester, controller, 'oc-loy');
-    expect(tester.widget<Text>(key('team-work-sheet-state')).data, 'Done');
+    expect(textOf(tester, 'team-work-sheet-state'), 'Done');
     final output = key('team-work-sheet-output');
     await reveal(tester, output);
-    final text = tester.widget<Text>(
-      find.descendant(of: output, matching: find.byType(Text)),
+    // Output is a kit code block: mono, left to right, copyable.
+    expect(
+      find.descendant(
+        of: output,
+        matching: find.textContaining('2 passed', findRichText: true),
+      ),
+      findsWidgets,
     );
-    expect(text.data, contains('2 passed'));
-    expect(text.textDirection, TextDirection.ltr);
-    expect(text.style?.fontFamily, AppTheme.monoFamily);
     await reveal(tester, key('team-work-sheet-validation'));
     expect(inSheet(find.text('Passed')), findsOneWidget);
     expect(inSheet(find.text('2 of 2 tests')), findsOneWidget);
@@ -542,11 +569,12 @@ void main() {
     final (controller, _) = await boot();
     await pumpHost(tester, controller, 'gone');
     expect(key('team-work-sheet-missing'), findsOneWidget);
+    expect(find.text('Work item gone'), findsOneWidget);
     expect(
       find.text('This work item is no longer on the host.'),
       findsOneWidget,
     );
-    expect(key('team-work-sheet'), findsNothing);
+    expect(key('team-work-sheet-technical'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -565,7 +593,7 @@ void main() {
       ],
     );
     await pumpHost(tester, controller, 'oc-loy');
-    expect(tester.widget<Text>(key('team-work-sheet-owner')).data, 'wolf');
+    expect(textOf(tester, 'team-work-sheet-owner'), 'wolf');
     expect(workOwnerInitial('ocproof/gastown.refinery'), 'R');
     expect(workOwnerInitial('wolf'), 'W');
     expect(workOwnerInitial(''), '');
