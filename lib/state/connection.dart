@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:ui' show Locale, PlatformDispatcher;
 
 import 'app_locale.dart';
+import 'automation_policy.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,9 +60,12 @@ import 'saved_prompts_controller.dart';
 import 'session_pins.dart';
 import 'session_auto_approval.dart';
 import 'prompt_shelf.dart';
+import 'queued_prompt_removal.dart';
 import 'session_read_state.dart';
+import 'automatic_activity.dart';
 import 'return_brief_state.dart';
 import '../domain/return_brief.dart';
+import '../domain/while_away.dart';
 import '../domain/workspace_paths.dart';
 import '../domain/session_title_text.dart';
 import '../domain/team_directories.dart';
@@ -2538,6 +2542,27 @@ class ConnectionController extends ChangeNotifier {
           _markDataRefreshReady(generation, currentApi);
           unawaited(refreshSessions());
         }
+        // The stream lost the server and found it again by itself: an
+        // automatic act, filed for While you were away (P6.2). A first
+        // connect or a person's Reconnect starts a new stream instead.
+        if (previousStatus == StreamStatus.reconnecting) {
+          final scope = _automaticActScope();
+          if (scope != null) {
+            final at = DateTime.now();
+            unawaited(
+              recordAutomaticAct(
+                profileId: scope.profileId,
+                location: scope.server,
+                kind: AutomaticActKind.reconnect,
+                target: scope.name,
+                eventId:
+                    'stream.reconnect:$generation:'
+                    '${at.microsecondsSinceEpoch}',
+                at: at,
+              ),
+            );
+          }
+        }
       } else {
         _cancelPermissionHydration();
       }
@@ -3447,6 +3472,7 @@ class ConnectionController extends ChangeNotifier {
     PermissionRequest permission,
   ) async {
     final identity = permissionIdentity(permission);
+    final scope = _automaticActScope();
     var failure = '';
     try {
       await _sendPermissionReply(
@@ -3469,15 +3495,31 @@ class ConnectionController extends ChangeNotifier {
         () => [],
       );
       if (record.length >= _maxAutoApprovedPerSession) record.removeAt(0);
+      final at = DateTime.now();
       record.add(
         AutoApprovedPermission(
           requestID: permission.id,
           sessionID: permission.sessionID,
           permission: permission.permission,
           patterns: List.unmodifiable(permission.patterns),
-          at: DateTime.now(),
+          at: at,
         ),
       );
+      // Filed by the conversation it was allowed in; the request's patterns
+      // (paths, commands) never reach the history.
+      if (scope != null) {
+        unawaited(
+          recordAutomaticAct(
+            profileId: scope.profileId,
+            location: scope.project,
+            kind: AutomaticActKind.permissionApproval,
+            target: _automaticActSessionTitle(permission.sessionID),
+            eventId: 'permission.auto:${permission.id}',
+            at: at,
+            sessionId: permission.sessionID,
+          ),
+        );
+      }
     } else if (stillPending) {
       // The reply did not land (transport gone, refused, or the wire went
       // quiet): the request stays pending and a person sees it, with the
@@ -4340,6 +4382,139 @@ class ConnectionController extends ChangeNotifier {
       shown,
     );
     if (!_disposed) notifyListeners();
+  }
+
+  /// The automatic acts the app did for the profile it shows (P6.2, AUTO-4):
+  /// the one shared history per profile, or null with no profile. The
+  /// Inbox's While you were away lists them; they never feed Needs you.
+  AutomaticActivityController? get automaticActivity {
+    final owner = _connectedProfile ?? profile;
+    return owner == null ? null : _automaticActivityFor(owner.id);
+  }
+
+  final Set<AutomaticActivityController> _watchedActivity = {};
+
+  AutomaticActivityController? _automaticActivityFor(String profileId) {
+    if (_disposed || profileId.isEmpty) return null;
+    final history = AutomaticActivityController.forProfile(
+      store.prefs,
+      profileId,
+      isProfilePresent: () => store.profiles.any((p) => p.id == profileId),
+    );
+    if (history != null && _watchedActivity.add(history)) {
+      history.addListener(_automaticActivityChanged);
+    }
+    return history;
+  }
+
+  void _automaticActivityChanged() {
+    if (!_disposed) notifyListeners();
+  }
+
+  /// The automatic acts not yet dismissed for what the app shows: the
+  /// server's own (a reconnect, a heat pause) and the open project's (a
+  /// request allowed, a queued message sent), newest first.
+  List<AutomaticAct> get automaticActsHere {
+    final owner = _connectedProfile ?? profile;
+    final history = automaticActivity;
+    if (owner == null || history == null) return const [];
+    final places = {automaticActivityServer(owner), automaticActivityProject};
+    return WhileAwaySnapshot.build(
+      automaticActs: [
+        for (final place in places) ...history.forLocation(place),
+      ],
+      sessions: const [],
+      readStateKnown: supportsSessionReadState,
+      inventoryPartial: false,
+      isUnread: (_) => false,
+      isBusy: (_) => false,
+      blockerOf: (_) => null,
+    ).automaticActs;
+  }
+
+  /// Where an act on the project the app shows is filed: the same identity
+  /// as [returnBriefScope] (server address, folder, workspace).
+  String get automaticActivityProject => returnBriefScope.$2;
+
+  /// Where an act on the server as a whole (a reconnect, a heat pause) is
+  /// filed: the server's address alone, whatever project is open.
+  String automaticActivityServer(ServerProfile owner) =>
+      jsonEncode([owner.baseUrl]);
+
+  /// Files one automatic act the app has CONFIRMED (never an attempt) in
+  /// [profileId]'s history. [target] names what it was done to (a
+  /// conversation's title, the server's name); the Inbox says what was done
+  /// from [kind]. [eventId] identifies this occurrence, so a repeat of the
+  /// same delivery is filed once. Profile, place and time are captured by
+  /// the caller at the act. Isolated task connections file nothing: the
+  /// app's own connection reports its server.
+  Future<bool> recordAutomaticAct({
+    required String profileId,
+    required String location,
+    required AutomaticActKind kind,
+    required String target,
+    required String eventId,
+    required DateTime at,
+    String? sessionId,
+  }) async {
+    if (isIsolated) return false;
+    final history = _automaticActivityFor(profileId);
+    if (history == null) return false;
+    try {
+      return await history.record(
+        eventId: eventId,
+        location: location,
+        kind: kind,
+        summary: target,
+        occurredAt: at,
+        sessionId: sessionId,
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Files an automatic act on a saved server as a whole (a heat pause of
+  /// the team on this phone): named by the server, filed under its address.
+  /// Nothing for a profile that is gone.
+  Future<bool> recordServerAct({
+    required String profileId,
+    required AutomaticActKind kind,
+    required String eventId,
+    required DateTime at,
+  }) {
+    for (final owner in store.profiles) {
+      if (owner.id != profileId) continue;
+      return recordAutomaticAct(
+        profileId: owner.id,
+        location: automaticActivityServer(owner),
+        kind: kind,
+        target: owner.name,
+        eventId: eventId,
+        at: at,
+      );
+    }
+    return Future.value(false);
+  }
+
+  /// The conversation's title as the Inbox would name it, at the act.
+  String _automaticActSessionTitle(String sessionID) {
+    final title = displaySessionTitleText(sessionsById[sessionID]?.title);
+    return title.isNotEmpty ? title : _shellStrings().globalSessionsUntitled;
+  }
+
+  /// Captures the connected server and the open project now, for an act
+  /// whose confirmation arrives later.
+  ({String profileId, String server, String project, String name})?
+  _automaticActScope() {
+    final owner = _connectedProfile ?? profile;
+    if (owner == null || isIsolated) return null;
+    return (
+      profileId: owner.id,
+      server: automaticActivityServer(owner),
+      project: automaticActivityProject,
+      name: owner.name,
+    );
   }
 
   late bool _shareSessionViews =
@@ -5351,6 +5526,19 @@ class ConnectionController extends ChangeNotifier {
   OfflineQueueStore get _queueStore =>
       _offlineQueueStore ??= OfflineQueueStore(prefs: store.prefs);
 
+  QueuedPromptRemoval? _keptQueuedStore;
+
+  /// Queued prompts a removed server left behind as drafts (P7.2). App-owned,
+  /// so the removed server's deletion sweep does not take them.
+  QueuedPromptRemoval get _keptQueued => _keptQueuedStore ??=
+      QueuedPromptRemoval(preferences: store.prefs, queue: _queueStore);
+
+  /// The queued prompts removing [profileId] would affect, counted for the
+  /// confirmation. Throws when the queue cannot be read (never a zero).
+  /// Pass the result to [deleteProfileAndLocalData].
+  QueuedPromptRemovalPlan inspectQueuedPromptsForRemoval(String profileId) =>
+      _keptQueued.inspect(profileId);
+
   Future<T> _serializeQueueChange<T>(Future<T> Function() change) {
     final operation = _queueChanges.then((_) => change());
     _queueChanges = operation.then<void>((_) {}, onError: (Object _) {});
@@ -5799,9 +5987,22 @@ class ConnectionController extends ChangeNotifier {
   ///
   /// Server-side and provider-side data is untouched; only this device is
   /// cleared.
-  Future<DeleteProfileResult> deleteProfileAndLocalData(String profileId) {
+  ///
+  /// [queuedPrompts] is the confirmed [inspectQueuedPromptsForRemoval]
+  /// snapshot. When given, the removal stops with a
+  /// [QueuedPromptRemovalException] (and removes nothing) if the server's
+  /// queued prompts changed since, and [keepQueuedPrompts] moves them into
+  /// Saved prompts before they leave the queue.
+  Future<DeleteProfileResult> deleteProfileAndLocalData(
+    String profileId, {
+    QueuedPromptRemovalPlan? queuedPrompts,
+    bool keepQueuedPrompts = false,
+  }) {
     if (_disposed || profileId.isEmpty) {
       return Future.error(StateError('The server profile is unavailable'));
+    }
+    if (queuedPrompts != null && queuedPrompts.profileID != profileId) {
+      return Future.error(ArgumentError('Queued prompts of another server'));
     }
     final pending = _profileDeletions[profileId];
     if (pending != null) return pending;
@@ -5840,7 +6041,11 @@ class ConnectionController extends ChangeNotifier {
           }
           await _profileMonitor?.drain(profileId);
           await _quotaMonitor?.drain(profileId);
-          return _deleteProfileAndLocalData(profileId);
+          return _deleteProfileAndLocalData(
+            profileId,
+            queuedPrompts: queuedPrompts,
+            keepQueuedPrompts: keepQueuedPrompts,
+          );
         })
         .whenComplete(() {
           _deletingReadProfiles.remove(profileId);
@@ -5856,8 +6061,10 @@ class ConnectionController extends ChangeNotifier {
   }
 
   Future<DeleteProfileResult> _deleteProfileAndLocalData(
-    String profileId,
-  ) async {
+    String profileId, {
+    QueuedPromptRemovalPlan? queuedPrompts,
+    bool keepQueuedPrompts = false,
+  }) async {
     await _draftChanges;
     await _pendingAuth.drain(profileId);
     // Selection writes begin before network refresh; drain them before the
@@ -5881,6 +6088,17 @@ class ConnectionController extends ChangeNotifier {
     } catch (_) {}
     try {
       await sessionAutoApproval.drain(profileId);
+    } catch (_) {}
+    try {
+      // Stop accepting edits and drain a write in flight, so the sweep below
+      // removes `oc.automation.<id>` for good.
+      await AutomationPolicyController.closeProfile(store.prefs, profileId);
+    } catch (_) {}
+    try {
+      // The While you were away history closes and drains its writes (and
+      // any Undo in flight) first, so a late write cannot bring back
+      // `oc.automaticActivity.<id>` after the sweep below.
+      await AutomaticActivityController.closeProfile(store.prefs, profileId);
     } catch (_) {}
     try {
       await _promptShelf.drain(profileId);
@@ -5907,6 +6125,31 @@ class ConnectionController extends ChangeNotifier {
       //    prompt is on the wire.
       var clearedQueued = 0;
       await _serializeQueueChange(() async {
+        if (queuedPrompts != null) {
+          // The person confirmed a count: act on exactly that, or on nothing.
+          final live = [
+            for (final entry in _queue)
+              if (entry.profileID == profileId) entry.toJson(),
+          ];
+          final confirmed = [
+            for (final entry in queuedPrompts.prompts) entry.toJson(),
+          ];
+          try {
+            if (jsonEncode(live) != jsonEncode(confirmed)) {
+              throw StateError('Queued prompts changed');
+            }
+            _keptQueued.validateCurrent(queuedPrompts);
+          } on StateError {
+            throw const QueuedPromptRemovalException(changed: true);
+          }
+          if (keepQueuedPrompts) {
+            try {
+              await _keptQueued.keepAsDrafts(queuedPrompts);
+            } on StateError {
+              throw const QueuedPromptRemovalException(changed: false);
+            }
+          }
+        }
         final keptQueue = [
           for (final entry in _queue)
             if (entry.profileID != profileId) entry,
@@ -6065,6 +6308,7 @@ class ConnectionController extends ChangeNotifier {
     final profileID = profile?.id;
     if (profileID == null) return;
     final origin = (profileID, profile?.baseUrl, directory, workspace);
+    final actScope = _automaticActScope();
     bool eligible(QueuedPrompt entry) =>
         entry.profileID == profileID && !entry.dispatched;
     if (!_queue.any(eligible)) return;
@@ -6249,6 +6493,22 @@ class ConnectionController extends ChangeNotifier {
         if (delivered) {
           if (!recorded) break;
           sent += 1;
+          // Sent by itself once the server was back: filed for While you
+          // were away under the conversation it went to (P6.2).
+          if (actScope != null) {
+            final at = DateTime.now();
+            unawaited(
+              recordAutomaticAct(
+                profileId: actScope.profileId,
+                location: actScope.project,
+                kind: AutomaticActKind.queuedSend,
+                target: _automaticActSessionTitle(entry.sessionID),
+                eventId: 'queue.sent:${entry.id}',
+                at: at,
+                sessionId: entry.sessionID,
+              ),
+            );
+          }
         }
         if (stop) break;
       }
@@ -7652,8 +7912,26 @@ class ConnectionController extends ChangeNotifier {
   final _promptShelfDeletionRevisions = <String, int>{};
   String get promptShelfProfileID => (_connectedProfile ?? profile)?.id ?? '';
   bool get canUsePromptShelf => isProfileReadable(promptShelfProfileID);
-  List<StashedPrompt> get promptStash =>
-      canUsePromptShelf ? _promptShelf.stashes(promptShelfProfileID) : const [];
+  List<StashedPrompt> get promptStash {
+    if (!canUsePromptShelf) return const [];
+    final prompts = [
+      ..._promptShelf.stashes(promptShelfProfileID),
+      ...keptQueuedDrafts,
+    ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return List.unmodifiable(prompts);
+  }
+
+  /// Queued prompts kept from removed servers, shown in every server's Saved
+  /// prompts. Unreadable ones stay on disk and are left out of the list.
+  List<StashedPrompt> get keptQueuedDrafts {
+    try {
+      return _keptQueued.savedDrafts;
+    } on StateError {
+      return const [];
+    }
+  }
+
+  static bool _isKeptQueuedDraft(String id) => id.startsWith('kept-');
   List<String> get sentPromptHistory =>
       canUsePromptShelf ? _promptShelf.history(promptShelfProfileID) : const [];
 
@@ -7718,6 +7996,21 @@ class ConnectionController extends ChangeNotifier {
     required int locationRevision,
   }) async {
     final current = _promptShelfScope(locationRevision);
+    if (_isKeptQueuedDraft(id)) {
+      // Only embedded bytes travel: a removed server's file or link is not
+      // this server's, so it is named as unavailable instead.
+      final prompt = keptQueuedDrafts.firstWhere((p) => p.id == id);
+      return DraftAttachmentRecovery(
+        [
+          for (final attachment in prompt.attachments)
+            if (attachment.url.startsWith('data:')) attachment,
+        ],
+        [
+          for (final attachment in prompt.attachments)
+            if (!attachment.url.startsWith('data:')) attachment.filename,
+        ],
+      );
+    }
     final owner = promptShelfProfileID;
     final prompt = _promptShelf.stashes(owner).firstWhere((p) => p.id == id);
     final sameLocation =
@@ -7804,6 +8097,11 @@ class ConnectionController extends ChangeNotifier {
   }) async {
     _promptShelfScope(locationRevision);
     try {
+      if (_isKeptQueuedDraft(id)) {
+        final removed = await _keptQueued.forgetDraft(id);
+        if (removed == null) throw StateError('The saved prompt is gone');
+        return SavedPromptUndo.kept(() => _keptQueued.rememberDraft(removed));
+      }
       return await _savedPromptsForShelf.delete(id);
     } finally {
       if (!_disposed) notifyListeners();
@@ -9258,6 +9556,11 @@ class ConnectionController extends ChangeNotifier {
     _orchestration?.removeListener(_orchestrationChanged);
     _orchestration?.dispose();
     _orchestration = null;
+    // The histories are shared per profile and outlive this connection.
+    for (final history in _watchedActivity) {
+      history.removeListener(_automaticActivityChanged);
+    }
+    _watchedActivity.clear();
     _profileMonitor?.removeListener(_monitorChanged);
     _profileMonitor?.dispose();
     _quotaMonitor?.removeListener(_quotaMonitorChanged);

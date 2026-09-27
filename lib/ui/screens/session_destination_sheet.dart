@@ -8,7 +8,8 @@ import '../../state/connection.dart';
 import '../app_iconography.dart';
 import '../early_l10n.dart';
 import '../kit/kit.dart';
-import '../widgets/product_states.dart' show productErrorText;
+import '../widgets/product_states.dart'
+    show productErrorDetails, productErrorText;
 import '../widgets/session_handoff.dart';
 
 enum SessionDestinationMode { move, warp }
@@ -66,11 +67,12 @@ class _DestinationPick {
   final Session? session;
 }
 
-/// Asks before moving, saying where the working changes go and where they
-/// stay. The move runs inside the question: a failure keeps it open with
-/// the reason and Try again, so it never closes on an error. "Move without
-/// changes" closes the question and moves; a failure there is said in an
-/// alert.
+/// Asks before moving, naming the destination in the title and every
+/// answer, and saying where the working changes go and where they stay.
+/// The move runs inside the question: a failure keeps it open with the
+/// reason and Try again, so it never closes on an error. "Move to {place}
+/// without changes" closes the question and moves; a failure there is said
+/// in an alert.
 Future<void> _confirmMove(
   BuildContext context,
   ConnectionController controller,
@@ -93,35 +95,39 @@ Future<void> _confirmMove(
   );
   final confirmed = await showKitConfirm(
     context,
-    title: copy.e7SharedDetail429,
+    title: copy.e7SharedDetail429(destination.title),
     body: hasChanges
         ? copy.sessionDestinationChangesCount(pick.changes)
         : pick.unknownChanges
         ? copy.e7SharedTheAppCouldNotInspectWorkingChanges
-        : copy.e7SharedDetail432(destination.title),
+        : copy.sessionDestinationNoChanges(pick.here),
+    // Where the changes go and where they stay are two facts of one
+    // choice, neither good nor bad news: one neutral mark for both.
     consequenceItems: hasChanges
         ? [
             KitConsequence(
               moving
                   ? copy.sessionDestinationChangesGo(destination.title)
                   : copy.sessionDestinationChangesCopied(destination.title),
+              mark: KitConsequenceMark.neutral,
             ),
             KitConsequence(
               copy.sessionDestinationChangesStay(pick.here),
-              mark: KitConsequenceMark.kept,
+              mark: KitConsequenceMark.neutral,
             ),
           ]
         : null,
     confirmLabel: hasChanges
         ? moving
-              ? copy.e7SharedMoveWithChanges
-              : copy.e7SharedCopyChangesAndMove
-        : copy.e7SharedMove,
+              ? copy.sessionDestinationMoveWithChanges(destination.title)
+              : copy.sessionDestinationWarpWithChanges(destination.title)
+        : copy.sessionDestinationMoveTo(destination.title),
     confirmKey: const Key('session-destination-confirm'),
+    // The kit places the alternative between the confirm and Cancel.
     alternative: hasChanges
         ? KitAction(
             key: const Key('session-destination-without-changes'),
-            label: copy.sessionDestinationMoveWithout,
+            label: copy.sessionDestinationMoveWithout(destination.title),
             onPressed: () => withoutChanges = true,
           )
         : null,
@@ -495,7 +501,7 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
           title: copy.sessionDestinationLoadFailed,
           body: productErrorText(_error!),
           error: _error,
-          details: productErrorText(_error!),
+          details: productErrorDetails(_error!),
           size: KitStateSize.inline,
           retry: KitAction(label: copy.isolatedTaskRetryOpen, onPressed: _load),
         ),
@@ -668,7 +674,7 @@ class _ConsoleOrganizationSheetState extends State<_ConsoleOrganizationSheet> {
                 title: copy.consoleOrganizationLoadFailed,
                 body: productErrorText(_error!),
                 error: _error,
-                details: productErrorText(_error!),
+                details: productErrorDetails(_error!),
                 size: KitStateSize.inline,
                 retry: KitAction(
                   label: copy.isolatedTaskRetryOpen,

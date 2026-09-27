@@ -11,6 +11,8 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/phone_host.dart' show PhoneHostKind;
 import '../../state/profiles.dart';
+import '../../state/queued_prompt_removal.dart'
+    show QueuedPromptRemovalException, QueuedPromptRemovalPlan;
 import '../../termux/bridge.dart' show TermuxRuntime;
 import '../app_iconography.dart';
 import '../kit/kit.dart';
@@ -236,25 +238,25 @@ Future<bool> runPhoneServerAction(
         fail: fail,
         connection: connection,
         linux: linux,
-        bytesUsed: bytesUsed,
         onRemoving: onRemoving,
       );
   }
 }
 
 /// The remove-from-phone sheet (P0.7, P1.5): it says what survives. The
-/// default removes OpenCode and its tools and keeps the projects, with the
-/// space that comes back; "Delete everything" is the heavy path and asks
-/// for the typed name. Then OpenCode is stopped and removed and the saved
-/// entries are forgotten: a "This phone" entry left behind would point at
-/// nothing and could only fail.
+/// default removes OpenCode and its tools and keeps the projects; its
+/// lines say what goes and what stays, with the measured sizes. "Delete
+/// everything" is the heavy path and asks for the typed name. Removal runs
+/// inside the question, so a failure keeps it open with Try again (DATA-14)
+/// and the saved entries stay until it worked. Then the saved entries are
+/// forgotten: a "This phone" entry left behind would point at nothing and
+/// could only fail.
 Future<bool> _removePhoneServer(
   BuildContext context, {
   required AppLocalizations l10n,
   required Future<void> Function(List<String>) fail,
   required ConnectionController connection,
   required BuiltinLinux linux,
-  int? bytesUsed,
   VoidCallback? onRemoving,
 }) async {
   // Measured afresh: sizes come from a real reading or are not said. A
@@ -266,65 +268,100 @@ Future<bool> _removePhoneServer(
     storage = null;
   }
   if (!context.mounted) return false;
+  // Queued prompts for this phone's server are kept in Saved prompts (P7.2).
+  var queued = 0;
+  for (final profile in connection.store.profiles) {
+    if (looksLikeInAppServer(profile)) {
+      queued += connection.queuedPromptCountForProfile(profile.id);
+    }
+  }
+
+  String? size(int? bytes) =>
+      bytes != null && bytes > 0 ? formatPhoneStorage(bytes) : null;
+  final keepFrees = size(storage?.keepProjectsFreedBytes);
+  final kept = size(storage?.projectsBytes);
+  final allFrees = size(storage?.deleteEverythingFreedBytes);
+
+  // One attempt, from the question's confirm: leave the server before it
+  // disappears, so the app does not spend the next minute reconnecting to
+  // something that is gone, then remove it.
+  Future<void> attempt(Future<void> Function() remove) async {
+    onRemoving?.call();
+    if (connection.api != null && looksLikeInAppServer(connection.profile)) {
+      await connection.disconnect(keepActive: true);
+    }
+    await remove();
+  }
+
   var deleteEverything = false;
-  final keep = await showKitConfirm(
+  final removed = await showKitConfirm(
     context,
     title: l10n.phoneServerCardRemoveTitle,
-    body: storage != null
-        ? l10n.removeFromPhoneKeepBody(
-            formatPhoneStorage(storage.keepProjectsFreedBytes),
-          )
+    body: keepFrees != null
+        ? l10n.removeFromPhoneKeepBody(keepFrees)
         : l10n.removeFromPhoneKeepBodyUnmeasured,
     confirmLabel: l10n.removeFromPhoneKeepConfirm,
     kind: KitConfirmKind.destructive,
     icon: AppIconography.delete,
+    consequenceItems: [
+      KitConsequence(
+        l10n.removeFromPhoneKeepLost,
+        mark: KitConsequenceMark.lost,
+      ),
+      KitConsequence(
+        kept != null
+            ? l10n.removeFromPhoneKeepKeptSize(kept)
+            : l10n.removeFromPhoneKeepKept,
+        mark: KitConsequenceMark.kept,
+        key: const ValueKey('phone-server-remove-kept'),
+      ),
+      if (queued > 0)
+        KitConsequence(
+          l10n.serversRemoveQueuedKept(queued),
+          mark: KitConsequenceMark.kept,
+        ),
+    ],
     alternative: KitAction(
       key: const ValueKey('phone-server-remove-everything'),
       label: l10n.removeFromPhoneDeleteAll,
       destructive: true,
       onPressed: () => deleteEverything = true,
     ),
+    // The keep path: the bridge's safe default (uninstall == remove()).
+    action: () => attempt(linux.uninstall),
     sheetKey: const ValueKey('phone-server-remove-sheet'),
     confirmKey: const ValueKey('phone-server-remove-confirm'),
   );
-  if (!keep && deleteEverything && context.mounted) {
-    deleteEverything = await showKitConfirm(
+  if (!removed) {
+    if (!deleteEverything || !context.mounted) return false;
+    final deleted = await showKitConfirm(
       context,
       title: l10n.removeFromPhoneDeleteTitle,
-      body: storage != null
-          ? l10n.removeFromPhoneDeleteBody(
-              formatPhoneStorage(storage.deleteEverythingFreedBytes),
-            )
+      body: allFrees != null
+          ? l10n.removeFromPhoneDeleteBody(allFrees)
           : l10n.removeFromPhoneDeleteBodyUnmeasured,
       confirmLabel: l10n.removeFromPhoneDeleteAll,
       kind: KitConfirmKind.destructive,
       icon: AppIconography.delete,
+      consequenceItems: [
+        KitConsequence(
+          l10n.removeFromPhoneDeleteLost,
+          mark: KitConsequenceMark.lost,
+        ),
+      ],
+      // The kit keeps the confirm disabled until the exact name is typed;
+      // native code checks it again.
       typedName: BuiltinLinux.deletionConfirmationName,
+      action: () => attempt(
+        () => linux.remove(
+          alsoDeleteProjects: true,
+          confirmationName: BuiltinLinux.deletionConfirmationName,
+        ),
+      ),
       sheetKey: const ValueKey('phone-server-delete-everything-sheet'),
       confirmKey: const ValueKey('phone-server-delete-everything-confirm'),
     );
-  } else {
-    deleteEverything = false;
-  }
-  if (!keep && !deleteEverything) return false;
-  onRemoving?.call();
-  // Leave the server before it disappears, so the app does not spend the
-  // next minute reconnecting to something that is gone.
-  if (connection.api != null && looksLikeInAppServer(connection.profile)) {
-    await connection.disconnect(keepActive: true);
-  }
-  try {
-    if (deleteEverything) {
-      await linux.remove(
-        alsoDeleteProjects: true,
-        confirmationName: BuiltinLinux.deletionConfirmationName,
-      );
-    } else {
-      await linux.uninstall();
-    }
-  } on BuiltinLinuxException catch (error) {
-    await fail([l10n.phoneServerCardActionFailed(error.message)]);
-    return false;
+    if (!deleted) return false;
   }
   final saved = [
     for (final profile in connection.store.profiles)
@@ -333,9 +370,27 @@ Future<bool> _removePhoneServer(
   final problems = <String>[];
   for (final profile in saved) {
     try {
-      final result = await connection.deleteProfileAndLocalData(profile.id);
+      // Counted at the last moment, so every prompt still queued is kept.
+      // An unreadable queue has nothing to keep; removal goes on as before.
+      QueuedPromptRemovalPlan? plan;
+      try {
+        plan = connection.inspectQueuedPromptsForRemoval(profile.id);
+      } catch (_) {
+        plan = null;
+      }
+      final result = await connection.deleteProfileAndLocalData(
+        profile.id,
+        queuedPrompts: plan,
+        keepQueuedPrompts: true,
+      );
       final partial = result.partialDeletionMessage;
       if (partial != null) problems.add(partial);
+    } on QueuedPromptRemovalException catch (error) {
+      problems.add(
+        error.changed
+            ? l10n.serversRemoveQueuedChanged(profile.name)
+            : l10n.serversRemoveQueuedNotKept(profile.name),
+      );
     } catch (error) {
       problems.add(l10n.phoneServerCardActionFailed(productErrorText(error)));
     }
@@ -470,7 +525,7 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       setState(() => _status = status);
     } on BuiltinLinuxException catch (error) {
       if (!mounted) return;
-      setState(() => _failure = error.message);
+      setState(() => _failure = productErrorText(error));
     }
     final interval = widget.pollInterval;
     if (interval != null && mounted) {
@@ -509,7 +564,7 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
     try {
       await _linux.stopServer();
     } on BuiltinLinuxException catch (error) {
-      if (mounted) setState(() => _failure = error.message);
+      if (mounted) setState(() => _failure = productErrorText(error));
     }
     if (!mounted) return;
     await _refresh();

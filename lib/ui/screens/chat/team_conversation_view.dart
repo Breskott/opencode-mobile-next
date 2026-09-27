@@ -582,7 +582,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
                   keyPrefix: 'team-conversation-gate-${gate.id}',
                   controller: _team,
                   gate: gate,
-                  title: teamGateKindWord(l10n, gate.kind),
+                  title: teamGateWho(l10n, _team.snapshot, gate),
                   onOpen: () => unawaited(
                     showGateSheet(context, _team, gate.id, now: widget.now),
                   ),
@@ -673,38 +673,23 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
   }
 }
 
-/// A team write's receipt in words: "Message · Sent", then "Confirmed" or
-/// the host's reason, with Try again when the record may be retried.
+/// A team write's receipt in words: "Message · Sending…", then
+/// "Message · Confirmed" or the host's reason, with Try again when the
+/// record may be retried ([teamControlReceipt]).
 Widget _teamReceipt(
   BuildContext context,
   MutationRecord record, {
   required Key key,
   String? control,
   Future<void> Function()? onRetry,
-}) {
-  final l10n = _chatL10n(context);
-  final state = switch (record.status) {
-    MutationStatus.sent => KitReceiptState.sent,
-    MutationStatus.confirmed => KitReceiptState.confirmed,
-    MutationStatus.unconfirmed => KitReceiptState.notConfirmed,
-    MutationStatus.rejected => KitReceiptState.refused,
-  };
-  final reason = record.status == MutationStatus.rejected
-      ? record.receipt?.message?.trim()
-      : null;
-  return KitReceipt(
-    key: key,
-    state: state,
-    automatic: true,
-    label: l10n.teamUiControlReceiptLine(
-      control ?? teamControlWord(l10n, record.request),
-      teamControlReceiptWord(l10n, record.status),
-    ),
-    reason: reason == null || reason.isEmpty ? null : reason,
-    onRetry: onRetry != null && record.canRetry ? () => onRetry() : null,
-    retryKey: ValueKey('${(key as ValueKey<String>).value}-retry'),
-  );
-}
+}) => teamControlReceipt(
+  context,
+  record,
+  key: key,
+  control: control,
+  onRetry: onRetry,
+  retryKey: ValueKey('${(key as ValueKey<String>).value}-retry'),
+);
 
 /// The lead's reply, read like any reply in the chat: one plain line per
 /// real team event with its time, on the prose's edge, no frame or fill.

@@ -17,7 +17,6 @@ import '../../api/product_repository.dart';
 import '../../api/server_probe.dart' show ServerFlavor;
 import '../../api/sse.dart';
 import '../../domain/prompt_attachment.dart';
-import '../../domain/context_capsule.dart';
 import '../../domain/background_work.dart';
 import '../../domain/background_agent_result.dart';
 import '../../domain/background_shell_result.dart';
@@ -83,8 +82,7 @@ import '../../state/orchestration.dart';
 import '../../state/team_conversation.dart';
 import '../../state/team_planning.dart'
     show teamPlanningRunMatches, teamPlannerAgent, teamPlannerIsOff;
-import '../widgets/team_controls.dart'
-    show teamControlReceiptWord, teamControlWord;
+import '../widgets/team_controls.dart' show teamControlReceipt;
 import '../widgets/team_cycle_strip.dart' show teamCycleStallSentence;
 import '../widgets/team_receipt.dart' show teamReceiptLine;
 import '../widgets/team_vocabulary.dart';
@@ -93,7 +91,8 @@ import 'team/gate_sheet.dart' show showGateSheet;
 import 'team/merge_section.dart' show TeamMergeSection;
 import 'team/run_screen.dart' show RunScreen;
 import 'team/team_home_screen.dart' show TeamHomeScreen;
-import 'team/team_needs_you.dart' show TeamNeedsYouCard, teamOpenGates;
+import 'team/team_needs_you.dart'
+    show TeamNeedsYouCard, teamGateWho, teamOpenGates;
 import 'team_conversation/team_conversation.dart' show TeamConversation;
 import '../kit/scenes/states_scenes.dart';
 import '../widgets/grace_timer.dart';
@@ -120,7 +119,6 @@ import 'settings_screen.dart';
 import 'capabilities_screen.dart';
 import 'terminal_screen.dart';
 import 'web_sources_screen.dart';
-import 'context_capsule_screen.dart';
 import '../early_l10n.dart';
 
 part 'chat/timeline_sheet.dart';
@@ -3101,99 +3099,6 @@ class _ChatScreenState extends State<ChatScreen>
     );
     await _persistDraft();
     if (mounted && source == _speechScopeNow) _focus.requestFocus();
-  }
-
-  Future<void> _addContextCapsule() async {
-    if (_conn.isIsolated ||
-        _sending ||
-        _promptShelfBusy ||
-        _voiceConversation) {
-      return;
-    }
-    if (_draftLocation != _conn.locationRevision ||
-        _draftProfileID != _conn.profile?.id) {
-      return;
-    }
-    final connection = _conn;
-    final source = _speechScopeNow;
-    final snapshot = _snapshotPrompt();
-    final location = _conn.locationRevision;
-    final revision = _promptContentRevision;
-    final route = ModalRoute.of(context);
-    var invalid = false;
-    bool current() {
-      if (!mounted ||
-          !identical(connection, _conn) ||
-          source != _speechScopeNow ||
-          _conn.directory != _draftDirectory ||
-          _conn.workspace != _draftWorkspace ||
-          !_conn.isProfileReadable(_draftProfileID)) {
-        invalid = true;
-      }
-      return !invalid;
-    }
-
-    void observe() {
-      current();
-    }
-
-    connection.addListener(observe);
-    connection.profileDataChanges.addListener(observe);
-    final changes = Listenable.merge([
-      connection,
-      connection.profileDataChanges,
-    ]);
-    final title = presentedSessionTitle(
-      _conn.sessionsById[widget.sessionID],
-      fallback: widget.sessionID,
-    );
-    setState(() => _promptShelfOperationBusy = true);
-    try {
-      final result = await Navigator.of(context).push<ContextCapsule>(
-        KitPageRoute(
-          builder: (_) => ContextCapsuleScreen(
-            sessionTitle: title,
-            scopeChanges: changes,
-            isCurrent: current,
-            pickImage: _supportsPromptAttachments
-                ? (images) async {
-                    if (!current() || !_supportsPromptAttachments) return null;
-                    final image = await _chooseAttachment([
-                      ...snapshot.attachments,
-                      ...images,
-                    ]);
-                    if (!current() || !_supportsPromptAttachments) return null;
-                    return image;
-                  }
-                : null,
-          ),
-        ),
-      );
-      if (!mounted || result == null) return;
-      if (!current() ||
-          revision != _promptContentRevision ||
-          !_promptUnchanged(snapshot, location) ||
-          !(route?.isCurrent ?? true) ||
-          (result.images.isNotEmpty && !_supportsPromptAttachments)) {
-        _showComposerNote(_chatL10n(context).capsuleScopeChanged);
-        return;
-      }
-      _restoreHistoryDraft();
-      final text = result.appendTo(_composer.text);
-      _composer.value = TextEditingValue(
-        text: text,
-        selection: TextSelection.collapsed(offset: text.length),
-      );
-      setState(() => _attachments.addAll(result.images));
-      final saved = await _persistDraft();
-      if (mounted && current() && saved) {
-        _showComposerNote(_chatL10n(context).capsuleApplied);
-      }
-    } finally {
-      connection.removeListener(observe);
-      connection.profileDataChanges.removeListener(observe);
-      if (mounted) setState(() => _promptShelfOperationBusy = false);
-    }
   }
 
   Future<void> _pickAttachment() async {
@@ -7349,7 +7254,6 @@ class _ChatScreenState extends State<ChatScreen>
       onVoice: _openVoice,
       onConversation: _startVoiceConversation,
       onWebSources: _addWebSources,
-      onContextCapsule: _addContextCapsule,
       conversationMode: _voiceConversation,
       onSend: _send,
       onStop: _abort,

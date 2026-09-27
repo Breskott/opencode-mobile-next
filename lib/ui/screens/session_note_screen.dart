@@ -216,12 +216,13 @@ class _SessionNoteScreenState extends State<SessionNoteScreen> {
   }
 
   String _errorText(Object error, AppLocalizations l10n) {
-    if (error is Api2Error) {
-      return error.statusCode == 401 || error.statusCode == 403
-          ? l10n.sessionNoteAuthorization
-          : error.message;
+    if (error is Api2Error &&
+        (error.statusCode == 401 || error.statusCode == 403)) {
+      return l10n.sessionNoteAuthorization;
     }
-    if (error is! SessionNoteException) return productErrorText(error);
+    if (error is! SessionNoteException) {
+      return productErrorText(error, l10n: l10n);
+    }
     return switch (error.failure) {
       SessionNoteFailure.unsupported => l10n.sessionNoteUnsupported,
       SessionNoteFailure.changed => l10n.sessionNoteChanged,

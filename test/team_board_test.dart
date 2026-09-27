@@ -438,15 +438,9 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    // On a phone the top bar shows one action; the board waits in its
-    // overflow (KitTopBar compact).
-    await tester.tap(find.byKey(const ValueKey('team-home-more')));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.text(
-        lookupAppLocalizations(const Locale('en')).teamBoardOpenTooltip,
-      ),
-    );
+    // On a phone the top bar shows one action: since P3.4 (Technical
+    // details moved to the page's "how it runs" row) it is the board.
+    await tester.tap(find.byKey(const ValueKey('team-home-board')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('team-board')), findsOneWidget);
     tester.state<NavigatorState>(find.byType(Navigator)).pop();

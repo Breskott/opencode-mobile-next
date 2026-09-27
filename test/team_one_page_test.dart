@@ -175,14 +175,14 @@ void main() {
       expect(call.verb, 'cancelRun');
       expect(call.target, teamTask.id);
       expect(_key('team-conversation-stop-receipt'), findsOneWidget);
-      expect(find.text('Stop task · Sent'), findsOneWidget);
+      expect(find.textContaining('Stop task · Sending…'), findsOneWidget);
 
       // The host says the task was cancelled: Confirmed.
       gateway.stream.add(
         RunChanged(runId: teamTask.id, state: RunState.cancelled),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Stop task · Confirmed'), findsOneWidget);
+      expect(find.textContaining('Stop task · Confirmed'), findsOneWidget);
       expect(
         team.latestMutation(kind: MutationKind.cancelRun)?.status,
         MutationStatus.confirmed,
@@ -199,7 +199,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(_key('team-conversation-stop-confirm-action'));
       await tester.pumpAndSettle();
-      expect(find.text('Stop task · Refused'), findsOneWidget);
+      expect(find.textContaining('Not accepted'), findsOneWidget);
       expect(find.textContaining('convoy is already closed'), findsOneWidget);
     });
 

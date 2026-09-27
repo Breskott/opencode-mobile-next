@@ -38,6 +38,9 @@ class _NotificationsSettingsScreenState
 
   /// Why Android did not turn the background connection on.
   String? _backgroundError;
+
+  /// Android's own text behind [_backgroundError], for Copy details only.
+  String? _backgroundErrorDetails;
   final _sectionKeys = <String, GlobalKey>{};
 
   /// True once Android itself is refusing this app's notifications (denied
@@ -77,14 +80,24 @@ class _NotificationsSettingsScreenState
   Future<void> _toggleBackground(bool value) async {
     final controller = widget.controller;
     if (controller.backgroundLive.busy) return;
-    setState(() => _backgroundError = null);
+    setState(() {
+      _backgroundError = null;
+      _backgroundErrorDetails = null;
+    });
     final enabled = await controller.setKeepLiveInBackground(value);
     if (!mounted) return;
     final error = controller.backgroundLive.lastError;
     if (error != null || enabled != value) {
-      setState(
-        () => _backgroundError = error ?? _settingsCopy(context).e7SettingsUi22,
-      );
+      // The app's own sentence from the Android side stays; exception
+      // text is said in words and kept only under Copy details.
+      final copy = _settingsCopy(context);
+      final words = error == null
+          ? (value ? copy.e7SettingsUi22 : copy.settingsBackgroundOffFailed)
+          : productErrorText(error, l10n: copy);
+      setState(() {
+        _backgroundError = words;
+        _backgroundErrorDetails = error == words ? null : error;
+      });
     }
   }
 
@@ -299,10 +312,11 @@ class _NotificationsSettingsScreenState
         onChanged: _toggleBackground,
         below: error == null
             ? null
-            : KitNotice(
+            : KitNotice.error(
                 key: const ValueKey('background-live-error'),
-                tone: AppStatusTone.failure,
                 message: error,
+                details: _backgroundErrorDetails,
+                reportSource: 'settings-background',
               ),
       ),
       if (controller.keepLiveInBackground)

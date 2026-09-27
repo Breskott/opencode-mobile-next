@@ -298,10 +298,6 @@
       "ar version \"{version}\"": 1,
       "en version \"{version}\"": 1
     },
-    "quotaSetupGuide": {
-      "ar path \"tool/quota/README.md\"": 1,
-      "en path \"tool/quota/README.md\"": 1
-    },
     "servicesUrlHint": {
       "ar address \"localhost\"": 1,
       "en address \"localhost\"": 1
@@ -1022,9 +1018,6 @@
     "quotaCodexAccount": {
       "product name Codex": 1
     },
-    "quotaSetupTitle": {
-      "title over four words": 1
-    },
     "readAloudConsentTitle": {
       "title over four words": 1
     },
@@ -1227,7 +1220,7 @@
     "termuxPhoneTitle": {
       "product name OpenCode": 1
     },
-    "termuxProcsGroupOpenCode": {
+    "termuxProcsKindOpenCode": {
       "product name OpenCode": 1
     },
     "termuxProcsStopGroupTitle": {

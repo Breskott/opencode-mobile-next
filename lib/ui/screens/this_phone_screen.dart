@@ -5,18 +5,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../builtin/builtin_linux.dart';
 import '../../builtin/builtin_server.dart';
+import '../../builtin/setup/component_removal.dart';
+import '../../builtin/setup/components.dart' show SetupComponentIds;
 import '../../builtin/setup/phone_setup.dart';
 import '../../builtin/setup/setup_contract.dart';
+import '../../builtin/setup/termux_setup_host.dart';
+import '../../builtin/team/builtin_team.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
+import '../../state/orchestration_store.dart' show PhoneOffer;
 import '../../state/phone_host.dart';
+import '../../state/profiles.dart' show OrchestrationHostKind;
 import '../../state/termux_host_setup.dart';
 import '../../termux/bridge.dart';
+import '../../termux/processes.dart';
 import '../app_iconography.dart';
 import '../kit/kit.dart';
+import '../widgets/builtin_team_section.dart' show forgetBuiltinTeam;
 import '../widgets/managed_server_recovery_option.dart';
 import '../widgets/phone_server_card.dart';
 import '../widgets/safety_confirms.dart';
+import '../widgets/team_phone_onboarding.dart' show teamPhoneRuntime;
 import '../widgets/termux_phone_tools.dart';
 import 'keep_running_screen.dart';
 import 'local_agent_screen.dart';
@@ -24,6 +33,7 @@ import 'phone_setup/phone_setup_routes.dart';
 import 'phone_setup/phone_setup_selection.dart';
 import 'phone_setup/phone_setup_termux_job_screen.dart';
 import 'phone_setup/phone_setup_termux_screen.dart';
+import 'termux_processes_screen.dart';
 
 /// Which host This phone shows when nobody said: the one in use, else the
 /// in-app one when it is saved, else Termux.
@@ -55,17 +65,39 @@ Future<void> openThisPhone(BuildContext context, {PhoneHostKind? kind}) =>
 /// One list ordered by what is most likely needed: the status with the one
 /// act it needs now (start, connect, finish a switch), then update, switch
 /// between OpenCode 1 and 2, add tools, what is installed, storage, what
-/// runs, keeping it running, the log, and removing it last. Each act names
+/// runs (Running on this phone, where the host can list it; left out when
+/// the list cannot be read), keeping it running, the log, and removing it
+/// last. Each act names
 /// what it acts on ("Stop the server on this phone"). Installing, updating,
 /// switching and adding tools run through phone setup's progress screen.
+///
+/// Each optional tool setup installed (Python, AI Team, voice typing) has
+/// its own "Remove {tool}" at the end of the list (P1.4), with the one line
+/// of what it deletes; its question says what goes, what stays and the
+/// measured space that comes back. A tool something else still uses is
+/// named with what uses it and cannot be removed.
 class ThisPhoneScreen extends ConsumerStatefulWidget {
-  const ThisPhoneScreen({super.key, this.kind, this.host});
+  const ThisPhoneScreen({
+    super.key,
+    this.kind,
+    this.host,
+    this.removal,
+    this.scanProcesses,
+  });
 
   /// Which host; null picks [defaultPhoneHostKind].
   final PhoneHostKind? kind;
 
   /// Tests pass their own host; the app makes one from the providers.
   final PhoneHost? host;
+
+  /// Removes the host's tools one by one; tests pass their own, the app
+  /// makes one for the host.
+  final ComponentRemovalService? removal;
+
+  /// Reads what runs in Termux for the Running on this phone row; tests
+  /// pass their own, the app reads through the tools script.
+  final Future<TermuxProcessReport> Function()? scanProcesses;
 
   @override
   ConsumerState<ThisPhoneScreen> createState() => _ThisPhoneScreenState();
@@ -77,6 +109,20 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
   Set<String>? _installedOptional;
   bool _connecting = false;
   bool _removing = false;
+
+  /// The host's tools that can be removed one by one (P1.4), read after
+  /// the page loads; null until then or when there is no engine.
+  ComponentRemovalService? _removal;
+  List<ComponentRemovalEntry>? _removable;
+
+  /// The tool whose removal runs now.
+  String? _removingTool;
+
+  /// What runs in Termux (P5.3), for the Running on this phone row: null
+  /// until read. When it cannot be read the row is left out of the list
+  /// (the owner's review: no dead "Not available right now" row).
+  TermuxProcessReport? _processes;
+  bool _processesUnavailable = false;
 
   /// The server log under Details (P1.5): folded until someone opens it.
   final _log = KitLogBuffer();
@@ -95,13 +141,50 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     }
   }
 
+  /// The engine of the host this page shows: its registry and checks say
+  /// what is installed there.
+  SetupEngine? _hostEngine() {
+    if (_host.kind != PhoneHostKind.termux) return _engine();
+    try {
+      return PhoneSetup.termux;
+    } on StateError {
+      return null;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _ownsHost = widget.host == null;
     _host = widget.host ?? _makeHost();
     _host.addListener(_changed);
+    _removal = widget.removal ?? _makeRemoval();
     unawaited(_load());
+  }
+
+  /// One removal service for this page, on the host it shows: the app's
+  /// own Linux with the in-app team, or Termux's Ubuntu with Termux's team
+  /// manager.
+  ComponentRemovalService? _makeRemoval() {
+    final engine = _hostEngine();
+    if (engine == null) return null;
+    if (_host.kind == PhoneHostKind.termux) {
+      final host = TermuxSetupHost();
+      return ComponentRemovalService(
+        linux: host,
+        registry: engine.registry,
+        removeTeam: ComponentRemovalService.termuxTeamRemover(
+          runtime: teamPhoneRuntime,
+          host: host,
+        ),
+      );
+    }
+    final linux = ref.read(builtinLinuxProvider);
+    return ComponentRemovalService(
+      linux: linux,
+      registry: engine.registry,
+      team: BuiltinTeam(linux: linux),
+    );
   }
 
   PhoneHost _makeHost() {
@@ -119,14 +202,62 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
 
   Future<void> _load() async {
     await _host.refresh();
-    if (_host.kind != PhoneHostKind.inApp) return;
-    final engine = _engine();
+    // Installed tools are read on both hosts (Termux's checks run in its
+    // Ubuntu); nothing to read before setup put anything there.
+    if (!_host.installed) {
+      if (mounted) setState(() => _removable = null);
+      return;
+    }
+    // The reads run in the host's Linux; none waits for another.
+    await Future.wait([_readInstalled(), _readRemovable(), _readProcesses()]);
+  }
+
+  /// Termux's process list: only Termux's tools can list what runs there
+  /// (the in-app Linux has no process inventory yet, so its page has no
+  /// such row).
+  Future<void> _readProcesses() async {
+    if (_host.kind != PhoneHostKind.termux) return;
+    try {
+      final report = await (widget.scanProcesses ?? TermuxProcesses.scan)();
+      if (!mounted) return;
+      setState(() {
+        _processes = report;
+        _processesUnavailable = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _processes = null;
+        _processesUnavailable = true;
+      });
+    }
+  }
+
+  Future<void> _openProcesses() async {
+    await pushKitPage<void>(context, (_) => const TermuxProcessesScreen());
+    if (mounted) unawaited(_readProcesses());
+  }
+
+  Future<void> _readInstalled() async {
+    final engine = _hostEngine();
     if (engine == null) return;
     try {
       final installed = await engine.installedOptional();
       if (mounted) setState(() => _installedOptional = installed);
     } catch (_) {
       // Unknown: the list shows what every setup installs.
+    }
+  }
+
+  Future<void> _readRemovable() async {
+    final removal = _removal;
+    if (removal == null) return;
+    try {
+      final entries = await removal.inventory();
+      if (mounted) setState(() => _removable = entries);
+    } catch (_) {
+      // Unknown: no tool offers removal until it is read.
+      if (mounted) setState(() => _removable = null);
     }
   }
 
@@ -297,6 +428,131 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     if (mounted) unawaited(_load());
   }
 
+  /// Asks before removing one tool (P1.4): what it deletes, what stays,
+  /// and the space that comes back, measured now (a slow or failed
+  /// reading leaves the figure out). Removal runs inside the question, so
+  /// a failure keeps it open with Try again. The list is read again
+  /// afterwards either way: a failed removal may have removed part.
+  Future<void> _removeTool(SetupComponent component) async {
+    final removal = _removal;
+    if (removal == null || _removingTool != null) return;
+    final l10n = _l10n;
+    final id = component.id;
+    final tool = component.shortTitle;
+    int? bytes;
+    try {
+      bytes = await removal
+          .freedBytes(id)
+          .timeout(const Duration(seconds: 3), onTimeout: () => null);
+    } catch (_) {
+      bytes = null;
+    }
+    if (!mounted) return;
+    final removed = await showKitConfirm(
+      context,
+      title: l10n.thisPhoneRemoveToolTitle(tool),
+      body: bytes != null
+          ? l10n.thisPhoneRemoveToolBody(formatPhoneStorage(bytes))
+          : l10n.thisPhoneRemoveToolBodyUnmeasured,
+      confirmLabel: l10n.thisPhoneRemoveTool(tool),
+      kind: KitConfirmKind.destructive,
+      icon: AppIconography.delete,
+      consequenceItems: _removeConsequences(l10n, id),
+      action: () async {
+        if (mounted) setState(() => _removingTool = id);
+        try {
+          await removal.remove(id);
+        } finally {
+          if (mounted) setState(() => _removingTool = null);
+        }
+      },
+      sheetKey: ValueKey('this-phone-remove-$id-sheet'),
+      confirmKey: ValueKey('this-phone-remove-$id-confirm'),
+    );
+    if (removed && id == SetupComponentIds.aiTeam) await _forgetTeam();
+    if (mounted) unawaited(_load());
+  }
+
+  List<KitConsequence> _removeConsequences(AppLocalizations l10n, String id) =>
+      switch (id) {
+        SetupComponentIds.python => [
+          KitConsequence(
+            l10n.thisPhoneRemovePythonLost,
+            mark: KitConsequenceMark.lost,
+          ),
+          KitConsequence(
+            l10n.thisPhoneRemovePythonKept,
+            mark: KitConsequenceMark.kept,
+          ),
+        ],
+        SetupComponentIds.aiTeam => [
+          KitConsequence(
+            l10n.thisPhoneRemoveTeamLost,
+            mark: KitConsequenceMark.lost,
+          ),
+          KitConsequence(
+            l10n.thisPhoneRemoveTeamLostWork,
+            mark: KitConsequenceMark.lost,
+          ),
+          KitConsequence(
+            l10n.thisPhoneRemoveTeamKept,
+            mark: KitConsequenceMark.kept,
+          ),
+        ],
+        SetupComponentIds.voice => [
+          KitConsequence(
+            l10n.thisPhoneRemoveVoiceLost,
+            mark: KitConsequenceMark.lost,
+          ),
+        ],
+        _ => [
+          KitConsequence(
+            l10n.thisPhoneRemoveToolKept,
+            mark: KitConsequenceMark.kept,
+          ),
+        ],
+      };
+
+  String _removeDetail(AppLocalizations l10n, String id) => switch (id) {
+    SetupComponentIds.python => l10n.thisPhoneRemovePythonDetail,
+    SetupComponentIds.aiTeam => l10n.thisPhoneRemoveTeamDetail,
+    SetupComponentIds.voice => l10n.thisPhoneRemoveVoiceDetail,
+    _ => l10n.thisPhoneRemoveToolDetail,
+  };
+
+  /// The removed team's config leaves every saved profile of this host
+  /// that points at it, so no screen keeps reading a team that is gone.
+  Future<void> _forgetTeam() async {
+    final connection = _connection;
+    try {
+      if (_host.kind == PhoneHostKind.inApp) {
+        await forgetBuiltinTeam(connection);
+        return;
+      }
+      for (final profile in [...connection.store.profiles]) {
+        if (!TermuxBridge.managesServerUrl(profile.baseUrl) ||
+            profile.orchestration?.hostKind != OrchestrationHostKind.phone) {
+          continue;
+        }
+        final current = connection.orchestration;
+        if (current != null && current.profileId == profile.id) {
+          await current.remove();
+        } else {
+          await connection.orchestrationStore.sweep(profile.id);
+        }
+        profile.orchestration = null;
+        await connection.store.upsert(profile);
+        await connection.orchestrationStore.setPhoneOffer(
+          profile.id,
+          PhoneOffer.dismissed,
+        );
+      }
+      connection.syncOrchestration();
+    } catch (_) {
+      // The team is gone either way; its screens say it is not there.
+    }
+  }
+
   /// Claude Code runs beside OpenCode in Termux: its own page, with its own
   /// cost and steps.
   void _openLocalAgent() => unawaited(
@@ -337,6 +593,9 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
       width: KitScreenWidth.reading,
       loading: state == PhoneHostState.checking,
       loadingLabel: l10n.phoneServerCardChecking,
+      // One Column inside the list, so every row is laid out at once: a
+      // search result that lands on a row further down ("Restart after a
+      // crash", P9.4) finds it built even on a small screen at large text.
       body: ListView(
         key: const ValueKey('this-phone'),
         padding: EdgeInsetsDirectional.only(
@@ -344,13 +603,18 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
           bottom: KitScreen.endPadding(context),
         ),
         children: [
-          _status(context, l10n),
-          if (_host.installed) ...[
-            SizedBox(height: tokens.sectionGap),
-            _list(context, l10n),
-            SizedBox(height: tokens.sectionGap),
-            _logFold(context, l10n),
-          ],
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _status(context, l10n),
+              if (_host.installed) ...[
+                SizedBox(height: tokens.sectionGap),
+                _list(context, l10n),
+                SizedBox(height: tokens.sectionGap),
+                _logFold(context, l10n),
+              ],
+            ],
+          ),
         ],
       ),
     );
@@ -365,6 +629,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     final working =
         _connecting ||
         _removing ||
+        _removingTool != null ||
         const {
           PhoneHostState.checking,
           PhoneHostState.starting,
@@ -524,6 +789,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     final busy =
         _connecting ||
         _removing ||
+        _removingTool != null ||
         const {
           PhoneHostState.settingUp,
           PhoneHostState.starting,
@@ -610,8 +876,14 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
                   ),
           )
         else ...[
-          const TermuxPhoneToolsRows(only: TermuxPhoneTool.storage),
-          const TermuxPhoneToolsRows(only: TermuxPhoneTool.processes),
+          const TermuxStorageRow(),
+          // Left out, not dead, when the list cannot be read: the group
+          // then draws no hairline for it either.
+          if (!_processesUnavailable)
+            PhoneProcessesRow(
+              report: _processes,
+              onTap: () => unawaited(_openProcesses()),
+            ),
         ],
         if (recoveryProfile != null)
           ManagedServerRecoveryOption(
@@ -635,6 +907,9 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
             enabled: !_removing,
             onTap: () => unawaited(_inApp(PhoneServerAction.terminal)),
           ),
+        // Destructive rows sit last (the group moves them there): each
+        // optional tool on its own, then OpenCode itself.
+        ..._toolRemoveRows(context, l10n, busy: busy, busyReason: busyReason),
         if (inApp)
           KitRow(
             key: const ValueKey('this-phone-remove'),
@@ -647,6 +922,65 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
           ),
       ],
     );
+  }
+
+  /// "Remove {tool}" for each optional tool setup installed on this host,
+  /// in the registry's order. Required parts (Linux, Node.js, OpenCode) go
+  /// only with OpenCode itself. A tool something still uses says what, and
+  /// is off (never removed from under it).
+  List<Widget> _toolRemoveRows(
+    BuildContext context,
+    AppLocalizations l10n, {
+    required bool busy,
+    required String? busyReason,
+  }) {
+    final entries = _removable;
+    if (entries == null) return const [];
+    final names = {
+      for (final entry in entries)
+        entry.component.id: entry.component.shortTitle,
+    };
+    final rows = <Widget>[];
+    for (final entry in entries) {
+      final component = entry.component;
+      if (component.required ||
+          component.native ||
+          entry.presence != ComponentPresence.installed) {
+        continue;
+      }
+      final String? neededBy;
+      switch (entry.block) {
+        case null:
+          neededBy = null;
+        case ComponentRemovalBlock.dependentInstalled ||
+            ComponentRemovalBlock.dependencyUnknown:
+          neededBy = l10n.thisPhoneRemoveToolNeededBy(
+            joinSetupNames(l10n, [
+              for (final id in entry.blockingDependents) names[id] ?? id,
+            ]),
+          );
+        default:
+          // Cannot be removed on its own here (no removal script, or its
+          // state could not be read): no row rather than a dead one.
+          continue;
+      }
+      rows.add(
+        KitRow(
+          key: ValueKey('this-phone-remove-${component.id}'),
+          leading: KitRow.icon(context, AppIconography.delete),
+          title: l10n.thisPhoneRemoveTool(component.shortTitle),
+          supporting: TextSpan(
+            text: neededBy ?? _removeDetail(l10n, component.id),
+          ),
+          supportingMaxLines: 2,
+          destructive: true,
+          enabled: !busy && neededBy == null,
+          disabledReason: neededBy ?? busyReason,
+          onTap: () => unawaited(_removeTool(component)),
+        ),
+      );
+    }
+    return rows;
   }
 
   /// The technical truth, last and folded (KIT-33): the server's log in
@@ -677,23 +1011,26 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     );
   }
 
-  /// What is installed on this phone, folded: the parts setup put there.
+  /// What is installed on this phone, folded: the parts setup put there,
+  /// on either host. What every setup installs, then the optional tools the
+  /// host's checks find (Python, AI Team, voice typing and more).
   Widget _installed(BuildContext context, AppLocalizations l10n) {
     final names = <String>[];
-    if (_host.kind == PhoneHostKind.inApp) {
-      final engine = _engine();
-      final optional = _installedOptional ?? const <String>{};
-      for (final component
-          in engine == null
-              ? const <SetupComponent>[]
-              : installableComponents(engine.registry)) {
-        if (component.required || optional.contains(component.id)) {
-          names.add(component.shortTitle);
-        }
+    final engine = _hostEngine();
+    final optional = _installedOptional ?? const <String>{};
+    for (final component
+        in engine == null
+            ? const <SetupComponent>[]
+            : installableComponents(engine.registry)) {
+      if (component.required || optional.contains(component.id)) {
+        names.add(component.shortTitle);
       }
-      if (names.isEmpty) names.add(l10n.phoneSetupLinuxTitle);
-    } else {
-      names.addAll([l10n.phoneSetupLinuxTitle, _runtimeName(_host.runtime)]);
+    }
+    if (names.isEmpty) {
+      names.add(l10n.phoneSetupLinuxTitle);
+      if (_host.kind == PhoneHostKind.termux) {
+        names.add(_runtimeName(_host.runtime));
+      }
     }
     return KitExpandRow(
       key: const ValueKey('this-phone-installed'),

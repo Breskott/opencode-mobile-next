@@ -21,6 +21,8 @@ import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import '../kit/kit_top_bar.dart';
 import '../widgets/diff_view.dart';
+import '../widgets/product_states.dart'
+    show productErrorDetails, productErrorText;
 import '../widgets/request_routes.dart';
 
 AppLocalizations _strings(BuildContext context) =>
@@ -220,7 +222,7 @@ Future<bool?> showStageRevertSheet(
                       ? l10n.reviewRevertFailed
                       : l10n.reviewRevertStageFailed,
                   error: error,
-                  details: '$error',
+                  details: productErrorDetails(error),
                 ),
               ],
             ],
@@ -396,7 +398,13 @@ class _StagedRevertScreenState extends State<StagedRevertScreen> {
         }
       } catch (error) {
         _acting = false;
-        if (mounted) setState(() => _error = '$error');
+        // Shown only as the notice's details (redacted), never as words.
+        if (mounted) {
+          setState(
+            () =>
+                _error = productErrorDetails(error) ?? productErrorText(error),
+          );
+        }
         rethrow;
       }
     }

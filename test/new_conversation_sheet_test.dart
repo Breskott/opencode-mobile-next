@@ -317,20 +317,18 @@ void main() {
       );
     });
 
-    testWidgets('where Solo is the only way, New conversation starts it '
-        'without asking', (tester) async {
-      // A Termux phone that cannot run a team, and no worktrees.
+    testWidgets('a Termux phone still offers Team: the intro\'s pre-flight '
+        'says whether it can run one, never hidden (P1.7)', (tester) async {
       debugPlatformCapabilities = const PlatformCapabilities.android();
       final controller = await _controller(
         caps: const ServerCapabilities(worktreeCreate: false),
         baseUrl: 'http://127.0.0.1:4096',
       );
       await _pumpWork(tester, controller);
-      await tester.tap(_key('workspace-new'));
-      await _settle(tester);
-      expect(_key('new-conversation-sheet'), findsNothing);
-      expect(_created(controller), 1);
-      expect(find.text('opened /chat/ses_new_1'), findsOneWidget);
+      await _openChooser(tester);
+      expect(_key('new-conversation-solo'), findsOneWidget);
+      expect(_key('new-conversation-team'), findsOneWidget);
+      expect(_created(controller), 0);
     });
   });
 }

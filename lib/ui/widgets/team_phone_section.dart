@@ -1,8 +1,9 @@
 /// Settings › Plugins › AI Team › "On this phone" (TEAM-302, 02-ux §9):
 /// the phone-hosted supervisor's status, Start / Stop, the "Android stopped
 /// the team" line with Start again, the Keep-it-running tips (spike-phone
-/// §3g) and Delete from this phone. (The one-time re-offer card is gone:
-/// the AI Team is added from This phone, programme P1.3.)
+/// §3g) and Delete from this phone. A team that is not installed or not on
+/// for a project yet is set up through phone setup v2's Add tools › AI
+/// Team and its ready page ([openTeamOnThisPhone], programme P1.7).
 ///
 /// Reads and drives [TermuxTeamRuntime] only; the plugin's own controller
 /// is left to the sheet around this section.
@@ -20,12 +21,10 @@ import 'package:flutter/widgets.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/orchestration_store.dart';
-import '../../state/phone_host.dart' show PhoneHostKind;
 import '../../state/profiles.dart';
 import '../../termux/bridge.dart';
 import '../../termux/team_runtime.dart';
 import '../app_iconography.dart';
-import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit_buttons.dart';
 import '../kit/kit_code_block.dart';
 import '../kit/kit_notice.dart';
@@ -36,7 +35,7 @@ import '../kit/kit_status_mark.dart';
 import '../kit/kit_technical_value.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
-import '../screens/this_phone_screen.dart' show openThisPhone;
+import 'product_states.dart' show productErrorDetails, productErrorText;
 import 'team_phone_onboarding.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -118,8 +117,8 @@ class TeamPhoneSection extends StatefulWidget {
   final ServerProfile profile;
   final TermuxTeamRuntime? runtime;
 
-  /// Opens This phone (to set up or resume); defaults to This phone for
-  /// Termux, where the AI Team is added.
+  /// Sets the team up (installs it, turns it on for the project); defaults
+  /// to [openTeamOnThisPhone].
   final VoidCallback? onOpenSetup;
 
   /// Called after Remove finished, so the sheet can close.
@@ -136,6 +135,10 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
   TeamRuntimeStatus? _status;
   bool _busy = false;
   String? _error;
+
+  /// The raw failure behind [_error] (script output, Termux's message),
+  /// for Copy details only.
+  String? _errorDetails;
   Timer? _poll;
 
   @override
@@ -180,6 +183,7 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
     setState(() {
       _busy = true;
       _error = null;
+      _errorDetails = null;
     });
     try {
       final status = await verb();
@@ -198,14 +202,18 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
       setState(() {
         _status = status;
         if (status.phase == TeamRuntimePhase.failed) {
-          _error = l10n.teamUiPhoneActionFailed(
-            status.lastError ?? status.reason ?? status.rawPhase,
-          );
+          _error = teamPhoneFailureText(l10n, status);
+          _errorDetails = teamPhoneFailureDetails(status);
         }
       });
     } on TermuxBridgeException catch (error) {
       if (!mounted) return;
-      setState(() => _error = l10n.teamUiPhoneActionFailed(error.message));
+      setState(() {
+        _error = l10n.teamUiPhoneActionFailed(
+          productErrorText(error, l10n: l10n),
+        );
+        _errorDetails = productErrorDetails(error);
+      });
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -267,16 +275,16 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
     setState(() {
       _busy = true;
       _error = null;
+      _errorDetails = null;
     });
     try {
       final status = await _runtime.remove();
       if (!mounted) return;
       if (status.phase == TeamRuntimePhase.failed) {
-        setState(
-          () => _error = l10n.teamUiPhoneActionFailed(
-            status.lastError ?? status.reason ?? status.rawPhase,
-          ),
-        );
+        setState(() {
+          _error = teamPhoneFailureText(l10n, status);
+          _errorDetails = teamPhoneFailureDetails(status);
+        });
         return;
       }
       // Removal turns the plugin off for the profile (03 §3), the same
@@ -303,16 +311,26 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
       widget.onRemoved?.call();
     } on TermuxBridgeException catch (error) {
       if (!mounted) return;
-      setState(() => _error = l10n.teamUiPhoneActionFailed(error.message));
+      setState(() {
+        _error = l10n.teamUiPhoneActionFailed(
+          productErrorText(error, l10n: l10n),
+        );
+        _errorDetails = productErrorDetails(error);
+      });
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  void _openSetup() {
+  Future<void> _openSetup() async {
     final open = widget.onOpenSetup;
     if (open != null) return open();
-    unawaited(openThisPhone(context, kind: PhoneHostKind.termux));
+    await openTeamOnThisPhone(
+      context,
+      widget.connection,
+      runtime: widget.runtime,
+    );
+    if (mounted) await _read();
   }
 
   @override
@@ -456,9 +474,9 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
         : status != null
         ? KitAction(
             key: const ValueKey('team-phone-open-setup'),
-            label: l10n.teamUiPhoneOpenSetup,
+            label: l10n.teamIntroSetUpPhone,
             icon: AppIconography.tools,
-            onPressed: _openSetup,
+            onPressed: () => unawaited(_openSetup()),
           )
         : null;
     final actions = KitActionBlock(primary: primary);
@@ -483,10 +501,11 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
         ],
         if (_error case final error?) ...[
           gap(),
-          KitNotice(
+          KitNotice.error(
             key: const ValueKey('team-phone-error'),
             message: error,
-            tone: AppStatusTone.failure,
+            details: _errorDetails,
+            reportSource: 'team-phone',
           ),
         ],
         if (!actions.isEmpty) ...[gap(), actions],

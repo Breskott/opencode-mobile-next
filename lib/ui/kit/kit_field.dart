@@ -260,7 +260,8 @@ class KitField extends StatefulWidget {
   /// At most two lines of guidance; wraps, never cut.
   final String? helper;
 
-  /// Replaces [helper]; a live region.
+  /// Replaces [helper]; a live region. Words that say what to change
+  /// ("Enter a port from 1 to 65535"), never exception or server text.
   final String? error;
 
   /// The limit; the counter appears from 80 % of it.

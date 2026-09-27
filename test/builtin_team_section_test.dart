@@ -43,6 +43,13 @@ class _FakeTeam extends BuiltinTeam {
   BuiltinTeamStage? failAt;
   int prepares = 0;
   int turnOns = 0;
+  int turnOffs = 0;
+
+  @override
+  Future<void> turnOff() async {
+    turnOffs++;
+    state = BuiltinTeamState(installed: true, hasCity: true, rigs: state.rigs);
+  }
 
   @override
   Future<BuiltinTeamState> status() async => state;
@@ -248,10 +255,13 @@ void main() {
     expect(markOf(tester, BuiltinTeamStage.preparing), KitMarkState.done);
     expect(markOf(tester, BuiltinTeamStage.addingProject), KitMarkState.failed);
     expect(markOf(tester, BuiltinTeamStage.starting), KitMarkState.waiting);
+    // The script's output is not the words: it is said plainly, and the
+    // output itself stays under Details.
     expect(
-      find.text(_en.aiteamComponentFailed('dirty tables')),
+      find.text(_en.aiteamComponentFailed(_en.productErrorDevice)),
       findsOneWidget,
     );
+    expect(find.text('dirty tables'), findsNothing);
     expect(find.byKey(const ValueKey('builtin-team-turn-on')), findsOneWidget);
     expect(find.text(_en.aiteamComponentTurnOnExpectation), findsNothing);
     expect(profile.orchestration, isNull);
@@ -346,5 +356,37 @@ void main() {
       scripts[2],
       BuiltinTeam.rigScript('/root/projects/my-app', 'my-app'),
     );
+  });
+
+  testWidgets('Turn off asks first, says what stays, turns the team off for '
+      'good and takes its config off the profile (P1.4)', (tester) async {
+    useTeam();
+    team.state = const BuiltinTeamState(
+      installed: true,
+      hasCity: true,
+      rigs: ['my-app'],
+      running: true,
+    );
+    profile.orchestration = BuiltinTeam.config();
+    await pumpSection(tester);
+    // One act ends the team's work, and it is the lasting one.
+    expect(find.text(_en.aiteamComponentTurnOff), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('builtin-team-turn-off')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('builtin-team-turn-off-sheet')),
+      findsOneWidget,
+    );
+    expect(find.text(_en.aiteamComponentTurnOffKept), findsOneWidget);
+    expect(team.turnOffs, 0, reason: 'the question changes nothing');
+    await tester.tap(
+      find.byKey(const ValueKey('builtin-team-turn-off-confirm')),
+    );
+    await tester.pumpAndSettle();
+    expect(team.turnOffs, 1);
+    expect(profile.orchestration, isNull);
+    // Off: turning it on again is the way back.
+    expect(find.byKey(const ValueKey('builtin-team-turn-on')), findsOneWidget);
+    await leave(tester);
   });
 }

@@ -655,7 +655,7 @@ void main() {
   // ---------------------------------------------------------------------
 
   group('confirmation', () {
-    testWidgets('Approve on a safe prompt is one tap; Deny is two-step', (
+    testWidgets('Approve on a safe prompt is one tap; so is Deny', (
       tester,
     ) async {
       final (team, gateway) = await boot(
@@ -684,25 +684,11 @@ void main() {
       // Denying is not destructive: the neutral tone, no red.
       expect(denyStyle.foregroundColor?.resolve({}), isNot(error));
 
+      // Deny sends at once, as on the card (slice-P4.1c): saying no loses
+      // nothing, so no second step.
       await tester.tap(deny);
-      await tester.pumpAndSettle();
-      expect(confirmSheet, findsOneWidget);
-      expect(find.text('Deny this request?'), findsOneWidget);
-      expect(gateway.calls, isEmpty);
-      // Cancel: nothing is sent.
-      await tester.tap(find.byKey(const ValueKey('kit-confirm-cancel')));
       await tester.pumpAndSettle();
       expect(confirmSheet, findsNothing);
-      expect(gateway.calls, isEmpty);
-
-      await tester.tap(deny);
-      await tester.pumpAndSettle();
-      final yes = tester.widget<FilledButton>(
-        find.descendant(of: confirmYes, matching: find.byType(FilledButton)),
-      );
-      expect(yes.style?.backgroundColor?.resolve({}), isNot(fill));
-      await tester.tap(confirmYes);
-      await tester.pumpAndSettle();
       expect(gateway.calls, hasLength(1));
       expect(gateway.calls.single.target, 'req-safe');
       expect((gateway.calls.single.arg as GateResponse).confirmed, isFalse);
@@ -1010,7 +996,7 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('Activity: Sent chip, row leaves only on confirmation', (
+    testWidgets('Activity: Sending receipt, row leaves only on confirmation', (
       tester,
     ) async {
       final (team, gateway) = await boot(
@@ -1030,7 +1016,8 @@ void main() {
       await tester.pump();
       expect(row, findsOneWidget);
       expect(chip, findsOneWidget);
-      expect(find.text('Sent'), findsOneWidget);
+      // The one receipt's moving word (slice-P4.1c).
+      expect(find.text('Sending…'), findsOneWidget);
 
       // Still sent after a while; the row stays.
       await tester.pump(const Duration(seconds: 30));
@@ -1115,7 +1102,14 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(chip, findsOneWidget);
-      expect(find.text('Not accepted'), findsOneWidget);
+      // The card's refused receipt says why, above the answers again.
+      expect(
+        find.descendant(
+          of: chip,
+          matching: find.textContaining('Not accepted'),
+        ),
+        findsOneWidget,
+      );
       // Rejected never removes the row.
       expect(row, findsOneWidget);
       // Only a confirmation does.

@@ -183,8 +183,8 @@ void main() {
         ),
       ),
     );
-    // The agent is chosen in place under "Your choice" (no dialog); the
-    // choice is staged until the apply action.
+    // The agent is chosen from the footer's menu (no dialog); the choice
+    // is staged until the apply action.
     await tester.tap(find.byKey(const Key('model-picker-agent')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('model-picker-agent-plan')));

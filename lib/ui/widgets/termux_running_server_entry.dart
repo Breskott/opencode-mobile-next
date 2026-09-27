@@ -10,6 +10,7 @@ import '../../state/profiles.dart';
 import '../../state/termux_running_server.dart';
 import '../../termux/bridge.dart';
 import 'local_server_row.dart';
+import 'product_states.dart' show productErrorText;
 import 'safety_confirms.dart';
 
 /// What the card can do to the phone's server, injected so the card stays a
@@ -215,7 +216,7 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
         setState(
           () => _failure = error.message.trim().isEmpty
               ? fallbackFailure
-              : error.message.trim(),
+              : productErrorText(error),
         );
       }
     } catch (_) {

@@ -338,12 +338,12 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('Compaction failed'), findsOneWidget);
-      // What it means for the reader first, then the server's reason.
+      // What it means for the reader; the server's own text is not copy.
       expect(
         find.textContaining('still too long for the model'),
         findsOneWidget,
       );
-      expect(find.textContaining('ran out of room'), findsOneWidget);
+      expect(find.textContaining('ran out of room'), findsNothing);
       // An old failure is history: nothing to press.
       expect(find.byKey(const Key('transcript-notice-action')), findsNothing);
     });
@@ -511,10 +511,6 @@ void main() {
       );
       await tester.pump();
       expect(find.text('Use model and mode'), findsOneWidget);
-      expect(
-        find.byKey(const Key('model-picker-session-scope-note')),
-        findsNothing,
-      );
     });
 
     testWidgets('session scope labels the apply for this session', (
@@ -524,16 +520,9 @@ void main() {
         picker(await controller(), ModelPickerApplyScope.session),
       );
       await tester.pump();
+      // The apply action names the scope; the sheet's subtitle adds when it
+      // applies (test/revamp/slice_p3_3_model_sheet_test.dart).
       expect(find.text('Use for this conversation'), findsOneWidget);
-      // The scope note sits under "Your choice" now; no options dialog.
-      expect(
-        find.byKey(const Key('model-picker-session-scope-note')),
-        findsOneWidget,
-      );
-      expect(
-        find.text("Applies to this conversation's next turns."),
-        findsOneWidget,
-      );
     });
 
     testWidgets('new-sessions scope labels the apply as the default', (
@@ -545,7 +534,7 @@ void main() {
       await tester.pump();
       expect(find.text('Use for new conversations'), findsOneWidget);
       expect(
-        find.byKey(const Key('model-picker-session-scope-note')),
+        find.text("Applies to this conversation's next turns."),
         findsNothing,
       );
     });

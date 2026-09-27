@@ -12,7 +12,6 @@ import 'package:opencode_mobile/domain/session_command_handoff.dart';
 import 'package:opencode_mobile/domain/session_handoff.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/ui/screens/active_context_screen.dart';
-import 'package:opencode_mobile/ui/screens/context_capsule_screen.dart';
 import 'package:opencode_mobile/ui/screens/run_result_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_context_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_export_screen.dart';
@@ -494,48 +493,6 @@ final kSessionMiscArea = CensusArea(
       await kit.navigator.maybePop();
       await kit.settle();
       kit.expectText('Discard your note changes?');
-    }),
-
-    // -- context-capsule --------------------------------------------------------------
-    CensusShot('context-capsule', state: 'entry', (kit) async {
-      final scope = ValueNotifier(true);
-      await kit.pumpApp(
-        ContextCapsuleScreen(
-          sessionTitle: 'Fix flaky checkout test',
-          scopeChanges: scope,
-          isCurrent: () => scope.value,
-          pickImage: (_) async => const PromptAttachment(
-            filename: 'checkout-error.png',
-            mime: 'image/png',
-            url:
-                'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=',
-          ),
-        ),
-      );
-      kit.expectText('Context capsule');
-      await kit.tapText('Error');
-      await kit.enterText(
-        find.byType(TextField).last,
-        'Payment timed out after returning from the bank app.',
-      );
-    }),
-    CensusShot('context-capsule', state: 'review', (kit) async {
-      final scope = ValueNotifier(true);
-      await kit.pumpApp(
-        ContextCapsuleScreen(
-          sessionTitle: 'Fix flaky checkout test',
-          scopeChanges: scope,
-          isCurrent: () => scope.value,
-          pickImage: null,
-        ),
-      );
-      await kit.tapText('Error');
-      await kit.enterText(
-        find.byType(TextField).last,
-        'Payment timed out after returning from the bank app.',
-      );
-      await kit.scrollTo(find.text('Apply to draft'));
-      kit.expectVisible(find.text('Apply to draft').hitTestable());
     }),
 
     // -- run-result --------------------------------------------------------------------

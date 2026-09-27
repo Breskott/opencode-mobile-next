@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import '../../builtin/builtin_folders.dart';
 import '../../builtin/builtin_linux.dart';
 import '../../builtin/builtin_server.dart';
+import '../../domain/server_gateway.dart' show WorkspaceProject;
+import '../../domain/team_directories.dart';
 import '../../domain/workspace_paths.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
+import '../../state/interaction_defaults.dart';
 import '../../termux/bridge.dart';
 import '../../termux/termux_folders.dart';
 import '../app_iconography.dart';
@@ -51,17 +54,37 @@ class ProjectFolderActions {
             looksLikeInAppServer(profile));
   }
 
+  /// The name a new project starts with when the server has no project of
+  /// its own yet ("my-app" on first run, P6.6): the field holds it, ready to
+  /// create or to type over. Null while the list is not loaded, or once
+  /// there is a project (the server's root and the AI Team's folders do not
+  /// count), so the field shows only its example.
+  static String? suggestedName(List<WorkspaceProject>? projects) {
+    if (projects == null) return null;
+    final own = projects
+        .where(
+          (project) =>
+              !isProtectedWorkspaceDirectory(project.directory) &&
+              !isAiTeamDirectory(project.directory),
+        )
+        .toList();
+    final proposal = InteractionDefaults.project(own).value;
+    return proposal != null && proposal.needsCreation ? proposal.name : null;
+  }
+
   /// Asks for a folder name, creates `/root/projects/<name>` on the managed
   /// server, and opens it. Returns the opened directory, or null when the
   /// user cancelled or the folder could not be created or opened.
+  /// [suggestedName] fills the field ([ProjectFolderActions.suggestedName]).
   ///
   /// The folder is made while the dialog is open, so a failure is said
   /// under the name with the name kept (map project-folder-new-dialog,
   /// "create fails").
   static Future<String?> createFolder(
     BuildContext context,
-    ConnectionController controller,
-  ) async {
+    ConnectionController controller, {
+    String? suggestedName,
+  }) async {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     // Termux never serves 4097, so the address alone picks the right
     // creator here; were Ubuntu missing, the bridge says so itself.
@@ -72,6 +95,7 @@ class ProjectFolderActions {
       title: l10n.projectFolderCreate,
       label: l10n.projectFolderNameLabel,
       confirmLabel: l10n.projectFolderCreateAction,
+      initial: suggestedName,
       hint: l10n.projectFolderNameHint,
       helper: l10n.projectFolderCreateHelper(managedProjectsDirectory),
       cancelLabel: l10n.projectFolderCancel,
@@ -92,7 +116,9 @@ class ProjectFolderActions {
           }
           return null;
         } on BuiltinLinuxException catch (error) {
-          return l10n.projectFolderCreateFailed(error.message);
+          return l10n.projectFolderCreateFailed(
+            productErrorText(error, l10n: l10n),
+          );
         } catch (error) {
           return productErrorText(error);
         }
@@ -221,7 +247,7 @@ class ProjectFolderActions {
         await _alert(
           context,
           l10n.projectFolderCreateFailedTitle,
-          l10n.projectFolderCreateFailed(error.toString()),
+          l10n.projectFolderCreateFailed(productErrorText(error, l10n: l10n)),
         );
       }
       return null;
@@ -287,7 +313,9 @@ class ProjectFolderActions {
           try {
             missing = !await inApp.exists(path);
           } on BuiltinLinuxException catch (error) {
-            return l10n.projectFolderCheckFailed(error.message);
+            return l10n.projectFolderCheckFailed(
+              productErrorText(error, l10n: l10n),
+            );
           }
           return null;
         },
@@ -330,7 +358,7 @@ class ProjectFolderActions {
         await _alert(
           context,
           l10n.projectFolderCreateFailedTitle,
-          l10n.projectFolderCreateFailed(error.message),
+          l10n.projectFolderCreateFailed(productErrorText(error, l10n: l10n)),
         );
       }
       return null;

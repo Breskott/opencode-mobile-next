@@ -12,6 +12,7 @@ import '../../termux/local_agent_runtime.dart';
 import '../kit/kit.dart';
 import 'local_agent_onboarding.dart';
 import 'local_server_row.dart';
+import 'product_states.dart' show productErrorText;
 import 'safety_confirms.dart';
 
 enum _Operation { starting, restarting, stopping, removing, signingIn }
@@ -276,7 +277,7 @@ class _LocalAgentServerEntryState extends State<LocalAgentServerEntry>
     try {
       opened = await _runtime.openSignIn();
     } on LocalAgentFailure catch (failure) {
-      problem = failure.message;
+      problem = productErrorText(failure, l10n: l10n);
     }
     if (!mounted) return;
     setState(() {

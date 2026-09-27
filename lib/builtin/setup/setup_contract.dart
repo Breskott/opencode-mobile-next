@@ -27,6 +27,7 @@ class SetupComponent {
     this.downloadBytes,
     this.removeScript,
     this.presenceScript,
+    this.sizeScript,
     this.why,
     this.summary,
     this.native = false,
@@ -67,6 +68,11 @@ class SetupComponent {
   /// Native components use the native installed status instead.
   final String? presenceScript;
 
+  /// What removing it would give back, for the remove question: prints
+  /// kilobytes on its last line and exits 0. Null (or a failure) leaves
+  /// the figure out rather than guessing.
+  final String? sizeScript;
+
   /// Installed by native code rather than a script (the Linux base itself).
   final bool native;
 
@@ -98,6 +104,7 @@ class SetupComponent {
     downloadBytes: bytes,
     removeScript: removeScript,
     presenceScript: presenceScript,
+    sizeScript: sizeScript,
     why: why,
     summary: summary,
     native: native,

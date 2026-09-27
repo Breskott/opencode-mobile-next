@@ -21,6 +21,8 @@ import '../../api2/models.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
 import 'external_link.dart';
+import 'product_states.dart'
+    show productErrorDetails, productErrorKind, productErrorText;
 import 'request_routes.dart';
 
 /// Delivers the assembled answer payload (active fields only) to the caller.
@@ -654,13 +656,9 @@ class _FormAnswers extends ChangeNotifier {
     onClose();
   }
 
-  static String _messageOf(Object error) {
-    final text = error.toString();
-    for (final prefix in const ['Exception: ', 'Bad state: ']) {
-      if (text.startsWith(prefix)) return text.substring(prefix.length);
-    }
-    return text;
-  }
+  /// The failure in words; the raw text stays in [bannerCause] for the
+  /// notice's Copy details and Report, never as the words.
+  static String _messageOf(Object error) => productErrorText(error);
 
   static String _two(int value) => value.toString().padLeft(2, '0');
 
@@ -774,6 +772,8 @@ class _FormBodyState extends State<_FormBody> {
                     key: const Key('form-error-banner'),
                     message: banner,
                     error: _answers.bannerCause,
+                    errorKind: productErrorKind(_answers.bannerCause),
+                    details: productErrorDetails(_answers.bannerCause),
                     reportSource: 'form-sheet',
                   ),
                 ),

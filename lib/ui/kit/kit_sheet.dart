@@ -162,6 +162,13 @@ class KitDraft {
 /// the header draws no close button while a secondary is shown. Esc, back,
 /// the handle and a swipe still close the sheet.
 ///
+/// [footer] is a short line of settings that go with the primary (the
+/// thinking level and agent beside "Use for this conversation"): it is
+/// pinned with the actions, above them, so it stays in reach while the
+/// body scrolls. It is at most one line of chips and brings its own
+/// [KitTokens.space2] below it (nothing when it has nothing to show); a
+/// longer choice opens from it as a menu, never a dialog over the sheet.
+///
 /// A long list is given as [itemCount] and [itemBuilder] instead of [body]:
 /// the frame builds only the rows in view (a virtualised list), where a
 /// [body] is laid out whole inside the frame's scroll view. Pass exactly
@@ -182,6 +189,7 @@ Future<T?> showKitSheet<T>(
   ValueListenable<KitAction?>? secondaryListenable,
   bool secondaryDismisses = false,
   List<KitAction> tertiary = const [],
+  WidgetBuilder? footer,
   ValueListenable<bool>? dirty,
   KitDraft? draft,
   ValueListenable<bool>? loading,
@@ -233,6 +241,7 @@ Future<T?> showKitSheet<T>(
         secondaryListenable: secondaryListenable,
         secondaryDismisses: secondaryDismisses,
         tertiary: tertiary,
+        footer: footer,
         dirty: dirty,
         draft: draft,
         loading: loading,
@@ -268,6 +277,7 @@ class KitSheet extends StatelessWidget {
     this.primary,
     this.secondary,
     this.tertiary = const [],
+    this.footer,
     this.onClose,
     this.loading = false,
     this.handle = true,
@@ -291,6 +301,7 @@ class KitSheet extends StatelessWidget {
     this.primary,
     this.secondary,
     this.tertiary = const [],
+    this.footer,
     this.onClose,
     this.loading = false,
     this.handle = true,
@@ -318,6 +329,10 @@ class KitSheet extends StatelessWidget {
   final KitAction? primary;
   final KitAction? secondary;
   final List<KitAction> tertiary;
+
+  /// Pinned above the actions: a short line of settings that go with the
+  /// primary (see [showKitSheet]).
+  final Widget? footer;
 
   /// Null hides the close button (while an irreversible step runs).
   final VoidCallback? onClose;
@@ -354,7 +369,10 @@ class KitSheet extends StatelessWidget {
     final l10n = _l10n(context);
     final subtitle = this.subtitle;
     final hasActions =
-        primary != null || secondary != null || tertiary.isNotEmpty;
+        primary != null ||
+        secondary != null ||
+        tertiary.isNotEmpty ||
+        footer != null;
     Widget top = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -479,11 +497,29 @@ class KitSheet extends StatelessWidget {
               tokens.rail,
               tokens.space4,
             ),
-            child: KitActionBlock(
-              primary: primary,
-              secondary: secondary,
-              tertiary: tertiary,
-            ),
+            child: footer == null
+                ? KitActionBlock(
+                    primary: primary,
+                    secondary: secondary,
+                    tertiary: tertiary,
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // The footer brings its own space below it, so an
+                      // empty one takes no room.
+                      KeyedSubtree(
+                        key: const ValueKey('kit-sheet-footer'),
+                        child: footer!,
+                      ),
+                      KitActionBlock(
+                        primary: primary,
+                        secondary: secondary,
+                        tertiary: tertiary,
+                      ),
+                    ],
+                  ),
           ),
       ],
     );
@@ -1139,6 +1175,7 @@ class _KitSheetHost extends StatefulWidget {
     required this.secondaryListenable,
     required this.secondaryDismisses,
     required this.tertiary,
+    required this.footer,
     required this.dirty,
     required this.draft,
     required this.loading,
@@ -1161,6 +1198,7 @@ class _KitSheetHost extends StatefulWidget {
   final ValueListenable<KitAction?>? secondaryListenable;
   final bool secondaryDismisses;
   final List<KitAction> tertiary;
+  final WidgetBuilder? footer;
   final ValueListenable<bool>? dirty;
   final KitDraft? draft;
   final ValueListenable<bool>? loading;
@@ -1291,6 +1329,9 @@ class _KitSheetHostState extends State<_KitSheetHost> {
     final showClose = !(widget.secondaryDismisses && secondary != null);
     final loading = widget.loading?.value ?? false;
     final frameFill = fill || shape == _KitModalShape.side;
+    final footer = widget.footer == null
+        ? null
+        : Builder(builder: widget.footer!);
     final itemBuilder = widget.itemBuilder;
     Widget content = itemBuilder != null
         ? KitSheet.list(
@@ -1304,6 +1345,7 @@ class _KitSheetHostState extends State<_KitSheetHost> {
             primary: primary,
             secondary: secondary,
             tertiary: widget.tertiary,
+            footer: footer,
             loading: loading,
             handle: bottom,
             fill: frameFill,
@@ -1320,6 +1362,7 @@ class _KitSheetHostState extends State<_KitSheetHost> {
             primary: primary,
             secondary: secondary,
             tertiary: widget.tertiary,
+            footer: footer,
             loading: loading,
             handle: bottom,
             fill: frameFill,

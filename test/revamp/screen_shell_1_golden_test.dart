@@ -10,16 +10,20 @@
 //   flutter test --update-goldens test/revamp/screen_shell_1_golden_test.dart
 // and look at every changed image before committing it.
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart' show kSecondaryMouseButton;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/domain/while_away.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
+import 'package:opencode_mobile/state/automatic_activity.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_iconography.dart';
@@ -97,6 +101,101 @@ Future<_Controller> _controller({bool requests = true}) async {
     ),
   };
   controller.questions = {'q-1': _question};
+  return controller;
+}
+
+/// P6.2 While you were away: one request waiting, one conversation working,
+/// then what finished and what the app did by itself, newest first. Fixed
+/// times, so the clock words never change.
+final _awayNow = DateTime(2026, 9, 27, 11, 0);
+
+Future<_Controller> _awayController() async {
+  AutomaticActivityController.resetShared();
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
+        const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+        (_) async => null,
+      );
+  SharedPreferences.setMockInitialValues({
+    'oc.profiles': jsonEncode([
+      {
+        'id': 'laptop',
+        'name': 'Laptop',
+        'baseUrl': 'http://192.168.1.20:4096',
+        'username': '',
+      },
+    ]),
+    'oc.activeProfile': 'laptop',
+  });
+  final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+  await store.load();
+  final controller = _Controller(store)
+    ..repository = _Repository()
+    ..status = StreamStatus.connected
+    ..directory = '/work/oc_app';
+  int ms(Duration ago) => _awayNow.subtract(ago).millisecondsSinceEpoch;
+  controller.sessionsById = {
+    'ses_run': Session(
+      id: 'ses_run',
+      title: 'Build the release',
+      directory: '/work/oc_app',
+    ),
+    'ses_docs': Session(
+      id: 'ses_docs',
+      title: 'Update the changelog',
+      directory: '/work/oc_app',
+      time: SessionTime(
+        created: ms(const Duration(hours: 1)),
+        updated: ms(const Duration(minutes: 40)),
+        idle: ms(const Duration(minutes: 40)),
+      ),
+    ),
+    'ses_fix': Session(
+      id: 'ses_fix',
+      title: 'Fix the login redirect',
+      directory: '/work/oc_app',
+    ),
+  };
+  controller.busySessions = {'ses_run'};
+  controller.permissions = {
+    'perm-1': PermissionRequest(
+      id: 'perm-1',
+      sessionID: 'ses_run',
+      permission: 'edit',
+      patterns: const ['lib/main.dart'],
+    ),
+  };
+  final project = controller.automaticActivityProject;
+  await controller.recordServerAct(
+    profileId: 'laptop',
+    kind: AutomaticActKind.reconnect,
+    eventId: 'reconnect',
+    at: _awayNow.subtract(const Duration(minutes: 12)),
+  );
+  await controller.recordAutomaticAct(
+    profileId: 'laptop',
+    location: project,
+    kind: AutomaticActKind.permissionApproval,
+    target: 'Fix the login redirect',
+    eventId: 'allowed',
+    at: _awayNow.subtract(const Duration(hours: 1, minutes: 5)),
+    sessionId: 'ses_fix',
+  );
+  await controller.recordAutomaticAct(
+    profileId: 'laptop',
+    location: project,
+    kind: AutomaticActKind.queuedSend,
+    target: 'Fix the login redirect',
+    eventId: 'queued',
+    at: _awayNow.subtract(const Duration(hours: 2)),
+    sessionId: 'ses_fix',
+  );
+  await controller.recordServerAct(
+    profileId: 'laptop',
+    kind: AutomaticActKind.heatPause,
+    eventId: 'heat',
+    at: _awayNow.subtract(const Duration(hours: 3)),
+  );
   return controller;
 }
 
@@ -203,6 +302,23 @@ void main() {
         },
       );
     });
+
+    for (final size in [_phone, _wide]) {
+      testWidgets('inbox while you were away ${size.width} ($theme)', (
+        tester,
+      ) async {
+        final controller = await _awayController();
+        addTearDown(controller.dispose);
+        addTearDown(AutomaticActivityController.resetShared);
+        await _shot(
+          tester,
+          'shell_activity_away',
+          light: light,
+          size: size,
+          home: ActivityScreen(controller: controller, now: () => _awayNow),
+        );
+      });
+    }
 
     testWidgets('inbox all clear ($theme)', (tester) async {
       final controller = await _controller(requests: false);

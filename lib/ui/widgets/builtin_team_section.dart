@@ -21,11 +21,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../builtin/builtin_linux.dart' show BuiltinLinuxException;
 import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../builtin/setup/aiteam_scripts.dart';
-import '../../builtin/setup/components.dart' show SetupComponentIds;
-import '../../builtin/setup/phone_setup.dart';
-import '../../builtin/setup/setup_contract.dart';
 import '../../builtin/team/builtin_team.dart';
 import '../../builtin/team/builtin_team_job.dart';
 import '../../diagnostics/failed_job_report.dart';
@@ -39,14 +37,18 @@ import '../kit/kit_details_fold.dart';
 import '../kit/kit_illustration.dart';
 import '../kit/kit_notice.dart';
 import '../kit/kit_progress.dart';
+import '../kit/kit_redact.dart';
 import '../kit/kit_row.dart';
+import '../kit/kit_sheet.dart';
 import '../kit/kit_status_mark.dart';
 import '../kit/kit_surface.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import '../kit/scenes/team_scenes.dart';
-import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/phone_setup/phone_setup_selection.dart' show setupSizeText;
+import 'product_states.dart' show productErrorDetails, productErrorText;
+import 'team_phone_onboarding.dart'
+    show TeamPhoneReadyScreen, openTeamOnThisPhone;
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -57,22 +59,42 @@ BuiltinTeam? debugBuiltinTeam;
 BuiltinTeam get _sharedTeam => debugBuiltinTeam ?? (_team ??= BuiltinTeam());
 BuiltinTeam? _team;
 
+/// The in-app team the phone's screens share (this section and the team's
+/// ready page, [TeamPhoneReadyScreen]), so one turn-on runs at a time.
+BuiltinTeam get sharedBuiltinTeam => _sharedTeam;
+
+/// After the in-app team was turned off or removed (P1.4): every saved
+/// profile whose AI Team config points at the in-app team loses it, with
+/// the plugin's cached state, so no screen keeps reading a team that is
+/// gone. A remote or Termux team is left as it is.
+Future<void> forgetBuiltinTeam(ConnectionController connection) async {
+  for (final profile in [...connection.store.profiles]) {
+    if (!BuiltinTeam.isBuiltinConfig(profile.orchestration)) continue;
+    final current = connection.orchestration;
+    if (current != null && current.profileId == profile.id) {
+      await current.remove();
+    } else {
+      await connection.orchestrationStore.sweep(profile.id);
+    }
+    profile.orchestration = null;
+    await connection.store.upsert(profile);
+  }
+  connection.syncOrchestration();
+}
+
 /// Opens Add tools with AI Team switched on and, when the person goes
-/// ahead, starts the install and shows its progress. Tests replace it.
+/// ahead, installs it and turns it on for the project: the one "Set up AI
+/// Team on this phone" ([openTeamOnThisPhone]). Tests replace it.
 @visibleForTesting
 Future<void> Function(BuildContext context)? debugAddAiTeam;
 
-Future<void> _addAiTeam(BuildContext context) async {
+Future<void> _addAiTeam(
+  BuildContext context,
+  ConnectionController connection,
+) async {
   final override = debugAddAiTeam;
   if (override != null) return override(context);
-  final ids = await showPhoneSetupCustomize(
-    context,
-    addMode: true,
-    selected: const {SetupComponentIds.aiTeam},
-  );
-  if (ids == null || ids.isEmpty || !context.mounted) return;
-  await PhoneSetup.engine.run(ids, params: SetupJobParams.adding(ids));
-  if (context.mounted) await openPhoneSetupProgress(context);
+  await openTeamOnThisPhone(context, connection);
 }
 
 /// The words for a failed turn-on or start.
@@ -86,8 +108,13 @@ String builtinTeamFailureText(
   if (error.timedOut) {
     return l10n.aiteamComponentFailed(l10n.aiteamComponentFailedTimeout);
   }
+  // The script's last line when it is a sentence for people; its output
+  // otherwise is said in words (the output itself is under Details).
   final lines = error.detail.trim().split('\n');
-  return l10n.aiteamComponentFailed(lines.isEmpty ? '' : lines.last.trim());
+  final last = lines.isEmpty ? '' : lines.last.trim();
+  return l10n.aiteamComponentFailed(
+    productErrorText(BuiltinLinuxException(last), l10n: l10n),
+  );
 }
 
 String builtinTeamStageText(
@@ -141,6 +168,56 @@ String builtinTeamProjectName(String path) {
       ? path.substring(0, path.length - 1)
       : path;
   return trimmed.substring(trimmed.lastIndexOf('/') + 1);
+}
+
+/// A team job's stages, each with its mark: done with how long it took,
+/// the current one with its time so far (or failed), the rest waiting.
+/// [project] is the project's name, for "Adding {project}".
+List<Widget> builtinTeamStageRows(
+  AppLocalizations l10n,
+  BuiltinTeamJob job, {
+  required bool failed,
+  required String project,
+}) {
+  final current = job.stage;
+  final rows = <Widget>[];
+  var reached = false;
+  for (final stage in job.stages) {
+    final took = job.took(stage);
+    final isCurrent = stage == current;
+    final KitMarkState mark;
+    String? supporting;
+    if (isCurrent) {
+      reached = true;
+      final elapsed = job.elapsed(stage);
+      mark = failed ? KitMarkState.failed : KitMarkState.working;
+      if (!failed && elapsed != null) {
+        supporting = l10n.aiteamComponentStageSoFar(
+          builtinTeamElapsedText(elapsed),
+        );
+      }
+    } else if (took != null) {
+      mark = KitMarkState.done;
+      supporting = l10n.aiteamComponentStageTook(builtinTeamElapsedText(took));
+    } else {
+      // A stage the job skipped (a store made during setup) reads as done
+      // once a later one began.
+      mark = reached || current == null
+          ? KitMarkState.waiting
+          : KitMarkState.done;
+    }
+    rows.add(
+      KitRow(
+        key: ValueKey('builtin-team-stage-${stage.name}'),
+        padding: EdgeInsets.zero,
+        leading: KitStatusMark(state: mark),
+        title: builtinTeamStageText(l10n, stage, project),
+        supporting: supporting == null ? null : TextSpan(text: supporting),
+        titleKey: isCurrent ? const ValueKey('builtin-team-stage') : null,
+      ),
+    );
+  }
+  return rows;
 }
 
 class BuiltinTeamSection extends StatefulWidget {
@@ -248,7 +325,7 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
   String get _notice => _copy(context).aiteamComponentNotice;
 
   Future<void> _add() async {
-    await _addAiTeam(context);
+    await _addAiTeam(context, widget.connection);
     if (mounted) await _load();
   }
 
@@ -271,7 +348,12 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
       }
     } catch (error) {
       if (mounted) {
-        setState(() => _error = _copy(context).aiteamComponentFailed('$error'));
+        setState(() {
+          _error = _copy(context).aiteamComponentFailed(
+            productErrorText(error, l10n: _copy(context)),
+          );
+          _detail = productErrorDetails(error);
+        });
       }
     } finally {
       if (mounted) {
@@ -318,7 +400,57 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
     );
   }
 
-  Future<void> _stop() => _run(_team.stop);
+  /// Turns the team off for good (P1.4): it stops, and stays off when the
+  /// app comes back, until the person turns it on again. Asks first; the
+  /// question says what stays. The profile then loses the team's config,
+  /// so the Team card and the AI Team screens stop reading a team that is
+  /// not running.
+  Future<void> _turnOff() async {
+    if (_working) return;
+    final l10n = _copy(context);
+    final confirmed = await showKitConfirm(
+      context,
+      title: l10n.aiteamComponentTurnOffTitle,
+      body: l10n.aiteamComponentTurnOffBody,
+      confirmLabel: l10n.aiteamComponentTurnOff,
+      kind: KitConfirmKind.stop,
+      icon: AppIconography.stop,
+      consequenceItems: [
+        KitConsequence(
+          l10n.aiteamComponentTurnOffKept,
+          mark: KitConsequenceMark.kept,
+        ),
+      ],
+      sheetKey: const ValueKey('builtin-team-turn-off-sheet'),
+      confirmKey: const ValueKey('builtin-team-turn-off-confirm'),
+    );
+    if (!confirmed || !mounted) return;
+    final connection = widget.connection;
+    setState(() {
+      _busy = true;
+      _error = null;
+      _detail = null;
+    });
+    try {
+      await _team.turnOff();
+      await forgetBuiltinTeam(connection);
+    } catch (error) {
+      // Plain words; the bridge's own (redacted) text only under Details.
+      if (mounted) {
+        setState(() {
+          _error = l10n.aiteamComponentTurnOffFailed;
+          _detail = error is BuiltinLinuxException
+              ? error.message
+              : KitRedact.text('$error');
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+        await _load();
+      }
+    }
+  }
 
   /// Tries again what the origin's hook does after every merge; the section
   /// then shows the new outcome (still left alone when it is not safe).
@@ -415,7 +547,14 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
     if (job.stages.isNotEmpty && (job.running || jobError != null)) {
       children
         ..add(SizedBox(height: tokens.space1))
-        ..addAll(_stageRows(l10n, job, failed: jobError != null));
+        ..addAll(
+          builtinTeamStageRows(
+            l10n,
+            job,
+            failed: jobError != null,
+            project: builtinTeamProjectName(job.project ?? _project ?? ''),
+          ),
+        );
     }
     final error =
         _error ??
@@ -471,57 +610,6 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
         children: children,
       ),
     );
-  }
-
-  /// The job's stages, each with its mark: done with how long it took, the
-  /// current one with its time so far (or failed), the rest waiting.
-  List<Widget> _stageRows(
-    AppLocalizations l10n,
-    BuiltinTeamJob job, {
-    required bool failed,
-  }) {
-    final project = builtinTeamProjectName(job.project ?? _project ?? '');
-    final current = job.stage;
-    final rows = <Widget>[];
-    var reached = false;
-    for (final stage in job.stages) {
-      final took = job.took(stage);
-      final isCurrent = stage == current;
-      final KitMarkState mark;
-      String? supporting;
-      if (isCurrent) {
-        reached = true;
-        final elapsed = job.elapsed(stage);
-        mark = failed ? KitMarkState.failed : KitMarkState.working;
-        if (!failed && elapsed != null) {
-          supporting = l10n.aiteamComponentStageSoFar(
-            builtinTeamElapsedText(elapsed),
-          );
-        }
-      } else if (took != null) {
-        mark = KitMarkState.done;
-        supporting = l10n.aiteamComponentStageTook(
-          builtinTeamElapsedText(took),
-        );
-      } else {
-        // A stage the job skipped (a store made during setup) reads as
-        // done once a later one began.
-        mark = reached || current == null
-            ? KitMarkState.waiting
-            : KitMarkState.done;
-      }
-      rows.add(
-        KitRow(
-          key: ValueKey('builtin-team-stage-${stage.name}'),
-          padding: EdgeInsets.zero,
-          leading: KitStatusMark(state: mark),
-          title: builtinTeamStageText(l10n, stage, project),
-          supporting: supporting == null ? null : TextSpan(text: supporting),
-          titleKey: isCurrent ? const ValueKey('builtin-team-stage') : null,
-        ),
-      );
-    }
-    return rows;
   }
 
   List<Widget> _installed(
@@ -622,14 +710,15 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
           tertiary.add(bring);
         }
       }
-      // Stopping ends the team's work on this phone: a quiet action, last.
-      if (on && state.running) {
+      // Turning off ends the team's work on this phone until it is turned
+      // on again: a quiet action, last.
+      if (on) {
         tertiary.add(
           KitAction(
-            key: const ValueKey('builtin-team-stop'),
-            label: l10n.aiteamComponentStop,
+            key: const ValueKey('builtin-team-turn-off'),
+            label: l10n.aiteamComponentTurnOff,
             icon: AppIconography.stop,
-            onPressed: _stop,
+            onPressed: () => unawaited(_turnOff()),
           ),
         );
       }

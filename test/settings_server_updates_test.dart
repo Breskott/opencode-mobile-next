@@ -409,20 +409,23 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    // Durable grants are a row of the server's group: they are about how
-    // the agent works there, not about privacy.
-    final entry = find.byKey(const ValueKey('saved-permissions-entry'));
+    // Durable grants sit inside What runs by itself (P6.1), the first row
+    // of Conversations: they are about how the agent works.
+    final entry = find.byKey(const ValueKey('settings-automation'));
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('settings-group-server')),
+        of: find.byKey(const ValueKey('settings-group-conversations')),
         matching: entry,
       ),
       findsOneWidget,
     );
     await tester.ensureVisible(entry);
     await tester.pumpAndSettle();
-    expect(find.text('Always allowed actions'), findsOneWidget);
     await tester.tap(entry);
+    await tester.pumpAndSettle();
+    final inside = find.byKey(const ValueKey('automation-saved-permissions'));
+    expect(find.text('Always allowed actions'), findsOneWidget);
+    await tester.tap(inside);
     await tester.pumpAndSettle();
 
     expect(find.byType(SavedPermissionsScreen), findsOneWidget);
@@ -712,13 +715,13 @@ void main() {
     );
     for (final key in const [
       'settings-model-and-mode',
-      'settings-category-plugins',
+      'settings-tools',
       'default-shell-settings-entry',
       'settings-category-server',
       'settings-category-background',
       'settings-category-appearance',
       'settings-category-privacy',
-      'settings-help',
+      'settings-setup-guide',
       'settings-about-notices',
     ]) {
       await tester.scrollUntilVisible(

@@ -1114,19 +1114,6 @@
           "destructive": false
         },
         {
-          "id": "chat-composer-context-capsule",
-          "type": "icon-button",
-          "label": "[add context capsule]",
-          "key": null,
-          "line": 7288,
-          "action": "navigate",
-          "target": "context-capsule",
-          "targetWidget": "ContextCapsuleScreen",
-          "effect": "Host wiring of _ChatComposer (chat/composer.dart:21): onContextCapsule -> _addContextCapsule() (line 2920) pushes ContextCapsuleScreen.",
-          "gates": [],
-          "destructive": false
-        },
-        {
           "id": "chat-composer-send",
           "type": "button",
           "label": "[Send]",

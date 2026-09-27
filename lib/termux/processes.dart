@@ -1,5 +1,12 @@
-/// Running now (TEAM-305): every process the app's Termux user owns, grouped
-/// by ancestry, and polite-then-forced stopping through `~/.oc/tools.sh`.
+/// Running on this phone (TEAM-305, P5.3): every process the app's Termux
+/// user owns, grouped by ancestry, and polite-then-forced stopping through
+/// `~/.oc/tools.sh`.
+///
+/// The scanner's groups say who owns a process; [PhoneProcessKind] says
+/// what runs, in the six kinds the page names (OpenCode server, AI Team,
+/// Claude Code, dev services, terminals, helpers). Activity is measured
+/// between two scans ([TermuxProcessReport.activityOf]), never read from
+/// `ps`'s lifetime average; a reading that is missing stays unknown.
 library;
 
 import 'dart:convert';
@@ -29,6 +36,19 @@ enum TermuxProcessGroup {
 }
 
 enum TermuxOrphanReason { parentGone, cpuNoOwner }
+
+/// What runs, as the page groups it (P5.3). Declared in the page's order.
+enum PhoneProcessKind {
+  openCodeServer,
+  aiTeam,
+  claudeCode,
+  devServices,
+  terminals,
+  helpers,
+}
+
+/// Whether a process used the processor between the last two scans.
+enum PhoneProcessActivity { busy, idle, unknown }
 
 class TermuxProcess {
   const TermuxProcess({
@@ -60,6 +80,57 @@ class TermuxProcess {
   final bool protected;
 
   bool get isOrphan => group == TermuxProcessGroup.orphans;
+
+  /// The Termux app's own process: the host itself, never a background
+  /// process of it and never stopped from the list.
+  bool get isHostApp =>
+      name.startsWith('com.termux') || cmd.startsWith('com.termux');
+
+  /// Whether the list may offer to stop it: not protected by the scanner
+  /// (the server, sshd) and not the Termux app itself.
+  bool get stoppable => !protected && !isHostApp;
+
+  /// Memory in whole megabytes, null when the reading is missing (a live
+  /// process never has none).
+  int? get memoryMb {
+    if (rssKb <= 0) return null;
+    final mb = (rssKb + 512) ~/ 1024;
+    return mb < 1 ? 1 : mb;
+  }
+
+  static const _shells = {'bash', 'zsh', 'fish', 'sh', 'dash', 'ash', 'login'};
+
+  static final _claude = RegExp(
+    r'(^|[/ ])claude(-code)?( |$)|@anthropic-ai/claude-code',
+  );
+
+  static final _devTool = RegExp(
+    r'GradleDaemon|GradleWrapperMain|KotlinCompileDaemon|analysis_server|'
+    r'frontend_server|gradle',
+  );
+
+  /// What runs: the scanner's owner first (the server, the team), then
+  /// what the process is by its name and command.
+  PhoneProcessKind get kind {
+    switch (group) {
+      case TermuxProcessGroup.opencodeServer:
+        return PhoneProcessKind.openCodeServer;
+      case TermuxProcessGroup.aiTeam:
+        return PhoneProcessKind.aiTeam;
+      case _:
+        break;
+    }
+    if (_claude.hasMatch(name) || _claude.hasMatch(cmd)) {
+      return PhoneProcessKind.claudeCode;
+    }
+    if (group == TermuxProcessGroup.buildDaemons || _devTool.hasMatch(cmd)) {
+      return PhoneProcessKind.devServices;
+    }
+    if (!isOrphan && !protected && _shells.contains(name)) {
+      return PhoneProcessKind.terminals;
+    }
+    return PhoneProcessKind.helpers;
+  }
 
   static TermuxProcess? fromJson(Object? raw) {
     if (raw is! Map) return null;
@@ -96,6 +167,36 @@ class TermuxProcessReport {
   final List<TermuxProcess> processes;
 
   int get count => processes.length;
+
+  /// Android 12 and later stop the oldest child processes of apps when all
+  /// apps together run more than this many (the phantom process limit's
+  /// default). An advisory budget: the phone's owner may have lifted it,
+  /// and other apps' processes count too.
+  static const androidBackgroundLimit = 32;
+
+  /// The processes that count against [androidBackgroundLimit]: everything
+  /// Termux started, not the Termux app itself.
+  int get backgroundCount => processes.where((p) => !p.isHostApp).length;
+
+  /// Whether [process] was busy since the same process in [previous]: two
+  /// or more seconds of processor time and at least a quarter of the time
+  /// between the scans. Unknown without an earlier reading of the same
+  /// process (same pid and name, still running longer than before).
+  static PhoneProcessActivity activityOf(
+    TermuxProcess process,
+    TermuxProcessReport? previous,
+  ) {
+    final before = previous?.processes
+        .where((p) => p.pid == process.pid && p.name == process.name)
+        .firstOrNull;
+    if (before == null) return PhoneProcessActivity.unknown;
+    final wall = process.elapsedSeconds - before.elapsedSeconds;
+    final cpu = process.cpuSeconds - before.cpuSeconds;
+    if (wall <= 0 || cpu < 0) return PhoneProcessActivity.unknown;
+    return cpu >= 2 && cpu * 4 >= wall
+        ? PhoneProcessActivity.busy
+        : PhoneProcessActivity.idle;
+  }
 
   double get totalCpuPct => processes.fold(0.0, (sum, p) => sum + p.cpuPct);
 
@@ -194,6 +295,22 @@ class TermuxProcesses {
       await TermuxBridge.runTool(
         'procs-stop',
         argument: '$pid',
+        timeout: const Duration(seconds: 25),
+      ),
+    );
+  }
+
+  /// Stops exactly [pids] (one kind's processes, confirmed together), each
+  /// checked again by the script: gone and protected ones are refused.
+  static Future<TermuxProcessStopResult> stopPids(List<int> pids) async {
+    if (pids.isEmpty || pids.any((pid) => pid <= 1)) {
+      throw ArgumentError.value(pids, 'pids');
+    }
+    if (pids.length == 1) return stopPid(pids.single);
+    return TermuxProcessStopResult.parse(
+      await TermuxBridge.runTool(
+        'procs-stop',
+        argument: pids.join(','),
         timeout: const Duration(seconds: 25),
       ),
     );

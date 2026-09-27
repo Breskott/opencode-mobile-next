@@ -7,7 +7,10 @@ import '../../api/product_repository.dart';
 import '../../api2/models.dart' show Api2FormInfo;
 import '../../domain/completion_digest.dart';
 import '../../domain/orchestration_gateway.dart';
+import '../../domain/return_brief.dart';
+import '../../domain/while_away.dart';
 import '../../l10n/app_localizations.dart';
+import '../../state/automatic_activity.dart';
 import '../../state/connection.dart';
 import '../../state/orchestration.dart';
 import '../app_iconography.dart';
@@ -46,7 +49,12 @@ import 'team/gate_sheet.dart';
 /// 2. **Running** — sessions busy right now, with their subagent counts;
 ///    while the connection is down they read "Last seen running" instead of
 ///    a live mark.
-/// 3. **Finished while you were away** — completion digests, on demand.
+/// 3. **While you were away** — what finished (completion digests, on
+///    demand) and every automatic act the app did (a reconnect, a request
+///    allowed by itself, a queued message sent, a heat pause), newest first
+///    in the same list. An act names what it was done to, says what was
+///    done and when in one line (with Undo where the act has one) and opens
+///    that thing's page. None of it is ever Needs you.
 ///
 /// From an expanded window the Inbox is two panes (KitScreen.twoPane): the
 /// list on the start side, and the picked request answered in the detail
@@ -109,6 +117,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Object? _digestScope;
   final Set<(String, int)> _expandedDigests = {};
   final Set<(String, int)> _dismissedDigests = {};
+
+  /// Automatic acts hidden by a Dismiss whose Undo window is still open.
+  final Set<String> _dismissedActs = {};
+
+  /// How an Undo of an automatic act ended, until the row goes.
+  final Map<String, AutomaticUndoResult> _undoResults = {};
   _Pick? _picked;
 
   Object get _currentDigestScope => (
@@ -125,6 +139,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
     _digestScope = _currentDigestScope;
     _expandedDigests.clear();
     _dismissedDigests.clear();
+    _dismissedActs.clear();
+    _undoResults.clear();
     _picked = null;
   }
 
@@ -175,10 +191,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
     _openChat(sessionID);
   }
 
-  /// Hides one digest at once and offers Undo (DATA-11: a local act the
-  /// app can restore).
-  void _dismissDigest(String sessionID, int idle) {
-    final key = (sessionID, idle);
+  /// Hides one digest at once and offers Undo (DATA-11 b: a deferred local
+  /// act). When the window closes the dismissal is saved as the same
+  /// "reviewed" mark Work's rows use, so it holds after a restart; a save
+  /// that fails brings the row back.
+  void _dismissDigest(Session session, int idle) {
+    final key = (session.id, idle);
+    final controller = widget.controller;
+    final scope = controller.returnBriefScope;
     setState(() {
       _dismissedDigests.add(key);
       _expandedDigests.remove(key);
@@ -190,6 +210,16 @@ class _ActivityScreenState extends State<ActivityScreen> {
       onUndo: () {
         if (mounted) setState(() => _dismissedDigests.remove(key));
       },
+      onCommit: () async {
+        try {
+          await controller.dismissReturnBrief(
+            ReturnBrief.single(ReturnBriefRun(session: session, idleAt: idle)),
+            expectedScope: scope,
+          );
+        } catch (_) {
+          if (mounted) setState(() => _dismissedDigests.remove(key));
+        }
+      },
     );
   }
 
@@ -198,10 +228,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
   /// "Finished" carrying the state (owner rule R1: no headed sections). A
   /// row unfolds to its digest card. Only conversations the person has not
   /// looked at since they finished, where the server keeps that record.
-  List<Widget> _finishedRows() {
+  List<({DateTime at, Widget row})> _finishedRows() {
     final l10n = _l10n(context);
     final controller = widget.controller;
     final scope = _currentDigestScope;
+    final reviewed = controller.returnBriefAcknowledgement;
     final sessions =
         controller.sessionsById.values.where((session) {
           final idle = session.time?.idle;
@@ -212,6 +243,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
               idle > 0 &&
               !controller.busySessions.contains(session.id) &&
               !_dismissedDigests.contains((session.id, idle)) &&
+              !reviewed.coversRun(session.id, idle) &&
               (!controller.supportsSessionReadState ||
                   controller.isSessionUnread(session));
         }).toList()..sort((a, b) {
@@ -228,75 +260,181 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final now = (widget.now ?? DateTime.now)();
     return [
       for (final session in sessions)
-        KitExpandRow(
-          key: ValueKey('activity-digest-${session.id}'),
-          headerKey: ValueKey('activity-digest-${session.id}-header'),
-          leading: KitStatusMark(
-            state: KitMarkState.done,
-            label: l10n.workFinished,
-          ),
-          title: presentedSessionTitle(
-            session,
-            fallback: l10n.globalSessionsUntitled,
-            l10n: l10n,
-          ),
-          supporting: TextSpan(
-            text: l10n.activityFinishedRow(
-              relativeTimeLabel(session.time!.idle!, now: now, l10n: l10n),
-            ),
-          ),
-          expanded: _expandedDigests.contains((
-            session.id,
-            session.time!.idle!,
-          )),
-          onExpansionChanged: (_) => setState(() {
-            final key = (session.id, session.time!.idle!);
-            if (!_expandedDigests.remove(key)) _expandedDigests.add(key);
-          }),
-          children: [
-            CompletionDigestCard(
-              key: ValueKey((scope, session.id, session.time!.idle)),
-              digest: CompletionDigest(
-                sessionID: session.id,
-                idleAt: session.time!.idle!,
-                changedFiles:
-                    session.summary == null || session.summary!.files < 0
-                    ? null
-                    : session.summary!.files,
-                pendingDecisions: !pendingKnown
-                    ? null
-                    : controller.awaitingPermissions
-                              .where((p) => p.sessionID == session.id)
-                              .length +
-                          controller.questions.values
-                              .where((q) => q.sessionID == session.id)
-                              .length +
-                          (controller.capabilities.forms
-                              ? controller.forms.values
-                                    .where((f) => f.sessionID == session.id)
-                                    .length
-                              : 0),
-              ),
-              onOpenConversation: () {
-                if (scope == _currentDigestScope) _openChat(session.id);
-              },
-              onReview: () => _reviewDigest(session.id, scope),
-              onRunResults: () {
-                if (scope != _currentDigestScope) return;
-                pushKitPage<void>(
-                  context,
-                  (_) => RunResultScreen(
-                    controller: controller,
-                    sessionID: session.id,
-                  ),
-                );
-              },
-              onDismiss: () => _dismissDigest(session.id, session.time!.idle!),
-            ),
-          ],
+        (
+          at: DateTime.fromMillisecondsSinceEpoch(session.time!.idle!),
+          row: _finishedRow(session, scope, pendingKnown, now, l10n),
         ),
     ];
   }
+
+  Widget _finishedRow(
+    Session session,
+    Object scope,
+    bool pendingKnown,
+    DateTime now,
+    AppLocalizations l10n,
+  ) {
+    final controller = widget.controller;
+    return KitExpandRow(
+      key: ValueKey('activity-digest-${session.id}'),
+      headerKey: ValueKey('activity-digest-${session.id}-header'),
+      leading: KitStatusMark(
+        state: KitMarkState.done,
+        label: l10n.workFinished,
+      ),
+      title: presentedSessionTitle(
+        session,
+        fallback: l10n.globalSessionsUntitled,
+        l10n: l10n,
+      ),
+      supporting: TextSpan(
+        text: l10n.activityFinishedRow(
+          relativeTimeLabel(session.time!.idle!, now: now, l10n: l10n),
+        ),
+      ),
+      expanded: _expandedDigests.contains((session.id, session.time!.idle!)),
+      onExpansionChanged: (_) => setState(() {
+        final key = (session.id, session.time!.idle!);
+        if (!_expandedDigests.remove(key)) _expandedDigests.add(key);
+      }),
+      children: [
+        CompletionDigestCard(
+          key: ValueKey((scope, session.id, session.time!.idle)),
+          digest: CompletionDigest(
+            sessionID: session.id,
+            idleAt: session.time!.idle!,
+            changedFiles: session.summary == null || session.summary!.files < 0
+                ? null
+                : session.summary!.files,
+            pendingDecisions: !pendingKnown
+                ? null
+                : controller.awaitingPermissions
+                          .where((p) => p.sessionID == session.id)
+                          .length +
+                      controller.questions.values
+                          .where((q) => q.sessionID == session.id)
+                          .length +
+                      (controller.capabilities.forms
+                          ? controller.forms.values
+                                .where((f) => f.sessionID == session.id)
+                                .length
+                          : 0),
+          ),
+          onOpenConversation: () {
+            if (scope == _currentDigestScope) _openChat(session.id);
+          },
+          onReview: () => _reviewDigest(session.id, scope),
+          onRunResults: () {
+            if (scope != _currentDigestScope) return;
+            pushKitPage<void>(
+              context,
+              (_) => RunResultScreen(
+                controller: controller,
+                sessionID: session.id,
+              ),
+            );
+          },
+          onDismiss: () => _dismissDigest(session, session.time!.idle!),
+        ),
+      ],
+    );
+  }
+
+  /// Every automatic act of this server and project the person has not
+  /// dismissed, one row each (P6.2, AUTO-4, AUTO-13): the thing it was done
+  /// to as the title, what was done and when as its line. Never Needs you:
+  /// the done mark, no count, no badge.
+  List<({DateTime at, Widget row})> _automaticRows() {
+    final controller = widget.controller;
+    final history = controller.automaticActivity;
+    if (history == null) return const [];
+    final l10n = _l10n(context);
+    final now = (widget.now ?? DateTime.now)();
+    return [
+      for (final act in controller.automaticActsHere)
+        if (!_dismissedActs.contains(act.id))
+          (
+            at: act.occurredAt,
+            row: _AutomaticActRow(
+              key: ValueKey('activity-auto-${act.id}'),
+              act: act,
+              now: now,
+              title: _actTarget(act, l10n),
+              words: _actWords(act, l10n),
+              undoResult: _undoResults[act.id],
+              onOpen: act.sessionId == null
+                  ? null
+                  : () => _openChat(act.sessionId!),
+              onUndo: history.canUndo(act.id)
+                  ? () => _undoAct(history, act.id)
+                  : null,
+              dismiss: _dismissAct(history, act, l10n),
+            ),
+          ),
+    ];
+  }
+
+  /// What the act was done to: the conversation's current title where the
+  /// app knows it, else the name saved with the act.
+  String _actTarget(AutomaticAct act, AppLocalizations l10n) {
+    final session = act.sessionId == null
+        ? null
+        : widget.controller.sessionsById[act.sessionId];
+    if (session != null) {
+      return presentedSessionTitle(
+        session,
+        fallback: l10n.globalSessionsUntitled,
+        l10n: l10n,
+      );
+    }
+    return act.summary;
+  }
+
+  /// What was done, in the person's language (the saved summary is only
+  /// the thing's name).
+  static String _actWords(AutomaticAct act, AppLocalizations l10n) =>
+      switch (act.kind) {
+        AutomaticActKind.reconnect => l10n.whileAwayActReconnected,
+        AutomaticActKind.restart => l10n.whileAwayActRestarted,
+        AutomaticActKind.heatPause => l10n.whileAwayActHeatPaused,
+        AutomaticActKind.heatStop => l10n.whileAwayActHeatStopped,
+        AutomaticActKind.heatResume => l10n.whileAwayActHeatResumed,
+        AutomaticActKind.update => l10n.whileAwayActUpdated,
+        AutomaticActKind.permissionApproval => l10n.whileAwayActAllowed,
+        AutomaticActKind.queuedSend => l10n.whileAwayActQueuedSent,
+        AutomaticActKind.other => l10n.whileAwayActOther,
+      };
+
+  Future<void> _undoAct(AutomaticActivityController history, String id) async {
+    final result = await history.undo(id);
+    if (mounted) setState(() => _undoResults[id] = result);
+  }
+
+  /// Dismiss: the row goes at once, with Undo; the history keeps the act
+  /// but stops listing it once the window closes (DATA-11 b). A save that
+  /// fails brings the row back.
+  KitSwipeAction _dismissAct(
+    AutomaticActivityController history,
+    AutomaticAct act,
+    AppLocalizations l10n,
+  ) => KitSwipeAction(
+    id: ValueKey('activity-auto-dismiss-${act.id}'),
+    label: l10n.whileAwayDismiss,
+    icon: AppIconography.close,
+    undoMessage: l10n.whileAwayDismissed(_actTarget(act, l10n)),
+    onAct: () async {
+      if (!mounted) return false;
+      setState(() => _dismissedActs.add(act.id));
+      return true;
+    },
+    onUndo: () {
+      if (mounted) setState(() => _dismissedActs.remove(act.id));
+    },
+    onCommit: () async {
+      final saved = await history.acknowledge([act.id]);
+      if (!saved && mounted) setState(() => _dismissedActs.remove(act.id));
+    },
+  );
 
   @override
   void initState() {
@@ -737,7 +875,32 @@ class _ActivityScreenState extends State<ActivityScreen> {
           onTap: () => _openChat(session.id),
         ),
     ];
-    final finishedRows = _finishedRows();
+    // While you were away: what finished and what the app did by itself,
+    // newest first, together (P6.2).
+    final awayRows = [..._finishedRows(), ..._automaticRows()]
+      ..sort((a, b) => b.at.compareTo(a.at));
+    final finishedRows = [for (final entry in awayRows) entry.row];
+    final history = controller.automaticActivity;
+    final historyTrouble = history == null
+        ? null
+        : history.corruptHistory
+        ? l10n.whileAwayHistoryUnreadable
+        : history.persistenceFailed
+        ? l10n.whileAwayHistoryUnsaved
+        : null;
+    final historyNotice = historyTrouble == null
+        ? null
+        : _Section(
+            child: Padding(
+              padding: EdgeInsetsDirectional.symmetric(
+                horizontal: KitTokens.of(context).gutter,
+              ),
+              child: KitNotice(
+                key: const ValueKey('activity-auto-history-notice'),
+                message: historyTrouble,
+              ),
+            ),
+          );
     // The one list (owner rule R1, 2026-09-27): no headed state sections.
     // Most urgent first: what waits on the person here, the server's own
     // forms, what other saved servers wait on, running work (and check-ins
@@ -807,6 +970,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   : _refresh,
             ),
           if (quiet.isNotEmpty) oneList(quiet),
+          ?historyNotice,
         ],
       );
     } else {
@@ -836,6 +1000,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 ),
               ),
             if (rows.isNotEmpty) oneList(rows),
+            ?historyNotice,
           ],
         ),
       );
@@ -882,6 +1047,82 @@ void _openPermissionSheet(
     ),
   ),
 );
+
+/// One automatic act in While you were away, a row like a finished one:
+/// the done mark, the thing it was done to as the title, and the
+/// KitAutoLine's words as the supporting line ("Reconnected by itself ·
+/// 12m ago"). Undo only where the act has a real inverse. A tap opens that
+/// thing's page; Dismiss is a swipe and its menu twin.
+class _AutomaticActRow extends StatelessWidget {
+  const _AutomaticActRow({
+    super.key,
+    required this.act,
+    required this.title,
+    required this.words,
+    required this.dismiss,
+    required this.now,
+    this.undoResult,
+    this.onOpen,
+    this.onUndo,
+  });
+
+  final AutomaticAct act;
+  final String title;
+  final String words;
+  final KitSwipeAction dismiss;
+  final DateTime now;
+  final AutomaticUndoResult? undoResult;
+  final VoidCallback? onOpen;
+  final VoidCallback? onUndo;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _l10n(context);
+    final undone = act.undone || undoResult == AutomaticUndoResult.undone;
+    // An Undo that went out and was never confirmed is never retried and
+    // never reads as done (STATE-10).
+    final line = undone
+        ? l10n.whileAwayActUndone(words)
+        : switch (undoResult) {
+            AutomaticUndoResult.failed => l10n.whileAwayUndoFailed(words),
+            AutomaticUndoResult.unconfirmed => l10n.whileAwayUndoUnconfirmed(
+              words,
+            ),
+            _ when act.undoAttempted => l10n.whileAwayUndoUnconfirmed(words),
+            _ => words,
+          };
+    final undo = undone ? null : onUndo;
+    return KitRow(
+      leading: KitStatusMark(
+        state: KitMarkState.done,
+        label: l10n.whileAwayMark,
+      ),
+      title: title,
+      supporting: TextSpan(
+        children: [
+          KitReceipt.span(context, KitReceiptState.confirmed, label: line),
+          TextSpan(
+            text: relativeTimeLabel(
+              act.occurredAt.millisecondsSinceEpoch,
+              now: now,
+              l10n: l10n,
+            ),
+          ),
+        ],
+      ),
+      supportingMaxLines: 2,
+      onTap: onOpen,
+      swipe: dismiss,
+      trailing: undo == null
+          ? null
+          : KitButton.tertiary(
+              key: ValueKey('activity-auto-undo-${act.id}'),
+              label: l10n.kitUndoAction,
+              onPressed: undo,
+            ),
+    );
+  }
+}
 
 /// A section of the list: the VL gap above each group (LAY-7).
 class _Section extends StatelessWidget {
@@ -1168,13 +1409,16 @@ class ActivityGateTile extends StatelessWidget {
         ],
       ),
       supportingMaxLines: 2,
-      trailing: record == null || record.status == MutationStatus.confirmed
-          ? const KitChevron()
-          : TeamReceiptChip(
-              key: ValueKey('activity-team-gate-${gate.id}-receipt'),
-              record: record,
-              onOpen: open,
-            ),
+      trailing:
+          (record == null
+              ? null
+              : teamGateRowReceipt(
+                  context,
+                  record,
+                  key: ValueKey('activity-team-gate-${gate.id}-receipt'),
+                  onOpen: open,
+                )) ??
+          const KitChevron(),
       onTap: open,
     );
   }

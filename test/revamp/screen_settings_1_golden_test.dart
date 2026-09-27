@@ -179,6 +179,14 @@ void main() {
         light: light,
       );
     });
+    testWidgets('what runs by itself · $mode', (tester) async {
+      await _scene(
+        tester,
+        SettingsScene.automation,
+        'settings_automation_loaded',
+        light: light,
+      );
+    });
     testWidgets('settings hub two panes · $mode', (tester) async {
       await _scene(
         tester,
@@ -309,6 +317,15 @@ void main() {
       tester,
       SettingsScene.privacy,
       'settings_privacy_loaded',
+      light: false,
+      size: _wide,
+    );
+  });
+  testWidgets('what runs by itself wide · dark', (tester) async {
+    await _scene(
+      tester,
+      SettingsScene.automation,
+      'settings_automation_loaded',
       light: false,
       size: _wide,
     );

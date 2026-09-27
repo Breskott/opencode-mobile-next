@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../api/models.dart';
 import '../../l10n/app_localizations.dart';
+import '../../state/interaction_defaults.dart';
 import '../../state/review_handoff.dart';
 import '../app_iconography.dart';
 import '../app_theme.dart' show AppStatusTone;
@@ -25,6 +26,7 @@ import '../kit/kit_tokens.dart';
 import '../kit/kit_top_bar.dart';
 import '../kit/kit_undo.dart';
 import '../kit/motion/kit_refresh.dart';
+import '../widgets/default_notices.dart';
 import '../widgets/product_states.dart' show productErrorText;
 import '../widgets/reader_preferences.dart';
 
@@ -58,7 +60,7 @@ class ReviewWorkspace extends StatefulWidget {
     this.loadDiffs,
     this.loadWorkingTreeDiffs,
     this.loadBranchDiffs,
-    this.initialScope = ReviewDiffScope.session,
+    this.initialScope,
     this.initialFile,
     this.handoff,
     this.cacheKey,
@@ -73,7 +75,12 @@ class ReviewWorkspace extends StatefulWidget {
   final ReviewDiffLoader? loadDiffs;
   final ReviewDiffLoader? loadWorkingTreeDiffs;
   final ReviewDiffLoader? loadBranchDiffs;
-  final ReviewDiffScope initialScope;
+
+  /// The view to open, when the caller means one. Without it the page picks
+  /// the view that has changes (P6.6 "defaults instead of questions"): this
+  /// conversation's first, then uncommitted, then the whole branch, and
+  /// says so once when that is not the first view.
+  final ReviewDiffScope? initialScope;
   final String? initialFile;
 
   /// When present, review findings stage as structured references on the
@@ -142,6 +149,15 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
   /// The file the diff shows now, as the diff's header last drew it.
   String? _shownPath;
   late ReviewDiffScope _scope;
+
+  /// The view is still the page's own pick: no caller named one and the
+  /// person has not chosen one. Only then does an empty first view give
+  /// way to one with changes, and only on the first load.
+  late bool _scopeIsDefault;
+
+  /// Said once, when the page opened a view other than the first because
+  /// only that one has changes.
+  String? _defaultNotice;
   String? _pendingInitialFile;
   int _loadGeneration = 0;
   bool _refreshing = false;
@@ -160,9 +176,9 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
   void initState() {
     super.initState();
     final scopes = _availableScopes;
-    _scope = scopes.contains(widget.initialScope)
-        ? widget.initialScope
-        : scopes.first;
+    final wanted = widget.initialScope;
+    _scope = wanted != null && scopes.contains(wanted) ? wanted : scopes.first;
+    _scopeIsDefault = wanted == null && scopes.length > 1;
     _pendingInitialFile = widget.initialFile;
     _load();
   }
@@ -193,13 +209,27 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
         : ReviewWorkspace._cache[_cacheKeyFor(scope)];
     if (_diffs == null && cached != null) _apply(cached);
     try {
-      final diffs = await _loaderFor(scope)();
+      var diffs = await _loaderFor(scope)();
       if (!mounted || generation != _loadGeneration) return;
       if (_cacheKeyFor(scope) case final key?) {
         ReviewWorkspace._remember(key, diffs);
       }
+      var shown = scope;
+      if (_scopeIsDefault) {
+        _scopeIsDefault = false;
+        if (diffs.isEmpty) {
+          final picked = await _viewWithChanges(scope);
+          if (!mounted || generation != _loadGeneration) return;
+          if (picked != null) {
+            shown = _fromDefault(picked.choice.value!);
+            diffs = picked.diffs;
+            setState(() => _scope = shown);
+            unawaited(_announceDefault(picked.choice));
+          }
+        }
+      }
       _apply(diffs);
-      unawaited(_prefetchOthers(scope));
+      unawaited(_prefetchOthers(shown));
     } catch (error) {
       if (mounted && generation == _loadGeneration) {
         setState(() => _error = error);
@@ -213,6 +243,68 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
 
   String? _cacheKeyFor(ReviewDiffScope scope) =>
       widget.cacheKey == null ? null : '${widget.cacheKey}|${scope.name}';
+
+  /// The first view with changes when [empty] has none, in the order
+  /// [InteractionDefaults.review] prefers. Each view is read at most once
+  /// (the prefetch would read it anyway); one that fails counts as unknown
+  /// and is never picked.
+  Future<({DefaultChoice<DefaultReviewScope> choice, List<FileDiff> diffs})?>
+  _viewWithChanges(ReviewDiffScope empty) async {
+    final counts = <DefaultReviewScope, int?>{_asDefault(empty): 0};
+    final loaded = <ReviewDiffScope, List<FileDiff>>{};
+    for (final scope in _availableScopes) {
+      if (scope == empty) continue;
+      try {
+        final diffs = await _loaderFor(scope)();
+        if (_cacheKeyFor(scope) case final key?) {
+          ReviewWorkspace._remember(key, diffs);
+        }
+        loaded[scope] = diffs;
+        counts[_asDefault(scope)] = diffs.length;
+        // The preferred order is the loaders' order: stop at the first.
+        if (diffs.isNotEmpty) break;
+      } catch (_) {
+        counts[_asDefault(scope)] = null;
+      }
+      if (!mounted) return null;
+    }
+    final choice = InteractionDefaults.review(counts);
+    final value = choice.value;
+    if (value == null) return null;
+    final scope = _fromDefault(value);
+    return (choice: choice, diffs: loaded[scope]!);
+  }
+
+  static DefaultReviewScope _asDefault(ReviewDiffScope scope) =>
+      switch (scope) {
+        ReviewDiffScope.session => DefaultReviewScope.session,
+        ReviewDiffScope.workingTree => DefaultReviewScope.workingTree,
+        ReviewDiffScope.branch => DefaultReviewScope.branch,
+      };
+
+  static ReviewDiffScope _fromDefault(DefaultReviewScope scope) =>
+      switch (scope) {
+        DefaultReviewScope.session => ReviewDiffScope.session,
+        DefaultReviewScope.workingTree => ReviewDiffScope.workingTree,
+        DefaultReviewScope.branch => ReviewDiffScope.branch,
+      };
+
+  Future<void> _announceDefault(
+    DefaultChoice<DefaultReviewScope> choice,
+  ) async {
+    final said = await claimDefaultNotice(
+      kind: DefaultKind.review,
+      choice: choice,
+      profileId: widget.profileId,
+    );
+    if (said == null || !mounted) return;
+    final scope = _fromDefault(choice.value!);
+    setState(
+      () => _defaultNotice = _l10n.defaultReviewScopeNotice(
+        _ReviewScopePicker._scopeLabel(_l10n, scope),
+      ),
+    );
+  }
 
   /// Loads the views not on screen, one at a time, into the cache.
   Future<void> _prefetchOthers(ReviewDiffScope shown) async {
@@ -268,6 +360,8 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
   void _selectScope(ReviewDiffScope scope) {
     if (_scope == scope) return;
     setState(() {
+      _scopeIsDefault = false;
+      _defaultNotice = null;
       _scope = scope;
       _diffs = null;
       _error = null;
@@ -365,6 +459,15 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
             scopes: _availableScopes,
             selected: _scope,
             onSelected: _selectScope,
+          ),
+        if (_defaultNotice case final said?)
+          onRails(
+            KitNotice(
+              key: const Key('review-default-scope'),
+              message: said,
+              dismissLabel: l10n.workspaceDismissNotice,
+              onDismiss: () => setState(() => _defaultNotice = null),
+            ),
           ),
         if (diffs != null && error != null)
           onRails(

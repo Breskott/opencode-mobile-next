@@ -197,12 +197,12 @@ void main() {
         });
       }
 
-      testWidgets('AI Team sheet, off', (tester) async {
+      testWidgets('AI Team page, off (from the Plugins row)', (tester) async {
         final c = await library3Server();
         addTearDown(c.dispose);
         await _shot(
           tester,
-          'settings_team_plugin_sheet_off',
+          'settings_team_page_off',
           light: light,
           home: library3Plugins(c),
           act: () =>

@@ -62,8 +62,6 @@ class E7VoiceModelArabicFixture extends AppLocalizationsEn {
   @override
   String get e7ModelUiAgent => 'الوكيل';
   @override
-  String get e7ModelUiNoAgents => 'لا توجد وكلاء متاحة';
-  @override
   String get e7ModelUiServerDefault => 'إعداد الخادم الافتراضي';
   @override
   String get e7ModelUiProvider => 'مزوّد الخدمة';

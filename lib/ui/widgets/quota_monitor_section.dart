@@ -324,6 +324,9 @@ class _Source extends StatelessWidget {
       target.provider,
     );
     final snapshot = observation.snapshot;
+    // Attention is reserved for Needs you (LOOK-4): a pause or a wait for
+    // Wi-Fi is neutral, and a source that could not be verified stopped
+    // the reads, so it is said as a failure.
     final (status, tone) = switch (observation.status) {
       QuotaMonitorStatus.disabled => (
         l10n.quotaMonitorDisabled,
@@ -343,11 +346,11 @@ class _Source extends StatelessWidget {
       ),
       QuotaMonitorStatus.paused => (
         l10n.quotaMonitorPaused,
-        AppStatusTone.attention,
+        AppStatusTone.neutral,
       ),
       QuotaMonitorStatus.wifiRequired => (
         l10n.quotaMonitorWifiRequired,
-        AppStatusTone.attention,
+        AppStatusTone.neutral,
       ),
       QuotaMonitorStatus.unavailable => (
         l10n.quotaUnavailable,
@@ -355,7 +358,7 @@ class _Source extends StatelessWidget {
       ),
       QuotaMonitorStatus.sourceChanged => (
         l10n.quotaMonitorSourceChanged,
-        AppStatusTone.attention,
+        AppStatusTone.failure,
       ),
     };
     final origin = Uri.tryParse(profile.baseUrl)?.hasScheme == true

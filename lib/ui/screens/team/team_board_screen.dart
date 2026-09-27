@@ -474,7 +474,7 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
                 icon: AppIconography.cloudOff,
                 tone: AppStatusTone.neutral,
                 title: l10n.teamUiStateNotAnsweringTitle,
-                body: l10n.workServerKeepsTrying,
+                body: teamNotAnsweringBody(l10n, controller),
                 secondary: KitAction(
                   key: const ValueKey('team-board-retry'),
                   label: l10n.teamUiCardRetry,

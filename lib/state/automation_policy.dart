@@ -5,8 +5,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/automation_policy.dart';
 import '../ui/kit/kit_redact.dart';
+import 'team_planning.dart' show TeamSupervision;
 
 export '../domain/automation_policy.dart';
+
+/// The team's supervision level a local choice stands for: new team tasks
+/// start at it (Settings › What runs by itself).
+extension AutomationSupervisionTeam on AutomationSupervision {
+  TeamSupervision get team => switch (this) {
+    AutomationSupervision.high => TeamSupervision.high,
+    AutomationSupervision.balanced => TeamSupervision.balanced,
+    AutomationSupervision.autonomous => TeamSupervision.autonomous,
+  };
+}
 
 /// One controller per profile, shared by its settings page and executors.
 /// Listen for successfully persisted changes; setters throw a safe StateError
@@ -29,6 +40,42 @@ class AutomationPolicyController extends ChangeNotifier {
   bool _closed = false;
 
   static String keyFor(String profileId) => 'oc.automation.$profileId';
+
+  static final _shared =
+      Map<
+        SharedPreferences,
+        Map<String, AutomationPolicyController>
+      >.identity();
+
+  /// The one shared controller of [profileId] on [preferences]: the
+  /// settings page and every executor that consults the policy read the same
+  /// instance, so there is never a second writer for one profile.
+  static AutomationPolicyController forProfile(
+    SharedPreferences preferences,
+    String profileId,
+  ) => (_shared[preferences] ??= {}).putIfAbsent(
+    profileId,
+    () => AutomationPolicyController(
+      profileId: profileId,
+      preferences: preferences,
+    ),
+  );
+
+  /// Closes the shared controller of [profileId] and drains its write in
+  /// flight, BEFORE the profile deletion sweep removes its key. A later
+  /// [forProfile] starts a fresh controller from what storage then holds.
+  static Future<void> closeProfile(
+    SharedPreferences preferences,
+    String profileId,
+  ) async {
+    final controller = _shared[preferences]?.remove(profileId);
+    if (controller == null) return;
+    await controller.prepareForDeletion();
+  }
+
+  /// Forgets every shared controller; tests only.
+  @visibleForTesting
+  static void resetShared() => _shared.clear();
   AutomationPolicy get value => _value;
 
   AutomationPolicy _read() {

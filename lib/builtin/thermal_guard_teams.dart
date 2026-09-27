@@ -292,6 +292,13 @@ void startThermalGuard(
   required ProfileStore store,
   required BuiltinLinux linux,
   AppDiagnosticsController? diagnostics,
+  void Function(
+    ThermalNoticeKind kind,
+    ThermalTeam team,
+    DateTime since,
+    DateTime at,
+  )?
+  onAct,
 }) {
   if (slot.value != null || !platformCapabilities.isAndroid) return;
   final guard = ThermalGuard(
@@ -305,6 +312,7 @@ void startThermalGuard(
     // Thermal changes go to the persisted problem report once it is open.
     onReading: (reading) =>
         ReportProblemStartup.current?.recordThermal(reading),
+    onAct: onAct,
   );
   slot.value = guard;
   unawaited(guard.start());

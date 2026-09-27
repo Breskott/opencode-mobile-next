@@ -57,6 +57,7 @@ import '../orchestration/adapters/gascity/gascity_mappers.dart'
 import '../orchestration/adapters/gascity/gascity_probe.dart';
 import '../orchestration/client/sse.dart';
 import '../orchestration/dispatch.dart';
+import 'automation_policy.dart';
 import 'orchestration_store.dart';
 import 'profiles.dart';
 
@@ -400,6 +401,11 @@ class OrchestrationController extends ChangeNotifier {
   DateTime? _lastEventAt;
 
   String get profileId => profile.id;
+
+  /// This server's local automation choices (Settings › What runs by
+  /// itself): the shared controller, never a second writer.
+  AutomationPolicyController get automation =>
+      AutomationPolicyController.forProfile(_store.prefs, profileId);
   OrchestrationPhase get phase => _phase;
 
   /// Identity of the host: from the probe, then the gateway once it

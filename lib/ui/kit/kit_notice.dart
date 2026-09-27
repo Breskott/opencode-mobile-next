@@ -234,6 +234,11 @@ class KitNotice extends StatelessWidget {
   final KitAction? secondary;
 
   final String? title;
+
+  /// Words for people, not exception text: never `'$error'`,
+  /// `error.toString()`, an `ApiException` or `PlatformException` message
+  /// or an HTTP body. The raw failure goes to [details] (the error form),
+  /// copied and reported only after redaction.
   final String message;
   final AppStatusTone tone;
 
