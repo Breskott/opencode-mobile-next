@@ -15,6 +15,7 @@ import 'builtin/app_exit_recovery.dart';
 import 'builtin/builtin_server.dart';
 import 'builtin/setup/phone_setup.dart';
 import 'builtin/setup/setup_finish.dart';
+import 'builtin/setup/termux_setup_finish.dart';
 import 'builtin/thermal_guard_teams.dart';
 import 'desktop/window_icon.dart';
 import 'desktop/window_state.dart';
@@ -1517,6 +1518,22 @@ class _RootState extends ConsumerState<_Root> {
           final l10n = strings();
           return l10n.builtinServerConnectFailed(
             _controller.lastError ?? l10n.builtinServerStopped,
+          );
+        },
+      ).call(request),
+      // The Termux host ends the same way, through Termux's own manager.
+      termuxFinisher: (request) => TermuxSetupFinisher(
+        store: ref.read(bootstrapProvider).store,
+        strings: strings,
+        isConnectedTo: (profile) =>
+            _controller.profile?.id == profile.id &&
+            _controller.hasConnectedServer,
+        connect: (profile) async {
+          await _controller.connect(profile);
+          if (_controller.hasConnectedServer) return null;
+          final l10n = strings();
+          return l10n.builtinServerConnectFailed(
+            _controller.lastError ?? l10n.e7SetupAuthFailed,
           );
         },
       ).call(request),

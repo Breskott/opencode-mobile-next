@@ -19310,10 +19310,6 @@
   "@phoneSetupStartAddTitle": {
     "description": "Title of the Customize sheet in add mode"
   },
-  "phoneSetupStartRequiredWhy": "Needed for the agent to run",
-  "@phoneSetupStartRequiredWhy": {
-    "description": "Fallback reason a required component cannot be switched off"
-  },
   "phoneSetupStartInstalled": "Installed",
   "@phoneSetupStartInstalled": {
     "description": "A tool that is already on this phone, in add mode"
@@ -30044,14 +30040,6 @@
   "@thisPhoneAddTools": {
     "description": "This phone: the row (and sheet title) that adds optional tools"
   },
-  "thisPhoneAddToolsInApp": "Python, Node.js, AI Team and more",
-  "@thisPhoneAddToolsInApp": {
-    "description": "This phone: the line under Add tools for OpenCode inside the app"
-  },
-  "thisPhoneAddToolsTermux": "AI Team and Claude Code",
-  "@thisPhoneAddToolsTermux": {
-    "description": "This phone: the line under Add tools for OpenCode in Termux"
-  },
   "thisPhoneInstalled": "Installed",
   "@thisPhoneInstalled": {
     "description": "This phone: the folded row that lists what setup installed"
@@ -30680,5 +30668,13 @@
         "type": "int"
       }
     }
+  },
+  "thisPhoneAddToolsDetail": "Python, AI Team, voice typing and more",
+  "@thisPhoneAddToolsDetail": {
+    "description": "This phone: the line under Add tools, the optional tools phone setup can add (in the app or in Termux)"
+  },
+  "phoneSetupTermuxOtherRuntime": "Termux already runs the other OpenCode. Switch it on This phone, then continue setup.",
+  "@phoneSetupTermuxOtherRuntime": {
+    "description": "Termux setup: the job installed one OpenCode generation but Termux serves the other; switching is This phone's job"
   }
 }

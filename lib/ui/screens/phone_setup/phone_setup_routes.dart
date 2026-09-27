@@ -29,13 +29,16 @@ Future<void> openPhoneSetupStart(BuildContext context) =>
 /// the whole selection for first setup, only the new tools in [addMode].
 /// [selected] reopens the sheet on an earlier choice instead of the
 /// registry defaults.
+///
+/// [host] picks the engine: Termux's lists and checks what Termux has.
 Future<Set<String>?> showPhoneSetupCustomize(
   BuildContext context, {
   bool addMode = false,
   Set<String>? selected,
+  SetupHostKind host = SetupHostKind.builtin,
 }) => showSetupCustomizeSheet(
   context,
-  engine: PhoneSetup.engine,
+  engine: PhoneSetup.of(host),
   addMode: addMode,
   selected: selected,
 );
@@ -59,16 +62,20 @@ Route<void> _progressRoute(bool firstSetup) => MaterialPageRoute<void>(
   builder: (_) => PhoneSetupProgressScreen(firstSetup: firstSetup),
 );
 
-Route<void> _readyRoute() => MaterialPageRoute<void>(
-  settings: const RouteSettings(name: phoneSetupReadyRouteName),
-  builder: (_) => const PhoneSetupReadyScreen(),
-);
+Route<void> _readyRoute([SetupHostKind host = SetupHostKind.builtin]) =>
+    MaterialPageRoute<void>(
+      settings: const RouteSettings(name: phoneSetupReadyRouteName),
+      builder: (_) => PhoneSetupReadyScreen(host: host),
+    );
 
-/// Screen C: ready, name the first project. It takes the progress screen's
-/// place, so Back never returns to a finished setup. Screen B calls it only
-/// when a first setup is done; updates and added tools end on B.
-Future<void> openPhoneSetupReady(BuildContext context) =>
-    Navigator.of(context).pushReplacement<void, void>(_readyRoute());
+/// Screen C: ready, name the first project, on the [host] setup ran on. It
+/// takes the progress screen's place, so Back never returns to a finished
+/// setup. Screen B calls it only when a first setup is done; updates and
+/// added tools end on B.
+Future<void> openPhoneSetupReady(
+  BuildContext context, {
+  SetupHostKind host = SetupHostKind.builtin,
+}) => Navigator.of(context).pushReplacement<void, void>(_readyRoute(host));
 
 /// Where a tap on a phone setup notification lands (SetupService.kt), with
 /// the app running, in the background or started by the tap.

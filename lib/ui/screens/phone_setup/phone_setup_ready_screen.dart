@@ -5,10 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../builtin/builtin_linux.dart';
 import '../../../builtin/builtin_server.dart';
+import '../../../builtin/setup/setup_contract.dart' show SetupHostKind;
+import '../../../builtin/setup/termux_setup_host.dart';
 import '../../../domain/workspace_paths.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/profiles.dart';
+import '../../../termux/bridge.dart' show TermuxBridge;
 import '../../kit/kit.dart';
 import '../../navigation/chat_route.dart';
 import '../../kit/scenes/setup_ready_scene.dart';
@@ -25,10 +28,19 @@ import 'phone_setup_hero.dart';
 /// It opens with a celebration ([SetupReadyScene], played once) at the top
 /// of the page, not a lone check floating mid-screen.
 class PhoneSetupReadyScreen extends ConsumerStatefulWidget {
-  const PhoneSetupReadyScreen({super.key, this.linux});
+  const PhoneSetupReadyScreen({
+    super.key,
+    this.linux,
+    this.host = SetupHostKind.builtin,
+  });
 
-  /// Tests pass a fake bridge; the app uses [builtinLinuxProvider].
+  /// Tests pass a fake bridge; the app uses [builtinLinuxProvider], or
+  /// Termux's Ubuntu ([TermuxSetupHost]) when setup ran in Termux.
   final BuiltinLinux? linux;
+
+  /// Where setup put OpenCode: the project is made there, and a dropped
+  /// connection is made again to that server.
+  final SetupHostKind host;
 
   /// The suggestion in the name field: short, valid, and obviously a
   /// placeholder the person may keep.
@@ -47,7 +59,16 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
   String? _problem;
   bool _busy = false;
 
-  BuiltinLinux get _linux => widget.linux ?? ref.read(builtinLinuxProvider);
+  late final BuiltinLinux _linux =
+      widget.linux ??
+      (widget.host == SetupHostKind.termux
+          ? TermuxSetupHost()
+          : ref.read(builtinLinuxProvider));
+
+  bool _isSetupServer(ServerProfile profile) =>
+      widget.host == SetupHostKind.termux
+      ? TermuxBridge.managesServerUrl(profile.baseUrl)
+      : looksLikeInAppServer(profile);
 
   AppLocalizations get _l10n =>
       lookupAppLocalizations(Localizations.localeOf(context));
@@ -92,12 +113,12 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
   }
 
   /// Setup ends connected; this covers a connection that dropped while the
-  /// person read this screen, by reconnecting to the in-app server.
+  /// person read this screen, by reconnecting to the server setup started.
   Future<bool> _ensureConnected(ConnectionController connection) async {
     if (connection.api != null) return true;
     ServerProfile? target;
     for (final profile in connection.store.profiles) {
-      if (!looksLikeInAppServer(profile)) continue;
+      if (!_isSetupServer(profile)) continue;
       if (target == null || profile.id == connection.store.activeId) {
         target = profile;
       }
