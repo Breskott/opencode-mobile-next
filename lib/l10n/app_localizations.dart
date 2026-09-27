@@ -40154,6 +40154,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show all {count} tasks'**
   String mobileTasksShowAll(int count);
+
+  /// Composer: the field waits while a saved prompt or photo is being put in the draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting your prompt ready…'**
+  String get composerBusyReason;
+
+  /// Composer + sheet: why the attach row is unavailable on a text-only server.
+  ///
+  /// In en, this message translates to:
+  /// **'This server takes text only'**
+  String get composerToolsTextOnly;
+
+  /// Composer + sheet: the door to the command and agent list.
+  ///
+  /// In en, this message translates to:
+  /// **'Commands and agents'**
+  String get composerToolCommandsTitle;
+
+  /// Composer + sheet: what Saved prompts does.
+  ///
+  /// In en, this message translates to:
+  /// **'Put a prompt you saved back in the draft'**
+  String get composerToolSavedSubtitle;
+
+  /// Composer + sheet: keeps the current prompt in Saved prompts.
+  ///
+  /// In en, this message translates to:
+  /// **'Save prompt for later'**
+  String get composerToolSaveForLater;
+
+  /// Composer + sheet: why Save prompt for later is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Type or attach something first'**
+  String get composerToolNothingToSave;
+
+  /// Composer + sheet: the fold holding the rarer tools.
+  ///
+  /// In en, this message translates to:
+  /// **'More tools'**
+  String get composerToolsMore;
+
+  /// Composer + sheet: the context capsule, in plain words.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes for this conversation'**
+  String get composerToolNotesTitle;
+
+  /// Undo bar after a waiting message was taken back into the draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Returned to your draft'**
+  String get composerReturnedToDraft;
+
+  /// Reuse a prompt sheet: one-line intro.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a prompt to add it to your draft.'**
+  String get promptHistoryIntro;
+
+  /// Prompt editor: confirms leaving without keeping the edits.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get promptEditorDiscardChanges;
+
+  /// Prompt editor: the pinned primary; hands the text back to the composer.
+  ///
+  /// In en, this message translates to:
+  /// **'Use in draft'**
+  String get promptEditorDone;
+
+  /// Prompt editor: the field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt'**
+  String get promptEditorFieldLabel;
+
+  /// Undo bar after deleting a saved prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved prompt deleted'**
+  String get promptStashDeleted;
+
+  /// Saved prompts sheet: subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest first · kept on this device for this server'**
+  String get promptStashIntro;
+
+  /// Saved prompts sheet: empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved prompts yet'**
+  String get promptStashEmptyTitle;
+
+  /// Saved prompts sheet: empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Save prompt for later in the + menu to keep a prompt here.'**
+  String get promptStashEmptyBody;
+
+  /// Saved prompts sheet: why a row cannot be restored right now.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the current step to finish'**
+  String get promptStashBusy;
+
+  /// Saved prompts sheet: the row menu name.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved prompt actions'**
+  String get promptStashRowActions;
+
+  /// Saved prompts sheet: row menu item.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore to draft'**
+  String get promptStashRestoreToDraft;
+
+  /// Saved prompts sheet: row menu item; deletes at once with Undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete saved prompt'**
+  String get promptStashDeleteAction;
+
+  /// Model shortcuts menu item (F2 shown beside it).
+  ///
+  /// In en, this message translates to:
+  /// **'Next recent model'**
+  String get modelShortcutsNextRecent;
+
+  /// Model shortcuts menu item (Shift+F2 shown beside it).
+  ///
+  /// In en, this message translates to:
+  /// **'Previous recent model'**
+  String get modelShortcutsPreviousRecent;
+
+  /// Model shortcuts: why the recent items are unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Use another model first to cycle back to it'**
+  String get modelShortcutsNoRecent;
+
+  /// Model shortcuts: why the favorite item is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark a model as a favorite in the model picker first'**
+  String get modelShortcutsNoFavorite;
+
+  /// Composer: typing waits while the person decides what to do with a recovered draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer the question about this draft first'**
+  String get composerDraftBlockedReason;
 }
 
 class _AppLocalizationsDelegate

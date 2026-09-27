@@ -25700,4 +25700,88 @@ class AppLocalizationsAr extends AppLocalizations {
   String mobileTasksShowAll(int count) {
     return 'Show all $count tasks';
   }
+
+  @override
+  String get composerBusyReason => 'Getting your prompt ready…';
+
+  @override
+  String get composerToolsTextOnly => 'This server takes text only';
+
+  @override
+  String get composerToolCommandsTitle => 'Commands and agents';
+
+  @override
+  String get composerToolSavedSubtitle =>
+      'Put a prompt you saved back in the draft';
+
+  @override
+  String get composerToolSaveForLater => 'Save prompt for later';
+
+  @override
+  String get composerToolNothingToSave => 'Type or attach something first';
+
+  @override
+  String get composerToolsMore => 'More tools';
+
+  @override
+  String get composerToolNotesTitle => 'Notes for this conversation';
+
+  @override
+  String get composerReturnedToDraft => 'Returned to your draft';
+
+  @override
+  String get promptHistoryIntro => 'Tap a prompt to add it to your draft.';
+
+  @override
+  String get promptEditorDiscardChanges => 'Discard changes';
+
+  @override
+  String get promptEditorDone => 'Use in draft';
+
+  @override
+  String get promptEditorFieldLabel => 'Prompt';
+
+  @override
+  String get promptStashDeleted => 'Saved prompt deleted';
+
+  @override
+  String get promptStashIntro =>
+      'Newest first · kept on this device for this server';
+
+  @override
+  String get promptStashEmptyTitle => 'No saved prompts yet';
+
+  @override
+  String get promptStashEmptyBody =>
+      'Choose Save prompt for later in the + menu to keep a prompt here.';
+
+  @override
+  String get promptStashBusy => 'Wait for the current step to finish';
+
+  @override
+  String get promptStashRowActions => 'Saved prompt actions';
+
+  @override
+  String get promptStashRestoreToDraft => 'Restore to draft';
+
+  @override
+  String get promptStashDeleteAction => 'Delete saved prompt';
+
+  @override
+  String get modelShortcutsNextRecent => 'Next recent model';
+
+  @override
+  String get modelShortcutsPreviousRecent => 'Previous recent model';
+
+  @override
+  String get modelShortcutsNoRecent =>
+      'Use another model first to cycle back to it';
+
+  @override
+  String get modelShortcutsNoFavorite =>
+      'Mark a model as a favorite in the model picker first';
+
+  @override
+  String get composerDraftBlockedReason =>
+      'Answer the question about this draft first';
 }
