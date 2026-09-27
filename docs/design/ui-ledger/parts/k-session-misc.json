@@ -599,8 +599,8 @@
       "file": "lib/ui/screens/session_import_screen.dart",
       "widget": "SessionImportScreen",
       "presentedBy": [],
-      "line": 37,
-      "purpose": "Picks an exported session JSON file, reviews it, chooses a destination directory/workspace and imports it to the connected server.",
+      "line": 58,
+      "purpose": "Picks an exported conversation JSON file, reviews its title and message count (ids under Details), shows the destination as one row and imports it to the connected server with one pinned primary.",
       "reachedFrom": [
         {
           "page": "?",
@@ -686,8 +686,8 @@
       "file": "lib/ui/screens/session_import_screen.dart",
       "widget": "_chooseDestination",
       "presentedBy": [],
-      "line": 248,
-      "purpose": "Lists project directories, worktrees and managed workspaces as import destinations.",
+      "line": 233,
+      "purpose": "Lists project folders, worktrees and managed workspaces as import destinations, the current one marked; hidden when there is only one place.",
       "reachedFrom": [
         {
           "page": "session-import",

@@ -443,8 +443,10 @@ final kSessionMiscArea = CensusArea(
         backdropTitle: 'Settings',
       );
       await kit.tapText('Choose JSON file');
-      await kit.tapText('Change destination');
-      kit.expectText('Import into');
+      await kit.tapKey('import-destination');
+      kit.expectVisible(
+        find.byKey(const ValueKey('import-destination-sheet')),
+      );
       kit.expectText('shopfront');
     }),
 

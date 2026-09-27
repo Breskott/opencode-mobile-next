@@ -35404,6 +35404,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{Delete} one{Delete 1 draft} other{Delete {count} drafts}}'**
   String privacyDeleteDraftsCount(int count);
+
+  /// All conversations: title of the Continue here question, naming the project it moves into.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to {project}?'**
+  String globalSessionsMoveTitle(String project);
+
+  /// All conversations: body of the Continue here question, naming both projects.
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” moves from {from} to {to} through the server’s sync system.'**
+  String globalSessionsMoveBody(String title, String from, String to);
+
+  /// All conversations: consequence line when the conversation being moved is working.
+  ///
+  /// In en, this message translates to:
+  /// **'It is working now. Moving it may interrupt the current step.'**
+  String get globalSessionsMoveWhileWorking;
+
+  /// All conversations: how to undo the move, naming the project it came from.
+  ///
+  /// In en, this message translates to:
+  /// **'To move it back, open {project} and choose Continue here in All conversations.'**
+  String globalSessionsMoveBack(String project);
+
+  /// All conversations: accessible name of the Active / Archived choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get globalSessionsFilterLabel;
+
+  /// All conversations: segment that shows conversations that are not archived.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get globalSessionsFilterActive;
+
+  /// All conversations: body when a search on the Archived filter finds nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived conversation has that title. Try a shorter search.'**
+  String get globalSessionsArchivedNoMatchMessage;
+
+  /// All conversations: title when the Archived filter has nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived conversations'**
+  String get globalSessionsArchivedEmptyTitle;
+
+  /// All conversations: body when the Archived filter has nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations you archive in Work appear here.'**
+  String get globalSessionsArchivedEmptyMessage;
+
+  /// All conversations: action on the empty Archived filter that goes back to Active.
+  ///
+  /// In en, this message translates to:
+  /// **'Show active conversations'**
+  String get globalSessionsShowActive;
+
+  /// All conversations: section name of the project Work has open now.
+  ///
+  /// In en, this message translates to:
+  /// **'{project} · In use'**
+  String globalSessionsProjectInUse(String project);
+
+  /// All conversations: row menu item that copies the conversation’s folder path.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy folder path'**
+  String get globalSessionsCopyFolder;
+
+  /// Worktrees: row menu item and ready notice action that starts a conversation in that worktree.
+  ///
+  /// In en, this message translates to:
+  /// **'New conversation here'**
+  String get worktreesStartConversation;
+
+  /// Worktrees: helper under the name field of New worktree.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode makes a separate branch and folder and runs the project’s startup tasks. Spaces become dashes.'**
+  String get worktreesCreateHelper;
+
+  /// Worktrees: label of the worktree folder path under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder'**
+  String get worktreesFolder;
+
+  /// Worktrees: supporting line of the project’s own folder row.
+  ///
+  /// In en, this message translates to:
+  /// **'Main copy'**
+  String get worktreesMainCopy;
+
+  /// Worktrees: row menu item that copies the folder path.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy folder path'**
+  String get worktreesCopyFolder;
+
+  /// Worktrees: title when the worktree list failed to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load worktrees'**
+  String get worktreesLoadFailedTitle;
+
+  /// Worktrees: state word that leads a worktree row whose setup failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup failed'**
+  String get worktreesSetupFailedWord;
+
+  /// Import conversation: why Import is not available yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a JSON file first.'**
+  String get importNeedsFile;
+
+  /// Import conversation: why Import is not available yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where to import it first.'**
+  String get importNeedsDestination;
+
+  /// Import conversation: section name of the chosen file, and its label under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get importFileLabel;
+
+  /// Import conversation: section name of the file’s preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation'**
+  String get importPreviewLabel;
+
+  /// Import conversation: how many messages the file holds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {1 message} other {{count} messages}}'**
+  String importMessages(int count);
+
+  /// Import conversation: title in the destination chooser when there is nowhere to import.
+  ///
+  /// In en, this message translates to:
+  /// **'No projects to import into'**
+  String get importNoDestinationsTitle;
+
+  /// Import conversation: supporting line of the destination row, naming the server.
+  ///
+  /// In en, this message translates to:
+  /// **'On {server}'**
+  String importOnServer(String server);
+
+  /// Import conversation: trailing word of the destination row that opens the chooser.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get importChangeDestinationShort;
+
+  /// Import conversation: label of the conversation id under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation ID'**
+  String get importConversationId;
+
+  /// Import conversation: label of the parent conversation id under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent conversation ID'**
+  String get importParentId;
+
+  /// Import conversation: label of the destination folder path under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder'**
+  String get importFolder;
+
+  /// Import conversation: label of the destination environment id under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud environment ID'**
+  String get importEnvironmentId;
+
+  /// All conversations: how many conversations are loaded and in how many projects, once every page is in.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {1 conversation} other {{count} conversations}} in {folders, plural, one {one project} other {{folders} projects}}'**
+  String globalSessionsSummaryCount(int count, int folders);
 }
 
 class _AppLocalizationsDelegate
