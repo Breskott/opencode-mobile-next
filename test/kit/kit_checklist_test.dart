@@ -8,7 +8,6 @@ import 'package:opencode_mobile/builtin/setup/setup_contract.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
-import 'package:opencode_mobile/ui/kit/kit_checklist.dart';
 import 'package:opencode_mobile/ui/widgets/setup_progress_view.dart';
 
 import 'kit_harness.dart';
