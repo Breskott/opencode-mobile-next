@@ -28891,5 +28891,41 @@
   "webSourcesScopeChangedTitle": "The server changed",
   "@webSourcesScopeChangedTitle": {
     "description": "Add web source: title of the state when the server or project changed."
+  },
+  "sessionExportFormatLabel": "Format",
+  "@sessionExportFormatLabel": {
+    "description": "Export conversation: section label above the two format choices (complete JSON copy, readable Markdown transcript)"
+  },
+  "sessionExportJsonUnavailable": "This server can't send a complete copy. Save the readable transcript instead.",
+  "@sessionExportJsonUnavailable": {
+    "description": "Export conversation: why the complete JSON choice is disabled on a server without the export endpoint"
+  },
+  "sessionExportPrivacyLabel": "Privacy",
+  "@sessionExportPrivacyLabel": {
+    "description": "Export conversation: section label above the redaction switch (complete JSON copy only)"
+  },
+  "sessionExportRedactKeeps": "Keeps who wrote each message; the words become placeholders. Not a backup.",
+  "@sessionExportRedactKeeps": {
+    "description": "Export conversation: what redaction keeps and what it replaces, shown under the Redact sensitive data switch"
+  },
+  "sessionExportRedactBusy": "Wait until the file is saved to change this.",
+  "@sessionExportRedactBusy": {
+    "description": "Export conversation: why the redaction switch cannot be changed while the export downloads or saves"
+  },
+  "sessionExportRedactChanged": "Open export again from the conversation to change this.",
+  "@sessionExportRedactChanged": {
+    "description": "Export conversation: why the redaction switch is disabled after the server or project changed under the page"
+  },
+  "sessionExportSaveJson": "Save complete conversation",
+  "@sessionExportSaveJson": {
+    "description": "Export conversation: bottom primary when the complete JSON copy is chosen; opens the system save picker"
+  },
+  "sessionExportSaveMarkdown": "Save readable transcript",
+  "@sessionExportSaveMarkdown": {
+    "description": "Export conversation: bottom primary when the Markdown transcript is chosen; opens the system save picker"
+  },
+  "sessionExportSaveFailed": "Couldn't write the file on this device. Nothing changed on the server. Try again, or choose another folder.",
+  "@sessionExportSaveFailed": {
+    "description": "Export conversation: the file was made but writing it to the chosen place on the device failed"
   }
 }
