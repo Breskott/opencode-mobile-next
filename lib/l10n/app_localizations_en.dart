@@ -22927,4 +22927,139 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamStartRunRefusedKept =>
       'Your task is still here. Edit it and send it again.';
+
+  @override
+  String teamAgentScreenPause(String agent) {
+    return 'Pause $agent';
+  }
+
+  @override
+  String teamAgentScreenPaused(String agent) {
+    return 'Paused $agent';
+  }
+
+  @override
+  String teamAgentScreenResume(String agent) {
+    return 'Start $agent again';
+  }
+
+  @override
+  String teamAgentScreenNudge(String agent) {
+    return 'Nudge $agent';
+  }
+
+  @override
+  String teamAgentScreenRestart(String agent) {
+    return 'Restart $agent';
+  }
+
+  @override
+  String teamAgentScreenStop(String agent) {
+    return 'Stop $agent';
+  }
+
+  @override
+  String teamAgentScreenStopBody(String agent, String task) {
+    return '$agent stops working on “$task” now. The task stays on the host, and you can start $agent again from this page.';
+  }
+
+  @override
+  String teamAgentScreenStoppedTitle(String agent) {
+    return '$agent is stopped';
+  }
+
+  @override
+  String get teamAgentScreenStoppedBody =>
+      'Its work stays where it is. Start it again when you want it back.';
+
+  @override
+  String teamAgentScreenCrashedTitle(String agent) {
+    return '$agent stopped unexpectedly';
+  }
+
+  @override
+  String get teamAgentScreenCrashedBody =>
+      'Its session ended on its own. Start it again to pick its work up from the host.';
+
+  @override
+  String get teamAgentScreenRecyclingBody =>
+      'It starts a fresh session soon and picks its work up from the host.';
+
+  @override
+  String teamAgentScreenModelFrom(String model, String provider) {
+    return '$model from $provider';
+  }
+
+  @override
+  String teamAgentScreenGateIfIgnored(String agent) {
+    return '$agent waits until you answer';
+  }
+
+  @override
+  String teamAgentScreenControlsElsewhere(String agent) {
+    return 'This phone can\'t pause, stop or message $agent on this host yet. Run the team\'s host front on the computer to control it from here.';
+  }
+
+  @override
+  String get teamAgentScreenMessageLabel => 'Your message';
+
+  @override
+  String get gateSheetDestructiveBody =>
+      'The host marks this action as destructive. Approving it can\'t be undone from the phone.';
+
+  @override
+  String get gateSheetAnswerLabel => 'Your answer';
+
+  @override
+  String get gateSheetAfterAnswer =>
+      'The team carries on as soon as the host confirms your answer.';
+
+  @override
+  String get gateSheetFixIt => 'Ask the team to fix it';
+
+  @override
+  String gateSheetFixItDetail(String agent) {
+    return 'Sends the error to $agent and asks it to find the cause and carry on.';
+  }
+
+  @override
+  String gateSheetFixRequest(String task, String error) {
+    return 'The task “$task” failed with this error:\n$error\nPlease find the cause, fix it and carry on.';
+  }
+
+  @override
+  String gateSheetOpenAgent(String agent) {
+    return 'Open $agent';
+  }
+
+  @override
+  String get teamIntroSetUpPhone => 'Set up AI Team on this phone';
+
+  @override
+  String teamIntroSetUpOn(String server) {
+    return 'Set up AI Team on $server';
+  }
+
+  @override
+  String teamIntroTurnOn(String server) {
+    return 'Turn on AI Team on $server';
+  }
+
+  @override
+  String get teamIntroCostTitle => 'Before you set it up';
+
+  @override
+  String get teamIntroCostTime => 'About 8–10 minutes the first time';
+
+  @override
+  String get teamIntroCostMemory => 'About 550 MB of memory for each worker';
+
+  @override
+  String get teamAgentScreenLabelId => 'Agent id';
+
+  @override
+  String get teamAgentScreenMessageFirst => 'Type a message first';
+
+  @override
+  String get gateSheetSendNeedsText => 'Type an answer first';
 }

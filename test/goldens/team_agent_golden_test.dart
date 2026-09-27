@@ -1,12 +1,14 @@
-// Golden renders of the AI Team agent detail on the design kit
-// (docs/design/design-standard.md §8): 412x915, dark and light, the app's
-// real fonts, a pinned clock and the recorded Gas City fixture.
+// Golden renders of the AI Team agent page and the Gate sheet on the kit
+// (screen-team-1): 412x915 and 1280x800, dark and light, the app's real
+// fonts, a pinned clock and the recorded Gas City fixture.
 //
-// team_agent: the short status page (status line, a question waiting, the
-// primary — Live output here, no OpenCode server to find its conversation
-// on — then Message, two text buttons, the rest under More, and Technical
-// details folded).
-// team_agent_controls: Technical details opened, scrolled to its end.
+// team_agent: the short status page (the question waiting as a needs-you
+// row, the status panel, Technical details folded, and the pinned block:
+// Live output here — no OpenCode server to find its conversation on —
+// then Message fox, two fallbacks and the rest under More).
+// team_agent_details: Technical details opened, scrolled to its end.
+// team_gate_choice / team_gate_free_text / team_gate_run_failed: the Gate
+// sheet's variants over the agent page.
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/team_agent_golden_test.dart
@@ -22,13 +24,14 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/gate_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../tool/capture/fixtures.dart' show captureTheme, loadCaptureFonts;
 
 final _clock = DateTime.utc(2026, 9, 11, 9, 41);
 
-/// The recorded fixture with the agent, work and question the page shows.
+/// The recorded fixture with the agent, work and questions the pages show.
 class _Gateway extends FixtureOrchestrationGateway {
   _Gateway({required super.fixturePath});
 
@@ -59,6 +62,7 @@ class _Gateway extends FixtureOrchestrationGateway {
       title: 'Sync engine',
       state: WorkState.working,
       runId: 'oc-xru',
+      assignee: 'fox',
     ),
     WorkItem(
       id: 'w4',
@@ -101,6 +105,21 @@ class _Gateway extends FixtureOrchestrationGateway {
       choices: const ['SQLite', 'Filesystem'],
       createdAt: _clock,
     ),
+    OrchestrationGate(
+      id: 'g2',
+      kind: GateKind.freeText,
+      title: 'What should the offline banner say?',
+      workId: 'w4',
+      createdAt: _clock.subtract(const Duration(minutes: 4)),
+    ),
+    OrchestrationGate(
+      id: 'g3',
+      kind: GateKind.runFailed,
+      title: 'Offline-first sessions failed',
+      prompt: 'npm test exited with code 1: 3 tests failed in sync_test.ts',
+      runId: 'oc-xru',
+      createdAt: _clock.subtract(const Duration(minutes: 9)),
+    ),
   ];
 }
 
@@ -140,13 +159,17 @@ Future<OrchestrationController> _controller() async {
   return controller;
 }
 
+const _phone = Size(412, 915);
+const _wide = Size(1280, 800);
+
 Future<void> _golden(
   WidgetTester tester,
   String name, {
   required bool light,
-  Future<void> Function()? before,
+  Size size = _phone,
+  Future<void> Function(OrchestrationController controller)? before,
 }) async {
-  tester.view.physicalSize = const Size(412, 915);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final controller = await _controller();
@@ -171,11 +194,12 @@ Future<void> _golden(
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    await before?.call();
+    await before?.call(controller);
     expect(tester.takeException(), isNull);
+    final suffix = size == _phone ? '' : '_${size.width.toInt()}x800';
     await expectLater(
       find.byKey(boundary),
-      matchesGoldenFile('${name}_${light ? 'light' : 'dark'}.png'),
+      matchesGoldenFile('${name}_${light ? 'light' : 'dark'}$suffix.png'),
     );
   } finally {
     await tester.pumpWidget(const SizedBox.shrink());
@@ -188,33 +212,69 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loadCaptureFonts);
 
+  Future<void> Function(OrchestrationController) gate(
+    WidgetTester tester,
+    String id,
+  ) => (controller) async {
+    final context = tester.element(find.byType(AgentScreen));
+    showGateSheet(context, controller, id, now: () => _clock);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+  };
+
   for (final light in [false, true]) {
     final mode = light ? 'light' : 'dark';
 
-    testWidgets('agent · top · $mode', (tester) async {
-      await _golden(tester, 'team_agent', light: light);
-    });
+    for (final size in [_phone, _wide]) {
+      final at = size == _phone ? 'phone' : 'wide';
 
-    testWidgets('agent · controls · $mode', (tester) async {
+      testWidgets('agent · top · $mode · $at', (tester) async {
+        await _golden(tester, 'team_agent', light: light, size: size);
+      });
+
+      testWidgets('gate · choice · $mode · $at', (tester) async {
+        await _golden(
+          tester,
+          'team_gate_choice',
+          light: light,
+          size: size,
+          before: gate(tester, 'g1'),
+        );
+      });
+    }
+
+    testWidgets('agent · details · $mode', (tester) async {
       await _golden(
         tester,
-        'team_agent_controls',
+        'team_agent_details',
         light: light,
-        before: () async {
+        before: (_) async {
           await tester.tap(find.byKey(const ValueKey('team-agent-technical')));
           await tester.pump(const Duration(milliseconds: 500));
-          await tester.scrollUntilVisible(
-            find.byKey(const ValueKey('team-agent-work-chip')),
-            300,
-            scrollable: find
-                .descendant(
-                  of: find.byKey(const ValueKey('team-agent-list')),
-                  matching: find.byType(Scrollable),
-                )
-                .first,
+          await tester.drag(
+            find.byKey(const ValueKey('team-agent-list')),
+            const Offset(0, -2000),
           );
-          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump(const Duration(milliseconds: 500));
         },
+      );
+    });
+
+    testWidgets('gate · free text · $mode', (tester) async {
+      await _golden(
+        tester,
+        'team_gate_free_text',
+        light: light,
+        before: gate(tester, 'g2'),
+      );
+    });
+
+    testWidgets('gate · run failed · $mode', (tester) async {
+      await _golden(
+        tester,
+        'team_gate_run_failed',
+        light: light,
+        before: gate(tester, 'g3'),
       );
     });
   }

@@ -36380,6 +36380,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your task is still here. Edit it and send it again.'**
   String get teamStartRunRefusedKept;
+
+  /// Agent page action: pause this agent's session. {agent} is the agent's short name.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause {agent}'**
+  String teamAgentScreenPause(String agent);
+
+  /// Agent page undo bar after pausing an agent. {agent} is the agent's short name.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused {agent}'**
+  String teamAgentScreenPaused(String agent);
+
+  /// Agent page: on a stopped or crashed agent, starts it again. {agent} is the agent's short name.
+  ///
+  /// In en, this message translates to:
+  /// **'Start {agent} again'**
+  String teamAgentScreenResume(String agent);
+
+  /// Agent page action: wake a stalled agent. {agent} is the agent's short name.
+  ///
+  /// In en, this message translates to:
+  /// **'Nudge {agent}'**
+  String teamAgentScreenNudge(String agent);
+
+  /// Agent page action and restart confirmation button. {agent} is the agent's short name.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart {agent}'**
+  String teamAgentScreenRestart(String agent);
+
+  /// Agent page action and stop confirmation button. {agent} is the agent's short name.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {agent}'**
+  String teamAgentScreenStop(String agent);
+
+  /// Stop confirmation body naming the task the agent works on.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} stops working on “{task}” now. The task stays on the host, and you can start {agent} again from this page.'**
+  String teamAgentScreenStopBody(String agent, String task);
+
+  /// Agent page notice title for a stopped agent.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} is stopped'**
+  String teamAgentScreenStoppedTitle(String agent);
+
+  /// Agent page notice body for a stopped agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Its work stays where it is. Start it again when you want it back.'**
+  String get teamAgentScreenStoppedBody;
+
+  /// Agent page notice title for a crashed agent.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} stopped unexpectedly'**
+  String teamAgentScreenCrashedTitle(String agent);
+
+  /// Agent page notice body for a crashed agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Its session ended on its own. Start it again to pick its work up from the host.'**
+  String get teamAgentScreenCrashedBody;
+
+  /// Agent page notice body under 'Recycling soon': what happens when the context is nearly full.
+  ///
+  /// In en, this message translates to:
+  /// **'It starts a fresh session soon and picks its work up from the host.'**
+  String get teamAgentScreenRecyclingBody;
+
+  /// Agent page status row: the model in plain words, e.g. 'gpt-x from openai'.
+  ///
+  /// In en, this message translates to:
+  /// **'{model} from {provider}'**
+  String teamAgentScreenModelFrom(String model, String provider);
+
+  /// Agent page needs-you row: what happens if the person does not answer.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} waits until you answer'**
+  String teamAgentScreenGateIfIgnored(String agent);
+
+  /// Agent page: explains why no controls are shown, with a How button.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone can\'t pause, stop or message {agent} on this host yet. Run the team\'s host front on the computer to control it from here.'**
+  String teamAgentScreenControlsElsewhere(String agent);
+
+  /// Message-an-agent sheet: the field's label.
+  ///
+  /// In en, this message translates to:
+  /// **'Your message'**
+  String get teamAgentScreenMessageLabel;
+
+  /// Gate sheet: notice on a destructive confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'The host marks this action as destructive. Approving it can\'t be undone from the phone.'**
+  String get gateSheetDestructiveBody;
+
+  /// Gate sheet free-text question: the field's label.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer'**
+  String get gateSheetAnswerLabel;
+
+  /// Gate sheet: what the team does after an answer.
+  ///
+  /// In en, this message translates to:
+  /// **'The team carries on as soon as the host confirms your answer.'**
+  String get gateSheetAfterAnswer;
+
+  /// Gate sheet, failed run: primary action that sends the error to the worker and asks it to fix the cause.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the team to fix it'**
+  String get gateSheetFixIt;
+
+  /// Gate sheet, failed run: what 'Ask the team to fix it' does.
+  ///
+  /// In en, this message translates to:
+  /// **'Sends the error to {agent} and asks it to find the cause and carry on.'**
+  String gateSheetFixItDetail(String agent);
+
+  /// Gate sheet, failed run: the message sent to the worker by 'Ask the team to fix it'.
+  ///
+  /// In en, this message translates to:
+  /// **'The task “{task}” failed with this error:\n{error}\nPlease find the cause, fix it and carry on.'**
+  String gateSheetFixRequest(String task, String error);
+
+  /// Gate sheet, failed run: opens the worker's page. {agent} is its short name.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {agent}'**
+  String gateSheetOpenAgent(String agent);
+
+  /// AI Team intro: primary on a phone server.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up AI Team on this phone'**
+  String get teamIntroSetUpPhone;
+
+  /// AI Team intro: primary on a computer where Gas City was not found. {server} is the server's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up AI Team on {server}'**
+  String teamIntroSetUpOn(String server);
+
+  /// AI Team intro: primary when Gas City was found on the computer. {server} is the server's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on AI Team on {server}'**
+  String teamIntroTurnOn(String server);
+
+  /// AI Team intro: title of the cost notice on a phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Before you set it up'**
+  String get teamIntroCostTitle;
+
+  /// AI Team intro cost item: how long the first setup takes on a phone.
+  ///
+  /// In en, this message translates to:
+  /// **'About 8–10 minutes the first time'**
+  String get teamIntroCostTime;
+
+  /// AI Team intro cost item: memory each worker uses on a phone.
+  ///
+  /// In en, this message translates to:
+  /// **'About 550 MB of memory for each worker'**
+  String get teamIntroCostMemory;
+
+  /// Agent page technical details: the label of the agent's id.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent id'**
+  String get teamAgentScreenLabelId;
+
+  /// Message-an-agent sheet: why Send is off while the field is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a message first'**
+  String get teamAgentScreenMessageFirst;
+
+  /// Gate sheet free-text question: why Send is off while the field is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Type an answer first'**
+  String get gateSheetSendNeedsText;
 }
 
 class _AppLocalizationsDelegate

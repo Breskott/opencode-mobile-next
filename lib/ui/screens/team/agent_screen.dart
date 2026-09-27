@@ -1,31 +1,44 @@
 /// The Agent detail (02-ux-flows-and-screens §5.2): what a fleet row
-/// opens. A short status page; the agent's work itself is shown in one
-/// place only, the chat (docs/design/team-conversation-2026-09-26.md).
+/// opens. A short status page whose primary is the worker's own
+/// conversation; the agent's work itself is shown in one place only, the
+/// chat (docs/design/team-conversation-2026-09-26.md).
 ///
-/// The app bar names the agent by role and name ("Worker · furiosa") and
-/// what it works on ("On “Sync engine”"). The header is one status line:
-/// the state from the agent's **session** (not the agents list), the
-/// context use as a number and the session's elapsed time, "Recycling
-/// soon" from [teamContextRecyclePercent]; under it one muted line with the
-/// newest step from its live output and when it was last active. Then
-/// "The worker didn't start" and a question waiting on you, when true.
+/// Built from kit parts only (screen-team-1, STANDARDS §4), top to bottom
+/// in one list ordered by urgency:
 ///
-/// The actions, in the one button hierarchy: the primary is **Open
-/// conversation** (the agent's own OpenCode session on the chat page in
-/// watching mode) — or, when no session can be matched on the connected
-/// server, **Live output** ([AgentOutputScreen], drawn with the chat's own
-/// parts) with a line saying why. Then the controls (TEAM-204,
-/// capability-gated: absent, never disabled): Message (secondary), Nudge,
-/// Pause / Resume, and under More Stop and Restart (confirmed, error tone)
-/// and Reassign work…; the newest receipts under them.
+/// 1. The top bar ([KitTopBar]) names the agent by role and name ("Worker ·
+///    fox") with what it works on as the subtitle ("On “Sync engine”").
+///    Refresh is its one icon; Live output joins the overflow when it is
+///    not the primary.
+/// 2. A question waiting on the person, as the pointing [KitNeedsYou.row]
+///    that opens the Gate sheet, when there is one.
+/// 3. What went wrong, when something did: the worker didn't start, it
+///    stopped or crashed (with "Start fox again"), its context is nearly
+///    full ("Recycling soon").
+/// 4. The status panel: the state from the agent's **session** with its
+///    mark and word, context use and session age; the newest step and when
+///    it was last active; the model in plain words; the current task and
+///    what blocks it; the team's usage today.
+/// 5. The newest control receipt, and why the primary is Live output when
+///    no conversation can be matched on the connected server.
+/// 6. Technical details, one [KitDetailsFold], last and collapsed.
 ///
-/// Technical details (§8) fold at the end: provider, model, harness,
-/// context, working directory, branch, usage, the current work, and every
-/// raw field with a copy button.
+/// The pinned actions ([KitActionBlock]): **Open conversation** (or **Live
+/// output**) is the primary, **Message fox** the secondary. The fallbacks
+/// (the team restarts, wakes and routes work itself) sit in the top bar's
+/// overflow: Pause fox, Nudge fox, Restart fox and Stop fox (last, in the
+/// destructive tone). Pause is undone with [showKitUndo]; Stop and Restart
+/// are confirmed with [showKitConfirm] (Stop in the stop tone, Restart
+/// neutral). The controls exist only when the host takes them (TEAM-204);
+/// when it takes none, the page says so and offers the host guide instead
+/// of hiding them.
+///
+/// Removed here (owner verdicts 2026-09-26): the Technical details sheet
+/// (merged into the fold) and Reassign work (the dispatcher routes ready
+/// work; the board's "Start now" is the manual fallback).
 library;
 
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -36,17 +49,21 @@ import '../../../state/orchestration.dart';
 import '../../../state/team_conversation.dart' show teamSessionState;
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
-import '../../widgets/team_agent_row.dart';
-import '../../widgets/team_controls.dart';
+import '../../widgets/team_host_form.dart' show showTeamHostGuideSheet;
 import '../../widgets/team_now.dart';
-import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_vocabulary.dart';
 import '../team_conversation/team_conversation.dart';
 import 'agent_output_screen.dart';
+import 'gate_sheet.dart' show showGateSheet;
 import 'team_states.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
+
+/// Where the message typed to [agentId] is kept across dismissal
+/// (P7.1, DATA-1): `oc.draft.team-agent-message.<agentId>.<profileId>`.
+String teamAgentMessageDraftTarget(String agentId) =>
+    'team-agent-message.$agentId';
 
 class AgentScreen extends StatefulWidget {
   const AgentScreen({
@@ -69,6 +86,7 @@ class AgentScreen extends StatefulWidget {
 class _AgentScreenState extends State<AgentScreen> {
   late AgentOutputTail _tail;
   bool _refreshing = false;
+  bool _busy = false;
 
   /// Where "Open conversation" leads, looked up once per agent session
   /// (its folder and start); null while looking.
@@ -76,43 +94,20 @@ class _AgentScreenState extends State<AgentScreen> {
   String? _lookupFor;
 
   DateTime get _now => (widget.now ?? DateTime.now)();
-
-  /// Looks for the agent's OpenCode session when the agent's folder or
-  /// session start changed since the last look.
-  void _lookUp(OrchestrationAgent agent) {
-    final key = '${agent.workDir}|${agent.sessionStartedAt}';
-    if (key == _lookupFor) return;
-    _lookupFor = key;
-    _lookup = null;
-    unawaited(() async {
-      final found = await lookupTeamAgentConversation(context, agent);
-      if (!mounted || _lookupFor != key) return;
-      setState(() => _lookup = found);
-    }());
-  }
-
-  void _openConversation(OrchestrationAgent agent) => unawaited(
-    openTeamAgentConversation(
-      context,
-      agent,
-      team: widget.controller,
-      lookup: _lookup,
-    ),
-  );
+  OrchestrationController get _controller => widget.controller;
 
   @override
   void initState() {
     super.initState();
-    _tail = widget.controller.watchAgentOutput(widget.agentId)
-      ..addListener(_changed);
-    widget.controller.addListener(_rebind);
+    _tail = _controller.watchAgentOutput(widget.agentId)..addListener(_changed);
+    _controller.addListener(_rebind);
   }
 
   @override
   void dispose() {
-    widget.controller.removeListener(_rebind);
+    _controller.removeListener(_rebind);
     _tail.removeListener(_changed);
-    widget.controller.unwatchAgentOutput(widget.agentId);
+    _controller.unwatchAgentOutput(widget.agentId);
     super.dispose();
   }
 
@@ -136,21 +131,33 @@ class _AgentScreenState extends State<AgentScreen> {
     if (_tail.sessionId != null || _tail.watching) return;
     final agent = _agent;
     if (agent?.sessionId == null) return;
-    final controller = widget.controller;
     _tail.removeListener(_changed);
-    controller.unwatchAgentOutput(widget.agentId);
-    _tail = controller.watchAgentOutput(widget.agentId)..addListener(_changed);
+    _controller.unwatchAgentOutput(widget.agentId);
+    _tail = _controller.watchAgentOutput(widget.agentId)..addListener(_changed);
+  }
+
+  /// Looks for the agent's OpenCode session when the agent's folder or
+  /// session start changed since the last look.
+  void _lookUp(OrchestrationAgent agent) {
+    final key = '${agent.workDir}|${agent.sessionStartedAt}';
+    if (key == _lookupFor) return;
+    _lookupFor = key;
+    _lookup = null;
+    unawaited(() async {
+      final found = await lookupTeamAgentConversation(context, agent);
+      if (!mounted || _lookupFor != key) return;
+      setState(() => _lookup = found);
+    }());
   }
 
   Future<void> _refresh() async {
     if (_refreshing) return;
     setState(() => _refreshing = true);
     try {
-      final controller = widget.controller;
-      if (controller.phase == OrchestrationPhase.failed) {
-        await controller.retry();
+      if (_controller.phase == OrchestrationPhase.failed) {
+        await _controller.retry();
       } else {
-        await controller.refresh();
+        await _controller.refresh();
       }
     } finally {
       // Look for its conversation again too: a worker still starting has
@@ -161,7 +168,7 @@ class _AgentScreenState extends State<AgentScreen> {
   }
 
   OrchestrationAgent? get _agent {
-    for (final agent in widget.controller.snapshot.agents) {
+    for (final agent in _controller.snapshot.agents) {
       if (agent.id == widget.agentId || agent.sessionId == widget.agentId) {
         return agent;
       }
@@ -169,162 +176,21 @@ class _AgentScreenState extends State<AgentScreen> {
     return null;
   }
 
-  void _openDetails(OrchestrationAgent agent) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => _AgentDetailsSheet(agent: agent),
-    );
-  }
-
-  void _openOutput() {
-    final miss = _lookup?.miss;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => AgentOutputScreen(
-          controller: widget.controller,
-          agentId: widget.agentId,
-          note: miss == null
-              ? null
-              : teamAgentConversationMissNote(context, miss),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: widget.controller,
-    builder: (context, _) {
-      final l10n = _copy(context);
-      final theme = Theme.of(context);
-      final agent = _agent;
-      // The agent by its role and short name ("Worker · furiosa") with the
-      // task it works on; the engine's full name, pool, pack and session
-      // are under Technical details.
-      final task = agent == null ? null : _workOf(agent)?.title;
-      final term = task == null ? null : l10n.teamAgentWorksOn(task);
-      return Scaffold(
-        key: const ValueKey('team-agent'),
-        appBar: AppBar(
-          toolbarHeight: _toolbarHeight(context),
-          title: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                agent == null ? widget.agentId : teamAgentTitle(l10n, agent),
-                key: const ValueKey('team-agent-title'),
-                style: theme.textTheme.titleMedium,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (term != null)
-                Text(
-                  term,
-                  key: const ValueKey('team-agent-term'),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppTheme.mutedOf(theme),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-            ],
-          ),
-          actions: [
-            IconButton(
-              key: const ValueKey('team-agent-refresh'),
-              tooltip: l10n.teamUiRefresh,
-              onPressed: _refreshing ? null : _refresh,
-              icon: const Icon(AppIconography.sync),
-            ),
-            // One icon action, then the overflow (design standard §1):
-            // Live output when it is not the primary, Technical details.
-            if (agent != null)
-              PopupMenuButton<String>(
-                key: const ValueKey('team-agent-more'),
-                tooltip: l10n.teamUiControlMoreActions,
-                icon: const Icon(AppIconography.more),
-                onSelected: (value) =>
-                    value == 'output' ? _openOutput() : _openDetails(agent),
-                itemBuilder: (context) => [
-                  if (_lookup?.miss == null)
-                    PopupMenuItem<String>(
-                      key: const ValueKey('team-agent-menu-output'),
-                      value: 'output',
-                      child: Text(l10n.teamUiAgentOutputTitle),
-                    ),
-                  PopupMenuItem<String>(
-                    key: const ValueKey('team-agent-details'),
-                    value: 'details',
-                    child: Text(l10n.teamUiTechnicalDetails),
-                  ),
-                ],
-              ),
-          ],
-        ),
-        body: _body(context, agent),
-      );
-    },
-  );
-
-  /// Two lines of title need more than the default toolbar at large text.
-  double _toolbarHeight(BuildContext context) {
-    final scaler = MediaQuery.textScalerOf(context);
-    final needed = scaler.scale(16) * 1.4 + scaler.scale(12) * 1.4 + 12;
-    return math.max(kToolbarHeight, needed);
-  }
-
-  /// The screen on the kit (design standard §1, §3-§5): the one loading
-  /// bar under the app bar, the one status line when the data is old, and
-  /// the state page or the agent's sections.
-  Widget _body(BuildContext context, OrchestrationAgent? agent) {
-    final l10n = _copy(context);
-    final controller = widget.controller;
-    final onRetry = _refreshing ? null : _refresh;
-    final state = teamScreenState(
-      context,
-      controller: controller,
-      keyPrefix: 'team-agent',
-      onRetry: onRetry,
-    );
-    final Widget body;
-    Widget? status;
-    if (state != null) {
-      body = state;
-    } else if (agent == null) {
-      body = KitStateView(
-        key: const ValueKey('team-agent-missing'),
-        icon: AppIconography.cloudOff,
-        title: l10n.teamUiAgentMissingTitle,
-        body: l10n.teamUiAgentMissingHint,
-        primary: KitAction(
-          label: l10n.teamUiRunBack,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-      );
-    } else {
-      status = teamStatusLine(
-        context,
-        controller: controller,
-        keyPrefix: 'team-agent',
-        onRetry: onRetry,
-      );
-      body = _sections(context, agent);
-    }
-    return KitScreen(
-      header: [?status],
-      loading: teamScreenLoading(controller),
-      loadingLabel: l10n.teamUiCardLoading,
-      body: body,
-    );
-  }
-
   WorkItem? _workOf(OrchestrationAgent agent) {
-    for (final item in widget.controller.snapshot.work) {
+    for (final item in _controller.snapshot.work) {
       if (item.id == agent.currentWorkId) return item;
+    }
+    return null;
+  }
+
+  OrchestrationGate? _gateOf(OrchestrationAgent agent, WorkItem? work) {
+    for (final g in _controller.snapshot.gates) {
+      if (g.kind == GateKind.reviewReady) continue;
+      if (g.agentId == agent.id ||
+          (agent.sessionId != null && g.agentId == agent.sessionId) ||
+          (work != null && g.workId == work.id)) {
+        return g;
+      }
     }
     return null;
   }
@@ -334,131 +200,14 @@ class _AgentScreenState extends State<AgentScreen> {
   bool _didNotStart(OrchestrationAgent agent) {
     if (teamAgentIsLive(agent)) return false;
     if (teamAgentRole(agent) != TeamAgentRole.worker) return false;
-    final snapshot = widget.controller.snapshot;
+    final snapshot = _controller.snapshot;
     return teamVisibleRuns(snapshot.runs).any(
       (run) => teamRunWaitsForWorker(
         run,
         snapshot.work,
-        cycleOf: widget.controller.cycleFor,
+        cycleOf: _controller.cycleFor,
       ),
     );
-  }
-
-  Widget _sections(BuildContext context, OrchestrationAgent agent) {
-    final l10n = _copy(context);
-    final controller = widget.controller;
-    final snapshot = controller.snapshot;
-    final work = _workOf(agent);
-    OrchestrationGate? gate;
-    for (final g in snapshot.gates) {
-      if (g.kind == GateKind.reviewReady) continue;
-      if (g.agentId == agent.id ||
-          (agent.sessionId != null && g.agentId == agent.sessionId) ||
-          (work != null && g.workId == work.id)) {
-        gate = g;
-        break;
-      }
-    }
-    final stale = controller.isStale;
-    _lookUp(agent);
-    Widget pad(Widget child) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: child,
-    );
-    // The primary: the agent's own conversation, or Live output when no
-    // session of its can be matched on the connected server.
-    final miss = _lookup?.miss;
-    final primary = miss == null
-        ? KitAction(
-            key: const ValueKey('team-agent-open-conversation'),
-            label: l10n.teamOpenConversation,
-            icon: AppIconography.chat,
-            onPressed: () => _openConversation(agent),
-          )
-        : KitAction(
-            key: const ValueKey('team-agent-open-output'),
-            label: l10n.teamUiAgentOutputTitle,
-            icon: AppIconography.terminal,
-            onPressed: _openOutput,
-          );
-    final body = KitRefresh(
-      key: const ValueKey('team-agent-pull'),
-      onRefresh: _refresh,
-      child: ListView(
-        key: const ValueKey('team-agent-list'),
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.only(
-          top: 12,
-          bottom: KitScreen.endPadding(context),
-        ),
-        children: [
-          pad(
-            _Header(
-              agent: agent,
-              now: _now,
-              lastStep: _lastStep(),
-              blocked: work?.isBlocked ?? false,
-            ),
-          ),
-          if (_didNotStart(agent)) ...[
-            const SizedBox(height: 12),
-            pad(
-              KitNotice(
-                key: const ValueKey('team-agent-did-not-start'),
-                tone: AppStatusTone.attention,
-                icon: AppIconography.warning,
-                title: l10n.teamAgentDidNotStartTitle,
-                message: l10n.teamAgentDidNotStartBody,
-                actions: [
-                  teamUnstickAction(
-                    context,
-                    controller,
-                    keyPrefix: 'team-agent-did-not-start',
-                    wake: [agent],
-                    wakeLabel: l10n.teamAgentStartIt,
-                  ),
-                ],
-              ),
-            ),
-          ],
-          if (gate != null) ...[
-            const SizedBox(height: 16),
-            pad(
-              _NeedsYou(
-                key: const ValueKey('team-agent-gate'),
-                gate: gate,
-                hostMode:
-                    controller.host?.hostMode ?? controller.config.hostMode,
-              ),
-            ),
-          ],
-          const SizedBox(height: 20),
-          pad(
-            _Controls(
-              key: const ValueKey('team-agent-controls'),
-              controller: controller,
-              agent: agent,
-              work: work,
-              primary: primary,
-              primaryNote: miss == null
-                  ? null
-                  : teamAgentConversationMissNote(context, miss),
-            ),
-          ),
-          const SizedBox(height: 8),
-          pad(
-            _TechnicalDetails(
-              agent: agent,
-              work: work,
-              usage: controller.capabilities.usage ? snapshot.usage : null,
-              showUsage: controller.capabilities.usage,
-            ),
-          ),
-        ],
-      ),
-    );
-    // Stale numbers dim; they stay readable (never colour-only).
-    return stale ? Opacity(opacity: .6, child: body) : body;
   }
 
   /// The newest tool call in the agent's live output, its first line: what
@@ -474,229 +223,11 @@ class _AgentScreenState extends State<AgentScreen> {
     }
     return null;
   }
-}
-
-bool _has(String? value) => value != null && value.trim().isNotEmpty;
-
-// ---------------------------------------------------------------------------
-// Header
-// ---------------------------------------------------------------------------
-
-/// The status: glyph + state word (from the session), the context number
-/// and the session's elapsed time on one wrapping line; one muted line
-/// under it with the newest step and when it was last active (and that
-/// its task is blocked); "Recycling soon" from the recycle threshold.
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.agent,
-    required this.now,
-    required this.lastStep,
-    required this.blocked,
-  });
-
-  final OrchestrationAgent agent;
-  final DateTime now;
-  final String? lastStep;
-  final bool blocked;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    final state = teamSessionState(agent);
-    final (icon, tone) = teamAgentGlyph(state);
-    final color = AppTheme.statusColor(theme, tone);
-    final percent = agent.contextPercent;
-    final started = agent.sessionStartedAt;
-    final age = started == null
-        ? null
-        : teamElapsedLabel(
-            l10n,
-            now.isBefore(started) ? Duration.zero : now.difference(started),
-          );
-    final small = theme.textTheme.bodyMedium?.copyWith(color: muted);
-    final lastActive = agent.lastActivity;
-    final activity = [
-      if (lastStep case final step?) l10n.teamAgentLastStep(step),
-      if (lastActive != null)
-        l10n.teamAgentLastActive(
-          teamElapsedLabel(
-            l10n,
-            now.isBefore(lastActive)
-                ? Duration.zero
-                : now.difference(lastActive),
-          ),
-        ),
-    ].join(teamUsageSeparator);
-    return Column(
-      key: const ValueKey('team-agent-header'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 4,
-          runSpacing: 4,
-          children: [
-            Icon(icon, size: 18, color: color),
-            Text(
-              teamAgentStateWord(l10n, state),
-              key: const ValueKey('team-agent-state'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (percent != null) ...[
-              Text(' · ', style: small),
-              TeamContextNumber(
-                key: const ValueKey('team-agent-context'),
-                percent: percent,
-                style: theme.textTheme.bodyMedium,
-              ),
-            ],
-            if (age != null) ...[
-              Text(' · ', style: small),
-              Text(
-                l10n.teamUiAgentSessionAge(age),
-                key: const ValueKey('team-agent-age'),
-                style: small,
-              ),
-            ],
-          ],
-        ),
-        if (activity.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              activity,
-              key: const ValueKey('team-agent-activity-line'),
-              style: theme.textTheme.bodySmall?.copyWith(color: muted),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        if (blocked)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              l10n.teamUiAgentWorkBlocked,
-              key: const ValueKey('team-agent-work-dependency'),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.statusColor(theme, AppStatusTone.attention),
-              ),
-            ),
-          ),
-        if (percent != null && percent >= teamContextRecyclePercent)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Row(
-              key: const ValueKey('team-agent-recycling'),
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  AppIconography.warning,
-                  size: 16,
-                  color: AppTheme.statusColor(theme, AppStatusTone.failure),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    l10n.teamUiAgentRecyclingSoon,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppTheme.statusColor(theme, AppStatusTone.failure),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-/// The question waiting on the person, read-only in Sprint A: the gate
-/// kind and title, then where to answer it.
-class _NeedsYou extends StatelessWidget {
-  const _NeedsYou({super.key, required this.gate, required this.hostMode});
-
-  final OrchestrationGate gate;
-  final OrchestrationHostMode hostMode;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    final (icon, tone) = teamGateGlyph(gate.kind);
-    return KitPanel(
-      tone: tone,
-      icon: icon,
-      title: l10n.teamUiAgentNeedsYou,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            teamGateKindWord(l10n, gate.kind),
-            style: theme.textTheme.bodySmall?.copyWith(color: muted),
-          ),
-          Text(gate.title, style: theme.textTheme.bodyMedium),
-          const SizedBox(height: 6),
-          Text(switch (hostMode) {
-            OrchestrationHostMode.computer =>
-              l10n.teamUiHomeGateAnswerOnComputer,
-            OrchestrationHostMode.phone => l10n.teamUiHomeGateAnswerOnPhone,
-          }, style: theme.textTheme.bodySmall?.copyWith(color: muted)),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Controls (TEAM-204)
-// ---------------------------------------------------------------------------
-
-/// The one thing you can do (§5.3), as buttons that exist only when the
-/// host allows them: Message and Nudge first, then Pause / Resume by the
-/// agent's state, Stop and Restart in the error tone behind a two-step
-/// confirmation, and Reassign work…. The newest receipt for this agent
-/// sits under the row.
-class _Controls extends StatefulWidget {
-  const _Controls({
-    super.key,
-    required this.controller,
-    required this.agent,
-    required this.work,
-    required this.primary,
-    this.primaryNote,
-  });
-
-  final OrchestrationController controller;
-  final OrchestrationAgent agent;
-  final WorkItem? work;
-
-  /// Open conversation, or Live output when there is none to open.
-  final KitAction primary;
-
-  /// Why the primary is Live output, under it.
-  final String? primaryNote;
-
-  @override
-  State<_Controls> createState() => _ControlsState();
-}
-
-class _ControlsState extends State<_Controls> {
-  bool _busy = false;
-
-  OrchestrationController get _controller => widget.controller;
-  OrchestrationAgent get _agent => widget.agent;
 
   /// The newest control record for this agent, by any of its ids.
-  MutationRecord? get _receipt {
+  MutationRecord? _receipt(OrchestrationAgent agent) {
     MutationRecord? best;
-    for (final id in {_agent.id, ?_agent.sessionId}) {
+    for (final id in {agent.id, ?agent.sessionId}) {
       for (final kind in const [
         MutationKind.controlAgent,
         MutationKind.message,
@@ -711,21 +242,9 @@ class _ControlsState extends State<_Controls> {
     return best;
   }
 
-  /// The newest assignment onto this agent.
-  MutationRecord? get _assignReceipt {
-    MutationRecord? best;
-    for (final record in _controller.mutations) {
-      if (record.kind != MutationKind.assign ||
-          record.retriedBy != null ||
-          record.request.agentId != _agent.id) {
-        continue;
-      }
-      if (best == null || record.createdAt.isAfter(best.createdAt)) {
-        best = record;
-      }
-    }
-    return best;
-  }
+  // -------------------------------------------------------------------------
+  // Actions (TEAM-204)
+  // -------------------------------------------------------------------------
 
   Future<void> _run(Future<MutationRecord> Function() send) async {
     if (_busy) return;
@@ -737,637 +256,703 @@ class _ControlsState extends State<_Controls> {
     }
   }
 
-  Future<void> _nudge() =>
-      _run(() => _controller.controlAgent(_agent.id, AgentControlAction.nudge));
+  Future<void> _control(String agentId, AgentControlAction action) =>
+      _run(() => _controller.controlAgent(agentId, action));
 
-  Future<void> _pause() =>
-      _run(() => _controller.controlAgent(_agent.id, AgentControlAction.pause));
-
-  Future<void> _resume() => _run(
-    () => _controller.controlAgent(_agent.id, AgentControlAction.resume),
-  );
-
-  Future<void> _stop() async {
+  /// Pause, then "Paused fox · Undo" (DATA-11: undo, not a confirmation).
+  Future<void> _pause(OrchestrationAgent agent) async {
     final l10n = _copy(context);
-    final ok = await confirmTeamControl(
+    await _control(agent.id, AgentControlAction.pause);
+    if (!mounted) return;
+    showKitUndo(
       context,
-      title: l10n.teamUiControlStopConfirmTitle(_agent.name),
-      message: l10n.teamUiControlStopConfirmBody,
-      confirmLabel: l10n.teamUiControlStopConfirmAction,
+      message: l10n.teamAgentScreenPaused(agent.name),
+      onUndo: () => _control(agent.id, AgentControlAction.resume),
+      key: const ValueKey('team-agent-pause-undo'),
+      undoKey: const ValueKey('team-agent-pause-undo-action'),
+    );
+  }
+
+  Future<void> _stop(OrchestrationAgent agent, WorkItem? work) async {
+    final l10n = _copy(context);
+    final ok = await showKitConfirm(
+      context,
+      title: l10n.teamUiControlStopConfirmTitle(teamAgentTitle(l10n, agent)),
+      body: work == null
+          ? l10n.teamUiControlStopConfirmBody
+          : l10n.teamAgentScreenStopBody(agent.name, work.title),
+      confirmLabel: l10n.teamAgentScreenStop(agent.name),
+      kind: KitConfirmKind.stop,
       sheetKey: const ValueKey('team-agent-stop-confirm'),
       confirmKey: const ValueKey('team-agent-stop-confirm-action'),
     );
     if (!ok || !mounted) return;
-    await _run(
-      () => _controller.controlAgent(_agent.id, AgentControlAction.stop),
-    );
+    await _control(agent.id, AgentControlAction.stop);
   }
 
-  Future<void> _restart() async {
+  Future<void> _restart(OrchestrationAgent agent) async {
     final l10n = _copy(context);
-    final ok = await confirmTeamControl(
+    final ok = await showKitConfirm(
       context,
-      title: l10n.teamUiControlRestartConfirmTitle(_agent.name),
-      message: l10n.teamUiControlRestartConfirmBody,
-      confirmLabel: l10n.teamUiControlRestartConfirmAction,
+      title: l10n.teamUiControlRestartConfirmTitle(teamAgentTitle(l10n, agent)),
+      body: l10n.teamUiControlRestartConfirmBody,
+      confirmLabel: l10n.teamAgentScreenRestart(agent.name),
+      icon: AppIconography.restart,
       sheetKey: const ValueKey('team-agent-restart-confirm'),
       confirmKey: const ValueKey('team-agent-restart-confirm-action'),
     );
     if (!ok || !mounted) return;
-    await _run(
-      () => _controller.controlAgent(_agent.id, AgentControlAction.restart),
-    );
+    await _control(agent.id, AgentControlAction.restart);
   }
 
-  Future<void> _message() async {
-    final text = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => _MessageSheet(agent: _agent),
-    );
-    if (text == null || text.trim().isEmpty || !mounted) return;
-    await _run(() => _controller.messageAgent(_agent.id, text.trim()));
-  }
-
-  Future<void> _reassign() async {
-    final ready = [
-      for (final item in _controller.snapshot.work)
-        if (item.state == WorkState.ready && item.id != widget.work?.id) item,
-    ];
-    final workId = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => _ReassignSheet(agent: _agent, ready: ready),
-    );
-    if (workId == null || !mounted) return;
-    await _run(() => _controller.assignWork(workId, agentId: _agent.id));
-  }
-
-  Future<void> _retry(MutationRecord record) =>
-      _run(() async => (await _controller.retryMutation(record.key)) ?? record);
-
-  @override
-  Widget build(BuildContext context) {
+  // revamp: merge-into:team-conversation (slice-P3.6) for
+  // team-agent-message-sheet: messaging a worker moves to the conversation
+  // composer; until then this sheet keeps the draft (P7.1).
+  Future<void> _message(OrchestrationAgent agent) async {
     final l10n = _copy(context);
-    final caps = _controller.capabilities;
-    // By the session, as the status line above says it (Resume never shows
-    // beside "Working").
-    final state = teamSessionState(_agent);
-    final stopped = state == AgentState.stopped || state == AgentState.crashed;
-    final receipt = _receipt;
-    final assign = _assignReceipt;
-    // The one button hierarchy (design standard §2): Message is the likely
-    // next step (secondary, full width), the rest are text buttons, two
-    // shown and the others under More. Stop and Restart stay confirmed.
-    VoidCallback? idle(VoidCallback action) => _busy ? null : action;
-    final message = caps.controlMessage
-        ? KitAction(
-            key: const ValueKey('team-agent-control-message'),
-            label: l10n.teamUiControlMessage,
-            icon: AppIconography.chat,
-            onPressed: idle(_message),
-          )
-        : null;
-    final rest = <KitAction>[
-      if (caps.controlAgent) ...[
-        KitAction(
-          key: const ValueKey('team-agent-control-nudge'),
-          label: l10n.teamUiControlNudge,
-          onPressed: idle(_nudge),
-        ),
-        if (stopped)
-          KitAction(
-            key: const ValueKey('team-agent-control-resume'),
-            label: l10n.teamUiControlResume,
-            onPressed: idle(_resume),
-          )
-        else
-          KitAction(
-            key: const ValueKey('team-agent-control-pause'),
-            label: l10n.teamUiControlPause,
-            onPressed: idle(_pause),
-          ),
-        if (!stopped)
-          KitAction(
-            key: const ValueKey('team-agent-control-stop'),
-            label: l10n.teamUiControlStop,
-            destructive: true,
-            onPressed: idle(_stop),
-          ),
-        KitAction(
-          key: const ValueKey('team-agent-control-restart'),
-          label: l10n.teamUiControlRestart,
-          destructive: true,
-          onPressed: idle(_restart),
-        ),
-      ],
-      if (caps.controlAssign)
-        KitAction(
-          key: const ValueKey('team-agent-control-reassign'),
-          label: l10n.teamUiControlReassign,
-          onPressed: idle(_reassign),
-        ),
-    ];
-    final secondary = message ?? (rest.isEmpty ? null : rest.removeAt(0));
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (widget.primaryNote case final note?)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              note,
-              key: const ValueKey('team-agent-conversation-miss'),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-              ),
-            ),
-          ),
-        KitActionBlock(
-          primary: widget.primary,
-          secondary: secondary,
-          tertiary: rest,
-        ),
-        if (receipt != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TeamReceiptChip(
-                key: const ValueKey('team-agent-receipt'),
-                record: receipt,
-                onRetry: () => _retry(receipt),
-              ),
-            ),
-          ),
-        if (assign != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TeamReceiptChip(
-                key: const ValueKey('team-agent-assign-receipt'),
-                record: assign,
-                onRetry: () => _retry(assign),
-              ),
-            ),
-          ),
-      ],
+    final text = TextEditingController();
+    final send = ValueNotifier<KitAction?>(null);
+    late final KitDraft draft;
+    void update() {
+      final value = text.text.trim();
+      send.value = KitAction(
+        key: const ValueKey('team-agent-message-send'),
+        label: l10n.teamUiControlMessageSend,
+        icon: AppIconography.send,
+        onPressed: value.isEmpty
+            ? null
+            : () => Navigator.of(context).pop(value),
+        disabledReason: value.isEmpty ? l10n.teamAgentScreenMessageFirst : null,
+      );
+    }
+
+    draft = KitDraft(
+      target: teamAgentMessageDraftTarget(agent.id),
+      profileId: _controller.profileId,
+      controller: text,
     );
+    text.addListener(update);
+    update();
+    try {
+      final result = await showKitSheet<String>(
+        context,
+        title: l10n.teamUiControlMessageTitle(agent.name),
+        icon: AppIconography.chat,
+        sheetKey: const ValueKey('team-agent-message-sheet'),
+        draft: draft,
+        primaryListenable: send,
+        body: (_) => KitField(
+          label: l10n.teamAgentScreenMessageLabel,
+          hint: l10n.teamUiControlMessageHint,
+          kind: KitFieldKind.multiline,
+          draft: draft,
+          controller: text,
+          autofocus: true,
+          fieldKey: const ValueKey('team-agent-message-field'),
+        ),
+      );
+      if (result == null || result.isEmpty || !mounted) return;
+      await _run(() => _controller.messageAgent(agent.id, result));
+      await draft.clear();
+    } finally {
+      text.removeListener(update);
+      send.dispose();
+      // The field may still read the controller while the sheet leaves.
+      WidgetsBinding.instance.addPostFrameCallback((_) => text.dispose());
+    }
   }
-}
 
-/// "Message fox": the composer field alone; Send pops with the text.
-class _MessageSheet extends StatefulWidget {
-  const _MessageSheet({required this.agent});
+  void _openConversation(OrchestrationAgent agent) => unawaited(
+    openTeamAgentConversation(
+      context,
+      agent,
+      team: _controller,
+      lookup: _lookup,
+    ),
+  );
 
-  final OrchestrationAgent agent;
-
-  @override
-  State<_MessageSheet> createState() => _MessageSheetState();
-}
-
-class _MessageSheetState extends State<_MessageSheet> {
-  final _text = TextEditingController();
-
-  @override
-  void dispose() {
-    _text.dispose();
-    super.dispose();
-  }
-
-  void _send() {
-    final text = _text.text.trim();
-    if (text.isEmpty) return;
-    Navigator.of(context).pop(text);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final inset = MediaQuery.viewInsetsOf(context).bottom;
-    return Padding(
-      key: const ValueKey('team-agent-message-sheet'),
-      padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + inset),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            l10n.teamUiControlMessageTitle(widget.agent.name),
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: 12),
-          TeamComposerField(
-            controller: _text,
-            hint: l10n.teamUiControlMessageHint,
-            sendLabel: l10n.teamUiControlMessageSend,
-            onSend: _send,
-            fieldKey: const ValueKey('team-agent-message-field'),
-            sendKey: const ValueKey('team-agent-message-send'),
-          ),
-        ],
+  void _openOutput() {
+    final miss = _lookup?.miss;
+    unawaited(
+      pushKitPage<void>(
+        context,
+        (context) => AgentOutputScreen(
+          controller: _controller,
+          agentId: widget.agentId,
+          note: miss == null
+              ? null
+              : teamAgentConversationMissNote(context, miss),
+        ),
       ),
     );
   }
-}
 
-/// The ready work items on the host; a row pops with its id.
-class _ReassignSheet extends StatelessWidget {
-  const _ReassignSheet({required this.agent, required this.ready});
-
-  final OrchestrationAgent agent;
-  final List<WorkItem> ready;
+  // -------------------------------------------------------------------------
+  // Build
+  // -------------------------------------------------------------------------
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: _controller,
+    builder: (context, _) {
+      final l10n = _copy(context);
+      final agent = _agent;
+      final work = agent == null ? null : _workOf(agent);
+      final onRetry = _refreshing ? null : _refresh;
+      final state = teamScreenState(
+        context,
+        controller: _controller,
+        keyPrefix: 'team-agent',
+        onRetry: onRetry,
+      );
+      if (agent != null && state == null) _lookUp(agent);
+      final miss = _lookup?.miss;
+      final ready = state == null && agent != null;
+      return KitScreen(
+        key: const ValueKey('team-agent'),
+        width: KitScreenWidth.reading,
+        topBar: KitTopBar(
+          title: agent == null ? widget.agentId : teamAgentTitle(l10n, agent),
+          subtitle: work == null ? null : l10n.teamAgentWorksOn(work.title),
+          titleKey: const ValueKey('team-agent-title'),
+          actions: [
+            KitAction(
+              key: const ValueKey('team-agent-refresh'),
+              label: l10n.teamUiRefresh,
+              icon: AppIconography.sync,
+              onPressed: onRetry,
+            ),
+          ],
+          menu: [
+            if (ready && miss == null)
+              KitMenuItem(
+                key: const ValueKey('team-agent-menu-output'),
+                label: l10n.teamUiAgentOutputTitle,
+                icon: AppIconography.terminal,
+                onSelected: _openOutput,
+              ),
+            if (ready) ..._controls(context, agent, work),
+          ],
+          menuKey: const ValueKey('team-agent-more'),
+        ),
+        header: [
+          if (ready)
+            ?teamStatusLine(
+              context,
+              controller: _controller,
+              keyPrefix: 'team-agent',
+              onRetry: onRetry,
+            ),
+        ],
+        loading: teamScreenLoading(_controller) || _refreshing,
+        loadingLabel: l10n.teamUiCardLoading,
+        body:
+            state ??
+            (agent == null
+                ? KitStateView(
+                    key: const ValueKey('team-agent-missing'),
+                    icon: AppIconography.cloudOff,
+                    title: l10n.teamUiAgentMissingTitle,
+                    body: l10n.teamUiAgentMissingHint,
+                    primary: KitAction(
+                      label: l10n.teamUiRunBack,
+                      onPressed: () => Navigator.of(context).maybePop(),
+                    ),
+                  )
+                : _list(context, agent, work)),
+        bottom: ready ? _actions(context, agent) : null,
+      );
+    },
+  );
+
+  /// The pinned block: the conversation (or Live output), then Message.
+  /// Absent controls are absent; the list explains why when the host takes
+  /// none.
+  KitActionBlock _actions(BuildContext context, OrchestrationAgent agent) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    final height = MediaQuery.sizeOf(context).height;
-    return ConstrainedBox(
-      key: const ValueKey('team-agent-reassign-sheet'),
-      constraints: BoxConstraints(maxHeight: height * .7),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    final caps = _controller.capabilities;
+    VoidCallback? idle(VoidCallback action) => _busy ? null : action;
+    final primary = _lookup?.miss == null
+        ? KitAction(
+            key: const ValueKey('team-agent-open-conversation'),
+            label: l10n.teamOpenConversation,
+            icon: AppIconography.chat,
+            onPressed: () => _openConversation(agent),
+          )
+        : KitAction(
+            key: const ValueKey('team-agent-open-output'),
+            label: l10n.teamUiAgentOutputTitle,
+            icon: AppIconography.terminal,
+            onPressed: _openOutput,
+          );
+    return KitActionBlock(
+      primary: primary,
+      secondary: caps.controlMessage
+          ? KitAction(
+              key: const ValueKey('team-agent-control-message'),
+              label: l10n.teamUiControlMessageTitle(agent.name),
+              icon: AppIconography.chat,
+              onPressed: idle(() => unawaited(_message(agent))),
+            )
+          : null,
+    );
+  }
+
+  /// The fallbacks, in the top bar's overflow (the team restarts, wakes and
+  /// routes work itself): Pause fox, Nudge fox, Restart fox, and Stop fox
+  /// last in the destructive tone. Only when the host takes them.
+  List<KitMenuItem> _controls(
+    BuildContext context,
+    OrchestrationAgent agent,
+    WorkItem? work,
+  ) {
+    final l10n = _copy(context);
+    if (!_controller.capabilities.controlAgent) return const [];
+    final state = teamSessionState(agent);
+    final stopped = state == AgentState.stopped || state == AgentState.crashed;
+    final name = agent.name;
+    const group = 'controls';
+    return [
+      if (!stopped)
+        KitMenuItem(
+          key: const ValueKey('team-agent-control-pause'),
+          label: l10n.teamAgentScreenPause(name),
+          icon: AppIconography.pause,
+          group: group,
+          enabled: !_busy,
+          disabledReason: _busy ? l10n.teamUiReceiptSent : null,
+          onSelected: () => unawaited(_pause(agent)),
+        ),
+      KitMenuItem(
+        key: const ValueKey('team-agent-control-nudge'),
+        label: l10n.teamAgentScreenNudge(name),
+        icon: AppIconography.lightning,
+        group: group,
+        enabled: !_busy,
+        disabledReason: _busy ? l10n.teamUiReceiptSent : null,
+        onSelected: () =>
+            unawaited(_control(agent.id, AgentControlAction.nudge)),
+      ),
+      KitMenuItem(
+        key: const ValueKey('team-agent-control-restart'),
+        label: l10n.teamAgentScreenRestart(name),
+        icon: AppIconography.restart,
+        group: group,
+        enabled: !_busy,
+        disabledReason: _busy ? l10n.teamUiReceiptSent : null,
+        onSelected: () => unawaited(_restart(agent)),
+      ),
+      if (!stopped)
+        KitMenuItem(
+          key: const ValueKey('team-agent-control-stop'),
+          label: l10n.teamAgentScreenStop(name),
+          icon: AppIconography.stopCircle,
+          destructive: true,
+          enabled: !_busy,
+          disabledReason: _busy ? l10n.teamUiReceiptSent : null,
+          onSelected: () => unawaited(_stop(agent, work)),
+        ),
+    ];
+  }
+
+  Widget _list(BuildContext context, OrchestrationAgent agent, WorkItem? work) {
+    final l10n = _copy(context);
+    final tokens = KitTokens.of(context);
+    final caps = _controller.capabilities;
+    final snapshot = _controller.snapshot;
+    final state = teamSessionState(agent);
+    final gate = _gateOf(agent, work);
+    final receipt = _receipt(agent);
+    final miss = _lookup?.miss;
+    final percent = agent.contextPercent;
+    final inset = EdgeInsetsDirectional.symmetric(
+      horizontal: tokens.gutter,
+      vertical: tokens.space2,
+    );
+    Widget pad(Widget child) => Padding(padding: inset, child: child);
+
+    return KitRefresh(
+      key: const ValueKey('team-agent-pull'),
+      onRefresh: _refresh,
+      child: ListView(
+        key: const ValueKey('team-agent-list'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsetsDirectional.only(
+          top: tokens.space2,
+          bottom: KitScreen.endPadding(context),
+        ),
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // 1. What needs the person.
+          if (gate != null)
+            KitRowGroup(
+              margin: _groupMargin(context),
               children: [
-                Text(
-                  l10n.teamUiControlReassignTitle(agent.name),
-                  style: theme.textTheme.titleMedium,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  l10n.teamUiControlReassignHint,
-                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                KitNeedsYou.row(
+                  key: const ValueKey('team-agent-gate'),
+                  title: gate.title,
+                  reason: KitNeedsYouReason.decision,
+                  ifIgnored: l10n.teamAgentScreenGateIfIgnored(agent.name),
+                  onOpen: () => unawaited(
+                    showGateSheet(
+                      context,
+                      _controller,
+                      gate.id,
+                      now: widget.now,
+                    ),
+                  ),
                 ),
               ],
             ),
-          ),
-          if (ready.isEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              child: Text(
-                l10n.teamUiControlReassignEmpty,
-                key: const ValueKey('team-agent-reassign-empty'),
-                style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+          // 2. What went wrong.
+          if (_didNotStart(agent))
+            pad(
+              KitNotice(
+                key: const ValueKey('team-agent-did-not-start'),
+                icon: AppIconography.warning,
+                title: l10n.teamAgentDidNotStartTitle,
+                message: l10n.teamAgentDidNotStartBody,
+                actions: [
+                  teamUnstickAction(
+                    context,
+                    _controller,
+                    keyPrefix: 'team-agent-did-not-start',
+                    wake: [agent],
+                    wakeLabel: l10n.teamAgentStartIt,
+                  ),
+                ],
               ),
             )
-          else
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                padding: EdgeInsets.only(
-                  bottom: 8 + MediaQuery.paddingOf(context).bottom,
-                ),
-                children: [
-                  for (final item in ready)
-                    KitRow(
-                      key: ValueKey('team-agent-reassign-${item.id}'),
-                      leading: KitRow.icon(context, AppIconography.checklist),
-                      title: item.title,
-                      supporting: TextSpan(text: l10n.teamUiWorkTerm(item.id)),
-                      onTap: () => Navigator.of(context).pop(item.id),
-                    ),
+          else if (state == AgentState.stopped || state == AgentState.crashed)
+            pad(
+              _stoppedNotice(
+                context,
+                agent,
+                crashed: state == AgentState.crashed,
+              ),
+            ),
+          if (percent != null && percent >= teamContextRecyclePercent)
+            pad(
+              KitNotice(
+                key: const ValueKey('team-agent-recycling'),
+                icon: AppIconography.restart,
+                title: l10n.teamUiAgentRecyclingSoon,
+                message: l10n.teamAgentScreenRecyclingBody,
+              ),
+            ),
+          // 3. Where it stands.
+          _status(context, agent, work),
+          if (caps.usage) ?_usage(context, agent, snapshot.usage),
+          // 4. The newest control and why the primary is Live output.
+          if (receipt != null)
+            pad(
+              KitReceipt(
+                key: const ValueKey('team-agent-receipt'),
+                state: _receiptState(receipt.status),
+                reason: receipt.receipt?.message,
+                since: receipt.createdAt,
+                onRetry: receipt.canRetry
+                    ? () => unawaited(
+                        _run(
+                          () async =>
+                              (await _controller.retryMutation(receipt.key)) ??
+                              receipt,
+                        ),
+                      )
+                    : null,
+                retryKey: const ValueKey('team-agent-receipt-retry'),
+              ),
+            ),
+          if (!caps.controlAgent && !caps.controlMessage)
+            pad(
+              KitNotice(
+                key: const ValueKey('team-agent-controls-elsewhere'),
+                icon: AppIconography.info,
+                message: l10n.teamAgentScreenControlsElsewhere(agent.name),
+                actions: [
+                  KitAction(
+                    key: const ValueKey('team-agent-controls-how'),
+                    label: l10n.teamUiHow,
+                    onPressed: () => unawaited(showTeamHostGuideSheet(context)),
+                  ),
                 ],
               ),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Technical details
-// ---------------------------------------------------------------------------
-
-/// "Context use" with the toned number, or "Not reported".
-class _ContextRow extends StatelessWidget {
-  const _ContextRow({super.key, required this.percent});
-
-  final int? percent;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final percent = this.percent;
-    if (percent == null) {
-      return TeamIdentityRow(
-        label: l10n.teamUiAgentLabelContext,
-        value: l10n.teamUiAgentValueUnknown,
-      );
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 12,
-        children: [
-          Text(
-            l10n.teamUiAgentLabelContext,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedOf(theme),
+          if (miss != null)
+            pad(
+              KitText(
+                teamAgentConversationMissNote(context, miss),
+                key: const ValueKey('team-agent-conversation-miss'),
+                role: KitTextRole.secondary,
+                tone: KitTextTone.secondary,
+              ),
+            ),
+          // 5. The technical truth, last.
+          pad(
+            KitDetailsFold(
+              label: l10n.teamUiTechnicalDetails,
+              foldKey: const ValueKey('team-agent-technical'),
+              values: _technical(l10n, agent, work),
             ),
           ),
-          TeamContextNumber(
-            percent: percent,
-            style: theme.textTheme.bodyMedium,
-            label: '$percent%',
-          ),
         ],
       ),
     );
   }
-}
 
-/// "Tokens / context / cost": the team's tokens today, this agent's
-/// context percent and the team's estimated cost on one line, with a hint
-/// that tokens and cost are city-wide estimates. Nothing at all when the
-/// host reported neither tokens nor cost — the context number already has
-/// its own row.
-class _UsageRow extends StatelessWidget {
-  const _UsageRow({
-    super.key,
-    required this.usage,
-    required this.contextPercent,
-  });
-
-  final OrchestrationUsage? usage;
-  final int? contextPercent;
-
-  @override
-  Widget build(BuildContext context) {
+  /// Stopped: "Start fox again" (resume). Crashed: restart it.
+  Widget _stoppedNotice(
+    BuildContext context,
+    OrchestrationAgent agent, {
+    required bool crashed,
+  }) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
+    final caps = _controller.capabilities;
+    return KitNotice(
+      key: const ValueKey('team-agent-stopped'),
+      tone: crashed ? AppStatusTone.failure : AppStatusTone.neutral,
+      icon: crashed ? AppIconography.error : AppIconography.stopCircle,
+      title: crashed
+          ? l10n.teamAgentScreenCrashedTitle(agent.name)
+          : l10n.teamAgentScreenStoppedTitle(agent.name),
+      message: crashed
+          ? l10n.teamAgentScreenCrashedBody
+          : l10n.teamAgentScreenStoppedBody,
+      actions: [
+        if (caps.controlAgent)
+          KitAction(
+            key: const ValueKey('team-agent-control-resume'),
+            label: l10n.teamAgentScreenResume(agent.name),
+            onPressed: _busy
+                ? null
+                : () => unawaited(
+                    _control(
+                      agent.id,
+                      crashed
+                          ? AgentControlAction.restart
+                          : AgentControlAction.resume,
+                    ),
+                  ),
+          ),
+      ],
+    );
+  }
+
+  /// The status panel: state with context and age, the newest step, the
+  /// model in plain words, the current task.
+  Widget _status(
+    BuildContext context,
+    OrchestrationAgent agent,
+    WorkItem? work,
+  ) {
+    final l10n = _copy(context);
+    final now = _now;
+    final state = teamSessionState(agent);
+    final percent = agent.contextPercent;
+    final started = agent.sessionStartedAt;
+    String elapsed(DateTime at) => teamElapsedLabel(
+      l10n,
+      now.isBefore(at) ? Duration.zero : now.difference(at),
+    );
+    final facts = [
+      if (percent != null) l10n.teamUiAgentContextSemantics(percent),
+      if (started != null) l10n.teamUiAgentSessionAge(elapsed(started)),
+    ].join(teamUsageSeparator);
+    final lastActive = agent.lastActivity;
+    final step = _lastStep();
+    final model = agent.model?.trim();
+    return KitRowGroup(
+      margin: _groupMargin(context),
+      key: const ValueKey('team-agent-header'),
+      children: [
+        KitRow(
+          key: const ValueKey('team-agent-state-row'),
+          leading: KitStatusMark(
+            state: _mark(state),
+            paused: state == AgentState.stopped,
+          ),
+          title: teamAgentStateWord(l10n, state),
+          titleKey: const ValueKey('team-agent-state'),
+          supporting: facts.isEmpty ? null : TextSpan(text: facts),
+          supportingKey: const ValueKey('team-agent-age'),
+          supportingMaxLines: 2,
+        ),
+        if (step != null || lastActive != null)
+          KitRow(
+            key: const ValueKey('team-agent-activity-line'),
+            leading: KitRow.icon(context, AppIconography.terminal),
+            title: step == null
+                ? l10n.teamAgentLastActive(elapsed(lastActive!))
+                : l10n.teamAgentLastStep(step),
+            supporting: step != null && lastActive != null
+                ? TextSpan(text: l10n.teamAgentLastActive(elapsed(lastActive)))
+                : null,
+          ),
+        if (model != null && model.isNotEmpty)
+          KitRow(
+            key: const ValueKey('team-agent-model'),
+            leading: KitRow.icon(context, AppIconography.model),
+            title: l10n.teamUiAgentLabelModel,
+            supporting: TextSpan(text: _modelWords(l10n, agent, model)),
+          ),
+        if (work == null)
+          KitRow(
+            key: const ValueKey('team-agent-no-work'),
+            leading: KitRow.icon(context, AppIconography.checklist),
+            title: l10n.teamUiHomeAgentNoWork,
+          )
+        else
+          KitRow(
+            key: const ValueKey('team-agent-work-chip'),
+            leading: KitRow.icon(context, AppIconography.checklist),
+            title: work.title,
+            titleMaxLines: 2,
+            supporting: TextSpan(
+              text: work.isBlocked
+                  ? l10n.teamUiAgentWorkBlocked
+                  : work.dependsOn.isNotEmpty
+                  ? l10n.teamUiRunBlockedByDeps(work.dependsOn.length)
+                  : l10n.teamUiAgentWorkUnblocked,
+            ),
+            supportingKey: const ValueKey('team-agent-work-chip-dependency'),
+          ),
+      ],
+    );
+  }
+
+  /// "Tokens / context / cost": the team's tokens today, this agent's
+  /// context and the team's estimated cost, with the hint that tokens and
+  /// cost are team-wide estimates. Null when the host reported neither.
+  Widget? _usage(
+    BuildContext context,
+    OrchestrationAgent agent,
+    OrchestrationUsage? usage,
+  ) {
+    final l10n = _copy(context);
     final tokens = teamUsageTokensLabel(l10n, usage);
     final cost = teamUsageCostLabel(l10n, usage);
-    if (tokens == null && cost == null) return const SizedBox.shrink();
-    final percent = contextPercent;
+    if (tokens == null && cost == null) return null;
+    final percent = agent.contextPercent;
     final value = [
       ?tokens,
       if (percent != null) l10n.teamUiAgentContextShort(percent),
       ?cost,
     ].join(teamUsageSeparator);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return KitRowGroup(
+      margin: _groupMargin(context),
+      key: const ValueKey('team-agent-usage-row'),
+      label: l10n.teamUiUsageRuntimeLabel,
       children: [
-        TeamIdentityRow(
+        KitRow(
           key: const ValueKey('team-agent-usage'),
-          label: l10n.teamUiUsageRuntimeLabel,
-          value: value,
-        ),
-        Text(
-          l10n.teamUiUsageRuntimeHint,
-          key: const ValueKey('team-agent-usage-hint'),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: AppTheme.mutedOf(theme),
-          ),
+          leading: KitRow.icon(context, AppIconography.usage),
+          title: value,
+          titleKey: const ValueKey('team-agent-usage-value'),
+          supporting: TextSpan(text: l10n.teamUiUsageRuntimeHint),
+          supportingKey: const ValueKey('team-agent-usage-hint'),
+          supportingMaxLines: 3,
         ),
       ],
     );
   }
-}
 
-/// The work chip ("Sync engine · oc-abc12") and its dependency state.
-class _CurrentWork extends StatelessWidget {
-  const _CurrentWork({required this.work});
-
-  final WorkItem? work;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    final work = this.work;
-    if (work == null) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Text(
-          l10n.teamUiHomeAgentNoWork,
-          key: const ValueKey('team-agent-no-work'),
-          style: theme.textTheme.bodyMedium?.copyWith(color: muted),
-        ),
-      );
-    }
-    final dependency = work.isBlocked
-        ? l10n.teamUiAgentWorkBlocked
-        : work.dependsOn.isNotEmpty
-        ? l10n.teamUiRunBlockedByDeps(work.dependsOn.length)
-        : l10n.teamUiAgentWorkUnblocked;
-    final tone = work.isBlocked ? AppStatusTone.attention : AppStatusTone.ok;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        key: const ValueKey('team-agent-work-chip'),
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 6,
-            children: [
-              Icon(AppIconography.checklist, size: 16, color: muted),
-              Text(work.title, style: theme.textTheme.bodyMedium),
-              Text(
-                work.id,
-                textDirection: TextDirection.ltr,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: muted,
-                  fontFamily: AppTheme.monoFamily,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            dependency,
-            key: const ValueKey('team-agent-work-chip-dependency'),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: work.isBlocked ? AppTheme.statusColor(theme, tone) : muted,
-            ),
-          ),
-        ],
-      ),
+  /// A panel's place in the list: the gutter at the sides, a small step
+  /// between panels.
+  static EdgeInsetsDirectional _groupMargin(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    return EdgeInsetsDirectional.fromSTEB(
+      tokens.gutter,
+      tokens.space2,
+      tokens.gutter,
+      tokens.space2,
     );
   }
-}
 
-/// Every scalar the provider sent about the agent, with copy buttons.
-List<(String, String)> _rawFields(OrchestrationAgent agent) {
-  final scalars = <(String, String)>[];
-  void collect(Map<String, Object?> map, String prefix) {
-    for (final entry in map.entries) {
-      final value = entry.value;
-      if (value is String || value is num || value is bool) {
-        scalars.add(('$prefix${entry.key}', '$value'));
-      } else if (value is Map && prefix.isEmpty) {
-        collect({
-          for (final e in value.entries) '${e.key}': e.value,
-        }, '${entry.key}.');
+  /// "gpt-x from openai": the model's own name, then who serves it.
+  static String _modelWords(
+    AppLocalizations l10n,
+    OrchestrationAgent agent,
+    String model,
+  ) {
+    final slash = model.indexOf('/');
+    final name = slash < 0 ? model : model.substring(slash + 1);
+    final provider = slash > 0 ? model.substring(0, slash) : agent.provider;
+    if (provider == null || provider.trim().isEmpty || name.isEmpty) {
+      return model;
+    }
+    return l10n.teamAgentScreenModelFrom(name, provider.trim());
+  }
+
+  static KitMarkState _mark(AgentState state) => switch (state) {
+    AgentState.working => KitMarkState.working,
+    AgentState.crashed => KitMarkState.failed,
+    AgentState.idle ||
+    AgentState.waiting ||
+    AgentState.blocked ||
+    AgentState.stopped ||
+    AgentState.unknown => KitMarkState.waiting,
+  };
+
+  /// Every value the host reports about the agent, once each, mono and
+  /// copyable (KIT-32, KIT-33): what it runs on, where it works, then the
+  /// raw scalars.
+  static List<KitTechnicalValue> _technical(
+    AppLocalizations l10n,
+    OrchestrationAgent agent,
+    WorkItem? work,
+  ) {
+    bool has(String? value) => value != null && value.trim().isNotEmpty;
+    final values = <KitTechnicalValue>[
+      KitTechnicalValue(l10n.teamAgentScreenLabelId, agent.id),
+      if (has(agent.sessionId))
+        KitTechnicalValue(l10n.teamUiAgentLabelSessionId, agent.sessionId!),
+      if (has(agent.sessionName))
+        KitTechnicalValue(l10n.teamUiAgentLabelSessionName, agent.sessionName!),
+      if (has(agent.provider))
+        KitTechnicalValue(l10n.teamUiLabelProvider, agent.provider!),
+      if (has(agent.model))
+        KitTechnicalValue(l10n.teamUiAgentLabelModel, agent.model!),
+      if (has(agent.harness))
+        KitTechnicalValue(l10n.teamUiAgentLabelHarness, agent.harness!),
+      if (has(agent.workDir))
+        KitTechnicalValue(l10n.teamUiAgentLabelWorkDir, agent.workDir!),
+      if (has(agent.branch))
+        KitTechnicalValue(l10n.teamUiAgentLabelBranch, agent.branch!),
+      if (work != null) KitTechnicalValue(l10n.teamUiGateLabelWorkId, work.id),
+      if (has(agent.rawState))
+        KitTechnicalValue(l10n.teamUiRunLabelRawState, agent.rawState!),
+      if (has(agent.pool))
+        KitTechnicalValue(l10n.teamUiAgentLabelPool, agent.pool!),
+      if (has(agent.pack))
+        KitTechnicalValue(l10n.teamUiAgentLabelPack, agent.pack!),
+    ];
+    final scalars = <(String, String)>[];
+    void collect(Map<String, Object?> map, String prefix) {
+      for (final entry in map.entries) {
+        final value = entry.value;
+        if (value is String || value is num || value is bool) {
+          final text = '$value';
+          if (text.trim().isEmpty || KitRedact.containsSecret(text)) continue;
+          scalars.add(('$prefix${entry.key}', text));
+        } else if (value is Map && prefix.isEmpty) {
+          collect({
+            for (final e in value.entries) '${e.key}': e.value,
+          }, '${entry.key}.');
+        }
       }
     }
-  }
 
-  collect(agent.raw, '');
-  scalars.sort((a, b) => a.$1.compareTo(b.$1));
-  return scalars;
-}
-
-/// Folded at the end: what the host reports about the agent in plain rows
-/// (a value it does not report is left out), its current work, then every
-/// raw field with a copy button.
-class _TechnicalDetails extends StatelessWidget {
-  const _TechnicalDetails({
-    required this.agent,
-    required this.work,
-    required this.usage,
-    required this.showUsage,
-  });
-
-  final OrchestrationAgent agent;
-  final WorkItem? work;
-  final OrchestrationUsage? usage;
-  final bool showUsage;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    return ExpansionTile(
-      key: const ValueKey('team-agent-technical'),
-      tilePadding: EdgeInsets.zero,
-      childrenPadding: const EdgeInsets.only(bottom: 8),
-      expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
-      title: Text(l10n.teamUiTechnicalDetails),
-      children: [
-        TeamIdentityRow(
-          label: l10n.teamUiAgentLabelRole,
-          value: teamAgentRoleWord(l10n, teamAgentRole(agent)),
-        ),
-        if (_has(agent.provider))
-          TeamIdentityRow(
-            label: l10n.teamUiLabelProvider,
-            value: agent.provider!,
-            mono: true,
-          ),
-        if (_has(agent.model))
-          TeamIdentityRow(
-            label: l10n.teamUiAgentLabelModel,
-            value: agent.model!,
-            mono: true,
-          ),
-        if (_has(agent.harness))
-          TeamIdentityRow(
-            label: l10n.teamUiAgentLabelHarness,
-            value: agent.harness!,
-          ),
-        if (agent.contextPercent != null)
-          _ContextRow(
-            key: const ValueKey('team-agent-context-row'),
-            percent: agent.contextPercent,
-          ),
-        if (_has(agent.workDir))
-          TeamIdentityRow(
-            label: l10n.teamUiAgentLabelWorkDir,
-            value: agent.workDir!,
-            mono: true,
-          ),
-        if (_has(agent.branch))
-          TeamIdentityRow(
-            label: l10n.teamUiAgentLabelBranch,
-            value: agent.branch!,
-            mono: true,
-          ),
-        if (showUsage)
-          _UsageRow(
-            key: const ValueKey('team-agent-usage-row'),
-            usage: usage,
-            contextPercent: agent.contextPercent,
-          ),
-        _CurrentWork(work: work),
-        const SizedBox(height: 8),
-        _RawFields(agent: agent),
-      ],
-    );
+    collect(agent.raw, '');
+    scalars.sort((a, b) => a.$1.compareTo(b.$1));
+    return [
+      ...values,
+      for (final (label, value) in scalars) KitTechnicalValue(label, value),
+    ];
   }
 }
 
-class _RawFields extends StatelessWidget {
-  const _RawFields({required this.agent});
-
-  final OrchestrationAgent agent;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        TeamTechnicalValue(label: l10n.teamUiRunLabelId, value: agent.id),
-        TeamTechnicalValue(
-          label: l10n.teamUiAgentLabelSessionId,
-          value: agent.sessionId ?? '',
-        ),
-        TeamTechnicalValue(
-          label: l10n.teamUiAgentLabelSessionName,
-          value: agent.sessionName ?? '',
-        ),
-        TeamTechnicalValue(
-          label: l10n.teamUiRunLabelRawState,
-          value: agent.rawState ?? '',
-        ),
-        TeamTechnicalValue(
-          label: l10n.teamUiAgentLabelPool,
-          value: agent.pool ?? '',
-        ),
-        TeamTechnicalValue(
-          label: l10n.teamUiAgentLabelPack,
-          value: agent.pack ?? '',
-        ),
-        for (final (label, value) in _rawFields(agent))
-          TeamTechnicalValue(label: label, value: value),
-      ],
-    );
-  }
-}
-
-/// The app bar's sheet: the same raw fields, reachable without scrolling.
-class _AgentDetailsSheet extends StatelessWidget {
-  const _AgentDetailsSheet({required this.agent});
-
-  final OrchestrationAgent agent;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    return SingleChildScrollView(
-      key: const ValueKey('team-agent-details-sheet'),
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(l10n.teamUiTechnicalDetails, style: theme.textTheme.titleLarge),
-          const SizedBox(height: 2),
-          TeamTermRow(l10n.teamUiTermAgent),
-          const SizedBox(height: 8),
-          _RawFields(agent: agent),
-        ],
-      ),
-    );
-  }
-}
+KitReceiptState _receiptState(MutationStatus status) => switch (status) {
+  MutationStatus.sent => KitReceiptState.sent,
+  MutationStatus.confirmed => KitReceiptState.confirmed,
+  MutationStatus.unconfirmed => KitReceiptState.notConfirmed,
+  MutationStatus.rejected => KitReceiptState.refused,
+};
