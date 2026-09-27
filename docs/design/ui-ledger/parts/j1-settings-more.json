@@ -1047,32 +1047,6 @@
           "destructive": false
         },
         {
-          "id": "theme-pack-preview-sheet-preview-chip",
-          "type": "chip",
-          "label": "Selected option",
-          "key": null,
-          "line": 295,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "ThemeComponentPreview sample FilterChip: local state only.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "theme-pack-preview-sheet-preview-button",
-          "type": "button",
-          "label": "Try a control",
-          "key": null,
-          "line": 301,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "ThemeComponentPreview sample button: local state only.",
-          "gates": [],
-          "destructive": false
-        },
-        {
           "id": "theme-pack-preview-sheet-apply",
           "type": "button",
           "label": "Apply / Current appearance / Saving…",
@@ -1833,159 +1807,6 @@
           "target": null,
           "targetWidget": null,
           "effect": "showConfirmSheet default cancel; pops false.",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "legacy-drafts",
-      "title": "Older drafts",
-      "kind": "screen",
-      "file": "lib/ui/screens/legacy_drafts_screen.dart",
-      "widget": "LegacyDraftsScreen",
-      "presentedBy": [],
-      "line": 10,
-      "purpose": "Lists drafts saved by older app versions so one can be reviewed and inserted into the composer; pops with the chosen draft text.",
-      "reachedFrom": [
-        {
-          "page": "?",
-          "element": null,
-          "widget": "_recoverLegacyDraft",
-          "file": "lib/ui/screens/chat_screen.dart",
-          "line": 3041
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "legacy-drafts-search",
-          "type": "text-field",
-          "label": "Search older drafts",
-          "key": "legacy-drafts-search",
-          "line": 133,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Sets _query (lower-cased) filtering drafts by text or sessionID.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "legacy-drafts-item",
-          "type": "list-tile",
-          "label": "<draft text>",
-          "key": "legacy-draft-<draft.sessionID>",
-          "line": 154,
-          "action": "open-sheet",
-          "target": "legacy-drafts-review-sheet",
-          "targetWidget": "_review",
-          "effect": "_review(draft): opens the review sheet; if the sheet returns true, Navigator.pop(context, draft.text) back to the chat composer.",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "legacy-drafts-review-sheet",
-      "title": "Older drafts",
-      "kind": "sheet",
-      "file": "lib/ui/screens/legacy_drafts_screen.dart",
-      "widget": "_review",
-      "presentedBy": [],
-      "line": 24,
-      "purpose": "Full text of one legacy draft with copy, delete and insert.",
-      "reachedFrom": [
-        {
-          "page": "legacy-drafts",
-          "element": "legacy-drafts-item"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "legacy-drafts-review-sheet-copy",
-          "type": "icon-button",
-          "label": "Copy",
-          "key": null,
-          "line": 56,
-          "action": "copy",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Clipboard.setData(draft.text) (tooltip MaterialLocalizations.copyButtonLabel). Disabled when the draft text is empty.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "legacy-drafts-review-sheet-delete",
-          "type": "button",
-          "label": "Delete saved copy",
-          "key": null,
-          "line": 65,
-          "action": "open-sheet",
-          "target": "legacy-drafts-delete-sheet",
-          "targetWidget": "showConfirmSheet",
-          "effect": "Opens the delete confirm sheet.",
-          "gates": [],
-          "destructive": true
-        },
-        {
-          "id": "legacy-drafts-review-sheet-insert",
-          "type": "button",
-          "label": "Insert into draft",
-          "key": null,
-          "line": 91,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Pops the sheet with true; the screen then pops with draft.text for the caller to insert. Disabled when text is empty.",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "legacy-drafts-delete-sheet",
-      "title": "Delete saved copy",
-      "kind": "sheet",
-      "file": "lib/ui/screens/legacy_drafts_screen.dart",
-      "widget": "_review",
-      "presentedBy": [
-        "showConfirmSheet"
-      ],
-      "line": 67,
-      "purpose": "Confirms deleting one legacy draft.",
-      "reachedFrom": [
-        {
-          "page": "legacy-drafts-review-sheet",
-          "element": "legacy-drafts-review-sheet-delete"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "legacy-drafts-delete-sheet-confirm",
-          "type": "button",
-          "label": "Delete saved copy",
-          "key": null,
-          "line": 71,
-          "action": "mutate",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Returns true; then controller.removeLegacySessionDraft(draft); on success pops the review sheet with false, else snackbar \"The draft changed or could not be removed. Reopen it and retry.\".",
-          "gates": [],
-          "destructive": true
-        },
-        {
-          "id": "legacy-drafts-delete-sheet-cancel",
-          "type": "button",
-          "label": "Cancel",
-          "key": null,
-          "line": 72,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Pops false.",
           "gates": [],
           "destructive": false
         }
@@ -2790,6 +2611,10 @@
     {
       "file": "lib/ui/screens/perf_trace_section.dart",
       "reason": "PerfTraceSection is the 'Performance' block of App diagnostics (embedded via lib/ui/screens/app_diagnostics_screen.dart:252, host page app-diagnostics), not a surface of its own; its Copy report and Clear buttons are recorded on app-diagnostics with `file` set here."
+    },
+    {
+      "file": "lib/ui/screens/usage_refresh_slot.dart",
+      "reason": "UsageRefreshSlot is a ChangeNotifier holding refresh callbacks for the Usage page, with no visual surface or gestures."
     }
   ],
   "notes": [

@@ -1323,39 +1323,42 @@
      "type": "text-field",
      "label": "<prompt message>",
      "key": "oauth-prompt-<key>",
-     "line": 786,
+     "line": 715,
      "action": "other",
      "target": null,
      "targetWidget": null,
-     "effect": "TextFormField per 'text' prompt; setState(_values[key]).",
+     "effect": "KitField updates the corresponding provider text prompt value and clears its validation error.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/screens/library/integration_tiles.dart"
     },
     {
      "id": "integrations-oauth-inputs-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "line": 812,
+     "type": "icon-button",
+     "label": "Close",
+     "key": "kit-sheet-close",
+     "line": 435,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
-     "effect": "Navigator.pop(context); OAuth is not started.",
+     "effect": "Closes the provider input sheet without beginning OAuth.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/kit/kit_sheet.dart"
     },
     {
      "id": "integrations-oauth-inputs-dialog-continue",
      "type": "button",
-     "label": "Continue",
-     "key": null,
-     "line": 820,
+     "label": "Open {provider} sign-in",
+     "key": "oauth-inputs-continue",
+     "line": 591,
      "action": "submit",
      "target": "integrations-authorization-launch-dialog",
      "targetWidget": "_confirmAuthorizationLaunch",
-     "effect": "_submit(): validates the form and pops the visible values; caller (_connectWithOAuth) starts controller.startRecoverableIntegrationOAuth or legacy repository.startIntegrationOAuth, then opens the authorization-launch dialog.",
+     "effect": "Validates the provider prompts and returns their answers to begin sign-in.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/screens/library/integration_tiles.dart"
     }
    ]
   },
@@ -1640,12 +1643,12 @@
    "id": "integrations-forget-pending-auth-sheet",
    "title": "Forget on this device",
    "kind": "sheet",
-   "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+   "file": "lib/ui/screens/library/integrations_screen.dart",
    "widget": "_PendingAuthRecoveryTileState._act",
    "presentedBy": [
     "showConfirmSheet"
    ],
-   "line": 59,
+   "line": 1238,
    "purpose": "The one forget-sign-in question, for a saved sign-in and for a start the server never confirmed (the uncertain start's own sheet merged here, slice-P3.11a).",
    "reachedFrom": [
     {
@@ -1664,8 +1667,8 @@
      "type": "button",
      "label": "Forget on this device",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 69,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 1246,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
@@ -1678,8 +1681,8 @@
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 86,
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
+     "line": 431,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
@@ -2177,7 +2180,12 @@
    ]
   }
  ],
- "notPages": [],
+ "notPages": [
+  {
+   "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+   "reason": "Only _authSourceFor remains: a nonvisual equality identity for an authentication action. The sign-in confirmation now lives in integrations_screen.dart."
+  }
+ ],
  "notes": [
   "lib/ui/screens/library/catalog_screen.dart:108 CatalogScreen's live body is ModelCatalogView (lib/ui/widgets/pickers.dart:113, not assigned here); its interactive elements must be merged into page 'catalog' by whoever owns pickers.dart.",
   "lib/ui/screens/library/catalog_screen.dart:113-439 _models/_providers/_agents/_modelDetails (and _load, _catalog, _query) are dead code (// ignore: unused_element); recorded with a dead-code gate so grep hits are covered. ModelStatusPill (line 5) and _CapabilityChip (line 448) are non-interactive.",
