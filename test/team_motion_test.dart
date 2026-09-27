@@ -275,20 +275,38 @@ void main() {
     expect(tester.hasRunningAnimations, isFalse);
   });
 
+  testWidgets('the home has no Needs you heading: its question block is '
+      'the answer surface', (tester) async {
+    await open(tester, TeamScene.loaded, home);
+    expect(find.byType(TeamNeedsYouLabel), findsNothing);
+    expect(find.byType(KitRequestCard), findsOneWidget);
+  });
+
   testWidgets('Needs you: the agent waves the first time, not again', (
     tester,
   ) async {
-    await open(tester, TeamScene.loaded, home);
-    final first = _drawings(tester, _key('team-home-needs-you'));
+    Widget label() => _app(
+      Scaffold(
+        body: TeamNeedsYouLabel(
+          'Needs you',
+          key: const ValueKey('needs-you'),
+          profileId: 'p',
+          gateIds: const ['g1'],
+        ),
+      ),
+    );
+    await tester.pumpWidget(label());
+    await _settle(tester);
+    final first = _drawings(tester, _key('needs-you'));
     expect(first.single.$1, isA<TeamNudgeScene>());
     expect(first.single.$2, isFalse, reason: 'a nudge is not a loop');
     expect(first.single.$3, isTrue, reason: 'it plays the first time');
 
-    // Back on the home later: the agent stands still, hand up.
+    // Back later: the agent stands still, hand up.
     await tester.pumpWidget(const SizedBox());
-    await tester.pumpWidget(_app(home()));
+    await tester.pumpWidget(label());
     await _settle(tester);
-    final again = _drawings(tester, _key('team-home-needs-you'));
+    final again = _drawings(tester, _key('needs-you'));
     expect(again.single.$1, isA<TeamNudgeScene>());
     expect(again.single.$3, isFalse);
   });

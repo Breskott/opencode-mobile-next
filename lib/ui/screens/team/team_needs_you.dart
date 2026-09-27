@@ -70,10 +70,12 @@ OrchestrationRun? teamGateRun(
 
 /// One question as a request block: [title] names what it is about (the
 /// task on the home, the kind of question on the task's own Overview), the
-/// question and its note follow, then the answers.
+/// question and its note follow, then the answers. On the home the card is
+/// also the task's row (nothing shown twice): [detail] carries the task's
+/// step count and [onOpenTask] its conversation.
 ///
 /// Keys: `<keyPrefix>` on the block, `-question`, `-send`, `-answer`,
-/// `-more`, `-receipt`, `-watch-only`.
+/// `-more`, `-task`, `-receipt`, `-watch-only`.
 class TeamNeedsYouCard extends StatefulWidget {
   const TeamNeedsYouCard({
     super.key,
@@ -82,11 +84,19 @@ class TeamNeedsYouCard extends StatefulWidget {
     required this.title,
     required this.onOpen,
     required this.keyPrefix,
+    this.detail,
+    this.onOpenTask,
   });
 
   final OrchestrationController controller;
   final OrchestrationGate gate;
   final String title;
+
+  /// One line under [title]: the task's progress ("1 of 5 steps done").
+  final String? detail;
+
+  /// Opens the task's conversation; no action when null.
+  final VoidCallback? onOpenTask;
 
   /// Opens the Gate sheet: the full question, other kinds' answers, the
   /// retry of an unconfirmed answer, Technical details.
@@ -181,6 +191,7 @@ class _TeamNeedsYouCardState extends State<TeamNeedsYouCard> {
         icon: icon,
         tone: tone,
         title: widget.title,
+        detail: widget.detail,
         announcement: l10n.teamUiHomeNeedsYouAnnouncement(gate.title),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -251,7 +262,15 @@ class _TeamNeedsYouCardState extends State<TeamNeedsYouCard> {
           ],
         ),
         primary: primary,
-        tertiary: [if (!answersInSheet) more],
+        tertiary: [
+          if (!answersInSheet) more,
+          if (widget.onOpenTask case final openTask?)
+            KitAction(
+              key: _key('task'),
+              label: l10n.teamOpenConversation,
+              onPressed: openTask,
+            ),
+        ],
       ),
     );
   }

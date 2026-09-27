@@ -1284,23 +1284,6 @@ class _FilesScreenState extends State<FilesScreen> {
               ),
             ),
           ),
-        // UX-102: after a run the question is "what changed?", so the
-        // changed set stays one tap away above the tree.
-        if (files && _fileStatuses.isNotEmpty)
-          Padding(
-            padding: EdgeInsetsDirectional.only(top: tokens.space2),
-            child: KitRowGroup(
-              children: [
-                KitRow(
-                  key: const ValueKey('files-changes-card'),
-                  leading: KitRow.icon(context, AppIconography.review),
-                  title: l10n.readerUiChangedCount(_fileStatuses.length),
-                  trailing: const KitChevron(),
-                  onTap: () => unawaited(_openChanges()),
-                ),
-              ],
-            ),
-          ),
         if (notice != null)
           Padding(
             padding: EdgeInsetsDirectional.only(
@@ -1341,6 +1324,19 @@ class _FilesScreenState extends State<FilesScreen> {
     ],
   );
 
+  /// UX-102: after a run the question is "what changed?", so the changed
+  /// set is one tap away as the list's first row: the same inset and
+  /// hairline as the file rows under it, not a card of its own.
+  Widget? _changesRow(AppLocalizations l10n) => _fileStatuses.isEmpty
+      ? null
+      : KitRow(
+          key: const ValueKey('files-changes-card'),
+          leading: KitRow.icon(context, AppIconography.review),
+          title: l10n.readerUiChangedCount(_fileStatuses.length),
+          trailing: const KitChevron(),
+          onTap: () => unawaited(_openChanges()),
+        );
+
   Widget _fileList(AppLocalizations l10n) {
     if (_loading && _entries == null) {
       return _waiting(l10n.filesLoadingFolder, _refreshFiles);
@@ -1353,10 +1349,11 @@ class _FilesScreenState extends State<FilesScreen> {
     }
     final hidden = <FileNode>[];
     final entries = _displayEntries(hidden);
+    final changes = _changesRow(l10n);
     if (_entries != null && entries.isEmpty) {
       final searching = _search.text.isNotEmpty;
       final onlyHidden = !searching && hidden.isNotEmpty;
-      return KitRefresh(
+      final state = KitRefresh(
         onRefresh: _refreshFiles,
         // An empty folder is the open folder; a filter that matched nothing
         // is the magnifier (one drawing per kind of state).
@@ -1387,7 +1384,22 @@ class _FilesScreenState extends State<FilesScreen> {
                 ),
         ),
       );
+      if (changes == null) return state;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: EdgeInsetsDirectional.only(
+              top: KitTokens.of(context).space2,
+            ),
+            child: changes,
+          ),
+          const KitDivider(inset: KitDividerInset.text),
+          Expanded(child: state),
+        ],
+      );
     }
+    final lead = changes == null ? 0 : 1;
     return KitRefresh(
       onRefresh: _refreshFiles,
       child: KitScrollArea(
@@ -1398,10 +1410,11 @@ class _FilesScreenState extends State<FilesScreen> {
             top: KitTokens.of(context).space2,
             bottom: KitScreen.endPadding(context),
           ),
-          itemCount: entries.length,
+          itemCount: lead + entries.length,
           separatorBuilder: (_, _) =>
               const KitDivider(inset: KitDividerInset.text),
-          itemBuilder: (context, i) => _fileRow(context, l10n, entries[i]),
+          itemBuilder: (context, i) =>
+              i < lead ? changes! : _fileRow(context, l10n, entries[i - lead]),
         ),
       ),
     );

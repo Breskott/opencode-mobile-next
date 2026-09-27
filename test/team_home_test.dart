@@ -499,10 +499,7 @@ void main() {
         findsNothing,
         reason: 'no upkeep in the recording: no toggle',
       );
-      expect(
-        find.byKey(const ValueKey('team-home-completed-group')),
-        findsNothing,
-      );
+      expect(find.text('Done today'), findsNothing);
       expect(find.byKey(const ValueKey('team-home-stale')), findsNothing);
 
       await tester.tap(runRow('oc-xru'));
@@ -534,10 +531,12 @@ void main() {
           reason: '${order[i - 1]} above ${order[i]}',
         );
       }
-      // What finished follows under its own heading, up to three shown.
-      final group = find.byKey(const ValueKey('team-home-completed-group'));
-      expect(group, findsOneWidget);
-      expect(top(tester, group), greaterThan(top(tester, runRow('wait-1'))));
+      // What finished follows in the same list, no heading of its own, up
+      // to three shown.
+      expect(
+        top(tester, runRow('done-1')),
+        greaterThan(top(tester, runRow('wait-1'))),
+      );
       await tester.dragUntilVisible(
         runRow('done-2'),
         find.byKey(const ValueKey('team-home-runs')),
@@ -554,6 +553,63 @@ void main() {
       expect(find.textContaining('formula'), findsNothing);
       expect(find.textContaining('convoy'), findsNothing);
       expect(lineOf(tester, 'work-new'), 'Working · 1 of 4 steps done');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('one list under one heading: needs you, then working, then '
+        'done; no state sections', (tester) async {
+      final (controller, _) = await boot(
+        configure: (g) {
+          mixedShape(g);
+          // Two questions: rows on their own panel, so their tasks stay in
+          // the list, first.
+          g.gatesOverride = const [
+            OrchestrationGate(
+              id: 'q-wait',
+              kind: GateKind.freeText,
+              title: 'Which branch?',
+              runId: 'wait-1',
+            ),
+            OrchestrationGate(
+              id: 'q-blocked',
+              kind: GateKind.freeText,
+              title: 'Which port?',
+              runId: 'blocked-1',
+            ),
+          ];
+        },
+      );
+      await pumpHome(tester, controller);
+      // One heading over every task; none of the old section labels.
+      final tasks = find.byKey(const ValueKey('team-home-tasks'));
+      expect(tasks, findsOneWidget);
+      expect(find.text('Tasks'), findsOneWidget);
+      expect(find.text('Done today'), findsNothing);
+      expect(find.text('Needs you'), findsNothing);
+      expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('team-home-completed-group')),
+        findsNothing,
+      );
+      final order = ['wait-1', 'work-new', 'done-1'];
+      for (final id in order) {
+        expect(
+          find.descendant(of: tasks, matching: runRow(id)),
+          findsOneWidget,
+          reason: '$id in the one list',
+        );
+      }
+      for (var i = 1; i < order.length; i++) {
+        expect(
+          top(tester, runRow(order[i - 1])),
+          lessThan(top(tester, runRow(order[i]))),
+          reason: '${order[i - 1]} above ${order[i]}',
+        );
+      }
+      // The row's own words carry the state.
+      expect(lineOf(tester, 'wait-1'), 'Needs you · 1 of 4 steps done');
+      expect(lineOf(tester, 'work-new'), 'Working · 1 of 4 steps done');
+      expect(lineOf(tester, 'done-1'), startsWith('Done'));
       expect(tester.takeException(), isNull);
     });
 
@@ -651,15 +707,34 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a gated task comes first, under Needs you', (tester) async {
+    testWidgets('a gated task with its one question: the question block is '
+        'its row, shown once', (tester) async {
+      OrchestrationRun? opened;
       final (controller, _) = await boot(configure: blockedShape);
-      await pumpHome(tester, controller);
-      final needsYou = find.byKey(const ValueKey('team-home-needs-you'));
-      expect(needsYou, findsOneWidget);
-      // The question sits above the task list, and the task's own line
-      // says it waits on the person.
-      expect(top(tester, needsYou), lessThan(top(tester, runRow('oc-xru'))));
-      expect(lineOf(tester, 'oc-xru'), 'Needs you · 1 of 2 steps done');
+      await pumpHome(tester, controller, onOpenRun: (run) => opened = run);
+      final gate = controller.snapshot.gates.single;
+      final block = find.byKey(ValueKey('team-home-gate-${gate.id}'));
+      expect(block, findsOneWidget);
+      // No heading over the block, and the task is not listed again.
+      expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
+      expect(runRow('oc-xru'), findsNothing);
+      // The block names the task and carries its step count, each once.
+      expect(
+        find.descendant(
+          of: block,
+          matching: find.text('Add subtract function to calc.py'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Add subtract function to calc.py'), findsOneWidget);
+      expect(
+        find.descendant(of: block, matching: find.text('1 of 2 steps done')),
+        findsOneWidget,
+      );
+      // It still opens the task's conversation.
+      await tester.tap(find.byKey(ValueKey('team-home-gate-${gate.id}-task')));
+      expect(opened?.id, 'oc-xru');
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('no tasks at all: the empty state teaches once', (
@@ -717,10 +792,7 @@ void main() {
 
       expect(find.byKey(const ValueKey('team-home-runs-empty')), findsNothing);
       expect(find.text('No recent tasks'), findsNothing);
-      expect(
-        find.byKey(const ValueKey('team-home-completed-group')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const ValueKey('team-home-tasks')), findsOneWidget);
       expect(
         find.byKey(const ValueKey('team-home-run-ma-lqw')),
         findsOneWidget,
@@ -984,10 +1056,10 @@ void main() {
       final gate = controller.snapshot.gates.single;
       final block = find.byKey(ValueKey('team-home-gate-${gate.id}'));
       expect(block, findsOneWidget);
-      expect(
-        top(tester, find.byKey(const ValueKey('team-home-needs-you'))),
-        lessThan(top(tester, find.byKey(const ValueKey('team-home-tasks')))),
-      );
+      // The block is the answer surface: no heading over it, and its task
+      // (the fixture's only one) is not listed again under Tasks.
+      expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
+      expect(runRow('oc-xru'), findsNothing);
       // Watch-only here: no choices to pick on the home.
       expect(
         find.byKey(ValueKey('team-home-gate-${gate.id}-watch-only')),
@@ -1080,7 +1152,8 @@ void main() {
         ],
       );
       await pumpHome(tester, controller);
-      expect(find.byKey(const ValueKey('team-home-needs-you')), findsOneWidget);
+      // The questions head the page without a section label.
+      expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
       Finder row(String id) => find.byKey(ValueKey('team-home-gate-$id'));
       final order = ['ask', 'failed', 'review', 'gate'];
       for (var i = 1; i < order.length; i++) {
@@ -1302,7 +1375,7 @@ void main() {
       expect(toggle, findsOneWidget);
       expect(find.text('Show team upkeep (3)'), findsOneWidget);
       expect(
-        top(tester, find.byKey(const ValueKey('team-home-completed-group'))),
+        top(tester, find.byKey(const ValueKey('team-home-tasks'))),
         lessThan(top(tester, toggle)),
       );
       expect(tester.widget<SwitchListTile>(toggle).value, isFalse);
