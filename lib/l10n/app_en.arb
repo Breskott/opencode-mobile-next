@@ -25594,5 +25594,33 @@
   "serverSettingsRunningVersionLabel": "Running version",
   "@serverSettingsRunningVersionLabel": {
     "description": "Server settings Details: the running OpenCode version label"
+  },
+  "tailscaleSetupAppTitle": "Tailscale app on this phone",
+  "@tailscaleSetupAppTitle": {
+    "description": "Tailscale setup: the first checklist step, whether the official Tailscale app is installed on this phone"
+  },
+  "tailscaleSetupVpnTitle": "Sign in and turn on the VPN",
+  "@tailscaleSetupVpnTitle": {
+    "description": "Tailscale setup: the second checklist step, done by the person in the Tailscale app; the app cannot verify it"
+  },
+  "tailscaleSetupVpnSupporting": "Sign in and connect. OpenCode can’t check this.",
+  "@tailscaleSetupVpnSupporting": {
+    "description": "Tailscale setup: the short line under the VPN step; the full instructions are in the Details fold"
+  },
+  "tailscaleSetupOpenFailed": "Tailscale didn’t open. Open it from your launcher, then come back.",
+  "@tailscaleSetupOpenFailed": {
+    "description": "Tailscale setup: the VPN step's short reason when the Tailscale app could not be opened"
+  },
+  "tailscaleSetupAddressHelper": "OpenCode can’t list the devices on your tailnet. Copy the HTTPS address Tailscale Serve printed.",
+  "@tailscaleSetupAddressHelper": {
+    "description": "Tailscale setup: the helper under the server address field; says the app cannot pick the computer from the tailnet's devices"
+  },
+  "tailscaleSetupGetApp": "Get Tailscale",
+  "@tailscaleSetupGetApp": {
+    "description": "Tailscale setup: the button on the app step that opens the official Play Store page (after the external-link review)"
+  },
+  "tailscaleSetupContinueReason": "Enter your server’s address first.",
+  "@tailscaleSetupContinueReason": {
+    "description": "Tailscale setup: why Continue to authentication is disabled while the address field is empty"
   }
 }
