@@ -4,15 +4,32 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show NumberFormat;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
+import 'package:opencode_mobile/ui/kit/kit_choice_list.dart';
+import 'package:opencode_mobile/ui/kit/kit_icon_button.dart';
+import 'package:opencode_mobile/ui/kit/kit_notice.dart';
+import 'package:opencode_mobile/ui/kit/kit_page_route.dart';
+import 'package:opencode_mobile/ui/kit/kit_progress.dart';
+import 'package:opencode_mobile/ui/kit/kit_row.dart';
+import 'package:opencode_mobile/ui/kit/kit_row_parts.dart';
+import 'package:opencode_mobile/ui/kit/kit_search_field.dart';
+import 'package:opencode_mobile/ui/kit/kit_segmented.dart';
+import 'package:opencode_mobile/ui/kit/kit_sheet.dart';
+import 'package:opencode_mobile/ui/kit/kit_state_view.dart';
+import 'package:opencode_mobile/ui/kit/kit_technical_value.dart';
+import 'package:opencode_mobile/ui/kit/kit_text.dart';
+import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
+
 import '../../api/models.dart';
 import '../../api/provider_presentation.dart';
 import '../../api/product_repository.dart';
 import '../../state/connection.dart';
 import '../../state/model_library.dart';
 import '../../l10n/app_localizations.dart';
-import '../app_theme.dart';
-import 'agent_color.dart';
-import 'provider_logo.dart';
+import '../app_iconography.dart';
+import '../app_theme.dart' show AppStatusTone;
+import '../screens/library_screen.dart'
+    show IntegrationsMode, IntegrationsScreen;
 
 AppLocalizations _pickerStrings(BuildContext context) =>
     Localizations.of<AppLocalizations>(context, AppLocalizations) ??
@@ -23,14 +40,11 @@ AppLocalizations _pickerStrings(BuildContext context) =>
 /// [classic] keeps the v1 wording ("Use model and mode") — selection is
 /// client-side state attached to each prompt. On OpenCode 2 servers the
 /// selection is session state instead: [session] labels the apply action
-/// "Use for this session" (picker opened with an active session), and
-/// [newSessions] labels it "Use for new sessions" (no session yet — the
+/// "Use for this conversation" (picker opened with an active session), and
+/// [newSessions] labels it "Use for new conversations" (no session yet — the
 /// choice becomes the default for `POST /api/session`).
 enum ModelPickerApplyScope { classic, session, newSessions }
 
-/// Opens the model/agent sheet. With [sessionID] and
-/// [ModelPickerApplyScope.session] the choice applies to that session only;
-/// otherwise it becomes the profile default.
 /// A reasoning-effort variant as a person reads it: "Extra high" for
 /// `xhigh`, "No thinking" for `none`. Unknown ids are shown as they are.
 String presentedEffort(String id, AppLocalizations strings) =>
@@ -55,6 +69,19 @@ bool isNewModel(CatalogModel model, {DateTime? now}) {
   return !age.isNegative && age.inDays < 30;
 }
 
+String _applyLabel(AppLocalizations strings, ModelPickerApplyScope scope) =>
+    switch (scope) {
+      ModelPickerApplyScope.classic => strings.e7ModelUiUseModelMode,
+      ModelPickerApplyScope.session => strings.e7ModelUiUseSession,
+      ModelPickerApplyScope.newSessions => strings.e7ModelUiUseNewSessions,
+    };
+
+/// Opens the model sheet: the choice (model, thinking level, agent) on top,
+/// then every model to pick from, with "Use for this conversation" (or the
+/// scope's wording) pinned at the bottom. With [sessionID] and
+/// [ModelPickerApplyScope.session] the choice applies to that session only;
+/// otherwise it becomes the profile default. [focusAgent] opens the sheet
+/// with the agent choice unfolded.
 Future<void> showModelPicker(
   BuildContext context, {
   ModelPickerApplyScope applyScope = ModelPickerApplyScope.classic,
@@ -76,64 +103,62 @@ Future<void> showModelPicker(
       controller.serverOwnsSessionSelection) {
     applyScope = ModelPickerApplyScope.newSessions;
   }
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    // Theme default drag handle: the visible affordance that this sheet
-    // collapses by dragging.
-    clipBehavior: Clip.antiAlias,
-    constraints: const BoxConstraints(maxWidth: 720),
-    builder: (_) => _ModelAgentSheet(
-      applyScope: applyScope,
+  final strings = _pickerStrings(context);
+  final apply = _SheetApply();
+  final scope = applyScope;
+  return showKitSheet<void>(
+    context,
+    title: strings.modelChooseTitle,
+    icon: AppIconography.model,
+    height: KitSheetHeight.full,
+    loading: apply.applying,
+    primary: KitAction(
+      key: const Key('model-picker-apply'),
+      label: _applyLabel(strings, scope),
+      onPressed: apply.run,
+    ),
+    body: (sheetContext) => ModelCatalogView._sheet(
+      controller: controller,
+      apply: apply,
+      onApplied: () => Navigator.of(sheetContext).maybePop(),
+      applyScope: scope,
       sessionID: sessionID,
       focusAgent: focusAgent,
     ),
-  );
+  ).whenComplete(apply.dispose);
 }
 
-class _ModelAgentSheet extends ConsumerWidget {
-  const _ModelAgentSheet({
-    this.applyScope = ModelPickerApplyScope.classic,
-    this.sessionID,
-    this.focusAgent = false,
-  });
+/// The sheet's pinned primary runs the view's apply through this; the view
+/// reports its in-flight save back as the sheet's loading bar.
+class _SheetApply {
+  final applying = ValueNotifier<bool>(false);
+  Future<void> Function()? _handler;
 
-  final ModelPickerApplyScope applyScope;
-  final String? sessionID;
-  final bool focusAgent;
+  void run() {
+    final handler = _handler;
+    if (handler != null) unawaited(handler());
+  }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) => Padding(
-    padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-    child: DraggableScrollableSheet(
-      expand: false,
-      minChildSize: .56,
-      initialChildSize: .88,
-      maxChildSize: .96,
-      snap: true,
-      snapSizes: const [.88, .96],
-      builder: (context, scrollController) => Material(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        child: ModelCatalogView(
-          controller: ref.watch(connProvider),
-          scrollController: scrollController,
-          onApplied: () => Navigator.maybePop(context),
-          onClose: () => Navigator.maybePop(context),
-          applyScope: applyScope,
-          sessionID: sessionID,
-          focusAgent: focusAgent,
-        ),
-      ),
-    ),
-  );
+  void dispose() => applying.dispose();
 }
 
 enum _ModelIntent { all, fast, reasoning, context }
 
 enum _ModelCollection { all, favorites, recent }
 
-/// The single model, mode, provider, and agent selector used throughout the app.
+/// How many model rows show before "Show more": the sheet body is not
+/// virtualised, so a catalog of hundreds of models grows on request.
+const _modelPage = 60;
+
+/// The single model, thinking level and agent selector used throughout the
+/// app: in the model sheet ([showModelPicker]) and as the body of the
+/// catalog screen.
+///
+/// Top to bottom: notices about this catalog (only when they apply), "Your
+/// choice" (the model, unfolding into its details; Thinking; Agent), then
+/// search with its filter menu, All / Favorites / Recent, and the models.
+/// With a bounded height (a screen) the list scrolls and the apply action is
+/// pinned under it; inside the sheet the sheet scrolls and pins it.
 class ModelCatalogView extends StatefulWidget {
   const ModelCatalogView({
     super.key,
@@ -145,7 +170,19 @@ class ModelCatalogView extends StatefulWidget {
     this.applyScope = ModelPickerApplyScope.classic,
     this.sessionID,
     this.focusAgent = false,
-  });
+  }) : _apply = null;
+
+  const ModelCatalogView._sheet({
+    required this.controller,
+    required _SheetApply apply,
+    this.onApplied,
+    this.applyScope = ModelPickerApplyScope.classic,
+    this.sessionID,
+    this.focusAgent = false,
+  }) : _apply = apply,
+       scrollController = null,
+       onClose = null,
+       showHeader = false;
 
   final ConnectionController controller;
   final ScrollController? scrollController;
@@ -154,7 +191,11 @@ class ModelCatalogView extends StatefulWidget {
   final bool showHeader;
   final ModelPickerApplyScope applyScope;
   final String? sessionID;
+
+  /// Opens with the agent choice unfolded.
   final bool focusAgent;
+
+  final _SheetApply? _apply;
 
   @override
   State<ModelCatalogView> createState() => _ModelCatalogViewState();
@@ -164,14 +205,11 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
   AppLocalizations get _strings => _pickerStrings(context);
 
   final _search = TextEditingController();
-  // Preserve the search's focus and input connection when keyboard/large-text
-  // layout moves the controls between the pinned header and scrollable list.
-  final _controlsKey = GlobalKey();
   String _query = '';
   String _provider = '*';
   _ModelIntent _intent = _ModelIntent.all;
   _ModelCollection _collection = _ModelCollection.all;
-  bool _showFilters = false;
+  int _visible = _modelPage;
   ModelRef? _draftModel;
   String _draftVariant = '';
   bool _applying = false;
@@ -180,8 +218,9 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
   String _observedVariant = '';
   String _draftAgent = '';
   String _observedAgent = '';
-  bool _optionsOpen = false;
-  bool _agentEntryOpened = false;
+  bool _thinkingOpen = false;
+  late bool _agentOpen = widget.focusAgent;
+  bool _detailsOpen = false;
   String? _scopeProfile;
   int _scopeLocation = 0;
 
@@ -204,31 +243,16 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     _observedVariant = _currentVariant;
     _observedAgent = _currentAgent;
     widget.controller.addListener(_selectionChanged);
-    _scheduleAgentEntry();
-  }
-
-  void _scheduleAgentEntry() {
-    if (!widget.focusAgent ||
-        _agentEntryOpened ||
-        !_sameScope ||
-        widget.controller.catalog == null) {
-      return;
-    }
-    _agentEntryOpened = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_sameScope) return;
-      final catalog = widget.controller.catalog;
-      if (catalog == null) {
-        _agentEntryOpened = false;
-        return;
-      }
-      _showAgentOptions(catalog);
-    });
+    widget._apply?._handler = _applyDraft;
   }
 
   @override
   void didUpdateWidget(covariant ModelCatalogView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget._apply != widget._apply) {
+      oldWidget._apply?._handler = null;
+      widget._apply?._handler = _applyDraft;
+    }
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_selectionChanged);
       widget.controller.addListener(_selectionChanged);
@@ -263,6 +287,18 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
       ? widget.controller.selectedAgent
       : widget.controller.agentForSession(_scopedSessionID!);
 
+  /// A save for this session is in flight elsewhere.
+  bool get _sessionSaving =>
+      _scopedSessionID != null &&
+      widget.controller.sessionSelectionSaving(_scopedSessionID!);
+
+  /// Why the choice cannot change now; null when it can.
+  String? get _lockedReason => !_sameScope
+      ? _strings.modelScopeChanged
+      : _applying || _sessionSaving
+      ? _strings.modelSelectionSaving
+      : null;
+
   void _syncDraft() {
     _draftAgent = _currentAgent;
     final sessionID = _scopedSessionID;
@@ -277,7 +313,6 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
 
   void _selectionChanged() {
     if (!mounted) return;
-    _scheduleAgentEntry();
     final untouched =
         _draftModel?.wireName == _observedModel?.wireName &&
         _draftVariant == _observedVariant &&
@@ -285,53 +320,79 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     _observedModel = _currentModel;
     _observedVariant = _currentVariant;
     _observedAgent = _currentAgent;
-    if (untouched && !_applying && !_optionsOpen) setState(_syncDraft);
+    if (untouched && !_applying) setState(_syncDraft);
   }
 
   @override
   void dispose() {
+    if (widget._apply?._handler == _applyDraft) widget._apply?._handler = null;
     widget.controller.removeListener(_selectionChanged);
     _ownedScroll?.dispose();
     _search.dispose();
     super.dispose();
   }
 
+  void _setApplying(bool value) {
+    _applying = value;
+    widget._apply?.applying.value = value;
+  }
+
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: widget.controller,
-    builder: (context, _) {
-      final catalog = widget.controller.catalog;
-      final drafted = catalog == null ? null : _draftedModel(catalog);
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          // At large text sizes or with the keyboard open, let the controls
-          // scroll with the models. The apply action always remains in view.
-          final compact =
-              AppTheme.stackedActions(context) || constraints.maxHeight < 460;
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: widget.controller,
+    builder: (context, _) => LayoutBuilder(
+      builder: (context, constraints) {
+        final tokens = KitTokens.of(context);
+        final catalog = widget.controller.catalog;
+        final drafted = catalog == null ? null : _draftedModel(catalog);
+        final items = _items(context, catalog, drafted);
+        final inSheet = widget._apply != null;
+        final apply = inSheet ? null : _applyBlock(context, drafted);
+        if (!constraints.hasBoundedHeight) {
+          // Inside a scrolling host (the sheet): the host scrolls.
           return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (!compact) ...[
-                if (widget.showHeader) _header(context),
-                if (catalog != null && catalog.models.isNotEmpty)
-                  _pinnedControls(context),
-              ],
-              Expanded(
-                child: catalog == null
-                    ? Column(
-                        children: [
-                          if (compact && widget.showHeader) _header(context),
-                          Expanded(child: _catalogState()),
-                        ],
-                      )
-                    : _catalog(context, catalog, compact: compact),
-              ),
-              if (drafted != null)
-                _applyBar(context, catalog!, drafted, compact: compact),
+              for (final item in items) item,
+              if (apply != null) ...[SizedBox(height: tokens.space3), apply],
             ],
           );
-        },
-      );
-    },
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: ListView(
+                controller: _listScroll,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsetsDirectional.fromSTEB(
+                  tokens.gutter,
+                  tokens.space2,
+                  tokens.gutter,
+                  tokens.space4,
+                ),
+                children: items,
+              ),
+            ),
+            if (apply != null)
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: EdgeInsetsDirectional.fromSTEB(
+                    tokens.gutter,
+                    tokens.space2,
+                    tokens.gutter,
+                    tokens.space3,
+                  ),
+                  child: apply,
+                ),
+              ),
+          ],
+        );
+      },
+    ),
   );
 
   CatalogModel? _draftedModel(CatalogSnapshot catalog) {
@@ -348,116 +409,445 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     return null;
   }
 
-  Widget _header(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            AppTheme.stackedActions(context)
-                ? _strings.modelTitleCompact
-                : _strings.modelChooseTitle,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+  /// Everything above the pinned action, top to bottom.
+  List<Widget> _items(
+    BuildContext context,
+    CatalogSnapshot? catalog,
+    CatalogModel? drafted,
+  ) {
+    final tokens = KitTokens.of(context);
+    final gap = SizedBox(height: tokens.space3);
+    final section = SizedBox(height: tokens.sectionGap);
+    final controller = widget.controller;
+    final current = _currentModel;
+    final notices = <Widget>[
+      if (!_sameScope)
+        KitNotice(
+          key: const Key('model-picker-scope-changed'),
+          icon: AppIconography.info,
+          message: _strings.modelScopeChanged,
         ),
-        if (widget.onClose != null)
-          IconButton(
-            tooltip: _strings.e7ModelUiClose,
-            onPressed: widget.onClose,
-            icon: const Icon(AppIconography.close),
-          ),
+      // Only a loaded catalog can say a model is missing from it.
+      if (current != null &&
+          catalog != null &&
+          catalog.models.isNotEmpty &&
+          !controller.modelAvailable(current))
+        KitNotice(
+          key: const Key('model-picker-current-unavailable'),
+          icon: AppIconography.warning,
+          title: current.wireName,
+          message: _strings.modelUnavailableSelection,
+        ),
+      if (_saveError case final error?)
+        KitNotice(
+          key: const Key('model-picker-save-error'),
+          tone: AppStatusTone.failure,
+          message: error,
+        ),
+      if (catalog != null) ..._catalogNotices(catalog),
+    ];
+    return [
+      if (widget.showHeader) ...[_header(context), gap],
+      for (final notice in notices) ...[notice, gap],
+      if (catalog == null)
+        _catalogState()
+      else if (catalog.models.isEmpty)
+        _noModels(context)
+      else ...[
+        _choiceGroup(context, catalog, drafted),
+        section,
+        ..._modelSection(context, catalog),
       ],
-    ),
+    ];
+  }
+
+  Widget _header(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: Semantics(
+          header: true,
+          child: KitText(_strings.modelChooseTitle, role: KitTextRole.headline),
+        ),
+      ),
+      if (widget.onClose case final close?)
+        KitIconButton(
+          icon: AppIconography.close,
+          tooltip: _strings.e7ModelUiClose,
+          onPressed: close,
+        ),
+    ],
   );
 
-  Widget _pinnedControls(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Column(
-      key: _controlsKey,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: TextField(
-            key: const Key('model-picker-search'),
-            controller: _search,
-            textInputAction: TextInputAction.search,
-            onChanged: (value) => setState(() => _query = value),
-            decoration: InputDecoration(
-              hintText: _strings.modelSearchHint,
-              prefixIcon: const Icon(AppIconography.search),
-              isDense: true,
-              suffixIcon: _query.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: _strings.e7ModelUiClearSearch,
-                      onPressed: () {
-                        _search.clear();
-                        setState(() => _query = '');
-                      },
-                      icon: const Icon(AppIconography.close),
-                    ),
+  /// Notices about the catalog itself, each only when it applies.
+  List<Widget> _catalogNotices(CatalogSnapshot catalog) {
+    final controller = widget.controller;
+    final unloaded = controller.unloadedProviderIDs;
+    // A basic catalog is worth saying only when the rows really lack their
+    // details; a notice over rows that show "200K context" contradicts them.
+    final detailsMissing =
+        !controller.catalogDetailed &&
+        catalog.models.isNotEmpty &&
+        catalog.models.every(
+          (model) => model.contextLimit <= 0 && model.cost == null,
+        );
+    return [
+      if (unloaded.isNotEmpty)
+        KitNotice(
+          key: const ValueKey('picker-unloaded-providers'),
+          icon: AppIconography.info,
+          title: _strings.modelChoiceProvidersTitle,
+          message: unloadedProvidersNotice(
+            unloaded
+                .map((id) => presentedProviderName(id, catalog.providers))
+                .toList(),
+            strings: _strings,
+          ),
+          actions: [
+            KitAction(
+              key: const ValueKey('picker-reload-providers'),
+              label: _strings.modelChoiceReloadProviders,
+              icon: AppIconography.retry,
+              working: controller.catalogLoading,
+              onPressed: controller.reloadProviderRuntime,
             ),
-          ),
+          ],
         ),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              for (final section in _ModelCollection.values)
-                Semantics(
-                  selected: _collection == section,
-                  child: TextButton(
-                    key: ValueKey('model-collection-${section.name}'),
-                    onPressed: () => setState(() => _collection = section),
-                    style: TextButton.styleFrom(
-                      foregroundColor: _collection == section
-                          ? scheme.primary
-                          : scheme.onSurfaceVariant,
-                      backgroundColor: _collection == section
-                          ? scheme.primary.withValues(alpha: .09)
-                          : null,
-                    ),
-                    child: Text(switch (section) {
-                      _ModelCollection.all => _strings.modelAll,
-                      _ModelCollection.favorites => _strings.modelFavorites,
-                      _ModelCollection.recent => _strings.modelRecent,
-                    }),
-                  ),
-                ),
-            ],
-          ),
+      if (detailsMissing)
+        KitNotice(
+          key: const Key('model-picker-basic-catalog'),
+          icon: AppIconography.info,
+          message: _strings.e7ModelUiBasicCatalog,
         ),
-        const SizedBox(height: 8),
-        const Divider(height: 1),
-      ],
-    );
+    ];
   }
 
   Widget _catalogState() {
     final controller = widget.controller;
-    if (controller.catalogError != null) {
-      return _PickerState(
-        icon: Icons.sync_problem_rounded,
+    if (controller.catalogError case final error?) {
+      return KitStateView.error(
         title: _strings.e7ModelUiLoadFailed,
-        message: controller.catalogError!,
-        action: FilledButton.tonalIcon(
-          onPressed: controller.catalogLoading
-              ? null
-              : controller.refreshCatalog,
-          icon: const Icon(AppIconography.retry),
-          label: Text(_strings.e7ModelUiRetry),
+        details: error,
+        size: KitStateSize.inline,
+        retry: KitAction(
+          label: _strings.e7ModelUiRetry,
+          icon: AppIconography.retry,
+          working: controller.catalogLoading,
+          onPressed: controller.refreshCatalog,
         ),
       );
     }
-    return const _CatalogLoading();
+    return Semantics(
+      liveRegion: true,
+      label: _strings.e7ModelUiLoading,
+      child: const KitSkeletonRows(count: 6),
+    );
   }
 
-  Widget _catalog(
+  // --- Your choice ---------------------------------------------------------
+
+  Widget _choiceGroup(
     BuildContext context,
-    CatalogSnapshot catalog, {
-    required bool compact,
-  }) {
+    CatalogSnapshot catalog,
+    CatalogModel? drafted,
+  ) {
+    final tokens = KitTokens.of(context);
+    return Column(
+      key: const Key('model-picker-choice'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KitRowGroup(
+          margin: EdgeInsets.zero,
+          label: _strings.modelPickerYourChoice,
+          children: [
+            if (drafted == null)
+              KitRow(
+                key: const Key('model-picker-none-chosen'),
+                leading: KitRow.icon(context, AppIconography.model),
+                title: _strings.modelPickerNoneChosen,
+                supporting: TextSpan(text: _strings.modelPickerNoneChosenHint),
+              )
+            else
+              _draftedRow(context, catalog, drafted),
+            _thinkingRow(context, drafted),
+            _agentRow(context, catalog),
+          ],
+        ),
+        if (widget.applyScope == ModelPickerApplyScope.session)
+          Padding(
+            padding: EdgeInsetsDirectional.only(
+              start: tokens.space1,
+              end: tokens.space1,
+              top: tokens.labelGap,
+            ),
+            child: KitText(
+              _strings.modelSessionScopeNote,
+              key: const Key('model-picker-session-scope-note'),
+              role: KitTextRole.secondary,
+              tone: KitTextTone.secondary,
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// The chosen model, unfolding in place into what it can do, its limits
+  /// and prices in words, and its id under Details.
+  Widget _draftedRow(
+    BuildContext context,
+    CatalogSnapshot catalog,
+    CatalogModel model,
+  ) {
+    final tokens = KitTokens.of(context);
+    final provider = presentedProviderName(model.providerID, catalog.providers);
+    final cost = model.cost;
+    final lines = <String>[
+      if (model.contextLimit > 0)
+        _strings.modelPickerDetailsContext(_number(model.contextLimit)),
+      if (model.outputLimit > 0)
+        _strings.modelPickerDetailsOutput(_number(model.outputLimit)),
+      if (model.reasoning) _strings.modelPickerCanThink,
+      if (model.tools) _strings.modelPickerCanUseTools,
+      if (model.attachments) _strings.modelPickerCanReadAttachments,
+      if (cost != null &&
+          (cost.inputPerMillion > 0 || cost.outputPerMillion > 0))
+        _strings.modelPickerDetailsPrice(
+          _money(cost.inputPerMillion),
+          _money(cost.outputPerMillion),
+        ),
+    ];
+    return KitExpandRow(
+      key: const Key('model-picker-drafted'),
+      headerKey: const Key('model-picker-options'),
+      leading: KitRow.icon(context, AppIconography.model),
+      title: model.name,
+      supporting: TextSpan(
+        text: [
+          provider,
+          if (model.contextLimit > 0)
+            _strings.e7ModelUiContext(_compactNumber(model.contextLimit)),
+        ].join(' · '),
+      ),
+      expanded: _detailsOpen,
+      onExpansionChanged: (open) => setState(() => _detailsOpen = open),
+      children: [
+        Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: tokens.space4,
+            end: tokens.space4,
+            bottom: tokens.space3,
+          ),
+          child: Column(
+            key: const Key('model-picker-details'),
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final line in lines)
+                Padding(
+                  padding: EdgeInsetsDirectional.only(bottom: tokens.space1),
+                  child: KitText(
+                    line,
+                    role: KitTextRole.secondary,
+                    tone: KitTextTone.secondary,
+                  ),
+                ),
+              SizedBox(height: tokens.space1),
+              KitDetailsFold(
+                foldKey: const Key('model-picker-model-id'),
+                values: [
+                  KitTechnicalValue(
+                    _strings.modelPickerModelId,
+                    '${model.providerID}/${model.id}',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _thinkingRow(BuildContext context, CatalogModel? model) {
+    final variants =
+        model?.variants.where((variant) => !variant.disabled).toList() ??
+        const <CatalogVariant>[];
+    if (model == null || variants.isEmpty) {
+      return KitRow(
+        key: const Key('model-picker-thinking'),
+        leading: KitRow.icon(context, AppIconography.idea),
+        title: _strings.modelPickerThinking,
+        supporting: TextSpan(
+          text: model == null
+              ? _strings.modelDefaultMode
+              : _strings.modelPickerThinkingOneLevel,
+        ),
+      );
+    }
+    final locked = _lockedReason;
+    CatalogVariant? chosen;
+    for (final variant in variants) {
+      if (variant.id == _draftVariant) chosen = variant;
+    }
+    final tokens = KitTokens.of(context);
+    return KitExpandRow(
+      key: const Key('model-picker-thinking'),
+      headerKey: const Key('model-picker-thinking-header'),
+      leading: KitRow.icon(context, AppIconography.idea),
+      title: _strings.modelPickerThinking,
+      supporting: TextSpan(
+        text: chosen == null
+            ? _strings.e7ModelUiDefault
+            : _variantLabel(chosen),
+      ),
+      expanded: _thinkingOpen,
+      onExpansionChanged: (open) => setState(() => _thinkingOpen = open),
+      children: [
+        Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: tokens.space4,
+            end: tokens.space4,
+            bottom: tokens.space2,
+          ),
+          child: KitText(
+            _strings.modelPickerThinkingExplain,
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
+          ),
+        ),
+        KitChoiceList<String>.single(
+          semanticsLabel: _strings.modelPickerThinking,
+          selected: _draftVariant,
+          choices: [
+            KitChoice(
+              key: ValueKey('model-variant-${model.id}-default'),
+              value: '',
+              title: _strings.e7ModelUiDefault,
+              enabled: locked == null,
+              disabledReason: locked,
+            ),
+            for (final variant in variants)
+              KitChoice(
+                key: ValueKey('model-variant-${model.id}-${variant.id}'),
+                value: variant.id,
+                title: _variantLabel(variant),
+                enabled: locked == null,
+                disabledReason: locked,
+              ),
+          ],
+          onSelected: (value) => setState(() {
+            _draftVariant = value;
+            _saveError = null;
+            _thinkingOpen = false;
+          }),
+        ),
+      ],
+    );
+  }
+
+  /// A server agent in words: the built-in ones say what they do, others
+  /// use the server's description, then their mode.
+  String _agentSupporting(CatalogAgent agent) {
+    final description = agent.description?.trim();
+    if (description != null && description.isNotEmpty) return description;
+    return switch (agent.id) {
+      'build' => _strings.modelPickerAgentBuild,
+      'plan' => _strings.modelPickerAgentPlan,
+      _ => [
+        if (agent.mode != 'unknown') agent.mode,
+        if (agent.model?.isNotEmpty == true) agent.model!,
+      ].join(' · '),
+    };
+  }
+
+  /// The built-in agents by name ("Build", "Plan"); any other agent by the
+  /// id its server gave it.
+  String _agentTitle(String id) => switch (id) {
+    'build' => _strings.modelPickerAgentBuildName,
+    'plan' => _strings.modelPickerAgentPlanName,
+    _ => id,
+  };
+
+  Widget _agentRow(BuildContext context, CatalogSnapshot catalog) {
+    final visible = catalog.agents
+        .where((agent) => !agent.hidden && agent.mode != 'subagent')
+        .toList();
+    final selected = _draftAgent;
+    if (visible.isEmpty) {
+      return KitRow(
+        key: const Key('model-picker-agent'),
+        leading: KitRow.icon(context, AppIconography.agent),
+        title: _strings.e7ModelUiAgent,
+        supporting: TextSpan(
+          text: selected.isEmpty
+              ? _strings.e7ModelUiNoAgents
+              : _agentTitle(selected),
+        ),
+      );
+    }
+    final unavailable =
+        selected.isNotEmpty && !visible.any((agent) => agent.id == selected);
+    final locked = _lockedReason;
+    final tokens = KitTokens.of(context);
+    return KitExpandRow(
+      key: const Key('model-picker-agent-row'),
+      headerKey: const Key('model-picker-agent'),
+      leading: KitRow.icon(context, AppIconography.agent),
+      title: _strings.e7ModelUiAgent,
+      supporting: TextSpan(
+        text: selected.isEmpty
+            ? _strings.e7ModelUiServerDefault
+            : _agentTitle(selected),
+      ),
+      expanded: _agentOpen,
+      onExpansionChanged: (open) => setState(() => _agentOpen = open),
+      children: [
+        Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: tokens.space4,
+            end: tokens.space4,
+            bottom: tokens.space2,
+          ),
+          child: KitText(
+            _strings.modelPickerAgentExplain,
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
+          ),
+        ),
+        KitChoiceList<String>.single(
+          semanticsLabel: _strings.e7ModelUiAgent,
+          selected: selected.isEmpty ? null : selected,
+          choices: [
+            if (unavailable)
+              KitChoice(
+                value: selected,
+                title: _agentTitle(selected),
+                enabled: false,
+                disabledReason: _strings.modelPickerUnavailableReason,
+              ),
+            for (final agent in visible)
+              KitChoice(
+                key: ValueKey('model-picker-agent-${agent.id}'),
+                value: agent.id,
+                title: _agentTitle(agent.id),
+                supporting: _agentSupporting(agent),
+                enabled: locked == null,
+                disabledReason: locked,
+              ),
+          ],
+          onSelected: (value) => setState(() {
+            _draftAgent = value;
+            _saveError = null;
+            _agentOpen = false;
+          }),
+        ),
+      ],
+    );
+  }
+
+  // --- Models --------------------------------------------------------------
+
+  List<CatalogModel> _filteredModels(CatalogSnapshot catalog) {
     final normalized = _query.trim().toLowerCase();
     final library = widget.controller.modelLibrary;
     final saved = switch (_collection) {
@@ -510,485 +900,300 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
       );
       models.sort((a, b) => rank(a).compareTo(rank(b)));
     }
-    final unloaded = widget.controller.unloadedProviderIDs;
+    return models;
+  }
+
+  String _intentLabel(_ModelIntent intent) => switch (intent) {
+    _ModelIntent.all => _strings.e7ModelUiAnyCapability,
+    _ModelIntent.fast => _strings.e7ModelUiFastModes,
+    _ModelIntent.reasoning => _strings.e7ModelUiReasoning,
+    _ModelIntent.context => _strings.e7ModelUiLargestContext,
+  };
+
+  void _resetFilters() => setState(() {
+    _search.clear();
+    _query = '';
+    _provider = '*';
+    _intent = _ModelIntent.all;
+    _collection = _ModelCollection.all;
+    _visible = _modelPage;
+  });
+
+  List<Widget> _modelSection(BuildContext context, CatalogSnapshot catalog) {
+    final tokens = KitTokens.of(context);
+    final gap = SizedBox(height: tokens.space3);
+    final controller = widget.controller;
+    final models = _filteredModels(catalog);
+    final providers = presentProviders(catalog.providers);
     final filtered =
-        normalized.isNotEmpty ||
+        _query.trim().isNotEmpty ||
         _provider != '*' ||
         _intent != _ModelIntent.all;
-    final leadItems = <Widget>[
-      if (!_sameScope)
-        _Notice(icon: AppIconography.info, text: _strings.modelScopeChanged),
-      if (_currentModel != null &&
-          !widget.controller.modelAvailable(_currentModel!))
-        _Notice(
-          icon: AppIconography.info,
-          text:
-              '${_currentModel!.wireName}\n${_strings.modelUnavailableSelection}',
-        ),
-      if (compact) ...[
-        if (widget.showHeader) _header(context),
-        if (catalog.models.isNotEmpty) _pinnedControls(context),
-      ],
-      if (!widget.controller.catalogDetailed)
-        _Notice(
-          icon: AppIconography.info,
-          text: _strings.e7ModelUiBasicCatalog,
-        ),
-      if (unloaded.isNotEmpty)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-          child: Material(
-            color: Theme.of(context).colorScheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(12),
-            clipBehavior: Clip.antiAlias,
-            child: Row(
-              key: const ValueKey('picker-unloaded-providers'),
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () => showDialog<void>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: Text(_strings.modelChoiceProvidersTitle),
-                        content: Text(
-                          unloadedProvidersNotice(
-                            unloaded
-                                .map(
-                                  (id) => presentedProviderName(
-                                    id,
-                                    catalog.providers,
-                                  ),
-                                )
-                                .toList(),
-                            strings: _strings,
-                          ),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text(_strings.modelChoiceDone),
-                          ),
-                        ],
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          const Icon(AppIconography.info, size: 20),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              _strings.modelChoiceProvidersSummary(
-                                unloaded.length,
-                              ),
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  key: const ValueKey('picker-reload-providers'),
-                  tooltip: _strings.modelChoiceReloadProviders,
-                  onPressed: widget.controller.catalogLoading
-                      ? null
-                      : widget.controller.reloadProviderRuntime,
-                  icon: const Icon(AppIconography.retry),
-                ),
-              ],
+    String? providerName;
+    for (final provider in providers) {
+      if (provider.id == _provider) providerName = provider.name;
+    }
+    final activeFilter = [
+      ?providerName,
+      if (_intent != _ModelIntent.all) _intentLabel(_intent),
+    ].join(' · ');
+    final shown = models.take(_visible).toList();
+    return [
+      KitSearchField(
+        label: _strings.modelSearchHint,
+        controller: _search,
+        fieldKey: const Key('model-picker-search'),
+        clearKey: const Key('model-picker-search-clear'),
+        filterKey: const Key('model-picker-filters'),
+        resultCount: _query.trim().isEmpty ? null : models.length,
+        onChanged: (value) => setState(() {
+          _query = value;
+          _visible = _modelPage;
+        }),
+        filters: [
+          for (final intent in _ModelIntent.values)
+            KitMenuItem(
+              key: ValueKey('model-intent-${intent.name}'),
+              label: _intentLabel(intent),
+              group: 'intent',
+              checked: _intent == intent,
+              onSelected: () => setState(() {
+                _intent = intent;
+                _visible = _modelPage;
+              }),
             ),
+          KitMenuItem(
+            key: const ValueKey('model-provider-*'),
+            label: _strings.e7ModelUiAllProviders,
+            group: 'provider',
+            checked: _provider == '*',
+            onSelected: () => setState(() => _provider = '*'),
           ),
-        ),
-      if (catalog.models.isNotEmpty)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _strings.e7ModelUiCount(models.length),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-              if (AppTheme.stackedActions(context))
-                IconButton(
-                  key: const Key('model-picker-filters'),
-                  tooltip: filtered
-                      ? _strings.e7ModelUiEditFilters
-                      : _strings.e7ModelUiFilterModels,
-                  isSelected: _showFilters || filtered,
-                  onPressed: () => setState(() => _showFilters = !_showFilters),
-                  icon: const Icon(AppIconography.settings),
-                )
-              else
-                TextButton.icon(
-                  key: const Key('model-picker-filters'),
-                  onPressed: () => setState(() => _showFilters = !_showFilters),
-                  icon: Icon(
-                    _showFilters
-                        ? AppIconography.chevronUp
-                        : AppIconography.settings,
-                    size: 18,
-                  ),
-                  label: Text(
-                    filtered
-                        ? _strings.e7ModelUiFiltered
-                        : _strings.e7ModelUiFilters,
-                  ),
-                ),
-              IconButton(
-                key: const Key('model-picker-refresh'),
-                tooltip: _strings.e7ModelUiRefresh,
-                onPressed: widget.controller.catalogLoading
-                    ? null
-                    : widget.controller.refreshCatalog,
-                icon: widget.controller.catalogLoading
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(AppIconography.retry, size: 20),
-              ),
-            ],
-          ),
-        ),
-      if (_showFilters)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Column(
-            children: [
-              _providerPicker(presentProviders(catalog.providers)),
-              const SizedBox(height: 8),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _intentChip(
-                      _strings.e7ModelUiAnyCapability,
-                      _ModelIntent.all,
-                    ),
-                    _intentChip(_strings.e7ModelUiFastModes, _ModelIntent.fast),
-                    _intentChip(
-                      _strings.e7ModelUiReasoning,
-                      _ModelIntent.reasoning,
-                    ),
-                    _intentChip(
-                      _strings.e7ModelUiLargestContext,
-                      _ModelIntent.context,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      if (compact)
-        if (_draftedModel(catalog) case final selected?)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _selectionSummary(context, catalog, selected),
-          ),
-      if (models.isEmpty)
-        _PickerState(
-          icon: catalog.models.isEmpty
-              ? AppIconography.package
-              : !filtered && _collection == _ModelCollection.favorites
-              ? AppIconography.star
-              : !filtered && _collection == _ModelCollection.recent
-              ? AppIconography.history
-              : Icons.search_off_rounded,
-          title: catalog.models.isEmpty
-              ? _strings.e7ModelUiNoneAvailable
-              : !filtered && _collection == _ModelCollection.favorites
-              ? _strings.e7ModelUiFavoritesEmpty
-              : !filtered && _collection == _ModelCollection.recent
-              ? _strings.e7ModelUiRecentEmpty
-              : _strings.e7ModelUiNoMatches,
-          message: catalog.models.isEmpty
-              ? _strings.e7ModelUiConfigureProvider
-              : !filtered && _collection == _ModelCollection.favorites
-              ? _strings.e7ModelUiFavoritesHint
-              : !filtered && _collection == _ModelCollection.recent
-              ? _strings.e7ModelUiRecentHint
-              : _intent == _ModelIntent.fast
-              ? _strings.e7ModelUiNoFastModes
-              : _strings.e7ModelUiNoMatchesHint,
-          action: TextButton(
-            onPressed: () => setState(() {
-              _search.clear();
-              _query = '';
-              _provider = '*';
-              _intent = _ModelIntent.all;
-              _collection = _ModelCollection.all;
-              _showFilters = false;
-            }),
-            child: Text(
-              filtered
-                  ? _strings.e7ModelUiClearFilters
-                  : _strings.e7ModelUiBrowseAll,
-            ),
-          ),
-        ),
-    ];
-    // Build only visible rows even with hundreds of server models.
-    return ListView.builder(
-      controller: _listScroll,
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.only(bottom: 16),
-      itemCount: leadItems.length + models.length,
-      itemBuilder: (context, index) {
-        if (index < leadItems.length) return leadItems[index];
-        final model = models[index - leadItems.length];
-        return _modelRow(
-          context,
-          model,
-          presentedProviderName(model.providerID, catalog.providers),
-        );
-      },
-    );
-  }
-
-  Widget _agentPicker(CatalogSnapshot catalog, {VoidCallback? onStateChanged}) {
-    final visible = catalog.agents
-        .where((agent) => !agent.hidden && agent.mode != 'subagent')
-        .toList();
-    final sessionID = _scopedSessionID;
-    final selected = _draftAgent;
-    final value = selected.isEmpty ? null : selected;
-    final unavailable =
-        selected.isNotEmpty && !visible.any((agent) => agent.id == selected);
-    return KeyedSubtree(
-      key: const Key('model-picker-agent'),
-      child: DropdownButtonFormField<String>(
-        key: ValueKey(('model-picker-agent', value)),
-        isExpanded: true,
-        initialValue: value,
-        decoration: InputDecoration(
-          labelText: _strings.e7ModelUiAgent,
-          prefixIcon: const Icon(AppIconography.support),
-          helperText: _strings.modelChoiceStagedAgentHint,
-          helperMaxLines: 3,
-        ),
-        hint: Text(
-          visible.isEmpty
-              ? _strings.e7ModelUiNoAgents
-              : _strings.e7ModelUiServerDefault,
-        ),
-        items: [
-          if (unavailable)
-            DropdownMenuItem(value: selected, child: Text(selected)),
-          for (final agent in visible)
-            DropdownMenuItem(
-              value: agent.id,
-              child: Row(
-                children: [
-                  // The agent's own colour, as the terminal client shows it,
-                  // so the same agent is recognisable across both clients.
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: agentColor(
-                        agent.color,
-                        Theme.of(context).colorScheme,
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      [
-                        agent.mode == 'unknown'
-                            ? agent.id
-                            : '${agent.id} · ${agent.mode}',
-                        if (agent.model?.isNotEmpty == true) agent.model!,
-                      ].join(' · '),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
+          for (final provider in providers)
+            KitMenuItem(
+              key: ValueKey('model-provider-${provider.id}'),
+              label: provider.name,
+              group: 'provider',
+              checked: _provider == provider.id,
+              onSelected: () => setState(() {
+                _provider = provider.id;
+                _visible = _modelPage;
+              }),
             ),
         ],
-        onChanged:
-            !_sameScope ||
-                visible.isEmpty ||
-                _applying ||
-                (sessionID != null &&
-                    widget.controller.sessionSelectionSaving(sessionID))
-            ? null
-            : (value) {
-                if (value == null) return;
-                setState(() {
-                  _draftAgent = value;
-                  _saveError = null;
-                });
-                onStateChanged?.call();
-              },
+        activeFilter: activeFilter.isEmpty ? null : activeFilter,
+        onClearFilter: () => setState(() {
+          _provider = '*';
+          _intent = _ModelIntent.all;
+        }),
       ),
-    );
-  }
-
-  Widget _providerPicker(List<PresentedProvider> providers) {
-    return DropdownButtonFormField<String>(
-      key: const Key('model-picker-provider'),
-      isExpanded: true,
-      initialValue: providers.any((provider) => provider.id == _provider)
-          ? _provider
-          : '*',
-      decoration: InputDecoration(
-        labelText: _strings.e7ModelUiProvider,
-        prefixIcon: Icon(AppIconography.cloud),
-      ),
-      items: [
-        DropdownMenuItem(
-          value: '*',
-          child: Text(_strings.e7ModelUiAllProviders),
-        ),
-        for (final provider in providers)
-          DropdownMenuItem(
-            value: provider.id,
-            child: Row(
-              children: [
-                ProviderLogo(provider.providerIDs.first, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(provider.name, overflow: TextOverflow.ellipsis),
-                ),
-              ],
-            ),
+      gap,
+      KitSegmented<_ModelCollection>(
+        semanticsLabel: _strings.modelPickerCollections,
+        selected: _collection,
+        onChanged: (value) => setState(() {
+          _collection = value;
+          _visible = _modelPage;
+        }),
+        segments: [
+          KitSegment(
+            key: const ValueKey('model-collection-all'),
+            value: _ModelCollection.all,
+            label: _strings.modelAll,
           ),
-      ],
-      onChanged: (value) => setState(() => _provider = value ?? '*'),
+          KitSegment(
+            key: const ValueKey('model-collection-favorites'),
+            value: _ModelCollection.favorites,
+            label: _strings.modelFavorites,
+          ),
+          KitSegment(
+            key: const ValueKey('model-collection-recent'),
+            value: _ModelCollection.recent,
+            label: _strings.modelRecent,
+          ),
+        ],
+      ),
+      gap,
+      if (models.isEmpty)
+        _noMatch(filtered)
+      else
+        KitRowGroup(
+          key: const Key('model-picker-list'),
+          margin: EdgeInsets.zero,
+          label: _strings.e7ModelUiCount(models.length),
+          labelTrailing: KitIconButton(
+            key: const Key('model-picker-refresh'),
+            icon: AppIconography.retry,
+            size: 20,
+            tooltip: _strings.e7ModelUiRefresh,
+            working: controller.catalogLoading,
+            onPressed: controller.catalogLoading
+                ? null
+                : controller.refreshCatalog,
+          ),
+          children: [
+            for (final model in shown)
+              _modelRow(
+                context,
+                model,
+                presentedProviderName(model.providerID, catalog.providers),
+              ),
+            if (models.length > shown.length)
+              KitRow(
+                key: const Key('model-picker-more'),
+                leading: KitRow.icon(context, AppIconography.unfoldMore),
+                title: _strings.modelPickerShowMore(
+                  models.length - shown.length,
+                ),
+                onTap: () => setState(() => _visible += _modelPage),
+              ),
+          ],
+        ),
+    ];
+  }
+
+  /// The server has no model at all: the next step is signing in to a
+  /// provider, which lives on the Providers screen.
+  Widget _noModels(BuildContext context) {
+    final controller = widget.controller;
+    return KitStateView(
+      key: const Key('model-picker-no-models'),
+      icon: AppIconography.login,
+      size: KitStateSize.inline,
+      title: _strings.modelPickerSignInTitle,
+      body: _strings.modelPickerSignInBody,
+      primary: controller.isIsolated
+          ? null
+          : KitAction(
+              key: const Key('model-picker-open-providers'),
+              label: _strings.chatUiOpenProviders,
+              onPressed: () => unawaited(
+                pushKitPage<void>(
+                  context,
+                  (_) => IntegrationsScreen(
+                    controller: controller,
+                    mode: IntegrationsMode.providers,
+                  ),
+                ),
+              ),
+            ),
+      secondary: KitAction(
+        label: _strings.e7ModelUiRefresh,
+        icon: AppIconography.retry,
+        working: controller.catalogLoading,
+        onPressed: controller.refreshCatalog,
+      ),
     );
   }
 
-  Widget _intentChip(String label, _ModelIntent intent) => Padding(
-    padding: const EdgeInsetsDirectional.only(end: 8),
-    child: ChoiceChip(
-      label: Text(label),
-      selected: _intent == intent,
-      onSelected: (_) => setState(() => _intent = intent),
-    ),
-  );
+  Widget _noMatch(bool filtered) {
+    if (_query.trim().isNotEmpty) {
+      return KitSearchNoMatch(
+        query: _query.trim(),
+        onClear: _resetFilters,
+        action: filtered && (_provider != '*' || _intent != _ModelIntent.all)
+            ? KitAction(
+                label: _strings.e7ModelUiClearFilters,
+                onPressed: _resetFilters,
+              )
+            : null,
+      );
+    }
+    final favorites = !filtered && _collection == _ModelCollection.favorites;
+    final recent = !filtered && _collection == _ModelCollection.recent;
+    return KitStateView(
+      key: const Key('model-picker-empty'),
+      icon: favorites
+          ? AppIconography.star
+          : recent
+          ? AppIconography.history
+          : AppIconography.search,
+      size: KitStateSize.inline,
+      title: favorites
+          ? _strings.e7ModelUiFavoritesEmpty
+          : recent
+          ? _strings.e7ModelUiRecentEmpty
+          : _strings.e7ModelUiNoMatches,
+      body: favorites
+          ? _strings.e7ModelUiFavoritesHint
+          : recent
+          ? _strings.e7ModelUiRecentHint
+          : _intent == _ModelIntent.fast
+          ? _strings.e7ModelUiNoFastModes
+          : _strings.e7ModelUiNoMatchesHint,
+      primary: KitAction(
+        label: filtered
+            ? _strings.e7ModelUiClearFilters
+            : _strings.e7ModelUiBrowseAll,
+        onPressed: _resetFilters,
+      ),
+    );
+  }
 
   Widget _modelRow(
     BuildContext context,
     CatalogModel model,
     String providerName,
   ) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final reference = ModelRef(providerID: model.providerID, modelID: model.id);
     final current = ModelLibrary.sameModel(_currentModel, reference);
     final draft = ModelLibrary.sameModel(_draftModel, reference);
     final favorite = widget.controller.modelLibrary.isFavorite(reference);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      child: Material(
-        color: draft
-            ? scheme.primary.withValues(alpha: .08)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-        clipBehavior: Clip.antiAlias,
-        child: Semantics(
-          selected: draft,
-          button: true,
-          label: current ? _strings.e7ModelUiCurrent : null,
-          child: InkWell(
-            key: ValueKey('model-option-${model.providerID}-${model.id}'),
-            onTap: model.enabled ? () => _draft(reference) : null,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 14, 4, 14),
-              child: Row(
-                children: [
-                  SizedBox.square(
-                    dimension: 28,
-                    child: draft
-                        ? Icon(AppIconography.check, color: scheme.primary)
-                        : ProviderLogo(model.providerID, size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text.rich(
-                          TextSpan(
-                            text: model.name,
-                            children: [
-                              // A model out in the last month is marked, so
-                              // a new release (Opus 5.5, GPT-6 Sol) is found
-                              // without knowing its name.
-                              if (isNewModel(model))
-                                TextSpan(
-                                  text: '  ${_strings.modelNewBadge}',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: scheme.primary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          key: ValueKey(
-                            'model-name-${model.providerID}-${model.id}',
-                          ),
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: model.enabled
-                                ? scheme.onSurface
-                                : scheme.onSurfaceVariant,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          [
-                            providerName,
-                            if (model.contextLimit > 0)
-                              _strings.e7ModelUiContext(
-                                _compactNumber(model.contextLimit),
-                              ),
-                            if (!model.enabled)
-                              _strings.e7ModelUiUnavailable
-                            else if (model.deprecated)
-                              _strings.e7ModelUiDeprecated
-                            else if (model.preview)
-                              _strings.e7ModelUiPreview,
-                          ].join(' · '),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: favorite
-                        ? _strings.e7ModelUiUnfavorite(model.name)
-                        : _strings.e7ModelUiFavorite(model.name),
-                    onPressed: model.enabled
-                        ? () => _toggleFavorite(reference)
-                        : null,
-                    icon: Icon(
-                      favorite
-                          ? AppIconography.starFilled
-                          : AppIconography.star,
-                      color: favorite ? scheme.primary : scheme.outline,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+    final favoriteLabel = favorite
+        ? _strings.e7ModelUiUnfavorite(model.name)
+        : _strings.e7ModelUiFavorite(model.name);
+    return KitRow(
+      key: ValueKey('model-option-${model.providerID}-${model.id}'),
+      titleKey: ValueKey('model-name-${model.providerID}-${model.id}'),
+      leading: KitRowIcon(
+        draft ? AppIconography.check : AppIconography.model,
+        current: draft,
       ),
+      title: model.name,
+      titleMaxLines: 2,
+      supportingMaxLines: 2,
+      supporting: TextSpan(
+        text: [
+          // Words, not colour: the one in use, and a release from the last
+          // month (Opus 5.5, GPT-6 Sol) found without knowing its name.
+          if (current) _strings.modelPickerInUse,
+          if (isNewModel(model)) _strings.modelNewBadge,
+          providerName,
+          if (model.contextLimit > 0)
+            _strings.e7ModelUiContext(_compactNumber(model.contextLimit)),
+          if (model.deprecated)
+            _strings.e7ModelUiDeprecated
+          else if (model.preview)
+            _strings.e7ModelUiPreview,
+        ].join(' · '),
+      ),
+      selected: draft,
+      enabled: model.enabled,
+      disabledReason: model.enabled
+          ? null
+          : _strings.modelPickerUnavailableReason,
+      onTap: model.enabled ? () => _draft(reference) : null,
+      trailing: model.enabled
+          ? KitIconButton(
+              key: ValueKey('model-favorite-${model.providerID}-${model.id}'),
+              icon: favorite ? AppIconography.starFilled : AppIconography.star,
+              tooltip: favoriteLabel,
+              selected: favorite,
+              onPressed: () => _toggleFavorite(reference),
+            )
+          : null,
+      menu: [
+        if (model.enabled)
+          KitMenuItem(
+            label: favoriteLabel,
+            icon: favorite ? AppIconography.starFilled : AppIconography.star,
+            onSelected: () => _toggleFavorite(reference),
+          ),
+        KitMenuItem.copy(
+          label: _strings.modelPickerCopyId,
+          text: () => '${model.providerID}/${model.id}',
+        ),
+      ],
     );
   }
 
@@ -998,6 +1203,11 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
       : value >= 1000
       ? '${(value / 1000).round()}K'
       : '$value';
+
+  static String _money(double value) => value >= 1
+      ? '\$${value.toStringAsFixed(2)}'
+      : '\$${value.toStringAsFixed(3)}';
+
   void _draft(ModelRef model) => setState(() {
     _saveError = null;
     _draftModel = model;
@@ -1016,254 +1226,38 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     }
   }
 
-  Widget _selectionSummary(
-    BuildContext context,
-    CatalogSnapshot catalog,
-    CatalogModel model,
-  ) => Row(
-    children: [
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              model.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            Text(
-              [
-                _draftVariant.isEmpty
-                    ? _strings.modelDefaultMode
-                    : _draftVariant,
-                if (_draftAgent.isNotEmpty) _draftAgent,
-              ].join(' · '),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
+  /// The apply action for a view that pins its own (a screen); inside the
+  /// sheet the sheet pins it.
+  Widget _applyBlock(BuildContext context, CatalogModel? drafted) {
+    final reason = drafted == null
+        ? _strings.modelPickerChooseFirst
+        : _lockedReason;
+    return KitActionBlock(
+      key: const Key('model-picker-apply-bar'),
+      primary: KitAction(
+        key: drafted == null
+            ? const Key('model-picker-apply')
+            : ValueKey('use-model-${drafted.providerID}-${drafted.id}'),
+        label: _applyLabel(_strings, widget.applyScope),
+        working: _applying,
+        onPressed: reason == null || _applying ? _applyDraft : null,
+        disabledReason: _applying ? null : reason,
       ),
-      TextButton(
-        key: const Key('model-picker-options'),
-        onPressed: () => _showModelOptions(context, catalog, model),
-        child: Text(_strings.modelOptions),
-      ),
-    ],
-  );
-
-  Widget _applyBar(
-    BuildContext context,
-    CatalogSnapshot catalog,
-    CatalogModel model, {
-    required bool compact,
-  }) => Material(
-    key: const Key('model-picker-apply-bar'),
-    color: Theme.of(context).colorScheme.surfaceContainerLow,
-    child: SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (!compact) ...[
-              _selectionSummary(context, catalog, model),
-              const SizedBox(height: 8),
-            ],
-            if (_saveError case final error?)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    error,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ),
-              ),
-            FilledButton(
-              key: ValueKey('use-model-${model.providerID}-${model.id}'),
-              onPressed:
-                  !_sameScope ||
-                      _applying ||
-                      (_scopedSessionID != null &&
-                          widget.controller.sessionSelectionSaving(
-                            _scopedSessionID!,
-                          ))
-                  ? null
-                  : _applyDraft,
-              child: _applying
-                  ? const SizedBox.square(
-                      dimension: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(switch (widget.applyScope) {
-                      ModelPickerApplyScope.classic =>
-                        _strings.e7ModelUiUseModelMode,
-                      ModelPickerApplyScope.session =>
-                        _strings.e7ModelUiUseSession,
-                      ModelPickerApplyScope.newSessions =>
-                        _strings.e7ModelUiUseNewSessions,
-                    }, textAlign: TextAlign.center),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-
-  Future<void> _showAgentOptions(CatalogSnapshot catalog) async {
-    _optionsOpen = true;
-    try {
-      await showDialog<void>(
-        context: context,
-        builder: (context) => StatefulBuilder(
-          builder: (context, updateDialog) => AlertDialog(
-            title: Text(_strings.modelChoiceAgentTitle),
-            scrollable: true,
-            content: _agentPicker(
-              catalog,
-              onStateChanged: () {
-                if (context.mounted) updateDialog(() {});
-              },
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(_strings.modelChoiceDone),
-              ),
-            ],
-          ),
-        ),
-      );
-    } finally {
-      _optionsOpen = false;
-    }
-  }
-
-  Future<void> _showModelOptions(
-    BuildContext context,
-    CatalogSnapshot catalog,
-    CatalogModel model,
-  ) async {
-    _optionsOpen = true;
-    try {
-      await showDialog<void>(
-        context: context,
-        builder: (context) => ListenableBuilder(
-          listenable: widget.controller,
-          builder: (context, _) => StatefulBuilder(
-            builder: (context, updateDialog) => AlertDialog(
-              title: Text(model.name),
-              scrollable: true,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${presentedProviderName(model.providerID, catalog.providers)} · ${model.id}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    [
-                      if (model.contextLimit > 0)
-                        _strings.e7ModelUiContext(_number(model.contextLimit)),
-                      if (model.outputLimit > 0)
-                        _strings.e7ModelUiOutput(_number(model.outputLimit)),
-                      if (model.reasoning) _strings.e7ModelUiReasoning,
-                      if (model.tools) _strings.e7ModelUiTools,
-                      if (model.attachments) _strings.e7ModelUiAttachments,
-                      ?modelCostLabel(model, strings: _strings),
-                    ].join(' · '),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    _strings.modelThinkingMode,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  _variantSelector(
-                    context,
-                    model,
-                    onChanged: (value) {
-                      setState(() => _draftVariant = value);
-                      updateDialog(() {});
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  _agentPicker(
-                    catalog,
-                    onStateChanged: () {
-                      if (context.mounted) updateDialog(() {});
-                    },
-                  ),
-                  if (widget.applyScope == ModelPickerApplyScope.session) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      _strings.modelSessionScopeNote,
-                      key: const Key('model-picker-session-scope-note'),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(_strings.modelChoiceDone),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } finally {
-      _optionsOpen = false;
-    }
-  }
-
-  Widget _variantSelector(
-    BuildContext context,
-    CatalogModel model, {
-    required ValueChanged<String> onChanged,
-  }) {
-    final variants = model.variants
-        .where((variant) => !variant.disabled)
-        .toList();
-    if (variants.isEmpty) return Text(_strings.modelDefaultMode);
-    return Wrap(
-      spacing: 8,
-      runSpacing: 4,
-      children: [
-        ChoiceChip(
-          key: ValueKey('model-variant-${model.id}-default'),
-          label: Text(_strings.e7ModelUiDefault),
-          selected: _draftVariant.isEmpty,
-          onSelected: (_) => onChanged(''),
-        ),
-        for (final variant in variants)
-          ChoiceChip(
-            key: ValueKey('model-variant-${model.id}-${variant.id}'),
-            label: Text(_variantLabel(variant)),
-            selected: _draftVariant == variant.id,
-            onSelected: (_) => onChanged(variant.id),
-          ),
-      ],
     );
   }
 
   Future<void> _applyDraft() async {
     final model = _draftModel;
-    if (model == null || _applying || !_sameScope) return;
+    if (_applying || !_sameScope) return;
+    final catalog = widget.controller.catalog;
+    if (model == null || catalog == null || _draftedModel(catalog) == null) {
+      setState(() => _saveError = _strings.modelPickerChooseFirst);
+      return;
+    }
     final variant = _draftVariant;
     final agent = _draftAgent;
     setState(() {
-      _applying = true;
+      _setApplying(true);
       _saveError = null;
     });
     var modelConfirmed = false;
@@ -1311,7 +1305,11 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
         );
       }
     } finally {
-      if (mounted) setState(() => _applying = false);
+      if (mounted) {
+        setState(() => _setApplying(false));
+      } else {
+        _applying = false;
+      }
     }
   }
 
@@ -1352,104 +1350,6 @@ String unloadedProvidersNotice(
     sorted.length > 1 ? sorted.length : 1,
     list,
   );
-}
-
-class _Notice extends StatelessWidget {
-  const _Notice({required this.icon, required this.text});
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: scheme.secondaryContainer.withValues(alpha: .45),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, size: 19, color: scheme.onSecondaryContainer),
-              const SizedBox(width: 8),
-              Expanded(child: Text(text)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CatalogLoading extends StatelessWidget {
-  const _CatalogLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Semantics(
-      liveRegion: true,
-      label: _pickerStrings(context).e7ModelUiLoading,
-      child: ListView.separated(
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
-        itemCount: 6,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (_, index) => Container(
-          height: index < 3 ? 54 : 72,
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest.withValues(alpha: .55),
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PickerState extends StatelessWidget {
-  const _PickerState({
-    required this.icon,
-    required this.title,
-    required this.message,
-    this.action,
-  });
-  final IconData icon;
-  final String title;
-  final String message;
-  final Widget? action;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 36, color: scheme.onSurfaceVariant),
-            const SizedBox(height: 12),
-            Text(title, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-            if (action != null) ...[const SizedBox(height: 16), action!],
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 /// "\$3.00 in · \$15.00 out /1M" for a model with published pricing; null when

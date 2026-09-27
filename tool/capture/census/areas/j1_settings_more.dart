@@ -614,8 +614,12 @@ final j1SettingsMoreArea = CensusArea(
     CensusShot('model-picker-sheet-unloaded-providers-dialog', (kit) async {
       await _modelController(kit, unloadedProviders: {'anthropic'});
       await kit.present((context) => showModelPicker(context));
-      await kit.tapKey('picker-unloaded-providers');
-      kit.expectText('Done');
+      // Merged into the sheet (shared-chat-1): the explanation and its
+      // Reload action sit in the notice; no dialog.
+      kit.expectVisible(
+        find.byKey(const ValueKey('picker-unloaded-providers')),
+      );
+      kit.expectText('Reload providers');
     }),
     CensusShot('model-picker-sheet-agent-dialog', (kit) async {
       await _modelController(kit);
@@ -629,8 +633,10 @@ final j1SettingsMoreArea = CensusArea(
       await kit.present((context) => showModelPicker(context));
       final model = controller.catalog!.models.first;
       await kit.tapKey('model-option-${model.providerID}-${model.id}');
+      // Merged into the sheet (shared-chat-1): the chosen model unfolds in
+      // place into its details.
       await kit.tapKey('model-picker-options');
-      kit.expectText('Done');
+      kit.expectVisible(find.byKey(const ValueKey('model-picker-details')));
     }),
 
     // ---- Server capabilities -----------------------------------------------
