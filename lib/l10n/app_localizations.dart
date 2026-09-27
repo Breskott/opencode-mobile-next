@@ -19910,6 +19910,12 @@ abstract class AppLocalizations {
   /// **'Removes its card, attention items and cached team data from this phone. Nothing changes on the host.'**
   String get teamUiTurnOffBody;
 
+  /// Confirm button of the AI Team turn-off question; the title names the server (R12).
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off AI Team'**
+  String get teamUiTurnOffConfirm;
+
   /// Title of the turn-off confirmation sheet
   ///
   /// In en, this message translates to:
@@ -23420,7 +23426,7 @@ abstract class AppLocalizations {
   /// On-device setup: success card title
   ///
   /// In en, this message translates to:
-  /// **'AI team is running on this phone'**
+  /// **'AI Team is running on this phone'**
   String get teamUiPhoneSuccessTitle;
 
   /// On-device setup: retry after a failure
@@ -23714,7 +23720,7 @@ abstract class AppLocalizations {
   /// On this phone: remove confirmation title
   ///
   /// In en, this message translates to:
-  /// **'Delete the AI team from this phone?'**
+  /// **'Delete AI Team from this phone?'**
   String get teamUiPhoneRemoveTitle;
 
   /// On this phone: remove confirmation body
@@ -23732,7 +23738,7 @@ abstract class AppLocalizations {
   /// On this phone: removed confirmation
   ///
   /// In en, this message translates to:
-  /// **'The AI team was deleted from this phone.'**
+  /// **'AI Team was deleted from this phone.'**
   String get teamUiPhoneRemoved;
 
   /// On this phone: a verb failed
@@ -23746,30 +23752,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not available on this phone. Running a team needs the 64-bit Linux environment; this device or build can\'t provide it.'**
   String get teamUiPhoneNotAvailable;
-
-  /// Settings › Plugins: re-offer row title
-  ///
-  /// In en, this message translates to:
-  /// **'Let a team of agents work on this phone too'**
-  String get teamUiPhoneReofferTitle;
-
-  /// Settings › Plugins: re-offer row body
-  ///
-  /// In en, this message translates to:
-  /// **'The optional step you skipped during setup. Several coding agents work on your project while you supervise from Work; Android may stop them when the app is away.'**
-  String get teamUiPhoneReofferBody;
-
-  /// Settings › Plugins: dismiss the re-offer (shown once)
-  ///
-  /// In en, this message translates to:
-  /// **'Not now'**
-  String get teamUiPhoneReofferDismiss;
-
-  /// Settings › Plugins: open the setup screen from the re-offer
-  ///
-  /// In en, this message translates to:
-  /// **'Set up'**
-  String get teamUiPhoneReofferAction;
 
   /// On-device setup: the runtime refused to install or create the city for lack of free space
   ///
@@ -35121,11 +35103,23 @@ abstract class AppLocalizations {
   /// **'Cancel test'**
   String get teamHostFormCancelTest;
 
-  /// Saves an AI Team host address that did not answer, for a computer that is asleep (shared-team-1).
+  /// Saves an AI Team host address that did not answer, for a computer that is asleep (shared-team-1, R12).
   ///
   /// In en, this message translates to:
-  /// **'Save without an answer'**
+  /// **'Save the address anyway'**
   String get teamHostFormSaveAnyway;
+
+  /// Note under the no-answer verdict on the Add AI Team host sheet: what saving the address anyway leads to (R12).
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team shows the team as not answering until the computer answers.'**
+  String get teamHostFormSaveAnywayNote;
+
+  /// Toggle of the fold holding the raw network error behind a failed AI Team address test (R12).
+  ///
+  /// In en, this message translates to:
+  /// **'Connection details'**
+  String get teamHostFormConnectionDetails;
 
   /// Agent page action: pause this agent's session. {agent} is the agent's short name.
   ///
