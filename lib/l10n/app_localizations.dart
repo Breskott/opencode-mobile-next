@@ -21474,12 +21474,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{Waits on 1 step} other{Waits on {count} steps}}'**
   String teamUiWorkWaitsOn(int count);
 
-  /// Run Overview usage chip: Gas City usage is city-level (today), never per run; {usage} is the est. cost and compact tokens
-  ///
-  /// In en, this message translates to:
-  /// **'Team today · {usage}'**
-  String teamUiUsageChip(String usage);
-
   /// A cost figure with the estimate suffix; every cost the plugin shows carries it (05-beads TEAM-113)
   ///
   /// In en, this message translates to:
@@ -40506,14 +40500,38 @@ abstract class AppLocalizations {
   /// AI Team page: under today's spend; never a task's cost.
   ///
   /// In en, this message translates to:
-  /// **'The whole team since midnight where it runs, estimated'**
+  /// **'The whole team since midnight where it runs, estimated. The host doesn’t report what each task cost.'**
   String get teamHomeSpentHint;
 
-  /// AI Team page: under today's spend when part of it is unpriced or history is missing.
+  /// AI Team page: under today's spend when part of it has no price.
   ///
   /// In en, this message translates to:
-  /// **'Some of today’s use has no price yet, so it cost more than this'**
+  /// **'Some of today’s use has no price yet, so it cost more than this.'**
   String get teamHomeSpentPartial;
+
+  /// AI Team page: under today's spend when the host says part of today's history is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Part of today’s history is missing, so it cost more than this.'**
+  String get teamHomeSpentHistoryMissing;
+
+  /// AI Team page: under today's spend when the host has stopped recording new usage.
+  ///
+  /// In en, this message translates to:
+  /// **'The team isn’t counting new use right now.'**
+  String get teamHomeSpentNotRecording;
+
+  /// A task's Details: the host reports no cost for a single task, only the whole team's day.
+  ///
+  /// In en, this message translates to:
+  /// **'Not reported for one task. The AI Team page shows today’s estimate for the whole team.'**
+  String get teamRunCostUnreported;
+
+  /// AI Team page agents row: how many live agents' sessions ended in an error.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} crashed'**
+  String teamHomeAgentsRowCrashed(int count);
 
   /// AI Team page while off, on a computer: discovery found no team. {server} is the server's name.
   ///

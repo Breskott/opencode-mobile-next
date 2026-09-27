@@ -30,6 +30,7 @@ import 'package:flutter/widgets.dart';
 import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
+import '../../../state/team_conversation.dart' show teamSessionState;
 import '../../app_iconography.dart';
 import '../../kit/kit_buttons.dart';
 import '../../kit/kit_page_route.dart';
@@ -69,14 +70,17 @@ enum TeamAgentStanding {
   paused,
 }
 
-/// [agent]'s place on the list.
+/// [agent]'s place on the list, from its session first
+/// ([teamSessionState], ledger row 21): an agent the list calls working
+/// whose session the host reports stopped is asleep, never "Working"; one
+/// the list calls stopped whose session runs is at work.
 TeamAgentStanding teamAgentStanding(OrchestrationAgent agent) {
   if (!teamAgentIsLive(agent)) {
     return teamAgentPaused(agent)
         ? TeamAgentStanding.paused
         : TeamAgentStanding.asleep;
   }
-  return switch (agent.state) {
+  return switch (teamSessionState(agent)) {
     AgentState.waiting || AgentState.blocked => TeamAgentStanding.needsYou,
     AgentState.crashed => TeamAgentStanding.crashed,
     AgentState.working => TeamAgentStanding.working,
@@ -340,7 +344,7 @@ class _AgentRow extends StatelessWidget {
     final word = switch (standing) {
       TeamAgentStanding.asleep => l10n.teamAgentsAsleep,
       TeamAgentStanding.paused => l10n.teamAgentsPaused,
-      _ => teamAgentStateWord(l10n, agent.state),
+      _ => teamAgentStateWord(l10n, teamSessionState(agent)),
     };
     final mark = switch (standing) {
       TeamAgentStanding.needsYou => const KitTaskMark(

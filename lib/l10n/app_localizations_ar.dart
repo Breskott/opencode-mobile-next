@@ -13531,11 +13531,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String teamUiUsageChip(String usage) {
-    return 'الفريق اليوم · $usage';
-  }
-
-  @override
   String teamUiUsageCostEstimated(String cost) {
     return '$cost تقديريًا';
   }
@@ -25990,11 +25985,28 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamHomeSpentHint =>
-      'The whole team since midnight where it runs, estimated';
+      'The whole team since midnight where it runs, estimated. The host doesn’t report what each task cost.';
 
   @override
   String get teamHomeSpentPartial =>
-      'Some of today’s use has no price yet, so it cost more than this';
+      'Some of today’s use has no price yet, so it cost more than this.';
+
+  @override
+  String get teamHomeSpentHistoryMissing =>
+      'Part of today’s history is missing, so it cost more than this.';
+
+  @override
+  String get teamHomeSpentNotRecording =>
+      'The team isn’t counting new use right now.';
+
+  @override
+  String get teamRunCostUnreported =>
+      'Not reported for one task. The AI Team page shows today’s estimate for the whole team.';
+
+  @override
+  String teamHomeAgentsRowCrashed(int count) {
+    return '$count crashed';
+  }
 
   @override
   String teamIntroNotFound(String server) {

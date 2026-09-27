@@ -3588,7 +3588,6 @@
   "teamUiWorkViewGraph": "رسم",
   "teamUiWorkViewList": "قائمة",
   "teamUiWorkWaitsOn": "{count, plural, =0{لا ينتظر شيئًا} =1{ينتظر خطوة واحدة} two{ينتظر خطوتين} few{ينتظر {count} خطوات} many{ينتظر {count} خطوة} other{ينتظر {count} خطوة}}",
-  "teamUiUsageChip": "الفريق اليوم · {usage}",
   "teamUiUsageCostEstimated": "{cost} تقديريًا",
   "teamUiUsageRuntimeHint": "الرموز والتكلفة لكامل الفريق اليوم، تقديرية.",
   "teamUiUsageRuntimeLabel": "الرموز / السياق / التكلفة",

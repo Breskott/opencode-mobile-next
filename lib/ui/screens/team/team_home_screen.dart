@@ -68,6 +68,7 @@ import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/orchestration.dart';
+import '../../../state/team_conversation.dart' show teamSessionState;
 import '../../../state/team_overview.dart';
 import '../../../termux/team_runtime.dart';
 import '../../app_theme.dart';
@@ -721,8 +722,15 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
         ? done
         : done.take(teamHomeDoneShown).toList();
     final hiddenDone = done.length - doneShown.length;
+    // Is the team working? From each agent's session first (ledger row
+    // 21): the host's stopped session is never counted as working.
     final live = teamLiveAgents(snapshot.agents);
-    final working = live.where((a) => a.state == AgentState.working).length;
+    final working = live
+        .where((a) => teamSessionState(a) == AgentState.working)
+        .length;
+    final crashed = live
+        .where((a) => teamSessionState(a) == AgentState.crashed)
+        .length;
 
     Widget row(OrchestrationRun run) {
       final gate = gateOfRun[run.id];
@@ -759,21 +767,23 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             ? [task, l10n.teamUiHomeRunReviewNext].join(teamUsageSeparator)
             : task;
       }
-      final receipt =
-          gate != null &&
-              record != null &&
-              record.status != MutationStatus.confirmed
-          ? Padding(
+      // Null once the host confirmed the answer (then the chevron shows).
+      final chip = gate == null || record == null
+          ? null
+          : teamGateRowReceipt(
+              context,
+              record,
+              key: ValueKey('team-home-gate-${gate.id}-receipt'),
+              onOpen: () => _openGate(gate),
+            );
+      final receipt = chip == null
+          ? null
+          : Padding(
               padding: EdgeInsetsDirectional.symmetric(
                 horizontal: tokens.space2,
               ),
-              child: TeamReceiptChip(
-                key: ValueKey('team-home-gate-${gate.id}-receipt'),
-                record: record,
-                onOpen: () => _openGate(gate),
-              ),
-            )
-          : null;
+              child: chip,
+            );
       return KitRow(
         key: ValueKey('team-home-run-${run.id}'),
         leading: KitTaskMark(state: teamRunMark(run, needsYou: needsYou)),
@@ -965,6 +975,7 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             rest: teamRest(snapshot.agents),
             cooling: hold != null,
             working: working,
+            crashed: crashed,
             onTap: _openAgents,
           ),
           // How fast it runs where it runs (the place is the top bar's);
@@ -1052,17 +1063,26 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
       if (tokens != null) l10n.teamUiUsageTokens(teamCompactCount(tokens)),
     ];
     if (figures.isEmpty) return null;
-    // Some use has no price, or history is missing: the figure is a floor.
-    final incomplete = (today.unpriced ?? 0) > 0 || evidence!.partial;
+    // What the figure covers (the whole team's day where it runs, never a
+    // task's cost: the host has no per-task figure, docs/qa/codex-p52),
+    // then why it may be low: use with no price, history missing, or the
+    // host not counting new use. Each is its own sentence.
+    final lines = [
+      l10n.teamHomeSpentHint,
+      if ((today.unpriced ?? 0) > 0)
+        l10n.teamHomeSpentPartial
+      else if (evidence!.partial)
+        l10n.teamHomeSpentHistoryMissing,
+      if (!evidence!.recording) l10n.teamHomeSpentNotRecording,
+    ];
     return KitRow(
       key: const ValueKey('team-home-spent'),
       leading: KitRow.icon(context, AppIconography.usage),
       title: l10n.teamHomeSpentToday(figures.join(teamUsageSeparator)),
       titleKey: const ValueKey('team-home-spent-figure'),
-      supporting: TextSpan(
-        text: incomplete ? l10n.teamHomeSpentPartial : l10n.teamHomeSpentHint,
-      ),
-      supportingMaxLines: 2,
+      supporting: TextSpan(text: lines.join(' ')),
+      supportingKey: const ValueKey('team-home-spent-scope'),
+      supportingMaxLines: 5,
     );
   }
 }
@@ -1076,8 +1096,13 @@ class _AgentsRow extends StatelessWidget {
     required this.rest,
     required this.working,
     required this.onTap,
+    this.crashed = 0,
     this.cooling = false,
   });
+
+  /// Live agents whose session ended in an error: said on the row, since a
+  /// team with a crashed worker is not simply "working".
+  final int crashed;
 
   final int live;
 
@@ -1112,6 +1137,7 @@ class _AgentsRow extends StatelessWidget {
       TeamRest.awake => [
         l10n.teamUiHomeAgentsRowCount(live),
         if (working > 0) l10n.teamUiHomeAgentsRowWorking(working),
+        if (crashed > 0) l10n.teamHomeAgentsRowCrashed(crashed),
       ],
     }.join(teamUsageSeparator);
     return Semantics(

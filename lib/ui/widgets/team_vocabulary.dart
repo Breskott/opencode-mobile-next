@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
+import '../../state/team_conversation.dart' show teamSessionState;
 import '../app_theme.dart';
 import '../kit/kit_task_mark.dart';
 import 'relative_time.dart';
@@ -348,10 +349,18 @@ List<OrchestrationRun> teamUpkeepRuns(Iterable<OrchestrationRun> runs) => [
     if (run.isUpkeep) run,
 ];
 
-/// Whether an agent is live: anything but stopped or suspended. Only live
-/// agents are dots on the card and counted as the team.
-bool teamAgentIsLive(OrchestrationAgent agent) =>
-    agent.state != AgentState.stopped && !agent.suspended;
+/// Whether an agent is live: anything but stopped or suspended, with its
+/// session's word first ([teamSessionState], ledger row 21): a running
+/// session is live even on an agent the list calls stopped, and a session
+/// the host reports stopped is not live whatever the list says. An asleep
+/// session leaves the list's word standing. Only live agents are dots on
+/// the card and counted as the team.
+bool teamAgentIsLive(OrchestrationAgent agent) {
+  final state = teamSessionState(agent);
+  if (state == AgentState.working) return true;
+  if (state == AgentState.stopped) return false;
+  return agent.state != AgentState.stopped && !agent.suspended;
+}
 
 /// The live agents, in the given order.
 List<OrchestrationAgent> teamLiveAgents(Iterable<OrchestrationAgent> agents) =>

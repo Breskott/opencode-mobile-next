@@ -1,10 +1,8 @@
 // TEAM-113: usage surfaces. The shared formatter returns null when the
 // host reported neither cost nor tokens, writes tokens compactly and puts
-// "est." after every cost; the run Overview's "Team today" line (under
-// its Details row since the 2026-09-24 redesign) and the
-// agent Runtime's "Tokens / context / cost" line show over the fixture's
-// `/usage` and are absent when usage is empty or the capability is off;
-// the Gas City read capabilities now include `usage`.
+// "est." after every cost; the run Overview's Details say a task's cost
+// is not reported (slice-P5.2: no host figure is one task's), never the
+// team's day; the Gas City read capabilities include `usage`.
 
 import 'dart:async';
 import 'dart:io';
@@ -256,8 +254,6 @@ void main() {
         '$teamUsageSeparator${ar.teamUiUsageTokens('12.4k')}',
       );
       expect(ar.teamUiUsageCostEstimated(r'$0.42'), startsWith(r'$0.42 '));
-      expect(ar.teamUiUsageChip(label), contains(label));
-      expect(ar.teamUiUsageChip(label), isNot(en.teamUiUsageChip(label)));
     });
   });
 
@@ -417,8 +413,12 @@ void main() {
       await openDetails(tester);
     }
 
-    group('run Overview Details usage', () {
-      testWidgets('under the step counts with the fixture usage', (
+    // slice-P5.2: the host reports the whole team's day and a worker's
+    // recent window, never one task's cost (docs/qa/codex-p52-2026-09-27).
+    // The task page says so; it never shows the team's day total or a
+    // figure from the run's raw payload as this task's cost.
+    group('run Overview Details: a task\'s cost is unreported', () {
+      testWidgets('says so under the step counts, with no figure', (
         tester,
       ) async {
         final (controller, _) = await boot(fixtureUsage: true);
@@ -426,58 +426,45 @@ void main() {
           tester,
           RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
         );
-        // Collapsed on open: the figure is one tap away, not on the page.
+        // Collapsed on open: the line is one tap away, not on the page.
         expect(key('team-run-usage'), findsNothing);
         await openDetails(tester);
-        // The recorded `/usage` counted nothing yet but reported it: an
-        // honest zero, still estimated.
-        expect(controller.snapshot.usage, isNotNull);
-        expect(controller.snapshot.usage!.isEstimated, isTrue);
         expect(key('team-run-usage'), findsOneWidget);
-        expect(
-          text(tester, key('team-run-usage')),
-          r'Team today · $0.00 est. · 0 tokens',
-        );
+        expect(text(tester, key('team-run-usage')), en.teamRunCostUnreported);
         expect(find.text('Usage'), findsOneWidget);
         expect(
           tester.getTopLeft(key('team-run-usage')).dy,
           greaterThan(tester.getBottomLeft(key('team-run-counts')).dy - 1),
         );
-        expect(
-          find.descendant(
-            of: key('team-run-summary-body'),
-            matching: key('team-run-usage'),
-          ),
-          findsOneWidget,
-        );
+        expect(find.textContaining(r'$'), findsNothing);
       });
 
-      testWidgets('names the team, the estimated cost and the tokens', (
+      testWidgets('never shows the team\'s day as the task\'s cost', (
         tester,
       ) async {
         final (controller, _) = await boot();
         await pumpRun(tester, controller);
-        expect(
-          text(tester, key('team-run-usage')),
-          r'Team today · $0.42 est. · 12.4k tokens',
+        expect(text(tester, key('team-run-usage')), en.teamRunCostUnreported);
+        expect(find.textContaining('est.'), findsNothing);
+        expect(find.textContaining('12.4k'), findsNothing);
+      });
+
+      testWidgets('ignores a figure in the run\'s raw payload', (tester) async {
+        final (controller, _) = await boot(
+          runOverride: run(
+            extraRaw: const {
+              'usage': {
+                'input_tokens': 700,
+                'output_tokens': 250,
+                'cost_usd_estimate': 0.07,
+              },
+            },
+          ),
         );
-      });
-
-      testWidgets('is absent when /usage returned nothing', (tester) async {
-        final (controller, _) = await boot(usage: null);
         await pumpRun(tester, controller);
-        expect(controller.snapshot.usage, isNull);
-        expect(key('team-run-counts'), findsOneWidget);
-        expect(key('team-run-usage'), findsNothing);
-        expect(find.textContaining('est.'), findsNothing);
-      });
-
-      testWidgets('is absent when usage carries only counts', (tester) async {
-        final (controller, _) = await boot(usage: _countsOnly);
-        await pumpRun(tester, controller);
-        expect(key('team-run-counts'), findsOneWidget);
-        expect(key('team-run-usage'), findsNothing);
-        expect(find.textContaining('est.'), findsNothing);
+        expect(text(tester, key('team-run-usage')), en.teamRunCostUnreported);
+        expect(find.textContaining(r'$0.07'), findsNothing);
+        expect(find.textContaining('950'), findsNothing);
       });
 
       testWidgets('is absent when the usage capability is off', (tester) async {
@@ -498,28 +485,7 @@ void main() {
         expect(key('team-run-usage'), findsNothing);
       });
 
-      testWidgets('prefers a per-run figure when the run carries one', (
-        tester,
-      ) async {
-        final (controller, _) = await boot(
-          runOverride: run(
-            extraRaw: const {
-              'usage': {
-                'input_tokens': 700,
-                'output_tokens': 250,
-                'cost_usd_estimate': 0.07,
-              },
-            },
-          ),
-        );
-        await pumpRun(tester, controller);
-        expect(text(tester, key('team-run-usage')), r'$0.07 est. · 950 tokens');
-        expect(find.textContaining('Team today'), findsNothing);
-      });
-
-      testWidgets('Arabic: the line reads right to left with Latin figures', (
-        tester,
-      ) async {
+      testWidgets('Arabic: the line reads right to left', (tester) async {
         final (controller, _) = await boot();
         await pump(
           tester,
@@ -528,16 +494,11 @@ void main() {
         );
         await tester.tap(find.text(ar.teamUiRunDetails));
         await tester.pumpAndSettle();
-        final label = text(tester, key('team-run-usage'));
-        expect(label, ar.teamUiUsageChip(teamUsageLabel(ar, _richUsage)!));
-        expect(label, contains(r'$0.42'));
-        expect(label, isNot(matches(arabicIndicDigits)));
+        expect(text(tester, key('team-run-usage')), ar.teamRunCostUnreported);
         expect(
           Directionality.of(tester.element(key('team-run-usage'))),
           TextDirection.rtl,
         );
-        // The line sits at the start edge: on the right in RTL, aligned
-        // with the counts above it.
         final usage = tester.getRect(key('team-run-usage'));
         final counts = tester.getRect(key('team-run-counts'));
         expect(usage.right, moreOrLessEquals(counts.right, epsilon: 1));

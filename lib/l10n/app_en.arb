@@ -14167,15 +14167,6 @@
       }
     }
   },
-  "teamUiUsageChip": "Team today · {usage}",
-  "@teamUiUsageChip": {
-    "description": "Run Overview usage chip: Gas City usage is city-level (today), never per run; {usage} is the est. cost and compact tokens",
-    "placeholders": {
-      "usage": {
-        "type": "String"
-      }
-    }
-  },
   "teamUiUsageCostEstimated": "{cost} est.",
   "@teamUiUsageCostEstimated": {
     "description": "A cost figure with the estimate suffix; every cost the plugin shows carries it (05-beads TEAM-113)",
@@ -30643,13 +30634,34 @@
       }
     }
   },
-  "teamHomeSpentHint": "The whole team since midnight where it runs, estimated",
+  "teamHomeSpentHint": "The whole team since midnight where it runs, estimated. The host doesn’t report what each task cost.",
   "@teamHomeSpentHint": {
     "description": "AI Team page: under today's spend; never a task's cost."
   },
-  "teamHomeSpentPartial": "Some of today’s use has no price yet, so it cost more than this",
+  "teamHomeSpentPartial": "Some of today’s use has no price yet, so it cost more than this.",
   "@teamHomeSpentPartial": {
-    "description": "AI Team page: under today's spend when part of it is unpriced or history is missing."
+    "description": "AI Team page: under today's spend when part of it has no price."
+  },
+  "teamHomeSpentHistoryMissing": "Part of today’s history is missing, so it cost more than this.",
+  "@teamHomeSpentHistoryMissing": {
+    "description": "AI Team page: under today's spend when the host says part of today's history is missing."
+  },
+  "teamHomeSpentNotRecording": "The team isn’t counting new use right now.",
+  "@teamHomeSpentNotRecording": {
+    "description": "AI Team page: under today's spend when the host has stopped recording new usage."
+  },
+  "teamRunCostUnreported": "Not reported for one task. The AI Team page shows today’s estimate for the whole team.",
+  "@teamRunCostUnreported": {
+    "description": "A task's Details: the host reports no cost for a single task, only the whole team's day."
+  },
+  "teamHomeAgentsRowCrashed": "{count} crashed",
+  "@teamHomeAgentsRowCrashed": {
+    "description": "AI Team page agents row: how many live agents' sessions ended in an error.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "teamIntroNotFound": "No AI Team found on {server}",
   "@teamIntroNotFound": {
