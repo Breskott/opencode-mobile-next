@@ -1206,8 +1206,9 @@ class _FilesScreenState extends State<FilesScreen> {
       controller: _search,
       focusNode: _searchFocus,
       label: symbols ? l10n.readerUiSearchSymbols : l10n.readerUiSearchFiles,
+      // Enter searches at once through onChanged (the field settles the
+      // query on submit); a second handler would query twice.
       onChanged: _onSearchChanged,
-      onSubmitted: _onSearchChanged,
       activeFilter: activeFilter,
       onClearFilter: clearFilter,
       filters: [

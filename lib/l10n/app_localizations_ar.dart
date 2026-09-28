@@ -7270,6 +7270,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LibraryCouldNotLoadThisSection => 'تعذّر تحميل هذا القسم';
 
   @override
+  String get integrationsPageLoadFailed => 'Could not load this page';
+
+  @override
   String get e7LibrarySkills => 'المهارات';
 
   @override

@@ -602,28 +602,41 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
           KitRowGroup(
             margin: EdgeInsets.zero,
             children: [
-              KitProgressRow(
-                key: const ValueKey('session-context-gauge'),
-                title: model.name,
-                value: usage,
-                // Near the limit, the verdict and the notice below say so;
-                // an explicit tone keeps the bar's own "Near limit" word
-                // off (the same colours as the automatic bar).
-                tone: near
-                    ? usage >= 1
-                          ? AppStatusTone.failure
-                          : AppStatusTone.progress
-                    : null,
-                valueKey: const ValueKey('session-context-token-summary'),
-                valueLabel: metrics.contextLimit > 0
-                    ? l10n.e7SharedDetail385(
-                        _formatNumber(metrics.contextTokens),
-                        _formatNumber(metrics.contextLimit),
-                      )
-                    : l10n.e7SharedDetail386(
-                        _formatNumber(metrics.contextTokens),
-                      ),
-              ),
+              if (usage == null)
+                // Without a limit there is no fraction to draw, but the
+                // amount is known: a bar with no fill would read as still
+                // loading (KitProgressRow `value: null`) and hide it.
+                KitRow(
+                  key: const ValueKey('session-context-gauge'),
+                  title: model.name,
+                  supportingKey: const ValueKey(
+                    'session-context-token-summary',
+                  ),
+                  supporting: TextSpan(
+                    text: l10n.e7SharedDetail386(
+                      _formatNumber(metrics.contextTokens),
+                    ),
+                  ),
+                )
+              else
+                KitProgressRow(
+                  key: const ValueKey('session-context-gauge'),
+                  title: model.name,
+                  value: usage,
+                  // Near the limit, the verdict and the notice below say so;
+                  // an explicit tone keeps the bar's own "Near limit" word
+                  // off (the same colours as the automatic bar).
+                  tone: near
+                      ? usage >= 1
+                            ? AppStatusTone.failure
+                            : AppStatusTone.progress
+                      : null,
+                  valueKey: const ValueKey('session-context-token-summary'),
+                  valueLabel: l10n.e7SharedDetail385(
+                    _formatNumber(metrics.contextTokens),
+                    _formatNumber(metrics.contextLimit),
+                  ),
+                ),
               if (activeContext)
                 KitRow(
                   key: const ValueKey('open-active-context'),

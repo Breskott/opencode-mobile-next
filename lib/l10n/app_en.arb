@@ -6674,6 +6674,10 @@
   "@e7LibraryCouldNotLoadThisSection": {
     "description": "Library and project tools UI: Could not load this section"
   },
+  "integrationsPageLoadFailed": "Could not load this page",
+  "@integrationsPageLoadFailed": {
+    "description": "Providers and MCP page: headline when more than one of its sections (providers, MCP servers, resources) failed to load; one Try again reloads them all"
+  },
   "e7LibrarySkills": "Skills",
   "@e7LibrarySkills": {
     "description": "Library and project tools UI: Skills"

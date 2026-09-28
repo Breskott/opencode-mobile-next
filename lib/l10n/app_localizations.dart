@@ -11861,6 +11861,12 @@ abstract class AppLocalizations {
   /// **'Could not load this section'**
   String get e7LibraryCouldNotLoadThisSection;
 
+  /// Providers and MCP page: headline when more than one of its sections (providers, MCP servers, resources) failed to load; one Try again reloads them all
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this page'**
+  String get integrationsPageLoadFailed;
+
   /// Library and project tools UI: Skills
   ///
   /// In en, this message translates to:

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -219,11 +220,36 @@ class _KitUndoHost {
       cover.addStatusListener(onCovered);
       pending.detach = () => cover.removeStatusListener(onCovered);
     }
+    // Sheets and dialogs are popup routes, which do not drive the route
+    // below's secondary animation: watch the route itself stop being the
+    // current one (something opened on top of it) and commit then too.
+    if (route != null) _commitWhenCovered(route, pending);
     current.value = pending;
     _ensureOverlayEntry(overlay);
     _ensureLifecycleObserver();
     _ensureKeyHandler();
     if (!accessible) pending.startTimer(() => _commit(pending));
+  }
+
+  /// Checks after each frame while [pending] shows: once [route] was the
+  /// current route and something is pushed on top of it (it is still in
+  /// the stack but no longer current), the bar commits. A bar shown while
+  /// [route] is covered (a sheet closing with the act's result) waits for
+  /// the route to come back first. Post-frame checks schedule no frames.
+  void _commitWhenCovered(ModalRoute<dynamic> route, _PendingUndo pending) {
+    var wasCurrent = route.isCurrent;
+    void check(Duration _) {
+      if (!identical(current.value, pending)) return;
+      final isCurrent = route.isCurrent;
+      if (wasCurrent && !isCurrent && route.isActive) {
+        _commit(pending);
+        return;
+      }
+      wasCurrent = isCurrent;
+      SchedulerBinding.instance.addPostFrameCallback(check);
+    }
+
+    SchedulerBinding.instance.addPostFrameCallback(check);
   }
 
   void _ensureOverlayEntry(OverlayState overlay) {

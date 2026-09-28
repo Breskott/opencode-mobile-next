@@ -810,6 +810,53 @@ void main() {
     expect(find.text('Project handbook'), findsOneWidget);
   });
 
+  testWidgets(
+    'every section failing says so once, and one Try again reloads them all',
+    (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final repository = _IntegrationsRepository()
+        ..integrationError = const ProductException('Providers unavailable')
+        ..serverError = const ProductException('MCP unavailable')
+        ..resourceError = const ProductException('Resources unavailable');
+
+      await tester.pumpWidget(_app(await _controller(repository)));
+      await tester.pumpAndSettle();
+
+      // One primary per screen (KitScreen asserts it): one error for the
+      // page, at the first failed section, never three.
+      expect(tester.takeException(), isNull);
+      expect(find.text('Could not load this page'), findsOneWidget);
+      expect(find.text('Could not load this section'), findsNothing);
+      final retry = find.widgetWithText(KitButton, 'Try again');
+      expect(retry, findsOneWidget);
+
+      repository
+        ..integrationError = null
+        ..serverError = null
+        ..resourceError = null
+        ..resources = const [
+          McpResourceInfo(
+            name: 'Project handbook',
+            server: 'docs',
+            uri: 'mcp://docs/handbook',
+          ),
+        ];
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Could not load this page'), findsNothing);
+      expect(find.byKey(const ValueKey('mcp-empty')), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Project handbook'),
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Project handbook'), findsOneWidget);
+    },
+  );
+
   testWidgets('MCP Disconnect waits for the confirm sheet', (tester) async {
     final repository = _IntegrationsRepository()
       ..servers = const [

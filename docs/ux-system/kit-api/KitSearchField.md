@@ -127,7 +127,7 @@ All of the following exist on `feat/visual-language-v1` unless flagged.
   - Ctrl+F or Cmd+F focusing the field is a shortcut registered by the shell's shortcuts layer (it draws nothing, so it stays outside the kit); the field exposes `focusNode` for it.
 - **Keyboard (§8.3, G14):**
   - Esc clears the query first. With an empty query, Esc is not consumed, so the screen or modal leaves.
-  - Enter calls `onSubmitted`.
+  - Enter settles the query at once (a pending `onChanged` runs now, once), then calls `onSubmitted`.
   - Arrow Down moves focus to the first result (the next focus in traversal).
   - Tab goes field → filter → clear, in reading order.
   - The back gesture does the same as Esc (it clears first, then leaves) through a `PopScope` inside the part.
@@ -188,7 +188,7 @@ In `test/kit/kit_search_field_test.dart` (G9, G14, TEST-15):
    - it is announced once.
 6. Filters: the button is labelled "Filter", the menu lists the items, and choosing one calls it. `activeFilter` shows a removable chip with its words, and removing calls `onClearFilter`. An active filter without `onClearFilter` asserts.
 7. A disabled field without `disabledReason` asserts. Its reason is visible.
-8. Enter calls `onSubmitted`. Arrow Down moves focus out of the field to the next focusable.
+8. Enter settles a pending query through `onChanged` at once (once only), then calls `onSubmitted`. Arrow Down moves focus out of the field to the next focusable.
 9. RTL: the magnifier is at the start and clear at the end, and the magnifier glyph is not mirrored.
 10. `worthShowing(8)` is false and `worthShowing(9)` is true.
 11. Under reduced motion one `pump()` settles.

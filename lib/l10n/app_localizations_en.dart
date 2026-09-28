@@ -7171,6 +7171,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LibraryCouldNotLoadThisSection => 'Could not load this section';
 
   @override
+  String get integrationsPageLoadFailed => 'Could not load this page';
+
+  @override
   String get e7LibrarySkills => 'Skills';
 
   @override
