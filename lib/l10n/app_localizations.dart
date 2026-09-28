@@ -35577,6 +35577,318 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The team isn\'t starting a worker'**
   String get teamNowNotStartingLine;
+
+  /// AI setup (review only, 2026-09-28): the title of the server-scoped page and of its row on the server's settings page. The page shows the server's settings, MCP tool servers and suggestions; it changes nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'AI setup'**
+  String get aiSetupTitle;
+
+  /// AI setup: the supporting line of its row on the server's settings page
+  ///
+  /// In en, this message translates to:
+  /// **'Models, tools and suggestions for this server'**
+  String get aiSetupEntryDetail;
+
+  /// AI setup: tooltip of the top bar button that reads the server's configuration and tool servers again
+  ///
+  /// In en, this message translates to:
+  /// **'Read this server\'s setup again'**
+  String get aiSetupRefresh;
+
+  /// AI setup: the loading state and progress label while the server's configuration is read
+  ///
+  /// In en, this message translates to:
+  /// **'Reading this server\'s setup…'**
+  String get aiSetupLoading;
+
+  /// AI setup: the one line at the top of the page; the app cannot change or undo setup yet, so no page offers to
+  ///
+  /// In en, this message translates to:
+  /// **'Review only. Changes are made on the server for now.'**
+  String get aiSetupReviewOnly;
+
+  /// AI setup: title when the server has no verified way to share its configuration (e.g. Codex or Claude Code servers)
+  ///
+  /// In en, this message translates to:
+  /// **'AI setup isn\'t available'**
+  String get aiSetupUnsupportedTitle;
+
+  /// AI setup: body of the unavailable state
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t share its configuration with the app. Set up its models and tools on the server itself.'**
+  String get aiSetupUnsupportedBody;
+
+  /// AI setup: title when the server refused the saved sign-in while reading setup
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in needed'**
+  String get aiSetupSignInTitle;
+
+  /// AI setup: body of the needs-sign-in state; the action below changes this server's sign-in
+  ///
+  /// In en, this message translates to:
+  /// **'{server} didn\'t accept the saved sign-in, so its setup can\'t be read.'**
+  String aiSetupSignInBody(String server);
+
+  /// AI setup: title of the error state when reading configuration or tool servers failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read setup'**
+  String get aiSetupErrorTitle;
+
+  /// AI setup: body of the error state; the technical reason is only under Details
+  ///
+  /// In en, this message translates to:
+  /// **'The server didn\'t answer as expected. Try again, or check the server on its settings page.'**
+  String get aiSetupErrorBody;
+
+  /// AI setup: error state action that reads the setup again
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get aiSetupTryAgain;
+
+  /// AI setup: title when the app is not connected and nothing was read yet
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re offline'**
+  String get aiSetupOfflineTitle;
+
+  /// AI setup: offline body, also the reason the refresh button rests
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect to {server} to read its setup.'**
+  String aiSetupOfflineBody(String server);
+
+  /// AI setup: the line above the list when offline with a previous read kept
+  ///
+  /// In en, this message translates to:
+  /// **'Offline. This is {server}\'s setup as last read; it updates when you reconnect.'**
+  String aiSetupOfflineStale(String server);
+
+  /// AI setup: empty state title when the server's configuration and tool list are both empty
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing set up yet'**
+  String get aiSetupEmptyTitle;
+
+  /// AI setup: empty state body
+  ///
+  /// In en, this message translates to:
+  /// **'This server runs on its defaults, with no model chosen and no tool servers. Changes are made on the server for now.'**
+  String get aiSetupEmptyBody;
+
+  /// AI setup: section label of the read-only suggestions (nothing is applied from the app)
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions'**
+  String get aiSetupSuggestionsLabel;
+
+  /// AI setup suggestion: an MCP tool server waits for its sign-in; name is the tool server's name
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to {name}'**
+  String aiSetupSuggestSignInTitle(String name);
+
+  /// AI setup suggestion: why and where to sign in to a tool server
+  ///
+  /// In en, this message translates to:
+  /// **'Its tools stay off until someone signs in to it on the server.'**
+  String get aiSetupSuggestSignInDetail;
+
+  /// AI setup suggestion: an MCP tool server failed to start or connect
+  ///
+  /// In en, this message translates to:
+  /// **'Check {name}\'s settings'**
+  String aiSetupSuggestFixTitle(String name);
+
+  /// AI setup suggestion: what to do about a failed tool server
+  ///
+  /// In en, this message translates to:
+  /// **'It failed to start. Fix its entry in the server\'s configuration, then restart the server.'**
+  String get aiSetupSuggestFixDetail;
+
+  /// AI setup suggestion: the configuration names no model
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a default model'**
+  String get aiSetupSuggestModelTitle;
+
+  /// AI setup suggestion: why choosing a model helps and where; “model” is the configuration field name
+  ///
+  /// In en, this message translates to:
+  /// **'No model is set, so new conversations use the server\'s own pick. Set “model” in the server\'s configuration.'**
+  String get aiSetupSuggestModelDetail;
+
+  /// AI setup suggestion: no MCP tool servers are set up
+  ///
+  /// In en, this message translates to:
+  /// **'Add tool servers'**
+  String get aiSetupSuggestToolsTitle;
+
+  /// AI setup suggestion: what tool servers add and where to add one
+  ///
+  /// In en, this message translates to:
+  /// **'No MCP servers are set up. Add one in the server\'s configuration to give the agent more tools.'**
+  String get aiSetupSuggestToolsDetail;
+
+  /// AI setup: section label of the MCP server list, most urgent first
+  ///
+  /// In en, this message translates to:
+  /// **'Tool servers'**
+  String get aiSetupToolsLabel;
+
+  /// AI setup: explanation shown on the Tool servers label
+  ///
+  /// In en, this message translates to:
+  /// **'MCP servers give the agent extra tools. Each shows whether it is working now.'**
+  String get aiSetupToolsTerm;
+
+  /// AI setup: MCP tool server status word
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get aiSetupToolConnected;
+
+  /// AI setup: MCP tool server status word, still starting
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get aiSetupToolWaiting;
+
+  /// AI setup: MCP tool server status word, turned off in configuration
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get aiSetupToolOff;
+
+  /// AI setup: MCP tool server status word
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get aiSetupToolFailed;
+
+  /// AI setup: MCP tool server status word, waiting for a sign-in or client registration
+  ///
+  /// In en, this message translates to:
+  /// **'Needs sign-in'**
+  String get aiSetupToolNeedsSignIn;
+
+  /// AI setup: MCP tool server status word the server did not report
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get aiSetupToolUnknown;
+
+  /// AI setup: section label of an OpenCode 1 server's combined (effective) configuration
+  ///
+  /// In en, this message translates to:
+  /// **'Settings in effect'**
+  String get aiSetupEffectiveLabel;
+
+  /// AI setup: explanation shown on the Settings in effect label
+  ///
+  /// In en, this message translates to:
+  /// **'What this server\'s conversations use, after combining its configuration files.'**
+  String get aiSetupEffectiveTerm;
+
+  /// AI setup: the configured default model
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get aiSetupModel;
+
+  /// AI setup: value when no model is configured
+  ///
+  /// In en, this message translates to:
+  /// **'Not set: the server picks'**
+  String get aiSetupServerDefault;
+
+  /// AI setup: the configured model for small tasks such as titles
+  ///
+  /// In en, this message translates to:
+  /// **'Small model'**
+  String get aiSetupSmallModel;
+
+  /// AI setup: the configured default agent
+  ///
+  /// In en, this message translates to:
+  /// **'Default agent'**
+  String get aiSetupDefaultAgent;
+
+  /// AI setup: configured model providers (names only, never keys)
+  ///
+  /// In en, this message translates to:
+  /// **'Providers'**
+  String get aiSetupProviders;
+
+  /// AI setup: configured tool permission rules
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get aiSetupPermissions;
+
+  /// AI setup: how many permission rules the configuration sets
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 rule} other{{count} rules}}'**
+  String aiSetupPermissionRules(int count);
+
+  /// AI setup: the fold holding the whole configuration with secrets hidden
+  ///
+  /// In en, this message translates to:
+  /// **'All settings'**
+  String get aiSetupAllSettings;
+
+  /// AI setup: section label of an OpenCode 2 server's ordered configuration sources
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration sources'**
+  String get aiSetupSourcesLabel;
+
+  /// AI setup: explanation shown on the Configuration sources label
+  ///
+  /// In en, this message translates to:
+  /// **'Listed from lowest to highest priority, as the server reports them. The app doesn\'t combine them.'**
+  String get aiSetupSourcesTerm;
+
+  /// AI setup: an OpenCode 2 server reports no configuration sources
+  ///
+  /// In en, this message translates to:
+  /// **'No configuration files'**
+  String get aiSetupNoSources;
+
+  /// AI setup: supporting line when there are no configuration sources
+  ///
+  /// In en, this message translates to:
+  /// **'This server runs on its defaults.'**
+  String get aiSetupNoSourcesDetail;
+
+  /// AI setup: title of a configuration source without a file path; type is the server's source type word
+  ///
+  /// In en, this message translates to:
+  /// **'Source without a file ({type})'**
+  String aiSetupSourceUnnamed(String type);
+
+  /// AI setup: supporting line of a configuration source: its priority position and the top-level settings it sets
+  ///
+  /// In en, this message translates to:
+  /// **'{position}. Sets {keys}'**
+  String aiSetupSourceSets(int position, String keys);
+
+  /// AI setup: supporting line of a configuration source that sets no settings
+  ///
+  /// In en, this message translates to:
+  /// **'{position}. Sets nothing'**
+  String aiSetupSourceEmpty(int position);
+
+  /// AI setup: the fold holding every configuration source with secrets hidden
+  ///
+  /// In en, this message translates to:
+  /// **'All sources'**
+  String get aiSetupAllSources;
 }
 
 class _AppLocalizationsDelegate

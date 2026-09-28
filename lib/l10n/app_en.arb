@@ -26868,5 +26868,268 @@
   "teamNowNotStartingLine": "The team isn't starting a worker",
   "@teamNowNotStartingLine": {
     "description": "Team page Now line (slice-P5.1): a task waits past the team's checks and no worker has started; one sentence about the team, never the task (its row says which and how long). The action wakes a worker or explains why."
+  },
+  "aiSetupTitle": "AI setup",
+  "@aiSetupTitle": {
+    "description": "AI setup (review only, 2026-09-28): the title of the server-scoped page and of its row on the server's settings page. The page shows the server's settings, MCP tool servers and suggestions; it changes nothing."
+  },
+  "aiSetupEntryDetail": "Models, tools and suggestions for this server",
+  "@aiSetupEntryDetail": {
+    "description": "AI setup: the supporting line of its row on the server's settings page"
+  },
+  "aiSetupRefresh": "Read this server's setup again",
+  "@aiSetupRefresh": {
+    "description": "AI setup: tooltip of the top bar button that reads the server's configuration and tool servers again"
+  },
+  "aiSetupLoading": "Reading this server's setup…",
+  "@aiSetupLoading": {
+    "description": "AI setup: the loading state and progress label while the server's configuration is read"
+  },
+  "aiSetupReviewOnly": "Review only. Changes are made on the server for now.",
+  "@aiSetupReviewOnly": {
+    "description": "AI setup: the one line at the top of the page; the app cannot change or undo setup yet, so no page offers to"
+  },
+  "aiSetupUnsupportedTitle": "AI setup isn't available",
+  "@aiSetupUnsupportedTitle": {
+    "description": "AI setup: title when the server has no verified way to share its configuration (e.g. Codex or Claude Code servers)"
+  },
+  "aiSetupUnsupportedBody": "This server doesn't share its configuration with the app. Set up its models and tools on the server itself.",
+  "@aiSetupUnsupportedBody": {
+    "description": "AI setup: body of the unavailable state"
+  },
+  "aiSetupSignInTitle": "Sign-in needed",
+  "@aiSetupSignInTitle": {
+    "description": "AI setup: title when the server refused the saved sign-in while reading setup"
+  },
+  "aiSetupSignInBody": "{server} didn't accept the saved sign-in, so its setup can't be read.",
+  "@aiSetupSignInBody": {
+    "description": "AI setup: body of the needs-sign-in state; the action below changes this server's sign-in",
+    "placeholders": {
+      "server": {
+        "type": "String",
+        "example": "Laptop"
+      }
+    }
+  },
+  "aiSetupErrorTitle": "Couldn't read setup",
+  "@aiSetupErrorTitle": {
+    "description": "AI setup: title of the error state when reading configuration or tool servers failed"
+  },
+  "aiSetupErrorBody": "The server didn't answer as expected. Try again, or check the server on its settings page.",
+  "@aiSetupErrorBody": {
+    "description": "AI setup: body of the error state; the technical reason is only under Details"
+  },
+  "aiSetupTryAgain": "Try again",
+  "@aiSetupTryAgain": {
+    "description": "AI setup: error state action that reads the setup again"
+  },
+  "aiSetupOfflineTitle": "You're offline",
+  "@aiSetupOfflineTitle": {
+    "description": "AI setup: title when the app is not connected and nothing was read yet"
+  },
+  "aiSetupOfflineBody": "Reconnect to {server} to read its setup.",
+  "@aiSetupOfflineBody": {
+    "description": "AI setup: offline body, also the reason the refresh button rests",
+    "placeholders": {
+      "server": {
+        "type": "String",
+        "example": "Laptop"
+      }
+    }
+  },
+  "aiSetupOfflineStale": "Offline. This is {server}'s setup as last read; it updates when you reconnect.",
+  "@aiSetupOfflineStale": {
+    "description": "AI setup: the line above the list when offline with a previous read kept",
+    "placeholders": {
+      "server": {
+        "type": "String",
+        "example": "Laptop"
+      }
+    }
+  },
+  "aiSetupEmptyTitle": "Nothing set up yet",
+  "@aiSetupEmptyTitle": {
+    "description": "AI setup: empty state title when the server's configuration and tool list are both empty"
+  },
+  "aiSetupEmptyBody": "This server runs on its defaults, with no model chosen and no tool servers. Changes are made on the server for now.",
+  "@aiSetupEmptyBody": {
+    "description": "AI setup: empty state body"
+  },
+  "aiSetupSuggestionsLabel": "Suggestions",
+  "@aiSetupSuggestionsLabel": {
+    "description": "AI setup: section label of the read-only suggestions (nothing is applied from the app)"
+  },
+  "aiSetupSuggestSignInTitle": "Sign in to {name}",
+  "@aiSetupSuggestSignInTitle": {
+    "description": "AI setup suggestion: an MCP tool server waits for its sign-in; name is the tool server's name",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "github"
+      }
+    }
+  },
+  "aiSetupSuggestSignInDetail": "Its tools stay off until someone signs in to it on the server.",
+  "@aiSetupSuggestSignInDetail": {
+    "description": "AI setup suggestion: why and where to sign in to a tool server"
+  },
+  "aiSetupSuggestFixTitle": "Check {name}'s settings",
+  "@aiSetupSuggestFixTitle": {
+    "description": "AI setup suggestion: an MCP tool server failed to start or connect",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "github"
+      }
+    }
+  },
+  "aiSetupSuggestFixDetail": "It failed to start. Fix its entry in the server's configuration, then restart the server.",
+  "@aiSetupSuggestFixDetail": {
+    "description": "AI setup suggestion: what to do about a failed tool server"
+  },
+  "aiSetupSuggestModelTitle": "Choose a default model",
+  "@aiSetupSuggestModelTitle": {
+    "description": "AI setup suggestion: the configuration names no model"
+  },
+  "aiSetupSuggestModelDetail": "No model is set, so new conversations use the server's own pick. Set “model” in the server's configuration.",
+  "@aiSetupSuggestModelDetail": {
+    "description": "AI setup suggestion: why choosing a model helps and where; “model” is the configuration field name"
+  },
+  "aiSetupSuggestToolsTitle": "Add tool servers",
+  "@aiSetupSuggestToolsTitle": {
+    "description": "AI setup suggestion: no MCP tool servers are set up"
+  },
+  "aiSetupSuggestToolsDetail": "No MCP servers are set up. Add one in the server's configuration to give the agent more tools.",
+  "@aiSetupSuggestToolsDetail": {
+    "description": "AI setup suggestion: what tool servers add and where to add one"
+  },
+  "aiSetupToolsLabel": "Tool servers",
+  "@aiSetupToolsLabel": {
+    "description": "AI setup: section label of the MCP server list, most urgent first"
+  },
+  "aiSetupToolsTerm": "MCP servers give the agent extra tools. Each shows whether it is working now.",
+  "@aiSetupToolsTerm": {
+    "description": "AI setup: explanation shown on the Tool servers label"
+  },
+  "aiSetupToolConnected": "Connected",
+  "@aiSetupToolConnected": {
+    "description": "AI setup: MCP tool server status word"
+  },
+  "aiSetupToolWaiting": "Waiting",
+  "@aiSetupToolWaiting": {
+    "description": "AI setup: MCP tool server status word, still starting"
+  },
+  "aiSetupToolOff": "Off",
+  "@aiSetupToolOff": {
+    "description": "AI setup: MCP tool server status word, turned off in configuration"
+  },
+  "aiSetupToolFailed": "Failed",
+  "@aiSetupToolFailed": {
+    "description": "AI setup: MCP tool server status word"
+  },
+  "aiSetupToolNeedsSignIn": "Needs sign-in",
+  "@aiSetupToolNeedsSignIn": {
+    "description": "AI setup: MCP tool server status word, waiting for a sign-in or client registration"
+  },
+  "aiSetupToolUnknown": "Unknown",
+  "@aiSetupToolUnknown": {
+    "description": "AI setup: MCP tool server status word the server did not report"
+  },
+  "aiSetupEffectiveLabel": "Settings in effect",
+  "@aiSetupEffectiveLabel": {
+    "description": "AI setup: section label of an OpenCode 1 server's combined (effective) configuration"
+  },
+  "aiSetupEffectiveTerm": "What this server's conversations use, after combining its configuration files.",
+  "@aiSetupEffectiveTerm": {
+    "description": "AI setup: explanation shown on the Settings in effect label"
+  },
+  "aiSetupModel": "Model",
+  "@aiSetupModel": {
+    "description": "AI setup: the configured default model"
+  },
+  "aiSetupServerDefault": "Not set: the server picks",
+  "@aiSetupServerDefault": {
+    "description": "AI setup: value when no model is configured"
+  },
+  "aiSetupSmallModel": "Small model",
+  "@aiSetupSmallModel": {
+    "description": "AI setup: the configured model for small tasks such as titles"
+  },
+  "aiSetupDefaultAgent": "Default agent",
+  "@aiSetupDefaultAgent": {
+    "description": "AI setup: the configured default agent"
+  },
+  "aiSetupProviders": "Providers",
+  "@aiSetupProviders": {
+    "description": "AI setup: configured model providers (names only, never keys)"
+  },
+  "aiSetupPermissions": "Permissions",
+  "@aiSetupPermissions": {
+    "description": "AI setup: configured tool permission rules"
+  },
+  "aiSetupPermissionRules": "{count, plural, =1{1 rule} other{{count} rules}}",
+  "@aiSetupPermissionRules": {
+    "description": "AI setup: how many permission rules the configuration sets",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiSetupAllSettings": "All settings",
+  "@aiSetupAllSettings": {
+    "description": "AI setup: the fold holding the whole configuration with secrets hidden"
+  },
+  "aiSetupSourcesLabel": "Configuration sources",
+  "@aiSetupSourcesLabel": {
+    "description": "AI setup: section label of an OpenCode 2 server's ordered configuration sources"
+  },
+  "aiSetupSourcesTerm": "Listed from lowest to highest priority, as the server reports them. The app doesn't combine them.",
+  "@aiSetupSourcesTerm": {
+    "description": "AI setup: explanation shown on the Configuration sources label"
+  },
+  "aiSetupNoSources": "No configuration files",
+  "@aiSetupNoSources": {
+    "description": "AI setup: an OpenCode 2 server reports no configuration sources"
+  },
+  "aiSetupNoSourcesDetail": "This server runs on its defaults.",
+  "@aiSetupNoSourcesDetail": {
+    "description": "AI setup: supporting line when there are no configuration sources"
+  },
+  "aiSetupSourceUnnamed": "Source without a file ({type})",
+  "@aiSetupSourceUnnamed": {
+    "description": "AI setup: title of a configuration source without a file path; type is the server's source type word",
+    "placeholders": {
+      "type": {
+        "type": "String",
+        "example": "document"
+      }
+    }
+  },
+  "aiSetupSourceSets": "{position}. Sets {keys}",
+  "@aiSetupSourceSets": {
+    "description": "AI setup: supporting line of a configuration source: its priority position and the top-level settings it sets",
+    "placeholders": {
+      "position": {
+        "type": "int"
+      },
+      "keys": {
+        "type": "String",
+        "example": "model, mcp"
+      }
+    }
+  },
+  "aiSetupSourceEmpty": "{position}. Sets nothing",
+  "@aiSetupSourceEmpty": {
+    "description": "AI setup: supporting line of a configuration source that sets no settings",
+    "placeholders": {
+      "position": {
+        "type": "int"
+      }
+    }
+  },
+  "aiSetupAllSources": "All sources",
+  "@aiSetupAllSources": {
+    "description": "AI setup: the fold holding every configuration source with secrets hidden"
   }
 }
