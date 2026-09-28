@@ -5,6 +5,11 @@ enum ConnectionStatusPhase {
   reconnecting,
   connected,
   credentialsRequired,
+
+  /// The saved password (or connection token) could not be read back from
+  /// the phone's secure storage, so nothing was tried: only entering it
+  /// again helps. Ranked with [credentialsRequired], ahead of transport.
+  credentialsUnreadable,
   notAnswering,
 }
 

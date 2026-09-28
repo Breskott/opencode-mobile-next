@@ -2040,9 +2040,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Claude subscription usage is unavailable here pending a supported, permitted integration. Current OpenCode does not include Claude Pro/Max sign-in. This app will not read or reuse that subscription login.';
 
   @override
-  String get iosAppTitle => 'OpenCode for iOS';
-
-  @override
   String get iosRemoteSummary =>
       'A remote client for the OpenCode server you choose. On-device server hosting and background monitoring are not available in this iOS build.';
 
@@ -2524,6 +2521,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'The connection token was rejected. Update it to reconnect.';
 
   @override
+  String connectionPasswordUnreadable(String server) {
+    return 'Can\'t read the saved password for $server';
+  }
+
+  @override
+  String connectionTokenUnreadable(String server) {
+    return 'Can\'t read the saved token for $server';
+  }
+
+  @override
+  String get connectionEnterPassword => 'Enter the password';
+
+  @override
+  String get connectionEnterToken => 'Enter the token';
+
+  @override
+  String get connectionPasswordUnreadableDetails =>
+      'This phone\'s secure storage couldn\'t open the password saved for this server. That can happen after the phone is restored from a backup or its screen lock is changed. The password itself was not changed: enter it again to connect.';
+
+  @override
+  String get connectionTokenUnreadableDetails =>
+      'This phone\'s secure storage couldn\'t open the token saved for this server. That can happen after the phone is restored from a backup or its screen lock is changed. The token itself was not changed: enter it again to connect.';
+
+  @override
   String get updateConnectionToken => 'Update token';
 
   @override
@@ -2582,10 +2603,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get codexTokenStorageHelp =>
       'Stored securely on this device and sent only to this Codex server.';
-
-  @override
-  String get connectionCredentialUnavailable =>
-      'A saved server credential can no longer be read. Edit the active server and re-enter it before connecting.';
 
   @override
   String get projectConfiguredFolder => 'Configured folder';
@@ -7286,7 +7303,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SetupDiscardChanges => 'Discard server changes?';
 
   @override
-  String get e7SetupPasswordRequired => 'Password re-entry required';
+  String get e7SetupPasswordRequired => 'Can\'t read the saved password';
 
   @override
   String get e7SetupPairing => 'Pairing…';
@@ -7376,10 +7393,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupConnectionClosed => 'Connection closed';
-
-  @override
-  String get e7SetupTokenBanner =>
-      'Connection token re-entry required for the active server. Edit the server and save its token before connecting.';
 
   @override
   String get e7SetupUpKey => 'Up arrow key';
@@ -7552,10 +7565,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SetupRestartingLocalStage => 'Restarting local server';
 
   @override
-  String get e7SetupPasswordBanner =>
-      'Password re-entry required for the active server. Edit the server and save its password before connecting.';
-
-  @override
   String get e7SetupEmptyPairClipboard =>
       'The clipboard is empty. Run “opencode2 pair” on the server and copy the code it prints.';
 
@@ -7564,7 +7573,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'The local server restarted, but the active server changed. Reconnect when you are ready.';
 
   @override
-  String get e7SetupTokenRequired => 'Connection token re-entry required';
+  String get e7SetupTokenRequired => 'Can\'t read the saved token';
 
   @override
   String get e7SetupPairingInstructions =>

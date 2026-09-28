@@ -189,7 +189,7 @@ void main() {
     await tester.pump();
     expect(connection.connectCalls, 0);
     expect(
-      find.textContaining('Connection token re-entry required'),
+      find.text("Can't read the saved token for Workstation"),
       findsOneWidget,
     );
     expect(find.text('Nothing is listening on this device'), findsNothing);
@@ -224,13 +224,21 @@ void main() {
       await tester.pump();
 
       expect(connection.connectCalls, 0);
-      expect(find.byKey(const Key('password-reentry-banner')), findsOneWidget);
-      expect(find.textContaining('Password re-entry required'), findsOneWidget);
+      // One status line says it, with the way forward; the row agrees.
+      expect(
+        find.text("Can't read the saved password for Workstation"),
+        findsOneWidget,
+      );
+      expect(find.text('Enter the password'), findsOneWidget);
+      expect(
+        find.textContaining("Can't read the saved password"),
+        findsNWidgets(2),
+      );
       expect(
         find.bySemanticsLabel(
-          RegExp('Password re-entry required for the active server'),
+          RegExp("Can't read the saved password for Workstation"),
         ),
-        findsOneWidget,
+        findsWidgets,
       );
       semantics.dispose();
 
