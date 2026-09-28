@@ -121,6 +121,21 @@ const _providers = [
     ],
     connectionCount: 0,
   ),
+  // Emulator QA B10: a key the server can also read from its environment.
+  // The row says how to connect; the variable name is under Details.
+  IntegrationInfo(
+    id: '302ai',
+    name: '302.AI',
+    methods: [
+      IntegrationMethodInfo(type: 'key', label: 'API key'),
+      IntegrationMethodInfo(
+        type: 'env',
+        label: 'Server environment',
+        environmentNames: ['302AI_API_KEY'],
+      ),
+    ],
+    connectionCount: 0,
+  ),
   IntegrationInfo(
     id: 'ollama',
     name: 'Ollama',

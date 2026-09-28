@@ -4816,7 +4816,7 @@ abstract class AppLocalizations {
   /// No description provided for @tailscaleAddressError.
   ///
   /// In en, this message translates to:
-  /// **'Enter an HTTPS origin with a valid port (1–65535). Remove paths, credentials, query text and fragments. Use the full address from Serve; do not replace https with http.'**
+  /// **'That address won\'t work here. Copy the https:// address Tailscale Serve shows on your computer and paste it as it is, with nothing added after it.'**
   String get tailscaleAddressError;
 
   /// No description provided for @tailscaleReviewDetail.
@@ -11585,12 +11585,6 @@ abstract class AppLocalizations {
   /// **'Stored credential: {detail1}'**
   String e7LibraryStoredCredential(String detail1);
 
-  /// Library and project tools UI: Server environment: {detail1}
-  ///
-  /// In en, this message translates to:
-  /// **'Server environment: {detail1}'**
-  String e7LibraryServerEnvironment2(String detail1);
-
   /// Library and project tools UI: No connection methods available
   ///
   /// In en, this message translates to:
@@ -12970,13 +12964,13 @@ abstract class AppLocalizations {
   /// Setup journey: require https.
   ///
   /// In en, this message translates to:
-  /// **'HTTPS is required outside this device. Basic credentials must never be sent over HTTP.'**
+  /// **'A password is only sent to another computer over https://. Use the computer\'s https:// address, pair with a code, or connect with Tailscale.'**
   String get e7SetupRequireHttps;
 
   /// Setup journey: local http.
   ///
   /// In en, this message translates to:
-  /// **'HTTP is allowed only for localhost, 127.0.0.1, or [::1]. Use HTTPS for LAN and remote servers.'**
+  /// **'An http:// address only works for a server on this phone. For another computer, pair with a code, use its https:// address, or connect with Tailscale.'**
   String get e7SetupLocalHttp;
 
   /// Setup journey: refused.
@@ -28197,6 +28191,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage {name} accounts'**
   String integrationsManageAccounts(String name);
+
+  /// Providers list: how an unconnected provider connects, after 'Not connected ·' on its row: with an API key the person adds.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an API key'**
+  String get integrationsConnectWithKey;
+
+  /// Providers list: how an unconnected provider connects when the app has no way to do it; it is set up where the server runs (the variable name is under Details).
+  ///
+  /// In en, this message translates to:
+  /// **'Set up on the server'**
+  String get integrationsConnectOnServer;
+
+  /// Providers list: row menu item and sheet title for a provider's technical details (the server environment variables it reads).
+  ///
+  /// In en, this message translates to:
+  /// **'{name} details'**
+  String integrationsProviderDetails(String name);
+
+  /// Providers list, provider details sheet: label of a variable name the server reads the provider's key from.
+  ///
+  /// In en, this message translates to:
+  /// **'Server environment variable'**
+  String get integrationsEnvironmentVariable;
+
+  /// Providers list, provider details sheet: the way forward for a key read from the server's environment.
+  ///
+  /// In en, this message translates to:
+  /// **'To connect {name} without the app, set this where the server runs, then restart the server.'**
+  String integrationsEnvironmentNote(String name);
 
   /// Integrations page: why the Manage accounts menu item is unavailable on this server.
   ///

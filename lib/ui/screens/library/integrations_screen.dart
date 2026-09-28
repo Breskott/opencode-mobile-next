@@ -1644,31 +1644,33 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
             connection.label,
       }.join(' · ');
     }
+    // Variable names (ANTHROPIC_API_KEY) are technical: they live in the
+    // row's Details, never on its line (emulator QA B10).
     if (integration.connections.isNotEmpty) {
-      return integration.connections
-          .map((connection) {
-            return switch (connection.type) {
-              'credential' => l10n.e7LibraryStoredCredential(connection.label),
-              'env' => l10n.e7LibraryServerEnvironment2(connection.label),
-              _ => connection.label,
-            };
-          })
-          .join(' · ');
+      return <String>{
+        for (final connection in integration.connections)
+          switch (connection.type) {
+            'credential' => l10n.e7LibraryStoredCredential(connection.label),
+            'env' => l10n.e7LibraryServerEnvironment,
+            _ => connection.label,
+          },
+      }.join(' · ');
     }
     if (integration.methods.isEmpty) {
       return l10n.e7LibraryNoConnectionMethodsAvailable;
     }
-    return integration.methods
-        .map((method) {
-          if (method.type == 'env') {
-            final names = method.environmentNames.join(', ');
-            return names.isEmpty
-                ? l10n.e7LibraryConfiguredOnTheServer
-                : l10n.e7LibraryServerEnvironment2(names);
-          }
-          return method.label;
-        })
-        .join(' · ');
+    // How to connect, in the person's words: add a key, or the server's
+    // own sign-in names ("Claude Pro/Max"); a key the server reads from
+    // its environment is set up there.
+    final ways = <String>{
+      for (final method in integration.methods)
+        if (method.type == 'key')
+          l10n.integrationsConnectWithKey
+        else if (method.type != 'env')
+          method.label,
+    };
+    if (ways.isEmpty) return l10n.integrationsConnectOnServer;
+    return ways.join(' · ');
   }
 
   Future<void> _disconnectIntegration(PresentedIntegration presented) async {

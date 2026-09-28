@@ -308,17 +308,21 @@ class _ToolsScreenState extends State<ToolsScreen> {
     ]);
   }
 
+  /// The tool by its name, and the server's description cut to its first
+  /// sentence (emulator QA B11: the whole prompt text the server wrote for
+  /// the model read as the row's title). The full description is on the
+  /// tool's sheet the row opens.
   Widget _callableToolRow(AppLocalizations l10n, CodingToolInfo tool) {
-    final described = tool.description.trim().isNotEmpty;
+    final summary = toolSummary(tool.description);
     return KitRow(
       key: Key('coding-tool-${tool.id}'),
-      title: described ? tool.description.trim() : tool.id,
-      titleMaxLines: 2,
+      title: tool.id,
       supporting: TextSpan(
-        text: described
-            ? tool.id
+        text: summary.isNotEmpty
+            ? summary
             : l10n.e7LibraryNoDescriptionReturnedByOpenCode,
       ),
+      supportingMaxLines: 2,
       trailing: const KitChevron(),
       onTap: () => _showTool(tool),
     );
@@ -424,6 +428,23 @@ class _ToolsScreenState extends State<ToolsScreen> {
 }
 
 /// A tool parameter as the person reads it.
+/// The first sentence of a tool's description, as one plain line: the
+/// first paragraph or list item, its list marker dropped, stopped at the
+/// first sentence end. Empty when the server sent no description.
+String toolSummary(String description) {
+  final marker = RegExp(r'^([-*•]|\d+[.)])\s+');
+  final lines = description.trim().split('\n').map((line) => line.trim());
+  final first = <String>[];
+  for (final line in lines) {
+    // A blank line or the next list item ends the first thought.
+    if (line.isEmpty || (first.isNotEmpty && marker.hasMatch(line))) break;
+    first.add(line.replaceFirst(marker, ''));
+  }
+  final text = first.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+  final end = RegExp(r'[.!?](?=\s|$)').firstMatch(text);
+  return end == null ? text : text.substring(0, end.end);
+}
+
 typedef ToolParameter = ({
   String name,
   ToolParameterType type,

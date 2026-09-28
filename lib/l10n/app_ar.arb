@@ -2566,7 +2566,6 @@
   "e7LibraryClientRegistrationRequired": "تسجيل العميل مطلوب",
   "e7LibraryAuthenticate": "مصادقة",
   "e7LibraryStoredCredential": "بيانات اعتماد محفوظة: {detail1}",
-  "e7LibraryServerEnvironment2": "بيئة الخادم: {detail1}",
   "e7LibraryNoConnectionMethodsAvailable": "لا توجد طرق اتصال متاحة",
   "e7LibraryConfiguredOnTheServer": "مُعدّ على الخادم",
   "e7LibraryDisconnect2": "قطع اتصال {detail1}؟",
