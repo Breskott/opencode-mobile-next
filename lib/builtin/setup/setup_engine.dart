@@ -152,6 +152,11 @@ class ChannelSetupEngine implements SetupEngine {
   String? _floorsJob;
 
   bool _starting = false;
+
+  /// The job [_start] is checking or handing over. Until the runner has it,
+  /// a record of any other job is old news: showing it would replace this
+  /// job's rows (the Add tools crash) and its progress.
+  String? _startingJobId;
   bool _cancelRequested = false;
 
   /// Whether the job being started (before setup.json has it) is a first
@@ -215,9 +220,19 @@ class ChannelSetupEngine implements SetupEngine {
       if (host == SetupHostKind.termux) {
         TermuxSetupHost.validateParams(effectiveParams);
       }
-      await _start(ids, effectiveParams);
+      try {
+        await _start(ids, effectiveParams);
+      } catch (error, stack) {
+        // Never thrown at a caller that may not show it (the AI Team page
+        // swallowed it, the tools sheet said "OpenCode is unreachable"): the
+        // job fails, and the progress screen says so with the text under
+        // Details.
+        debugPrint('setup: start failed ${error.runtimeType}: $error\n$stack');
+        _failStart(error);
+      }
     } finally {
       _starting = false;
+      _startingJobId = null;
     }
   }
 
@@ -229,6 +244,7 @@ class ChannelSetupEngine implements SetupEngine {
     final all = _components(l10n, params);
     final job = expandSelection(all, ids);
     final jobId = 'setup-${_clock().microsecondsSinceEpoch}';
+    _startingJobId = jobId;
     _jobComponents = job;
     _localFirstSetup = SetupJobParams.isFirstSetup(params);
     _localAdding = SetupJobParams.addingIds(params);
@@ -243,7 +259,7 @@ class ChannelSetupEngine implements SetupEngine {
               : ComponentState.checking,
         ),
     };
-    _emitLocal(jobId, checking, startedAt);
+    _emitLocal(jobId, checking, startedAt, job: job);
 
     // The resume rule: whatever its check finds installed is not redone.
     final Map<String, SetupCheckResult> checks;
@@ -257,6 +273,7 @@ class ChannelSetupEngine implements SetupEngine {
             c.id: ComponentProgress(id: c.id, state: ComponentState.pending),
         },
         startedAt,
+        job: job,
         state: SetupState.failed,
         error: error.message,
       );
@@ -267,11 +284,12 @@ class ChannelSetupEngine implements SetupEngine {
         jobId,
         _afterChecks(job, checks),
         startedAt,
+        job: job,
         state: SetupState.cancelled,
       );
       return;
     }
-    _emitLocal(jobId, _afterChecks(job, checks), startedAt);
+    _emitLocal(jobId, _afterChecks(job, checks), startedAt, job: job);
 
     final openCode = params[SetupComponentIds.openCode] ?? const {};
     final runtime = TermuxRuntime.parse(openCode['runtime']);
@@ -325,6 +343,7 @@ class ChannelSetupEngine implements SetupEngine {
         jobId,
         _afterChecks(job, checks),
         startedAt,
+        job: job,
         state: SetupState.failed,
         error: error.code == 'setup_persistence'
             ? l10n.phoneSetupErrorInstall('OpenCode')
@@ -346,6 +365,26 @@ class ChannelSetupEngine implements SetupEngine {
     } finally {
       _ensurePolling();
     }
+  }
+
+  /// Ends a start that broke before the runner had the job as a failed job.
+  void _failStart(Object error) {
+    final jobId = _startingJobId ?? 'setup-${_clock().microsecondsSinceEpoch}';
+    final rows = _jobComponents;
+    final shown = {for (final c in _progress.value.components) c.id: c};
+    _emitLocal(
+      jobId,
+      {
+        for (final c in rows)
+          c.id:
+              shown[c.id] ??
+              ComponentProgress(id: c.id, state: ComponentState.pending),
+      },
+      _clock().millisecondsSinceEpoch,
+      job: rows,
+      state: SetupState.failed,
+      error: KitRedact.text('${error.runtimeType}: $error'),
+    );
   }
 
   Map<String, Object?> _spec(
@@ -477,15 +516,22 @@ class ChannelSetupEngine implements SetupEngine {
     int startedAt, {
     SetupState state = SetupState.running,
     String? error,
+    List<SetupComponent>? job,
   }) {
+    // The job the caller is starting, not whatever a poll last showed: a
+    // refresh of the previous job's record must never decide which rows this
+    // job has (build 2064: Add tools died on a null check).
+    final rows = job ?? _jobComponents;
     final list = [
-      for (final component in _jobComponents) components[component.id]!,
+      for (final component in rows)
+        components[component.id] ??
+            ComponentProgress(id: component.id, state: ComponentState.pending),
     ];
     _progress.value = SetupProgress(
       jobId: jobId,
       state: state,
       components: list,
-      overall: overallFraction(_jobComponents, list, floors: _floors),
+      overall: overallFraction(rows, list, floors: _floors),
       error: error,
       firstSetup: _localFirstSetup,
       adding: _localAdding,
@@ -610,6 +656,7 @@ class ChannelSetupEngine implements SetupEngine {
       }
     }
     if (record == null) return;
+    if (_startingJobId != null && record.jobId != _startingJobId) return;
     _show(record);
     _followAppStep(record);
     if (host == SetupHostKind.termux &&
@@ -811,6 +858,8 @@ class ChannelSetupEngine implements SetupEngine {
   }
 
   void _show(SetupJobRecord record) {
+    final starting = _startingJobId;
+    if (starting != null && record.jobId != starting) return;
     final l10n = strings();
     if (_jobComponents.isEmpty ||
         _progress.value.jobId != record.jobId ||
