@@ -71,6 +71,12 @@ import 'state/phone_host.dart' show PhoneHostKind;
 import 'ui/screens/phone_setup/phone_setup_routes.dart'
     show openPhoneSetupFromNotification, openPhoneSetupStart;
 import 'ui/screens/app_diagnostics_screen.dart';
+import 'manage_space_main.dart' show runManageSpaceApp;
+
+/// Android's App info › Storage › Manage space (ManageSpaceActivity): a
+/// small app of its own that guards "Clear storage".
+@pragma('vm:entry-point')
+void manageSpaceMain() => runManageSpaceApp();
 
 Future<void> main() async {
   // First thing: starts the trace clock, so every later OCTRACE `at=` reads

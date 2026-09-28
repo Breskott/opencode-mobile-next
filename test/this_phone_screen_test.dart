@@ -224,6 +224,9 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).first,
     );
+    // Clear of the page's end padding, whatever the list's length.
+    await tester.ensureVisible(details);
+    await _settle(tester);
     await tester.tap(details);
     await _settle(tester);
     expect(find.byKey(const ValueKey('this-phone-log')), findsOneWidget);
