@@ -483,21 +483,24 @@ class _RenderGlassPair extends RenderBox
         paint.hairlineWidth,
       );
     } else if (shaders != null) {
-      // Liquid: the shader draws the joined edge itself, inside a plain
-      // rectangle around both pieces.
-      _clipPath.layer = null;
-      final bounds = a.outerRect.expandToInclude(b.outerRect).inflate(1);
-      _clipRect.layer = context.pushClipRect(
+      // Liquid: the shader draws the pieces' edges itself and nothing
+      // outside them; the clip is their outline one physical pixel wider
+      // (room for that anti-aliased edge), never a rectangle round both.
+      _clipRect.layer = null;
+      final px = 1 / paint.dpr;
+      final room = _outline(a.inflate(px), b.inflate(px));
+      _clipPath.layer = context.pushClipPath(
         needsCompositing,
         offset,
-        bounds,
+        room.getBounds(),
+        room,
         (context, offset) => _pushBackdrop(
           context,
           offset,
           _lens(a, b, shaders),
           (canvas) => paint.paintRim(canvas, outline.shift(offset)),
         ),
-        oldLayer: _clipRect.layer,
+        oldLayer: _clipPath.layer,
       );
     } else {
       // Frosted: the outline clips a blur; the fill and rim follow it.

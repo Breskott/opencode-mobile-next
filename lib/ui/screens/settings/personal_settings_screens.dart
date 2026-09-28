@@ -342,6 +342,33 @@ class _EffectsSectionState extends State<_EffectsSection> {
                           )
                         : null,
                   ),
+                  ValueListenableBuilder<bool>(
+                    valueListenable: KitGlassSafety.turnedOffAfterCrashes,
+                    builder: (context, off, _) => KitReveal(
+                      child: off
+                          ? Padding(
+                              padding: EdgeInsetsDirectional.only(
+                                start: tokens.gutter,
+                                end: tokens.gutter,
+                                bottom: tokens.space3,
+                              ),
+                              child: KitNotice(
+                                key: const ValueKey('effects-glass-crash'),
+                                message: copy.effectsGlassCrashOff,
+                                actions: [
+                                  KitAction(
+                                    key: const ValueKey(
+                                      'effects-glass-crash-on',
+                                    ),
+                                    label: copy.effectsGlassCrashOn,
+                                    onPressed: KitGlassShader.turnLiquidBackOn,
+                                  ),
+                                ],
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
                   KitRowGroup(
                     label: copy.effectsSection,
                     children: [

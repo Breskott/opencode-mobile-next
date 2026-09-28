@@ -183,6 +183,31 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('says once when glass was turned off after crashes, and '
+        'turning it back on clears that', (tester) async {
+      final (controller, _) = await _controller();
+      addTearDown(controller.dispose);
+      addTearDown(KitGlassSafety.debugReset);
+      await tester.pumpWidget(_page(controller));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Liquid glass was turned off'), findsNothing);
+
+      KitGlassSafety.turnedOffAfterCrashes.value = true;
+      await tester.pumpAndSettle();
+      await _show(tester, find.textContaining('Liquid glass was turned off'));
+      expect(
+        find.text(
+          'Liquid glass was turned off after the app closed unexpectedly twice.',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Turn it back on'));
+      await tester.pumpAndSettle();
+      expect(KitGlassSafety.turnedOffAfterCrashes.value, isFalse);
+      expect(find.textContaining('Liquid glass was turned off'), findsNothing);
+    });
+
     testWidgets('glass off turns the glass solid and is saved', (tester) async {
       final (controller, store) = await _controller();
       addTearDown(controller.dispose);
