@@ -27,6 +27,7 @@ import 'package:opencode_mobile/ui/app_iconography.dart';
 import 'package:opencode_mobile/ui/desktop/shortcuts.dart';
 import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
+import 'package:opencode_mobile/ui/widgets/app_connection_status.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../tool/capture/fixtures.dart'
@@ -70,15 +71,22 @@ Future<void> _golden(
         navigatorKey: navigatorKey,
         // The shortcut layer as main.dart installs it, so the shell shows
         // its search button (it opens the launcher).
-        home: AppShortcuts(
+        // The app's status slot as main.dart hosts it above every page:
+        // since the one controller-owned connection status (3d64653c) the
+        // shell's connection line comes from here, not from the page.
+        home: AppConnectionStatusScope(
+          controller: controller,
           navigatorKey: navigatorKey,
-          signals: AppShortcutSignals(),
-          handlers: AppShortcutHandlers(
-            onNewSession: () {},
-            onOpenSettings: () {},
-            paletteCommands: (_) => _commands(),
+          child: AppShortcuts(
+            navigatorKey: navigatorKey,
+            signals: AppShortcutSignals(),
+            handlers: AppShortcutHandlers(
+              onNewSession: () {},
+              onOpenSettings: () {},
+              paletteCommands: (_) => _commands(),
+            ),
+            child: home,
           ),
-          child: home,
         ),
         boundaryKey: boundary,
         controller: controller,
@@ -161,10 +169,14 @@ class _Monitor extends ProfileMonitor {
 
   @override
   ProfileAttentionSnapshot snapshotFor(String id) => switch (id) {
+    // A real check has a time: the Inbox badge counts only requests a
+    // check actually saw (P4.2b attention feed).
     'claude' => ProfileAttentionSnapshot(
       profileID: id,
       status: ProfileMonitorStatus.current,
+      checkedAt: DateTime.now(),
       complete: true,
+      attentionComplete: true,
       runningCount: 1,
       requests: const [
         MonitoredRequest(
@@ -177,7 +189,9 @@ class _Monitor extends ProfileMonitor {
     'laptop' => ProfileAttentionSnapshot(
       profileID: id,
       status: ProfileMonitorStatus.current,
+      checkedAt: DateTime.now(),
       complete: true,
+      attentionComplete: true,
       runningCount: 2,
     ),
     _ => ProfileAttentionSnapshot(

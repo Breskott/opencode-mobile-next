@@ -22,6 +22,7 @@ import 'package:opencode_mobile/termux/team_runtime.dart';
 import 'package:opencode_mobile/ui/widgets/builtin_team_section.dart';
 import 'package:opencode_mobile/ui/widgets/team_host_form.dart';
 import 'package:opencode_mobile/ui/widgets/team_phone_onboarding.dart';
+import 'package:opencode_mobile/voice/device.dart';
 
 import '../../tool/capture/fixtures.dart' show captureApp, loadCaptureFonts;
 import '../support/work_tab_fixture.dart';
@@ -182,7 +183,18 @@ void main() {
         'team_intro_phone',
         light: light,
         controller: controller,
-        home: TeamIntroScreen(controller: controller),
+        // The phone's pre-flight reads the device (P1.7); a capable phone
+        // answers, as a real one does within a frame.
+        home: TeamIntroScreen(
+          controller: controller,
+          deviceProbe: () async => const VoiceDeviceInfo(
+            supportedAbis: ['arm64-v8a'],
+            totalMemoryMb: 8192,
+            memoryClassMb: 512,
+            hasMicrophone: true,
+            availableStorageBytes: 20000000000,
+          ),
+        ),
       );
     });
 

@@ -24,6 +24,7 @@ import '../widgets/last_known_sessions.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/other_servers_panel.dart';
 import '../widgets/other_projects_panel.dart';
+import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../kit/kit.dart';
 import '../kit/scenes/states_scenes.dart';
 import '../widgets/product_states.dart' show productErrorText;
@@ -1193,11 +1194,22 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     );
   }
 
+  String? _serverName(ConnectionController controller) =>
+      controller.profile == null
+      ? null
+      : serverDisplayName(
+          controller.profile,
+          _l10n(context),
+          among: controller.store.profiles,
+        );
+
   Widget _chooser(ServerCapabilities capabilities) {
     final controller = widget.controller;
     return _WorkspaceFolderChooser(
       notice: controller.locationNotice,
-      server: controller.profile?.name,
+      // The name the pill and Servers show ("This phone · Termux"), not
+      // the one setup saved the profile under.
+      server: _serverName(controller),
       projectError: _projectError,
       canCreate: ProjectFolderActions.canCreate(controller),
       onCreate: _createProjectFolder,
@@ -1586,7 +1598,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
               (_selectedDirectory == null
                   ? l10n.e7WorkspaceNoProjectSelected
                   : _basename(_selectedDirectory!));
-    final server = controller.profile?.name;
+    final server = _serverName(controller);
     final workspace = _selectedWorkspace;
     final subtitle = [
       if (server != null && server.isNotEmpty)

@@ -14,6 +14,7 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
+import 'package:opencode_mobile/ui/widgets/app_connection_status.dart';
 import 'package:opencode_mobile/ui/widgets/saved_server_connection_card.dart';
 import 'package:opencode_mobile/ui/widgets/work_status_line.dart';
 
@@ -47,10 +48,19 @@ Future<void> _golden(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final boundary = GlobalKey();
+  final navigatorKey = GlobalKey<NavigatorState>();
   try {
     await tester.pumpWidget(
       captureApp(
-        home: home,
+        navigatorKey: navigatorKey,
+        // The app's status slot as main.dart hosts it above every page:
+        // since the one controller-owned connection status (3d64653c) the
+        // Work tab's connection line comes from here, not from the page.
+        home: AppConnectionStatusScope(
+          controller: controller,
+          navigatorKey: navigatorKey,
+          child: home,
+        ),
         boundaryKey: boundary,
         controller: controller,
         light: light,
