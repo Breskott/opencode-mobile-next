@@ -22905,4 +22905,167 @@ class AppLocalizationsEn extends AppLocalizations {
   String queuedMoveUndoFailed(String destination) {
     return 'Could not put the prompts back. They stay on $destination.';
   }
+
+  @override
+  String get sessionAddressInclude => 'Include this server’s address';
+
+  @override
+  String get sessionAddressDisclosure =>
+      'The link then shows this address and the conversation ID, never a password: the other phone still needs its own access. Screenshots, messages and the clipboard can keep it.';
+
+  @override
+  String get sessionAddressIntro =>
+      'Scan with OpenCode Mobile on the other phone. The code holds this server’s address and the conversation ID.';
+
+  @override
+  String get sessionAddressUnsupportedHost =>
+      'Only a private HTTPS address ending in .ts.net can go in a link.';
+
+  @override
+  String get sessionAddressOpenTitle => 'Open a shared conversation';
+
+  @override
+  String get sessionAddressConsentSaved => 'Open on this saved server?';
+
+  @override
+  String get sessionAddressConsentNew => 'Add this server?';
+
+  @override
+  String get sessionAddressNotSaved => 'Not saved on this phone';
+
+  @override
+  String get sessionAddressConsentNote =>
+      'The link grants no access. Checking only asks the server which installation it is; nothing signs in and no password is sent.';
+
+  @override
+  String get sessionAddressCheck => 'Check server';
+
+  @override
+  String sessionAddressChecking(String host) {
+    return 'Checking $host…';
+  }
+
+  @override
+  String get sessionAddressAddBody =>
+      'This server is not saved on this phone. Add it with your own sign-in; the link does not carry one.';
+
+  @override
+  String get sessionAddressAddServer => 'Add server';
+
+  @override
+  String get sessionAddressChooseBody =>
+      'More than one saved server uses this address. Choose the one to open the conversation on.';
+
+  @override
+  String sessionAddressVerifyBody(String name) {
+    return 'Confirm that $name is the server this link came from. The phone remembers this for $name; it does not sign in or share a password.';
+  }
+
+  @override
+  String get sessionAddressVerify => 'Verify server';
+
+  @override
+  String sessionAddressReadyBody(String name) {
+    return '$name matches this link.';
+  }
+
+  @override
+  String sessionAddressSignInBody(String name) {
+    return 'Sign in to $name with your own account first, then open the conversation.';
+  }
+
+  @override
+  String get sessionAddressSignIn => 'Sign in';
+
+  @override
+  String get sessionAddressOpen => 'Open conversation';
+
+  @override
+  String get sessionAddressOpening => 'Opening the conversation…';
+
+  @override
+  String get sessionAddressReason => 'Reason';
+
+  @override
+  String get sessionAddressFailUnavailable =>
+      'Conversation links with a server address are not available yet.';
+
+  @override
+  String get sessionAddressFailInvalidLink =>
+      'This conversation link is not valid. Scan or copy it again.';
+
+  @override
+  String get sessionAddressFailTooLarge =>
+      'This link is too long. Ask the sender for a new link.';
+
+  @override
+  String get sessionAddressFailCredentials =>
+      'This link contains private sign-in information and cannot be used.';
+
+  @override
+  String get sessionAddressFailConsentRequired =>
+      'Choose whether to include this server’s address first.';
+
+  @override
+  String get sessionAddressFailPrivateRouteRequired =>
+      'This server cannot be reached through the required private connection. Check your connection.';
+
+  @override
+  String get sessionAddressFailUnreachable =>
+      'The server could not be reached. Check your connection and try again.';
+
+  @override
+  String get sessionAddressFailTimedOut =>
+      'The server did not answer in time. Try again.';
+
+  @override
+  String get sessionAddressFailTlsRejected =>
+      'The server’s secure connection could not be verified, so the link was not opened.';
+
+  @override
+  String get sessionAddressFailRedirectsRejected =>
+      'This server tried to send the request somewhere else. The link was not opened.';
+
+  @override
+  String get sessionAddressFailAccessDenied =>
+      'Your access to this server or conversation was refused.';
+
+  @override
+  String get sessionAddressFailInvalidDescriptor =>
+      'This server did not provide the information needed to open this link.';
+
+  @override
+  String get sessionAddressFailInstanceMismatch =>
+      'This link and the saved server do not identify the same installation.';
+
+  @override
+  String get sessionAddressFailBindingRequired =>
+      'Verify this saved server before opening the conversation.';
+
+  @override
+  String get sessionAddressFailAmbiguousProfile =>
+      'Choose which saved server to use.';
+
+  @override
+  String get sessionAddressFailProfileMissing =>
+      'This saved server is no longer available.';
+
+  @override
+  String get sessionAddressFailStorage =>
+      'The server verification could not be saved or read. Try again after restarting the app.';
+
+  @override
+  String get sessionAddressFailSignInRequired =>
+      'Sign in to this server with your own account before continuing.';
+
+  @override
+  String get sessionAddressFailUnsafeLookup =>
+      'This server has not been verified for private conversation links.';
+
+  @override
+  String get sessionAddressFailSessionMissing =>
+      'This conversation is not available on this server.';
+
+  @override
+  String get sessionAddressFailCancelled => 'Opening this link was cancelled.';
 }

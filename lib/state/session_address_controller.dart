@@ -1,10 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/server_gateway.dart' show Session;
 import '../domain/session_address_handoff.dart';
 import '../domain/session_address_link.dart';
+import '../platform/session_address_transport.dart';
+import 'connection.dart' show connProvider;
 import 'profiles.dart';
 import 'session_link_bindings.dart';
 
@@ -426,3 +429,20 @@ class SessionAddressController extends ChangeNotifier {
     super.dispose();
   }
 }
+
+/// The app's one address-link coordinator, shared by the Open on another
+/// phone sheet (sender) and the incoming-link sheet (receiver). Built with the
+/// closed production constructor: generation and reception stay unavailable
+/// until the host deployment is verified (docs/qa/codex-sessionlink-2026-09-28).
+/// Tests override it with [SessionAddressController.verifiedTestHarness].
+final sessionAddressProvider = Provider<SessionAddressController>((ref) {
+  final controller = SessionAddressController(
+    store: ref.watch(connProvider).store,
+    descriptors: PrivateSessionDescriptorReader(),
+    // Default-closed evidence: nothing here is verified yet.
+    deploymentForOrigin: (_) => const SessionAddressDeployment(),
+    lookupForProfile: (_) async => null,
+  );
+  ref.onDispose(controller.dispose);
+  return controller;
+});

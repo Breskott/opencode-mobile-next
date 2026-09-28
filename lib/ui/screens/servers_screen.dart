@@ -111,11 +111,14 @@ class ServersRouteRequest {
     this.detectedRunning = false,
   }) : kind = ServersRouteRequestKind.connect,
        backend = null,
+       initialUrl = null,
        openCode2 = false;
 
-  /// Open a new server editor, optionally starting with the requested kind.
-  /// This is an editable choice, never permission to connect or save.
-  const ServersRouteRequest.add({this.backend})
+  /// Open a new server editor, optionally starting with the requested kind
+  /// or, for a conversation link that carries one, the validated address
+  /// ([initialUrl], never credentials). This is an editable choice, never
+  /// permission to connect or save.
+  const ServersRouteRequest.add({this.backend, this.initialUrl})
     : kind = ServersRouteRequestKind.add,
       profileID = null,
       detectedRunning = false,
@@ -127,17 +130,20 @@ class ServersRouteRequest {
     required this.openCode2,
   }) : kind = ServersRouteRequestKind.enterPhoneCredentials,
        backend = null,
+       initialUrl = null,
        detectedRunning = true;
 
   /// Confirm and forget the saved server [profileID].
   const ServersRouteRequest.forget(String this.profileID)
     : kind = ServersRouteRequestKind.forget,
       backend = null,
+      initialUrl = null,
       detectedRunning = false,
       openCode2 = false;
 
   final ServersRouteRequestKind kind;
   final ServerBackend? backend;
+  final String? initialUrl;
   final String? profileID;
   final bool detectedRunning;
   final bool openCode2;
@@ -217,7 +223,10 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     }
     switch (request.kind) {
       case ServersRouteRequestKind.add:
-        await _edit(initialBackend: request.backend);
+        await _edit(
+          initialBackend: request.backend,
+          initialUrl: request.initialUrl,
+        );
       case ServersRouteRequestKind.connect:
         if (target != null) {
           await _connect(target, detectedRunning: request.detectedRunning);
