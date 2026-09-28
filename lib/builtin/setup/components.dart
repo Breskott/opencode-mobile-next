@@ -110,13 +110,21 @@ List<SetupComponent> setupComponents(
       required: true,
       estimatedSeconds: 100,
       downloadBytes: 50 * _mb,
-      checkScript: SetupScripts.openCodeCheck(runtime, version: version),
+      // In the app's own Ubuntu: the pinned native program, never npm (its
+      // wrapper and install scripts failed on the owner's phone, build
+      // 2062). Termux keeps the shared text its own manager also runs.
+      checkScript: host == SetupHostKind.builtin
+          ? SetupScripts.openCodeNativeCheck(runtime, version: version)
+          : SetupScripts.openCodeCheck(runtime, version: version),
       presenceScript:
           'command -v opencode >/dev/null 2>&1 || '
           'command -v opencode2 >/dev/null 2>&1 || '
+          '[ -e /opt/opencode ] || [ -e /opt/opencode2 ] || '
           '[ -e /usr/local/lib/node_modules/opencode-ai ] || '
           '[ -e /usr/local/lib/node_modules/opencode ]',
-      installScript: SetupScripts.openCodeInstall(runtime, version: version),
+      installScript: host == SetupHostKind.builtin
+          ? SetupScripts.openCodeNativeInstall(runtime, version: version)
+          : SetupScripts.openCodeInstall(runtime, version: version),
     ),
     // Several agents sharing the work on one project. Opt-in and install
     // only: a team belongs to a project, which the first setup does not
@@ -215,6 +223,86 @@ abstract final class SetupComponentIds {
   /// Not installed: starting the server and connecting to it, the last step
   /// of every job (see [SetupComponent.jobStep]).
   static const start = 'start';
+}
+
+/// One pinned OpenCode download for one CPU: where it is, its SHA-256, and
+/// the path of the `opencode` program inside the archive.
+typedef OpenCodeAsset = ({String url, String sha256, String member});
+
+/// The OpenCode programs the app's own Ubuntu installs: native builds,
+/// downloaded whole and checked against these SHA-256s before anything is
+/// unpacked or run. No npm: its wrapper package and install scripts are what
+/// failed on the owner's ARM64 phone (build 2062, npm 11.19 `allowScripts`).
+///
+/// - OpenCode 1: the release archives of
+///   https://github.com/anomalyco/opencode/releases/tag/v1.18.32, the same
+///   pins as scripts/host/ubuntu-opencode.sh (GitHub's asset digests, read
+///   and matched against the files 2026-09-28). x64 is the baseline build,
+///   which also runs on CPUs without AVX2.
+/// - OpenCode 2 (`@opencode/cli` 2.0.10) has no GitHub release. Its official
+///   per-platform npm packages hold only the program and a package.json,
+///   with no install script; their tarballs' SHA-512 matched the registry's
+///   published `integrity` on 2026-09-28, and these are those files'
+///   SHA-256s.
+///
+/// Moving to a newer OpenCode means new pins here, next to
+/// [TermuxRuntime.pinnedVersion].
+abstract final class OpenCodePins {
+  static const v1Arm64 = (
+    url:
+        'https://github.com/anomalyco/opencode/releases/download/v1.18.32/'
+        'opencode-linux-arm64.tar.gz',
+    sha256: '568461b7d4d8c19865c97e9a1102e613049c6039d01fe772154de873c1865840',
+    member: 'opencode',
+  );
+  static const v1X64 = (
+    url:
+        'https://github.com/anomalyco/opencode/releases/download/v1.18.32/'
+        'opencode-linux-x64-baseline.tar.gz',
+    sha256: '763af386ef88a8cab18df00fcf055690e5a55e31a7088beabe02307142a6adce',
+    member: 'opencode',
+  );
+  static const v2Arm64 = (
+    url:
+        'https://registry.npmjs.org/@opencode/cli-linux-arm64/-/'
+        'cli-linux-arm64-2.0.10.tgz',
+    sha256: 'cf5416676240455dc5a98500237af296cb1a00efbd2cca302ad22c92ea080ebc',
+    member: 'package/bin/opencode',
+  );
+  static const v2X64 = (
+    url:
+        'https://registry.npmjs.org/@opencode/cli-linux-x64-baseline/-/'
+        'cli-linux-x64-baseline-2.0.10.tgz',
+    sha256: '700c4d0fcc209e42f61c10f9773331d1d1f7eff35670971ee316b38641a1a76c',
+    member: 'package/bin/opencode',
+  );
+
+  /// The pinned downloads of [runtime], by CPU.
+  static ({OpenCodeAsset arm64, OpenCodeAsset x64}) of(TermuxRuntime runtime) =>
+      runtime == TermuxRuntime.openCode2
+      ? (arm64: v2Arm64, x64: v2X64)
+      : (arm64: v1Arm64, x64: v1X64);
+
+  /// Where the program lives in Ubuntu; `/usr/local/bin/<command>` links it.
+  static String dir(TermuxRuntime runtime) =>
+      runtime == TermuxRuntime.openCode2 ? '/opt/opencode2' : '/opt/opencode';
+
+  static String command(TermuxRuntime runtime) =>
+      runtime == TermuxRuntime.openCode2 ? 'opencode2' : 'opencode';
+}
+
+/// The reasons [SetupScripts.openCodeNativeInstall] ends a failed run with
+/// (its last log line, which becomes the component's error), so
+/// [describeSetupFailure] can say in plain words what went wrong.
+abstract final class OpenCodeInstallFailure {
+  static const noProgram =
+      "[oc] OpenCode's download did not contain its program";
+  static const wontRun = "[oc] OpenCode's program does not run on this phone";
+  static const wrongVersion = "[oc] OpenCode's program reports another version";
+  static const noStart = '[oc] OpenCode was installed but did not start';
+  static const unpinned =
+      '[oc] This app can only install its own pinned OpenCode';
+  static const cpu = "[oc] OpenCode has no build for this phone's processor";
 }
 
 /// The scripts behind [setupComponents]. Checks exit 0 only when the piece is
@@ -362,6 +450,173 @@ oc_version "\$(node --version | sed 's/^v//')"
         '$refresh'
         'installed=\$($binary --version)\n'
         'oc_version "\${installed##* v}"\n';
+  }
+
+  /// Passes only when [runtime]'s command is the pinned native program this
+  /// app installed (not npm's wrapper from an older build) at the requested
+  /// version. A phone whose npm install failed, or that has the wrapper,
+  /// fails this check, so Continue replaces OpenCode and nothing else: the
+  /// Linux base, Git, Python and Node pass their own checks.
+  ///
+  /// [root] prefixes every path; it exists for the script tests only.
+  static String openCodeNativeCheck(
+    TermuxRuntime runtime, {
+    String? version,
+    String root = '',
+  }) {
+    final selected = _version(runtime, version);
+    final command = OpenCodePins.command(runtime);
+    final program = '$root${OpenCodePins.dir(runtime)}/bin/$command';
+    return 'set -e\n'
+        'oc_bin=\$(command -v $command)\n'
+        '[ "\$(readlink -f "\$oc_bin")" = \'$program\' ]\n'
+        'installed=\$("\$oc_bin" --version | tail -n 1)\n'
+        'installed=\${installed##* v}\n'
+        '[ "\$installed" = \'$selected\' ]\n'
+        'echo "\$installed"\n';
+  }
+
+  /// Installs [runtime]'s pinned native program in the app's Ubuntu:
+  ///
+  /// 1. picks the archive for this CPU and downloads it with `oc_download`
+  ///    (resumable, into /var/cache/oc-setup so a force-stopped run picks it
+  ///    up again); a file that does not match its SHA-256 is deleted and the
+  ///    run stops before anything is unpacked;
+  /// 2. unpacks only the program, next to the current install;
+  /// 3. proves it: `--version` from the program itself, then a short
+  ///    `serve` in a throwaway home until its health address answers;
+  /// 4. only then swaps it in, links `/usr/local/bin/<command>` to it and
+  ///    deletes what npm installed before (a running server keeps its file
+  ///    until the start step restarts it).
+  ///
+  /// A failure ends with one of [OpenCodeInstallFailure]'s lines, after the
+  /// program's own output, so the log ends with the reason. OpenCode 1 then
+  /// refreshes its model list, bounded; a failure there does not fail the
+  /// install (the server fetches it later).
+  ///
+  /// [assets], [root] and [probeSeconds] exist for the script tests only.
+  static String openCodeNativeInstall(
+    TermuxRuntime runtime, {
+    String? version,
+    ({OpenCodeAsset arm64, OpenCodeAsset x64})? assets,
+    String root = '',
+    int probeSeconds = 120,
+  }) {
+    final selected = _version(runtime, version);
+    if (selected != runtime.pinnedVersion) {
+      return "echo '${OpenCodeInstallFailure.unpinned} "
+          "(${runtime.pinnedVersion}, not $selected)' >&2\n"
+          'exit 64\n';
+    }
+    final pins = assets ?? OpenCodePins.of(runtime);
+    final command = OpenCodePins.command(runtime);
+    final dir = '$root${OpenCodePins.dir(runtime)}';
+    final health = runtime == TermuxRuntime.openCode2
+        ? '/api/info /api/health'
+        : '/global/health';
+    final modules = '$root/usr/local/lib/node_modules';
+    final leftovers = runtime == TermuxRuntime.openCode2
+        ? '"$root/opt/oc2" "$modules/@opencode-ai/cli" '
+              '"$modules/@opencode-ai/"cli-linux-*'
+        : '"$modules/opencode-ai" "$modules/"opencode-linux-*';
+    final refresh = runtime == TermuxRuntime.openCode1
+        ? "oc_stage 'Getting the model list'\n"
+              'timeout 180 "\$oc_dir/bin/$command" models --refresh '
+              '>/dev/null 2>&1 || '
+              "echo '[oc] The model list could not be refreshed now; "
+              "OpenCode will fetch it later.'\n"
+        : '';
+    return '''set -eu
+oc_fail() { echo "\$*" >&2; exit 1; }
+case "\$(uname -m)" in
+  aarch64|arm64) oc_url='${pins.arm64.url}'; oc_sha=${pins.arm64.sha256}; oc_member='${pins.arm64.member}' ;;
+  x86_64|amd64) oc_url='${pins.x64.url}'; oc_sha=${pins.x64.sha256}; oc_member='${pins.x64.member}' ;;
+  *) echo "${OpenCodeInstallFailure.cpu} (\$(uname -m))" >&2; exit 64 ;;
+esac
+oc_dir='$dir'
+oc_new="\$oc_dir.new"
+oc_file="$root/var/cache/oc-setup/opencode-$selected-\$oc_sha.archive"
+oc_stage 'Downloading OpenCode $selected'
+# Checked against the pinned SHA-256 before anything is unpacked; a file
+# that does not match is deleted and the run stops here.
+oc_download "\$oc_url" "\$oc_file" "\$oc_sha"
+oc_stage 'Unpacking OpenCode'
+rm -rf "\$oc_new"
+mkdir -p "\$oc_new/bin"
+if ! tar -xzf "\$oc_file" -C "\$oc_new" "\$oc_member" ||
+  [ ! -f "\$oc_new/\$oc_member" ] || [ -L "\$oc_new/\$oc_member" ]; then
+  rm -rf "\$oc_new" "\$oc_file"
+  oc_fail "${OpenCodeInstallFailure.noProgram}"
+fi
+mv -f "\$oc_new/\$oc_member" "\$oc_new/bin/$command.tmp"
+mv -f "\$oc_new/bin/$command.tmp" "\$oc_new/bin/$command"
+case "\$oc_member" in */*) rm -rf "\$oc_new/\${oc_member%%/*}" ;; esac
+chmod 755 "\$oc_new/bin/$command"
+oc_program="\$oc_new/bin/$command"
+if ! oc_out=\$("\$oc_program" --version 2>&1); then
+  printf '%s\\n' "\$oc_out" | tail -n 20
+  rm -rf "\$oc_new"
+  oc_fail "${OpenCodeInstallFailure.wontRun}"
+fi
+oc_got=\$(printf '%s\\n' "\$oc_out" | tail -n 1)
+oc_got=\${oc_got##* v}
+if [ "\$oc_got" != '$selected' ]; then
+  printf '%s\\n' "\$oc_out" | tail -n 5
+  rm -rf "\$oc_new"
+  oc_fail "${OpenCodeInstallFailure.wrongVersion} (\$oc_got, not $selected)"
+fi
+oc_stage 'Checking that OpenCode starts'
+oc_probe=\$(mktemp -d "\${TMPDIR:-/tmp}/oc-probe.XXXXXX")
+oc_port=\$((30000 + \$\$ % 10000))
+oc_pw=\$(od -An -N12 -tx1 /dev/urandom | tr -d ' \\n')
+(
+  cd "\$oc_probe"
+  unset OPENCODE_CONFIG OPENCODE_CONFIG_CONTENT OPENCODE_DB
+  export HOME="\$oc_probe" XDG_DATA_HOME="\$oc_probe/data" XDG_CACHE_HOME="\$oc_probe/cache"
+  export XDG_STATE_HOME="\$oc_probe/state" XDG_CONFIG_HOME="\$oc_probe/config"
+  export OPENCODE_CONFIG_DIR="\$oc_probe/config/opencode" OPENCODE_DISABLE_MODELS_FETCH=1
+  export OPENCODE_SERVER_USERNAME=opencode OPENCODE_SERVER_PASSWORD="\$oc_pw"
+  exec "\$oc_program" serve --hostname 127.0.0.1 --port "\$oc_port"
+) > "\$oc_probe/log" 2>&1 </dev/null &
+oc_pid=\$!
+oc_alive() {
+  kill -0 "\$oc_pid" 2>/dev/null || return 1
+  case "\$(sed 's/^.*) //' "/proc/\$oc_pid/stat" 2>/dev/null)" in Z*|X*) return 1 ;; esac
+}
+oc_started=
+oc_i=0
+while [ "\$oc_i" -lt $probeSeconds ]; do
+  for oc_path in $health; do
+    oc_code=\$(curl -s --max-time 3 -o /dev/null -w '%{http_code}' \\
+      -u "opencode:\$oc_pw" "http://127.0.0.1:\$oc_port\$oc_path" 2>/dev/null) || true
+    case "\$oc_code" in 200|401) oc_started=1 ;; esac
+  done
+  [ -z "\$oc_started" ] || break
+  oc_alive || break
+  sleep 1
+  oc_i=\$((oc_i + 1))
+done
+kill "\$oc_pid" 2>/dev/null || true
+oc_i=0
+while [ "\$oc_i" -lt 5 ] && oc_alive; do sleep 1; oc_i=\$((oc_i + 1)); done
+kill -9 "\$oc_pid" 2>/dev/null || true
+wait "\$oc_pid" 2>/dev/null || true
+if [ -z "\$oc_started" ]; then
+  echo "[oc] What OpenCode said:"
+  tail -n 20 "\$oc_probe/log" | sed 's/^/  /'
+  rm -rf "\$oc_probe" "\$oc_new"
+  oc_fail "${OpenCodeInstallFailure.noStart}"
+fi
+rm -rf "\$oc_probe"
+rm -rf "\$oc_dir"
+mv "\$oc_new" "\$oc_dir"
+mkdir -p "$root/usr/local/bin"
+ln -sfn "\$oc_dir/bin/$command" "$root/usr/local/bin/$command"
+# What npm installed before, wrapper and all.
+rm -rf $leftovers
+rm -f "\$oc_file"
+$refresh'''
+        'oc_version "\$oc_got"\n';
   }
 
   static final _versionPattern = RegExp(r'^[A-Za-z0-9._+-]+$');

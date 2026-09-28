@@ -98,6 +98,55 @@ void main() {
       );
     });
 
+    test('a failed job report carries no OCTRACE timings: its log ends '
+        'with the real error, not status polls', () {
+      final report = ProblemReport.build(
+        description: '',
+        version: '1.0.44+62',
+        platform: 'Android',
+        error: const KitReport(
+          title: 'OpenCode was installed, but it did not start.',
+          source: 'failed job · setup · setup-1',
+          log:
+              '==> Getting the model list\n'
+              '[oc] OpenCode was installed but did not start',
+        ),
+        events: [
+          for (var i = 0; i < 12; i++)
+            _event(
+              'OCTRACE 2.9ms linux.setupStatus',
+              kind: ProblemEventKind.timing,
+              source: 'OCTRACE',
+              minute: i,
+            ),
+          _event('StateError: kept', minute: 20),
+        ],
+      );
+      expect(report.diagnostics, isNot(contains('OCTRACE')));
+      expect(report.diagnostics, isNot(contains('timing ·')));
+      expect(
+        report.diagnostics,
+        contains('[oc] OpenCode was installed but did not start'),
+      );
+      // Errors around the failure still come along.
+      expect(report.diagnostics, contains('StateError: kept'));
+
+      // Without a failed job, the newest timings still help.
+      final plain = ProblemReport.build(
+        description: 'slow',
+        version: '1.0.44+62',
+        platform: 'Android',
+        events: [
+          _event(
+            'OCTRACE chat.open 120ms',
+            kind: ProblemEventKind.timing,
+            source: 'OCTRACE',
+          ),
+        ],
+      );
+      expect(plain.diagnostics, contains('OCTRACE chat.open'));
+    });
+
     test('without an error, the first line of the description is the title; '
         'without diagnostics there is no Diagnostics part', () {
       final report = ProblemReport.build(

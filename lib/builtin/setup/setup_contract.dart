@@ -364,3 +364,13 @@ abstract class SetupEngine {
   /// Ids of optional components that are installed now.
   Future<Set<String>> installedOptional();
 }
+
+/// A job's log as people see it (the details view, a failed-job report):
+/// the scripts' own lines, never the app's `OCTRACE` timing lines, which
+/// belong in the device log and diagnostics only. They never reach the job
+/// log on purpose; this keeps one that slipped in from burying the real
+/// error at the end.
+String setupLogForPeople(String log) {
+  if (!log.contains('OCTRACE')) return log;
+  return log.split('\n').where((line) => !line.contains('OCTRACE')).join('\n');
+}

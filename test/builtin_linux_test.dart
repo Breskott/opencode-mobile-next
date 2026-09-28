@@ -304,15 +304,15 @@ void main() {
     // refactor provably changed nothing for Termux. A deliberate edit to the
     // manager script or the shared setup text updates this hash with it.
     // Pinned so the manager on people's phones never changes by accident.
-    // Last deliberate change: recovery_arm also arms a permit after a
-    // confirmed crash, on port 4096 only (6ed0ec26, phone-server healing,
-    // 2026-09-28).
+    // Last deliberate change: npm is told to allow exactly the OpenCode
+    // package's own install script (`--allow-scripts`, npm 11.19;
+    // slice-builtin-opencode-pin, 2026-09-28).
     test('the Termux manager script changes only on purpose', () {
       final script = TermuxBridge.managerScriptForTesting();
-      expect(script.length, 51772);
+      expect(script.length, 51956);
       expect(
         sha256.convert(utf8.encode(script)).toString(),
-        '87886a2aa22329be1e2b4007b3b142fe17b57940412f22523cb709d2280ceb1a',
+        '8239c9f461a74e49a531393090dcee0a23dfe51194bfb2009a4a72d2a1f869b3',
       );
     });
 

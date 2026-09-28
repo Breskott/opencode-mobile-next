@@ -90,6 +90,25 @@ void main() {
     expect(FailedJobReport.setup(setup(), componentId: 'missing'), isNull);
   });
 
+  test('OCTRACE timing lines never land in a failed job\'s log excerpt', () {
+    final report = FailedJobReport.setup(
+      setup(
+        log:
+            'OCTRACE 2.9ms linux.setupStatus\n'
+            '[oc] What OpenCode said:\n'
+            '  Error: Failed to start server\n'
+            '[oc] OpenCode was installed but did not start\n'
+            '[2026-09-28 10:00:00 UTC] timing · OCTRACE\n'
+            'OCTRACE 3.1ms linux.setupStatus\n',
+      ),
+    )!;
+    expect(report.logExcerpt, isNot(contains('OCTRACE')));
+    expect(
+      report.logExcerpt.split('\n').last,
+      '[oc] OpenCode was installed but did not start',
+    );
+  });
+
   test('successful, active and interrupted setup do not claim failure', () {
     for (final state in SetupState.values.where(
       (s) => s != SetupState.failed,

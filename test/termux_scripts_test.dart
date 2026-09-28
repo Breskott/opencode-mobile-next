@@ -468,6 +468,7 @@ npm() {
               '-g',
               '--include=optional',
               '--foreground-scripts',
+              '--allow-scripts=$mainPackage',
               '--fetch-retries=5',
               '--fetch-timeout=300000',
               '${scenario.$3}@${runtime.pinnedVersion}',

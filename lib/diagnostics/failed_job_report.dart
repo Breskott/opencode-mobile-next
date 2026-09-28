@@ -186,8 +186,10 @@ class FailedJobReport {
     return safe.length <= limit ? safe : safe.substring(0, limit);
   }
 
+  // Timing lines stay in the device log and diagnostics: in a failed job's
+  // excerpt they would push the real error out of its last lines.
   static String _excerpt(String log) {
-    final lines = _clean(log).trimRight().split('\n');
+    final lines = _clean(setupLogForPeople(log)).trimRight().split('\n');
     final tail = lines
         .skip(lines.length > maxLogLines ? lines.length - maxLogLines : 0)
         .join('\n');
