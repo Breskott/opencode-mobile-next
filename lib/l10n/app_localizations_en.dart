@@ -3858,9 +3858,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7BannerDetails => 'Details';
 
   @override
-  String get e7BannerChangeServer => 'Change server';
-
-  @override
   String e7BannerReconnectPasswordNote(String note) {
     return 'Server password changed — reconnect.\n$note';
   }
@@ -22668,4 +22665,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSetupAllSources => 'All sources';
+
+  @override
+  String get integrationsPageLoadFailed => 'Could not load this page';
 }

@@ -131,7 +131,7 @@ KitStatus? connectionKitStatus(
       if (showChangeServer)
         KitAction(
           key: const ValueKey('connection-banner-change-server'),
-          label: l10n.e7BannerChangeServer,
+          label: l10n.productStatesSwitchServer,
           onPressed: () {
             final current = target();
             if (current != null && current.mounted) {
@@ -236,7 +236,7 @@ Future<void> showConnectionDetailsSheet(
     tertiary: [
       if (showChangeServer && !manualRetry)
         KitAction(
-          label: l10n.e7BannerChangeServer,
+          label: l10n.productStatesSwitchServer,
           onPressed: () {
             navigator.pop();
             navigator.pushNamed('/servers');

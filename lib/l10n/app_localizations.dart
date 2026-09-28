@@ -6514,12 +6514,6 @@ abstract class AppLocalizations {
   /// Localized shared connection or glossary interface
   ///
   /// In en, this message translates to:
-  /// **'Change server'**
-  String get e7BannerChangeServer;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
   /// **'Server password changed — reconnect.\n{note}'**
   String e7BannerReconnectPasswordNote(String note);
 
@@ -35889,6 +35883,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All sources'**
   String get aiSetupAllSources;
+
+  /// Providers and MCP page: headline when more than one of its sections (providers, MCP servers, resources) failed to load; one Try again reloads them all
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this page'**
+  String get integrationsPageLoadFailed;
 }
 
 class _AppLocalizationsDelegate

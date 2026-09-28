@@ -3881,9 +3881,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7BannerDetails => 'التفاصيل';
 
   @override
-  String get e7BannerChangeServer => 'تغيير الخادم';
-
-  @override
   String e7BannerReconnectPasswordNote(String note) {
     return 'تغيّرت كلمة مرور الخادم — أعد الاتصال.\n$note';
   }
@@ -22797,4 +22794,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get aiSetupAllSources => 'All sources';
+
+  @override
+  String get integrationsPageLoadFailed => 'Could not load this page';
 }
