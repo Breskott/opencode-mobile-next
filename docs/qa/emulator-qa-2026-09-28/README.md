@@ -142,3 +142,57 @@ The first-pass external-server attempt and its result are documented above and
 at [18-server-connect-attempt.png](18-server-connect-attempt.png). Tailscale
 was not installed, so its handoff was not followed. No automated tests were
 run; this deliverable records manual emulator QA only.
+
+## Pass 3 — build 2060
+
+### Environment and result
+
+| Item | Value |
+| --- | --- |
+| Branch / source | `codex/qa`, `e1d651047e6471cee7d377584cd75231bd23aefb` |
+| APK | `/home/eslam/Storage/tmp/oc-apk-share/opencode-mobile-2060.apk`, package `io.github.eslamasabry.opencode_mobile`, version code `2060` |
+| APK SHA-256 | `61e158a8bc868f70c6300301b58c1dd04cb6571ac53b21ae453b2fdf37bd779c` |
+| Install | `adb -s emulator-5554 install -r` succeeded; the old package was present before update and the saved “Quick check-in” conversation remained available. |
+| Emulator | `OC_API35`, Android 15 / API 35, x86_64, 1080×2400; tried at 4096 MB / 4 cores, then 2048 MB / 2 cores, then returned to 4096 MB / 4 cores. |
+| Guest memory | 4 GB boot reported 4013936 kB; 2 GB boot reported 2019400 kB. |
+| Host OpenCode | Official v1.18.32 baseline archive from the requested GitHub release URL; SHA-256 checked as `763af386ef88a8cab18df00fcf055690e5a55e31a7088beabe02307142a6adce` before extraction. Server PID `1641872`, port 4123; stopped by exact PID and verified no listener. The temporary directory was removed. |
+
+All ADB commands used `-s emulator-5554`. The release update retained app
+storage and the This phone project/session. Several emulator launches reached
+`sys.boot_completed=1`, then the QEMU process exited with status 139 while the
+app was opening its in-app server. This recurred across five 4 GB launches and
+one 2 GB launch (PIDs `1639432`, `1643934`, `1648107`, `1651280`, `1657039`,
+and `1662876`). Each launch was retried as requested. The final
+`adb -s emulator-5554 emu kill` found port 5554 already closed; those exact
+QEMU PIDs were no longer running. Screenshots 152–171 are the retained
+captures; malformed empty captures were removed.
+
+### Fix verification
+
+| B-ID | Result | Evidence and notes |
+| --- | --- | --- |
+| B1 — in-app server relaunch / explicit stop | **FAIL, partial** | Build 2060 displayed “Starting OpenCode inside the app” after launch ([152-build2060-initial.png](152-build2060-initial.png), [158-b1-first-transition.png](158-b1-first-transition.png)). After a force-stop launch it later displayed “OpenCode inside the app is stopped” ([161-b1-state.png](161-b1-state.png)); tapping **Start and connect** still showed the stopped page ([163-b1-manual-start.png]). Server management then said “OpenCode on this phone isn't answering” ([164-b1-details.png]). The required 4+ launch sequence, two launches within 15 seconds, successful manual start precondition, and explicit Stop/relaunch check could not be completed because QEMU repeatedly exited. |
+| B2 — 2 GB setup allowance and slow-device note | **BLOCKED** | The 2 GB guest booted and reported 2019400 kB. The app remained on the This phone startup path ([168-b2-launch-retry.png]); QEMU exited before I could navigate to the setup gate. I could not verify the allowance or the “It may be slow on this phone” copy. |
+| B4 — closing untouched Add server step 1 | **BLOCKED** | The Add server form and close action were not reached in this pass. |
+| B5 — key press then cold relaunch, no green frame | **BLOCKED** | No key press plus cold-relaunch cycle completed. The captured recovery screens do not show a green outline, but this does not verify the requested sequence. |
+| B6 — compact This phone status during setup for another server | **BLOCKED** | The This phone setup screen with a different unresponsive server was not reached. |
+| B9 — plain address errors | **BLOCKED** | Build 2060 address validation copy was not exercised. |
+| B10 — provider rows | **BLOCKED** | Build 2060 Providers rows were not reached. |
+| B11 — named Tools rows | **BLOCKED** | Build 2060 Tools rows were not reached. |
+
+### Findings
+
+| ID | Screenshot file(s) | Page | What's wrong | Severity | Steps to reproduce |
+| --- | --- | --- | --- | --- | --- |
+| QA-03 | [158-b1-first-transition.png](158-b1-first-transition.png), [161-b1-state.png](161-b1-state.png), [163-b1-manual-start.png](163-b1-manual-start.png), [164-b1-details.png](164-b1-details.png) | This phone relaunch | On the saved This phone profile, launch showed startup progress but then returned to the stopped page. A tap on **Start and connect** still showed stopped, and server management said the phone server was not answering. This is a partial reproduction; the emulator exited before a longer retry could confirm whether the local server eventually recovered. | P1 — broken flow | Install build 2060 over the saved build 2058 data → cold-launch OpenCode Mobile → wait through the startup screen → observe the stopped page → tap **Start and connect** → open server management and inspect the phone profile. |
+
+### Remaining third-pass coverage
+
+Not verified: Inbox (including the other-server row), Project tab, every
+Settings page one level deep, stopping an in-flight reply, host server stop and
+reconnect wording, airplane-mode recovery, Move from Termux visibility, AI
+setup with a real config, MCP catalogue enable/disable, font scale 2.0 on chat,
+and landscape chat. The host server was started with the verified binary but
+the emulator exited before server-backed flows could be reached. No provider
+credential values were requested, logged, or captured. No app code was changed
+and no automated tests were run.
