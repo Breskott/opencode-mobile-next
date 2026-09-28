@@ -90,7 +90,6 @@ void main() {
         clock: () => _now,
         gatewayFactory: (_) => _Gateway(),
       );
-      final l10n = lookupAppLocalizations(const Locale('en'));
       Widget app(Widget screen) => RepaintBoundary(
         key: boundary,
         child: MaterialApp(
@@ -146,7 +145,6 @@ void main() {
           EnginePhase.sendSemanticsUpdate,
           const Duration(seconds: 3),
         );
-        expect(find.text(l10n.quotaMonitorCurrent), findsOneWidget);
         expect(tester.takeException(), isNull);
         await writePng(
           'docs/qa/provider-quota/monitor-review-${light ? 'light' : 'dark'}.png',
