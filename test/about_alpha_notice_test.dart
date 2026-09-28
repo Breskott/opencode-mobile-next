@@ -181,14 +181,26 @@ void main() {
     // (P3.10), so Open source is on the page itself.
     expect(find.byKey(const ValueKey('about-tabs')), findsNothing);
     expect(find.byKey(const ValueKey('about-privacy-document')), findsNothing);
-    expect(
-      find.byKey(const ValueKey('about-notices-document')),
-      findsOneWidget,
-    );
+    // The bundled components' notices sit behind their own row, so About
+    // stays short (owner review of build 2061): no legal text on the page.
+    expect(find.byKey(const ValueKey('about-notices-document')), findsNothing);
+    expect(find.text('Bundled components'), findsOneWidget);
     expect(find.byKey(const ValueKey('about-all-licences')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('about-all-licences')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('about-licences-viewer')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    Navigator.of(
+      tester.element(find.byKey(const ValueKey('about-licences-viewer'))),
+    ).pop();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('about-bundled-components')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('about-notices-document')),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 

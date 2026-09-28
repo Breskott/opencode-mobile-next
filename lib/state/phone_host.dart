@@ -7,6 +7,7 @@ import '../builtin/builtin_server.dart';
 import '../builtin/setup/setup_contract.dart';
 import '../l10n/app_localizations.dart';
 import '../termux/bridge.dart';
+import '../termux/termux_reach.dart';
 import 'connection.dart';
 import 'local_server_controls.dart';
 import 'profiles.dart';
@@ -102,6 +103,14 @@ abstract class PhoneHost extends ChangeNotifier {
 
   /// What [failure] was about; null when nothing failed.
   PhoneHostProblem? get problem => null;
+
+  /// Why the app cannot reach Termux now (Termux only): one typed cause
+  /// with one fix. While it is set, acts that run in Termux cannot work.
+  TermuxProblem? get termuxProblem => null;
+
+  /// Whether [runtime] was read or saved, rather than assumed: a page that
+  /// could not ask the host does not call it "OpenCode 1".
+  bool get runtimeKnown => true;
 
   /// The saved connection for [runtime], or null when there is none yet.
   ServerProfile? get profile;
@@ -317,6 +326,7 @@ class TermuxPhoneHost extends PhoneHost {
   bool _checked = false;
   String? _failure;
   PhoneHostProblem? _problem;
+  TermuxProblem? _reach;
   bool _disposed = false;
 
   ProfileStore get _store => connection.store;
@@ -393,6 +403,12 @@ class TermuxPhoneHost extends PhoneHost {
   PhoneHostProblem? get problem => _failure == null ? null : _problem;
 
   @override
+  TermuxProblem? get termuxProblem => _reach;
+
+  @override
+  bool get runtimeKnown => _knownRuntime != null || profile != null;
+
+  @override
   TermuxRuntime? get switchTarget =>
       _status?.switchPending == true ? _status!.switchTarget : null;
 
@@ -420,8 +436,10 @@ class TermuxPhoneHost extends PhoneHost {
           : PhoneHostState.settingUp;
     }
     if (status != null && status.isReady) return PhoneHostState.running;
-    // Termux did not answer: not knowing is not "not set up".
-    if (status == null && problem == PhoneHostProblem.check) {
+    // Termux could not be asked or did not answer: not knowing is not
+    // "not set up".
+    if (status == null &&
+        (_reach != null || problem == PhoneHostProblem.check)) {
       return PhoneHostState.needsYou;
     }
     if (version == null) return PhoneHostState.notSetUp;
@@ -436,9 +454,29 @@ class TermuxPhoneHost extends PhoneHost {
       notifyListeners();
       return;
     }
+    // What Android says first: without Termux, or without access to it, no
+    // command can run, and asking would only fail slowly.
+    try {
+      final blocked = termuxProblemOfCapabilities(
+        await TermuxBridge.capabilities(),
+      );
+      if (_disposed) return;
+      if (blocked != null) {
+        _reach = blocked;
+        _status = null;
+        _checked = true;
+        notifyListeners();
+        return;
+      }
+    } catch (_) {
+      // Unknown: the status read below says what it can.
+    }
     try {
       final snapshot = await TermuxBridge.setupSnapshot();
       if (_disposed) return;
+      final hadReach = _reach != null;
+      _reach = null;
+      if (hadReach) _failure = null;
       _status = snapshot.status;
       _log = snapshot.output;
       if (snapshot.status.isFailed && !snapshot.status.switchPending) {
@@ -454,8 +492,18 @@ class TermuxPhoneHost extends PhoneHost {
       }
     } on TermuxBridgeException catch (error) {
       if (_disposed) return;
-      _failure = error.message;
-      _problem = PhoneHostProblem.check;
+      final reach = termuxProblemOfError(error);
+      if (reach == TermuxProblem.unknown) {
+        _reach = null;
+        _failure = error.message;
+        _problem = PhoneHostProblem.check;
+      } else {
+        // A cause with its own fix: said as that, never as "try again".
+        _reach = reach;
+        _failure = error.message;
+        _problem = null;
+        _status = null;
+      }
     }
     try {
       _installation = await TermuxBridge.inspectInstallation();

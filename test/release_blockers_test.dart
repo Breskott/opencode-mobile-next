@@ -950,16 +950,18 @@ void main() {
       contains('not built, maintained, endorsed by, or affiliated with'),
     );
 
-    // P3.10 folded the Open source tab into the About page.
-    // The bundled document sits below the build, alpha and original-language
-    // notes, so the lazy list only builds it once the reader scrolls.
+    // P3.10 folded the Open source tab into the About page; the bundled
+    // document opens from its row under Open source (owner review, 2061).
+    final bundled = find.byKey(const ValueKey('about-bundled-components'));
     await tester.scrollUntilVisible(
-      find.text('Bundled components'),
+      bundled,
       200,
       scrollable: find.byType(Scrollable).last,
     );
-    expect(find.text('Bundled components'), findsOneWidget);
-    expect(find.text('sherpa-onnx'), findsWidgets);
+    await tester.tap(bundled);
+    await tester.pumpAndSettle();
+    expect(find.text('Bundled components'), findsWidgets);
+    expect(find.textContaining('sherpa-onnx'), findsWidgets);
 
     final controller = await _controller();
     addTearDown(controller.dispose);

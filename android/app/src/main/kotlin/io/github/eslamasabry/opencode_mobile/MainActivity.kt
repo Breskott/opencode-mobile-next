@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class MainActivity : FlutterActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var permissionResult: MethodChannel.Result? = null
+    private var runCommandAccessResult: MethodChannel.Result? = null
     private var microphonePermissionResult: MethodChannel.Result? = null
     private var backgroundPermissionResult: MethodChannel.Result? = null
     private var cameraPermissionResult: MethodChannel.Result? = null
@@ -152,6 +153,7 @@ class MainActivity : FlutterActivity() {
                     "getSigningCertificateSha256" ->
                         result.success(signingCertificateSha256())
                     "requestRunCommandPermission" -> requestRunCommandPermission(result)
+                    "requestRunCommandAccess" -> requestRunCommandAccess(result)
                     "openTermux" -> result.success(openTermux())
                     "openAppSettings" -> {
                         startActivity(
@@ -798,9 +800,24 @@ class MainActivity : FlutterActivity() {
         if (voiceDownloadNotifications.onPermissionResult(requestCode, grantResults)) return
         when (requestCode) {
             RUN_COMMAND_PERMISSION_REQUEST -> {
+                val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
+                val access = runCommandAccessResult
+                runCommandAccessResult = null
+                if (access != null) {
+                    // Android answers "no" without a dialog once the person
+                    // chose "Don't allow" twice: then only Settings can.
+                    access.success(
+                        when {
+                            granted -> "granted"
+                            !shouldShowRequestPermissionRationale(RUN_COMMAND_PERMISSION) ->
+                                "permanentlyDenied"
+                            else -> "denied"
+                        }
+                    )
+                }
                 val result = permissionResult ?: return
                 permissionResult = null
-                result.success(grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED)
+                result.success(granted)
             }
             MICROPHONE_PERMISSION_REQUEST -> {
                 val result = microphonePermissionResult ?: return
@@ -1006,11 +1023,34 @@ class MainActivity : FlutterActivity() {
             result.success(true)
             return
         }
-        if (permissionResult != null) {
+        if (permissionResult != null || runCommandAccessResult != null) {
             result.error("permission_in_progress", "A permission request is already open.", null)
             return
         }
         permissionResult = result
+        requestPermissions(arrayOf(RUN_COMMAND_PERMISSION), RUN_COMMAND_PERMISSION_REQUEST)
+    }
+
+    /**
+     * The same request as [requestRunCommandPermission], answered in words:
+     * `granted`, `denied`, `permanentlyDenied` (Android no longer shows the
+     * dialog; the app's settings page is the only way) or `missing` (no
+     * Termux to ask for). Read-only until the person answers the dialog.
+     */
+    private fun requestRunCommandAccess(result: MethodChannel.Result) {
+        if (!isPackageInstalled(TERMUX_PACKAGE)) {
+            result.success("missing")
+            return
+        }
+        if (hasRunCommandPermission()) {
+            result.success("granted")
+            return
+        }
+        if (runCommandAccessResult != null || permissionResult != null) {
+            result.error("permission_in_progress", "A permission request is already open.", null)
+            return
+        }
+        runCommandAccessResult = result
         requestPermissions(arrayOf(RUN_COMMAND_PERMISSION), RUN_COMMAND_PERMISSION_REQUEST)
     }
 

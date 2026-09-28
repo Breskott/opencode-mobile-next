@@ -17,6 +17,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/local_server_controls.dart';
 import 'package:opencode_mobile/state/termux_running_server.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
+import 'package:opencode_mobile/termux/termux_reach.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/widgets/termux_running_server_entry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -138,15 +139,20 @@ void main() {
     },
   );
 
-  test('permission denied never sends a command or health request', () async {
-    capabilities['permissionGranted'] = false;
-    expect(
-      (await detectTermuxRunningServer()).state,
-      TermuxRunningServerState.denied,
-    );
-    expect(calls.map((call) => call.method), ['getCapabilities']);
-    expect(probes, isEmpty);
-  });
+  test(
+    'permission denied sends no command; one look at the app-authored loopback says whether OpenCode answers',
+    () async {
+      capabilities['permissionGranted'] = false;
+      final observed = await detectTermuxRunningServer();
+      expect(observed.state, TermuxRunningServerState.denied);
+      expect(observed.problem, TermuxProblem.accessNeeded);
+      expect(observed.heardOnPhone, isTrue);
+      expect(calls.map((call) => call.method), ['getCapabilities']);
+      expect(probes, [TermuxBridge.managedServerUrl]);
+      health = const ServerProbeResult.failure('refused');
+      expect((await detectTermuxRunningServer()).heardOnPhone, isFalse);
+    },
+  );
 
   test(
     'missing Termux and a stopped or switching runtime are not running',
@@ -410,7 +416,13 @@ void main() {
       capabilities['permissionGranted'] = false;
       await entry(tester);
       expect(
-        find.text('Allow Termux access in phone setup to check for a server.'),
+        find.textContaining(
+          'OpenCode is running in Termux, but this app can\'t reach Termux yet.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('termux-running-server-fix')),
         findsOneWidget,
       );
       expect(
@@ -419,16 +431,27 @@ void main() {
       );
       capabilities['permissionGranted'] = true;
       health = const ServerProbeResult.failure('unreachable');
-      await tester.tap(
-        find.byKey(const ValueKey('termux-running-server-menu')),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey('termux-running-server-recheck')),
-      );
+      // No expect inside the handler: it would run inside pumpAndSettle.
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'getCapabilities') return capabilities;
+        return {'exitCode': 0, 'stdout': status, 'stderr': ''};
+      });
+      // Coming back to the app reads the phone again.
+      for (final state in [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        tester.binding.handleAppLifecycleStateChanged(state);
+      }
       await tester.pumpAndSettle();
       expect(
-        find.text('Could not check the server on this phone.'),
+        find.textContaining(
+          'OpenCode 1 is set up in Termux but isn\'t answering.',
+        ),
         findsOneWidget,
       );
     },
@@ -499,14 +522,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final card = find.byKey(const ValueKey('termux-running-server'));
+    final card = find.byKey(const ValueKey('termux-lead'));
     expect(card, findsOneWidget);
-    // A live server the app found outranks every generic choice, including
-    // the question itself.
+    // A live server the app found leads the page: no welcome hero and no
+    // question; the other ways follow it, compact.
+    expect(find.byKey(const ValueKey('servers-welcome-hero')), findsNothing);
+    expect(find.byKey(const ValueKey('welcome-question')), findsNothing);
     final cardBottom = tester.getRect(card).bottom;
     expect(
-      tester.getRect(find.byKey(const ValueKey('welcome-question'))).top,
-      greaterThanOrEqualTo(cardBottom),
+      tester.getRect(find.byKey(const ValueKey('welcome-choice-in-app'))).top,
+      greaterThan(cardBottom),
     );
     expect(
       tester.getRect(find.byKey(const ValueKey('welcome-choice-computer'))).top,
@@ -545,9 +570,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final connect = find.byKey(
-        const ValueKey('termux-running-server-connect'),
-      );
+      final connect = find.byKey(const ValueKey('termux-lead-connect'));
       await tester.ensureVisible(connect);
       await tester.tap(connect);
       await tester.pumpAndSettle();
@@ -587,9 +610,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final connect = find.byKey(
-        const ValueKey('termux-running-server-connect'),
-      );
+      final connect = find.byKey(const ValueKey('termux-lead-connect'));
       await tester.ensureVisible(connect);
       await tester.tap(connect);
       await tester.pumpAndSettle();

@@ -20,6 +20,7 @@ import '../../state/profiles.dart' show OrchestrationHostKind;
 import '../../state/termux_host_setup.dart';
 import '../../termux/bridge.dart';
 import '../../termux/processes.dart';
+import '../../termux/termux_reach.dart';
 import '../app_iconography.dart';
 import '../kit/kit.dart';
 import '../widgets/builtin_team_section.dart' show forgetBuiltinTeam;
@@ -30,6 +31,7 @@ import '../widgets/safety_confirms.dart';
 import '../widgets/team_phone_onboarding.dart' show teamPhoneRuntime;
 import '../widgets/termux_migration_entry.dart';
 import '../widgets/termux_phone_tools.dart';
+import '../widgets/termux_problem_fix.dart';
 import 'keep_running_screen.dart';
 import 'local_agent_screen.dart';
 import 'phone_setup/phone_setup_routes.dart';
@@ -155,9 +157,47 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     }
   }
 
+  /// Back from Android's settings, Termux or the F-Droid page after a fix:
+  /// the phone is read again, and a server found running is connected.
+  late final AppLifecycleListener _lifecycle = AppLifecycleListener(
+    onResume: () {
+      if (_host.termuxProblem != null && mounted) unawaited(_afterFix());
+    },
+  );
+
+  /// A Termux fix was made: the next look that finds OpenCode running
+  /// connects without another tap.
+  bool _connectAfterFix = false;
+
+  Future<void> _afterFix() async {
+    await _load();
+    if (!mounted || !_connectAfterFix || _host.termuxProblem != null) return;
+    _connectAfterFix = false;
+    if (_host.state == PhoneHostState.running &&
+        _connection.api == null &&
+        _host.profile != null) {
+      await _connect();
+    }
+  }
+
+  /// The one act that fixes why Termux cannot be reached.
+  Future<void> _fixTermux(TermuxProblem problem) async {
+    _connectAfterFix = true;
+    final again = await fixTermuxProblem(
+      context,
+      problem,
+      restart: _start,
+      retry: _load,
+    );
+    if (again && mounted && problem != TermuxProblem.notAnswering) {
+      await _afterFix();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _lifecycle;
     _ownsHost = widget.host == null;
     _host = widget.host ?? _makeHost();
     _host.addListener(_changed);
@@ -266,6 +306,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _host.removeListener(_changed);
     if (_ownsHost) _host.dispose();
     _log.dispose();
@@ -301,6 +342,12 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     } else {
       await openPhoneSetupStart(context);
     }
+    if (mounted) unawaited(_load());
+  }
+
+  /// A fresh start with the in-app server (phone setup, where it leads).
+  Future<void> _setUpInApp() async {
+    await openPhoneSetupStart(context);
     if (mounted) unawaited(_load());
   }
 
@@ -676,8 +723,19 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     final where = _host.kind == PhoneHostKind.termux
         ? l10n.thisPhoneHostTermux
         : l10n.thisPhoneHostInApp;
-    // The generation is the title, so the line under it says the rest once.
-    final title = _runtimeName(_host.runtime);
+    // The generation is the title, so the line under it says the rest once;
+    // one the page could not read is not guessed.
+    final title = _host.runtimeKnown
+        ? _runtimeName(_host.runtime)
+        : l10n.firstRunAgentOpenCode;
+    final reach = working ? null : _host.termuxProblem;
+    final reachWords = reach == null
+        ? null
+        : termuxProblemWords(
+            l10n,
+            reach,
+            runtime: _host.runtimeKnown ? title : null,
+          );
     final detail = [?_host.version, where].join(' · ');
     final switchTarget = _host.switchTarget;
     final switchPrevious = _host.switchPrevious;
@@ -687,6 +745,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     final runtimeName = _runtimeName(_host.runtime);
     final String? line = switch (problem) {
       _ when _removing || working => null,
+      _ when reachWords != null => reachWords.line,
       _ when state == PhoneHostState.needsYou && switchTarget != null =>
         l10n.thisPhoneSwitchStopped(_runtimeName(switchTarget)),
       PhoneHostProblem.start => l10n.thisPhoneStartFailed(runtimeName),
@@ -698,7 +757,14 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
 
     KitAction? primary;
     KitAction? secondary;
-    if (!working) {
+    if (!working && reach != null) {
+      // The cause's own fix; "Try again" only where retrying can help.
+      primary = KitAction(
+        key: const ValueKey('this-phone-termux-fix'),
+        label: reachWords!.action,
+        onPressed: () => unawaited(_fixTermux(reach)),
+      );
+    } else if (!working) {
       switch (state) {
         case PhoneHostState.notSetUp:
           primary = KitAction(
@@ -786,6 +852,9 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     }
     final actions = KitActionBlock(primary: primary, secondary: secondary);
     final running = state == PhoneHostState.running;
+    // "Needs you" starts the line, inline (never a word floating at the
+    // row's end); every other state keeps its word at the end.
+    final needsYou = state == PhoneHostState.needsYou && !working;
     return KitRowGroup(
       key: const ValueKey('this-phone-status'),
       children: [
@@ -801,19 +870,22 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
             supporting: TextSpan(
               children: [
                 if (connected) kitCurrentSpan(context, l10n.serverRowConnected),
+                if (needsYou) KitNeedsYou.span(context),
                 TextSpan(text: detail),
               ],
             ),
             supportingKey: const ValueKey('this-phone-detail'),
             supportingMaxLines: 2,
-            trailing: KitText(
-              word,
-              key: const ValueKey('this-phone-state'),
-              role: KitTextRole.secondary,
-              tone: running && !working
-                  ? KitTextTone.success
-                  : KitTextTone.secondary,
-            ),
+            trailing: needsYou
+                ? null
+                : KitText(
+                    word,
+                    key: const ValueKey('this-phone-state'),
+                    role: KitTextRole.secondary,
+                    tone: running && !working
+                        ? KitTextTone.success
+                        : KitTextTone.secondary,
+                  ),
             below: line == null
                 ? null
                 : KitText(
@@ -871,13 +943,55 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     Widget icon(IconData data) => KitRow.icon(context, data);
 
     final migrateFrom = inApp ? null : _host.profile;
+    final reach = inApp ? null : _host.termuxProblem;
+    if (reach != null && reach.blocksTermux) {
+      // Nothing that runs in Termux can work now: those acts wait until
+      // the fix above is done. The in-app server is the simpler way, and
+      // is always offered to a Termux user.
+      return KitRowGroup(
+        key: const ValueKey('this-phone-list'),
+        children: [
+          if (BuiltinLinux.supported)
+            KitRow(
+              key: const ValueKey('this-phone-in-app-instead'),
+              leading: icon(AppIconography.swap),
+              title: l10n.termuxInAppInstead,
+              titleMaxLines: 2,
+              supporting: TextSpan(text: l10n.termuxInAppInsteadBlocked),
+              supportingMaxLines: 3,
+              trailing: const KitChevron(),
+              onTap: () => unawaited(_setUpInApp()),
+            ),
+          KitRow(
+            key: const ValueKey('this-phone-keep-running'),
+            leading: icon(AppIconography.batteryCharging),
+            title: l10n.keepRunningTitle,
+            supporting: TextSpan(text: l10n.keepRunningRowSubtitle),
+            supportingMaxLines: 2,
+            trailing: const KitChevron(),
+            onTap: () => unawaited(openKeepRunningScreen(context)),
+          ),
+        ],
+      );
+    }
     return KitRowGroup(
       key: const ValueKey('this-phone-list'),
       children: [
         // A Termux user's way to the in-app server leads the list: it is
         // the one change this page cannot do in place (owner, 2026-09-28).
         if (offersTermuxMigration(migrateFrom))
-          TermuxMigrationRow(profile: migrateFrom!),
+          TermuxMigrationRow(profile: migrateFrom!)
+        else if (!inApp && BuiltinLinux.supported)
+          KitRow(
+            key: const ValueKey('this-phone-in-app-instead'),
+            leading: icon(AppIconography.swap),
+            title: l10n.termuxInAppInstead,
+            titleMaxLines: 2,
+            supporting: TextSpan(text: l10n.termuxInAppInsteadDetail),
+            supportingMaxLines: 3,
+            trailing: const KitChevron(),
+            onTap: () => unawaited(_setUpInApp()),
+          ),
         if (hasEngine && !halfSwitched && upToDate)
           KitRow(
             key: const ValueKey('this-phone-up-to-date'),
@@ -966,6 +1080,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
           leading: icon(AppIconography.batteryCharging),
           title: l10n.keepRunningTitle,
           supporting: TextSpan(text: l10n.keepRunningRowSubtitle),
+          supportingMaxLines: 2,
           trailing: const KitChevron(),
           onTap: () => unawaited(openKeepRunningScreen(context)),
         ),

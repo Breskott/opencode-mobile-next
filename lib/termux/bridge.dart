@@ -98,6 +98,14 @@ class TermuxBridge {
   static Future<bool> requestPermission() =>
       _invokeFlag('requestRunCommandPermission');
 
+  /// Android's question for Termux's "Run commands" permission, answered
+  /// in words: `granted`, `denied`, `permanentlyDenied` or `missing`.
+  /// Throws [MissingPluginException] on a runner without the method.
+  static Future<String?> requestRunCommandAccess() async {
+    final raw = await _channel.invokeMethod<Object?>('requestRunCommandAccess');
+    return raw is String ? raw : null;
+  }
+
   static Future<bool> openTermux() => _invokeFlag('openTermux');
 
   static Future<bool> openAppSettings() => _invokeFlag('openAppSettings');

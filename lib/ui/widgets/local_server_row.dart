@@ -62,7 +62,20 @@ class LocalServerRow extends StatelessWidget {
     this.running = true,
     this.dividerAbove = false,
     this.mark = AppIconography.phone,
+    this.needsYou = false,
+    this.fixLabel,
+    this.onFix,
   });
+
+  /// The server waits on the person (no access, not answering): the line
+  /// starts with the one "Needs you" span, inline, and wraps whole.
+  final bool needsYou;
+
+  /// The one act that fixes what [status] says, named for its target
+  /// ("Allow access to Termux"). Tapping the row does the same, unless
+  /// [onOpen] is given (a cause that may still let a connect work).
+  final String? fixLabel;
+  final VoidCallback? onFix;
 
   /// The agent's own mark: the phone for OpenCode (the phone's own
   /// server), [AppIconography.agent] for Claude Code, so two agents on one
@@ -128,6 +141,9 @@ class LocalServerRow extends StatelessWidget {
     } else if (stopped) {
       tap = onStart;
       rowKey = null;
+    } else if (onFix != null && onOpen == null) {
+      tap = onFix;
+      rowKey = null;
     } else if (running && !connected) {
       tap = onConnect;
       rowKey = _key('connect');
@@ -166,7 +182,15 @@ class LocalServerRow extends StatelessWidget {
     // At large text the small Start moves under the row's line (KitRow's
     // `below`), so the name keeps its width.
     final large = MediaQuery.textScalerOf(context).scale(14) > 21;
+    final fix = onFix != null && fixLabel != null
+        ? KitButton.tertiary(
+            key: _key('fix'),
+            label: fixLabel!,
+            onPressed: locked ? null : onFix,
+          )
+        : null;
     final below = [
+      ?fix,
       if (failure != null)
         // The failure in words, in the failure tone LOOK-5 sets: text1
         // with the error word, never the danger colour, which is kept for
@@ -207,10 +231,12 @@ class LocalServerRow extends StatelessWidget {
           supporting: TextSpan(
             children: [
               if (connected) kitCurrentSpan(context, connectedLabel),
+              if (needsYou) KitNeedsYou.span(context),
               TextSpan(text: status, semanticsLabel: status),
             ],
           ),
-          supportingMaxLines: large ? 2 : 1,
+          // A cause is read whole: never cut to "…".
+          supportingMaxLines: needsYou ? 6 : (large ? 2 : 1),
           supportingKey: _key('runtime'),
           below: below.isEmpty
               ? null

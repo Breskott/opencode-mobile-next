@@ -123,7 +123,9 @@ void main() {
         extra: 'failure_kind=crash\n',
       ),
     );
-    expect(_text(tester, 'this-phone-state'), 'Needs you');
+    // "Needs you" starts the line, inline; no word floats at the row's end.
+    expect(_text(tester, 'this-phone-detail'), startsWith('Needs you · '));
+    expect(find.byKey(const ValueKey('this-phone-state')), findsNothing);
     expect(
       _text(tester, 'this-phone-failure'),
       "OpenCode 1 didn't start. Start it again; Details below says what went "

@@ -7778,12 +7778,6 @@ abstract class AppLocalizations {
   /// **'References'**
   String get e7SettingsDetailUi27;
 
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'App information could not be loaded. Try opening this page again.'**
-  String get e7SettingsInformationFailed;
-
   /// About screen AI assistance provenance and experimental desktop limitation
   ///
   /// In en, this message translates to:
@@ -17502,18 +17496,6 @@ abstract class AppLocalizations {
   /// **'The server could not be stopped. Try again.'**
   String get phoneServerStopFailed;
 
-  /// No description provided for @termuxRunningPermission.
-  ///
-  /// In en, this message translates to:
-  /// **'Allow Termux access in phone setup to check for a server.'**
-  String get termuxRunningPermission;
-
-  /// No description provided for @termuxRunningUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not check the server on this phone.'**
-  String get termuxRunningUnavailable;
-
   /// No description provided for @termuxStorageCatSharedCaches.
   ///
   /// In en, this message translates to:
@@ -21029,12 +21011,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your conversations are kept. This can take a minute.'**
   String get connectStartingBody;
-
-  /// Title of the About screen state when its documents could not be read
-  ///
-  /// In en, this message translates to:
-  /// **'The notices didn\'t load'**
-  String get settingsAboutLoadFailed;
 
   /// The team's merged work is in the project folder
   ///
@@ -37513,6 +37489,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'To connect {name} without the app, set this where the server runs, then restart the server.'**
   String integrationsEnvironmentNote(String name);
+
+  /// Termux problem line: OpenCode answered on this phone but the app lacks Termux's Run commands permission.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is running in Termux, but this app can\'t reach Termux yet. Allow access and it connects.'**
+  String get termuxProblemAccessHeard;
+
+  /// Termux problem line: the app lacks Termux's Run commands permission (usual after the app's storage was cleared).
+  ///
+  /// In en, this message translates to:
+  /// **'This app can\'t reach Termux yet. Allow access so it can find OpenCode there and connect.'**
+  String get termuxProblemAccessNeeded;
+
+  /// Termux problem line: Android no longer shows the permission question; only the app's settings page can grant it.
+  ///
+  /// In en, this message translates to:
+  /// **'Android blocked Termux access for this app. In this app\'s permissions, turn on “Run commands in Termux environment”.'**
+  String get termuxProblemAccessBlocked;
+
+  /// Termux problem line: allow-external-apps is off in Termux.
+  ///
+  /// In en, this message translates to:
+  /// **'Termux doesn\'t take commands from other apps yet. One line in Termux allows it.'**
+  String get termuxProblemOtherAppsOff;
+
+  /// Termux problem line: Termux did not answer a command in time.
+  ///
+  /// In en, this message translates to:
+  /// **'Termux didn\'t answer. Android may have put it to sleep. Open Termux to wake it.'**
+  String get termuxProblemAsleep;
+
+  /// Termux problem line: Termux says OpenCode runs but OpenCode does not answer.
+  ///
+  /// In en, this message translates to:
+  /// **'{runtime} is set up in Termux but isn\'t answering. A restart usually brings it back.'**
+  String termuxProblemNotAnswering(String runtime);
+
+  /// Termux problem line: Termux is not installed.
+  ///
+  /// In en, this message translates to:
+  /// **'Termux isn\'t on this phone. Install it again, or set up the in-app server instead.'**
+  String get termuxProblemNotInstalled;
+
+  /// Termux problem line: the installed Termux cannot take commands from other apps.
+  ///
+  /// In en, this message translates to:
+  /// **'This Termux is too old for the app to use. Install the current Termux from F-Droid.'**
+  String get termuxProblemOutdated;
+
+  /// Termux problem line: something else failed; retrying may help.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone couldn\'t check on {runtime} in Termux. Try again in a moment.'**
+  String termuxProblemUnknown(String runtime);
+
+  /// Termux fix action: shows Android's permission question.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow access to Termux'**
+  String get termuxFixAllowAccess;
+
+  /// Termux fix action: opens the app's Android settings page.
+  ///
+  /// In en, this message translates to:
+  /// **'Open this app\'s permissions'**
+  String get termuxFixOpenPermissions;
+
+  /// Termux fix action: opens the sheet with the line that turns on allow-external-apps.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow other apps in Termux'**
+  String get termuxFixAllowOtherApps;
+
+  /// Termux fix action: opens Termux (wakes it; the copied line can be pasted there).
+  ///
+  /// In en, this message translates to:
+  /// **'Open Termux'**
+  String get termuxFixOpenTermux;
+
+  /// Termux fix action: restarts OpenCode in Termux.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart {runtime} in Termux'**
+  String termuxFixRestart(String runtime);
+
+  /// Termux fix action: opens the Termux download page.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Termux'**
+  String get termuxFixGetTermux;
+
+  /// Termux fix action: opens the Termux download page to replace an old build.
+  ///
+  /// In en, this message translates to:
+  /// **'Get the current Termux'**
+  String get termuxFixGetCurrentTermux;
+
+  /// Sheet title: the line that lets other apps run commands in Termux.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow other apps'**
+  String get termuxOtherAppsTitle;
+
+  /// Sheet body above the copyable allow-external-apps line.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste this line in Termux and press Enter, then come back here. Open Termux copies it for you.'**
+  String get termuxOtherAppsBody;
+
+  /// First screen, found on this phone: heading when OpenCode answered in Termux.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is running in Termux'**
+  String get termuxLeadRunning;
+
+  /// First screen, found on this phone: the line under 'OpenCode is running in Termux' when the app lacks Termux access (the heading already says OpenCode runs).
+  ///
+  /// In en, this message translates to:
+  /// **'This app can\'t reach Termux yet. Allow access and it connects to your conversations.'**
+  String get termuxLeadAccessLine;
+
+  /// First screen, found on this phone: heading when OpenCode is set up in Termux but not running or answering.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is set up in Termux'**
+  String get termuxLeadSetUp;
+
+  /// First screen, found on this phone: heading when only Termux is known.
+  ///
+  /// In en, this message translates to:
+  /// **'Termux is on this phone'**
+  String get termuxLeadTermuxOnly;
+
+  /// First screen, found on this phone: the line under a running OpenCode in Termux.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to pick up your conversations.'**
+  String get termuxLeadRunningBody;
+
+  /// First screen, found on this phone: the line under a stopped OpenCode in Termux.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s stopped. Start it to pick up your conversations.'**
+  String get termuxLeadStoppedBody;
+
+  /// First screen primary: connects to the running OpenCode in Termux.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to the server in Termux'**
+  String get termuxLeadConnect;
+
+  /// First screen primary: starts the stopped OpenCode in Termux.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the server in Termux'**
+  String get termuxLeadStart;
+
+  /// Row: a fresh start with the server that runs inside this app, offered to a Termux user.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up the in-app server instead'**
+  String get termuxInAppInstead;
+
+  /// Row detail under Set up the in-app server instead.
+  ///
+  /// In en, this message translates to:
+  /// **'A fresh start that runs inside this app. No Termux needed.'**
+  String get termuxInAppInsteadDetail;
+
+  /// This phone row detail: the move needs Termux, which cannot be reached now.
+  ///
+  /// In en, this message translates to:
+  /// **'A fresh start inside this app. To bring your projects from Termux, fix Termux access first.'**
+  String get termuxInAppInsteadBlocked;
+
+  /// About: row that opens the notices for parts shipped inside the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundled components'**
+  String get aboutBundledComponents;
+
+  /// About: detail under Bundled components.
+  ///
+  /// In en, this message translates to:
+  /// **'Icons, fonts and other parts shipped inside this app'**
+  String get aboutBundledComponentsDetail;
 }
 
 class _AppLocalizationsDelegate

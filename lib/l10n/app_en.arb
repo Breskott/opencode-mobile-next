@@ -3414,10 +3414,6 @@
   "@e7SettingsDetailUi27": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsInformationFailed": "App information could not be loaded. Try opening this page again.",
-  "@e7SettingsInformationFailed": {
-    "description": "Settings and appearance user interface."
-  },
   "e7SettingsAlphaBody": "Android is the supported platform; desktop builds are experimental.",
   "@e7SettingsAlphaBody": {
     "description": "About screen AI assistance provenance and experimental desktop limitation"
@@ -11378,8 +11374,6 @@
   "phoneServerStartFailed": "The server did not start. Open Manage setup to see why.",
   "phoneServerRestartFailed": "The server did not restart. Open Manage setup to see why.",
   "phoneServerStopFailed": "The server could not be stopped. Try again.",
-  "termuxRunningPermission": "Allow Termux access in phone setup to check for a server.",
-  "termuxRunningUnavailable": "Could not check the server on this phone.",
   "termuxStorageCatSharedCaches": "Other caches and package data",
   "termuxStorageNoteSharedCaches": "Shared caches, package installs and download folders may support other tools or contain files worth keeping. They cannot be removed here.",
   "termuxStorageRescanRequired": "Previous scan · Scan again before cleaning more",
@@ -13933,10 +13927,6 @@
   "connectStartingBody": "Your conversations are kept. This can take a minute.",
   "@connectStartingBody": {
     "description": "Connecting screen body while the phone's own server starts"
-  },
-  "settingsAboutLoadFailed": "The notices didn't load",
-  "@settingsAboutLoadFailed": {
-    "description": "Title of the About screen state when its documents could not be read"
   },
   "aiteamBringInDone": "{project} has the team's latest work ({commit}).",
   "@aiteamBringInDone": {
@@ -28652,5 +28642,144 @@
         "type": "String"
       }
     }
+  },
+  "termuxProblemAccessHeard": "OpenCode is running in Termux, but this app can't reach Termux yet. Allow access and it connects.",
+  "@termuxProblemAccessHeard": {
+    "description": "Termux problem line: OpenCode answered on this phone but the app lacks Termux's Run commands permission."
+  },
+  "termuxProblemAccessNeeded": "This app can't reach Termux yet. Allow access so it can find OpenCode there and connect.",
+  "@termuxProblemAccessNeeded": {
+    "description": "Termux problem line: the app lacks Termux's Run commands permission (usual after the app's storage was cleared)."
+  },
+  "termuxProblemAccessBlocked": "Android blocked Termux access for this app. In this app's permissions, turn on “Run commands in Termux environment”.",
+  "@termuxProblemAccessBlocked": {
+    "description": "Termux problem line: Android no longer shows the permission question; only the app's settings page can grant it."
+  },
+  "termuxProblemOtherAppsOff": "Termux doesn't take commands from other apps yet. One line in Termux allows it.",
+  "@termuxProblemOtherAppsOff": {
+    "description": "Termux problem line: allow-external-apps is off in Termux."
+  },
+  "termuxProblemAsleep": "Termux didn't answer. Android may have put it to sleep. Open Termux to wake it.",
+  "@termuxProblemAsleep": {
+    "description": "Termux problem line: Termux did not answer a command in time."
+  },
+  "termuxProblemNotAnswering": "{runtime} is set up in Termux but isn't answering. A restart usually brings it back.",
+  "@termuxProblemNotAnswering": {
+    "description": "Termux problem line: Termux says OpenCode runs but OpenCode does not answer.",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "termuxProblemNotInstalled": "Termux isn't on this phone. Install it again, or set up the in-app server instead.",
+  "@termuxProblemNotInstalled": {
+    "description": "Termux problem line: Termux is not installed."
+  },
+  "termuxProblemOutdated": "This Termux is too old for the app to use. Install the current Termux from F-Droid.",
+  "@termuxProblemOutdated": {
+    "description": "Termux problem line: the installed Termux cannot take commands from other apps."
+  },
+  "termuxProblemUnknown": "This phone couldn't check on {runtime} in Termux. Try again in a moment.",
+  "@termuxProblemUnknown": {
+    "description": "Termux problem line: something else failed; retrying may help.",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "termuxFixAllowAccess": "Allow access to Termux",
+  "@termuxFixAllowAccess": {
+    "description": "Termux fix action: shows Android's permission question."
+  },
+  "termuxFixOpenPermissions": "Open this app's permissions",
+  "@termuxFixOpenPermissions": {
+    "description": "Termux fix action: opens the app's Android settings page."
+  },
+  "termuxFixAllowOtherApps": "Allow other apps in Termux",
+  "@termuxFixAllowOtherApps": {
+    "description": "Termux fix action: opens the sheet with the line that turns on allow-external-apps."
+  },
+  "termuxFixOpenTermux": "Open Termux",
+  "@termuxFixOpenTermux": {
+    "description": "Termux fix action: opens Termux (wakes it; the copied line can be pasted there)."
+  },
+  "termuxFixRestart": "Restart {runtime} in Termux",
+  "@termuxFixRestart": {
+    "description": "Termux fix action: restarts OpenCode in Termux.",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "termuxFixGetTermux": "Get Termux",
+  "@termuxFixGetTermux": {
+    "description": "Termux fix action: opens the Termux download page."
+  },
+  "termuxFixGetCurrentTermux": "Get the current Termux",
+  "@termuxFixGetCurrentTermux": {
+    "description": "Termux fix action: opens the Termux download page to replace an old build."
+  },
+  "termuxOtherAppsTitle": "Allow other apps",
+  "@termuxOtherAppsTitle": {
+    "description": "Sheet title: the line that lets other apps run commands in Termux."
+  },
+  "termuxOtherAppsBody": "Paste this line in Termux and press Enter, then come back here. Open Termux copies it for you.",
+  "@termuxOtherAppsBody": {
+    "description": "Sheet body above the copyable allow-external-apps line."
+  },
+  "termuxLeadRunning": "OpenCode is running in Termux",
+  "@termuxLeadRunning": {
+    "description": "First screen, found on this phone: heading when OpenCode answered in Termux."
+  },
+  "termuxLeadAccessLine": "This app can't reach Termux yet. Allow access and it connects to your conversations.",
+  "@termuxLeadAccessLine": {
+    "description": "First screen, found on this phone: the line under 'OpenCode is running in Termux' when the app lacks Termux access (the heading already says OpenCode runs)."
+  },
+  "termuxLeadSetUp": "OpenCode is set up in Termux",
+  "@termuxLeadSetUp": {
+    "description": "First screen, found on this phone: heading when OpenCode is set up in Termux but not running or answering."
+  },
+  "termuxLeadTermuxOnly": "Termux is on this phone",
+  "@termuxLeadTermuxOnly": {
+    "description": "First screen, found on this phone: heading when only Termux is known."
+  },
+  "termuxLeadRunningBody": "Connect to pick up your conversations.",
+  "@termuxLeadRunningBody": {
+    "description": "First screen, found on this phone: the line under a running OpenCode in Termux."
+  },
+  "termuxLeadStoppedBody": "It's stopped. Start it to pick up your conversations.",
+  "@termuxLeadStoppedBody": {
+    "description": "First screen, found on this phone: the line under a stopped OpenCode in Termux."
+  },
+  "termuxLeadConnect": "Connect to the server in Termux",
+  "@termuxLeadConnect": {
+    "description": "First screen primary: connects to the running OpenCode in Termux."
+  },
+  "termuxLeadStart": "Start the server in Termux",
+  "@termuxLeadStart": {
+    "description": "First screen primary: starts the stopped OpenCode in Termux."
+  },
+  "termuxInAppInstead": "Set up the in-app server instead",
+  "@termuxInAppInstead": {
+    "description": "Row: a fresh start with the server that runs inside this app, offered to a Termux user."
+  },
+  "termuxInAppInsteadDetail": "A fresh start that runs inside this app. No Termux needed.",
+  "@termuxInAppInsteadDetail": {
+    "description": "Row detail under Set up the in-app server instead."
+  },
+  "termuxInAppInsteadBlocked": "A fresh start inside this app. To bring your projects from Termux, fix Termux access first.",
+  "@termuxInAppInsteadBlocked": {
+    "description": "This phone row detail: the move needs Termux, which cannot be reached now."
+  },
+  "aboutBundledComponents": "Bundled components",
+  "@aboutBundledComponents": {
+    "description": "About: row that opens the notices for parts shipped inside the app."
+  },
+  "aboutBundledComponentsDetail": "Icons, fonts and other parts shipped inside this app",
+  "@aboutBundledComponentsDetail": {
+    "description": "About: detail under Bundled components."
   }
 }
