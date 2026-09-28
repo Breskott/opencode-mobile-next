@@ -1,7 +1,12 @@
-/// Settings › Plugins (TEAM-106): the discovery card, the Plugins group with
-/// its single "AI Team" row (subtitle per state, 02-ux §1.1; "Off" or
-/// "On · This phone", docs/design/phone-server-screens-cleanup-2026-09-24.md
-/// §3), and the connected server's own plugins.
+/// Settings › Plugins (TEAM-106): the Plugins group with its single "AI
+/// Team" row (subtitle per state, 02-ux §1.1; "Off" or "On · This phone",
+/// docs/design/phone-server-screens-cleanup-2026-09-24.md §3), and the
+/// connected server's own plugins.
+///
+/// Discovery has no card of its own (review board, embedded-team-discovery-
+/// card): when the server's host answers like an AI team, the row says
+/// "Found on {server}" and carries Turn on, one consenting tap, so the team
+/// has one presence on the page.
 ///
 /// The row opens the one AI Team page ([openTeamPage], programme P3.4):
 /// the team's state, where it runs, Change address and Turn off live there
@@ -29,14 +34,13 @@ import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../widgets/builtin_team_section.dart';
 import '../../widgets/team_discover.dart' show teamStateLine;
-import '../../widgets/team_discovery_card.dart';
+import '../../widgets/team_discovery_card.dart' show TeamDiscovery;
 import '../../widgets/team_host_form.dart';
 import '../../widgets/team_switch.dart' show editTeamAddress;
 import '../../widgets/team_technical_details.dart';
 import '../team/team_page.dart';
 import 'server_plugins_section.dart';
 
-export '../../widgets/team_discovery_card.dart' show TeamDiscoveryCard;
 export '../../widgets/team_technical_details.dart' show teamReadOnly;
 
 AppLocalizations _copy(BuildContext context) =>
@@ -50,7 +54,8 @@ bool teamPhoneProfile(ServerProfile? profile) =>
     TermuxBridge.managesServerUrl(profile.baseUrl);
 
 /// The one Plugins page. "In this app" holds the plugins this app ships
-/// (AI Team · Gas City, with its discovery card); "On the server" holds the
+/// (the AI Team row, with Turn on when a team was found); "On the server"
+/// holds the
 /// connected server's plugin inventory and only exists when the server has
 /// one.
 class PluginsSettingsScreen extends StatefulWidget {
@@ -87,17 +92,24 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
   /// bar.
   final ServerPluginsActions _serverActions = ServerPluginsActions();
 
+  /// The row's Turn on is saving the found host.
+  bool _turningOn = false;
+
+  /// The last Turn on failed: nothing changed, and the row says so.
+  bool _turnOnFailed = false;
+
   @override
   void initState() {
     super.initState();
-    widget.controller.addListener(_changed);
+    widget.controller.addListener(_connectionChanged);
     _discovery.addListener(_changed);
     _serverActions.addListener(_changed);
+    _look();
   }
 
   @override
   void dispose() {
-    widget.controller.removeListener(_changed);
+    widget.controller.removeListener(_connectionChanged);
     _discovery.removeListener(_changed);
     _serverActions
       ..removeListener(_changed)
@@ -108,6 +120,35 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
 
   void _changed() {
     if (mounted) setState(() {});
+  }
+
+  void _connectionChanged() {
+    _changed();
+    _look();
+  }
+
+  /// Asks the server's host whether it runs an AI team, after the current
+  /// frame: [TeamDiscovery] notifies as soon as it starts, which must not
+  /// land inside a build. A profile switch looks again; a repeat is free.
+  void _look() => scheduleMicrotask(() {
+    if (mounted) unawaited(_discovery.ensureProbed());
+  });
+
+  /// The row's Turn on: saves the host discovery found and starts the team.
+  /// A failed save changes nothing and the row says so.
+  Future<void> _turnOn() async {
+    if (_turningOn) return;
+    setState(() {
+      _turningOn = true;
+      _turnOnFailed = false;
+    });
+    try {
+      await _discovery.turnOn();
+    } catch (_) {
+      if (mounted) setState(() => _turnOnFailed = true);
+    } finally {
+      if (mounted) setState(() => _turningOn = false);
+    }
   }
 
   /// The one AI Team page, in whatever state the team is (P3.4).
@@ -148,6 +189,8 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
     final phoneTeamOn = BuiltinTeam.isBuiltinConfig(config);
     final phoneIsTheTeam = phoneHosts && (config == null || phoneTeamOn);
     final serverPlugins = controller.capabilities.pluginInventory;
+    // A team answered on the server's host and none is set up yet.
+    final found = config == null && _discovery.result != null;
     final refresh = serverPlugins ? _serverActions.refresh : null;
     return KitScreen(
       topBar: KitTopBar(
@@ -171,13 +214,6 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
             bottom: KitScreen.endPadding(context),
           ),
           children: [
-            rails(
-              TeamDiscoveryCard(
-                controller: controller,
-                discovery: _discovery,
-                probe: widget.probe,
-              ),
-            ),
             if (phoneHosts)
               rails(
                 BuiltinTeamSection(connection: controller, profile: profile!),
@@ -237,16 +273,31 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
                     leading: KitRow.icon(context, AppIconography.extensions),
                     title: l10n.pluginsTeamRowTitle,
                     supporting: TextSpan(
-                      text: teamStateLine(
-                        l10n,
-                        controller,
-                        discovery: _discovery,
-                        now: widget.now?.call() ?? DateTime.now(),
-                      ),
+                      text: _turnOnFailed && found
+                          ? l10n.teamDiscoveryCardTurnOnFailed
+                          : _turningOn
+                          ? l10n.teamDiscoveryCardTurningOn
+                          : teamStateLine(
+                              l10n,
+                              controller,
+                              discovery: _discovery,
+                              now: widget.now?.call() ?? DateTime.now(),
+                            ),
                     ),
                     supportingKey: const ValueKey('plugins-ai-team-subtitle'),
-                    supportingMaxLines: 2,
-                    trailing: const KitChevron(),
+                    supportingMaxLines: 3,
+                    // Found on the server: Turn on is the row's own action,
+                    // one consenting tap; the row still opens the page.
+                    action: found
+                        ? KitAction(
+                            key: const ValueKey('plugins-ai-team-turn-on'),
+                            label: l10n.pluginsTeamRowTurnOn,
+                            onPressed: _turningOn
+                                ? null
+                                : () => unawaited(_turnOn()),
+                          )
+                        : null,
+                    trailing: found ? null : const KitChevron(),
                     onTap: _openTeam,
                   ),
                 ],

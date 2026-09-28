@@ -14,7 +14,7 @@ import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 import 'package:opencode_mobile/ui/widgets/appearance_picker.dart';
 import 'package:opencode_mobile/ui/widgets/language_picker.dart';
-import 'package:opencode_mobile/ui/widgets/team_discovery_card.dart';
+import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n_coverage_test.dart' show scan;
@@ -182,7 +182,10 @@ void main() {
     });
   });
 
-  group('team discovery offer', () {
+  // Review board, embedded-team-discovery-card: the offer is folded into
+  // the Plugins AI Team row ("Found on Workstation" + Turn on), so the team
+  // has one presence on the page.
+  group('team found on the server', () {
     Future<(ConnectionController, FlakyProfileStore)> pump(
       WidgetTester tester, {
       Size size = const Size(412, 915),
@@ -193,49 +196,52 @@ void main() {
       final booted = await bootWorkstation();
       addTearDown(booted.$1.dispose);
       await tester.pumpWidget(
-        _app(
-          ListView(
-            children: [
-              TeamDiscoveryCard(controller: booted.$1, probe: teamProbe),
-            ],
-          ),
-        ),
+        _app(PluginsSettingsScreen(controller: booted.$1, probe: teamProbe)),
       );
       await _settle(tester);
       return booted;
     }
 
-    testWidgets('says what was found and stacks Turn on over Not now', (
-      tester,
-    ) async {
+    String rowLine(WidgetTester tester) {
+      final text = tester.widget<Text>(
+        find.byKey(const ValueKey('plugins-ai-team-subtitle')),
+      );
+      return text.data ?? text.textSpan!.toPlainText();
+    }
+
+    testWidgets('one row says where it was found and carries Turn on, with '
+        'no separate card', (tester) async {
       await pump(tester);
+      expect(find.byKey(const ValueKey('team-discovery-card')), findsNothing);
+      expect(rowLine(tester), _l10n.pluginsTeamRowFound('Workstation'));
+      final row = find.byKey(const ValueKey('plugins-ai-team-row'));
+      final turnOn = find.byKey(const ValueKey('plugins-ai-team-turn-on'));
+      expect(find.descendant(of: row, matching: turnOn), findsOneWidget);
       expect(
-        find.text(_l10n.teamUiDiscoveryTitle('Workstation')),
+        find.descendant(of: turnOn, matching: find.text('Turn on')),
         findsOneWidget,
       );
-      final turnOn = tester.getRect(
-        find.byKey(const ValueKey('team-discovery-turn-on')),
-      );
-      final notNow = tester.getRect(
-        find.byKey(const ValueKey('team-discovery-not-now')),
-      );
-      expect(notNow.top, greaterThanOrEqualTo(turnOn.bottom));
+      // Engine words (Gas City, its version, the city) stay on the page.
+      expect(find.textContaining('Gas City'), findsNothing);
+      expect(find.textContaining('bright-lights'), findsNothing);
     });
 
-    testWidgets('a failed turn-on says so, keeps the offer and can retry', (
-      tester,
-    ) async {
+    testWidgets('a failed turn-on says so on the row, keeps Turn on and can '
+        'retry', (tester) async {
       final (controller, store) = await pump(tester);
       store.fail = true;
-      await tester.tap(find.byKey(const ValueKey('team-discovery-turn-on')));
+      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-turn-on')));
       await _settle(tester);
-      expect(find.text(_l10n.teamDiscoveryCardTurnOnFailed), findsOneWidget);
-      expect(find.byKey(const ValueKey('team-discovery-card')), findsOneWidget);
+      expect(rowLine(tester), _l10n.teamDiscoveryCardTurnOnFailed);
+      expect(controller.profile!.orchestration, isNull);
       store.fail = false;
-      await tester.tap(find.byKey(const ValueKey('team-discovery-turn-on')));
+      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-turn-on')));
       await _settle(tester);
       expect(controller.profile!.orchestration?.city, 'bright-lights');
-      expect(find.byKey(const ValueKey('team-discovery-card')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('plugins-ai-team-turn-on')),
+        findsNothing,
+      );
     });
   });
 }

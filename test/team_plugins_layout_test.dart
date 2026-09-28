@@ -254,14 +254,21 @@ void main() {
           expect(tester.takeException(), isNull);
           switch (page) {
             case 'discovery':
+              // The offer is the row's own Turn on (no separate card).
               expect(
                 find.byKey(const ValueKey('team-discovery-card')),
-                findsOneWidget,
+                findsNothing,
               );
               final row = find.byKey(const ValueKey('plugins-ai-team-row'));
               await reveal(tester, row);
               await tester.pumpAndSettle();
               expect(row.hitTestable(), findsOneWidget);
+              expect(
+                find
+                    .byKey(const ValueKey('plugins-ai-team-turn-on'))
+                    .hitTestable(),
+                findsOneWidget,
+              );
             case 'team':
               // The row opens the one AI Team page (P3.4); its switches
               // are in the top bar's menu, reachable at large text.

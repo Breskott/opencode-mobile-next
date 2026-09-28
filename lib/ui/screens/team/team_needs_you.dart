@@ -17,7 +17,6 @@ import 'package:flutter/material.dart';
 import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
-import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../widgets/relative_time.dart';
 import '../../widgets/team_controls.dart' show teamControlWord;
@@ -299,7 +298,7 @@ class _TeamNeedsYouCardState extends State<TeamNeedsYouCard> {
     ].join('\n');
     return KitRequestCard.ask(
       kind: kind,
-      icon: teamGateGlyph(gate.kind).$1,
+      icon: teamGateMark(gate.kind).icon,
       title: gate.title,
       titleKey: _key('question'),
       who: widget.title,
@@ -434,8 +433,6 @@ class TeamGateRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final (icon, tone) = teamGateGlyph(gate.kind);
-    final color = AppTheme.statusColor(Theme.of(context), tone);
     final record = teamGateMutation(controller, gate);
     final age = gate.createdAt == null
         ? null
@@ -449,7 +446,7 @@ class TeamGateRow extends StatelessWidget {
     // receipt as a word after the kind while the host has not confirmed
     // it. The row opens the Gate sheet, where Try again lives.
     return KitRow(
-      leading: KitRow.icon(context, icon, color: color),
+      leading: teamGateMark(gate.kind).leading(context),
       title: gate.title,
       titleMaxLines: 2,
       supporting: teamGateRowLine(context, [

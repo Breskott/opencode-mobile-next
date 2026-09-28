@@ -58,7 +58,12 @@ class KitRow extends StatelessWidget {
     this.server,
     this.disabledReason,
     this.selected = false,
-  }) : capability = null,
+    this.action,
+  }) : assert(
+         action == null || trailing == null,
+         'KitRow: the action takes the trailing slot; pass one or the other',
+       ),
+       capability = null,
        enable = null,
        _unavailable = false;
 
@@ -93,6 +98,7 @@ class KitRow extends StatelessWidget {
        menuLabel = null,
        swipe = null,
        selected = false,
+       action = null,
        _unavailable = true;
 
   final Widget? leading;
@@ -167,6 +173,14 @@ class KitRow extends StatelessWidget {
   /// Only on [KitRow.unavailable]: the flow that turns the capability on.
   final KitAction? enable;
 
+  /// The row's own one action, beside what a tap on the row opens (a team
+  /// found on the server: "Turn on", while the row opens the team's page):
+  /// a tertiary [KitButton] at the row's end, moved under the supporting
+  /// line from 1.3× text so the title keeps the row's width (A11Y-8), the
+  /// same place [KitRow.unavailable] puts [enable]. It takes the trailing
+  /// slot, so a row with an action has no [trailing].
+  final KitAction? action;
+
   /// Only on [KitRow.unavailable]: the capabilities.json id ("voice.model").
   final String? capability;
 
@@ -237,8 +251,10 @@ class KitRow extends StatelessWidget {
         ? math.max(titleMaxLines, 2)
         : titleMaxLines;
 
-    final enable = this.enable;
-    final enableButton = !_unavailable || enable == null
+    // The unavailable row's enable flow, or an enabled row's own action:
+    // one tertiary button, trailing, under the text from 1.3× text.
+    final enable = _unavailable ? this.enable : action;
+    final enableButton = enable == null
         ? null
         : KitButton.fromAction(
             enable,
@@ -248,7 +264,7 @@ class KitRow extends StatelessWidget {
     // From 1.3× text the enable action moves under the reason, so the
     // reason keeps the row's width instead of sharing it (A11Y-8).
     final enableBelow = enableButton != null && textScale >= 1.3;
-    final Widget? trailing = _unavailable
+    final Widget? trailing = enableButton != null
         ? (enableBelow ? null : enableButton)
         : this.trailing;
 

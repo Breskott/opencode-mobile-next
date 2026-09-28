@@ -67,6 +67,8 @@ Baseline at `ca043f36` (58 file entries, `allow` excluded). The `allow` section 
 
 ### Open: 19 G17 "attention roles" hits in the team page
 
+*Closed by slice-team-g17 (docs/qa/slice-team-g17-2026-09-28/README.md): all 19 cleared, and G17 is now absolute.*
+
 `team_vocabulary.dart` (11), `team_states.dart` (5), `team_board_card.dart` (2) and `team_home_screen.dart` (1) pass `AppStatusTone.attention` for team states. They fall into two groups:
 
 - **Degraded states that LOOK-4 says must never be amber (about 10):** not answering, stale, refresh failed, heat hold, plain-HTTP refused, unreachable, blocked, context 75 %. These become neutral.

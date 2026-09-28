@@ -68,8 +68,11 @@ KitTaskState teamBoardMark(TeamBoardCard card) {
   };
 }
 
-/// The card's one flag line and its tone; null when there is none.
-(IconData, AppStatusTone, String)? teamBoardFlag(
+/// The card's one flag line and its glyph; null when there is none. How
+/// it looks is the kit's: [KitTaskFlag] gives the needs-you flag the
+/// needs-you word and no other kind amber (amber means "needs you" only,
+/// LOOK-4), so the line carries no tone of its own.
+(IconData, String)? teamBoardFlag(
   AppLocalizations l10n,
   TeamBoardCard card, {
   TeamBoardColumn? movingTo,
@@ -77,29 +80,19 @@ KitTaskState teamBoardMark(TeamBoardCard card) {
   if (card.moving) {
     return (
       AppIconography.forward,
-      AppStatusTone.progress,
       l10n.teamBoardFlagMoving(teamBoardColumnWord(l10n, card.column)),
     );
   }
   if (card.needsYou) {
-    return (
-      AppIconography.question,
-      AppStatusTone.attention,
-      l10n.teamBoardFlagNeedsYou,
-    );
+    return (AppIconography.question, l10n.teamBoardFlagNeedsYou);
   }
   if (card.failed) {
-    return (
-      AppIconography.error,
-      AppStatusTone.failure,
-      l10n.teamBoardFlagFailed,
-    );
+    return (AppIconography.error, l10n.teamBoardFlagFailed);
   }
   if (card.isBlocked && card.column != TeamBoardColumn.done) {
     final blockers = card.blockers;
     return (
       AppIconography.blocked,
-      AppStatusTone.attention,
       blockers.isEmpty
           ? l10n.teamBoardFlagBlocked
           : blockers.length == 1
@@ -111,18 +104,10 @@ KitTaskState teamBoardMark(TeamBoardCard card) {
     );
   }
   if (card.cancelled) {
-    return (
-      AppIconography.stopCircle,
-      AppStatusTone.neutral,
-      l10n.teamBoardFlagCancelled,
-    );
+    return (AppIconography.stopCircle, l10n.teamBoardFlagCancelled);
   }
   if (card.epic case final epic?) {
-    return (
-      AppIconography.layers,
-      AppStatusTone.neutral,
-      l10n.teamBoardFlagInEpic(epic.title),
-    );
+    return (AppIconography.layers, l10n.teamBoardFlagInEpic(epic.title));
   }
   return null;
 }
@@ -139,15 +124,15 @@ KitTaskFlag? _teamBoardKitFlag(AppLocalizations l10n, TeamBoardCard card) {
     return const KitTaskFlag(kind: KitTaskFlagKind.needsYou, label: '');
   }
   if (card.failed) {
-    return KitTaskFlag(kind: KitTaskFlagKind.failed, label: flag.$3);
+    return KitTaskFlag(kind: KitTaskFlagKind.failed, label: flag.$2);
   }
   if (card.isBlocked && card.column != TeamBoardColumn.done) {
-    return KitTaskFlag(kind: KitTaskFlagKind.blocked, label: flag.$3);
+    return KitTaskFlag(kind: KitTaskFlagKind.blocked, label: flag.$2);
   }
   if (card.cancelled) {
-    return KitTaskFlag(kind: KitTaskFlagKind.stopped, label: flag.$3);
+    return KitTaskFlag(kind: KitTaskFlagKind.stopped, label: flag.$2);
   }
-  return KitTaskFlag(kind: KitTaskFlagKind.info, label: flag.$3, icon: flag.$1);
+  return KitTaskFlag(kind: KitTaskFlagKind.info, label: flag.$2, icon: flag.$1);
 }
 
 /// The kit's priority level for the app's [WorkPriority]: what a

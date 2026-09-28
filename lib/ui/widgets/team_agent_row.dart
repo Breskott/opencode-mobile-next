@@ -25,9 +25,9 @@ import 'team_vocabulary.dart';
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
-/// "ctx 63%" in the tone of [teamContextTone], for the agent's header: the
-/// kit's status tones (text2 when fine, text1 once it runs high), tabular
-/// figures, never colour-only (the number is the state).
+/// "ctx 63%" in the tone of [teamContextTone], for the agent's header:
+/// text2 when fine, text1 once it runs high, tabular figures, never
+/// colour-only (the number is the state).
 class TeamContextNumber extends StatelessWidget {
   const TeamContextNumber({
     super.key,
@@ -61,7 +61,7 @@ class TeamContextNumber extends StatelessWidget {
         label ?? l10n.teamUiAgentContextShort(percent),
         role:
             role ?? (style == null ? KitTextRole.secondary : KitTextRole.body),
-        tone: KitTokens.toneFor(tone),
+        tone: tone,
         tabular: true,
       ),
     );
@@ -111,14 +111,9 @@ class TeamAgentRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final (icon, tone) = teamAgentGlyph(teamSessionState(agent));
     return KitRow(
       key: ValueKey('$keyPrefix-${agent.id}'),
-      leading: KitRow.icon(
-        context,
-        icon,
-        color: KitTokens.toneColor(KitTokens.of(context).roles, tone),
-      ),
+      leading: teamAgentMark(teamSessionState(agent)).leading(context),
       title: teamAgentRoleWord(l10n, teamAgentRole(agent)),
       supporting: TextSpan(text: teamAgentLine(l10n, agent, work, now)),
       supportingKey: ValueKey('$keyPrefix-state-${agent.id}'),

@@ -187,7 +187,9 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
   });
 
   Future<void> _showGuide() async {
-    await showTeamHostGuideSheet(context);
+    // The guide's next step is the address: its "Enter the address" opens
+    // the same form as this page's own action.
+    await showTeamHostGuideSheet(context, enterAddress: _enterAddress);
     // Installed it in the meantime? Look again.
     if (mounted) setState(_look);
   }
@@ -382,7 +384,12 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
                   KitAction(
                     key: const ValueKey('team-intro-on-computer'),
                     label: l10n.teamDiscoverOnComputer,
-                    onPressed: () => unawaited(showTeamHostGuideSheet(context)),
+                    onPressed: () => unawaited(
+                      showTeamHostGuideSheet(
+                        context,
+                        enterAddress: _enterAddress,
+                      ),
+                    ),
                   ),
                 ],
               ),

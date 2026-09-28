@@ -8852,7 +8852,7 @@
   "@teamUiAccessReadOnly": {
     "description": "Access value when the phone can only watch the team"
   },
-  "teamUiAddAddressHint": "http://100.x.x.x:8372",
+  "teamUiAddAddressHint": "http://100.x.x.x:8373",
   "@teamUiAddAddressHint": {
     "description": "Hint inside the host address field of the manual add form"
   },
@@ -8892,20 +8892,6 @@
   "@teamUiDisclaimerPhone": {
     "description": "Performance disclaimer for a team hosted on this phone"
   },
-  "teamUiDiscoveryNotNow": "Not now",
-  "@teamUiDiscoveryNotNow": {
-    "description": "Discovery card action that dismisses the offer for this server"
-  },
-  "teamUiDiscoveryTitle": "{server} also runs an AI team. Turn it on?",
-  "@teamUiDiscoveryTitle": {
-    "description": "Discovery card headline when the server host answers on the AI Team port",
-    "placeholders": {
-      "server": {
-        "type": "String",
-        "example": "Development PC"
-      }
-    }
-  },
   "teamUiEditorBody": "If this computer runs Gas City, the app can find it automatically.",
   "@teamUiEditorBody": {
     "description": "One-line copy of the AI Team (optional) section in the server editor"
@@ -8932,7 +8918,7 @@
   "@teamUiHostGuideStep1": {
     "description": "Host guide step 1"
   },
-  "teamUiHostGuideStep2": "Save the city file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:",
+  "teamUiHostGuideStep2": "Save the team file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:",
   "@teamUiHostGuideStep2": {
     "description": "Host guide step 2"
   },
@@ -9149,34 +9135,6 @@
   "teamUiVerdictCityNotRunning": "The team host is starting. Try again in a moment.",
   "@teamUiVerdictCityNotRunning": {
     "description": "Verdict when the supervisor answered but the city is not running"
-  },
-  "teamUiVerdictFound": "Gas City {version} · city {city} · read-only",
-  "@teamUiVerdictFound": {
-    "description": "Verdict chip for a found host without a front",
-    "placeholders": {
-      "version": {
-        "type": "String",
-        "example": "1.4.1"
-      },
-      "city": {
-        "type": "String",
-        "example": "bright-lights"
-      }
-    }
-  },
-  "teamUiVerdictFoundControls": "Gas City {version} · city {city} · decisions and controls",
-  "@teamUiVerdictFoundControls": {
-    "description": "Verdict chip for a found host with a front",
-    "placeholders": {
-      "version": {
-        "type": "String",
-        "example": "1.4.1"
-      },
-      "city": {
-        "type": "String",
-        "example": "bright-lights"
-      }
-    }
   },
   "teamUiVerdictNotGasCity": "This server doesn't run an AI team yet. Set one up on the computer — it takes a few minutes.",
   "@teamUiVerdictNotGasCity": {
@@ -14283,6 +14241,10 @@
         "type": "String"
       }
     }
+  },
+  "pluginsTeamRowTurnOn": "Turn on",
+  "@pluginsTeamRowTurnOn": {
+    "description": "Plugins, the AI Team row when a team was found on the server: the row's own action that saves the found host and starts the team (the row title already names AI Team)"
   },
   "pluginsLoading": "Loading plugins",
   "@pluginsLoading": {
@@ -23016,10 +22978,6 @@
       }
     }
   },
-  "teamDiscoverTurnOnNamed": "Turn on AI Team",
-  "@teamDiscoverTurnOnNamed": {
-    "description": "AI Team offer card: the button that turns the AI Team on."
-  },
   "serverSettingsChangeSignIn": "Change sign-in for {server}",
   "@serverSettingsChangeSignIn": {
     "description": "Server settings: the row that opens this server in the editor to change its password.",
@@ -27508,6 +27466,10 @@
   "teamUiHostGuideOpen": "Open the full guide",
   "@teamUiHostGuideOpen": {
     "description": "Host guide sheet: opens docs/ai-team-host.md on GitHub in the browser"
+  },
+  "teamUiHostGuideEnterAddress": "Enter the address",
+  "@teamUiHostGuideEnterAddress": {
+    "description": "Host guide sheet: the primary action, the next step after the host steps; opens the form for the team's address"
   },
   "hostServiceInstallChecked": "Downloads the script from release {release} and checks its SHA-256 checksum first. If the file was changed, nothing runs.",
   "@hostServiceInstallChecked": {

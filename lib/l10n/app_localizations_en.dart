@@ -8813,7 +8813,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiAccessReadOnly => 'Read-only';
 
   @override
-  String get teamUiAddAddressHint => 'http://100.x.x.x:8372';
+  String get teamUiAddAddressHint => 'http://100.x.x.x:8373';
 
   @override
   String get teamUiAddAddressLabel => 'Address';
@@ -8845,14 +8845,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Android may stop it when the screen is off; slower than a computer';
 
   @override
-  String get teamUiDiscoveryNotNow => 'Not now';
-
-  @override
-  String teamUiDiscoveryTitle(String server) {
-    return '$server also runs an AI team. Turn it on?';
-  }
-
-  @override
   String get teamUiEditorBody =>
       'If this computer runs Gas City, the app can find it automatically.';
 
@@ -8874,7 +8866,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiHostGuideStep2 =>
-      'Save the city file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:';
+      'Save the team file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:';
 
   @override
   String get teamUiHostGuideStep3 =>
@@ -9029,16 +9021,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamUiVerdictCityNotRunning =>
       'The team host is starting. Try again in a moment.';
-
-  @override
-  String teamUiVerdictFound(String version, String city) {
-    return 'Gas City $version · city $city · read-only';
-  }
-
-  @override
-  String teamUiVerdictFoundControls(String version, String city) {
-    return 'Gas City $version · city $city · decisions and controls';
-  }
 
   @override
   String get teamUiVerdictNotGasCity =>
@@ -13033,6 +13015,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String pluginsTeamRowFound(String server) {
     return 'Found on $server';
   }
+
+  @override
+  String get pluginsTeamRowTurnOn => 'Turn on';
 
   @override
   String get pluginsLoading => 'Loading plugins';
@@ -19536,9 +19521,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamDiscoverTurnOnNamed => 'Turn on AI Team';
-
-  @override
   String serverSettingsChangeSignIn(String server) {
     return 'Change sign-in for $server';
   }
@@ -22913,6 +22895,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiHostGuideOpen => 'Open the full guide';
+
+  @override
+  String get teamUiHostGuideEnterAddress => 'Enter the address';
 
   @override
   String hostServiceInstallChecked(String release) {

@@ -2,20 +2,7 @@
   "G2": {},
   "G7": {},
   "G15x": {},
-  "G17": {
-    "lib/ui/screens/team/team_home_screen.dart": {
-      "attention roles": 1
-    },
-    "lib/ui/screens/team/team_states.dart": {
-      "attention roles": 5
-    },
-    "lib/ui/widgets/team_board_card.dart": {
-      "attention roles": 2
-    },
-    "lib/ui/widgets/team_vocabulary.dart": {
-      "attention roles": 11
-    }
-  },
+  "G17": {},
   "G21": {},
   "G48": {},
   "allow": {

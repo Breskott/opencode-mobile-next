@@ -1,16 +1,14 @@
-/// The one-time discovery offer of 02-ux §1.2: when the connected server
-/// has no AI Team config and its own host answers like a Gas City on port
+/// The discovery of 02-ux §1.2: when the connected server has no AI Team
+/// config, its own host is asked whether it answers like a Gas City on port
 /// 8373 (the host front, which gives controls) or 8372 (the bare
-/// supervisor, read-only), a quiet kit panel asks "… also runs an AI team.
-/// Turn it on?", says what was found, and stacks Turn on over Not now on a
-/// phone. The front port is tried first and preferred. Never a
-/// modal; "Not now" is remembered per server through
-/// [OrchestrationStore.dismissDiscovery]. Absent from the tree in every
-/// other state, so a screen can place it unconditionally (TEAM-107 puts it
-/// on Workspace; Settings › Plugins shows it at the top).
+/// supervisor, read-only); the front port is tried first and preferred.
+/// What it finds is shown where the team already is, never as a card of its
+/// own: the Plugins row says "Found on {server}" with Turn on, and the AI
+/// Team page offers Turn on (review board, embedded-team-discovery-card:
+/// one team, one presence). A dismissal remembered through
+/// [OrchestrationStore.dismissDiscovery] (turning a team off) stops the
+/// asking for that server.
 library;
-
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -18,12 +16,6 @@ import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/profiles.dart';
-import '../app_theme.dart';
-import '../kit/kit_buttons.dart';
-import '../kit/kit_notice.dart';
-import '../kit/kit_surface.dart';
-import '../kit/kit_text.dart';
-import '../kit/kit_tokens.dart';
 import 'team_host_form.dart';
 
 /// What discovery found for a profile, shared with the Plugins row so it can
@@ -177,155 +169,6 @@ class TeamDiscovery extends ChangeNotifier {
     }
     controller.syncOrchestration();
     _reset();
-  }
-}
-
-/// The card. Renders nothing until [discovery] found a host.
-class TeamDiscoveryCard extends StatefulWidget {
-  const TeamDiscoveryCard({
-    super.key,
-    required this.controller,
-    this.discovery,
-    this.probe,
-  });
-
-  final ConnectionController controller;
-
-  /// A discovery shared with sibling widgets; the card owns one otherwise.
-  final TeamDiscovery? discovery;
-  final TeamHostProbe? probe;
-
-  @override
-  State<TeamDiscoveryCard> createState() => _TeamDiscoveryCardState();
-}
-
-class _TeamDiscoveryCardState extends State<TeamDiscoveryCard> {
-  late TeamDiscovery _discovery;
-  bool _owned = false;
-  bool _turningOn = false;
-  bool _failed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _adopt();
-  }
-
-  void _adopt() {
-    final shared = widget.discovery;
-    _owned = shared == null;
-    _discovery =
-        shared ?? TeamDiscovery(widget.controller, probe: widget.probe);
-    _discovery.addListener(_changed);
-    widget.controller.addListener(_connectionChanged);
-    _kick();
-  }
-
-  /// Probes after the current frame: [TeamDiscovery] notifies as soon as
-  /// it starts, which must not land inside a build.
-  void _kick() => scheduleMicrotask(() {
-    if (mounted) unawaited(_discovery.ensureProbed());
-  });
-
-  void _release() {
-    _discovery.removeListener(_changed);
-    widget.controller.removeListener(_connectionChanged);
-    if (_owned) _discovery.dispose();
-  }
-
-  @override
-  void didUpdateWidget(TeamDiscoveryCard old) {
-    super.didUpdateWidget(old);
-    if (old.discovery != widget.discovery ||
-        old.controller != widget.controller) {
-      _release();
-      _adopt();
-    }
-  }
-
-  void _changed() {
-    if (mounted) setState(() {});
-  }
-
-  void _connectionChanged() => _kick();
-
-  @override
-  void dispose() {
-    _release();
-    super.dispose();
-  }
-
-  Future<void> _turnOn() async {
-    if (_turningOn) return;
-    setState(() {
-      _turningOn = true;
-      _failed = false;
-    });
-    try {
-      await _discovery.turnOn();
-    } catch (_) {
-      if (mounted) setState(() => _failed = true);
-    } finally {
-      if (mounted) setState(() => _turningOn = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final result = _discovery.result;
-    final profile = widget.controller.profile;
-    if (result == null || profile == null || profile.orchestration != null) {
-      return const SizedBox.shrink();
-    }
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final tokens = KitTokens.of(context);
-    return Padding(
-      padding: EdgeInsetsDirectional.only(bottom: tokens.space3),
-      child: KitSurface.panel(
-        key: const ValueKey('team-discovery-card'),
-        icon: AppIconography.extensions,
-        title: l10n.teamUiDiscoveryTitle(profile.name),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            KitText(
-              teamFoundCopy(l10n, result.found),
-              role: KitTextRole.secondary,
-            ),
-            if (_failed) ...[
-              SizedBox(height: tokens.space2),
-              KitNotice(
-                key: const ValueKey('team-discovery-failed'),
-                message: l10n.teamDiscoveryCardTurnOnFailed,
-                tone: AppStatusTone.failure,
-              ),
-            ],
-            SizedBox(height: tokens.space3),
-            KitActionBlock(
-              primary: KitAction(
-                key: const ValueKey('team-discovery-turn-on'),
-                label: l10n.teamDiscoverTurnOnNamed,
-                working: _turningOn,
-                onPressed: _turnOn,
-              ),
-              tertiary: [
-                KitAction(
-                  key: const ValueKey('team-discovery-not-now'),
-                  label: l10n.teamUiDiscoveryNotNow,
-                  onPressed: _turningOn
-                      ? null
-                      : () => unawaited(_discovery.dismiss()),
-                  disabledReason: _turningOn
-                      ? l10n.teamDiscoveryCardTurningOn
-                      : null,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

@@ -645,7 +645,6 @@ class _Changes extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = _copy(context);
     final tokens = KitTokens.of(context);
-    final theme = Theme.of(context);
     final changes = readiness?.changes ?? const <MergeChange>[];
     final work = [
       for (final item in controller.snapshot.work)
@@ -708,14 +707,7 @@ class _Changes extends StatelessWidget {
               for (final item in work)
                 KitRow(
                   key: ValueKey('team-merge-work-${item.id}'),
-                  leading: KitRow.icon(
-                    context,
-                    teamWorkGlyph(item.state).$1,
-                    color: AppTheme.statusColor(
-                      theme,
-                      teamWorkGlyph(item.state).$2,
-                    ),
-                  ),
+                  leading: teamWorkMark(item.state).leading(context),
                   title: item.title,
                   supporting: TextSpan(
                     text: teamWorkStateWord(l10n, item.state),

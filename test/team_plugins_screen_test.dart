@@ -1,6 +1,7 @@
 // TEAM-106: Settings › Plugins — the AI Team row per state, the manual-add
-// form and its verdicts (tailnet rule, no network), the discovery card and
-// its memory, and the turn-off sheet's copy and effects. Since P3.4 the row
+// form and its verdicts (tailnet rule, no network), a team found on the
+// server (the row's own Turn on, no separate card) and the dismissal memory,
+// and the turn-off sheet's copy and effects. Since P3.4 the row
 // opens the one AI Team page, where the address and Turn off live (the AI
 // Team sheet is gone).
 
@@ -277,7 +278,10 @@ void main() {
         ('http://100.100.1.2:8373', null),
         ('http://100.100.1.2:8372', null),
       ]);
-      expect(find.byKey(const ValueKey('team-discovery-card')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('plugins-ai-team-turn-on')),
+        findsNothing,
+      );
     });
 
     testWidgets('discovery prefers a front on 8373 (TEAM-202)', (tester) async {
@@ -302,8 +306,7 @@ void main() {
       await settle(tester);
       // Found on the front: the supervisor port is never asked.
       expect(probe.calls, [('http://100.100.1.2:8373', null)]);
-      expect(find.byKey(const ValueKey('team-discovery-card')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('team-discovery-turn-on')));
+      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-turn-on')));
       await settle(tester);
       final config = controller.profile!.orchestration;
       expect(config?.url, 'http://100.100.1.2:8373');
@@ -328,7 +331,12 @@ void main() {
       await pump(tester, controller);
       await settle(tester);
       expect(subtitle(tester), l10n.pluginsTeamRowFound('Workstation'));
-      expect(find.byKey(const ValueKey('team-discovery-card')), findsOneWidget);
+      // One presence: the row carries Turn on; there is no separate card.
+      expect(find.byKey(const ValueKey('team-discovery-card')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('plugins-ai-team-turn-on')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('on and healthy with a front', (tester) async {
@@ -703,34 +711,21 @@ void main() {
     });
   });
 
-  group('discovery card', () {
-    testWidgets('appears once and stays dismissed', (tester) async {
+  group('found on the server: the row turns it on', () {
+    testWidgets('a dismissed server is not asked again and shows no Turn on', (
+      tester,
+    ) async {
       probe.verdicts['http://100.100.1.2:8372'] = _found();
       final controller = await boot(profile());
+      await controller.orchestrationStore.dismissDiscovery(_profileId);
       await pump(tester, controller);
       await settle(tester);
-      final card = find.byKey(const ValueKey('team-discovery-card'));
-      expect(card, findsOneWidget);
-      expect(
-        find.text(l10n.teamUiDiscoveryTitle('Workstation')),
-        findsOneWidget,
-      );
-      await tester.tap(find.byKey(const ValueKey('team-discovery-not-now')));
-      await settle(tester);
-      expect(card, findsNothing);
-      expect(
-        prefs.getString(OrchestrationStore.discoveryDismissedKey(_profileId)),
-        isNotNull,
-      );
-      expect(subtitle(tester), l10n.teamUiRowOff);
-
-      // A fresh screen remembers the dismissal and does not probe again.
-      probe.calls.clear();
-      await tester.pumpWidget(const SizedBox.shrink());
-      await pump(tester, controller);
-      await settle(tester);
-      expect(card, findsNothing);
       expect(probe.calls, isEmpty);
+      expect(subtitle(tester), l10n.teamUiRowOff);
+      expect(
+        find.byKey(const ValueKey('plugins-ai-team-turn-on')),
+        findsNothing,
+      );
       // The dismissal lives under the profile's sweep prefix.
       expect(
         OrchestrationStore.discoveryDismissedKey(_profileId),
@@ -738,17 +733,20 @@ void main() {
       );
     });
 
-    testWidgets('turn on saves the found host', (tester) async {
+    testWidgets('Turn on saves the found host', (tester) async {
       probe.verdicts['http://100.100.1.2:8372'] = _found();
       final controller = await boot(profile());
       await pump(tester, controller);
       await settle(tester);
-      await tester.tap(find.byKey(const ValueKey('team-discovery-turn-on')));
+      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-turn-on')));
       await settle(tester);
       final config = controller.profile!.orchestration;
       expect(config?.url, 'http://100.100.1.2:8372');
       expect(config?.city, 'bright-lights');
-      expect(find.byKey(const ValueKey('team-discovery-card')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('plugins-ai-team-turn-on')),
+        findsNothing,
+      );
       expect(controller.orchestration, isNotNull);
     });
 
@@ -757,7 +755,10 @@ void main() {
       final controller = await boot(profile(config: fixtureConfig()));
       await pump(tester, controller);
       await settle(tester);
-      expect(find.byKey(const ValueKey('team-discovery-card')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('plugins-ai-team-turn-on')),
+        findsNothing,
+      );
       expect(probe.calls, isEmpty);
     });
   });
