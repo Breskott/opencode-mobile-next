@@ -44,6 +44,7 @@
         android:fullBackupContent="@xml/backup_rules"
         android:usesCleartextTraffic="false"
         android:enableOnBackInvokedCallback="true"
+        android:manageSpaceActivity=".ManageSpaceActivity"
         android:networkSecurityConfig="@xml/network_security_config">
         <activity
             android:name=".MainActivity"
@@ -96,6 +97,26 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="${appShortcuts}" />
+        </activity>
+        <!-- App info › Storage: "Clear storage" becomes "Manage space" and
+             opens this page first (ManageSpaceActivity.kt): what clearing
+             deletes (the in-app server, its projects and conversations),
+             Export projects first, Clear the app's cache only, and Delete
+             everything after an explicit confirm. Its own Flutter engine
+             runs manageSpaceMain, so it works while the app is not running.
+             Exported for Settings; it reads no extras. -->
+        <activity
+            android:name=".ManageSpaceActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
         </activity>
         <service
             android:name=".TermuxResultService"

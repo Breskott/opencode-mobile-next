@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../builtin/app_exit_recovery.dart' show appLifecycleBridgeProvider;
 import '../../builtin/builtin_linux.dart';
 import '../../builtin/builtin_server.dart';
+import '../../builtin/project_export.dart' show MethodChannelProjectExport;
+import '../../builtin/project_export_controller.dart';
 import '../../builtin/setup/component_removal.dart';
 import '../../builtin/setup/components.dart' show SetupComponentIds;
 import '../../builtin/setup/phone_setup.dart';
@@ -32,6 +34,7 @@ import '../widgets/termux_migration_entry.dart';
 import '../widgets/termux_phone_tools.dart';
 import 'keep_running_screen.dart';
 import 'local_agent_screen.dart';
+import 'manage_space_screen.dart' show ProjectExportScreen;
 import 'phone_setup/phone_setup_routes.dart';
 import 'phone_setup/phone_setup_selection.dart';
 import 'phone_setup/phone_setup_termux_job_screen.dart';
@@ -945,6 +948,24 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
                     formatPhoneStorage(_host.bytesUsed!),
                     chevron: false,
                   ),
+          ),
+        if (inApp)
+          KitRow(
+            key: const ValueKey('this-phone-export-projects'),
+            leading: icon(AppIconography.zip),
+            title: l10n.thisPhoneExportProjects,
+            supporting: TextSpan(text: l10n.thisPhoneExportProjectsDetail),
+            trailing: const KitChevron(),
+            onTap: () => unawaited(
+              pushKitPage<void>(
+                context,
+                (_) => ProjectExportScreen(
+                  controller: ProjectExportController(
+                    platform: MethodChannelProjectExport(),
+                  ),
+                ),
+              ),
+            ),
           )
         else ...[
           const TermuxStorageRow(),

@@ -28652,5 +28652,258 @@
         "type": "String"
       }
     }
+  },
+  "manageSpaceTitle": "Clear this app's storage",
+  "@manageSpaceTitle": {
+    "description": "Manage-space page (Android App info › Storage › Manage space): page title."
+  },
+  "manageSpaceMeasuring": "Measuring what is stored…",
+  "@manageSpaceMeasuring": {
+    "description": "Manage-space and Export projects pages: loading label while sizes are measured."
+  },
+  "manageSpaceIntro": "Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone. Export your projects first if you want to keep them.",
+  "@manageSpaceIntro": {
+    "description": "Manage-space page: the warning at the top."
+  },
+  "manageSpaceExportFirst": "Export projects first",
+  "@manageSpaceExportFirst": {
+    "description": "Manage-space page: the export row's title."
+  },
+  "manageSpaceClearCache": "Clear the app's cache only",
+  "@manageSpaceClearCache": {
+    "description": "Manage-space page: the safe action's title."
+  },
+  "manageSpaceClearCacheDetail": "Frees {size}. Projects, servers and settings stay.",
+  "@manageSpaceClearCacheDetail": {
+    "description": "Manage-space page: under Clear the app's cache only, with the measured cache size.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "manageSpaceClearCacheKeeps": "Projects, servers and settings stay.",
+  "@manageSpaceClearCacheKeeps": {
+    "description": "Manage-space page: under Clear the app's cache only, when the cache size is unknown or empty."
+  },
+  "manageSpaceCacheCleared": "Cache cleared. {size} freed.",
+  "@manageSpaceCacheCleared": {
+    "description": "Manage-space page: after clearing the cache.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "manageSpaceCacheFailed": "Could not clear the cache. Try again.",
+  "@manageSpaceCacheFailed": {
+    "description": "Manage-space page: clearing the cache failed."
+  },
+  "manageSpaceTryAgain": "Try again",
+  "@manageSpaceTryAgain": {
+    "description": "Manage-space and Export projects pages: retry action."
+  },
+  "manageSpaceDeleteAll": "Delete everything",
+  "@manageSpaceDeleteAll": {
+    "description": "Manage-space page: the destructive row and its confirm button."
+  },
+  "manageSpaceDeleteAllDetail": "Deletes all of the list below and closes the app",
+  "@manageSpaceDeleteAllDetail": {
+    "description": "Manage-space page: under Delete everything."
+  },
+  "manageSpaceDeleteTitle": "Delete everything?",
+  "@manageSpaceDeleteTitle": {
+    "description": "Manage-space page: the delete confirm's title."
+  },
+  "manageSpaceDeleteBody": "OpenCode Mobile then starts again as if it were new. This cannot be undone.",
+  "@manageSpaceDeleteBody": {
+    "description": "Manage-space page: the delete confirm's body."
+  },
+  "manageSpaceLostServer": "The in-app server and its conversations",
+  "@manageSpaceLostServer": {
+    "description": "Manage-space delete confirm: lost item."
+  },
+  "manageSpaceLostProjects": "{count, plural, =1{1 project ({size})} other{{count} projects ({size})}}",
+  "@manageSpaceLostProjects": {
+    "description": "Manage-space delete confirm: lost projects with total size.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "manageSpaceLostSettings": "{count, plural, =0{All settings} =1{1 saved server and all settings} other{{count} saved servers and all settings}}",
+  "@manageSpaceLostSettings": {
+    "description": "Manage-space delete confirm: lost saved servers and settings.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "manageSpaceKeptAll": "Termux, your computers and anything pushed to git stay",
+  "@manageSpaceKeptAll": {
+    "description": "Manage-space delete confirm: what is kept."
+  },
+  "manageSpaceWaitForExport": "Wait for the export to finish",
+  "@manageSpaceWaitForExport": {
+    "description": "Manage-space page: why an action is off during an export."
+  },
+  "manageSpaceDeletedLabel": "Clearing deletes",
+  "@manageSpaceDeletedLabel": {
+    "description": "Manage-space page: label of the list of what is deleted."
+  },
+  "manageSpaceServer": "The in-app server",
+  "@manageSpaceServer": {
+    "description": "Manage-space page: the in-app Ubuntu and OpenCode row."
+  },
+  "manageSpaceServerDetail": "Ubuntu, OpenCode, its sign-ins and its conversations",
+  "@manageSpaceServerDetail": {
+    "description": "Manage-space page: under The in-app server."
+  },
+  "manageSpaceSettings": "Saved servers and settings",
+  "@manageSpaceSettings": {
+    "description": "Manage-space page: settings row title."
+  },
+  "manageSpaceSavedServers": "{count, plural, =0{No saved servers} =1{1 saved server} other{{count} saved servers}}",
+  "@manageSpaceSavedServers": {
+    "description": "Manage-space page: under Saved servers and settings.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "manageSpaceKeptLabel": "Stays",
+  "@manageSpaceKeptLabel": {
+    "description": "Manage-space page: label of the list of what is kept."
+  },
+  "manageSpaceKeptTermux": "Termux and the projects in it",
+  "@manageSpaceKeptTermux": {
+    "description": "Manage-space page: kept row."
+  },
+  "manageSpaceKeptComputers": "Your computers and their servers",
+  "@manageSpaceKeptComputers": {
+    "description": "Manage-space page: kept row."
+  },
+  "manageSpaceKeptGit": "Anything you pushed to git",
+  "@manageSpaceKeptGit": {
+    "description": "Manage-space page: kept row."
+  },
+  "projectExportDetail": "{count, plural, =1{1 project, {size}, as one zip file where you choose} other{{count} projects, {size}, as one zip file where you choose}}",
+  "@projectExportDetail": {
+    "description": "Export row: what it saves and where.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "projectExportNoProjects": "No projects on the in-app server yet",
+  "@projectExportNoProjects": {
+    "description": "Export row/page: nothing in the projects folder."
+  },
+  "projectExportSave": "Save as a zip file",
+  "@projectExportSave": {
+    "description": "Export projects page: the act's title."
+  },
+  "projectExportRunning": "Exporting projects",
+  "@projectExportRunning": {
+    "description": "Export progress row title."
+  },
+  "projectExportPreparing": "Listing files…",
+  "@projectExportPreparing": {
+    "description": "Export progress row: before bytes are written."
+  },
+  "projectExportProgress": "{done} of {total}",
+  "@projectExportProgress": {
+    "description": "Export progress row: bytes written of the total.",
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "projectExportStop": "Stop the export",
+  "@projectExportStop": {
+    "description": "Export: cancel row title."
+  },
+  "projectExportStopDetail": "The half-written file is deleted",
+  "@projectExportStopDetail": {
+    "description": "Export: under Stop the export."
+  },
+  "projectExportPrivate": "Include sign-ins and conversations",
+  "@projectExportPrivate": {
+    "description": "Export: switch that makes a private export."
+  },
+  "projectExportPrivateDetail": "Private: anyone with the file can use your accounts",
+  "@projectExportPrivateDetail": {
+    "description": "Export: under the private switch."
+  },
+  "projectExportDone": "Projects exported: {size} in {files} files.",
+  "@projectExportDone": {
+    "description": "Export finished.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      },
+      "files": {
+        "type": "int"
+      }
+    }
+  },
+  "projectExportDonePrivate": "This file holds sign-ins. Keep it private.",
+  "@projectExportDonePrivate": {
+    "description": "Export finished: note for a private export."
+  },
+  "projectExportDoneLeftOut": "{count, plural, =1{1 file with sign-ins or keys was left out.} other{{count} files with sign-ins or keys were left out.}}",
+  "@projectExportDoneLeftOut": {
+    "description": "Export finished: note that credential files were not included.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectExportStopped": "Export stopped. Nothing was saved.",
+  "@projectExportStopped": {
+    "description": "Export cancelled by the person."
+  },
+  "projectExportFailedDestination": "Could not write to the place you chose. Try again, or pick another place.",
+  "@projectExportFailedDestination": {
+    "description": "Export failed: the destination refused or went away."
+  },
+  "projectExportFailedSpace": "The place you chose is full. Free some space there or pick another place.",
+  "@projectExportFailedSpace": {
+    "description": "Export failed: destination full."
+  },
+  "projectExportFailedSource": "A project file could not be read. Try again.",
+  "@projectExportFailedSource": {
+    "description": "Export failed: reading a project file failed."
+  },
+  "projectExportFailed": "The export stopped before it finished. Try again.",
+  "@projectExportFailed": {
+    "description": "Export failed for another reason."
+  },
+  "projectExportProjectsLabel": "Projects",
+  "@projectExportProjectsLabel": {
+    "description": "Export projects page: label of the project list."
+  },
+  "thisPhoneExportProjects": "Export projects",
+  "@thisPhoneExportProjects": {
+    "description": "This phone (in-app server): row and page title for backing up projects."
+  },
+  "thisPhoneExportProjectsDetail": "Save them as a zip file, to keep or move",
+  "@thisPhoneExportProjectsDetail": {
+    "description": "This phone: under Export projects."
   }
 }

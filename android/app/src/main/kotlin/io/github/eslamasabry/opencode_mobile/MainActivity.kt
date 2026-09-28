@@ -45,6 +45,7 @@ class MainActivity : FlutterActivity() {
     private var readAloud: ReadAloudBridge? = null
     private var localPdf: LocalPdfBridge? = null
     private var networkMonitor: NetworkMonitor? = null
+    private var projectExport: ProjectExportBridge? = null
     private val voiceDownloadNotifications by lazy { VoiceDownloadNotifications(this) }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -56,6 +57,9 @@ class MainActivity : FlutterActivity() {
         localPdf = LocalPdfBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         readAloud?.dispose()
         readAloud = ReadAloudBridge(this, flutterEngine.dartExecutor.binaryMessenger)
+        // Export projects on This phone (oc/project_export).
+        projectExport?.dispose()
+        projectExport = ProjectExportBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         captureCodingAlertOpen(intent)
         captureSharedText(intent)
         captureLaunchAction(intent)
@@ -333,6 +337,8 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        projectExport?.dispose()
+        projectExport = null
         networkMonitor?.dispose()
         networkMonitor = null
         localPdf?.dispose()
@@ -347,6 +353,11 @@ class MainActivity : FlutterActivity() {
         linkChannel = null
         linkDartReady = false
         super.cleanUpFlutterEngine(flutterEngine)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (projectExport?.onActivityResult(requestCode, resultCode, data) == true) return
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onResume() {
