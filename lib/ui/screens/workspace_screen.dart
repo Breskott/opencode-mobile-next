@@ -13,10 +13,12 @@ import '../../state/interaction_defaults.dart';
 import '../../state/nudges.dart';
 import '../../domain/orchestration_gateway.dart' show OrchestrationRun;
 import '../../state/orchestration.dart';
+import '../../state/session_inventory_cache.dart' show SessionInventoryPreview;
 import '../desktop/desktop_interaction.dart';
 import '../navigation/chat_route.dart';
 import '../widgets/default_notices.dart';
 import '../widgets/grace_timer.dart';
+import '../widgets/last_known_sessions.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/other_servers_panel.dart';
 import '../widgets/other_projects_panel.dart';
@@ -988,6 +990,19 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 ),
               )
             else ...[
+              // The first read failed with nothing listed yet: the titles
+              // from last time stay, read-only, beside the failure the
+              // pager says (codex-speed contract item 1).
+              if (head.isEmpty &&
+                  recent.isEmpty &&
+                  controller.sessionsError != null)
+                if (_lastKnown case final lastKnown?)
+                  SliverToBoxAdapter(
+                    child: LastKnownSessions(
+                      preview: lastKnown,
+                      refreshing: false,
+                    ),
+                  ),
               if (head.isNotEmpty)
                 SliverToBoxAdapter(child: KitAnimatedRows(children: head)),
               SliverList.builder(
@@ -1141,8 +1156,16 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
             controller.status == StreamStatus.disconnected &&
             controller.connectionError != null &&
             !controller.manualReconnectInProgress;
-        if (!lost || !(overdue || failed)) return const KitSkeletonRows();
-        return KitStateView(
+        // What this list held last time stands in for the skeletons, so
+        // the tab opens with the person's own titles (codex-speed contract
+        // item 1); a different project or server has no such rows.
+        final lastKnown = _lastKnown;
+        if (!lost || !(overdue || failed)) {
+          return lastKnown == null
+              ? const KitSkeletonRows()
+              : LastKnownSessions(preview: lastKnown);
+        }
+        final notAnswering = KitStateView(
           key: const ValueKey('work-not-answering-list'),
           size: KitStateSize.inline,
           liveRegion: false,
@@ -1151,8 +1174,24 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           title: l10n.workNotAnsweringListTitle,
           body: l10n.workNotAnsweringListBody,
         );
+        if (lastKnown == null) return notAnswering;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            notAnswering,
+            LastKnownSessions(preview: lastKnown, refreshing: !failed),
+          ],
+        );
       },
     );
+  }
+
+  /// The titles this list showed last time for this exact server and
+  /// project, or null (none saved, or nothing in them).
+  SessionInventoryPreview? get _lastKnown {
+    final cached = widget.controller.cachedSessionInventory;
+    return cached != null && cached.sessions.isNotEmpty ? cached : null;
   }
 
   /// The one status line, in priority order: server not answering (inside
