@@ -350,8 +350,12 @@ void main() {
     addTearDown(controller.dispose);
     await _open(tester, controller, textScale: 2);
 
+    // At 2x text the kind choice stacks (KIT-24); bring the row into view.
+    await tester.ensureVisible(find.text('Local command'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Local command'));
     await tester.pumpAndSettle();
+    await _reveal(tester, const ValueKey('mcp-name'));
     await tester.enterText(
       find.byKey(const ValueKey('mcp-name')),
       'local-tools',
