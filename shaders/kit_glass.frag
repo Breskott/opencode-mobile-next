@@ -1,16 +1,25 @@
 // KitGlass: a liquid-glass backdrop filter (design standard §10, glass).
 //
-// Runs as ImageFilter.compose(outer: this shader, inner: a small blur) inside
-// a BackdropFilterLayer, clipped by the widget's rounded rectangle: the blur
-// is the frost (Impeller's downsampled Gaussian, cheaper and smoother than
-// taps here), this pass is the lens and the light. Impeller hands it the
-// (frosted) backdrop as u_texture and
-// sets u_size to that texture's size; FlutterFragCoord() is a pixel of that
-// texture, which is the screen's physical pixel grid for the app's layers.
+// Two ways to run, one program (loaded once; nothing compiles per frame):
+//
+// - One surface (u_cover == 0): ImageFilter.compose(outer: this shader,
+//   inner: a small blur) inside a BackdropFilterLayer, clipped by the
+//   widget's rounded rectangle. The blur is the frost (Impeller's
+//   downsampled Gaussian); the clip is the crisp edge; this pass is the lens
+//   and the light.
+// - Two surfaces joined like drops (u_cover > 0, KitGlass.pair): this
+//   shader alone inside a rectangular clip around both. It draws its own
+//   edge from the distance field (one physical pixel of anti-aliasing, so
+//   the joined outline is as crisp as a clip), frosts with seven taps of
+//   radius u_cover, and leaves the backdrop untouched outside the shape.
+//
+// Impeller hands it the backdrop as u_texture and sets u_size to that
+// texture's size; FlutterFragCoord() is a pixel of that texture, which is the
+// screen's physical pixel grid for the app's layers.
 //
 // Cost budget (issue #87: performance is the gate): one pass over the glass's
-// own rectangle, two texture reads per pixel, no loops. Everything else is
-// arithmetic on the rounded rectangle's distance field.
+// own rectangle; two texture reads per pixel for one surface, eight for the
+// joined pair (a small top control); no loops.
 //
 //   1. Lens: within u_band of the edge the backdrop is read from further
 //      inside, pulling the content outwards like the thick rim of a lens.
@@ -19,27 +28,33 @@
 //   3. Tint: the surface colour at full strength over the middle, where the
 //      labels sit (the 4.5:1 contrast the frosted dock guarantees), thinning
 //      to half across the band so the bent edge shows.
-//   4. Rim: an analytic specular highlight lit from the top left, a fainter
-//      one opposite, and a slight inner glow across the band.
+//   4. Rim: a one-physical-pixel specular line lit from the top left, a
+//      fainter one opposite, a narrow halo; pressed glass (u_glow) is a
+//      little brighter.
 
 #include <flutter/runtime_effect.glsl>
 
-uniform vec2 u_size;    // backdrop texture size (set by the engine)
-uniform vec4 u_rect;    // glass rectangle in backdrop pixels: l, t, r, b
-uniform float u_radius; // corner radius, pixels
-uniform float u_band;   // width of the refracting edge, pixels
-uniform float u_bend;   // largest displacement at the edge, pixels
-uniform float u_rim;    // rim light strength, 0..1
-uniform float u_px;     // one logical pixel in backdrop pixels (dpr)
-uniform vec4 u_tint;    // surface colour (straight rgb) and its opacity
+uniform vec2 u_size;     // backdrop texture size (set by the engine)
+uniform vec4 u_rect;     // glass rectangle in backdrop pixels: l, t, r, b
+uniform float u_radius;  // corner radius, pixels
+uniform float u_band;    // width of the refracting edge, pixels
+uniform float u_bend;    // largest displacement at the edge, pixels
+uniform float u_rim;     // rim light strength, 0..1
+uniform float u_px;      // one logical pixel in backdrop pixels (dpr)
+uniform vec4 u_tint;     // surface colour (straight rgb) and its opacity
+uniform vec4 u_rect2;    // a second rectangle (== u_rect for one surface)
+uniform float u_radius2; // its corner radius, pixels
+uniform float u_blend;   // how far the two melt together, pixels (0: none)
+uniform float u_glow;    // pressed: 0 at rest, about 1 under a finger
+uniform float u_cover;   // 0: one clipped surface; > 0: frost radius, pixels
 
 uniform sampler2D u_texture;
 
 out vec4 frag_color;
 
-vec4 backdrop(vec2 px) {
+vec4 backdrop(vec2 px, vec4 bounds) {
   // Stay inside the glass: the backdrop outside the clip may be cut out.
-  vec2 p = clamp(px, u_rect.xy + 0.5, u_rect.zw - 0.5);
+  vec2 p = clamp(px, bounds.xy + 0.5, bounds.zw - 0.5);
   vec2 uv = p / u_size;
 #ifdef IMPELLER_TARGET_OPENGLES
   uv.y = 1.0 - uv.y;
@@ -47,19 +62,28 @@ vec4 backdrop(vec2 px) {
   return texture(u_texture, uv);
 }
 
-void main() {
-  vec2 frag = FlutterFragCoord().xy;
-  vec2 half_size = (u_rect.zw - u_rect.xy) * 0.5;
-  vec2 p = frag - (u_rect.xy + half_size);
-  float r = min(u_radius, min(half_size.x, half_size.y));
+// The frost for the joined pair: the centre and six taps on a ring.
+vec4 frost(vec2 p, vec4 bounds) {
+  float r = u_cover;
+  vec4 c = backdrop(p, bounds) * 0.25;
+  c += backdrop(p + vec2(r, 0.0), bounds) * 0.125;
+  c += backdrop(p + vec2(-r, 0.0), bounds) * 0.125;
+  c += backdrop(p + vec2(0.5 * r, 0.866 * r), bounds) * 0.125;
+  c += backdrop(p + vec2(-0.5 * r, 0.866 * r), bounds) * 0.125;
+  c += backdrop(p + vec2(0.5 * r, -0.866 * r), bounds) * 0.125;
+  c += backdrop(p + vec2(-0.5 * r, -0.866 * r), bounds) * 0.125;
+  return c;
+}
 
-  // Signed distance to the rounded rectangle (negative inside) and the
-  // outward normal of the nearest edge.
+// Signed distance to a rounded rectangle (negative inside) and the outward
+// normal of its nearest edge.
+float box(vec2 frag, vec4 rect, float radius, out vec2 normal) {
+  vec2 half_size = (rect.zw - rect.xy) * 0.5;
+  vec2 p = frag - (rect.xy + half_size);
+  float r = min(radius, min(half_size.x, half_size.y));
   vec2 q = abs(p) - half_size + r;
   vec2 s = vec2(p.x < 0.0 ? -1.0 : 1.0, p.y < 0.0 ? -1.0 : 1.0);
   float outside = length(max(q, 0.0));
-  float dist = outside + min(max(q.x, q.y), 0.0) - r;
-  vec2 normal;
   if (q.x > 0.0 && q.y > 0.0) {
     normal = s * (q / max(outside, 0.0001));
   } else if (q.x > q.y) {
@@ -67,28 +91,77 @@ void main() {
   } else {
     normal = vec2(0.0, s.y);
   }
+  return outside + min(max(q.x, q.y), 0.0) - r;
+}
+
+void main() {
+  vec2 frag = FlutterFragCoord().xy;
+  vec4 bounds = vec4(min(u_rect.xy, u_rect2.xy), max(u_rect.zw, u_rect2.zw));
+
+  vec2 n1;
+  vec2 n2;
+  float d1 = box(frag, u_rect, u_radius, n1);
+  float d2 = box(frag, u_rect2, u_radius2, n2);
+  float dist;
+  vec2 normal;
+  if (u_blend > 0.0) {
+    // A smooth union: the two shapes melt into one where they are closer
+    // than u_blend, like two drops touching.
+    float h = clamp(0.5 + 0.5 * (d2 - d1) / u_blend, 0.0, 1.0);
+    dist = mix(d2, d1, h) - u_blend * h * (1.0 - h);
+    vec2 n = mix(n2, n1, h);
+    normal = n / max(length(n), 0.0001);
+  } else if (d1 <= d2) {
+    dist = d1;
+    normal = n1;
+  } else {
+    dist = d2;
+    normal = n2;
+  }
+
+  float cover = 1.0;
+  if (u_cover > 0.0) {
+    cover = clamp(0.5 - dist, 0.0, 1.0);
+    if (cover <= 0.0) {
+      frag_color = backdrop(frag, bounds);
+      return;
+    }
+  }
 
   float depth = max(-dist, 0.0);
   float edge = clamp(1.0 - depth / u_band, 0.0, 1.0);
   float bend = u_bend * edge * edge;
 
-  vec4 color = backdrop(frag - normal * bend);
-  // Dispersion: red from a little further in, only where the lens bends.
-  float red = backdrop(frag - normal * bend * 1.35).r;
+  vec4 color;
+  float red;
+  if (u_cover > 0.0) {
+    color = frost(frag - normal * bend, bounds);
+    red = backdrop(frag - normal * bend * 1.35, bounds).r;
+  } else {
+    color = backdrop(frag - normal * bend, bounds);
+    // Dispersion: red from a little further in, only where the lens bends.
+    red = backdrop(frag - normal * bend * 1.35, bounds).r;
+  }
   color.r = mix(color.r, red, edge * 0.6);
 
   color.rgb = mix(color.rgb, u_tint.rgb, u_tint.a * (1.0 - 0.5 * edge * edge));
+  color.rgb = mix(color.rgb, vec3(1.0), 0.07 * u_glow);
 
-  // Specular rim: a thin line of light where the edge faces the light,
-  // softer where it faces away, and a faint glow across the band.
+  // Specular rim: a line one physical pixel wide where the edge faces the
+  // light, softer where it faces away, a narrow halo and a faint glow
+  // across the band. Never a soft blur of light.
   vec2 light = vec2(-0.6, -0.8);
   float facing = dot(normal, light);
-  float line = 1.0 - smoothstep(0.0, 1.6 * u_px, depth);
-  float halo = 1.0 - smoothstep(0.0, 6.0 * u_px, depth);
+  float line = 1.0 - smoothstep(0.0, 1.0, depth);
+  float halo = 1.0 - smoothstep(0.0, 3.0 * u_px, depth);
   float spec = line * (0.28 + 0.62 * pow(max(facing, 0.0), 2.0) +
                        0.3 * pow(max(-facing, 0.0), 3.0)) +
-               halo * 0.16 * pow(max(facing, 0.0), 3.0) + edge * 0.035;
+               halo * 0.12 * pow(max(facing, 0.0), 3.0) + edge * 0.035;
+  spec *= 1.0 + 0.6 * u_glow;
   color.rgb = mix(color.rgb, vec3(1.0), clamp(spec * u_rim, 0.0, 1.0));
   color.a = 1.0;
+  if (u_cover > 0.0) {
+    color = mix(backdrop(frag, bounds), color, cover);
+  }
   frag_color = color;
 }

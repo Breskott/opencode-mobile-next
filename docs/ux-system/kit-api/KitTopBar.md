@@ -182,7 +182,8 @@ Back at the start (right in RTL, glyph mirrored via `matchTextDirection`), Close
 
 - Subtitle changes cross-fade over `KitMotion.quick`; the hairline appears over `KitMotion.quick` when content scrolls under the bar. No layout animation, no scale (MOT-2, MOT-5).
 - The shell pill's status word and mark change with KitStatusMark's own motion.
-- Reduced motion: all changes at once; one `pump()` settles.
+- Fluid glass (kit-fluid-glass, 2026-09-28, KitGlass.md): in the bar layout the server pill and search are one `KitGlass.pair`. While the page under KitNav is scrolled past one `minTarget` (`KitGlass.scrolledOf`), search slides next to the pill, becomes the smaller drop and the two melt together (`KitMotion.glassJoin`); back at the top, or on another destination, they pull apart. Only the drawn glass and search's painted place move; search keeps its label, size and reading order. Pill and search (and the sidebar's search field-button) give under a finger (`KitGlass(respond: true)`).
+- Reduced motion: all changes at once (the pair joins and parts instantly); one `pump()` settles.
 - Haptics: none.
 
 ## Data safety and honest state
@@ -206,7 +207,7 @@ kit-KitIcon, kit-KitIconButton-v2 (`tooltip`, `shortcut`), kit-KitNeedsYou (`spa
 5. Expanded (1280): actions render as labelled buttons; when they don't fit, the last move into the overflow; the title keeps ≥ half the width.
 6. Asserts: an action without an icon, a destructive action, `onTitleTap` without `titleTapLabel` → `AssertionError`.
 7. Switcher: tap calls `onTitleTap`; semantics "…, Switch project"; `needsYou: 2` shows a badge whose count is in the label.
-8. `KitTopBar.shell`: pill shows name + status word; tapping calls `onServer`; search button labelled; both are `KitGlass` with `dim: true`; under Effects › Glass off they are solid.
+8. `KitTopBar.shell`: pill shows name + status word; tapping calls `onServer`; search button labelled; both are one `KitGlass.pair` with `dim: true` (kit-fluid-glass); under Effects › Glass off they are solid.
 9. `KitShellControls(layout: sidebar)`: pill, project switcher, search field-button stacked; `onProject` null hides the project row.
 10. 200 % text at 320 dp: no overflow; title wraps, not cut; actions collapse to icons then overflow.
 11. RTL: Back is at the right and mirrored; actions at the left.
