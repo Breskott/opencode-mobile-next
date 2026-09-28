@@ -1,0 +1,38 @@
+{
+  "backendCommit": "aeb3ef67643759ade1157be1f6bb2cb3ea07f187",
+  "sourceBase": "7954e980",
+  "flutter": "Pinned Shorebird Flutter 3.47.1",
+  "formatting": "10 Dart files, no changes required",
+  "wholeProjectAnalyze": {
+    "command": "tool/qa/machine_lock.sh analyze -- <pinned-flutter> analyze --no-pub",
+    "result": "No issues found",
+    "seconds": 8.9
+  },
+  "tests": {
+    "command": "tool/qa/machine_lock.sh test -- <pinned-flutter> test --no-pub --concurrency=1 test/termux_migration_controller_test.dart test/termux_migration_profile_test.dart test/termux_migration_archive_test.dart test/termux_migration_transport_test.dart test/kit_ratchet_test.dart test/redaction_test.dart test/ui_glossary_test.dart test/no_raw_error_text_test.dart test/architecture_boundaries_test.dart",
+    "passed": 127,
+    "seconds": 16,
+    "finalAffectedTransportRerunPassed": 11
+  },
+  "realHostProof": "Generated Bash inventory, USTAR packing, sha256, authenticated curl upload, cached resume and private permissions against isolated synthetic filesystem fixture",
+  "deviceProof": {
+    "ownerPhoneAccessed": false,
+    "emulatorAccessed": false,
+    "replayDocumented": true
+  },
+  "uiChanged": false,
+  "nativeChanged": false,
+  "fullProductSuiteRun": false,
+  "sourceSha256": {
+    "lib/builtin/migration/migration_archive_store.dart": "e38b53cb3608b7cddcdb7d15f8c8bdc9343c1eaab9152b51bf067f4aebde08c9",
+    "lib/builtin/migration/migration_profile.dart": "e7670b5ff340555fb31c8a6f77227255485b21a0d5d66431ab4a3239085f467c",
+    "lib/builtin/migration/termux_migration_controller.dart": "336f17ce8afd1c3fd5e1ba9efdaf6be204b7d0a131845a8c2f1eea61a2edba31",
+    "lib/builtin/migration/termux_migration_transport.dart": "c2bc9583e3fdf1b07ba9807bb007366ebba0196a87075be6edde1891f0c9ecdb",
+    "lib/domain/termux_migration.dart": "4dbda96e4169ec08412c3ab3ca96defe7525de2577bcc9656740256269edb913",
+    "lib/domain/termux_migration_service.dart": "bab4a821d68e26a11a53e5521806f533d54dd8f37347473bc02e82075f65a507",
+    "test/termux_migration_archive_test.dart": "9733a2a47564c783634397ee344ef2232b9e36b598f51ddeb970082eac343550",
+    "test/termux_migration_controller_test.dart": "e9e54939f6f704f0206539514f1946e0769751616f9a01c980f82a1cc23dcfba",
+    "test/termux_migration_profile_test.dart": "e24d651bc6c1acbfcfc5814b65223493780cadcf4bc3f07234a8c48950b843fb",
+    "test/termux_migration_transport_test.dart": "f8f4f48f50a8f62cffdbcd0a662bfbae6bfa57bc7a3d3d6e2be9d1fd1669e6b5"
+  }
+}
