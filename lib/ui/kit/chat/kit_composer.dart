@@ -472,10 +472,6 @@ class _KitComposerState extends State<KitComposer> {
             borderRadius: BorderRadius.circular(radius),
             dim: true,
             shadow: true,
-            // The glass follows the composer's content as it grows and
-            // shrinks (a second line, a note, a chip row) instead of
-            // snapping (fluid glass hand-off).
-            flow: true,
             child: Padding(
               padding: EdgeInsets.all(tokens.space1),
               child: KitSwap(
