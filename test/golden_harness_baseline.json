@@ -20,12 +20,11 @@
       "test/goldens/work_tab_golden_test.dart",
       "test/kit_illustration_test.dart",
       "test/kit_states_scenes_test.dart",
+      "test/revamp/screen_shell_1_golden_test.dart",
       "test/servers_scenes_test.dart",
       "test/setup_scenes_test.dart"
     ],
-    "arabicFont": [
-      "test/goldens/folder_browser_golden_test.dart"
-    ],
+    "arabicFont": [],
     "captureFonts": [
       "test/goldens/team_discover_scenes_golden_test.dart",
       "test/goldens/team_scenes_golden_test.dart",
@@ -112,14 +111,10 @@
       "test/goldens/states_unplugged_light.png",
       "test/goldens/states_working_dark.png",
       "test/goldens/states_working_light.png",
-      "test/goldens/team_agent_dark.png",
-      "test/goldens/team_agent_light.png",
       "test/goldens/team_agents_dark.png",
       "test/goldens/team_agents_light.png",
       "test/goldens/team_merge_dark.png",
       "test/goldens/team_merge_light.png",
-      "test/goldens/termux_setup_dark.png",
-      "test/goldens/termux_setup_light.png",
       "test/goldens/work_chooser_dark.png",
       "test/goldens/work_chooser_light.png",
       "test/goldens/work_empty_dark.png",
@@ -135,7 +130,9 @@
       "test/goldens/work_runaway_dark.png",
       "test/goldens/work_runaway_light.png",
       "test/goldens/work_team_dark.png",
-      "test/goldens/work_team_light.png"
+      "test/goldens/work_team_light.png",
+      "test/revamp/goldens/aisetup_oc1_all_settings_412x2300_dark.png",
+      "test/revamp/goldens/aisetup_oc1_all_settings_412x2300_light.png"
     ],
     "kitGalleryDpr3": [],
     "regenerateHeader": [
@@ -143,31 +140,6 @@
       "test/kit_illustration_test.dart",
       "test/servers_scenes_test.dart"
     ],
-    "trackedFailures": [
-      "test/goldens/failures/team_agent_controls_dark_isolatedDiff.png",
-      "test/goldens/failures/team_agent_controls_dark_maskedDiff.png",
-      "test/goldens/failures/team_agent_controls_dark_masterImage.png",
-      "test/goldens/failures/team_agent_controls_dark_testImage.png",
-      "test/goldens/failures/team_agent_controls_light_isolatedDiff.png",
-      "test/goldens/failures/team_agent_controls_light_maskedDiff.png",
-      "test/goldens/failures/team_agent_controls_light_masterImage.png",
-      "test/goldens/failures/team_agent_controls_light_testImage.png",
-      "test/goldens/failures/team_agent_dark_isolatedDiff.png",
-      "test/goldens/failures/team_agent_dark_maskedDiff.png",
-      "test/goldens/failures/team_agent_dark_masterImage.png",
-      "test/goldens/failures/team_agent_dark_testImage.png",
-      "test/goldens/failures/team_agent_light_isolatedDiff.png",
-      "test/goldens/failures/team_agent_light_maskedDiff.png",
-      "test/goldens/failures/team_agent_light_masterImage.png",
-      "test/goldens/failures/team_agent_light_testImage.png",
-      "test/goldens/failures/team_agent_output_dark_isolatedDiff.png",
-      "test/goldens/failures/team_agent_output_dark_maskedDiff.png",
-      "test/goldens/failures/team_agent_output_dark_masterImage.png",
-      "test/goldens/failures/team_agent_output_dark_testImage.png",
-      "test/goldens/failures/team_agent_output_light_isolatedDiff.png",
-      "test/goldens/failures/team_agent_output_light_maskedDiff.png",
-      "test/goldens/failures/team_agent_output_light_masterImage.png",
-      "test/goldens/failures/team_agent_output_light_testImage.png"
-    ]
+    "trackedFailures": []
   }
 }

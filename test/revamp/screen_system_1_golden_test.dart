@@ -155,7 +155,7 @@ void main() {
     testWidgets('about ($theme)', (tester) async {
       await _shot(
         tester,
-        'system_about',
+        'system_about_loaded',
         light: light,
         home: const AboutScreen(),
       );
@@ -284,7 +284,7 @@ void main() {
   testWidgets('about wide (dark)', (tester) async {
     await _shot(
       tester,
-      'system_about',
+      'system_about_loaded',
       light: false,
       size: _wide,
       home: const AboutScreen(),

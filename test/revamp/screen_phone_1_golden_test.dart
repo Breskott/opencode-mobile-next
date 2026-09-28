@@ -12,6 +12,7 @@
 //   flutter test --update-goldens test/revamp/screen_phone_1_golden_test.dart
 // and look at every changed image before committing it.
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -68,6 +69,7 @@ Future<void> _shot(
   Future<void> Function()? act,
 }) async {
   final boundary = GlobalKey();
+  debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
   try {
     await pumpPhone(
       tester,
@@ -88,6 +90,7 @@ Future<void> _shot(
       matchesGoldenFile('goldens/${_name(shot, size, light)}.png'),
     );
   } finally {
+    debugDefaultTargetPlatformOverride = null;
     await unmountPhone(tester);
   }
 }

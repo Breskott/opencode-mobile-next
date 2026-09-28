@@ -323,7 +323,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(taps, 1);
     expect(find.text('2'), findsOneWidget);
-    // ignore: avoid_print
     final node = tester.getSemantics(find.byKey(const ValueKey('title')));
     expect(
       node.getSemanticsData().label,

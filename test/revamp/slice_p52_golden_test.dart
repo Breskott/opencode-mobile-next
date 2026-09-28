@@ -5,11 +5,13 @@
 // list of a computer's team with paused agents after a wake the host did
 // not confirm; and a task's Details saying its cost is not reported.
 //
-// Regenerate deliberately and look at every image:
+// Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/slice_p52_golden_test.dart
+// and look at every changed image before committing it.
 
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
@@ -267,40 +269,45 @@ void main() {
       }
       addTearDown(team.dispose);
       final boundary = GlobalKey();
-      await tester.pumpWidget(
-        MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: captureTheme(light: true),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(disableAnimations: true),
-            child: RepaintBoundary(key: boundary, child: child),
+      debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: captureTheme(light: true),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: RepaintBoundary(key: boundary, child: child),
+            ),
+            home: home,
           ),
-          home: home,
-        ),
-      );
-      for (var i = 0; i < 10; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-      if (shot == _Shot.wake) {
-        final wake = find.byKey(const ValueKey('team-agents-wake-paused'));
-        // Before this slice each paused row had its own Wake button.
-        final perRow = find.byKey(const ValueKey('team-agents-wake-nux'));
-        await tester.tap(wake.evaluate().isNotEmpty ? wake : perRow);
+        );
         for (var i = 0; i < 10; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
+        if (shot == _Shot.wake) {
+          final wake = find.byKey(const ValueKey('team-agents-wake-paused'));
+          // Before this slice each paused row had its own Wake button.
+          final perRow = find.byKey(const ValueKey('team-agents-wake-nux'));
+          await tester.tap(wake.evaluate().isNotEmpty ? wake : perRow);
+          for (var i = 0; i < 10; i++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+        }
+        expect(tester.takeException(), isNull);
+        // Task details' elapsed time reads the wall clock, so only its body
+        // (where the cost line is) is pinned.
+        await expectLater(
+          shot == _Shot.taskCost
+              ? find.byKey(const ValueKey('team-task-details-body'))
+              : find.byKey(boundary),
+          matchesGoldenFile('goldens/${shot.name}.png'),
+        );
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
       }
-      expect(tester.takeException(), isNull);
-      // Task details' elapsed time reads the wall clock, so only its body
-      // (where the cost line is) is pinned.
-      await expectLater(
-        shot == _Shot.taskCost
-            ? find.byKey(const ValueKey('team-task-details-body'))
-            : find.byKey(boundary),
-        matchesGoldenFile('goldens/${shot.name}.png'),
-      );
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 1));
     });

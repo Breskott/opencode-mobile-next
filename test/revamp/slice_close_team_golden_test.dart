@@ -5,10 +5,12 @@
 // is not confirmed, and a worker page whose only dependency is closed. At
 // 412x915 dark and 1280x800 light, with the app's real fonts.
 //
-// Regenerate deliberately and look at every changed image:
+// Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/slice_close_team_golden_test.dart
+// and look at every changed image before committing it.
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -345,6 +347,7 @@ Future<void> _golden(
   addTearDown(tester.view.reset);
   final boundary = GlobalKey();
   final host = GlobalKey();
+  debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
   try {
     await tester.pumpWidget(
       RepaintBoundary(
@@ -375,6 +378,7 @@ Future<void> _golden(
       matchesGoldenFile('goldens/$name.png'),
     );
   } finally {
+    debugDefaultTargetPlatformOverride = null;
     await tester.pumpWidget(const SizedBox.shrink());
     await controller.stop();
     controller.dispose();
@@ -413,7 +417,13 @@ void main() {
         : '_${size.width.toInt()}x${size.height.toInt()}';
     final mode = light ? 'light' : 'dark';
     for (final scene in _Scene.values) {
-      final name = 'close_team_${scene.name}${sized}_$mode';
+      // TEST-20: golden names are lower-case snake_case (plannerOff ->
+      // planner_off).
+      final state = scene.name.replaceAllMapped(
+        RegExp('[A-Z]'),
+        (m) => '_${m[0]!.toLowerCase()}',
+      );
+      final name = 'close_team_$state${sized}_$mode';
       testWidgets(name, (tester) async {
         final controller = await _controller(
           store,

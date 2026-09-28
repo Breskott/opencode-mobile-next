@@ -778,7 +778,7 @@
           "type": "button",
           "label": "Stop agent",
           "key": "team-agent-stop-confirm-action",
-          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "file": "lib/ui/kit/kit_confirm_sheet.dart",
           "line": 68,
           "action": "mutate",
           "target": null,
@@ -791,7 +791,7 @@
           "type": "button",
           "label": "Keep going",
           "key": null,
-          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "file": "lib/ui/kit/kit_confirm_sheet.dart",
           "line": 85,
           "action": "dismiss",
           "target": null,
@@ -829,7 +829,7 @@
           "type": "button",
           "label": "Restart agent",
           "key": "team-agent-restart-confirm-action",
-          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "file": "lib/ui/kit/kit_confirm_sheet.dart",
           "line": 68,
           "action": "mutate",
           "target": null,
@@ -842,7 +842,7 @@
           "type": "button",
           "label": "Keep going",
           "key": null,
-          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "file": "lib/ui/kit/kit_confirm_sheet.dart",
           "line": 85,
           "action": "dismiss",
           "target": null,
@@ -852,197 +852,6 @@
         }
       ],
       "sheetKey": "team-agent-restart-confirm"
-    },
-    {
-      "id": "team-cycle-how-sheet",
-      "title": "How the host dispatches",
-      "kind": "sheet",
-      "file": "lib/ui/widgets/team_cycle_strip.dart",
-      "widget": "showTeamCycleHowSheet",
-      "presentedBy": [
-        "showTeamCycleHowSheet"
-      ],
-      "line": 82,
-      "purpose": "Three-line explanation of the host's polling/dispatch chain.",
-      "reachedFrom": [
-        {
-          "page": "embedded-team-cycle-strip",
-          "element": "embedded-team-cycle-strip-how"
-        }
-      ],
-      "gates": [
-        "cycle.stalled && stallReason in {DispatchStall.hostNotStarted, DispatchStall.agentCannotStart}"
-      ],
-      "elements": [
-        {
-          "id": "team-cycle-how-sheet-close",
-          "type": "button",
-          "label": "Got it",
-          "key": "team-cycle-how-close",
-          "line": 114,
-          "action": "dismiss",
-          "target": null,
-          "effect": "Navigator.of(sheetContext).pop().",
-          "gates": [],
-          "destructive": false
-        }
-      ],
-      "sheetKey": "team-cycle-how-sheet"
-    },
-    {
-      "id": "team-cycle-stop-confirm-sheet",
-      "title": "Stop {agent}?",
-      "kind": "sheet",
-      "file": "lib/ui/widgets/team_cycle_strip.dart",
-      "widget": "_stop",
-      "presentedBy": [
-        "confirmTeamControl",
-        "showConfirmSheet"
-      ],
-      "line": 249,
-      "purpose": "Two-step confirmation before stopping the agent a provider-limit stall points at.",
-      "reachedFrom": [
-        {
-          "page": "embedded-team-cycle-strip",
-          "element": "embedded-team-cycle-strip-stop"
-        }
-      ],
-      "gates": [
-        "controller.capabilities.controlAgent",
-        "stallReason == DispatchStall.providerLimit"
-      ],
-      "elements": [
-        {
-          "id": "team-cycle-stop-confirm-sheet-confirm",
-          "type": "button",
-          "label": "Stop agent",
-          "key": "team-cycle-stop-confirm-action",
-          "file": "lib/ui/widgets/confirm_sheet.dart",
-          "line": 68,
-          "action": "mutate",
-          "target": null,
-          "effect": "Pops true; TeamCycleStripState._stop then calls controller.controlAgent(agentId, AgentControlAction.stop).",
-          "gates": [],
-          "destructive": true
-        },
-        {
-          "id": "team-cycle-stop-confirm-sheet-keep",
-          "type": "button",
-          "label": "Keep going",
-          "key": null,
-          "file": "lib/ui/widgets/confirm_sheet.dart",
-          "line": 85,
-          "action": "dismiss",
-          "target": null,
-          "effect": "Navigator.pop(context, false); nothing is sent.",
-          "gates": [],
-          "destructive": false
-        }
-      ],
-      "sheetKey": "team-cycle-stop-confirm"
-    },
-    {
-      "id": "embedded-team-cycle-strip",
-      "title": "[Dispatch cycle strip]",
-      "kind": "overlay",
-      "file": "lib/ui/widgets/team_cycle_strip.dart",
-      "widget": "TeamCycleStrip",
-      "presentedBy": [],
-      "line": 126,
-      "purpose": "Dispatch cycle steps for a work item with the one action a stall calls for; the compact form (TeamCard) has no buttons.",
-      "reachedFrom": [],
-      "gates": [
-        "ConnectionController.orchestration != null (lib/state/connection.dart:712); _syncOrchestration (connection.dart:746) returns without building the controller when `config == null || selected == null || isIsolated || _disposed`, where `config = selected?.orchestration` (the connected ServerProfile's AI Team plugin config)"
-      ],
-      "elements": [
-        {
-          "id": "embedded-team-cycle-strip-refresh",
-          "type": "button",
-          "label": "Refresh",
-          "key": "team-cycle-action-refresh",
-          "line": 328,
-          "action": "mutate",
-          "target": null,
-          "effect": "_refresh -> controller.refresh(); disabled while busy.",
-          "gates": [
-            "non-compact strip only (`!widget.compact`); `cycle.stalled && cycle.stallReason != null`",
-            "stallReason in {hostNotStarted, agentCannotStart, mergeWaiting without (canControl && refinery != null)}"
-          ],
-          "destructive": false,
-          "file": "lib/ui/widgets/team_cycle_strip.dart"
-        },
-        {
-          "id": "embedded-team-cycle-strip-how",
-          "type": "button",
-          "label": "How the host dispatches",
-          "key": "team-cycle-action-how",
-          "line": 335,
-          "action": "open-sheet",
-          "target": "team-cycle-how-sheet",
-          "targetWidget": "showTeamCycleHowSheet",
-          "effect": "showTeamCycleHowSheet(context).",
-          "gates": [
-            "non-compact strip only (`!widget.compact`); `cycle.stalled && cycle.stallReason != null`",
-            "stallReason in {hostNotStarted, agentCannotStart}"
-          ],
-          "destructive": false,
-          "file": "lib/ui/widgets/team_cycle_strip.dart"
-        },
-        {
-          "id": "embedded-team-cycle-strip-open-output",
-          "type": "button",
-          "label": "Watch the agent",
-          "key": "team-cycle-action-output",
-          "line": 342,
-          "action": "navigate",
-          "target": "chat",
-          "targetWidget": "openTeamAgentConversationById",
-          "effect": "_openOutput(agentId): openTeamAgentConversationById(context, controller, agentId): the agent's conversation in watching mode, or TeamWatchLiveScreen (chat-watching-live); disabled when controller.cycleAgentFor(workId) == null.",
-          "gates": [
-            "non-compact strip only (`!widget.compact`); `cycle.stalled && cycle.stallReason != null`",
-            "stallReason in {providerLimit, workingLong}"
-          ],
-          "destructive": false,
-          "file": "lib/ui/widgets/team_cycle_strip.dart"
-        },
-        {
-          "id": "embedded-team-cycle-strip-stop",
-          "type": "button",
-          "label": "Stop",
-          "key": "team-cycle-action-stop",
-          "line": 356,
-          "action": "open-sheet",
-          "target": "team-cycle-stop-confirm-sheet",
-          "targetWidget": "confirmTeamControl",
-          "effect": "_stop(agentId): confirmTeamControl; on confirm controller.controlAgent(agentId, AgentControlAction.stop).",
-          "gates": [
-            "non-compact strip only (`!widget.compact`); `cycle.stalled && cycle.stallReason != null`",
-            "stallReason == providerLimit && controller.capabilities.controlAgent && !_busy && agent != null"
-          ],
-          "destructive": true,
-          "file": "lib/ui/widgets/team_cycle_strip.dart"
-        },
-        {
-          "id": "embedded-team-cycle-strip-nudge-refinery",
-          "type": "button",
-          "label": "Nudge refinery",
-          "key": "team-cycle-action-nudge",
-          "line": 367,
-          "action": "mutate",
-          "target": null,
-          "effect": "_nudge(refineryId): controller.controlAgent(refineryId, AgentControlAction.nudge).",
-          "gates": [
-            "non-compact strip only (`!widget.compact`); `cycle.stalled && cycle.stallReason != null`",
-            "stallReason == mergeWaiting && controller.capabilities.controlAgent && !_busy && controller.cycleRefineryFor(workId) != null"
-          ],
-          "destructive": false,
-          "file": "lib/ui/widgets/team_cycle_strip.dart"
-        }
-      ],
-      "embeddedIn": [
-        "WorkSheet"
-      ],
-      "hostNotes": "Also embedded in RunScreen's Overview (elements duplicated on team-run-overview-tab) and, compact with no buttons, in TeamCard (team_card.dart:612). WorkSheet host: lib/ui/screens/team/work_sheet.dart:319 (key team-work-sheet-cycle)."
     },
     {
       "id": "embedded-team-receipt-chip",
@@ -1522,7 +1331,7 @@
           "type": "button",
           "label": "Cancel task",
           "key": "team-board-cancel-confirm",
-          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "file": "lib/ui/kit/kit_confirm_sheet.dart",
           "line": 68,
           "action": "mutate",
           "target": null,
@@ -1535,7 +1344,7 @@
           "type": "button",
           "label": "Keep it",
           "key": null,
-          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "file": "lib/ui/kit/kit_confirm_sheet.dart",
           "line": 85,
           "action": "dismiss",
           "target": null,
@@ -1863,7 +1672,7 @@
           "label": "Stop task",
           "key": "team-conversation-stop-confirm-action",
           "line": 69,
-          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "file": "lib/ui/kit/kit_confirm_sheet.dart",
           "action": "mutate",
           "target": null,
           "effect": "Pops true; _stop then calls team.cancelRun(run.id); the receipt shows in the conversation.",
@@ -1876,7 +1685,7 @@
           "label": "Keep running",
           "key": null,
           "line": 87,
-          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "file": "lib/ui/kit/kit_confirm_sheet.dart",
           "action": "dismiss",
           "target": null,
           "effect": "Navigator.pop(context, false); nothing is sent.",
@@ -1885,6 +1694,75 @@
         }
       ],
       "sheetKey": "team-conversation-stop-confirm"
+    },
+    {
+      "id": "embedded-team-now-line",
+      "title": "[Team Now line]",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/team_now_line_view.dart",
+      "widget": "TeamNowLineView",
+      "presentedBy": [],
+      "line": 156,
+      "purpose": "What is happening to a task or step now, since when, what comes next and the usual time; after a while the reason and a Why that unfolds in place with the host page's ways out (slice-P5.1, replacing the dispatch cycle strip and its How sheet).",
+      "reachedFrom": [],
+      "gates": [
+        "a run or step with TeamNowInput facts"
+      ],
+      "elements": [
+        {
+          "id": "embedded-team-now-line-why",
+          "type": "button",
+          "label": "Why | Hide why",
+          "key": "<prefix>-now-why",
+          "line": 343,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Unfolds or folds the reason and the ways out in place (KitReveal).",
+          "gates": [
+            "a reason is known, the page lets the line explain, not needs-you"
+          ],
+          "destructive": false,
+          "file": "lib/ui/widgets/team_now_line_view.dart"
+        },
+        {
+          "id": "embedded-team-now-line-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": "<prefix>-retry",
+          "line": 309,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "The page's refresh way out while the team is unreachable.",
+          "gates": [
+            "activity == unavailable and the page offers refresh"
+          ],
+          "destructive": false,
+          "file": "lib/ui/widgets/team_now_line_view.dart"
+        },
+        {
+          "id": "embedded-team-now-line-way-out",
+          "type": "button",
+          "label": "<page way out: open activity | refresh | dismiss request | cancel run>",
+          "key": "<prefix>-now-ways",
+          "line": 364,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "KitActionBlock of the host page's KitActions for the suggested TeamNowActions; the Work sheet offers Refresh only.",
+          "gates": [
+            "Why unfolded"
+          ],
+          "destructive": false,
+          "file": "lib/ui/widgets/team_now_line_view.dart"
+        }
+      ],
+      "embeddedIn": [
+        "TeamConversationScreen",
+        "WorkSheet"
+      ],
+      "hostNotes": "Hosts: lib/ui/screens/chat/team_conversation_view.dart:1258 (keyPrefix team-conversation) and lib/ui/screens/team/work_sheet.dart:392 (keyPrefix team-work-sheet)."
     }
   ],
   "notPages": [

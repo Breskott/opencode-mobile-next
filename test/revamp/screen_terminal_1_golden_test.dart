@@ -147,13 +147,13 @@ void main() {
     final mode = light ? 'light' : 'dark';
 
     testWidgets('list · $mode', (tester) async {
-      await _shot(tester, 'terminal_list', light: light, home: _list);
+      await _shot(tester, 'terminal_list_loaded', light: light, home: _list);
     });
 
     testWidgets('list wide · $mode', (tester) async {
       await _shot(
         tester,
-        'terminal_list',
+        'terminal_list_loaded',
         light: light,
         size: _wide,
         home: _list,
@@ -163,7 +163,7 @@ void main() {
     testWidgets('list empty · $mode', (tester) async {
       await _shot(
         tester,
-        'terminal_empty',
+        'terminal_list_empty',
         light: light,
         server: TerminalServer(processes: []),
         home: _list,
@@ -211,7 +211,7 @@ void main() {
     testWidgets('server without terminals · $mode', (tester) async {
       await _shot(
         tester,
-        'terminal_unavailable',
+        'terminal_list_unavailable',
         light: light,
         terminals: false,
         home: (controller, _) => TerminalPage(
@@ -236,13 +236,18 @@ void main() {
     });
 
     testWidgets('surface connected · $mode', (tester) async {
-      await _shot(tester, 'terminal_surface', light: light, home: _surface);
+      await _shot(
+        tester,
+        'terminal_surface_open',
+        light: light,
+        home: _surface,
+      );
     });
 
     testWidgets('surface connected wide · $mode', (tester) async {
       await _shot(
         tester,
-        'terminal_surface',
+        'terminal_surface_open',
         light: light,
         size: _wide,
         home: _surface,

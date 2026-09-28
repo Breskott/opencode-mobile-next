@@ -122,11 +122,17 @@ void main() {
       }
 
       testWidgets('loaded, $theme', (tester) async {
-        await _shot(tester, 'usage_loaded', page(), light: light);
+        await _shot(tester, 'usage_stats_loaded', page(), light: light);
       });
 
       testWidgets('loaded at 1280x800, $theme', (tester) async {
-        await _shot(tester, 'usage_loaded', page(), light: light, size: _wide);
+        await _shot(
+          tester,
+          'usage_stats_loaded',
+          page(),
+          light: light,
+          size: _wide,
+        );
       });
 
       testWidgets('budget reached, $theme', (tester) async {
@@ -153,7 +159,7 @@ void main() {
       testWidgets('models, $theme', (tester) async {
         await _shot(
           tester,
-          'usage_models',
+          'usage_stats_models',
           page(),
           light: light,
           act: (tester) =>
@@ -162,13 +168,18 @@ void main() {
       });
 
       testWidgets('empty range, $theme', (tester) async {
-        await _shot(tester, 'usage_empty', page(empty: true), light: light);
+        await _shot(
+          tester,
+          'usage_stats_empty',
+          page(empty: true),
+          light: light,
+        );
       });
 
       testWidgets('unsupported, $theme', (tester) async {
         await _shot(
           tester,
-          'usage_unsupported',
+          'usage_stats_unsupported',
           page(supported: false),
           light: light,
         );

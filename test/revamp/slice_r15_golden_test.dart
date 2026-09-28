@@ -6,6 +6,7 @@
 // Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/slice_r15_golden_test.dart
 // and look at every changed image before committing it.
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -97,6 +98,7 @@ void main() {
           ..version = '2.0.10';
         final linux = _Linux();
         final boundary = GlobalKey();
+        debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
         try {
           await tester.pumpWidget(
             captureApp(
@@ -136,6 +138,7 @@ void main() {
             matchesGoldenFile('goldens/$name.png'),
           );
         } finally {
+          debugDefaultTargetPlatformOverride = null;
           await tester.pumpWidget(const SizedBox.shrink());
           controller.dispose();
           await tester.pump(const Duration(minutes: 2));

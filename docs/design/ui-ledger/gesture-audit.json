@@ -21,20 +21,11 @@
     },
     {
       "page": "command-launcher-sheet",
-      "element": "command-launcher-sheet-agents-refresh-gesture",
-      "gesture": "pull to refresh (subagents tab)",
-      "action": "reload server commands and subagents",
-      "visibleEquivalent": "visible 'Refresh' text button in the empty state and a 'Try again' icon button on the error row (lib/ui/screens/chat/command_launcher.dart:336)",
-      "evidence": "lib/ui/screens/chat/command_launcher.dart:461",
-      "changed": false
-    },
-    {
-      "page": "command-launcher-sheet",
       "element": "chat-command-launcher-refresh",
-      "gesture": "pull to refresh (callback handed to the sheet)",
+      "gesture": "refresh callback handed to the command sheet",
       "action": "reload server commands",
-      "visibleEquivalent": "same callback as the sheet's visible 'Refresh' / 'Try again' controls; also loaded automatically when the conversation opens (lib/ui/screens/chat_screen.dart:585)",
-      "evidence": "lib/ui/screens/chat/command_launcher.dart:337",
+      "visibleEquivalent": "the command sheet's visible 'Try again' on its error notice (lib/ui/widgets/command_sheet.dart:410) runs the same callback; also loaded automatically when the conversation opens",
+      "evidence": "lib/ui/screens/chat_screen.dart:5731",
       "changed": false
     },
     {
@@ -402,8 +393,8 @@
       "element": "chat-shortcut-find",
       "gesture": "keyboard shortcut: Ctrl+F",
       "action": "open find in the conversation",
-      "visibleEquivalent": "visible 'Find' chip in the conversation menu (value 'find', same _openFind); listed in Keyboard shortcuts help",
-      "evidence": "lib/ui/screens/chat/attention_card.dart:595",
+      "visibleEquivalent": "visible 'Find' in the conversation menu (SessionMenuAction.find, same _openFind, lib/ui/screens/chat_screen.dart:6247); listed in Keyboard shortcuts help",
+      "evidence": "lib/ui/screens/chat_screen.dart:8118",
       "changed": false
     },
     {
@@ -641,15 +632,6 @@
       "changed": false
     },
     {
-      "page": "voice-composer-sheet",
-      "element": "voice-composer-sheet-dismiss-gesture",
-      "gesture": "drag down / tap outside / back",
-      "action": "dismiss the voice sheet and cancel recording",
-      "visibleEquivalent": "visible 'Cancel' button in the sheet (voice-composer-cancel) does the same",
-      "evidence": "lib/voice/voice_ui.dart:799",
-      "changed": false
-    },
-    {
       "page": "isolated-task-sheet",
       "element": "isolated-task-sheet-back",
       "gesture": "system back",
@@ -683,15 +665,6 @@
       "action": "leave an unsaved external task draft",
       "visibleEquivalent": "system navigation; the app bar back button does the same (same PopScope handler)",
       "evidence": "lib/ui/screens/external_agents_screen.dart:801",
-      "changed": false
-    },
-    {
-      "page": "chat",
-      "element": "chat-appbar-title",
-      "gesture": "hover or long-press tooltip on the title",
-      "action": "show the full conversation title",
-      "visibleEquivalent": "the conversation menu sheet prints the full title at its top",
-      "evidence": "lib/ui/screens/chat/attention_card.dart:561",
       "changed": false
     },
     {
@@ -813,20 +786,11 @@
     },
     {
       "page": "embedded-work-graph",
-      "element": "embedded-work-graph-viewer",
-      "gesture": "pinch-zoom / drag-pan the work graph",
-      "action": "zoom and pan",
-      "visibleEquivalent": "view-only manipulation, no action; a visible 'Fit' button resets the view, and the visible List/Graph switch shows the same items as a list (lib/ui/screens/team/run_screen.dart:1364)",
-      "evidence": "lib/ui/screens/team/work_graph.dart:258",
-      "changed": false
-    },
-    {
-      "page": "embedded-work-graph",
       "element": "embedded-work-graph-node",
       "gesture": "tap a graph node",
       "action": "open the work sheet",
-      "visibleEquivalent": "plain tap on a visible, titled node; the visible List view (List/Graph switch) opens the same work sheet from a labeled row",
-      "evidence": "lib/ui/screens/team/work_graph.dart:256",
+      "visibleEquivalent": "plain tap on a visible, titled KitWorkGraph node or row; the same onOpen opens the work sheet",
+      "evidence": "lib/ui/kit/kit_work_graph.dart:965",
       "changed": false
     },
     {
@@ -844,7 +808,7 @@
       "gesture": "after the run dialog returns a conversation",
       "action": "open the new conversation",
       "visibleEquivalent": "not a user gesture: automatic follow-up navigation after the visible Run dialog",
-      "evidence": "lib/ui/screens/library/commands_screen.dart:158",
+      "evidence": "lib/ui/screens/library/commands_screen.dart:122",
       "changed": false
     },
     {
@@ -870,8 +834,17 @@
       "element": "team-board-card-long-press",
       "gesture": "long press on a card",
       "action": "open the move sheet",
-      "visibleEquivalent": "visible '⋯' icon button on the same card (team-board-card-moves, tooltip 'Move or change') when moves exist; the card's own tap already opens the same conversation directly (team-board-card)",
-      "evidence": "lib/ui/widgets/team_board_card.dart:248",
+      "visibleEquivalent": "visible '⋯' action on the same card (team-board-card-more-<id>, label 'Move or change') when moves exist; the card's own tap opens the conversation directly (team-board-card)",
+      "evidence": "lib/ui/widgets/team_board_card.dart:227",
+      "changed": false
+    },
+    {
+      "page": "mcp-catalog",
+      "element": "mcp-catalog-pull-refresh",
+      "gesture": "pull to refresh",
+      "action": "read this server's MCP list and the registry again",
+      "visibleEquivalent": "automatic load on open; 'Try again' when the registry or this server's list could not be read (lib/ui/screens/mcp_catalog_screen.dart:539); a search reads the registry again",
+      "evidence": "lib/ui/screens/mcp_catalog_screen.dart:156",
       "changed": false
     }
   ]

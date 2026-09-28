@@ -12,6 +12,7 @@
 // and look at every changed image before committing it.
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -56,6 +57,7 @@ Future<void> _progress(
   final scene = setupScenes.firstWhere(
     (s) => s.name == 'setup_progress_running',
   );
+  debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
   try {
     await pumpSetupScene(tester, scene, boundary: boundary, light: light);
     if (size != _phone) {
@@ -71,6 +73,7 @@ Future<void> _progress(
       matchesGoldenFile('goldens/${_name(shot, size, light)}.png'),
     );
   } finally {
+    debugDefaultTargetPlatformOverride = null;
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   }
@@ -231,6 +234,7 @@ Future<void> _processes(
     ),
   );
   final boundary = GlobalKey();
+  debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
   try {
     await tester.pumpWidget(
       RepaintBoundary(
@@ -262,6 +266,7 @@ Future<void> _processes(
       matchesGoldenFile('goldens/${_name(shot, size, light)}.png'),
     );
   } finally {
+    debugDefaultTargetPlatformOverride = null;
     await tester.pumpWidget(const SizedBox.shrink());
   }
 }

@@ -7,6 +7,7 @@
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/slice_inbox_work_golden_test.dart
+// and look at every changed image before committing it.
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

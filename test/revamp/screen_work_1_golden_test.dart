@@ -7,6 +7,7 @@
 // Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/screen_work_1_golden_test.dart
 // and look at every changed image before committing it.
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -56,6 +57,7 @@ Future<void> _golden(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final boundary = GlobalKey();
+  debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
   try {
     await tester.pumpWidget(
       captureApp(
@@ -78,6 +80,7 @@ Future<void> _golden(
       matchesGoldenFile('goldens/${_name(state, size, light)}.png'),
     );
   } finally {
+    debugDefaultTargetPlatformOverride = null;
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(KitUndo.window);
     controller.dispose();

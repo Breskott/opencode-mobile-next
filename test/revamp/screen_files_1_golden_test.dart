@@ -202,7 +202,7 @@ void main() {
     final mode = light ? 'light' : 'dark';
 
     testWidgets('files loaded · $mode', (tester) async {
-      await _shot(tester, 'files_loaded', light: light, home: _files);
+      await _shot(tester, 'files_list_loaded', light: light, home: _files);
     });
     testWidgets('files two panes with the viewer · $mode', (tester) async {
       await _shot(

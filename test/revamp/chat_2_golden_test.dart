@@ -9,6 +9,7 @@
 // Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/chat_2_golden_test.dart
 // and look at every changed image before committing it.
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
@@ -230,6 +231,7 @@ Future<void> _shot(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final boundary = GlobalKey();
+  debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
   try {
     await tester.pumpWidget(
       RepaintBoundary(
@@ -270,6 +272,7 @@ Future<void> _shot(
       matchesGoldenFile('goldens/${_name(shot, size, light)}.png'),
     );
   } finally {
+    debugDefaultTargetPlatformOverride = null;
     await tester.pumpWidget(const SizedBox.shrink());
   }
 }

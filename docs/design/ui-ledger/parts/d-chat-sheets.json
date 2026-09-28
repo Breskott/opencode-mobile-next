@@ -951,10 +951,10 @@
      "key": null,
      "file": "lib/ui/screens/chat/voice_conversation.dart",
      "line": 488,
-     "action": "open-sheet",
-     "target": "voice-composer-sheet",
-     "targetWidget": "showVoiceComposerResultSheet",
-     "effect": "_openVoice (chat_screen.dart ~2800): opens the voice model setup sheet if the model is not ready, then showVoiceComposerResultSheet(conversation: true) and merges the transcript into the composer.",
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onVoice -> ChatScreen._openVoice(): the voice model setup sheet when no model is ready; otherwise voice is a composer mode (slice-P10.3, 3273d7ef) and dictation lands in the draft; no voice sheet opens.",
      "gates": [
       "disabled when _voiceOpening || _sending || !_conversationCanSend"
      ],
@@ -1021,10 +1021,6 @@
    "line": 33,
    "purpose": "Choose, download, re-download or delete the on-device speech model pack and pick the transcription language.",
    "reachedFrom": [
-    {
-     "page": "voice-composer-sheet",
-     "element": "voice-composer-sheet-model-settings"
-    },
     {
      "page": "?",
      "element": null,
@@ -1174,204 +1170,6 @@
      "effect": "Navigator.pop(context, true) -> manager.deletePack(pack).",
      "gates": [],
      "destructive": true
-    }
-   ]
-  },
-  {
-   "id": "voice-composer-sheet",
-   "title": "[Voice input] (status: Ready for local voice input / Listening …)",
-   "kind": "sheet",
-   "file": "lib/voice/voice_ui.dart",
-   "widget": "_VoiceComposerSheet",
-   "presentedBy": [
-    "showVoiceComposerResultSheet",
-    "showVoiceComposerSheet"
-   ],
-   "line": 598,
-   "purpose": "Record speech on device, transcribe it locally, review the transcript and insert (or insert and send) it into the chat composer.",
-   "reachedFrom": [
-    {
-     "page": "?",
-     "element": null,
-     "widget": "_ChatScreenState._openVoice (composer onVoice)",
-     "file": "lib/ui/screens/chat_screen.dart",
-     "line": 2844
-    },
-    {
-     "page": "embedded-voice-conversation-controls",
-     "element": "embedded-voice-conversation-controls-listen"
-    }
-   ],
-   "gates": [
-    "platformCapabilities.supportsVoice",
-    "voice.models.isReady (else the model setup sheet opens first)"
-   ],
-   "elements": [
-    {
-     "id": "voice-composer-sheet-dismiss-gesture",
-     "type": "gesture",
-     "label": "[drag down / tap outside / back]",
-     "key": null,
-     "line": 683,
-     "action": "dismiss",
-     "target": null,
-     "effect": "PopScope.onPopInvokedWithResult -> controller.cancel() so no capture outlives the sheet.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-interrupted-close",
-     "type": "button",
-     "label": "Close voice input",
-     "key": null,
-     "line": 697,
-     "action": "dismiss",
-     "target": null,
-     "effect": "_close(): controller.cancel() then Navigator.pop.",
-     "gates": [
-      "!_current (scope changed, app backgrounded or route covered)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-stop-recording",
-     "type": "button",
-     "label": "Stop recording",
-     "key": "stop-voice-recording",
-     "line": 983,
-     "action": "other",
-     "target": null,
-     "effect": "controller.stopListening(): ends capture and starts transcription.",
-     "gates": [
-      "controller.state == VoiceComposerState.listening"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-draft-field",
-     "type": "text-field",
-     "label": "Review transcript",
-     "key": "voice-draft-field",
-     "line": 734,
-     "action": "other",
-     "target": null,
-     "effect": "Editable transcript (_draft) before inserting.",
-     "gates": [
-      "controller.state == VoiceComposerState.draft"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-technical-details",
-     "type": "list-tile",
-     "label": "Technical details",
-     "key": null,
-     "line": 1046,
-     "action": "other",
-     "target": null,
-     "effect": "ExpansionTile: expands raw error text.",
-     "gates": [
-      "controller.state == VoiceComposerState.error && controller.error != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-open-settings",
-     "type": "button",
-     "label": "Open app settings",
-     "key": null,
-     "line": 770,
-     "action": "external-link",
-     "target": null,
-     "effect": "voiceDevicePlatform.openAppSettings(): leaves to the OS app settings for the microphone permission.",
-     "gates": [
-      "controller.error is VoicePermissionDenied && permanent"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-retry",
-     "type": "button",
-     "label": "Try again",
-     "key": null,
-     "line": 778,
-     "action": "other",
-     "target": null,
-     "effect": "controller.startListening().",
-     "gates": [
-      "controller.state == VoiceComposerState.error"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-start-listening",
-     "type": "button",
-     "label": "Start listening",
-     "key": null,
-     "line": 786,
-     "action": "other",
-     "target": null,
-     "effect": "controller.startListening().",
-     "gates": [
-      "controller.state == VoiceComposerState.idle"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": "voice-composer-cancel",
-     "line": 798,
-     "action": "dismiss",
-     "target": null,
-     "effect": "_close(): controller.cancel() then Navigator.pop (null result). Same key in draft and non-draft layouts (lines 798 and 824).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-insert",
-     "type": "button",
-     "label": "Insert",
-     "key": "insert-voice-draft",
-     "line": 804,
-     "action": "submit",
-     "target": null,
-     "effect": "_insert(send: false): pops VoiceComposerResult(text); ChatScreen._openVoice merges it into the composer via mergeVoiceDraft.",
-     "gates": [
-      "controller.state == VoiceComposerState.draft"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-insert-send",
-     "type": "button",
-     "label": "Insert & send",
-     "key": "insert-voice-draft-send",
-     "line": 813,
-     "action": "submit",
-     "target": null,
-     "effect": "_insert(send: true): pops VoiceComposerResult(text, send: true); ChatScreen._openVoice inserts and then calls _send().",
-     "gates": [
-      "controller.state == VoiceComposerState.draft",
-      "!widget.conversation"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-model-settings",
-     "type": "button",
-     "label": "<model pack> · <language>",
-     "key": null,
-     "line": 831,
-     "action": "open-sheet",
-     "target": "voice-model-setup-sheet",
-     "targetWidget": "showVoiceModelSetupSheet",
-     "effect": "showVoiceModelSetupSheet(context, controller.models); setState on return.",
-     "gates": [
-      "disabled while listening / initializing / loading / finishingCancellation / transcribing"
-     ],
-     "destructive": false
     }
    ]
   },
@@ -2142,7 +1940,7 @@
      "type": "button",
      "label": "Dismiss",
      "key": "form-dismiss-confirm-button",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 447,
      "action": "mutate",
      "target": null,
@@ -2155,7 +1953,7 @@
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 443,
      "action": "dismiss",
      "target": null,

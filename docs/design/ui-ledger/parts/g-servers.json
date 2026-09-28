@@ -76,21 +76,6 @@
       ],
       "elements": [
         {
-          "id": "servers-background-checks",
-          "type": "list-tile",
-          "label": "Background checks · Last checked {when}",
-          "key": "servers-background-checks",
-          "action": "navigate",
-          "target": "profile-monitor",
-          "targetWidget": "ProfileMonitorScreen",
-          "effect": "Pushes ProfileMonitorScreen(controller): each saved server's last and next check and \"Check monitored servers\". The row says \"Off for every server\" when none is monitored.",
-          "gates": [
-            "bootstrap.store.profiles.isNotEmpty",
-            "!connection.isIsolated"
-          ],
-          "destructive": false
-        },
-        {
           "id": "servers-about",
           "type": "icon-button",
           "label": "About and open source notices",
@@ -1652,6 +1637,21 @@
             "no installed or available server version"
           ],
           "destructive": false
+        },
+        {
+          "id": "server-settings-ai-setup",
+          "type": "list-tile",
+          "label": "AI setup",
+          "key": "ai-setup-entry",
+          "line": 362,
+          "action": "navigate",
+          "target": "ai-setup",
+          "targetWidget": "AiSetupScreen",
+          "effect": "pushKitPage(AiSetupScreen(controller, serverName)).",
+          "gates": [
+            "profile != null && controller.capabilities.setupConfigRead"
+          ],
+          "destructive": false
         }
       ],
       "remarks": [
@@ -2443,83 +2443,6 @@
       ]
     },
     {
-      "id": "profile-monitor",
-      "title": "Background checks",
-      "kind": "screen",
-      "file": "lib/ui/screens/profile_monitor_screen.dart",
-      "widget": "ProfileMonitorScreen",
-      "presentedBy": [],
-      "line": 90,
-      "purpose": "Live saved-server attention list: each readable server with its monitor status, last and next check, pending requests and observed busy intervals. Its settings live in Notifications, one link away.",
-      "reachedFrom": [
-        {
-          "page": "servers",
-          "element": "servers-background-checks"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "profile-monitor-refresh",
-          "type": "icon-button",
-          "label": "Check monitored servers",
-          "key": null,
-          "line": 101,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "controller.profileMonitor.refresh().",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "profile-monitor-notification-settings",
-          "type": "link",
-          "label": "Notification settings",
-          "key": "monitor-notification-settings",
-          "line": 118,
-          "action": "navigate",
-          "target": "notifications-settings",
-          "targetWidget": "NotificationsSettingsScreen",
-          "effect": "Pushes NotificationsSettingsScreen(controller), where monitoring, Notify, check-ins, quiet hours and Wi-Fi only are set.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "profile-monitor-request-row",
-          "type": "list-tile",
-          "label": "<session title | Session> / {server} · Permission|Question|Form|Check-in due · last checked",
-          "key": "monitor-row-<request identity>",
-          "line": 238,
-          "action": "navigate",
-          "target": "permission-sheet",
-          "targetWidget": "openMonitoredRequest",
-          "effect": "_MonitorRequestRow -> openMonitoredRequest(context, controller, MonitoredRoute): may ask to switch server first, then controller.prepareMonitoredRequest(route) and opens showPermissionSheet / showQuestionSheet / presentConnectionForm, or pushes ChatScreen(sessionID) for a check-in; finally profileMonitor.refresh().",
-          "gates": [
-            "supported && rules.enabled",
-            "snapshot.isCurrent"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "profile-monitor-busy-row",
-          "type": "list-tile",
-          "label": "<session title | Session> / [Check-in due ·] observed busy {minutes} min since {time}",
-          "key": "monitor-busy-<session id>",
-          "line": 412,
-          "action": "navigate",
-          "target": "chat",
-          "targetWidget": "ChatScreen",
-          "effect": "_BusyIntervalRow -> openMonitoredRequest(kind: checkIn): switches/validates the profile and pushes ChatScreen(sessionID).",
-          "gates": [
-            "supported && rules.enabled",
-            "snapshot.isCurrent && rules.checkInAfterMinutes != null"
-          ],
-          "destructive": false
-        }
-      ]
-    },
-    {
       "id": "profile-monitor-switch-server-dialog",
       "title": "Switch server to review?",
       "kind": "dialog",
@@ -2529,16 +2452,8 @@
         "openMonitoredRequest"
       ],
       "line": 25,
-      "purpose": "Asks before switching away from a profile that still has busy sessions in order to open a monitored request on another saved server.",
+      "purpose": "Asks before switching away from a profile that still has busy sessions in order to open a monitored request on another saved server (openMonitoredRequest; the Background checks page it once came with was removed by slice-close-misc).",
       "reachedFrom": [
-        {
-          "page": "profile-monitor",
-          "element": "profile-monitor-request-row"
-        },
-        {
-          "page": "profile-monitor",
-          "element": "profile-monitor-busy-row"
-        },
         {
           "page": "embedded-profile-monitor-inbox",
           "element": "embedded-profile-monitor-inbox-request-row"
@@ -2547,6 +2462,13 @@
           "page": "system",
           "element": null,
           "trigger": "notification tap for a monitored request -> openMonitoredRequest (lib/main.dart:1018)"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "OtherServersPanel / attention feed rows (openMonitoredRequest)",
+          "file": "lib/ui/widgets/other_servers_panel.dart",
+          "line": 98
         }
       ],
       "gates": [
@@ -3222,6 +3144,92 @@
           "effect": "Pops with true; budgets.clearAll().",
           "gates": [],
           "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "ai-setup",
+      "title": "AI setup",
+      "kind": "screen",
+      "file": "lib/ui/screens/settings/ai_setup_screen.dart",
+      "widget": "AiSetupScreen",
+      "presentedBy": [],
+      "line": 29,
+      "purpose": "Review only: the server's AI settings in effect (OpenCode 1) or its ordered sources (OpenCode 2), its tool servers and suggestions; all values redacted.",
+      "reachedFrom": [
+        {
+          "page": "server-settings",
+          "element": "server-settings-ai-setup"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "Settings search entry",
+          "file": "lib/ui/search/search_index.dart",
+          "line": 1001
+        }
+      ],
+      "gates": [
+        "controller.capabilities.setupConfigRead"
+      ],
+      "elements": [
+        {
+          "id": "ai-setup-refresh",
+          "type": "icon-button",
+          "label": "Read this server's setup again",
+          "key": "ai-setup-refresh",
+          "line": 97,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_session.refresh().",
+          "gates": [
+            "online and ready or empty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "ai-setup-change-sign-in",
+          "type": "button",
+          "label": "Change sign-in for {server}",
+          "key": "ai-setup-change-sign-in",
+          "line": 145,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": null,
+          "effect": "pushNamed('/servers', arguments: 'edit-active').",
+          "gates": [
+            "the server needs a sign-in"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "ai-setup-try-again",
+          "type": "button",
+          "label": "Try again",
+          "key": "ai-setup-try-again",
+          "line": 161,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_session.refresh().",
+          "gates": [
+            "read failed"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "ai-setup-all-settings",
+          "type": "button",
+          "label": "All settings | All sources",
+          "key": "ai-setup-all-settings",
+          "line": 314,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "KitDetailsFold: the redacted settings or sources as JSON, in place.",
+          "gates": [],
+          "destructive": false
         }
       ]
     }

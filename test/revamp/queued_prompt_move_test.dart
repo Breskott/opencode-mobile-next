@@ -12,6 +12,7 @@
 // and look at every changed image before committing it.
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -599,6 +600,8 @@ void main() {
       final wide = size == _wide ? ' wide' : '';
       testWidgets('server row menu$wide', (tester) async {
         final boundary = GlobalKey();
+        debugDefaultTargetPlatformOverride =
+            TargetPlatform.android; // ARCH-11; reset in finally
         final (_, done) = await _openMenu(
           tester,
           boundary: boundary,
@@ -611,12 +614,15 @@ void main() {
             matchesGoldenFile(_golden('row_menu', size)),
           );
         } finally {
+          debugDefaultTargetPlatformOverride = null;
           await done();
         }
       });
 
       testWidgets('move sheet$wide', (tester) async {
         final boundary = GlobalKey();
+        debugDefaultTargetPlatformOverride =
+            TargetPlatform.android; // ARCH-11; reset in finally
         final (_, done) = await _openSheet(
           tester,
           boundary: boundary,
@@ -629,6 +635,7 @@ void main() {
             matchesGoldenFile(_golden('sheet', size)),
           );
         } finally {
+          debugDefaultTargetPlatformOverride = null;
           await done();
         }
       });

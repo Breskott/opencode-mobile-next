@@ -42,21 +42,6 @@
           "destructive": false
         },
         {
-          "id": "chat-appbar-title",
-          "type": "gesture",
-          "label": "<session title> (tooltip shows full title)",
-          "key": "chat-title",
-          "line": 6447,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Tooltip only: long-press/hover shows presentedSessionTitle(session); no tap handler.",
-          "gates": [
-            "widget.showAppBar"
-          ],
-          "destructive": false
-        },
-        {
           "id": "chat-appbar-stop-reading",
           "type": "icon-button",
           "label": "Stop reading aloud",
@@ -1064,10 +1049,10 @@
           "label": "[voice input]",
           "key": null,
           "line": 7285,
-          "action": "open-sheet",
-          "target": "voice-composer-result-sheet",
-          "targetWidget": "showVoiceComposerResultSheet",
-          "effect": "Host wiring of _ChatComposer (chat/composer.dart:21): onVoice -> _openVoice() (line 2801): showVoiceModelSetupSheet when models are missing, then showVoiceComposerResultSheet.",
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onVoice -> ChatScreen._openVoice(): the voice model setup sheet when no model is ready; otherwise voice is a composer mode (slice-P10.3, 3273d7ef) and dictation lands in the draft; no voice sheet opens.",
           "gates": [],
           "destructive": false
         },

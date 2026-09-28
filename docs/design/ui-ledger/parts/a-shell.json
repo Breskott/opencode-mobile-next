@@ -2114,12 +2114,12 @@
       "id": "confirm-sheet",
       "title": "[Generic confirmation sheet: caller-supplied title]",
       "kind": "sheet",
-      "file": "lib/ui/widgets/confirm_sheet.dart",
-      "widget": "showConfirmSheet",
+      "file": "lib/ui/kit/kit_confirm_sheet.dart",
+      "widget": "showKitConfirm",
       "presentedBy": [
         "showConfirmSheet"
       ],
-      "line": 23,
+      "line": 58,
       "purpose": "Shared bottom-sheet confirmation (icon, title, message, one primary action, cancel). Callers supply copy, keys and the destructive flag and perform the actual mutation after it returns true; caller agents record their own instances.",
       "reachedFrom": [],
       "gates": [
@@ -2560,14 +2560,6 @@
     {
       "file": "lib/ui/widgets/connection_failure.dart",
       "reason": "ConnectionFailure.diagnose model + ConnectionFailureAction enum used by SavedServerConnectionCard; no widgets"
-    },
-    {
-      "file": "lib/ui/widgets/glass_surface.dart",
-      "reason": "pure rendering helper (frosted dock surface), no interactive element"
-    },
-    {
-      "file": "lib/ui/widgets/entrance.dart",
-      "reason": "EntranceReveal animation wrapper; no interactive element"
     },
     {
       "file": "lib/ui/app_iconography.dart",

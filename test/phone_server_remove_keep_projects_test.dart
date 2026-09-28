@@ -11,6 +11,7 @@
 // and look at every changed image before committing it.
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -387,6 +388,7 @@ void main() {
     }) async {
       final boundary = GlobalKey();
       final linux = _RemovalLinux(sizes: _measured);
+      debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
       try {
         await pumpPhone(
           tester,
@@ -429,6 +431,7 @@ void main() {
           matchesGoldenFile('goldens/$label.png'),
         );
       } finally {
+        debugDefaultTargetPlatformOverride = null;
         await unmountPhone(tester);
       }
     }

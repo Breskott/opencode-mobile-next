@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
@@ -426,6 +427,18 @@ class KitStatusLine extends StatelessWidget {
     final firstLine =
         MediaQuery.textScalerOf(context).scale(bodyStyle.fontSize ?? 16) *
         (bodyStyle.height ?? 1);
+    // Stacked with the controls apart, More (and Dismiss) sit beside the
+    // message while the action sits under it, inset towards the start: by
+    // geometry alone a screen reader would read the action first (it
+    // starts further left in the band More spans). Read the top row, then
+    // the action under it (A11Y-4). The wrappers are always there (empty
+    // otherwise) so a change of layout keeps the same elements.
+    final ordered = stacked && !controlsTogether;
+    Widget inOrder(double order, Widget child) => Semantics(
+      container: ordered,
+      sortKey: ordered ? OrdinalSortKey(order) : null,
+      child: child,
+    );
     return Semantics(
       container: true,
       child: DecoratedBox(
@@ -471,6 +484,7 @@ class KitStatusLine extends StatelessWidget {
                       children: [
                         Semantics(
                           container: true,
+                          sortKey: ordered ? const OrdinalSortKey(0) : null,
                           liveRegion: true,
                           label: announced,
                           excludeSemantics: true,
@@ -526,7 +540,7 @@ class KitStatusLine extends StatelessWidget {
                             ],
                           )
                         else if (stacked && actionButton != null)
-                          KitInset(child: actionButton),
+                          inOrder(3, KitInset(child: actionButton)),
                         if (disabledReason != null)
                           Padding(
                             padding: EdgeInsetsDirectional.only(
@@ -540,8 +554,8 @@ class KitStatusLine extends StatelessWidget {
                 ),
                 if (!stacked && actionButton != null) actionButton,
                 if (!(stacked && controlsTogether)) ...[
-                  ?moreMenu,
-                  ?dismissButton,
+                  if (moreMenu != null) inOrder(1, moreMenu),
+                  if (dismissButton != null) inOrder(2, dismissButton),
                 ],
               ],
             ),

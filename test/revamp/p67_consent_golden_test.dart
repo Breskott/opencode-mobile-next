@@ -6,6 +6,7 @@
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/p67_consent_golden_test.dart
+// and look at every changed image before committing it.
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -177,7 +178,7 @@ void main() {
     testWidgets('your answers · $mode', (tester) async {
       await _shot(
         tester,
-        'p67_answers',
+        'p67_consent_answers',
         light: light,
         home: (c) => AutomationSettingsScreen(controller: c),
       );
@@ -187,7 +188,7 @@ void main() {
   testWidgets('your answers wide · dark', (tester) async {
     await _shot(
       tester,
-      'p67_answers',
+      'p67_consent_answers',
       light: false,
       size: _wide,
       home: (c) => AutomationSettingsScreen(controller: c),

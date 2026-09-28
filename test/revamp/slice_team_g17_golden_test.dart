@@ -5,10 +5,12 @@
 // server; and the host guide sheet. At 412x915 dark and 1280x800 light, with
 // the app's real fonts.
 //
-// Regenerate deliberately and look at every changed image:
+// Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/slice_team_g17_golden_test.dart
+// and look at every changed image before committing it.
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -296,35 +298,40 @@ Future<void> _golden(
   addTearDown(tester.view.reset);
   final boundary = GlobalKey();
   final host = GlobalKey();
-  await tester.pumpWidget(
-    RepaintBoundary(
-      key: boundary,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: captureTheme(light: light),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(disableAnimations: true),
-          child: child!,
+  debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
+  try {
+    await tester.pumpWidget(
+      RepaintBoundary(
+        key: boundary,
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: captureTheme(light: light),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: child!,
+          ),
+          home: body ?? Scaffold(key: host, body: const SizedBox.expand()),
         ),
-        home: body ?? Scaffold(key: host, body: const SizedBox.expand()),
       ),
-    ),
-  );
-  for (var i = 0; i < 10; i++) {
-    await tester.pump(const Duration(milliseconds: 100));
+    );
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    if (open != null) {
+      unawaited(open(host.currentContext!));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+    }
+    expect(tester.takeException(), isNull);
+    await expectLater(
+      find.byKey(boundary),
+      matchesGoldenFile('goldens/$name.png'),
+    );
+  } finally {
+    debugDefaultTargetPlatformOverride = null;
   }
-  if (open != null) {
-    unawaited(open(host.currentContext!));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-  }
-  expect(tester.takeException(), isNull);
-  await expectLater(
-    find.byKey(boundary),
-    matchesGoldenFile('goldens/$name.png'),
-  );
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pump(const Duration(seconds: 1));
 }
@@ -367,7 +374,13 @@ void main() {
         : '_${size.width.toInt()}x${size.height.toInt()}';
     final mode = light ? 'light' : 'dark';
     for (final scene in _Scene.values) {
-      final name = 'team_g17_${scene.name}${sized}_$mode';
+      // TEST-20: golden names are lower-case snake_case (plannerOff ->
+      // planner_off).
+      final state = scene.name.replaceAllMapped(
+        RegExp('[A-Z]'),
+        (m) => '_${m[0]!.toLowerCase()}',
+      );
+      final name = 'team_g17_$state${sized}_$mode';
       testWidgets(name, (tester) async {
         switch (scene) {
           case _Scene.home:

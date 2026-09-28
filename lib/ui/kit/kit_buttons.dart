@@ -268,9 +268,18 @@ class KitButton extends StatelessWidget {
     }
     // A touch shows the pressed state on the next frame (KitPressTracker),
     // not after Material's tap-or-scroll wait; a quick tap still shows it.
-    return _KitPressBuilder(
-      enabled: onPressed != null && !working,
-      builder: _buildButton,
+    //
+    // The tracker's Listener is the outermost render object, so the
+    // button's semantics are merged into one node here: the button's own
+    // element resolves straight to its node (TEST-1/TEST-5 tooling:
+    // `tester.getSemantics(find.byKey(...))` walks outward from the
+    // element's render object), and a screen reader hears the same one
+    // button as before.
+    return MergeSemantics(
+      child: _KitPressBuilder(
+        enabled: onPressed != null && !working,
+        builder: _buildButton,
+      ),
     );
   }
 
@@ -480,19 +489,20 @@ class KitButton extends StatelessWidget {
                 label: labelWidget,
               );
     }
-    if (inFlight) {
-      // Honest while in flight: the button looks enabled but ignores taps,
-      // so a screen reader hears it as not pressable now, not as an
-      // enabled button that does nothing.
-      result = Semantics(
-        container: true,
-        button: true,
-        enabled: false,
-        label: label,
-        excludeSemantics: true,
-        child: result,
-      );
-    }
+    // Honest while in flight: the button looks enabled but ignores taps,
+    // so a screen reader hears it as not pressable now, not as an enabled
+    // button that does nothing. The wrapper is always there (empty when
+    // idle) so starting or finishing work keeps the same button element:
+    // the icon and the spinner crossfade and the width eases, instead of a
+    // rebuilt button jumping to its new state.
+    result = Semantics(
+      container: inFlight,
+      button: inFlight ? true : null,
+      enabled: inFlight ? false : null,
+      label: inFlight ? label : null,
+      excludeSemantics: inFlight,
+      child: result,
+    );
     final reason = disabledReason;
     if (reason != null && onPressed == null) {
       // STATE-8: a disabled control's reason is also its semantic hint.

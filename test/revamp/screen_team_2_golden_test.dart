@@ -4,9 +4,11 @@
 // 412x915 and 1280x800, light and dark, with the app's real fonts and the
 // recorded team fixture (test/support/team_golden_fixture.dart).
 //
-// Regenerate deliberately and look at every image:
+// Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/screen_team_2_golden_test.dart
+// and look at every changed image before committing it.
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -53,41 +55,48 @@ void main() {
         final controller = await teamSceneController(shot.scene);
         addTearDown(controller.dispose);
         final boundary = GlobalKey();
-        await tester.pumpWidget(
-          MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: captureTheme(light: light),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(disableAnimations: true),
-              child: RepaintBoundary(key: boundary, child: child),
+        debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
+        try {
+          await tester.pumpWidget(
+            MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: captureTheme(light: light),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(disableAnimations: true),
+                child: RepaintBoundary(key: boundary, child: child),
+              ),
+              home: TeamHomeScreen(
+                controller: controller,
+                now: () => teamSceneClock,
+              ),
             ),
-            home: TeamHomeScreen(
-              controller: controller,
-              now: () => teamSceneClock,
-            ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
-        switch (shot) {
-          case _Shot.homeSearch:
-            await tester.tap(
-              find.byKey(const ValueKey('team-home-search-open')),
-            );
-          case _Shot.startRun || _Shot.startRunWide:
-            await tester.tap(find.byKey(const ValueKey('team-home-start-run')));
-          case _Shot.homeLoaded || _Shot.homeLoadedWide || _Shot.homeEmpty:
-            break;
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+          switch (shot) {
+            case _Shot.homeSearch:
+              await tester.tap(
+                find.byKey(const ValueKey('team-home-search-open')),
+              );
+            case _Shot.startRun || _Shot.startRunWide:
+              await tester.tap(
+                find.byKey(const ValueKey('team-home-start-run')),
+              );
+            case _Shot.homeLoaded || _Shot.homeLoadedWide || _Shot.homeEmpty:
+              break;
+          }
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 600));
+          expect(tester.takeException(), isNull);
+          await expectLater(
+            find.byKey(boundary),
+            matchesGoldenFile('goldens/${shot.name(light)}.png'),
+          );
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
         }
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 600));
-        expect(tester.takeException(), isNull);
-        await expectLater(
-          find.byKey(boundary),
-          matchesGoldenFile('goldens/${shot.name(light)}.png'),
-        );
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump(const Duration(seconds: 1));
       });

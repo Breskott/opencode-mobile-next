@@ -32,7 +32,7 @@ Future<void> _mic(WidgetTester tester) async {
 }
 
 final _scenes = <String, (_Scene, List<Size>)>{
-  'p103_dictating': (
+  'p103_voice_dictating': (
     (tester, voice) => _mic(tester),
     const [Size(412, 915), Size(1280, 800)],
   ),
@@ -48,7 +48,7 @@ final _scenes = <String, (_Scene, List<Size>)>{
     },
     const [Size(412, 915)],
   ),
-  'p103_conversation': (
+  'p103_voice_conversation': (
     (tester, voice) async {
       await tester.tap(find.byKey(const Key('composer-tools-button')));
       await tester.pumpAndSettle();

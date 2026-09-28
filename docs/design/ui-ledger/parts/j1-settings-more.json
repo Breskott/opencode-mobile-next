@@ -581,10 +581,6 @@
           "element": "workspace-section-menu-background"
         },
         {
-          "page": "profile-monitor",
-          "element": "profile-monitor-notification-settings"
-        },
-        {
           "page": "provider-quota",
           "element": "provider-quota-monitor-notification-settings"
         }

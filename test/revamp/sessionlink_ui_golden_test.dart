@@ -12,6 +12,7 @@
 // and look at every changed image before committing it.
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -142,6 +143,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final boundary = GlobalKey();
+    debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
     try {
       await tester.pumpWidget(
         RepaintBoundary(
@@ -180,6 +182,7 @@ void main() {
         matchesGoldenFile('goldens/${_name(name, size, light)}.png'),
       );
     } finally {
+      debugDefaultTargetPlatformOverride = null;
       await tester.pumpWidget(const SizedBox.shrink());
     }
   }

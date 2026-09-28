@@ -54,7 +54,7 @@ String settingsSceneName(SettingsScene scene) => switch (scene) {
   SettingsScene.servers => 'servers_list',
   SettingsScene.addServer => 'servers_add',
   SettingsScene.addServerFailed => 'servers_add_failed',
-  SettingsScene.automation => 'settings_automation',
+  SettingsScene.automation => 'settings_automation_loaded',
 };
 
 final _en = lookupAppLocalizations(const Locale('en'));

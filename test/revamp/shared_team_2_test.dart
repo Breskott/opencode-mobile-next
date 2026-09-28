@@ -10,6 +10,7 @@
 // Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/shared_team_2_test.dart
 // and look at every changed image before committing it.
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -166,19 +167,25 @@ void main() {
         testWidgets('golden: open$suffix · $mode', (tester) async {
           await tester.runAsync(loadCaptureFonts);
           final boundary = GlobalKey();
-          await _openHostSheet(
-            tester,
-            size: size,
-            light: light,
-            boundary: boundary,
-          );
-          expect(tester.takeException(), isNull);
-          await expectLater(
-            find.byKey(boundary),
-            matchesGoldenFile(
-              'goldens/team_host_details_sheet_open${suffix}_$mode.png',
-            ),
-          );
+          debugDefaultTargetPlatformOverride =
+              TargetPlatform.android; // ARCH-11
+          try {
+            await _openHostSheet(
+              tester,
+              size: size,
+              light: light,
+              boundary: boundary,
+            );
+            expect(tester.takeException(), isNull);
+            await expectLater(
+              find.byKey(boundary),
+              matchesGoldenFile(
+                'goldens/team_host_details_sheet_open${suffix}_$mode.png',
+              ),
+            );
+          } finally {
+            debugDefaultTargetPlatformOverride = null;
+          }
         });
       }
     }
