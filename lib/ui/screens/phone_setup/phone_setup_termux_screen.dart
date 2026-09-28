@@ -10,12 +10,10 @@ import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/termux_host_setup.dart';
 import '../../../termux/bridge.dart';
-import '../../app_iconography.dart';
 import '../../kit/kit.dart';
 import '../../widgets/external_link.dart';
 import '../../widgets/setup_progress_view.dart';
 import '../../widgets/setup_ui_messages.dart';
-import '../servers_screen.dart' show ServersRouteRequest;
 import 'phone_setup_termux_job_screen.dart';
 
 /// Where Termux comes from: the current F-Droid build.
@@ -377,24 +375,8 @@ class _PhoneSetupTermuxScreenState extends ConsumerState<PhoneSetupTermuxScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n;
-    if (!TermuxBridge.supported) {
-      // Termux is an Android app: said plainly, with the way that works.
-      return KitScreen(
-        topBar: KitTopBar(title: l10n.phoneSetupStartScreenTitle),
-        body: KitStateView(
-          key: const ValueKey('phone-setup-termux-unsupported'),
-          icon: AppIconography.deviceOff,
-          title: l10n.e7SetupAndroidOnly,
-          body: l10n.e7SetupUnsupportedSetup,
-          primary: KitAction(
-            label: l10n.setupConnectExisting,
-            onPressed: () => Navigator.of(
-              context,
-            ).pushNamed('/servers', arguments: const ServersRouteRequest.add()),
-          ),
-        ),
-      );
-    }
+    // Termux is an Android app: said plainly, with the way that works.
+    if (!TermuxBridge.supported) return const PhoneSetupUnsupportedScreen();
     final progress = _progress(l10n);
     final busy = _setup.busy;
     final permissionDenied = _setup.error == l10n.termuxPermissionDenied;

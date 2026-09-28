@@ -303,6 +303,16 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     if (mounted) unawaited(_load());
   }
 
+  /// Installs the same version again after an install or update that did
+  /// not finish.
+  Future<void> _reinstall() async {
+    if (_host.kind == PhoneHostKind.inApp) {
+      return _inApp(PhoneServerAction.update);
+    }
+    await openPhoneSetupTermux(context, job: TermuxHostJob.update);
+    if (mounted) unawaited(_load());
+  }
+
   Future<void> _showProgress() async {
     if (_host.kind == PhoneHostKind.termux) {
       await openPhoneSetupTermux(context, job: TermuxHostJob.update);
@@ -378,23 +388,21 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
       return _inApp(PhoneServerAction.update);
     }
     final l10n = _l10n;
+    final runtime = _runtimeName(_host.runtime);
     if (_connection.busySessions.isNotEmpty) {
       await showKitAlert(
         context,
-        title: l10n.e7SetupConfirmUpdate,
-        body: l10n.e7SetupStopBeforeUpdate,
+        title: l10n.thisPhoneUpdateTitle(runtime),
+        body: l10n.thisPhoneUpdateBusy,
         icon: AppIconography.warning,
       );
       return;
     }
     final confirmed = await showKitConfirm(
       context,
-      title: l10n.e7SetupConfirmUpdate,
-      body: l10n.setupRuntimeUpdateDetail(
-        _runtimeName(_host.runtime),
-        _host.runtime.pinnedVersion,
-      ),
-      consequences: [l10n.e7SetupUpdateInterruption],
+      title: l10n.thisPhoneUpdateTitle(runtime),
+      body: l10n.thisPhoneUpdateBody(_host.runtime.pinnedVersion),
+      consequences: [l10n.thisPhoneUpdateKept],
       confirmLabel: l10n.thisPhoneUpdate,
       icon: AppIconography.systemDownload,
       confirmKey: const ValueKey('this-phone-update-confirm'),
@@ -670,9 +678,22 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     // The generation is the title, so the line under it says the rest once.
     final title = _runtimeName(_host.runtime);
     final detail = [?_host.version, where].join(' · ');
-    final failure = _removing ? null : _host.failure;
     final switchTarget = _host.switchTarget;
     final switchPrevious = _host.switchPrevious;
+    // What went wrong, in plain words; the host's own text is under
+    // Details at the end of the page.
+    final problem = _removing || working ? null : _host.problem;
+    final runtimeName = _runtimeName(_host.runtime);
+    final String? line = switch (problem) {
+      _ when _removing || working => null,
+      _ when state == PhoneHostState.needsYou && switchTarget != null =>
+        l10n.thisPhoneSwitchStopped(_runtimeName(switchTarget)),
+      PhoneHostProblem.start => l10n.thisPhoneStartFailed(runtimeName),
+      PhoneHostProblem.install => l10n.thisPhoneInstallFailed(runtimeName),
+      PhoneHostProblem.stop => l10n.thisPhoneStopFailed(runtimeName),
+      PhoneHostProblem.check => l10n.thisPhoneCheckFailed(runtimeName),
+      null => null,
+    };
 
     KitAction? primary;
     KitAction? secondary;
@@ -709,10 +730,31 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
               ),
             );
           }
+        case PhoneHostState.needsYou || PhoneHostState.notSetUp
+            when problem == PhoneHostProblem.check:
+          primary = KitAction(
+            key: const ValueKey('this-phone-check-again'),
+            label: l10n.commonRetry,
+            onPressed: () => unawaited(_load()),
+          );
+        case PhoneHostState.needsYou when problem == PhoneHostProblem.install:
+          primary = KitAction(
+            key: const ValueKey('this-phone-reinstall'),
+            label: l10n.thisPhoneInstallAgain,
+            onPressed: () => unawaited(_reinstall()),
+          );
+          // The version installed before may still start.
+          secondary = KitAction(
+            key: const ValueKey('this-phone-start'),
+            label: l10n.thisPhoneStart,
+            onPressed: () => unawaited(_start()),
+          );
         case PhoneHostState.needsYou || PhoneHostState.stopped:
           primary = KitAction(
             key: const ValueKey('this-phone-start'),
-            label: l10n.thisPhoneStart,
+            label: problem == PhoneHostProblem.start
+                ? l10n.thisPhoneStartAgain
+                : l10n.thisPhoneStart,
             onPressed: () => unawaited(_start()),
           );
         case PhoneHostState.running:
@@ -771,15 +813,13 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
                   ? KitTextTone.success
                   : KitTextTone.secondary,
             ),
-            below: failure == null
+            below: line == null
                 ? null
                 : KitText(
-                    failure,
+                    line,
                     key: const ValueKey('this-phone-failure'),
                     role: KitTextRole.secondary,
                     tone: KitTextTone.primary,
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
                   ),
           ),
         ),
@@ -819,6 +859,9 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     // Update only when the installed server is not already the pinned one.
     final installed = _host.version?.trim().replaceFirst(RegExp('^v'), '');
     final upToDate = installed == _host.runtime.pinnedVersion;
+    // After an install that did not finish, Install again at the top is
+    // this very act: it is not offered twice.
+    final reinstalling = _host.problem == PhoneHostProblem.install;
     final recoveryProfile = inApp
         ? null
         : _connection.store.profiles
@@ -829,7 +872,13 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     return KitRowGroup(
       key: const ValueKey('this-phone-list'),
       children: [
-        if (hasEngine && !halfSwitched && !upToDate)
+        if (hasEngine && !halfSwitched && upToDate)
+          KitRow(
+            key: const ValueKey('this-phone-up-to-date'),
+            leading: icon(AppIconography.check),
+            title: l10n.thisPhoneUpToDate(_host.runtime.pinnedVersion),
+          ),
+        if (hasEngine && !halfSwitched && !upToDate && !reinstalling)
           KitRow(
             key: const ValueKey('this-phone-update'),
             leading: icon(AppIconography.systemDownload),
@@ -1012,6 +1061,10 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
         foldKey: const ValueKey('this-phone-details'),
         expanded: _detailsOpen,
         onExpansionChanged: _details,
+        // What the host said went wrong, word for word (redacted by the
+        // fold); the status row says it in plain words.
+        text: _removing ? null : _host.failure,
+        textKey: const ValueKey('this-phone-failure-details'),
         child: KitLogPanel(
           lines: _log,
           panelKey: const ValueKey('this-phone-log'),

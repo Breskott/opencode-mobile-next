@@ -16,6 +16,7 @@ import '../kit/kit_progress.dart';
 import '../kit/kit_state_view.dart';
 import '../kit/kit_status_mark.dart';
 import '../kit/scenes/setup_steps_scene.dart';
+import 'setup_ui_messages.dart';
 
 /// The progress of any setup job as one state (design standard §3, §4,
 /// §10), now a thin adapter over the kit (KitChecklist.md, C24): it maps
@@ -41,6 +42,7 @@ class SetupProgressView extends StatefulWidget {
     this.note,
     this.title,
     this.personActions = const {},
+    this.failureActions = const {},
     this.timeLine,
   });
 
@@ -72,6 +74,13 @@ class SetupProgressView extends StatefulWidget {
   /// needs-you mark, says its [ComponentProgress.stage] as the instruction,
   /// and offers this button.
   final Map<String, KitAction> personActions;
+
+  /// A failed row's own way forward, by row id, where it is not Continue
+  /// setup ("Get the current Termux" on a too-old Termux): the row's one
+  /// button. Rows named here or in [personActions] are the host's own, and
+  /// their error is the host's words; every other row's error is the job's
+  /// technical text, which goes under Details.
+  final Map<String, KitAction> failureActions;
 
   /// The line under the bar in place of the engine's estimate, for a host
   /// that knows how long it has been going but not how long is left.
@@ -175,7 +184,14 @@ class _SetupProgressViewState extends State<SetupProgressView> {
     _furthest = progress.overall.clamp(0, 1).toDouble();
     _lastReport = clock.now();
     _signature = _signatureOf(progress);
-    _syncLog(progress);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The log's first fill needs the locale (what counts as the app's own
+    // words), so it waits for the dependencies.
+    _syncLog(widget.progress);
   }
 
   @override
@@ -211,11 +227,42 @@ class _SetupProgressViewState extends State<SetupProgressView> {
   }
 
   void _syncLog(SetupProgress progress) {
-    final text = progress.logTail.trimRight();
+    final text = _logOf(progress);
     if (text == _logText) return;
     _logText = text;
     _log.replaceText(text);
   }
+
+  /// The job's log, then any technical text a failure carried that the log
+  /// does not already hold: the words on screen leave it out (no raw
+  /// errors), so Details is where it is read.
+  String _logOf(SetupProgress progress) {
+    final log = progress.logTail.trimRight();
+    if (progress.state != SetupState.failed) return log;
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final extra = <String>[
+      for (final raw in [
+        for (final row in progress.components)
+          if (row.state == ComponentState.failed && !_hostRow(row.id))
+            row.error,
+        progress.error,
+      ])
+        if (raw != null &&
+            raw.trim().isNotEmpty &&
+            !log.contains(raw.trim()) &&
+            setupPlainMessage(l10n, raw) == null)
+          raw.trim(),
+    ];
+    return [
+      if (log.isNotEmpty) log,
+      ...{...extra},
+    ].join('\n');
+  }
+
+  /// A row the host drew itself (a person step): its words are the host's.
+  bool _hostRow(String id) =>
+      widget.personActions.containsKey(id) ||
+      widget.failureActions.containsKey(id);
 
   // The engine names each job; the component list is only the fallback for
   // hosts whose progress carries no id.
@@ -265,7 +312,7 @@ class _SetupProgressViewState extends State<SetupProgressView> {
       } else {
         body = network
             ? l10n.setupProgressViewNoInternet
-            : (progress.error ?? l10n.setupProgressViewFailedUnknown);
+            : _jobFailureText(l10n, progress);
         bodyKey = const Key('setup-progress-job-error');
       }
     } else if (stopped) {
@@ -295,6 +342,9 @@ class _SetupProgressViewState extends State<SetupProgressView> {
                 : _detail(l10n, row),
             personAction: row.state == ComponentState.pending
                 ? widget.personActions[row.id]
+                : null,
+            retry: row.state == ComponentState.failed
+                ? widget.failureActions[row.id]
                 : null,
             // Report this failure (P8.4): the job's log as it is at the tap
             // (widget.progress is the host's latest), for this row.
@@ -510,12 +560,27 @@ class _SetupProgressViewState extends State<SetupProgressView> {
   ) {
     if (network) return l10n.setupProgressViewNoInternet;
     final reason = row.error ?? progress.error;
+    // The host's own row: its words are already the person's.
+    if (_hostRow(row.id) && reason != null) return reason;
+    // A message the app wrote is said in its words; anything else (a
+    // script's error, native text) is under Details (no raw errors).
+    final plain = reason == null ? null : setupPlainMessage(l10n, reason);
+    if (plain != null) return plain;
     final stage = row.stage;
-    if (reason != null && stage != null) {
-      return l10n.setupProgressViewFailedStageReason(stage, reason);
-    }
-    if (reason != null) return reason;
     if (stage != null) return l10n.setupProgressViewFailedDuring(stage);
+    return l10n.setupProgressViewFailedStep;
+  }
+
+  /// A job that failed with no failed row (between components): where it
+  /// stopped, in words; its own text is under Details.
+  String _jobFailureText(AppLocalizations l10n, SetupProgress progress) {
+    final error = progress.error;
+    final plain = error == null ? null : setupPlainMessage(l10n, error);
+    if (plain != null) return plain;
+    final current = progress.current;
+    if (current != null) {
+      return l10n.setupProgressViewFailedAt(_titleOf(current));
+    }
     return l10n.setupProgressViewFailedUnknown;
   }
 

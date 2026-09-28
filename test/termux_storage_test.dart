@@ -702,6 +702,38 @@ void main() {
       );
       expect(running.state, TermuxStorageScanState.running);
       expect(running.log, '[oc] Build caches');
+    });
+
+    test('the scan stage is the last heading the script printed', () {
+      expect(TermuxStorageScanStage.reached(''), isNull);
+      expect(
+        TermuxStorageScanStage.reached('[oc] Measuring storage on this phone'),
+        isNull,
+      );
+      expect(
+        TermuxStorageScanStage.reached(
+          '[oc] Measuring storage on this phone\n[oc] Build caches\n'
+          '[oc] Other caches and package data (read only)\n'
+          '[oc] Agent scratch',
+        ),
+        TermuxStorageScanStage.agentScratch,
+      );
+      // A path that happens to read like a heading is not one.
+      expect(
+        TermuxStorageScanStage.reached('[oc] Build caches\n  Toolchains'),
+        TermuxStorageScanStage.buildCaches,
+      );
+    });
+
+    test('every scan stage heading is a log line of the bundled script', () {
+      final script = TermuxBridge.toolsScriptForTesting();
+      for (final stage in TermuxStorageScanStage.values) {
+        expect(
+          script,
+          contains("log '${stage.heading}'"),
+          reason: '${stage.name} heading drifted from the script',
+        );
+      }
       expect(
         TermuxStorageScanStatus.parse('').state,
         TermuxStorageScanState.idle,
@@ -719,6 +751,15 @@ void main() {
     ) async {
       await fixture.mount(tester);
       expect(find.byKey(const Key('termux-storage-intro')), findsOneWidget);
+      // The intro is two short sentences, not a paragraph.
+      expect(
+        find.text(
+          'See what Termux uses on this phone. Only caches that rebuild '
+          'themselves can be cleaned here; your projects, sign-ins and '
+          'conversations stay.',
+        ),
+        findsOneWidget,
+      );
       await tester.tap(find.byKey(const Key('termux-storage-scan')));
       await tester.pump();
       expect(fixture.scanStarts, 1);
@@ -726,7 +767,45 @@ void main() {
       fixture.log = '[oc] Measuring storage on this phone\n[oc] Build caches';
       await tester.pump(const Duration(milliseconds: 60));
       expect(find.byKey(const Key('termux-storage-scanning')), findsOneWidget);
-      // The scan's output is the kit's one log view (KIT-31).
+      // The categories fill in as the scan reaches them: the one being
+      // measured works, the rest wait.
+      final semantics = tester.ensureSemantics();
+      Matcher row(String label) => isSemantics(label: label);
+      expect(
+        tester.getSemantics(
+          find.byKey(const ValueKey('termux-storage-stage-buildCaches')),
+        ),
+        row('Step 1 of 8, Build caches, Working'),
+      );
+      expect(
+        tester.getSemantics(
+          find.byKey(const ValueKey('termux-storage-stage-agentScratch')),
+        ),
+        row('Step 3 of 8, Agent scratch, Waiting'),
+      );
+      fixture.log =
+          '${fixture.log}\n[oc] Other caches and package data (read only)'
+          '\n[oc] Agent scratch';
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.pump(const Duration(milliseconds: 60));
+      expect(
+        tester.getSemantics(
+          find.byKey(const ValueKey('termux-storage-stage-buildCaches')),
+        ),
+        row('Step 1 of 8, Build caches, Done'),
+      );
+      expect(
+        tester.getSemantics(
+          find.byKey(const ValueKey('termux-storage-stage-agentScratch')),
+        ),
+        row('Step 3 of 8, Agent scratch, Working'),
+      );
+      semantics.dispose();
+      // The scan's output is the kit's one log view (KIT-31), folded under
+      // Details: the rows say how far it is.
+      expect(find.byKey(const ValueKey('kit-log-panel')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('termux-storage-log')));
+      await tester.pump(const Duration(milliseconds: 400));
       expect(find.byKey(const ValueKey('kit-log-panel')), findsOneWidget);
       expect(find.textContaining('[oc] Build caches'), findsOneWidget);
       await tester.tap(find.byKey(const Key('termux-storage-cancel')));
@@ -899,7 +978,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(fixture.cleans, ['build_caches']);
         expect(
-          find.text('In use by java. Stop it under Running on this phone first.'),
+          find.text(
+            'In use by java. Stop it under Running on this phone first.',
+          ),
           findsOneWidget,
         );
         expect(

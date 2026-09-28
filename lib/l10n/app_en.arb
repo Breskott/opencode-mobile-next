@@ -1184,7 +1184,6 @@
     }
   },
   "setupOutputWaiting": "Waiting for Termux output…",
-  "setupConnectExisting": "Connect existing server",
   "uncertainAuthDetail": "The server may have started this sign-in without confirming it. Check on the server before you start again.",
   "uncertainAuthCloseHint": "Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.",
   "pluginsUnsupported": "This server does not support plugin inspection.",
@@ -1386,7 +1385,6 @@
   "codexReconnectBeforeSending": "Reconnect before sending.",
   "openCodeConnectionLabel": "OpenCode",
   "paseoAddressHint": "ws://100.64.0.1:6767 or wss://paseo.example",
-  "paseoAddressHelp": "The Paseo daemon on your computer. ws:// works on this device and on Tailscale addresses; use wss:// elsewhere.",
   "paseoPasswordLabel": "Daemon password (optional)",
   "paseoPasswordHelp": "Set one with \"paseo daemon set-password\". Stored in this device's secure storage.",
   "paseoSetupNotice": "Run \"paseo start --no-relay\" on the computer that has Claude Code or Pi installed. This app never uses the Paseo relay: connect on this device or over your own private network.",
@@ -1394,7 +1392,6 @@
   "connectionDisplayNameHint": "Defaults to the server host",
   "connectionServerAddress": "Server address",
   "codexAddressHint": "wss://codex.example or ws://127.0.0.1:4500",
-  "codexAddressHelp": "Use wss:// for remote servers. ws:// is limited to this device.",
   "codexProjectFolder": "Project folder on server",
   "codexTokenReentry": "Re-enter connection token",
   "codexTokenLabel": "Connection token",
@@ -1404,7 +1401,7 @@
   "termuxGuideTitle": "Connect Termux once",
   "termuxGuideOpenFailed": "The command was copied, but Termux could not open. Open Termux yourself or try Copy & open Termux again.",
   "termuxGuideCopyOpenFailed": "Could not copy the command or open Termux.",
-  "termuxPermissionDenied": "Android denied the Termux command permission. Allow it in OpenCode app settings.",
+  "termuxPermissionDenied": "Android didn't let this app run commands in Termux.",
   "launchShortcutWaiting": "Connecting to the saved server. The new conversation opens when it is ready.",
   "@launchShortcutWaiting": {
     "description": "Snackbar shown once when the New task home-screen shortcut arrives while the saved server is still connecting"
@@ -1476,18 +1473,6 @@
   "setupRuntimeTwo": "OpenCode 2",
   "@setupRuntimeTwo": {
     "description": "Experimental new OpenCode server generation"
-  },
-  "setupRuntimeUpdateDetail": "The app will install {runtime} {version}, restart only the managed local server, and reconnect this server.",
-  "@setupRuntimeUpdateDetail": {
-    "description": "Names the selected runtime and pinned version in the update confirmation",
-    "placeholders": {
-      "runtime": {
-        "type": "String"
-      },
-      "version": {
-        "type": "String"
-      }
-    }
   },
   "queuedBannerReview": "{count, plural, =1{1 draft with an unconfirmed send to review.} other{{count} drafts with an unconfirmed send to review.}}",
   "@queuedBannerReview": {
@@ -1629,7 +1614,7 @@
   "tailscaleIntro": "Reach OpenCode on another computer through your own Tailscale network.",
   "tailscaleAppStep": "1. Open your private network",
   "tailscaleChecking": "Checking for the Tailscale app…",
-  "tailscaleInstalled": "Tailscale is installed. VPN connection is unverified.",
+  "tailscaleInstalled": "Tailscale is installed.",
   "tailscaleMissing": "Tailscale is not installed. Install the official app, then return and check again.",
   "tailscaleUnknown": "Could not check the app. Try again, or open Tailscale from your phone.",
   "tailscaleUnsupported": "This device cannot open the Android app. Set up Tailscale on this device yourself, then review your HTTPS address below.",
@@ -1642,7 +1627,7 @@
   "tailscaleAddressDetail": "Use the full HTTPS origin printed by Tailscale Serve, such as https://computer.tailnet-name.ts.net. Keep any HTTPS port it prints. A short device name or a raw HTTP port may not provide a valid certificate.",
   "tailscaleAddressError": "Enter an HTTPS origin with a valid port (1–65535). Remove paths, credentials, query text and fragments. Use the full address from Serve; do not replace https with http.",
   "tailscaleReviewDetail": "Continue only with an address you recognize. The next screen reviews your server credentials before you explicitly test or save. This app cannot confirm that an address is private from its name alone.",
-  "tailscaleContinue": "Continue to authentication",
+  "tailscaleContinue": "Continue to sign-in",
   "tailscaleHelp": "Tailscale setup and recovery",
   "tailscaleServeHelp": "On the server computer, Tailscale Serve can provide private HTTPS for a local OpenCode port. Use Serve, not public Funnel. Your tailnet access rules still apply. Enabling HTTPS publishes the certificate’s device and tailnet names in a public certificate log, although access stays private. Review the official guide before changing your server.",
   "tailscaleServeDocs": "Read the official Serve guide",
@@ -1723,11 +1708,11 @@
   "agentAccountNoAuth": "Host does not require sign-in",
   "agentAccountApiKey": "API key",
   "agentAccountHostAuth": "Host authentication",
-  "agentAccountHostNote": "The official Codex runtime keeps your provider credentials. Account changes apply to this host, including other saved servers connected to it.",
+  "agentAccountHostNote": "The sign-in is kept on the server's computer, not in this app. Signing in or out here changes it for every saved server on that computer.",
   "agentAccountUnsupportedDetail": "This panel is verified with Codex 0.153.4. The connected runtime may not support these account methods.",
   "agentAccountReconnectDetail": "Account data and the sign-in code were cleared. Reconnect to refresh. Sign-in will not restart automatically.",
   "agentAccountSignIn": "Sign in with ChatGPT",
-  "agentAccountSignInNote": "Start an official device-code sign-in on this host. Complete it in your browser; the app never receives your provider tokens.",
+  "agentAccountSignInNote": "Sign in with your ChatGPT account. You finish in the browser; this app never sees your password.",
   "agentAccountLimits": "Rate limits",
   "agentAccountLimitsUnavailable": "Rate limits are unavailable for this account or host.",
   "agentAccountUsage": "Token usage",
@@ -3311,7 +3296,7 @@
       }
     }
   },
-  "e7SettingsRestartBody": "OpenCode {version} is installed, but this server process is still running {current}. Restart that process on the server host; mobile will reconnect and confirm the running version.",
+  "e7SettingsRestartBody": "OpenCode {version} is installed, but the server is still running {current}. Restart it on its computer the way you started it; the app then checks it again.",
   "@e7SettingsRestartBody": {
     "description": "Settings and appearance user interface.",
     "placeholders": {
@@ -6731,7 +6716,7 @@
   "@e7SetupCameraFailedDetail": {
     "description": "Setup journey: camera failed detail."
   },
-  "e7SetupTermuxNoAnswer": "Termux did not answer. Open Termux once, run the unlock line, then verify again.",
+  "e7SetupTermuxNoAnswer": "Termux didn't answer. Tap Copy & open Termux, paste the line in Termux and press Enter, then come back here.",
   "@e7SetupTermuxNoAnswer": {
     "description": "Setup journey: termux no answer."
   },
@@ -7071,7 +7056,7 @@
   "@e7SetupChooseContinue": {
     "description": "Setup journey: choose continue."
   },
-  "e7SetupTermuxOutdated": "This version of Termux is too old for the app to control it. Install the current F-Droid or GitHub build of Termux, then check again.",
+  "e7SetupTermuxOutdated": "This Termux is too old for the app to use. Install the current one, then tap Continue setup.",
   "@e7SetupTermuxOutdated": {
     "description": "Setup journey: termux outdated."
   },
@@ -7131,9 +7116,9 @@
   "@e7SetupReportCopied": {
     "description": "Setup journey: report copied."
   },
-  "e7SetupAppSettings": "App settings",
+  "e7SetupAppSettings": "Allow the permission in Settings",
   "@e7SetupAppSettings": {
-    "description": "Setup journey: app settings."
+    "description": "Setup journey, Allow Termux row after Android denied the permission: opens this app's page in Android Settings, where the person allows running commands in Termux."
   },
   "e7SetupNoCamera": "This device has no camera",
   "@e7SetupNoCamera": {
@@ -7303,7 +7288,7 @@
   "@e7SetupSendCommand": {
     "description": "Setup journey: send command."
   },
-  "e7SetupUnsupportedSetup": "On-device setup requires Termux on Android. On this computer, run `opencode serve` and add its address.",
+  "e7SetupUnsupportedSetup": "Setting up on the device itself works only on Android phones. On this computer, start OpenCode yourself and add it as a server.",
   "@e7SetupUnsupportedSetup": {
     "description": "Setup journey: unsupported setup."
   },
@@ -7573,7 +7558,7 @@
   "@e7SetupNotOpenCode": {
     "description": "Setup journey: not open code."
   },
-  "e7SetupNoServerAnswer": "The server did not answer. Check that opencode serve is running on that address.",
+  "e7SetupNoServerAnswer": "The server did not answer. Check that it is running and that the address is right.",
   "@e7SetupNoServerAnswer": {
     "description": "Setup journey: no server answer."
   },
@@ -7629,7 +7614,7 @@
   "@e7SetupLocalHttp": {
     "description": "Setup journey: local http."
   },
-  "e7SetupRefused": "The connection was refused. Is opencode serve running on that host and port?",
+  "e7SetupRefused": "The computer refused the connection. Check that the server is running there and that the address and port are right.",
   "@e7SetupRefused": {
     "description": "Setup journey: refused."
   },
@@ -7689,7 +7674,7 @@
   "@e7SetupCodexPath": {
     "description": "Setup journey: codex path."
   },
-  "e7SetupCodexPlain": "Plain WebSocket is allowed only for a local Codex server.",
+  "e7SetupCodexPlain": "ws:// works only for a server on this phone. Use a wss:// address for another computer.",
   "@e7SetupCodexPlain": {
     "description": "Setup journey: codex plain."
   },
@@ -10728,7 +10713,7 @@
   "@termuxStorageRescanAction": {
     "description": "Button that starts a fresh scan when a report exists"
   },
-  "termuxStorageIntro": "See the storage used by Termux, including the local server and other tools. Expand a category to inspect it. Only selected regenerable caches can be cleaned here; projects, team data, sign-ins and conversation history stay in place.",
+  "termuxStorageIntro": "See what Termux uses on this phone. Only caches that rebuild themselves can be cleaned here; your projects, sign-ins and conversations stay.",
   "@termuxStorageIntro": {
     "description": "Storage screen: paragraph before the first scan"
   },
@@ -12646,19 +12631,7 @@
   "@setupProgressViewStarting": {
     "description": "A setup component started but has not reported what it is doing yet"
   },
-  "setupProgressViewFailedStageReason": "{stage}: {reason}",
-  "@setupProgressViewFailedStageReason": {
-    "description": "What failed in a setup component: its last stage and the reason",
-    "placeholders": {
-      "stage": {
-        "type": "String"
-      },
-      "reason": {
-        "type": "String"
-      }
-    }
-  },
-  "setupProgressViewFailedDuring": "Stopped during: {stage}",
+  "setupProgressViewFailedDuring": "Stopped during: {stage}. What went wrong is under Details.",
   "@setupProgressViewFailedDuring": {
     "description": "A setup component failed; only its last stage is known",
     "placeholders": {
@@ -12667,9 +12640,9 @@
       }
     }
   },
-  "setupProgressViewFailedUnknown": "Something went wrong. Show details for the log.",
+  "setupProgressViewFailedUnknown": "Setup stopped before it finished. What went wrong is under Details.",
   "@setupProgressViewFailedUnknown": {
-    "description": "A setup component failed with no reason given"
+    "description": "A setup job failed and the app does not know at which component"
   },
   "setupProgressViewNoInternet": "No internet connection — Continue when you're back online",
   "@setupProgressViewNoInternet": {
@@ -18993,9 +18966,9 @@
   "@profileMonitorIfIgnored": {
     "description": "Needs-you row on another server: what happens if it is not answered"
   },
-  "serverSettingsRestartCommandLabel": "If it runs as a Linux service, run this there",
+  "serverSettingsRestartCommandLabel": "Set up with the Linux service script?",
   "@serverSettingsRestartCommandLabel": {
-    "description": "Restart sheet: label above the restart command"
+    "description": "Restart sheet: the fold that holds the helper script's restart command, for servers set up with it"
   },
   "serverSettingsRestartedIt": "I restarted it",
   "@serverSettingsRestartedIt": {
@@ -27911,5 +27884,170 @@
   "teamStartRunWakeRefusedNext": "Try again, or switch it on where the team runs.",
   "@teamStartRunWakeRefusedNext": {
     "description": "Next step under a refused wake"
+  },
+  "addServerTailscaleNext": "Enter the address",
+  "@addServerTailscaleNext": {
+    "description": "Add server, Tailscale step: the primary that moves on to the step where the Tailscale address is entered."
+  },
+  "phoneSetupTermuxGetCurrent": "Get the current Termux",
+  "@phoneSetupTermuxGetCurrent": {
+    "description": "Setup journey, failed Get Termux row when the installed Termux is too old: opens the current Termux download page in the browser."
+  },
+  "phoneSetupUnsupportedTitle": "Connect a server",
+  "@phoneSetupUnsupportedTitle": {
+    "description": "Phone setup reached on a device that cannot run it (not Android): title of the page that points to connecting a server instead."
+  },
+  "phoneSetupUnsupportedBody": "Setting up on the device itself works only on Android phones. On your computer, run this command, then add the server here with the code it prints.",
+  "@phoneSetupUnsupportedBody": {
+    "description": "Phone setup reached on a device that cannot run it: body above the command to copy (opencode2 pair)."
+  },
+  "termuxStorageStageTotal": "The whole Termux install",
+  "@termuxStorageStageTotal": {
+    "description": "Storage screen: the scan's last row while it runs, measuring everything Termux uses"
+  },
+  "setupProgressViewFailedStep": "This step didn't finish. What went wrong is under Details.",
+  "@setupProgressViewFailedStep": {
+    "description": "A setup component failed; neither its stage nor a reason the app can word is known (the raw text is in the Details log)"
+  },
+  "setupProgressViewFailedAt": "Stopped at {name}. What went wrong is under Details.",
+  "@setupProgressViewFailedAt": {
+    "description": "A setup job failed between components; name is the component it was at",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "workRunawayHelper": "A leftover {helper} process has been busy for {duration} with nothing to do",
+  "@workRunawayHelper": {
+    "description": "Status line: a leftover helper process on the phone (not OpenCode itself) keeps using the CPU; helper is the process's own name, e.g. 'node'",
+    "placeholders": {
+      "helper": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "workRunawayHelperInProject": "A leftover {helper} process in {project} has been busy for {duration} with nothing to do",
+  "@workRunawayHelperInProject": {
+    "description": "Status line: a leftover helper process in a project folder (not OpenCode itself) keeps using the CPU",
+    "placeholders": {
+      "helper": {
+        "type": "String"
+      },
+      "project": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "workRunawaySeeRunning": "See what's running",
+  "@workRunawaySeeRunning": {
+    "description": "Status line menu: opens Running on this phone, the list of processes on the phone"
+  },
+  "thisPhoneUpToDate": "Up to date · {version}",
+  "@thisPhoneUpToDate": {
+    "description": "Technical: This phone: the row in place of Update when the installed OpenCode is already the version the app installs, e.g. 'Up to date · 1.18.29'",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "thisPhoneUpdateTitle": "Update {runtime}?",
+  "@thisPhoneUpdateTitle": {
+    "description": "This phone: the title of the question before an update in Termux; runtime is 'OpenCode' or 'OpenCode 2'",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "thisPhoneUpdateBody": "Installs version {version}, restarts the server on this phone and connects again.",
+  "@thisPhoneUpdateBody": {
+    "description": "Technical: This phone: what an update does, in the question before it, naming the version it installs",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "thisPhoneUpdateKept": "Your conversations are kept. The server is away for a minute while it restarts.",
+  "@thisPhoneUpdateKept": {
+    "description": "This phone: the consequence line in the question before an update"
+  },
+  "thisPhoneUpdateBusy": "A reply is still being written. Stop it or let it finish, then update.",
+  "@thisPhoneUpdateBusy": {
+    "description": "This phone: why Update waits while a conversation is still working"
+  },
+  "thisPhoneStartFailed": "{runtime} didn't start. Start it again; Details below says what went wrong.",
+  "@thisPhoneStartFailed": {
+    "description": "This phone: the line under the status when the server did not start or stopped by itself",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "thisPhoneStartAgain": "Start again",
+  "@thisPhoneStartAgain": {
+    "description": "This phone: the button after the server did not start"
+  },
+  "thisPhoneInstallFailed": "Installing {runtime} didn't finish. Install it again; your conversations are kept.",
+  "@thisPhoneInstallFailed": {
+    "description": "This phone: the line under the status when an install or update did not finish",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "thisPhoneInstallAgain": "Install again",
+  "@thisPhoneInstallAgain": {
+    "description": "This phone: the button after an install or update did not finish; it installs the same version again"
+  },
+  "thisPhoneStopFailed": "{runtime} didn't stop. Try stopping it again.",
+  "@thisPhoneStopFailed": {
+    "description": "This phone: the line under the status when stopping the server failed",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "thisPhoneCheckFailed": "This phone couldn't check on {runtime}. Try again in a moment.",
+  "@thisPhoneCheckFailed": {
+    "description": "This phone: the line under the status when the host (Termux or the in-app Linux) did not answer",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "thisPhoneSwitchStopped": "{runtime} didn't start after the switch. Your conversations are kept.",
+  "@thisPhoneSwitchStopped": {
+    "description": "This phone: the line under the status when a switch between OpenCode versions stopped half way; runtime is the version it switched to",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "addServerCheckFailedPlain": "The server could not be checked. Check the address and this phone’s connection, then try again.",
+  "@addServerCheckFailedPlain": {
+    "description": "Add server: a connection check failed before the server could answer (a socket or TLS error); the raw error is under Details."
+  },
+  "serverRowDetailsTitle": "{name} details",
+  "@serverRowDetailsTitle": {
+    "description": "Servers: title of the sheet a saved server's menu Details opens, with its full address and project folder.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -7,8 +7,8 @@
 /// offered for cleaning; the script refuses those paths as well.
 ///
 /// Built from kit parts only (screen-phone-1): a [KitScreen] page, the
-/// intro and the scan as [KitStateView]s, the scan's output in a
-/// [KitLogPanel], categories as [KitExpandRow]s on one [KitRowGroup], the
+/// intro and the scan as [KitStateView]s, the scan's categories filling in
+/// on a [KitChecklist] with its output in a folded [KitLogPanel], categories as [KitExpandRow]s on one [KitRowGroup], the
 /// clean question through [showKitConfirm] (the clean runs inside it, so a
 /// failure keeps it open), and every result or problem as a [KitNotice].
 library;
@@ -373,10 +373,13 @@ class _TermuxStorageScreenState extends State<TermuxStorageScreen> {
     ),
   );
 
-  /// The scan as a working state with its output underneath: the page
-  /// exists to show that output while it runs, so the log is open.
+  /// The scan as a working state: one row per category, filling in as the
+  /// script reaches it (the sizes arrive with the report), Cancel, and the
+  /// raw output folded under Details.
   Widget _buildScanning(AppLocalizations l10n) {
     final tokens = KitTokens.of(context);
+    final reached = TermuxStorageScanStage.reached(_status?.log ?? '');
+    final at = reached?.index ?? 0;
     return ListView(
       key: const ValueKey('termux-storage-scan-view'),
       padding: EdgeInsetsDirectional.only(
@@ -391,18 +394,48 @@ class _TermuxStorageScreenState extends State<TermuxStorageScreen> {
           titleKey: const Key('termux-storage-scanning'),
           body: l10n.termuxStorageScanningDetail,
           size: KitStateSize.inline,
-          progress: const KitProgress.waiting(),
-          secondary: KitAction(
-            key: const Key('termux-storage-cancel'),
-            label: l10n.termuxStorageCancel,
-            icon: AppIconography.stop,
-            onPressed: _cancelScan,
+        ),
+        _onRails(
+          KitChecklist(
+            steps: [
+              for (final stage in TermuxStorageScanStage.values)
+                KitStep(
+                  key: ValueKey('termux-storage-stage-${stage.name}'),
+                  title: _stageTitle(l10n, stage),
+                  state: stage.index < at
+                      ? KitMarkState.done
+                      : stage.index == at
+                      ? KitMarkState.working
+                      : KitMarkState.waiting,
+                ),
+            ],
+            stop: KitAction(
+              key: const Key('termux-storage-cancel'),
+              label: l10n.termuxStorageCancel,
+              icon: AppIconography.stop,
+              onPressed: _cancelScan,
+            ),
+            detailsKey: const ValueKey('termux-storage-log'),
+            log: KitLogPanel(lines: _log, live: true),
           ),
         ),
-        _onRails(KitLogPanel(lines: _log, live: true)),
       ],
     );
   }
+
+  static String _stageTitle(
+    AppLocalizations l10n,
+    TermuxStorageScanStage stage,
+  ) => switch (stage) {
+    TermuxStorageScanStage.buildCaches => l10n.termuxStorageCatBuildCaches,
+    TermuxStorageScanStage.sharedCaches => l10n.termuxStorageCatSharedCaches,
+    TermuxStorageScanStage.agentScratch => l10n.termuxStorageCatAgentScratch,
+    TermuxStorageScanStage.toolchains => l10n.termuxStorageCatToolchains,
+    TermuxStorageScanStage.aiTeam => l10n.termuxStorageCatAiTeam,
+    TermuxStorageScanStage.opencode => l10n.termuxStorageCatOpenCode,
+    TermuxStorageScanStage.projects => l10n.termuxStorageCatProjects,
+    TermuxStorageScanStage.total => l10n.termuxStorageStageTotal,
+  };
 
   List<Widget> _buildReport(AppLocalizations l10n, TermuxStorageReport report) {
     final tokens = KitTokens.of(context);

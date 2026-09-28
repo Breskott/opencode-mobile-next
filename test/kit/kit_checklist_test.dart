@@ -449,7 +449,17 @@ void main() {
         scroll: false,
       );
       expect(find.byKey(const Key('setup-progress-job-error')), findsOneWidget);
-      expect(find.text('OpenCode did not start'), findsOneWidget);
+      // The job's own text is under Details, never the words (no raw
+      // errors; slice-close-servers).
+      expect(find.text('OpenCode did not start'), findsNothing);
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).setupProgressViewFailedUnknown,
+        ),
+        findsOneWidget,
+      );
     });
   });
 

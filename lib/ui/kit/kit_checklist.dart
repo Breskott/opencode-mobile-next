@@ -551,9 +551,10 @@ class _StepRow extends StatelessWidget {
     Widget content;
     if (button == null) {
       content = words;
-    } else if (AppTheme.stackedActions(context)) {
-      // 200 % text or a narrow window: the button moves under the words.
-      content = Column(
+    } else {
+      // 200 % text, a narrow window or a long label ("Allow the permission
+      // in Settings"): the button moves under the words, so neither is cut.
+      Widget stacked() => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -570,16 +571,24 @@ class _StepRow extends StatelessWidget {
           ),
         ],
       );
-    } else {
-      content = Row(
-        children: [
-          Expanded(child: words),
-          Padding(
-            padding: EdgeInsetsDirectional.only(start: tokens.space3),
-            child: button,
-          ),
-        ],
-      );
+      content = AppTheme.stackedActions(context)
+          ? stacked()
+          : LayoutBuilder(
+              builder: (context, constraints) =>
+                  _buttonWidth(context, action!) > constraints.maxWidth / 2
+                  ? stacked()
+                  : Row(
+                      children: [
+                        Expanded(child: words),
+                        Padding(
+                          padding: EdgeInsetsDirectional.only(
+                            start: tokens.space3,
+                          ),
+                          child: button,
+                        ),
+                      ],
+                    ),
+            );
     }
     return Semantics(
       container: true,
@@ -591,6 +600,24 @@ class _StepRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// About how wide a row's button draws [action]: its label in the button's
+/// text style plus the filled button's side padding and icon. Only decides
+/// beside-or-under, so an estimate is enough.
+double _buttonWidth(BuildContext context, KitAction action) {
+  final painter = TextPainter(
+    text: TextSpan(
+      text: action.label,
+      style: Theme.of(context).textTheme.labelLarge,
+    ),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    maxLines: 1,
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width + 48 + (action.icon == null ? 0 : 26);
 }
 
 /// The thin per-row bar: `accent` on `surface3`, [KitTokens.loadingBarHeight]

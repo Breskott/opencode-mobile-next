@@ -34,11 +34,12 @@ abstract final class SetupCommands {
       '> /absolute/path/codex-capability-token\n'
       'chmod 600 /absolute/path/codex-capability-token';
 
+  /// One line, so it reads and copies as one command: a block of `\`
+  /// continuations shows a prompt on every line and is cut at the edge.
   static const codexStart =
-      'codex app-server \\\n'
-      '  --listen ws://127.0.0.1:4141 \\\n'
-      '  --ws-auth capability-token \\\n'
-      '  --ws-token-file /absolute/path/codex-capability-token';
+      'codex app-server --listen ws://127.0.0.1:4141 '
+      '--ws-auth capability-token '
+      '--ws-token-file /absolute/path/codex-capability-token';
 
   static const codexUsb = 'adb reverse tcp:4141 tcp:4141';
 

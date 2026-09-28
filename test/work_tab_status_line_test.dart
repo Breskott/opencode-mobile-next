@@ -34,7 +34,7 @@ Future<void> _settle(WidgetTester tester) async {
 
 TermuxProcess _orphan({
   int pid = 4242,
-  String name = '/root/projects/',
+  String name = 'node',
   String cwd = '/root/projects/',
   int cpuSeconds = 610,
 }) => TermuxProcess(
@@ -77,8 +77,8 @@ void main() {
       );
     });
 
-    testWidgets('the phone case reads "OpenCode has been busy", and its '
-        'dismissal lasts until the process changes', (tester) async {
+    testWidgets('a leftover helper is named as one, not as OpenCode, and '
+        'its dismissal lasts until the process changes', (tester) async {
       var report = TermuxProcessReport([_orphan()]);
       var scans = 0;
       await tester.pumpWidget(
@@ -106,9 +106,13 @@ void main() {
       );
       await _settle(tester);
       expect(
-        find.text('OpenCode has been busy for 10 min with nothing to do'),
+        find.text(
+          'A leftover node process has been busy for 10 min with nothing to '
+          'do',
+        ),
         findsOneWidget,
       );
+      expect(find.textContaining('OpenCode'), findsNothing);
       expect(find.textContaining('/root'), findsNothing);
       expect(find.textContaining('CPU'), findsNothing);
 
@@ -130,11 +134,55 @@ void main() {
       await _settle(tester);
       expect(
         find.text(
-          'OpenCode has been busy in FinanceHub for 12 min with nothing to do',
+          'A leftover node process in FinanceHub has been busy for 12 min '
+          'with nothing to do',
         ),
         findsOneWidget,
       );
       await tester.pumpWidget(const SizedBox());
+    });
+
+    test('OpenCode is named only when OpenCode itself is the one busy, and '
+        'a path never shows', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      WorkRunawayNotice notice(String helper, {String? project}) =>
+          WorkRunawayNotice(
+            identity: helper,
+            helper: helper,
+            project: project,
+            busyFor: '10 min',
+            onStop: () {},
+            onDismiss: () {},
+          );
+      expect(
+        notice('opencode').status(l10n).message,
+        'OpenCode has been busy for 10 min with nothing to do',
+      );
+      expect(
+        notice('opencode', project: 'FinanceHub').status(l10n).message,
+        'OpenCode has been busy in FinanceHub for 10 min with nothing to do',
+      );
+      expect(
+        notice('/usr/bin/java').status(l10n).message,
+        'A leftover java process has been busy for 10 min with nothing to do',
+      );
+    });
+
+    test('the line offers See what\'s running when it can open the list', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      var opened = 0;
+      final notice = WorkRunawayNotice(
+        identity: 1,
+        helper: 'node',
+        busyFor: '10 min',
+        onStop: () {},
+        onDismiss: () {},
+      );
+      expect(notice.status(l10n).more, isEmpty);
+      final more = notice.status(l10n, onSeeRunning: () => opened++).more;
+      expect(more.map((action) => action.label), ["See what's running"]);
+      more.single.onPressed!();
+      expect(opened, 1);
     });
 
     // slice-R14: the line's one action stops the process it talks about.
@@ -472,6 +520,32 @@ void main() {
         expect(line('stale'), findsOneWidget);
         expect(find.text('This may be out of date'), findsOneWidget);
         expect(find.text('Last observed state.'), findsNothing);
+      } finally {
+        await tester.pumpWidget(const SizedBox());
+        controller.dispose();
+      }
+    });
+
+    testWidgets('on Work, the leftover line\'s More opens Running on this '
+        'phone', (tester) async {
+      final controller = await pumpWork(tester, runaway: true);
+      try {
+        expect(line('runaway'), findsOneWidget);
+        expect(
+          find.text(
+            'A leftover node process has been busy for 10 min with nothing '
+            'to do',
+          ),
+          findsOneWidget,
+        );
+        await tester.tap(
+          find.descendant(
+            of: line('runaway'),
+            matching: find.byKey(const ValueKey('kit-status-more')),
+          ),
+        );
+        await _settle(tester);
+        expect(find.text("See what's running"), findsOneWidget);
       } finally {
         await tester.pumpWidget(const SizedBox());
         controller.dispose();

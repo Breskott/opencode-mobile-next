@@ -10,6 +10,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../termux/bridge.dart';
 import '../../app_iconography.dart';
 import '../../kit/kit.dart';
+import '../../setup_commands.dart';
 import '../../widgets/external_link.dart';
 import '../../widgets/product_states.dart'
     show productErrorDetails, productErrorText;
@@ -133,22 +134,27 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
   AppLocalizations get _l10n =>
       lookupAppLocalizations(Localizations.localeOf(context));
 
+  /// Off Android there is no Termux: the page says what works instead and
+  /// never wakes the Termux engine.
+  final bool _supported = TermuxBridge.supported;
+
   @override
   void initState() {
     super.initState();
+    if (!_supported) return;
     _engine.progress.addListener(_onProgress);
     WidgetsBinding.instance.addObserver(this);
-    if (TermuxBridge.supported) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) unawaited(_begin());
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_begin());
+    });
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _engine.progress.removeListener(_onProgress);
+    if (_supported) {
+      WidgetsBinding.instance.removeObserver(this);
+      _engine.progress.removeListener(_onProgress);
+    }
     super.dispose();
   }
 
@@ -185,8 +191,11 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
       unawaited(_check());
       return;
     }
-    // Back from the download page or Settings: the person steps again.
-    if (_gate == _Gate.needTermux || _gate == _Gate.needAllow) {
+    // Back from the download page or Settings: the person steps again
+    // (a too-old Termux too, once the current one may be installed).
+    if (_gate == _Gate.needTermux ||
+        _gate == _Gate.needAllow ||
+        _gate == _Gate.outdated) {
       unawaited(_check());
     }
   }
@@ -543,24 +552,7 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n;
-    if (!TermuxBridge.supported) {
-      // Termux is an Android app: said plainly, with the way that works.
-      return KitScreen(
-        topBar: KitTopBar(title: l10n.phoneSetupStartScreenTitle),
-        body: KitStateView(
-          key: const ValueKey('phone-setup-termux-unsupported'),
-          icon: AppIconography.deviceOff,
-          title: l10n.e7SetupAndroidOnly,
-          body: l10n.e7SetupUnsupportedSetup,
-          primary: KitAction(
-            label: l10n.setupConnectExisting,
-            onPressed: () => Navigator.of(
-              context,
-            ).pushNamed('/servers', arguments: const ServersRouteRequest.add()),
-          ),
-        ),
-      );
-    }
+    if (!_supported) return const PhoneSetupUnsupportedScreen();
     final progress = _progress(l10n);
     final permissionDenied = _gateError == l10n.termuxPermissionDenied;
     final running =
@@ -583,22 +575,70 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
               label: l10n.e7SetupGetTermux,
               onPressed: _busy ? null : () => unawaited(_getTermux()),
             ),
-            termuxAllowRowId: permissionDenied
-                ? KitAction(
-                    key: const ValueKey('phone-setup-termux-app-settings'),
-                    label: l10n.e7SetupAppSettings,
-                    onPressed: () => unawaited(TermuxBridge.openAppSettings()),
-                  )
-                : KitAction(
-                    key: const ValueKey('phone-setup-termux-allow'),
-                    label: l10n.e7SetupCopyOpenTermux,
-                    onPressed: _busy ? null : () => unawaited(_allowTermux()),
-                  ),
+            // Allowing is the next step only once Termux is there and
+            // current: never offered beside a Termux that must change first.
+            if (_gate == _Gate.needAllow)
+              termuxAllowRowId: permissionDenied
+                  ? KitAction(
+                      key: const ValueKey('phone-setup-termux-app-settings'),
+                      label: l10n.e7SetupAppSettings,
+                      onPressed: () =>
+                          unawaited(TermuxBridge.openAppSettings()),
+                    )
+                  : KitAction(
+                      key: const ValueKey('phone-setup-termux-allow'),
+                      label: l10n.e7SetupCopyOpenTermux,
+                      onPressed: _busy ? null : () => unawaited(_allowTermux()),
+                    ),
+          },
+          // A too-old Termux: its failed row's one way on is the current
+          // one; Continue setup checks again once it is installed.
+          failureActions: {
+            if (_gate == _Gate.outdated)
+              termuxGetRowId: KitAction(
+                key: const ValueKey('phone-setup-termux-get-current'),
+                label: l10n.phoneSetupTermuxGetCurrent,
+                onPressed: () => unawaited(_getTermux()),
+              ),
           },
           onCancel: running ? _cancel : null,
           onContinue: progress.canContinue && !_busy
               ? () => unawaited(_continue())
               : null,
+        ),
+      ),
+    );
+  }
+}
+
+/// Phone setup reached where it cannot run (not Android, so no Termux and
+/// no on-device Linux): the way that works instead, said plainly — start
+/// OpenCode on a computer with the command to copy, then add it here.
+class PhoneSetupUnsupportedScreen extends StatelessWidget {
+  const PhoneSetupUnsupportedScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return KitScreen(
+      topBar: KitTopBar(title: l10n.phoneSetupStartScreenTitle),
+      width: KitScreenWidth.reading,
+      body: KitStateView(
+        key: const ValueKey('phone-setup-termux-unsupported'),
+        icon: AppIconography.deviceOff,
+        title: l10n.phoneSetupUnsupportedTitle,
+        body: l10n.phoneSetupUnsupportedBody,
+        content: const KitCodeBlock(
+          key: ValueKey('phone-setup-unsupported-command'),
+          text: SetupCommands.pair,
+          kind: KitCodeKind.command,
+        ),
+        primary: KitAction(
+          key: const ValueKey('phone-setup-unsupported-add-server'),
+          label: l10n.e7SetupAddServer,
+          onPressed: () => Navigator.of(
+            context,
+          ).pushNamed('/servers', arguments: const ServersRouteRequest.add()),
         ),
       ),
     );

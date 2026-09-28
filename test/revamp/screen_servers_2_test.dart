@@ -329,6 +329,14 @@ void main() {
         find.byKey(const ValueKey('server-restart-sheet')),
         findsOneWidget,
       );
+      // The app cannot know how the server was started: the sheet says to
+      // restart it that way, and the helper script's command is only a
+      // folded aside for servers set up with it.
+      expect(find.textContaining('the way you started it'), findsOneWidget);
+      expect(find.text('bash ubuntu-opencode.sh restart'), findsNothing);
+      expect(find.byKey(const ValueKey('server-restart-copy')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('server-restart-script')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('server-restart-copy')));
       await tester.pump();
       expect(copied, 'bash ubuntu-opencode.sh restart');

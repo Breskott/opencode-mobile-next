@@ -194,7 +194,7 @@ class ConnectionStatusBanner extends StatelessWidget {
 /// explanation and the same list of what to check, so the line's Details
 /// and the page the app opens on never tell two stories (P4.4). The phase
 /// comes from the controller's one snapshot; the raw error stays in a
-/// [KitDetailsFold] (KIT-33), open and copyable here.
+/// [KitDetailsFold] (KIT-33), folded and copyable here.
 Future<void> showConnectionDetailsSheet(
   BuildContext context,
   ConnectionController controller, {
@@ -265,9 +265,9 @@ Future<void> showConnectionDetailsSheet(
           ],
           if (error != null && error.isNotEmpty) ...[
             gap,
-            // This sheet exists to show the details, so the fold starts
-            // open; it gives the raw error its copy action (tinkerer).
-            KitDetailsFold(text: error, initiallyExpanded: true),
+            // The plain diagnosis above is read first; the raw error waits
+            // folded, one tap away, with its copy action (tinkerer).
+            KitDetailsFold(text: error),
           ],
         ],
       );

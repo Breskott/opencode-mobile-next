@@ -211,10 +211,20 @@ void main() {
       await tester.pumpAndSettle();
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.agentAccountSignInNote), findsOneWidget);
+      // The sign-in note in the person's words, not the runtime's.
+      expect(
+        find.text(
+          'Sign in with your ChatGPT account. You finish in the browser; '
+          'this app never sees your password.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('device-code'), findsNothing);
       await tester.tap(find.text('Details'));
       await tester.pumpAndSettle();
       expect(find.text(l10n.agentAccountSignInNote), findsOneWidget);
       expect(find.text(l10n.agentAccountHostNote), findsOneWidget);
+      expect(find.textContaining('official Codex runtime'), findsNothing);
     });
 
     testWidgets('demo: the X leaves the demo, set-up waits for the '

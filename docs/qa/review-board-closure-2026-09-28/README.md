@@ -20,11 +20,15 @@
 
 ## Summary counts
 
+*Counts after the closure merges are recounted at the end of the closure round; per-page rows below are authoritative.*
+
+*Updated 2026-09-28 after slice-close-servers: 14 pages moved from partial to done (profile-editor, termux-setup-connect-termux, termux-setup-failed, termux-setup-update-sheet, servers, tailscale-setup, agent-account, connection-status-details-sheet, development-services-logs-sheet, embedded-termux-attention-line, termux-setup, termux-setup-installed, termux-setup-unsupported, termux-storage). The short answer above is as audited at `ca043f36`.*
+
 | Status | All 167 | 27 with a note | 140 without |
 |---|---:|---:|---:|
-| done | 117 | 13 | 104 |
-| partial | 39 | 9 | 30 |
-| not done | 3 | 0 | 3 |
+| done | 124 | 16 | 108 |
+| partial | 31 | 6 | 25 |
+| not done | 4 | 0 | 4 |
 | in progress | 3 | 2 | 1 |
 | blocked | 5 | 3 | 2 |
 | **total** | **167** | **27** | **140** |
@@ -40,17 +44,17 @@ By area:
 
 | Area | done | partial | not done | in progress | blocked |
 |---|---:|---:|---:|---:|---:|
-| a-shell | 10 | 1 | 0 | 0 | 1 |
+| a-shell | 11 | 0 | 0 | 0 | 1 |
 | b1-chat-screen | 1 | 1 | 0 | 0 | 0 |
 | b2-chat-screen | 2 | 1 | 1 | 0 | 1 |
 | c-chat-compose | 3 | 5 | 0 | 0 | 0 |
 | d-chat-sheets | 9 | 2 | 0 | 2 | 0 |
 | e-workspace | 16 | 2 | 0 | 0 | 0 |
 | f-files-review-terminal | 9 | 3 | 0 | 0 | 0 |
-| g-servers | 16 | 6 | 1 | 0 | 0 |
-| h-termux | 11 | 10 | 0 | 0 | 2 |
-| i1-team-core | 14 | 1 | 0 | 1 | 0 |
-| i2-team-sheets | 9 | 1 | 1 | 0 | 1 |
+| g-servers | 20 | 2 | 1 | 0 | 0 |
+| h-termux | 20 | 1 | 0 | 0 | 2 |
+| i1-team-core | 9 | 6 | 0 | 1 | 0 |
+| i2-team-sheets | 8 | 2 | 1 | 0 | 1 |
 | j1-settings-more | 9 | 3 | 0 | 0 | 0 |
 | j2-library | 4 | 2 | 0 | 0 | 0 |
 | k-session-misc | 4 | 1 | 0 | 0 | 0 |
@@ -71,7 +75,7 @@ What the pages became: 80 redesigned, 40 merged into another page (mostly phone 
 - *Missing:* No Retry action on a failed queued item. It waits for the next automatic flush. *Fix owner:* lib/ui/screens/chat/message_view.dart _draftItem (chat library) (medium impact).
 - *Evidence:* `lib/ui/kit/chat/kit_queued_message.dart:1-52`
 
-### profile-editor — **partial**
+### profile-editor — **done** (slice-close-servers)
 
 > Inline with v installa?
 
@@ -81,6 +85,7 @@ What the pages became: 80 redesigned, 40 merged into another page (mostly phone 
 - *Critics' findings:* no — all three still stand. (1) A refused connection still says 'Is opencode serve running on that host and port?' next to the 'opencode2 pair' command (app_en.arb:7814, mapped at setup_ui_messages.dart:127). (2) The verdict renders at the head of the form (servers_screen.dart:3244-3251), and the address field sits under the pinned Save & connect (golden add_server_failed). (3) The Codex command is a multi-line block cut at the right edge, and the 'Use wss:// for remote servers. ws:// is limited to this device.' helper remains (arb:1528, servers_screen.dart:2651).
 - *Missing:* Plain failure wording with the raw error under Details; the verdict as a KitNotice under the address field, scrolled into view; the Codex command on one scrollable line and field validation instead of the ws/wss helper. *Fix owner:* lib/ui/screens/servers_screen.dart (_status/_manualAddress/_buildCodexFields); lib/l10n/app_en.arb e7SetupRefused, codexAddressHelp; SetupCommands.startFor(codex) (medium impact).
 - *Evidence:* `test/goldens/add_server_failed_dark.png`
+- *Closed 2026-09-28 by slice-close-servers:* a refused connection reads "The computer refused the connection. Check that the server is running there and that the address and port are right." (no `opencode serve`); a check's raw socket/TLS error sits under Details; the verdict is a notice under the address field and the form scrolls that field and verdict into view above Save & connect; the Codex command is one line (`SetupCommands.codexStart`); the ws/wss helpers (`codexAddressHelp`, `paseoAddressHelp`) are gone and the address is checked when the person leaves the field. Evidence: `docs/qa/slice-close-servers-2026-09-28/README.md`, `test/slice_close_servers_profile_editor_test.dart`.
 
 ### provider-quota — **partial**
 
@@ -105,7 +110,7 @@ What the pages became: 80 redesigned, 40 merged into another page (mostly phone 
 - *Missing:* Host-neutral finish line not met: no callable process list for the in-app Linux (P5.3 README 'Blockers kept unavailable'); emulator proof + TalkBack walk not done *Fix owner:* Codex backend (in-app process inventory, codex-p53) then P5.3 follow-up on this_phone_screen.dart (medium impact).
 - *Evidence:* `docs/qa/slice-P5.3-2026-09-27/README.md`
 
-### termux-setup-connect-termux — **partial**
+### termux-setup-connect-termux — **done** (slice-close-servers)
 
 > Align with v2
 
@@ -115,8 +120,9 @@ What the pages became: 80 redesigned, 40 merged into another page (mostly phone 
 - *Critics' findings:* partly — card-in-card mock UI is gone (one checklist row, 'In Termux, paste the copied line and press Enter.'); but the no-answer text still says 'Open Termux once, run the unlock line, then verify again.' (app_en.arb:6916, used at phone_setup_termux_job_screen.dart:224) and the settings action is still labelled 'App settings'
 - *Missing:* No-answer copy still uses 'run the unlock line' jargon; 'App settings' label not renamed to 'Allow the permission in Settings' *Fix owner:* app_en.arb e7SetupTermuxNoAnswer / e7SetupAppSettings (phone setup v2 owner) (low impact).
 - *Evidence:* `lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart:424-446, 576-600`
+- *Closed 2026-09-28 by slice-close-servers:* the no-answer text reads "Termux didn't answer. Tap Copy & open Termux, paste the line in Termux and press Enter, then come back here."; the settings action is "Allow the permission in Settings". Evidence: `docs/qa/slice-close-servers-2026-09-28/README.md`, `test/termux_setup_v2_words_test.dart`.
 
-### termux-setup-failed — **partial**
+### termux-setup-failed — **done** (slice-close-servers)
 
 > Unify all installation into v2
 
@@ -126,8 +132,9 @@ What the pages became: 80 redesigned, 40 merged into another page (mostly phone 
 - *Critics' findings:* partly — contradictions and 'Retry — resumes' are gone from the UI; but too-old Termux is a failed 'Get Termux' row whose only action is Continue setup (a re-check): personAction is offered only on pending rows (setup_progress_view.dart:296-298), so there is no 'Get the current Termux' link; non-network script errors are shown verbatim as the row text (setup_progress_view.dart:512-518)
 - *Missing:* Too-old Termux state has no link to get the current Termux; only network failures are mapped to plain titles *Fix owner:* lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart (_Gate.outdated) + setup_progress_view.dart _failureText (low impact).
 - *Evidence:* `lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart:476-500`
+- *Closed 2026-09-28 by slice-close-servers:* a too-old Termux is a failed row with its own "Get the current Termux" action through `openExternalLink` (`SetupProgressView.failureActions`), and returning re-checks; script errors the app does not know become "Stopped during: {stage}. What went wrong is under Details." with the raw text in the redacted Details log. Evidence: `docs/qa/slice-close-servers-2026-09-28/README.md`, `test/termux_setup_v2_words_test.dart`.
 
-### termux-setup-update-sheet — **partial**
+### termux-setup-update-sheet — **done** (slice-close-servers)
 
 > Align with v2
 
@@ -137,6 +144,7 @@ What the pages became: 80 redesigned, 40 merged into another page (mostly phone 
 - *Critics' findings:* partly — the same-version update is no longer offered (row hidden when up to date, this_phone_screen.dart:819-832); but the confirm keeps engine copy: title 'Update managed OpenCode?' (app_en.arb:6948), body 'restart only the managed local server' (:1611), 'Active generation should be stopped first' (:7468), used at this_phone_screen.dart:382-398
 - *Missing:* Update confirm copy still in engine words; up-to-date state is hidden rather than shown as 'Up to date · version' *Fix owner:* lib/ui/screens/this_phone_screen.dart _update + app_en.arb e7SetupConfirmUpdate/setupRuntimeUpdateDetail/e7SetupUpdateInterruption (low impact).
 - *Evidence:* `lib/ui/screens/this_phone_screen.dart:376-405`
+- *Closed 2026-09-28 by slice-close-servers:* the confirm reads "Update {runtime}?" / "Installs version X, restarts the server on this phone and connects again." / "Your conversations are kept…"; a reply in progress gets its own plain alert; the pinned version already installed shows "Up to date · {version}" instead of hiding the row. Evidence: `docs/qa/slice-close-servers-2026-09-28/README.md`, `test/this_phone_plain_failures_test.dart`.
 
 ### start-run-sheet — **done** (slice-close-team)
 
@@ -357,7 +365,7 @@ Gaps are shortened here; every non-done row is listed in full under **Gaps** bel
 |---|---|---|---|---|---|---|---|
 | activity | a-shell | fix | redesigned | done | screen-shell-1, slice-P4.2a, slice-P4.2b (inbox-work), slice-P6.2 · 24adc02d, 2c1c783f, … |  | lib/ui/screens/activity_screen.dart:930-948 |
 | bootstrap-gate | a-shell | fix | redesigned | done | coord-main · c274356e, 2c8efba4 |  | lib/main.dart:328-375 |
-| connection-status-details-sheet | a-shell | rethink | merged into root-connecting / shell status line | partial | shared-shell-1, slice-P4.4 · 781933fb, 3fe463f8 | The raw error fold starts open instead of collapsed. | lib/ui/widgets/connection_status_banner.dart:198-276 |
+| connection-status-details-sheet | a-shell | rethink | merged into root-connecting / shell status line | done | shared-shell-1, slice-P4.4 · 781933fb, 3fe463f8 | The raw error fold starts collapsed (slice-close-servers). | docs/qa/slice-close-servers-2026-09-28/README.md |
 | embedded-connection-status-banner | a-shell | fix | redesigned | done | shared-shell-1, slice-P4.4 · 781933fb, fe34c91f |  | docs/qa/slice-P4.4-2026-09-28/README.md |
 | embedded-product-states | a-shell | fix | removed | done | shared-system-1, kit-hygiene, no-raw-errors · bbb3577f, 4316dc8c, 6cdfca4e |  | lib/ui/widgets/product_states.dart:13-21 |
 | home-shell | a-shell | rethink | redesigned | done | screen-shell-2, slice-P1.3, slice-P4.4 · f4b7a51f, 2045a435 |  | lib/ui/screens/home_screen.dart:471-490 |
@@ -420,7 +428,7 @@ Gaps are shortened here; every non-done row is listed in full under **Gaps** bel
 | terminal | f-files-review-terminal | fix | redesigned | done | screen-terminal-1, slice-R18 · 6b2903df, 443f4b47, c0efb78c |  | lib/ui/screens/terminal_screen.dart:639-650 |
 | terminal-surface | f-files-review-terminal | fix | redesigned | done | screen-terminal-1 · 6b2903df |  | lib/ui/screens/terminal_screen.dart:1380-1420 |
 | add-agent | g-servers | rethink | redesigned | done | screen-library-2 · 93f915ac, 8c743a97 |  | lib/ui/screens/external_agents_screen.dart:395 |
-| agent-account | g-servers | fix | restyled | partial | screen-usage-1, slice-P5.4 · 82eb38cc, 64437e87 | Plain sign-in copy ('Sign in with your ChatGPT account. You finish in the browser; this app never sees your password.') was never applied. The kit … | test/revamp/goldens/agent_account_signed_out_dark.png |
+| agent-account | g-servers | fix | restyled | done | screen-usage-1, slice-P5.4 · 82eb38cc, 64437e87 | Closed (slice-close-servers): the plain sign-in copy is applied. | docs/qa/slice-close-servers-2026-09-28/README.md |
 | agent-choice | g-servers | rethink | merged into profile-editor (Add server step 1) | done | slice-P3.9 · 3d251f37, 24b76eb8 |  | test/revamp/goldens/servers_addserver_kind_dark.png |
 | connection-help | g-servers | rethink | merged into profile-editor (inline advice) | done | slice-P3.9 · 3d251f37, 24b76eb8 |  | docs/qa/slice-P3.9-2026-09-27/README.md |
 | embedded-profile-monitor-inbox | g-servers | fix | redesigned | done | screen-servers-2, slice-P4.2b (slice-inbox-work) · 337b478d, 53c2bf2a |  | lib/ui/screens/profile_monitor_screen.dart:339 |
@@ -436,24 +444,24 @@ Gaps are shortened here; every non-done row is listed in full under **Gaps** bel
 | server-settings | g-servers | fix | redesigned | done | screen-servers-2, slice-P1.3, slice-R15 · 337b478d, 2045a435, 0bc6651e |  | lib/ui/screens/settings/server_settings_screen.dart:78 |
 | server-settings-restart-dialog | g-servers | fix | redesigned (kit sheet) | done | screen-servers-2 · 337b478d |  | lib/ui/screens/settings/server_settings_screen.dart:105 |
 | server-settings-upgrade-sheet | g-servers | fix | fixed | done | screen-servers-2 · 337b478d |  | lib/ui/screens/settings/server_settings_screen.dart:182 |
-| servers | g-servers | fix | redesigned | partial | screen-servers-1, slice-P3.9, slice-R15, slice-P4.2b, slice-P4.4, slice-P7.2, … | The supporting line should carry kind and state only, with the address and folder moved to the row menu's Details. | test/revamp/goldens/slice_r15_servers_phone_row_dark.png |
-| tailscale-setup | g-servers | fix | redesigned | partial | screen-servers-3, slice-R15, slice-P3.9 · b738e8e7, 0bc6651e | Rename the primary to 'Continue' and drop 'VPN connection is unverified' from the installed line. | lib/ui/screens/tailscale_setup_screen.dart:91 |
+| servers | g-servers | fix | redesigned | done | screen-servers-1, slice-P3.9, slice-R15, slice-P4.2b, slice-P4.4, slice-P7.2, … | Closed (slice-close-servers): the line carries state and kind only; address and folder are in the row menu's Details sheet. | docs/qa/slice-close-servers-2026-09-28/README.md |
+| tailscale-setup | g-servers | fix | redesigned | done | screen-servers-3, slice-R15, slice-P3.9 · b738e8e7, 0bc6651e | Closed (slice-close-servers): primary 'Continue to sign-in' (a bare 'Continue' fails the G28 actions-name-their-target gate; Add server's Tailscale step says 'Enter the address'); installed line is just 'Tailscale is installed.' | docs/qa/slice-close-servers-2026-09-28/README.md |
 | usage | g-servers | rethink | redesigned | done | screen-usage-1, slice-P5.4, slice-P5.2 · 82eb38cc, 64437e87, 43b14616, 8e0c584b |  | docs/qa/slice-P5.4-2026-09-27/after-usage_loaded_dark.png |
 | usage-budget-clear-dialog | g-servers | fix | fixed | done | screen-usage-1 · 82eb38cc |  | test/revamp/goldens/usage_budget_clear_dialog_dark.png |
 | builtin-server-log-sheet | h-termux | fix | merged into this-phone (Details fold) | done | screen-phone-1, slice-P1.3+P1.5 · 5088cc85, 2045a435 |  | lib/ui/screens/this_phone_screen.dart:1004-1027 (KitDetailsFold > KitLogPanel live: … |
 | builtin-server-setup | h-termux | fix | removed (merged into phone-setup-start) | done | screen-phone-1, slice-P1.3 · bf19c3e2, 7617d6fc |  | docs/qa/slice-P1.3-P1.5-2026-09-27/README.md (entry-point table) + lib/main.dart:2074 |
 | development-services | h-termux | fix | redesigned | done | screen-work-4 · 3599f22f, fd451271 |  | lib/ui/screens/development_services_screen.dart:562-720; … |
 | development-services-confirm-sheet | h-termux | fix | redesigned | done | screen-work-4 · 3599f22f |  | lib/ui/screens/development_services_screen.dart:305-335 |
-| development-services-logs-sheet | h-termux | fix | restyled | partial | screen-work-4 · 3599f22f | Log does not follow new output: readLogs is called once at development_services_screen.dart:362 and otherwise only via the panel's onRefresh (:457); … | lib/ui/screens/development_services_screen.dart:353-470 |
+| development-services-logs-sheet | h-termux | fix | restyled | done | screen-work-4 · 3599f22f | Closed (slice-close-servers): the finding was wrong — KitLogPanel already polls every 2 s while open; a test now guards it. | docs/qa/slice-close-servers-2026-09-28/README.md |
 | embedded-local-agent-onboarding-block | h-termux | rethink | restyled (merge into phone-setup-progress not built) | blocked | slice-P1.6b (not started), P1.6a gate · 01c3e7a2, fd8ab222, 6ff049d9 (gate only) | The planned merge into the v2 checklist (P1.6b: a 'claude' component + 'Sign in to Claude' person-step) is not built: P1.6a gate is NO-GO/incomplete … | docs/qa/gate-P1.6a-2026-09-28/README.md; lib/ui/widgets/local_agent_onboarding.dart:65-70 |
 | embedded-setup-terminal | h-termux | fix | redesigned | done | shared-phone-1, slice-P1.2, slice-P1.3+P1.5 · a840e233, 935945d6, 2045a435 |  | lib/ui/widgets/setup_progress_view.dart:281-345 (KitChecklist log: KitLogPanel) |
-| embedded-termux-attention-line | h-termux | fix | fixed (action only) | partial | shared-servers-1, R14 · 58c17ec3, 635f69ac | Copy still says OpenCode is busy when the culprit is a leftover helper; no 'See what's running' link to Running on this phone | lib/ui/widgets/work_status_line.dart:96-110 |
+| embedded-termux-attention-line | h-termux | fix | fixed (action only) | done | shared-servers-1, R14 · 58c17ec3, 635f69ac | Closed (slice-close-servers): a leftover helper is named as one; the line's menu has 'See what's running'. | docs/qa/slice-close-servers-2026-09-28/README.md |
 | phone-setup-customize-sheet | h-termux | fix | redesigned | done | screen-phone-1, slice-P1.5 · 5088cc85, 2045a435 |  | lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart:448-470; … |
-| termux-setup | h-termux | fix | merged into This phone (termux-setup-installed) | partial | slice-P1.2, slice-P1.3+P1.5 · 935945d6, 2045a435, 7617d6fc | Switch-stopped state has no explanation sentence ('OpenCode 2 didn't start... your conversations are kept'): only the runtime name, 'Needs you' and … | lib/ui/screens/this_phone_screen.dart:686-710 |
-| termux-setup-installed | h-termux | fix | redesigned (This phone, host-neutral) | partial | slice-P1.5, slice-P1.4, slice-P0.7-port · 2045a435, 94ec2afa, 1207aa74 | Needs-you state does not distinguish failed install (Reinstall) from failed start ('OpenCode didn't start' / Start again); Termux failure text is not … | lib/ui/screens/this_phone_screen.dart:710-790 |
+| termux-setup | h-termux | fix | merged into This phone (termux-setup-installed) | done | slice-P1.2, slice-P1.3+P1.5 · 935945d6, 2045a435, 7617d6fc | Closed (slice-close-servers): '{runtime} didn't start after the switch. Your conversations are kept.' | docs/qa/slice-close-servers-2026-09-28/README.md |
+| termux-setup-installed | h-termux | fix | redesigned (This phone, host-neutral) | done | slice-P1.5, slice-P1.4, slice-P0.7-port · 2045a435, 94ec2afa, 1207aa74 | Closed (slice-close-servers): failed start (Start again) vs failed install (Install again) vs no answer; script text only under Details. | docs/qa/slice-close-servers-2026-09-28/README.md |
 | termux-setup-replace-installed-sheet | h-termux | fix | removed | done | slice-P1.3+P1.5 · bf19c3e2, 2045a435 |  | lib/ui/screens/this_phone_screen.dart:819-832 |
-| termux-setup-unsupported | h-termux | fix | merged into phone setup (Termux job unsupported state) | partial | slice-P1.3 · 2045a435 | Title still 'Setup on this phone is Android only' instead of 'Connect a server'; body keeps backticks and the untrue 'requires Termux'; no copyable … | lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart:549-555 |
-| termux-storage | h-termux | fix | restyled | partial | screen-phone-1 · 5088cc85 | Scan view should show the category rows filling in with the log under Details; intro paragraph still long | docs/qa/revamp-screen-phone-1-2026-09-27/after-termux-storage-scanning.png |
+| termux-setup-unsupported | h-termux | fix | merged into phone setup (Termux job unsupported state) | done | slice-P1.3 · 2045a435 | Closed (slice-close-servers): 'Connect a server', plain body, copyable opencode2 pair block, Add server. | docs/qa/slice-close-servers-2026-09-28/README.md |
+| termux-storage | h-termux | fix | restyled | done | screen-phone-1 · 5088cc85 | Closed (slice-close-servers): the scan's stage rows fill in as it runs (sizes land with the report), log under Details; two-sentence intro. | docs/qa/slice-close-servers-2026-09-28/README.md |
 | embedded-team-cycle-strip | i1-team-core | rethink | merged into team-conversation (Now line) | done | shared-team-1, slice-P5.1 · 19640c8b, e5148e4a (merge dd18fdee) |  | lib/ui/screens/chat/team_conversation_view.dart (TeamNowLineView); … |
 | embedded-team-receipt-chip | i1-team-core | fix | restyled (slice-close-team: the receipt is a mark and word in the row's supporting line, `teamGateRowLine`; the chevron stays) | done | kit-KitReceipt, slice-P4.1c, slice-P5.2 · 513310c0, 4cfbf10a (merge 078cffed), 10cf32d9 | Receipt as a word + icon in the row's supporting line ('Question · Not confirmed yet'), chevron trailing; the retry stays in the Gate sheet. | lib/ui/widgets/team_receipt.dart:99 |
 | team-agent | i1-team-core | fix | redesigned (short status page; slice-close-team: only open dependencies count, `teamOpenDependencies`) | done | screen-team-1, slice-P3.6 · 346ca55c (merge 30dbf42c), af07cc7a (merge dbac9c48) | Say the dependency only while it is open (check the dependency's state), so 'Working' and 'waiting on…' never show together. | lib/ui/screens/team/agent_screen.dart:246 |
@@ -532,7 +540,7 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
    - offers only Host guide (`lib/ui/screens/team/start_run_sheet.dart:412`, `:676-700`).
 
    **Fix:** `_PlannerOff`. Use a plain title, and offer Wake the planner where `controlAgent` exists. *Medium.*
-7. **Add server still fails in engine words.** Affects profile-editor ("Inline with v installa?"). The owner's point is met: This phone hands off to v2, and adding a computer is one stepped path. All three critic findings stand:
+7. ~~**Add server still fails in engine words.**~~ **Closed 2026-09-28 by slice-close-servers** (`docs/qa/slice-close-servers-2026-09-28/README.md`). Affects profile-editor ("Inline with v installa?"). The owner's point is met: This phone hands off to v2, and adding a computer is one stepped path. All three critic findings stand:
    - "Is opencode serve running…" appears next to an OC2 pair command (`app_en.arb:7814` `e7SetupRefused`).
    - The failure shows at the top of the form, away from the field (golden `test/goldens/add_server_failed_*.png`).
    - The Codex command is clipped, and the ws/wss helper is still there (`app_en.arb:1528` `codexAddressHelp`).
@@ -542,7 +550,7 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 9. **A failed queued message has no Retry.** Affects embedded-pending-sends-strip. The owner's "one bubble, themed" is done. A failed queued item offers only Edit and Discard (`lib/ui/screens/chat/message_view.dart:1812-1840`). **Fix:** `_draftItem` in the chat library. *Medium.*
 10. **The session-link sheet cannot prefill the server.** Affects session-link-server-missing-banner ("Screen sucks"). It is now an "Add this server?" sheet, but Add server opens empty and the text still says "scan the code again". **Blocked:** links that carry the address are built but gated off (`ServerCapabilities.sessionAddressHandoff` is false on every adapter until the host can be verified; `docs/qa/codex-sessionlink-2026-09-28`). *Medium.*
 11. **Commands for Claude Code and Codex don't exist.** Affects command-launcher-sheet ("… what about using Claude or codex will this support their commands?"). There is one sheet with plain words and an honest "not available" for those backends. **Blocked:** there is no callable command contract (`slashCommands` is false on both gateways). The visual study the owner asked for ("run an agent to think how to visually represent these") is not recorded anywhere. **Fix:** the Codex backend queue (`docs/qa/codex-p101-2026-09-27`), then `lib/ui/widgets/command_sheet.dart`. *Medium.*
-12. **Termux-host words that could still be plainer** (all *low*, under the "Align with v2" notes):
+12. ~~**Termux-host words that could still be plainer**~~ **Closed 2026-09-28 by slice-close-servers** (`docs/qa/slice-close-servers-2026-09-28/README.md`). (all *low*, under the "Align with v2" notes):
     - termux-setup-connect-termux still says "run the unlock line" and "App settings" (`app_en.arb:6916`).
     - termux-setup-failed: a too-old Termux has no "Get the current Termux" link, because actions only appear on pending rows (`setup_progress_view.dart:296`).
     - termux-setup-update-sheet: the confirm says "Update managed OpenCode?" and "Active generation…" (`this_phone_screen.dart:382-398`).
@@ -564,7 +572,7 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 19. ~~**profile-monitor.**~~ *Closed by slice-close-misc: the page is removed; every door lands in Notifications.* P4.2b's acceptance ("route removed") is not met. It is still reachable as Servers › Background checks (`servers_screen.dart:1029-1040`) and from search (`search_index.dart:1377`). The dot stays green while a request waits, and the engine words remain. *Medium.*
 20. **embedded-completion-digest-card.** The Inbox row landed, but the expanded body is still the old raw card with its disclaimers and five text buttons (`lib/ui/widgets/completion_digest.dart:54-104`). **Fix:** a P4.2b follow-up. *Medium.*
 21. **command-auth-sheet.** Recovery mechanics are still shown as copy (`lib/ui/screens/library/command_auth_sheet.dart:185-213`). *Medium.*
-22. **termux-setup-installed and embedded-termux-attention-line.**
+22. ~~**termux-setup-installed and embedded-termux-attention-line.**~~ **Closed 2026-09-28 by slice-close-servers** (`docs/qa/slice-close-servers-2026-09-28/README.md`).
     - "Needs you" does not tell a failed install from a failed start, and Termux errors are shown exactly as the scripts send them (`lib/state/phone_host.dart:384` → `this_phone_screen.dart:778`).
     - The line blames OpenCode when a leftover helper is the real cause, and has no "See what's running" (`lib/ui/widgets/work_status_line.dart:101-103`).
 
@@ -575,7 +583,7 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 
 ### D. Low-impact leftovers (wording and polish; one line each)
 
-- **connection-status-details-sheet** (partial): The raw error fold starts open instead of collapsed. Fix: lib/ui/widgets/connection_status_banner.dart.
+- ~~**connection-status-details-sheet**~~ (done, slice-close-servers; was partial): The raw error fold starts open instead of collapsed. Fix: lib/ui/widgets/connection_status_banner.dart.
 - **chat-read-aloud-consent-sheet** (partial): Consent is not remembered across conversations or app restarts. It resets on every scope change. Fix: lib/ui/screens/chat/read_aloud.dart (chat library).
 - **embedded-composer** (partial): In the working state with text, show one trailing control (Send), not Stop+Send, and move expand into the field corner. Fix: lib/ui/kit/chat/kit_composer.dart (kit owner).
 - **embedded-transcript-find-bar** (partial): The match excerpt card still repeats the count. Keep the count in the bar only and highlight in place. Fix: lib/ui/screens/chat/message_view.dart _frame + lib/ui/widgets/transcript_highlight.dart.
@@ -584,13 +592,13 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 - **project-health** (partial): Split 'Couldn't read Git status' + Try again from 'This server doesn't report Git status' with no retry Fix: gateway typed unsupported error (Codex backend) + lib/ui/screens/project_health_screen.dart _readFailed.
 - **diff-view** (partial): Multi-file title still 'Review' (reviewTitle) instead of 'Changes · N files' Fix: lib/ui/screens/review_workspace.dart DiffPage (P3.7a follow-up).
 - **staged-revert** (partial): State 'Files were put back' / 'Files were left as they are' (SessionRevert has no applyFiles flag; the app could remember the choice it sent) Fix: lib/state/connection.dart stageSessionRevert (remember applyFiles) + lib/ui/screens/staged_revert_screen.dart.
-- **agent-account** (partial): Plain sign-in copy ('Sign in with your ChatGPT account. You finish in the browser; this app never sees your password.') was never applied. The kit rebuild and the 'Sign in with ChatGPT' primary did land. Fix: lib/l10n/app_en.arb agentAccountSignInNote/agentAccountHostNote; lib/ui/screens/agent_account_screen.dart.
-- **servers** (partial): The supporting line should carry kind and state only, with the address and folder moved to the row menu's Details. Fix: lib/ui/screens/servers_screen.dart _ServerRow (:1193-1246).
-- **tailscale-setup** (partial): Rename the primary to 'Continue' and drop 'VPN connection is unverified' from the installed line. Fix: lib/l10n/app_en.arb tailscaleContinue, tailscaleInstalled.
-- **development-services-logs-sheet** (partial): Log does not follow new output: readLogs is called once at development_services_screen.dart:362 and otherwise only via the panel's onRefresh (:457); no poll while the sheet is open Fix: lib/ui/screens/development_services_screen.dart (_logs) — screen-work-4 follow-up.
-- **termux-setup** (partial): Switch-stopped state has no explanation sentence ('OpenCode 2 didn't start... your conversations are kept'): only the runtime name, 'Needs you' and two buttons Fix: lib/ui/screens/this_phone_screen.dart _status (switchTarget branch) — P1.5 follow-up.
-- **termux-setup-unsupported** (partial): Title still 'Setup on this phone is Android only' instead of 'Connect a server'; body keeps backticks and the untrue 'requires Termux'; no copyable mono command box Fix: lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart:546-563 + app_en.arb e7SetupUnsupportedSetup.
-- **termux-storage** (partial): Scan view should show the category rows filling in with the log under Details; intro paragraph still long Fix: lib/ui/screens/termux_storage_screen.dart _buildScanning (screen-phone-1 follow-up).
+- ~~**agent-account**~~ (done, slice-close-servers; was partial): Plain sign-in copy ('Sign in with your ChatGPT account. You finish in the browser; this app never sees your password.') was never applied. The kit rebuild and the 'Sign in with ChatGPT' primary did land. Fix: lib/l10n/app_en.arb agentAccountSignInNote/agentAccountHostNote; lib/ui/screens/agent_account_screen.dart.
+- ~~**servers**~~ (done, slice-close-servers; was partial): The supporting line should carry kind and state only, with the address and folder moved to the row menu's Details. Fix: lib/ui/screens/servers_screen.dart _ServerRow (:1193-1246).
+- ~~**tailscale-setup**~~ (done, slice-close-servers; was partial): Rename the primary to 'Continue' and drop 'VPN connection is unverified' from the installed line. Fix: lib/l10n/app_en.arb tailscaleContinue, tailscaleInstalled.
+- ~~**development-services-logs-sheet**~~ (done, slice-close-servers; was partial): Log does not follow new output: readLogs is called once at development_services_screen.dart:362 and otherwise only via the panel's onRefresh (:457); no poll while the sheet is open Fix: lib/ui/screens/development_services_screen.dart (_logs) — screen-work-4 follow-up.
+- ~~**termux-setup**~~ (done, slice-close-servers; was partial): Switch-stopped state has no explanation sentence ('OpenCode 2 didn't start... your conversations are kept'): only the runtime name, 'Needs you' and two buttons Fix: lib/ui/screens/this_phone_screen.dart _status (switchTarget branch) — P1.5 follow-up.
+- ~~**termux-setup-unsupported**~~ (done, slice-close-servers; was partial): Title still 'Setup on this phone is Android only' instead of 'Connect a server'; body keeps backticks and the untrue 'requires Termux'; no copyable mono command box Fix: lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart:546-563 + app_en.arb e7SetupUnsupportedSetup.
+- ~~**termux-storage**~~ (done, slice-close-servers; was partial): Scan view should show the category rows filling in with the log under Details; intro paragraph still long Fix: lib/ui/screens/termux_storage_screen.dart _buildScanning (screen-phone-1 follow-up).
 - **embedded-team-receipt-chip** (done, slice-close-team): Receipt as a word + icon in the row's supporting line ('Question · Not confirmed yet'), chevron trailing; the retry stays in the Gate sheet. Fix: lib/ui/widgets/team_receipt.dart (teamGateRowReceipt) + its row callers.
 - **team-agent** (done, slice-close-team): Say the dependency only while it is open (check the dependency's state), so 'Working' and 'waiting on…' never show together. Fix: lib/ui/screens/team/agent_screen.dart (_workHold).
 - **team-agent-output** (partial): Ended + empty: an inline state 'This session has ended' with a way on (Back to the task / About the worker) instead of the 'fills in as the agent works' line. Fix: lib/ui/screens/chat/team_watch_live.dart.
@@ -605,7 +613,7 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 
 - `test/calm_chat_disclosure_test.dart` still mentions the removed Context capsule.
 - The Arabic `sessionCopyHandoff` still means "copy handoff reference", not "Continue on computer".
-- `lib/ui/screens/server_settings_screen.dart:33`: the restart sheet hard-codes `bash ubuntu-opencode.sh restart`, which is wrong for servers not installed with that helper.
+- ~~`lib/ui/screens/server_settings_screen.dart:33`: the restart sheet hard-codes `bash ubuntu-opencode.sh restart`~~ — closed by slice-close-servers: the sheet says to restart the server the way it was started, with the script command in a folded "Set up with the Linux service script?".
 - All conversations still ends in a "Load more" button (`global_sessions_screen.dart:1005`), although target-ia says lists load their next page by themselves.
 - In Files, the change-marks line still shows when the folder listing has failed (`files_screen.dart:1080`).
 - Old wizard strings (`e7SetupChooseContinue`, `e7SetupNoUbuntu`, `e7SetupResumeSetup`) survive only to translate script messages (`setup_ui_messages.dart`). They are not dead code, but they could move to that file's own keys.

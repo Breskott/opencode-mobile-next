@@ -282,7 +282,8 @@ void main() {
         find.byKey(const ValueKey('phone-setup-termux-unsupported')),
         findsOneWidget,
       );
-      expect(find.text('Setup on this phone is Android only'), findsOneWidget);
+      // The way that works instead (slice-close-servers).
+      expect(find.text('Connect a server'), findsOneWidget);
       // No step list, so nothing invites a tap that cannot work.
       expect(find.text('Get Termux'), findsNothing);
       expect(tester.takeException(), isNull);

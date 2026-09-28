@@ -43,6 +43,7 @@ import '../../termux/bridge.dart';
 import 'global_sessions_screen.dart';
 import 'isolated_task_sheet.dart';
 import 'session_context_screen.dart';
+import 'termux_processes_screen.dart';
 import 'new_conversation_sheet.dart';
 import 'project_folder_actions.dart';
 import 'projects_screen.dart';
@@ -1330,7 +1331,13 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 onPressed: () => unawaited(_refreshRequests()),
               ),
             ),
-          runaway?.status(l10n),
+          runaway?.status(
+            l10n,
+            // Every process on the phone, where the rest can be stopped.
+            onSeeRunning: () => unawaited(
+              pushKitPage<void>(context, (_) => const TermuxProcessesScreen()),
+            ),
+          ),
           if (notice != null)
             WorkStatus(
               id: 'notice',

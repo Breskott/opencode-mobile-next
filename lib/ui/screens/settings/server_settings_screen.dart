@@ -29,7 +29,8 @@ class ServerSettingsScreen extends StatefulWidget {
   State<ServerSettingsScreen> createState() => _ServerSettingsScreenState();
 }
 
-/// The helper script's restart, as Run as a Linux service installs it.
+/// The helper script's restart, as Run as a Linux service installs it: only
+/// right for a server set up with that script, so the sheet folds it away.
 const _serverRestartCommand = 'bash ubuntu-opencode.sh restart';
 
 /// The official upgrade and model refresh, run on the server's computer.
@@ -120,17 +121,19 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                 _runningVersion ?? copy.e7SettingsUi52,
               ),
             ),
-            SizedBox(height: tokens.space4),
-            KitText(
-              copy.serverSettingsRestartCommandLabel,
-              role: KitTextRole.label,
-            ),
             SizedBox(height: tokens.space2),
-            KitCodeBlock(
-              text: _serverRestartCommand,
-              kind: KitCodeKind.command,
-              copyLabel: copy.handoffCopyCommand,
-              copyKey: const ValueKey('server-restart-copy'),
+            // The app cannot tell how the server was started, so the helper
+            // script's command is a folded aside for servers set up with it,
+            // never the instruction for every server.
+            KitDetailsFold(
+              foldKey: const ValueKey('server-restart-script'),
+              label: copy.serverSettingsRestartCommandLabel,
+              child: KitCodeBlock(
+                text: _serverRestartCommand,
+                kind: KitCodeKind.command,
+                copyLabel: copy.handoffCopyCommand,
+                copyKey: const ValueKey('server-restart-copy'),
+              ),
             ),
           ],
         );
