@@ -4,6 +4,11 @@
 // quiet line in the page's status slot, with "Sign in to a provider". It is
 // never a blocking banner, it can be dismissed once per conversation, and
 // showing or dismissing it never moves the reply (F16's concern too).
+//
+// Regenerate deliberately, and look at every changed image before committing it:
+//   flutter test --update-goldens --dart-define=CAPTURE_EVIDENCE=true \
+//     test/chat_free_model_note_test.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -239,15 +244,23 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final c = await _controller();
-      await tester.pumpWidget(_app(c, 's1', theme: captureTheme(light: light)));
-      await tester.pumpAndSettle();
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile(
-          'goldens/evidence/chat_free_model_note_'
-          '${size.width.toInt()}_${light ? 'light' : 'dark'}.png',
-        ),
-      );
+      debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
+      try {
+        await tester.pumpWidget(
+          _app(c, 's1', theme: captureTheme(light: light)),
+        );
+        await tester.pumpAndSettle();
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile(
+            'goldens/evidence/chat_free_model_note_'
+            '${size.width.toInt()}_${light ? 'light' : 'dark'}.png',
+          ),
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
   }
 
