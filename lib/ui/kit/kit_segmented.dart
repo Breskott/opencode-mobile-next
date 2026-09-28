@@ -4,6 +4,7 @@ import 'package:intl/intl.dart' show NumberFormat;
 
 import 'kit_choice_list.dart';
 import 'kit_motion.dart';
+import 'kit_tappable.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
 
@@ -136,7 +137,14 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
   /// keyboard: `FocusHighlightMode.traditional`).
   int? _ring;
   int? _hovered;
-  int? _pressed;
+
+  /// Each segment's press, shown on the next frame of a touch
+  /// (KitPressTracker) rather than after the tap-or-scroll wait.
+  final _presses = <int, KitPressTracker>{};
+
+  KitPressTracker _press(int index) => _presses[index] ??= KitPressTracker(() {
+    if (mounted) setState(() {});
+  });
 
   KitSegmented<T> get _part => widget.part;
   List<KitSegment<T>> get _segments => _part.segments;
@@ -172,7 +180,11 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
       }
       _nodes = _buildNodes();
       _stackNodes = _buildStackNodes();
-      _focused = _ring = _hovered = _pressed = null;
+      _focused = _ring = _hovered = null;
+      for (final press in _presses.values) {
+        press.dispose();
+      }
+      _presses.clear();
     }
   }
 
@@ -180,6 +192,9 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
   void dispose() {
     for (final node in [..._nodes, ..._stackNodes]) {
       node.dispose();
+    }
+    for (final press in _presses.values) {
+      press.dispose();
     }
     super.dispose();
   }
@@ -313,11 +328,6 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
   void _setHovered(int index, bool hovered) {
     final next = hovered ? index : (_hovered == index ? null : _hovered);
     if (next != _hovered) setState(() => _hovered = next);
-  }
-
-  void _setPressed(int index, bool pressed) {
-    final next = pressed ? index : (_pressed == index ? null : _pressed);
-    if (next != _pressed) setState(() => _pressed = next);
   }
 
   String _formatCount(BuildContext context, int count) =>
@@ -595,7 +605,7 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
     // already sits on the surface3 indicator.
     final KitSurfaceLevel? step = !enabled || isSelected
         ? null
-        : _pressed == index
+        : _presses[index]?.shown ?? false
         ? KitSurfaceLevel.surface3
         : _hovered == index
         ? (roles.isDark ? KitSurfaceLevel.surface2 : KitSurfaceLevel.surface3)
@@ -694,36 +704,43 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
         child: MouseRegion(
           onEnter: enabled ? (_) => _setHovered(index, true) : null,
           onExit: (_) => _setHovered(index, false),
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            excludeFromSemantics: true,
-            onTapDown: enabled ? (_) => _setPressed(index, true) : null,
-            onTapUp: enabled ? (_) => _setPressed(index, false) : null,
-            onTapCancel: enabled ? () => _setPressed(index, false) : null,
-            onTap: enabled ? () => _choose(index) : null,
-            child: Container(
-              constraints: BoxConstraints(minHeight: tokens.minTarget),
-              alignment: Alignment.center,
-              padding: EdgeInsetsDirectional.symmetric(
-                horizontal: tokens.space2,
-              ),
-              decoration: BoxDecoration(
-                color: step == null ? null : tokens.fillOf(step),
-                borderRadius: radius,
-              ),
-              // The keyboard ring is painted over the segment, inside its
-              // bounds, so it never moves the content (LOOK-21: 2 physical px
-              // in accent).
-              foregroundDecoration: _ring == index
-                  ? BoxDecoration(
-                      borderRadius: radius,
-                      border: Border.all(
-                        color: roles.accent,
-                        width: KitTokens.focusRingWidth(context),
-                      ),
-                    )
+          child: _press(index).listen(
+            context: context,
+            enabled: enabled,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              excludeFromSemantics: true,
+              onTapCancel: enabled ? _press(index).cancel : null,
+              onTap: enabled
+                  ? () {
+                      _press(index).confirm();
+                      _choose(index);
+                    }
                   : null,
-              child: content,
+              child: Container(
+                constraints: BoxConstraints(minHeight: tokens.minTarget),
+                alignment: Alignment.center,
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: tokens.space2,
+                ),
+                decoration: BoxDecoration(
+                  color: step == null ? null : tokens.fillOf(step),
+                  borderRadius: radius,
+                ),
+                // The keyboard ring is painted over the segment, inside its
+                // bounds, so it never moves the content (LOOK-21: 2 physical px
+                // in accent).
+                foregroundDecoration: _ring == index
+                    ? BoxDecoration(
+                        borderRadius: radius,
+                        border: Border.all(
+                          color: roles.accent,
+                          width: KitTokens.focusRingWidth(context),
+                        ),
+                      )
+                    : null,
+                child: content,
+              ),
             ),
           ),
         ),

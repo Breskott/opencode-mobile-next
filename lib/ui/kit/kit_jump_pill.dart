@@ -17,6 +17,7 @@ import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
 import 'kit_bottom_inset.dart';
 import 'kit_motion.dart';
+import 'kit_tappable.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
 
@@ -341,17 +342,22 @@ class _KitJumpPillButton extends StatefulWidget {
 
 class _KitJumpPillButtonState extends State<_KitJumpPillButton> {
   bool _hovered = false;
-  bool _pressed = false;
   bool _focused = false;
+  // The pill answers a touch on the next frame (KitPressTracker), not after
+  // the InkWell's tap-or-scroll wait.
+  late final _press = KitPressTracker(() {
+    if (mounted) setState(() {});
+  });
+
+  @override
+  void dispose() {
+    _press.dispose();
+    super.dispose();
+  }
 
   void _setHovered(bool value) {
     if (_hovered == value) return;
     setState(() => _hovered = value);
-  }
-
-  void _setPressed(bool value) {
-    if (_pressed == value) return;
-    setState(() => _pressed = value);
   }
 
   void _setFocused(bool value) {
@@ -364,7 +370,7 @@ class _KitJumpPillButtonState extends State<_KitJumpPillButton> {
     final tokens = KitTokens.of(context);
     final roles = tokens.roles;
     final shape = tokens.shapeOf(KitShape.pill);
-    final fill = _hovered || _pressed ? roles.surface2 : roles.surface3;
+    final fill = _hovered || _press.shown ? roles.surface2 : roles.surface3;
     final borderedShape = StadiumBorder(
       side: BorderSide(
         color: roles.hairline,
@@ -426,20 +432,27 @@ class _KitJumpPillButtonState extends State<_KitJumpPillButton> {
               ),
             )
           : const BoxDecoration(),
-      child: Material(
-        type: MaterialType.transparency,
-        shape: shape,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          key: widget.pillKey,
-          onTap: widget.onPressed,
-          onHover: _setHovered,
-          onHighlightChanged: _setPressed,
-          onFocusChange: _setFocused,
-          customBorder: shape,
-          splashFactory: NoSplash.splashFactory,
-          overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-          child: pill,
+      child: _press.listen(
+        context: context,
+        enabled: true,
+        child: Material(
+          type: MaterialType.transparency,
+          shape: shape,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            key: widget.pillKey,
+            onTap: () {
+              _press.confirm();
+              widget.onPressed();
+            },
+            onTapCancel: _press.cancel,
+            onHover: _setHovered,
+            onFocusChange: _setFocused,
+            customBorder: shape,
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+            child: pill,
+          ),
         ),
       ),
     );

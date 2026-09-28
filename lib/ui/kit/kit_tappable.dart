@@ -5,6 +5,9 @@
 // the same right-click / long-press / Shift+F10 popup everywhere
 // (`showKitMenu`, kit-KitMenu). `KitRow`, `KitSurface`-based cards,
 // `KitBreadcrumb` and the chat parts build on it.
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +18,183 @@ import 'kit_layout.dart';
 import 'kit_menu.dart';
 import 'kit_motion.dart';
 import 'kit_tokens.dart';
+
+/// The pressed state every kit control shows on a touch (the shared press
+/// layer behind [KitTappable], `KitIconButton`, `KitButton`, `KitChip`,
+/// `KitSegmented` and the terminal keys), so a tap answers on the very next
+/// frame instead of after the framework's tap-or-scroll wait.
+///
+/// It reads raw pointer events ([listen]), not the tap recognizer, because
+/// the recognizer only reports a press after `kPressTimeout` (100 ms), and a
+/// quick tap (down and up between two frames) reports down and up together,
+/// so a fill set on down and cleared on up never reaches the screen.
+///
+/// - Nothing to confuse the press with (no scrollable that could take the
+///   drag, or a mouse): pressed on pointer-down, on the next frame.
+/// - Inside a scrollable a touch could still become a scroll, so the press
+///   waits `kPressTimeout` like the platform does, and a quick tap shows it
+///   on release instead.
+/// - When the host's tap fires it calls [confirm]: the press stays visible
+///   for at least [KitMotion.pressHold], so the quickest tap is still seen.
+///   A release the tap did not win (a control inside took it, or a
+///   long-press did) clears the press at once.
+/// - Moving past the touch slop (a scroll or drag starting), a pointer
+///   cancel or [cancel] (the host's tap lost the gesture arena) clears it at
+///   once, with no hold.
+///
+/// It changes no semantics, focus, keyboard or haptic behaviour: it only
+/// decides when the host's pressed fill shows. The host calls [dispose].
+class KitPressTracker {
+  KitPressTracker(this._onChanged);
+
+  /// Called when [shown] flips; the host calls `setState` in it.
+  final VoidCallback _onChanged;
+
+  bool _shown = false;
+  int? _pointer;
+  Offset _origin = Offset.zero;
+  double _slop = kTouchSlop;
+  Timer? _delay;
+  Timer? _hold;
+  bool _releasing = false;
+  bool _awaitingTap = false;
+  bool _disposed = false;
+
+  /// Whether the host paints its pressed fill now.
+  bool get shown => _shown;
+
+  /// [child] with the press read from its pointer events. When [enabled] is
+  /// false no new press starts (a disabled control shows no fill).
+  Widget listen({
+    required BuildContext context,
+    required bool enabled,
+    required Widget child,
+  }) => Listener(
+    onPointerDown: enabled ? (event) => _down(context, event) : null,
+    onPointerMove: _move,
+    onPointerUp: _up,
+    onPointerCancel: _pointerCancel,
+    child: child,
+  );
+
+  void _down(BuildContext context, PointerDownEvent event) {
+    // One finger at a time, and only the primary button: a right-click
+    // opens a menu, which holds its own fill.
+    if (_pointer != null || event.buttons != kPrimaryButton) return;
+    _pointer = event.pointer;
+    _origin = event.position;
+    _slop = computeHitSlop(
+      event.kind,
+      MediaQuery.maybeGestureSettingsOf(context),
+    );
+    _delay?.cancel();
+    if (_mayScroll(context, event.kind)) {
+      _delay = Timer(kPressTimeout, _show);
+    } else {
+      _show();
+    }
+  }
+
+  void _move(PointerMoveEvent event) {
+    if (event.pointer != _pointer) return;
+    if ((event.position - _origin).distance > _slop) cancel();
+  }
+
+  void _up(PointerUpEvent event) {
+    if (event.pointer != _pointer) return;
+    _pointer = null;
+    _delay?.cancel();
+    _delay = null;
+    // The host's tap, if it wins, reports [confirm] later in this same
+    // event; by the next microtask the arena has decided. No confirm means
+    // the tap was lost (a child control or a long-press took it), so the
+    // press clears with no hold.
+    _awaitingTap = true;
+    scheduleMicrotask(() {
+      if (!_awaitingTap) return;
+      _awaitingTap = false;
+      cancel();
+    });
+  }
+
+  /// The host's tap fired from a pointer ([listen] saw its release): the
+  /// press shows now if it had not yet (a quick tap inside a scrollable)
+  /// and clears once it has been visible for [KitMotion.pressHold]. A tap
+  /// with no pointer behind it (Enter, Space, a screen reader) shows none.
+  void confirm() {
+    if (!_awaitingTap) return;
+    _awaitingTap = false;
+    if (!_shown) _show();
+    if (_hold == null) {
+      _set(false);
+    } else {
+      _releasing = true;
+    }
+  }
+
+  void _pointerCancel(PointerCancelEvent event) {
+    if (event.pointer == _pointer) cancel();
+  }
+
+  /// Clears the press at once, with no hold: the gesture became a scroll
+  /// or drag, or the host's tap lost to another gesture.
+  void cancel() {
+    _pointer = null;
+    _awaitingTap = false;
+    _delay?.cancel();
+    _delay = null;
+    _hold?.cancel();
+    _hold = null;
+    _releasing = false;
+    _set(false);
+  }
+
+  void _show() {
+    _delay = null;
+    _releasing = false;
+    _hold?.cancel();
+    _hold = Timer(KitMotion.pressHold, () {
+      _hold = null;
+      if (_releasing) {
+        _releasing = false;
+        _set(false);
+      }
+    });
+    _set(true);
+  }
+
+  void _set(bool shown) {
+    if (_disposed || shown == _shown) return;
+    _shown = shown;
+    _onChanged();
+  }
+
+  /// Whether a touch at this control could still turn into a scroll: some
+  /// scrollable above it would take a drag now. A mouse never drags a
+  /// scrollable, so it is never ambiguous.
+  static bool _mayScroll(BuildContext context, PointerDeviceKind kind) {
+    if (kind == PointerDeviceKind.mouse || kind == PointerDeviceKind.trackpad) {
+      return false;
+    }
+    var scrollable = context.findAncestorStateOfType<ScrollableState>();
+    while (scrollable != null) {
+      final position = scrollable.position;
+      if (!position.hasContentDimensions ||
+          position.physics.shouldAcceptUserOffset(position)) {
+        return true;
+      }
+      scrollable = scrollable.context
+          .findAncestorStateOfType<ScrollableState>();
+    }
+    return false;
+  }
+
+  void dispose() {
+    _disposed = true;
+    _delay?.cancel();
+    _hold?.cancel();
+  }
+}
 
 /// What a tappable is to a screen reader.
 enum KitTappableRole { button, link }
@@ -187,7 +367,9 @@ class _KitTappableState extends State<KitTappable> {
   final _subtreeKey = GlobalKey(debugLabel: 'KitTappable subtree');
   bool _ownsFocusNode = false;
   bool _hovered = false;
-  bool _pressed = false;
+  late final _press = KitPressTracker(() {
+    if (mounted) setState(() {});
+  });
   bool _menuOpen = false;
   bool _focusRingVisible = false;
 
@@ -228,6 +410,7 @@ class _KitTappableState extends State<KitTappable> {
   void dispose() {
     FocusManager.instance.removeHighlightModeListener(_handleHighlightMode);
     _detachFocusNode();
+    _press.dispose();
     super.dispose();
   }
 
@@ -270,16 +453,8 @@ class _KitTappableState extends State<KitTappable> {
     }
   }
 
-  void _handleTapDown(TapDownDetails details) {
-    setState(() => _pressed = true);
-  }
-
-  void _handleTapCancel() {
-    setState(() => _pressed = false);
-  }
-
   void _handleTapUp(TapUpDetails details) {
-    setState(() => _pressed = false);
+    _press.confirm();
     widget.onTap?.call();
   }
 
@@ -350,7 +525,7 @@ class _KitTappableState extends State<KitTappable> {
     final levels = _kitTappableFillLevels(tokens, widget.surface);
     Color fill = Colors.transparent;
     if (!disabled) {
-      if (_pressed || _menuOpen) {
+      if (_press.shown || _menuOpen) {
         fill = tokens.fillOf(levels.pressed);
       } else if (_hovered && finePointer) {
         fill = tokens.fillOf(levels.hover);
@@ -373,10 +548,13 @@ class _KitTappableState extends State<KitTappable> {
 
     // One widget in every mode (the child subtree never remounts when
     // Effects Off toggles): under reduced motion the duration is zero, so
-    // the fill changes at once and no ticker starts. A fill that appears or
-    // deepens eases in on `enter`; one that clears eases out on `exit`.
+    // the fill changes at once and no ticker starts. The pressed fill is
+    // always instant, so a touch answers on the very next frame
+    // (KitPressTracker); a hover fill eases in on `enter`, and a fill that
+    // clears eases out on `exit`.
+    final pressedNow = !disabled && (_press.shown || _menuOpen);
     final Widget filled = AnimatedContainer(
-      duration: reduced ? Duration.zero : KitMotion.quick,
+      duration: reduced || pressedNow ? Duration.zero : KitMotion.quick,
       curve: fill.a == 0 ? KitMotion.exit : KitMotion.enter,
       decoration: ShapeDecoration(color: fill, shape: shapeBorder),
       child: sized,
@@ -411,18 +589,21 @@ class _KitTappableState extends State<KitTappable> {
           : MouseCursor.defer,
       onEnter: disabled ? null : (_) => setState(() => _hovered = true),
       onExit: disabled ? null : (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        key: widget.tappableKey,
-        behavior: HitTestBehavior.opaque,
-        onTapDown: disabled ? null : _handleTapDown,
-        onTapCancel: disabled ? null : _handleTapCancel,
-        onTapUp: disabled ? null : _handleTapUp,
-        onSecondaryTapUp: (disabled || widget.menu.isEmpty)
-            ? null
-            : _handleSecondaryTapUp,
-        onLongPressStart: disabled ? null : _handleLongPressStart,
-        excludeFromSemantics: true,
-        child: ringed,
+      child: _press.listen(
+        context: context,
+        enabled: !disabled,
+        child: GestureDetector(
+          key: widget.tappableKey,
+          behavior: HitTestBehavior.opaque,
+          onTapCancel: disabled ? null : _press.cancel,
+          onTapUp: disabled ? null : _handleTapUp,
+          onSecondaryTapUp: (disabled || widget.menu.isEmpty)
+              ? null
+              : _handleSecondaryTapUp,
+          onLongPressStart: disabled ? null : _handleLongPressStart,
+          excludeFromSemantics: true,
+          child: ringed,
+        ),
       ),
     );
 
