@@ -242,7 +242,7 @@ void main() {
                 controller: controller,
                 item: entry,
                 now: now,
-                onOpenConversation: (_) {},
+                onOpenConversation: (_, _) {},
               ),
           ],
         ),

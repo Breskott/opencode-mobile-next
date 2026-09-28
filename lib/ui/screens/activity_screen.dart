@@ -566,8 +566,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
   }
 
   /// Opens [sessionID]; with [landOnRequestID] the chat lands on that
-  /// request's card (P4.2a).
-  Future<void> _openChat(String sessionID, {String? landOnRequestID}) async {
+  /// request's card, with [landOnFailure] on its newest failed turn (P4.2a).
+  Future<void> _openChat(
+    String sessionID, {
+    String? landOnRequestID,
+    bool landOnFailure = false,
+  }) async {
     final controller = widget.controller;
     final location = controller.locationRevision;
     final profile = controller.profile?.id;
@@ -601,7 +605,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
         unawaited(controller.prefetchSessionTail(sessionID));
         Navigator.of(context).pushNamed(
           '/chat/$sessionID',
-          arguments: ChatRouteArguments(landOnRequestID: landOnRequestID),
+          arguments: ChatRouteArguments(
+            landOnRequestID: landOnRequestID,
+            landOnFailure: landOnFailure,
+          ),
         );
       }
     } catch (error) {
@@ -874,7 +881,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
           controller: controller,
           item: item,
           now: now,
-          onOpenConversation: _openChat,
+          onOpenConversation: (sessionID, landing) => _openChat(
+            sessionID,
+            landOnRequestID: landing.landOnRequestID,
+            landOnFailure: landing.landOnFailure,
+          ),
         ),
     ];
     // Other servers this list cannot speak for, and the way forward.

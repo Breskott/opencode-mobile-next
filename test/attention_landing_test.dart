@@ -10,12 +10,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
+import 'package:opencode_mobile/domain/attention_feed.dart' show AttentionKind;
 import 'package:opencode_mobile/domain/profile_monitor.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/navigation/attention_landing.dart';
+import 'package:opencode_mobile/ui/navigation/chat_route.dart';
 import 'package:opencode_mobile/ui/screens/profile_monitor_screen.dart';
+import 'package:opencode_mobile/ui/widgets/attention_feed_rows.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../tool/capture/fixtures.dart';
@@ -244,5 +247,52 @@ void main() {
     final card = find.byKey(const ValueKey('permission-card-perm-a'));
     expect(card, findsOneWidget);
     expect(_washed(tester, card), isTrue);
+  });
+
+  group('Inbox feed rows (openAttentionItem) pass the landing', () {
+    testWidgets('a connected-server request lands on its card', (tester) async {
+      final controller = await _pump(
+        tester,
+        permissions: {'perm-a': _permission('perm-a')},
+      );
+      final item = controller.attentionFeed.items.singleWhere(
+        (item) => item.target.requestID == 'perm-a',
+      );
+      String? opened;
+      ChatRouteArguments? landing;
+      await openAttentionItem(
+        _context(tester),
+        controller,
+        item.identity,
+        onOpenConversation: (sessionID, arguments) {
+          opened = sessionID;
+          landing = arguments;
+        },
+      );
+      expect(opened, checkoutSessionID);
+      expect(landing!.landOnRequestID, 'perm-a');
+      expect(landing!.landOnFailure, isFalse);
+    });
+
+    testWidgets('a connected-server failure lands on its failed turn', (
+      tester,
+    ) async {
+      final controller = await _pump(tester);
+      controller.handleEventForTesting(
+        captureEvent('session.error', {'sessionID': checkoutSessionID}),
+      );
+      final item = controller.attentionFeed.items.singleWhere(
+        (item) => item.kind == AttentionKind.failedRun,
+      );
+      ChatRouteArguments? landing;
+      await openAttentionItem(
+        _context(tester),
+        controller,
+        item.identity,
+        onOpenConversation: (_, arguments) => landing = arguments,
+      );
+      expect(landing!.landOnFailure, isTrue);
+      expect(landing!.landOnRequestID, isNull);
+    });
   });
 }

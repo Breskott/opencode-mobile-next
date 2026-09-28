@@ -36081,6 +36081,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not put the prompts back. They stay on {destination}.'**
   String queuedMoveUndoFailed(String destination);
+
+  /// Work row (slice-P5.5): a team task with no progress since {time}, a locale-formatted clock time.
+  ///
+  /// In en, this message translates to:
+  /// **'Stalled since {time}'**
+  String workStalledSince(String time);
+
+  /// Inbox row (slice-P4.2b): which saved server the item belongs to, after its state words, e.g. 'Failed · on Home PC'.
+  ///
+  /// In en, this message translates to:
+  /// **'on {server}'**
+  String attentionOnServer(String server);
+
+  /// Inbox row title (slice-P4.2b) for an AI Team task whose title is not known.
+  ///
+  /// In en, this message translates to:
+  /// **'Team task'**
+  String get attentionTeamTask;
+
+  /// Inbox row (slice-P4.2b): other saved servers the app does not check, so their requests cannot show here. {servers} is one name or a comma-separated list.
+  ///
+  /// In en, this message translates to:
+  /// **'Not checking {servers}'**
+  String attentionChecksOff(String servers);
+
+  /// Inbox row (slice-P4.2b): supporting line under 'Not checking …'; tapping the row opens Notifications, where each server's check is turned on.
+  ///
+  /// In en, this message translates to:
+  /// **'Their requests don\'t show here. Turn on checks in Notifications.'**
+  String get attentionChecksOffDetail;
+
+  /// Inbox row (slice-P4.2b): another saved server the last check could not reach, or whose last result is old.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check {server}'**
+  String attentionUnchecked(String server);
+
+  /// Inbox row (slice-P4.2b): supporting line under 'Couldn't check …'.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests waiting there may be missing here.'**
+  String get attentionUncheckedDetail;
+
+  /// Inbox row (slice-P4.2b): supporting line under 'Couldn't check …' when an older check is known; {time} is a relative age such as '5m ago'.
+  ///
+  /// In en, this message translates to:
+  /// **'Last checked {time}. Requests waiting there may be missing here.'**
+  String attentionUncheckedSince(String time);
+
+  /// Inbox row (slice-P4.2b): another saved server whose checks wait for Wi-Fi under the person's Notifications rule.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} is checked on Wi-Fi only'**
+  String attentionWaitsForWifi(String server);
+
+  /// Inbox row (slice-P4.2b): checks of another saved server stopped because the app cannot run in the background now.
+  ///
+  /// In en, this message translates to:
+  /// **'Checks on {server} are paused'**
+  String attentionChecksPaused(String server);
 }
 
 class _AppLocalizationsDelegate
