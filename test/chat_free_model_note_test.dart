@@ -4,6 +4,11 @@
 // quiet line in the page's status slot, with "Sign in to a provider". It is
 // never a blocking banner, it can be dismissed once per conversation, and
 // showing or dismissing it never moves the reply (F16's concern too).
+//
+// Evidence renders only (CAPTURE_EVIDENCE). Regenerate deliberately:
+//   flutter test --update-goldens --dart-define=CAPTURE_EVIDENCE=true \
+//     test/chat_free_model_note_test.dart
+// and look at every changed image before committing it.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -235,6 +240,7 @@ void main() {
       tester,
     ) async {
       await loadCaptureFonts();
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -248,6 +254,7 @@ void main() {
           '${size.width.toInt()}_${light ? 'light' : 'dark'}.png',
         ),
       );
+      debugDefaultTargetPlatformOverride = null;
     });
   }
 

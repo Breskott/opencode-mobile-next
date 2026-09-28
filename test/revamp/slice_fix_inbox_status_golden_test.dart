@@ -9,6 +9,8 @@
 //   flutter test --update-goldens --dart-define=CAPTURE_EVIDENCE=true \
 //     test/revamp/slice_fix_inbox_status_golden_test.dart
 // The images are copied into docs/qa/slice-fix-inbox-status-2026-09-28/.
+// Regenerate deliberately (the command above) and look at every changed
+// image before committing it.
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

@@ -170,7 +170,6 @@ const _migrated = <String, List<String>>{
   'lib/ui/screens/chat/attention_card.dart': ['chat_permission'],
   'lib/ui/screens/chat/permission_sheet.dart': ['chat_permission_sheet'],
   'lib/ui/screens/chat/empty_chat.dart': ['chat_empty'],
-  'lib/ui/widgets/first_reply_notify_card.dart': ['chat_notify'],
   // §9 step 6: Settings (goldens: test/goldens/settings_golden_test.dart).
   'lib/ui/screens/settings_screen.dart': ['settings_hub'],
   'lib/ui/screens/settings/default_shell_row.dart': ['settings_hub'],
@@ -363,7 +362,6 @@ const _grandfathered = <String>{
   'lib/ui/screens/team/work_sheet.dart',
   'lib/ui/screens/workspace_screen.dart',
   'lib/ui/widgets/connection_status_banner.dart',
-  'lib/ui/widgets/first_reply_notify_card.dart',
   'lib/ui/widgets/folder_browser.dart',
   'lib/ui/widgets/local_server_row.dart',
   'lib/ui/widgets/managed_server_recovery_option.dart',

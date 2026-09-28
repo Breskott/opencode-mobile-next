@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/models.dart';
 import '../domain/session_history.dart';
+import '../domain/session_stop.dart';
 import '../codex/gateway.dart';
 import '../codex/transport.dart' show CodexFailure, CodexFailureKind;
 import '../paseo/gateway.dart';
@@ -3822,19 +3823,27 @@ class ConnectionController extends ChangeNotifier {
 
       case 'session.error':
         final sid = props['sessionID']?.toString();
+        // The person's own Stop ends the run with an "aborted" error. It is
+        // not a failure: never "Failed" in Inbox or Work, never counted as
+        // needing them, no error alert and no error text (F3).
+        final stopped = sessionErrorIsStop(props['error']);
         if (sid != null) {
-          _failedAttentionSessions[sid] = (
-            at: DateTime.now(),
-            revision: _attentionTransportRevision,
-          );
+          if (stopped) {
+            _attentionActiveSessions.remove(sid);
+          } else {
+            _failedAttentionSessions[sid] = (
+              at: DateTime.now(),
+              revision: _attentionTransportRevision,
+            );
+          }
           _markSessionChanged(sid);
           busySessions.remove(sid);
           retryStates.remove(sid);
-          _settleSessionAttention(sid, CodingAlertKind.error);
+          if (!stopped) _settleSessionAttention(sid, CodingAlertKind.error);
           _resumeDeferredProviderHeal();
         }
         final err = props['error'];
-        if (err is Map<String, dynamic>) {
+        if (!stopped && err is Map<String, dynamic>) {
           final data = err['data'];
           final message =
               (err['message']?.toString() ??
