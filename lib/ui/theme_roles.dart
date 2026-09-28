@@ -299,7 +299,7 @@ const graphiteDark = ThemeRoles(
   codeKeyword: Color(0xFFC7A6FF),
   codeString: Color(0xFFFFB88A),
   codeType: Color(0xFF7FD1FF),
-  glassRimLight: Color(0x33FFFFFF), // white .20
+  glassRimLight: Color(0x47FFFFFF), // white .28: a crisp top line on dark
   glassRimDark: Color(0x80000000), // black .50
   glassShadow: Color(0x4D000000), // black .30
   ambient: [Color(0x143DDC8A), Color(0x0F5AB0FF)],
@@ -334,7 +334,8 @@ const graphiteLight = ThemeRoles(
   codeString: Color(0xFFB4480B),
   codeType: Color(0xFF0B6BA8),
   glassRimLight: Color(0xE6FFFFFF), // white .90
-  glassRimDark: Color(0x1A000000), // black .10
+  // A light ground needs the darker line to draw the edge at all (§7).
+  glassRimDark: Color(0x2E000000), // black .18
   glassShadow: Color(0x4D000000), // black .30 (LOOK-20: both brightnesses)
   ambient: [Color(0x0F0B8A4A)],
 );

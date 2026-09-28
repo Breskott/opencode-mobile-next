@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -445,29 +446,104 @@ class _PageFrame extends StatelessWidget {
     final tokens = KitTokens.of(context);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final topBar = this.topBar;
+    final ambient = KitNav.hosts(context)
+        ? tokens.roles.ambient
+        : const <Color>[];
     return Material(
       color: tokens.roles.ground,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: EdgeInsetsDirectional.only(bottom: keyboard),
-          child: MediaQuery.removeViewInsets(
-            context: context,
-            removeBottom: true,
-            child: topBar == null
-                ? child
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      topBar,
-                      Expanded(child: child),
-                    ],
-                  ),
+      child: _AmbientGround(
+        fields: ambient,
+        textDirection: Directionality.of(context),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: EdgeInsetsDirectional.only(bottom: keyboard),
+            child: MediaQuery.removeViewInsets(
+              context: context,
+              removeBottom: true,
+              child: topBar == null
+                  ? child
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        topBar,
+                        Expanded(child: child),
+                      ],
+                    ),
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// The theme's ambient fields (visual language §6, `ThemeRoles.ambient`):
+/// up to three very soft colour fields on the ground behind a page that
+/// sits under the floating glass navigation layer, so the glass has
+/// something to bend. At the top start (behind the server pill), the end
+/// middle and the bottom start (behind the dock). None paints nothing.
+class _AmbientGround extends StatelessWidget {
+  const _AmbientGround({
+    required this.fields,
+    required this.textDirection,
+    required this.child,
+  });
+
+  final List<Color> fields;
+  final TextDirection textDirection;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (fields.isEmpty) return child;
+    return CustomPaint(
+      painter: _AmbientPainter(fields, textDirection),
+      child: child,
+    );
+  }
+}
+
+class _AmbientPainter extends CustomPainter {
+  _AmbientPainter(this.fields, this.textDirection);
+
+  final List<Color> fields;
+  final TextDirection textDirection;
+
+  // Centre (start, top as shares of the page) and radius (share of its
+  // longer side) of each field, in order.
+  static const _places = [
+    (Offset(.12, .06), .5),
+    (Offset(1, .45), .42),
+    (Offset(.1, .95), .36),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rtl = textDirection == TextDirection.rtl;
+    final longest = size.longestSide;
+    for (var i = 0; i < fields.length && i < _places.length; i++) {
+      final (at, share) = _places[i];
+      final center = Offset(
+        (rtl ? 1 - at.dx : at.dx) * size.width,
+        at.dy * size.height,
+      );
+      final radius = share * longest;
+      final color = fields[i];
+      canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [color, color.withValues(alpha: 0)],
+          ).createShader(Rect.fromCircle(center: center, radius: radius)),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AmbientPainter old) =>
+      !listEquals(old.fields, fields) || old.textDirection != textDirection;
 }
 
 /// A transparent [Scaffold] around a page so [ScaffoldMessenger] snack bars

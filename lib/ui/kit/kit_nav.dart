@@ -119,6 +119,12 @@ class KitNav extends StatelessWidget {
       context.dependOnInheritedWidgetOfExactType<_KitNavScope>()?.hostsPane ??
       false;
 
+  /// True below a KitNav: the page sits under the floating glass
+  /// navigation layer, so its ground carries the theme's ambient fields
+  /// (visual language §6: the glass has something to bend).
+  static bool hosts(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<_KitNavScope>() != null;
+
   @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);

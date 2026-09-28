@@ -26,11 +26,12 @@
 //   2. Dispersion: red is read a little further in than green and blue at
 //      the rim (one extra read), a hint of a prism.
 //   3. Tint: the surface colour at full strength over the middle, where the
-//      labels sit (the 4.5:1 contrast the frosted dock guarantees), thinning
-//      to half across the band so the bent edge shows.
+//      labels sit (the 4.5:1 contrast the frosted dock guarantees), clearing
+//      over the outer few pixels of the band (to about a quarter at the rim)
+//      so the bent edge shows as a clear lens ring.
 //   4. Rim: a one-physical-pixel specular line lit from the top left, a
-//      fainter one opposite, a narrow halo; pressed glass (u_glow) is a
-//      little brighter.
+//      fainter one opposite, no halo; pressed glass (u_glow) is a little
+//      brighter.
 
 #include <flutter/runtime_effect.glsl>
 
@@ -144,20 +145,27 @@ void main() {
   }
   color.r = mix(color.r, red, edge * 0.6);
 
-  color.rgb = mix(color.rgb, u_tint.rgb, u_tint.a * (1.0 - 0.5 * edge * edge));
+  // The tint is full over the middle, where labels sit (their 4.5:1), and
+  // clears towards the rim over the outer few pixels only, so the bent
+  // backdrop shows there: a clear lens ring, not a white or grey blob.
+  color.rgb = mix(color.rgb, u_tint.rgb, u_tint.a * (1.0 - 0.72 * edge * edge * edge));
   color.rgb = mix(color.rgb, vec3(1.0), 0.07 * u_glow);
+  // A faint sheen lit from above over the top half, fading to nothing by
+  // the middle: the body of the glass (the canvas's GlassWork), not a glow.
+  float rise = clamp((frag.y - bounds.y) / max(bounds.w - bounds.y, 1.0), 0.0, 1.0);
+  color.rgb = mix(color.rgb, vec3(1.0), 0.05 * u_rim * max(1.0 - 2.0 * rise, 0.0));
 
   // Specular rim: a line one physical pixel wide where the edge faces the
-  // light, softer where it faces away, a narrow halo and a faint glow
-  // across the band. Never a soft blur of light.
+  // light, softer where it faces away. No halo and no glow across the band
+  // (visual language §7: a crisp line, never a soft blur of light).
   vec2 light = vec2(-0.6, -0.8);
   float facing = dot(normal, light);
   float line = 1.0 - smoothstep(0.0, 1.0, depth);
-  float halo = 1.0 - smoothstep(0.0, 3.0 * u_px, depth);
   float spec = line * (0.28 + 0.62 * pow(max(facing, 0.0), 2.0) +
-                       0.3 * pow(max(-facing, 0.0), 3.0)) +
-               halo * 0.12 * pow(max(facing, 0.0), 3.0) + edge * 0.035;
+                       0.3 * pow(max(-facing, 0.0), 3.0));
   spec *= 1.0 + 0.6 * u_glow;
+  // Pressed glass: its outermost logical pixel brightens, hard-edged.
+  spec += 0.15 * u_glow * (1.0 - step(u_px, depth));
   color.rgb = mix(color.rgb, vec3(1.0), clamp(spec * u_rim, 0.0, 1.0));
   color.a = 1.0;
   if (u_cover > 0.0) {

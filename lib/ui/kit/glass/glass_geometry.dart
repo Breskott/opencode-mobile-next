@@ -67,13 +67,32 @@ class GlassGeometry extends ChangeNotifier {
   /// Whether the drawn shape is exactly the layout box.
   bool get atRest => _press == 0 && _flow >= 1;
 
+  /// Physical pixels per logical pixel; above 0, [rectFor] puts every edge
+  /// on a physical pixel (the glass's origin is snapped by its owner), so
+  /// the clip and the one-physical-pixel rim are crisp (visual language
+  /// §7). Set by the glass at build; 0 does not snap.
+  double pixelRatio = 0;
+
   /// The drawn rectangle for a layout box of [size], in the box's
   /// coordinates.
   Rect rectFor(Size size) {
     var rect = Offset.zero & size;
     final from = _flowFrom;
     if (from != null && _flow < 1) rect = Rect.lerp(from, rect, _flow)!;
-    return swell(rect, _press);
+    return snap(swell(rect, _press), pixelRatio);
+  }
+
+  /// [rect] with each edge on the nearest physical pixel of [pixelRatio]
+  /// (none when it is 0).
+  static Rect snap(Rect rect, double pixelRatio) {
+    if (pixelRatio <= 0) return rect;
+    double on(double v) => (v * pixelRatio).roundToDouble() / pixelRatio;
+    return Rect.fromLTRB(
+      on(rect.left),
+      on(rect.top),
+      on(rect.right),
+      on(rect.bottom),
+    );
   }
 
   /// [rect] swollen by [press] (see [swellShare]).
