@@ -5998,7 +5998,7 @@ abstract class AppLocalizations {
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
   ///
   /// In en, this message translates to:
-  /// **'Nothing is listening on this device'**
+  /// **'Nothing answered on this phone'**
   String get e7ConnectionFailure24;
 
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
@@ -34003,7 +34003,7 @@ abstract class AppLocalizations {
   /// Map page root-connecting: the address is under Details.
   ///
   /// In en, this message translates to:
-  /// **'This address means the server runs on this phone, or is reached through a tunnel that ends here. Neither answered.'**
+  /// **'The app looked for a server running on this phone and got no answer. Start that server, or reconnect the tunnel that brings one here, then try again.'**
   String get connectionFailureLoopbackBody;
 
   /// Map page root-connecting: the address is under Details.
@@ -37459,6 +37459,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start the team again to give it a task or open one.'**
   String get teamHomeStoppedStartFirst;
+
+  /// Why the in-app server did not start: its process ended before it answered
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode closed by itself while it was starting. Open setup to see its log, or start it again.'**
+  String get inAppServerStartExitedBody;
+
+  /// Why the in-app server did not start: no answer in time
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode did not answer within {seconds} seconds. The phone may be busy or short on memory; close other apps, then start it again.'**
+  String inAppServerStartTimedOutBody(int seconds);
+
+  /// Why the in-app server did not start: the start was withdrawn when the app went to the background
+  ///
+  /// In en, this message translates to:
+  /// **'The start stopped because the app left the screen. Start it again to continue.'**
+  String get inAppServerStartInterruptedBody;
+
+  /// Why the in-app server did not start: its password could not be prepared
+  ///
+  /// In en, this message translates to:
+  /// **'The app could not set up OpenCode\'s sign-in on this phone. Start it again; if this repeats, open setup.'**
+  String get inAppServerStartPasswordBody;
+
+  /// Why the in-app server did not start: the phone refused to start it
+  ///
+  /// In en, this message translates to:
+  /// **'The phone did not let the app start OpenCode just now. Start it again; if this repeats, restart the phone.'**
+  String get inAppServerStartRefusedBody;
 }
 
 class _AppLocalizationsDelegate
