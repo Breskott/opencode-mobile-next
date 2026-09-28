@@ -13,7 +13,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
+import 'package:opencode_mobile/ui/kit/kit_icon_button.dart';
 import 'package:opencode_mobile/ui/kit/kit_menu.dart';
+import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/kit/kit_tappable.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
@@ -810,6 +813,322 @@ void main() {
     final semantics = tester.getSemantics(find.byType(KitTappable));
     expect(semantics.flagsCollection.isSelected, Tristate.isTrue);
     handle.dispose();
+  });
+
+  group('13. a tap shows on the very next frame (KitPressTracker)', () {
+    const idle = KitSurfaceLevel.surface1;
+    const pressed = KitSurfaceLevel.surface3; // dark: hover surface2, then 3
+
+    /// The fill at the tappable's top-start corner, as painted.
+    Future<Color> fillAt(WidgetTester tester, Finder target) async {
+      final shot = await _Shot.take(tester);
+      return shot.at(tester.getRect(target).topLeft + const Offset(4, 4));
+    }
+
+    Future<bool> showsPressed(WidgetTester tester, [Finder? target]) async {
+      final tokens = KitTokens.of(tester.element(find.byType(KitTappable)));
+      final at = target ?? find.byType(KitTappable);
+      return _near(await fillAt(tester, at), tokens.fillOf(pressed));
+    }
+
+    Future<bool> showsIdle(WidgetTester tester) async {
+      final tokens = KitTokens.of(tester.element(find.byType(KitTappable)));
+      return _near(
+        await fillAt(tester, find.byType(KitTappable)),
+        tokens.fillOf(idle),
+      );
+    }
+
+    /// A row at the top of a list that scrolls, so a touch on it could
+    /// still become a scroll.
+    Widget inScroll(Widget row) => SizedBox(
+      width: 300,
+      height: 300,
+      child: ListView(children: [row, const SizedBox(height: 1000)]),
+    );
+
+    testWidgets('pointer-down paints the pressed fill on the first frame', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const KitTappable(onTap: _noop, child: Text('Row')),
+        background: _surfaceColor(false, idle),
+      );
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(KitTappable)),
+      );
+      await tester.pump();
+      expect(await showsPressed(tester), isTrue, reason: 'no 100 ms wait');
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(await showsIdle(tester), isTrue);
+    });
+
+    testWidgets('a quick tap (down and up in one frame) still shows it', (
+      tester,
+    ) async {
+      var taps = 0;
+      await _pump(
+        tester,
+        KitTappable(onTap: () => taps++, child: const Text('Row')),
+        background: _surfaceColor(false, idle),
+      );
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(KitTappable)),
+      );
+      await gesture.up();
+      await tester.pump();
+      expect(taps, 1);
+      expect(await showsPressed(tester), isTrue, reason: 'held after up');
+      expect(
+        tester.hasRunningAnimations,
+        isFalse,
+        reason: 'the press appears at once, no ticker (one pump settles)',
+      );
+      await tester.pump(KitMotion.pressHold);
+      await tester.pumpAndSettle();
+      expect(await showsIdle(tester), isTrue, reason: 'clears after the hold');
+    });
+
+    testWidgets('in a scroll view a quick tap shows it on release', (
+      tester,
+    ) async {
+      var taps = 0;
+      await _pump(
+        tester,
+        inScroll(KitTappable(onTap: () => taps++, child: const Text('Row'))),
+        background: _surfaceColor(false, idle),
+      );
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(KitTappable)),
+      );
+      await tester.pump();
+      expect(
+        await showsIdle(tester),
+        isTrue,
+        reason: 'a touch that may become a scroll waits kPressTimeout',
+      );
+      await gesture.up();
+      await tester.pump();
+      expect(taps, 1);
+      expect(await showsPressed(tester), isTrue);
+      await tester.pump(KitMotion.pressHold);
+      await tester.pumpAndSettle();
+      expect(await showsIdle(tester), isTrue);
+    });
+
+    testWidgets('in a scroll view a held touch shows it after kPressTimeout', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        inScroll(const KitTappable(onTap: _noop, child: Text('Row'))),
+        background: _surfaceColor(false, idle),
+      );
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(KitTappable)),
+      );
+      await tester.pump(kPressTimeout);
+      expect(await showsPressed(tester), isTrue);
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(await showsIdle(tester), isTrue);
+    });
+
+    testWidgets('a drag that starts a scroll cancels it at once', (
+      tester,
+    ) async {
+      var taps = 0;
+      await _pump(
+        tester,
+        inScroll(KitTappable(onTap: () => taps++, child: const Text('Row'))),
+        background: _surfaceColor(false, idle),
+      );
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(KitTappable)),
+      );
+      await tester.pump(kPressTimeout);
+      expect(await showsPressed(tester), isTrue);
+      await gesture.moveBy(const Offset(0, -40));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(taps, 0);
+      final tokens = KitTokens.of(tester.element(find.byType(KitTappable)));
+      expect(
+        _near(
+          await fillAt(tester, find.byType(KitTappable)),
+          tokens.fillOf(pressed),
+        ),
+        isFalse,
+        reason: 'the scroll took the gesture; no press is left behind',
+      );
+    });
+
+    testWidgets('a drag off a still row cancels it with no hold', (
+      tester,
+    ) async {
+      var taps = 0;
+      await _pump(
+        tester,
+        KitTappable(onTap: () => taps++, child: const Text('Row')),
+        background: _surfaceColor(false, idle),
+      );
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(KitTappable)),
+      );
+      await tester.pump();
+      expect(await showsPressed(tester), isTrue);
+      await gesture.moveBy(const Offset(40, 0));
+      await tester.pump();
+      expect(tester.hasRunningAnimations, isTrue, reason: 'eases out');
+      await tester.pumpAndSettle();
+      expect(await showsIdle(tester), isTrue);
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(taps, 0);
+    });
+
+    testWidgets('reduced motion: in and out are both instant', (tester) async {
+      await _pump(
+        tester,
+        const MediaQuery(
+          data: MediaQueryData(disableAnimations: true),
+          child: KitTappable(onTap: _noop, child: Text('Row')),
+        ),
+        background: _surfaceColor(false, idle),
+      );
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(KitTappable)),
+      );
+      await gesture.up();
+      await tester.pump();
+      expect(await showsPressed(tester), isTrue);
+      expect(tester.hasRunningAnimations, isFalse);
+      await tester.pump(KitMotion.pressHold);
+      expect(tester.hasRunningAnimations, isFalse);
+      expect(await showsIdle(tester), isTrue);
+    });
+
+    testWidgets('a control inside the row that wins the tap: row stays idle', (
+      tester,
+    ) async {
+      var rowTaps = 0;
+      var buttonTaps = 0;
+      await _pump(
+        tester,
+        KitTappable(
+          onTap: () => rowTaps++,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Row'),
+              const SizedBox(width: 80),
+              KitIconButton(
+                icon: Icons.close,
+                tooltip: 'Remove',
+                onPressed: () => buttonTaps++,
+              ),
+            ],
+          ),
+        ),
+        background: _surfaceColor(false, idle),
+      );
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(KitIconButton)),
+      );
+      await gesture.up();
+      await tester.pump();
+      expect((rowTaps, buttonTaps), (0, 1));
+      expect(await showsIdle(tester), isTrue, reason: 'the row lost the tap');
+    });
+
+    testWidgets('Enter activates with no pointer press painted', (
+      tester,
+    ) async {
+      var taps = 0;
+      await _pump(
+        tester,
+        KitTappable(
+          onTap: () => taps++,
+          autofocus: true,
+          child: const Text('Row'),
+        ),
+        background: _surfaceColor(false, idle),
+      );
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(taps, 1);
+      final tokens = KitTokens.of(tester.element(find.byType(KitTappable)));
+      expect(
+        _near(
+          await fillAt(tester, find.byType(KitTappable)),
+          tokens.fillOf(pressed),
+        ),
+        isFalse,
+      );
+    });
+
+    testWidgets('KitIconButton: a quick tap shows its pressed fill', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        KitIconButton(icon: Icons.refresh, tooltip: 'Reload', onPressed: () {}),
+        background: _surfaceColor(false, idle),
+      );
+      final tokens = KitTokens.of(tester.element(find.byType(KitIconButton)));
+      final center = tester.getCenter(find.byType(KitIconButton));
+      // Beside the glyph, inside the 48 dp circle.
+      final probe = center + const Offset(-16, 0);
+      Future<Color> fill() async => (await _Shot.take(tester)).at(probe);
+      expect(_near(await fill(), tokens.roles.surface1), isTrue);
+      final gesture = await tester.startGesture(center);
+      await gesture.up();
+      await tester.pump();
+      expect(_near(await fill(), tokens.roles.surface3), isTrue);
+      await tester.pump(KitMotion.pressHold);
+      await tester.pumpAndSettle();
+      expect(_near(await fill(), tokens.roles.surface1), isTrue);
+    });
+
+    testWidgets('KitButton: pointer-down shows its pressed layer at once', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        KitButton.primary(label: 'Connect', onPressed: () {}, expand: false),
+        background: _surfaceColor(false, idle),
+      );
+      final tokens = KitTokens.of(tester.element(find.byType(KitButton)));
+      final roles = tokens.roles;
+      final rect = tester.getRect(find.byType(FilledButton));
+      // Clear of the label and the rounded corner.
+      final probe = Offset(rect.left + 12, rect.center.dy);
+      Future<Color> fill() async => (await _Shot.take(tester)).at(probe);
+      expect(_near(await fill(), roles.accent), isTrue);
+      final pressedFill = Color.alphaBlend(
+        roles.onAccent.withValues(alpha: 0.16),
+        roles.accent,
+      );
+      final gesture = await tester.startGesture(rect.center);
+      await tester.pump();
+      expect(_near(await fill(), pressedFill), isTrue, reason: 'first frame');
+      await gesture.up();
+      await tester.pump(KitMotion.pressHold);
+      await tester.pumpAndSettle();
+      expect(_near(await fill(), roles.accent), isTrue);
+
+      // A quick tap also shows it.
+      final quick = await tester.startGesture(rect.center);
+      await quick.up();
+      await tester.pump();
+      expect(_near(await fill(), pressedFill), isTrue, reason: 'quick tap');
+      await tester.pump(KitMotion.pressHold);
+      await tester.pumpAndSettle();
+    });
   });
 
   // 11 (reduced motion settles after one pump with no ticker) is the

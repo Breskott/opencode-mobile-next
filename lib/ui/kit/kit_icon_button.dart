@@ -8,6 +8,7 @@ import 'kit_bidi.dart';
 import 'kit_copy.dart';
 import 'kit_layout.dart';
 import 'kit_motion.dart';
+import 'kit_tappable.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
 
@@ -119,13 +120,25 @@ class _KitIconButtonState extends State<KitIconButton> {
   Timer? _copiedTimer;
   bool _copied = false;
   bool _focused = false;
+  bool _hovered = false;
+  // The pressed fill answers a touch on the next frame (KitPressTracker);
+  // the InkWell's own highlight waits for the tap-or-scroll timeout.
+  late final _press = KitPressTracker(() {
+    if (mounted) setState(() {});
+  });
 
   bool get _isCopy => widget.copyText != null;
 
   @override
   void dispose() {
     _copiedTimer?.cancel();
+    _press.dispose();
     super.dispose();
+  }
+
+  void _handlePointerTap() {
+    _press.confirm();
+    _handleTap();
   }
 
   void _handleTap() {
@@ -223,31 +236,48 @@ class _KitIconButtonState extends State<KitIconButton> {
               )
             : null,
       ),
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        clipBehavior: Clip.antiAlias,
-        child: SizedBox.square(
-          dimension: tokens.minTarget,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: widget.selected == true ? roles.surface3 : null,
-              shape: BoxShape.circle,
-            ),
-            child: InkWell(
-              onTap: active ? _handleTap : null,
-              customBorder: const CircleBorder(),
-              hoverColor: roles.surface3,
-              focusColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              splashFactory: NoSplash.splashFactory,
-              // InkWell reports every focus notification, also an unchanged
-              // one (it re-reports when the button turns disabled); only a
-              // real change rebuilds.
-              onFocusChange: (value) {
-                if (value != _focused) setState(() => _focused = value);
-              },
-              child: Center(child: swapped),
+      child: _press.listen(
+        context: context,
+        enabled: active,
+        child: Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox.square(
+            dimension: tokens.minTarget,
+            child: DecoratedBox(
+              // Pressed is surface3; a button already showing surface3 (a
+              // selected one, or a hovered one under a mouse) steps back down
+              // to surface2, the KitTappable rule for surface3.
+              decoration: BoxDecoration(
+                color: active && _press.shown
+                    ? (widget.selected == true || _hovered
+                          ? roles.surface2
+                          : roles.surface3)
+                    : widget.selected == true
+                    ? roles.surface3
+                    : null,
+                shape: BoxShape.circle,
+              ),
+              child: InkWell(
+                onTap: active ? _handlePointerTap : null,
+                onTapCancel: active ? _press.cancel : null,
+                onHover: (value) {
+                  if (value != _hovered) setState(() => _hovered = value);
+                },
+                customBorder: const CircleBorder(),
+                hoverColor: roles.surface3,
+                focusColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                splashFactory: NoSplash.splashFactory,
+                // InkWell reports every focus notification, also an unchanged
+                // one (it re-reports when the button turns disabled); only a
+                // real change rebuilds.
+                onFocusChange: (value) {
+                  if (value != _focused) setState(() => _focused = value);
+                },
+                child: Center(child: swapped),
+              ),
             ),
           ),
         ),

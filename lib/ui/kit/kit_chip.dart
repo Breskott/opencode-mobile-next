@@ -24,6 +24,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
 import 'kit_motion.dart';
+import 'kit_tappable.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
 
@@ -345,8 +346,23 @@ class _ChipFrame extends StatefulWidget {
 
 class _ChipFrameState extends State<_ChipFrame> {
   final _hovered = <_Zone>{};
-  final _pressed = <_Zone>{};
   final _focused = <_Zone>{};
+  // Each zone's press shows on the next frame of a touch (KitPressTracker),
+  // not after the InkWell's tap-or-scroll wait.
+  late final _press = {
+    for (final zone in _Zone.values)
+      zone: KitPressTracker(() {
+        if (mounted) setState(() {});
+      }),
+  };
+
+  @override
+  void dispose() {
+    for (final press in _press.values) {
+      press.dispose();
+    }
+    super.dispose();
+  }
 
   void _mark(Set<_Zone> set, _Zone zone, bool on) {
     final changed = on ? set.add(zone) : set.remove(zone);
@@ -378,16 +394,23 @@ class _ChipFrameState extends State<_ChipFrame> {
   /// A tap zone: the whole area it is given, painting nothing itself (no
   /// ink over the words, no spread past the pill); it tells the pill when
   /// it is hovered, pressed or focused.
-  Widget _zone(_Zone zone, VoidCallback onTap) => Material(
-    type: MaterialType.transparency,
-    child: InkWell(
-      onTap: onTap,
-      onHover: (on) => _mark(_hovered, zone, on),
-      onHighlightChanged: (on) => _mark(_pressed, zone, on),
-      onFocusChange: (on) => _mark(_focused, zone, on),
-      splashFactory: NoSplash.splashFactory,
-      overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-      child: const SizedBox.expand(),
+  Widget _zone(_Zone zone, VoidCallback onTap) => _press[zone]!.listen(
+    context: context,
+    enabled: true,
+    child: Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: () {
+          _press[zone]!.confirm();
+          onTap();
+        },
+        onTapCancel: _press[zone]!.cancel,
+        onHover: (on) => _mark(_hovered, zone, on),
+        onFocusChange: (on) => _mark(_focused, zone, on),
+        splashFactory: NoSplash.splashFactory,
+        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+        child: const SizedBox.expand(),
+      ),
     ),
   );
 
@@ -437,7 +460,7 @@ class _ChipFrameState extends State<_ChipFrame> {
         }
         final pill = _PillSurface(
           tokens: tokens,
-          fill: _hovered.isNotEmpty || _pressed.isNotEmpty
+          fill: _hovered.isNotEmpty || _press.values.any((p) => p.shown)
               ? roles.surface2
               : roles.surface3,
           focused: _focused.isNotEmpty,

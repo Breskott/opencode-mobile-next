@@ -87,13 +87,14 @@ class KitTappable extends StatefulWidget {
 - **Disabled:** `onTap == null`. There is no fill, no cursor and no Tab stop. Semantics say `enabled: false`, with `disabledReason` as the hint. The reason must also be visible in the host (a row's supporting line, `KitAction.disabledReason`), because KitTappable does not draw it.
 - **Selected:** semantics only.
 - **Menu open:** the pressed fill holds while the menu is open.
+- **Pressed timing (slice-tap-feedback, 2026-09-28):** the pressed fill comes from `KitPressTracker`, the shared press layer (also behind `KitIconButton`, `KitButton`, `KitChip`, `KitSegmented`, `KitJumpPill`, `KitReceipt`'s tap target and the terminal keys). With no scrollable that could take the drag (or under a mouse) it shows on the first frame after pointer-down; inside a scrollable it waits `kPressTimeout` like the platform, and a quick tap shows it on release. A tap keeps it visible for at least `KitMotion.pressHold` (100 ms). Moving past the touch slop, a pointer cancel or losing the tap to another gesture (a control inside, a long-press) clears it at once. Keyboard and screen-reader activation paint no press.
 - Loading, empty, error and working belong to the host: a working action is `KitButton` or `KitIconButton.working`, never a tappable with a spinner.
 
 ## Tokens
 
 - **ThemeRoles:** `accent` (the focus ring); `ground` and `surface1`–`surface3` (hover and pressed steps, through `KitTokens.fillOf`).
 - **KitTokens:** `minTarget` (48); `shapeOf(shape)` and `fillOf(level)` (pre-wave seam); `focusRingWidth(context)` (pre-wave §0.5 step 2, 2 physical px).
-- **KitMotion:** `quick` (the hover and pressed fill cross-fade).
+- **KitMotion:** `quick` (the hover fill cross-fade and the fill clearing); `pressHold` (the least time a tap's press stays visible).
 - **New tokens:** none beyond the shared pre-wave seam enums. There are no translucent overlay colours.
 - **Tooltip look:** the theme's `tooltipTheme`, which is `surface3` and `text1`. Its radius literal 8 (`app_theme.dart:512`) is Appendix A #40's to fix, not this unit's.
 
@@ -129,7 +130,7 @@ class KitTappable extends StatefulWidget {
 
 ## Motion and haptics
 
-- The hover and pressed fills cross-fade on `KitMotion.quick` with `KitMotion.enter`/`exit`. Under `KitMotion.reduced` they change at once.
+- The hover fill cross-fades in on `KitMotion.quick` with `KitMotion.enter`; the pressed fill appears at once (the next frame), and a fill that clears fades on `KitMotion.exit`. Under `KitMotion.reduced` every change is instant.
 - The focus ring appears at once.
 - No `AnimationController` runs at rest.
 - **Haptics:** none. Long-press feedback is turned off (`enableFeedback: false`), because MOT-11 allows vibration only through `KitHaptics` and nothing on rows.
