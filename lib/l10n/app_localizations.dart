@@ -296,10 +296,10 @@ abstract class AppLocalizations {
   /// **'Refresh status'**
   String get servicesRefresh;
 
-  /// No description provided for @isolatedTaskScopeChanged.
+  /// Start in a separate copy: the server or project changed before Start, so the sheet can't be used
   ///
   /// In en, this message translates to:
-  /// **'The server or project changed. Close this sheet and reopen the task from the intended project.'**
+  /// **'The server or project changed while this was open. Close it and start again from the project you want.'**
   String get isolatedTaskScopeChanged;
 
   /// Application title shown in the task switcher / window title
@@ -3368,12 +3368,6 @@ abstract class AppLocalizations {
   /// **'Remaining usage'**
   String get quotaTitle;
 
-  /// Label above the explicitly selected server origin
-  ///
-  /// In en, this message translates to:
-  /// **'Collector server'**
-  String get quotaSource;
-
   /// Selected quota source profile and provider heading
   ///
   /// In en, this message translates to:
@@ -3428,12 +3422,6 @@ abstract class AppLocalizations {
   /// **'Reading remaining usage'**
   String get quotaLoading;
 
-  /// Clear this visit's consent and in-memory quota snapshot; no remote mutation
-  ///
-  /// In en, this message translates to:
-  /// **'Stop using this collector'**
-  String get quotaForgetConsent;
-
   /// Collector or proxy authentication failure, distinct from provider reauthentication
   ///
   /// In en, this message translates to:
@@ -3482,28 +3470,10 @@ abstract class AppLocalizations {
   /// **'The collector could not verify the selected account. No allowance is shown. Check the login source on the server.'**
   String get quotaAccountUnverified;
 
-  /// Heading for Codex entitlements, not all ChatGPT product allowances
-  ///
-  /// In en, this message translates to:
-  /// **'Codex account windows'**
-  String get quotaCodexAccount;
-
-  /// Provider-reported plan label, from a safe allowlist
-  ///
-  /// In en, this message translates to:
-  /// **'Reported plan: {plan}'**
-  String quotaPlan(String plan);
-
-  /// Collector snapshot time, formatted in the device locale
-  ///
-  /// In en, this message translates to:
-  /// **'Snapshot checked {time}'**
-  String quotaChecked(String time);
-
   /// An expired, interrupted or failed-refresh snapshot is not live provider truth
   ///
   /// In en, this message translates to:
-  /// **'Previous snapshot — refresh to check the latest allowance.'**
+  /// **'This is the last reading. Refresh to see the latest.'**
   String get quotaStale;
 
   /// Explicit provider eligibility signal, independent of quota arithmetic
@@ -3512,53 +3482,11 @@ abstract class AppLocalizations {
   /// **'The provider reports that ordinary Codex use is currently blocked. Window percentages alone do not determine access.'**
   String get quotaUseBlocked;
 
-  /// Unknown allowance; never means zero or unlimited
-  ///
-  /// In en, this message translates to:
-  /// **'Not reported'**
-  String get quotaNotReported;
-
-  /// First provider rate-limit window without assuming a five-hour duration
-  ///
-  /// In en, this message translates to:
-  /// **'Primary window'**
-  String get quotaPrimaryWindow;
-
-  /// Second provider rate-limit window without assuming a weekly duration
-  ///
-  /// In en, this message translates to:
-  /// **'Secondary window'**
-  String get quotaSecondaryWindow;
-
-  /// Safe display name for an additional bounded window
-  ///
-  /// In en, this message translates to:
-  /// **'Usage window {number}'**
-  String quotaOtherWindow(int number);
-
-  /// Percentage remaining within one reported provider window
-  ///
-  /// In en, this message translates to:
-  /// **'{percent} remaining'**
-  String quotaRemaining(String percent);
-
   /// Provider-reported percentage used within one window
   ///
   /// In en, this message translates to:
   /// **'{percent} used'**
   String quotaUsed(String percent);
-
-  /// Absolute provider reset time in device locale
-  ///
-  /// In en, this message translates to:
-  /// **'Reported reset: {time}'**
-  String quotaResetAt(String time);
-
-  /// Missing provider reset time is not fabricated
-  ///
-  /// In en, this message translates to:
-  /// **'Reset time not reported'**
-  String get quotaResetUnknown;
 
   /// Honest limits and provenance of optional provider quota collectors
   ///
@@ -3607,12 +3535,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Server passwords use this platform\'s secure credential storage. They are not stored in plain app preferences.'**
   String get platformSecureStorageGuide;
-
-  /// Claude allowances for the operator-selected OAuth login
-  ///
-  /// In en, this message translates to:
-  /// **'Claude login windows'**
-  String get quotaClaudeAccount;
 
   /// Distinguishes credential-bound Claude usage from provider-confirmed account identity
   ///
@@ -3794,12 +3716,6 @@ abstract class AppLocalizations {
   /// **'MiniMax'**
   String get quotaMiniMax;
 
-  /// No description provided for @quotaMiniMaxAccount.
-  ///
-  /// In en, this message translates to:
-  /// **'MiniMax subscription windows'**
-  String get quotaMiniMaxAccount;
-
   /// No description provided for @quotaMiniMaxSourceBound.
   ///
   /// In en, this message translates to:
@@ -3835,24 +3751,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'GLM'**
   String get quotaGlm;
-
-  /// No description provided for @quotaGlmAccount.
-  ///
-  /// In en, this message translates to:
-  /// **'Configured GLM Coding Plan source'**
-  String get quotaGlmAccount;
-
-  /// No description provided for @quotaGlmTokenWindow.
-  ///
-  /// In en, this message translates to:
-  /// **'Reported token-plan window'**
-  String get quotaGlmTokenWindow;
-
-  /// No description provided for @quotaGlmMcpWindow.
-  ///
-  /// In en, this message translates to:
-  /// **'Reported MCP window'**
-  String get quotaGlmMcpWindow;
 
   /// No description provided for @usageBudgetTitle.
   ///
@@ -3932,12 +3830,6 @@ abstract class AppLocalizations {
   /// **'Clear consumption budgets?'**
   String get usageBudgetClearTitle;
 
-  /// No description provided for @monitorTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Saved-server attention'**
-  String get monitorTitle;
-
   /// No description provided for @monitorScope.
   ///
   /// In en, this message translates to:
@@ -3947,14 +3839,8 @@ abstract class AppLocalizations {
   /// No description provided for @monitorDisclosure.
   ///
   /// In en, this message translates to:
-  /// **'Monitoring is off until you enable it for a server. Checks run about once a minute while this app is open. Background checks run no more often than every five minutes, only while Keep live is already on and Android’s service is running. Android can stop that service; no remaining runtime is promised.'**
+  /// **'Monitoring is off until you enable it for a server. Checks run about once a minute while this app is open. Background checks run no more often than every five minutes, only while Stay connected in the background is on and Android’s service is running. Android can stop that service; no remaining runtime is promised.'**
   String get monitorDisclosure;
-
-  /// No description provided for @monitorRefresh.
-  ///
-  /// In en, this message translates to:
-  /// **'Check monitored servers'**
-  String get monitorRefresh;
 
   /// No description provided for @monitorOptIn.
   ///
@@ -3997,60 +3883,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Quiet hours end'**
   String get monitorQuietEnd;
-
-  /// No description provided for @monitorDisabled.
-  ///
-  /// In en, this message translates to:
-  /// **'Not monitored · attention unknown'**
-  String get monitorDisabled;
-
-  /// No description provided for @monitorWaiting.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for a check · attention unknown'**
-  String get monitorWaiting;
-
-  /// No description provided for @monitorChecking.
-  ///
-  /// In en, this message translates to:
-  /// **'Checking · attention unknown'**
-  String get monitorChecking;
-
-  /// No description provided for @monitorUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not check · attention unknown'**
-  String get monitorUnavailable;
-
-  /// No description provided for @monitorWifiRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for Wi-Fi · attention unknown'**
-  String get monitorWifiRequired;
-
-  /// No description provided for @monitorPaused.
-  ///
-  /// In en, this message translates to:
-  /// **'Paused in background · attention unknown'**
-  String get monitorPaused;
-
-  /// No description provided for @monitorCurrent.
-  ///
-  /// In en, this message translates to:
-  /// **'Current observation'**
-  String get monitorCurrent;
-
-  /// No description provided for @monitorAllClear.
-  ///
-  /// In en, this message translates to:
-  /// **'No pending requests in the checked project'**
-  String get monitorAllClear;
-
-  /// No description provided for @monitorNoServers.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a server to monitor attention.'**
-  String get monitorNoServers;
 
   /// No description provided for @monitorSaveFailed.
   ///
@@ -4100,12 +3932,6 @@ abstract class AppLocalizations {
   /// **'Last checked'**
   String get monitorLastChecked;
 
-  /// No description provided for @monitorNextCheck.
-  ///
-  /// In en, this message translates to:
-  /// **'Next check'**
-  String get monitorNextCheck;
-
   /// Saved-server request row summary
   ///
   /// In en, this message translates to:
@@ -4116,12 +3942,6 @@ abstract class AppLocalizations {
     String lastChecked,
     String time,
   );
-
-  /// A localized monitor timestamp with its label
-  ///
-  /// In en, this message translates to:
-  /// **'{label}: {time}'**
-  String monitorLabeledTime(String label, String time);
 
   /// No description provided for @monitorCheckIn.
   ///
@@ -4158,12 +3978,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Time to check in'**
   String get monitorCheckInDue;
-
-  /// Span between busy samples, not a continuous duration or a lower bound on run length
-  ///
-  /// In en, this message translates to:
-  /// **'Busy at checks spanning {minutes} min · first check {since}'**
-  String monitorObservedBusy(int minutes, String since);
 
   /// No description provided for @quotaBudgetClearAll.
   ///
@@ -4339,12 +4153,6 @@ abstract class AppLocalizations {
   /// **'Sources are checked in rotation, at most three per cycle; larger lists take several cycles. Background reads require the existing live service to be active; Android may stop it. Displayed readings expire when the collector says they do. Device alerts record past threshold readings, not current remaining allowance. This page never switches your active server.'**
   String get quotaMonitorRuntime;
 
-  /// No description provided for @quotaMonitorEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.'**
-  String get quotaMonitorEmpty;
-
   /// No description provided for @quotaMonitorDisabled.
   ///
   /// In en, this message translates to:
@@ -4360,31 +4168,25 @@ abstract class AppLocalizations {
   /// No description provided for @quotaMonitorChecking.
   ///
   /// In en, this message translates to:
-  /// **'Checking the trusted collector…'**
+  /// **'Checking now…'**
   String get quotaMonitorChecking;
-
-  /// No description provided for @quotaMonitorCurrent.
-  ///
-  /// In en, this message translates to:
-  /// **'Fresh reading from the consented provider source.'**
-  String get quotaMonitorCurrent;
 
   /// No description provided for @quotaMonitorPaused.
   ///
   /// In en, this message translates to:
-  /// **'Monitoring is paused. Open the app or check the existing background service.'**
+  /// **'Paused. Checks start again when the app is open or Stay connected in the background is on.'**
   String get quotaMonitorPaused;
 
   /// No description provided for @quotaMonitorWifiRequired.
   ///
   /// In en, this message translates to:
-  /// **'Waiting for confirmed Wi-Fi. Unknown network status does not permit a read.'**
+  /// **'Waiting for Wi-Fi to check again.'**
   String get quotaMonitorWifiRequired;
 
   /// No description provided for @quotaMonitorSourceChanged.
   ///
   /// In en, this message translates to:
-  /// **'This provider account or source changed, or could not be verified. Open Remaining, read it again and review new consent.'**
+  /// **'The account on this server changed, so checks stopped. Open Remaining usage on that server and read it again.'**
   String get quotaMonitorSourceChanged;
 
   /// No description provided for @quotaMonitorSaveFailed.
@@ -4801,149 +4603,119 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 draft with an unconfirmed send to review.} other{{count} drafts with an unconfirmed send to review.}}'**
   String queuedBannerReview(int count);
 
-  /// Title of the fresh-worktree task sheet
+  /// Title of the sheet that starts a conversation in a separate copy (a git worktree) of the project
   ///
   /// In en, this message translates to:
-  /// **'New task in a fresh worktree'**
+  /// **'Start in a separate copy'**
   String get isolatedTaskTitle;
 
-  /// Explanation shown before the user starts a fresh-worktree task
+  /// Start in a separate copy: one line under the title saying what a separate copy is for
   ///
   /// In en, this message translates to:
-  /// **'OpenCode creates a new Git worktree and branch for {project} and runs the project\'s setup. The worktree stays listed under Manage project until you remove it there.'**
-  String isolatedTaskIntro(String project);
+  /// **'Works on its own branch, so it can\'t clash with your other conversations.'**
+  String get isolatedTaskIntro;
 
-  /// Label of the optional worktree name field
+  /// Start in a separate copy: the optional name of the worktree, inside Options
   ///
   /// In en, this message translates to:
-  /// **'Worktree name (optional)'**
+  /// **'Name of the copy (optional)'**
   String get isolatedTaskNameLabel;
 
-  /// Helper text under the optional worktree name field
+  /// Start in a separate copy: helper under the optional name field
   ///
   /// In en, this message translates to:
-  /// **'Leave empty to let OpenCode choose a name.'**
+  /// **'Leave it empty and a name is chosen for you.'**
   String get isolatedTaskNameHelper;
 
-  /// Primary button that creates the worktree and waits for it
+  /// Start in a separate copy: primary button that makes the copy, runs its setup and opens the conversation
   ///
   /// In en, this message translates to:
-  /// **'Create and start'**
+  /// **'Start'**
   String get isolatedTaskStart;
 
-  /// Status while the create request is in flight
+  /// Start in a separate copy: status while the create request is in flight
   ///
   /// In en, this message translates to:
-  /// **'Creating the worktree…'**
+  /// **'Making the copy…'**
   String get isolatedTaskCreating;
 
-  /// Caution under the creating status: cancelling does not imply server rollback
+  /// Start in a separate copy: under the making status; stopping does not undo a create the server may already run. Project › Worktrees is where copies are listed
   ///
   /// In en, this message translates to:
-  /// **'Stopping now cannot undo a create the server may already be running.'**
+  /// **'If you stop waiting, the copy may still be made. You\'ll find it under Project › Worktrees.'**
   String get isolatedTaskCreatingHint;
 
-  /// Status after the server returned the worktree, before its readiness event
+  /// Start in a separate copy: status while the project setup runs in the new copy
   ///
   /// In en, this message translates to:
-  /// **'{name} was created. OpenCode is preparing it…'**
+  /// **'Setting up {name}…'**
   String isolatedTaskPreparing(String name);
 
-  /// Status once the worktree reported ready and the session is being opened
+  /// Start in a separate copy: status once setup finished and the conversation is being opened
   ///
   /// In en, this message translates to:
-  /// **'{name} is ready. Opening a blank conversation…'**
+  /// **'{name} is ready. Opening the conversation…'**
   String isolatedTaskReady(String name);
 
-  /// Status when the worktree is ready but the last open attempt failed and nothing is in flight
+  /// Start in a separate copy: the copy is ready but the last open attempt failed; nothing is in flight
   ///
   /// In en, this message translates to:
-  /// **'{name} is ready.'**
+  /// **'{name} is ready, but the conversation didn\'t open.'**
   String isolatedTaskReadyIdle(String name);
 
-  /// Status when no readiness event arrived within the wait
+  /// Start in a separate copy: no setup result arrived within the wait
   ///
   /// In en, this message translates to:
-  /// **'{name} was created, but its setup status is not confirmed.'**
+  /// **'{name} is made, but its setup hasn\'t reported back.'**
   String isolatedTaskUnconfirmed(String name);
 
-  /// Explanation under the unconfirmed status
+  /// Start in a separate copy: explanation under the unconfirmed status
   ///
   /// In en, this message translates to:
-  /// **'You can keep waiting or open it now. Setup may still be running.'**
+  /// **'Setup may still be running. Keep waiting, or start in it now.'**
   String get isolatedTaskUnconfirmedHint;
 
-  /// Status when the server reported worktree.failed
+  /// Start in a separate copy: the copy was made but its project setup failed
   ///
   /// In en, this message translates to:
-  /// **'OpenCode could not prepare the worktree.'**
-  String get isolatedTaskFailed;
+  /// **'Setup failed in {name}'**
+  String isolatedTaskFailed(String name);
 
-  /// Status when the create request itself failed
+  /// Start in a separate copy: the create request itself failed
   ///
   /// In en, this message translates to:
-  /// **'The worktree could not be created.'**
+  /// **'Couldn\'t make the copy'**
   String get isolatedTaskCreateFailed;
 
-  /// Note under a failed preparation: the created worktree is kept
-  ///
-  /// In en, this message translates to:
-  /// **'{name} stays listed under Manage project. Nothing was deleted.'**
-  String isolatedTaskFailedKept(String name);
-
-  /// Status after the user stopped waiting for readiness
+  /// Start in a separate copy: status after the person stopped waiting
   ///
   /// In en, this message translates to:
   /// **'Stopped waiting.'**
   String get isolatedTaskCancelled;
 
-  /// Note after stopping when the server had already returned the worktree
+  /// Start in a separate copy: status while switching to the copy and creating the conversation
   ///
   /// In en, this message translates to:
-  /// **'{name} was created and stays listed under Manage project.'**
-  String isolatedTaskCancelledKept(String name);
-
-  /// Note after stopping before the create request answered
-  ///
-  /// In en, this message translates to:
-  /// **'If OpenCode created the worktree, it appears under Manage project.'**
-  String get isolatedTaskCancelledUnknown;
-
-  /// Status while switching scope and creating the session
-  ///
-  /// In en, this message translates to:
-  /// **'Opening a blank conversation in {name}…'**
+  /// **'Opening the conversation in {name}…'**
   String isolatedTaskOpening(String name);
 
-  /// Status once the blank session exists in the worktree
+  /// Start in a separate copy: status once the conversation exists in the copy
   ///
   /// In en, this message translates to:
-  /// **'Conversation ready in {name}. Nothing has been sent.'**
+  /// **'The conversation in {name} is ready.'**
   String isolatedTaskOpened(String name);
 
-  /// Branch line under the worktree status
-  ///
-  /// In en, this message translates to:
-  /// **'Branch {branch}'**
-  String isolatedTaskBranch(String branch);
-
-  /// Button that stops waiting for readiness without deleting anything
+  /// Start in a separate copy: stops waiting without deleting anything
   ///
   /// In en, this message translates to:
   /// **'Stop waiting'**
   String get isolatedTaskStopWaiting;
 
-  /// Button that waits another period for the readiness event
+  /// Start in a separate copy: waits another period for the setup result
   ///
   /// In en, this message translates to:
   /// **'Keep waiting'**
   String get isolatedTaskKeepWaiting;
-
-  /// Button that opens a session in a worktree whose setup is unconfirmed
-  ///
-  /// In en, this message translates to:
-  /// **'Open anyway'**
-  String get isolatedTaskOpenAnyway;
 
   /// Button that retries opening the session after an open error
   ///
@@ -7624,7 +7396,7 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Android 15+ allows six hours of this per 24 hours and then stops it; the app turns the switch off and says so when that happens.'**
+  /// **'Android stops this after 6 hours a day. The app will tell you when it does.'**
   String get e7SettingsUi34;
 
   /// Settings and appearance user interface.
@@ -11006,12 +10778,6 @@ abstract class AppLocalizations {
   /// **'Local command'**
   String get e7LibraryLocalCommand;
 
-  /// Library and project tools UI: Timeout in milliseconds
-  ///
-  /// In en, this message translates to:
-  /// **'Timeout in milliseconds'**
-  String get e7LibraryTimeoutInMilliseconds;
-
   /// Library and project tools UI: Optional
   ///
   /// In en, this message translates to:
@@ -11041,12 +10807,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a valid HTTP or HTTPS URL without credentials'**
   String get e7LibraryEnterAValidHTTPOrHTTPSURL;
-
-  /// Library and project tools UI: Optional. Enter one KEY=VALUE pair per line.
-  ///
-  /// In en, this message translates to:
-  /// **'Optional. Enter one KEY=VALUE pair per line.'**
-  String get e7LibraryOptionalEnterOneKEYVALUEPairPer;
 
   /// Library and project tools UI: Detect OAuth automatically
   ///
@@ -14922,12 +14682,6 @@ abstract class AppLocalizations {
   /// **'AI Team (optional)'**
   String get teamUiEditorTitle;
 
-  /// Closing line of the host guide sheet pointing at the repository guide
-  ///
-  /// In en, this message translates to:
-  /// **'The full guide with every command is docs/ai-team-host.md in the app\'s repository.'**
-  String get teamUiHostGuideDocs;
-
   /// Intro line of the host guide sheet
   ///
   /// In en, this message translates to:
@@ -14937,25 +14691,25 @@ abstract class AppLocalizations {
   /// Host guide step 1
   ///
   /// In en, this message translates to:
-  /// **'Install Gas City on the computer: gc, bd and dolt on your PATH.'**
+  /// **'Install Gas City\'s three tools, gc, bd and dolt, on your PATH; the full guide has each download with its checksum. Then check that all three are found:'**
   String get teamUiHostGuideStep1;
 
   /// Host guide step 2
   ///
   /// In en, this message translates to:
-  /// **'Create a city next to your project and add the project to it: gc init, then gc rig add.'**
+  /// **'Save the city file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:'**
   String get teamUiHostGuideStep2;
 
   /// Host guide step 3
   ///
   /// In en, this message translates to:
-  /// **'Start it with gc start and check that http://127.0.0.1:8372/v0/city/<name>/health answers.'**
+  /// **'Start the team and check that it answers:'**
   String get teamUiHostGuideStep3;
 
   /// Host guide step 4
   ///
   /// In en, this message translates to:
-  /// **'Expose port 8372 on the computer\'s Tailscale address, then add it here as http://100.x.x.x:8372 with the city name.'**
+  /// **'Download the front that lets this phone in over Tailscale, check it and start it, with your own Tailscale login after --allow. Then add it here: the computer\'s Tailscale address with the port in the command, and the team\'s name.'**
   String get teamUiHostGuideStep4;
 
   /// Title of the host guide sheet
@@ -16566,12 +16320,6 @@ abstract class AppLocalizations {
   /// **'The host did not accept this answer.'**
   String get teamUiGateAnswerRejectedNoMessage;
 
-  /// Accessibility label of the unconfirmed chip
-  ///
-  /// In en, this message translates to:
-  /// **'Unconfirmed, open to retry'**
-  String get teamUiGateAnswerChipUnconfirmedSemantics;
-
   /// Two-step sheet title before a destructive confirmation is approved
   ///
   /// In en, this message translates to:
@@ -16811,30 +16559,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send to the {planner}'**
   String teamUiStartRunSend(String planner);
-
-  /// Shown instead of the form when the host lists the planner as suspended or stopped; nothing is sent
-  ///
-  /// In en, this message translates to:
-  /// **'The planner (Mayor) is off on this host'**
-  String get teamUiStartRunPlannerOffTitle;
-
-  /// Body under the planner-off title
-  ///
-  /// In en, this message translates to:
-  /// **'Wake it on the host or switch it to the full profile, then come back.'**
-  String get teamUiStartRunPlannerOffBody;
-
-  /// Shown when the host lists no planner agent at all
-  ///
-  /// In en, this message translates to:
-  /// **'No planner on this host'**
-  String get teamUiStartRunPlannerMissingTitle;
-
-  /// Body under the planner-missing title
-  ///
-  /// In en, this message translates to:
-  /// **'The Gas Town pack with its Mayor is not running here. The host guide shows how to enable it.'**
-  String get teamUiStartRunPlannerMissingBody;
 
   /// Button opening the host guide sheet from the planner-off states
   ///
@@ -18293,12 +18017,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Background: {state}'**
   String notifyHubBackgroundSummary(String state);
-
-  /// Link from the saved-servers attention list and the Usage screen to the Notifications screen.
-  ///
-  /// In en, this message translates to:
-  /// **'Notification settings'**
-  String get monitorNotificationSettings;
 
   /// Usage screen section (tab): what the connected server reports it used.
   ///
@@ -21609,7 +21327,7 @@ abstract class AppLocalizations {
   /// First of the four stages of an AI Team task
   ///
   /// In en, this message translates to:
-  /// **'Waiting'**
+  /// **'Planned'**
   String get teamUiRunStageWaiting;
 
   /// Second of the four stages of an AI Team task
@@ -21621,13 +21339,13 @@ abstract class AppLocalizations {
   /// Third of the four stages of an AI Team task: handed to the reviewer, who merges
   ///
   /// In en, this message translates to:
-  /// **'Reviewing'**
+  /// **'In review'**
   String get teamUiRunStageReviewing;
 
   /// Last of the four stages of an AI Team task: merged
   ///
   /// In en, this message translates to:
-  /// **'Done'**
+  /// **'Merged'**
   String get teamUiRunStageDone;
 
   /// Screen-reader label of the four-stage line on an AI Team task
@@ -26622,31 +26340,31 @@ abstract class AppLocalizations {
   /// **'Enter an http or https address without a user name or password.'**
   String get servicesUrlInvalid;
 
-  /// New task in a fresh worktree: the label of the project path in Details
+  /// Start in a separate copy: the label of the project path in Details
   ///
   /// In en, this message translates to:
   /// **'Project folder'**
   String get isolatedTaskProjectFolder;
 
-  /// New task in a fresh worktree: progress stage 1 of 3
+  /// Start in a separate copy: progress stage 1 of 3
   ///
   /// In en, this message translates to:
-  /// **'Creating the worktree'**
+  /// **'Making the copy'**
   String get isolatedTaskStageCreate;
 
-  /// New task in a fresh worktree: progress stage 2 of 3
+  /// Start in a separate copy: progress stage 2 of 3
   ///
   /// In en, this message translates to:
   /// **'Running the project setup'**
   String get isolatedTaskStagePrepare;
 
-  /// New task in a fresh worktree: progress stage 3 of 3
+  /// Start in a separate copy: progress stage 3 of 3 with no task typed
   ///
   /// In en, this message translates to:
-  /// **'Opening a conversation'**
+  /// **'Opening the conversation'**
   String get isolatedTaskStageOpen;
 
-  /// New task in a fresh worktree: how long creating and setting up a worktree usually takes
+  /// Start in a separate copy: how long making and setting up a copy usually takes
   ///
   /// In en, this message translates to:
   /// **'Usually 1–3 minutes'**
@@ -30511,7 +30229,7 @@ abstract class AppLocalizations {
   /// screen-library-2: Add MCP server: what the Advanced fold holds for a local command.
   ///
   /// In en, this message translates to:
-  /// **'Working folder, environment and timeout'**
+  /// **'Working folder and timeout'**
   String get mcpSetupAdvancedLocal;
 
   /// screen-library-2: Add MCP server: why "This project" cannot be chosen.
@@ -32188,24 +31906,6 @@ abstract class AppLocalizations {
   /// **'Background checks'**
   String get monitorBackgroundChecks;
 
-  /// Supporting line of the Servers page's Background checks row, e.g. 'Last checked 5m ago'
-  ///
-  /// In en, this message translates to:
-  /// **'Last checked {when}'**
-  String monitorRowLastChecked(String when);
-
-  /// Supporting line of the Servers page's Background checks row when a server is monitored but no check has finished yet
-  ///
-  /// In en, this message translates to:
-  /// **'Not checked yet'**
-  String get monitorRowNotChecked;
-
-  /// Supporting line of the Servers page's Background checks row when no saved server is monitored
-  ///
-  /// In en, this message translates to:
-  /// **'Off for every server'**
-  String get monitorRowOff;
-
   /// Settings › Help row (and search result) that opens the offline demo conversation
   ///
   /// In en, this message translates to:
@@ -33001,7 +32701,7 @@ abstract class AppLocalizations {
   /// Remaining: collector setup step 1
   ///
   /// In en, this message translates to:
-  /// **'Ask whoever runs {server} to install the quota collector from tool/quota in the app’s repository. It needs Node 20 or later.'**
+  /// **'Ask whoever runs {server} to install the quota collector. It needs Node 20 or later.'**
   String quotaCollectorStepInstall(String server);
 
   /// Remaining: collector setup step 2
@@ -36417,6 +36117,600 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The team’s reply'**
   String get teamDispatchHostWords;
+
+  /// Project tab (slice-close-misc): the live line under Changes, from the project's working tree
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No changes} =1{1 file changed} other{{count} files changed}}'**
+  String projectHubChangedFiles(int count);
+
+  /// Project tab (slice-close-misc): the live line under Terminal, how many terminals are running; not shown when none are
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 running} other{{count} running}}'**
+  String projectHubTerminalsRunning(int count);
+
+  /// Remaining (slice-close-misc): button under the collector steps; opens the collector's full guide on the web
+  ///
+  /// In en, this message translates to:
+  /// **'Open the collector guide'**
+  String get quotaCollectorGuide;
+
+  /// Remaining (collector path, slice-close-misc): label over the answer rows read through the collector
+  ///
+  /// In en, this message translates to:
+  /// **'{provider}, from the quota collector on {server}'**
+  String quotaCollectorFrom(String provider, String server);
+
+  /// Remaining (collector path, slice-close-misc): the reading has no window with a used percentage
+  ///
+  /// In en, this message translates to:
+  /// **'The quota collector on {server} reported no limits for {provider}.'**
+  String quotaCollectorNoWindows(String provider, String server);
+
+  /// Remaining (collector path, slice-close-misc): row that stops reading through the collector for this visit
+  ///
+  /// In en, this message translates to:
+  /// **'Stop using the quota collector on {server}'**
+  String quotaStopCollector(String server);
+
+  /// Remaining (collector path): what stopping the collector does
+  ///
+  /// In en, this message translates to:
+  /// **'The reading goes away, and Remaining asks you again before the next read.'**
+  String get quotaStopCollectorDetail;
+
+  /// Remaining (collector path): Details label for the collector's web address
+  ///
+  /// In en, this message translates to:
+  /// **'Collector address'**
+  String get quotaCollectorAddressLabel;
+
+  /// Remaining (collector path): Details label for the plan the provider reported
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get quotaPlanLabel;
+
+  /// Remaining (collector path): Details label for when the collector took the reading
+  ///
+  /// In en, this message translates to:
+  /// **'Read at'**
+  String get quotaReadAtLabel;
+
+  /// Host guide sheet: opens docs/ai-team-host.md on GitHub in the browser
+  ///
+  /// In en, this message translates to:
+  /// **'Open the full guide'**
+  String get teamUiHostGuideOpen;
+
+  /// Run as a Linux service page: supporting line of the install command
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads the script from release {release} and checks its SHA-256 checksum first. If the file was changed, nothing runs.'**
+  String hostServiceInstallChecked(String release);
+
+  /// Run as a Linux service page: fold under the install command
+  ///
+  /// In en, this message translates to:
+  /// **'What this does'**
+  String get hostServiceWhatThisDoes;
+
+  /// Run as a Linux service page, What this does: where the script runs
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Linux with systemd, such as Ubuntu. It does not run on macOS or Windows.'**
+  String get hostServiceWhatLinux;
+
+  /// Run as a Linux service page, What this does: the OpenCode install
+  ///
+  /// In en, this message translates to:
+  /// **'Installs OpenCode with its official installer if it is not there yet.'**
+  String get hostServiceWhatInstall;
+
+  /// Run as a Linux service page, What this does: the systemd user service
+  ///
+  /// In en, this message translates to:
+  /// **'Adds a service for your account that keeps OpenCode running after reboots and closed terminals. It listens on that computer only.'**
+  String get hostServiceWhatService;
+
+  /// Run as a Linux service page, What this does: the server password
+  ///
+  /// In en, this message translates to:
+  /// **'Makes a password for the server and keeps it in a file only your account can read.'**
+  String get hostServiceWhatPassword;
+
+  /// Run as a Linux service page, What this does: label of the pinned commit hash
+  ///
+  /// In en, this message translates to:
+  /// **'Script version'**
+  String get hostServicePinnedCommit;
+
+  /// Run as a Linux service page, What this does: label of the script's SHA-256
+  ///
+  /// In en, this message translates to:
+  /// **'SHA-256 checksum'**
+  String get hostServiceChecksum;
+
+  /// MCP add sheet (P2.4): the choice that opens the MCP catalogue
+  ///
+  /// In en, this message translates to:
+  /// **'Browse the catalogue'**
+  String get mcpAddBrowseTitle;
+
+  /// MCP add sheet: what the catalogue choice offers
+  ///
+  /// In en, this message translates to:
+  /// **'Servers from the public MCP registry, turned on with a switch'**
+  String get mcpAddBrowseDetail;
+
+  /// MCP add sheet: why the catalogue choice is unavailable on this server
+  ///
+  /// In en, this message translates to:
+  /// **'No catalogue for this server: it doesn\'t accept new MCP servers from the app.'**
+  String get mcpAddBrowseNone;
+
+  /// MCP add sheet and catalogue: the choice that opens the manual MCP form
+  ///
+  /// In en, this message translates to:
+  /// **'Enter manually'**
+  String get mcpAddManualTitle;
+
+  /// MCP add sheet: what the manual choice is
+  ///
+  /// In en, this message translates to:
+  /// **'Type its address, or the command that starts it'**
+  String get mcpAddManualDetail;
+
+  /// MCP catalogue (P2.5): page title
+  ///
+  /// In en, this message translates to:
+  /// **'MCP catalogue'**
+  String get mcpCatalogTitle;
+
+  /// MCP catalogue: title before the person agrees to load the registry list
+  ///
+  /// In en, this message translates to:
+  /// **'Load the MCP registry?'**
+  String get mcpCatalogConsentTitle;
+
+  /// MCP catalogue: what loading the registry list sends
+  ///
+  /// In en, this message translates to:
+  /// **'The app asks registry.modelcontextprotocol.io for its list of MCP servers. It sends only what you search for, nothing about you or your servers.'**
+  String get mcpCatalogConsentBody;
+
+  /// MCP catalogue: button that agrees and loads the registry list
+  ///
+  /// In en, this message translates to:
+  /// **'Load the list'**
+  String get mcpCatalogConsentLoad;
+
+  /// MCP catalogue menu: forgets the consent and the saved registry list
+  ///
+  /// In en, this message translates to:
+  /// **'Stop using the registry'**
+  String get mcpCatalogForget;
+
+  /// MCP catalogue: forgetting the saved list failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t forget the saved registry list. Try again.'**
+  String get mcpCatalogForgetFailed;
+
+  /// MCP catalogue: search field label
+  ///
+  /// In en, this message translates to:
+  /// **'Search the registry'**
+  String get mcpCatalogSearch;
+
+  /// MCP catalogue: the server's MCP list could not be read
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read this server\'s MCP servers'**
+  String get mcpCatalogInventoryFailed;
+
+  /// MCP catalogue: why the list waits for the server's MCP list
+  ///
+  /// In en, this message translates to:
+  /// **'The switches need to know what is already on. Check the connection, then try again.'**
+  String get mcpCatalogInventoryFailedBody;
+
+  /// MCP catalogue: the registry list could not be loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the public MCP registry'**
+  String get mcpCatalogFailed;
+
+  /// MCP catalogue: a registry search failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t search the public MCP registry'**
+  String get mcpCatalogSearchFailed;
+
+  /// MCP catalogue: way forward when the registry is unreachable
+  ///
+  /// In en, this message translates to:
+  /// **'Check the phone\'s internet connection, then try again. You can still enter a server by hand.'**
+  String get mcpCatalogFailedBody;
+
+  /// MCP catalogue: the registry answered with an empty list
+  ///
+  /// In en, this message translates to:
+  /// **'The registry listed no servers'**
+  String get mcpCatalogEmpty;
+
+  /// MCP catalogue: a search found nothing
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in the registry matches “{query}”'**
+  String mcpCatalogNoMatch(String query);
+
+  /// MCP catalogue: way forward when nothing is listed
+  ///
+  /// In en, this message translates to:
+  /// **'Try other words, or enter the server by hand.'**
+  String get mcpCatalogEmptyBody;
+
+  /// MCP catalogue: a refresh failed; the saved list is shown
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh the list from the registry. These are the listings loaded earlier.'**
+  String get mcpCatalogStale;
+
+  /// MCP catalogue: note under the list about cost
+  ///
+  /// In en, this message translates to:
+  /// **'The registry lists no prices. A hosted server\'s owner may charge for it or ask for an account.'**
+  String get mcpCatalogPriceNote;
+
+  /// MCP catalogue: a row while its form is open
+  ///
+  /// In en, this message translates to:
+  /// **'Adding…'**
+  String get mcpCatalogAdding;
+
+  /// MCP catalogue: a row while it is being removed
+  ///
+  /// In en, this message translates to:
+  /// **'Removing…'**
+  String get mcpCatalogRemoving;
+
+  /// MCP catalogue: why an added server's switch cannot be turned off here
+  ///
+  /// In en, this message translates to:
+  /// **'On. This server keeps it in its configuration, and the app can\'t remove it.'**
+  String get mcpCatalogCannotRemove;
+
+  /// MCP catalogue: why a container listing cannot be turned on
+  ///
+  /// In en, this message translates to:
+  /// **'Runs in Docker. To add it anyway, use Enter manually.'**
+  String get mcpCatalogNeedsDocker;
+
+  /// MCP catalogue: why a listing cannot be turned on
+  ///
+  /// In en, this message translates to:
+  /// **'Lists nothing the app can start. To add it anyway, use Enter manually.'**
+  String get mcpCatalogNoEndpoint;
+
+  /// MCP catalogue row: where a hosted server runs
+  ///
+  /// In en, this message translates to:
+  /// **'Hosted by {host}'**
+  String mcpCatalogHostedBy(String host);
+
+  /// MCP catalogue row: an npm package needs Node where OpenCode runs
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Node on the server'**
+  String get mcpCatalogNeedsNode;
+
+  /// MCP catalogue row: an npm package needs Node on this phone's OpenCode
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Node on this phone'**
+  String get mcpCatalogNeedsNodePhone;
+
+  /// MCP catalogue row: a PyPI package needs uv
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Python with uv on the server'**
+  String get mcpCatalogNeedsPython;
+
+  /// MCP catalogue row: the listing requires a secret
+  ///
+  /// In en, this message translates to:
+  /// **'Needs an API key'**
+  String get mcpCatalogNeedsKey;
+
+  /// MCP catalogue row: the listing requires other settings or arguments
+  ///
+  /// In en, this message translates to:
+  /// **'Needs extra settings'**
+  String get mcpCatalogNeedsSettings;
+
+  /// MCP catalogue: sheet title when a Node server is turned on for this phone
+  ///
+  /// In en, this message translates to:
+  /// **'{title} runs with Node'**
+  String mcpCatalogNodeTitle(String title);
+
+  /// MCP catalogue Node sheet: opens This phone to add Node
+  ///
+  /// In en, this message translates to:
+  /// **'Add Node to this phone'**
+  String get mcpCatalogNodeAdd;
+
+  /// MCP catalogue Node sheet: what adding Node involves
+  ///
+  /// In en, this message translates to:
+  /// **'Opens This phone. Choose Add tools, then Node, and turn this on again once it\'s added.'**
+  String get mcpCatalogNodeAddDetail;
+
+  /// MCP catalogue Node sheet: continue to the form
+  ///
+  /// In en, this message translates to:
+  /// **'Node is already on this phone'**
+  String get mcpCatalogNodeHave;
+
+  /// MCP catalogue Node sheet: what continuing does
+  ///
+  /// In en, this message translates to:
+  /// **'Check the details and add it'**
+  String get mcpCatalogNodeHaveDetail;
+
+  /// MCP form opened from the catalogue: where the values came from
+  ///
+  /// In en, this message translates to:
+  /// **'Filled in from “{listing}” in the public MCP registry. Check it before you add it: {server} will run or connect to what is here.'**
+  String mcpSetupFromCatalog(String listing, String server);
+
+  /// MCP form: the server, when it has no name
+  ///
+  /// In en, this message translates to:
+  /// **'this server'**
+  String get mcpSetupThisServer;
+
+  /// MCP form: a header or variable the registry listing requires is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a value for {name}'**
+  String mcpSetupValueRequired(String name);
+
+  /// MCP form: why a prefilled header or variable name is fixed
+  ///
+  /// In en, this message translates to:
+  /// **'The registry listing needs this one'**
+  String get mcpSetupNameFromCatalog;
+
+  /// MCP form: environment variable name field
+  ///
+  /// In en, this message translates to:
+  /// **'Variable name'**
+  String get mcpVariableName;
+
+  /// MCP form: environment variable value field (secret)
+  ///
+  /// In en, this message translates to:
+  /// **'Variable value'**
+  String get mcpVariableValue;
+
+  /// MCP form: adds an environment variable row
+  ///
+  /// In en, this message translates to:
+  /// **'Add another variable'**
+  String get mcpAddVariable;
+
+  /// MCP form: removes an environment variable row
+  ///
+  /// In en, this message translates to:
+  /// **'Remove variable'**
+  String get mcpRemoveVariable;
+
+  /// MCP form: the optional timeout field, in seconds
+  ///
+  /// In en, this message translates to:
+  /// **'Timeout in seconds'**
+  String get mcpSetupTimeoutSeconds;
+
+  /// Start in a separate copy: the task field, sent to the new conversation once the copy is ready
+  ///
+  /// In en, this message translates to:
+  /// **'What should it work on?'**
+  String get isolatedTaskPromptLabel;
+
+  /// Start in a separate copy: helper under the task field
+  ///
+  /// In en, this message translates to:
+  /// **'Sent once the copy is ready. Leave it empty to write it in the conversation.'**
+  String get isolatedTaskPromptHelper;
+
+  /// Start in a separate copy: the fold holding the optional name of the copy
+  ///
+  /// In en, this message translates to:
+  /// **'Options'**
+  String get isolatedTaskOptions;
+
+  /// Start in a separate copy: under the setup status; stopping never deletes the copy
+  ///
+  /// In en, this message translates to:
+  /// **'If you stop waiting, the copy stays. You\'ll find it under Project › Worktrees.'**
+  String get isolatedTaskPreparingHint;
+
+  /// Start in a separate copy: body under a failed setup; the setup's own output is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'The copy is made, but its setup didn\'t finish. Start in it anyway, or remove it.'**
+  String get isolatedTaskFailedBody;
+
+  /// Start in a separate copy: status while the typed task is sent to the new conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Sending your task to {name}…'**
+  String isolatedTaskSending(String name);
+
+  /// Start in a separate copy: the conversation opened but the typed task was not sent
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send your task'**
+  String get isolatedTaskSendFailed;
+
+  /// Start in a separate copy: the unsent task was kept as the conversation's draft
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s waiting in the conversation\'s message box, ready to send.'**
+  String get isolatedTaskSendFailedBody;
+
+  /// Start in a separate copy: the unsent task could not be kept as a draft either; it is shown under Details to copy
+  ///
+  /// In en, this message translates to:
+  /// **'Copy your task below and send it in the conversation.'**
+  String get isolatedTaskSendFailedLost;
+
+  /// Start in a separate copy: opens the new conversation after its task could not be sent
+  ///
+  /// In en, this message translates to:
+  /// **'Open the conversation'**
+  String get isolatedTaskOpenConversation;
+
+  /// Start in a separate copy: opens the conversation in a copy whose setup failed or has not reported
+  ///
+  /// In en, this message translates to:
+  /// **'Start anyway'**
+  String get isolatedTaskStartAnyway;
+
+  /// Start in a separate copy: deletes the copy (worktree) whose setup failed
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the copy'**
+  String get isolatedTaskRemove;
+
+  /// Start in a separate copy: confirmation title before deleting the copy
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String isolatedTaskRemoveTitle(String name);
+
+  /// Start in a separate copy: confirmation body before deleting the copy
+  ///
+  /// In en, this message translates to:
+  /// **'Its folder and branch are deleted. Your project itself is not touched.'**
+  String get isolatedTaskRemoveBody;
+
+  /// Start in a separate copy: notice on the form after the failed copy was removed
+  ///
+  /// In en, this message translates to:
+  /// **'Removed {name}. You can start again.'**
+  String isolatedTaskRemoved(String name);
+
+  /// Start in a separate copy: note above the setup's own output, under Details
+  ///
+  /// In en, this message translates to:
+  /// **'What the setup reported'**
+  String get isolatedTaskSetupOutput;
+
+  /// Start in a separate copy: the label of the copy's folder in Details
+  ///
+  /// In en, this message translates to:
+  /// **'Folder of the copy'**
+  String get isolatedTaskCopyFolder;
+
+  /// Start in a separate copy: the label of the copy's branch in Details
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get isolatedTaskBranchLabel;
+
+  /// Start in a separate copy: progress stage 3 of 3 with a task typed
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the conversation and sending your task'**
+  String get isolatedTaskStageSend;
+
+  /// Title of the Give-a-task sheet when the team has no planner awake and no direct path to a worker
+  ///
+  /// In en, this message translates to:
+  /// **'Team can\'t take tasks'**
+  String get teamStartRunBlockedTitle;
+
+  /// Reason line: the team's planner agent is suspended or stopped on its host
+  ///
+  /// In en, this message translates to:
+  /// **'The planner is switched off'**
+  String get teamStartRunPlannerOff;
+
+  /// Body when the planner is off and the app can wake it
+  ///
+  /// In en, this message translates to:
+  /// **'The planner turns each task into steps for the team. Wake it to give the team your task.'**
+  String get teamStartRunPlannerOffWakeBody;
+
+  /// Body when the planner is off and the app cannot wake it
+  ///
+  /// In en, this message translates to:
+  /// **'The planner turns each task into steps for the team, and this app can\'t switch it on. Switch it on where the team runs, then try again.'**
+  String get teamStartRunPlannerOffHostBody;
+
+  /// Reason line: the host lists no planner agent
+  ///
+  /// In en, this message translates to:
+  /// **'This team has no planner'**
+  String get teamStartRunNoPlanner;
+
+  /// Body when the host lists no planner
+  ///
+  /// In en, this message translates to:
+  /// **'A planner turns each task into steps for the team. Add one where the team runs, then try again.'**
+  String get teamStartRunNoPlannerBody;
+
+  /// Reason line: the team gives tasks straight to a project's worker but has no project
+  ///
+  /// In en, this message translates to:
+  /// **'This team has no project yet'**
+  String get teamStartRunNoProject;
+
+  /// Body when the team has no project
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks go straight to a project\'s worker. Add a project to the team, then try again.'**
+  String get teamStartRunNoProjectBody;
+
+  /// Primary: wake the team's planner agent so it can take a task
+  ///
+  /// In en, this message translates to:
+  /// **'Wake the planner'**
+  String get teamStartRunWake;
+
+  /// Notice after the host took the wake, until the planner is listed awake
+  ///
+  /// In en, this message translates to:
+  /// **'Waking the planner. The task form opens as soon as it\'s awake.'**
+  String get teamStartRunWakeAsked;
+
+  /// Notice after Check again when nothing changed
+  ///
+  /// In en, this message translates to:
+  /// **'The planner is still switched off.'**
+  String get teamStartRunStillOff;
+
+  /// Notice after Check again when the team still has no project
+  ///
+  /// In en, this message translates to:
+  /// **'The team still has no project.'**
+  String get teamStartRunStillNoProject;
+
+  /// Title of the notice when the host refused to wake the planner
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t wake the planner'**
+  String get teamStartRunWakeRefused;
+
+  /// Next step under a refused wake
+  ///
+  /// In en, this message translates to:
+  /// **'Try again, or switch it on where the team runs.'**
+  String get teamStartRunWakeRefusedNext;
 }
 
 class _AppLocalizationsDelegate

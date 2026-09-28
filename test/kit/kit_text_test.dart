@@ -702,4 +702,30 @@ void main() {
   // KitText sample (including 'selectable' and the middle-cut mono) and the
   // new KitSelectable/KitLtr parts settle after one pump() with no ticker
   // running, under both stillness settings.
+
+  group('app-wide helpers (slice-P9.10)', () {
+    test(
+      'appScaler passes a scale through below the cap and caps above it',
+      () {
+        expect(
+          KitText.appScaler(const TextScaler.linear(.85), max: 2.5).scale(10),
+          closeTo(8.5, 1e-9),
+        );
+        expect(
+          KitText.appScaler(const TextScaler.linear(2), max: 2.5).scale(10),
+          closeTo(20, 1e-9),
+        );
+        expect(
+          KitText.appScaler(const TextScaler.linear(3.2), max: 2.5).scale(10),
+          closeTo(25, 1e-9),
+        );
+      },
+    );
+
+    test('sentenceCase capitalises the first letter only', () {
+      expect(KitText.sentenceCase('read the docs'), 'Read the docs');
+      expect(KitText.sentenceCase('mcp'), 'Mcp');
+      expect(KitText.sentenceCase(''), '');
+    });
+  });
 }

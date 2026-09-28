@@ -140,6 +140,7 @@ class KitConsequences extends StatelessWidget {
 }
 ```
 
+- **`showKitFramedSheet` (added by slice-P9.10).** `Future<T?> showKitFramedSheet<T>(BuildContext context, {required WidgetBuilder builder, double? maxWidth, bool useSafeArea = false, Key? sheetKey})` opens a body that draws its own `KitSheet` frame (with `handle: false`) on the theme's bottom sheet route: scroll-controlled, the route's one drag handle, capped at `maxWidth` when given. It exists for the few sheets whose frame depends on state only the body holds (the folder browser, the command launcher, the timeline), so the last raw `showModalBottomSheet(` calls outside the kit came through the kit without changing their look. Everything else uses `showKitSheet`.
 - **Additive only (KIT-43).** Every existing `showKitSheet`, `KitSheet` and `KitDraft` call compiles and behaves as before. Nothing is renamed, removed or marked `@Deprecated`.
 - **Returns.** `showKitSheet` completes with the value passed to `Navigator.pop`/`KitSheet.close`. It returns null on dismissal, and also when `routes` closed it or `routes` was no longer pending at call time.
 - **Internal keys kept (TEST-5):** `kit-sheet-close`, `kit-sheet-handle`, `kit-sheet-actions`, `kit-sheet-content` and `kit-loading-bar`. They are used by 8 test references. New internal keys: `kit-sheet-icon` and `kit-consequences`.

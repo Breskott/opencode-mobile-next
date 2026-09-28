@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../kit_illustration.dart';
+import '../kit_motion.dart';
 
 /// The AI Team's drawings (design standard §10, motion spec slice D): a
 /// small cast of line-drawn agents — a rounded body, a round head, two dot
@@ -275,7 +276,7 @@ class TeamBoardScene extends KitScene {
       }
     }
     // The empty slot a task will fill: the one accent.
-    final slot = KitDraw.interval(t, .7, 1, Curves.easeOutBack);
+    final slot = KitDraw.interval(t, .7, 1, KitMotion.land);
     if (slot > 0) {
       canvas.save();
       canvas.translate(32, 36);
@@ -301,7 +302,7 @@ class TeamBoardScene extends KitScene {
       Offset? rightHand,
     }) {
       final arrive = KitDraw.interval(t, begin, begin + .4);
-      final rise = KitDraw.interval(t, begin, begin + .4, Curves.easeOutBack);
+      final rise = KitDraw.interval(t, begin, begin + .4, KitMotion.land);
       return TeamAgentPose(
         base: base + Offset(0, 14 * (1 - rise)),
         scale: scale,
@@ -312,7 +313,7 @@ class TeamBoardScene extends KitScene {
       );
     }
 
-    final wave = KitDraw.interval(t, .7, 1, Curves.easeOutBack);
+    final wave = KitDraw.interval(t, .7, 1, KitMotion.land);
     TeamCast.agent(
       canvas,
       p,
@@ -382,7 +383,7 @@ class TeamPlanningScene extends KitScene {
       (_right, -1.0, .15, false, pass),
     ]) {
       final arrive = KitDraw.interval(t, begin, begin + .45);
-      final rise = KitDraw.interval(t, begin, begin + .45, Curves.easeOutBack);
+      final rise = KitDraw.interval(t, begin, begin + .45, KitMotion.land);
       final hand = arms > 0 ? reach(base, side, amount * arms) : null;
       TeamCast.agent(
         canvas,
@@ -399,7 +400,7 @@ class TeamPlanningScene extends KitScene {
       );
     }
 
-    final pop = KitDraw.interval(t, .55, 1, Curves.easeOutBack);
+    final pop = KitDraw.interval(t, .55, 1, KitMotion.land);
     TeamCast.card(
       canvas,
       p,
@@ -466,7 +467,7 @@ class TeamWakingScene extends KitScene {
     }
 
     // The spark that wakes them: lands, then its rays breathe.
-    final land = KitDraw.interval(t, .65, 1, Curves.easeOutBack);
+    final land = KitDraw.interval(t, .65, 1, KitMotion.land);
     if (land > 0) {
       canvas.drawCircle(_spark, 4.5 * land, KitDraw.fill(p.accent));
       final breath = frame.looping ? KitDraw.wave(frame.loop) : 0.0;
@@ -509,7 +510,7 @@ class TeamMergedScene extends KitScene {
 
     // Sparks: thrown out from the card, settling as a ring of short
     // strokes (accent and the success colour alternating).
-    final burst = KitDraw.interval(t, .5, 1, Curves.easeOutBack);
+    final burst = KitDraw.interval(t, .5, 1, KitMotion.land);
     if (burst > 0) {
       for (var i = 0; i < 10; i++) {
         final angle = i * math.pi / 5 - math.pi / 2 + .31;
@@ -526,7 +527,7 @@ class TeamMergedScene extends KitScene {
     }
 
     // The card lands with a small overshoot.
-    final land = KitDraw.interval(t, .1, .55, Curves.easeOutBack);
+    final land = KitDraw.interval(t, .1, .55, KitMotion.land);
     if (land > 0) {
       TeamCast.card(
         canvas,
@@ -545,13 +546,13 @@ class TeamMergedScene extends KitScene {
       KitDraw.pen(p.success, KitDraw.stroke * .8),
     );
 
-    final cheer = KitDraw.interval(t, .55, .95, Curves.easeOutBack);
+    final cheer = KitDraw.interval(t, .55, .95, KitMotion.land);
     for (final (base, begin, look) in [
       (_left, 0.0, const Offset(.8, -.5)),
       (_right, .12, const Offset(-.8, -.5)),
     ]) {
       final arrive = KitDraw.interval(t, begin, begin + .4);
-      final rise = KitDraw.interval(t, begin, begin + .4, Curves.easeOutBack);
+      final rise = KitDraw.interval(t, begin, begin + .4, KitMotion.land);
       TeamCast.agent(
         canvas,
         p,
@@ -583,11 +584,11 @@ class TeamNudgeScene extends KitScene {
   void paint(Canvas canvas, KitSceneFrame frame) {
     final p = frame.palette;
     final t = frame.entrance;
-    final rise = KitDraw.interval(t, 0, .45, Curves.easeOutBack);
+    final rise = KitDraw.interval(t, 0, .45, KitMotion.land);
     final base = _base + Offset(0, 30 * (1 - rise));
-    final raise = KitDraw.interval(t, .35, .65, Curves.easeOutBack);
+    final raise = KitDraw.interval(t, .35, .65, KitMotion.land);
     // One wave: the hand swings twice about its raised place, dying away.
-    final waving = KitDraw.interval(t, .55, 1, Curves.linear);
+    final waving = KitDraw.interval(t, .55, 1, KitMotion.steady);
     final swing = waving <= 0 || waving >= 1
         ? 0.0
         : .45 * math.sin(waving * 4 * math.pi) * (1 - waving);

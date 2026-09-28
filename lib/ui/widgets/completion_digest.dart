@@ -1,9 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
 
 import '../../domain/completion_digest.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
+import '../kit/kit.dart';
+import 'product_states.dart' show showProductError;
 
 /// Deliberately formats only allowlisted counts and app-authored copy.
 class CompletionDigestCard extends StatelessWidget {
@@ -42,66 +45,67 @@ class CompletionDigestCard extends StatelessWidget {
     l10n.digestProvenance,
   ].join('\n');
 
+  /// Copies the app-authored summary, announced once (KitCopy, KIT-23: no
+  /// SnackBar); a clipboard that refuses says so in a kit alert.
+  Future<void> _copy(BuildContext context, AppLocalizations l10n) async {
+    try {
+      await KitCopy.copy(
+        context,
+        _sanitizedSummary(l10n),
+        announcement: l10n.digestCopySucceeded,
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      showProductError(context, error, title: l10n.digestCopyFailed);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsetsDirectional.symmetric(
+        horizontal: tokens.gutter,
+        vertical: tokens.space2,
+      ),
       child: Column(
         key: const Key('completion-digest-card'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            l10n.digestStatusUnverified,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(_changedFilesText(l10n)),
-          Text(_pendingDecisionsText(l10n)),
-          Text(l10n.digestOutcomesUnknown),
-          const SizedBox(height: 8),
-          Text(
-            l10n.digestProvenance,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          KitText(l10n.digestStatusUnverified, role: KitTextRole.rowTitle),
+          SizedBox(height: tokens.space2),
+          KitText(_changedFilesText(l10n)),
+          KitText(_pendingDecisionsText(l10n)),
+          KitText(l10n.digestOutcomesUnknown),
+          SizedBox(height: tokens.space2),
+          KitText(l10n.digestProvenance, role: KitTextRole.secondary),
           Wrap(
-            spacing: 8,
-            runSpacing: 4,
+            spacing: tokens.space2,
+            runSpacing: tokens.space1,
             children: [
-              TextButton(
+              KitButton.tertiary(
+                label: l10n.digestOpenConversation,
                 onPressed: onOpenConversation,
-                child: Text(l10n.digestOpenConversation),
               ),
-              TextButton(onPressed: onReview, child: Text(l10n.digestReview)),
+              KitButton.tertiary(label: l10n.digestReview, onPressed: onReview),
               if (onRunResults != null)
-                TextButton.icon(
+                KitButton.tertiary(
                   key: const Key('completion-digest-run-results'),
+                  label: l10n.digestRunResults,
+                  icon: AppIconography.checklist,
                   onPressed: onRunResults,
-                  icon: const Icon(AppIconography.checklist),
-                  label: Text(l10n.digestRunResults),
                 ),
-              TextButton.icon(
+              KitButton.tertiary(
                 key: const Key('completion-digest-copy'),
-                onPressed: () async {
-                  try {
-                    await Clipboard.setData(
-                      ClipboardData(text: _sanitizedSummary(l10n)),
-                    );
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.digestCopySucceeded)),
-                    );
-                  } catch (_) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.digestCopyFailed)),
-                    );
-                  }
-                },
-                icon: const Icon(AppIconography.copy),
-                label: Text(l10n.digestCopy),
+                label: l10n.digestCopy,
+                icon: AppIconography.copy,
+                onPressed: () => unawaited(_copy(context, l10n)),
               ),
-              TextButton(onPressed: onDismiss, child: Text(l10n.digestDismiss)),
+              KitButton.tertiary(
+                label: l10n.digestDismiss,
+                onPressed: onDismiss,
+              ),
             ],
           ),
         ],

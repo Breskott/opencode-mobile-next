@@ -121,7 +121,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get isolatedTaskScopeChanged =>
-      'تغيّر الخادم أو المشروع. أغلق هذه اللوحة وافتح المهمة مجددًا من المشروع المطلوب.';
+      'The server or project changed while this was open. Close it and start again from the project you want.';
 
   @override
   String get appTitle => 'OpenCode Mobile';
@@ -1997,9 +1997,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get quotaTitle => 'رصيد الاستخدام المتبقي';
 
   @override
-  String get quotaSource => 'خادم جمع البيانات';
-
-  @override
   String quotaSourceTitle(String profile, String provider) {
     return '$profile · $provider';
   }
@@ -2030,9 +2027,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get quotaLoading => 'جارٍ قراءة الاستخدام المتبقي';
-
-  @override
-  String get quotaForgetConsent => 'التوقف عن استخدام جامع البيانات';
 
   @override
   String get quotaCollectorAuth =>
@@ -2067,56 +2061,17 @@ class AppLocalizationsAr extends AppLocalizations {
       'لم يتمكن جامع البيانات من التحقق من الحساب المحدد. لا يُعرض رصيد استخدام. تحقّق من مصدر تسجيل الدخول على الخادم.';
 
   @override
-  String get quotaCodexAccount => 'فترات حساب Codex';
-
-  @override
-  String quotaPlan(String plan) {
-    return 'الخطة المبلّغ عنها: $plan';
-  }
-
-  @override
-  String quotaChecked(String time) {
-    return 'تم التحقق من القراءة $time';
-  }
-
-  @override
-  String get quotaStale => 'قراءة سابقة — حدّث للتحقق من أحدث رصيد استخدام.';
+  String get quotaStale =>
+      'This is the last reading. Refresh to see the latest.';
 
   @override
   String get quotaUseBlocked =>
       'يفيد مزوّد الخدمة بأن استخدام Codex المعتاد محظور حاليًا. نسب الفترات وحدها لا تحدد إمكانية الاستخدام.';
 
   @override
-  String get quotaNotReported => 'غير مبلّغ عنه';
-
-  @override
-  String get quotaPrimaryWindow => 'الفترة الأساسية';
-
-  @override
-  String get quotaSecondaryWindow => 'الفترة الثانوية';
-
-  @override
-  String quotaOtherWindow(int number) {
-    return 'فترة الاستخدام $number';
-  }
-
-  @override
-  String quotaRemaining(String percent) {
-    return 'المتبقي $percent';
-  }
-
-  @override
   String quotaUsed(String percent) {
     return 'المستخدم $percent';
   }
-
-  @override
-  String quotaResetAt(String time) {
-    return 'موعد التجديد المبلّغ عنه: $time';
-  }
-
-  @override
-  String get quotaResetUnknown => 'لم يُبلّغ عن موعد التجديد';
 
   @override
   String get quotaSourceDisclosure =>
@@ -2146,9 +2101,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get platformSecureStorageGuide =>
       'تُحفظ كلمات مرور الخوادم في مخزن بيانات الاعتماد الآمن لهذه المنصة، ولا تُخزَّن في تفضيلات التطبيق العادية.';
-
-  @override
-  String get quotaClaudeAccount => 'فترات تسجيل دخول Claude';
 
   @override
   String get quotaSourceBound =>
@@ -2260,9 +2212,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get quotaMiniMax => 'MiniMax';
 
   @override
-  String get quotaMiniMaxAccount => 'فترات اشتراك MiniMax';
-
-  @override
   String get quotaMiniMaxSourceBound =>
       'مرتبط بمفتاح MiniMax Subscription Key المضبوط في جامع البيانات. استجابة الحصة لا تحدد الحساب بشكل مستقل. تُعرض فقط نسب الرصيد العام المبلّغ عنها؛ وقد تنطبق حدود أخرى.';
 
@@ -2284,15 +2233,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get quotaGlm => 'GLM';
-
-  @override
-  String get quotaGlmAccount => 'مصدر GLM Coding Plan المضبوط';
-
-  @override
-  String get quotaGlmTokenWindow => 'فترة خطة الرموز المبلّغ عنها';
-
-  @override
-  String get quotaGlmMcpWindow => 'فترة MCP المبلّغ عنها';
 
   @override
   String get usageBudgetTitle => 'ميزانيات الاستهلاك الشخصية';
@@ -2339,18 +2279,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get usageBudgetClearTitle => 'مسح ميزانيات الاستهلاك؟';
 
   @override
-  String get monitorTitle => 'ما يحتاج إلى انتباه في الخوادم المحفوظة';
-
-  @override
   String get monitorScope =>
       'تشمل الأعداد آخر مشروع محدد لكل خادم، وليس جميع مشاريعه.';
 
   @override
   String get monitorDisclosure =>
-      'المراقبة متوقفة حتى تفعّلها لخادم. تُجرى الفحوص كل دقيقة تقريبًا أثناء فتح التطبيق. لا تتكرر الفحوص في الخلفية أكثر من مرة كل خمس دقائق، وفقط عندما يكون «إبقاء الاتصال نشطًا» مفعّلًا وخدمة Android قيد التشغيل. قد يوقف Android هذه الخدمة؛ ولا توجد مدة تشغيل متبقية مضمونة.';
-
-  @override
-  String get monitorRefresh => 'فحص الخوادم الخاضعة للمراقبة';
+      'Monitoring is off until you enable it for a server. Checks run about once a minute while this app is open. Background checks run no more often than every five minutes, only while Stay connected in the background is on and Android’s service is running. Android can stop that service; no remaining runtime is promised.';
 
   @override
   String get monitorOptIn => 'مراقبة هذا الخادم';
@@ -2374,36 +2308,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get monitorQuietEnd => 'نهاية ساعات الهدوء';
-
-  @override
-  String get monitorDisabled =>
-      'غير خاضع للمراقبة · الحاجة إلى انتباه غير معروفة';
-
-  @override
-  String get monitorWaiting => 'بانتظار فحص · الحاجة إلى انتباه غير معروفة';
-
-  @override
-  String get monitorChecking => 'جارٍ الفحص · الحاجة إلى انتباه غير معروفة';
-
-  @override
-  String get monitorUnavailable => 'تعذّر الفحص · الحاجة إلى انتباه غير معروفة';
-
-  @override
-  String get monitorWifiRequired =>
-      'بانتظار Wi-Fi · الحاجة إلى انتباه غير معروفة';
-
-  @override
-  String get monitorPaused =>
-      'متوقف مؤقتًا في الخلفية · الحاجة إلى انتباه غير معروفة';
-
-  @override
-  String get monitorCurrent => 'الرصد الحالي';
-
-  @override
-  String get monitorAllClear => 'لا طلبات معلّقة في المشروع المفحوص';
-
-  @override
-  String get monitorNoServers => 'أضف خادمًا لمراقبة ما يحتاج إلى انتباه.';
 
   @override
   String get monitorSaveFailed => 'تعذّر حفظ إعدادات المراقبة. أعد المحاولة.';
@@ -2431,9 +2335,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get monitorLastChecked => 'آخر تحقق';
 
   @override
-  String get monitorNextCheck => 'التحقق التالي';
-
-  @override
   String monitorRequestSummary(
     String profile,
     String kind,
@@ -2441,11 +2342,6 @@ class AppLocalizationsAr extends AppLocalizations {
     String time,
   ) {
     return '$profile · $kind\n$lastChecked: $time';
-  }
-
-  @override
-  String monitorLabeledTime(String label, String time) {
-    return '$label: $time';
   }
 
   @override
@@ -2479,11 +2375,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get monitorCheckInDue => 'حان وقت المتابعة';
-
-  @override
-  String monitorObservedBusy(int minutes, String since) {
-    return 'رُصد انشغال في فحوص امتدت $minutes دقيقة · أول فحص $since';
-  }
 
   @override
   String get quotaBudgetClearAll => 'مسح حدود مزوّدي الخدمة المحفوظة';
@@ -2590,33 +2481,24 @@ class AppLocalizationsAr extends AppLocalizations {
       'تُفحص المصادر بالتناوب، ثلاثة مصادر كحد أقصى في الدورة؛ وتحتاج القوائم الأطول إلى عدة دورات. تتطلب القراءات في الخلفية أن تكون خدمة الاتصال الحالية نشطة؛ وقد يوقفها Android. تنتهي صلاحية القراءات المعروضة وفقًا لجامع البيانات. تسجل تنبيهات الجهاز قراءات سابقة بلغت الحد، ولا تعرض الرصيد المتبقي الحالي. لا تبدّل هذه الصفحة خادمك النشط مطلقًا.';
 
   @override
-  String get quotaMonitorEmpty =>
-      'لا توجد مصادر مزوّدي خدمة خاضعة للمراقبة. اقرأ الاستخدام المتبقي من جامع بيانات موثوق، ثم فعّل المراقبة لذلك المصدر.';
-
-  @override
   String get quotaMonitorDisabled => 'المراقبة متوقفة.';
 
   @override
   String get quotaMonitorWaiting => 'بانتظار قراءة حديثة.';
 
   @override
-  String get quotaMonitorChecking => 'جارٍ فحص جامع البيانات الموثوق…';
-
-  @override
-  String get quotaMonitorCurrent =>
-      'قراءة حديثة من مصدر مزوّد الخدمة الذي وافقت عليه.';
+  String get quotaMonitorChecking => 'Checking now…';
 
   @override
   String get quotaMonitorPaused =>
-      'المراقبة متوقفة مؤقتًا. افتح التطبيق أو افحص خدمة الخلفية الحالية.';
+      'Paused. Checks start again when the app is open or Stay connected in the background is on.';
 
   @override
-  String get quotaMonitorWifiRequired =>
-      'بانتظار شبكة Wi-Fi مؤكدة. حالة الشبكة غير المعروفة لا تسمح بالقراءة.';
+  String get quotaMonitorWifiRequired => 'Waiting for Wi-Fi to check again.';
 
   @override
   String get quotaMonitorSourceChanged =>
-      'تغيّر حساب مزوّد الخدمة هذا أو مصدره، أو تعذّر التحقق منه. افتح «المتبقي»، واقرأه مجددًا، وراجع الموافقة الجديدة.';
+      'The account on this server changed, so checks stopped. Open Remaining usage on that server and read it again.';
 
   @override
   String get quotaMonitorSaveFailed =>
@@ -2885,99 +2767,79 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get isolatedTaskTitle => 'مهمة جديدة في شجرة عمل جديدة';
+  String get isolatedTaskTitle => 'Start in a separate copy';
 
   @override
-  String isolatedTaskIntro(String project) {
-    return 'ينشئ OpenCode شجرة عمل Git وفرعًا جديدين للمشروع $project ويشغّل إعداد المشروع. تبقى شجرة العمل ضمن «إدارة المشروع» حتى تزيلها من هناك.';
-  }
+  String get isolatedTaskIntro =>
+      'Works on its own branch, so it can\'t clash with your other conversations.';
 
   @override
-  String get isolatedTaskNameLabel => 'اسم شجرة العمل (اختياري)';
+  String get isolatedTaskNameLabel => 'Name of the copy (optional)';
 
   @override
-  String get isolatedTaskNameHelper => 'اتركه فارغًا ليختار OpenCode اسمًا.';
+  String get isolatedTaskNameHelper =>
+      'Leave it empty and a name is chosen for you.';
 
   @override
-  String get isolatedTaskStart => 'إنشاء وبدء';
+  String get isolatedTaskStart => 'Start';
 
   @override
-  String get isolatedTaskCreating => 'جارٍ إنشاء شجرة العمل…';
+  String get isolatedTaskCreating => 'Making the copy…';
 
   @override
   String get isolatedTaskCreatingHint =>
-      'التوقف الآن لا يلغي عملية إنشاء ربما بدأ الخادم تنفيذها بالفعل.';
+      'If you stop waiting, the copy may still be made. You\'ll find it under Project › Worktrees.';
 
   @override
   String isolatedTaskPreparing(String name) {
-    return 'تم إنشاء $name. يعمل OpenCode على تجهيزها…';
+    return 'Setting up $name…';
   }
 
   @override
   String isolatedTaskReady(String name) {
-    return '$name جاهزة. جارٍ فتح محادثة فارغة…';
+    return '$name is ready. Opening the conversation…';
   }
 
   @override
   String isolatedTaskReadyIdle(String name) {
-    return '$name جاهزة.';
+    return '$name is ready, but the conversation didn\'t open.';
   }
 
   @override
   String isolatedTaskUnconfirmed(String name) {
-    return 'تم إنشاء $name، لكن حالة إعدادها غير مؤكدة.';
+    return '$name is made, but its setup hasn\'t reported back.';
   }
 
   @override
   String get isolatedTaskUnconfirmedHint =>
-      'يمكنك مواصلة الانتظار أو فتحها الآن. ربما لا يزال الإعداد جاريًا.';
+      'Setup may still be running. Keep waiting, or start in it now.';
 
   @override
-  String get isolatedTaskFailed => 'تعذّر على OpenCode تجهيز شجرة العمل.';
-
-  @override
-  String get isolatedTaskCreateFailed => 'تعذّر إنشاء شجرة العمل.';
-
-  @override
-  String isolatedTaskFailedKept(String name) {
-    return 'تبقى $name ضمن «إدارة المشروع». لم يُحذف شيء.';
+  String isolatedTaskFailed(String name) {
+    return 'Setup failed in $name';
   }
 
   @override
-  String get isolatedTaskCancelled => 'تم التوقف عن الانتظار.';
+  String get isolatedTaskCreateFailed => 'Couldn\'t make the copy';
 
   @override
-  String isolatedTaskCancelledKept(String name) {
-    return 'تم إنشاء $name وهي باقية ضمن «إدارة المشروع».';
-  }
-
-  @override
-  String get isolatedTaskCancelledUnknown =>
-      'إذا أنشأ OpenCode شجرة العمل، فستظهر ضمن «إدارة المشروع».';
+  String get isolatedTaskCancelled => 'Stopped waiting.';
 
   @override
   String isolatedTaskOpening(String name) {
-    return 'جارٍ فتح محادثة فارغة في $name…';
+    return 'Opening the conversation in $name…';
   }
 
   @override
   String isolatedTaskOpened(String name) {
-    return 'المحادثة جاهزة في $name. لم يُرسل شيء.';
+    return 'The conversation in $name is ready.';
   }
 
   @override
-  String isolatedTaskBranch(String branch) {
-    return 'الفرع $branch';
-  }
+  String get isolatedTaskStopWaiting => 'Stop waiting';
 
   @override
-  String get isolatedTaskStopWaiting => 'التوقف عن الانتظار';
-
-  @override
-  String get isolatedTaskKeepWaiting => 'مواصلة الانتظار';
-
-  @override
-  String get isolatedTaskOpenAnyway => 'فتح على أي حال';
+  String get isolatedTaskKeepWaiting => 'Keep waiting';
 
   @override
   String get isolatedTaskRetryOpen => 'إعادة المحاولة';
@@ -4550,7 +4412,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SettingsUi34 =>
-      'يسمح Android 15 والإصدارات الأحدث بست ساعات من هذا العمل لكل 24 ساعة ثم يوقفه. يعطّل التطبيق المفتاح ويُعلمك عند حدوث ذلك.';
+      'Android stops this after 6 hours a day. The app will tell you when it does.';
 
   @override
   String get e7SettingsUi35 => 'الصدفة الافتراضية';
@@ -6775,9 +6637,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LibraryLocalCommand => 'أمر محلي';
 
   @override
-  String get e7LibraryTimeoutInMilliseconds => 'المهلة بالمللي ثانية';
-
-  @override
   String get e7LibraryOptional => 'اختياري';
 
   @override
@@ -6793,10 +6652,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get e7LibraryEnterAValidHTTPOrHTTPSURL =>
       'أدخل رابط HTTP أو HTTPS صالحًا لا يحتوي على بيانات اعتماد';
-
-  @override
-  String get e7LibraryOptionalEnterOneKEYVALUEPairPer =>
-      'اختياري. أدخل زوجًا واحدًا بصيغة KEY=VALUE في كل سطر.';
 
   @override
   String get e7LibraryDetectOAuthAutomatically => 'اكتشاف OAuth تلقائيًا';
@@ -9146,28 +9001,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiEditorTitle => 'فريق الذكاء الاصطناعي (اختياري)';
 
   @override
-  String get teamUiHostGuideDocs =>
-      'الدليل الكامل بجميع الأوامر موجود في docs/ai-team-host.md داخل مستودع التطبيق.';
-
-  @override
   String get teamUiHostGuideIntro =>
       'كل شيء يبقى داخل شبكة Tailscale الخاصة بك؛ ولا يُنشر أي شيء على الإنترنت.';
 
   @override
   String get teamUiHostGuideStep1 =>
-      'ثبّت Gas City على الحاسوب: gc وbd وdolt ضمن PATH.';
+      'Install Gas City\'s three tools, gc, bd and dolt, on your PATH; the full guide has each download with its checksum. Then check that all three are found:';
 
   @override
   String get teamUiHostGuideStep2 =>
-      'أنشئ مدينة بجوار مشروعك وأضف المشروع إليها: gc init ثم gc rig add.';
+      'Save the city file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:';
 
   @override
   String get teamUiHostGuideStep3 =>
-      'شغّله بالأمر gc start وتأكد أن http://127.0.0.1:8372/v0/city/<name>/health يستجيب.';
+      'Start the team and check that it answers:';
 
   @override
   String get teamUiHostGuideStep4 =>
-      'افتح المنفذ 8372 على عنوان Tailscale الخاص بالحاسوب، ثم أضفه هنا بصيغة http://100.x.x.x:8372 مع اسم المدينة.';
+      'Download the front that lets this phone in over Tailscale, check it and start it, with your own Tailscale login after --allow. Then add it here: the computer\'s Tailscale address with the port in the command, and the team\'s name.';
 
   @override
   String get teamUiHostGuideTitle => 'شغّل فريق ذكاء اصطناعي على حاسوبك';
@@ -10098,10 +9949,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiGateAnswerRejectedNoMessage => 'لم يقبل المضيف هذه الإجابة.';
 
   @override
-  String get teamUiGateAnswerChipUnconfirmedSemantics =>
-      'غير مؤكد، افتح لإعادة المحاولة';
-
-  @override
   String get teamUiGateAnswerConfirmApproveTitle =>
       'الموافقة على هذا الإجراء المدمّر؟';
 
@@ -10237,21 +10084,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String teamUiStartRunSend(String planner) {
     return 'إرسال إلى المخطِّط';
   }
-
-  @override
-  String get teamUiStartRunPlannerOffTitle =>
-      'المخطِّط (Mayor) متوقف على هذا المضيف';
-
-  @override
-  String get teamUiStartRunPlannerOffBody =>
-      'أيقظه على المضيف أو بدّله إلى الملف الكامل، ثم عد.';
-
-  @override
-  String get teamUiStartRunPlannerMissingTitle => 'لا مخطِّط على هذا المضيف';
-
-  @override
-  String get teamUiStartRunPlannerMissingBody =>
-      'حزمة Gas Town مع عمدتها لا تعمل هنا. يوضح دليل المضيف كيفية تفعيلها.';
 
   @override
   String get teamUiStartRunHostGuide => 'دليل المضيف';
@@ -11195,9 +11027,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String notifyHubBackgroundSummary(String state) {
     return 'الخلفية: $state';
   }
-
-  @override
-  String get monitorNotificationSettings => 'إعدادات الإشعارات';
 
   @override
   String get usageSectionSpent => 'المصروف';
@@ -16759,13 +16588,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get isolatedTaskProjectFolder => 'Project folder';
 
   @override
-  String get isolatedTaskStageCreate => 'Creating the worktree';
+  String get isolatedTaskStageCreate => 'Making the copy';
 
   @override
   String get isolatedTaskStagePrepare => 'Running the project setup';
 
   @override
-  String get isolatedTaskStageOpen => 'Opening a conversation';
+  String get isolatedTaskStageOpen => 'Opening the conversation';
 
   @override
   String get isolatedTaskUsually => 'Usually 1–3 minutes';
@@ -19291,7 +19120,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mcpSetupAdvancedRemote => 'Sign-in detection and timeout';
 
   @override
-  String get mcpSetupAdvancedLocal => 'Working folder, environment and timeout';
+  String get mcpSetupAdvancedLocal => 'Working folder and timeout';
 
   @override
   String get mcpSetupNoProject => 'Open a project first';
@@ -20357,17 +20186,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get monitorBackgroundChecks => 'Background checks';
 
   @override
-  String monitorRowLastChecked(String when) {
-    return 'Last checked $when';
-  }
-
-  @override
-  String get monitorRowNotChecked => 'Not checked yet';
-
-  @override
-  String get monitorRowOff => 'Off for every server';
-
-  @override
   String get settingsTryDemo => 'Try the demo';
 
   @override
@@ -20959,7 +20777,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String quotaCollectorStepInstall(String server) {
-    return 'Ask whoever runs $server to install the quota collector from tool/quota in the app’s repository. It needs Node 20 or later.';
+    return 'Ask whoever runs $server to install the quota collector. It needs Node 20 or later.';
   }
 
   @override
@@ -23221,4 +23039,376 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamDispatchHostWords => 'The team’s reply';
+
+  @override
+  String projectHubChangedFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files changed',
+      one: '1 file changed',
+      zero: 'No changes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectHubTerminalsRunning(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count running',
+      one: '1 running',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get quotaCollectorGuide => 'Open the collector guide';
+
+  @override
+  String quotaCollectorFrom(String provider, String server) {
+    return '$provider, from the quota collector on $server';
+  }
+
+  @override
+  String quotaCollectorNoWindows(String provider, String server) {
+    return 'The quota collector on $server reported no limits for $provider.';
+  }
+
+  @override
+  String quotaStopCollector(String server) {
+    return 'Stop using the quota collector on $server';
+  }
+
+  @override
+  String get quotaStopCollectorDetail =>
+      'The reading goes away, and Remaining asks you again before the next read.';
+
+  @override
+  String get quotaCollectorAddressLabel => 'Collector address';
+
+  @override
+  String get quotaPlanLabel => 'Plan';
+
+  @override
+  String get quotaReadAtLabel => 'Read at';
+
+  @override
+  String get teamUiHostGuideOpen => 'Open the full guide';
+
+  @override
+  String hostServiceInstallChecked(String release) {
+    return 'Downloads the script from release $release and checks its SHA-256 checksum first. If the file was changed, nothing runs.';
+  }
+
+  @override
+  String get hostServiceWhatThisDoes => 'What this does';
+
+  @override
+  String get hostServiceWhatLinux =>
+      'Needs Linux with systemd, such as Ubuntu. It does not run on macOS or Windows.';
+
+  @override
+  String get hostServiceWhatInstall =>
+      'Installs OpenCode with its official installer if it is not there yet.';
+
+  @override
+  String get hostServiceWhatService =>
+      'Adds a service for your account that keeps OpenCode running after reboots and closed terminals. It listens on that computer only.';
+
+  @override
+  String get hostServiceWhatPassword =>
+      'Makes a password for the server and keeps it in a file only your account can read.';
+
+  @override
+  String get hostServicePinnedCommit => 'Script version';
+
+  @override
+  String get hostServiceChecksum => 'SHA-256 checksum';
+
+  @override
+  String get mcpAddBrowseTitle => 'Browse the catalogue';
+
+  @override
+  String get mcpAddBrowseDetail =>
+      'Servers from the public MCP registry, turned on with a switch';
+
+  @override
+  String get mcpAddBrowseNone =>
+      'No catalogue for this server: it doesn\'t accept new MCP servers from the app.';
+
+  @override
+  String get mcpAddManualTitle => 'Enter manually';
+
+  @override
+  String get mcpAddManualDetail =>
+      'Type its address, or the command that starts it';
+
+  @override
+  String get mcpCatalogTitle => 'MCP catalogue';
+
+  @override
+  String get mcpCatalogConsentTitle => 'Load the MCP registry?';
+
+  @override
+  String get mcpCatalogConsentBody =>
+      'The app asks registry.modelcontextprotocol.io for its list of MCP servers. It sends only what you search for, nothing about you or your servers.';
+
+  @override
+  String get mcpCatalogConsentLoad => 'Load the list';
+
+  @override
+  String get mcpCatalogForget => 'Stop using the registry';
+
+  @override
+  String get mcpCatalogForgetFailed =>
+      'Couldn\'t forget the saved registry list. Try again.';
+
+  @override
+  String get mcpCatalogSearch => 'Search the registry';
+
+  @override
+  String get mcpCatalogInventoryFailed =>
+      'Couldn\'t read this server\'s MCP servers';
+
+  @override
+  String get mcpCatalogInventoryFailedBody =>
+      'The switches need to know what is already on. Check the connection, then try again.';
+
+  @override
+  String get mcpCatalogFailed => 'Couldn\'t load the public MCP registry';
+
+  @override
+  String get mcpCatalogSearchFailed =>
+      'Couldn\'t search the public MCP registry';
+
+  @override
+  String get mcpCatalogFailedBody =>
+      'Check the phone\'s internet connection, then try again. You can still enter a server by hand.';
+
+  @override
+  String get mcpCatalogEmpty => 'The registry listed no servers';
+
+  @override
+  String mcpCatalogNoMatch(String query) {
+    return 'Nothing in the registry matches “$query”';
+  }
+
+  @override
+  String get mcpCatalogEmptyBody =>
+      'Try other words, or enter the server by hand.';
+
+  @override
+  String get mcpCatalogStale =>
+      'Couldn\'t refresh the list from the registry. These are the listings loaded earlier.';
+
+  @override
+  String get mcpCatalogPriceNote =>
+      'The registry lists no prices. A hosted server\'s owner may charge for it or ask for an account.';
+
+  @override
+  String get mcpCatalogAdding => 'Adding…';
+
+  @override
+  String get mcpCatalogRemoving => 'Removing…';
+
+  @override
+  String get mcpCatalogCannotRemove =>
+      'On. This server keeps it in its configuration, and the app can\'t remove it.';
+
+  @override
+  String get mcpCatalogNeedsDocker =>
+      'Runs in Docker. To add it anyway, use Enter manually.';
+
+  @override
+  String get mcpCatalogNoEndpoint =>
+      'Lists nothing the app can start. To add it anyway, use Enter manually.';
+
+  @override
+  String mcpCatalogHostedBy(String host) {
+    return 'Hosted by $host';
+  }
+
+  @override
+  String get mcpCatalogNeedsNode => 'Needs Node on the server';
+
+  @override
+  String get mcpCatalogNeedsNodePhone => 'Needs Node on this phone';
+
+  @override
+  String get mcpCatalogNeedsPython => 'Needs Python with uv on the server';
+
+  @override
+  String get mcpCatalogNeedsKey => 'Needs an API key';
+
+  @override
+  String get mcpCatalogNeedsSettings => 'Needs extra settings';
+
+  @override
+  String mcpCatalogNodeTitle(String title) {
+    return '$title runs with Node';
+  }
+
+  @override
+  String get mcpCatalogNodeAdd => 'Add Node to this phone';
+
+  @override
+  String get mcpCatalogNodeAddDetail =>
+      'Opens This phone. Choose Add tools, then Node, and turn this on again once it\'s added.';
+
+  @override
+  String get mcpCatalogNodeHave => 'Node is already on this phone';
+
+  @override
+  String get mcpCatalogNodeHaveDetail => 'Check the details and add it';
+
+  @override
+  String mcpSetupFromCatalog(String listing, String server) {
+    return 'Filled in from “$listing” in the public MCP registry. Check it before you add it: $server will run or connect to what is here.';
+  }
+
+  @override
+  String get mcpSetupThisServer => 'this server';
+
+  @override
+  String mcpSetupValueRequired(String name) {
+    return 'Enter a value for $name';
+  }
+
+  @override
+  String get mcpSetupNameFromCatalog => 'The registry listing needs this one';
+
+  @override
+  String get mcpVariableName => 'Variable name';
+
+  @override
+  String get mcpVariableValue => 'Variable value';
+
+  @override
+  String get mcpAddVariable => 'Add another variable';
+
+  @override
+  String get mcpRemoveVariable => 'Remove variable';
+
+  @override
+  String get mcpSetupTimeoutSeconds => 'Timeout in seconds';
+
+  @override
+  String get isolatedTaskPromptLabel => 'What should it work on?';
+
+  @override
+  String get isolatedTaskPromptHelper =>
+      'Sent once the copy is ready. Leave it empty to write it in the conversation.';
+
+  @override
+  String get isolatedTaskOptions => 'Options';
+
+  @override
+  String get isolatedTaskPreparingHint =>
+      'If you stop waiting, the copy stays. You\'ll find it under Project › Worktrees.';
+
+  @override
+  String get isolatedTaskFailedBody =>
+      'The copy is made, but its setup didn\'t finish. Start in it anyway, or remove it.';
+
+  @override
+  String isolatedTaskSending(String name) {
+    return 'Sending your task to $name…';
+  }
+
+  @override
+  String get isolatedTaskSendFailed => 'Couldn\'t send your task';
+
+  @override
+  String get isolatedTaskSendFailedBody =>
+      'It\'s waiting in the conversation\'s message box, ready to send.';
+
+  @override
+  String get isolatedTaskSendFailedLost =>
+      'Copy your task below and send it in the conversation.';
+
+  @override
+  String get isolatedTaskOpenConversation => 'Open the conversation';
+
+  @override
+  String get isolatedTaskStartAnyway => 'Start anyway';
+
+  @override
+  String get isolatedTaskRemove => 'Remove the copy';
+
+  @override
+  String isolatedTaskRemoveTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get isolatedTaskRemoveBody =>
+      'Its folder and branch are deleted. Your project itself is not touched.';
+
+  @override
+  String isolatedTaskRemoved(String name) {
+    return 'Removed $name. You can start again.';
+  }
+
+  @override
+  String get isolatedTaskSetupOutput => 'What the setup reported';
+
+  @override
+  String get isolatedTaskCopyFolder => 'Folder of the copy';
+
+  @override
+  String get isolatedTaskBranchLabel => 'Branch';
+
+  @override
+  String get isolatedTaskStageSend =>
+      'Opening the conversation and sending your task';
+
+  @override
+  String get teamStartRunBlockedTitle => 'Team can\'t take tasks';
+
+  @override
+  String get teamStartRunPlannerOff => 'The planner is switched off';
+
+  @override
+  String get teamStartRunPlannerOffWakeBody =>
+      'The planner turns each task into steps for the team. Wake it to give the team your task.';
+
+  @override
+  String get teamStartRunPlannerOffHostBody =>
+      'The planner turns each task into steps for the team, and this app can\'t switch it on. Switch it on where the team runs, then try again.';
+
+  @override
+  String get teamStartRunNoPlanner => 'This team has no planner';
+
+  @override
+  String get teamStartRunNoPlannerBody =>
+      'A planner turns each task into steps for the team. Add one where the team runs, then try again.';
+
+  @override
+  String get teamStartRunNoProject => 'This team has no project yet';
+
+  @override
+  String get teamStartRunNoProjectBody =>
+      'Tasks go straight to a project\'s worker. Add a project to the team, then try again.';
+
+  @override
+  String get teamStartRunWake => 'Wake the planner';
+
+  @override
+  String get teamStartRunWakeAsked =>
+      'Waking the planner. The task form opens as soon as it\'s awake.';
+
+  @override
+  String get teamStartRunStillOff => 'The planner is still switched off.';
+
+  @override
+  String get teamStartRunStillNoProject => 'The team still has no project.';
+
+  @override
+  String get teamStartRunWakeRefused => 'Couldn\'t wake the planner';
+
+  @override
+  String get teamStartRunWakeRefusedNext =>
+      'Try again, or switch it on where the team runs.';
 }

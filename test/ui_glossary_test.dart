@@ -1152,6 +1152,8 @@ const _properNouns = <String>{
   'Git',
   'Ubuntu',
   'Linux',
+  'Node',
+  'Python',
   'Arabic',
   'English',
   'Google',

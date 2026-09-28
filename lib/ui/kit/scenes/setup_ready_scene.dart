@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../kit_illustration.dart';
 import 'setup_cast.dart';
+import '../kit_motion.dart';
 
 /// Setup finished (design standard §10, a celebration): the phone lights,
 /// the portal on its screen springs open around a check, rays burst out
@@ -76,7 +77,7 @@ class SetupReadyScene extends KitScene {
 
     // The portal springs open: closed brackets overshoot to open.
     final draw = KitDraw.interval(t, .25, .5);
-    final open = KitDraw.interval(t, .45, .8, Curves.easeOutBack);
+    final open = KitDraw.interval(t, .45, .8, KitMotion.land);
     SetupCast.portal(
       canvas,
       center: _portal,
@@ -95,7 +96,7 @@ class SetupReadyScene extends KitScene {
     );
 
     // Rays shoot out and fade: the moment, not the rest.
-    final burst = KitDraw.interval(t, .55, 1, Curves.easeOutCubic);
+    final burst = KitDraw.interval(t, .55, 1, KitMotion.enter);
     if (burst > 0 && burst < 1) {
       final pen = KitDraw.pen(
         KitDraw.fade(p.accent, 1 - burst),
@@ -113,8 +114,8 @@ class SetupReadyScene extends KitScene {
     }
 
     // What stays: sparkles and confetti.
-    final big = KitDraw.interval(t, .6, .9, Curves.easeOutBack);
-    final small = KitDraw.interval(t, .7, 1, Curves.easeOutBack);
+    final big = KitDraw.interval(t, .6, .9, KitMotion.land);
+    final small = KitDraw.interval(t, .7, 1, KitMotion.land);
     SetupCast.sparkle(canvas, const Offset(126, 30), 10, p.accent, pop: big);
     SetupCast.sparkle(
       canvas,
@@ -135,7 +136,7 @@ class SetupReadyScene extends KitScene {
         t,
         .6 + index * .05,
         .85 + index * .03,
-        Curves.easeOutBack,
+        KitMotion.land,
       );
       if (pop <= 0) continue;
       final d = Offset(math.cos(angle), math.sin(angle)) * 3.5 * pop;

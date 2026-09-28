@@ -536,7 +536,7 @@ void main() {
       // One step: no "0 of 1" on the status line; the step is a row.
       expect(key('team-task-details-progress'), findsNothing);
       expect(key('team-task-details-step-oc-loy'), findsOneWidget);
-      expect(find.bySemanticsLabel('Stage 1 of 4: Waiting'), findsOneWidget);
+      expect(find.bySemanticsLabel('Stage 1 of 4: Planned'), findsOneWidget);
       expect(key('team-task-details-stages'), findsNothing);
       final fold = await openTechnical(tester);
       expect(
@@ -571,7 +571,7 @@ void main() {
         _textOf(tester, key('team-task-details-elapsed')).data,
         '20 h 19 min since hand-off',
       );
-      expect(find.bySemanticsLabel('Stage 3 of 4: Reviewing'), findsOneWidget);
+      expect(find.bySemanticsLabel('Stage 3 of 4: In review'), findsOneWidget);
       expect(find.text('Waiting for a worker'), findsNothing);
       final cycle = controller.cycleFor('oc-loy');
       expect(cycle.reachedAt[DispatchStep.handedToMerge], handedAt);

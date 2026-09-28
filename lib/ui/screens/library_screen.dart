@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../api/mcp_oauth.dart';
 import '../../l10n/app_localizations.dart';
@@ -19,6 +18,7 @@ import '../widgets/safety_confirms.dart';
 import '../widgets/product_states.dart';
 import '../widgets/command_sheet.dart';
 import '../widgets/run_command_dialog.dart';
+import 'mcp_catalog_screen.dart';
 import 'mcp_setup_screen.dart';
 
 part 'library/integrations_screen.dart';

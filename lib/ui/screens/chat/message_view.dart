@@ -238,10 +238,16 @@ class _BackgroundShellResultRowState extends State<BackgroundShellResultRow> {
         expanded: _open,
         onExpansionChanged: (open) => setState(() => _open = open),
         body: [
-          TerminalView(
+          KitTerminalView.output(
             key: const Key('background-shell-output'),
             command: result.command,
             output: result.output,
+            onOpenFull: (text) => unawaited(
+              showFilePreviewSheet(
+                context,
+                FilePreviewData(name: 'terminal.txt', text: text),
+              ),
+            ),
           ),
         ],
       ),
@@ -1116,7 +1122,7 @@ class _MessageView extends StatelessWidget {
   /// delete): the prompt's long-press and right-click menu, and the reply's
   /// More, long-press and right-click menu (without Copy, which the turn's
   /// footer shows beside More).
-  final List<ContextMenuAction> Function()? contextActions;
+  final List<KitMenuItem> Function()? contextActions;
   final ToolOutputFileLoader filePreviewLoader;
   final ToolOutputFileAction? onAttachFile;
   final ToolOutputFileAction onDownloadFile;
@@ -1194,9 +1200,8 @@ class _MessageView extends StatelessWidget {
       context.findAncestorStateOfType<_ChatScreenState>();
 
   List<KitMenuItem> _menuItems({bool withCopy = true}) => [
-    for (final action in contextActions?.call() ?? const <ContextMenuAction>[])
-      if (withCopy || action.menuKey != const ValueKey('message-menu-copy'))
-        action.toKitMenuItem(),
+    for (final item in contextActions?.call() ?? const <KitMenuItem>[])
+      if (withCopy || item.key != const ValueKey('message-menu-copy')) item,
   ];
 
   @override

@@ -5,7 +5,7 @@
 /// |---|---|
 /// | [KitScreen] | §1 screen: header, one loading bar, body, pinned bottom |
 /// | [KitLayout], [KitWindow] | kit v2 §8.1 window classes: every part adapts to phone, tablet and PC |
-/// | [KitSheet], [showKitSheet], [KitSheetHeight], [KitDraft] | kit v2 §1.1 the one sheet frame, its draft and unsaved-input guard |
+/// | [KitSheet], [showKitSheet], [showKitFramedSheet], [KitSheetHeight], [KitDraft] | kit v2 §1.1 the one sheet frame, a body that draws its own frame, its draft and unsaved-input guard |
 /// | [KitConfirmSheet], [showKitConfirm], [KitConfirmKind] | kit v2 §1.2 the one confirmation (§4.1 undo, confirm or neither) |
 /// | [KitConsequences], [KitConsequence] | §5 a sheet's panel of one-line consequences |
 /// | [KitTokens] | kit v2 the colours (the theme's [ThemeRoles]), radii, heights, scrim, type and spacing every part reads (a ThemeExtension) |

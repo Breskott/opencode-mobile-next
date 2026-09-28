@@ -13,7 +13,6 @@ import 'package:opencode_mobile/state/profile_monitor.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/provider_quota_monitor.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/screens/profile_monitor_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -429,23 +428,6 @@ void main() {
     );
     expect(stored['enabled'], isTrue);
     expect(stored['notifications'], isFalse);
-    await _finish(tester, controller);
-  });
-
-  testWidgets('the live attention list links to Notification settings', (
-    tester,
-  ) async {
-    final controller = await _controller();
-    await tester.pumpWidget(_app(ProfileMonitorScreen(controller: controller)));
-    await tester.pump();
-    // The list holds no settings of its own.
-    expect(find.byType(Switch), findsNothing);
-    expect(find.text(_en.monitorQuiet), findsNothing);
-
-    await tester.tap(_key('monitor-notification-settings'));
-    await tester.pumpAndSettle();
-    expect(find.byType(NotificationsSettingsScreen), findsOneWidget);
-    expect(_key('monitor-enabled-profile-1'), findsOneWidget);
     await _finish(tester, controller);
   });
 

@@ -39,7 +39,7 @@
     }
   },
   "servicesRefresh": "Refresh status",
-  "isolatedTaskScopeChanged": "The server or project changed. Close this sheet and reopen the task from the intended project.",
+  "isolatedTaskScopeChanged": "The server or project changed while this was open. Close it and start again from the project you want.",
   "@@locale": "en",
   "appTitle": "OpenCode Mobile",
   "@appTitle": {
@@ -1052,10 +1052,6 @@
   "@quotaTitle": {
     "description": "Read-only subscription quota screen title"
   },
-  "quotaSource": "Collector server",
-  "@quotaSource": {
-    "description": "Label above the explicitly selected server origin"
-  },
   "quotaSourceTitle": "{profile} · {provider}",
   "@quotaSourceTitle": {
     "description": "Selected quota source profile and provider heading",
@@ -1100,10 +1096,6 @@
   "@quotaLoading": {
     "description": "Progress semantics for a quota read"
   },
-  "quotaForgetConsent": "Stop using this collector",
-  "@quotaForgetConsent": {
-    "description": "Clear this visit's consent and in-memory quota snapshot; no remote mutation"
-  },
   "quotaCollectorAuth": "The collector route did not accept this server sign-in. Ask the server operator to check its authentication setup.",
   "@quotaCollectorAuth": {
     "description": "Collector or proxy authentication failure, distinct from provider reauthentication"
@@ -1136,65 +1128,13 @@
   "@quotaAccountUnverified": {
     "description": "Missing or mismatched account identity must not display measurements"
   },
-  "quotaCodexAccount": "Codex account windows",
-  "@quotaCodexAccount": {
-    "description": "Heading for Codex entitlements, not all ChatGPT product allowances"
-  },
-  "quotaPlan": "Reported plan: {plan}",
-  "@quotaPlan": {
-    "description": "Provider-reported plan label, from a safe allowlist",
-    "placeholders": {
-      "plan": {
-        "type": "String"
-      }
-    }
-  },
-  "quotaChecked": "Snapshot checked {time}",
-  "@quotaChecked": {
-    "description": "Collector snapshot time, formatted in the device locale",
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "quotaStale": "Previous snapshot — refresh to check the latest allowance.",
+  "quotaStale": "This is the last reading. Refresh to see the latest.",
   "@quotaStale": {
     "description": "An expired, interrupted or failed-refresh snapshot is not live provider truth"
   },
   "quotaUseBlocked": "The provider reports that ordinary Codex use is currently blocked. Window percentages alone do not determine access.",
   "@quotaUseBlocked": {
     "description": "Explicit provider eligibility signal, independent of quota arithmetic"
-  },
-  "quotaNotReported": "Not reported",
-  "@quotaNotReported": {
-    "description": "Unknown allowance; never means zero or unlimited"
-  },
-  "quotaPrimaryWindow": "Primary window",
-  "@quotaPrimaryWindow": {
-    "description": "First provider rate-limit window without assuming a five-hour duration"
-  },
-  "quotaSecondaryWindow": "Secondary window",
-  "@quotaSecondaryWindow": {
-    "description": "Second provider rate-limit window without assuming a weekly duration"
-  },
-  "quotaOtherWindow": "Usage window {number}",
-  "@quotaOtherWindow": {
-    "description": "Safe display name for an additional bounded window",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
-  "quotaRemaining": "{percent} remaining",
-  "@quotaRemaining": {
-    "description": "Percentage remaining within one reported provider window",
-    "placeholders": {
-      "percent": {
-        "type": "String"
-      }
-    }
   },
   "quotaUsed": "{percent} used",
   "@quotaUsed": {
@@ -1204,19 +1144,6 @@
         "type": "String"
       }
     }
-  },
-  "quotaResetAt": "Reported reset: {time}",
-  "@quotaResetAt": {
-    "description": "Absolute provider reset time in device locale",
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "quotaResetUnknown": "Reset time not reported",
-  "@quotaResetUnknown": {
-    "description": "Missing provider reset time is not fabricated"
   },
   "quotaSourceDisclosure": "Read-only snapshot from the optional collector using an internal provider endpoint. Other product allowances, model-specific limits, credits and eligibility are not included. Missing data is unknown, not unlimited.",
   "@quotaSourceDisclosure": {
@@ -1249,10 +1176,6 @@
   "platformSecureStorageGuide": "Server passwords use this platform's secure credential storage. They are not stored in plain app preferences.",
   "@platformSecureStorageGuide": {
     "description": "Platform-neutral storage copy rather than incorrectly promising Linux libsecret everywhere"
-  },
-  "quotaClaudeAccount": "Claude login windows",
-  "@quotaClaudeAccount": {
-    "description": "Claude allowances for the operator-selected OAuth login"
   },
   "quotaSourceBound": "Tied to the collector's configured Claude login. The usage response does not independently identify the account.",
   "@quotaSourceBound": {
@@ -1312,7 +1235,6 @@
   "demoSetUpServer": "Set up your own server",
   "handoffCopyCommand": "Copy command",
   "quotaMiniMax": "MiniMax",
-  "quotaMiniMaxAccount": "MiniMax subscription windows",
   "quotaMiniMaxSourceBound": "Tied to the collector's configured MiniMax Subscription Key. The quota response does not independently identify the account. Only reported general-pool percentages are shown; other limits may apply.",
   "managedHealthLifetime": "Android may stop either app. Keeping the mobile connection alive does not guarantee the Termux server will keep running overnight.",
   "quotaBudgetOff": "Off",
@@ -1326,9 +1248,6 @@
   },
   "quotaBudgetSaveFailed": "Could not save this budget change. Your last saved settings remain in effect.",
   "quotaGlm": "GLM",
-  "quotaGlmAccount": "Configured GLM Coding Plan source",
-  "quotaGlmTokenWindow": "Reported token-plan window",
-  "quotaGlmMcpWindow": "Reported MCP window",
   "usageBudgetTitle": "Budgets",
   "usageBudgetDescription": "Budgets use all reported consumption for the selected server, project, timezone and date-window start. Model filters do not change them. A new window start needs a new budget. These do not change subscription allowances or stop requests.",
   "usageBudgetUsd": "Set USD budget",
@@ -1355,10 +1274,8 @@
   "usageBudgetClearAll": "Clear both budgets",
   "usageBudgetClearDescription": "Remove all current and past consumption budgets for this saved server? Provider thresholds are kept.",
   "usageBudgetClearTitle": "Clear consumption budgets?",
-  "monitorTitle": "Saved-server attention",
   "monitorScope": "Counts cover each server’s last selected project, not every project on that server.",
-  "monitorDisclosure": "Monitoring is off until you enable it for a server. Checks run about once a minute while this app is open. Background checks run no more often than every five minutes, only while Keep live is already on and Android’s service is running. Android can stop that service; no remaining runtime is promised.",
-  "monitorRefresh": "Check monitored servers",
+  "monitorDisclosure": "Monitoring is off until you enable it for a server. Checks run about once a minute while this app is open. Background checks run no more often than every five minutes, only while Stay connected in the background is on and Android’s service is running. Android can stop that service; no remaining runtime is promised.",
   "monitorOptIn": "Monitor this server",
   "monitorOptInDetail": "Check pending permissions, questions and forms in its last selected project.",
   "monitorNotifications": "Notify when attention is needed",
@@ -1366,15 +1283,6 @@
   "monitorQuiet": "Quiet hours",
   "monitorQuietStart": "Quiet hours start",
   "monitorQuietEnd": "Quiet hours end",
-  "monitorDisabled": "Not monitored · attention unknown",
-  "monitorWaiting": "Waiting for a check · attention unknown",
-  "monitorChecking": "Checking · attention unknown",
-  "monitorUnavailable": "Could not check · attention unknown",
-  "monitorWifiRequired": "Waiting for Wi-Fi · attention unknown",
-  "monitorPaused": "Paused in background · attention unknown",
-  "monitorCurrent": "Current observation",
-  "monitorAllClear": "No pending requests in the checked project",
-  "monitorNoServers": "Add a server to monitor attention.",
   "monitorSaveFailed": "Could not save monitoring settings. Try again.",
   "monitorOpenFailed": "This request or its project changed. Refresh the inbox and try again.",
   "monitorSession": "Conversation",
@@ -1383,7 +1291,6 @@
   "monitorForm": "Form response needed",
   "monitorUnknown": "Unknown",
   "monitorLastChecked": "Last checked",
-  "monitorNextCheck": "Next check",
   "monitorRequestSummary": "{profile} · {kind}\n{lastChecked}: {time}",
   "@monitorRequestSummary": {
     "description": "Saved-server request row summary",
@@ -1395,18 +1302,6 @@
         "type": "String"
       },
       "lastChecked": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "monitorLabeledTime": "{label}: {time}",
-  "@monitorLabeledTime": {
-    "description": "A localized monitor timestamp with its label",
-    "placeholders": {
-      "label": {
         "type": "String"
       },
       "time": {
@@ -1428,18 +1323,6 @@
     }
   },
   "monitorCheckInDue": "Time to check in",
-  "monitorObservedBusy": "Busy at checks spanning {minutes} min · first check {since}",
-  "@monitorObservedBusy": {
-    "description": "Span between busy samples, not a continuous duration or a lower bound on run length",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "since": {
-        "type": "String"
-      }
-    }
-  },
   "quotaBudgetClearAll": "Clear saved provider thresholds",
   "managedRecoveryAttempts": "Attempts used: {attempts} of 3. The limit survives app restarts.",
   "@managedRecoveryAttempts": {
@@ -1497,14 +1380,12 @@
   "mobileTaskPriorityLow": "Low priority",
   "quotaMonitorTitle": "Quota monitoring",
   "quotaMonitorRuntime": "Sources are checked in rotation, at most three per cycle; larger lists take several cycles. Background reads require the existing live service to be active; Android may stop it. Displayed readings expire when the collector says they do. Device alerts record past threshold readings, not current remaining allowance. This page never switches your active server.",
-  "quotaMonitorEmpty": "No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.",
   "quotaMonitorDisabled": "Monitoring is off.",
   "quotaMonitorWaiting": "Waiting for a fresh reading.",
-  "quotaMonitorChecking": "Checking the trusted collector…",
-  "quotaMonitorCurrent": "Fresh reading from the consented provider source.",
-  "quotaMonitorPaused": "Monitoring is paused. Open the app or check the existing background service.",
-  "quotaMonitorWifiRequired": "Waiting for confirmed Wi-Fi. Unknown network status does not permit a read.",
-  "quotaMonitorSourceChanged": "This provider account or source changed, or could not be verified. Open Remaining, read it again and review new consent.",
+  "quotaMonitorChecking": "Checking now…",
+  "quotaMonitorPaused": "Paused. Checks start again when the app is open or Stay connected in the background is on.",
+  "quotaMonitorWifiRequired": "Waiting for Wi-Fi to check again.",
+  "quotaMonitorSourceChanged": "The account on this server changed, so checks stopped. Open Remaining usage on that server and read it again.",
   "quotaMonitorSaveFailed": "Could not save quota monitoring. A failed disable stays paused in this app; retry before closing the app.",
   "quotaMonitorDisable": "Stop monitoring {provider} on {server}",
   "webSearchDisclosure": "Search sends your query to this server’s selected search provider. Review results before adding them to your editable draft. Nothing is sent to the model here.",
@@ -1658,151 +1539,116 @@
       }
     }
   },
-  "isolatedTaskTitle": "New task in a fresh worktree",
+  "isolatedTaskTitle": "Start in a separate copy",
   "@isolatedTaskTitle": {
-    "description": "Title of the fresh-worktree task sheet"
+    "description": "Title of the sheet that starts a conversation in a separate copy (a git worktree) of the project"
   },
-  "isolatedTaskIntro": "OpenCode creates a new Git worktree and branch for {project} and runs the project's setup. The worktree stays listed under Manage project until you remove it there.",
+  "isolatedTaskIntro": "Works on its own branch, so it can't clash with your other conversations.",
   "@isolatedTaskIntro": {
-    "description": "Explanation shown before the user starts a fresh-worktree task",
-    "placeholders": {
-      "project": {
-        "type": "String"
-      }
-    }
+    "description": "Start in a separate copy: one line under the title saying what a separate copy is for"
   },
-  "isolatedTaskNameLabel": "Worktree name (optional)",
+  "isolatedTaskNameLabel": "Name of the copy (optional)",
   "@isolatedTaskNameLabel": {
-    "description": "Label of the optional worktree name field"
+    "description": "Start in a separate copy: the optional name of the worktree, inside Options"
   },
-  "isolatedTaskNameHelper": "Leave empty to let OpenCode choose a name.",
+  "isolatedTaskNameHelper": "Leave it empty and a name is chosen for you.",
   "@isolatedTaskNameHelper": {
-    "description": "Helper text under the optional worktree name field"
+    "description": "Start in a separate copy: helper under the optional name field"
   },
-  "isolatedTaskStart": "Create and start",
+  "isolatedTaskStart": "Start",
   "@isolatedTaskStart": {
-    "description": "Primary button that creates the worktree and waits for it"
+    "description": "Start in a separate copy: primary button that makes the copy, runs its setup and opens the conversation"
   },
-  "isolatedTaskCreating": "Creating the worktree…",
+  "isolatedTaskCreating": "Making the copy…",
   "@isolatedTaskCreating": {
-    "description": "Status while the create request is in flight"
+    "description": "Start in a separate copy: status while the create request is in flight"
   },
-  "isolatedTaskCreatingHint": "Stopping now cannot undo a create the server may already be running.",
+  "isolatedTaskCreatingHint": "If you stop waiting, the copy may still be made. You'll find it under Project › Worktrees.",
   "@isolatedTaskCreatingHint": {
-    "description": "Caution under the creating status: cancelling does not imply server rollback"
+    "description": "Start in a separate copy: under the making status; stopping does not undo a create the server may already run. Project › Worktrees is where copies are listed"
   },
-  "isolatedTaskPreparing": "{name} was created. OpenCode is preparing it…",
+  "isolatedTaskPreparing": "Setting up {name}…",
   "@isolatedTaskPreparing": {
-    "description": "Status after the server returned the worktree, before its readiness event",
+    "description": "Start in a separate copy: status while the project setup runs in the new copy",
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "isolatedTaskReady": "{name} is ready. Opening a blank conversation…",
+  "isolatedTaskReady": "{name} is ready. Opening the conversation…",
   "@isolatedTaskReady": {
-    "description": "Status once the worktree reported ready and the session is being opened",
+    "description": "Start in a separate copy: status once setup finished and the conversation is being opened",
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "isolatedTaskReadyIdle": "{name} is ready.",
+  "isolatedTaskReadyIdle": "{name} is ready, but the conversation didn't open.",
   "@isolatedTaskReadyIdle": {
-    "description": "Status when the worktree is ready but the last open attempt failed and nothing is in flight",
+    "description": "Start in a separate copy: the copy is ready but the last open attempt failed; nothing is in flight",
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "isolatedTaskUnconfirmed": "{name} was created, but its setup status is not confirmed.",
+  "isolatedTaskUnconfirmed": "{name} is made, but its setup hasn't reported back.",
   "@isolatedTaskUnconfirmed": {
-    "description": "Status when no readiness event arrived within the wait",
+    "description": "Start in a separate copy: no setup result arrived within the wait",
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "isolatedTaskUnconfirmedHint": "You can keep waiting or open it now. Setup may still be running.",
+  "isolatedTaskUnconfirmedHint": "Setup may still be running. Keep waiting, or start in it now.",
   "@isolatedTaskUnconfirmedHint": {
-    "description": "Explanation under the unconfirmed status"
+    "description": "Start in a separate copy: explanation under the unconfirmed status"
   },
-  "isolatedTaskFailed": "OpenCode could not prepare the worktree.",
+  "isolatedTaskFailed": "Setup failed in {name}",
   "@isolatedTaskFailed": {
-    "description": "Status when the server reported worktree.failed"
-  },
-  "isolatedTaskCreateFailed": "The worktree could not be created.",
-  "@isolatedTaskCreateFailed": {
-    "description": "Status when the create request itself failed"
-  },
-  "isolatedTaskFailedKept": "{name} stays listed under Manage project. Nothing was deleted.",
-  "@isolatedTaskFailedKept": {
-    "description": "Note under a failed preparation: the created worktree is kept",
+    "description": "Start in a separate copy: the copy was made but its project setup failed",
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
+  },
+  "isolatedTaskCreateFailed": "Couldn't make the copy",
+  "@isolatedTaskCreateFailed": {
+    "description": "Start in a separate copy: the create request itself failed"
   },
   "isolatedTaskCancelled": "Stopped waiting.",
   "@isolatedTaskCancelled": {
-    "description": "Status after the user stopped waiting for readiness"
+    "description": "Start in a separate copy: status after the person stopped waiting"
   },
-  "isolatedTaskCancelledKept": "{name} was created and stays listed under Manage project.",
-  "@isolatedTaskCancelledKept": {
-    "description": "Note after stopping when the server had already returned the worktree",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "isolatedTaskCancelledUnknown": "If OpenCode created the worktree, it appears under Manage project.",
-  "@isolatedTaskCancelledUnknown": {
-    "description": "Note after stopping before the create request answered"
-  },
-  "isolatedTaskOpening": "Opening a blank conversation in {name}…",
+  "isolatedTaskOpening": "Opening the conversation in {name}…",
   "@isolatedTaskOpening": {
-    "description": "Status while switching scope and creating the session",
+    "description": "Start in a separate copy: status while switching to the copy and creating the conversation",
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "isolatedTaskOpened": "Conversation ready in {name}. Nothing has been sent.",
+  "isolatedTaskOpened": "The conversation in {name} is ready.",
   "@isolatedTaskOpened": {
-    "description": "Status once the blank session exists in the worktree",
+    "description": "Start in a separate copy: status once the conversation exists in the copy",
     "placeholders": {
       "name": {
-        "type": "String"
-      }
-    }
-  },
-  "isolatedTaskBranch": "Branch {branch}",
-  "@isolatedTaskBranch": {
-    "description": "Branch line under the worktree status",
-    "placeholders": {
-      "branch": {
         "type": "String"
       }
     }
   },
   "isolatedTaskStopWaiting": "Stop waiting",
   "@isolatedTaskStopWaiting": {
-    "description": "Button that stops waiting for readiness without deleting anything"
+    "description": "Start in a separate copy: stops waiting without deleting anything"
   },
   "isolatedTaskKeepWaiting": "Keep waiting",
   "@isolatedTaskKeepWaiting": {
-    "description": "Button that waits another period for the readiness event"
-  },
-  "isolatedTaskOpenAnyway": "Open anyway",
-  "@isolatedTaskOpenAnyway": {
-    "description": "Button that opens a session in a worktree whose setup is unconfirmed"
+    "description": "Start in a separate copy: waits another period for the setup result"
   },
   "isolatedTaskRetryOpen": "Try again",
   "@isolatedTaskRetryOpen": {
@@ -3214,7 +3060,7 @@
   "@e7SettingsUi32": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsUi34": "Android 15+ allows six hours of this per 24 hours and then stops it; the app turns the switch off and says so when that happens.",
+  "e7SettingsUi34": "Android stops this after 6 hours a day. The app will tell you when it does.",
   "@e7SettingsUi34": {
     "description": "Settings and appearance user interface."
   },
@@ -6040,10 +5886,6 @@
   "@e7LibraryLocalCommand": {
     "description": "Library and project tools UI: Local command"
   },
-  "e7LibraryTimeoutInMilliseconds": "Timeout in milliseconds",
-  "@e7LibraryTimeoutInMilliseconds": {
-    "description": "Library and project tools UI: Timeout in milliseconds"
-  },
   "e7LibraryOptional": "Optional",
   "@e7LibraryOptional": {
     "description": "Library and project tools UI: Optional"
@@ -6063,10 +5905,6 @@
   "e7LibraryEnterAValidHTTPOrHTTPSURL": "Enter a valid HTTP or HTTPS URL without credentials",
   "@e7LibraryEnterAValidHTTPOrHTTPSURL": {
     "description": "Library and project tools UI: Enter a valid HTTP or HTTPS URL without credentials"
-  },
-  "e7LibraryOptionalEnterOneKEYVALUEPairPer": "Optional. Enter one KEY=VALUE pair per line.",
-  "@e7LibraryOptionalEnterOneKEYVALUEPairPer": {
-    "description": "Library and project tools UI: Optional. Enter one KEY=VALUE pair per line."
   },
   "e7LibraryDetectOAuthAutomatically": "Detect OAuth automatically",
   "@e7LibraryDetectOAuthAutomatically": {
@@ -9145,27 +8983,23 @@
   "@teamUiEditorTitle": {
     "description": "Title of the AI Team section in the server editor"
   },
-  "teamUiHostGuideDocs": "The full guide with every command is docs/ai-team-host.md in the app's repository.",
-  "@teamUiHostGuideDocs": {
-    "description": "Closing line of the host guide sheet pointing at the repository guide"
-  },
   "teamUiHostGuideIntro": "Everything stays on your Tailscale network; nothing is published to the internet.",
   "@teamUiHostGuideIntro": {
     "description": "Intro line of the host guide sheet"
   },
-  "teamUiHostGuideStep1": "Install Gas City on the computer: gc, bd and dolt on your PATH.",
+  "teamUiHostGuideStep1": "Install Gas City's three tools, gc, bd and dolt, on your PATH; the full guide has each download with its checksum. Then check that all three are found:",
   "@teamUiHostGuideStep1": {
     "description": "Host guide step 1"
   },
-  "teamUiHostGuideStep2": "Create a city next to your project and add the project to it: gc init, then gc rig add.",
+  "teamUiHostGuideStep2": "Save the city file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:",
   "@teamUiHostGuideStep2": {
     "description": "Host guide step 2"
   },
-  "teamUiHostGuideStep3": "Start it with gc start and check that http://127.0.0.1:8372/v0/city/<name>/health answers.",
+  "teamUiHostGuideStep3": "Start the team and check that it answers:",
   "@teamUiHostGuideStep3": {
     "description": "Host guide step 3"
   },
-  "teamUiHostGuideStep4": "Expose port 8372 on the computer's Tailscale address, then add it here as http://100.x.x.x:8372 with the city name.",
+  "teamUiHostGuideStep4": "Download the front that lets this phone in over Tailscale, check it and start it, with your own Tailscale login after --allow. Then add it here: the computer's Tailscale address with the port in the command, and the team's name.",
   "@teamUiHostGuideStep4": {
     "description": "Host guide step 4"
   },
@@ -10459,10 +10293,6 @@
   "@teamUiGateAnswerRejectedNoMessage": {
     "description": "Receipt line when the host refused the answer without a reason"
   },
-  "teamUiGateAnswerChipUnconfirmedSemantics": "Unconfirmed, open to retry",
-  "@teamUiGateAnswerChipUnconfirmedSemantics": {
-    "description": "Accessibility label of the unconfirmed chip"
-  },
   "teamUiGateAnswerConfirmApproveTitle": "Approve this destructive action?",
   "@teamUiGateAnswerConfirmApproveTitle": {
     "description": "Two-step sheet title before a destructive confirmation is approved"
@@ -10645,22 +10475,6 @@
         "type": "String"
       }
     }
-  },
-  "teamUiStartRunPlannerOffTitle": "The planner (Mayor) is off on this host",
-  "@teamUiStartRunPlannerOffTitle": {
-    "description": "Shown instead of the form when the host lists the planner as suspended or stopped; nothing is sent"
-  },
-  "teamUiStartRunPlannerOffBody": "Wake it on the host or switch it to the full profile, then come back.",
-  "@teamUiStartRunPlannerOffBody": {
-    "description": "Body under the planner-off title"
-  },
-  "teamUiStartRunPlannerMissingTitle": "No planner on this host",
-  "@teamUiStartRunPlannerMissingTitle": {
-    "description": "Shown when the host lists no planner agent at all"
-  },
-  "teamUiStartRunPlannerMissingBody": "The Gas Town pack with its Mayor is not running here. The host guide shows how to enable it.",
-  "@teamUiStartRunPlannerMissingBody": {
-    "description": "Body under the planner-missing title"
   },
   "teamUiStartRunHostGuide": "Host guide",
   "@teamUiStartRunHostGuide": {
@@ -11931,10 +11745,6 @@
         "type": "String"
       }
     }
-  },
-  "monitorNotificationSettings": "Notification settings",
-  "@monitorNotificationSettings": {
-    "description": "Link from the saved-servers attention list and the Usage screen to the Notifications screen."
   },
   "usageSectionSpent": "Spent",
   "@usageSectionSpent": {
@@ -14436,7 +14246,7 @@
   "@teamUiAgentRoleOther": {
     "description": "An AI Team agent whose role the app does not know"
   },
-  "teamUiRunStageWaiting": "Waiting",
+  "teamUiRunStageWaiting": "Planned",
   "@teamUiRunStageWaiting": {
     "description": "First of the four stages of an AI Team task"
   },
@@ -14444,11 +14254,11 @@
   "@teamUiRunStageWorking": {
     "description": "Second of the four stages of an AI Team task"
   },
-  "teamUiRunStageReviewing": "Reviewing",
+  "teamUiRunStageReviewing": "In review",
   "@teamUiRunStageReviewing": {
     "description": "Third of the four stages of an AI Team task: handed to the reviewer, who merges"
   },
-  "teamUiRunStageDone": "Done",
+  "teamUiRunStageDone": "Merged",
   "@teamUiRunStageDone": {
     "description": "Last of the four stages of an AI Team task: merged"
   },
@@ -18992,23 +18802,23 @@
   },
   "isolatedTaskProjectFolder": "Project folder",
   "@isolatedTaskProjectFolder": {
-    "description": "New task in a fresh worktree: the label of the project path in Details"
+    "description": "Start in a separate copy: the label of the project path in Details"
   },
-  "isolatedTaskStageCreate": "Creating the worktree",
+  "isolatedTaskStageCreate": "Making the copy",
   "@isolatedTaskStageCreate": {
-    "description": "New task in a fresh worktree: progress stage 1 of 3"
+    "description": "Start in a separate copy: progress stage 1 of 3"
   },
   "isolatedTaskStagePrepare": "Running the project setup",
   "@isolatedTaskStagePrepare": {
-    "description": "New task in a fresh worktree: progress stage 2 of 3"
+    "description": "Start in a separate copy: progress stage 2 of 3"
   },
-  "isolatedTaskStageOpen": "Opening a conversation",
+  "isolatedTaskStageOpen": "Opening the conversation",
   "@isolatedTaskStageOpen": {
-    "description": "New task in a fresh worktree: progress stage 3 of 3"
+    "description": "Start in a separate copy: progress stage 3 of 3 with no task typed"
   },
   "isolatedTaskUsually": "Usually 1–3 minutes",
   "@isolatedTaskUsually": {
-    "description": "New task in a fresh worktree: how long creating and setting up a worktree usually takes"
+    "description": "Start in a separate copy: how long making and setting up a copy usually takes"
   },
   "savedPermissionsIntro": "Actions the agent may take in this project without asking you first. Revoke one and the agent asks again.",
   "@savedPermissionsIntro": {
@@ -22415,7 +22225,7 @@
   "@mcpSetupAdvancedRemote": {
     "description": "screen-library-2: Add MCP server: what the Advanced fold holds for a remote server."
   },
-  "mcpSetupAdvancedLocal": "Working folder, environment and timeout",
+  "mcpSetupAdvancedLocal": "Working folder and timeout",
   "@mcpSetupAdvancedLocal": {
     "description": "screen-library-2: Add MCP server: what the Advanced fold holds for a local command."
   },
@@ -23932,23 +23742,6 @@
   "@monitorBackgroundChecks": {
     "description": "Title of the page that lists every saved server's last and next background check, and of the Servers page row that opens it"
   },
-  "monitorRowLastChecked": "Last checked {when}",
-  "@monitorRowLastChecked": {
-    "description": "Supporting line of the Servers page's Background checks row, e.g. 'Last checked 5m ago'",
-    "placeholders": {
-      "when": {
-        "type": "String"
-      }
-    }
-  },
-  "monitorRowNotChecked": "Not checked yet",
-  "@monitorRowNotChecked": {
-    "description": "Supporting line of the Servers page's Background checks row when a server is monitored but no check has finished yet"
-  },
-  "monitorRowOff": "Off for every server",
-  "@monitorRowOff": {
-    "description": "Supporting line of the Servers page's Background checks row when no saved server is monitored"
-  },
   "settingsTryDemo": "Try the demo",
   "@settingsTryDemo": {
     "description": "Settings › Help row (and search result) that opens the offline demo conversation"
@@ -24725,7 +24518,7 @@
   "@quotaCollectorHowTo": {
     "description": "Remaining: the fold with the steps to get the quota collector"
   },
-  "quotaCollectorStepInstall": "Ask whoever runs {server} to install the quota collector from tool/quota in the app’s repository. It needs Node 20 or later.",
+  "quotaCollectorStepInstall": "Ask whoever runs {server} to install the quota collector. It needs Node 20 or later.",
   "@quotaCollectorStepInstall": {
     "description": "Remaining: collector setup step 1",
     "placeholders": {
@@ -27715,5 +27508,483 @@
   "teamDispatchHostWords": "The team’s reply",
   "@teamDispatchHostWords": {
     "description": "P6.3 Technical details note: the team host's own words about a refused or unconfirmed step follow (redacted)"
+  },
+  "projectHubChangedFiles": "{count, plural, =0{No changes} =1{1 file changed} other{{count} files changed}}",
+  "@projectHubChangedFiles": {
+    "description": "Project tab (slice-close-misc): the live line under Changes, from the project's working tree",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHubTerminalsRunning": "{count, plural, =1{1 running} other{{count} running}}",
+  "@projectHubTerminalsRunning": {
+    "description": "Project tab (slice-close-misc): the live line under Terminal, how many terminals are running; not shown when none are",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaCollectorGuide": "Open the collector guide",
+  "@quotaCollectorGuide": {
+    "description": "Remaining (slice-close-misc): button under the collector steps; opens the collector's full guide on the web"
+  },
+  "quotaCollectorFrom": "{provider}, from the quota collector on {server}",
+  "@quotaCollectorFrom": {
+    "description": "Remaining (collector path, slice-close-misc): label over the answer rows read through the collector",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaCollectorNoWindows": "The quota collector on {server} reported no limits for {provider}.",
+  "@quotaCollectorNoWindows": {
+    "description": "Remaining (collector path, slice-close-misc): the reading has no window with a used percentage",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaStopCollector": "Stop using the quota collector on {server}",
+  "@quotaStopCollector": {
+    "description": "Remaining (collector path, slice-close-misc): row that stops reading through the collector for this visit",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaStopCollectorDetail": "The reading goes away, and Remaining asks you again before the next read.",
+  "@quotaStopCollectorDetail": {
+    "description": "Remaining (collector path): what stopping the collector does"
+  },
+  "quotaCollectorAddressLabel": "Collector address",
+  "@quotaCollectorAddressLabel": {
+    "description": "Remaining (collector path): Details label for the collector's web address"
+  },
+  "quotaPlanLabel": "Plan",
+  "@quotaPlanLabel": {
+    "description": "Remaining (collector path): Details label for the plan the provider reported"
+  },
+  "quotaReadAtLabel": "Read at",
+  "@quotaReadAtLabel": {
+    "description": "Remaining (collector path): Details label for when the collector took the reading"
+  },
+  "teamUiHostGuideOpen": "Open the full guide",
+  "@teamUiHostGuideOpen": {
+    "description": "Host guide sheet: opens docs/ai-team-host.md on GitHub in the browser"
+  },
+  "hostServiceInstallChecked": "Downloads the script from release {release} and checks its SHA-256 checksum first. If the file was changed, nothing runs.",
+  "@hostServiceInstallChecked": {
+    "description": "Run as a Linux service page: supporting line of the install command",
+    "placeholders": {
+      "release": {
+        "type": "String"
+      }
+    }
+  },
+  "hostServiceWhatThisDoes": "What this does",
+  "@hostServiceWhatThisDoes": {
+    "description": "Run as a Linux service page: fold under the install command"
+  },
+  "hostServiceWhatLinux": "Needs Linux with systemd, such as Ubuntu. It does not run on macOS or Windows.",
+  "@hostServiceWhatLinux": {
+    "description": "Run as a Linux service page, What this does: where the script runs"
+  },
+  "hostServiceWhatInstall": "Installs OpenCode with its official installer if it is not there yet.",
+  "@hostServiceWhatInstall": {
+    "description": "Run as a Linux service page, What this does: the OpenCode install"
+  },
+  "hostServiceWhatService": "Adds a service for your account that keeps OpenCode running after reboots and closed terminals. It listens on that computer only.",
+  "@hostServiceWhatService": {
+    "description": "Run as a Linux service page, What this does: the systemd user service"
+  },
+  "hostServiceWhatPassword": "Makes a password for the server and keeps it in a file only your account can read.",
+  "@hostServiceWhatPassword": {
+    "description": "Run as a Linux service page, What this does: the server password"
+  },
+  "hostServicePinnedCommit": "Script version",
+  "@hostServicePinnedCommit": {
+    "description": "Run as a Linux service page, What this does: label of the pinned commit hash"
+  },
+  "hostServiceChecksum": "SHA-256 checksum",
+  "@hostServiceChecksum": {
+    "description": "Run as a Linux service page, What this does: label of the script's SHA-256"
+  },
+  "mcpAddBrowseTitle": "Browse the catalogue",
+  "@mcpAddBrowseTitle": {
+    "description": "MCP add sheet (P2.4): the choice that opens the MCP catalogue"
+  },
+  "mcpAddBrowseDetail": "Servers from the public MCP registry, turned on with a switch",
+  "@mcpAddBrowseDetail": {
+    "description": "MCP add sheet: what the catalogue choice offers"
+  },
+  "mcpAddBrowseNone": "No catalogue for this server: it doesn't accept new MCP servers from the app.",
+  "@mcpAddBrowseNone": {
+    "description": "MCP add sheet: why the catalogue choice is unavailable on this server"
+  },
+  "mcpAddManualTitle": "Enter manually",
+  "@mcpAddManualTitle": {
+    "description": "MCP add sheet and catalogue: the choice that opens the manual MCP form"
+  },
+  "mcpAddManualDetail": "Type its address, or the command that starts it",
+  "@mcpAddManualDetail": {
+    "description": "MCP add sheet: what the manual choice is"
+  },
+  "mcpCatalogTitle": "MCP catalogue",
+  "@mcpCatalogTitle": {
+    "description": "MCP catalogue (P2.5): page title"
+  },
+  "mcpCatalogConsentTitle": "Load the MCP registry?",
+  "@mcpCatalogConsentTitle": {
+    "description": "MCP catalogue: title before the person agrees to load the registry list"
+  },
+  "mcpCatalogConsentBody": "The app asks registry.modelcontextprotocol.io for its list of MCP servers. It sends only what you search for, nothing about you or your servers.",
+  "@mcpCatalogConsentBody": {
+    "description": "MCP catalogue: what loading the registry list sends"
+  },
+  "mcpCatalogConsentLoad": "Load the list",
+  "@mcpCatalogConsentLoad": {
+    "description": "MCP catalogue: button that agrees and loads the registry list"
+  },
+  "mcpCatalogForget": "Stop using the registry",
+  "@mcpCatalogForget": {
+    "description": "MCP catalogue menu: forgets the consent and the saved registry list"
+  },
+  "mcpCatalogForgetFailed": "Couldn't forget the saved registry list. Try again.",
+  "@mcpCatalogForgetFailed": {
+    "description": "MCP catalogue: forgetting the saved list failed"
+  },
+  "mcpCatalogSearch": "Search the registry",
+  "@mcpCatalogSearch": {
+    "description": "MCP catalogue: search field label"
+  },
+  "mcpCatalogInventoryFailed": "Couldn't read this server's MCP servers",
+  "@mcpCatalogInventoryFailed": {
+    "description": "MCP catalogue: the server's MCP list could not be read"
+  },
+  "mcpCatalogInventoryFailedBody": "The switches need to know what is already on. Check the connection, then try again.",
+  "@mcpCatalogInventoryFailedBody": {
+    "description": "MCP catalogue: why the list waits for the server's MCP list"
+  },
+  "mcpCatalogFailed": "Couldn't load the public MCP registry",
+  "@mcpCatalogFailed": {
+    "description": "MCP catalogue: the registry list could not be loaded"
+  },
+  "mcpCatalogSearchFailed": "Couldn't search the public MCP registry",
+  "@mcpCatalogSearchFailed": {
+    "description": "MCP catalogue: a registry search failed"
+  },
+  "mcpCatalogFailedBody": "Check the phone's internet connection, then try again. You can still enter a server by hand.",
+  "@mcpCatalogFailedBody": {
+    "description": "MCP catalogue: way forward when the registry is unreachable"
+  },
+  "mcpCatalogEmpty": "The registry listed no servers",
+  "@mcpCatalogEmpty": {
+    "description": "MCP catalogue: the registry answered with an empty list"
+  },
+  "mcpCatalogNoMatch": "Nothing in the registry matches “{query}”",
+  "@mcpCatalogNoMatch": {
+    "description": "MCP catalogue: a search found nothing",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpCatalogEmptyBody": "Try other words, or enter the server by hand.",
+  "@mcpCatalogEmptyBody": {
+    "description": "MCP catalogue: way forward when nothing is listed"
+  },
+  "mcpCatalogStale": "Couldn't refresh the list from the registry. These are the listings loaded earlier.",
+  "@mcpCatalogStale": {
+    "description": "MCP catalogue: a refresh failed; the saved list is shown"
+  },
+  "mcpCatalogPriceNote": "The registry lists no prices. A hosted server's owner may charge for it or ask for an account.",
+  "@mcpCatalogPriceNote": {
+    "description": "MCP catalogue: note under the list about cost"
+  },
+  "mcpCatalogAdding": "Adding…",
+  "@mcpCatalogAdding": {
+    "description": "MCP catalogue: a row while its form is open"
+  },
+  "mcpCatalogRemoving": "Removing…",
+  "@mcpCatalogRemoving": {
+    "description": "MCP catalogue: a row while it is being removed"
+  },
+  "mcpCatalogCannotRemove": "On. This server keeps it in its configuration, and the app can't remove it.",
+  "@mcpCatalogCannotRemove": {
+    "description": "MCP catalogue: why an added server's switch cannot be turned off here"
+  },
+  "mcpCatalogNeedsDocker": "Runs in Docker. To add it anyway, use Enter manually.",
+  "@mcpCatalogNeedsDocker": {
+    "description": "MCP catalogue: why a container listing cannot be turned on"
+  },
+  "mcpCatalogNoEndpoint": "Lists nothing the app can start. To add it anyway, use Enter manually.",
+  "@mcpCatalogNoEndpoint": {
+    "description": "MCP catalogue: why a listing cannot be turned on"
+  },
+  "mcpCatalogHostedBy": "Hosted by {host}",
+  "@mcpCatalogHostedBy": {
+    "description": "MCP catalogue row: where a hosted server runs",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpCatalogNeedsNode": "Needs Node on the server",
+  "@mcpCatalogNeedsNode": {
+    "description": "MCP catalogue row: an npm package needs Node where OpenCode runs"
+  },
+  "mcpCatalogNeedsNodePhone": "Needs Node on this phone",
+  "@mcpCatalogNeedsNodePhone": {
+    "description": "MCP catalogue row: an npm package needs Node on this phone's OpenCode"
+  },
+  "mcpCatalogNeedsPython": "Needs Python with uv on the server",
+  "@mcpCatalogNeedsPython": {
+    "description": "MCP catalogue row: a PyPI package needs uv"
+  },
+  "mcpCatalogNeedsKey": "Needs an API key",
+  "@mcpCatalogNeedsKey": {
+    "description": "MCP catalogue row: the listing requires a secret"
+  },
+  "mcpCatalogNeedsSettings": "Needs extra settings",
+  "@mcpCatalogNeedsSettings": {
+    "description": "MCP catalogue row: the listing requires other settings or arguments"
+  },
+  "mcpCatalogNodeTitle": "{title} runs with Node",
+  "@mcpCatalogNodeTitle": {
+    "description": "MCP catalogue: sheet title when a Node server is turned on for this phone",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpCatalogNodeAdd": "Add Node to this phone",
+  "@mcpCatalogNodeAdd": {
+    "description": "MCP catalogue Node sheet: opens This phone to add Node"
+  },
+  "mcpCatalogNodeAddDetail": "Opens This phone. Choose Add tools, then Node, and turn this on again once it's added.",
+  "@mcpCatalogNodeAddDetail": {
+    "description": "MCP catalogue Node sheet: what adding Node involves"
+  },
+  "mcpCatalogNodeHave": "Node is already on this phone",
+  "@mcpCatalogNodeHave": {
+    "description": "MCP catalogue Node sheet: continue to the form"
+  },
+  "mcpCatalogNodeHaveDetail": "Check the details and add it",
+  "@mcpCatalogNodeHaveDetail": {
+    "description": "MCP catalogue Node sheet: what continuing does"
+  },
+  "mcpSetupFromCatalog": "Filled in from “{listing}” in the public MCP registry. Check it before you add it: {server} will run or connect to what is here.",
+  "@mcpSetupFromCatalog": {
+    "description": "MCP form opened from the catalogue: where the values came from",
+    "placeholders": {
+      "listing": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpSetupThisServer": "this server",
+  "@mcpSetupThisServer": {
+    "description": "MCP form: the server, when it has no name"
+  },
+  "mcpSetupValueRequired": "Enter a value for {name}",
+  "@mcpSetupValueRequired": {
+    "description": "MCP form: a header or variable the registry listing requires is empty",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpSetupNameFromCatalog": "The registry listing needs this one",
+  "@mcpSetupNameFromCatalog": {
+    "description": "MCP form: why a prefilled header or variable name is fixed"
+  },
+  "mcpVariableName": "Variable name",
+  "@mcpVariableName": {
+    "description": "MCP form: environment variable name field"
+  },
+  "mcpVariableValue": "Variable value",
+  "@mcpVariableValue": {
+    "description": "MCP form: environment variable value field (secret)"
+  },
+  "mcpAddVariable": "Add another variable",
+  "@mcpAddVariable": {
+    "description": "MCP form: adds an environment variable row"
+  },
+  "mcpRemoveVariable": "Remove variable",
+  "@mcpRemoveVariable": {
+    "description": "MCP form: removes an environment variable row"
+  },
+  "mcpSetupTimeoutSeconds": "Timeout in seconds",
+  "@mcpSetupTimeoutSeconds": {
+    "description": "MCP form: the optional timeout field, in seconds"
+  },
+  "@isolatedTaskScopeChanged": {
+    "description": "Start in a separate copy: the server or project changed before Start, so the sheet can't be used"
+  },
+  "isolatedTaskPromptLabel": "What should it work on?",
+  "@isolatedTaskPromptLabel": {
+    "description": "Start in a separate copy: the task field, sent to the new conversation once the copy is ready"
+  },
+  "isolatedTaskPromptHelper": "Sent once the copy is ready. Leave it empty to write it in the conversation.",
+  "@isolatedTaskPromptHelper": {
+    "description": "Start in a separate copy: helper under the task field"
+  },
+  "isolatedTaskOptions": "Options",
+  "@isolatedTaskOptions": {
+    "description": "Start in a separate copy: the fold holding the optional name of the copy"
+  },
+  "isolatedTaskPreparingHint": "If you stop waiting, the copy stays. You'll find it under Project › Worktrees.",
+  "@isolatedTaskPreparingHint": {
+    "description": "Start in a separate copy: under the setup status; stopping never deletes the copy"
+  },
+  "isolatedTaskFailedBody": "The copy is made, but its setup didn't finish. Start in it anyway, or remove it.",
+  "@isolatedTaskFailedBody": {
+    "description": "Start in a separate copy: body under a failed setup; the setup's own output is under Details"
+  },
+  "isolatedTaskSending": "Sending your task to {name}…",
+  "@isolatedTaskSending": {
+    "description": "Start in a separate copy: status while the typed task is sent to the new conversation",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "isolatedTaskSendFailed": "Couldn't send your task",
+  "@isolatedTaskSendFailed": {
+    "description": "Start in a separate copy: the conversation opened but the typed task was not sent"
+  },
+  "isolatedTaskSendFailedBody": "It's waiting in the conversation's message box, ready to send.",
+  "@isolatedTaskSendFailedBody": {
+    "description": "Start in a separate copy: the unsent task was kept as the conversation's draft"
+  },
+  "isolatedTaskSendFailedLost": "Copy your task below and send it in the conversation.",
+  "@isolatedTaskSendFailedLost": {
+    "description": "Start in a separate copy: the unsent task could not be kept as a draft either; it is shown under Details to copy"
+  },
+  "isolatedTaskOpenConversation": "Open the conversation",
+  "@isolatedTaskOpenConversation": {
+    "description": "Start in a separate copy: opens the new conversation after its task could not be sent"
+  },
+  "isolatedTaskStartAnyway": "Start anyway",
+  "@isolatedTaskStartAnyway": {
+    "description": "Start in a separate copy: opens the conversation in a copy whose setup failed or has not reported"
+  },
+  "isolatedTaskRemove": "Remove the copy",
+  "@isolatedTaskRemove": {
+    "description": "Start in a separate copy: deletes the copy (worktree) whose setup failed"
+  },
+  "isolatedTaskRemoveTitle": "Remove {name}?",
+  "@isolatedTaskRemoveTitle": {
+    "description": "Start in a separate copy: confirmation title before deleting the copy",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "isolatedTaskRemoveBody": "Its folder and branch are deleted. Your project itself is not touched.",
+  "@isolatedTaskRemoveBody": {
+    "description": "Start in a separate copy: confirmation body before deleting the copy"
+  },
+  "isolatedTaskRemoved": "Removed {name}. You can start again.",
+  "@isolatedTaskRemoved": {
+    "description": "Start in a separate copy: notice on the form after the failed copy was removed",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "isolatedTaskSetupOutput": "What the setup reported",
+  "@isolatedTaskSetupOutput": {
+    "description": "Start in a separate copy: note above the setup's own output, under Details"
+  },
+  "isolatedTaskCopyFolder": "Folder of the copy",
+  "@isolatedTaskCopyFolder": {
+    "description": "Start in a separate copy: the label of the copy's folder in Details"
+  },
+  "isolatedTaskBranchLabel": "Branch",
+  "@isolatedTaskBranchLabel": {
+    "description": "Start in a separate copy: the label of the copy's branch in Details"
+  },
+  "isolatedTaskStageSend": "Opening the conversation and sending your task",
+  "@isolatedTaskStageSend": {
+    "description": "Start in a separate copy: progress stage 3 of 3 with a task typed"
+  },
+  "teamStartRunBlockedTitle": "Team can't take tasks",
+  "@teamStartRunBlockedTitle": {
+    "description": "Title of the Give-a-task sheet when the team has no planner awake and no direct path to a worker"
+  },
+  "teamStartRunPlannerOff": "The planner is switched off",
+  "@teamStartRunPlannerOff": {
+    "description": "Reason line: the team's planner agent is suspended or stopped on its host"
+  },
+  "teamStartRunPlannerOffWakeBody": "The planner turns each task into steps for the team. Wake it to give the team your task.",
+  "@teamStartRunPlannerOffWakeBody": {
+    "description": "Body when the planner is off and the app can wake it"
+  },
+  "teamStartRunPlannerOffHostBody": "The planner turns each task into steps for the team, and this app can't switch it on. Switch it on where the team runs, then try again.",
+  "@teamStartRunPlannerOffHostBody": {
+    "description": "Body when the planner is off and the app cannot wake it"
+  },
+  "teamStartRunNoPlanner": "This team has no planner",
+  "@teamStartRunNoPlanner": {
+    "description": "Reason line: the host lists no planner agent"
+  },
+  "teamStartRunNoPlannerBody": "A planner turns each task into steps for the team. Add one where the team runs, then try again.",
+  "@teamStartRunNoPlannerBody": {
+    "description": "Body when the host lists no planner"
+  },
+  "teamStartRunNoProject": "This team has no project yet",
+  "@teamStartRunNoProject": {
+    "description": "Reason line: the team gives tasks straight to a project's worker but has no project"
+  },
+  "teamStartRunNoProjectBody": "Tasks go straight to a project's worker. Add a project to the team, then try again.",
+  "@teamStartRunNoProjectBody": {
+    "description": "Body when the team has no project"
+  },
+  "teamStartRunWake": "Wake the planner",
+  "@teamStartRunWake": {
+    "description": "Primary: wake the team's planner agent so it can take a task"
+  },
+  "teamStartRunWakeAsked": "Waking the planner. The task form opens as soon as it's awake.",
+  "@teamStartRunWakeAsked": {
+    "description": "Notice after the host took the wake, until the planner is listed awake"
+  },
+  "teamStartRunStillOff": "The planner is still switched off.",
+  "@teamStartRunStillOff": {
+    "description": "Notice after Check again when nothing changed"
+  },
+  "teamStartRunStillNoProject": "The team still has no project.",
+  "@teamStartRunStillNoProject": {
+    "description": "Notice after Check again when the team still has no project"
+  },
+  "teamStartRunWakeRefused": "Couldn't wake the planner",
+  "@teamStartRunWakeRefused": {
+    "description": "Title of the notice when the host refused to wake the planner"
+  },
+  "teamStartRunWakeRefusedNext": "Try again, or switch it on where the team runs.",
+  "@teamStartRunWakeRefusedNext": {
+    "description": "Next step under a refused wake"
   }
 }

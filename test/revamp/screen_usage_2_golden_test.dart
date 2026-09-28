@@ -182,7 +182,7 @@ void main() {
         monitored: true,
         act: (tester) async {
           await _readToTop(tester);
-          await _scrollTo(tester, _key('quota-window-secondary'));
+          await _scrollTo(tester, _key('quota-window-primary'));
         },
       );
     });

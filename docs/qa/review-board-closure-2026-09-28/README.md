@@ -8,6 +8,8 @@
 - **Claude Code isn't part of phone setup v2 yet.** This is P1.6b, blocked because the ARM64 check hasn't passed.
 - **The agent-driven setup assistant and the MCP catalogue don't exist yet.** Both are in P2, which the owner put on "later".
 
+> **Update (slice-close-team, 2026-09-28):** seven more pages are done — start-run-sheet, isolated-task-sheet, team-agent, team-home-needs-you-tab, team-run, team-run-overview-tab and embedded-team-receipt-chip — and the greyed-out Merge on a merged task is gone (embedded-team-merge-section stays blocked on the host merge contract). The counts below include them. Evidence: `docs/qa/slice-close-team-2026-09-28/README.md`.
+
 | Candidate | Value |
 |---|---|
 | Branch / revision audited | `feat/phone-setup-v2` at `ca043f36` (merge of slice-P10.1-2) |
@@ -20,9 +22,9 @@
 
 | Status | All 167 | 27 with a note | 140 without |
 |---|---:|---:|---:|
-| done | 110 | 12 | 98 |
-| partial | 45 | 10 | 35 |
-| not done | 4 | 0 | 4 |
+| done | 117 | 13 | 104 |
+| partial | 39 | 9 | 30 |
+| not done | 3 | 0 | 3 |
 | in progress | 3 | 2 | 1 |
 | blocked | 5 | 3 | 2 |
 | **total** | **167** | **27** | **140** |
@@ -43,12 +45,12 @@ By area:
 | b2-chat-screen | 2 | 1 | 1 | 0 | 1 |
 | c-chat-compose | 3 | 5 | 0 | 0 | 0 |
 | d-chat-sheets | 9 | 2 | 0 | 2 | 0 |
-| e-workspace | 15 | 2 | 1 | 0 | 0 |
+| e-workspace | 16 | 2 | 0 | 0 | 0 |
 | f-files-review-terminal | 9 | 3 | 0 | 0 | 0 |
 | g-servers | 16 | 6 | 1 | 0 | 0 |
 | h-termux | 11 | 10 | 0 | 0 | 2 |
-| i1-team-core | 9 | 6 | 0 | 1 | 0 |
-| i2-team-sheets | 8 | 2 | 1 | 0 | 1 |
+| i1-team-core | 14 | 1 | 0 | 1 | 0 |
+| i2-team-sheets | 9 | 1 | 1 | 0 | 1 |
 | j1-settings-more | 9 | 3 | 0 | 0 | 0 |
 | j2-library | 4 | 2 | 0 | 0 | 0 |
 | k-session-misc | 4 | 1 | 0 | 0 | 0 |
@@ -90,6 +92,7 @@ What the pages became: 80 redesigned, 40 merged into another page (mostly phone 
 - *Critics' findings:* partly — the setup wall and mechanics moved into Details, and there is a 'Needs the quota collector on {server}' notice with 'How to get it'. Still standing on the collector path: the 'Codex account windows / Reported plan / Snapshot checked <date>' header (arb:1123, 1127, 1136); a 'Secondary window · Not reported' row (arb:1161); the missing-collector page still lists 'Collector server' and 'Stop using this collector', plus a second Refresh beside the top-bar one; the empty monitor notice 'No provider sources are monitored. Read Remaining for a trusted collector…' (quota_monitor_section.dart:108, arb:1484); and 'How to get it' points at 'tool/quota in the app's repository' (arb:24765).
 - *Missing:* Collector-path cleanup: provider rows as 'Codex · 74% left · resets in 3 h' without the snapshot/plan/secondary-window header; no collector controls when the collector is missing; plain empty-monitor copy; an external guide link instead of a repository path. Offline value does not survive an app restart, and the ≥80% attention is foreground only (no device notification). *Fix owner:* lib/ui/screens/provider_quota_screen.dart, lib/ui/widgets/quota_monitor_section.dart (follow-up to slice-P5.4) (medium impact).
 - *Evidence:* `test/revamp/goldens/slice_p54_collector_missing_dark.png`
+- *Update (slice-close-misc, 2026-09-28):* the collector path is closed. Rows are answer sentences under "Codex, from the quota collector on Studio"; the snapshot/plan/secondary-window header is gone (plan, reading time and collector address are in Details; unreported windows are left out); a missing collector shows no collector controls and no second Refresh; the monitoring list shows only while something is monitored (the jargon empty notice is deleted); "How to get it" opens the collector guide through `openExternalLink` instead of naming `tool/quota`. Monitored sources on other servers read as the same answer rows with their state in words. **Still open:** the Codex answer does not survive an app restart, and the 80% alert is foreground only; both need state work (Codex backend owner). Evidence: `docs/qa/slice-close-misc-2026-09-28/README.md`.
 
 ### termux-processes — **partial**
 
@@ -135,7 +138,7 @@ What the pages became: 80 redesigned, 40 merged into another page (mostly phone 
 - *Missing:* Update confirm copy still in engine words; up-to-date state is hidden rather than shown as 'Up to date · version' *Fix owner:* lib/ui/screens/this_phone_screen.dart _update + app_en.arb e7SetupConfirmUpdate/setupRuntimeUpdateDetail/e7SetupUpdateInterruption (low impact).
 - *Evidence:* `lib/ui/screens/this_phone_screen.dart:376-405`
 
-### start-run-sheet — **partial**
+### start-run-sheet — **done** (slice-close-team)
 
 > Give the user recovery options?
 
@@ -145,6 +148,7 @@ What the pages became: 80 redesigned, 40 merged into another page (mostly phone 
 - *Critics' findings:* partly — the draft finding is fixed. The planner-off finding still stands: the title stays 'Give the team a task', the body uses engine words ('The planner (Mayor) is off… switch it to the full profile') and there is no Wake/Start the planner action even where controlAgent exists (start_run_sheet.dart:412-416, 676-700; strings app_en.arb:10687-10699).
 - *Missing:* Planner-off with no direct path: title it 'This team can't take tasks right now', use plain words, and offer a recovery action (wake/start the planner when the host allows it, else the host guide). *Fix owner:* lib/ui/screens/team/start_run_sheet.dart (_PlannerOff) (medium impact).
 - *Evidence:* `lib/ui/screens/team/start_run_sheet.dart:676`
+- *Closed by slice-close-team:* with no planner awake and no direct path the sheet opens as "Team can't take tasks" (the glossary's four-word title rule, G28, keeps it shorter than the proposed 'This team can't take tasks right now'), says why in plain words ("The planner is switched off" / "This team has no planner" / "This team has no project yet"), and offers a way on: **Wake the planner** where the host takes agent controls (never for an agent the phone team keeps off), after which the task form opens by itself; elsewhere **Try again** and the Host guide. A refused wake says "Couldn't wake the planner" with the host's words only under Technical details. `TeamStartBlocked` in `lib/ui/screens/team/start_run_sheet.dart`; tests `test/slice_close_team_test.dart`.
 
 ### settings — **partial**
 
@@ -155,9 +159,10 @@ What the pages became: 80 redesigned, 40 merged into another page (mostly phone 
 - *Owner note:* partly: the better layout landed (5 groups, at most 5 rows each, about 21 rows: settings_screen.dart:300-445), as did the better search (P9.4: typo tolerance, arrival at the row). The configuration-assistant agent did not: there is no 'Ask the setup assistant' row (P2.2). Only the review-only AI setup page exists, reached from Server settings and search (search_index.dart:989); it runs no agent and cannot change config
 - *Critics' findings:* yes: there is one Model row, AI Team stays only in its own row, and there is one Privacy and data row and one About row, with voice licences moved into About's Open source group
 - *Missing:* The owner's 'agent as my opencode configuration assistant' (P2.2 Ask the setup assistant, a seeded conversation) was not built. The owner deferred P2 'later'. Apply and Undo for config (P2.3) is blocked on server support. *Fix owner:* slice-P2.2 (owner-deferred) (medium impact).
+- *Update 2026-09-28 (slice-P2.4-5):* the note's non-assistant parts, better layout and better search, were already done (P3.10, P9.4). The MCP catalogue this note links to ("same as the mcp agent I mentioned") now exists without the agent: see mcp-setup. Only the assistant itself is still open, and the owner has deferred it.
 - *Evidence:* `docs/qa/slice-P3.10-2026-09-27/README.md`
 
-### mcp-setup — **partial**
+### mcp-setup — **partial** (non-assistant parts done by slice-P2.4-5)
 
 > Can we have two optios one technical users and one driven by ai agents where users can come and say I wantmcp installed or maybe connect with and oss mcp provider and show the mcp from thateposirto or provider in the app as toggles or somethin
 
@@ -166,6 +171,7 @@ What the pages became: 80 redesigned, 40 merged into another page (mostly phone 
 - *Owner note:* partly: only the technical path exists. There is no Add chooser (P2.4 mcp-add-sheet) and no registry catalogue as toggles (P2.5 mcp-catalog). A registry client exists (lib/domain/setup_registry.dart:161, registry.modelcontextprotocol.io) but no UI uses it. The AI setup page merged 2026-09-28 (6962eb0b) is review-only: it lists MCP servers from Server settings but cannot install one
 - *Critics' findings:* yes: headers are key rows with a secret value (mcp_setup_screen.dart:39-41, P0.1), and Headers, OAuth detection and Timeout sit under an Advanced KitExpandRow (:475). Minor: timeout is still entered in milliseconds (:233)
 - *Missing:* The owner's 'two options' is missing: the agent-driven path (Ask the setup assistant) and the OSS registry catalogue as toggles. P2 was deferred 'later' by the owner, and agent-driven install also needs P2.3 Apply, which is blocked on server support. *Fix owner:* slice-P2.4 (mcp-add-sheet), slice-P2.5 (mcp-catalog), slice-P2.2 (owner-deferred) (medium impact).
+- *Update 2026-09-28 (slice-P2.4-5, owner decision to build P2.4 and P2.5 now):* the technical path and the OSS provider path now both exist. MCP › Add opens the add sheet: **Browse the catalogue** · **Enter manually** (`lib/ui/screens/mcp_catalog_screen.dart` `showMcpAddSheet`). The catalogue lists servers from the public MCP registry (registry.modelcontextprotocol.io, `GET /v0.1/servers`, no credentials; verified live) as switches, each with what it is, where it runs (hosted by / needs Node / needs Python) and what it needs (API key, extra settings), plus one line on price. Turning one on opens the same manual form filled in from the listing, so the same Save and the same gateway call add it. Turning one off runs the MCP page's removal where the server supports it. On a phone host a Node server offers This phone › Add tools › Node. Critic's minor: the timeout is now entered in seconds. Still missing, owner-deferred: the agent-driven path (P2.2 Ask the setup assistant). The add sheet leaves it out rather than showing a row that does nothing. *Evidence:* `docs/qa/slice-P2.4-5-2026-09-28/README.md`, `test/revamp/slice_p2_4_5_test.dart`.
 - *Evidence:* `lib/ui/screens/mcp_setup_screen.dart:475`
 
 ### voice-composer-sheet — **in progress**
@@ -388,7 +394,7 @@ Gaps are shortened here; every non-done row is listed in full under **Gaps** bel
 | embedded-session-inventory-footer | e-workspace | rethink | removed | done | slice-P3.1 · 496a4583 |  | lib/ui/widgets/older_sessions_pager.dart:1-15,103-108 |
 | global-sessions | e-workspace | rethink | redesigned | done | screen-work-2, slice-R13 · 93e42ef3, 80e9b414 |  | lib/ui/screens/global_sessions_screen.dart:150-206,936-941 |
 | global-sessions-continue-here-sheet | e-workspace | fix | fixed | partial | screen-work-2 · 93e42ef3 | Engine wording 'through the server's sync system' still in globalSessionsMoveBody | lib/ui/screens/global_sessions_screen.dart:658-667 |
-| isolated-task-sheet | e-workspace | fix | restyled (entry moved into the New conversation chooser) | not done | screen-work-4, slice-P4.5 · 3599f22f, a2605a09, 8a5113ef | Ask 'What should it work on?' and send it after setup; title 'Start in a separate copy' + plain body with path/branch under Details; rewrite the … | docs/qa/revamp-slice-P4.5-2026-09-27/README.md (map items: 'write the first prompt' … no … |
+| isolated-task-sheet | e-workspace | fix | redesigned (slice-close-team: 'Start in a separate copy', asks 'What should it work on?' and sends it after setup; Start anyway / Remove the copy on a failed setup; setup output under Details; 'Run setup again' left out, no proven contract) | done | screen-work-4, slice-P4.5 · 3599f22f, a2605a09, 8a5113ef | Ask 'What should it work on?' and send it after setup; title 'Start in a separate copy' + plain body with path/branch under Details; rewrite the … | docs/qa/revamp-slice-P4.5-2026-09-27/README.md (map items: 'write the first prompt' … no … |
 | managed-workspaces | e-workspace | fix | redesigned | done | screen-work-3 · 9e901d21, acbfc9a7 |  | lib/ui/screens/managed_workspaces_screen.dart:341-372,597-627 |
 | managed-workspaces-create-dialog | e-workspace | fix | redesigned | done | screen-work-3 · 9e901d21 |  | lib/ui/screens/managed_workspaces_screen.dart:684-720 |
 | project-health | e-workspace | fix | redesigned | partial | screen-work-3 · 9e901d21 | Split 'Couldn't read Git status' + Try again from 'This server doesn't report Git status' with no retry | docs/qa/revamp-screen-work-3-2026-09-27/README.md (line 19, 29) |
@@ -406,7 +412,7 @@ Gaps are shortened here; every non-done row is listed in full under **Gaps** bel
 | files | f-files-review-terminal | fix | redesigned | done | screen-files-1, slice-P3.7a · 6f21d378, 4e0f79f9, d4f01730 |  | lib/ui/screens/files_screen.dart:1218-1232 |
 | files-file-viewer-sheet | f-files-review-terminal | rethink | merged into file-preview-sheet (KitViewer) | done | screen-files-1, shared-files-1 · 6f21d378, 036e14a3 |  | lib/ui/kit/kit_viewer.dart:691-699,854-859 |
 | files-row-actions-sheet | f-files-review-terminal | fix | merged into files (row menu) | done | screen-files-1 · 6f21d378 |  | lib/ui/screens/files_screen.dart:1397-1460 |
-| project-hub | f-files-review-terminal | fix | redesigned | partial | screen-files-1, slice-P3.11a · 6f21d378, 00cafa13 | Live supporting lines on Changes / Terminal / Health, and order by use (Changes first) | lib/ui/screens/project_hub_screen.dart:446-506 |
+| project-hub | f-files-review-terminal | fix | redesigned | done | screen-files-1, slice-P3.11a, slice-close-misc · 6f21d378, 00cafa13 | Closed by slice-close-misc: Changes says "3 files changed" / "No changes", Terminal "1 running"; read on open, project change, tool close and when the last conversation finishes (no poller). Changes first already held. | lib/ui/screens/project_hub_screen.dart (_readStatus) |
 | review-comment-sheet | f-files-review-terminal | fix | redesigned | done | screen-review-1 · 8a424e7c, e83b720c |  | lib/ui/screens/review_workspace.dart:636-695 |
 | review-workspace | f-files-review-terminal | fix | redesigned | done | screen-review-1, slice-P3.7a, slice-R7 · 8a424e7c, 2cbeebe9, d4f01730 |  | test/revamp/goldens/review_loaded_light.png |
 | stage-revert-sheet | f-files-review-terminal | fix | redesigned | done | screen-review-2, slice-P3.7b · af410fb8, 2b858465, 0b6fd5b3 |  | lib/ui/screens/staged_revert_screen.dart:136-215 |
@@ -424,7 +430,7 @@ Gaps are shortened here; every non-done row is listed in full under **Gaps** bel
 | external-task | g-servers | fix | redesigned | done | screen-library-2 · 93f915ac |  | lib/ui/screens/external_agents_screen.dart:1118 |
 | host-management | g-servers | rethink | restyled | not done | screen-servers-2, slice-R15 · 337b478d, 0bc6651e | Pin the script to a release tag, show a checksum, add a 'What this does' fold, say it is Linux only, and add a way to check it is running. | lib/ui/screens/host_management_screen.dart:33 |
 | profile-editor-discard-sheet | g-servers | fix | fixed | done | screen-servers-1 · 71417a2f, 62592cfc |  | lib/ui/screens/servers_screen.dart:2327 |
-| profile-monitor | g-servers | rethink | restyled; renamed 'Background checks' | partial | screen-servers-2, slice-P4.2b (slice-inbox-work), slice-P3.9 · 337b478d, 2c1c783f, … | P4.2b acceptance 'profile-monitor route removed' is not met. ProfileMonitorScreen is still reached from the Servers 'Background checks' row … | lib/ui/screens/profile_monitor_screen.dart:152 |
+| profile-monitor | g-servers | rethink | removed (merged into the Inbox and Notifications) | done | screen-servers-2, slice-P4.2b (slice-inbox-work), slice-P3.9, slice-close-misc · 337b478d, 2c1c783f, … | Closed by slice-close-misc: ProfileMonitorScreen deleted; the Servers row is gone; search "Background checks" and the Inbox "Not checking …" row open Notifications at the saved servers' checks. The green dot and engine words went with the page. | lib/ui/screens/profile_monitor_screen.dart (ProfileMonitorInbox only) |
 | provider-quota-clear-dialog | g-servers | fix | removed | done | screen-usage-2, 531bb6ab (owner rules R1-R6) · 531bb6ab |  | git show 531bb6ab -- lib/ui/screens/provider_quota_screen.dart |
 | provider-quota-enroll-dialog | g-servers | rethink | merged into provider-quota | done | slice-P3.11a, slice-P5.4 · 00cafa13, 674f8182, 43b14616 |  | docs/qa/slice-P3.11a-2026-09-27/README.md |
 | server-settings | g-servers | fix | redesigned | done | screen-servers-2, slice-P1.3, slice-R15 · 337b478d, 2045a435, 0bc6651e |  | lib/ui/screens/settings/server_settings_screen.dart:78 |
@@ -449,21 +455,21 @@ Gaps are shortened here; every non-done row is listed in full under **Gaps** bel
 | termux-setup-unsupported | h-termux | fix | merged into phone setup (Termux job unsupported state) | partial | slice-P1.3 · 2045a435 | Title still 'Setup on this phone is Android only' instead of 'Connect a server'; body keeps backticks and the untrue 'requires Termux'; no copyable … | lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart:549-555 |
 | termux-storage | h-termux | fix | restyled | partial | screen-phone-1 · 5088cc85 | Scan view should show the category rows filling in with the log under Details; intro paragraph still long | docs/qa/revamp-screen-phone-1-2026-09-27/after-termux-storage-scanning.png |
 | embedded-team-cycle-strip | i1-team-core | rethink | merged into team-conversation (Now line) | done | shared-team-1, slice-P5.1 · 19640c8b, e5148e4a (merge dd18fdee) |  | lib/ui/screens/chat/team_conversation_view.dart (TeamNowLineView); … |
-| embedded-team-receipt-chip | i1-team-core | fix | restyled | partial | kit-KitReceipt, slice-P4.1c, slice-P5.2 · 513310c0, 4cfbf10a (merge 078cffed), 10cf32d9 | Receipt as a word + icon in the row's supporting line ('Question · Not confirmed yet'), chevron trailing; the retry stays in the Gate sheet. | lib/ui/widgets/team_receipt.dart:99 |
-| team-agent | i1-team-core | fix | redesigned (short status page; the worker is its … | partial | screen-team-1, slice-P3.6 · 346ca55c (merge 30dbf42c), af07cc7a (merge dbac9c48) | Say the dependency only while it is open (check the dependency's state), so 'Working' and 'waiting on…' never show together. | lib/ui/screens/team/agent_screen.dart:246 |
+| embedded-team-receipt-chip | i1-team-core | fix | restyled (slice-close-team: the receipt is a mark and word in the row's supporting line, `teamGateRowLine`; the chevron stays) | done | kit-KitReceipt, slice-P4.1c, slice-P5.2 · 513310c0, 4cfbf10a (merge 078cffed), 10cf32d9 | Receipt as a word + icon in the row's supporting line ('Question · Not confirmed yet'), chevron trailing; the retry stays in the Gate sheet. | lib/ui/widgets/team_receipt.dart:99 |
+| team-agent | i1-team-core | fix | redesigned (short status page; slice-close-team: only open dependencies count, `teamOpenDependencies`) | done | screen-team-1, slice-P3.6 · 346ca55c (merge 30dbf42c), af07cc7a (merge dbac9c48) | Say the dependency only while it is open (check the dependency's state), so 'Working' and 'waiting on…' never show together. | lib/ui/screens/team/agent_screen.dart:246 |
 | team-agent-message-sheet | i1-team-core | fix | merged into team-conversation (watching composer) | done | screen-team-1, slice-P3.6 · af07cc7a (merge dbac9c48) |  | docs/qa/slice-P3.6-2026-09-27/README.md |
 | team-agent-output | i1-team-core | rethink | merged into chat (watching mode; TeamWatchLiveScreen … | partial | slice-P3.6 · af07cc7a (merge dbac9c48) | Ended + empty: an inline state 'This session has ended' with a way on (Back to the task / About the worker) instead of the 'fills in as the agent … | lib/ui/screens/chat/team_watch_live.dart:289 |
 | team-agents | i1-team-core | fix | redesigned | done | screen-team-3, slice-P3.6 · ac649a70 (merge f6f2e4ec), af07cc7a (merge dbac9c48) |  | lib/ui/screens/team/team_agents_screen.dart:149 |
 | team-cycle-how-sheet | i1-team-core | fix | merged into team-conversation (Now line 'Why?' in place) | done | shared-team-1, slice-P5.1 · 19640c8b, e5148e4a (merge dd18fdee) |  | docs/qa/slice-P5.1-2026-09-27/README.md |
 | team-cycle-stop-confirm-sheet | i1-team-core | fix | merged into team-agent-stop-confirm-sheet | done | shared-team-1, screen-team-1 · 19640c8b, 346ca55c |  | lib/ui/screens/team/agent_screen.dart:322 |
-| team-home-needs-you-tab | i1-team-core | fix | merged into team-home | partial | screen-team-2, slice-P3.4, slice-P5.2 · a7bda280, d42ba768 (merge aa40d789), 10cf32d9 | Receipt as a word in the supporting line ('Needs you · … · Not confirmed yet'), chevron trailing. | lib/ui/screens/team/team_home_screen.dart:788 |
+| team-home-needs-you-tab | i1-team-core | fix | merged into team-home (slice-close-team: 'Needs you · Not confirmed yet · …' in the supporting line; no trailing chip — the home's task rows carry no chevron, so its question rows match them) | done | screen-team-2, slice-P3.4, slice-P5.2 · a7bda280, d42ba768 (merge aa40d789), 10cf32d9 | Receipt as a word in the supporting line ('Needs you · … · Not confirmed yet'), chevron trailing. | lib/ui/screens/team/team_home_screen.dart:788 |
 | team-home-runs-tab | i1-team-core | fix | merged into team-home | done | screen-team-2, slice-P3.4 · a7bda280, d42ba768 (merge aa40d789) |  | lib/ui/screens/team/team_home_screen.dart:697 |
-| team-run | i1-team-core | fix | merged into team-conversation (+ Task details sheet) | partial | slice-P3.5 · 3ac501b7 (merge 998915e9) | Stage words as outcomes ('Planned · Working · In review · Merged'), with Done/Merged only when every step is merged. | lib/ui/screens/team/task_details_sheet.dart:375 |
+| team-run | i1-team-core | fix | merged into team-conversation (+ Task details sheet; slice-close-team: Planned · Working · In review · Merged, Merged only once every step is closed) | done | slice-P3.5 · 3ac501b7 (merge 998915e9) | Stage words as outcomes ('Planned · Working · In review · Merged'), with Done/Merged only when every step is merged. | lib/ui/screens/team/task_details_sheet.dart:375 |
 | team-run-agents-tab | i1-team-core | fix | merged into team-conversation (strip + worker lines) | done | slice-P3.5 · 3ac501b7 (merge 998915e9) |  | lib/ui/screens/chat/team_conversation_view.dart:1417 |
 | team-run-cancel-confirm-sheet | i1-team-core | fix | merged into the team conversation's Stop task confirm | done | slice-P3.5 · 3ac501b7 (merge 998915e9) |  | lib/ui/screens/chat/team_conversation_view.dart:304 |
-| team-run-overview-tab | i1-team-core | fix | merged into team-conversation | partial | slice-P3.5, slice-P5.1 · 3ac501b7 (merge 998915e9), e5148e4a | The merged state shows only 'Merged into main · <sha>' with Review changes, and no disabled Merge button. | lib/ui/screens/team/merge_section.dart:350 |
+| team-run-overview-tab | i1-team-core | fix | merged into team-conversation (slice-close-team: merged = 'Merged into main · <sha>' + Review changes, no Merge) | done | slice-P3.5, slice-P5.1 · 3ac501b7 (merge 998915e9), e5148e4a | The merged state shows only 'Merged into main · <sha>' with Review changes, and no disabled Merge button. | lib/ui/screens/team/merge_section.dart:350 |
 | embedded-team-discovery-card | i2-team-sheets | fix | fixed | partial | shared-settings-1 · 063f4741 (merge 550cbfbf) | Fold the offer into the Plugins AI Team row ('AI Team · Found on Laptop' + Turn on); shared-settings-1 deferred it to the Plugins row owner and no … | lib/ui/screens/settings/plugins_screen.dart:175 |
-| embedded-team-merge-section | i2-team-sheets | fix | redesigned | blocked | screen-team-2, slice-P3.5 · a7bda280 (merge a2ba4379), 3ac501b7; blocker docs … | P6.4 merge on green / undo and real merge diffs ('Review changes' lists steps, not diffs) need a host merge contract that does not exist … | docs/qa/codex-x64-2026-09-27/README.md |
+| embedded-team-merge-section | i2-team-sheets | fix | redesigned (the greyed-out Merge on a merged task is gone, slice-close-team) | blocked | screen-team-2, slice-P3.5 · a7bda280 (merge a2ba4379), 3ac501b7; blocker docs … | P6.4 merge on green / undo and real merge diffs ('Review changes' lists steps, not diffs) need a host merge contract that does not exist … | docs/qa/codex-x64-2026-09-27/README.md |
 | embedded-team-phone-reoffer-card | i2-team-sheets | fix | removed | done | shared-phone-1, slice-P1.7, slice-R12 · 802e46f9 (merge 56887008), 7acd226c (merge … |  | docs/qa/slice-R12-2026-09-27/README.md |
 | embedded-team-phone-section | i2-team-sheets | rethink | merged into team-home (menu › On this phone sheet) | done | shared-phone-1, slice-P3.4 · a840e233 (merge d4e437c6), d42ba768 (merge aa40d789) |  | lib/ui/screens/team/team_home_screen.dart:328 |
 | embedded-team-planning-card | i2-team-sheets | fix | merged into team-conversation (lead line + Now line; … | done | screen-team-2, slice-P3.5, slice-P5.1 · 3ac501b7, e5148e4a (merge dd18fdee) |  | docs/qa/slice-P5.1-2026-09-27/README.md |
@@ -478,7 +484,7 @@ Gaps are shortened here; every non-done row is listed in full under **Gaps** bel
 | appearance-picker-sheet | j1-settings-more | rethink | removed (inline KitSegmented on the Appearance page) | done | shared-settings-1, slice-P3.1 · 496a4583, 477e2075 |  | lib/ui/screens/settings/personal_settings_screens.dart:107 |
 | model-picker-sheet | j1-settings-more | fix | redesigned (one model sheet) | done | shared-chat-1, slice-P3.3 · 3fcace2c, c90ff900, fa9fc679 |  | lib/ui/widgets/pickers.dart:574 |
 | model-picker-sheet-agent-dialog | j1-settings-more | rethink | merged into model-picker-sheet (footer Agent chip + menu) | done | shared-chat-1, slice-P3.3 · 3fcace2c |  | lib/ui/widgets/pickers.dart:673 |
-| notifications-settings | j1-settings-more | fix | redesigned | partial | screen-settings-1 · 477e2075, a528c5cf | Shorten the background row to 'Android stops this after 6 hours a day. The app will tell you when it does.' (or let it wrap), and replace 'Keep live' … | lib/ui/screens/settings/notifications_settings_screen.dart:606 |
+| notifications-settings | j1-settings-more | fix | redesigned | done | screen-settings-1, slice-close-misc · 477e2075, a528c5cf | Closed by slice-close-misc: the background line reads "Android stops this after 6 hours a day. The app will tell you when it does." and monitorDisclosure names the switch ("Stay connected in the background"). | lib/l10n/app_en.arb e7SettingsUi34, monitorDisclosure |
 | plugins-mapping-dialog | j1-settings-more | rethink | removed | done | slice-P3.1 · 496a4583, 441012f8 |  | lib/ui/screens/settings/server_plugins_section.dart:39 |
 | team-plugin-sheet | j1-settings-more | rethink | merged into team-home | done | screen-library-3, slice-P3.4 · d42ba768, aa40d789 |  | docs/qa/slice-P3.4-2026-09-27/README.md |
 | command-auth-sheet | j2-library | rethink | restyled | partial | screen-library-3, slice-P3.11a · 0d4d1e71, 2d238870, 00cafa13 | The three plain states the critic asked for ('Signing in on the server...', 'Signed in', 'Sign-in didn't finish - Try again') are not written. The … | lib/ui/screens/library/command_auth_sheet.dart:189 |
@@ -507,7 +513,7 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
    - **Fix:** slice-P1.6b. Once the ARM64 proof passes, add the `claude` component to Customize and Add tools with a "Sign in to Claude" person-step. A Termux-host version could ship first, because it does not depend on the in-app ARM64 check. That split is an owner or coordinator decision. *High.*
 4. **No setup assistant, and MCP has one path only.** Affects settings ("can an agent become my opencode configuration assistant…") and mcp-setup ("two options: one for technical users and one driven by AI agents … an OSS MCP provider … as toggles").
    - Settings layout (P3.10) and search (P9.4) landed.
-   - Missing: the "Ask the setup assistant" row (P2.2), the MCP Add chooser (P2.4) and the registry catalogue as toggles (P2.5).
+   - Missing: the "Ask the setup assistant" row (P2.2). **Update 2026-09-28:** the MCP Add chooser (P2.4) and the registry catalogue as toggles (P2.5) are built in slice-P2.4-5 (`docs/qa/slice-P2.4-5-2026-09-28/README.md`).
    - A registry client already exists (`lib/domain/setup_registry.dart:161`) but nothing uses it. The AI setup page merged on 2026-09-28 (2b79b0ee) is review-only.
    - **Fix:** the owner marked P2 "later" on 2026-09-26, but two notes ask for it. Ask the owner to schedule P2.4 and P2.5 (neither needs server Apply) before P2.2. P2.3 Apply/Undo stays blocked on server support. *Medium; owner decision.*
 5. **Quota on the collector path is still mostly the old page.** Affects provider-quota ("Feature itself needs a lot of work"). P5.4 landed for Codex hosts. On the collector path, these remain:
@@ -519,7 +525,8 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
    - an 80 % alert that shows only in the foreground.
 
    **Fix:** a P5.4 follow-up in `lib/ui/screens/provider_quota_screen.dart` and `lib/ui/widgets/quota_monitor_section.dart`. *Medium.*
-6. **A planner-off team gives no way forward.** Affects start-run-sheet ("Give the user recovery options?"). Drafts, a refusal and the direct-task path are recovered. When the planner is off and no direct path exists, the sheet still:
+   *Update: slice-close-misc closed the first four (collector path). The offline value across a restart and a device alert remain; both are state work for the Codex backend.*
+6. **Closed by slice-close-team.** ~~A planner-off team gives no way forward.~~ Affects start-run-sheet ("Give the user recovery options?"). Drafts, a refusal and the direct-task path are recovered. When the planner is off and no direct path exists, the sheet still:
    - keeps the title "Give the team a task";
    - explains in engine words: "The planner (Mayor) is off… switch it to the full profile";
    - offers only Host guide (`lib/ui/screens/team/start_run_sheet.dart:412`, `:676-700`).
@@ -544,7 +551,7 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 
 13. **host-management (not done).** The page tells people to pipe a script from the `master` branch straight into bash: unpinned, no checksum, no "What this does" (`lib/ui/screens/host_management_screen.dart:33-35`). This is a trust problem. **Fix:** pin a release tag, show a checksum and add a Details fold. No unit owns this; it needs one. *High.*
 14. **chat-leave-unsaved-draft-sheet (not done).** The body tells the person to copy or retry, but the only choices are Leave and Cancel (`lib/ui/screens/chat_screen.dart:6751-6760`). **Fix:** `_leaveChat`: make "Copy draft and leave" the main button and add "Try saving again". *Medium.*
-15. **isolated-task-sheet (not done).** P4.5 only moved the entry point. The sheet still:
+15. **Closed by slice-close-team.** ~~isolated-task-sheet (not done).~~ P4.5 only moved the entry point. The sheet still:
     - uses the title "New task in a fresh worktree";
     - never asks what the copy should work on;
     - shows a stop line that cannot undo anything (`lib/ui/screens/isolated_task_sheet.dart:311`);
@@ -554,7 +561,7 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 16. **team-host-guide-sheet (not done).** Commands are prose you cannot copy, and it ends by pointing at `docs/ai-team-host.md` in the repository (`lib/ui/widgets/team_host_form.dart:477`). **Fix:** use `KitCodeBlock` commands, "Open the full guide" through `openExternalLink`, and "Enter the address". *Medium.*
 17. **chat (partial; owner decision).** In a finished turn, text written before the last tool step folds under the work line, so the explanation can be hidden (`lib/ui/screens/chat/message_view.dart:529-570`). The critic says keep the prose visible; the turn model says fold the work. *Medium.*
 18. **embedded-prompt-error-banner.** There is no one-tap "Use ⟨suggested model⟩ and resend", and the failed prompt is not marked "Not sent" with Retry (`lib/ui/screens/chat/chat_states.dart:176-221`). *Medium.*
-19. **profile-monitor.** P4.2b's acceptance ("route removed") is not met. It is still reachable as Servers › Background checks (`servers_screen.dart:1029-1040`) and from search (`search_index.dart:1377`). The dot stays green while a request waits, and the engine words remain. *Medium.*
+19. ~~**profile-monitor.**~~ *Closed by slice-close-misc: the page is removed; every door lands in Notifications.* P4.2b's acceptance ("route removed") is not met. It is still reachable as Servers › Background checks (`servers_screen.dart:1029-1040`) and from search (`search_index.dart:1377`). The dot stays green while a request waits, and the engine words remain. *Medium.*
 20. **embedded-completion-digest-card.** The Inbox row landed, but the expanded body is still the old raw card with its disclaimers and five text buttons (`lib/ui/widgets/completion_digest.dart:54-104`). **Fix:** a P4.2b follow-up. *Medium.*
 21. **command-auth-sheet.** Recovery mechanics are still shown as copy (`lib/ui/screens/library/command_auth_sheet.dart:185-213`). *Medium.*
 22. **termux-setup-installed and embedded-termux-attention-line.**
@@ -562,9 +569,9 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
     - The line blames OpenCode when a leftover helper is the real cause, and has no "See what's running" (`lib/ui/widgets/work_status_line.dart:101-103`).
 
     *Medium.*
-23. **project-hub.** Rows are titles only, with no live lines such as "3 files changed" or "1 running" (`lib/ui/screens/project_hub_screen.dart:446`). *Medium; no owner.*
+23. ~~**project-hub.**~~ *Closed by slice-close-misc: live lines on Changes and Terminal.* Rows are titles only, with no live lines such as "3 files changed" or "1 running" (`lib/ui/screens/project_hub_screen.dart:446`). *Medium; no owner.*
 24. **chat-run-shell-dialog.** The command field is a single line (`chat_screen.dart:4995`). **Fix:** a multi-line mono `KitField`. *Medium.*
-25. **embedded-team-merge-section (blocked).** Merge on green, Undo and real diffs need the host merge contract (939a0554, bae398c0). Separately, a merged task still shows a greyed-out Merge button (`lib/ui/screens/team/merge_section.dart:350`; also team-run-overview-tab), and that part can be fixed now. *Medium.*
+25. **embedded-team-merge-section (blocked).** Merge on green, Undo and real diffs need the host merge contract (939a0554, bae398c0). The greyed-out Merge button on a merged task is gone (slice-close-team). *Medium.*
 
 ### D. Low-impact leftovers (wording and polish; one line each)
 
@@ -584,14 +591,14 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 - **termux-setup** (partial): Switch-stopped state has no explanation sentence ('OpenCode 2 didn't start... your conversations are kept'): only the runtime name, 'Needs you' and two buttons Fix: lib/ui/screens/this_phone_screen.dart _status (switchTarget branch) — P1.5 follow-up.
 - **termux-setup-unsupported** (partial): Title still 'Setup on this phone is Android only' instead of 'Connect a server'; body keeps backticks and the untrue 'requires Termux'; no copyable mono command box Fix: lib/ui/screens/phone_setup/phone_setup_termux_job_screen.dart:546-563 + app_en.arb e7SetupUnsupportedSetup.
 - **termux-storage** (partial): Scan view should show the category rows filling in with the log under Details; intro paragraph still long Fix: lib/ui/screens/termux_storage_screen.dart _buildScanning (screen-phone-1 follow-up).
-- **embedded-team-receipt-chip** (partial): Receipt as a word + icon in the row's supporting line ('Question · Not confirmed yet'), chevron trailing; the retry stays in the Gate sheet. Fix: lib/ui/widgets/team_receipt.dart (teamGateRowReceipt) + its row callers.
-- **team-agent** (partial): Say the dependency only while it is open (check the dependency's state), so 'Working' and 'waiting on…' never show together. Fix: lib/ui/screens/team/agent_screen.dart (_workHold).
+- **embedded-team-receipt-chip** (done, slice-close-team): Receipt as a word + icon in the row's supporting line ('Question · Not confirmed yet'), chevron trailing; the retry stays in the Gate sheet. Fix: lib/ui/widgets/team_receipt.dart (teamGateRowReceipt) + its row callers.
+- **team-agent** (done, slice-close-team): Say the dependency only while it is open (check the dependency's state), so 'Working' and 'waiting on…' never show together. Fix: lib/ui/screens/team/agent_screen.dart (_workHold).
 - **team-agent-output** (partial): Ended + empty: an inline state 'This session has ended' with a way on (Back to the task / About the worker) instead of the 'fills in as the agent works' line. Fix: lib/ui/screens/chat/team_watch_live.dart.
-- **team-home-needs-you-tab** (partial): Receipt as a word in the supporting line ('Needs you · … · Not confirmed yet'), chevron trailing. Fix: lib/ui/widgets/team_receipt.dart / lib/ui/screens/team/team_home_screen.dart.
-- **team-run** (partial): Stage words as outcomes ('Planned · Working · In review · Merged'), with Done/Merged only when every step is merged. Fix: lib/ui/widgets/team_vocabulary.dart (teamRunStage) + lib/ui/screens/team/task_details_sheet.dart (_StageLine).
+- **team-home-needs-you-tab** (done, slice-close-team): Receipt as a word in the supporting line ('Needs you · … · Not confirmed yet'), chevron trailing. Fix: lib/ui/widgets/team_receipt.dart / lib/ui/screens/team/team_home_screen.dart.
+- **team-run** (done, slice-close-team): Stage words as outcomes ('Planned · Working · In review · Merged'), with Done/Merged only when every step is merged. Fix: lib/ui/widgets/team_vocabulary.dart (teamRunStage) + lib/ui/screens/team/task_details_sheet.dart (_StageLine).
 - **embedded-team-discovery-card** (partial): Fold the offer into the Plugins AI Team row ('AI Team · Found on Laptop' + Turn on); shared-settings-1 deferred it to the Plugins row owner and no later slice did it. Fix: lib/ui/screens/settings/plugins_screen.dart (slice-P3.1 / Plugins owner).
 - **about-privacy-tab** (partial): The policy text was not rewritten in the person's words, and there is no folded Technical details section for the CIDRs and key names (screen-system-1 deferred this as document content with no owner). Fix: PRIVACY.md + assets/l10n/PRIVACY.ar.md (docs content; no unit owns it).
-- **notifications-settings** (partial): Shorten the background row to 'Android stops this after 6 hours a day. The app will tell you when it does.' (or let it wrap), and replace 'Keep live' with the switch's name in monitorDisclosure. Fix: lib/ui/screens/settings/notifications_settings_screen.dart:606 + app_en.arb e7SettingsUi34/monitorDisclosure.
+- ~~**notifications-settings**~~ (closed by slice-close-misc): Shorten the background row to 'Android stops this after 6 hours a day. The app will tell you when it does.' (or let it wrap), and replace 'Keep live' with the switch's name in monitorDisclosure. Fix: lib/ui/screens/settings/notifications_settings_screen.dart:606 + app_en.arb e7SettingsUi34/monitorDisclosure.
 - **run-result** (partial): Pass the model through the catalog name or presentedModelLabel. When the outcome is notReported, lead with the known facts. Fix: lib/ui/widgets/run_result_view.dart _facts/_outcome.
 
 ### E. Loose ends found on the way (not board pages)
@@ -610,5 +617,5 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 2. Put the owner decisions to the owner: schedule P2.4 and P2.5 (gap 4), ship a Termux-only P1.6b (gap 3), and decide the chat fold (gap 17).
 3. Run one "leftovers" chat-library unit for gaps 9, 14, 18 and 24 plus the chat lows.
 4. Run one servers/phone wording unit for gaps 7, 12, 22 and the servers and termux lows.
-5. Run one team unit for gaps 6, 16, 25 plus the team lows.
+5. Run one team unit for gaps 6, 16, 25 plus the team lows. *(slice-close-team closed gap 6, gap 15, the merged-state part of gap 25 and the team lows it owns; gap 16's commands are with the security slice, team-agent-output is in the chat library, and the discovery-card fold is in the Plugins page.)*
 6. Give host-management (gap 13) an owner now; it is the only security-shaped gap.

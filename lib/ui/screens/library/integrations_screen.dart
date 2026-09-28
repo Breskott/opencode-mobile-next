@@ -9,9 +9,8 @@ enum IntegrationsMode { providers, mcp, all }
 enum _Section { providers, servers, resources }
 
 /// Providers and MCP servers of the current server, built from kit parts
-/// (screen-library-1). The map proposal for this page is `redesign`: the
-/// split into agent-driven and catalog MCP setup waits for its wave-3
-/// slice; this rebuild keeps today's structure in the visual language.
+/// (screen-library-1). MCP › Add opens the add sheet (P2.4): the MCP
+/// catalogue (P2.5) or the manual form.
 class IntegrationsScreen extends StatefulWidget {
   final ConnectionController controller;
   final Future<bool> Function(Uri destination)? authorizationLauncher;
@@ -500,6 +499,30 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     }
   }
 
+  /// MCP › Add (P2.4): the add sheet, then the catalogue or the form.
+  Future<void> _openMcpAdd() async {
+    final path = await showMcpAddSheet(
+      context,
+      capabilities: widget.controller.capabilities,
+    );
+    if (!mounted || path == null) return;
+    switch (path) {
+      case McpAddPath.manual:
+        await _openMcpSetup();
+      case McpAddPath.catalog:
+        final location = widget.controller.locationRevision;
+        await Navigator.of(context).push<void>(
+          KitPageRoute<void>(
+            builder: (_) => McpCatalogScreen(controller: widget.controller),
+          ),
+        );
+        // Whatever the catalogue turned on or off: read the list again.
+        if (mounted && widget.controller.locationRevision == location) {
+          await _load();
+        }
+    }
+  }
+
   Future<void> _openMcpSetup() async {
     final location = widget.controller.locationRevision;
     final runtime =
@@ -658,7 +681,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
               key: const ValueKey('add-mcp-server'),
               label: l10n.mcpAdd,
               icon: AppIconography.add,
-              onPressed: _openMcpSetup,
+              onPressed: _openMcpAdd,
             ),
         ],
       ),
@@ -1405,7 +1428,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
               key: const ValueKey('mcp-empty-add'),
               label: l10n.e7LibraryAddAnMCPServer,
               icon: AppIconography.add,
-              onPressed: _openMcpSetup,
+              onPressed: _openMcpAdd,
             ),
           ),
         )
@@ -2035,7 +2058,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         }
         try {
           return await (widget.authorizationLauncher?.call(uri) ??
-              launchUrl(uri, mode: LaunchMode.externalApplication));
+              launchExternalUri(uri));
         } catch (_) {
           // The shared policy's generic launcher error could include a URL.
           // Auth URLs are sensitive: never forward platform exception text.

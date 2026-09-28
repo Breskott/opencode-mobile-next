@@ -601,7 +601,8 @@ class PerfTraceInterceptor extends Interceptor {
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     try {
       options.extra[_extraKey] = PerfTrace.begin(
-        'http $api ${options.method.toUpperCase()} '
+        // Dio upper-cases the method when it composes the request.
+        'http $api ${options.method} '
         '${PerfTrace.pathTemplate(options.path)}',
         logMinMs: logMinMs,
       );

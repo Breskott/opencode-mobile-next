@@ -290,7 +290,7 @@ void main() {
       expect(find.text('25.5% used'), findsOneWidget);
       await tester.ensureVisible(_key('quota-enable-monitoring'));
       expect(find.text(_en.quotaMonitorOfferDetail('80%')), findsOneWidget);
-      // The collector's origin shows once, in its own row, not in Details.
+      // The collector's address shows once, in Details.
       await tester.ensureVisible(_key('quota-details'));
       await tester.tap(_key('quota-details'));
       await tester.pumpAndSettle();

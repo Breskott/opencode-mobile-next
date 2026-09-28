@@ -984,25 +984,16 @@ final gServersArea = CensusArea(
       kit.expectText('Remove from this phone');
     }),
 
-    // -- profile-monitor -------------------------------------------------
-    CensusShot('profile-monitor', (kit) async {
-      final s = await _monitorSetup(kit, activeId: 'profile-2');
-      await s.controller.profileMonitor.setEnabled('profile-1', true);
-      await s.controller.profileMonitor.refresh();
-      await kit.pumpApp(
-        ProfileMonitorScreen(controller: s.controller),
-        controller: s.controller,
-        store: s.store,
-      );
-      kit.expectText('Background checks');
-    }),
+    // profile-monitor was removed (slice-close-misc): its checks live in
+    // Notifications › Saved servers, which the notifications census covers.
 
     // -- profile-monitor-switch-server-dialog --------------------------------
     CensusShot('profile-monitor-switch-server-dialog', (kit) async {
       final s = await _monitorSetup(kit, activeId: 'profile-1');
       s.controller.busySessions = {'busy-session'};
       await kit.pumpApp(
-        ProfileMonitorScreen(controller: s.controller),
+        // The dialog opens from an Inbox row; any page can host it.
+        const SizedBox.expand(),
         controller: s.controller,
         store: s.store,
       );

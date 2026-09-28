@@ -293,7 +293,7 @@ class KitRow extends StatelessWidget {
                     style: tokens.rowTitle.copyWith(color: titleColor),
                   ),
                   if (line != null) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: KitTokens.rowLineGap),
                     Text.rich(
                       line,
                       key: supportingKey,
@@ -305,7 +305,7 @@ class KitRow extends StatelessWidget {
                     ),
                   ],
                   if (below case final below?) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: KitTokens.rowLineGap),
                     below,
                   ],
                   if (enableBelow) KitInset(child: enableButton),

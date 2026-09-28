@@ -220,12 +220,13 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
   Widget _inset(Widget child, {bool top = true}) {
     final tokens = KitTokens.of(context);
     return Padding(
-      padding: EdgeInsetsDirectional.fromSTEB(
-        tokens.gutter,
-        top ? tokens.space2 : 0,
-        tokens.gutter,
-        0,
-      ),
+      padding: top
+          ? EdgeInsetsDirectional.only(
+              start: tokens.gutter,
+              top: tokens.space2,
+              end: tokens.gutter,
+            )
+          : EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
       child: child,
     );
   }

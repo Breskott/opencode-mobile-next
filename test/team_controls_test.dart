@@ -9,7 +9,8 @@
 // Manual reassign is absent (the dispatcher owns it); Start a run sends the
 // objective and the supervision line to the Mayor, shows "Planning…
 // (Mayor)" on the home, resolves when a run carrying the objective
-// appears, and a suspended Mayor shows the host-off copy without sending.
+// appears, and a suspended Mayor opens "Team can't take tasks" with Wake
+// the planner, without sending.
 // TEAM-306: on a host that creates work (the phone's loopback) a suspended
 // Mayor shows the direct task form instead, which creates one bead and
 // slings it at the project's polecat pool; a refused create stays on the
@@ -979,7 +980,7 @@ void main() {
       await drain(tester);
     });
 
-    testWidgets('a suspended Mayor: host-off copy, nothing sent', (
+    testWidgets('a suspended Mayor: the team can\'t take tasks, nothing sent', (
       tester,
     ) async {
       await size(tester, const Size(400, 900));
@@ -990,10 +991,10 @@ void main() {
       await tester.tap(key('team-home-start-run'));
       await tester.pumpAndSettle();
       expect(key('team-start-run-planner-off'), findsOneWidget);
-      expect(
-        find.text('The planner (Mayor) is off on this host'),
-        findsOneWidget,
-      );
+      // slice-close-team: plain title and words, and a way on.
+      expect(find.text("Team can't take tasks"), findsOneWidget);
+      expect(find.text('The planner is switched off'), findsOneWidget);
+      expect(key('team-start-run-wake'), findsOneWidget);
       expect(key('team-start-run-host-guide'), findsOneWidget);
       expect(key('team-start-run-send'), findsNothing);
       expect(key('team-start-run-objective'), findsNothing);

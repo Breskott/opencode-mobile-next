@@ -129,8 +129,8 @@ void main() {
   });
 
   group('quota monitoring section', () {
-    testWidgets('a monitored source shows its server, origin, state, '
-        'threshold and actions', (tester) async {
+    testWidgets('a monitored source shows its server, state, threshold and '
+        'actions; no collector address', (tester) async {
       tester.view.physicalSize = const Size(412, 1600);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -143,7 +143,8 @@ void main() {
         find.text(_en.quotaSourceTitle('Workstation', _en.quotaCodex)),
         findsOneWidget,
       );
-      expect(find.text(_baseUrl), findsOneWidget);
+      // The server's name is the title; its address is not repeated.
+      expect(find.text(_baseUrl), findsNothing);
       expect(find.text(_en.quotaMonitorSourceChanged), findsOneWidget);
       expect(find.text(_en.quotaMonitorThreshold), findsOneWidget);
       expect(find.text(_en.quotaBudgetPercent('90')), findsOneWidget);
@@ -154,7 +155,6 @@ void main() {
         find.text(_en.quotaMonitorDisable(_en.quotaCodex, 'Workstation')),
         findsOneWidget,
       );
-      expect(find.text(_en.quotaMonitorEmpty), findsNothing);
       // Quota alerts is a row that says what it opens.
       expect(find.text(_en.quotaAlertsRowTitle), findsOneWidget);
       expect(find.text(_en.quotaAlertsRowSupporting), findsOneWidget);
@@ -211,7 +211,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(_key('quota-source-profile-1-codex'), findsNothing);
       // It is monitored, so the empty state does not claim otherwise.
-      expect(find.text(_en.quotaMonitorEmpty), findsNothing);
       await _finish(tester, c);
     });
 
@@ -272,8 +271,8 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('Stop monitoring removes the source and the empty state says '
-        'how to add one', (tester) async {
+    testWidgets('Stop monitoring removes the source, and no empty notice '
+        'stands in for it', (tester) async {
       tester.view.physicalSize = const Size(412, 1600);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -292,7 +291,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(c.quotaMonitor.sources, isEmpty);
-      expect(find.text(_en.quotaMonitorEmpty), findsOneWidget);
+      expect(
+        find.text(_en.quotaSourceTitle('Workstation', _en.quotaCodex)),
+        findsNothing,
+      );
+      expect(find.textContaining('No provider sources'), findsNothing);
       expect(find.text(_en.quotaMonitorThreshold), findsNothing);
       await _finish(tester, c);
     });

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../kit_illustration.dart';
+import '../kit_motion.dart';
 
 /// The brand's "open portal" (assets/branding/open-portal/mark.svg): two
 /// open brackets forming an aperture. Entrance: each bracket draws itself,
@@ -65,7 +66,7 @@ class KitPortalScene extends KitScene {
     canvas.restore();
 
     // The spark: lands with a small overshoot, then circles while waiting.
-    final land = KitDraw.interval(t, .6, 1, Curves.easeOutBack);
+    final land = KitDraw.interval(t, .6, 1, KitMotion.land);
     if (land > 0) {
       final angle = frame.loop * 2 * math.pi - math.pi / 2;
       final orbit = frame.looping ? 7.0 : 0.0;

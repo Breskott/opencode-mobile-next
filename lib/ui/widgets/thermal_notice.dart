@@ -32,9 +32,15 @@ class ThermalNoticeLine extends ConsumerWidget {
             return KitReveal(
               child: Padding(
                 key: ValueKey('thermal-notice-${notice.kind.name}'),
-                padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 4, 4),
+                padding: EdgeInsetsDirectional.fromSTEB(
+                  KitTokens.of(context).gutter,
+                  KitTokens.of(context).space2,
+                  KitTokens.of(context).space1,
+                  KitTokens.of(context).space1,
+                ),
                 child: KitNotice(
-                  tone: resumed ? AppStatusTone.ok : AppStatusTone.attention,
+                  // Neutral, as its KitStatus twin: amber is needs-you only (LOOK-24).
+                  tone: resumed ? AppStatusTone.ok : AppStatusTone.neutral,
                   icon: switch (notice.kind) {
                     ThermalNoticeKind.paused => AppIconography.pause,
                     ThermalNoticeKind.stopped => AppIconography.stopCircle,

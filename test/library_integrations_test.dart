@@ -11,6 +11,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
+import 'package:opencode_mobile/ui/screens/mcp_catalog_screen.dart';
 import 'package:opencode_mobile/ui/screens/mcp_setup_screen.dart';
 import 'package:opencode_mobile/ui/widgets/provider_logo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -361,10 +362,32 @@ void main() {
     expect(find.byKey(const ValueKey('add-mcp-server')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('add-mcp-server')));
     await tester.pumpAndSettle();
+    // P2.4: Add opens the add sheet; Enter manually is the form.
+    expect(find.byKey(const ValueKey('mcp-add-sheet')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('mcp-add-manual')));
+    await tester.pumpAndSettle();
 
     expect(find.byType(McpSetupScreen), findsOneWidget);
     // A persistent write offers where to save it (this project or all).
     expect(find.byKey(const ValueKey('mcp-scope')), findsOneWidget);
+  });
+
+  testWidgets('Add › Browse the catalogue opens the MCP catalogue', (
+    tester,
+  ) async {
+    final controller = await _controller(_IntegrationsRepository());
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('add-mcp-server')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('mcp-add-catalog')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(McpCatalogScreen), findsOneWidget);
+    // Nothing is fetched until the person agrees.
+    expect(find.byKey(const ValueKey('mcp-catalog-consent')), findsOneWidget);
   });
 
   testWidgets(

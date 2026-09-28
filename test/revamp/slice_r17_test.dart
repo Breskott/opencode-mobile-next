@@ -297,22 +297,10 @@ void main() {
           );
     });
 
-    for (final (status, message, tone) in [
-      (
-        QuotaMonitorStatus.paused,
-        _en.quotaMonitorPaused,
-        AppStatusTone.neutral,
-      ),
-      (
-        QuotaMonitorStatus.wifiRequired,
-        _en.quotaMonitorWifiRequired,
-        AppStatusTone.neutral,
-      ),
-      (
-        QuotaMonitorStatus.sourceChanged,
-        _en.quotaMonitorSourceChanged,
-        AppStatusTone.failure,
-      ),
+    for (final (status, message) in [
+      (QuotaMonitorStatus.paused, _en.quotaMonitorPaused),
+      (QuotaMonitorStatus.wifiRequired, _en.quotaMonitorWifiRequired),
+      (QuotaMonitorStatus.sourceChanged, _en.quotaMonitorSourceChanged),
     ]) {
       testWidgets('${status.name} is said without the Needs-you tone', (
         tester,
@@ -336,14 +324,19 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        final notice = tester.widget<KitNotice>(
+        // Said in words on the source's own row beside a neutral mark,
+        // never as a tinted notice (slice-close-misc).
+        expect(
+          find.ancestor(of: find.text(message), matching: find.byType(KitRow)),
+          findsOneWidget,
+        );
+        expect(
           find.ancestor(
             of: find.text(message),
             matching: find.byType(KitNotice),
           ),
+          findsNothing,
         );
-        expect(notice.tone, tone);
-        expect(notice.tone, isNot(AppStatusTone.attention));
         await tester.pumpWidget(const SizedBox.shrink());
         c.quotaMonitor.dispose();
         c.dispose();

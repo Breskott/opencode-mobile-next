@@ -1119,7 +1119,7 @@ void main() {
       // The eight-step strip became four plain stages.
       expect(key('team-run-cycle'), findsNothing);
       expect(key('team-task-details-stage'), findsOneWidget);
-      for (final stage in ['Waiting', 'Working', 'Reviewing', 'Done']) {
+      for (final stage in ['Planned', 'Working', 'In review', 'Merged']) {
         expect(
           find.descendant(
             of: key('team-task-details-stage'),

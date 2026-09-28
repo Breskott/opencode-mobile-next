@@ -267,7 +267,11 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
                         TextSpan(
                           text:
                               ' · ${l10n.pluginsBuiltinFailed(builtInFailed)}',
-                          style: TextStyle(color: tokens.roles.danger),
+                          style: KitText.styleOf(
+                            context,
+                            KitTextRole.secondary,
+                            tone: KitTextTone.danger,
+                          ),
                         ),
                     ],
                   ),
@@ -307,7 +311,11 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
       supporting: TextSpan(
         text: _statusWord(plugin, l10n),
         style: failed
-            ? TextStyle(color: KitTokens.of(context).roles.danger)
+            ? KitText.styleOf(
+                context,
+                KitTextRole.secondary,
+                tone: KitTextTone.danger,
+              )
             : null,
       ),
       trailing: const KitChevron(),
@@ -438,31 +446,31 @@ String readablePluginName(String id) {
   }
   if (words.isEmpty) return id;
   const acronyms = {
-    'ai',
-    'api',
-    'cli',
-    'git',
-    'http',
-    'https',
-    'id',
-    'json',
-    'llm',
-    'lsp',
-    'mcp',
-    'pr',
-    'sdk',
-    'ssh',
-    'tui',
-    'ui',
-    'url',
+    'ai': 'AI',
+    'api': 'API',
+    'cli': 'CLI',
+    'git': 'GIT',
+    'http': 'HTTP',
+    'https': 'HTTPS',
+    'id': 'ID',
+    'json': 'JSON',
+    'llm': 'LLM',
+    'lsp': 'LSP',
+    'mcp': 'MCP',
+    'pr': 'PR',
+    'sdk': 'SDK',
+    'ssh': 'SSH',
+    'tui': 'TUI',
+    'ui': 'UI',
+    'url': 'URL',
   };
   final shown = <String>[];
   for (var i = 0; i < words.length; i++) {
     final word = words[i].toLowerCase();
-    if (acronyms.contains(word)) {
-      shown.add(word.toUpperCase());
+    if (acronyms[word] case final acronym?) {
+      shown.add(acronym);
     } else if (i == 0) {
-      shown.add(word[0].toUpperCase() + word.substring(1));
+      shown.add(KitText.sentenceCase(word));
     } else {
       shown.add(word);
     }

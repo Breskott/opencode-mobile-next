@@ -373,11 +373,10 @@ class _KitSwitchRowBodyState extends State<_KitSwitchRowBody> {
     final gap = SizedBox(height: tokens.space2);
     return Padding(
       key: const ValueKey('kit-switch-risk-step'),
-      padding: EdgeInsetsDirectional.fromSTEB(
-        tokens.gutter,
-        0,
-        tokens.gutter,
-        tokens.space3,
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.gutter,
+        end: tokens.gutter,
+        bottom: tokens.space3,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

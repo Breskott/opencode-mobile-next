@@ -261,6 +261,46 @@ Future<T?> showKitSheet<T>(
   );
 }
 
+/// Opens [builder] as a bottom sheet when the body draws its own [KitSheet]
+/// frame (with `handle: false`): a sheet whose frame depends on state only
+/// its body holds, such as a fixed share of the window's height, a
+/// full-height list with its own search, or a header that changes with a
+/// tab (the folder browser, the command launcher, the timeline). Anything
+/// else uses [showKitSheet].
+///
+/// The route is the theme's bottom sheet (`bottomSheetTheme`: `surface2`,
+/// the sheet radius, the scrim and the drag handle the frame leaves out),
+/// scroll-controlled so the body sets its own height, and capped at
+/// [maxWidth] when given. [useSafeArea] keeps it below the status bar.
+/// [sheetKey] keys the body. It returns what the body pops with, or null
+/// when dismissed; `Navigator.pop(context, result)` from the caller's
+/// context or [KitSheet.close] from inside the body closes it.
+///
+/// Added by slice-P9.10 so the last raw `showModalBottomSheet(` calls
+/// outside the kit (G1) come through the kit without changing how they
+/// look.
+Future<T?> showKitFramedSheet<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  double? maxWidth,
+  bool useSafeArea = false,
+  Key? sheetKey,
+}) => showModalBottomSheet<T>(
+  context: context,
+  isScrollControlled: true,
+  useSafeArea: useSafeArea,
+  // The frame is drawn with `handle: false`: the route draws the one
+  // handle, as the theme does.
+  showDragHandle: true,
+  // Reduced motion (MOT-7): no slide; otherwise the route's own.
+  sheetAnimationStyle: KitMotion.reduced(context)
+      ? AnimationStyle.noAnimation
+      : null,
+  constraints: maxWidth == null ? null : BoxConstraints(maxWidth: maxWidth),
+  builder: (sheetContext) =>
+      KeyedSubtree(key: sheetKey, child: builder(sheetContext)),
+);
+
 /// The one sheet frame (§1.1), drawn by [showKitSheet]; also used on its
 /// own for goldens and for a full-screen variant on tablets.
 ///

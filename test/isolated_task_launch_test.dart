@@ -131,6 +131,39 @@ void main() {
     },
   );
 
+  test(
+    'after a failed setup only an explicit Start anyway opens the copy',
+    () async {
+      final h = _Harness();
+      addTearDown(h.close);
+      unawaited(h.launch.start());
+      h.createCompleter.complete(_created);
+      await Future<void>.delayed(Duration.zero);
+      h.events.add(_failed('/data/worktree/project-1/wake-fix'));
+      await Future<void>.delayed(Duration.zero);
+      expect(h.launch.canStartAfterFailedSetup, isTrue);
+
+      await h.launch.open();
+      expect(h.openCalls, isEmpty, reason: 'no implicit open after a failure');
+      expect(h.launch.phase, IsolatedTaskPhase.failed);
+
+      await h.launch.open(acceptFailedSetup: true);
+      expect(h.openCalls, ['/data/worktree/project-1/wake-fix']);
+      expect(h.launch.phase, IsolatedTaskPhase.opened);
+    },
+  );
+
+  test('a failed create has no copy to start in', () async {
+    final h = _Harness();
+    addTearDown(h.close);
+    unawaited(h.launch.start());
+    h.createCompleter.completeError(const ProductException('nope'));
+    await Future<void>.delayed(Duration.zero);
+    expect(h.launch.canStartAfterFailedSetup, isFalse);
+    await h.launch.open(acceptFailedSetup: true);
+    expect(h.openCalls, isEmpty);
+  });
+
   test('create failure surfaces the error with no worktree', () async {
     final h = _Harness();
     addTearDown(h.close);

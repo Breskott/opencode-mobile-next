@@ -465,14 +465,14 @@ void main() {
       find.text(_l10n.quotaNeedsCollector('Synthetic collector')),
       findsOneWidget,
     );
-    await _reveal(tester, find.byKey(const ValueKey('quota-source')));
-    expect(find.textContaining(_origin), findsOneWidget);
     await _reveal(tester, find.byKey(const ValueKey('quota-details')));
     await tester.tap(find.text('Details'));
     await _frames(tester);
+    // The collector's address is a technical value, in Details only.
+    expect(find.textContaining(_origin), findsOneWidget);
     expect(find.textContaining(providerQuotaPath), findsOneWidget);
     expect(find.text(_l10n.quotaCollectorHowTo), findsOneWidget);
-    expect(_l10n.quotaCollectorStepInstall('x'), contains('tool/quota'));
+    expect(_l10n.quotaCollectorStepInstall('x'), isNot(contains('tool/quota')));
     await _reveal(tester, _consentSwitch);
     expect(tester.widget<Switch>(_consentSwitch).value, isFalse);
     expect(tester.widget<KitButton>(_readButton).onPressed, isNull);
@@ -508,8 +508,6 @@ void main() {
             profile.baseUrl = '$_origin/?token=$_privateError',
       );
       await _pumpQuota(tester, h);
-      await _reveal(tester, find.byKey(const ValueKey('quota-source')));
-      expect(find.textContaining(_origin), findsOneWidget);
       await _reveal(tester, _consentSwitch);
       expect(
         find.descendant(
@@ -521,6 +519,11 @@ void main() {
       expect(tester.widget<Switch>(_consentSwitch).onChanged, isNull);
       expect(tester.widget<KitButton>(_readButton).onPressed, isNull);
       expect(h.gateways, isEmpty);
+      // Only the origin is shown, in Details; the query never is.
+      await _reveal(tester, find.byKey(const ValueKey('quota-details')));
+      await tester.tap(find.text('Details'));
+      await _frames(tester);
+      expect(find.textContaining(_origin), findsOneWidget);
       _expectNoPrivateCopy();
     },
   );
@@ -607,7 +610,17 @@ void main() {
           },
         ),
       );
-      expect(find.text(_l10n.quotaNotReported), findsNWidgets(2));
+      // Windows the collector did not report are left out; the reading
+      // says in words that no limit was reported (slice-close-misc).
+      expect(
+        find.text(
+          _l10n.quotaCollectorNoWindows(
+            _l10n.quotaCodex,
+            'Synthetic collector',
+          ),
+        ),
+        findsOneWidget,
+      );
       expect(find.textContaining('resets'), findsNothing);
       expect(find.byType(KitProgressRow), findsNothing);
       expect(find.textContaining('% left'), findsNothing);
@@ -622,8 +635,15 @@ void main() {
           },
         ),
       );
-      expect(find.text(_l10n.quotaNotReported), findsOneWidget);
-      expect(find.text(_l10n.quotaPrimaryWindow), findsNothing);
+      expect(
+        find.text(
+          _l10n.quotaCollectorNoWindows(
+            _l10n.quotaCodex,
+            'Synthetic collector',
+          ),
+        ),
+        findsOneWidget,
+      );
       expect(find.byType(KitProgressRow), findsNothing);
     },
   );
@@ -735,7 +755,7 @@ void main() {
           reason: '${status.name}/${account.name}',
         );
         expect(find.text(_l10n.quotaCollectorAuth), findsNothing);
-        expect(find.text(_l10n.quotaCodexAccount), findsNothing);
+        expect(find.textContaining('from the quota collector'), findsNothing);
         expect(find.textContaining('% left'), findsNothing);
         expect(find.byType(KitProgressRow), findsNothing);
         _expectNoPrivateCopy();
@@ -779,7 +799,13 @@ void main() {
         expect(find.text(cases[index].$2), findsOneWidget);
         expect(find.text(_l10n.quotaProviderAuth), findsNothing);
         expect(find.byType(KitProgressRow), findsNothing);
-        expect(_retryButton, findsOneWidget);
+        // A missing collector is not retried: nothing to retry until it
+        // is installed, and the top bar keeps Refresh (slice-close-misc).
+        final missing =
+            cases[index].$1 is ProviderQuotaFailure &&
+            (cases[index].$1 as ProviderQuotaFailure).kind ==
+                QuotaFailureKind.unsupported;
+        expect(_retryButton, missing ? findsNothing : findsOneWidget);
         _expectNoPrivateCopy();
       }
     },
@@ -1026,9 +1052,19 @@ void main() {
       expect(find.textContaining('/ocmn/quota/v1/minimax'), findsOneWidget);
       await _consentAndRead(tester, h);
       await _finishRead(tester, h, _snapshot(provider: QuotaProvider.minimax));
-      expect(find.text(_l10n.quotaMiniMaxAccount), findsOneWidget);
+      expect(
+        find.text(
+          _l10n.quotaCollectorFrom(_l10n.quotaMiniMax, 'Synthetic collector'),
+        ),
+        findsOneWidget,
+      );
+      // The source-bound caveat is technical: it is said in Details.
+      await _reveal(tester, find.byKey(const ValueKey('quota-details')));
+      if (find.text(_l10n.quotaMiniMaxSourceBound).evaluate().isEmpty) {
+        await tester.tap(find.text('Details'));
+        await _frames(tester);
+      }
       expect(find.text(_l10n.quotaMiniMaxSourceBound), findsOneWidget);
-      expect(find.text(_l10n.quotaClaudeAccount), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -1091,7 +1127,7 @@ void main() {
         await _finishRead(tester, first, _snapshot());
         current.value = second;
         await _frames(tester);
-        expect(find.text(_l10n.quotaCodexAccount), findsNothing);
+        expect(find.textContaining('from the quota collector'), findsNothing);
         expect(tester.widget<Switch>(_consentSwitch).value, isFalse);
         expect(second.gateways, isEmpty);
         expect(second.overview.consented, isFalse);
@@ -1126,14 +1162,13 @@ void main() {
       expect(find.text(_l10n.quotaClaudeUnavailable), findsOneWidget);
       old.result.complete(_snapshot());
       await _frames(tester);
-      expect(find.text(_l10n.quotaCodexAccount), findsNothing);
+      expect(find.textContaining('from the quota collector'), findsNothing);
       expect(h.gateways, hasLength(1));
       await h.overview.allowAndRefresh();
       await _frames(tester);
       expect(h.gateways, hasLength(1));
       expect(_readButton, findsNothing);
-      expect(find.text(_l10n.quotaClaudeAccount), findsNothing);
-      expect(find.text(_l10n.quotaCodexAccount), findsNothing);
+      expect(find.textContaining('from the quota collector'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -1392,9 +1427,9 @@ void main() {
     await _consentAndRead(tester, h);
     await _finishRead(tester, h, _snapshot());
     await tester.pump(const Duration(seconds: 1));
-    expect(find.textContaining(_origin), findsOneWidget);
     expect(find.textContaining('About 75% left'), findsOneWidget);
-    expect(find.text(_l10n.quotaNotReported), findsOneWidget);
+    // An unreported window is left out (slice-close-misc).
+    expect(find.text('Not reported'), findsNothing);
     _expectNoPrivateCopy();
     expect(tester.takeException(), isNull);
     final png = await capturePng(tester, boundary, pixelRatio: 1);

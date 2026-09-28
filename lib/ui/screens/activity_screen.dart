@@ -1421,34 +1421,28 @@ class ActivityGateTile extends StatelessWidget {
             now: now,
             l10n: l10n,
           );
-    final subtitle = [
-      teamGateKindWord(l10n, gate.kind),
-      ?teamGateLink(l10n, team.snapshot, gate),
-      ?serverName,
-      ?age,
-    ].join(' · ');
     final record = teamGateMutation(team, gate);
     void open() => showGateSheet(context, team, gate.id, now: () => now);
     return KitRow(
       leading: KitNeedsYou.mark(),
       title: gate.title,
+      // "Needs you · Question · Not confirmed yet · …": the answer's
+      // receipt as a word while the host has not confirmed it; the row
+      // opens the Gate sheet, where Try again lives.
       supporting: TextSpan(
         children: [
           KitNeedsYou.span(context),
-          TextSpan(text: subtitle),
+          teamGateRowLine(context, [
+            teamGateKindWord(l10n, gate.kind),
+            ?teamGateLink(l10n, team.snapshot, gate),
+            ?serverName,
+            ?age,
+          ], record: record),
         ],
       ),
       supportingMaxLines: 2,
-      trailing:
-          (record == null
-              ? null
-              : teamGateRowReceipt(
-                  context,
-                  record,
-                  key: ValueKey('activity-team-gate-${gate.id}-receipt'),
-                  onOpen: open,
-                )) ??
-          const KitChevron(),
+      supportingKey: ValueKey('activity-team-gate-${gate.id}-line'),
+      trailing: const KitChevron(),
       onTap: open,
     );
   }

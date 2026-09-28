@@ -2,13 +2,13 @@
 // the new owner rule G16: "No UI component to be used should remain outside
 // our kit. All is coming from our library only.", 2026-09-26).
 //
-// A pure-Dart file scan — no widget pumping. Modelled on
-// test/design_standard_test.dart: a committed per-file baseline that only
-// shrinks. The test fails when a file/pattern count rises above its
-// baseline, or a file/pattern not in the baseline appears at all. When
-// counts drop it still passes, but prints the entries that dropped and the
-// command that commits the smaller numbers, so they only ever go down. A
-// passing run with nothing dropped prints nothing.
+// A pure-Dart file scan — no widget pumping.
+//
+// G1, G15 and G16 are ABSOLUTE (slice-P9.10, kit-v2 §9.3: "when the
+// baseline is empty, the test switches to absolute"). They have no baseline
+// and no per-file allowance: any hit fails, with a message that names the
+// kit part to use instead (`_kitOnlyFix`). There is nothing to regenerate
+// for them; fix the file.
 //
 // G1 — modal and toast entry points live in the kit: outside lib/ui/kit/,
 // showDialog(/showModalBottomSheet(/etc. must come from the kit's
@@ -22,12 +22,20 @@
 // buttons, Card, Scaffold, dialogs, ...) must come from the kit. Pages are
 // pushed with KitPageRoute (KIT-7): MaterialPageRoute and PageRouteBuilder
 // count there and in the Flutter UI code elsewhere under lib/.
+//
+// The `_rules` gates below (G2, G7, ...) keep a committed per-file
+// baseline for their ratchet rows that only shrinks (modelled on
+// test/design_standard_test.dart). A ratchet row fails when a file/pattern
+// count rises above its baseline, or a file/pattern not in the baseline
+// appears at all. When counts drop it still passes, but prints the entries
+// that dropped and the command that commits the smaller numbers, so they
+// only ever go down. A passing run with nothing dropped prints nothing.
 // G2, G7, G15x, G17, G21, G48 — docs/ux-system/revamp/STANDARDS.md §18: kit
 // seams (copy, haptics, links, motion, retired wrappers), directional layout
 // and bidi marks, widths inside the kit, colour roles, look and motion
 // literals, and drafts in sheets. One data-driven table, `_rules`.
 //
-// Regenerate the baseline after a migration lands:
+// Regenerate the `_rules` baseline after a migration lands:
 //   KIT_RATCHET_WRITE=1 flutter test test/kit_ratchet_test.dart
 // (add KIT_RATCHET_GATES=G17,G21 to rewrite only those gates' baselines)
 // (the pinned Flutter from AGENTS.md). Then run it again without the env
@@ -42,7 +50,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// file -> reason, for G1/G16 exemptions that cannot move into the kit.
+/// file -> reason, for G1/G15/G16 exemptions that cannot move into the kit.
 /// Keep this empty or near-empty: the kit itself is already out of scope
 /// (excluded by directory), so an entry here means a *non-kit* file that
 /// genuinely cannot use the kit wrapper (e.g. bootstrap code that runs
@@ -73,9 +81,11 @@ const _g16Allowlist = <String>{
   'ConstrainedBox', 'LimitedBox', 'AspectRatio', 'FittedBox', 'SafeArea',
   'Offstage', 'Visibility', 'KeyedSubtree', 'RepaintBoundary',
   'IgnorePointer', 'AbsorbPointer',
-  // Scrolling.
+  // Scrolling. NotificationListener only hears scroll (and other)
+  // notifications bubbling up; it draws nothing and takes no input
+  // (kit-v2 §9.1, slice-P9.10).
   'ListView', 'CustomScrollView', 'SliverList', 'SliverToBoxAdapter',
-  'SliverPadding', 'SliverFillRemaining',
+  'SliverPadding', 'SliverFillRemaining', 'NotificationListener',
   // Builders.
   'Builder', 'StatefulBuilder', 'LayoutBuilder', 'ValueListenableBuilder',
   'ListenableBuilder', 'AnimatedBuilder', 'StreamBuilder', 'FutureBuilder',
@@ -90,8 +100,8 @@ const _g16Allowlist = <String>{
 
 /// The routes G16 counts although they are not widgets, so the widget
 /// catalogue never lists them (KIT-7): a page is pushed with KitPageRoute,
-/// pushKitPage or replaceWithKitPage, and every other use is baselined per
-/// file and only shrinks. Name -> named constructors (none). Counted in
+/// pushKitPage or replaceWithKitPage, and every other use fails (G16 is
+/// absolute). Name -> named constructors (none). Counted in
 /// lib/ui (minus the kit) and in the Flutter UI code elsewhere under lib/
 /// (`_uiElsewhere`: lib/main.dart, lib/voice/notices.dart, ...), where G16
 /// counts only these.
@@ -99,10 +109,6 @@ const _g16Routes = <String, List<String>>{
   'MaterialPageRoute': [],
   'PageRouteBuilder': [],
 };
-
-/// Scrollbar is allowed only in the one file that owns desktop scroll
-/// chrome (docs/ux-system/kit-v2.md §8.3).
-const _scrollbarHome = 'lib/ui/desktop/desktop_interaction.dart';
 
 bool _isGenerated(String path) {
   if (path.startsWith('lib/l10n/app_localizations') && path.endsWith('.dart')) {
@@ -213,13 +219,10 @@ Map<String, int> _countG16(
   Map<String, List<String>> widgets,
   Set<String> appClasses,
 ) {
-  final allowlist = path == _scrollbarHome
-      ? {..._g16Allowlist, 'Scrollbar'}
-      : _g16Allowlist;
   final counts = <String, int>{};
   for (final m in _ctorCallRe.allMatches(code)) {
     final name = m.group(1)!;
-    if (allowlist.contains(name)) continue;
+    if (_g16Allowlist.contains(name)) continue;
     if (appClasses.contains(name)) continue;
     final ctors = widgets[name] ?? _g16Routes[name];
     if (ctors == null) continue; // not a known Flutter framework widget
@@ -246,6 +249,143 @@ Map<String, int> _g16CountsFor(
   path.startsWith('lib/ui/') ? widgets : const {},
   appClasses,
 );
+
+// --- G1/G15/G16 are absolute: what to use instead ------------------------
+
+/// The kit part that replaces a G1 entry point, a G15 width literal or a G16
+/// framework widget (kit-v2 §9.2, STANDARDS KIT-1/KIT-2). A name missing
+/// here gets the general advice only.
+const _kitOnlyFix = <String, String>{
+  // G1 — modal and toast entry points.
+  'showDialog(':
+      'showKitAlert (a blocking alert), showKitConfirm (a question) or '
+      'showKitInputDialog (one short text entry)',
+  'showModalBottomSheet(':
+      'showKitSheet (the one sheet frame); a body that draws its own '
+      'KitSheet frame opens with showKitFramedSheet',
+  'showGeneralDialog(': 'showKitSheet, showKitAlert or showKitConfirm',
+  'AlertDialog(': 'showKitAlert or showKitConfirm',
+  'SimpleDialog(': 'showKitChoiceSheet',
+  'DraggableScrollableSheet(': 'showKitSheet(height: KitSheetHeight.full)',
+  'showSnackBar(':
+      'showKitUndo for done-with-undo (KIT-34), KitCopy.copy or '
+      'KitAction.copy for a copy (it confirms itself), showProductError for a '
+      'failure, or a KitNotice on the part it is about',
+  'SnackBar(':
+      'showKitUndo for done-with-undo (KIT-34), KitCopy.copy or '
+      'KitAction.copy for a copy (it confirms itself), showProductError for a '
+      'failure, or a KitNotice on the part it is about',
+  'MaterialBanner(': 'KitNotice or KitStatusLine',
+  'showConfirmSheet(': 'showKitConfirm',
+  // G15 — a width compared to a number.
+  'width-literal':
+      'KitLayout.windowOf(context) (KitWindow compact/medium/expanded/large) '
+      'or a KitLayout constant (kit-v2 §8.1)',
+  // G16 — framework widgets.
+  'Text': 'KitText (a role and a tone, never a style)',
+  'RichText': 'KitText.rich',
+  'SelectableText': 'KitText.selectable or KitSelectable',
+  'DefaultTextStyle': 'KitText roles',
+  'Icon': 'KitIcon (or KitIcon.status for a state)',
+  'ImageIcon': 'KitIcon',
+  'Image': 'KitImage',
+  'TextButton': 'KitButton.tertiary, or a KitAction in a KitActionBlock slot',
+  'FilledButton': 'KitButton.primary, or a KitAction in a KitActionBlock slot',
+  'OutlinedButton':
+      'KitButton.secondary, or a KitAction in a KitActionBlock slot',
+  'ElevatedButton':
+      'KitButton.secondary, or a KitAction in a KitActionBlock slot',
+  'IconButton': 'KitIconButton',
+  'FloatingActionButton': 'KitButton.primary in the screen\'s pinned bottom',
+  'PopupMenuButton': 'KitRowMenu (items are KitMenuItem) or showKitMenu',
+  'PopupMenuItem': 'KitMenuItem in a KitRowMenu or showKitMenu',
+  'DropdownButton': 'KitPickerRow',
+  'SegmentedButton': 'KitSegmented',
+  'ListTile': 'KitRow in a KitRowGroup',
+  'SwitchListTile': 'KitSwitchRow',
+  'CheckboxListTile': 'KitChoiceList.multi or KitChoiceRow',
+  'RadioListTile': 'KitChoiceList.single or KitChoiceRow',
+  'RadioGroup': 'KitChoiceList.single',
+  'Radio': 'KitChoiceList.single or KitChoiceRow',
+  'Checkbox': 'KitChoiceList.multi or KitChoiceRow',
+  'Switch': 'KitSwitchRow',
+  'ExpansionTile': 'KitExpandRow',
+  'TextField': 'KitField (KitSearchField for search)',
+  'TextFormField': 'KitField (it takes a validator)',
+  'Card': 'KitSurface.panel',
+  'Container': 'KitSurface, or Padding/SizedBox for plain spacing',
+  'DecoratedBox': 'KitSurface',
+  'ColoredBox': 'KitSurface',
+  'Material': 'KitSurface',
+  'InkWell': 'KitTappable',
+  'GestureDetector': 'KitTappable',
+  'Divider': 'KitDivider',
+  'VerticalDivider': 'KitDivider',
+  'Chip': 'KitChip',
+  'ActionChip': 'KitChip',
+  'FilterChip': 'KitChip',
+  'Tooltip': 'the tooltip of the kit part (KitIconButton, KitTappable)',
+  'CircularProgressIndicator':
+      'KitStatusMark (a step), KitButton working (a tap in flight) or '
+      'KitProgressView',
+  'LinearProgressIndicator':
+      'KitLoadingBar (the screen\'s one bar), KitProgressView or '
+      'KitProgressRow',
+  'RefreshIndicator': 'KitRefresh',
+  'Scaffold': 'KitScreen',
+  'AppBar': 'KitTopBar in a KitScreen',
+  'SliverAppBar': 'KitTopBar in a KitScreen',
+  'Dialog': 'showKitSheet or showKitAlert',
+  'BottomSheet': 'showKitSheet',
+  'SingleChildScrollView':
+      'a ListView/CustomScrollView (allowed), a KitScreen body or a '
+      'showKitSheet body (the frame scrolls it)',
+  'Scrollbar': 'KitScrollbar or KitScrollArea',
+  'NavigationBar': 'KitNav',
+  'NavigationRail': 'KitNav',
+  'TabBar': 'KitTabStrip or KitSegmented',
+  'Theme': 'KitText roles and KitTokens, never a local Theme override',
+  'MaterialPageRoute': 'KitPageRoute, pushKitPage or replaceWithKitPage',
+  'PageRouteBuilder': 'KitPageRoute, pushKitPage or replaceWithKitPage',
+};
+
+/// The steps every G1/G15/G16 failure ends with.
+const _kitOnlyHowTo =
+    'Outside lib/ui/kit/, a file only arranges kit parts with the '
+    'layout, scrolling, builder, semantics and focus widgets of '
+    'docs/ux-system/kit-v2.md §9.1 (`_g16Allowlist`). If no kit part fits, '
+    'add one to lib/ui/kit/ (exported from kit.dart with a row in its '
+    'table, a spec in docs/ux-system/kit-api/, a test in test/kit/ and a '
+    'gallery in test/goldens/kit/; test/kit/kit_manifest_test.dart lists '
+    'what is missing), even if one screen uses it. Never build it on the '
+    'screen. These gates are absolute: there is no baseline to regenerate '
+    'and no allowlist to extend.';
+
+/// Problems for an absolute kit-only gate: every hit in [current] (file ->
+/// pattern -> count) fails, except the frozen `_allowed` files. Each names
+/// the kit part to use.
+List<String> _kitOnlyProblems(
+  String gate,
+  Map<String, Map<String, int>> current,
+) {
+  final problems = <String>[];
+  for (final MapEntry(key: path, value: patterns) in current.entries) {
+    if (_allowed.containsKey(path)) continue;
+    for (final MapEntry(key: pattern, value: count) in patterns.entries) {
+      final instead = _kitOnlyFix[pattern];
+      problems.add(
+        '$gate: $path uses "$pattern" x$count — '
+        '${instead == null ? 'use the kit part that does this' : 'use $instead'}'
+        ' (docs/ux-system/kit-v2.md §9.2).',
+      );
+    }
+  }
+  if (problems.isNotEmpty) problems.add(_kitOnlyHowTo);
+  return problems;
+}
+
+/// The gates [_kitOnlyProblems] checks; the baseline never holds them.
+const _kitOnlyGates = ['G1', 'G15', 'G16'];
 
 // --- STANDARDS.md §18 gates G2, G7, G15x, G17, G21, G48 -------------------
 //
@@ -283,7 +423,6 @@ class _Rule {
     this.allow = const {},
     this.absolute = false,
     this.skipThemeFiles = false,
-    this.note,
   });
 
   final String gate;
@@ -316,9 +455,6 @@ class _Rule {
 
   /// G17 and G21 skip app_theme.dart, theme_packs*.dart and theme_roles.dart.
   final bool skipThemeFiles;
-
-  /// Why a row STANDARDS.md calls absolute is a ratchet today.
-  final String? note;
 }
 
 bool _isThemeFile(String path) {
@@ -403,7 +539,9 @@ _Counter _call(String callee, bool Function(String args) test) {
   };
 }
 
-final _ctorDeclAfter = RegExp(r'^\(\s*(?:\{|this\.|super\.)');
+/// A constructor's own parameter list: named, initialising or super
+/// parameters, or none at all (`const Name();`, `Name() : super(...)`).
+final _ctorDeclAfter = RegExp(r'^\(\s*(?:\{|this\.|super\.|\)\s*[;:{])');
 final _ctorDeclBefore = RegExp(r'^\s*(?:const\s+|factory\s+)?$');
 final _fnDeclBefore = RegExp(
   r'^\s*(?:static\s+)?(?:void|[A-Z]\w*(?:<.*>)?\??)\s+$',
@@ -501,8 +639,36 @@ int _g48Count(String code, String path) {
 }
 
 /// Old kit names retired by a kit change, name -> the unit that retired it
-/// (KIT-43). Append one line per retired name; each becomes a G2 row.
-const _retiredApis = <String, String>{};
+/// (KIT-43). Append one line per retired name; each becomes an absolute G2
+/// row: its forwarder may stay for tests, but no code under lib/ outside the
+/// kit calls it (slice-P9.10).
+const _retiredApis = <String, String>{
+  'TerminalView': 'kit-KitTerminalView (KitTerminalView.output)',
+  'stripAnsi': 'shared-phone-1 (SetupTerminal and KitLogPanel clean lines)',
+  'TerminalKeyBar': 'kit-KitTerminalView (KitTerminalView with keys)',
+  'KitNotice.card':
+      'kit-KitNotice-v2 (KitRequestCard in a conversation, KitNeedsYou.row '
+      'in a list)',
+  'NudgeCard': 'kit-KitNotice-v2 (KitNotice.offer)',
+  'AppScrollBehavior': 'screen-shell-1 (KitScrollBehavior)',
+  'DesktopScrollbarArea': 'screen-shell-1 (KitScrollArea)',
+  'OwnScrollbar': 'screen-shell-1 (KitOwnScrollbar)',
+  'DesktopSelectionArea':
+      'screen-shell-1 (KitSelectable(mode: KitSelectMode.finePointer))',
+  'ContextMenuRegion': 'screen-shell-1 (KitContextRegion, or KitRow.menu)',
+  'ContextMenuAction': 'screen-shell-1 (KitMenuItem)',
+  'showContextMenu': 'screen-shell-1 (showKitMenu)',
+};
+
+/// G2 rows for old wrappers that reached zero: absolute from slice-P9.10
+/// (KIT-38 and KIT-43 delete them at the latest there).
+const _retiredG2Rows = {
+  'ProductErrorState(',
+  'ProductEmptyState(',
+  'ProductInlineEmpty(',
+  'showConfirmSheet(',
+  'KitSecretField(',
+};
 
 /// The LOOK-27 files allowed to construct glass whose path is known today.
 /// Frozen (KIT-5): the floating tab bar, rail, top controls and desktop
@@ -539,12 +705,7 @@ const _sceneRadiusFiles = <String, String>{
 /// that slice brings them to zero; each names its owner, and the map only
 /// shrinks (a file that reaches zero must leave it).
 const _lookGates = {'G17', 'G21'};
-const _kitLookDeferrals = <String, String>{
-  'lib/ui/kit/kit_row.dart':
-      'slice-R4 (row groups on one inset) holds kit_row.dart',
-  'lib/ui/kit/kit_row_parts.dart':
-      'slice-R4 (row groups on one inset) holds kit_row_parts.dart',
-};
+const _kitLookDeferrals = <String, String>{};
 
 /// Whether [rule]'s hit in [path] is never baselined.
 bool _absoluteAt(_Rule rule, String path) =>
@@ -655,7 +816,7 @@ final List<_Rule> _rules = [
             '$old(',
             _uses(old),
             ['KIT-43'],
-            'retired by $unit: use its replacement',
+            'retired by $unit: use that instead',
           ),
       ])
     _Rule(
@@ -665,6 +826,9 @@ final List<_Rule> _rules = [
       ids: ids,
       fix: fix,
       roots: const ['lib'],
+      absolute:
+          _retiredG2Rows.contains(name) ||
+          _retiredApis.keys.any((old) => name == '$old('),
       allow: name == 'launchUrl('
           ? const {
               'lib/ui/widgets/external_link.dart':
@@ -693,8 +857,7 @@ final List<_Rule> _rules = [
     ids: ['MOT-11'],
     fix: 'call KitHaptics',
     scope: _In.insideKit,
-    note:
-        'STANDARDS says absolute; terminal_key_bar.dart vibrates directly today, so ratchet until it calls KitHaptics',
+    absolute: true,
     allow: const {
       'lib/ui/kit/motion/kit_haptics.dart':
           'KitHaptics is the one vibration seam',
@@ -731,8 +894,7 @@ final List<_Rule> _rules = [
     ids: ['MOT-1'],
     fix: 'name the curve in kit_motion.dart',
     scope: _In.insideKit,
-    note:
-        'STANDARDS says absolute; the kit scenes shape their drawings with Curves today, so ratchet until they read KitMotion curves',
+    absolute: true,
     allow: const {
       'lib/ui/kit/kit_motion.dart': 'KitMotion owns every curve (MOT-1)',
     },
@@ -834,10 +996,7 @@ final List<_Rule> _rules = [
       counter,
       ids: const ['LAY-2'],
       scope: _In.insideKit,
-      note:
-          'STANDARDS says absolute after §0.5 step 2 adds the KitLayout '
-          'named widths; until then kit parts still hold 600/860/440, so '
-          'ratchet',
+      absolute: true,
       fix:
           'name the width in KitLayout and decide layout from the window class',
       allow: const {
@@ -1142,8 +1301,7 @@ final List<_Rule> _rules = [
     roots: _uiRoots,
     scope: _In.anywhere,
     skipThemeFiles: true,
-    note:
-        'STANDARDS says absolute; the Appearance glass preview builds KitGlass today, so ratchet until it is a kit miniature tab bar',
+    absolute: true,
     allow: _glassFiles,
   ),
   _Rule(
@@ -1166,8 +1324,7 @@ final List<_Rule> _rules = [
     roots: _uiRoots,
     scope: _In.anywhere,
     skipThemeFiles: true,
-    note:
-        'STANDARDS says absolute; screens read reduced motion directly today, so ratchet until they ask KitMotion.reduced',
+    absolute: true,
     allow: const {
       'lib/ui/kit/kit_motion.dart':
           'KitMotion is the one reader of reduced motion (MOT-8)',
@@ -1181,8 +1338,7 @@ final List<_Rule> _rules = [
     fix: 'slide or cross-fade',
     scope: _In.insideKit,
     skipThemeFiles: true,
-    note:
-        'STANDARDS says absolute; KitTabSwitcher scales today (MOT-2 names it), so ratchet until it slides or cross-fades',
+    absolute: true,
   ),
   _Rule(
     'G21',
@@ -1192,8 +1348,7 @@ final List<_Rule> _rules = [
     fix: 'metal is dropped; rename it',
     roots: const ['lib', 'shaders', 'assets'],
     scope: _In.anywhere,
-    note:
-        'STANDARDS says absolute; two layout variables are named chrome today, so ratchet until they are renamed',
+    absolute: true,
   ),
 
   // G48 — multiline input in a kit sheet keeps a draft.
@@ -1438,38 +1593,6 @@ void _printDrops(
   );
 }
 
-/// Fails when [current] (file -> pattern -> count, for one gate) rises
-/// above [baseline], or introduces a file/pattern the baseline does not
-/// know about. Files in `_allowed` are skipped entirely.
-List<String> _ratchetProblems(
-  String gateName,
-  Map<String, Map<String, int>> current,
-  Map<String, dynamic> baseline,
-) {
-  final gateBaseline = baseline;
-  final problems = <String>[];
-  for (final MapEntry(key: path, value: patterns) in current.entries) {
-    if (_allowed.containsKey(path)) continue;
-    final baseFile = gateBaseline[path] as Map<String, dynamic>? ?? const {};
-    for (final MapEntry(key: pattern, value: count) in patterns.entries) {
-      final baseCount = (baseFile[pattern] as num?)?.toInt() ?? 0;
-      if (!baseFile.containsKey(pattern)) {
-        problems.add(
-          '$gateName: $path uses "$pattern" x$count (new — baseline has '
-          'none) — use the kit part instead (docs/ux-system/kit-v2.md '
-          '§7/§9)',
-        );
-      } else if (count > baseCount) {
-        problems.add(
-          '$gateName: $path "$pattern" rose from $baseCount to $count — '
-          'use the kit part instead (docs/ux-system/kit-v2.md §7/§9)',
-        );
-      }
-    }
-  }
-  return problems;
-}
-
 void main() {
   final baseline = _loadBaseline();
   final writeMode = Platform.environment['KIT_RATCHET_WRITE'] == '1';
@@ -1502,11 +1625,10 @@ void main() {
     ruleAbsolute[gate] = absoluteProblems;
   }
 
-  final allCurrent = {
+  final kitOnlyCurrent = {
     'G1': g1Current,
     'G15': g15Current,
     'G16': g16Current,
-    ...ruleCurrent,
   };
 
   // KIT_RATCHET_GATES=G17,G21 limits a rewrite to those gates; every other
@@ -1520,78 +1642,56 @@ void main() {
   if (writeMode) {
     const encoder = JsonEncoder.withIndent('  ');
     // The frozen `allow` section (KIT-5) and any gate this file does not
-    // scan are copied as committed, never regenerated.
+    // scan are copied as committed, never regenerated. G1/G15/G16 are
+    // absolute and never written (a committed entry for them is dropped).
     final out = <String, dynamic>{
-      for (final g in {...allCurrent.keys, ...baseline.keys})
-        g:
-            allCurrent.containsKey(g) &&
-                (writeGates == null || writeGates.contains(g))
-            ? _sorted(allCurrent[g]!)
-            : baseline[g],
+      for (final g in {...ruleCurrent.keys, ...baseline.keys})
+        if (!_kitOnlyGates.contains(g))
+          g:
+              ruleCurrent.containsKey(g) &&
+                  (writeGates == null || writeGates.contains(g))
+              ? _sorted(ruleCurrent[g]!)
+              : baseline[g],
     };
     File(
       'test/kit_ratchet_baseline.json',
     ).writeAsStringSync('${encoder.convert(out)}\n');
     stdout.writeln(
       'KIT_RATCHET_WRITE=1: wrote test/kit_ratchet_baseline.json for '
-      '${writeGates?.join(', ') ?? 'every gate'} '
-      '(${[for (final g in allCurrent.keys) '$g: ${allCurrent[g]!.length} files'].join(', ')})',
+      '${writeGates?.join(', ') ?? 'every ratchet gate'} '
+      '(${[for (final g in ruleCurrent.keys) '$g: ${ruleCurrent[g]!.length} files'].join(', ')})',
     );
   }
 
-  test('G1: modal and toast entry points live in the kit', () {
-    final problems = writeMode
-        ? const <String>[]
-        : _ratchetProblems(
-            'G1',
-            g1Current,
-            baseline['G1'] as Map<String, dynamic>? ?? {},
-          );
-    if (problems.isEmpty && !writeMode) {
-      _printDrops(
-        'G1',
-        g1Current,
-        baseline['G1'] as Map<String, dynamic>? ?? {},
-      );
-    }
-    expect(problems, isEmpty, reason: problems.join('\n'));
-  });
+  const kitOnlyTitles = {
+    'G1': 'G1: modal and toast entry points live in the kit',
+    'G15': 'G15: no width literals outside the kit',
+    'G16': 'G16: every UI component comes from the kit',
+  };
+  for (final gate in _kitOnlyGates) {
+    test('${kitOnlyTitles[gate]} (absolute)', () {
+      final problems = _kitOnlyProblems(gate, kitOnlyCurrent[gate]!);
+      expect(problems, isEmpty, reason: problems.join('\n'));
+    });
+  }
 
-  test('G15: no width literals outside the kit', () {
-    final problems = writeMode
-        ? const <String>[]
-        : _ratchetProblems(
-            'G15',
-            g15Current,
-            baseline['G15'] as Map<String, dynamic>? ?? {},
-          );
-    if (problems.isEmpty && !writeMode) {
-      _printDrops(
-        'G15',
-        g15Current,
-        baseline['G15'] as Map<String, dynamic>? ?? {},
+  test(
+    'G1/G15/G16 have no baseline: the committed file holds none of them',
+    () {
+      final stale = [
+        for (final gate in _kitOnlyGates)
+          if (baseline.containsKey(gate)) gate,
+      ];
+      expect(
+        stale,
+        isEmpty,
+        reason:
+            'test/kit_ratchet_baseline.json still has ${stale.join(', ')}: '
+            'these gates are absolute (slice-P9.10), so delete those sections; '
+            'KIT_RATCHET_WRITE=1 drops them too.',
       );
-    }
-    expect(problems, isEmpty, reason: problems.join('\n'));
-  });
-
-  test('G16: every UI component comes from the kit', () {
-    final problems = writeMode
-        ? const <String>[]
-        : _ratchetProblems(
-            'G16',
-            g16Current,
-            baseline['G16'] as Map<String, dynamic>? ?? {},
-          );
-    if (problems.isEmpty && !writeMode) {
-      _printDrops(
-        'G16',
-        g16Current,
-        baseline['G16'] as Map<String, dynamic>? ?? {},
-      );
-    }
-    expect(problems, isEmpty, reason: problems.join('\n'));
-  });
+    },
+  );
 
   const ruleGateTitles = {
     'G2': 'G2: copy, haptics, links and motion go through the kit',
@@ -1802,11 +1902,9 @@ MyAppWidget();
       },
     );
 
-    test(
-      'KIT-7: a new MaterialPageRoute( in a file with no baseline entry fails '
-      'G16, in lib/ui and in UI code elsewhere under lib/',
-      () {
-        const source = '''
+    test('KIT-7: MaterialPageRoute( and PageRouteBuilder( fail G16, in lib/ui '
+        'and in UI code elsewhere under lib/, with no baseline to lean on', () {
+      const source = '''
 Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
 Navigator.of(context).push(
   PageRouteBuilder<void>(pageBuilder: (_, _, _) => page),
@@ -1816,57 +1914,84 @@ Navigator.of(context).push(KitPageRoute<void>(builder: (_) => page));
 final isPage = route is MaterialPageRoute;
 // MaterialPageRoute(builder: ignored, inside a comment)
 ''';
-        expect(_g16Allowlist, isNot(contains('MaterialPageRoute')));
-        expect(_g16Allowlist, isNot(contains('PageRouteBuilder')));
-        final widgets = _loadFlutterWidgets();
-        const appClasses = {'KitPageRoute'};
-        final committed = baseline['G16'] as Map<String, dynamic>? ?? {};
-        for (final path in [
-          'lib/ui/screens/kit7_fixture_only.dart',
+      expect(_g16Allowlist, isNot(contains('MaterialPageRoute')));
+      expect(_g16Allowlist, isNot(contains('PageRouteBuilder')));
+      final widgets = _loadFlutterWidgets();
+      const appClasses = {'KitPageRoute'};
+      for (final path in [
+        'lib/ui/screens/kit7_fixture_only.dart',
+        'lib/voice/kit7_fixture_only.dart',
+      ]) {
+        final counts = _g16CountsFor(
+          _stripLineComments(source),
+          path,
+          widgets,
+          appClasses,
+        );
+        expect(counts, {
+          'MaterialPageRoute': 1,
+          'PageRouteBuilder': 1,
+        }, reason: path);
+        // Absolute: the fixture fails although no baseline exists, and
+        // the message says what to use instead.
+        final problems = _kitOnlyProblems('G16', {path: counts});
+        expect(problems, hasLength(3), reason: path);
+        expect(
+          problems.first,
+          allOf(
+            contains('$path uses "MaterialPageRoute" x1'),
+            contains('KitPageRoute, pushKitPage or replaceWithKitPage'),
+          ),
+        );
+        expect(problems.last, _kitOnlyHowTo);
+      }
+      // Outside lib/ui/ only the routes count: a Text there is not G16's.
+      expect(
+        _g16CountsFor(
+          "final t = Text('x');",
           'lib/voice/kit7_fixture_only.dart',
-        ]) {
-          expect(committed.containsKey(path), isFalse, reason: path);
-          final counts = _g16CountsFor(
-            _stripLineComments(source),
-            path,
-            widgets,
-            appClasses,
-          );
-          expect(counts, {
-            'MaterialPageRoute': 1,
-            'PageRouteBuilder': 1,
-          }, reason: path);
-          final problems = _ratchetProblems('G16', {path: counts}, committed);
-          expect(problems, hasLength(2), reason: path);
-          expect(
-            problems,
-            contains(
-              contains('$path uses "MaterialPageRoute" x1 (new — baseline '),
-            ),
-          );
-        }
+          widgets,
+          appClasses,
+        ),
+        isEmpty,
+      );
+    });
 
-        // A file with a baseline entry may not add one either (any file
-        // still baselined; lib/main.dart reached 0 in coord-main).
-        final mainFile = committed.entries
-            .firstWhere(
-              (entry) =>
-                  (entry.value as Map<String, dynamic>?)?['MaterialPageRoute']
-                      is num,
-            )
-            .key;
-        final base =
-            ((committed[mainFile]
-                        as Map<String, dynamic>?)?['MaterialPageRoute']
-                    as num?)
-                ?.toInt();
-        expect(base, isNotNull, reason: 'KIT-7 baselines $mainFile\'s routes');
-        final rose = _ratchetProblems('G16', {
-          mainFile: {'MaterialPageRoute': base! + 1},
-        }, committed);
-        expect(rose.single, contains('rose from $base to ${base + 1}'));
-      },
-    );
+    test('G1/G15/G16 failures name the kit part and the way forward', () {
+      final problems = _kitOnlyProblems('G16', {
+        'lib/ui/screens/fixture_only.dart': {'Text': 2, 'Tooltip': 1},
+        'lib/ui/screens/other_fixture.dart': {'CupertinoSwitch': 1},
+      });
+      expect(problems, [
+        contains('uses "Text" x2 — use KitText'),
+        contains('uses "Tooltip" x1 — use the tooltip of the kit part'),
+        contains('"CupertinoSwitch" x1 — use the kit part that does this'),
+        _kitOnlyHowTo,
+      ]);
+      expect(_kitOnlyHowTo, contains('add one to lib/ui/kit/'));
+      expect(_kitOnlyHowTo, contains('no baseline to regenerate'));
+      expect(_kitOnlyProblems('G1', {}), isEmpty);
+      // Every G1 entry point has its kit replacement named.
+      for (final pattern in _g1PatternNames) {
+        expect(_kitOnlyFix, contains(pattern), reason: pattern);
+      }
+      // Every route G16 counts has its replacement named.
+      for (final route in _g16Routes.keys) {
+        expect(_kitOnlyFix, contains(route), reason: route);
+      }
+      // Nothing the allowlist permits has a "use instead".
+      expect(_kitOnlyFix.keys.toSet().intersection(_g16Allowlist), isEmpty);
+    });
+
+    test('Scrollbar has no home outside the kit any more (KIT-6)', () {
+      final counts = _countG16(
+        'final s = Scrollbar(child: list);',
+        'lib/ui/desktop/desktop_interaction.dart',
+        _loadFlutterWidgets(),
+        const {},
+      );
+      expect(counts, {'Scrollbar': 1});
+    });
 
     test(
       'G15 counts a width compared to a literal, not BoxConstraints(maxWidth: n)',
@@ -1904,6 +2029,21 @@ final ok = await showConfirmSheet(context);
 ''';
       expect(count('G2', 'ProductEmptyState(', source), 2);
       expect(count('G2', 'showConfirmSheet(', source), 1);
+
+      // A retired forwarder with a no-argument constructor (slice-P9.10).
+      const forwarder = '''
+class AppScrollBehavior extends KitScrollBehavior {
+  const AppScrollBehavior();
+}
+MaterialApp(scrollBehavior: const AppScrollBehavior());
+MaterialApp(scrollBehavior: const KitScrollBehavior());
+''';
+      expect(count('G2', 'AppScrollBehavior(', forwarder), 1);
+      final retired = _rules.singleWhere(
+        (r) => r.gate == 'G2' && r.name == 'ContextMenuAction(',
+      );
+      expect(retired.absolute, isTrue);
+      expect(retired.fix, contains('KitMenuItem'));
     });
 
     test('G2 counts motion literals and seams, not KitMotion names', () {
