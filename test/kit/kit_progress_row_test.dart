@@ -8,7 +8,6 @@ import 'kit_motion_still.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/intl.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_progress_row.dart';
@@ -240,7 +239,9 @@ void main() {
   });
 
   group('KitProgressRow stale (asOf)', () {
-    testWidgets('renders "as of HH:mm" in the locale format', (tester) async {
+    testWidgets('renders "as of" in the person\'s 12/24-hour clock (F15)', (
+      tester,
+    ) async {
       final at = DateTime(2026, 9, 27, 10, 42);
       await _pumpRow(
         tester,
@@ -254,7 +255,9 @@ void main() {
         reduced: true,
       );
       await tester.pump();
-      final expected = DateFormat.Hm('en').format(at);
+      // The emulator QA (F15) saw "23:19" here beside "11:36 PM" in the
+      // banner: the device's 12-hour setting now holds for both.
+      const expected = '10:42 AM';
       expect(find.textContaining('as of $expected'), findsOneWidget);
       final data = _rowSemantics(tester);
       expect(data.label, contains('as of $expected'));

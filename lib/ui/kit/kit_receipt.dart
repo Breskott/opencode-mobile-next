@@ -9,6 +9,7 @@ import 'kit_motion.dart';
 import 'kit_since.dart';
 import 'kit_tappable.dart';
 import 'kit_text.dart';
+import 'kit_time.dart';
 import 'kit_tokens.dart';
 
 /// What happened to a write the phone sent (docs/ux-system/kit-api/
@@ -482,11 +483,7 @@ double _glyphSize(BuildContext context, KitTokens tokens) {
 }
 
 /// The clock time of [at], in the person's 12/24-hour setting.
-String _time(BuildContext context, DateTime at) =>
-    MaterialLocalizations.of(context).formatTimeOfDay(
-      TimeOfDay.fromDateTime(at.toLocal()),
-      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
-    );
+String _time(BuildContext context, DateTime at) => KitTime.clock(context, at);
 
 /// The receipt as one button (KitReceipt.md Adaptive: "`onTap` makes the
 /// receipt one button (focus ring, Enter)"): a 48 dp target (LAY-9) whose

@@ -8624,32 +8624,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7ModelUiListSeparator => ', ';
 
   @override
-  String e7ModelUiUnusableProviders(int count, String providers) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other:
-          'Signed in to $providers, but this server could not load those sign-ins even after a reload, so their models cannot answer. Sign in another way under Providers, or pick another model.',
-      one:
-          'Signed in to $providers, but this server could not load that sign-in even after a reload, so its models cannot answer. Sign in another way under Providers, or pick another model.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String e7ModelUiProviderReloadWaits(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other:
-          'The reload waits for $count running replies to finish, because reloading would stop them.',
-      one:
-          'The reload waits for 1 running reply to finish, because reloading would stop it.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String e7ModelUiUnloadedProviders(int count, String providers) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -13891,7 +13865,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String appExitForceStopped(String time) {
-    return 'Android closed OpenCode Mobile $time';
+    return 'OpenCode Mobile was closed $time';
   }
 
   @override
@@ -13927,6 +13901,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String appExitServerAndTeamStoppedManual(String what) {
     return '$what. Your phone\'s OpenCode and the AI Team stopped with it. Start them again when you\'re ready.';
+  }
+
+  @override
+  String appExitServerBack(String what) {
+    return '$what. Your phone\'s OpenCode stopped with it and is running again.';
+  }
+
+  @override
+  String appExitServerBackTeam(String what) {
+    return '$what. Your phone\'s OpenCode and the AI Team stopped with it; OpenCode is running again.';
   }
 
   @override
@@ -24156,6 +24140,32 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get demoNoCommands =>
       'The demo has no commands — send the sample prompt to see a change reviewed.';
+
+  @override
+  String e7ModelUiUnusableProviders(int count, String providers) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Signed in to $providers, but this server could not load those sign-ins even after a reload, so their models cannot answer. Sign in another way under Providers, or pick another model.',
+      one:
+          'Signed in to $providers, but this server could not load that sign-in even after a reload, so its models cannot answer. Sign in another way under Providers, or pick another model.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String e7ModelUiProviderReloadWaits(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'The reload waits for $count running replies to finish, because reloading would stop them.',
+      one:
+          'The reload waits for 1 running reply to finish, because reloading would stop it.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get freeModelNotice =>

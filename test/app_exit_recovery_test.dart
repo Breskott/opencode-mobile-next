@@ -15,7 +15,7 @@ import 'package:opencode_mobile/platform/app_exit.dart';
 import 'package:opencode_mobile/platform/keep_alive_advice.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/automation_policy.dart';
-import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/keep_running_screen.dart';
 import 'package:opencode_mobile/ui/widgets/app_exit_notice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -546,7 +546,7 @@ void main() {
       return recovery;
     }
 
-    testWidgets('says what Android closed and when, once, with Keep it '
+    testWidgets('says the app was closed and when, once, with Keep it '
         'running', (tester) async {
       final recovery = await mountNotice(
         tester,
@@ -556,7 +556,7 @@ void main() {
         find.text(
           // No saved in-app server here, so nothing restarts it: the
           // notice must not promise that it is starting again.
-          'Android closed OpenCode Mobile at 00:06. Your phone\'s OpenCode '
+          'OpenCode Mobile was closed at 00:06. Your phone\'s OpenCode '
           'and the AI Team stopped with it. Start them again when you\'re '
           'ready.',
         ),
@@ -596,6 +596,77 @@ void main() {
       }
     });
 
+    test('F10: a force stop is not blamed on Android, and once the '
+        'server is back it says so instead of "starting again"', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      for (final team in [false, true]) {
+        final notice = AppExitNotice(
+          kind: AppExitKind.forceStop,
+          at: DateTime(2026, 9, 27, 21, 21),
+          teamStopped: team,
+        );
+        final starting = appExitMessage(l10n, notice, 'at 9:21 PM');
+        expect(starting, startsWith('OpenCode Mobile was closed at 9:21 PM'));
+        expect(starting, isNot(contains('Android')));
+        final back = appExitMessage(
+          l10n,
+          notice,
+          'at 9:21 PM',
+          serverBack: true,
+        );
+        expect(back, contains('is running again'));
+        expect(back, isNot(contains('starting again')));
+      }
+    });
+
+    testWidgets('F10: once the server is back, a notice with nothing left '
+        'to offer resolves; one with Keep it running stays, reworded', (
+      tester,
+    ) async {
+      Future<KitStatus?> status(AppExitRecovery recovery) async {
+        KitStatus? result;
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) {
+                result = appExitKitStatus(context, recovery, serverBack: true);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+        return result;
+      }
+
+      Future<AppExitRecovery> after(Map<String, Object?> record) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final recovery = AppExitRecovery(
+          bridge: _FakeBridge(_report(record, ['server'])),
+        );
+        final starter = BuiltinServerStarter(linux: _FakeLinux());
+        addTearDown(starter.dispose);
+        await recovery.runOnce(
+          store: _Store(prefs: prefs, all: const []),
+          active: null,
+          starter: starter,
+        );
+        return recovery;
+      }
+
+      final crash = await after(_record(4));
+      expect(crash.notice, isNotNull);
+      expect(await status(crash), isNull);
+
+      final stopped = await after(_ownerRecord);
+      final shown = await status(stopped);
+      expect(shown, isNotNull);
+      expect(shown!.message, contains('is running again'));
+      expect(shown.action?.label, 'Keep it running');
+    });
+
     testWidgets('Keep it running opens the guidance', (tester) async {
       const channel = MethodChannel(AppLifecycleBridge.channelName);
       final messenger = tester.binding.defaultBinaryMessenger;
@@ -633,9 +704,7 @@ void main() {
         ),
       );
       expect(
-        find.textContaining(
-          'Android closed OpenCode Mobile on Sep 25 at 20:19',
-        ),
+        find.textContaining('OpenCode Mobile was closed on Sep 25 at 20:19'),
         findsOneWidget,
       );
     });

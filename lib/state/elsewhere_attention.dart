@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../api/models.dart' show EventEnvelope;
 import '../domain/attention_feed.dart';
+import '../domain/session_stop.dart';
 import '../domain/team_directories.dart';
 import '../domain/work_row_status.dart';
 
@@ -183,6 +184,11 @@ class ElsewhereAttention extends ChangeNotifier {
         if (sessionID != null) changed = _settle(directory, sessionID);
       case 'session.error':
         if (sessionID == null || sessionID.isEmpty) break;
+        // A Stop ends the run; it is not a failure to look at (F3).
+        if (sessionErrorIsStop(props['error'])) {
+          changed = _settle(directory, sessionID);
+          break;
+        }
         _settle(directory, sessionID);
         final failure = AttentionObservation(
           id: 'session-failure:$sessionID',

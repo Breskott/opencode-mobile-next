@@ -139,7 +139,15 @@ class WorkRowStatus {
 
   /// No clock is owned here. A caller may tick fresh rows, but disconnected
   /// rows freeze at their last observation, including their completion age.
-  String line(AppLocalizations l10n, {required DateTime now}) {
+  ///
+  /// [moment] writes the "as of" time; a screen passes the app's one time
+  /// formatter (`KitTime.moment`, the device's 12/24-hour clock) so every
+  /// row and banner agree (F15). Without it, a fixed numeric pattern.
+  String line(
+    AppLocalizations l10n, {
+    required DateTime now,
+    String Function(DateTime at)? moment,
+  }) {
     final at = isFresh ? now : observedAt;
     var text = word(l10n);
     final steps = facts.steps;
@@ -165,7 +173,9 @@ class WorkRowStatus {
     if (!isFresh) {
       text = l10n.workStatusElapsed(
         text,
-        l10n.kitProgressRowAsOf(_asOf(l10n, observedAt)),
+        l10n.kitProgressRowAsOf(
+          moment?.call(observedAt) ?? _asOf(l10n, observedAt),
+        ),
       );
     }
     return text;

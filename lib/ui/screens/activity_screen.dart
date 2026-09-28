@@ -338,33 +338,58 @@ class _ActivityScreenState extends State<ActivityScreen> {
   /// dismissed, one row each (P6.2, AUTO-4, AUTO-13): the thing it was done
   /// to as the title, what was done and when as its line. Never Needs you:
   /// the done mark, no count, no badge.
+  ///
+  /// Routine reconnects are one current row per place (F4): the newest
+  /// says when the app last found the server again, and the older ones
+  /// fold into it, so a restart or a flaky network never fills the list.
+  /// Dismissing that row dismisses what it folded.
   List<({DateTime at, Widget row})> _automaticRows() {
     final controller = widget.controller;
     final history = controller.automaticActivity;
     if (history == null) return const [];
     final l10n = _l10n(context);
     final now = (widget.now ?? DateTime.now)();
+    final shown = <AutomaticAct>[];
+    final folded = <String, List<String>>{};
+    final reconnectRow = <String, String>{};
+    for (final act in controller.automaticActsHere) {
+      if (_dismissedActs.contains(act.id)) continue;
+      if (act.kind == AutomaticActKind.reconnect) {
+        // Newest first: the first reconnect of a place is its row.
+        final row = reconnectRow[act.locationKey];
+        if (row != null) {
+          (folded[row] ??= []).add(act.id);
+          continue;
+        }
+        reconnectRow[act.locationKey] = act.id;
+      }
+      shown.add(act);
+    }
     return [
-      for (final act in controller.automaticActsHere)
-        if (!_dismissedActs.contains(act.id))
-          (
-            at: act.occurredAt,
-            row: _AutomaticActRow(
-              key: ValueKey('activity-auto-${act.id}'),
-              act: act,
-              now: now,
-              title: _actTarget(act, l10n),
-              words: _actWords(act, l10n),
-              undoResult: _undoResults[act.id],
-              onOpen: act.sessionId == null
-                  ? null
-                  : () => _openChat(act.sessionId!),
-              onUndo: history.canUndo(act.id)
-                  ? () => _undoAct(history, act.id)
-                  : null,
-              dismiss: _dismissAct(history, act, l10n),
+      for (final act in shown)
+        (
+          at: act.occurredAt,
+          row: _AutomaticActRow(
+            key: ValueKey('activity-auto-${act.id}'),
+            act: act,
+            now: now,
+            title: _actTarget(act, l10n),
+            words: _actWords(act, l10n),
+            undoResult: _undoResults[act.id],
+            onOpen: act.sessionId == null
+                ? null
+                : () => _openChat(act.sessionId!),
+            onUndo: history.canUndo(act.id)
+                ? () => _undoAct(history, act.id)
+                : null,
+            dismiss: _dismissAct(
+              history,
+              act,
+              l10n,
+              also: folded[act.id] ?? const [],
             ),
           ),
+        ),
     ];
   }
 
@@ -381,7 +406,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
         l10n: l10n,
       );
     }
-    return act.summary;
+    return presentedSessionTitleText(
+      act.summary,
+      fallback: l10n.globalSessionsUntitled,
+      l10n: l10n,
+    );
   }
 
   /// What was done, in the person's language (the saved summary is only
@@ -410,25 +439,29 @@ class _ActivityScreenState extends State<ActivityScreen> {
   KitSwipeAction _dismissAct(
     AutomaticActivityController history,
     AutomaticAct act,
-    AppLocalizations l10n,
-  ) => KitSwipeAction(
-    id: ValueKey('activity-auto-dismiss-${act.id}'),
-    label: l10n.whileAwayDismiss,
-    icon: AppIconography.close,
-    undoMessage: l10n.whileAwayDismissed(_actTarget(act, l10n)),
-    onAct: () async {
-      if (!mounted) return false;
-      setState(() => _dismissedActs.add(act.id));
-      return true;
-    },
-    onUndo: () {
-      if (mounted) setState(() => _dismissedActs.remove(act.id));
-    },
-    onCommit: () async {
-      final saved = await history.acknowledge([act.id]);
-      if (!saved && mounted) setState(() => _dismissedActs.remove(act.id));
-    },
-  );
+    AppLocalizations l10n, {
+    List<String> also = const [],
+  }) {
+    final ids = [act.id, ...also];
+    return KitSwipeAction(
+      id: ValueKey('activity-auto-dismiss-${act.id}'),
+      label: l10n.whileAwayDismiss,
+      icon: AppIconography.close,
+      undoMessage: l10n.whileAwayDismissed(_actTarget(act, l10n)),
+      onAct: () async {
+        if (!mounted) return false;
+        setState(() => _dismissedActs.addAll(ids));
+        return true;
+      },
+      onUndo: () {
+        if (mounted) setState(() => _dismissedActs.removeAll(ids));
+      },
+      onCommit: () async {
+        final saved = await history.acknowledge(ids);
+        if (!saved && mounted) setState(() => _dismissedActs.removeAll(ids));
+      },
+    );
+  }
 
   @override
   void initState() {
