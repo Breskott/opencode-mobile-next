@@ -1,0 +1,30 @@
+Setting up libpython3-stdlib:amd64 (3.12.3-0ubuntu2.1) ...
+Setting up python3.12-venv (3.12.3-1ubuntu0.17) ...
+Setting up python3 (3.12.3-0ubuntu2.1) ...
+Setting up python3-wheel (0.42.0-2) ...
+Setting up python3-venv (3.12.3-0ubuntu2.1) ...
+Setting up python3-pkg-resources (68.1.2-2ubuntu1.2) ...
+Setting up python3-setuptools (68.1.2-2ubuntu1.2) ...
+Setting up python3-pip (24.0+dfsg-1ubuntu1.3) ...
+Processing triggers for libc-bin (2.39-0ubuntu8.8) ...
+==> Downloading Node.js 24.21.0
+==> Unpacking Node.js
+==> Installing OpenCode 1.18.32
+
+> opencode-ai@1.18.32 postinstall
+> node ./postinstall.mjs
+
+
+added 3 packages in 36s
+npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn install-scripts   opencode-ai@1.18.32 (postinstall: node ./postinstall.mjs)
+npm warn install-scripts
+npm warn install-scripts Run `npm install -g --allow-scripts=opencode-ai` to allow these scripts once, or `npm config set allow-scripts=opencode-ai --location=user` to allow them for all global installs.
+npm notice
+npm notice New major version of npm available! 11.19.0 -> 12.1.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.1.0
+npm notice To update run: npm install -g npm@12.1.0
+npm notice
+1.18.32
+==> Getting the model list
+
