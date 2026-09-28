@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SelectedContent;
 import 'package:highlight/highlight.dart' show Node, highlight;
 
 import '../../l10n/app_localizations.dart';
@@ -261,12 +262,14 @@ class KitCodeBlock extends StatefulWidget {
   final List<TextRange> marks;
   final Key? blockKey, copyKey, showAllKey;
 
-  /// The wrap a block uses when [wrap] is null: `command` scrolls sideways
-  /// (a host opts into wrapping with `wrap: true`); code and output wrap on
-  /// a compact window and scroll sideways from medium up (today's reader
-  /// default, `ReaderWrapButton`).
+  /// The wrap a block uses when [wrap] is null: `command` and `code`
+  /// scroll sideways on every window, so a long line is never broken
+  /// mid-identifier ("getStringExt / ra"); the Wrap toggle wraps them. Output
+  /// wraps on a compact window and scrolls sideways from medium up (today's
+  /// reader default, `ReaderWrapButton`). A wrapping block prefers breaks at
+  /// spaces and punctuation ([kitCodeBreakable]).
   static bool defaultWrap(BuildContext context, KitCodeKind kind) {
-    if (kind == KitCodeKind.command) return false;
+    if (kind != KitCodeKind.output) return false;
     return KitLayout.windowOf(context) == KitWindow.compact;
   }
 
@@ -815,7 +818,7 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
         final children = <InlineSpan>[];
         for (var i = 0; i < ls.length; i++) {
           if (i > 0) children.add(const TextSpan(text: '\n'));
-          children.add(_lineSpan(ls[i], 0, roles, monoStyle));
+          children.add(_lineSpan(ls[i], 0, roles, monoStyle, wrap: wrap));
         }
         return Text.rich(
           TextSpan(children: children),
@@ -865,7 +868,7 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
     if (!inlineCopy) {
       constrained = ConstrainedBox(
         constraints: BoxConstraints(minHeight: tokens.minTarget),
-        child: SelectionArea(child: scrolled),
+        child: SelectionArea(child: _CopiesSource(child: scrolled)),
       );
     } else {
       // Copy on the first line (R3): the lines get the top and bottom inset
@@ -880,7 +883,7 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
       final top = (room / 2).floorToDouble();
       constrained = Padding(
         padding: EdgeInsets.only(top: top, bottom: room - top),
-        child: SelectionArea(child: scrolled),
+        child: SelectionArea(child: _CopiesSource(child: scrolled)),
       );
     }
 
@@ -970,7 +973,7 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
       ),
     );
 
-    final selectable = SelectionArea(child: list);
+    final selectable = SelectionArea(child: _CopiesSource(child: list));
     if (wrap) return selectable;
     // Unwrapped, a line wider than the host scrolls sideways with every
     // other line (one horizontal scroller for the whole block, K2 §1.9)
@@ -1046,7 +1049,7 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
     required double gutterWidth,
     int lineStart = 0,
   }) {
-    final content = _lineSpan(line, lineStart, roles, monoStyle);
+    final content = _lineSpan(line, lineStart, roles, monoStyle, wrap: wrap);
     final key = widget.fill ? ValueKey('kit-code-line-${index + 1}') : null;
     final text = Text.rich(
       content,
@@ -1084,8 +1087,24 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
   /// [line]'s spans: syntax-highlighted for `code` when [KitCodeBlock.highlight]
   /// is on, plain otherwise, with find [KitCodeBlock.marks] painted on top.
   /// [lineStart] is this line's offset into the joined text (`.fill` only;
-  /// the bounded body has no [KitCodeBlock.marks] and passes 0).
+  /// the bounded body has no [KitCodeBlock.marks] and passes 0). A
+  /// wrapping line gets break chances after punctuation ([kitCodeBreakable]).
   TextSpan _lineSpan(
+    String line,
+    int lineStart,
+    ThemeRoles roles,
+    TextStyle monoStyle, {
+    required bool wrap,
+  }) {
+    final span = _markedLineSpan(line, lineStart, roles, monoStyle);
+    // A command keeps the reviewed R3 wrap (at spaces and `/`), so a file
+    // name in it is never split before its extension.
+    return wrap && widget.kind != KitCodeKind.command
+        ? _breakableSpan(span)
+        : span;
+  }
+
+  TextSpan _markedLineSpan(
     String line,
     int lineStart,
     ThemeRoles roles,
@@ -1111,6 +1130,24 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
     }
     if (local.isEmpty) return withStyle;
     return _paintMarks(withStyle, local, roles);
+  }
+
+  /// [span] with [kitCodeBreakable] applied to every piece of text, keeping
+  /// each piece's style (syntax colour, find marks).
+  static TextSpan _breakableSpan(TextSpan span) {
+    InlineSpan visit(InlineSpan value) {
+      if (value is! TextSpan) return value;
+      final text = value.text;
+      return TextSpan(
+        text: text == null ? null : kitCodeBreakable(text),
+        style: value.style,
+        children: value.children == null
+            ? null
+            : [for (final c in value.children!) visit(c)],
+      );
+    }
+
+    return visit(span) as TextSpan;
   }
 
   TextSpan _paintMarks(
@@ -1163,6 +1200,103 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
     }
 
     return visit(span) as TextSpan;
+  }
+}
+
+/// The characters a wrapping code line may break after, besides spaces
+/// (which already break): member access, argument and statement separators,
+/// opening brackets, assignment, logic and path separators.
+const _breakAfter = {'.', ',', ';', ':', '(', '[', '{', '=', '&', '|', '/'};
+
+/// What never starts a new wrapped line: a closing bracket or separator
+/// stays with what it closes.
+const _noBreakBefore = {'.', ',', ';', ':', ')', ']', '}'};
+
+/// [line] with a zero-width break chance after punctuation inside a long
+/// token, so a wrapping code line breaks at "intent." / "getStringExtra("
+/// instead of mid-identifier ("getStringExt" / "ra"), the way a code editor
+/// would. A run of the same mark ("::", "==", "&&", "//") stays whole,
+/// nothing breaks before a closing bracket or separator, and a short ending
+/// after a dot (a file extension, "test.dart") stays with its name. A token with no
+/// such mark still breaks where it must. Only the display changes:
+/// [KitCodeBlock]'s Copy uses the source, and selection strips the marks
+/// again (`_CopiesSource`).
+String kitCodeBreakable(String line) {
+  if (line.length < 2) return line;
+  StringBuffer? out;
+  for (var i = 0; i < line.length; i++) {
+    final char = line[i];
+    out?.write(char);
+    if (i == line.length - 1 || !_breakAfter.contains(char)) continue;
+    final next = line[i + 1];
+    if (next == char || next.trim().isEmpty || _noBreakBefore.contains(next)) {
+      continue;
+    }
+    // "checkout_test.dart": a short ending after a dot (a file extension)
+    // stays with its name.
+    if (char == '.' && _shortTail(line, i + 1)) continue;
+    out ??= StringBuffer(line.substring(0, i + 1));
+    out.write(_zeroWidthSpace);
+  }
+  return out?.toString() ?? line;
+}
+
+const _zeroWidthSpace = '\u200B';
+
+/// Whether the word starting at [from] is at most four letters or digits
+/// and then ends (a space, the line's end or a closing mark), like a file
+/// extension: "dart", "md", "json".
+bool _shortTail(String line, int from) {
+  var i = from;
+  while (i < line.length && _alnum.hasMatch(line[i])) {
+    i++;
+  }
+  final length = i - from;
+  if (length == 0 || length > 4) return false;
+  return i == line.length || !_continues.hasMatch(line[i]);
+}
+
+final _alnum = RegExp(r'[A-Za-z0-9]');
+
+/// What makes a short word after a dot part of a longer expression
+/// ("a.b.c", "x.map(", "list.first[").
+final _continues = RegExp(r'[A-Za-z0-9_(\[{.]');
+
+/// Selected code copies (and shares) as its source: the zero-width break
+/// chances [kitCodeBreakable] adds to a wrapping line are taken out again.
+class _CopiesSource extends StatefulWidget {
+  const _CopiesSource({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_CopiesSource> createState() => _CopiesSourceState();
+}
+
+class _CopiesSourceState extends State<_CopiesSource> {
+  final _delegate = _SourceSelectionDelegate();
+
+  @override
+  void dispose() {
+    _delegate.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      SelectionContainer(delegate: _delegate, child: widget.child);
+}
+
+class _SourceSelectionDelegate extends StaticSelectionContainerDelegate {
+  @override
+  SelectedContent? getSelectedContent() {
+    final content = super.getSelectedContent();
+    if (content == null || !content.plainText.contains(_zeroWidthSpace)) {
+      return content;
+    }
+    return SelectedContent(
+      plainText: content.plainText.replaceAll(_zeroWidthSpace, ''),
+    );
   }
 }
 

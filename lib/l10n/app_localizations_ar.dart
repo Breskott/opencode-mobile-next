@@ -2176,6 +2176,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get demoSetUpServer => 'إعداد خادمك الخاص';
 
   @override
+  String get demoNoCommands =>
+      'The demo has no commands — send the sample prompt to see a change reviewed.';
+
+  @override
   String get handoffCopyCommand => 'نسخ الأمر';
 
   @override

@@ -3650,6 +3650,12 @@ abstract class AppLocalizations {
   /// **'Set up your own server'**
   String get demoSetUpServer;
 
+  /// One line in the demo chat's suggestion area when the person types / : the demo has no slash commands.
+  ///
+  /// In en, this message translates to:
+  /// **'The demo has no commands — send the sample prompt to see a change reviewed.'**
+  String get demoNoCommands;
+
   /// No description provided for @handoffCopyCommand.
   ///
   /// In en, this message translates to:

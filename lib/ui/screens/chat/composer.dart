@@ -450,6 +450,18 @@ class _ChatComposer extends StatelessWidget {
   KitComposerChips? _suggestions(BuildContext context) {
     if (!allowInlineCommands) return null;
     final l10n = _chatL10n(context);
+    // The demo has no commands: a typed `/` (at the start or mid-text) gets
+    // one line saying so and pointing at the sample prompt, not silence
+    // (B12).
+    if (isolated) {
+      if (!_slashWordAtCaret(controller.value)) return null;
+      return KitComposerChips.suggestions(
+        listKey: const Key('demo-no-commands'),
+        suggestions: const [],
+        onSelected: (_) {},
+        note: l10n.demoNoCommands,
+      );
+    }
     final shown = compact ? 3 : KitComposerChips.visibleCount;
     final slash = _slashQuery;
     if (slash != null) {
@@ -513,6 +525,21 @@ class _ChatComposer extends StatelessWidget {
       onSelected: (s) => onSelectAgent(s.id as CatalogAgent),
       onShowAll: matches.length > shown ? onOpenAgents : null,
     );
+  }
+
+  /// The word the caret ends starts with `/`: "/" alone, "/rev", or
+  /// "fix this /" mid-text. Without a caret, the whole text's start counts.
+  static bool _slashWordAtCaret(TextEditingValue value) {
+    final text = value.text;
+    final selection = value.selection;
+    if (!selection.isValid || !selection.isCollapsed) {
+      return text.trimLeft().startsWith('/');
+    }
+    final cursor = selection.baseOffset;
+    if (cursor < 1 || cursor > text.length) return false;
+    final before = text.substring(0, cursor);
+    final start = before.lastIndexOf(RegExp(r'\s')) + 1;
+    return before.substring(start).startsWith('/');
   }
 
   String? get _slashQuery {

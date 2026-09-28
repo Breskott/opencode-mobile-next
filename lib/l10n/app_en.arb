@@ -1200,6 +1200,10 @@
   "pluginsFailureDetail": "Failure details are hidden because they may contain credentials.",
   "demoReviewChanges": "Review changes",
   "demoSetUpServer": "Set up your own server",
+  "demoNoCommands": "The demo has no commands — send the sample prompt to see a change reviewed.",
+  "@demoNoCommands": {
+    "description": "One line in the demo chat's suggestion area when the person types / : the demo has no slash commands."
+  },
   "handoffCopyCommand": "Copy command",
   "quotaMiniMax": "MiniMax",
   "quotaMiniMaxSourceBound": "Tied to the collector's configured MiniMax Subscription Key. The quota response does not independently identify the account. Only reported general-pool percentages are shown; other limits may apply.",

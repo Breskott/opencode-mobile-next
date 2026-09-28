@@ -288,7 +288,7 @@ class KitRowGroup extends StatelessWidget {
 - **Traversal:** reading order is top to bottom, then start to end (A11Y-4).
 - **200 % text (A11Y-8):**
   - a row title is one line below 1.3× text and two lines from 1.3×, with the full value in semantics;
-  - supporting lines wrap to their max;
+  - supporting lines wrap to their max, and at large text the row raises that max: at least two lines from 1.3×, three from 2.0×, before the ellipsis (slice-polish2: "Editing workflow fil…" at 2.0). At 1.0× a list keeps its one line (design standard §6);
   - the row grows with the text, since its heights are minimums;
   - there is no overflow at 320 dp (G6).
 

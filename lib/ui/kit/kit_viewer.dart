@@ -41,6 +41,16 @@ import 'motion/kit_reveal.dart';
 /// Which renderer a [KitViewerContent] uses.
 enum KitViewerKind { text, code, markdown, image, pdf, svg, delimited, binary }
 
+/// The wrap a viewer uses before the person picks one: source code scrolls
+/// sideways on every window, so a long line is never broken mid-identifier
+/// ([KitCodeBlock.defaultWrap]); text, markdown source and the rest read
+/// like output, wrapped on a compact window.
+bool kitViewerDefaultWrap(BuildContext context, KitViewerKind? kind) =>
+    KitCodeBlock.defaultWrap(
+      context,
+      kind == KitViewerKind.code ? KitCodeKind.code : KitCodeKind.output,
+    );
+
 /// One page of a PDF, already rendered by the caller's renderer
 /// (lib/platform/local_pdf.dart); the kit only lays pages out.
 @immutable
@@ -689,9 +699,7 @@ class _KitViewerState extends State<KitViewer> {
   }
 
   bool _effectiveWrap(BuildContext context) =>
-      _wrap ??
-      widget.wrap ??
-      KitCodeBlock.defaultWrap(context, KitCodeKind.code);
+      _wrap ?? widget.wrap ?? kitViewerDefaultWrap(context, _content?.kind);
 
   void _toggleWrap() {
     final next = !_effectiveWrap(context);

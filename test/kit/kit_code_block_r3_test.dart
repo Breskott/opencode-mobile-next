@@ -137,10 +137,14 @@ void main() {
     );
     expect(find.byKey(_wrapKey), findsNothing);
 
-    await _pump(tester, KitCodeBlock(text: 'final a = "${'x' * 120}";'));
+    await _pump(
+      tester,
+      KitCodeBlock(text: 'final a = "${'x' * 120}";', kind: KitCodeKind.output),
+    );
     expect(find.byKey(_wrapKey), findsOneWidget);
     final handle = tester.ensureSemantics();
-    // Compact wraps by default: the toggle reads on, as an accent glyph.
+    // Compact wraps output by default (code scrolls, polish2): the toggle
+    // reads on, as an accent glyph.
     expect(
       tester.getSemantics(find.byKey(_wrapKey)),
       isSemantics(

@@ -2150,6 +2150,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get demoSetUpServer => 'Set up your own server';
 
   @override
+  String get demoNoCommands =>
+      'The demo has no commands — send the sample prompt to see a change reviewed.';
+
+  @override
   String get handoffCopyCommand => 'Copy command';
 
   @override

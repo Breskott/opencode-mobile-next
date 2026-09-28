@@ -132,10 +132,8 @@ void main() {
           w is Scrollable &&
           axisDirectionToAxis(w.axisDirection) == Axis.horizontal,
     );
-    // This host reads as a compact window, where code wraps by default;
-    // turning Wrap off gives the block its sideways scroller.
-    await tester.tap(find.byTooltip('Wrap lines'));
-    await tester.pump();
+    // Code scrolls sideways by default on every window (polish2), so the
+    // block has its sideways scroller without touching Wrap.
     final state = tester.state<ScrollableState>(horizontal);
     expect(state.position.axisDirection, AxisDirection.right);
     expect(state.position.pixels, state.position.minScrollExtent);

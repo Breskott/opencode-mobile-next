@@ -238,67 +238,71 @@ void main() {
     },
   );
 
-  testWidgets(
-    '4. wrap: compact wraps, wide scrolls; command never wraps; toggle',
-    (tester) async {
-      const long =
-          'a rather long single line of source that will need to either wrap '
-          'onto a second line or scroll sideways depending on window width';
+  testWidgets('4. wrap: code scrolls on every window, output wraps on compact; '
+      'command never wraps; toggle', (tester) async {
+    const long =
+        'a rather long single line of source that will need to either wrap '
+        'onto a second line or scroll sideways depending on window width';
 
-      await _pump(
-        tester,
-        const KitCodeBlock(text: long),
-        size: const Size(360, 800),
-      );
-      expect(find.byKey(_horizontalKey), findsNothing);
+    // Code never soft-wraps by default (polish2): it scrolls sideways on
+    // a phone too, with the Wrap toggle offered.
+    await _pump(
+      tester,
+      const KitCodeBlock(text: long),
+      size: const Size(360, 800),
+    );
+    expect(find.byKey(_horizontalKey), findsOneWidget);
+    expect(find.byKey(_wrapKey), findsOneWidget);
 
-      await _pump(
-        tester,
-        const KitCodeBlock(text: long),
-        size: const Size(1280, 800),
-      );
-      expect(find.byKey(_horizontalKey), findsOneWidget);
+    await _pump(
+      tester,
+      const KitCodeBlock(text: long, kind: KitCodeKind.output),
+      size: const Size(360, 800),
+    );
+    expect(find.byKey(_horizontalKey), findsNothing);
 
-      await _pump(
-        tester,
-        const KitCodeBlock(text: 'echo hi', kind: KitCodeKind.command),
-        size: const Size(360, 800),
-      );
-      expect(find.byKey(_horizontalKey), findsOneWidget);
-      expect(find.byKey(_wrapKey), findsNothing);
+    await _pump(
+      tester,
+      const KitCodeBlock(text: long),
+      size: const Size(1280, 800),
+    );
+    expect(find.byKey(_horizontalKey), findsOneWidget);
 
-      // Self-managed toggle at a wide window (starts unwrapped).
-      await _pump(
-        tester,
-        const KitCodeBlock(text: long),
-        size: const Size(1280, 800),
-      );
-      expect(find.byKey(_horizontalKey), findsOneWidget);
-      await tester.tap(find.byKey(_wrapKey));
-      await tester.pump();
-      expect(find.byKey(_horizontalKey), findsNothing);
+    await _pump(
+      tester,
+      const KitCodeBlock(text: 'echo hi', kind: KitCodeKind.command),
+      size: const Size(360, 800),
+    );
+    expect(find.byKey(_horizontalKey), findsOneWidget);
+    expect(find.byKey(_wrapKey), findsNothing);
 
-      // Controlled: onWrapChanged calls back and the block waits for the host.
-      bool? changed;
-      await _pump(
-        tester,
-        KitCodeBlock(
-          text: long,
-          wrap: false,
-          onWrapChanged: (v) => changed = v,
-        ),
-        size: const Size(1280, 800),
-      );
-      await tester.tap(find.byKey(_wrapKey));
-      await tester.pump();
-      expect(changed, isTrue);
-      expect(
-        find.byKey(_horizontalKey),
-        findsOneWidget,
-        reason: 'still unwrapped: only the host changes wrap',
-      );
-    },
-  );
+    // Self-managed toggle at a wide window (starts unwrapped).
+    await _pump(
+      tester,
+      const KitCodeBlock(text: long),
+      size: const Size(1280, 800),
+    );
+    expect(find.byKey(_horizontalKey), findsOneWidget);
+    await tester.tap(find.byKey(_wrapKey));
+    await tester.pump();
+    expect(find.byKey(_horizontalKey), findsNothing);
+
+    // Controlled: onWrapChanged calls back and the block waits for the host.
+    bool? changed;
+    await _pump(
+      tester,
+      KitCodeBlock(text: long, wrap: false, onWrapChanged: (v) => changed = v),
+      size: const Size(1280, 800),
+    );
+    await tester.tap(find.byKey(_wrapKey));
+    await tester.pump();
+    expect(changed, isTrue);
+    expect(
+      find.byKey(_horizontalKey),
+      findsOneWidget,
+      reason: 'still unwrapped: only the host changes wrap',
+    );
+  });
 
   testWidgets('5. header: file name and +n -n; semantics read the sentence', (
     tester,

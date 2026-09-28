@@ -527,6 +527,59 @@ void main() {
   // Owner polish 2026-09-28: at 2.0 text Review broke file names mid-word
   // ("checkout_page.da" / "rt"). A file-name title wraps only between its
   // words: after `_` or `-`, or before the extension's dot.
+  group('KitRow supporting line at large text (polish2)', () {
+    const supportingKey = ValueKey('row-supporting');
+    Widget row({int supportingMaxLines = 1}) => KitRow(
+      leading: const Icon(Icons.terminal),
+      title: 'Speed up the CI pipeline',
+      supporting: const TextSpan(text: 'Editing workflow files · 4 min'),
+      supportingKey: supportingKey,
+      supportingMaxLines: supportingMaxLines,
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {},
+    );
+    RenderParagraph supporting(WidgetTester tester) =>
+        tester.renderObject<RenderParagraph>(find.byKey(supportingKey));
+
+    for (final (scale, lines) in [(1.0, 1), (1.3, 2), (2.0, 3), (3.0, 3)]) {
+      testWidgets('at ${scale}x text the supporting line may take $lines '
+          'line(s) before its ellipsis', (tester) async {
+        await _pump(tester, row(), textScale: scale);
+        expect(supporting(tester).maxLines, lines);
+      });
+    }
+
+    testWidgets('at 2.0 text the line wraps whole instead of ending '
+        '"Editing workflow fil…"', (tester) async {
+      // The test font's glyphs are one em wide, so this width gives the
+      // line the two to three lines a phone's real font needs at 2.0.
+      await _pump(tester, row(), textScale: 2, size: const Size(700, 915));
+      final paragraph = supporting(tester);
+      expect(paragraph.didExceedMaxLines, isFalse);
+      expect(
+        paragraph
+            .getBoxesForSelection(
+              const TextSelection(baseOffset: 0, extentOffset: 30),
+            )
+            .map((b) => b.top)
+            .toSet()
+            .length,
+        greaterThan(1),
+        reason: 'wrapped onto a second line',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a caller that asks for more keeps its own count', (
+      tester,
+    ) async {
+      await _pump(tester, row(supportingMaxLines: 4), textScale: 2);
+      expect(supporting(tester).maxLines, 4);
+      await _pump(tester, row(supportingMaxLines: 2));
+      expect(supporting(tester).maxLines, 2);
+    });
+  });
+
   group('KitRow file-name title', () {
     const titleKey = ValueKey('file-title');
 

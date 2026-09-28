@@ -437,12 +437,13 @@ void main() {
   ) async {
     final changes = <bool>[];
     await _open(tester, size: const Size(360, 800), onWrapChanged: changes.add);
-    expect(tester.widget<KitCodeBlock>(find.byType(KitCodeBlock)).wrap, true);
+    // Code scrolls sideways by default on a phone too (polish2).
+    expect(tester.widget<KitCodeBlock>(find.byType(KitCodeBlock)).wrap, false);
     await _openMore(tester);
     await tester.tap(find.text('Wrap lines'));
     await tester.pumpAndSettle();
-    expect(changes, [false]);
-    expect(tester.widget<KitCodeBlock>(find.byType(KitCodeBlock)).wrap, false);
+    expect(changes, [true]);
+    expect(tester.widget<KitCodeBlock>(find.byType(KitCodeBlock)).wrap, true);
 
     await _open(tester, size: _pc);
     expect(tester.widget<KitCodeBlock>(find.byType(KitCodeBlock)).wrap, false);

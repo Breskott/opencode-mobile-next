@@ -7667,10 +7667,10 @@ class _ChatScreenState extends State<ChatScreen>
       maxInputHeight: compactComposer
           ? bodyConstraints.maxHeight * .45
           : double.infinity,
+      // Isolated (the demo) has no commands; the composer says so when a
+      // `/` is typed instead of offering any.
       allowInlineCommands:
-          !_conn.isIsolated &&
-          !_voiceConversation &&
-          bodyConstraints.maxHeight >= 300,
+          !_voiceConversation && bodyConstraints.maxHeight >= 300,
       controller: _composer,
       focusNode: _focus,
       commands: _chatCommands,

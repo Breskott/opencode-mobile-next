@@ -581,6 +581,45 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets('no rows with a note: one plain line in the suggestion '
+        'area, read out, nothing to tap (B12)', (tester) async {
+      final semantics = tester.ensureSemantics();
+      const note =
+          'The demo has no commands — send the sample prompt to see a '
+          'change reviewed.';
+      await _pump(
+        tester,
+        KitComposerChips.suggestions(
+          listKey: const Key('note-list'),
+          suggestions: const [],
+          onSelected: (_) {},
+          note: note,
+        ),
+        size: const Size(360, 800),
+      );
+      expect(find.text(note), findsOneWidget);
+      expect(find.byKey(const Key('note-list')), findsOneWidget);
+      expect(find.bySemanticsLabel('Suggestions'), findsNothing);
+      expect(find.byType(InkWell), findsNothing);
+      // Read out when it appears: a live region with the line as its label.
+      expect(
+        tester.getSemantics(find.text(note)),
+        matchesSemantics(label: note, isLiveRegion: true),
+      );
+      // Rows win over the note.
+      await _pump(
+        tester,
+        KitComposerChips.suggestions(
+          suggestions: _suggestions(2),
+          onSelected: (_) {},
+          note: note,
+        ),
+      );
+      expect(find.text(note), findsNothing);
+      expect(find.text('/command1'), findsOneWidget);
+      semantics.dispose();
+    });
+
     testWidgets('tapping a row calls onSelected once', (tester) async {
       final selected = <Object>[];
       await _pump(
