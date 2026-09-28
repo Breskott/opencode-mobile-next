@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../kit_illustration.dart';
 import 'servers_cast.dart';
+import '../kit_motion.dart';
 
 /// Where a server connection stands, as the link drawing shows it.
 enum ServersLinkState {
@@ -171,7 +172,7 @@ class ServersLinkScene extends KitScene {
           KitDraw.interval(t, 0, .35),
           KitDraw.pen(palette.accent, 4),
         );
-        final land = KitDraw.interval(t, .25, .7, Curves.easeOutBack);
+        final land = KitDraw.interval(t, .25, .7, KitMotion.land);
         if (land > 0) {
           canvas.drawCircle(_middle, 6.5 * land, KitDraw.fill(palette.accent));
           canvas.drawCircle(
@@ -182,7 +183,7 @@ class ServersLinkScene extends KitScene {
         }
         // The spark: rays thrown out once, settling as short ticks that stay
         // in the finished frame.
-        final throw_ = KitDraw.interval(t, .35, 1, Curves.easeOutBack);
+        final throw_ = KitDraw.interval(t, .35, 1, KitMotion.land);
         if (throw_ > 0) {
           final pen = KitDraw.pen(
             KitDraw.fade(palette.accent, .85),

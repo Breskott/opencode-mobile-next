@@ -50,7 +50,6 @@ import '../../domain/agent_error_text.dart';
 import '../../domain/office_text.dart';
 import '../agent_error_words.dart';
 import '../app_theme.dart';
-import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
 import '../desktop/file_drop.dart';
 import '../desktop/shortcuts.dart';
@@ -76,7 +75,6 @@ import '../widgets/session_title.dart';
 import '../widgets/session_read_state.dart';
 import '../widgets/session_handoff_sheets.dart';
 import '../widgets/running_agents_strip.dart';
-import '../widgets/terminal_view.dart';
 import '../widgets/tool_card.dart';
 import '../../api2/models.dart' show Api2Delivery, Api2FormInfo, Api2InboxItem;
 import '../../feedback/bug_report.dart' show openBugReport;
@@ -3868,11 +3866,10 @@ class _ChatScreenState extends State<ChatScreen>
     if (_messages.isEmpty) return;
     // A prompt's own Fork in the timeline lands like every fork (P10.2).
     const forkMode = false;
-    final selection = await showModalBottomSheet<_TimelineSelection>(
-      context: context,
-      isScrollControlled: true,
+    final selection = await showKitFramedSheet<_TimelineSelection>(
+      context,
       useSafeArea: true,
-      constraints: const BoxConstraints(maxWidth: 720),
+      maxWidth: 720,
       builder: (context) => ListenableBuilder(
         listenable: _historyChanges,
         builder: (context, _) => _TimelineSheet(
@@ -4431,45 +4428,45 @@ class _ChatScreenState extends State<ChatScreen>
   /// footer's More, long-press, right-click, Shift+F10 and the screen
   /// reader's custom actions (the footer draws Copy beside More, so its
   /// menu leaves Copy out). Ordered by use; delete last (KIT-28).
-  List<ContextMenuAction> _messageContextActions(MessageWithParts message) => [
+  List<KitMenuItem> _messageContextActions(MessageWithParts message) => [
     if (_messageCopy(message).text.isNotEmpty)
-      ContextMenuAction(
-        menuKey: const ValueKey('message-menu-copy'),
+      KitMenuItem(
+        key: const ValueKey('message-menu-copy'),
         label: _messageCopy(message).label,
         icon: AppIcons.copy,
         onSelected: () => unawaited(_copyMessageText(message)),
       ),
     if (message.info.role == 'user' && _conn.capabilities.sessionFork)
-      ContextMenuAction(
-        menuKey: const ValueKey('message-menu-fork'),
+      KitMenuItem(
+        key: const ValueKey('message-menu-fork'),
         label: _chatL10n(context).chatUiForkFromThisPrompt,
         icon: AppIconography.fork,
         onSelected: () => unawaited(_forkFromMessage(message)),
       ),
     if (_canReadReply(message))
-      ContextMenuAction(
-        menuKey: const ValueKey('message-menu-read-aloud'),
+      KitMenuItem(
+        key: const ValueKey('message-menu-read-aloud'),
         label: _chatL10n(context).readAloudAction,
         icon: AppIconography.volume,
         onSelected: () => unawaited(_readReply(message)),
       ),
     if (_canReadReply(message) && _readAloudConsented)
-      ContextMenuAction(
-        menuKey: const ValueKey('message-menu-read-aloud-voice'),
+      KitMenuItem(
+        key: const ValueKey('message-menu-read-aloud-voice'),
         label: _chatL10n(context).readAloudOtherVoice,
         icon: AppIconography.speakUser,
         onSelected: () => unawaited(_readReply(message, chooseVoice: true)),
       ),
     if (_canUndoFrom(message))
-      ContextMenuAction(
-        menuKey: const ValueKey('message-menu-revert'),
+      KitMenuItem(
+        key: const ValueKey('message-menu-revert'),
         label: _chatL10n(context).revertFromHere,
         icon: AppIconography.history,
         onSelected: () => unawaited(_undoFrom(message)),
       ),
     if (_conn.capabilities.messageDelete)
-      ContextMenuAction(
-        menuKey: const ValueKey('message-menu-delete'),
+      KitMenuItem(
+        key: const ValueKey('message-menu-delete'),
         label: _chatL10n(context).chatUiDeleteMessage,
         icon: AppIconography.delete,
         destructive: true,
@@ -5614,11 +5611,10 @@ class _ChatScreenState extends State<ChatScreen>
     if (_conn.capabilities.serverCatalog) {
       unawaited(_conn.refreshCatalog());
     }
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
+    await showKitFramedSheet<void>(
+      context,
       useSafeArea: true,
-      constraints: const BoxConstraints(maxWidth: 720),
+      maxWidth: 720,
       builder: (sheetContext) => CommandSheet(
         controller: _conn,
         initialTab: initialTab,
@@ -6936,8 +6932,9 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  Widget _transcriptSelectionArea({required Widget child}) =>
-      _conn.isIsolated ? child : DesktopSelectionArea(child: child);
+  Widget _transcriptSelectionArea({required Widget child}) => _conn.isIsolated
+      ? child
+      : KitSelectable(mode: KitSelectMode.finePointer, child: child);
 
   Widget _composerDropTarget({required Widget child}) => _conn.isIsolated
       ? child

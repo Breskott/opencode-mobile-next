@@ -117,6 +117,13 @@ abstract final class KitMotion {
   static const Curve exit = Curves.easeInCubic;
   static const Curve emphasized = Curves.easeInOutCubicEmphasized;
 
+  /// A drawing's part landing with a small overshoot: a mark popping in, a
+  /// card settling on a lane (the KitScene arrivals, MOT-1).
+  static const Curve land = Curves.easeOutBack;
+
+  /// Constant speed inside a drawing: a wave, a route being traced.
+  static const Curve steady = Curves.linear;
+
   /// Whether ambient loops may run at all; false under `flutter test`.
   static bool loops = true;
 

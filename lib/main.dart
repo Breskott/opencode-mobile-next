@@ -1659,7 +1659,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
                 ),
               );
             },
-            scrollBehavior: const AppScrollBehavior(),
+            scrollBehavior: const KitScrollBehavior(),
             title: 'OpenCode Mobile',
             onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
             localizationsDelegates: AppLocalizations.localizationsDelegates,

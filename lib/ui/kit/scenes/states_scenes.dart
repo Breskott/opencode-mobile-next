@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../kit_illustration.dart';
 import 'states_parts.dart';
+import '../kit_motion.dart';
 
 // The empty, quiet and failure drawings (design standard §10; spec
 // docs/design/motion-and-illustration-2026-09-25.md, slice C). One drawing
@@ -83,7 +84,7 @@ class StatesSheetScene extends KitScene {
         KitDraw.fill(p.accent),
       );
     }
-    final pop = KitDraw.interval(t, .8, 1, Curves.easeOutBack);
+    final pop = KitDraw.interval(t, .8, 1, KitMotion.land);
     StatesParts.spark(canvas, const Offset(100, 38), 8, pop, p.accent);
     canvas.drawCircle(
       const Offset(90, 100),
@@ -149,7 +150,7 @@ class StatesFolderScene extends KitScene {
       pen: KitDraw.pen(p.muted),
     );
     // The spark rises out of the folder and settles above it.
-    final rise = KitDraw.interval(t, .65, 1, Curves.easeOutBack);
+    final rise = KitDraw.interval(t, .65, 1, KitMotion.land);
     if (rise > 0) {
       final y = 58 - 34 * rise;
       StatesParts.spark(canvas, Offset(64, y), 9, rise.clamp(0, 1.2), p.accent);
@@ -217,7 +218,7 @@ class StatesTrayScene extends KitScene {
     );
 
     // The sheet drops in from above and settles with a small give.
-    final drop = KitDraw.interval(t, .2, .7, Curves.easeOutBack);
+    final drop = KitDraw.interval(t, .2, .7, KitMotion.land);
     if (drop > 0) {
       canvas.save();
       canvas.translate(0, -34 * (1 - drop));
@@ -287,7 +288,7 @@ class StatesSearchScene extends KitScene {
     }
 
     // The magnifier slides in a little and lands over the sheet.
-    final land = KitDraw.interval(t, .35, .85, Curves.easeOutBack);
+    final land = KitDraw.interval(t, .35, .85, KitMotion.land);
     if (land > 0) {
       canvas.save();
       canvas.translate(10 * (1 - land), 10 * (1 - land));
@@ -482,7 +483,7 @@ class StatesUnpluggedScene extends KitScene {
     }
 
     // The plug eases back from the socket with a small give.
-    final pull = KitDraw.interval(t, .35, .85, Curves.easeOutBack);
+    final pull = KitDraw.interval(t, .35, .85, KitMotion.land);
     canvas.save();
     canvas.translate(10 * (1 - pull), 0);
     StatesParts.outlined(
@@ -505,7 +506,7 @@ class StatesUnpluggedScene extends KitScene {
     canvas.restore();
 
     // The gap: a small spark and a few short strokes.
-    final gap = KitDraw.interval(t, .75, 1, Curves.easeOutBack);
+    final gap = KitDraw.interval(t, .75, 1, KitMotion.land);
     StatesParts.ticks(
       canvas,
       const Offset(63, 61),

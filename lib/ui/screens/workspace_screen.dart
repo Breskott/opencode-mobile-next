@@ -16,7 +16,6 @@ import '../../state/orchestration.dart';
 import '../../state/attention_feed.dart' show AttentionKind;
 import '../../state/session_inventory_cache.dart' show SessionInventoryPreview;
 import '../../state/work_row_status_controller.dart';
-import '../desktop/desktop_interaction.dart';
 import '../navigation/attention_landing.dart' show chatLandingPage;
 import '../navigation/chat_route.dart';
 import '../widgets/default_notices.dart';
@@ -917,7 +916,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
     final list = KitRefresh(
       onRefresh: _refreshWorkspace,
-      child: DesktopScrollbarArea(
+      child: KitScrollArea(
         builder: (scrollController) => CustomScrollView(
           controller: scrollController,
           key: const PageStorageKey('workspace-scroll'),

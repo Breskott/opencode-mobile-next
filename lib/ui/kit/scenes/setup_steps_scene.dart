@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../kit_illustration.dart';
 import '../kit_tokens.dart';
 import 'setup_cast.dart';
+import '../kit_motion.dart';
 
 /// The part of setup that is happening now, as the drawing shows it.
 enum SetupSceneStage { download, unpack, install, start }
@@ -277,7 +278,7 @@ class SetupStepsScene extends KitScene {
         open: 1.2 * breath,
         width: 3.2,
       );
-      final land = KitDraw.interval(t, .85, 1, Curves.easeOutBack);
+      final land = KitDraw.interval(t, .85, 1, KitMotion.land);
       canvas.drawCircle(
         loop ? SetupCast.orbit(_portal, 1.5, frame.loop) : _portal,
         2 * land,

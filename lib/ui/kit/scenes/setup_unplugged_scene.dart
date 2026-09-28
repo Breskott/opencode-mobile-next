@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../kit_illustration.dart';
 import '../kit_tokens.dart';
 import 'setup_cast.dart';
+import '../kit_motion.dart';
 
 /// A server that is not answering (design standard §10): the app's plug
 /// hangs just short of a quiet, grey portal, with a few small marks in the
@@ -76,7 +77,7 @@ class SetupUnpluggedScene extends KitScene {
       KitDraw.interval(t, .3, .7),
       KitDraw.pen(p.muted),
     );
-    final plug = KitDraw.interval(t, .5, .8, Curves.easeOutBack);
+    final plug = KitDraw.interval(t, .5, .8, KitMotion.land);
     if (plug > 0) {
       canvas.save();
       canvas.translate(50, 60);

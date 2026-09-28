@@ -272,7 +272,7 @@ abstract final class AppTheme {
       textTheme: text,
       primaryTextTheme: KitText.textTheme(base.primaryTextTheme, r),
       iconTheme: IconThemeData(color: r.text1, size: 22),
-      appBarTheme: AppBarTheme(
+      appBarTheme: AppBarThemeData(
         backgroundColor: r.ground,
         foregroundColor: r.text1,
         surfaceTintColor: Colors.transparent,
@@ -360,7 +360,7 @@ abstract final class AppTheme {
           fontWeight: FontWeight.w500,
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: InputDecorationThemeData(
         filled: true,
         fillColor: r.surface1,
         hintStyle: text.bodyLarge?.copyWith(color: r.text3),

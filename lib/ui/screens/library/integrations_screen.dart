@@ -2035,7 +2035,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         }
         try {
           return await (widget.authorizationLauncher?.call(uri) ??
-              launchUrl(uri, mode: LaunchMode.externalApplication));
+              launchExternalUri(uri));
         } catch (_) {
           // The shared policy's generic launcher error could include a URL.
           // Auth URLs are sensitive: never forward platform exception text.

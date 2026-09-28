@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../kit_illustration.dart';
 import 'servers_cast.dart';
+import '../kit_motion.dart';
 
 /// The Servers welcome's hero (no servers yet, design standard §10): the
 /// computer where the agent runs, the portal on its screen, and this phone
@@ -43,7 +44,7 @@ class ServersWelcomeScene extends KitScene {
       36,
       palette.accent,
       KitDraw.interval(t, .25, .75),
-      dot: KitDraw.interval(t, .75, 1, Curves.easeOutBack),
+      dot: KitDraw.interval(t, .75, 1, KitMotion.land),
     );
     _phone.paint(canvas, palette, KitDraw.interval(t, .3, .8));
 

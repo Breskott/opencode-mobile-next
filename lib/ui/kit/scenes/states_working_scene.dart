@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../kit_illustration.dart';
+import '../kit_motion.dart';
 
 /// The small drawn mark beside Stop while a reply is being written: the
 /// brand's two brackets, small, with a spark inside. Entrance: the brackets
@@ -55,7 +56,7 @@ class StatesWorkingScene extends KitScene {
     KitDraw.partialPath(canvas, _lower, KitDraw.interval(t, .2, .75), pen);
     canvas.restore();
 
-    final land = KitDraw.interval(t, .6, 1, Curves.easeOutBack);
+    final land = KitDraw.interval(t, .6, 1, KitMotion.land);
     if (land <= 0) return;
     // The spark travels a small circle inside the aperture while working,
     // with a faint trail behind it; at rest it sits in the middle.
