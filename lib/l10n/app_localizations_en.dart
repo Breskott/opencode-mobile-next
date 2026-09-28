@@ -24333,4 +24333,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get integrationsSignedInUnusable =>
       'Signed in, but this server can\'t use it';
+
+  @override
+  String get effectsGlassCrashOff =>
+      'Liquid glass was turned off after the app closed unexpectedly twice.';
+
+  @override
+  String get effectsGlassCrashOn => 'Turn it back on';
 }
