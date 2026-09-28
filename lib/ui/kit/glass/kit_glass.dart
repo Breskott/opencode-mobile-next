@@ -11,6 +11,7 @@ import '../kit_effects.dart';
 import '../kit_motion.dart';
 import '../kit_tokens.dart';
 import 'glass_geometry.dart';
+import 'glass_safety.dart';
 import 'liquid_glass_filter.dart';
 
 part 'kit_glass_pair.dart';
@@ -32,7 +33,7 @@ enum KitGlassLook {
 }
 
 /// Loads the liquid glass shader once for the whole app and says whether
-/// this phone can use it.
+/// this phone can use it ([KitGlassSafety] guards weak renderers).
 abstract final class KitGlassShader {
   /// The shader, once loaded; null before, and forever where unsupported
   /// or when loading failed (glass then stays frosted).
@@ -53,10 +54,17 @@ abstract final class KitGlassShader {
   static const asset = 'shaders/kit_glass.frag';
 
   /// Starts loading the shader (once). Cheap to call from every build.
+  /// Where [KitGlassSafety] says the device's renderer cannot take it (an
+  /// emulator, a software renderer, or the last sessions died with liquid
+  /// glass on screen) it is never loaded and the glass stays frosted.
   static void ensureLoaded() {
     if (_loading != null || !supported) return;
-    _loading = ui.FragmentProgram.fromAsset(asset).then(
-      (loaded) => program.value = loaded,
+    _loading = _load().then(
+      (loaded) {
+        if (loaded == null) return;
+        program.value = loaded;
+        KitGlassSafety.watch();
+      },
       onError: (Object error, StackTrace stack) {
         // A missing or rejected shader is not worth a crash: stay frosted.
         FlutterError.reportError(
@@ -72,11 +80,17 @@ abstract final class KitGlassShader {
     );
   }
 
+  static Future<ui.FragmentProgram?> _load() async {
+    if (!await KitGlassSafety.allowed()) return null;
+    return ui.FragmentProgram.fromAsset(asset);
+  }
+
   /// Tests and captures only: forget the shader and any override.
   static void debugReset() {
     _loading = null;
     program.value = null;
     debugSupportedOverride = null;
+    KitGlassSafety.debugReset();
   }
 }
 
@@ -551,11 +565,17 @@ class _GlassPaint {
       ..clipPath(shape);
     final highlight = rimHighlight;
     if (highlight != null) {
+      // The two physical pixels inside the top edge, filled (the edge line
+      // below covers the outer one): a gradient-shaded wide stroke here,
+      // inside the liquid glass's backdrop layer, crashed the Android
+      // emulator's renderer (QEMU SIGSEGV, emulator QA of build 2062, F1).
       canvas.drawPath(
-        shape,
+        Path.combine(
+          PathOperation.difference,
+          shape,
+          shape.shift(Offset(0, px * 2)),
+        ),
         Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = px * 4
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,

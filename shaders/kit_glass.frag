@@ -11,7 +11,8 @@
 //   shader alone inside a rectangular clip around both. It draws its own
 //   edge from the distance field (one physical pixel of anti-aliasing, so
 //   the joined outline is as crisp as a clip), frosts with seven taps of
-//   radius u_cover, and leaves the backdrop untouched outside the shape.
+//   radius u_cover, and draws nothing (transparent) outside the shapes, so
+//   the backdrop there is untouched.
 //
 // Impeller hands it the backdrop as u_texture and sets u_size to that
 // texture's size; FlutterFragCoord() is a pixel of that texture, which is the
@@ -55,8 +56,13 @@ out vec4 frag_color;
 
 vec4 backdrop(vec2 px, vec4 bounds) {
   // Stay inside the glass: the backdrop outside the clip may be cut out.
-  vec2 p = clamp(px, bounds.xy + 0.5, bounds.zw - 0.5);
-  vec2 uv = p / u_size;
+  // clamp() is undefined when its low bound passes its high one (a glass
+  // thinner than a pixel), so the high bound never goes below the low.
+  vec2 lo = bounds.xy + 0.5;
+  vec2 hi = max(bounds.zw - 0.5, lo);
+  vec2 p = clamp(px, lo, hi);
+  // Never divide by a zero texture size, never read outside the texture.
+  vec2 uv = clamp(p / max(u_size, vec2(1.0)), vec2(0.0), vec2(1.0));
 #ifdef IMPELLER_TARGET_OPENGLES
   uv.y = 1.0 - uv.y;
 #endif
@@ -65,7 +71,7 @@ vec4 backdrop(vec2 px, vec4 bounds) {
 
 // The frost for the joined pair: the centre and six taps on a ring.
 vec4 frost(vec2 p, vec4 bounds) {
-  float r = u_cover;
+  float r = clamp(u_cover, 0.0, 64.0);
   vec4 c = backdrop(p, bounds) * 0.25;
   c += backdrop(p + vec2(r, 0.0), bounds) * 0.125;
   c += backdrop(p + vec2(-r, 0.0), bounds) * 0.125;
@@ -79,9 +85,10 @@ vec4 frost(vec2 p, vec4 bounds) {
 // Signed distance to a rounded rectangle (negative inside) and the outward
 // normal of its nearest edge.
 float box(vec2 frag, vec4 rect, float radius, out vec2 normal) {
-  vec2 half_size = (rect.zw - rect.xy) * 0.5;
+  // A rectangle of no size (or turned inside out) is a point, not NaN.
+  vec2 half_size = max((rect.zw - rect.xy) * 0.5, vec2(0.0));
   vec2 p = frag - (rect.xy + half_size);
-  float r = min(radius, min(half_size.x, half_size.y));
+  float r = clamp(radius, 0.0, min(half_size.x, half_size.y));
   vec2 q = abs(p) - half_size + r;
   vec2 s = vec2(p.x < 0.0 ? -1.0 : 1.0, p.y < 0.0 ? -1.0 : 1.0);
   float outside = length(max(q, 0.0));
@@ -98,6 +105,16 @@ float box(vec2 frag, vec4 rect, float radius, out vec2 normal) {
 void main() {
   vec2 frag = FlutterFragCoord().xy;
   vec4 bounds = vec4(min(u_rect.xy, u_rect2.xy), max(u_rect.zw, u_rect2.zw));
+  // Every length the glass is given is kept in a safe range: no division
+  // by zero, no negative widths, no runaway reach (weak and software GPUs
+  // may crash rather than return NaN).
+  float band = max(u_band, 1.0);
+  float reach = clamp(u_bend, 0.0, band);
+  float blend = max(u_blend, 0.0);
+  float rim = clamp(u_rim, 0.0, 1.0);
+  float glow = clamp(u_glow, 0.0, 1.0);
+  float px_size = max(u_px, 1.0);
+  vec4 tint = clamp(u_tint, vec4(0.0), vec4(1.0));
 
   vec2 n1;
   vec2 n2;
@@ -105,11 +122,11 @@ void main() {
   float d2 = box(frag, u_rect2, u_radius2, n2);
   float dist;
   vec2 normal;
-  if (u_blend > 0.0) {
+  if (blend > 0.0) {
     // A smooth union: the two shapes melt into one where they are closer
     // than u_blend, like two drops touching.
-    float h = clamp(0.5 + 0.5 * (d2 - d1) / u_blend, 0.0, 1.0);
-    dist = mix(d2, d1, h) - u_blend * h * (1.0 - h);
+    float h = clamp(0.5 + 0.5 * (d2 - d1) / blend, 0.0, 1.0);
+    dist = mix(d2, d1, h) - blend * h * (1.0 - h);
     vec2 n = mix(n2, n1, h);
     normal = n / max(length(n), 0.0001);
   } else if (d1 <= d2) {
@@ -124,14 +141,17 @@ void main() {
   if (u_cover > 0.0) {
     cover = clamp(0.5 - dist, 0.0, 1.0);
     if (cover <= 0.0) {
-      frag_color = backdrop(frag, bounds);
+      // Outside the shapes nothing is drawn: the backdrop shows through
+      // untouched (the filter is laid over it), never a copy of it that
+      // could differ, a dark rectangle round the pair (emulator QA 61/62).
+      frag_color = vec4(0.0);
       return;
     }
   }
 
   float depth = max(-dist, 0.0);
-  float edge = clamp(1.0 - depth / u_band, 0.0, 1.0);
-  float bend = u_bend * edge * edge;
+  float edge = clamp(1.0 - depth / band, 0.0, 1.0);
+  float bend = reach * edge * edge;
 
   vec4 color;
   float red;
@@ -148,28 +168,32 @@ void main() {
   // The tint is full over the middle, where labels sit (their 4.5:1), and
   // clears towards the rim over the outer few pixels only, so the bent
   // backdrop shows there: a clear lens ring, not a white or grey blob.
-  color.rgb = mix(color.rgb, u_tint.rgb, u_tint.a * (1.0 - 0.72 * edge * edge * edge));
-  color.rgb = mix(color.rgb, vec3(1.0), 0.07 * u_glow);
+  color.rgb = mix(color.rgb, tint.rgb, tint.a * (1.0 - 0.72 * edge * edge * edge));
+  color.rgb = mix(color.rgb, vec3(1.0), 0.07 * glow);
   // A faint sheen lit from above over the top half, fading to nothing by
   // the middle: the body of the glass (the canvas's GlassWork), not a glow.
   float rise = clamp((frag.y - bounds.y) / max(bounds.w - bounds.y, 1.0), 0.0, 1.0);
-  color.rgb = mix(color.rgb, vec3(1.0), 0.05 * u_rim * max(1.0 - 2.0 * rise, 0.0));
+  color.rgb = mix(color.rgb, vec3(1.0), 0.05 * rim * max(1.0 - 2.0 * rise, 0.0));
 
   // Specular rim: a line one physical pixel wide where the edge faces the
   // light, softer where it faces away. No halo and no glow across the band
   // (visual language §7: a crisp line, never a soft blur of light).
   vec2 light = vec2(-0.6, -0.8);
-  float facing = dot(normal, light);
+  float facing = clamp(dot(normal, light), -1.0, 1.0);
   float line = 1.0 - smoothstep(0.0, 1.0, depth);
-  float spec = line * (0.28 + 0.62 * pow(max(facing, 0.0), 2.0) +
-                       0.3 * pow(max(-facing, 0.0), 3.0));
-  spec *= 1.0 + 0.6 * u_glow;
+  // Squares and cubes by multiplication: pow() of 0 is undefined on some
+  // GPUs (exp2(y * log2(0))).
+  float lit = max(facing, 0.0);
+  float away = max(-facing, 0.0);
+  float spec = line * (0.28 + 0.62 * lit * lit + 0.3 * away * away * away);
+  spec *= 1.0 + 0.6 * glow;
   // Pressed glass: its outermost logical pixel brightens, hard-edged.
-  spec += 0.15 * u_glow * (1.0 - step(u_px, depth));
-  color.rgb = mix(color.rgb, vec3(1.0), clamp(spec * u_rim, 0.0, 1.0));
+  spec += 0.15 * glow * (1.0 - step(px_size, depth));
+  color.rgb = mix(color.rgb, vec3(1.0), clamp(spec * rim, 0.0, 1.0));
+  // Whatever came in, what goes out is a colour.
+  color = clamp(color, vec4(0.0), vec4(1.0));
   color.a = 1.0;
-  if (u_cover > 0.0) {
-    color = mix(backdrop(frag, bounds), color, cover);
-  }
-  frag_color = color;
+  // The joined pair's own anti-aliased edge: premultiplied, laid over the
+  // backdrop, so the edge pixel mixes with what is really there.
+  frag_color = color * cover;
 }

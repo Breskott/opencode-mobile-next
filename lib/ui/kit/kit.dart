@@ -162,6 +162,7 @@ export 'motion/kit_page_transitions.dart';
 export 'motion/kit_refresh.dart';
 export 'motion/kit_reveal.dart';
 export 'motion/kit_tab_switcher.dart';
+export 'glass/glass_safety.dart';
 export 'glass/kit_glass.dart';
 export 'chat/kit_message.dart';
 export 'chat/kit_transcript_excerpt.dart';
