@@ -10,6 +10,7 @@ import 'package:opencode_mobile/builtin/project_export.dart';
 import 'package:opencode_mobile/builtin/project_export_controller.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/manage_space_main.dart';
+import 'package:opencode_mobile/state/profiles.dart' show AppAppearance;
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/manage_space_screen.dart';
 
@@ -263,6 +264,93 @@ void main() {
     );
     expect(find.text('Export projects first'), findsNothing);
     expect(find.text('Delete everything'), findsOneWidget);
+  });
+
+  // Emulator QA F7: it said "Export your projects first" with no Export
+  // on the page, sat against the window's edge, and was light in a dark app.
+  testWidgets('nothing to export: the warning does not send to Export', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      controllerFor(FakeExportPlatform(), facts: AppStorageFacts.empty),
+    );
+    expect(find.textContaining('cannot be undone'), findsOneWidget);
+    expect(find.textContaining('Export your projects'), findsNothing);
+  });
+
+  testWidgets('with projects, the warning names Export and the row is next', (
+    tester,
+  ) async {
+    await pumpPage(tester, controllerFor(FakeExportPlatform()));
+    final warning = find.textContaining('Export your projects first');
+    expect(warning, findsOneWidget);
+    final row = find.text('Export projects first');
+    expect(
+      tester.getTopLeft(row).dy,
+      greaterThan(tester.getBottomLeft(warning).dy),
+    );
+  });
+
+  testWidgets('the notices sit on the page gutter, not the window edge', (
+    tester,
+  ) async {
+    final platform = FakeExportPlatform();
+    await pumpPage(tester, controllerFor(platform));
+    await tapText(tester, "Clear the app's cache only");
+    for (final key in ['manage-space-intro', 'manage-space-cache-cleared']) {
+      final notice = tester.getRect(find.byKey(ValueKey(key)));
+      expect(notice.left, greaterThanOrEqualTo(16), reason: key);
+      expect(
+        notice.right,
+        lessThanOrEqualTo(
+          tester.view.physicalSize.width / tester.view.devicePixelRatio - 16,
+        ),
+        reason: key,
+      );
+    }
+  });
+
+  testWidgets("follows the app's saved appearance, dark by default", (
+    tester,
+  ) async {
+    Future<Brightness> brightness(ManageSpaceApp app) async {
+      // A fresh page each time (the page loads its controller once).
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(app);
+      await tester.pumpAndSettle();
+      return Theme.of(
+        tester.element(find.byType(ManageSpaceScreen)),
+      ).brightness;
+    }
+
+    final c = controllerFor(FakeExportPlatform());
+    expect(
+      await brightness(ManageSpaceApp(controller: c, onClose: () {})),
+      Brightness.dark,
+    );
+    expect(
+      await brightness(
+        ManageSpaceApp(
+          controller: controllerFor(FakeExportPlatform()),
+          onClose: () {},
+          appearance: AppAppearance.light,
+        ),
+      ),
+      Brightness.light,
+    );
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    expect(
+      await brightness(
+        ManageSpaceApp(
+          controller: controllerFor(FakeExportPlatform()),
+          onClose: () {},
+          appearance: AppAppearance.system,
+        ),
+      ),
+      Brightness.dark,
+    );
   });
 
   testWidgets('This phone export page lists projects and exports', (

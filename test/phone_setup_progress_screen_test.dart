@@ -388,13 +388,75 @@ void main() {
       expect(find.text('Getting started…'), findsOneWidget);
       expect(find.textContaining('min left'), findsNothing);
 
-      h.engine.emit(_job(eta: 130, current: _nodeDownloading));
+      const before = {'linux', 'essentials', 'python'};
+      h.engine.emit(_job(eta: 130, done: before, current: _nodeDownloading));
       await tester.pump();
       expect(find.text('~2 min left'), findsOneWidget);
+    });
 
-      h.engine.emit(_job(eta: 40, current: _nodeDownloading));
+    // Emulator QA F11: "Less than a minute" at 30 %, then "~5 min left".
+    testWidgets('never under a minute before the last step, and never up', (
+      tester,
+    ) async {
+      final h = await _pump(tester, initial: _job(current: _nodeDownloading));
+      const before = {'linux', 'essentials', 'python'};
+      // A fast download: the engine's pace says 40 s, but OpenCode (90 s)
+      // has not started, so the line says what is still to come.
+      h.engine.emit(_job(eta: 40, done: before, current: _nodeDownloading));
+      await tester.pump();
+      expect(find.text('Less than a minute'), findsNothing);
+      expect(find.text('~2 min left'), findsOneWidget);
+
+      // The pace slows and the engine now says 5 min: the line holds.
+      h.engine.emit(_job(eta: 300, done: before, current: _nodeDownloading));
+      await tester.pump();
+      expect(find.text('~5 min left'), findsNothing);
+      expect(find.text('~2 min left'), findsOneWidget);
+
+      // The last step: now it may say less than a minute.
+      h.engine.emit(
+        _job(
+          eta: 40,
+          done: {...before, 'node'},
+          current: const ComponentProgress(
+            id: 'opencode',
+            state: ComponentState.running,
+            stage: 'Installing',
+          ),
+        ),
+      );
       await tester.pump();
       expect(find.text('Less than a minute'), findsOneWidget);
+    });
+
+    testWidgets('a short estimate before the last step reads ~1 min', (
+      tester,
+    ) async {
+      final h = await _pump(
+        tester,
+        initial: _job(
+          ids: const ['linux', 'essentials'],
+          current: const ComponentProgress(
+            id: 'linux',
+            state: ComponentState.running,
+            stage: 'Downloading',
+          ),
+        ),
+      );
+      h.engine.emit(
+        _job(
+          eta: 10,
+          ids: const ['linux', 'essentials'],
+          current: const ComponentProgress(
+            id: 'linux',
+            state: ComponentState.running,
+            stage: 'Downloading',
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Less than a minute'), findsNothing);
+      expect(find.text('~1 min left'), findsOneWidget);
     });
   });
 

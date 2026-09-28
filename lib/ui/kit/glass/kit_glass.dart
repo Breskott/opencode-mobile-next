@@ -92,7 +92,7 @@ abstract final class KitGlassShader {
 /// Fluid glass (the owner's approved sample, visual language §6): with
 /// [respond] the glass gives under a finger (it swells a few dp past its box
 /// and brightens, then springs back); with [flow] it follows its content's
-/// new size instead of jumping; [KitGlass.pair] joins two pieces like drops.
+/// new size instead of jumping; [KitGlass.pair] brings two pieces together.
 /// Only the drawn shape moves, on [KitMotion] springs: content is never
 /// scaled and never relaid out, so labels stay crisp. Under reduced motion
 /// ([KitMotion.reduced]) every state is instant; solid glass never moves.
@@ -116,9 +116,10 @@ class KitGlass extends StatefulWidget {
 
   /// Two pieces of glass in one row, drawn as one liquid surface: [leading]
   /// at the start at its own width, [trailing] at the end. When [joined]
-  /// the trailing piece slides next to the leading one and the two melt
-  /// together like drops; apart again, they pull away. The shell's server
-  /// pill and search join while the page is scrolled ([scrolledOf]).
+  /// the trailing piece slides up to a small gap from the leading one
+  /// (never melted into it); apart again, it slides back to the end. The
+  /// shell's server pill and search join while the page is scrolled
+  /// ([scrolledOf]).
   ///
   /// Each piece gives under a finger ([respond]). Only the drawn glass
   /// moves: the pieces keep their layout, sizes and semantics order.

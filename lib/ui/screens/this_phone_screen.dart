@@ -481,7 +481,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
       context,
       title: l10n.setupSwitchConfirmTitle(_runtimeName(target)),
       body: l10n.setupSwitchConfirmDetail,
-      confirmLabel: l10n.setupSwitchConfirm,
+      confirmLabel: l10n.setupSwitchConfirm(_runtimeName(target)),
       icon: AppIconography.sync,
       sheetKey: const ValueKey('this-phone-switch-sheet'),
       confirmKey: const ValueKey('this-phone-switch-confirm'),
@@ -943,15 +943,20 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
             ),
             supportingKey: const ValueKey('this-phone-detail'),
             supportingMaxLines: 2,
+            // The state word keeps the row's end inset (a trailing slot
+            // leaves only space1), never against the panel's edge.
             trailing: needsYou
                 ? null
-                : KitText(
-                    word,
-                    key: const ValueKey('this-phone-state'),
-                    role: KitTextRole.secondary,
-                    tone: running && !working
-                        ? KitTextTone.success
-                        : KitTextTone.secondary,
+                : Padding(
+                    padding: EdgeInsetsDirectional.only(end: tokens.space3),
+                    child: KitText(
+                      word,
+                      key: const ValueKey('this-phone-state'),
+                      role: KitTextRole.secondary,
+                      tone: running && !working
+                          ? KitTextTone.success
+                          : KitTextTone.secondary,
+                    ),
                   ),
             below: line == null
                 ? null
