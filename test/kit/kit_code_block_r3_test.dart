@@ -290,4 +290,72 @@ void main() {
     );
     expect(find.text('Copy command'), findsOneWidget);
   });
+
+  // 98c064bd let a labelled copy flex beside the caption: both took half the
+  // header and the unused half of the copy's share was put before the
+  // caption, so "Terminal command" sat ~70 dp in on a 1280 sheet.
+  for (final size in const [Size(412, 915), Size(1280, 800)]) {
+    for (final dir in TextDirection.values) {
+      testWidgets('a caption beside a labelled copy starts at the block\'s '
+          'start edge (${size.width.toInt()}, ${dir.name})', (tester) async {
+        await _pump(
+          tester,
+          Directionality(
+            textDirection: dir,
+            child: const KitCodeBlock(
+              text: "cd '/home/dev/My Projects/acme' && opencode2 --session x",
+              kind: KitCodeKind.command,
+              caption: 'Terminal command',
+              copyLabel: 'Copy command',
+            ),
+          ),
+          size: size,
+        );
+        final block = _blockRect(tester);
+        final inset = _tokens(tester).space4;
+        final caption = tester.getRect(find.text('Terminal command'));
+        final copy = tester.getRect(find.text('Copy command'));
+        if (dir == TextDirection.ltr) {
+          expect(
+            caption.left,
+            moreOrLessEquals(block.left + inset, epsilon: 1),
+          );
+          expect(copy.right, lessThanOrEqualTo(block.right - inset + 1));
+          expect(copy.left, greaterThan(caption.right));
+        } else {
+          expect(
+            caption.right,
+            moreOrLessEquals(block.right - inset, epsilon: 1),
+          );
+          expect(copy.left, greaterThanOrEqualTo(block.left + inset - 1));
+          expect(copy.right, lessThan(caption.left));
+        }
+      });
+    }
+  }
+
+  testWidgets('a long copy label beside a caption wraps and leaves the '
+      'caption room', (tester) async {
+    await _pump(
+      tester,
+      MediaQuery(
+        data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+        child: const KitCodeBlock(
+          text: 'flutter run',
+          kind: KitCodeKind.command,
+          caption: 'Terminal command',
+          copyLabel: 'Copy the command for the computer',
+        ),
+      ),
+      size: const Size(320, 800),
+    );
+    expect(tester.takeException(), isNull);
+    final block = _blockRect(tester);
+    final caption = tester.getRect(find.text('Terminal command'));
+    expect(
+      caption.left,
+      moreOrLessEquals(block.left + _tokens(tester).space4, epsilon: 1),
+    );
+    expect(caption.width, greaterThan(0));
+  });
 }
