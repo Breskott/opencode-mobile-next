@@ -2,6 +2,8 @@ package io.github.eslamasabry.opencode_mobile
 
 import android.content.Context
 import android.os.Build
+import android.os.PowerManager
+import android.os.Process as AndroidProcess
 import android.os.SystemClock
 import android.system.Os
 import android.system.OsConstants
@@ -475,6 +477,9 @@ class BuiltinLinux(private val context: Context) {
     /** Keeps the foreground service exactly as long as any service runs. */
     private fun serviceSetChanged() {
         recordRunning()
+        // A reply cannot run on a server that is gone: never keep the phone
+        // awake for it.
+        if (!serverRunning) releaseWork()
         if (services.values.none { it.process.isAlive }) {
             BuiltinServerService.stop(context)
             return
@@ -522,6 +527,101 @@ class BuiltinLinux(private val context: Context) {
             input.skip(skip)
             return input.readBytes().toString(Charsets.UTF_8)
         }
+    }
+
+    // ---- a reply in flight ---------------------------------------------------
+
+    /**
+     * Keeps the CPU running while the in-app server works on a reply, as
+     * Termux's wake lock does for a server there. The foreground service
+     * keeps the process alive, but without a wake lock the phone still
+     * sleeps with the screen off, and a reply (or a tool it runs) stalls
+     * until something wakes it.
+     *
+     * Never unbounded: every hold ends by itself after at most
+     * [MAX_WORK_HOLD_MS]; the app renews it while a reply is still running
+     * and releases it as soon as none is. It is held only while the server
+     * runs, and a server that stops releases it (serviceSetChanged).
+     */
+    private val workLock: PowerManager.WakeLock? by lazy {
+        context.getSystemService(PowerManager::class.java)
+            ?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "OpenCode:reply")
+            ?.apply { setReferenceCounted(false) }
+    }
+
+    /** Whether the phone is kept awake for a reply now. */
+    val workHeld: Boolean get() = synchronized(workLockGuard) { workLock?.isHeld == true }
+
+    private val workLockGuard = Any()
+
+    /**
+     * [on]: hold (or renew) the wake lock for [forMs], capped; off releases
+     * it. Returns whether it is held afterwards.
+     */
+    fun holdAwakeForWork(on: Boolean, forMs: Long): Boolean {
+        if (!on || !serverRunning) {
+            releaseWork()
+            return false
+        }
+        val lock = workLock ?: return false
+        synchronized(workLockGuard) {
+            // Not reference-counted: acquiring again only moves the timeout.
+            lock.acquire(forMs.coerceIn(1_000L, MAX_WORK_HOLD_MS))
+        }
+        return true
+    }
+
+    private fun releaseWork() {
+        synchronized(workLockGuard) {
+            val lock = workLock ?: return
+            if (lock.isHeld) {
+                try {
+                    lock.release()
+                } catch (_: RuntimeException) {
+                    // Its timeout released it a moment ago.
+                }
+            }
+        }
+    }
+
+    /**
+     * How proot runs the server now, for the Performance details: "seccomp"
+     * when proot's seccomp filter is in place in the server (most system
+     * calls then run without stopping in proot), "ptrace" when it is not
+     * (every system call stops twice in proot: several times slower),
+     * "unknown" when the kernel does not say or no server runs.
+     *
+     * Read from /proc: the server has one seccomp filter more than proot
+     * itself (Android's own app filter is on both).
+     */
+    @Synchronized
+    fun performance(): Map<String, Any?> {
+        val service = services[SERVER]?.takeIf { it.process.isAlive }
+        val root = service?.let { pidOf(it.process) }
+        val prootFilters = root?.let { seccompFilters(it) }
+        val serverFilters = root?.let { descendants(it) }
+            ?.firstNotNullOfOrNull { seccompFilters(it) }
+        val mode = when {
+            prootFilters == null || serverFilters == null -> "unknown"
+            serverFilters > prootFilters -> "seccomp"
+            else -> "ptrace"
+        }
+        return mapOf(
+            "serverRunning" to (service != null),
+            "prootMode" to mode,
+            "prootFilters" to prootFilters,
+            "serverFilters" to serverFilters,
+            "workHeld" to workHeld,
+        )
+    }
+
+    /** The "Seccomp_filters:" count of [pid] (Linux 5.9+), or null. */
+    private fun seccompFilters(pid: Int): Int? = try {
+        File("/proc/$pid/status").readLines()
+            .firstOrNull { it.startsWith("Seccomp_filters:") }
+            ?.substringAfter(':')?.trim()?.toIntOrNull()
+    } catch (_: Exception) {
+        null
     }
 
     // ---- install state -----------------------------------------------------
@@ -596,15 +696,24 @@ class BuiltinLinux(private val context: Context) {
         )
     }
 
-    /** Disk used by Ubuntu and what is installed in it, measured at most once a minute. */
+    /**
+     * Disk used by Ubuntu and what is installed in it. Measuring walks every
+     * file in Ubuntu, and the app reads status every few seconds, so it is
+     * measured at most every ten minutes, at background priority, and not
+     * while a reply runs (the walk would compete with it for the disk).
+     */
     @Volatile private var measured: Pair<Long, Long>? = null
 
     fun bytesUsed(): Long? {
         val now = System.currentTimeMillis()
         val last = measured
-        if (last == null || now - last.first > 60_000) {
+        val due = last == null || now - last.first > MEASURE_EVERY_MS
+        if (due && (last == null || !workHeld)) {
             measured = now to (last?.second ?: -1L)
-            Thread { measured = System.currentTimeMillis() to sizeOf(rootfs) }.start()
+            Thread {
+                AndroidProcess.setThreadPriority(AndroidProcess.THREAD_PRIORITY_BACKGROUND)
+                measured = System.currentTimeMillis() to sizeOf(rootfs)
+            }.start()
         }
         return measured?.second?.takeIf { it >= 0 }
     }
@@ -943,6 +1052,12 @@ class BuiltinLinux(private val context: Context) {
         )
 
         const val TAG = "OcLinux"
+
+        /** The longest one wake-lock hold for a reply lasts before renewal. */
+        const val MAX_WORK_HOLD_MS = 15 * 60 * 1000L
+
+        /** How often the Ubuntu tree's size is measured at most. */
+        private const val MEASURE_EVERY_MS = 10 * 60 * 1000L
         private const val OUTPUT_CAP = 64 * 1024
 
         /** The OpenCode server's service name. */

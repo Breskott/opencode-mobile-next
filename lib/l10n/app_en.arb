@@ -28469,7 +28469,7 @@
   "@migrationSignInAgain": {
     "description": "Moving from Termux to the in-app server: next step: provider sign-in on the in-app server."
   },
-  "migrationSignInAgainNamed": "{names} were signed in on Termux. Sign-ins never move.",
+  "migrationSignInAgainNamed": "{names} were signed in on Termux. Sign-ins never move: until you sign in here, replies use OpenCode's free model, which is slower.",
   "@migrationSignInAgainNamed": {
     "description": "Moving from Termux to the in-app server: next step detail with the provider names.",
     "placeholders": {
@@ -28478,7 +28478,7 @@
       }
     }
   },
-  "migrationSignInAgainAny": "Sign-ins never move from Termux.",
+  "migrationSignInAgainAny": "Sign-ins never move from Termux. Until you sign in here, replies use OpenCode's free model, which is slower.",
   "@migrationSignInAgainAny": {
     "description": "Moving from Termux to the in-app server: next step detail when provider names are unknown."
   },
@@ -29050,5 +29050,101 @@
   "demoNoCommands": "The demo has no commands — send the sample prompt to see a change reviewed.",
   "@demoNoCommands": {
     "description": "One line in the demo chat's suggestion area when the person types / : the demo has no slash commands."
+  },
+  "freeModelNotice": "Using OpenCode's free model — it's slower. Sign in to your provider to use your own.",
+  "@freeModelNotice": {
+    "description": "Shown when the connected server has no provider signed in and answers with OpenCode's free default model (shared, rate-limited, slower)."
+  },
+  "freeModelSignIn": "Sign in to a provider",
+  "@freeModelSignIn": {
+    "description": "Action under the free-model notice: opens the server's provider sign-in list."
+  },
+  "replySpeedTitle": "Reply speed",
+  "@replySpeedTitle": {
+    "description": "This phone: row title for how fast the last reply on this phone's server came."
+  },
+  "replySpeedLast": "Last reply: first words after {first}, finished after {total}",
+  "@replySpeedLast": {
+    "description": "This phone › Reply speed: the last reply's wait for its first words and its whole length.",
+    "placeholders": {
+      "first": {
+        "type": "String",
+        "example": "4.1 s"
+      },
+      "total": {
+        "type": "String",
+        "example": "22.0 s"
+      }
+    }
+  },
+  "replySpeedNoWords": "Last reply: ended after {total} before any words came",
+  "@replySpeedNoWords": {
+    "description": "This phone › Reply speed: the last reply ended (stopped or failed) before any output.",
+    "placeholders": {
+      "total": {
+        "type": "String",
+        "example": "8.2 s"
+      }
+    }
+  },
+  "replySpeedSeconds": "{seconds} s",
+  "@replySpeedSeconds": {
+    "description": "A duration in seconds with one decimal, e.g. 4.1 s.",
+    "placeholders": {
+      "seconds": {
+        "type": "String",
+        "example": "4.1"
+      }
+    }
+  },
+  "perfDetailLinuxMode": "Linux speed mode",
+  "@perfDetailLinuxMode": {
+    "description": "This phone › Details (technical): how proot runs the server."
+  },
+  "perfLinuxModeFast": "Fast: proot with seccomp",
+  "@perfLinuxModeFast": {
+    "description": "Details value: proot's seccomp acceleration is active."
+  },
+  "perfLinuxModeSlow": "Slow: proot without seccomp",
+  "@perfLinuxModeSlow": {
+    "description": "Details value: proot runs without seccomp acceleration (every system call stops)."
+  },
+  "perfLinuxModeUnknown": "Not known while OpenCode is stopped",
+  "@perfLinuxModeUnknown": {
+    "description": "Details value: the mode cannot be read (no server running, or the phone does not say)."
+  },
+  "perfDetailAwake": "Phone kept awake",
+  "@perfDetailAwake": {
+    "description": "This phone › Details (technical): whether the app holds a wake lock for a running reply."
+  },
+  "perfAwakeNow": "Now, while a reply runs",
+  "@perfAwakeNow": {
+    "description": "Details value: the wake lock is held now."
+  },
+  "perfAwakeWhenWorking": "Only while a reply runs",
+  "@perfAwakeWhenWorking": {
+    "description": "Details value: the wake lock is not held now; it is held only while replies run."
+  },
+  "perfDetailFirstWords": "First words, last reply",
+  "@perfDetailFirstWords": {
+    "description": "This phone › Details (technical): wait for the last reply's first output."
+  },
+  "perfFirstWordsSplit": "{app} in the app · {server} on the server",
+  "@perfFirstWordsSplit": {
+    "description": "Details value: first-output wait measured in the app and by the server's own clock.",
+    "placeholders": {
+      "app": {
+        "type": "String",
+        "example": "4.1 s"
+      },
+      "server": {
+        "type": "String",
+        "example": "3.8 s"
+      }
+    }
+  },
+  "perfDetailModel": "Model, last reply",
+  "@perfDetailModel": {
+    "description": "This phone › Details (technical): provider/model id of the last reply."
   }
 }

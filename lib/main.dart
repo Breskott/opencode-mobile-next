@@ -14,6 +14,7 @@ import 'background/live_background.dart';
 import 'builtin/app_exit_recovery.dart';
 import 'builtin/builtin_server.dart';
 import 'builtin/phone_server_healing.dart';
+import 'builtin/reply_watch.dart';
 import 'builtin/setup/phone_setup.dart';
 import 'builtin/setup/setup_finish.dart';
 import 'builtin/setup/termux_setup_finish.dart';
@@ -1827,6 +1828,9 @@ class _RootState extends ConsumerState<_Root> {
     _builtin = ref.read(builtinServerStarterProvider)..addListener(_changed);
     _attachPhoneSetup();
     _recoverFromLastExit();
+    // Times each reply and keeps the phone awake while one runs on the
+    // in-app server (lib/builtin/reply_watch.dart).
+    ref.read(replyWatchProvider).attach(ConnectionReplySource(_controller));
     // The status scope is above this route. Publish the guard after mounting
     // so its slot notification cannot rebuild an ancestor during this build.
     WidgetsBinding.instance.addPostFrameCallback((_) {

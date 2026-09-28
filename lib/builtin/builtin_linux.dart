@@ -104,6 +104,59 @@ class BuiltinLinuxStatus {
   bool serviceRunning(String name) => services.contains(name);
 }
 
+/// How proot runs the in-app server, as `/proc` shows it (BuiltinLinux.kt
+/// `performance`).
+enum BuiltinProotMode {
+  /// proot's seccomp filter is in place: most system calls run without
+  /// stopping in proot. What Termux's proot does too.
+  seccomp,
+
+  /// Every system call stops in proot: several times slower.
+  ptrace,
+
+  /// No server runs, or the kernel does not say.
+  unknown;
+
+  static BuiltinProotMode parse(Object? value) => switch (value) {
+    'seccomp' => seccomp,
+    'ptrace' => ptrace,
+    _ => unknown,
+  };
+}
+
+/// One reading of `performance`: what the Performance details show.
+class BuiltinPerformance {
+  const BuiltinPerformance({
+    this.serverRunning = false,
+    this.prootMode = BuiltinProotMode.unknown,
+    this.prootFilters,
+    this.serverFilters,
+    this.workHeld = false,
+  });
+
+  factory BuiltinPerformance.fromMap(Map<Object?, Object?> map) {
+    int? asInt(Object? value) => value is num ? value.toInt() : null;
+    return BuiltinPerformance(
+      serverRunning: map['serverRunning'] == true,
+      prootMode: BuiltinProotMode.parse(map['prootMode']),
+      prootFilters: asInt(map['prootFilters']),
+      serverFilters: asInt(map['serverFilters']),
+      workHeld: map['workHeld'] == true,
+    );
+  }
+
+  final bool serverRunning;
+  final BuiltinProotMode prootMode;
+
+  /// Seccomp filters on proot itself (Android's own app filter) and on the
+  /// server under it; the server has one more when proot's is in place.
+  final int? prootFilters;
+  final int? serverFilters;
+
+  /// Whether the phone is kept awake for a running reply now.
+  final bool workHeld;
+}
+
 /// The answer of one `run`.
 class BuiltinLinuxRunResult {
   const BuiltinLinuxRunResult({required this.exitCode, required this.output});
@@ -276,6 +329,27 @@ class BuiltinLinux {
 
   Future<void> stopServer() => _invoke<void>('stopServer');
 
+  /// Keeps the phone awake while a reply runs on the in-app server ([on]),
+  /// for at most [hold] (Android caps it at 15 minutes); the caller renews
+  /// it while the reply lasts and turns it off when it ends. Held only while
+  /// the server runs. Returns whether it is held.
+  Future<bool> holdAwakeForWork(
+    bool on, {
+    Duration hold = const Duration(minutes: 10),
+  }) async =>
+      await _invoke<bool>('holdAwakeForWork', {
+        'on': on,
+        'forMs': hold.inMilliseconds,
+      }) ??
+      false;
+
+  /// How proot runs the server now and whether the phone is kept awake.
+  Future<BuiltinPerformance> performance() async {
+    if (!supported) return const BuiltinPerformance();
+    final raw = await _invoke<Map<Object?, Object?>>('performance');
+    return BuiltinPerformance.fromMap(raw ?? const {});
+  }
+
   Future<String> serverLog({int tailBytes = 32768}) async =>
       await _invoke<String>('serverLog', {'tailBytes': tailBytes}) ?? '';
 
@@ -426,7 +500,15 @@ class BuiltinLinux {
       attrs: {
         if (method == 'run' && script is String) 'label': scriptLabel(script),
       },
-      logMinMs: method == 'setupStatus' || method == 'status' ? 50 : 0,
+      logMinMs:
+          const {
+            'setupStatus',
+            'status',
+            'holdAwakeForWork',
+            'performance',
+          }.contains(method)
+          ? 50
+          : 0,
     );
   }
 
