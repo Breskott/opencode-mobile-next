@@ -838,7 +838,16 @@ class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
   /// The start view: identity in fit mode; the fitted child in canvas mode
   /// (set by the first post-frame fit).
   Matrix4 _start = Matrix4.identity();
-  Offset? _doubleTapPosition;
+
+  // Double-tap is read from the raw pointer events, with a window this state
+  // owns and cancels: the framework's multi-tap recognizers start a 40 ms
+  // countdown on every tap that nothing can cancel, so a zoom that settled at
+  // once (reduced motion) still left a timer running behind it.
+  Timer? _tapWindow;
+  int? _tapPointer;
+  Offset? _tapDown;
+  Offset? _firstTap;
+  final Set<int> _pointersDown = {};
   Size _viewportSize = Size.zero;
 
   Matrix4? _gestureStart;
@@ -884,6 +893,7 @@ class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
     _t.removeListener(_onTransformChanged);
     _anim.removeListener(_onAnimTick);
     _anim.dispose();
+    _endTapSeries();
     _owned?.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -1075,13 +1085,60 @@ class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
 
   void _handleScaleEnd(ScaleEndDetails details) => _gestureStart = null;
 
-  void _handleDoubleTapDown(TapDownDetails details) {
-    _doubleTapPosition = details.localPosition;
+  /// One primary-button pointer starts or continues a tap series; a second
+  /// finger (a pinch) or another button ends it.
+  void _handlePointerDown(PointerDownEvent event) {
+    _pointersDown.add(event.pointer);
+    final first = _firstTap;
+    if (_pointersDown.length > 1 ||
+        event.buttons != kPrimaryButton ||
+        (first != null &&
+            (event.localPosition - first).distance > kDoubleTapSlop)) {
+      _endTapSeries();
+      if (_pointersDown.length > 1 || event.buttons != kPrimaryButton) return;
+    }
+    _tapPointer = event.pointer;
+    _tapDown = event.localPosition;
   }
 
-  void _handleDoubleTap() {
-    final p = _doubleTapPosition;
-    if (p == null) return;
+  void _handlePointerMove(PointerMoveEvent event) {
+    final down = _tapDown;
+    if (event.pointer != _tapPointer || down == null) return;
+    if ((event.localPosition - down).distance > kDoubleTapTouchSlop) {
+      _endTapSeries();
+    }
+  }
+
+  void _handlePointerUp(PointerUpEvent event) {
+    _pointersDown.remove(event.pointer);
+    final down = _tapDown;
+    if (event.pointer != _tapPointer || down == null) return;
+    _tapPointer = null;
+    _tapDown = null;
+    if (_firstTap != null) {
+      // The second tap of the series, at its own down position.
+      _endTapSeries();
+      _handleDoubleTap(down);
+      return;
+    }
+    _firstTap = down;
+    _tapWindow = Timer(kDoubleTapTimeout, _endTapSeries);
+  }
+
+  void _handlePointerCancel(PointerCancelEvent event) {
+    _pointersDown.remove(event.pointer);
+    if (event.pointer == _tapPointer) _endTapSeries();
+  }
+
+  void _endTapSeries() {
+    _tapWindow?.cancel();
+    _tapWindow = null;
+    _firstTap = null;
+    _tapPointer = null;
+    _tapDown = null;
+  }
+
+  void _handleDoubleTap(Offset p) {
     if (_atRest) {
       // An absolute 2×, whatever the start scale (a fitted canvas is
       // often well under 1×).
@@ -1198,14 +1255,19 @@ class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
     viewer = GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _focusNode.requestFocus,
-      onDoubleTapDown: _handleDoubleTapDown,
-      onDoubleTap: _handleDoubleTap,
       onScaleStart: _handleScaleStart,
       onScaleUpdate: _handleScaleUpdate,
       onScaleEnd: _handleScaleEnd,
       child: viewer,
     );
-    viewer = Listener(onPointerSignal: _handlePointerSignal, child: viewer);
+    viewer = Listener(
+      onPointerDown: _handlePointerDown,
+      onPointerMove: _handlePointerMove,
+      onPointerUp: _handlePointerUp,
+      onPointerCancel: _handlePointerCancel,
+      onPointerSignal: _handlePointerSignal,
+      child: viewer,
+    );
     if (finePointer) {
       viewer = MouseRegion(
         cursor: _pannable ? SystemMouseCursors.grab : MouseCursor.defer,

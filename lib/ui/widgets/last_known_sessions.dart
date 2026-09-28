@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../api/models.dart' show Session;
+import '../../domain/server_gateway.dart' show Session;
 import '../../l10n/app_localizations.dart';
 import '../../state/session_inventory_cache.dart';
 import '../kit/kit.dart';
