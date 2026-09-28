@@ -37987,6 +37987,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save them as a zip file, to keep or move'**
   String get thisPhoneExportProjectsDetail;
+
+  /// One line in the demo chat's suggestion area when the person types / : the demo has no slash commands.
+  ///
+  /// In en, this message translates to:
+  /// **'The demo has no commands — send the sample prompt to see a change reviewed.'**
+  String get demoNoCommands;
 }
 
 class _AppLocalizationsDelegate

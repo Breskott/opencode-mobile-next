@@ -24123,4 +24123,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get thisPhoneExportProjectsDetail =>
       'Save them as a zip file, to keep or move';
+
+  @override
+  String get demoNoCommands =>
+      'The demo has no commands — send the sample prompt to see a change reviewed.';
 }
