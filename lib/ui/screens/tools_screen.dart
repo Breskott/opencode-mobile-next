@@ -9,9 +9,9 @@ import 'package:flutter/material.dart';
 
 import '../../api/models.dart';
 import '../../api/product_repository.dart';
-import '../../api/provider_presentation.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
+import '../../state/server_presentation.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
 import '../widgets/pickers.dart';
@@ -185,8 +185,6 @@ class _ToolsScreenState extends State<ToolsScreen> {
   /// "· no background subagents" when the server says so. The whole row
   /// opens the model picker (one way to change it, marked by the chevron).
   Widget _modelHeader(AppLocalizations l10n, ModelRef model) {
-    final providers =
-        widget.controller.catalog?.providers ?? const <CatalogProvider>[];
     final capabilities = _capabilities;
     return KitRowGroup(
       margin: EdgeInsets.zero,
@@ -198,7 +196,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
           titleMaxLines: 2,
           supporting: TextSpan(
             text: [
-              presentedProviderName(model.providerID, providers),
+              widget.controller.providerName(model.providerID),
               if (capabilities != null && !capabilities.backgroundSubagents)
                 l10n.toolsScreenNoBackgroundSubagents,
             ].join(' · '),

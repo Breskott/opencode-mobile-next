@@ -803,8 +803,25 @@ class ConnectionController extends ChangeNotifier {
     );
   }
 
-  int get unknownAttentionProfileCount =>
-      attentionFeed.servers.where((server) => !server.isCurrent).length;
+  /// Servers whose pending requests are not known now: zero lets the Inbox
+  /// say "all caught up" for its scope. The current server answers from its
+  /// own connection and request reads (the monitor's wider failed-run
+  /// coverage is not needed to say no request waits here). Another saved
+  /// server is in scope only while the person monitors it: one never opted
+  /// into monitoring is outside the claim, not unknown, so a person who never
+  /// turned monitoring on still reaches the all-caught-up state.
+  int get unknownAttentionProfileCount {
+    final active = profile?.id;
+    return attentionFeed.servers.where((server) {
+      if (server.profileID == active) {
+        return !isConnected ||
+            permissionsError != null ||
+            questionsError != null ||
+            formsError != null;
+      }
+      return server.state != AttentionCheckState.disabled && !server.isCurrent;
+    }).length;
+  }
 
   int get unifiedAttentionCount => attentionFeed.knownAttentionCount;
 
