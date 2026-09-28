@@ -12489,10 +12489,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get builtinServerLogTitle => 'سجل الخادم';
 
   @override
-  String get builtinServerRemoveBody =>
-      'سيؤدي هذا إلى إيقاف الخادم وحذف Ubuntu وOpenCode وكل مجلدات المشاريع داخله. يبقى الخادم المحفوظ في القائمة.';
-
-  @override
   String get phoneSetupReadyTitle => 'OpenCode جاهز';
 
   @override
@@ -12600,15 +12596,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get phoneServerCardRemoveTitle => 'إزالة OpenCode من هذا الهاتف؟';
-
-  @override
-  String phoneServerCardRemoveBody(String size) {
-    return 'سيحذف هذا OpenCode وأدواته وكل مشروع على هذا الهاتف، ويحرّر $size.';
-  }
-
-  @override
-  String get phoneServerCardRemoveBodyUnmeasured =>
-      'سيحذف هذا OpenCode وأدواته وكل مشروع على هذا الهاتف، ويحرّر المساحة التي تشغلها.';
 
   @override
   String phoneServerCardActionFailed(String reason) {
@@ -20302,7 +20289,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String removeFromPhoneKeepBody(String size) {
-    return 'OpenCode and its tools are removed and $size comes back.';
+    return 'OpenCode and its tools are removed, freeing about $size.';
   }
 
   @override
@@ -20320,7 +20307,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String removeFromPhoneDeleteBody(String size) {
-    return 'OpenCode, its tools and every project on this phone are deleted and $size comes back. This cannot be undone.';
+    return 'OpenCode, its tools and every project on this phone are deleted, freeing about $size. This cannot be undone.';
   }
 
   @override
@@ -23174,4 +23161,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sessionAddressFailCancelled => 'Opening this link was cancelled.';
+
+  @override
+  String get removeFromPhoneDeleteAllChoice => 'Delete everything…';
+
+  @override
+  String removeFromPhoneDeleteAllChoiceSize(String size) {
+    return 'Delete everything, freeing about $size…';
+  }
+
+  @override
+  String get phoneServerCardErrorDetail => 'Error';
 }

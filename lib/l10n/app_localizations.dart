@@ -20430,12 +20430,6 @@ abstract class AppLocalizations {
   /// **'Server log'**
   String get builtinServerLogTitle;
 
-  /// Remove confirmation body
-  ///
-  /// In en, this message translates to:
-  /// **'This stops the server and deletes Ubuntu, OpenCode and every project folder inside it. The saved server entry stays.'**
-  String get builtinServerRemoveBody;
-
   /// Screen C heading once phone setup finished
   ///
   /// In en, this message translates to:
@@ -20633,18 +20627,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove OpenCode from this phone?'**
   String get phoneServerCardRemoveTitle;
-
-  /// Remove confirmation with the space that comes back
-  ///
-  /// In en, this message translates to:
-  /// **'This deletes OpenCode, its tools and every project on this phone, and frees {size}.'**
-  String phoneServerCardRemoveBody(String size);
-
-  /// Remove confirmation before the space has been measured
-  ///
-  /// In en, this message translates to:
-  /// **'This deletes OpenCode, its tools and every project on this phone, and frees the space they use.'**
-  String get phoneServerCardRemoveBodyUnmeasured;
 
   /// A phone card action failed
   ///
@@ -32152,10 +32134,10 @@ abstract class AppLocalizations {
   /// **'About 10–15 minutes the first time, in Termux\'s storage'**
   String get phoneSetupTermuxCost;
 
-  /// Remove from this phone: the default choice's body, with the space freed, e.g. '1.2 GB'
+  /// Remove from this phone: the default choice's body, with the estimated space it frees, e.g. '700.0 MB'
   ///
   /// In en, this message translates to:
-  /// **'OpenCode and its tools are removed and {size} comes back.'**
+  /// **'OpenCode and its tools are removed, freeing about {size}.'**
   String removeFromPhoneKeepBody(String size);
 
   /// Remove from this phone: the default choice's body when the space could not be measured
@@ -32182,10 +32164,10 @@ abstract class AppLocalizations {
   /// **'Delete OpenCode and projects?'**
   String get removeFromPhoneDeleteTitle;
 
-  /// Remove from this phone: the heavy delete's body with the space freed
+  /// Remove from this phone: the heavy delete's body with the estimated space it frees
   ///
   /// In en, this message translates to:
-  /// **'OpenCode, its tools and every project on this phone are deleted and {size} comes back. This cannot be undone.'**
+  /// **'OpenCode, its tools and every project on this phone are deleted, freeing about {size}. This cannot be undone.'**
   String removeFromPhoneDeleteBody(String size);
 
   /// Remove from this phone: the heavy delete's body when the space could not be measured
@@ -36375,6 +36357,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Opening this link was cancelled.'**
   String get sessionAddressFailCancelled;
+
+  /// Remove from this phone: the other choice, before the space was measured; opens a second question that asks for the typed name
+  ///
+  /// In en, this message translates to:
+  /// **'Delete everything…'**
+  String get removeFromPhoneDeleteAllChoice;
+
+  /// Remove from this phone: the other choice with the estimated space it frees (OpenCode and every project), e.g. '1.9 GB'; opens a second question that asks for the typed name
+  ///
+  /// In en, this message translates to:
+  /// **'Delete everything, freeing about {size}…'**
+  String removeFromPhoneDeleteAllChoiceSize(String size);
+
+  /// This phone: the label of the technical error text under Details, when moving its waiting prompts could not be fully undone
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get phoneServerCardErrorDetail;
 }
 
 class _AppLocalizationsDelegate
