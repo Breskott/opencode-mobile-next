@@ -197,7 +197,7 @@ void main() {
           await tester.pumpAndSettle();
           await tester.tap(find.text('Continue to sign-in'));
           await tester.pumpAndSettle();
-          await tester.ensureVisible(find.textContaining('valid port'));
+          await tester.ensureVisible(find.textContaining("won't work here"));
         },
       );
     });

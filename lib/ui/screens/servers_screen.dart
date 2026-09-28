@@ -1253,6 +1253,7 @@ class _WelcomeView extends StatelessWidget {
     final copy = _connectionL10n(context);
     final tokens = KitTokens.of(context);
     final busyReason = busy ? copy.e7SetupServerOperation : null;
+    final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.3;
     Widget choice({
       required String key,
       required IconData icon,
@@ -1280,17 +1281,21 @@ class _WelcomeView extends StatelessWidget {
       children: [
         // The hero (design standard §10): this phone and the computer the
         // agent runs on. Drawn in once; the welcome is a resting screen, so
-        // it never loops.
-        const _Rails(
-          child: Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: KitIllustration(
-              key: ValueKey('servers-welcome-hero'),
-              scene: ServersWelcomeScene(),
+        // it never loops. From 1.3x text it steps aside: the picture says
+        // nothing the words don't, and the choices are what the person came
+        // for (emulator QA B3: at 2.0 they started below the fold).
+        if (!largeText) ...[
+          const _Rails(
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: KitIllustration(
+                key: ValueKey('servers-welcome-hero'),
+                scene: ServersWelcomeScene(),
+              ),
             ),
           ),
-        ),
-        SizedBox(height: tokens.space5),
+          SizedBox(height: tokens.space5),
+        ],
         _Rails(
           child: Semantics(
             header: true,
@@ -2318,7 +2323,11 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
 
   Future<void> _close() async {
     if (_closing || _submitting) return;
-    if (!_dirty) {
+    // The first step (what runs there) has nothing to type: closing it
+    // never asks, even when Back brought the person here from an address
+    // they had started (emulator QA B4). What they left behind is on a step
+    // they already walked away from.
+    if (!_dirty || _step == _AddStep.kind) {
       Navigator.pop(context);
       return;
     }

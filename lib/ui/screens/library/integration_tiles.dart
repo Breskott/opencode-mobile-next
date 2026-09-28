@@ -295,6 +295,30 @@ class _ProviderRow extends StatelessWidget {
       (presented.connected &&
           _integration.methods.any((method) => method.type == 'oauth'));
 
+  /// The server environment variables this provider's key is read from:
+  /// technical words, shown only on the Details sheet (emulator QA B10).
+  List<String> get _environmentNames => <String>{
+    for (final method in _integration.methods)
+      if (method.type == 'env') ...method.environmentNames,
+    for (final connection in _integration.connections)
+      if (connection.type == 'env') connection.label,
+  }.where((name) => name.trim().isNotEmpty).toList();
+
+  Future<void> _showDetails(BuildContext context, String name) {
+    final l10n = _libraryCopy(context);
+    return showKitTechnicalDetails(
+      context,
+      title: l10n.integrationsProviderDetails(name),
+      text: '',
+      sheetKey: ValueKey('provider-details-sheet-${_integration.id}'),
+      values: [
+        for (final variable in _environmentNames)
+          KitTechnicalValue(l10n.integrationsEnvironmentVariable, variable),
+      ],
+      notes: [if (!presented.connected) l10n.integrationsEnvironmentNote(name)],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = _libraryCopy(context);
@@ -344,6 +368,13 @@ class _ProviderRow extends StatelessWidget {
           enabled: false,
           disabledReason: l10n.integrationsManageAccountsUnavailable,
           onSelected: () {},
+        ),
+      if (_environmentNames.isNotEmpty)
+        KitMenuItem(
+          key: ValueKey('provider-details-${_integration.id}'),
+          label: l10n.kitDetails,
+          icon: AppIconography.info,
+          onSelected: () => unawaited(_showDetails(context, name)),
         ),
       if (_canDisconnect)
         KitMenuItem(

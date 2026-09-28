@@ -1654,7 +1654,7 @@
   "tailscaleAddressStep": "2. Review your server address",
   "tailscaleAddressLabel": "Private HTTPS server address",
   "tailscaleAddressDetail": "Use the full HTTPS origin printed by Tailscale Serve, such as https://computer.tailnet-name.ts.net. Keep any HTTPS port it prints. A short device name or a raw HTTP port may not provide a valid certificate.",
-  "tailscaleAddressError": "Enter an HTTPS origin with a valid port (1–65535). Remove paths, credentials, query text and fragments. Use the full address from Serve; do not replace https with http.",
+  "tailscaleAddressError": "That address won't work here. Copy the https:// address Tailscale Serve shows on your computer and paste it as it is, with nothing added after it.",
   "tailscaleReviewDetail": "Continue only with an address you recognize. The next screen reviews your server credentials before you explicitly test or save. This app cannot confirm that an address is private from its name alone.",
   "tailscaleContinue": "Continue to sign-in",
   "tailscaleHelp": "Tailscale setup and recovery",
@@ -6543,16 +6543,6 @@
       }
     }
   },
-  "e7LibraryServerEnvironment2": "Server environment: {detail1}",
-  "@e7LibraryServerEnvironment2": {
-    "description": "Library and project tools UI: Server environment: {detail1}",
-    "placeholders": {
-      "detail1": {
-        "type": "String",
-        "description": "Server or project detail displayed verbatim in this message."
-      }
-    }
-  },
   "e7LibraryNoConnectionMethodsAvailable": "No connection methods available",
   "@e7LibraryNoConnectionMethodsAvailable": {
     "description": "Library and project tools UI: No connection methods available"
@@ -7627,11 +7617,11 @@
   "@e7SetupUrlPath": {
     "description": "Setup journey: url path."
   },
-  "e7SetupRequireHttps": "HTTPS is required outside this device. Basic credentials must never be sent over HTTP.",
+  "e7SetupRequireHttps": "A password is only sent to another computer over https://. Use the computer's https:// address, pair with a code, or connect with Tailscale.",
   "@e7SetupRequireHttps": {
     "description": "Setup journey: require https."
   },
-  "e7SetupLocalHttp": "HTTP is allowed only for localhost, 127.0.0.1, or [::1]. Use HTTPS for LAN and remote servers.",
+  "e7SetupLocalHttp": "An http:// address only works for a server on this phone. For another computer, pair with a code, use its https:// address, or connect with Tailscale.",
   "@e7SetupLocalHttp": {
     "description": "Setup journey: local http."
   },
@@ -28632,5 +28622,35 @@
   "inAppServerStartRefusedBody": "The phone did not let the app start OpenCode just now. Start it again; if this repeats, restart the phone.",
   "@inAppServerStartRefusedBody": {
     "description": "Why the in-app server did not start: the phone refused to start it"
+  },
+  "integrationsConnectWithKey": "Add an API key",
+  "@integrationsConnectWithKey": {
+    "description": "Providers list: how an unconnected provider connects, after 'Not connected ·' on its row: with an API key the person adds."
+  },
+  "integrationsConnectOnServer": "Set up on the server",
+  "@integrationsConnectOnServer": {
+    "description": "Providers list: how an unconnected provider connects when the app has no way to do it; it is set up where the server runs (the variable name is under Details)."
+  },
+  "integrationsProviderDetails": "{name} details",
+  "@integrationsProviderDetails": {
+    "description": "Providers list: row menu item and sheet title for a provider's technical details (the server environment variables it reads).",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsEnvironmentVariable": "Server environment variable",
+  "@integrationsEnvironmentVariable": {
+    "description": "Providers list, provider details sheet: label of a variable name the server reads the provider's key from."
+  },
+  "integrationsEnvironmentNote": "To connect {name} without the app, set this where the server runs, then restart the server.",
+  "@integrationsEnvironmentNote": {
+    "description": "Providers list, provider details sheet: the way forward for a key read from the server's environment.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

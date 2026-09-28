@@ -186,7 +186,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'http://100.64.0.1:4096');
     await _tap(tester, 'Continue to sign-in');
     expect(result, isNull);
-    expect(find.textContaining('valid port'), findsOneWidget);
+    expect(find.textContaining("won't work here"), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'work.example.ts.net');
     await _tap(tester, 'Continue to sign-in');
     expect(result, 'https://work.example.ts.net');
@@ -215,7 +215,7 @@ void main() {
       await tester.tap(find.text('Continue to sign-in'));
       await tester.pumpAndSettle();
       expect(result, isNull);
-      expect(find.textContaining('valid port'), findsNothing);
+      expect(find.textContaining("won't work here"), findsNothing);
       await tester.enterText(find.byType(TextField), 'work.example.ts.net');
       await tester.pump();
       expect(find.text('Enter your server’s address first.'), findsNothing);

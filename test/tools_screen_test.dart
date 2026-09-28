@@ -170,6 +170,93 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  // Emulator QA B11: the server's description (prompt text written for the
+  // model) was the row's title, cut mid-sentence.
+  test('a tool summary is the first sentence of its description', () {
+    expect(
+      toolSummary(
+        'Use this tool when you need to ask the user questions during '
+        'execution. This allows you to:\n1. Gather preferences',
+      ),
+      'Use this tool when you need to ask the user questions during '
+      'execution.',
+    );
+    expect(
+      toolSummary(
+        '- Fast file pattern matching tool that works with any codebase '
+        'size\n- Supports glob patterns like "**/*.js"',
+      ),
+      'Fast file pattern matching tool that works with any codebase size',
+    );
+    expect(
+      toolSummary('Reads a file.\n\nUsage:\n- The path must be absolute'),
+      'Reads a file.',
+    );
+    expect(
+      toolSummary(
+        'Executes a given bash command in a\npersistent shell. More.',
+      ),
+      'Executes a given bash command in a persistent shell.',
+    );
+    expect(toolSummary('  '), isEmpty);
+    expect(toolSummary('Version 1.2 of the tool'), 'Version 1.2 of the tool');
+  });
+
+  testWidgets('a tool row names the tool and says its first sentence', (
+    tester,
+  ) async {
+    final repository = _ToolsRepository()
+      ..tools = const [
+        CodingToolInfo(
+          id: 'question',
+          description:
+              'Use this tool when you need to ask the user questions. This '
+              'allows you to gather preferences.\n\nUsage notes: …',
+          parameters: {'type': 'object'},
+        ),
+        CodingToolInfo(id: 'invalid', description: '', parameters: {}),
+      ];
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(ToolsScreen(controller: controller)));
+    await tester.pumpAndSettle();
+
+    final question = find.byKey(const ValueKey('coding-tool-question'));
+    expect(
+      find.descendant(of: question, matching: find.text('question')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: question,
+        matching: find.text(
+          'Use this tool when you need to ask the user questions.',
+          findRichText: true,
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('This allows', findRichText: true),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('coding-tool-invalid')),
+        matching: find.text('invalid'),
+      ),
+      findsOneWidget,
+    );
+
+    // The whole description is one tap away, on the tool's sheet.
+    await tester.tap(question);
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('This allows you to gather preferences.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('the tool sheet copies the schema the server returned', (
     tester,
   ) async {

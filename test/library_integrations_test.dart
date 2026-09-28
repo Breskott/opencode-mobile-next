@@ -670,6 +670,78 @@ void main() {
     },
   );
 
+  // Emulator QA B10: rows read "Not connected · API key · Server
+  // environment: 302AI_API_KEY". The line says how to connect; the variable
+  // name is under the row's Details.
+  testWidgets('an unconnected provider says how to connect; env names are '
+      'under Details', (tester) async {
+    final repository = _IntegrationsRepository()
+      ..integrations = const [
+        IntegrationInfo(
+          id: '302ai',
+          name: '302.AI',
+          methods: [
+            IntegrationMethodInfo(type: 'key', label: 'API key'),
+            IntegrationMethodInfo(
+              type: 'env',
+              label: 'Server environment',
+              environmentNames: ['302AI_API_KEY'],
+            ),
+          ],
+          connectionCount: 0,
+        ),
+        IntegrationInfo(
+          id: 'onlyenv',
+          name: 'Only Env',
+          methods: [
+            IntegrationMethodInfo(
+              type: 'env',
+              label: 'Server environment',
+              environmentNames: ['ONLY_ENV_KEY'],
+            ),
+          ],
+          connectionCount: 0,
+        ),
+      ];
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('_API_KEY', findRichText: true), findsNothing);
+    expect(
+      find.textContaining('ONLY_ENV_KEY', findRichText: true),
+      findsNothing,
+    );
+    expect(
+      find.text('Not connected · Add an API key', findRichText: true),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Not connected · Set up on the server', findRichText: true),
+      findsOneWidget,
+    );
+
+    final row = find.byKey(const ValueKey('connect-provider-302ai'));
+    await tester.ensureVisible(row);
+    await tester.longPress(row);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('provider-details-302ai')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('provider-details-sheet-302ai')),
+      findsOneWidget,
+    );
+    expect(find.text('302.AI details'), findsOneWidget);
+    expect(find.text('302AI_API_KEY'), findsOneWidget);
+    expect(
+      find.textContaining('set this where the server runs'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('legacy OAuth can be removed while environment stays active', (
     tester,
   ) async {

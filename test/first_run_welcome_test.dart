@@ -338,6 +338,73 @@ void main() {
     });
   }
 
+  // Emulator QA B3 (font scale 2.0 on a 1080×2400, 420 dpi phone): the
+  // choices ran under the gesture bar at the bottom, whose handle looked like
+  // it struck through "Connect to an agent". The page scrolls, every choice
+  // ends above the gesture bar, and a row's icon never covers its words.
+  for (final direction in TextDirection.values) {
+    testWidgets('welcome at 2.0 text on a gesture phone, ${direction.name}', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1080, 2400)
+        ..devicePixelRatio = 2.625
+        ..padding = const FakeViewPadding(top: 63, bottom: 63);
+      addTearDown(tester.view.reset);
+      final (store, controller) = await _state();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _app(store, controller, textScale: 2, direction: direction),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      const height = 2400 / 2.625;
+      const gestureBar = 63 / 2.625;
+      // The picture steps aside for large text: the choices are what the
+      // person came for.
+      expect(find.byKey(const ValueKey('servers-welcome-hero')), findsNothing);
+
+      final list = find.byType(Scrollable).first;
+      final position = tester.state<ScrollableState>(list).position;
+      // Taller than the screen at 2.0: it must scroll to its end. The lazy
+      // list learns its full length as it goes, so jump until it stops.
+      expect(position.maxScrollExtent, greaterThan(0));
+      for (
+        var i = 0;
+        i < 10 && position.pixels < position.maxScrollExtent;
+        i++
+      ) {
+        position.jumpTo(position.maxScrollExtent);
+        await tester.pumpAndSettle();
+      }
+
+      for (final key in ['computer', 'phone', 'demo']) {
+        final choice = find.byKey(ValueKey('welcome-choice-$key'));
+        expect(choice, findsOneWidget, reason: key);
+        final rect = tester.getRect(choice);
+        expect(
+          rect.bottom,
+          lessThanOrEqualTo(height - gestureBar),
+          reason: key,
+        );
+
+        final icon = tester.getRect(
+          find.descendant(of: choice, matching: find.byType(Icon)).first,
+        );
+        final words = find.descendant(of: choice, matching: find.byType(Text));
+        for (final element in words.evaluate()) {
+          final text = tester.getRect(
+            find.byElementPredicate((e) => e == element),
+          );
+          if (text.width == 0) continue;
+          expect(icon.overlaps(text), isFalse, reason: '$key: icon over words');
+        }
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('pasting a bare address into the editor fills the scheme', (
     tester,
   ) async {

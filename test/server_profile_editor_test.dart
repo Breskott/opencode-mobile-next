@@ -547,23 +547,39 @@ void main() {
   testWidgets('closing a changed server editor requires confirmation', (
     tester,
   ) async {
-    final (store, controller) = await _state();
+    SharedPreferences.setMockInitialValues({});
+    final store = _RecordingProfileStore(
+      prefs: await SharedPreferences.getInstance(),
+    );
+    store.saved.add(
+      ServerProfile(
+        id: 'server-1',
+        name: 'Workstation',
+        baseUrl: 'https://box.example:4096',
+        username: '',
+        password: '',
+      ),
+    );
+    final controller = _RecordingConnection(store);
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
-    await _openEditor(tester);
+    await tester.longPress(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('saved-server-rows')),
+            matching: find.byType(KitRow),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
 
     await openServerMoreOptions(tester);
-
     await tester.enterText(
       find.byKey(const ValueKey('server-name-field')),
-      'Workstation',
+      'Renamed box',
     );
-    // Back steps to the first step and keeps what was typed; Close from
-    // there asks before it is lost.
-    await tester.tap(find.byKey(const ValueKey('server-editor-back')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('server-kind-step')), findsOneWidget);
-    expect(find.text('Discard server changes?'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('server-editor-close')));
     await tester.pumpAndSettle();
 
@@ -571,5 +587,48 @@ void main() {
     await tester.tap(find.text('Keep editing'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
+  });
+
+  // Emulator QA B4: Close on "What runs there" asked "Discard server
+  // changes?" although that step shows nothing typed.
+  testWidgets('closing the first step of Add server never asks', (
+    tester,
+  ) async {
+    final (store, controller) = await _state();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(store, controller));
+    Future<void> openAddServer() async {
+      final computer = find.byKey(const ValueKey('welcome-choice-computer'));
+      await tester.ensureVisible(computer);
+      await tester.pumpAndSettle();
+      await tester.tap(computer);
+      await tester.pumpAndSettle();
+    }
+
+    await openAddServer();
+
+    // Straight from the first step: nothing entered, nothing asked.
+    expect(find.byKey(const ValueKey('server-kind-step')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('server-editor-close')));
+    await tester.pumpAndSettle();
+    expect(find.text('Discard server changes?'), findsNothing);
+    expect(find.byKey(const ValueKey('server-profile-editor')), findsNothing);
+
+    // Back from an address that was started, then Close: the first step
+    // still has nothing of its own to lose.
+    await openAddServer();
+    await openServerManualAddress(tester);
+    await tester.enterText(
+      find.byKey(const ValueKey('server-url-field')),
+      'https://box.example',
+    );
+    await tester.tap(find.byKey(const ValueKey('server-editor-back')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('server-kind-step')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('server-editor-close')));
+    await tester.pumpAndSettle();
+    expect(find.text('Discard server changes?'), findsNothing);
+    expect(find.byKey(const ValueKey('server-profile-editor')), findsNothing);
+    expect(store.saved, isEmpty);
   });
 }
