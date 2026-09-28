@@ -23501,11 +23501,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Termux stays as it is, and its server keeps working until you remove it';
 
   @override
-  String migrationSpaceNeeded(String size) {
-    return 'Needs about $size of free space while copying.';
-  }
-
-  @override
   String get migrationKeepOpen =>
       'Keep the app open while copying. Android stops it when you leave the app, and it picks up from here when you resume.';
 
@@ -23678,7 +23673,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String migrationSignInAgainNamed(String names) {
-    return '$names were signed in on Termux. Sign-ins never move: until you sign in here, replies use OpenCode\'s free model, which is slower.';
+    return '$names appear in your Termux settings. Sign in here to use them.';
   }
 
   @override
@@ -24257,4 +24252,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String integrationsKeySavedPending(String name) {
     return '$name key saved. The server has not loaded it yet.';
   }
+
+  @override
+  String migrationReviewSpace(String needed, String free) {
+    return 'Needs about $needed · $free free';
+  }
+
+  @override
+  String migrationReviewSpaceUnknown(String needed) {
+    return 'Needs about $needed · Free space unknown';
+  }
+
+  @override
+  String get migrationReviewSpaceShort =>
+      'Not enough free space for this. Choose fewer items, or free up space on this phone.';
+
+  @override
+  String get migrationDiscard => 'Discard saved copy';
+
+  @override
+  String get migrationDiscardTitle => 'Discard this saved copy?';
+
+  @override
+  String get migrationDiscardBody =>
+      'Temporary copy files will be removed. Files already imported and everything in Termux will stay.';
+
+  @override
+  String get migrationDiscardFailed =>
+      'The saved copy couldn\'t be removed. Try again in a moment.';
+
+  @override
+  String get migrationStopping => 'Stopping…';
 }

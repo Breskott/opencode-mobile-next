@@ -37004,12 +37004,6 @@ abstract class AppLocalizations {
   /// **'Termux stays as it is, and its server keeps working until you remove it'**
   String get migrationTermuxKept;
 
-  /// Moving from Termux to the in-app server: the space the selected items need while they are copied (a conservative estimate).
-  ///
-  /// In en, this message translates to:
-  /// **'Needs about {size} of free space while copying.'**
-  String migrationSpaceNeeded(String size);
-
   /// Moving from Termux to the in-app server: why the app must stay open.
   ///
   /// In en, this message translates to:
@@ -37307,7 +37301,7 @@ abstract class AppLocalizations {
   /// Moving from Termux to the in-app server: next step detail with the provider names.
   ///
   /// In en, this message translates to:
-  /// **'{names} were signed in on Termux. Sign-ins never move: until you sign in here, replies use OpenCode\'s free model, which is slower.'**
+  /// **'{names} appear in your Termux settings. Sign in here to use them.'**
   String migrationSignInAgainNamed(String names);
 
   /// Moving from Termux to the in-app server: next step detail when provider names are unknown.
@@ -38155,6 +38149,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} key saved. The server has not loaded it yet.'**
   String integrationsKeySavedPending(String name);
+
+  /// Moving from Termux to the in-app server: the review: the space the chosen items need while copying (a conservative estimate) and the phone's free space.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs about {needed} · {free} free'**
+  String migrationReviewSpace(String needed, String free);
+
+  /// Moving from Termux to the in-app server: the review: the space the chosen items need when the phone's free space could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs about {needed} · Free space unknown'**
+  String migrationReviewSpaceUnknown(String needed);
+
+  /// Moving from Termux to the in-app server: the review: why copying cannot start, and the way forward, when the chosen items need more than the free space.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough free space for this. Choose fewer items, or free up space on this phone.'**
+  String get migrationReviewSpaceShort;
+
+  /// Moving from Termux to the in-app server: action on a stopped or unfinished copy: throw away the temporary copy and start over.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard saved copy'**
+  String get migrationDiscard;
+
+  /// Moving from Termux to the in-app server: confirmation title for discarding the saved copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this saved copy?'**
+  String get migrationDiscardTitle;
+
+  /// Moving from Termux to the in-app server: confirmation body for discarding the saved copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporary copy files will be removed. Files already imported and everything in Termux will stay.'**
+  String get migrationDiscardBody;
+
+  /// Moving from Termux to the in-app server: shown when discarding the saved copy failed; it stays and can be discarded again.
+  ///
+  /// In en, this message translates to:
+  /// **'The saved copy couldn\'t be removed. Try again in a moment.'**
+  String get migrationDiscardFailed;
+
+  /// Moving from Termux to the in-app server: shown while a stopped copy is still finishing its current step.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping…'**
+  String get migrationStopping;
 }
 
 class _AppLocalizationsDelegate
