@@ -23353,4 +23353,359 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatWatchBackToWorker => 'Back to the worker';
+
+  @override
+  String get migrationTitle => 'Move from Termux';
+
+  @override
+  String get migrationChecking => 'Checking Termux and phone storage…';
+
+  @override
+  String get migrationReviewIntro =>
+      'Your projects are copied into OpenCode inside this app. Nothing in Termux is changed or removed.';
+
+  @override
+  String get migrationGroupMoves => 'Copied and ready to use';
+
+  @override
+  String get migrationGroupExports => 'Saved privately, not turned on';
+
+  @override
+  String get migrationGroupNotMoved => 'Not moved';
+
+  @override
+  String get migrationItemProjects => 'Projects';
+
+  @override
+  String get migrationItemConfig => 'MCP and agent settings';
+
+  @override
+  String get migrationItemSessions => 'Conversation history (backup copy)';
+
+  @override
+  String get migrationItemGitConfig => 'Git settings';
+
+  @override
+  String get migrationItemShellFiles => 'Shell settings';
+
+  @override
+  String get migrationItemAiTeam => 'AI Team';
+
+  @override
+  String get migrationItemProjectsWhat =>
+      'Into a new folder on the in-app server. Nothing there is overwritten.';
+
+  @override
+  String get migrationItemConfigWhat =>
+      'To review before using: commands and paths may only work in Termux.';
+
+  @override
+  String get migrationItemSessionsWhat =>
+      'May contain your sign-ins, and the app doesn\'t open it. Termux keeps your usable history.';
+
+  @override
+  String get migrationItemGitConfigWhat =>
+      'Your Git name, email and options, to review.';
+
+  @override
+  String get migrationItemShellFilesWhat =>
+      'Keeps .bashrc, .zshrc and your other shell start files; they never run.';
+
+  @override
+  String get migrationItemAiTeamWhat =>
+      'The team\'s saved state. Setup installs its tools again.';
+
+  @override
+  String migrationItemSize(String size, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+    );
+    return '$size · $_temp0';
+  }
+
+  @override
+  String get migrationSizeUnknown => 'Size unknown';
+
+  @override
+  String get migrationExportsNote =>
+      'Private copies stay on this phone inside the in-app Linux. Nothing in them runs or turns on by itself.';
+
+  @override
+  String get migrationNotMovedSignIn =>
+      'Sign-ins to AI providers: sign in again after the move';
+
+  @override
+  String migrationNotMovedSignInNamed(String names) {
+    return 'Sign-ins to $names: sign in again after the move';
+  }
+
+  @override
+  String get migrationNotMovedKeys => 'SSH keys and saved Git passwords';
+
+  @override
+  String get migrationNotMovedTools =>
+      'Installed tools and caches: setup installs them again';
+
+  @override
+  String get migrationTermuxKept =>
+      'Termux stays as it is, and its server keeps working until you remove it';
+
+  @override
+  String migrationSpaceNeeded(String size) {
+    return 'Needs about $size of free space while copying.';
+  }
+
+  @override
+  String get migrationKeepOpen =>
+      'Keep the app open while copying. Android stops it when you leave the app, and it picks up from here when you resume.';
+
+  @override
+  String get migrationStart => 'Copy to the in-app server';
+
+  @override
+  String get migrationChooseOne => 'Choose at least one item to copy.';
+
+  @override
+  String get migrationPacking => 'Preparing your files in Termux…';
+
+  @override
+  String get migrationCopying => 'Copying files to this app…';
+
+  @override
+  String get migrationUnpacking => 'Importing your files…';
+
+  @override
+  String get migrationVerifying => 'Checking the copied files…';
+
+  @override
+  String get migrationSwitching => 'Connecting to the in-app server…';
+
+  @override
+  String get migrationStepConnect => 'Connect to the in-app server';
+
+  @override
+  String get migrationStop => 'Stop copying';
+
+  @override
+  String get migrationStopTitle => 'Stop copying?';
+
+  @override
+  String get migrationStopBody => 'You can resume later from This phone.';
+
+  @override
+  String get migrationStopKept => 'What was copied so far is kept';
+
+  @override
+  String get migrationKeepGoing => 'Keep copying';
+
+  @override
+  String get migrationCancelled => 'Copy stopped. You can resume later.';
+
+  @override
+  String get migrationCancelledBody =>
+      'What was copied is kept, and Termux isn\'t changed.';
+
+  @override
+  String get migrationStoppedLeaving =>
+      'It stopped because the app left the screen: Android doesn\'t let it run in the background. What was copied is kept.';
+
+  @override
+  String get migrationResume => 'Resume copying';
+
+  @override
+  String get migrationNeedsSpace => 'More free space is needed before copying.';
+
+  @override
+  String migrationNeedsSpaceBody(String needed, String free) {
+    return 'Needs about $needed, and $free is free. Free up space on this phone, or copy fewer items.';
+  }
+
+  @override
+  String migrationNeedsSpaceBodyUnknown(String needed) {
+    return 'Needs about $needed, and the free space couldn\'t be read. Free up space on this phone, or copy fewer items.';
+  }
+
+  @override
+  String get migrationChooseFewer => 'Choose fewer items';
+
+  @override
+  String get migrationNeedsBuiltin => 'Set up the in-app server first.';
+
+  @override
+  String migrationNeedsBuiltinBody(String runtime) {
+    return 'Your projects move into OpenCode inside this app, so it needs setting up. Setup installs Linux and $runtime, then this continues here.';
+  }
+
+  @override
+  String get migrationSetUpBuiltin => 'Set up the in-app server';
+
+  @override
+  String get migrationSetupFailed =>
+      'Setup couldn\'t start. Try again, or set it up from This phone.';
+
+  @override
+  String get migrationTermuxNotAnswering => 'Termux isn\'t answering';
+
+  @override
+  String get migrationTermuxUnavailable => 'Open Termux, then try again.';
+
+  @override
+  String get migrationOpenTermux => 'Open Termux';
+
+  @override
+  String get migrationFailedTitle => 'The move stopped';
+
+  @override
+  String get migrationSourceChanged =>
+      'Files changed during copying. Try again when Termux is idle.';
+
+  @override
+  String get migrationSourceBusy =>
+      'Termux is finishing the previous step. Try again shortly.';
+
+  @override
+  String get migrationUnsupportedFiles =>
+      'This item contains files that cannot be copied safely.';
+
+  @override
+  String get migrationUnsupportedFilesFix =>
+      'Links, sockets and Git worktrees can\'t be copied. Remove them in Termux and try again, or copy that project by hand.';
+
+  @override
+  String get migrationTooLarge =>
+      'This item exceeds the migration size or file limit.';
+
+  @override
+  String get migrationTooLargeFix =>
+      'Each item can hold up to 512 MB and 20,000 files. Delete build folders such as node_modules in Termux, then try again.';
+
+  @override
+  String get migrationVerificationFailed =>
+      'The copy could not be verified. Your Termux files are unchanged.';
+
+  @override
+  String get migrationDestinationChanged =>
+      'Imported files changed. They will not be overwritten.';
+
+  @override
+  String get migrationDestinationChangedFix =>
+      'The files on the in-app server stay as you left them.';
+
+  @override
+  String get migrationStorageFailed =>
+      'The copy could not be saved. Check phone storage and try again.';
+
+  @override
+  String get migrationTimedOut =>
+      'This step took too long. Keep the app open and resume.';
+
+  @override
+  String get migrationSelectionChanged =>
+      'Use the saved migration selection to resume.';
+
+  @override
+  String get migrationConnectionFailed =>
+      'Files are copied, but the in-app server could not connect.';
+
+  @override
+  String get migrationFailureCode => 'Reason';
+
+  @override
+  String get migrationFailureItem => 'Item';
+
+  @override
+  String get migrationOpenThisPhone => 'Open This phone';
+
+  @override
+  String get migrationDoneTitle => 'Moved from Termux';
+
+  @override
+  String get migrationDone =>
+      'Files copied. Your Termux server is still available.';
+
+  @override
+  String get migrationSignInAgain => 'Sign in to your AI providers again';
+
+  @override
+  String migrationSignInAgainNamed(String names) {
+    return '$names were signed in on Termux. Sign-ins never move.';
+  }
+
+  @override
+  String get migrationSignInAgainAny => 'Sign-ins never move from Termux.';
+
+  @override
+  String get migrationProjectsWhere => 'Your projects';
+
+  @override
+  String migrationProjectsWhereBody(String folder) {
+    return 'In the folder $folder on the in-app server';
+  }
+
+  @override
+  String get migrationExportsWhere => 'Private copies';
+
+  @override
+  String migrationExportsWhereBody(String items) {
+    return '$items: saved inside the in-app Linux, not turned on';
+  }
+
+  @override
+  String get migrationRemoveTermux =>
+      'Remove the Termux server when you\'re ready';
+
+  @override
+  String get migrationRemoveTermuxBody =>
+      'Nothing is removed for you. Until then it keeps working, and you can switch back to it on Servers.';
+
+  @override
+  String get migrationOpenBuiltin => 'Open the in-app server';
+
+  @override
+  String get migrationDetailProjects => 'Projects folder';
+
+  @override
+  String get migrationDetailExports => 'Private copies folder';
+
+  @override
+  String get migrationUnfinishedTitle => 'The move didn\'t finish';
+
+  @override
+  String get migrationUnfinishedBody =>
+      'Resume to carry on where it stopped. What was already copied is kept, and Termux isn\'t changed.';
+
+  @override
+  String get migrationUnavailableTitle => 'The move can\'t start';
+
+  @override
+  String get migrationUnavailableBody =>
+      'The app couldn\'t prepare its private storage for the copy. Try again, and if it keeps happening, restart the app.';
+
+  @override
+  String get migrationRowBody =>
+      'Copy your projects into the in-app server. Termux stays as it is.';
+
+  @override
+  String get migrationRowResume => 'Resume moving to the in-app server';
+
+  @override
+  String get migrationRowResumeBody =>
+      'Stopped before it finished. What was copied is kept.';
+
+  @override
+  String get migrationRowRunning => 'Moving to the in-app server';
+
+  @override
+  String get migrationRowDoneBody =>
+      'Remove the Termux server when you\'re ready.';
+
+  @override
+  String get migrationOffer =>
+      'Move your Termux projects into this app? Termux stays as it is.';
+
+  @override
+  String get migrationOfferAction => 'Review what moves';
 }
