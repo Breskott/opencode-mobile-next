@@ -201,6 +201,19 @@ double _fieldShare(WidgetTester tester) {
   return field.width / surface.width;
 }
 
+/// The words' column with the editor button in its top corner, which sits
+/// beside the words while there is text (owner Fix "editor in the field
+/// corner", 23f2d0ce): together they still own the row.
+double _wordsColumnShare(WidgetTester tester) {
+  final editable = find.descendant(
+    of: find.byKey(const Key('chat-composer-field')),
+    matching: find.byType(EditableText),
+  );
+  final corner = tester.getSize(find.byKey(const Key('prompt-editor-button')));
+  return (tester.getSize(editable).width + corner.width) /
+      tester.getSize(find.byKey(const Key('chat-composer-surface'))).width;
+}
+
 double _editingShare(WidgetTester tester) {
   final editable = find.descendant(
     of: find.byKey(const Key('chat-composer-field')),
@@ -689,7 +702,9 @@ void main() {
     expect(tester.testTextInput.hasAnyClients, isTrue);
     expect(field.controller!.text, 'Review this draft');
     expect(field.controller!.selection.baseOffset, 7);
-    expect(_editingShare(tester), greaterThanOrEqualTo(0.85));
+    // With text the editor button takes the field's top corner (23f2d0ce);
+    // the words and their corner still own the row.
+    expect(_wordsColumnShare(tester), greaterThanOrEqualTo(0.85));
     expect(
       tester.getTopLeft(find.byKey(const Key('chat-send-button'))).dy,
       greaterThanOrEqualTo(tester.getBottomLeft(fieldFinder).dy),

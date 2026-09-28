@@ -567,26 +567,30 @@ class _KitComposerState extends State<KitComposer> {
     // The full-screen editor opens from the field's top corner, where it
     // belongs to the words, not from the send row (owner Fix).
     final editor = !readOnly && _hasContent && widget.onOpenEditor != null;
-    final fieldWithEditor = editor
-        ? Stack(
-            children: [
-              Padding(
-                padding: EdgeInsetsDirectional.only(end: tokens.minTarget),
-                child: field,
-              ),
-              PositionedDirectional(
-                top: 0,
-                end: 0,
-                child: KitIconButton(
-                  key: widget.editorKey,
-                  icon: AppIconography.expand,
-                  tooltip: l10n.kitComposerEditor,
-                  onPressed: widget.onOpenEditor,
-                ),
-              ),
-            ],
-          )
-        : field;
+    // One tree whether or not the editor button shows: the field keeps its
+    // place (and its editing state, selection and keyboard) as words come
+    // and go, a run finishes or the keyboard resizes the page.
+    final fieldWithEditor = Stack(
+      children: [
+        Padding(
+          padding: editor
+              ? EdgeInsetsDirectional.only(end: tokens.minTarget)
+              : EdgeInsets.zero,
+          child: field,
+        ),
+        if (editor)
+          PositionedDirectional(
+            top: 0,
+            end: 0,
+            child: KitIconButton(
+              key: widget.editorKey,
+              icon: AppIconography.expand,
+              tooltip: l10n.kitComposerEditor,
+              onPressed: widget.onOpenEditor,
+            ),
+          ),
+      ],
+    );
 
     // What sits above the field: the note, the delivery choice, the
     // suggestions and the attachments. When they do not fit (large text on
