@@ -2116,9 +2116,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get setupOutputWaiting => 'بانتظار مخرجات Termux…';
 
   @override
-  String get setupConnectExisting => 'الاتصال بخادم موجود';
-
-  @override
   String get uncertainAuthDetail =>
       'ربما بدأ الخادم تسجيل الدخول، لكن لم يصل معرّف المحاولة. تحقّق على الخادم قبل البدء مجددًا.';
 
@@ -2580,10 +2577,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get paseoAddressHint => 'ws://100.64.0.1:6767 أو wss://paseo.example';
 
   @override
-  String get paseoAddressHelp =>
-      'خدمة Paseo على حاسوبك. يعمل ws:// على هذا الجهاز وعلى عناوين Tailscale؛ استخدم wss:// في غير ذلك.';
-
-  @override
   String get paseoPasswordLabel => 'كلمة مرور الخدمة (اختيارية)';
 
   @override
@@ -2605,10 +2598,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get codexAddressHint => 'wss://codex.example أو ws://127.0.0.1:4500';
-
-  @override
-  String get codexAddressHelp =>
-      'استخدم wss:// للخوادم البعيدة. يقتصر ws:// على هذا الجهاز.';
 
   @override
   String get codexProjectFolder => 'مجلد المشروع على الخادم';
@@ -2708,11 +2697,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get setupRuntimeTwo => 'OpenCode 2';
-
-  @override
-  String setupRuntimeUpdateDetail(String runtime, String version) {
-    return 'سيثبّت التطبيق $runtime $version، ويعيد تشغيل الخادم المحلي الذي يديره فقط، ثم يعيد الاتصال بهذا الخادم.';
-  }
 
   @override
   String queuedBannerReview(int count) {
@@ -11989,11 +11973,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get setupProgressViewStarting => 'جارٍ البدء';
 
   @override
-  String setupProgressViewFailedStageReason(String stage, String reason) {
-    return '$stage: $reason';
-  }
-
-  @override
   String setupProgressViewFailedDuring(String stage) {
     return 'توقّف أثناء: $stage';
   }
@@ -16755,7 +16734,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get serverSettingsRestartCommandLabel =>
-      'If it runs as a Linux service, run this there';
+      'Set up with the Linux service script?';
 
   @override
   String get serverSettingsRestartedIt => 'I restarted it';
@@ -23351,4 +23330,109 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamStartRunWakeRefusedNext =>
       'Try again, or switch it on where the team runs.';
+
+  @override
+  String get addServerTailscaleNext => 'Enter the address';
+
+  @override
+  String get phoneSetupTermuxGetCurrent => 'Get the current Termux';
+
+  @override
+  String get phoneSetupUnsupportedTitle => 'Connect a server';
+
+  @override
+  String get phoneSetupUnsupportedBody =>
+      'Setting up on the device itself works only on Android phones. On your computer, run this command, then add the server here with the code it prints.';
+
+  @override
+  String get termuxStorageStageTotal => 'The whole Termux install';
+
+  @override
+  String get setupProgressViewFailedStep =>
+      'This step didn\'t finish. What went wrong is under Details.';
+
+  @override
+  String setupProgressViewFailedAt(String name) {
+    return 'Stopped at $name. What went wrong is under Details.';
+  }
+
+  @override
+  String workRunawayHelper(String helper, String duration) {
+    return 'A leftover $helper process has been busy for $duration with nothing to do';
+  }
+
+  @override
+  String workRunawayHelperInProject(
+    String helper,
+    String project,
+    String duration,
+  ) {
+    return 'A leftover $helper process in $project has been busy for $duration with nothing to do';
+  }
+
+  @override
+  String get workRunawaySeeRunning => 'See what\'s running';
+
+  @override
+  String thisPhoneUpToDate(String version) {
+    return 'Up to date · $version';
+  }
+
+  @override
+  String thisPhoneUpdateTitle(String runtime) {
+    return 'Update $runtime?';
+  }
+
+  @override
+  String thisPhoneUpdateBody(String version) {
+    return 'Installs version $version, restarts the server on this phone and connects again.';
+  }
+
+  @override
+  String get thisPhoneUpdateKept =>
+      'Your conversations are kept. The server is away for a minute while it restarts.';
+
+  @override
+  String get thisPhoneUpdateBusy =>
+      'A reply is still being written. Stop it or let it finish, then update.';
+
+  @override
+  String thisPhoneStartFailed(String runtime) {
+    return '$runtime didn\'t start. Start it again; Details below says what went wrong.';
+  }
+
+  @override
+  String get thisPhoneStartAgain => 'Start again';
+
+  @override
+  String thisPhoneInstallFailed(String runtime) {
+    return 'Installing $runtime didn\'t finish. Install it again; your conversations are kept.';
+  }
+
+  @override
+  String get thisPhoneInstallAgain => 'Install again';
+
+  @override
+  String thisPhoneStopFailed(String runtime) {
+    return '$runtime didn\'t stop. Try stopping it again.';
+  }
+
+  @override
+  String thisPhoneCheckFailed(String runtime) {
+    return 'This phone couldn\'t check on $runtime. Try again in a moment.';
+  }
+
+  @override
+  String thisPhoneSwitchStopped(String runtime) {
+    return '$runtime didn\'t start after the switch. Your conversations are kept.';
+  }
+
+  @override
+  String get addServerCheckFailedPlain =>
+      'The server could not be checked. Check the address and this phone’s connection, then try again.';
+
+  @override
+  String serverRowDetailsTitle(String name) {
+    return '$name details';
+  }
 }
