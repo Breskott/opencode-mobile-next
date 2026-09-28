@@ -246,6 +246,16 @@ class ChatScreen extends StatefulWidget {
   /// composer. Null is the ordinary chat.
   final ChatWatch? watch;
 
+  /// P4.2a: the request (permission, question or form) an Inbox row or a
+  /// notification opened this chat for. Its card leads the requests above
+  /// the composer and is washed once when it appears (KitArrival, under a
+  /// [KitArrivalScope] named by `chatRequestArrivalId`).
+  final String? landOnRequestID;
+
+  /// P4.2a: opened for a failed run: once the history is in, the transcript
+  /// scrolls to the newest failed turn and marks it.
+  final bool landOnFailure;
+
   const ChatScreen({
     super.key,
     required this.sessionID,
@@ -258,6 +268,8 @@ class ChatScreen extends StatefulWidget {
     this.emptyState,
     this.handoffStore,
     this.watch,
+    this.landOnRequestID,
+    this.landOnFailure = false,
   });
 
   @override
@@ -542,6 +554,9 @@ class _ChatScreenState extends State<ChatScreen>
   bool _serverCommandsLoading = false;
   Future<void>? _serverCommandsRequest;
   String? _highlightedMessageID;
+
+  /// [ChatScreen.landOnFailure] happens once, after the first history.
+  bool _landedOnFailure = false;
   Timer? _highlightTimer;
   final _findController = TextEditingController();
   final _findFocus = FocusNode();
@@ -2042,6 +2057,7 @@ class _ChatScreenState extends State<ChatScreen>
         }
       });
       _restoreHistoryAnchor(anchor, generation);
+      _landOnFailedTurn();
     } catch (e) {
       if (!_currentHistory(generation, scope)) return;
       setState(() => _error = e);
@@ -4170,6 +4186,22 @@ class _ChatScreenState extends State<ChatScreen>
         changes: vcs?.changes.length,
       ),
     );
+  }
+
+  /// [ChatScreen.landOnFailure]: the newest turn that ended in an error,
+  /// scrolled to and marked once. None in the loaded history: the chat
+  /// opens at its newest turn as usual.
+  void _landOnFailedTurn() {
+    if (!widget.landOnFailure || _landedOnFailure) return;
+    _landedOnFailure = true;
+    MessageWithParts? failed;
+    for (final message in _visibleHistory) {
+      if (message.info.errorText != null) failed = message;
+    }
+    if (failed == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _jumpToMessage(failed!.info.id, alignment: .3);
+    });
   }
 
   void _jumpToMessage(String messageID, {double alignment = .5}) {
@@ -6685,46 +6717,62 @@ class _ChatScreenState extends State<ChatScreen>
   /// slot unfolds when one arrives and folds away when none is left
   /// ([KitReveal], instant under reduced motion); one card replacing
   /// another changes in place.
-  Widget _attentionRegion(List<PermissionRequest> pendingPermissions) {
+  Widget _attentionRegion(
+    List<PermissionRequest> pendingPermissions, {
+    bool arrive = true,
+  }) {
     final permission = pendingPermissions.firstOrNull;
     final question = _conn.questionForSession(widget.sessionID);
     final retry = _retryState;
+    // The card an Inbox row or a notification opened this chat for is
+    // washed once where it settles (above the composer), never in the
+    // loading layout it leaves a moment later.
+    Widget landing(String requestID, Widget card) => arrive
+        ? KitArrival(id: chatRequestArrivalId(requestID), child: card)
+        : card;
     // Automatic approval is never silent, but it is a standing fact, not an
     // event: it lives in the chip strip above the composer
     // ([_composerStatusStrip]), not in this slot.
     return KitReveal(
       child: permission != null
-          ? Column(
-              key: ValueKey('permission-region-${permission.id}'),
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _PermissionAttentionCard(
-                  key: ValueKey('permission-card-${permission.id}'),
-                  permission: permission,
-                  autoApprovalFailed:
-                      _conn.autoApprovalFailure(permission.id) != null,
-                  onReview: () => unawaited(_showPermissionDialog(permission)),
-                ),
-                // P6.7: the third identical ask offers "Always allow"
-                // once, directly under its card.
-                if (!_conn.isIsolated)
-                  AlwaysAllowInvitation(
-                    key: ValueKey('always-allow-${permission.id}'),
-                    controller: _conn,
-                    sessionID: permission.sessionID,
-                    requestID: permission.id,
+          ? landing(
+              permission.id,
+              Column(
+                key: ValueKey('permission-region-${permission.id}'),
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _PermissionAttentionCard(
+                    key: ValueKey('permission-card-${permission.id}'),
+                    permission: permission,
+                    autoApprovalFailed:
+                        _conn.autoApprovalFailure(permission.id) != null,
+                    onReview: () =>
+                        unawaited(_showPermissionDialog(permission)),
                   ),
-              ],
+                  // P6.7: the third identical ask offers "Always allow"
+                  // once, directly under its card.
+                  if (!_conn.isIsolated)
+                    AlwaysAllowInvitation(
+                      key: ValueKey('always-allow-${permission.id}'),
+                      controller: _conn,
+                      sessionID: permission.sessionID,
+                      requestID: permission.id,
+                    ),
+                ],
+              ),
             )
           : question != null
-          ? _QuestionAttentionCard(
-              key: ValueKey('question-card-${question.id}'),
-              question: question,
-              replying: _questionReplying,
-              onAnswer: (answers) =>
-                  unawaited(_answerQuestion(question, answers)),
-              onMore: () => unawaited(_showQuestionSheet(question)),
+          ? landing(
+              question.id,
+              _QuestionAttentionCard(
+                key: ValueKey('question-card-${question.id}'),
+                question: question,
+                replying: _questionReplying,
+                onAnswer: (answers) =>
+                    unawaited(_answerQuestion(question, answers)),
+                onMore: () => unawaited(_showQuestionSheet(question)),
+              ),
             )
           : retry != null
           ? _RetryAttentionCard(
@@ -7072,10 +7120,13 @@ class _ChatScreenState extends State<ChatScreen>
         // a form card onto a server that cannot answer it.
         if (_conn.formForSession(widget.sessionID) case final pendingForm?
             when _conn.capabilities.forms)
-          _FormRequestCard(
-            key: ValueKey('form-request-card-${pendingForm.id}'),
-            form: pendingForm,
-            onAnswer: () => unawaited(_openForm(pendingForm)),
+          KitArrival(
+            id: chatRequestArrivalId(pendingForm.id),
+            child: _FormRequestCard(
+              key: ValueKey('form-request-card-${pendingForm.id}'),
+              form: pendingForm,
+              onAnswer: () => unawaited(_openForm(pendingForm)),
+            ),
           ),
         // The one nudge slot: below whatever needs the person. It gives way
         // to a short (keyboard) layout like every quiet strip. At large text
@@ -7386,7 +7437,17 @@ class _ChatScreenState extends State<ChatScreen>
       running: _conn.busySessions.contains(widget.sessionID),
     );
     final showAttachmentNote = _attachmentNoteVisible();
-    final pendingPermissions = _conn.permissionsForSession(widget.sessionID);
+    var pendingPermissions = _conn.permissionsForSession(widget.sessionID);
+    // The request this chat was opened for leads (P4.2a).
+    if (widget.landOnRequestID case final landing?
+        when pendingPermissions.length > 1 &&
+            pendingPermissions.first.id != landing &&
+            pendingPermissions.any((p) => p.id == landing)) {
+      pendingPermissions = [
+        ...pendingPermissions.where((p) => p.id == landing),
+        ...pendingPermissions.where((p) => p.id != landing),
+      ];
+    }
 
     final session = _conn.sessionsById[widget.sessionID];
     final shareUrl = _shareUrl;
@@ -7540,7 +7601,8 @@ class _ChatScreenState extends State<ChatScreen>
             ? Column(
                 children: [
                   const Expanded(child: _ChatLoadingBody()),
-                  if (!_watching) _attentionRegion(pendingPermissions),
+                  if (!_watching)
+                    _attentionRegion(pendingPermissions, arrive: false),
                 ],
               )
             : _error != null && _messages.isEmpty
@@ -7552,7 +7614,8 @@ class _ChatScreenState extends State<ChatScreen>
                       onRetry: () => unawaited(_load()),
                     ),
                   ),
-                  if (!_watching) _attentionRegion(pendingPermissions),
+                  if (!_watching)
+                    _attentionRegion(pendingPermissions, arrive: false),
                 ],
               )
             : LayoutBuilder(

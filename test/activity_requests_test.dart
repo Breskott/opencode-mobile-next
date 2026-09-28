@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
@@ -53,6 +55,9 @@ PendingQuestion _question({required bool multiple}) => PendingQuestion(
   ],
 );
 
+/// The question's answer sheet, as the chat's question card opens it
+/// (P4.2a: an Inbox row now lands on that card instead of a sheet over the
+/// list; the sheet itself is unchanged).
 Future<void> _openQuestion(
   WidgetTester tester,
   PendingQuestion question,
@@ -60,21 +65,15 @@ Future<void> _openQuestion(
 ) async {
   final controller = await _controller(repository);
   addTearDown(controller.dispose);
-  await tester.pumpWidget(
-    MaterialApp(home: ActivityScreen(controller: controller)),
+  await tester.pumpWidget(const MaterialApp(home: Scaffold()));
+  await controller.refreshPendingQuestions();
+  unawaited(
+    showQuestionSheet(
+      tester.element(find.byType(Scaffold)),
+      controller,
+      controller.questions[question.id]!,
+    ),
   );
-  await tester.pumpAndSettle();
-  final row = find.text(question.prompts.single.title);
-  for (
-    var attempt = 0;
-    attempt < 20 && row.hitTestable().evaluate().isEmpty;
-    attempt++
-  ) {
-    await tester.drag(find.byType(ListView), const Offset(0, -140));
-    await tester.pump();
-  }
-  expect(row.hitTestable(), findsOneWidget);
-  await tester.tap(row.hitTestable());
   await tester.pumpAndSettle();
 }
 

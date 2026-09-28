@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import '../../../state/orchestration.dart';
 import '../../../state/team_planning.dart' show TeamPlanningRequest;
 import '../../kit/kit.dart';
+import '../../navigation/chat_route.dart' show chatRequestArrivalId;
 import '../chat_screen.dart';
 import '../team/start_run_sheet.dart' show showStartRunSheet;
 
@@ -44,16 +45,27 @@ abstract final class TeamConversation {
   }) => Navigator.of(context).push(route(team, runId: runId));
 
   /// The route [open] pushes, for a door that holds a [NavigatorState]
-  /// rather than a context (the team notification).
+  /// rather than a context (the team notification). With [landOnGateId]
+  /// (an Inbox row or a notification for one gate, P4.2a) the page lands on
+  /// that gate's card and marks it once.
   static Route<void> route(
     OrchestrationController team, {
     required String runId,
-  }) => KitPageRoute<void>(
-    builder: (_) => TeamControllerScope(
+    String? landOnGateId,
+  }) {
+    final Widget page = TeamControllerScope(
       team: team,
       child: TeamConversationScreen(team: team, runId: runId),
-    ),
-  );
+    );
+    // Built once for the page, so a rebuild never lands a second time.
+    final landing = landOnGateId == null
+        ? page
+        : KitArrivalScope(
+            rowId: chatRequestArrivalId(landOnGateId),
+            child: page,
+          );
+    return KitPageRoute<void>(builder: (_) => landing);
+  }
 
   /// Opens the conversation of a task the planner has not listed yet
   /// ([request], a Start-a-task message): its Now line says where it

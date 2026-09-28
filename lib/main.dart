@@ -47,6 +47,7 @@ import 'ui/desktop/desktop_interaction.dart';
 import 'ui/desktop/shortcuts.dart';
 import 'ui/kit/kit.dart';
 import 'ui/theme_packs.dart';
+import 'ui/navigation/attention_landing.dart' show chatLandingPage;
 import 'ui/navigation/chat_route.dart';
 import 'ui/screens/settings_screen.dart';
 import 'ui/widgets/product_states.dart' show productErrorText;
@@ -1621,17 +1622,18 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
               if (settings.name?.startsWith('/chat/') == true) {
                 final id = settings.name!.substring('/chat/'.length);
                 final arguments = settings.arguments;
-                return KitPageRoute<void>(
-                  builder: (_) => ChatScreen(
-                    sessionID: id,
-                    discardIfUntouched:
-                        arguments is ChatRouteArguments &&
-                        arguments.discardIfUntouched,
-                    focusComposer:
-                        arguments is ChatRouteArguments &&
-                        arguments.focusComposer,
-                  ),
+                final chat = arguments is ChatRouteArguments
+                    ? arguments
+                    : const ChatRouteArguments();
+                // Built once for the page (P4.2a landing scope).
+                final page = chatLandingPage(
+                  sessionID: id,
+                  discardIfUntouched: chat.discardIfUntouched,
+                  focusComposer: chat.focusComposer,
+                  landOnRequestID: chat.landOnRequestID,
+                  landOnFailure: chat.landOnFailure,
                 );
+                return KitPageRoute<void>(builder: (_) => page);
               }
               return null;
             },

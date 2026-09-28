@@ -19,6 +19,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/desktop/file_drop.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
+import 'package:opencode_mobile/ui/navigation/chat_route.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/search/search_index.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -148,19 +149,43 @@ void desktopTest(
 
 void main() {
   group('Inbox', () {
-    testWidgets('on a phone a question row opens the question sheet', (
+    // P4.2a: on a phone the row lands on the question's card in its
+    // conversation, never on a sheet over the list.
+    testWidgets('on a phone a question row lands on its card in the chat', (
       tester,
     ) async {
       await _size(tester, const Size(412, 915));
       final controller = await _controller();
       addTearDown(controller.dispose);
-      await tester.pumpWidget(_app(ActivityScreen(controller: controller)));
+      controller.sessionsById['ses_q'] = Session(
+        id: 'ses_q',
+        directory: '/work/oc_app',
+      );
+      String? landed;
+      Object? arguments;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ActivityScreen(controller: controller),
+          onGenerateRoute: (settings) => MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) {
+              landed = settings.name;
+              arguments = settings.arguments;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
       await _settle(tester);
 
       await tester.tap(find.text('Target'));
       await _settle(tester);
-      expect(find.byKey(const ValueKey('question-sheet')), findsOneWidget);
+      expect(find.byKey(const ValueKey('question-sheet')), findsNothing);
       expect(find.byKey(const ValueKey('activity-detail-pane')), findsNothing);
+      expect(landed, startsWith('/chat/'));
+      expect((arguments as ChatRouteArguments).landOnRequestID, 'q-1');
     });
 
     testWidgets('from expanded the pick is answered in the detail pane', (
