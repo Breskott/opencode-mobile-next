@@ -28204,12 +28204,6 @@ abstract class AppLocalizations {
   /// **'Manage {name} accounts'**
   String integrationsManageAccounts(String name);
 
-  /// Integrations page: why the Manage accounts menu item is unavailable on this server.
-  ///
-  /// In en, this message translates to:
-  /// **'This server can\'t list saved accounts from the app.'**
-  String get integrationsManageAccountsUnavailable;
-
   /// Integrations page: provider row menu item and sheet title; runs the provider's sign-in command on the server.
   ///
   /// In en, this message translates to:
@@ -37483,6 +37477,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The phone did not let the app start OpenCode just now. Start it again; if this repeats, restart the phone.'**
   String get inAppServerStartRefusedBody;
+
+  /// Providers list: word for a provider the server holds a sign-in for but has not loaded, so its models cannot be used yet. Replaces 'Connected'.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in, not loaded by this server yet'**
+  String get integrationsSignedInNotLoaded;
+
+  /// Providers list: word for a provider whose saved sign-in stayed unloaded after a reload (a subscription sign-in the server has no loader for). Replaces 'Connected'; its fix is an API key.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in, but this server can\'t use it'**
+  String get integrationsSignedInUnusable;
 
   /// Providers list: how an unconnected provider connects, after 'Not connected ·' on its row: with an API key the person adds.
   ///

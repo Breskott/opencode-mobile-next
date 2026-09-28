@@ -904,6 +904,11 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
                   presented: presented,
                   subtitle: _integrationSubtitle(presented.integration),
                   modelCount: _modelCount(presented.integration.id),
+                  notLoaded: widget.controller.unloadedProviderIDs.contains(
+                    presented.integration.id,
+                  ),
+                  notUsable: widget.controller.unloadedProvidersUnusable,
+                  onAddKey: () => _addKeyFor(presented),
                   busy: _busy.contains(presented.integration.id),
                   onConnect: () => _connectIntegration(presented.integration),
                   onDisconnect: () => _disconnectIntegration(presented),
@@ -1806,6 +1811,17 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   /// The key goes straight to the server inside the dialog: it shows it is
   /// working, a rejected key keeps the dialog open with the reason under
   /// the field, and the key is never shown, logged or kept (SEC-3).
+  /// The working fix for a provider signed in with an account the server
+  /// cannot load (Anthropic and Google subscription sign-ins have no loader
+  /// on the server): an API key replaces that sign-in.
+  Future<void> _addKeyFor(PresentedIntegration presented) async {
+    final method = presented.integration.methods
+        .where((method) => method.type == 'key')
+        .firstOrNull;
+    if (method == null) return;
+    await _connectWithKey(presented.integration, method, presented.name);
+  }
+
   Future<void> _connectWithKey(
     IntegrationInfo integration,
     IntegrationMethodInfo method,

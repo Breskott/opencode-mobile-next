@@ -20394,10 +20394,6 @@
       }
     }
   },
-  "integrationsManageAccountsUnavailable": "This server can't list saved accounts from the app.",
-  "@integrationsManageAccountsUnavailable": {
-    "description": "Integrations page: why the Manage accounts menu item is unavailable on this server."
-  },
   "integrationsServerSignIn": "Sign in to {name} on the server",
   "@integrationsServerSignIn": {
     "description": "Integrations page: provider row menu item and sheet title; runs the provider's sign-in command on the server.",
@@ -28633,6 +28629,14 @@
   "inAppServerStartRefusedBody": "The phone did not let the app start OpenCode just now. Start it again; if this repeats, restart the phone.",
   "@inAppServerStartRefusedBody": {
     "description": "Why the in-app server did not start: the phone refused to start it"
+  },
+  "integrationsSignedInNotLoaded": "Signed in, not loaded by this server yet",
+  "@integrationsSignedInNotLoaded": {
+    "description": "Providers list: word for a provider the server holds a sign-in for but has not loaded, so its models cannot be used yet. Replaces 'Connected'."
+  },
+  "integrationsSignedInUnusable": "Signed in, but this server can't use it",
+  "@integrationsSignedInUnusable": {
+    "description": "Providers list: word for a provider whose saved sign-in stayed unloaded after a reload (a subscription sign-in the server has no loader for). Replaces 'Connected'; its fix is an API key."
   },
   "integrationsConnectWithKey": "Add an API key",
   "@integrationsConnectWithKey": {

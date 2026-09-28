@@ -17799,10 +17799,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get integrationsManageAccountsUnavailable =>
-      'This server can\'t list saved accounts from the app.';
-
-  @override
   String integrationsServerSignIn(String name) {
     return 'Sign in to $name on the server';
   }
@@ -23917,6 +23913,14 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get inAppServerStartRefusedBody =>
       'The phone did not let the app start OpenCode just now. Start it again; if this repeats, restart the phone.';
+
+  @override
+  String get integrationsSignedInNotLoaded =>
+      'Signed in, not loaded by this server yet';
+
+  @override
+  String get integrationsSignedInUnusable =>
+      'Signed in, but this server can\'t use it';
 
   @override
   String get integrationsConnectWithKey => 'Add an API key';
