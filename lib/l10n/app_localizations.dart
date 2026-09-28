@@ -14850,40 +14850,40 @@ abstract class AppLocalizations {
   /// **'AI Team (optional)'**
   String get teamUiEditorTitle;
 
-  /// Closing line of the host guide sheet pointing at the repository guide
-  ///
-  /// In en, this message translates to:
-  /// **'The full guide with every command is docs/ai-team-host.md in the app\'s repository.'**
-  String get teamUiHostGuideDocs;
-
   /// Intro line of the host guide sheet
   ///
   /// In en, this message translates to:
   /// **'Everything stays on your Tailscale network; nothing is published to the internet.'**
   String get teamUiHostGuideIntro;
 
+  /// Host guide sheet: opens docs/ai-team-host.md on GitHub in the browser
+  ///
+  /// In en, this message translates to:
+  /// **'Open the full guide'**
+  String get teamUiHostGuideOpen;
+
   /// Host guide step 1
   ///
   /// In en, this message translates to:
-  /// **'Install Gas City on the computer: gc, bd and dolt on your PATH.'**
+  /// **'Install Gas City\'s three tools, gc, bd and dolt, on your PATH; the full guide has each download with its checksum. Then check that all three are found:'**
   String get teamUiHostGuideStep1;
 
   /// Host guide step 2
   ///
   /// In en, this message translates to:
-  /// **'Create a city next to your project and add the project to it: gc init, then gc rig add.'**
+  /// **'Save the city file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:'**
   String get teamUiHostGuideStep2;
 
   /// Host guide step 3
   ///
   /// In en, this message translates to:
-  /// **'Start it with gc start and check that http://127.0.0.1:8372/v0/city/<name>/health answers.'**
+  /// **'Start the team and check that it answers:'**
   String get teamUiHostGuideStep3;
 
   /// Host guide step 4
   ///
   /// In en, this message translates to:
-  /// **'Expose port 8372 on the computer\'s Tailscale address, then add it here as http://100.x.x.x:8372 with the city name.'**
+  /// **'Download the front that lets this phone in over Tailscale, check it and start it, with your own Tailscale login after --allow. Then add it here: the computer\'s Tailscale address with the port in the command, and the team\'s name.'**
   String get teamUiHostGuideStep4;
 
   /// Title of the host guide sheet
@@ -34803,6 +34803,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Linux service for {server}'**
   String hostServiceTitle(String server);
+
+  /// Run as a Linux service page: supporting line of the install command
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads the script from release {release} and checks its SHA-256 checksum first. If the file was changed, nothing runs.'**
+  String hostServiceInstallChecked(String release);
+
+  /// Run as a Linux service page: fold under the install command
+  ///
+  /// In en, this message translates to:
+  /// **'What this does'**
+  String get hostServiceWhatThisDoes;
+
+  /// Run as a Linux service page, What this does: where the script runs
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Linux with systemd, such as Ubuntu. It does not run on macOS or Windows.'**
+  String get hostServiceWhatLinux;
+
+  /// Run as a Linux service page, What this does: the OpenCode install
+  ///
+  /// In en, this message translates to:
+  /// **'Installs OpenCode with its official installer if it is not there yet.'**
+  String get hostServiceWhatInstall;
+
+  /// Run as a Linux service page, What this does: the systemd user service
+  ///
+  /// In en, this message translates to:
+  /// **'Adds a service for your account that keeps OpenCode running after reboots and closed terminals. It listens on that computer only.'**
+  String get hostServiceWhatService;
+
+  /// Run as a Linux service page, What this does: the server password
+  ///
+  /// In en, this message translates to:
+  /// **'Makes a password for the server and keeps it in a file only your account can read.'**
+  String get hostServiceWhatPassword;
+
+  /// Run as a Linux service page, What this does: label of the pinned commit hash
+  ///
+  /// In en, this message translates to:
+  /// **'Script version'**
+  String get hostServicePinnedCommit;
+
+  /// Run as a Linux service page, What this does: label of the script's SHA-256
+  ///
+  /// In en, this message translates to:
+  /// **'SHA-256 checksum'**
+  String get hostServiceChecksum;
 
   /// Run as a Linux service page: the one line under the top bar.
   ///

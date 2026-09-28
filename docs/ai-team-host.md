@@ -265,10 +265,14 @@ supervisor with the `X-GC-Request` header and a loopback `Host`.
 ```sh
 # 1. find your tailnet login
 tailscale whois $(tailscale ip -4)          # UserProfile › LoginName
-# 2. run the front (or install the systemd user unit from the README)
-python3 tool/host/cp_front/front.py \
-  --supervisor http://127.0.0.1:8372 \
-  --bind $(tailscale ip -4) --port 8373 \
+# 2. download the front from a pinned commit, check it, and run it
+#    (or install the systemd user unit from the README)
+curl -fsSLo opencode-mobile-front.py.part \
+  https://raw.githubusercontent.com/Eslamasabry/opencode-mobile-next/c62f159ae3c1741cb4ec0ef92b4941c0ddfc0a18/tool/host/cp_front/front.py &&
+echo 'b672254944c3d77cb18f85b2337773e330f82d29ed64690d57e4fdc26235cd47  opencode-mobile-front.py.part' | sha256sum -c - &&
+mv opencode-mobile-front.py.part opencode-mobile-front.py &&
+python3 opencode-mobile-front.py --supervisor http://127.0.0.1:8372 \
+  --bind "$(tailscale ip -4)" --port 8373 \
   --allow you@example.com
 # 3. check from any tailnet device
 curl http://$(tailscale ip -4):8373/.well-known/opencode-mobile-orchestration

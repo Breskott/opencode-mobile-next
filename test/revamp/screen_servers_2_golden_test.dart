@@ -246,6 +246,28 @@ void main() {
           );
         });
       }
+      // slice-close-security: the install command's "What this does",
+      // open: Linux only, what changes, and the pin and checksum.
+      testWidgets('install what this does', (tester) async {
+        final controller = await _server();
+        addTearDown(controller.dispose);
+        await _shot(
+          tester,
+          'servers_host_management_install_what',
+          light: light,
+          home: HostManagementScreen(controller: controller),
+          act: () async {
+            final what = find.byKey(const ValueKey('host-install-what'));
+            await tester.tap(what);
+            await tester.pumpAndSettle();
+            await tester.drag(
+              find.byType(ListView).last,
+              const Offset(0, -260),
+            );
+            await tester.pumpAndSettle();
+          },
+        );
+      });
     });
 
     group('pairing scanner ($tone)', () {

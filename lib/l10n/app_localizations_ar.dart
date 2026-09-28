@@ -9099,28 +9099,27 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiEditorTitle => 'فريق الذكاء الاصطناعي (اختياري)';
 
   @override
-  String get teamUiHostGuideDocs =>
-      'الدليل الكامل بجميع الأوامر موجود في docs/ai-team-host.md داخل مستودع التطبيق.';
-
-  @override
   String get teamUiHostGuideIntro =>
       'كل شيء يبقى داخل شبكة Tailscale الخاصة بك؛ ولا يُنشر أي شيء على الإنترنت.';
 
   @override
+  String get teamUiHostGuideOpen => 'Open the full guide';
+
+  @override
   String get teamUiHostGuideStep1 =>
-      'ثبّت Gas City على الحاسوب: gc وbd وdolt ضمن PATH.';
+      'Install Gas City\'s three tools, gc, bd and dolt, on your PATH; the full guide has each download with its checksum. Then check that all three are found:';
 
   @override
   String get teamUiHostGuideStep2 =>
-      'أنشئ مدينة بجوار مشروعك وأضف المشروع إليها: gc init ثم gc rig add.';
+      'Save the city file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:';
 
   @override
   String get teamUiHostGuideStep3 =>
-      'شغّله بالأمر gc start وتأكد أن http://127.0.0.1:8372/v0/city/<name>/health يستجيب.';
+      'Start the team and check that it answers:';
 
   @override
   String get teamUiHostGuideStep4 =>
-      'افتح المنفذ 8372 على عنوان Tailscale الخاص بالحاسوب، ثم أضفه هنا بصيغة http://100.x.x.x:8372 مع اسم المدينة.';
+      'Download the front that lets this phone in over Tailscale, check it and start it, with your own Tailscale login after --allow. Then add it here: the computer\'s Tailscale address with the port in the command, and the team\'s name.';
 
   @override
   String get teamUiHostGuideTitle => 'شغّل فريق ذكاء اصطناعي على حاسوبك';
@@ -22143,6 +22142,36 @@ class AppLocalizationsAr extends AppLocalizations {
   String hostServiceTitle(String server) {
     return 'Linux service for $server';
   }
+
+  @override
+  String hostServiceInstallChecked(String release) {
+    return 'Downloads the script from release $release and checks its SHA-256 checksum first. If the file was changed, nothing runs.';
+  }
+
+  @override
+  String get hostServiceWhatThisDoes => 'What this does';
+
+  @override
+  String get hostServiceWhatLinux =>
+      'Needs Linux with systemd, such as Ubuntu. It does not run on macOS or Windows.';
+
+  @override
+  String get hostServiceWhatInstall =>
+      'Installs OpenCode with its official installer if it is not there yet.';
+
+  @override
+  String get hostServiceWhatService =>
+      'Adds a service for your account that keeps OpenCode running after reboots and closed terminals. It listens on that computer only.';
+
+  @override
+  String get hostServiceWhatPassword =>
+      'Makes a password for the server and keeps it in a file only your account can read.';
+
+  @override
+  String get hostServicePinnedCommit => 'Script version';
+
+  @override
+  String get hostServiceChecksum => 'SHA-256 checksum';
 
   @override
   String hostServiceIntro(String server) {

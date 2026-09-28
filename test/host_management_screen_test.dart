@@ -10,6 +10,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/host_management_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
+import 'package:opencode_mobile/ui/setup_commands.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _HealthyApi extends OpenCodeApi {
@@ -205,6 +206,78 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  // slice-close-security: the install command is the pinned, checksummed
+  // one, copied exactly, and "What this does" names Linux, the pin and the
+  // checksum.
+  testWidgets('install copies the pinned, checked command', (tester) async {
+    String? copiedText;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copiedText = (call.arguments as Map)['text'] as String?;
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    final controller = await _controllerFor('http://192.0.2.20:4747');
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(home: HostManagementScreen(controller: controller)),
+    );
+    await tester.pumpAndSettle();
+
+    // Nothing on the page pipes a download into a shell.
+    expect(find.textContaining(RegExp(r'\|\s*(ba)?sh\b')), findsNothing);
+    expect(find.textContaining('/master/'), findsNothing);
+    expect(
+      find.text(
+        'Downloads the script from release 1.0.44 and checks its SHA-256 '
+        'checksum first. If the file was changed, nothing runs.',
+      ),
+      findsOneWidget,
+    );
+
+    final copy = find.byKey(
+      const ValueKey(
+        'copy-host-command-Install OpenCode as a background service',
+      ),
+    );
+    await tester.ensureVisible(copy);
+    await tester.pumpAndSettle();
+    await tester.tap(copy);
+    await tester.pumpAndSettle();
+    expect(copiedText, HostScripts.install(4747));
+    expect(copiedText, contains(HostScripts.commit));
+    expect(
+      copiedText,
+      contains('${HostScripts.ubuntu.sha256}  ubuntu-opencode.sh.part'),
+    );
+    expect(copiedText, contains('sha256sum -c -'));
+
+    final what = find.byKey(const ValueKey('host-install-what'));
+    await tester.ensureVisible(what);
+    await tester.pumpAndSettle();
+    await tester.tap(what);
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Needs Linux with systemd, such as Ubuntu. It does not run on macOS '
+        'or Windows.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining(HostScripts.commit), findsWidgets);
+    expect(find.textContaining(HostScripts.ubuntu.sha256), findsWidgets);
   });
 
   testWidgets('host management fits a 320dp phone at 2x text', (tester) async {
