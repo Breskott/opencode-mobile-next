@@ -302,7 +302,9 @@ const graphiteDark = ThemeRoles(
   glassRimLight: Color(0x47FFFFFF), // white .28: a crisp top line on dark
   glassRimDark: Color(0x80000000), // black .50
   glassShadow: Color(0x4D000000), // black .30
-  ambient: [Color(0x143DDC8A), Color(0x0F5AB0FF)],
+  // Moderate (the owner, 2026-09-28): ambientFields over this theme's text
+  // roles gives these; test/theme_roles_test.dart holds them to it.
+  ambient: [Color(0x263DDC8A), Color(0x1C5AB0FF), Color(0x173DDC8A)],
 );
 
 /// The default theme, light.
@@ -337,7 +339,9 @@ const graphiteLight = ThemeRoles(
   // A light ground needs the darker line to draw the edge at all (§7).
   glassRimDark: Color(0x2E000000), // black .18
   glassShadow: Color(0x4D000000), // black .30 (LOOK-20: both brightnesses)
-  ambient: [Color(0x0F0B8A4A)],
+  // Moderate: pale ground-bright tints of the canvas's green and blue, so
+  // dark text keeps its contrast (ambientFields; test/theme_roles_test.dart).
+  ambient: [Color(0xD9CDFFE6), Color(0xB3F1F6FF), Color(0x99CDFFE6)],
 );
 
 /// The accents the canvas offers for Graphite, dark and light (§3, theme
@@ -636,8 +640,112 @@ ThemeRoles deriveRoles({
     glassRimLight: defaults.glassRimLight,
     glassRimDark: defaults.glassRimDark,
     glassShadow: defaults.glassShadow,
-    ambient: ambient ?? [a.withValues(alpha: dark ? .08 : .06)],
+    ambient:
+        ambient ??
+        ambientFields(
+          hues: [a, a, a],
+          ground: ground,
+          brightness: brightness,
+          text: [text1, text2, text3, a, att, dng, ok],
+        ),
   );
+}
+
+/// How strong each ambient field is at its centre, "Moderate" (the owner,
+/// 2026-09-28: between the first 6–8 % and the canvas's strong green): on
+/// dark, the field's alpha over the ground; on light, the alpha of its
+/// pale, ground-bright tint. In [ambientFields]'s order: top start, end
+/// middle, bottom start.
+const ambientStrengthDark = [.15, .11, .09];
+const ambientStrengthLight = [.85, .7, .6];
+
+/// The soft colour fields for a theme's ground (visual language §6), one
+/// per hue in [hues], as strong as [ambientStrengthDark] or
+/// [ambientStrengthLight] allow while every role in [text] keeps 4.5:1 on
+/// the ground under the field's centre, and under two fields overlapping.
+///
+/// On dark a field is the hue itself, light over the ground; its strength
+/// is capped by the weakest light text. On light the hue is drawn as the
+/// most colourful tint as bright as the ground, so dark text keeps its
+/// contrast and the glass still has colour to bend; where the ground is so
+/// white that such a tint is barely a colour, the hue itself, as far as the
+/// text's headroom allows, whichever shows more. A field that cannot
+/// be seen without hurting a text role is left out; an empty list (no
+/// fields) is valid.
+List<Color> ambientFields({
+  required List<Color> hues,
+  required Color ground,
+  required Brightness brightness,
+  required List<Color> text,
+}) {
+  final dark = brightness == Brightness.dark;
+  bool reads(Color under) =>
+      text.every((role) => contrastRatio(role, under) >= 4.5);
+  // The strongest [tint] up to [strength] under which every role reads.
+  Color? capped(Color tint, double strength) {
+    var alpha = strength;
+    while (alpha > .01 &&
+        !reads(Color.alphaBlend(tint.withValues(alpha: alpha), ground))) {
+      alpha -= .005;
+    }
+    return alpha > .01 ? tint.withValues(alpha: alpha) : null;
+  }
+
+  // How much a field changes the ground where it is strongest.
+  double seen(Color? field) {
+    if (field == null) return 0;
+    final under = Color.alphaBlend(field, ground);
+    final dr = under.r - ground.r;
+    final dg = under.g - ground.g;
+    final db = under.b - ground.b;
+    return dr * dr + dg * dg + db * db;
+  }
+
+  final fields = <Color>[];
+  for (var i = 0; i < hues.length && i < ambientStrengthDark.length; i++) {
+    final Color? field;
+    if (dark) {
+      field = capped(hues[i], ambientStrengthDark[i]);
+    } else {
+      // A pale tint as bright as the ground keeps dark text's contrast; on
+      // a ground so white that the tint is barely a colour, the hue itself
+      // as far as the text's headroom allows shows more.
+      final pale = capped(
+        _groundBrightTint(hues[i], ground),
+        ambientStrengthLight[i],
+      );
+      final hue = capped(hues[i], ambientStrengthDark[i]);
+      field = seen(hue) > seen(pale) ? hue : pale;
+    }
+    if (field != null) fields.add(field);
+  }
+  // Where two fields overlap each is at most about 60 % of its centre.
+  for (var guard = 0; guard < 40; guard++) {
+    var under = ground;
+    for (final field in fields.take(2)) {
+      under = Color.alphaBlend(field.withValues(alpha: field.a * .6), under);
+    }
+    if (reads(under)) break;
+    for (var i = 0; i < fields.length; i++) {
+      fields[i] = fields[i].withValues(alpha: fields[i].a * .95);
+    }
+  }
+  return fields;
+}
+
+/// [hue] at full saturation, as light as it must be to be about as bright
+/// as [ground] (never darker): the most
+/// colourful tint a light ground can carry without dimming its text.
+Color _groundBrightTint(Color hue, Color ground) {
+  final target = ground.computeLuminance();
+  final hsl = HSLColor.fromColor(hue).withSaturation(1);
+  var lightness = hsl.lightness;
+  var tint = hsl.withLightness(lightness).toColor();
+  while (tint.computeLuminance() < target && lightness < .99) {
+    lightness = (lightness + .01).clamp(0, .99);
+    tint = hsl.withLightness(lightness).toColor();
+  }
+  return tint;
 }
 
 /// A Material [ColorScheme] that says the same as [roles], so a stock
