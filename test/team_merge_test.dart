@@ -699,7 +699,10 @@ void main() {
         'Merged into main · c02e375',
       );
       expect(textOf(tester, 'team-merge-title'), 'Merged');
-      expect(enabled(tester, 'team-merge-merge'), isFalse);
+      // Merged: no Merge button that can no longer do anything
+      // (slice-close-team); Review changes stays.
+      expect(key('team-merge-merge'), findsNothing);
+      expect(key('team-merge-review'), findsOneWidget);
       expect(gateway.readinessReads, 2);
     });
 
@@ -784,13 +787,17 @@ void main() {
       );
       await pumpRun(tester, controller);
       expect(textOf(tester, 'team-merge-title'), 'Merged');
-      expect(textOf(tester, 'team-merge-files'), 'Already on main');
+      // Only where it landed and Review changes: no checks, no request,
+      // no Merge (slice-close-team).
       expect(
         textOf(tester, 'team-merge-receipt'),
         'Merged into main · abcdef0',
       );
-      expect(enabled(tester, 'team-merge-merge'), isFalse);
+      expect(key('team-merge-files'), findsNothing);
+      expect(key('team-merge-request'), findsNothing);
+      expect(key('team-merge-merge'), findsNothing);
       expect(key('team-merge-approve'), findsNothing);
+      expect(key('team-merge-review'), findsOneWidget);
     });
   });
 

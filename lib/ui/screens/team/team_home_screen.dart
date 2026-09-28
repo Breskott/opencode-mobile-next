@@ -749,14 +749,16 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
       final gate = gateOfRun[run.id];
       final needsYou = gate != null || gated.contains(run.id);
       final record = gate == null ? null : teamGateMutation(controller, gate);
-      final String line;
+      final InlineSpan line;
       if (gate != null) {
-        // The row is the question: "Needs you · <question> · 2 min ago".
-        line = [
+        // The row is the question: "Needs you · <question> · 2 min ago",
+        // with the answer's receipt as a word after "Needs you" while the
+        // host has not confirmed it ("Needs you · Not confirmed yet · …").
+        line = teamGateRowLine(context, [
           l10n.teamUiHomeRunNeedsYou,
           gate.title,
           ?_age(l10n, gate.createdAt),
-        ].join(teamUsageSeparator);
+        ], record: record);
       } else {
         final task = teamTaskLine(
           l10n,
@@ -776,38 +778,23 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             run.state == RunState.working &&
             teamRunStage(run, snapshot.work, cycleOf: controller.cycleFor) ==
                 TeamStage.working;
-        line = reviewNext
-            ? [task, l10n.teamUiHomeRunReviewNext].join(teamUsageSeparator)
-            : task;
+        line = TextSpan(
+          text: reviewNext
+              ? [task, l10n.teamUiHomeRunReviewNext].join(teamUsageSeparator)
+              : task,
+        );
       }
-      // Null once the host confirmed the answer (then the chevron shows).
-      final chip = gate == null || record == null
-          ? null
-          : teamGateRowReceipt(
-              context,
-              record,
-              key: ValueKey('team-home-gate-${gate.id}-receipt'),
-              onOpen: () => _openGate(gate),
-            );
-      final receipt = chip == null
-          ? null
-          : Padding(
-              padding: EdgeInsetsDirectional.symmetric(
-                horizontal: tokens.space2,
-              ),
-              child: chip,
-            );
       return KitRow(
         key: ValueKey('team-home-run-${run.id}'),
-        leading: KitTaskMark(state: teamRunMark(run, needsYou: needsYou)),
+        leading: KitTaskMark(
+          state: teamRunMark(run, needsYou: needsYou, work: snapshot.work),
+        ),
         // A task's title is the person's own objective: two lines.
         title: run.title,
         titleMaxLines: 2,
-        supporting: TextSpan(text: line),
+        supporting: line,
         supportingMaxLines: 2,
         supportingKey: ValueKey('team-home-run-state-${run.id}'),
-        // The receipt while the host has not confirmed an answer.
-        trailing: receipt,
         // A question opens the Gate sheet; any other task its conversation.
         onTap: gate != null ? () => _openGate(gate) : () => _openRun(run),
       );

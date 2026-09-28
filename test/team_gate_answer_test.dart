@@ -1003,19 +1003,21 @@ void main() {
       final connection = await connect(team);
       await pumpActivity(tester, connection);
       final row = find.byKey(const ValueKey('activity-team-gate-req-1'));
-      final chip = find.byKey(
-        const ValueKey('activity-team-gate-req-1-receipt'),
-      );
+      // The receipt is a word in the row's line (slice-close-team).
+      String line() => tester
+          .widget<Text>(
+            find.byKey(const ValueKey('activity-team-gate-req-1-line')),
+          )
+          .textSpan!
+          .toPlainText();
       expect(row, findsOneWidget);
-      expect(chip, findsNothing);
+      expect(line(), isNot(contains('Sending…')));
 
       await team.answerGate('req-1', const GateResponse.choice('SQLite'));
       await tester.pump();
       await tester.pump();
       expect(row, findsOneWidget);
-      expect(chip, findsOneWidget);
-      // The one receipt's moving word (slice-P4.1c).
-      expect(find.text('Sending…'), findsOneWidget);
+      expect(line(), contains('Sending…'));
 
       // Still sent after a while; the row stays.
       await tester.pump(const Duration(seconds: 30));
@@ -1047,23 +1049,13 @@ void main() {
       await team.answerGate('req-1', const GateResponse.choice('SQLite'));
       await tester.pump();
       await tester.pump();
-      final chip = find.byKey(
-        const ValueKey('activity-team-gate-req-1-receipt'),
-      );
-      expect(chip, findsOneWidget);
+      final line = find.byKey(const ValueKey('activity-team-gate-req-1-line'));
       expect(
-        find.descendant(of: chip, matching: find.text('Not confirmed yet')),
-        findsOneWidget,
+        tester.widget<Text>(line).textSpan!.toPlainText(),
+        contains('Not confirmed yet'),
       );
-      expect(
-        find.byWidgetPredicate(
-          (w) =>
-              w is Semantics &&
-              w.properties.label == 'Unconfirmed, open to retry',
-        ),
-        findsOneWidget,
-      );
-      await tester.tap(chip);
+      // The row opens the gate, where Try again lives; its chevron stays.
+      await tester.tap(find.byKey(const ValueKey('activity-team-gate-req-1')));
       await tester.pumpAndSettle();
       expect(sheet, findsOneWidget);
       expect(retry, findsOneWidget);
