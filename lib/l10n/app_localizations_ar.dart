@@ -3460,7 +3460,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'يوقف خادم هذا الهاتف والمهام الجارية. تبقى المحادثات وإعدادات مزوّدي الخدمة وبيانات الاعتماد منفصلة؛ بينما تُشارك ملفات المشروع وإعداداته. يمكنك العودة إلى الإصدار السابق.';
 
   @override
-  String get setupSwitchConfirm => 'تبديل الإصدار';
+  String setupSwitchConfirm(String runtime) {
+    return 'التبديل إلى $runtime';
+  }
 
   @override
   String get setupSwitchPending =>
@@ -24338,4 +24340,8 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get perfDetailModel => 'Model, last reply';
+
+  @override
+  String get manageSpaceIntroNothingToExport =>
+      'Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone.';
 }
