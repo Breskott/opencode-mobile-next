@@ -167,7 +167,7 @@ void main() {
       },
     );
 
-    testWidgets('share waiting: connection has priority ${size.width}', (
+    testWidgets('share waiting: the card is the connection ${size.width}', (
       tester,
     ) async {
       final messenger = tester.binding.defaultBinaryMessenger;
@@ -229,8 +229,14 @@ void main() {
         await tester.pump();
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
+        // slice-P4.4: the card is the connection's status on this page, so
+        // the line above it never repeats it; the share waiting shows.
         expect(
           find.byKey(const ValueKey('connection-status-banner')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('kit-status-app:share-waiting')),
           findsOneWidget,
         );
         expect(find.byType(KitStatusLine), findsOneWidget);

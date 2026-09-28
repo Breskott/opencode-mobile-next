@@ -52,6 +52,7 @@ Finder _drawing<T extends KitScene>() => find.byWidgetPredicate(
 Widget _card({
   String? error,
   bool starting = false,
+  bool notAnswering = false,
   bool phone = true,
   bool reduce = false,
 }) => MaterialApp(
@@ -71,6 +72,7 @@ Widget _card({
       onRetry: () {},
       onStartPhoneServer: phone ? () {} : null,
       startingPhoneServer: starting,
+      notAnswering: notAnswering,
     ),
   ),
 );
@@ -218,8 +220,8 @@ void main() {
     ) async {
       await tester.pumpWidget(_card());
       expect(_drawing<KitPortalScene>(), findsOneWidget);
-      // The waiting bar never settles; step past the 8 s grace instead.
-      await tester.pump(const Duration(seconds: 9));
+      // The connection's own 8 s wait ran out (the controller's clock).
+      await tester.pumpWidget(_card(notAnswering: true));
       await tester.pump(KitMotion.entrance);
       expect(
         find.byKey(const ValueKey('saved-server-not-answering')),
