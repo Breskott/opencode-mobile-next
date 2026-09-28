@@ -238,7 +238,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         supporting: TextSpan(
           text: controller.profile == null ? copy.e7SettingsUi9 : status,
         ),
-        supportingMaxLines: 2,
+        // A failed check says why in a whole sentence (no raw errors):
+        // three lines keep "…or report the problem." from being cut off.
+        supportingMaxLines: _healthError != null ? 3 : 2,
         // A failed probe offers the one fix in place; otherwise the row is a
         // plain door like its neighbours. The check itself shows as the
         // screen's one loading bar, not a spinner in the row.
