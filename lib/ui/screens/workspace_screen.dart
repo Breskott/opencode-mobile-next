@@ -13,7 +13,9 @@ import '../../state/interaction_defaults.dart';
 import '../../state/nudges.dart';
 import '../../domain/orchestration_gateway.dart' show OrchestrationRun;
 import '../../state/orchestration.dart';
+import '../../state/attention_feed.dart' show AttentionKind;
 import '../../state/session_inventory_cache.dart' show SessionInventoryPreview;
+import '../../state/work_row_status_controller.dart';
 import '../desktop/desktop_interaction.dart';
 import '../navigation/chat_route.dart';
 import '../widgets/default_notices.dart';
@@ -170,9 +172,65 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   String? get _headerDirectory =>
       widget.controller.directory ?? _pendingDirectory;
 
+  /// What each conversation row is doing (slice-P5.5), for this server and
+  /// project only. Rows are observed only while the connection is live; a
+  /// dropped connection freezes them as last seen (no live mark), and a new
+  /// server or project starts empty.
+  final WorkRowStatusController _rowStatus = WorkRowStatusController();
+  Object? _rowScope;
+
+  void _observeRows() {
+    final controller = widget.controller;
+    final scope = (
+      controller,
+      controller.profile?.id,
+      controller.directory,
+      controller.workspace,
+    );
+    if (scope != _rowScope) {
+      _rowScope = scope;
+      _rowStatus.clear();
+    }
+    // Only a live, current transport is evidence; a reconnect starts a new
+    // generation and the next live notification re-observes every row.
+    _rowStatus.setConnected(controller.isConnected);
+    if (!controller.isConnected) return;
+    final generation = _rowStatus.generation;
+    final now = DateTime.now();
+    final active = controller.profile?.id;
+    // A failure the connected transport confirmed (a session error), from
+    // the same feed the Inbox lists; idleness alone is never Done or Failed.
+    final failed = <String>{
+      for (final item in controller.attentionFeed.items)
+        if (item.profileID == active &&
+            item.kind == AttentionKind.failedRun &&
+            item.target.taskID == null &&
+            item.target.runID == null &&
+            item.target.hasConversation)
+          item.target.sessionID!,
+    };
+    for (final session in controller.sessionsById.values) {
+      final id = session.id;
+      final needsYou =
+          controller.permissionsForSession(id).isNotEmpty ||
+          controller.questionForSession(id) != null ||
+          controller.formForSession(id) != null;
+      final busy = controller.busySessions.contains(id);
+      _rowStatus.observe(
+        id,
+        !needsYou && !busy && failed.contains(id)
+            ? const WorkRowFacts(phase: WorkRowPhase.failed)
+            : WorkRowFacts.chat(busy: busy, needsYou: needsYou),
+        observedAt: now,
+        generation: generation,
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _observeRows();
     _dataRefreshRevision = widget.controller.dataRefreshRevision;
     widget.controller.addListener(_changed);
     widget.controller.nudges.addListener(_nudgesChanged);
@@ -192,6 +250,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     _restoreGaveUp = false;
     _selectingInitial = false;
     _selectedSessionID = null;
+    _observeRows();
     unawaited(_load());
   }
 
@@ -237,6 +296,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         _dataRefreshRevision != widget.controller.dataRefreshRevision &&
         widget.controller.repository != null;
     _dataRefreshRevision = widget.controller.dataRefreshRevision;
+    _observeRows();
     setState(() {});
     if (shouldReload) unawaited(_load());
   }
@@ -647,6 +707,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       key: ValueKey('team-work-${run.id}'),
       team: team!,
       run: run,
+      connected: controller.isConnected,
       onOpen: () => _openTeamTask(team, run.id),
     );
     final capabilities = controller.capabilities;
@@ -743,11 +804,14 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         ? selectedID
         : null;
 
+    final rowNow = DateTime.now();
     Widget row(Session session, {bool busy = false, String? blocker}) =>
         _SessionRow(
           controller: controller,
           session: session,
           busy: busy,
+          status: _rowStatus.statusFor(session.id),
+          now: rowNow,
           blocker: blocker,
           unreviewed: busy ? null : unreviewed(session),
           selected: session.id == detailID,
@@ -1845,6 +1909,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     final nudges = widget.controller.nudges;
     // Deferred: listeners must not rebuild while the tree is being torn down.
     scheduleMicrotask(() => nudges.releaseScope(NudgeRegistry.workScope));
+    _rowStatus.dispose();
     super.dispose();
   }
 }
@@ -1875,6 +1940,15 @@ class _SessionRow extends StatelessWidget {
   final ConnectionController controller;
   final Session session;
   final bool busy;
+
+  /// What the conversation is doing, from the one row-status source
+  /// (slice-P5.5); null before the first live observation. A status that is
+  /// not fresh (the connection dropped) is the last seen state: it rests
+  /// still and says when.
+  final WorkRowStatus? status;
+
+  /// The clock a fresh status line is read against.
+  final DateTime now;
 
   /// What the run is blocked on (permission, question, form), already
   /// worded for the row; null when nothing is waiting.
@@ -1909,6 +1983,8 @@ class _SessionRow extends StatelessWidget {
     required this.controller,
     required this.session,
     required this.busy,
+    required this.now,
+    this.status,
     this.blocker,
     this.unreviewed,
     this.selected = false,
@@ -1933,6 +2009,16 @@ class _SessionRow extends StatelessWidget {
     final pinned = controller.isSessionPinned(session.id);
     final needsAttention = blocker != null;
     final isUnreviewed = !needsAttention && !busy && unreviewed != null;
+    final rowStatus = this.status;
+    final phase = rowStatus?.facts.phase;
+    // Last seen working: the connection dropped while it ran. It rests
+    // still and says as of when — never a live mark while disconnected.
+    final stale =
+        (rowStatus != null && !rowStatus.isFresh) || !controller.isConnected;
+    final lastSeen =
+        !needsAttention && stale && (busy || phase == WorkRowPhase.working);
+    final failed =
+        !needsAttention && !busy && !lastSeen && phase == WorkRowPhase.failed;
     // The facts line wraps instead of cutting: one ellipsized line lost the
     // time and diff at 390dp and even "Working" at 320dp/2.5x. The status
     // comes first, so whatever is cut is the least essential.
@@ -1949,11 +2035,25 @@ class _SessionRow extends StatelessWidget {
               key: ValueKey('session-attention-icon-${session.id}'),
             ),
           )
+        : lastSeen
+        ? lead(
+            KitTaskMark(
+              key: ValueKey('session-last-seen-mark-${session.id}'),
+              state: KitTaskState.waiting,
+            ),
+          )
         : busy
         ? lead(
             const KitTaskMark(
               key: ValueKey('session-busy-dot'),
               state: KitTaskState.working,
+            ),
+          )
+        : failed
+        ? lead(
+            KitTaskMark(
+              key: ValueKey('session-failed-mark-${session.id}'),
+              state: KitTaskState.failed,
             ),
           )
         : KitRow.icon(
@@ -1964,10 +2064,20 @@ class _SessionRow extends StatelessWidget {
     // making progress.
     final status = needsAttention
         ? null
-        : session.compactingSince != null
+        : session.compactingSince != null && !lastSeen
         ? l10n.e7WorkspaceCompacting
+        : lastSeen
+        ? (rowStatus != null &&
+                  !rowStatus.isFresh &&
+                  phase == WorkRowPhase.working
+              ? rowStatus.line(l10n, now: now)
+              : l10n.activityLastSeenRunning)
         : busy
-        ? l10n.globalSessionsWorking
+        ? (rowStatus?.facts.phase == WorkRowPhase.working
+              ? rowStatus!.line(l10n, now: now)
+              : l10n.globalSessionsWorking)
+        : failed
+        ? rowStatus!.line(l10n, now: now)
         : isUnreviewed
         ? l10n.workUnreviewed
         : null;

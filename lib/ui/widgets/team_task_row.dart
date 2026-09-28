@@ -9,13 +9,16 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../domain/orchestration_gateway.dart';
+import '../../domain/work_row_status.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
+import '../../state/team_conversation.dart' show TeamNowKind, teamNow;
 import '../kit/kit_row.dart';
 import '../kit/kit_task_mark.dart';
 import '../kit/kit_text.dart';
 import 'team_now.dart';
 import 'team_vocabulary.dart';
+import 'work_row_presentation.dart';
 
 /// The team's open tasks (not finished, not cancelled), what needs the
 /// person first; the host's upkeep left out.
@@ -36,18 +39,88 @@ class TeamTaskRow extends StatelessWidget {
     required this.team,
     required this.run,
     required this.onOpen,
+    this.connected = true,
   });
 
   final OrchestrationController team;
   final OrchestrationRun run;
   final VoidCallback onOpen;
 
+  /// The server's connection is live. Without it (or with a stale team
+  /// read) the row is the last seen state: still mark, "as of" time
+  /// (slice-P5.5).
+  final bool connected;
+
+  /// The row's one status (slice-P5.5), from the same vocabulary as the
+  /// Work and Inbox rows: needs you and a finished outcome outrank a stall,
+  /// and a stall is the task's own P3.5 evidence ([teamNow]), never the
+  /// row's age.
+  static WorkRowStatus statusOf(
+    OrchestrationController team,
+    OrchestrationRun run, {
+    required bool needsYou,
+    required bool connected,
+    required DateTime now,
+  }) {
+    final snapshot = team.snapshot;
+    final stalled =
+        !needsYou &&
+        teamNow(
+              run: run,
+              work: snapshot.work,
+              cycleOf: team.cycleFor,
+              agents: snapshot.agents,
+              gates: snapshot.gates,
+              now: now,
+            ).kind ==
+            TeamNowKind.stalled;
+    return WorkRowStatus(
+      facts: WorkRowFacts(
+        phase: needsYou
+            ? WorkRowPhase.needsYou
+            : switch (run.state) {
+                RunState.failed => WorkRowPhase.failed,
+                RunState.completed => WorkRowPhase.done,
+                RunState.cancelled => WorkRowPhase.stopped,
+                _ when stalled => WorkRowPhase.stalled,
+                RunState.working || RunState.planning => WorkRowPhase.working,
+                RunState.waiting ||
+                RunState.blocked ||
+                RunState.unknown => WorkRowPhase.waiting,
+              },
+        finishedAt: run.finishedAt,
+      ),
+      observedAt: snapshot.refreshedAt ?? now,
+      isFresh: connected && !team.isStale && snapshot.hasData,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final snapshot = team.snapshot;
     final needsYou = teamGatedRuns(snapshot).contains(run.id);
-    final line = teamTaskLine(
+    // The stall is judged on the team's own clock, as its pages judge it.
+    final now = team.now();
+    final status = statusOf(
+      team,
+      run,
+      needsYou: needsYou,
+      connected: connected,
+      now: now,
+    );
+    final stall = status.facts.phase == WorkRowPhase.stalled
+        ? teamNow(
+            run: run,
+            work: snapshot.work,
+            cycleOf: team.cycleFor,
+            agents: snapshot.agents,
+            gates: snapshot.gates,
+            now: now,
+          )
+        : null;
+    final stalledSince = stall?.quietSince ?? stall?.since;
+    final fullLine = teamTaskLine(
       l10n,
       run,
       snapshot.work,
@@ -61,6 +134,15 @@ class TeamTaskRow extends StatelessWidget {
       // task's own page says how long.
       showWaitAge: false,
     );
+    // A stalled task says since when; a row that is not fresh says the
+    // last seen state and as of when, with a still mark.
+    final line = !status.isFresh
+        ? status.line(l10n, now: now)
+        : stall != null
+        ? (stalledSince == null
+              ? l10n.workStalled
+              : l10n.workStalledSince(_clock(context, stalledSince, now)))
+        : fullLine;
     // The Work list's own row: the task's mark leads, and the "Team" word
     // in `text1` opens the line, so the row reads as the team's, not one
     // agent's. The list's scaffold is the ink surface.
@@ -70,7 +152,11 @@ class TeamTaskRow extends StatelessWidget {
         key: ValueKey('team-work-task-${run.id}'),
         leading: KeyedSubtree(
           key: ValueKey('team-work-task-mark-${run.id}'),
-          child: KitTaskMark(state: teamRunMark(run, needsYou: needsYou)),
+          child: KitTaskMark(
+            state: status.isFresh && stall == null
+                ? teamRunMark(run, needsYou: needsYou)
+                : workRowTaskState(status),
+          ),
         ),
         title: run.title,
         titleMaxLines: 2,
@@ -93,4 +179,17 @@ class TeamTaskRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "14:02" today, else the short date with it.
+String _clock(BuildContext context, DateTime at, DateTime now) {
+  final local = at.toLocal();
+  final material = MaterialLocalizations.of(context);
+  final time = material.formatTimeOfDay(TimeOfDay.fromDateTime(local));
+  final today = now.toLocal();
+  final sameDay =
+      local.year == today.year &&
+      local.month == today.month &&
+      local.day == today.day;
+  return sameDay ? time : '${material.formatShortDate(local)} $time';
 }

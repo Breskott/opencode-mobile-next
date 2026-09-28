@@ -1,9 +1,9 @@
 import 'package:flutter/widgets.dart';
 
-import '../../api/server_probe.dart' show ServerFlavor;
 import '../../domain/session_handoff.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
+import '../../state/server_presentation.dart';
 import 'product_states.dart';
 import 'session_handoff_sheets.dart';
 
@@ -70,9 +70,7 @@ Future<void> showSessionHandoff(
       command: SessionResumeCommand.build(
         // The CLI's name follows the server's product generation: copy
         // only, the availability is the capability above.
-        cli: controller.serverFlavor == ServerFlavor.v2
-            ? SessionResumeCli.openCode2
-            : SessionResumeCli.openCode1,
+        cli: controller.sessionResumeCli,
         sessionID: session.id,
         directory: session.directory,
         workspaceID: session.workspaceID,

@@ -27398,5 +27398,80 @@
         "type": "String"
       }
     }
+  },
+  "workStalledSince": "Stalled since {time}",
+  "@workStalledSince": {
+    "description": "Work row (slice-P5.5): a team task with no progress since {time}, a locale-formatted clock time.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "attentionOnServer": "on {server}",
+  "@attentionOnServer": {
+    "description": "Inbox row (slice-P4.2b): which saved server the item belongs to, after its state words, e.g. 'Failed · on Home PC'.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "attentionTeamTask": "Team task",
+  "@attentionTeamTask": {
+    "description": "Inbox row title (slice-P4.2b) for an AI Team task whose title is not known."
+  },
+  "attentionChecksOff": "Not checking {servers}",
+  "@attentionChecksOff": {
+    "description": "Inbox row (slice-P4.2b): other saved servers the app does not check, so their requests cannot show here. {servers} is one name or a comma-separated list.",
+    "placeholders": {
+      "servers": {
+        "type": "String"
+      }
+    }
+  },
+  "attentionChecksOffDetail": "Their requests don't show here. Turn on checks in Notifications.",
+  "@attentionChecksOffDetail": {
+    "description": "Inbox row (slice-P4.2b): supporting line under 'Not checking …'; tapping the row opens Notifications, where each server's check is turned on."
+  },
+  "attentionUnchecked": "Couldn't check {server}",
+  "@attentionUnchecked": {
+    "description": "Inbox row (slice-P4.2b): another saved server the last check could not reach, or whose last result is old.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "attentionUncheckedDetail": "Requests waiting there may be missing here.",
+  "@attentionUncheckedDetail": {
+    "description": "Inbox row (slice-P4.2b): supporting line under 'Couldn't check …'."
+  },
+  "attentionUncheckedSince": "Last checked {time}. Requests waiting there may be missing here.",
+  "@attentionUncheckedSince": {
+    "description": "Inbox row (slice-P4.2b): supporting line under 'Couldn't check …' when an older check is known; {time} is a relative age such as '5m ago'.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "attentionWaitsForWifi": "{server} is checked on Wi-Fi only",
+  "@attentionWaitsForWifi": {
+    "description": "Inbox row (slice-P4.2b): another saved server whose checks wait for Wi-Fi under the person's Notifications rule.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "attentionChecksPaused": "Checks on {server} are paused",
+  "@attentionChecksPaused": {
+    "description": "Inbox row (slice-P4.2b): checks of another saved server stopped because the app cannot run in the background now.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
   }
 }

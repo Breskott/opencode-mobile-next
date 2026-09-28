@@ -10,9 +10,6 @@
       "lib/api/": 2,
       "lib/api2/": 1
     },
-    "lib/ui/screens/app_diagnostics_screen.dart": {
-      "lib/api/": 1
-    },
     "lib/ui/screens/chat/form_flow.dart": {
       "lib/api/": 1,
       "lib/api2/": 1
@@ -35,9 +32,6 @@
     },
     "lib/ui/screens/library_screen.dart": {
       "lib/api/": 3
-    },
-    "lib/ui/screens/manage_project_screen.dart": {
-      "lib/api/": 1
     },
     "lib/ui/screens/managed_workspaces_screen.dart": {
       "lib/api/": 1
@@ -108,9 +102,6 @@
     "lib/ui/search/search_index.dart": {
       "lib/api/": 1
     },
-    "lib/ui/widgets/connection_status_banner.dart": {
-      "lib/api/": 1
-    },
     "lib/ui/widgets/diff_view.dart": {
       "lib/api/": 1
     },
@@ -118,9 +109,6 @@
       "lib/api2/": 1
     },
     "lib/ui/widgets/pickers.dart": {
-      "lib/api/": 3
-    },
-    "lib/ui/widgets/product_states.dart": {
       "lib/api/": 3
     },
     "lib/ui/widgets/provider_logo.dart": {
@@ -132,9 +120,6 @@
     "lib/ui/widgets/running_agents_strip.dart": {
       "lib/api/": 1
     },
-    "lib/ui/widgets/server_switcher_sheet.dart": {
-      "lib/api/": 1
-    },
     "lib/ui/widgets/session_read_state.dart": {
       "lib/api/": 1
     },
@@ -142,9 +127,6 @@
       "lib/api/": 1
     },
     "lib/ui/widgets/tool_card.dart": {
-      "lib/api/": 1
-    },
-    "lib/ui/widgets/work_status_line.dart": {
       "lib/api/": 1
     }
   },
