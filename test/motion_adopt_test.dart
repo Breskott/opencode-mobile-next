@@ -241,7 +241,9 @@ void main() {
           .onRefresh();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-      final banner = find.byType(MaterialBanner);
+      // The terminal list's failure is a KitNotice over the kept rows since
+      // its kit rebuild (6b2903df), no longer a MaterialBanner.
+      final banner = find.byKey(const ValueKey('terminal-list-notice'));
       final reveal = find.ancestor(
         of: banner,
         matching: find.byType(KitReveal),
@@ -287,10 +289,15 @@ void main() {
       final one = find.byKey(const ValueKey('terminal-session-one'));
       final rowHeight = _height(tester, one);
       expect(rowHeight, greaterThan(40));
-      expect(
-        _height(tester, find.byKey(const ValueKey('terminal-session-three'))),
-        rowHeight + 1, // its divider above
+      // Its hairline above: KitDivider is one physical pixel (kit v2), so
+      // the step is measured, not assumed to be 1 dp.
+      final three = find.byKey(const ValueKey('terminal-session-three'));
+      final hairline = _height(
+        tester,
+        find.descendant(of: three, matching: find.byType(KitDivider)),
       );
+      expect(hairline, greaterThan(0));
+      expect(_height(tester, three), rowHeight + hairline);
       expect(tester.binding.hasScheduledFrame, isFalse);
 
       // A terminal started elsewhere shows up on the next refresh.
@@ -305,9 +312,12 @@ void main() {
         of: four,
         matching: find.byType(SizeTransition),
       );
-      expect(_height(tester, motion), inExclusiveRange(0, rowHeight + 1));
+      expect(
+        _height(tester, motion),
+        inExclusiveRange(0, rowHeight + hairline),
+      );
       await tester.pumpAndSettle();
-      expect(_height(tester, motion), rowHeight + 1);
+      expect(_height(tester, motion), rowHeight + hairline);
 
       // One removed folds away where it was.
       repository.terminals.removeWhere((process) => process.id == 'two');
@@ -323,7 +333,7 @@ void main() {
           tester,
           find.ancestor(of: two, matching: find.byType(SizeTransition)),
         ),
-        inExclusiveRange(0, rowHeight + 1),
+        inExclusiveRange(0, rowHeight + hairline),
       );
       await tester.pumpAndSettle();
       expect(two, findsNothing);
@@ -344,36 +354,26 @@ void main() {
         ),
       );
       await _pumpChat(tester, controller);
+      // Everything waiting to send is one "Waiting to send · N" bubble
+      // (KitQueuedMessage, chat-1 557920e3): its items carry
+      // 'queued-send-<index>' / 'pending-send-<id>' and come and go through
+      // the bubble's KitAnimatedRows.
       // Present when the chat opened: shown at once, not animated.
-      final draft = find.byKey(const ValueKey('queued-row-queued-1'));
+      final draft = find.byKey(const ValueKey('queued-send-0'));
       expect(draft, findsOneWidget);
-      expect(
-        find.ancestor(of: draft, matching: find.byType(SizeTransition)),
-        findsOneWidget,
+      SizeTransition motionOf(Finder item) => tester.widget<SizeTransition>(
+        find.ancestor(of: item, matching: find.byType(SizeTransition)).first,
       );
-      final draftMotion = tester.widget<SizeTransition>(
-        find.ancestor(of: draft, matching: find.byType(SizeTransition)),
-      );
-      expect(draftMotion.sizeFactor.value, 1);
+      expect(motionOf(draft).sizeFactor.value, 1);
 
       _enqueue(controller, 'msg_1', 'sent while it works');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-      final sent = find.byKey(const ValueKey('pending-row-msg_1'));
-      final sentMotion = tester.widget<SizeTransition>(
-        find.ancestor(of: sent, matching: find.byType(SizeTransition)),
-      );
-      expect(sentMotion.sizeFactor.value, inExclusiveRange(0, 1));
+      final sent = find.byKey(const ValueKey('pending-send-msg_1'));
+      expect(sent, findsOneWidget);
+      expect(motionOf(sent).sizeFactor.value, inExclusiveRange(0, 1));
       await _settle(tester);
-      expect(
-        tester
-            .widget<SizeTransition>(
-              find.ancestor(of: sent, matching: find.byType(SizeTransition)),
-            )
-            .sizeFactor
-            .value,
-        1,
-      );
+      expect(motionOf(sent).sizeFactor.value, 1);
     });
   });
 

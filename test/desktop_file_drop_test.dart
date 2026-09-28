@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/desktop/file_drop.dart';
@@ -77,7 +78,14 @@ Future<void> _pumpChat(WidgetTester tester) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [connProvider.overrideWithValue(connection)],
-      child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+      // The app's own localizations, as the real MaterialApp has them: the
+      // chip's preview is KitViewer (f4622b0e) behind showFilePreviewSheet
+      // (036e14a3), which read AppLocalizations from the tree.
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ChatScreen(sessionID: 'session-1'),
+      ),
     ),
   );
   await tester.pumpAndSettle();

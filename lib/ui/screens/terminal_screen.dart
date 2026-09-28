@@ -691,7 +691,6 @@ class _TerminalScreenState extends State<TerminalScreen> {
         ? l10n.terminalScreenRowEndedNoCode(process.command)
         : l10n.terminalScreenRowEnded('$code', process.command);
     return KitRow(
-      key: ValueKey('terminal-session-${process.id}'),
       leading: KitRow.icon(
         context,
         AppIconography.terminal,
@@ -839,8 +838,36 @@ class _TerminalScreenState extends State<TerminalScreen> {
                       KitRowGroup(
                         key: const ValueKey('terminal-session-rows'),
                         children: [
-                          for (final process in [...running, ...ended])
-                            _processRow(context, process),
+                          // A terminal started or removed while the list is
+                          // open unfolds in or folds away where it was
+                          // (design standard §10, kit-v2: a list that
+                          // changes while open uses KitAnimatedRows); the
+                          // first paint shows the rows at once.
+                          KitAnimatedRows(
+                            children: [
+                              for (final (index, process) in [
+                                ...running,
+                                ...ended,
+                              ].indexed)
+                                KeyedSubtree(
+                                  key: ValueKey(
+                                    'terminal-session-${process.id}',
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      if (index > 0)
+                                        const KitDivider(
+                                          inset: KitDividerInset.text,
+                                        ),
+                                      _processRow(context, process),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
                         ],
                       ),
                       // Framed by a page without this bar: the clear-up

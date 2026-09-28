@@ -924,7 +924,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(TeamConversationScreen), findsOneWidget);
         // Eight seconds with no plan: the line says why, and its Why
-        // unfolds the ways out in place.
+        // unfolds the ways out in place. The page reads the pinned clock,
+        // so the clock moves with the pump.
+        clock = clock.add(const Duration(seconds: 9));
         await tester.pump(const Duration(seconds: 9));
         await tester.pumpAndSettle();
         await tester.tap(key('team-conversation-now-why'));

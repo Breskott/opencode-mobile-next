@@ -566,48 +566,65 @@ void main() {
       }
     });
 
-    // TEAM-206: the kind of computer, chosen for the disclaimer only.
+    // TEAM-206: the kind of computer, kept for the disclaimer only. Since
+    // 19640c8b (shared-team-1 map fix) the form no longer asks for it: a
+    // new host is a Desktop computer, a saved kind is carried through
+    // Change address, and a host that reports a phone stays a phone.
     group('host kind', () {
-      Finder chip(OrchestrationHostKind kind) =>
-          find.byKey(ValueKey('team-host-kind-${kind.name}'));
+      void expectNoKindQuestion() {
+        expect(find.text(l10n.teamUiHostKindLabel), findsNothing);
+        expect(find.text(l10n.teamUiHostKindHint), findsNothing);
+        for (final kind in OrchestrationHostKind.values) {
+          expect(
+            find.byKey(ValueKey('team-host-kind-${kind.name}')),
+            findsNothing,
+          );
+        }
+      }
 
-      bool selected(WidgetTester tester, OrchestrationHostKind kind) =>
-          tester.widget<ChoiceChip>(chip(kind)).selected;
-
-      testWidgets('offers three kinds with Desktop computer preselected', (
+      testWidgets('the form asks no kind; a new host is a Desktop computer', (
         tester,
       ) async {
+        probe.verdicts['http://100.100.1.2:8372'] = _found();
         final controller = await boot(
           profile(baseUrl: 'https://server.example:4096'),
         );
         await pump(tester, controller);
         await settle(tester);
         await openForm(tester);
-        expect(find.text(l10n.teamUiHostKindLabel), findsOneWidget);
-        expect(find.text(l10n.teamUiHostKindDesktop), findsOneWidget);
-        expect(find.text(l10n.teamUiHostKindLaptop), findsOneWidget);
-        expect(find.text(l10n.teamUiHostKindWsl), findsOneWidget);
-        expect(find.text(l10n.teamUiHostKindHint), findsOneWidget);
-        expect(chip(OrchestrationHostKind.phone), findsNothing);
-        expect(selected(tester, OrchestrationHostKind.pc), isTrue);
-        expect(selected(tester, OrchestrationHostKind.laptop), isFalse);
-        expect(selected(tester, OrchestrationHostKind.wsl), isFalse);
+        expectNoKindQuestion();
+        await submit(tester, 'http://100.100.1.2:8372');
+        final config = controller.profile!.orchestration!;
+        expect(config.hostKind, OrchestrationHostKind.pc);
+        expect(config.hostMode, OrchestrationHostMode.computer);
       });
 
       for (final kind in teamHostKindChoices) {
-        testWidgets('${kind.name} persists into the config', (tester) async {
-          probe.verdicts['http://100.100.1.2:8372'] = _found();
+        testWidgets('a saved ${kind.name} persists through Change address', (
+          tester,
+        ) async {
+          probe.verdicts['http://100.100.1.3:8372'] = _found();
           final controller = await boot(
-            profile(baseUrl: 'https://server.example:4096'),
+            profile(
+              config: OrchestrationConfig(
+                provider: OrchestrationProvider.gascity,
+                url: 'http://100.100.1.2:8372',
+                city: 'bright-lights',
+                hostKind: kind,
+              ),
+            ),
           );
           await pump(tester, controller);
           await settle(tester);
-          await openForm(tester);
-          await tester.tap(chip(kind));
-          await tester.pump();
-          expect(selected(tester, kind), isTrue);
-          await submit(tester, 'http://100.100.1.2:8372');
+          await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
+          await tester.pumpAndSettle();
+          // The team page's menu: Change address.
+          await menu(tester, 'team-home-change-address');
+          expect(find.byKey(const ValueKey('team-host-form')), findsOneWidget);
+          expectNoKindQuestion();
+          await submit(tester, 'http://100.100.1.3:8372');
           final config = controller.profile!.orchestration!;
+          expect(config.url, 'http://100.100.1.3:8372');
           expect(config.hostKind, kind);
           expect(config.hostMode, OrchestrationHostMode.computer);
           final stored = ProfileStore(prefs: prefs, secure: secure);
@@ -617,31 +634,6 @@ void main() {
           expect(find.byType(TeamHomeScreen), findsOneWidget);
         });
       }
-
-      testWidgets('Change reopens the form with the saved kind', (
-        tester,
-      ) async {
-        probe.verdicts['http://100.100.1.2:8372'] = _found();
-        final controller = await boot(
-          profile(
-            config: const OrchestrationConfig(
-              provider: OrchestrationProvider.gascity,
-              url: 'http://100.100.1.2:8372',
-              city: 'bright-lights',
-              hostKind: OrchestrationHostKind.wsl,
-            ),
-          ),
-        );
-        await pump(tester, controller);
-        await settle(tester);
-        await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
-        await tester.pumpAndSettle();
-        // The team page's menu: Change address.
-        await menu(tester, 'team-home-change-address');
-        expect(find.byKey(const ValueKey('team-host-form')), findsOneWidget);
-        expect(selected(tester, OrchestrationHostKind.wsl), isTrue);
-        expect(selected(tester, OrchestrationHostKind.pc), isFalse);
-      });
 
       testWidgets('a host that reports a phone keeps the phone kind', (
         tester,
@@ -655,8 +647,6 @@ void main() {
         await pump(tester, controller);
         await settle(tester);
         await openForm(tester);
-        await tester.tap(chip(OrchestrationHostKind.laptop));
-        await tester.pump();
         await submit(tester, 'http://100.100.1.2:8372');
         final config = controller.profile!.orchestration!;
         expect(config.hostMode, OrchestrationHostMode.phone);

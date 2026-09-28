@@ -3,6 +3,8 @@
 // first run, the server's default model, the review view with changes),
 // says so once where it matters, and the thing's own place keeps the way to
 // change it.
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -154,7 +156,14 @@ void main() {
   setUp(() {
     ReviewWorkspace.clearCache();
     resetDefaultNoticesForTest();
-    SharedPreferences.setMockInitialValues({});
+    // The saved server row: defaults are remembered (and said) only for a
+    // server that is saved, the admission profile deletion drains
+    // (7c6d009c). The seeded stores below read their profiles from memory.
+    SharedPreferences.setMockInitialValues({
+      'oc.profiles': jsonEncode([
+        {'id': 'phone', 'name': 'Laptop', 'baseUrl': 'http://127.0.0.1:4096'},
+      ]),
+    });
   });
 
   group('review opens the view that has changes', () {

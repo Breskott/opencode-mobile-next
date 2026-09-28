@@ -23,6 +23,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
+import 'package:opencode_mobile/ui/screens/session_context_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -43,6 +44,14 @@ class _Api extends OpenCodeApi {
 
   @override
   Future<Map<String, String>> sessionStatuses() async => const {};
+
+  /// No replies loaded: Conversation context shows its facts without usage.
+  @override
+  Future<ServerPage<MessageWithParts>> messagePage(
+    String id, {
+    String? cursor,
+    int limit = 100,
+  }) async => const ServerPage(items: []);
 
   @override
   Future<List<PermissionRequest>> pendingPermissions() async => const [];
@@ -288,18 +297,21 @@ void main() {
     expect(_isolated, findsNothing);
   });
 
-  // The test font paints every glyph 1em wide. At 2.5x the rungs are 60, 50
-  // and 40dp per glyph; a 339dp phone gives the name a 275dp row, so four
-  // letters fit the large title, a five-letter segment ("shop-") only the
-  // middle rung, and nine letters no rung at all, each with a 25dp margin.
-  for (final (name, fontSize) in [
-    ('shop', 24.0),
-    ('shop-front', 20.0),
-    ('shopfront', 16.0),
+  // The test font paints every glyph 1em wide. The name's rungs are the
+  // kit's type roles (23b2efb5: largeTitle 32, title 24, headline 17), so
+  // at 2.5x they are 80, 60 and 42.5dp per glyph; a 339dp phone gives the
+  // name a 275dp row. Three letters fit the large title, four only the
+  // title, a five-letter segment ("shop-") only the headline, and nine
+  // letters no rung at all, which keeps the smallest.
+  for (final (name, role) in [
+    ('app', KitTextRole.largeTitle),
+    ('shop', KitTextRole.title),
+    ('shop-front', KitTextRole.headline),
+    ('shopfront', KitTextRole.headline),
   ]) {
     testWidgets(
       '339dp 2.5x: "$name" keeps the largest title size whose longest '
-      'segment fits the row ($fontSize)',
+      'segment fits the row (${role.name})',
       (tester) async {
         _phone(tester, 339);
         final controller = await _controller(projectName: name);
@@ -307,10 +319,11 @@ void main() {
         await tester.pumpWidget(_app(controller, textScale: 2.5));
         await _pumpFrames(tester);
         expect(tester.takeException(), isNull);
-        final text = tester.widget<Text>(_name);
-        expect(text.data, name);
-        expect(text.style?.fontSize, fontSize);
+        final text = tester.widget<KitText>(_name);
+        expect(text.text, name);
+        expect(text.role, role);
         // The scale itself is untouched: the painted text is 2.5x the base.
+        final fontSize = KitText.styleOf(tester.element(_name), role).fontSize!;
         expect(
           MediaQuery.textScalerOf(tester.element(_name)).scale(fontSize),
           fontSize * 2.5,
@@ -363,15 +376,22 @@ void main() {
       find.textContaining('https://example.test/shared/checkout'),
       findsNothing,
     );
-    await tester.tap(
-      find.descendant(
-        of: _row('busy'),
-        matching: find.byType(PopupMenuButton<String>),
-      ),
-    );
+    // Rows carry no overflow button; long-press opens the row menu (KIT-28,
+    // 23b2efb5), whose Go to › Details opens Conversation context, where
+    // the old details sheet's facts now live (P3.11a 00cafa13, P10.2
+    // 34353c2f).
+    await tester.longPress(_row('busy'));
     await _pumpFrames(tester);
-    expect(find.text('Rename'), findsOneWidget);
-    await tester.tap(find.text('Details'));
+    expect(find.byKey(const ValueKey('session-menu-rename')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('session-menu-details')));
+    await _pumpFrames(tester);
+    expect(find.byType(SessionContextScreen), findsOneWidget);
+    // The facts sit under Details, folded: open it.
+    final details = find.byKey(const ValueKey('session-context-details'));
+    await tester.ensureVisible(details);
+    await tester.tap(
+      find.descendant(of: details, matching: find.text('Details')).first,
+    );
     await _pumpFrames(tester);
     expect(find.textContaining(r'$0.42'), findsOneWidget);
     expect(find.textContaining('+120'), findsOneWidget);

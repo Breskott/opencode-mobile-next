@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
+import 'package:opencode_mobile/api/opencode_api.dart';
+import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
@@ -50,6 +53,88 @@ class _Controller extends ConnectionController {
     notifyListeners();
   }
 }
+
+/// A healthy v1 server that answers the connect-time reads locally.
+class _BadgeApi extends OpenCodeApi {
+  _BadgeApi() : super(baseUrl: 'http://127.0.0.1:1');
+
+  @override
+  Future<Health> health() async => Health(healthy: true, version: '1.18.23');
+
+  @override
+  Future<List<Session>> sessions() async => const [];
+
+  @override
+  Future<Map<String, String>> sessionStatuses() async => const {};
+
+  @override
+  Future<ProvidersResponse> providers() async =>
+      ProvidersResponse(providers: const []);
+
+  @override
+  Future<ProvidersResponse> configuredProviders() async =>
+      ProvidersResponse(providers: const []);
+
+  @override
+  Future<List<AgentInfo>> agents() async => const [];
+
+  @override
+  Future<List<PermissionRequest>> pendingPermissions() async => const [];
+
+  @override
+  Future<List<PermissionRequest>> pendingPermissionsV2() =>
+      Future.error(ApiException('V2 unavailable', statusCode: 404));
+
+  @override
+  Future<List<Map<String, dynamic>>> pendingQuestionsV2() =>
+      Future.error(ApiException('V2 unavailable', statusCode: 404));
+}
+
+class _BadgeRepository extends SdkProductRepository {
+  _BadgeRepository(OpenCodeApi api) : super(api.sdkClient);
+
+  @override
+  Future<ChatDefaults> loadChatDefaults() async => const ChatDefaults();
+
+  @override
+  Future<List<PendingQuestion>> listQuestions() async => const [];
+
+  @override
+  Future<CatalogSnapshot> loadCatalog() async =>
+      const CatalogSnapshot(providers: [], models: [], agents: []);
+
+  @override
+  Future<List<IntegrationInfo>> listIntegrations() async => const [];
+}
+
+class _Channel extends EventStream {
+  _Channel({
+    required super.api,
+    required super.onEvent,
+    required super.onStatus,
+    super.onError,
+  });
+
+  @override
+  void start() => onStatus(StreamStatus.connecting);
+
+  @override
+  Future<void> dispose() async {}
+
+  void emit(EventEnvelope value) => onEvent(value);
+}
+
+EventStreamFactory _channels(List<_Channel> opened) =>
+    ({required api, required onEvent, required onStatus, onError}) {
+      final channel = _Channel(
+        api: api,
+        onEvent: onEvent,
+        onStatus: onStatus,
+        onError: onError,
+      );
+      opened.add(channel);
+      return channel;
+    };
 
 ElsewhereConversation _conversation(
   String id,
@@ -243,8 +328,9 @@ void main() {
     await tester.pump();
     expect(inRow('/work/FinanceHub3', 'Needs you · Fix offers'), findsOne);
     expect(controller.waitingElsewhereCount, 1);
-    // The Inbox badge counts it.
-    expect(controller.unifiedAttentionCount, 1);
+    // The Inbox badge counts it once this server's global channel reported
+    // it (the badge is the attention feed since c96a7fb4): see "the Inbox
+    // badge counts ..." below, which connects for real.
 
     // A project not listed yet earns a row the moment it needs you.
     controller.elsewhereAttention.handle(
@@ -266,6 +352,62 @@ void main() {
     );
     await tester.pump();
     expect(inRow('/work/FinanceHub3', 'Needs you'), findsNothing);
+  });
+
+  // The badge is the attention feed (c96a7fb4): another project's request
+  // counts for the saved server whose global channel reported it.
+  // A plain test: connecting starts the controller's own timers, which
+  // dispose cancels.
+  test('the Inbox badge counts a request stopped on you in another '
+      'project, from the server-wide channel', () async {
+    const secure = MethodChannel(
+      'plugins.it_nomads.com/flutter_secure_storage',
+    );
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(secure, (_) async => null);
+    addTearDown(() => messenger.setMockMethodCallHandler(secure, null));
+    SharedPreferences.setMockInitialValues({});
+    final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+    final server = ServerProfile(
+      id: 'server',
+      name: 'server',
+      baseUrl: 'http://127.0.0.1:1',
+    );
+    await store.upsert(server);
+    final global = <_Channel>[];
+    final controller = ConnectionController(
+      store,
+      apiFactory: (_) => _BadgeApi(),
+      repositoryFactory: (api) => _BadgeRepository(api),
+      eventStreamFactory: _channels([]),
+      globalEventStreamFactory: _channels(global),
+    );
+    addTearDown(controller.dispose);
+    await controller.connect(server);
+    expect(global, hasLength(1));
+    final before = controller.unifiedAttentionCount;
+
+    global.single.emit(
+      EventEnvelope(
+        type: 'permission.v2.asked',
+        directory: '/work/FinanceHub3',
+        properties: const {'id': 'req1', 'sessionID': 's1'},
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(controller.waitingElsewhereCount, 1);
+    expect(controller.unifiedAttentionCount, before + 1);
+
+    global.single.emit(
+      EventEnvelope(
+        type: 'permission.v2.replied',
+        directory: '/work/FinanceHub3',
+        properties: const {'requestID': 'req1'},
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(controller.unifiedAttentionCount, before);
   });
 
   testWidgets('a project can be taken off the list', (tester) async {
