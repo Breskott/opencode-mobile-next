@@ -285,7 +285,8 @@ void main() {
       await _providers(tester, c);
 
       // No cards above the list: the sign-ins are rows of it, sorted first,
-      // each with the needs-you mark and its state in words.
+      // each with its mark (needs-you only while the person must finish in
+      // the browser) and its state in words.
       expect(find.text('Pending sign-in: cloud'), findsNothing);
       expect(find.textContaining('attempt ID'), findsNothing);
       final cloud = find.byKey(const ValueKey('pending-auth-cloud'));
@@ -306,7 +307,8 @@ void main() {
       expect(
         find.descendant(
           of: openai,
-          matching: find.text(
+          // Its way forward follows the word on the same line.
+          matching: find.textContaining(
             'Sign-in may not have started',
             findRichText: true,
           ),
@@ -347,6 +349,47 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(c.forgotten, 1);
+    });
+
+    // Visual language (slice-polish 2026-09-28): amber means "needs you"
+    // only. A sign-in the person must finish in the browser takes the
+    // needs-you mark; a start the server never confirmed is neutral (the
+    // provider's logo) and says the way forward on its row.
+    testWidgets('only a waiting sign-in is marked needs-you; an unconfirmed '
+        'start is neutral with its way forward', (tester) async {
+      final c = await library3Server()
+        ..pending = [library3Pending()]
+        ..uncertain = const [
+          (integrationID: 'openai', kind: PendingAuthKind.command),
+        ];
+      addTearDown(c.dispose);
+      await _providers(tester, c);
+
+      final cloud = find.byKey(const ValueKey('pending-auth-cloud'));
+      final openai = find.byKey(const ValueKey('pending-auth-openai'));
+      KitTaskState? markOf(Finder row) {
+        final marks = tester.widgetList<KitTaskMark>(
+          find.descendant(of: row, matching: find.byType(KitTaskMark)),
+        );
+        return marks.isEmpty ? null : marks.single.state;
+      }
+
+      expect(markOf(cloud), KitTaskState.needsYou);
+      expect(markOf(openai), isNull);
+      expect(
+        find.descendant(of: openai, matching: find.byType(ProviderLogo)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: openai,
+          matching: find.textContaining(
+            'Check the server before you start again',
+            findRichText: true,
+          ),
+        ),
+        findsOneWidget,
+      );
     });
 
     // One forget-auth sheet (slice-P3.11a): a start the server never

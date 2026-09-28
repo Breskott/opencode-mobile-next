@@ -64,6 +64,7 @@ class KitRow extends StatelessWidget {
     this.onTap,
     this.onLongPress,          // kept (KIT-43). Retired for menus by kit-KitRow-v2: use [menu].
     this.titleMaxLines = 1,
+    this.titleIsFileName = false,
     this.supportingMaxLines = 1,
     this.below,
     this.titleKey,
@@ -124,6 +125,11 @@ class KitRow extends StatelessWidget {
   final VoidCallback? onLongPress;
   final int titleMaxLines;
   final int supportingMaxLines;
+
+  /// The title is a file name: from 1.3x text it wraps only after `_`, `-`
+  /// or before the extension's dot (never mid-word) and is shown whole;
+  /// screen readers read the plain name (slice-polish 2026-09-28).
+  final bool titleIsFileName;
   final Widget? below;
   final Key? titleKey;
   final Key? supportingKey;

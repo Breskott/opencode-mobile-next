@@ -22,6 +22,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/prompt_shelf.dart';
+import 'package:opencode_mobile/ui/kit/chat/kit_composer.dart';
 import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -216,6 +217,13 @@ void main() {
           await _openSaved(tester);
           await tester.tap(find.byKey(const ValueKey('restore-stash-coupon')));
           await _frames(tester);
+          // Slice-polish 2026-09-28: the Undo bar floats above the composer
+          // (phone and wide), never over it.
+          final bar = tester.getRect(
+            find.byKey(const Key('prompt-restored-undo')),
+          );
+          final composer = tester.getRect(find.byType(KitComposer));
+          expect(bar.bottom, lessThanOrEqualTo(composer.top));
         },
       );
     });

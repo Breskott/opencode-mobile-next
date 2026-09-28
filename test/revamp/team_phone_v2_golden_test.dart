@@ -12,6 +12,7 @@
 // and look at every changed image before committing it.
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -22,11 +23,16 @@ import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
 import 'package:opencode_mobile/builtin/setup/setup_contract.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
+import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/state/orchestration.dart' show TeamLastKnown;
+import 'package:opencode_mobile/state/orchestration_store.dart'
+    show OrchestrationStore;
 import 'package:opencode_mobile/state/phone_host.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/termux/team_runtime.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitRow;
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
 import 'package:opencode_mobile/ui/screens/this_phone_screen.dart';
@@ -159,10 +165,15 @@ Future<void> _settle(WidgetTester tester) async {
 }
 
 /// A connection that has [profile] as its connected server.
-Future<ConnectionController> _connection(ServerProfile profile) async {
-  SharedPreferences.setMockInitialValues({});
-  final prefs = await SharedPreferences.getInstance();
-  final store = _Store(prefs: prefs, saved: [profile]);
+Future<ConnectionController> _connection(
+  ServerProfile profile, {
+  Map<String, Object> prefs = const {},
+}) async {
+  SharedPreferences.setMockInitialValues(prefs);
+  final store = _Store(
+    prefs: await SharedPreferences.getInstance(),
+    saved: [profile],
+  );
   await store.setActiveId(profile.id);
   final controller = ConnectionController(store)
     ..directory = '/root/projects/calc';
@@ -358,7 +369,49 @@ void main() {
 
   testWidgets('team page: Android stopped the phone team', (tester) async {
     runtime.current = _status(TeamRuntimePhase.ready, killed: true);
+    // What the app read before Android stopped the team (slice-polish
+    // 2026-09-28): kept on the device, shown dimmed and "as of" under the
+    // stopped line.
+    final lastKnown = TeamLastKnown(
+      asOf: DateTime(2026, 9, 27, 10, 42),
+      runs: const [
+        OrchestrationRun(
+          id: 'r1',
+          title: 'Fix the checkout total',
+          state: RunState.working,
+        ),
+        OrchestrationRun(
+          id: 'r2',
+          title: 'Add a test for an expired coupon',
+          state: RunState.waiting,
+        ),
+        OrchestrationRun(
+          id: 'r3',
+          title: 'Update the changelog',
+          state: RunState.completed,
+        ),
+      ],
+      agents: const [
+        OrchestrationAgent(
+          id: 'a1',
+          name: 'calc/polecat-1',
+          pool: 'polecat',
+          state: AgentState.working,
+        ),
+        OrchestrationAgent(
+          id: 'a2',
+          name: 'calc/refinery',
+          pool: 'refinery',
+          state: AgentState.idle,
+        ),
+      ],
+    );
     final controller = await _connection(
+      prefs: {
+        OrchestrationStore.lastKnownKey('termux'): jsonEncode(
+          lastKnown.toJson(),
+        ),
+      },
       _termuxProfile(
         config: OrchestrationConfig(
           provider: OrchestrationProvider.gascity,
@@ -379,6 +432,24 @@ void main() {
         controller: controller.orchestration!,
         now: () => DateTime.utc(2026, 9, 27, 12),
       ),
+      act: () async {
+        // The last-known team is under the stopped line, dimmed, with when
+        // it was read; nothing on it acts, and Start a task says why.
+        expect(find.byKey(const ValueKey('team-phone-killed')), findsWidgets);
+        expect(find.text('Fix the checkout total'), findsOneWidget);
+        expect(find.text('Update the changelog'), findsOneWidget);
+        expect(find.textContaining('Tasks as of'), findsOneWidget);
+        expect(find.textContaining('Agents as of'), findsOneWidget);
+        final row = tester.widget<KitRow>(
+          find.byKey(const ValueKey('team-home-last-known-run-r1')),
+        );
+        expect(row.enabled, isFalse);
+        expect(row.onTap, isNull);
+        expect(
+          find.text('Start the team again to give it a task or open one.'),
+          findsOneWidget,
+        );
+      },
     );
   });
 

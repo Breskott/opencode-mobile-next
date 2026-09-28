@@ -16,6 +16,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../orchestration/events/cursor.dart';
+import '../orchestration/models/agent.dart';
+import '../orchestration/models/run.dart';
 import 'mutation_store.dart';
 import 'team_storage_redaction.dart';
 
@@ -81,6 +83,113 @@ class OrchestrationSnapshotCache {
   ];
 }
 
+/// The team as the app last read it, kept small on the device so the
+/// Team page can still show it after Android stopped the phone's team (and
+/// the app with it): each task's title and state and each agent's name and
+/// state, and when they were read. Only for showing, dimmed, "as of" —
+/// never acted on; the host stays the truth.
+class TeamLastKnown {
+  const TeamLastKnown({
+    required this.asOf,
+    this.runs = const [],
+    this.agents = const [],
+  });
+
+  /// At most this many tasks and agents are kept.
+  static const int limit = 30;
+
+  /// Builds the record from a live read: the person's tasks (not the
+  /// host's upkeep) and the agents, each cut to [limit].
+  factory TeamLastKnown.of({
+    required DateTime asOf,
+    required Iterable<OrchestrationRun> runs,
+    required Iterable<OrchestrationAgent> agents,
+  }) => TeamLastKnown(
+    asOf: asOf,
+    runs: [
+      for (final run in runs.where((run) => !run.isUpkeep).take(limit))
+        OrchestrationRun(id: run.id, title: run.title, state: run.state),
+    ],
+    agents: [
+      for (final agent in agents.take(limit))
+        OrchestrationAgent(
+          id: agent.id,
+          name: agent.name,
+          pool: agent.pool,
+          state: agent.state,
+          suspended: agent.suspended,
+        ),
+    ],
+  );
+
+  final DateTime asOf;
+  final List<OrchestrationRun> runs;
+  final List<OrchestrationAgent> agents;
+
+  Map<String, Object?> toJson() => {
+    'asOf': asOf.toUtc().toIso8601String(),
+    'runs': [
+      for (final run in runs)
+        {'id': run.id, 'title': run.title, 'state': run.state.name},
+    ],
+    'agents': [
+      for (final agent in agents)
+        {
+          'id': agent.id,
+          'name': agent.name,
+          if (agent.pool != null) 'pool': agent.pool,
+          'state': agent.state.name,
+          if (agent.suspended) 'suspended': true,
+        },
+    ],
+  };
+
+  /// Null for anything unreadable.
+  static TeamLastKnown? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final asOf = json['asOf'];
+    final at = asOf is String ? DateTime.tryParse(asOf) : null;
+    if (at == null) return null;
+    T byName<T extends Enum>(List<T> values, Object? name, T fallback) {
+      for (final value in values) {
+        if (value.name == name) return value;
+      }
+      return fallback;
+    }
+
+    return TeamLastKnown(
+      asOf: at,
+      runs: [
+        for (final item in OrchestrationSnapshotCache._maps(json['runs']))
+          if (item['id'] case final String id)
+            OrchestrationRun(
+              id: id,
+              title: item['title'] is String ? item['title']! as String : id,
+              state: byName(RunState.values, item['state'], RunState.unknown),
+            ),
+      ],
+      agents: [
+        for (final item in OrchestrationSnapshotCache._maps(json['agents']))
+          if ((item['id'], item['name']) case (
+            final String id,
+            final String name,
+          ))
+            OrchestrationAgent(
+              id: id,
+              name: name,
+              pool: item['pool'] is String ? item['pool']! as String : null,
+              state: byName(
+                AgentState.values,
+                item['state'],
+                AgentState.unknown,
+              ),
+              suspended: item['suspended'] == true,
+            ),
+      ],
+    );
+  }
+}
+
 /// Per-profile cache, cursor and mutation receipts for the AI Team plugin.
 class OrchestrationStore {
   OrchestrationStore(this.prefs, {FlutterSecureStorage? secure})
@@ -109,6 +218,10 @@ class OrchestrationStore {
   static String mutationKey(String profileId, String key) =>
       MutationStore.keyFor(profileId, key);
   static String cursorKey(String profileId) => '${prefix(profileId)}cursor';
+
+  /// `oc.orchestration.<profileId>.lastKnown`: the [TeamLastKnown] record.
+  static String lastKnownKey(String profileId) =>
+      '${prefix(profileId)}lastKnown';
   static String refreshedAtKey(String profileId) =>
       '${prefix(profileId)}refreshedAt';
 
@@ -166,6 +279,31 @@ class OrchestrationStore {
       return null;
     }
   }
+
+  /// The team as last read, or null when none was saved or it is
+  /// unreadable.
+  TeamLastKnown? readLastKnown(String profileId) {
+    final raw = prefs.getString(lastKnownKey(profileId));
+    if (raw == null) return null;
+    try {
+      return TeamLastKnown.fromJson(jsonDecode(raw));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Keeps [lastKnown] (redacted like the snapshot). A refused write is
+  /// dropped: it is a convenience for a stopped team, never the truth.
+  Future<void> saveLastKnown(String profileId, TeamLastKnown lastKnown) =>
+      _write(profileId, () async {
+        final String encoded;
+        try {
+          encoded = jsonEncode(redactTeamStoredValue(lastKnown.toJson()));
+        } catch (_) {
+          return;
+        }
+        await prefs.setString(lastKnownKey(profileId), encoded);
+      });
 
   /// The persisted resume cursor, [EventCursor.none] when absent.
   EventCursor readCursor(String profileId) {

@@ -107,8 +107,16 @@ class _PendingUndo extends ChangeNotifier {
   final Key? barKey;
   final Key? undoKey;
 
-  /// Read once at show time (KitBottomInset.md, KitUndo.md §Adaptive).
-  final KitClearance clearance;
+  /// Read at show time (KitBottomInset.md, KitUndo.md §Adaptive), then
+  /// again after each frame while the bar shows ([updateClearance]): a
+  /// composer that grows under the bar (a restored prompt) lifts it too.
+  KitClearance clearance;
+
+  void updateClearance(KitClearance next) {
+    if (_disposed || next == clearance) return;
+    clearance = next;
+    notifyListeners();
+  }
 
   Timer? _timer;
 
@@ -224,6 +232,7 @@ class _KitUndoHost {
     // below's secondary animation: watch the route itself stop being the
     // current one (something opened on top of it) and commit then too.
     if (route != null) _commitWhenCovered(route, pending);
+    _trackClearance(context, pending);
     current.value = pending;
     _ensureOverlayEntry(overlay);
     _ensureLifecycleObserver();
@@ -246,6 +255,23 @@ class _KitUndoHost {
         return;
       }
       wasCurrent = isCurrent;
+      SchedulerBinding.instance.addPostFrameCallback(check);
+    }
+
+    SchedulerBinding.instance.addPostFrameCallback(check);
+  }
+
+  /// Re-reads what the bar must stay clear of from the context that showed
+  /// it, after each frame while [pending] shows: what sits below (the
+  /// composer, a pinned primary) may change size after the act that showed
+  /// the bar. Post-frame checks schedule no frames; a change rebuilds the
+  /// bar in place.
+  void _trackClearance(BuildContext context, _PendingUndo pending) {
+    void check(Duration _) {
+      if (!identical(current.value, pending)) return;
+      if (context.mounted) {
+        pending.updateClearance(KitBottomInset.read(context));
+      }
       SchedulerBinding.instance.addPostFrameCallback(check);
     }
 
@@ -508,6 +534,14 @@ class _KitUndoTransitionState extends State<_KitUndoTransition>
   Widget build(BuildContext context) {
     final shown = _shown;
     if (shown == null) return const SizedBox.shrink();
+    // The placement follows the bar's clearance as it is re-read.
+    return ListenableBuilder(
+      listenable: shown,
+      builder: (context, _) => _placed(context, shown),
+    );
+  }
+
+  Widget _placed(BuildContext context, _PendingUndo shown) {
     final tokens = KitTokens.of(context);
     final media = MediaQuery.of(context);
     final isShort = KitLayout.isShort(context);

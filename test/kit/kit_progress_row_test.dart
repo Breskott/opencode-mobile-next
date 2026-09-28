@@ -173,6 +173,39 @@ void main() {
       expect(find.text('Limit reached'), findsNothing);
     });
 
+    // Owner polish 2026-09-28: a full limit is a failure. The bar and its
+    // word take the danger role, never the text colour and never amber.
+    testWidgets('100 % draws the full bar and "Limit reached" in danger', (
+      tester,
+    ) async {
+      await _pumpRow(
+        tester,
+        const KitProgressRow(key: _rowKey, title: 'Provider quota', value: 1.0),
+        reduced: true,
+      );
+      await tester.pump();
+      final roles = AppTheme.rolesOf(_theme);
+      final bar = _bar(tester);
+      final size = bar.size;
+      expect(
+        bar,
+        _paintsRect(roles.danger, (rect) => rect == Offset.zero & size),
+      );
+      final word = tester.widgetList<RichText>(find.byType(RichText)).expand((
+        text,
+      ) {
+        final spans = <TextSpan>[];
+        text.text.visitChildren((span) {
+          if (span is TextSpan && span.text == 'Limit reached') {
+            spans.add(span);
+          }
+          return true;
+        });
+        return spans;
+      }).single;
+      expect(word.style?.color, roles.danger);
+    });
+
     testWidgets('an explicit tone never adds the automatic words', (
       tester,
     ) async {

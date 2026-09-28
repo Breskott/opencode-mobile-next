@@ -8,6 +8,7 @@
 //   flutter test --update-goldens test/revamp/screen_team_2_golden_test.dart
 // and look at every changed image before committing it.
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -47,59 +48,62 @@ void main() {
 
   for (final light in [false, true]) {
     for (final shot in _Shot.values) {
-      testWidgets(shot.name(light), (tester) async {
-        tester.view.physicalSize = shot.size;
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.reset);
-        resetTeamMoments();
-        final controller = await teamSceneController(shot.scene);
-        addTearDown(controller.dispose);
-        final boundary = GlobalKey();
-        debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
-        try {
-          await tester.pumpWidget(
-            MaterialApp(
-              debugShowCheckedModeBanner: false,
-              theme: captureTheme(light: light),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(context).copyWith(disableAnimations: true),
-                child: RepaintBoundary(key: boundary, child: child),
-              ),
-              home: TeamHomeScreen(
-                controller: controller,
-                now: () => teamSceneClock,
-              ),
-            ),
-          );
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 500));
-          switch (shot) {
-            case _Shot.homeSearch:
-              await tester.tap(
-                find.byKey(const ValueKey('team-home-search-open')),
-              );
-            case _Shot.startRun || _Shot.startRunWide:
-              await tester.tap(
-                find.byKey(const ValueKey('team-home-start-run')),
-              );
-            case _Shot.homeLoaded || _Shot.homeLoadedWide || _Shot.homeEmpty:
-              break;
-          }
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 600));
-          expect(tester.takeException(), isNull);
-          await expectLater(
-            find.byKey(boundary),
-            matchesGoldenFile('goldens/${shot.name(light)}.png'),
-          );
-        } finally {
-          debugDefaultTargetPlatformOverride = null;
-        }
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump(const Duration(seconds: 1));
-      });
+      // Elapsed words ("waiting 12 min") read the pinned clock (TEST-11),
+      // not today's date: the scene's gates were made at teamSceneClock.
+      testWidgets(
+        shot.name(light),
+        (tester) => withClock(
+          Clock.fixed(teamSceneClock),
+          () => _run(tester, shot, light),
+        ),
+      );
     }
   }
+}
+
+Future<void> _run(WidgetTester tester, _Shot shot, bool light) async {
+  tester.view.physicalSize = shot.size;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  resetTeamMoments();
+  final controller = await teamSceneController(shot.scene);
+  addTearDown(controller.dispose);
+  final boundary = GlobalKey();
+  debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
+  try {
+    await tester.pumpWidget(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: captureTheme(light: light),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: RepaintBoundary(key: boundary, child: child),
+        ),
+        home: TeamHomeScreen(controller: controller, now: () => teamSceneClock),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    switch (shot) {
+      case _Shot.homeSearch:
+        await tester.tap(find.byKey(const ValueKey('team-home-search-open')));
+      case _Shot.startRun || _Shot.startRunWide:
+        await tester.tap(find.byKey(const ValueKey('team-home-start-run')));
+      case _Shot.homeLoaded || _Shot.homeLoadedWide || _Shot.homeEmpty:
+        break;
+    }
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(tester.takeException(), isNull);
+    await expectLater(
+      find.byKey(boundary),
+      matchesGoldenFile('goldens/${shot.name(light)}.png'),
+    );
+  } finally {
+    debugDefaultTargetPlatformOverride = null;
+  }
+  await tester.pumpWidget(const SizedBox.shrink());
+  await tester.pump(const Duration(seconds: 1));
 }

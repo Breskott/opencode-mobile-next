@@ -66,6 +66,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
+import 'package:intl/intl.dart' show DateFormat;
 
 import '../../../builtin/team/builtin_team.dart' show BuiltinTeam;
 import '../../../builtin/thermal_guard.dart';
@@ -522,7 +523,19 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           loading: !_killed && (teamScreenLoading(controller) || _refreshing),
           loadingLabel: l10n.teamUiCardLoading,
           body: _body(context, hold),
-          bottom: canStart
+          // Stopped by Android: giving a task needs the team running, so
+          // the action stays in its place, off, and says why.
+          bottom: _killed
+              ? KitActionBlock(
+                  primary: KitAction(
+                    key: const ValueKey('team-home-start-run'),
+                    label: l10n.teamUiStartRunFab,
+                    icon: AppIconography.add,
+                    onPressed: null,
+                    disabledReason: l10n.teamHomeStoppedStartFirst,
+                  ),
+                )
+              : canStart
               ? KitButton.primary(
                   key: const ValueKey('team-home-start-run'),
                   label: l10n.teamUiStartRunFab,
@@ -613,6 +626,72 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     return [teamHostPlace(l10n, controller), held].join(teamUsageSeparator);
   }
 
+  /// "10:42" today, "Sep 27, 10:42" before: when the last-known team was
+  /// read.
+  String _asOf(BuildContext context, DateTime at) {
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final local = at.toLocal();
+    final now = _now.toLocal();
+    final today =
+        local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day;
+    return today
+        ? DateFormat.jm(locale).format(local)
+        : DateFormat.MMMd(locale).add_jm().format(local);
+  }
+
+  /// The team as last read, while Android has it stopped: its tasks and
+  /// agents, dimmed, each with the state it had, under one "as of" label.
+  /// Rows do not open: the tasks and agents answer again once the team
+  /// runs (the reason is the page's pinned line).
+  List<Widget> _lastKnown(
+    BuildContext context,
+    AppLocalizations l10n,
+    TeamLastKnown lastKnown,
+  ) {
+    final tokens = KitTokens.of(context);
+    final asOf = _asOf(context, lastKnown.asOf);
+    final titles = teamAgentTitles(l10n, lastKnown.agents);
+    return [
+      if (lastKnown.runs.isNotEmpty) ...[
+        SizedBox(height: tokens.sectionGap),
+        KitRowGroup(
+          key: const ValueKey('team-home-last-known-tasks'),
+          label: l10n.teamHomeLastKnownTasks(asOf),
+          children: [
+            for (final run in lastKnown.runs)
+              KitRow(
+                key: ValueKey('team-home-last-known-run-${run.id}'),
+                leading: KitTaskMark(state: teamRunMark(run, needsYou: false)),
+                title: run.title,
+                titleMaxLines: 2,
+                enabled: false,
+                disabledReason: teamRunStateWord(l10n, run.state),
+              ),
+          ],
+        ),
+      ],
+      if (lastKnown.agents.isNotEmpty) ...[
+        SizedBox(height: tokens.sectionGap),
+        KitRowGroup(
+          key: const ValueKey('team-home-last-known-agents'),
+          label: l10n.teamHomeLastKnownAgents(asOf),
+          children: [
+            for (final agent in lastKnown.agents)
+              KitRow(
+                key: ValueKey('team-home-last-known-agent-${agent.id}'),
+                leading: KitRow.icon(context, AppIconography.agent),
+                title: titles[agent.id] ?? agent.name,
+                enabled: false,
+                disabledReason: teamAgentStateWord(l10n, agent.state),
+              ),
+          ],
+        ),
+      ],
+    ];
+  }
+
   Widget _body(BuildContext context, ThermalTeamHold? hold) {
     final l10n = _copy(context);
     final tokens = KitTokens.of(context);
@@ -630,16 +709,22 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             },
           )
         : null;
-    // Stopped and nothing was read yet: that line is the page's state
-    // (with Start the team again); no "not answering, the app keeps
+    // Stopped by Android: that line is the page's state (with Start the
+    // team again), and the team as last read stays under it, dimmed and
+    // "as of", so the person still sees what it was doing. Nothing on it
+    // acts: it needs the team running. No "not answering, the app keeps
     // trying" under it.
-    if (killed != null && _killed && !controller.snapshot.hasData) {
+    if (killed != null && _killed) {
+      final lastKnown = controller.lastKnown;
       return ListView(
         key: const ValueKey('team-home-stopped'),
         padding: EdgeInsetsDirectional.only(
           bottom: KitScreen.endPadding(context),
         ),
-        children: [killed],
+        children: [
+          killed,
+          if (lastKnown != null) ..._lastKnown(context, l10n, lastKnown),
+        ],
       );
     }
     if (teamScreenState(

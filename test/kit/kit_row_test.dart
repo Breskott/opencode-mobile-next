@@ -524,6 +524,95 @@ void main() {
     });
   });
 
+  // Owner polish 2026-09-28: at 2.0 text Review broke file names mid-word
+  // ("checkout_page.da" / "rt"). A file-name title wraps only between its
+  // words: after `_` or `-`, or before the extension's dot.
+  group('KitRow file-name title', () {
+    const titleKey = ValueKey('file-title');
+
+    List<String> lines(WidgetTester tester) {
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(
+          of: find.byKey(titleKey),
+          matching: find.byType(RichText),
+        ),
+      );
+      final text = paragraph.text.toPlainText();
+      // Each character's line, by the top of its box.
+      final byTop = <double, StringBuffer>{};
+      for (var i = 0; i < text.length; i++) {
+        final boxes = paragraph.getBoxesForSelection(
+          TextSelection(baseOffset: i, extentOffset: i + 1),
+        );
+        if (boxes.isEmpty) continue;
+        byTop.putIfAbsent(boxes.first.top, StringBuffer.new).write(text[i]);
+      }
+      final tops = byTop.keys.toList()..sort();
+      return [
+        for (final top in tops) byTop[top].toString().replaceAll('\u200B', ''),
+      ]..removeWhere((line) => line.isEmpty);
+    }
+
+    for (final name in [
+      'checkout_page.dart',
+      'settings_screen.dart',
+      'theme-picker-sheet.dart',
+    ]) {
+      testWidgets('$name at 2.0 text breaks between words only', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        await _pump(
+          tester,
+          KitRow(
+            leading: const Icon(Icons.description),
+            title: name,
+            titleKey: titleKey,
+            titleIsFileName: true,
+            supporting: const TextSpan(text: 'lib/checkout'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {},
+          ),
+          textScale: 2,
+        );
+        final shown = lines(tester);
+        expect(shown.join(), name, reason: 'the whole name is shown');
+        expect(shown.length, greaterThan(1), reason: 'the name wraps');
+        for (var i = 0; i + 1 < shown.length; i++) {
+          final (line, next) = (shown[i], shown[i + 1]);
+          expect(
+            line.endsWith('_') || line.endsWith('-') || next.startsWith('.'),
+            isTrue,
+            reason: 'no mid-word break: $shown',
+          );
+        }
+        // Read as the name, without the break chances.
+        final label = tester.getSemantics(find.byKey(titleKey)).label;
+        expect(label, contains(name));
+        expect(label, isNot(contains('\u200B')));
+        semantics.dispose();
+      });
+    }
+
+    testWidgets('at 1.0 text the title is the plain name', (tester) async {
+      await _pump(
+        tester,
+        const KitRow(
+          title: 'checkout_page.dart',
+          titleKey: titleKey,
+          titleIsFileName: true,
+        ),
+      );
+      expect(find.text('checkout_page.dart'), findsOneWidget);
+    });
+
+    test('kitBreakableFileName keeps every character in order', () {
+      const name = 'a_b-c.d.dart';
+      expect(kitBreakableFileName(name).replaceAll('\u200B', ''), name);
+      expect(kitBreakableFileName('README'), 'README');
+    });
+  });
+
   group('KitSwipeAction', () {
     KitSwipeAction swipe({
       required Future<bool> Function() onAct,

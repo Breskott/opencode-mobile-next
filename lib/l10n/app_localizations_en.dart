@@ -23735,4 +23735,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get migrationOfferAction => 'Review what moves';
+
+  @override
+  String get integrationsSignInUncertainNext =>
+      'Check the server before you start again';
+
+  @override
+  String teamHomeLastKnownTasks(String time) {
+    return 'Tasks as of $time';
+  }
+
+  @override
+  String teamHomeLastKnownAgents(String time) {
+    return 'Agents as of $time';
+  }
+
+  @override
+  String get teamHomeStoppedStartFirst =>
+      'Start the team again to give it a task or open one.';
 }

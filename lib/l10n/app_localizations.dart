@@ -37429,6 +37429,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review what moves'**
   String get migrationOfferAction;
+
+  /// Providers: after 'Sign-in may not have started' on a provider's row (neutral, not needs-you): the way forward. The row's sheet offers to forget it on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the server before you start again'**
+  String get integrationsSignInUncertainNext;
+
+  /// AI Team page while Android has the phone's team stopped: label over the tasks as the app last read them (dimmed, not live). {time} is a clock time, or a date and time before today.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks as of {time}'**
+  String teamHomeLastKnownTasks(String time);
+
+  /// AI Team page while Android has the phone's team stopped: label over the agents as the app last read them (dimmed, not live). {time} is a clock time, or a date and time before today.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents as of {time}'**
+  String teamHomeLastKnownAgents(String time);
+
+  /// AI Team page while Android has the phone's team stopped: why Start a task is off and why the last-known tasks do not open.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the team again to give it a task or open one.'**
+  String get teamHomeStoppedStartFirst;
 }
 
 class _AppLocalizationsDelegate
