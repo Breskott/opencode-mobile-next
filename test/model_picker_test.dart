@@ -486,6 +486,11 @@ void main() {
         unloadedProvidersNotice(['OpenAI', 'Anthropic']),
         contains('Anthropic and OpenAI, but the server has not loaded them'),
       );
+      // After a reload that still could not load them: steer to API keys.
+      expect(
+        unloadedProvidersNotice(['Anthropic'], unusable: true),
+        allOf(contains('Add an API key under Providers'), contains('Google')),
+      );
     },
   );
 

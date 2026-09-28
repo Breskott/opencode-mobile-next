@@ -1,5 +1,13 @@
+// Providers screen behaviour: connect, disconnect, OAuth, MCP, and the
+// API-key-led sign-in for Anthropic and Google.
+//
+// Regenerate deliberately, and look at every changed image before committing it:
+//   flutter test --update-goldens --dart-define=CAPTURE_EVIDENCE=true \
+//     test/library_integrations_test.dart --plain-name "evidence"
+
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,8 +21,13 @@ import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
 import 'package:opencode_mobile/ui/screens/mcp_catalog_screen.dart';
 import 'package:opencode_mobile/ui/screens/mcp_setup_screen.dart';
+import 'package:opencode_mobile/ui/widgets/connect_methods.dart';
 import 'package:opencode_mobile/ui/widgets/provider_logo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../tool/capture/fixtures.dart' show captureTheme, loadCaptureFonts;
+
+const _evidence = bool.fromEnvironment('CAPTURE_EVIDENCE');
 
 class _IntegrationsRepository implements ProductRepository {
   List<McpServerInfo> servers = const [];
@@ -108,6 +121,17 @@ class _IntegrationsRepository implements ProductRepository {
   Future<void> disconnectMcp(String name) async {
     mcpDisconnected.add(name);
     servers = [McpServerInfo(name: name, status: 'disabled')];
+  }
+
+  final savedKeys = <String>[];
+
+  @override
+  Future<void> connectIntegrationKey(
+    String id,
+    String key, {
+    String? label,
+  }) async {
+    savedKeys.add(id);
   }
 
   @override
@@ -280,6 +304,199 @@ void main() {
   // Provider logos are fetched favicons; tests render the monogram instead.
   setUpAll(() => ProviderLogo.imageProviderOverride = (_) => null);
   tearDownAll(() => ProviderLogo.imageProviderOverride = null);
+
+  for (final (id, name, host) in const [
+    ('anthropic', 'Anthropic', 'console.anthropic.com'),
+    ('google', 'Google', 'aistudio.google.com'),
+  ]) {
+    testWidgets('$name leads with an API key: no browser sign-in, a link to '
+        'the key page, no key echoed', (tester) async {
+      final repository = _IntegrationsRepository()
+        ..integrations = [
+          IntegrationInfo(
+            id: id,
+            name: name,
+            methods: const [
+              IntegrationMethodInfo(
+                type: 'oauth',
+                id: 'oauth-1',
+                label: 'Browser sign-in',
+              ),
+              IntegrationMethodInfo(type: 'key', label: 'API key'),
+            ],
+            connectionCount: 0,
+          ),
+        ];
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ValueKey('connect-provider-$id')));
+      await tester.pumpAndSettle();
+
+      // Straight to the key dialog: no method sheet, no OAuth call.
+      expect(find.byKey(const ValueKey('connect-method-sheet')), findsNothing);
+      expect(find.byKey(const ValueKey('provider-key-field')), findsOneWidget);
+      expect(
+        find.textContaining(
+          'does not allow browser sign-in',
+          findRichText: true,
+        ),
+        findsOneWidget,
+      );
+      expect(repository.oauthCalls, 0);
+
+      await tester.tap(find.text('Get a key from $name'));
+      await tester.pumpAndSettle();
+      expect(find.text('Open external link?'), findsOneWidget);
+      expect(find.textContaining(host, findRichText: true), findsWidgets);
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey('external-link-confirm')),
+          matching: find.text('Cancel'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Back in the key dialog after the link's confirmation.
+      expect(find.byKey(const ValueKey('provider-key-field')), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('provider-key-field')),
+        'sk-secret-value-123',
+      );
+      await tester.tap(find.byKey(const ValueKey('confirm-provider-key')));
+      await tester.pumpAndSettle();
+      expect(repository.savedKeys, [id]);
+      expect(find.textContaining('sk-secret-value-123'), findsNothing);
+      // Saved, but the catalog has no model of it: not called ready.
+      expect(
+        find.text('$name key saved. The server has not loaded it yet.'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('a key-only provider without a key method keeps what the '
+      'server offers', (tester) async {
+    final repository = _IntegrationsRepository()
+      ..integrations = const [
+        IntegrationInfo(
+          id: 'anthropic',
+          name: 'Anthropic',
+          methods: [
+            IntegrationMethodInfo(
+              type: 'oauth',
+              id: 'oauth-1',
+              label: 'Account sign-in',
+            ),
+          ],
+          connectionCount: 0,
+        ),
+      ];
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('connect-provider-anthropic')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('provider-key-field')), findsNothing);
+  });
+
+  testWidgets('another provider keeps its browser sign-in choice', (
+    tester,
+  ) async {
+    final repository = _IntegrationsRepository()
+      ..integrations = const [
+        IntegrationInfo(
+          id: 'cloud',
+          name: 'Cloud Provider',
+          methods: [
+            IntegrationMethodInfo(
+              type: 'oauth',
+              id: 'oauth-1',
+              label: 'Account sign-in',
+            ),
+            IntegrationMethodInfo(type: 'key', label: 'API key'),
+          ],
+          connectionCount: 0,
+        ),
+      ];
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('connect-provider-cloud')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('connect-method-sheet')), findsOneWidget);
+  });
+
+  test('key page links are official https pages for key-only providers', () {
+    expect(providerKeyPageUrl('anthropic'), startsWith('https://'));
+    expect(providerKeyPageUrl('google'), startsWith('https://'));
+    expect(providerKeyPageUrl('groq'), isNull);
+  });
+
+  // Evidence only (docs/qa/slice-api-key-signin-2026-09-29):
+  //   flutter test --update-goldens --dart-define=CAPTURE_EVIDENCE=true \
+  //     test/library_integrations_test.dart --plain-name "evidence"
+  for (final (size, light) in const [
+    (Size(412, 915), false),
+    (Size(1280, 800), true),
+  ]) {
+    testWidgets('evidence · ${size.width.toInt()}', skip: !_evidence, (
+      tester,
+    ) async {
+      await loadCaptureFonts();
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final repository = _IntegrationsRepository()
+        ..integrations = const [
+          IntegrationInfo(
+            id: 'anthropic',
+            name: 'Anthropic',
+            methods: [
+              IntegrationMethodInfo(
+                type: 'oauth',
+                id: 'oauth-1',
+                label: 'Browser sign-in',
+              ),
+              IntegrationMethodInfo(type: 'key', label: 'API key'),
+            ],
+            connectionCount: 0,
+          ),
+        ];
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+      debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: captureTheme(light: light),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: IntegrationsScreen(controller: controller),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey('connect-provider-anthropic')),
+        );
+        await tester.pumpAndSettle();
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile(
+            '../docs/qa/slice-api-key-signin-2026-09-29/'
+            'anthropic_key_${size.width.toInt()}_${light ? 'light' : 'dark'}.png',
+          ),
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+  }
 
   test('authorization URL policy accepts only credential-free HTTPS hosts', () {
     expect(

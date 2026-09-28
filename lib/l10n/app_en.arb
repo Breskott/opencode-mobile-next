@@ -29069,7 +29069,7 @@
   "@demoNoCommands": {
     "description": "One line in the demo chat's suggestion area when the person types / : the demo has no slash commands."
   },
-  "e7ModelUiUnusableProviders": "{count, plural, one{Signed in to {providers}, but this server could not load that sign-in even after a reload, so its models cannot answer. Sign in another way under Providers, or pick another model.} other{Signed in to {providers}, but this server could not load those sign-ins even after a reload, so their models cannot answer. Sign in another way under Providers, or pick another model.}}",
+  "e7ModelUiUnusableProviders": "{count, plural, one{Signed in to {providers}, but this server could not load that sign-in even after a reload, so its models cannot answer. Browser sign-ins for some providers, such as Anthropic and Google, do not load on this server. Add an API key under Providers instead, or pick another model.} other{Signed in to {providers}, but this server could not load those sign-ins even after a reload, so their models cannot answer. Browser sign-ins for some providers, such as Anthropic and Google, do not load on this server. Add an API key under Providers instead, or pick another model.}}",
   "@e7ModelUiUnusableProviders": {
     "description": "Model picker: signed-in providers the server still could not load after a provider reload",
     "placeholders": {
@@ -29090,13 +29090,13 @@
       }
     }
   },
-  "freeModelNotice": "Using OpenCode's free model — it's slower. Sign in to your provider to use your own.",
+  "freeModelNotice": "Using OpenCode's free model — it's slower. Add an API key from your provider to use your own.",
   "@freeModelNotice": {
     "description": "Shown when the connected server has no provider signed in and answers with OpenCode's free default model (shared, rate-limited, slower)."
   },
-  "freeModelSignIn": "Sign in to a provider",
+  "freeModelSignIn": "Add an API key",
   "@freeModelSignIn": {
-    "description": "Action under the free-model notice: opens the server's provider sign-in list."
+    "description": "Action under the free-model notice: opens the server's provider list, where an API key is added."
   },
   "replySpeedTitle": "Reply speed",
   "@replySpeedTitle": {
@@ -29197,5 +29197,59 @@
   "manageSpaceIntroNothingToExport": "Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone.",
   "@manageSpaceIntroNothingToExport": {
     "description": "Manage-space page: the warning at the top when there are no projects to export (so it offers no export)."
+  },
+  "integrationsKeyOnlyHelper": "{name} does not allow browser sign-in from other apps, so use an API key. It is billed separately from any subscription. The key is stored on this server and never shown again.",
+  "@integrationsKeyOnlyHelper": {
+    "description": "Providers \u203a API key dialog for Anthropic or Google: why browser sign-in is not offered, and where the key goes.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsGetKey": "Get a key from {name}",
+  "@integrationsGetKey": {
+    "description": "Providers \u203a API key dialog: opens the provider's official key page in the browser.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsKeySavedReady": "{name} key saved. Pick one of its models in the model picker.",
+  "@integrationsKeySavedReady": {
+    "description": "Providers: status after an API key was added and the server loaded the provider.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsKeySavedWaiting": "{name} key saved. It loads once the running replies finish.",
+  "@integrationsKeySavedWaiting": {
+    "description": "Providers: status after a key was added while replies run, so the reload waits.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsKeySavedUnusable": "{name} key saved, but this server could not load it after a refresh. Check the key, or try Reload providers in the model picker.",
+  "@integrationsKeySavedUnusable": {
+    "description": "Providers: status after a key was added and the server still could not load the provider.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsKeySavedPending": "{name} key saved. The server has not loaded it yet.",
+  "@integrationsKeySavedPending": {
+    "description": "Providers: status after a key was added and the provider is not loaded yet.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -1663,7 +1663,10 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     // own sign-in names ("Claude Pro/Max"); a key the server reads from
     // its environment is set up there.
     final ways = <String>{
-      for (final method in integration.methods)
+      for (final method in keyLedConnectMethods(
+        integration.id,
+        integration.methods,
+      ))
         if (method.type == 'key')
           l10n.integrationsConnectWithKey
         else if (method.type != 'env')
@@ -1737,16 +1740,19 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         presentIntegrations([integration]).firstOrNull?.name ??
         integration.name;
     final methods = orderConnectMethods(
-      integration.methods
-          .where(
-            (method) =>
-                (!onlyCommand &&
-                    (method.type == 'key' || method.type == 'oauth')) ||
-                (commandSupported &&
-                    method.type == 'command' &&
-                    method.id != null),
-          )
-          .toList(),
+      keyLedConnectMethods(
+        integration.id,
+        integration.methods
+            .where(
+              (method) =>
+                  (!onlyCommand &&
+                      (method.type == 'key' || method.type == 'oauth')) ||
+                  (commandSupported &&
+                      method.type == 'command' &&
+                      method.id != null),
+            )
+            .toList(),
+      ),
     );
     if (methods.isEmpty) return;
     final method = methods.length == 1
@@ -1808,11 +1814,25 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     final l10n = _l10n;
     if (_busy.contains(integration.id)) return;
     final source = _mcpSource;
+    final keyPage = providerKeyPageUrl(integration.id);
+    // The dialog closes for the key page's confirmation and comes back
+    // after it, so the person returns to where they were.
+    var wantsKeyPage = false;
     final value = await showKitInputDialog(
       context,
       title: l10n.e7LibraryConnect2(name),
       label: method.label,
-      helper: l10n.integrationsKeyHelper,
+      helper: keyPage == null
+          ? l10n.integrationsKeyHelper
+          : l10n.integrationsKeyOnlyHelper(name),
+      alternative: keyPage == null
+          ? null
+          : KitAction(
+              key: const ValueKey('provider-get-key'),
+              label: l10n.integrationsGetKey(name),
+              icon: AppIconography.browser,
+              onPressed: () => wantsKeyPage = true,
+            ),
       kind: KitFieldKind.secret,
       confirmLabel: l10n.e7LibraryConnect,
       cancelLabel: l10n.workCancel,
@@ -1831,11 +1851,46 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         }
       },
     );
-    if (value == null || !mounted || source != _mcpSource) return;
+    if (!mounted || source != _mcpSource) return;
+    if (value == null && wantsKeyPage && keyPage != null) {
+      await openExternalLink(context, keyPage);
+      if (!mounted || source != _mcpSource) return;
+      await _connectWithKey(integration, method, name);
+      return;
+    }
+    if (value == null) return;
     await _runIntegrationAction(integration.id, () async {
       await Future.wait([_load(), widget.controller.refreshCatalog()]);
-      if (mounted) _say(_l10n.e7LibraryIsConnected(name));
+      if (!mounted || source != _mcpSource) return;
+      _sayKeySaved(integration.id, name);
     });
+  }
+
+  /// What the person can rely on after a key was saved: only a provider the
+  /// server reports as loaded, with a model in the catalog, is called ready.
+  void _sayKeySaved(String id, String name) {
+    final controller = widget.controller;
+    final l10n = _l10n;
+    if (controller.unloadedProviderIDs.contains(id)) {
+      if (controller.providerReloadWaitingOn > 0) {
+        _say(l10n.integrationsKeySavedWaiting(name));
+      } else if (controller.unloadedProvidersUnusable) {
+        _say(
+          l10n.integrationsKeySavedUnusable(name),
+          tone: AppStatusTone.failure,
+        );
+      } else {
+        _say(l10n.integrationsKeySavedPending(name));
+      }
+      return;
+    }
+    final hasModel =
+        controller.catalog?.models.any((m) => m.providerID == id) ?? false;
+    _say(
+      hasModel
+          ? l10n.integrationsKeySavedReady(name)
+          : l10n.integrationsKeySavedPending(name),
+    );
   }
 
   Future<void> _connectWithOAuth(
@@ -2015,7 +2070,12 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     await Future.wait([_load(), widget.controller.refreshCatalog()]);
     if (!mounted || _pendingOAuth != pending) return;
     setState(() => _pendingOAuth = null);
-    _say(_l10n.e7LibraryIsConnected(pending.integrationName));
+    if (widget.controller.unloadedProviderIDs.contains(pending.integrationID)) {
+      // Saved is not loaded: say which, never "connected".
+      _sayKeySaved(pending.integrationID, pending.integrationName);
+    } else {
+      _say(_l10n.e7LibraryIsConnected(pending.integrationName));
+    }
   }
 
   Future<void> _cancelOAuth({bool showError = true}) async {

@@ -24274,9 +24274,9 @@ class AppLocalizationsAr extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Signed in to $providers, but this server could not load those sign-ins even after a reload, so their models cannot answer. Sign in another way under Providers, or pick another model.',
+          'Signed in to $providers, but this server could not load those sign-ins even after a reload, so their models cannot answer. Browser sign-ins for some providers, such as Anthropic and Google, do not load on this server. Add an API key under Providers instead, or pick another model.',
       one:
-          'Signed in to $providers, but this server could not load that sign-in even after a reload, so its models cannot answer. Sign in another way under Providers, or pick another model.',
+          'Signed in to $providers, but this server could not load that sign-in even after a reload, so its models cannot answer. Browser sign-ins for some providers, such as Anthropic and Google, do not load on this server. Add an API key under Providers instead, or pick another model.',
     );
     return '$_temp0';
   }
@@ -24296,10 +24296,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get freeModelNotice =>
-      'Using OpenCode\'s free model — it\'s slower. Sign in to your provider to use your own.';
+      'Using OpenCode\'s free model — it\'s slower. Add an API key from your provider to use your own.';
 
   @override
-  String get freeModelSignIn => 'Sign in to a provider';
+  String get freeModelSignIn => 'Add an API key';
 
   @override
   String get replySpeedTitle => 'Reply speed';
@@ -24354,4 +24354,34 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get manageSpaceIntroNothingToExport =>
       'Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone.';
+
+  @override
+  String integrationsKeyOnlyHelper(String name) {
+    return '$name does not allow browser sign-in from other apps, so use an API key. It is billed separately from any subscription. The key is stored on this server and never shown again.';
+  }
+
+  @override
+  String integrationsGetKey(String name) {
+    return 'Get a key from $name';
+  }
+
+  @override
+  String integrationsKeySavedReady(String name) {
+    return '$name key saved. Pick one of its models in the model picker.';
+  }
+
+  @override
+  String integrationsKeySavedWaiting(String name) {
+    return '$name key saved. It loads once the running replies finish.';
+  }
+
+  @override
+  String integrationsKeySavedUnusable(String name) {
+    return '$name key saved, but this server could not load it after a refresh. Check the key, or try Reload providers in the model picker.';
+  }
+
+  @override
+  String integrationsKeySavedPending(String name) {
+    return '$name key saved. The server has not loaded it yet.';
+  }
 }
