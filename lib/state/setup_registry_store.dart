@@ -16,6 +16,7 @@ class SetupRegistrySnapshot {
     List<RegistryEntry> entries = const [],
     this.cachedAt,
     this.reason,
+    this.query,
   }) : entries = List.unmodifiable(entries);
 
   final SetupRegistryStatus status;
@@ -23,6 +24,10 @@ class SetupRegistrySnapshot {
   final List<RegistryEntry> entries;
   final DateTime? cachedAt;
   final String? reason;
+
+  /// The search these [entries] answer; null for the saved default list.
+  /// Search results are shown, never saved.
+  final String? query;
 }
 
 /// Phone-side browsing is disabled by default and never follows entry URLs.
@@ -52,6 +57,10 @@ class SetupRegistryStore {
     status: SetupRegistryStatus.disabled,
     optedIn: false,
   );
+
+  /// The default list as last saved or loaded (never search results).
+  List<RegistryEntry> _savedEntries = const [];
+  DateTime? _savedAt;
 
   String get storageKey => 'oc.setupRegistry.$profileId';
   SetupRegistrySnapshot get snapshot => _snapshot;
@@ -107,12 +116,12 @@ class SetupRegistryStore {
     final next = SetupRegistrySnapshot(
       status: !enabled
           ? SetupRegistryStatus.disabled
-          : snapshot.entries.isEmpty
+          : _savedEntries.isEmpty
           ? SetupRegistryStatus.empty
           : SetupRegistryStatus.ready,
       optedIn: enabled,
-      entries: snapshot.entries,
-      cachedAt: snapshot.cachedAt,
+      entries: _savedEntries,
+      cachedAt: _savedAt,
     );
     // Disable network immediately, even if saving the preference fails.
     _emit(next);
@@ -137,9 +146,16 @@ class SetupRegistryStore {
   }
 
   /// User-requested refresh only. Offline and opt-out paths are cache-only.
-  Future<void> refresh({bool online = true}) async {
+  ///
+  /// A non-empty [query] asks the registry for matching listings (its
+  /// `search` parameter). Those results are shown but never saved; the
+  /// saved default list stays as it was, and [showSaved] returns to it.
+  Future<void> refresh({bool online = true, String? query}) async {
     _ensureOpen();
     if (!snapshot.optedIn) return;
+    final search = query?.trim() ?? '';
+    final saved = _savedEntries;
+    final savedAt = _savedAt;
     if (!online) {
       _generation++;
       _pending?.cancel();
@@ -147,8 +163,8 @@ class SetupRegistryStore {
         SetupRegistrySnapshot(
           status: SetupRegistryStatus.offline,
           optedIn: true,
-          entries: snapshot.entries,
-          cachedAt: snapshot.cachedAt,
+          entries: saved,
+          cachedAt: savedAt,
           reason:
               'You are offline. Showing saved listings; set up by hand is available.',
         ),
@@ -163,15 +179,33 @@ class SetupRegistryStore {
       SetupRegistrySnapshot(
         status: SetupRegistryStatus.loading,
         optedIn: true,
-        entries: snapshot.entries,
-        cachedAt: snapshot.cachedAt,
+        entries: search.isEmpty ? saved : const [],
+        cachedAt: savedAt,
+        query: search.isEmpty ? null : search,
       ),
     );
     try {
-      final entries = await _client.fetch(cancelToken: pending);
+      final entries = await _client.fetch(
+        cancelToken: pending,
+        search: search.isEmpty ? null : search,
+      );
       if (_disposed ||
           generation != _generation ||
           !_prefs.containsKey(storageKey)) {
+        return;
+      }
+      if (search.isNotEmpty) {
+        _emit(
+          SetupRegistrySnapshot(
+            status: entries.isEmpty
+                ? SetupRegistryStatus.empty
+                : SetupRegistryStatus.ready,
+            optedIn: true,
+            entries: entries,
+            cachedAt: savedAt,
+            query: search,
+          ),
+        );
         return;
       }
       final next = SetupRegistrySnapshot(
@@ -190,14 +224,34 @@ class SetupRegistryStore {
           SetupRegistrySnapshot(
             status: SetupRegistryStatus.error,
             optedIn: snapshot.optedIn,
-            entries: snapshot.entries,
-            cachedAt: snapshot.cachedAt,
-            reason:
-                'The public registry could not be loaded. Showing saved listings.',
+            entries: search.isEmpty ? saved : const [],
+            cachedAt: savedAt,
+            query: search.isEmpty ? null : search,
+            reason: search.isEmpty
+                ? 'The public registry could not be loaded. Showing saved listings.'
+                : 'The public registry could not be searched.',
           ),
         );
       }
     }
+  }
+
+  /// Back from a search to the saved default list, without a request.
+  void showSaved() {
+    _ensureOpen();
+    if (!snapshot.optedIn || snapshot.query == null) return;
+    _generation++;
+    _pending?.cancel();
+    _emit(
+      SetupRegistrySnapshot(
+        status: _savedEntries.isEmpty
+            ? SetupRegistryStatus.empty
+            : SetupRegistryStatus.ready,
+        optedIn: true,
+        entries: _savedEntries,
+        cachedAt: _savedAt,
+      ),
+    );
   }
 
   /// Remove both the opt-in preference and cache without affecting profiles.
@@ -261,6 +315,10 @@ class SetupRegistryStore {
 
   void _emit(SetupRegistrySnapshot value) {
     _snapshot = value;
+    if (value.query == null) {
+      _savedEntries = value.entries;
+      _savedAt = value.cachedAt;
+    }
     if (!_disposed) _changes.add(value);
   }
 
