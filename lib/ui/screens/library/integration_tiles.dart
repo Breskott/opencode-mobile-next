@@ -254,6 +254,15 @@ class _ProviderRow extends StatelessWidget {
   final bool busy;
   final bool commandAuthSupported;
   final bool credentialsSupported;
+
+  /// Signed in, but the server has not loaded the provider (or loaded and
+  /// still cannot use it): its models are not usable, so it is not
+  /// "Connected" and shows no model count.
+  final bool notLoaded;
+
+  /// A reload already ran and the provider stayed unloaded.
+  final bool notUsable;
+  final VoidCallback onAddKey;
   final VoidCallback onConnect;
   final VoidCallback onDisconnect;
   final VoidCallback onManageAccounts;
@@ -267,12 +276,18 @@ class _ProviderRow extends StatelessWidget {
     required this.onDisconnect,
     required this.onManageAccounts,
     required this.onServerSignIn,
+    required this.onAddKey,
     this.modelCount,
+    this.notLoaded = false,
+    this.notUsable = false,
     this.commandAuthSupported = false,
     this.credentialsSupported = false,
   });
 
   IntegrationInfo get _integration => presented.integration;
+
+  bool get _hasKeyMethod =>
+      _integration.methods.any((method) => method.type == 'key');
 
   bool get _hasCommand => _integration.methods.any(
     (method) => method.type == 'command' && method.id != null,
@@ -323,14 +338,20 @@ class _ProviderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = _libraryCopy(context);
     final name = presented.name;
-    final count = modelCount;
+    final count = notLoaded ? null : modelCount;
     final serverManaged = presented.connected && !_canDisconnect;
     final word = busy
         ? l10n.e7LibraryUpdating
+        : presented.connected && notLoaded
+        ? (notUsable
+              ? l10n.integrationsSignedInUnusable
+              : l10n.integrationsSignedInNotLoaded)
         : presented.connected
         ? l10n.e7LibraryConnected
         : l10n.e7LibraryNotConnected;
-    final detail = serverManaged
+    final detail = notLoaded && _hasKeyMethod
+        ? l10n.integrationsConnectWithKey
+        : serverManaged
         ? (_integration.hasEnvironmentConnection
               ? l10n.e7LibraryServerEnvironment
               : l10n.e7LibraryServerManaged)
@@ -341,6 +362,13 @@ class _ProviderRow extends StatelessWidget {
           label: l10n.e7LibraryConnect2(name),
           icon: AppIconography.login,
           onSelected: onConnect,
+        ),
+      if (notLoaded && _hasKeyMethod)
+        KitMenuItem(
+          key: ValueKey('add-key-${_integration.id}'),
+          label: l10n.integrationsConnectWithKey,
+          icon: AppIconography.login,
+          onSelected: onAddKey,
         ),
       if (_hasCommand)
         KitMenuItem(
@@ -359,15 +387,6 @@ class _ProviderRow extends StatelessWidget {
           label: l10n.integrationsManageAccounts(name),
           icon: AppIconography.manageAccount,
           onSelected: onManageAccounts,
-        )
-      else if (_canDisconnect)
-        KitMenuItem(
-          key: ValueKey('manage-accounts-${_integration.id}'),
-          label: l10n.integrationsManageAccounts(name),
-          icon: AppIconography.manageAccount,
-          enabled: false,
-          disabledReason: l10n.integrationsManageAccountsUnavailable,
-          onSelected: () {},
         ),
       if (_environmentNames.isNotEmpty)
         KitMenuItem(
@@ -408,10 +427,16 @@ class _ProviderRow extends StatelessWidget {
       supportingMaxLines: 2,
       trailing: busy
           ? const KitTaskMark(state: KitTaskState.working)
-          : _canConnect
+          : _canConnect || (notLoaded && _hasKeyMethod)
           ? const KitChevron()
           : null,
-      onTap: busy || !_canConnect ? null : onConnect,
+      onTap: busy
+          ? null
+          : notLoaded && _hasKeyMethod
+          ? onAddKey
+          : !_canConnect
+          ? null
+          : onConnect,
       menuLabel: l10n.integrationsProviderActions(name),
       menu: busy ? const [] : menu,
     );
