@@ -54,6 +54,7 @@ class SavedServerConnectionCard extends StatelessWidget {
     this.inAppServer = false,
     this.startingInAppServer = false,
     this.inAppStartFailed = false,
+    this.inAppStartFailedBody,
     this.onOpenInAppSetup,
     this.notAnswering = false,
     this.size = KitStateSize.page,
@@ -95,6 +96,10 @@ class SavedServerConnectionCard extends StatelessWidget {
 
   /// The last start of the in-app server ended without an answer.
   final bool inAppStartFailed;
+
+  /// Why that start failed, in plain words with the way forward. Replaces
+  /// the general explanation; the technical line stays in [error].
+  final String? inAppStartFailedBody;
 
   /// Opens the in-app server's setup, where its log is. Given only after a
   /// start failed, when the log is what the person needs.
@@ -342,7 +347,9 @@ class SavedServerConnectionCard extends StatelessWidget {
           : null,
       title: failure.title,
       titleKey: const ValueKey('saved-server-title'),
-      body: failure.explanation,
+      body: inAppServer && inAppStartFailed && inAppStartFailedBody != null
+          ? inAppStartFailedBody
+          : failure.explanation,
       bodyKey: const ValueKey('saved-server-explanation'),
       primary: escalated
           ? KitAction(

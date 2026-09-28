@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
@@ -70,8 +72,10 @@ class _Linux extends BuiltinLinux {
   bool running = false;
   bool healthy = true;
   bool wanted = true;
+  bool dies = false;
   int generation = 0;
   int restarts = 0;
+  int starts = 0;
 
   @override
   Future<BuiltinLinuxStatus> status() async => BuiltinLinuxStatus(
@@ -98,13 +102,14 @@ class _Linux extends BuiltinLinux {
       throw const BuiltinLinuxException('The server cannot restart.');
     }
     restarts++;
-    running = true;
+    running = !dies;
   }
 
   @override
   Future<void> startServer(String script, {int port = 4097}) async {
+    starts++;
     wanted = true;
-    running = true;
+    running = !dies;
   }
 
   @override
@@ -326,4 +331,102 @@ void main() {
       expect(connection.acts, hasLength(1));
     },
   );
+
+  group('the launch start (QA B1)', () {
+    Future<void> exhaust() => prefs.setString(
+      BuiltinServerRecovery.keyFor(phone.id),
+      jsonEncode({'version': 1, 'attempts': 3, 'pending': false}),
+    );
+
+    setUp(() => PhoneServerHealing.launchRetryDelay = Duration.zero);
+    tearDown(
+      () => PhoneServerHealing.launchRetryDelay = const Duration(seconds: 2),
+    );
+
+    test('starts a stopped server past an exhausted crash budget, '
+        'connects, and gives the budget back once it answers', () async {
+      await exhaust();
+      final owner = bind()..setForeground(true);
+      await owner.startForLaunch(phone);
+      expect(linux.restarts, 0, reason: 'the crash budget stays spent');
+      expect(linux.starts, 1);
+      expect(linux.running, isTrue);
+      expect(connection.connections, [phone.id]);
+      await owner.check(phone);
+      expect(owner.recovery.value.attempts, 0);
+    });
+
+    test('waits for the first resume before it does anything', () async {
+      await exhaust();
+      final owner = bind();
+      var done = false;
+      final launching = owner.startForLaunch(phone).then((_) => done = true);
+      await Future<void>.delayed(Duration.zero);
+      expect(done, isFalse);
+      expect(linux.starts, 0);
+      owner.setForeground(true);
+      await launching;
+      expect(linux.starts, 1);
+      expect(connection.connections, [phone.id]);
+    });
+
+    test('leaves an explicitly stopped server stopped', () async {
+      await exhaust();
+      linux.wanted = false;
+      final owner = bind()..setForeground(true);
+      await owner.startForLaunch(phone);
+      expect(linux.starts + linux.restarts, 0);
+    });
+
+    test('leaves it stopped when restarting the phone server is off', () async {
+      await exhaust();
+      await AutomationPolicyController.forProfile(
+        prefs,
+        phone.id,
+      ).setBehavior(AutomationBehavior.restartPhoneServer, false);
+      final owner = bind()..setForeground(true);
+      await owner.startForLaunch(phone);
+      expect(linux.starts + linux.restarts, 0);
+    });
+
+    test('only connects to a server that already runs', () async {
+      linux.running = true;
+      final owner = bind()..setForeground(true);
+      await owner.startForLaunch(phone);
+      expect(linux.starts + linux.restarts, 0);
+      expect(connection.connections, [phone.id]);
+    });
+
+    test(
+      'tries once more after a fast failure, then leaves the reason',
+      () async {
+        await exhaust();
+        linux.dies = true;
+        final owner = bind()..setForeground(true);
+        await owner.startForLaunch(phone);
+        expect(linux.starts, 2);
+        expect(starter.failureFor(phone)?.problem, BuiltinStartProblem.exited);
+        expect(connection.connections, isEmpty);
+        // Once per app process: a later Try again does not start it again.
+        await owner.startForLaunch(phone);
+        expect(linux.starts, 2);
+      },
+    );
+
+    test('a timeout is not tried again on its own', () async {
+      await exhaust();
+      linux.healthy = false;
+      final owner = bind()..setForeground(true);
+      await owner.startForLaunch(phone);
+      expect(linux.starts, 1);
+      expect(starter.failureFor(phone)?.problem, BuiltinStartProblem.timedOut);
+    });
+
+    test('a failed crash restart counts as the first try', () async {
+      linux.dies = true;
+      final owner = bind()..setForeground(true);
+      await owner.startForLaunch(phone);
+      expect(linux.restarts + linux.starts, 2);
+    });
+  });
 }

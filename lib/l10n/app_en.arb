@@ -2010,7 +2010,7 @@
   "@e7ConnectionFailure23": {
     "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
   },
-  "e7ConnectionFailure24": "Nothing is listening on this device",
+  "e7ConnectionFailure24": "Nothing answered on this phone",
   "@e7ConnectionFailure24": {
     "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
   },
@@ -25654,7 +25654,7 @@
   "@connectionFailureRemoteCodexBody": {
     "description": "Map page root-connecting: the address is under Details."
   },
-  "connectionFailureLoopbackBody": "This address means the server runs on this phone, or is reached through a tunnel that ends here. Neither answered.",
+  "connectionFailureLoopbackBody": "The app looked for a server running on this phone and got no answer. Start that server, or reconnect the tunnel that brings one here, then try again.",
   "@connectionFailureLoopbackBody": {
     "description": "Map page root-connecting: the address is under Details."
   },
@@ -28607,5 +28607,30 @@
   "teamHomeStoppedStartFirst": "Start the team again to give it a task or open one.",
   "@teamHomeStoppedStartFirst": {
     "description": "AI Team page while Android has the phone's team stopped: why Start a task is off and why the last-known tasks do not open."
+  },
+  "inAppServerStartExitedBody": "OpenCode closed by itself while it was starting. Open setup to see its log, or start it again.",
+  "@inAppServerStartExitedBody": {
+    "description": "Why the in-app server did not start: its process ended before it answered"
+  },
+  "inAppServerStartTimedOutBody": "OpenCode did not answer within {seconds} seconds. The phone may be busy or short on memory; close other apps, then start it again.",
+  "@inAppServerStartTimedOutBody": {
+    "description": "Why the in-app server did not start: no answer in time",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "inAppServerStartInterruptedBody": "The start stopped because the app left the screen. Start it again to continue.",
+  "@inAppServerStartInterruptedBody": {
+    "description": "Why the in-app server did not start: the start was withdrawn when the app went to the background"
+  },
+  "inAppServerStartPasswordBody": "The app could not set up OpenCode's sign-in on this phone. Start it again; if this repeats, open setup.",
+  "@inAppServerStartPasswordBody": {
+    "description": "Why the in-app server did not start: its password could not be prepared"
+  },
+  "inAppServerStartRefusedBody": "The phone did not let the app start OpenCode just now. Start it again; if this repeats, restart the phone.",
+  "@inAppServerStartRefusedBody": {
+    "description": "Why the in-app server did not start: the phone refused to start it"
   }
 }
