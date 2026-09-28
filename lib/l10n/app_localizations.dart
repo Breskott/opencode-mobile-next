@@ -23262,6 +23262,18 @@ abstract class AppLocalizations {
   /// **'{what}. Your phone\'s OpenCode and the AI Team stopped with it; they\'re starting again.'**
   String appExitServerAndTeamStopped(String what);
 
+  /// The notice when only the phone's OpenCode server was running and automatic restart is off, so nothing is restarting it
+  ///
+  /// In en, this message translates to:
+  /// **'{what}. Your phone\'s OpenCode stopped with it. Start it again when you\'re ready.'**
+  String appExitServerStoppedManual(String what);
+
+  /// The notice when the phone's OpenCode and the AI Team were running and automatic restart is off, so nothing is restarting them
+  ///
+  /// In en, this message translates to:
+  /// **'{what}. Your phone\'s OpenCode and the AI Team stopped with it. Start them again when you\'re ready.'**
+  String appExitServerAndTeamStoppedManual(String what);
+
   /// Time of the exit today, e.g. 'at 00:06'
   ///
   /// In en, this message translates to:

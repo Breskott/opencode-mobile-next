@@ -14189,6 +14189,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String appExitServerStoppedManual(String what) {
+    return '$what. Your phone\'s OpenCode stopped with it. Start it again when you\'re ready.';
+  }
+
+  @override
+  String appExitServerAndTeamStoppedManual(String what) {
+    return '$what. Your phone\'s OpenCode and the AI Team stopped with it. Start them again when you\'re ready.';
+  }
+
+  @override
   String appExitAtTime(String time) {
     return 'at $time';
   }

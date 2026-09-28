@@ -2133,7 +2133,10 @@ class _RootState extends ConsumerState<_Root> {
 }
 
 /// The page ground under a bar-less root page (the app opening, the saved
-/// server connecting): a KitScreen draws its ground only with a top bar.
+/// server connecting): a KitScreen draws its ground and keeps out of the
+/// system bars only with a top bar, so this does both. The ground runs
+/// under the status and navigation bars; the content (the app's status
+/// line first) stays inside the safe area.
 class _Ground extends StatelessWidget {
   const _Ground({required this.child});
 
@@ -2145,6 +2148,6 @@ class _Ground extends StatelessWidget {
     shape: KitShape.square,
     padding: KitSurfacePadding.none,
     clip: false,
-    child: child,
+    child: SafeArea(child: child),
   );
 }

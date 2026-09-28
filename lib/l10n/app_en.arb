@@ -15836,6 +15836,24 @@
       }
     }
   },
+  "appExitServerStoppedManual": "{what}. Your phone's OpenCode stopped with it. Start it again when you're ready.",
+  "@appExitServerStoppedManual": {
+    "description": "The notice when only the phone's OpenCode server was running and automatic restart is off, so nothing is restarting it",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "appExitServerAndTeamStoppedManual": "{what}. Your phone's OpenCode and the AI Team stopped with it. Start them again when you're ready.",
+  "@appExitServerAndTeamStoppedManual": {
+    "description": "The notice when the phone's OpenCode and the AI Team were running and automatic restart is off, so nothing is restarting them",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
   "appExitAtTime": "at {time}",
   "@appExitAtTime": {
     "description": "Time of the exit today, e.g. 'at 00:06'",
