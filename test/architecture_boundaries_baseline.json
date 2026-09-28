@@ -102,9 +102,6 @@
     "lib/ui/search/search_index.dart": {
       "lib/api/": 1
     },
-    "lib/ui/widgets/diff_view.dart": {
-      "lib/api/": 1
-    },
     "lib/ui/widgets/form_renderer.dart": {
       "lib/api2/": 1
     },

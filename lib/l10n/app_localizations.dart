@@ -8357,12 +8357,6 @@ abstract class AppLocalizations {
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Review all changes'**
-  String get readerUiReviewAll;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Files'**
   String get readerUiFiles;
 
@@ -8491,18 +8485,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, one{{count} changed file} other{{count} changed files}}'**
   String readerUiChangedCount(int count);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{{count} file} other{{count} files}} · +{added} −{removed}'**
-  String readerUiChangeSummary(int count, int added, int removed);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'Add {path} to the prompt'**
-  String readerUiAddPath(String path);
 
   /// Reader display, status or accessible label. Technical placeholders remain original.
   ///
@@ -20448,12 +20430,6 @@ abstract class AppLocalizations {
   /// **'Server log'**
   String get builtinServerLogTitle;
 
-  /// Remove confirmation body
-  ///
-  /// In en, this message translates to:
-  /// **'This stops the server and deletes Ubuntu, OpenCode and every project folder inside it. The saved server entry stays.'**
-  String get builtinServerRemoveBody;
-
   /// Screen C heading once phone setup finished
   ///
   /// In en, this message translates to:
@@ -20651,18 +20627,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove OpenCode from this phone?'**
   String get phoneServerCardRemoveTitle;
-
-  /// Remove confirmation with the space that comes back
-  ///
-  /// In en, this message translates to:
-  /// **'This deletes OpenCode, its tools and every project on this phone, and frees {size}.'**
-  String phoneServerCardRemoveBody(String size);
-
-  /// Remove confirmation before the space has been measured
-  ///
-  /// In en, this message translates to:
-  /// **'This deletes OpenCode, its tools and every project on this phone, and frees the space they use.'**
-  String get phoneServerCardRemoveBodyUnmeasured;
 
   /// A phone card action failed
   ///
@@ -32170,10 +32134,10 @@ abstract class AppLocalizations {
   /// **'About 10–15 minutes the first time, in Termux\'s storage'**
   String get phoneSetupTermuxCost;
 
-  /// Remove from this phone: the default choice's body, with the space freed, e.g. '1.2 GB'
+  /// Remove from this phone: the default choice's body, with the estimated space it frees, e.g. '700.0 MB'
   ///
   /// In en, this message translates to:
-  /// **'OpenCode and its tools are removed and {size} comes back.'**
+  /// **'OpenCode and its tools are removed, freeing about {size}.'**
   String removeFromPhoneKeepBody(String size);
 
   /// Remove from this phone: the default choice's body when the space could not be measured
@@ -32200,10 +32164,10 @@ abstract class AppLocalizations {
   /// **'Delete OpenCode and projects?'**
   String get removeFromPhoneDeleteTitle;
 
-  /// Remove from this phone: the heavy delete's body with the space freed
+  /// Remove from this phone: the heavy delete's body with the estimated space it frees
   ///
   /// In en, this message translates to:
-  /// **'OpenCode, its tools and every project on this phone are deleted and {size} comes back. This cannot be undone.'**
+  /// **'OpenCode, its tools and every project on this phone are deleted, freeing about {size}. This cannot be undone.'**
   String removeFromPhoneDeleteBody(String size);
 
   /// Remove from this phone: the heavy delete's body when the space could not be measured
@@ -36141,6 +36105,282 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Checks on {server} are paused'**
   String attentionChecksPaused(String server);
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): switch on the Open on another phone sheet; off by default each time the sheet opens
+  ///
+  /// In en, this message translates to:
+  /// **'Include this server’s address'**
+  String get sessionAddressInclude;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): what including the address discloses, under the switch
+  ///
+  /// In en, this message translates to:
+  /// **'The link then shows this address and the conversation ID, never a password: the other phone still needs its own access. Screenshots, messages and the clipboard can keep it.'**
+  String get sessionAddressDisclosure;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): sheet lead paragraph while the address is included
+  ///
+  /// In en, this message translates to:
+  /// **'Scan with OpenCode Mobile on the other phone. The code holds this server’s address and the conversation ID.'**
+  String get sessionAddressIntro;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): why the switch is off for a server whose saved address cannot be shared
+  ///
+  /// In en, this message translates to:
+  /// **'Only a private HTTPS address ending in .ts.net can go in a link.'**
+  String get sessionAddressUnsupportedHost;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): title of the sheet an incoming link opens
+  ///
+  /// In en, this message translates to:
+  /// **'Open a shared conversation'**
+  String get sessionAddressOpenTitle;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): question before contacting a server this phone has saved
+  ///
+  /// In en, this message translates to:
+  /// **'Open on this saved server?'**
+  String get sessionAddressConsentSaved;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): question before contacting a server this phone has not saved
+  ///
+  /// In en, this message translates to:
+  /// **'Add this server?'**
+  String get sessionAddressConsentNew;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): supporting line of the server row when no saved server matches
+  ///
+  /// In en, this message translates to:
+  /// **'Not saved on this phone'**
+  String get sessionAddressNotSaved;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): what approving the check does
+  ///
+  /// In en, this message translates to:
+  /// **'The link grants no access. Checking only asks the server which installation it is; nothing signs in and no password is sent.'**
+  String get sessionAddressConsentNote;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): approves one anonymous check of the server named above
+  ///
+  /// In en, this message translates to:
+  /// **'Check server'**
+  String get sessionAddressCheck;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): progress while the server is checked
+  ///
+  /// In en, this message translates to:
+  /// **'Checking {host}…'**
+  String sessionAddressChecking(String host);
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): unknown server state; the address is filled in, never connected automatically
+  ///
+  /// In en, this message translates to:
+  /// **'This server is not saved on this phone. Add it with your own sign-in; the link does not carry one.'**
+  String get sessionAddressAddBody;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): opens Add server with only the address filled in
+  ///
+  /// In en, this message translates to:
+  /// **'Add server'**
+  String get sessionAddressAddServer;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): several saved servers match the link
+  ///
+  /// In en, this message translates to:
+  /// **'More than one saved server uses this address. Choose the one to open the conversation on.'**
+  String get sessionAddressChooseBody;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): binding step for a saved server not yet verified
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm that {name} is the server this link came from. The phone remembers this for {name}; it does not sign in or share a password.'**
+  String sessionAddressVerifyBody(String name);
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): saves that the chosen saved server is the installation in the link
+  ///
+  /// In en, this message translates to:
+  /// **'Verify server'**
+  String get sessionAddressVerify;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): matched to a saved server, ready to open
+  ///
+  /// In en, this message translates to:
+  /// **'{name} matches this link.'**
+  String sessionAddressReadyBody(String name);
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): the matched saved server needs its password or token entered again
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to {name} with your own account first, then open the conversation.'**
+  String sessionAddressSignInBody(String name);
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): opens Servers to sign in to the matched saved server
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get sessionAddressSignIn;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): opens the existing conversation after the checks; never creates or resumes one
+  ///
+  /// In en, this message translates to:
+  /// **'Open conversation'**
+  String get sessionAddressOpen;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): progress while the conversation is looked up
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the conversation…'**
+  String get sessionAddressOpening;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): label of the failure category under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get sessionAddressReason;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code unavailable
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation links with a server address are not available yet.'**
+  String get sessionAddressFailUnavailable;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code invalidLink
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation link is not valid. Scan or copy it again.'**
+  String get sessionAddressFailInvalidLink;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code tooLarge
+  ///
+  /// In en, this message translates to:
+  /// **'This link is too long. Ask the sender for a new link.'**
+  String get sessionAddressFailTooLarge;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code credentials
+  ///
+  /// In en, this message translates to:
+  /// **'This link contains private sign-in information and cannot be used.'**
+  String get sessionAddressFailCredentials;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code consentRequired
+  ///
+  /// In en, this message translates to:
+  /// **'Choose whether to include this server’s address first.'**
+  String get sessionAddressFailConsentRequired;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code privateRouteRequired
+  ///
+  /// In en, this message translates to:
+  /// **'This server cannot be reached through the required private connection. Check your connection.'**
+  String get sessionAddressFailPrivateRouteRequired;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code unreachable
+  ///
+  /// In en, this message translates to:
+  /// **'The server could not be reached. Check your connection and try again.'**
+  String get sessionAddressFailUnreachable;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code timedOut
+  ///
+  /// In en, this message translates to:
+  /// **'The server did not answer in time. Try again.'**
+  String get sessionAddressFailTimedOut;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code tlsRejected
+  ///
+  /// In en, this message translates to:
+  /// **'The server’s secure connection could not be verified, so the link was not opened.'**
+  String get sessionAddressFailTlsRejected;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code redirectsRejected
+  ///
+  /// In en, this message translates to:
+  /// **'This server tried to send the request somewhere else. The link was not opened.'**
+  String get sessionAddressFailRedirectsRejected;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code accessDenied
+  ///
+  /// In en, this message translates to:
+  /// **'Your access to this server or conversation was refused.'**
+  String get sessionAddressFailAccessDenied;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code invalidDescriptor
+  ///
+  /// In en, this message translates to:
+  /// **'This server did not provide the information needed to open this link.'**
+  String get sessionAddressFailInvalidDescriptor;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code instanceMismatch
+  ///
+  /// In en, this message translates to:
+  /// **'This link and the saved server do not identify the same installation.'**
+  String get sessionAddressFailInstanceMismatch;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code bindingRequired
+  ///
+  /// In en, this message translates to:
+  /// **'Verify this saved server before opening the conversation.'**
+  String get sessionAddressFailBindingRequired;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code ambiguousProfile
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which saved server to use.'**
+  String get sessionAddressFailAmbiguousProfile;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code profileMissing
+  ///
+  /// In en, this message translates to:
+  /// **'This saved server is no longer available.'**
+  String get sessionAddressFailProfileMissing;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code storage
+  ///
+  /// In en, this message translates to:
+  /// **'The server verification could not be saved or read. Try again after restarting the app.'**
+  String get sessionAddressFailStorage;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code signInRequired
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to this server with your own account before continuing.'**
+  String get sessionAddressFailSignInRequired;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code unsafeLookup
+  ///
+  /// In en, this message translates to:
+  /// **'This server has not been verified for private conversation links.'**
+  String get sessionAddressFailUnsafeLookup;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code sessionMissing
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation is not available on this server.'**
+  String get sessionAddressFailSessionMissing;
+
+  /// Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code cancelled
+  ///
+  /// In en, this message translates to:
+  /// **'Opening this link was cancelled.'**
+  String get sessionAddressFailCancelled;
+
+  /// Remove from this phone: the other choice, before the space was measured; opens a second question that asks for the typed name
+  ///
+  /// In en, this message translates to:
+  /// **'Delete everything…'**
+  String get removeFromPhoneDeleteAllChoice;
+
+  /// Remove from this phone: the other choice with the estimated space it frees (OpenCode and every project), e.g. '1.9 GB'; opens a second question that asks for the typed name
+  ///
+  /// In en, this message translates to:
+  /// **'Delete everything, freeing about {size}…'**
+  String removeFromPhoneDeleteAllChoiceSize(String size);
+
+  /// This phone: the label of the technical error text under Details, when moving its waiting prompts could not be fully undone
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get phoneServerCardErrorDetail;
 }
 
 class _AppLocalizationsDelegate

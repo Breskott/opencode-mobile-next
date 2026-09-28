@@ -58,7 +58,6 @@ import '../search/search_index.dart';
 import '../widgets/always_allow_invitation.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/default_notices.dart';
-import '../widgets/diff_view.dart';
 import '../widgets/file_preview.dart';
 import '../widgets/first_reply_notify_card.dart';
 import '../widgets/markdown.dart';
@@ -6097,7 +6096,17 @@ class _ChatScreenState extends State<ChatScreen>
       profileID: _conn.profile?.id,
       sessionID: widget.sessionID,
     );
-    await showContinueOnPhoneSheet(context, link: link);
+    await showContinueOnPhoneSheet(
+      context,
+      link: link,
+      // P3.9: "Include this server's address", offered only where the
+      // server and the address coordinator allow it (gated off for now).
+      address: SessionAddressOffer.of(
+        context,
+        connection: _conn,
+        sessionID: widget.sessionID,
+      ),
+    );
   }
 
   Future<void> _showContext() async {
@@ -6215,7 +6224,7 @@ class _ChatScreenState extends State<ChatScreen>
       if (!mounted) return;
       await Navigator.of(context).push<void>(
         KitPageRoute<void>(
-          builder: (_) => DiffView(diffs: diffs, allowCopy: false),
+          builder: (_) => DiffPage(diffs: diffs, allowCopy: false),
         ),
       );
       return;

@@ -628,6 +628,9 @@ class _KitComposerState extends State<KitComposer> {
         ),
     ];
 
+    final handleClearance = _hasText && available >= 6 * tokens.minTarget
+        ? _handleClearance
+        : 0.0;
     return LayoutBuilder(
       builder: (context, constraints) {
         final above = accessories.isEmpty
@@ -662,9 +665,7 @@ class _KitComposerState extends State<KitComposer> {
                 // the last line; this keeps it off the send row, so the
                 // prompt editor and Send stay pressable (320 dp, 2x text).
                 // A short room keeps the height for the field instead.
-                bottom: _hasText && available >= 6 * tokens.minTarget
-                    ? _handleClearance
-                    : 0,
+                bottom: handleClearance,
               ),
               child: field,
             ),

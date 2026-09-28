@@ -120,17 +120,17 @@ class KitTranscriptExcerpt extends StatelessWidget {
                   selectable: false,
                   interactive: false,
                 );
+                // A prompt is followed by its reply (a turn's inner gap); a
+                // reply ends its turn (the gap between turns). The newest
+                // has the caption under it instead.
+                final gap = i == 1
+                    ? 0.0
+                    : message.fromPerson
+                    ? tokens.space4
+                    : tokens.sectionGap;
                 return Padding(
                   key: message.key,
-                  // A prompt is followed by its reply (a turn's inner gap);
-                  // a reply ends its turn (the gap between turns).
-                  padding: EdgeInsetsDirectional.only(
-                    bottom: i == 1
-                        ? 0
-                        : message.fromPerson
-                        ? tokens.space4
-                        : tokens.sectionGap,
-                  ),
+                  padding: EdgeInsetsDirectional.only(bottom: gap),
                   child: message.fromPerson
                       ? KitMessage.prompt(body: body)
                       : KitMessage.reply(body: body),
