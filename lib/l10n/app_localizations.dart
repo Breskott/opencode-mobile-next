@@ -3470,12 +3470,6 @@ abstract class AppLocalizations {
   /// **'Claude subscription usage is unavailable here pending a supported, permitted integration. Current OpenCode does not include Claude Pro/Max sign-in. This app will not read or reuse that subscription login.'**
   String get quotaClaudeUnavailable;
 
-  /// iOS app identity without describing it as an Android or desktop build
-  ///
-  /// In en, this message translates to:
-  /// **'OpenCode for iOS'**
-  String get iosAppTitle;
-
   /// Truthful initial iOS remote-control scope
   ///
   /// In en, this message translates to:
@@ -4267,6 +4261,42 @@ abstract class AppLocalizations {
   /// **'The connection token was rejected. Update it to reconnect.'**
   String get connectionTokenRejected;
 
+  /// Connection status line when the active server's saved password can no longer be read from the phone's secure storage; nothing was tried
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t read the saved password for {server}'**
+  String connectionPasswordUnreadable(String server);
+
+  /// Connection status line when the active server's saved connection token can no longer be read from the phone's secure storage
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t read the saved token for {server}'**
+  String connectionTokenUnreadable(String server);
+
+  /// Status line action: opens the active server's edit form with the password field focused
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the password'**
+  String get connectionEnterPassword;
+
+  /// Status line action: opens the active server's edit form to enter its connection token
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the token'**
+  String get connectionEnterToken;
+
+  /// Details for an unreadable saved password: why, and that the password was not changed
+  ///
+  /// In en, this message translates to:
+  /// **'This phone\'s secure storage couldn\'t open the password saved for this server. That can happen after the phone is restored from a backup or its screen lock is changed. The password itself was not changed: enter it again to connect.'**
+  String get connectionPasswordUnreadableDetails;
+
+  /// Details for an unreadable saved connection token: why, and that the token was not changed
+  ///
+  /// In en, this message translates to:
+  /// **'This phone\'s secure storage couldn\'t open the token saved for this server. That can happen after the phone is restored from a backup or its screen lock is changed. The token itself was not changed: enter it again to connect.'**
+  String get connectionTokenUnreadableDetails;
+
   /// No description provided for @updateConnectionToken.
   ///
   /// In en, this message translates to:
@@ -4374,12 +4404,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stored securely on this device and sent only to this Codex server.'**
   String get codexTokenStorageHelp;
-
-  /// No description provided for @connectionCredentialUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'A saved server credential can no longer be read. Edit the active server and re-enter it before connecting.'**
-  String get connectionCredentialUnavailable;
 
   /// No description provided for @projectConfiguredFolder.
   ///
@@ -12070,7 +12094,7 @@ abstract class AppLocalizations {
   /// Setup journey: password required.
   ///
   /// In en, this message translates to:
-  /// **'Password re-entry required'**
+  /// **'Can\'t read the saved password'**
   String get e7SetupPasswordRequired;
 
   /// Setup journey: pairing.
@@ -12234,12 +12258,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connection closed'**
   String get e7SetupConnectionClosed;
-
-  /// Setup journey: token banner.
-  ///
-  /// In en, this message translates to:
-  /// **'Connection token re-entry required for the active server. Edit the server and save its token before connecting.'**
-  String get e7SetupTokenBanner;
 
   /// Setup journey: up key.
   ///
@@ -12553,12 +12571,6 @@ abstract class AppLocalizations {
   /// **'Restarting local server'**
   String get e7SetupRestartingLocalStage;
 
-  /// Setup journey: password banner.
-  ///
-  /// In en, this message translates to:
-  /// **'Password re-entry required for the active server. Edit the server and save its password before connecting.'**
-  String get e7SetupPasswordBanner;
-
   /// Setup journey: empty pair clipboard.
   ///
   /// In en, this message translates to:
@@ -12574,7 +12586,7 @@ abstract class AppLocalizations {
   /// Setup journey: token required.
   ///
   /// In en, this message translates to:
-  /// **'Connection token re-entry required'**
+  /// **'Can\'t read the saved token'**
   String get e7SetupTokenRequired;
 
   /// Setup journey: pairing instructions.

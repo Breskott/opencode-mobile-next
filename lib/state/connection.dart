@@ -946,6 +946,12 @@ class ConnectionController extends ChangeNotifier {
     final owner = _connectedProfile ?? profile;
     final phase = isIsolated || owner == null
         ? ConnectionStatusPhase.hidden
+        // Nothing was tried: the saved secret could not be read back from
+        // the phone's secure storage, so only entering it again helps.
+        : (owner.usesAgentSocket
+              ? owner.requiresCodexTokenReentry
+              : owner.requiresPasswordReentry)
+        ? ConnectionStatusPhase.credentialsUnreadable
         : passwordRejected
         ? ConnectionStatusPhase.credentialsRequired
         : status == StreamStatus.connected

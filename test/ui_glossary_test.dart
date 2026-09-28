@@ -1120,7 +1120,6 @@ const _allowedProductKeys = <String>{
   'phoneServerCardStartOpenCode',
   // The app's own name, not a backend label.
   'appTitle',
-  'iosAppTitle',
   'aboutBuildVersion',
 };
 

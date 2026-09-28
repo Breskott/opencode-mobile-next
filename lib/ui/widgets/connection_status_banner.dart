@@ -36,6 +36,62 @@ KitStatus? connectionKitStatus(
   }
 
   final server = snapshot.serverName.isEmpty ? 'OpenCode' : snapshot.serverName;
+  if (snapshot.phase == ConnectionStatusPhase.credentialsUnreadable) {
+    // The saved secret could not be read back on this phone: nothing was
+    // tried and Reconnect cannot help. The way forward names its target;
+    // Details says why in plain words (never the platform's exception).
+    final token = snapshot.usesToken;
+    final message = token
+        ? l10n.connectionTokenUnreadable(server)
+        : l10n.connectionPasswordUnreadable(server);
+    final enter = KitAction(
+      key: const ValueKey('banner-enter-saved-secret'),
+      label: token ? l10n.connectionEnterToken : l10n.connectionEnterPassword,
+      onPressed: editServer,
+    );
+    return KitStatus(
+      kind: KitStatusKind.connection,
+      id: 'connection:${snapshot.profileId}',
+      key: const ValueKey('connection-status-banner'),
+      icon: AppIconography.locked,
+      tone: AppStatusTone.failure,
+      message: message,
+      supporting: note,
+      action: enter,
+      more: [
+        KitAction(
+          key: const ValueKey('connection-banner-details'),
+          label: l10n.e7BannerDetails,
+          onPressed: () {
+            final current = target();
+            if (current == null || !current.mounted) return;
+            final navigator = Navigator.of(current);
+            unawaited(
+              showKitSheet<void>(
+                current,
+                title: message,
+                icon: AppIconography.locked,
+                primary: KitAction(
+                  label: enter.label,
+                  onPressed: () {
+                    navigator.pop();
+                    editServer();
+                  },
+                ),
+                body: (_) => KitText(
+                  token
+                      ? l10n.connectionTokenUnreadableDetails
+                      : l10n.connectionPasswordUnreadableDetails,
+                  key: const ValueKey('connection-details-explanation'),
+                  tone: KitTextTone.secondary,
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
   if (snapshot.phase == ConnectionStatusPhase.credentialsRequired) {
     return KitStatus(
       kind: KitStatusKind.connection,

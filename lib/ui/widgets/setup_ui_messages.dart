@@ -84,8 +84,6 @@ Map<String, String> _messages(AppLocalizations l10n) => <String, String>{
       l10n.e7SetupMissingPasswordLong,
   'The saved password is unavailable. Enter it again, or leave it empty only if this server no longer requires one.':
       l10n.e7SetupMissingPasswordShort,
-  'Connection token re-entry required for the active server. Edit the server and save its token before connecting.':
-      l10n.e7SetupTokenBanner,
   'That pairing code lists more addresses than this app will try. Bind the server to one interface and pair again.':
       l10n.e7SetupPairTooMany,
   'When the server reports an update, Settings offers the native upgrade first; this is the host-side equivalent.':
@@ -94,8 +92,6 @@ Map<String, String> _messages(AppLocalizations l10n) => <String, String>{
       l10n.e7SetupCredentialMismatch,
   'That is far too long to be a pairing code. Copy only the line `opencode2 pair` prints, or scan its QR code.':
       l10n.e7SetupPairLong,
-  'Password re-entry required for the active server. Edit the server and save its password before connecting.':
-      l10n.e7SetupPasswordBanner,
   'That pairing code is the wrong shape — it should be a JSON object with `urls`, `username`, and `password`.':
       l10n.e7SetupPairShape,
   'A local server exists, but its saved credential is unavailable. Run setup again to replace it safely.':

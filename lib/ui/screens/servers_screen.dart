@@ -821,19 +821,6 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     }
     final activeId = store.activeId;
     final phoneServer = phoneServerProfile(store.profiles, activeId);
-    final needsCredential = store.profiles.any(
-      (profile) =>
-          profile.id == activeId &&
-          (profile.usesAgentSocket
-              ? profile.requiresCodexTokenReentry
-              : profile.requiresPasswordReentry),
-    );
-    final needsToken = store.profiles.any(
-      (profile) =>
-          profile.id == activeId &&
-          profile.usesAgentSocket &&
-          profile.requiresCodexTokenReentry,
-    );
     final saved = [
       for (final p in store.profiles)
         if (!looksLikeInAppServer(p) && !shownAsPhoneRow(p)) p,
@@ -867,24 +854,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           bottom: KitScreen.endPadding(context),
         ),
         children: [
-          if (needsCredential)
-            _Rails(
-              child: Semantics(
-                container: true,
-                liveRegion: true,
-                excludeSemantics: true,
-                label: needsToken
-                    ? copy.e7SetupTokenBanner
-                    : copy.e7SetupPasswordBanner,
-                child: KitNotice(
-                  key: const Key('password-reentry-banner'),
-                  tone: AppStatusTone.neutral,
-                  icon: AppIconography.locked,
-                  message: copy.connectionCredentialUnavailable,
-                  liveRegion: false,
-                ),
-              ),
-            ),
+          // A saved password or token this phone can no longer read is
+          // said once, by the connection status line above (with Enter the
+          // password) and by the server's row: no notice here repeats it.
           // A connect or a removal that failed unfolds over the rows and
           // folds away when dismissed or retried (design standard §10).
           KitReveal(

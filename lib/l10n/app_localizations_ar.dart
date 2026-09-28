@@ -2064,9 +2064,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'استخدام اشتراك Claude غير متاح هنا إلى حين توفر تكامل مدعوم ومسموح به. لا يتضمن OpenCode الحالي تسجيل دخول Claude Pro/Max. لن يقرأ التطبيق بيانات دخول هذا الاشتراك أو يعيد استخدامها.';
 
   @override
-  String get iosAppTitle => 'OpenCode لنظام iOS';
-
-  @override
   String get iosRemoteSummary =>
       'عميل اتصال بخادم OpenCode الذي تختاره. استضافة الخادم على الجهاز والمراقبة في الخلفية غير متاحتين في إصدار iOS هذا.';
 
@@ -2553,6 +2550,30 @@ class AppLocalizationsAr extends AppLocalizations {
       'رُفض رمز الاتصال. حدّثه لإعادة الاتصال.';
 
   @override
+  String connectionPasswordUnreadable(String server) {
+    return 'Can\'t read the saved password for $server';
+  }
+
+  @override
+  String connectionTokenUnreadable(String server) {
+    return 'Can\'t read the saved token for $server';
+  }
+
+  @override
+  String get connectionEnterPassword => 'Enter the password';
+
+  @override
+  String get connectionEnterToken => 'Enter the token';
+
+  @override
+  String get connectionPasswordUnreadableDetails =>
+      'This phone\'s secure storage couldn\'t open the password saved for this server. That can happen after the phone is restored from a backup or its screen lock is changed. The password itself was not changed: enter it again to connect.';
+
+  @override
+  String get connectionTokenUnreadableDetails =>
+      'This phone\'s secure storage couldn\'t open the token saved for this server. That can happen after the phone is restored from a backup or its screen lock is changed. The token itself was not changed: enter it again to connect.';
+
+  @override
   String get updateConnectionToken => 'تحديث الرمز';
 
   @override
@@ -2611,10 +2632,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get codexTokenStorageHelp =>
       'يُحفظ بأمان على هذا الجهاز، ويُرسل إلى خادم Codex هذا فقط.';
-
-  @override
-  String get connectionCredentialUnavailable =>
-      'لم تعد قراءة بيانات اعتماد خادم محفوظ ممكنة. عدّل الخادم النشط وأعد إدخالها قبل الاتصال.';
 
   @override
   String get projectConfiguredFolder => 'المجلد المضبوط';
@@ -7477,10 +7494,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SetupConnectionClosed => 'أُغلق الاتصال';
 
   @override
-  String get e7SetupTokenBanner =>
-      'يلزم إدخال رمز الاتصال للخادم النشط مجددًا. عدّل الخادم واحفظ رمزه قبل الاتصال.';
-
-  @override
   String get e7SetupUpKey => 'مفتاح السهم لأعلى';
 
   @override
@@ -7648,10 +7661,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SetupRestartingLocalStage => 'جارٍ إعادة تشغيل الخادم المحلي';
-
-  @override
-  String get e7SetupPasswordBanner =>
-      'يلزم إدخال كلمة مرور الخادم النشط مجددًا. عدّل الخادم واحفظ كلمة مروره قبل الاتصال.';
 
   @override
   String get e7SetupEmptyPairClipboard =>

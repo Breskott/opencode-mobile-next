@@ -1133,10 +1133,6 @@
   "@quotaClaudeUnavailable": {
     "description": "Explains the disabled Claude subscription collection path without suggesting an OAuth workaround"
   },
-  "iosAppTitle": "OpenCode for iOS",
-  "@iosAppTitle": {
-    "description": "iOS app identity without describing it as an Android or desktop build"
-  },
   "iosRemoteSummary": "A remote client for the OpenCode server you choose. On-device server hosting and background monitoring are not available in this iOS build.",
   "@iosRemoteSummary": {
     "description": "Truthful initial iOS remote-control scope"
@@ -1378,6 +1374,40 @@
   "codexConnectionVerified": "Connection verified. Save and connect to continue.",
   "codexApprovalRecoveryNotice": "After reconnecting, review any pending approvals on your computer.",
   "connectionTokenRejected": "The connection token was rejected. Update it to reconnect.",
+  "connectionPasswordUnreadable": "Can't read the saved password for {server}",
+  "@connectionPasswordUnreadable": {
+    "description": "Connection status line when the active server's saved password can no longer be read from the phone's secure storage; nothing was tried",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "connectionTokenUnreadable": "Can't read the saved token for {server}",
+  "@connectionTokenUnreadable": {
+    "description": "Connection status line when the active server's saved connection token can no longer be read from the phone's secure storage",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "connectionEnterPassword": "Enter the password",
+  "@connectionEnterPassword": {
+    "description": "Status line action: opens the active server's edit form with the password field focused"
+  },
+  "connectionEnterToken": "Enter the token",
+  "@connectionEnterToken": {
+    "description": "Status line action: opens the active server's edit form to enter its connection token"
+  },
+  "connectionPasswordUnreadableDetails": "This phone's secure storage couldn't open the password saved for this server. That can happen after the phone is restored from a backup or its screen lock is changed. The password itself was not changed: enter it again to connect.",
+  "@connectionPasswordUnreadableDetails": {
+    "description": "Details for an unreadable saved password: why, and that the password was not changed"
+  },
+  "connectionTokenUnreadableDetails": "This phone's secure storage couldn't open the token saved for this server. That can happen after the phone is restored from a backup or its screen lock is changed. The token itself was not changed: enter it again to connect.",
+  "@connectionTokenUnreadableDetails": {
+    "description": "Details for an unreadable saved connection token: why, and that the token was not changed"
+  },
   "updateConnectionToken": "Update token",
   "codexDraftReconnectNotice": "Review draft stays here; nothing is sent automatically.",
   "codexTextOnlyPrompt": "This server supports text only. Remove attachments before sending.",
@@ -1396,7 +1426,6 @@
   "codexTokenReentry": "Re-enter connection token",
   "codexTokenLabel": "Connection token",
   "codexTokenStorageHelp": "Stored securely on this device and sent only to this Codex server.",
-  "connectionCredentialUnavailable": "A saved server credential can no longer be read. Edit the active server and re-enter it before connecting.",
   "projectConfiguredFolder": "Configured folder",
   "termuxGuideTitle": "Connect Termux once",
   "termuxGuideOpenFailed": "The command was copied, but Termux could not open. Open Termux yourself or try Copy & open Termux again.",
@@ -6892,7 +6921,7 @@
   "@e7SetupDiscardChanges": {
     "description": "Setup journey: discard changes."
   },
-  "e7SetupPasswordRequired": "Password re-entry required",
+  "e7SetupPasswordRequired": "Can't read the saved password",
   "@e7SetupPasswordRequired": {
     "description": "Setup journey: password required."
   },
@@ -7003,10 +7032,6 @@
   "e7SetupConnectionClosed": "Connection closed",
   "@e7SetupConnectionClosed": {
     "description": "Setup journey: connection closed."
-  },
-  "e7SetupTokenBanner": "Connection token re-entry required for the active server. Edit the server and save its token before connecting.",
-  "@e7SetupTokenBanner": {
-    "description": "Setup journey: token banner."
   },
   "e7SetupUpKey": "Up arrow key",
   "@e7SetupUpKey": {
@@ -7216,10 +7241,6 @@
   "@e7SetupRestartingLocalStage": {
     "description": "Setup journey: restarting local stage."
   },
-  "e7SetupPasswordBanner": "Password re-entry required for the active server. Edit the server and save its password before connecting.",
-  "@e7SetupPasswordBanner": {
-    "description": "Setup journey: password banner."
-  },
   "e7SetupEmptyPairClipboard": "The clipboard is empty. Run “opencode2 pair” on the server and copy the code it prints.",
   "@e7SetupEmptyPairClipboard": {
     "description": "Setup journey: empty pair clipboard."
@@ -7228,7 +7249,7 @@
   "@e7SetupRestartActiveChanged": {
     "description": "Setup journey: restart active changed."
   },
-  "e7SetupTokenRequired": "Connection token re-entry required",
+  "e7SetupTokenRequired": "Can't read the saved token",
   "@e7SetupTokenRequired": {
     "description": "Setup journey: token required."
   },
