@@ -172,14 +172,53 @@ String _plainErrorHeadline(
   };
 }
 
+/// The model a "model not found" error suggests ("Model not found:
+/// openai/gpt-5.6. Did you mean: gpt-5.6-pro?"), when this server's catalog
+/// has it enabled: the first suggestion that resolves, in the server's
+/// order. A bare suggestion is looked up under the failing model's
+/// provider first, then any provider. Null when nothing resolves.
+CatalogModel? _suggestedModel(String raw, List<CatalogModel> models) {
+  final offer = RegExp(
+    r'did you mean:?\s*([^?\n]+)',
+    caseSensitive: false,
+  ).firstMatch(raw);
+  if (offer == null) return null;
+  final failed = RegExp(
+    r'not found:?\s*([^\s/]+)/(\S+?)\.?(?:\s|$)',
+    caseSensitive: false,
+  ).firstMatch(raw);
+  final failing = failed?.group(1);
+  for (final piece in offer.group(1)!.split(RegExp(r',|\s+or\s+'))) {
+    final name = piece.trim().replaceAll(RegExp('^[`\'"]+|[`\'".]+\$'), '');
+    if (name.isEmpty) continue;
+    final slash = name.indexOf('/');
+    final provider = slash > 0 ? name.substring(0, slash) : failing;
+    final id = slash > 0 ? name.substring(slash + 1) : name;
+    // Never the model that just failed (the composite-id case suggests the
+    // same model under its bare id).
+    if (provider == failing && id == failed?.group(2)) continue;
+    final usable = models.where((model) => model.enabled && model.id == id);
+    final match =
+        usable.where((model) => model.providerID == provider).firstOrNull ??
+        (slash > 0 ? null : usable.firstOrNull);
+    if (match != null) return match;
+  }
+  return null;
+}
+
 /// A prompt the server refused, or a session-level failure with no home in
 /// the transcript: the plain sentence, what to do, the fix when there is one
-/// (a model the server does not know), and the server's words under Details.
+/// (a model the server does not know: the model it suggests, one tap, and
+/// the prompt goes again; or send it again as it was), and the server's
+/// words under Details.
 _ChatStatus _promptErrorStatus(
   BuildContext context, {
   required String message,
   required VoidCallback onDismiss,
   VoidCallback? onChooseModel,
+  VoidCallback? onResend,
+  String? suggestion,
+  VoidCallback? onUseSuggestion,
 }) {
   final l10n = _chatL10n(context);
   final words = agentErrorWords(message, l10n);
@@ -197,11 +236,33 @@ _ChatStatus _promptErrorStatus(
           ),
         )
       : null;
-  final choose = kind == MessageErrorKind.modelNotFound && onChooseModel != null
+  final modelMissing = kind == MessageErrorKind.modelNotFound;
+  final use = modelMissing && suggestion != null && onUseSuggestion != null
+      ? KitAction(
+          key: const ValueKey('prompt-error-use-suggestion'),
+          label: l10n.chatUiUseModelAndResend(suggestion),
+          onPressed: onUseSuggestion,
+        )
+      : null;
+  final choose = modelMissing && onChooseModel != null
       ? KitAction(
           key: const ValueKey('prompt-error-choose-model'),
-          label: l10n.chatUiChooseModel,
+          label: use == null
+              ? l10n.chatUiChooseModel
+              : l10n.chatUiChooseAnotherModel,
           onPressed: onChooseModel,
+        )
+      : null;
+  final resend =
+      !modelMissing &&
+          kind != MessageErrorKind.contextOverflow &&
+          kind != MessageErrorKind.providerAuth &&
+          kind != MessageErrorKind.contentFilter &&
+          onResend != null
+      ? KitAction(
+          key: const ValueKey('prompt-error-resend'),
+          label: l10n.chatUiSendPromptAgain,
+          onPressed: onResend,
         )
       : null;
   return _ChatStatus(
@@ -213,8 +274,11 @@ _ChatStatus _promptErrorStatus(
     messageKey: const ValueKey('prompt-error-headline'),
     supporting: words.hint,
     supportingKey: const ValueKey('prompt-error-hint'),
-    action: choose ?? details,
-    more: [if (choose != null && details != null) details],
+    action: use ?? choose ?? resend ?? details,
+    more: [
+      if (use != null) ?choose,
+      if (use != null || choose != null || resend != null) ?details,
+    ],
     onDismiss: onDismiss,
     dismissTooltip: l10n.chatUiDismissPromptError,
   );

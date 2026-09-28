@@ -5,9 +5,7 @@
     },
     "lib/ui/screens/chat_screen.dart": {
       "title draftAttachmentRecoveryTitle: Arabic does not end with \"؟\"": 1,
-      "title draftAttachmentRecoveryTitle: English does not end with \"?\"": 1,
-      "title draftLeaveTitle: Arabic does not end with \"؟\"": 1,
-      "title draftLeaveTitle: English does not end with \"?\"": 1
+      "title draftAttachmentRecoveryTitle: English does not end with \"?\"": 1
     },
     "lib/ui/screens/local_terminal_screen.dart": {
       "label localTerminalStop: fewer than two words": 1

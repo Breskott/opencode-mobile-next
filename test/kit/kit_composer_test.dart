@@ -756,7 +756,8 @@ void main() {
       expect(h.controller.text, '/co');
     });
 
-    testWidgets('Tab from the field reaches "+" first', (tester) async {
+    testWidgets('Tab from the field reaches the editor in its corner, then '
+        '"+"', (tester) async {
       debugPlatformCapabilities = const PlatformCapabilities(
         platform: TargetPlatform.linux,
         isWeb: false,
@@ -765,16 +766,25 @@ void main() {
       await _pump(tester, _composer(h), size: const Size(1280, 800));
       await tester.tap(find.byKey(_field));
       await tester.pump();
+      bool focusedIn(Key key) {
+        final focused = FocusManager.instance.primaryFocus!.context!;
+        return find
+            .descendant(
+              of: find.byKey(key),
+              matching: find.byWidgetPredicate(
+                (w) => identical(w, focused.widget),
+              ),
+            )
+            .evaluate()
+            .isNotEmpty;
+      }
+
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pump();
-      final focused = FocusManager.instance.primaryFocus!.context!;
-      expect(
-        find.descendant(
-          of: find.byKey(_tools),
-          matching: find.byWidgetPredicate((w) => identical(w, focused.widget)),
-        ),
-        findsOneWidget,
-      );
+      expect(focusedIn(_editor), isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(focusedIn(_tools), isTrue);
     });
   });
 
@@ -788,9 +798,8 @@ void main() {
     expect(find.byKey(_stop), findsOneWidget);
   });
 
-  testWidgets('200 % text at 320 dp: no overflow; Stop and Send 8 dp apart', (
-    tester,
-  ) async {
+  testWidgets('200 % text at 320 dp: no overflow; Stop leads the row and '
+      'Send trails it, never side by side', (tester) async {
     final h = _host('a long message to the agent');
     await _pump(
       tester,
@@ -808,7 +817,26 @@ void main() {
     expect(tester.takeException(), isNull);
     final stop = tester.getRect(find.byKey(_stop));
     final send = tester.getRect(find.byKey(_send));
-    expect(send.left - stop.right, greaterThanOrEqualTo(8));
+    final tools = tester.getRect(find.byKey(_tools));
+    // One trailing control (owner Fix): Send. Stop sits after "+".
+    expect(stop.left, greaterThanOrEqualTo(tools.right));
+    expect(send.left - stop.right, greaterThanOrEqualTo(48));
     expect(find.byKey(_tools), findsOneWidget);
+  });
+
+  testWidgets('the full-screen editor opens from the field\'s top corner', (
+    tester,
+  ) async {
+    final h = _host('hello');
+    await _pump(tester, _composer(h));
+    final editor = tester.getRect(find.byKey(_editor));
+    final field = tester.getRect(find.byKey(_field));
+    final send = tester.getRect(find.byKey(_send));
+    // Beside the words, above the send row.
+    expect(editor.bottom, lessThanOrEqualTo(send.top + 1));
+    expect(editor.left, greaterThanOrEqualTo(field.right - 1));
+    await tester.tap(find.byKey(_editor));
+    await tester.pump();
+    expect(h.editors, 1);
   });
 }

@@ -6434,6 +6434,22 @@ class ConnectionController extends ChangeNotifier {
     return cleared;
   }
 
+  /// The person's Retry on a queued prompt whose send failed before it left
+  /// the device (the server refused it, so nothing was delivered): it goes
+  /// out in a flush that starts now, even when automatic sending is off.
+  /// Offline it waits for the next flush with the same explicit request.
+  /// False, changing nothing, when the entry is gone, is already on its way,
+  /// or left the device once (that is [resendQueuedPrompt]'s review).
+  Future<bool> retryQueuedPrompt(String id) async {
+    if (_queuedPromptInFlight == id) return false;
+    final index = _queue.indexWhere((entry) => entry.id == id);
+    if (index < 0 || _queue[index].dispatched) return false;
+    _explicitQueueResends.add(id);
+    if (!_disposed) notifyListeners();
+    await flushOfflineQueue();
+    return true;
+  }
+
   /// Persists a replacement for one queue entry. Returns null when the entry
   /// is no longer queued, false when the store refused the write (memory
   /// and storage both stay as they were), true when the change persisted.

@@ -60,6 +60,7 @@ class KitField extends StatefulWidget {
     this.error,                           // replaces the helper; a live region
     this.maxLength,                       // the counter appears from 80 % of the limit
     this.maxLines,                        // null: 1, or 3→8 growing for multiline
+    this.minLines,                        // one-line kinds with maxLines > 1: 1 = start at one line and grow as it wraps
     this.decimal = false,                 // number kind: allow one decimal separator
     this.draft,                           // required for multiline inside a sheet (G48)
     this.enabled = true,

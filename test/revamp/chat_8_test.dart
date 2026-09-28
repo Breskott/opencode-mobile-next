@@ -6,6 +6,7 @@
 // cannot run an app action, the command launcher says why instead of
 // leaving it out (P7.4).
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/codex/gateway.dart'
@@ -124,6 +125,11 @@ void main() {
       ),
       findsOneWidget,
     );
+    // Nothing is judged before the first try (KitDialog, slice-R2): Run
+    // with an empty field says why instead of running.
+    expect(find.text('Type a command to run.'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('run-shell-confirm')));
+    await tester.pumpAndSettle();
     expect(find.text('Type a command to run.'), findsOneWidget);
 
     await tester.enterText(
@@ -144,6 +150,48 @@ void main() {
     expect(find.byKey(const ValueKey('run-shell-dialog')), findsNothing);
   });
 
+  testWidgets('a long shell command wraps so it reads whole; Enter runs it, '
+      'Shift+Enter starts a new line', (tester) async {
+    final api = _Chat8Api();
+    final conn = await chat3Controller(api: api);
+    addTearDown(conn.dispose);
+    await pumpChat3(tester, conn);
+    await _runCommand(tester, 'shell');
+
+    final field = find.byKey(const ValueKey('run-shell-command'));
+    EditableText editable() => tester.widget<EditableText>(
+      find.descendant(of: field, matching: find.byType(EditableText)),
+    );
+    // Starts at one line and grows to four as the command wraps.
+    expect(editable().minLines, 1);
+    expect(editable().maxLines, 4);
+    final oneLine = tester.getSize(field).height;
+    const long =
+        'flutter test --concurrency=1 test/revamp/chat_8_test.dart '
+        '--plain-name "a long shell command wraps so it reads whole"';
+    await tester.enterText(field, long);
+    await tester.pumpAndSettle();
+    expect(tester.getSize(field).height, greaterThan(oneLine));
+    // The start of the command stays in view: nothing scrolled sideways.
+    expect(find.textContaining('flutter test --concurrency'), findsWidgets);
+
+    // Shift+Enter adds a line; it does not run anything.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
+    await tester.pump();
+    expect(api.shells, isEmpty);
+    expect(editable().controller.text, '$long\n');
+    await tester.enterText(field, long);
+    await tester.pump();
+
+    // Enter (the keyboard's action) runs it.
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(api.shells, [long]);
+    expect(find.byKey(const ValueKey('run-shell-dialog')), findsNothing);
+  });
+
   testWidgets('Rename conversation is a kit dialog that says why it waits', (
     tester,
   ) async {
@@ -158,6 +206,12 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('session-menu-rename')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('rename-session-dialog')), findsOneWidget);
+    // An edit that leaves the title empty is judged (KitDialog, slice-R2).
+    await tester.enterText(
+      find.byKey(const ValueKey('rename-session-title')),
+      'x',
+    );
+    await tester.pump();
     await tester.enterText(
       find.byKey(const ValueKey('rename-session-title')),
       '',

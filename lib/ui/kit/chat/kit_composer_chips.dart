@@ -34,6 +34,7 @@ import '../kit_layout.dart';
 import '../kit_menu.dart';
 import '../kit_motion.dart';
 import '../kit_text.dart';
+import '../kit_tappable.dart' show KitPressTracker;
 import '../kit_tokens.dart';
 import '../motion/kit_motion_parts.dart';
 
@@ -328,28 +329,38 @@ class _Pill extends StatelessWidget {
 }
 
 /// A tap zone that paints nothing itself: it fills the area it is given and
-/// reports hover, press and keyboard focus to the surface under it
-/// (KitChip's zone; kit-KitTappable replaces it once merged).
+/// reports hover and keyboard focus to the surface under it; its press is
+/// [press] (KitPressTracker), so the fill shows on the next frame of a touch
+/// instead of after the InkWell's tap-or-scroll wait, and a quick tap is
+/// still seen (KitChip's zone).
 Widget _zone({
+  required BuildContext context,
+  required KitPressTracker press,
   required VoidCallback onTap,
   required ValueChanged<bool> onHover,
-  required ValueChanged<bool> onPressed,
   required ValueChanged<bool> onFocus,
   VoidCallback? onLongPress,
   GestureTapUpCallback? onSecondaryTapUp,
-}) => Material(
-  type: MaterialType.transparency,
-  child: InkWell(
-    onTap: onTap,
-    onLongPress: onLongPress,
-    onSecondaryTapUp: onSecondaryTapUp,
-    onHover: onHover,
-    onHighlightChanged: onPressed,
-    onFocusChange: onFocus,
-    enableFeedback: false,
-    splashFactory: NoSplash.splashFactory,
-    overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-    child: const SizedBox.expand(),
+}) => press.listen(
+  context: context,
+  enabled: true,
+  child: Material(
+    type: MaterialType.transparency,
+    child: InkWell(
+      onTap: () {
+        press.confirm();
+        onTap();
+      },
+      onTapCancel: press.cancel,
+      onLongPress: onLongPress,
+      onSecondaryTapUp: onSecondaryTapUp,
+      onHover: onHover,
+      onFocusChange: onFocus,
+      enableFeedback: false,
+      splashFactory: NoSplash.splashFactory,
+      overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+      child: const SizedBox.expand(),
+    ),
   ),
 );
 
@@ -388,8 +399,16 @@ class _ModelChip extends StatefulWidget {
 
 class _ModelChipState extends State<_ModelChip> {
   bool _hovered = false;
-  bool _pressed = false;
   bool _focused = false;
+  late final _press = KitPressTracker(() {
+    if (mounted) setState(() {});
+  });
+
+  @override
+  void dispose() {
+    _press.dispose();
+    super.dispose();
+  }
 
   void _set(void Function() change) => setState(change);
 
@@ -597,7 +616,7 @@ class _ModelChipState extends State<_ModelChip> {
             children: [
               ExcludeSemantics(
                 child: _Pill(
-                  active: _hovered || _pressed,
+                  active: _hovered || _press.shown,
                   focused: _focused,
                   padding: padding,
                   child: content,
@@ -616,6 +635,8 @@ class _ModelChipState extends State<_ModelChip> {
                   excludeFromSemantics: true,
                   enableFeedback: false,
                   child: _zone(
+                    context: context,
+                    press: _press,
                     onTap: widget.onPressed,
                     onLongPress: hasMenu ? _openMenu : null,
                     onSecondaryTapUp: hasMenu
@@ -623,7 +644,6 @@ class _ModelChipState extends State<_ModelChip> {
                               _openMenu(position: details.globalPosition)
                         : null,
                     onHover: (on) => _set(() => _hovered = on),
-                    onPressed: (on) => _set(() => _pressed = on),
                     onFocus: (on) => _set(() => _focused = on),
                   ),
                 ),
@@ -839,8 +859,21 @@ class _AttachmentChip extends StatefulWidget {
 
 class _AttachmentChipState extends State<_AttachmentChip> {
   final _hovered = <_Zone>{};
-  final _pressed = <_Zone>{};
   final _focused = <_Zone>{};
+  late final _press = {
+    for (final zone in _Zone.values)
+      zone: KitPressTracker(() {
+        if (mounted) setState(() {});
+      }),
+  };
+
+  @override
+  void dispose() {
+    for (final press in _press.values) {
+      press.dispose();
+    }
+    super.dispose();
+  }
 
   void _mark(Set<_Zone> set, _Zone zone, bool on) {
     final changed = on ? set.add(zone) : set.remove(zone);
@@ -930,9 +963,10 @@ class _AttachmentChipState extends State<_AttachmentChip> {
       child: onOpen == null
           ? const SizedBox.expand()
           : _zone(
+              context: context,
+              press: _press[_Zone.body]!,
               onTap: onOpen,
               onHover: (on) => _mark(_hovered, _Zone.body, on),
-              onPressed: (on) => _mark(_pressed, _Zone.body, on),
               onFocus: (on) => _mark(_focused, _Zone.body, on),
             ),
     );
@@ -951,7 +985,9 @@ class _AttachmentChipState extends State<_AttachmentChip> {
         children: [
           ExcludeSemantics(
             child: _Pill(
-              active: _hovered.isNotEmpty || _pressed.isNotEmpty,
+              active:
+                  _hovered.isNotEmpty ||
+                  _press.values.any((press) => press.shown),
               focused: _focused.isNotEmpty,
               padding: padding,
               child: content,
@@ -977,9 +1013,10 @@ class _AttachmentChipState extends State<_AttachmentChip> {
                 onTap: onRemove,
                 excludeSemantics: true,
                 child: _zone(
+                  context: context,
+                  press: _press[_Zone.remove]!,
                   onTap: onRemove,
                   onHover: (on) => _mark(_hovered, _Zone.remove, on),
-                  onPressed: (on) => _mark(_pressed, _Zone.remove, on),
                   onFocus: (on) => _mark(_focused, _Zone.remove, on),
                 ),
               ),
@@ -1146,8 +1183,16 @@ class _SuggestionRow extends StatefulWidget {
 
 class _SuggestionRowState extends State<_SuggestionRow> {
   bool _hovered = false;
-  bool _pressed = false;
   bool _focused = false;
+  late final _press = KitPressTracker(() {
+    if (mounted) setState(() {});
+  });
+
+  @override
+  void dispose() {
+    _press.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1255,7 +1300,7 @@ class _SuggestionRowState extends State<_SuggestionRow> {
     );
     row = DecoratedBox(
       decoration: BoxDecoration(
-        color: _hovered || _pressed ? roles.surface3 : null,
+        color: _hovered || _press.shown ? roles.surface3 : null,
       ),
       position: DecorationPosition.background,
       child: row,
@@ -1287,9 +1332,10 @@ class _SuggestionRowState extends State<_SuggestionRow> {
             top: 0,
             bottom: 0,
             child: _zone(
+              context: context,
+              press: _press,
               onTap: () => widget.onSelected(s),
               onHover: (on) => setState(() => _hovered = on),
-              onPressed: (on) => setState(() => _pressed = on),
               onFocus: (on) => setState(() => _focused = on),
             ),
           ),

@@ -79,13 +79,13 @@ void main() {
     expect(marked, ['Retry', 'retry']);
   });
 
-  testWidgets('the excerpt says which match and marks the hit', (tester) async {
+  testWidgets('the excerpt says where the match is and marks the hit; the '
+      'count stays in the find bar', (tester) async {
     const text = 'The flaky checkout test fails one run in five on CI.';
     final start = text.indexOf('checkout');
     await _host(
       tester,
       const TranscriptMatchExcerpt(
-        label: 'Match 2 of 5',
         match: TranscriptMatch(
           messageID: 'm1',
           partIndex: 0,
@@ -97,7 +97,8 @@ void main() {
       ),
     );
     expect(start, 10);
-    expect(find.text('Match 2 of 5 · Tool data'), findsOneWidget);
+    expect(find.text('Tool data'), findsOneWidget);
+    expect(find.textContaining('of 5'), findsNothing);
     expect(
       find.byKey(const ValueKey('transcript-match-m1/0/10')),
       findsOneWidget,

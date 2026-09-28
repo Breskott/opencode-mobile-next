@@ -34,6 +34,10 @@ import 'motion/kit_reveal.dart';
 /// - [confirmLabel] is a verb naming the act ("Rename", COPY-8).
 /// - [initial] is prefilled and selected on open (never with
 ///   [KitFieldKind.secret], which is never prefilled).
+/// - [maxLines] over 1 lets a long value (a shell command) wrap: the field
+///   starts at one line and grows to [maxLines], so the whole value reads
+///   at once. Enter and the IME action still submit; Shift+Enter starts a
+///   new line.
 /// - [validate] returns null when the text is valid, the reason otherwise.
 ///   Nothing is judged before the first edit (the primary stays enabled; a
 ///   tap on it with invalid text shows the reason instead of submitting).
@@ -70,6 +74,7 @@ Future<String?> showKitInputDialog(
   String? helper,
   KitFieldKind kind = KitFieldKind.text,
   int? maxLength,
+  int maxLines = 1,
   String? Function(String value)? validate,
   Future<String?> Function(String value)? onSubmit,
   KitAction? alternative,
@@ -111,6 +116,7 @@ Future<String?> showKitInputDialog(
     helper: helper,
     kind: kind,
     maxLength: maxLength,
+    maxLines: maxLines,
     validate: validate,
     onSubmit: onSubmit,
     alternative: alternative,
@@ -342,6 +348,7 @@ class _KitInputSpec {
     this.hint,
     this.helper,
     this.maxLength,
+    this.maxLines = 1,
     this.validate,
     this.onSubmit,
     this.alternative,
@@ -359,6 +366,7 @@ class _KitInputSpec {
   final String? helper;
   final KitFieldKind kind;
   final int? maxLength;
+  final int maxLines;
   final String? Function(String value)? validate;
   final Future<String?> Function(String value)? onSubmit;
   final KitAction? alternative;
@@ -492,6 +500,19 @@ class _KitInputDialogState extends State<_KitInputDialog> {
     _close(value);
   }
 
+  /// Shift+Enter in a wrapping field: a line break at the caret.
+  void _newLine() {
+    if (_working) return;
+    final value = widget.controller.value;
+    final selection = value.selection.isValid
+        ? value.selection
+        : TextSelection.collapsed(offset: value.text.length);
+    widget.controller.value = value.replaced(
+      TextRange(start: selection.start, end: selection.end),
+      '\n',
+    );
+  }
+
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.escape) {
@@ -577,6 +598,8 @@ class _KitInputDialogState extends State<_KitInputDialog> {
             helper: spec.helper,
             error: fieldError,
             maxLength: spec.maxLength,
+            maxLines: spec.maxLines,
+            minLines: spec.maxLines > 1 ? 1 : null,
             enabled: !working,
             disabledReason: workingReason,
             focusNode: _focus,
@@ -591,7 +614,18 @@ class _KitInputDialogState extends State<_KitInputDialog> {
       body: [
         _KitDialogTitle(spec.title),
         SizedBox(height: tokens.space4),
-        field,
+        if (spec.maxLines > 1)
+          // Enter submits (the IME action and a hardware Enter alike);
+          // Shift+Enter is the one way to start a new line.
+          CallbackShortcuts(
+            bindings: {
+              const SingleActivator(LogicalKeyboardKey.enter, shift: true):
+                  _newLine,
+            },
+            child: field,
+          )
+        else
+          field,
       ],
       actions: KitActionBlock(
         primary: KitAction(

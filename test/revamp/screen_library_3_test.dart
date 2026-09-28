@@ -77,7 +77,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Start sign-in on the server?'), findsNothing);
       expect(c.started, ['cloud/login']);
-      expect(find.textContaining('Sign-in is pending on the server'), findsOne);
+      expect(find.textContaining('Signing in on the server…'), findsOne);
       expect(find.byKey(const ValueKey('command-auth-cancel')), findsOneWidget);
       expect(find.byKey(const ValueKey('command-auth-start')), findsNothing);
       // The server gets time to answer before the sheet offers the check.
@@ -86,6 +86,64 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('command-auth-check')), findsOneWidget);
       expect(find.text('Check Cloud sign-in now'), findsOneWidget);
+    });
+  });
+
+  group('server sign-in says three plain things', () {
+    Future<Library3Controller> started(WidgetTester tester) async {
+      final c = await library3Server();
+      addTearDown(c.dispose);
+      await _providers(tester, c);
+      await tester.tap(find.byKey(const ValueKey('connect-provider-cloud')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('command-auth-start')));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 8));
+      await tester.pumpAndSettle();
+      return c;
+    }
+
+    testWidgets('signed in', (tester) async {
+      final c = await started(tester);
+      c.commandStatus = IntegrationAuthState.complete;
+      await tester.tap(find.byKey(const ValueKey('command-auth-check')));
+      await tester.pumpAndSettle();
+      expect(find.text('Signed in.'), findsOneWidget);
+      expect(find.textContaining('Refresh Providers'), findsNothing);
+      expect(find.byKey(const ValueKey('command-auth-cancel')), findsNothing);
+    });
+
+    testWidgets("sign-in didn't finish: Try again starts a new one", (
+      tester,
+    ) async {
+      final c = await started(tester);
+      c.commandStatus = IntegrationAuthState.failed;
+      await tester.tap(find.byKey(const ValueKey('command-auth-check')));
+      await tester.pumpAndSettle();
+      expect(find.text("Sign-in didn't finish."), findsOneWidget);
+      // No attempt or recovery mechanics as copy.
+      expect(find.textContaining('attempt'), findsNothing);
+      expect(find.textContaining('Check the existing'), findsNothing);
+      final again = find.byKey(const ValueKey('command-auth-start'));
+      expect(
+        find.descendant(of: again, matching: find.text('Try again')),
+        findsOneWidget,
+      );
+      await tester.tap(again);
+      await tester.pumpAndSettle();
+      expect(c.started, ['cloud/login', 'cloud/login']);
+      expect(find.textContaining('Signing in on the server…'), findsOne);
+    });
+
+    testWidgets('a check that cannot reach the server says so in words', (
+      tester,
+    ) async {
+      final c = await started(tester);
+      c.commandStatus = null;
+      await tester.tap(find.byKey(const ValueKey('command-auth-check')));
+      await tester.pumpAndSettle();
+      expect(find.text("Couldn't check the sign-in. Try again."), findsOne);
+      expect(find.textContaining('synthetic'), findsNothing);
     });
   });
 

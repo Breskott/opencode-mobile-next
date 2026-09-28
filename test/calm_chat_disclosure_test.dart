@@ -83,16 +83,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('composer-tool-attach')), findsOneWidget);
     expect(find.byKey(const Key('composer-tool-commands')), findsOneWidget);
-    expect(find.text('Context capsule'), findsNothing);
+    // Voice conversation waits under Advanced (the Context capsule is gone,
+    // slice-P3.3).
+    expect(find.byKey(const Key('composer-tool-conversation')), findsNothing);
     expect(find.byKey(const Key('composer-tool-clear')), findsNothing);
     final advanced = find.byKey(const Key('composer-tools-advanced'));
     await tester.ensureVisible(advanced);
     await tester.tap(advanced);
     await tester.pumpAndSettle();
-    expect(find.text('Context capsule'), findsOneWidget);
+    expect(find.byKey(const Key('composer-tool-conversation')), findsOneWidget);
     // Tap the disclosure header, not the expanded tile's children.
-    await tester.ensureVisible(find.text('Advanced'));
-    await tester.tap(find.text('Advanced'));
+    await tester.ensureVisible(find.text('More tools'));
+    await tester.tap(find.text('More tools'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('composer-tools-sheet')), findsOneWidget);
     final prompts = find.byKey(const Key('composer-tools-prompts'));
@@ -104,8 +106,13 @@ void main() {
     expect(clear.hitTestable(), findsOneWidget);
     expect(
       tester
-          .widget<TextField>(find.byKey(const Key('chat-composer-field')))
-          .controller!
+          .widget<EditableText>(
+            find.descendant(
+              of: find.byKey(const Key('chat-composer-field')),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .controller
           .text,
       'Keep my draft',
     );

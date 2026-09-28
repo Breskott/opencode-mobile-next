@@ -10,6 +10,8 @@
 
 > **Update (slice-close-team, 2026-09-28):** seven more pages are done — start-run-sheet, isolated-task-sheet, team-agent, team-home-needs-you-tab, team-run, team-run-overview-tab and embedded-team-receipt-chip — and the greyed-out Merge on a merged task is gone (embedded-team-merge-section stays blocked on the host merge contract). The counts below include them. Evidence: `docs/qa/slice-close-team-2026-09-28/README.md`.
 
+> **Update (slice-close-chat, 2026-09-28):** eleven more pages are done — embedded-pending-sends-strip (the owner-note page: a refused queued message has Try again), chat (the fold decision below), chat-leave-unsaved-draft-sheet, chat-run-shell-dialog, chat-read-aloud-consent-sheet, embedded-composer, embedded-prompt-error-banner, embedded-transcript-find-bar, session-approvals-sheet, command-auth-sheet and team-agent-output. **Fold decision (gap 17, delegated):** a finished turn folds only its work and the agent's passing words ("Looking into it.", "Now let me run the tests:"); an explanation the agent wrote before its last step stays in view below the turn's one work line. The counts below include them. Evidence: `docs/qa/slice-close-chat-2026-09-28/README.md`.
+
 | Candidate | Value |
 |---|---|
 | Branch / revision audited | `feat/phone-setup-v2` at `ca043f36` (merge of slice-P10.1-2) |
@@ -56,7 +58,7 @@ By area:
 | i1-team-core | 9 | 6 | 0 | 1 | 0 |
 | i2-team-sheets | 8 | 2 | 1 | 0 | 1 |
 | j1-settings-more | 9 | 3 | 0 | 0 | 0 |
-| j2-library | 4 | 2 | 0 | 0 | 0 |
+| j2-library | 5 | 1 | 0 | 0 | 0 |
 | k-session-misc | 4 | 1 | 0 | 0 | 0 |
 
 What the pages became: 80 redesigned, 40 merged into another page (mostly phone setup v2, the team conversation, team-home, This phone, the Inbox, the diff view and the file viewer), 18 only restyled on kit parts, 15 removed, 13 fixed and 1 unchanged at this revision (embedded-voice-conversation-controls, waiting on P10.3).
@@ -64,7 +66,7 @@ What the pages became: 80 redesigned, 40 merged into another page (mostly phone 
 
 ## Pages with an owner note (27)
 
-### embedded-pending-sends-strip — **partial**
+### embedded-pending-sends-strip — **done** (slice-close-chat)
 
 > All the queued messages should be merged in one bubble andwith clear ctar message inside the bubble andthe design should follow the themethey feel so different.
 
@@ -73,6 +75,7 @@ What the pages became: 80 redesigned, 40 merged into another page (mostly phone 
 - *Owner note:* yes — all waiting sends are one themed KitQueuedMessage bubble with a 'n waiting' head, per-item states in words and one ⋯ menu each.
 - *Critics' findings:* partly — clipping and overflow are fixed (the bubble sits in a height-capped, scrolling ListView), and Edit and a destructive Discard are in ⋯. Still standing: a failed item that was never dispatched (state failed) has no Retry or Send now, only Edit/Discard. Send again is offered only for unconfirmed sends (message_view.dart:1812-1840).
 - *Missing:* No Retry action on a failed queued item. It waits for the next automatic flush. *Fix owner:* lib/ui/screens/chat/message_view.dart _draftItem (chat library) (medium impact).
+- *Closed by slice-close-chat:* a queued message the server refused (nothing delivered) says why in the app's words ("Not accepted: The model provider is overloaded right now.", never the server's text) and the bubble's one call to action is **Try again** ("Try all N again" for several); each refused item's ⋯ menu has Try again first, then Edit and Discard. It sends at once through `ConnectionController.retryQueuedPrompt`, even with automatic sending off; offline there is no Try again (it waits for the reconnect). Tests `test/pending_sends_strip_test.dart` ("a queued message the server refused").
 - *Evidence:* `lib/ui/kit/chat/kit_queued_message.dart:1-52`
 
 ### profile-editor — **done** (slice-close-servers)
@@ -373,16 +376,16 @@ Gaps are shortened here; every non-done row is listed in full under **Gaps** bel
 | root-connecting | a-shell | fix | redesigned | done | coord-main, slice-P1.3, slice-P4.4 · 2c8efba4, 781933fb |  | lib/ui/widgets/saved_server_connection_card.dart:310-390 |
 | share-session-failed-banner | a-shell | fix | redesigned | done | coord-main · c274356e, 2c8efba4 |  | lib/main.dart:678-726 |
 | shorebird-update-notice | a-shell | fix | redesigned | done | screen-system-2 · 5a42b94d, ff9a4446 |  | lib/update/shorebird_update_notice.dart:273-287 |
-| chat | b1-chat-screen | fix | redesigned | partial | chat-7, chat-8, chat-9, slice-P3.6, slice-P3.7b, slice-P4.4, P7.5 · 01634614, 064d7211, … | Assistant text before the last tool step still folds into the work line in finished turns, so the answer's explanation can be hidden. This conflicts … | lib/ui/screens/chat/message_view.dart:529-570 |
-| chat-leave-unsaved-draft-sheet | b2-chat-screen | fix | restyled | not done | chat-7, chat-8, chat-9 · 01634614 | No 'Copy draft and leave' primary and no 'Try saving again'; the copy still points to actions the sheet does not offer. | lib/ui/screens/chat_screen.dart:6751-6760 |
+| chat | b1-chat-screen | fix | redesigned (slice-close-chat: a finished turn keeps its explanation in view, folds only work and passing words, one work line; decision recorded in docs/qa/slice-close-chat-2026-09-28) | done | chat-7, chat-8, chat-9, slice-P3.6, slice-P3.7b, slice-P4.4, P7.5 · 01634614, 064d7211, … | Assistant text before the last tool step still folds into the work line in finished turns, so the answer's explanation can be hidden. This conflicts … | lib/ui/screens/chat/message_view.dart:529-570 |
+| chat-leave-unsaved-draft-sheet | b2-chat-screen | fix | restyled (slice-close-chat: Copy draft and leave (main), Try saving again (leaves once saved, says so when it fails), Leave without saving; back keeps editing) | done | chat-7, chat-8, chat-9 · 01634614 | No 'Copy draft and leave' primary and no 'Try saving again'; the copy still points to actions the sheet does not offer. | lib/ui/screens/chat_screen.dart:6751-6760 |
 | chat-revert-confirm-sheet | b2-chat-screen | rethink | merged into stage-revert-sheet | done | slice-P3.7b · 2b858465, 0b6fd5b3 |  | docs/qa/slice-P3.7b-2026-09-27/README.md |
-| chat-run-shell-dialog | b2-chat-screen | fix | restyled | partial | chat-7, chat-8, chat-9, slice-P10.1 · 01634614, 34353c2f | The command field is still one line. It needs to show 1–4 mono lines so the whole command is readable. | lib/ui/screens/chat_screen.dart:4985-5010 |
+| chat-run-shell-dialog | b2-chat-screen | fix | restyled (slice-close-chat: the mono field wraps from one to four lines; Enter runs, Shift+Enter adds a line) | done | chat-7, chat-8, chat-9, slice-P10.1 · 01634614, 34353c2f | The command field is still one line. It needs to show 1–4 mono lines so the whole command is readable. | lib/ui/screens/chat_screen.dart:4985-5010 |
 | session-menu-sheet | b2-chat-screen | rethink | redesigned | done | chat-5, slice-P10.2 · 34353c2f, ca043f36 |  | lib/ui/widgets/session_menu.dart:11-31 |
-| chat-read-aloud-consent-sheet | c-chat-compose | fix | fixed | partial | chat-6 · e52f11c4, edd086b4 | Consent is not remembered across conversations or app restarts. It resets on every scope change. | lib/ui/screens/chat/read_aloud.dart:82-120 |
-| embedded-composer | c-chat-compose | fix | redesigned | partial | chat-3, slice-P4.4 (KIT-24), P7.5/P7.7 · e28442b0, 74412bb5 | In the working state with text, show one trailing control (Send), not Stop+Send, and move expand into the field corner. | lib/ui/kit/chat/kit_composer.dart:385-403 |
+| chat-read-aloud-consent-sheet | c-chat-compose | fix | fixed (slice-close-chat: asked once, remembered on this phone (oc.readAloudConsent), across conversations and restarts) | done | chat-6 · e52f11c4, edd086b4 | Consent is not remembered across conversations or app restarts. It resets on every scope change. | lib/ui/screens/chat/read_aloud.dart:82-120 |
+| embedded-composer | c-chat-compose | fix | redesigned (slice-close-chat: one trailing control (Send with text, Stop when empty); Stop leads the row while text waits; the editor opens from the field corner) | done | chat-3, slice-P4.4 (KIT-24), P7.5/P7.7 · e28442b0, 74412bb5 | In the working state with text, show one trailing control (Send), not Stop+Send, and move expand into the field corner. | lib/ui/kit/chat/kit_composer.dart:385-403 |
 | embedded-message-view | c-chat-compose | fix | redesigned | done | chat-1 · 557920e3, fcf193c8 |  | lib/ui/kit/chat/kit_work_line.dart:380-420 |
-| embedded-prompt-error-banner | c-chat-compose | fix | fixed | partial | chat-6, slice-P4.4 · e52f11c4, 781933fb | Add a one-tap 'Use <suggestion> and resend' and mark the failed prompt Not sent with Retry. | lib/ui/screens/chat/chat_states.dart:176-221 |
-| embedded-transcript-find-bar | c-chat-compose | fix | restyled | partial | chat-6 · e52f11c4 | The match excerpt card still repeats the count. Keep the count in the bar only and highlight in place. | lib/ui/widgets/transcript_highlight.dart:111-150 |
+| embedded-prompt-error-banner | c-chat-compose | fix | fixed (slice-close-chat: Use <suggested model> and resend, Send again, and Not answered on the prompt, on the status line and under the failed turn) | done | chat-6, slice-P4.4 · e52f11c4, 781933fb | Add a one-tap 'Use <suggestion> and resend' and mark the failed prompt Not sent with Retry. | lib/ui/screens/chat/chat_states.dart:176-221 |
+| embedded-transcript-find-bar | c-chat-compose | fix | restyled (slice-close-chat: the count lives in the bar only; a match in words already on screen is marked in place, the excerpt shows only for hidden text and says where) | done | chat-6 · e52f11c4 | The match excerpt card still repeats the count. Keep the count in the bar only and highlight in place. | lib/ui/widgets/transcript_highlight.dart:111-150 |
 | prompt-history-sheet | c-chat-compose | fix | fixed | done | chat-3 · e28442b0 |  | lib/ui/screens/chat_screen.dart:982-991 |
 | prompt-stash-sheet | c-chat-compose | fix | redesigned | done | chat-3, slice-P3.2 · e28442b0, 331179d0 |  | lib/ui/screens/chat/prompt_stash.dart:275-310 |
 | embedded-completion-digest-card | d-chat-sheets | rethink | merged into activity (Inbox 'Finished' KitExpandRow), but … | partial | slice-P4.2b · 2c1c783f, 53c2bf2a | The row landed, but its body was not rebuilt. It should say only what is known ('Finished · 9 files changed · nothing waiting on you'), put … | lib/ui/widgets/completion_digest.dart:54 |
@@ -393,7 +396,7 @@ Gaps are shortened here; every non-done row is listed in full under **Gaps** bel
 | form-sheet | d-chat-sheets | fix | restyled (KitSheet) | done | shared-chat-2 · da07313f |  | lib/ui/widgets/form_renderer.dart:79 |
 | markdown-code-reader | d-chat-sheets | fix | redesigned | done | kit-KitMarkdown, kit-KitCodeBlock · 79d941e4, 0e57c30f |  | lib/ui/widgets/markdown.dart:241 |
 | permission-sheet | d-chat-sheets | fix | redesigned (KitRequestSheet) | done | chat-5 · ec709a5d, c79b4494 |  | lib/ui/screens/chat/permission_sheet.dart:277 |
-| session-approvals-sheet | d-chat-sheets | fix | redesigned | partial | chat-5, P6 · ec709a5d, 0b171ac3 | Say the new-conversation rule once and remove the contradicting footer sentence from approvalsUiServerRulesNote. | lib/ui/screens/chat/approvals_sheet.dart:186 |
+| session-approvals-sheet | d-chat-sheets | fix | redesigned (slice-close-chat: the new-conversation rule is said once, by the Approve everything switch; the contradicting footer sentence is gone) | done | chat-5, P6 · ec709a5d, 0b171ac3 | Say the new-conversation rule once and remove the contradicting footer sentence from approvalsUiServerRulesNote. | lib/ui/screens/chat/approvals_sheet.dart:186 |
 | todos-sheet | d-chat-sheets | rethink | merged into embedded-message-view (Tasks step checklist) | done | chat-6 · e52f11c4, edd086b4 |  | lib/ui/screens/chat/session_sheets.dart:3 |
 | voice-model-setup-sheet | d-chat-sheets | rethink | redesigned | done | screen-voice-1, slice-P10.4 · 83af7522, 5c36473d |  | lib/voice/voice_ui.dart:290 |
 | voice-notices | d-chat-sheets | fix | redesigned; moved under About > Open source | done | screen-voice-1, slice-P3.10 · 83af7522, 2bec3ed3 |  | lib/voice/notices.dart:155 |
@@ -466,7 +469,7 @@ Gaps are shortened here; every non-done row is listed in full under **Gaps** bel
 | embedded-team-receipt-chip | i1-team-core | fix | restyled (slice-close-team: the receipt is a mark and word in the row's supporting line, `teamGateRowLine`; the chevron stays) | done | kit-KitReceipt, slice-P4.1c, slice-P5.2 · 513310c0, 4cfbf10a (merge 078cffed), 10cf32d9 | Receipt as a word + icon in the row's supporting line ('Question · Not confirmed yet'), chevron trailing; the retry stays in the Gate sheet. | lib/ui/widgets/team_receipt.dart:99 |
 | team-agent | i1-team-core | fix | redesigned (short status page; slice-close-team: only open dependencies count, `teamOpenDependencies`) | done | screen-team-1, slice-P3.6 · 346ca55c (merge 30dbf42c), af07cc7a (merge dbac9c48) | Say the dependency only while it is open (check the dependency's state), so 'Working' and 'waiting on…' never show together. | lib/ui/screens/team/agent_screen.dart:246 |
 | team-agent-message-sheet | i1-team-core | fix | merged into team-conversation (watching composer) | done | screen-team-1, slice-P3.6 · af07cc7a (merge dbac9c48) |  | docs/qa/slice-P3.6-2026-09-27/README.md |
-| team-agent-output | i1-team-core | rethink | merged into chat (watching mode; TeamWatchLiveScreen … | partial | slice-P3.6 · af07cc7a (merge dbac9c48) | Ended + empty: an inline state 'This session has ended' with a way on (Back to the task / About the worker) instead of the 'fills in as the agent … | lib/ui/screens/chat/team_watch_live.dart:289 |
+| team-agent-output | i1-team-core | rethink | merged into chat (watching mode; TeamWatchLiveScreen … (slice-close-chat: ended before a word: This conversation has ended, in place, with Back to the task and About the worker; the status line does not repeat it) | done | slice-P3.6 · af07cc7a (merge dbac9c48) | Ended + empty: an inline state 'This session has ended' with a way on (Back to the task / About the worker) instead of the 'fills in as the agent … | lib/ui/screens/chat/team_watch_live.dart:289 |
 | team-agents | i1-team-core | fix | redesigned | done | screen-team-3, slice-P3.6 · ac649a70 (merge f6f2e4ec), af07cc7a (merge dbac9c48) |  | lib/ui/screens/team/team_agents_screen.dart:149 |
 | team-cycle-how-sheet | i1-team-core | fix | merged into team-conversation (Now line 'Why?' in place) | done | shared-team-1, slice-P5.1 · 19640c8b, e5148e4a (merge dd18fdee) |  | docs/qa/slice-P5.1-2026-09-27/README.md |
 | team-cycle-stop-confirm-sheet | i1-team-core | fix | merged into team-agent-stop-confirm-sheet | done | shared-team-1, screen-team-1 · 19640c8b, 346ca55c |  | lib/ui/screens/team/agent_screen.dart:322 |
@@ -495,7 +498,7 @@ Gaps are shortened here; every non-done row is listed in full under **Gaps** bel
 | notifications-settings | j1-settings-more | fix | redesigned | done | screen-settings-1, slice-close-misc · 477e2075, a528c5cf | Closed by slice-close-misc: the background line reads "Android stops this after 6 hours a day. The app will tell you when it does." and monitorDisclosure names the switch ("Stay connected in the background"). | lib/l10n/app_en.arb e7SettingsUi34, monitorDisclosure |
 | plugins-mapping-dialog | j1-settings-more | rethink | removed | done | slice-P3.1 · 496a4583, 441012f8 |  | lib/ui/screens/settings/server_plugins_section.dart:39 |
 | team-plugin-sheet | j1-settings-more | rethink | merged into team-home | done | screen-library-3, slice-P3.4 · d42ba768, aa40d789 |  | docs/qa/slice-P3.4-2026-09-27/README.md |
-| command-auth-sheet | j2-library | rethink | restyled | partial | screen-library-3, slice-P3.11a · 0d4d1e71, 2d238870, 00cafa13 | The three plain states the critic asked for ('Signing in on the server...', 'Signed in', 'Sign-in didn't finish - Try again') are not written. The … | lib/ui/screens/library/command_auth_sheet.dart:189 |
+| command-auth-sheet | j2-library | rethink | restyled (slice-close-chat: Signing in on the server… / Signed in. / Sign-in didn't finish. with Try again; no attempt or recovery mechanics as copy) | done | screen-library-3, slice-P3.11a · 0d4d1e71, 2d238870, 00cafa13 | The three plain states the critic asked for ('Signing in on the server...', 'Signed in', 'Sign-in didn't finish - Try again') are not written. The … | lib/ui/screens/library/command_auth_sheet.dart:189 |
 | credential-management-sheet | j2-library | fix | redesigned | done | screen-library-3, slice-P3.11a · 0d4d1e71, 00cafa13 |  | lib/ui/screens/library/credential_sheet.dart:363 |
 | integrations | j2-library | rethink | redesigned | done | screen-library-1, slice-P3.10 · 3e19c94a, 2bec3ed3 |  | lib/ui/screens/library/integration_tiles.dart:247 |
 | integrations-forget-uncertain-auth-sheet | j2-library | rethink | merged into integrations-forget-pending-auth-sheet | done | screen-library-3, slice-P3.11a · 00cafa13, 674f8182 |  | lib/ui/screens/library/integrations_screen.dart:1272 |
@@ -547,7 +550,7 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 
    **Fix:** `lib/ui/screens/servers_screen.dart` (`_status`, `_manualAddress`, `_buildCodexFields`). *Medium.*
 8. **Running on this phone covers Termux only.** Affects termux-processes ("Good screen respec and make proper tool"). The tool is respecified, but there is no process inventory for the in-app Linux, and the row sits inside the Termux-only branch (`this_phone_screen.dart:895-900`). **Fix:** the Codex backend adds the in-app inventory (codex-p53), then a P5.3 follow-up. *Medium.*
-9. **A failed queued message has no Retry.** Affects embedded-pending-sends-strip. The owner's "one bubble, themed" is done. A failed queued item offers only Edit and Discard (`lib/ui/screens/chat/message_view.dart:1812-1840`). **Fix:** `_draftItem` in the chat library. *Medium.*
+9. **Closed by slice-close-chat.** ~~A failed queued message has no Retry.~~ Affects embedded-pending-sends-strip. The owner's "one bubble, themed" is done. A failed queued item offers only Edit and Discard (`lib/ui/screens/chat/message_view.dart:1812-1840`). **Fix:** `_draftItem` in the chat library. *Medium.*
 10. **The session-link sheet cannot prefill the server.** Affects session-link-server-missing-banner ("Screen sucks"). It is now an "Add this server?" sheet, but Add server opens empty and the text still says "scan the code again". **Blocked:** links that carry the address are built but gated off (`ServerCapabilities.sessionAddressHandoff` is false on every adapter until the host can be verified; `docs/qa/codex-sessionlink-2026-09-28`). *Medium.*
 11. **Commands for Claude Code and Codex don't exist.** Affects command-launcher-sheet ("… what about using Claude or codex will this support their commands?"). There is one sheet with plain words and an honest "not available" for those backends. **Blocked:** there is no callable command contract (`slashCommands` is false on both gateways). The visual study the owner asked for ("run an agent to think how to visually represent these") is not recorded anywhere. **Fix:** the Codex backend queue (`docs/qa/codex-p101-2026-09-27`), then `lib/ui/widgets/command_sheet.dart`. *Medium.*
 12. ~~**Termux-host words that could still be plainer**~~ **Closed 2026-09-28 by slice-close-servers** (`docs/qa/slice-close-servers-2026-09-28/README.md`). (all *low*, under the "Align with v2" notes):
@@ -558,7 +561,7 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 ### C. Pages with no note: not done, or high or medium gaps
 
 13. **host-management (not done).** The page tells people to pipe a script from the `master` branch straight into bash: unpinned, no checksum, no "What this does" (`lib/ui/screens/host_management_screen.dart:33-35`). This is a trust problem. **Fix:** pin a release tag, show a checksum and add a Details fold. No unit owns this; it needs one. *High.*
-14. **chat-leave-unsaved-draft-sheet (not done).** The body tells the person to copy or retry, but the only choices are Leave and Cancel (`lib/ui/screens/chat_screen.dart:6751-6760`). **Fix:** `_leaveChat`: make "Copy draft and leave" the main button and add "Try saving again". *Medium.*
+14. **Closed by slice-close-chat.** ~~chat-leave-unsaved-draft-sheet (not done).~~ The body tells the person to copy or retry, but the only choices are Leave and Cancel (`lib/ui/screens/chat_screen.dart:6751-6760`). **Fix:** `_leaveChat`: make "Copy draft and leave" the main button and add "Try saving again". *Medium.*
 15. **Closed by slice-close-team.** ~~isolated-task-sheet (not done).~~ P4.5 only moved the entry point. The sheet still:
     - uses the title "New task in a fresh worktree";
     - never asks what the copy should work on;
@@ -573,21 +576,23 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 20. **embedded-completion-digest-card.** The Inbox row landed, but the expanded body is still the old raw card with its disclaimers and five text buttons (`lib/ui/widgets/completion_digest.dart:54-104`). **Fix:** a P4.2b follow-up. *Medium.*
 21. **command-auth-sheet.** Recovery mechanics are still shown as copy (`lib/ui/screens/library/command_auth_sheet.dart:185-213`). *Medium.*
 22. ~~**termux-setup-installed and embedded-termux-attention-line.**~~ **Closed 2026-09-28 by slice-close-servers** (`docs/qa/slice-close-servers-2026-09-28/README.md`).
+17. **Closed by slice-close-chat (decided: fold only the work).** ~~chat (partial; owner decision).~~ In a finished turn, text written before the last tool step folds under the work line, so the explanation can be hidden (`lib/ui/screens/chat/message_view.dart:529-570`). The critic says keep the prose visible; the turn model says fold the work. *Medium.*
+21. **Closed by slice-close-chat.** ~~command-auth-sheet.~~ Recovery mechanics are still shown as copy (`lib/ui/screens/library/command_auth_sheet.dart:185-213`). *Medium.*
     - "Needs you" does not tell a failed install from a failed start, and Termux errors are shown exactly as the scripts send them (`lib/state/phone_host.dart:384` → `this_phone_screen.dart:778`).
     - The line blames OpenCode when a leftover helper is the real cause, and has no "See what's running" (`lib/ui/widgets/work_status_line.dart:101-103`).
 
     *Medium.*
 23. ~~**project-hub.**~~ *Closed by slice-close-misc: live lines on Changes and Terminal.* Rows are titles only, with no live lines such as "3 files changed" or "1 running" (`lib/ui/screens/project_hub_screen.dart:446`). *Medium; no owner.*
-24. **chat-run-shell-dialog.** The command field is a single line (`chat_screen.dart:4995`). **Fix:** a multi-line mono `KitField`. *Medium.*
+24. **Closed by slice-close-chat.** ~~chat-run-shell-dialog.~~ The command field is a single line (`chat_screen.dart:4995`). **Fix:** a multi-line mono `KitField`. *Medium.*
 25. **embedded-team-merge-section (blocked).** Merge on green, Undo and real diffs need the host merge contract (939a0554, bae398c0). The greyed-out Merge button on a merged task is gone (slice-close-team). *Medium.*
 
 ### D. Low-impact leftovers (wording and polish; one line each)
 
 - ~~**connection-status-details-sheet**~~ (done, slice-close-servers; was partial): The raw error fold starts open instead of collapsed. Fix: lib/ui/widgets/connection_status_banner.dart.
-- **chat-read-aloud-consent-sheet** (partial): Consent is not remembered across conversations or app restarts. It resets on every scope change. Fix: lib/ui/screens/chat/read_aloud.dart (chat library).
-- **embedded-composer** (partial): In the working state with text, show one trailing control (Send), not Stop+Send, and move expand into the field corner. Fix: lib/ui/kit/chat/kit_composer.dart (kit owner).
-- **embedded-transcript-find-bar** (partial): The match excerpt card still repeats the count. Keep the count in the bar only and highlight in place. Fix: lib/ui/screens/chat/message_view.dart _frame + lib/ui/widgets/transcript_highlight.dart.
-- **session-approvals-sheet** (partial): Say the new-conversation rule once and remove the contradicting footer sentence from approvalsUiServerRulesNote. Fix: lib/ui/screens/chat/approvals_sheet.dart:186 + app_en.arb approvalsUiServerRulesNote.
+- **chat-read-aloud-consent-sheet** (done, slice-close-chat): Consent is not remembered across conversations or app restarts. It resets on every scope change. Fix: lib/ui/screens/chat/read_aloud.dart (chat library).
+- **embedded-composer** (done, slice-close-chat): In the working state with text, show one trailing control (Send), not Stop+Send, and move expand into the field corner. Fix: lib/ui/kit/chat/kit_composer.dart (kit owner).
+- **embedded-transcript-find-bar** (done, slice-close-chat): The match excerpt card still repeats the count. Keep the count in the bar only and highlight in place. Fix: lib/ui/screens/chat/message_view.dart _frame + lib/ui/widgets/transcript_highlight.dart.
+- **session-approvals-sheet** (done, slice-close-chat): Say the new-conversation rule once and remove the contradicting footer sentence from approvalsUiServerRulesNote. Fix: lib/ui/screens/chat/approvals_sheet.dart:186 + app_en.arb approvalsUiServerRulesNote.
 - **global-sessions-continue-here-sheet** (partial): Engine wording 'through the server's sync system' still in globalSessionsMoveBody Fix: lib/l10n/app_en.arb globalSessionsMoveBody (screen-work-2 follow-up).
 - **project-health** (partial): Split 'Couldn't read Git status' + Try again from 'This server doesn't report Git status' with no retry Fix: gateway typed unsupported error (Codex backend) + lib/ui/screens/project_health_screen.dart _readFailed.
 - **diff-view** (partial): Multi-file title still 'Review' (reviewTitle) instead of 'Changes · N files' Fix: lib/ui/screens/review_workspace.dart DiffPage (P3.7a follow-up).
@@ -601,7 +606,7 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 - ~~**termux-storage**~~ (done, slice-close-servers; was partial): Scan view should show the category rows filling in with the log under Details; intro paragraph still long Fix: lib/ui/screens/termux_storage_screen.dart _buildScanning (screen-phone-1 follow-up).
 - **embedded-team-receipt-chip** (done, slice-close-team): Receipt as a word + icon in the row's supporting line ('Question · Not confirmed yet'), chevron trailing; the retry stays in the Gate sheet. Fix: lib/ui/widgets/team_receipt.dart (teamGateRowReceipt) + its row callers.
 - **team-agent** (done, slice-close-team): Say the dependency only while it is open (check the dependency's state), so 'Working' and 'waiting on…' never show together. Fix: lib/ui/screens/team/agent_screen.dart (_workHold).
-- **team-agent-output** (partial): Ended + empty: an inline state 'This session has ended' with a way on (Back to the task / About the worker) instead of the 'fills in as the agent works' line. Fix: lib/ui/screens/chat/team_watch_live.dart.
+- **team-agent-output** (done, slice-close-chat): Ended + empty: an inline state 'This session has ended' with a way on (Back to the task / About the worker) instead of the 'fills in as the agent works' line. Fix: lib/ui/screens/chat/team_watch_live.dart.
 - **team-home-needs-you-tab** (done, slice-close-team): Receipt as a word in the supporting line ('Needs you · … · Not confirmed yet'), chevron trailing. Fix: lib/ui/widgets/team_receipt.dart / lib/ui/screens/team/team_home_screen.dart.
 - **team-run** (done, slice-close-team): Stage words as outcomes ('Planned · Working · In review · Merged'), with Done/Merged only when every step is merged. Fix: lib/ui/widgets/team_vocabulary.dart (teamRunStage) + lib/ui/screens/team/task_details_sheet.dart (_StageLine).
 - ~~**embedded-team-discovery-card**~~ (closed by slice-team-g17: the Plugins AI Team row says "Found on {server}" and carries Turn on; the card is gone) (partial): Fold the offer into the Plugins AI Team row ('AI Team · Found on Laptop' + Turn on); shared-settings-1 deferred it to the Plugins row owner and no later slice did it. Fix: lib/ui/screens/settings/plugins_screen.dart (slice-P3.1 / Plugins owner).
@@ -611,7 +616,7 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 
 ### E. Loose ends found on the way (not board pages)
 
-- `test/calm_chat_disclosure_test.dart` still mentions the removed Context capsule.
+- ~~`test/calm_chat_disclosure_test.dart` still mentions the removed Context capsule.~~ Fixed by slice-close-chat (the test asserts the More tools section instead).
 - The Arabic `sessionCopyHandoff` still means "copy handoff reference", not "Continue on computer".
 - ~~`lib/ui/screens/server_settings_screen.dart:33`: the restart sheet hard-codes `bash ubuntu-opencode.sh restart`~~ — closed by slice-close-servers: the sheet says to restart the server the way it was started, with the script command in a folded "Set up with the Linux service script?".
 - All conversations still ends in a "Load more" button (`global_sessions_screen.dart:1005`), although target-ia says lists load their next page by themselves.
@@ -622,8 +627,8 @@ The ranking weighs four things: how many people hit the gap, whether the owner w
 ### Suggested next moves
 
 1. Merge P10.3 and P6.3. This closes gaps 1-2 and moves 3 pages to done.
-2. Put the owner decisions to the owner: schedule P2.4 and P2.5 (gap 4), ship a Termux-only P1.6b (gap 3), and decide the chat fold (gap 17).
-3. Run one "leftovers" chat-library unit for gaps 9, 14, 18 and 24 plus the chat lows.
+2. Put the owner decisions to the owner: schedule P2.4 and P2.5 (gap 4), ship a Termux-only P1.6b (gap 3), and decide the chat fold (gap 17). *(Decided in slice-close-chat, as delegated: fold only the work and passing words; the explanation stays.)*
+3. Run one "leftovers" chat-library unit for gaps 9, 14, 18 and 24 plus the chat lows. *(slice-close-chat closed gaps 9, 14, 17, 18, 21, 24, the chat lows and team-agent-output; embedded-completion-digest-card stays open: its body is drawn by lib/ui/widgets/completion_digest.dart in the Inbox, not by a chat part.)*
 4. Run one servers/phone wording unit for gaps 7, 12, 22 and the servers and termux lows.
 5. Run one team unit for gaps 6, 16, 25 plus the team lows. *(slice-close-team closed gap 6, gap 15, the merged-state part of gap 25 and the team lows it owns; gap 16's commands are with the security slice, team-agent-output is in the chat library, and the discovery-card fold is in the Plugins page.)*
 6. Give host-management (gap 13) an owner now; it is the only security-shaped gap.

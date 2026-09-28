@@ -418,7 +418,12 @@ class _ChatScreenState extends State<ChatScreen>
   bool _promptShelfOperationBusy = false;
   ReadAloudController? _readAloud;
   Object? _speechOwnerScope;
-  bool _readAloudConsented = false;
+
+  /// Consent to hand reply prose to the phone's speech engine: asked once
+  /// and remembered on this phone (the engine is the phone's, not a
+  /// server's), not asked again in every conversation or after a restart.
+  bool get _readAloudConsented =>
+      _conn.store.prefs.getBool(_readAloudConsentKey) ?? false;
   bool _readAloudRequestBusy = false;
   int _readAloudRequest = 0;
   String? _readAloudVoiceID;
@@ -578,6 +583,11 @@ class _ChatScreenState extends State<ChatScreen>
   bool _leavingProvisionalSession = false;
   String? _localShareUrl;
   String? _promptError;
+
+  /// The newest turn when it got no answer, as (its prompt's index, the
+  /// index of the step that ended it on an error, or null when the server
+  /// refused the prompt before any step). Worked out once per build.
+  (int, int?)? _unanswered;
 
   /// The last send failed before the server took it; its text is back in
   /// the composer. Shown on the status line until dismissed or sent again.
@@ -903,11 +913,12 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
-  Future<void> _retryDraftPersistence() async {
+  /// True once the draft is saved.
+  Future<bool> _retryDraftPersistence() async {
     if (_draftRecoveryBlocked) {
       _draftRecoveryFuture = _recoverDraftAttachments();
     }
-    await _persistDraft();
+    return _persistDraft();
   }
 
   String _draftFailureText(SessionDraftFailure failure) => switch (failure) {
@@ -2548,6 +2559,16 @@ class _ChatScreenState extends State<ChatScreen>
       await _conn.resendQueuedPrompt(entry.id);
     } on OfflineQueueWriteException {
       if (mounted) _showActionError(_chatL10n(context).queueSaveFailed);
+    }
+  }
+
+  /// Retry on a draft the server refused: nothing was delivered, so it is
+  /// sent again at once, with no question.
+  Future<void> _retryQueuedPrompt(QueuedPrompt entry) async {
+    try {
+      await _conn.retryQueuedPrompt(entry.id);
+    } catch (error) {
+      if (mounted) _showActionError(error);
     }
   }
 
@@ -4618,6 +4639,65 @@ class _ChatScreenState extends State<ChatScreen>
 
   /// Sends "Continue" through the normal send path after an output-length
   /// cut, keeping any half-typed draft for afterwards.
+  /// The words of the newest turn's prompt when that turn got no answer
+  /// and the prompt is words alone (a resend from here cannot bring files).
+  String? get _unansweredWords {
+    final prompt = _unanswered?.$1;
+    if (prompt == null || prompt >= _messages.length) return null;
+    return _promptWordsOnly(_messages[prompt]);
+  }
+
+  /// The model a "model not found" [raw] error suggests, when this server
+  /// has it ([_suggestedModel]).
+  CatalogModel? _suggestedModelFor(String? raw) {
+    final models = _conn.catalog?.models;
+    if (raw == null || models == null || models.isEmpty) return null;
+    return _suggestedModel(raw, models);
+  }
+
+  /// A model by the name the catalog gives it.
+  String _modelName(CatalogModel model) => model.name.trim().isNotEmpty
+      ? model.name.trim()
+      : presentedModelLabel(model.providerID, model.id);
+
+  /// Sends the unanswered prompt again, as it was, after switching this
+  /// conversation to [model] when one is given ("Use GPT-5.6 Pro and
+  /// resend"). Whatever the message box holds is set aside for the send and
+  /// put back after it.
+  Future<void> _resendUnanswered({CatalogModel? model}) async {
+    final words = _unansweredWords;
+    if (words == null || _sending) return;
+    if (model != null) {
+      try {
+        await _conn.selectModelForSession(
+          widget.sessionID,
+          ModelRef(providerID: model.providerID, modelID: model.id),
+        );
+      } catch (error) {
+        if (mounted) _showActionError(error);
+        return;
+      }
+      if (!mounted) return;
+    }
+    final draft = _composer.value;
+    final draftAttachments = List<PromptAttachment>.of(_attachments);
+    setState(() {
+      _attachments.clear();
+      _promptError = null;
+    });
+    _composer.text = words;
+    await _send();
+    if (!mounted) return;
+    if (draft.text.isNotEmpty || draftAttachments.isNotEmpty) {
+      _composer.value = draft;
+      setState(
+        () => _attachments
+          ..clear()
+          ..addAll(draftAttachments),
+      );
+    }
+  }
+
   Future<void> _continueTruncated() async {
     if (_sending) return;
     final draft = _composer.text;
@@ -5011,6 +5091,9 @@ class _ChatScreenState extends State<ChatScreen>
       helper: strings.chatRunShellHelper,
       confirmLabel: strings.commandRun,
       kind: KitFieldKind.mono,
+      // A command reads whole: it wraps to up to four lines instead of
+      // scrolling its start out of view (review board: run-shell dialog).
+      maxLines: 4,
       initial: initial,
       dialogKey: const ValueKey('run-shell-dialog'),
       fieldKey: const ValueKey('run-shell-command'),
@@ -6758,6 +6841,103 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
+  /// The draft could not be saved on the way out. The sheet offers what its
+  /// words say: copy the text and leave (the main answer), try saving
+  /// again (it leaves once the save works), or leave without saving. Back,
+  /// Esc and a swipe keep editing. True when the chat should close.
+  Future<bool> _askLeaveUnsavedDraft() async {
+    final l10n = _chatL10n(context);
+    final navigator = Navigator.of(context);
+    final text = _composer.text;
+    final hasText = text.trim().isNotEmpty;
+    final stillFailing = ValueNotifier<bool>(false);
+    final retry = ValueNotifier<KitAction?>(null);
+    var retrying = false;
+    var open = true;
+    void close() {
+      if (!open) return;
+      open = false;
+      navigator.pop(true);
+    }
+
+    late final VoidCallback showRetry;
+    Future<void> tryAgain() async {
+      retrying = true;
+      stillFailing.value = false;
+      showRetry();
+      final saved = await _retryDraftPersistence();
+      retrying = false;
+      if (!mounted || !open) return;
+      if (saved) {
+        close();
+        return;
+      }
+      stillFailing.value = true;
+      showRetry();
+    }
+
+    showRetry = () => retry.value = KitAction(
+      key: const ValueKey('leave-draft-retry'),
+      label: l10n.draftLeaveRetry,
+      working: retrying,
+      onPressed: retrying ? null : () => unawaited(tryAgain()),
+    );
+    showRetry();
+    // The two notifiers outlive the sheet on purpose: a save still running
+    // when the sheet is dismissed reports into them afterwards.
+    final answer = await showKitSheet<bool>(
+      context,
+      sheetKey: const ValueKey('leave-unsaved-draft'),
+      icon: AppIconography.save,
+      title: l10n.draftLeaveTitle,
+      body: (_) => ValueListenableBuilder<bool>(
+        valueListenable: stillFailing,
+        builder: (context, failed, _) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            KitText(
+              hasText ? l10n.draftLeaveMessage : l10n.draftLeaveMessageNoText,
+              tone: KitTextTone.secondary,
+            ),
+            if (failed) ...[
+              SizedBox(height: KitTokens.of(context).space3),
+              KitNotice(
+                key: const ValueKey('leave-draft-still-failing'),
+                tone: AppStatusTone.failure,
+                message: l10n.draftLeaveStillFailing,
+              ),
+            ],
+          ],
+        ),
+      ),
+      primary: hasText
+          ? KitAction(
+              key: const ValueKey('leave-draft-copy'),
+              label: l10n.draftLeaveCopyAction,
+              icon: AppIconography.copy,
+              onPressed: () async {
+                if (!open) return;
+                await KitCopy.copy(context, text, redact: false);
+                close();
+              },
+            )
+          : null,
+      primaryListenable: hasText ? null : retry,
+      secondaryListenable: hasText ? retry : null,
+      tertiary: [
+        KitAction(
+          key: const ValueKey('leave-draft-discard'),
+          label: l10n.draftLeaveAction,
+          destructive: true,
+          onPressed: close,
+        ),
+      ],
+    );
+    open = false;
+    return answer == true;
+  }
+
   Future<void> _leaveChat() async {
     if (_leavingProvisionalSession) return;
     final textBeforeSave = _composer.text;
@@ -6765,15 +6945,7 @@ class _ChatScreenState extends State<ChatScreen>
     final saved = await _persistDraft();
     if (!mounted) return;
     if (!saved) {
-      final leave = await showKitConfirm(
-        context,
-        sheetKey: const ValueKey('leave-unsaved-draft'),
-        kind: KitConfirmKind.discard,
-        icon: AppIconography.save,
-        title: _chatL10n(context).draftLeaveTitle,
-        body: _chatL10n(context).draftLeaveMessage,
-        confirmLabel: _chatL10n(context).draftLeaveAction,
-      );
+      final leave = await _askLeaveUnsavedDraft();
       if (!mounted || !leave) return;
     }
     if (_composer.text != textBeforeSave ||
@@ -7142,8 +7314,21 @@ class _ChatScreenState extends State<ChatScreen>
         ? _findHits[_findCursor]
         : null;
     final offline = _conn.isIsolated || _watching;
+    final unanswered = _unanswered;
+    final endsUnanswered = !offline && unanswered?.$2 == index;
+    final suggestion = endsUnanswered
+        ? _suggestedModelFor(m.info.errorText)
+        : null;
     return _MessageView(
       key: ValueKey('message-${m.info.id}'),
+      unanswered: unanswered?.$1 == index,
+      onResendPrompt: endsUnanswered && _unansweredWords != null
+          ? () => unawaited(_resendUnanswered())
+          : null,
+      suggestedModel: suggestion == null ? null : _modelName(suggestion),
+      onUseSuggestedModel: suggestion == null || _unansweredWords == null
+          ? null
+          : () => unawaited(_resendUnanswered(model: suggestion)),
       queued:
           queuedAfterIndex >= 0 &&
           m.info.role == 'user' &&
@@ -7163,11 +7348,6 @@ class _ChatScreenState extends State<ChatScreen>
         }
       },
       searchMatch: hit,
-      searchLabel: _findHits.isEmpty
-          ? ''
-          : _chatL10n(
-              context,
-            ).transcriptFindCount(_findCursor + 1, _findHits.length),
       // One "more" control per turn: under the message that ends a reply,
       // never under each step of it or under the prompt. An error with
       // more of the turn after it was got over.
@@ -7342,6 +7522,9 @@ class _ChatScreenState extends State<ChatScreen>
               _conn.queuedPromptAcceptedUnrecorded(entry.id),
           onEdit: _editQueuedPrompt,
           onResend: _resendQueuedPrompt,
+          onRetry: _conn.status == StreamStatus.connected
+              ? (entry) => unawaited(_retryQueuedPrompt(entry))
+              : null,
           onDiscard: _discardQueuedPrompt,
           onCancelInbox: _cancelInboxSend,
           onFlipDelivery: _flipInboxDelivery,
@@ -7571,6 +7754,13 @@ class _ChatScreenState extends State<ChatScreen>
         ? _queuedAfterIndex(_messages)
         : -1;
     final displayParts = _timelineDisplayParts(_messages, liveTail: busy);
+    _unanswered = _conn.isIsolated || _watching
+        ? null
+        : _unansweredTurn(
+            _messages,
+            refused: _promptError != null,
+            running: busy || _sending,
+          );
     // A prompt waiting in the server's inbox (steering, or queued behind the
     // run) is shown once, as its waiting bubble above the composer, where
     // it can still be flipped or cancelled. Its optimistic copy in the
@@ -7733,6 +7923,21 @@ class _ChatScreenState extends State<ChatScreen>
                         applyScope: _modelApplyScope,
                         sessionID: widget.sessionID,
                       ),
+                onResend: _unansweredWords == null
+                    ? null
+                    : () => unawaited(_resendUnanswered()),
+                suggestion: switch (_suggestedModelFor(promptError)) {
+                  final model? when _unansweredWords != null => _modelName(
+                    model,
+                  ),
+                  _ => null,
+                },
+                onUseSuggestion: switch (_suggestedModelFor(promptError)) {
+                  final model? when _unansweredWords != null => () => unawaited(
+                    _resendUnanswered(model: model),
+                  ),
+                  _ => null,
+                },
               ),
             _queuedDraftsStatus(
               context,
