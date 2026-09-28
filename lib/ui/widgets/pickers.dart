@@ -597,6 +597,8 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
                       .map((id) => presentedProviderName(id, catalog.providers))
                       .toList(),
                   strings: _strings,
+                  unusable: controller.unloadedProvidersUnusable,
+                  waitingOnReplies: controller.providerReloadWaitingOn,
                 ),
               ),
               supportingMaxLines: 4,
@@ -1367,10 +1369,14 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
 }
 
 /// Copy for the picker notice about providers the server has signed in to
-/// but not loaded; [names] are already presented for display.
+/// but not loaded; [names] are already presented for display. [unusable]
+/// says a reload already ran and could not load them; [waitingOnReplies]
+/// counts running replies a reload is waiting for.
 String unloadedProvidersNotice(
   List<String> names, {
   AppLocalizations? strings,
+  bool unusable = false,
+  int waitingOnReplies = 0,
 }) {
   final l10n = strings ?? lookupAppLocalizations(const Locale('en'));
   final sorted = [...names]..sort();
@@ -1383,10 +1389,12 @@ String unloadedProvidersNotice(
       sorted.last,
     ),
   };
-  return l10n.e7ModelUiUnloadedProviders(
-    sorted.length > 1 ? sorted.length : 1,
-    list,
-  );
+  final count = sorted.length > 1 ? sorted.length : 1;
+  final state = unusable
+      ? l10n.e7ModelUiUnusableProviders(count, list)
+      : l10n.e7ModelUiUnloadedProviders(count, list);
+  if (waitingOnReplies <= 0) return state;
+  return '$state ${l10n.e7ModelUiProviderReloadWaits(waitingOnReplies)}';
 }
 
 /// "\$3.00 in · \$15.00 out /1M" for a model with published pricing; null when

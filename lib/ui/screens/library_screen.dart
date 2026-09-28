@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../api/mcp_oauth.dart';
 import '../../l10n/app_localizations.dart';
-import '../../domain/server_gateway.dart' show StreamStatus;
+import '../../domain/server_gateway.dart'
+    show ProviderRuntimeBusyException, StreamStatus;
 import '../../api/provider_presentation.dart';
 import '../../api/product_repository.dart';
 import '../../state/connection.dart';

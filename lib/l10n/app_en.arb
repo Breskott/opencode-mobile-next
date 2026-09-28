@@ -8640,6 +8640,27 @@
   "@e7ModelUiListSeparator": {
     "description": "Voice/model presentation: e7ModelUiListSeparator"
   },
+  "e7ModelUiUnusableProviders": "{count, plural, one{Signed in to {providers}, but this server could not load that sign-in even after a reload, so its models cannot answer. Sign in another way under Providers, or pick another model.} other{Signed in to {providers}, but this server could not load those sign-ins even after a reload, so their models cannot answer. Sign in another way under Providers, or pick another model.}}",
+  "@e7ModelUiUnusableProviders": {
+    "description": "Model picker: signed-in providers the server still could not load after a provider reload",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "providers": {
+        "type": "String"
+      }
+    }
+  },
+  "e7ModelUiProviderReloadWaits": "{count, plural, one{The reload waits for 1 running reply to finish, because reloading would stop it.} other{The reload waits for {count} running replies to finish, because reloading would stop them.}}",
+  "@e7ModelUiProviderReloadWaits": {
+    "description": "Model picker: a provider reload is held back while replies run on the server",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "e7ModelUiUnloadedProviders": "{count, plural, one{Signed in to {providers}, but the server has not loaded it yet, so its models cannot answer.} other{Signed in to {providers}, but the server has not loaded them yet, so their models cannot answer.}}",
   "@e7ModelUiUnloadedProviders": {
     "description": "Voice/model presentation: e7ModelUiUnloadedProviders",

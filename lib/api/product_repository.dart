@@ -1952,7 +1952,11 @@ class SdkProductRepository extends ProductRepository
           providerID: id,
           auth: sdk.Auth({'type': 'api', 'key': key}),
         );
-        await refreshProviderRuntime();
+        try {
+          await refreshProviderRuntime();
+        } on ProviderRuntimeBusyException {
+          // The key is saved; the app reloads providers once replies finish.
+        }
       });
 
   @override
@@ -1995,6 +1999,8 @@ class SdkProductRepository extends ProductRepository
         Object? refreshFailure;
         try {
           await refreshProviderRuntime();
+        } on ProviderRuntimeBusyException {
+          // Removed from the store; the runtime drops it once replies finish.
         } catch (error) {
           refreshFailure = error;
         }
@@ -2019,6 +2025,13 @@ class SdkProductRepository extends ProductRepository
   @override
   Future<void> refreshProviderRuntime() =>
       _guard('Could not refresh the provider runtime', () async {
+        // Disposing an instance aborts every reply running in it, and the
+        // transcript then says the person stopped it. Count what is running
+        // in both locations this refresh disposes first and refuse while any
+        // reply runs; an unreadable status also refuses, since losing a reply
+        // costs more than a provider that loads later.
+        final running = await _runningSessionCount();
+        if (running > 0) throw ProviderRuntimeBusyException(running);
         // Provider inventories are cached per server instance. Match
         // OpenCode's own compatibility client: invalidate the selected
         // location and the server-default location so newly authenticated or
@@ -2029,6 +2042,32 @@ class SdkProductRepository extends ProductRepository
         );
         await _client.getInstanceApi().instanceDispose();
       });
+
+  /// Sessions that are not idle in the selected location and in the
+  /// server-default location: the two instances a runtime refresh disposes.
+  Future<int> _runningSessionCount() async {
+    final running = <String>{};
+    for (final location in <Map<String, String>>[
+      {'directory': ?_directory, 'workspace': ?_workspace},
+      const {},
+    ]) {
+      final response = await _client.dio.get<Object>(
+        '/session/status',
+        queryParameters: location,
+      );
+      final data = response.data;
+      if (data is! Map) {
+        throw const ProductException(
+          'Could not read which replies are running',
+        );
+      }
+      data.forEach((id, status) {
+        final type = status is Map ? status['type']?.toString() : null;
+        if (type != null && type != 'idle') running.add(id.toString());
+      });
+    }
+    return running.length;
+  }
 
   @override
   Future<IntegrationAuthLaunch> startIntegrationOAuth(
