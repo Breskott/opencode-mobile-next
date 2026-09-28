@@ -16992,11 +16992,89 @@ abstract class AppLocalizations {
   /// **'Send to an agent'**
   String get teamUiStartRunDirectSend;
 
-  /// Inline error under the direct-task form when the host rejected the create
+  /// P6.3 direct task stage: the create request is on its way (sheet notice and the team page's Now line)
   ///
   /// In en, this message translates to:
-  /// **'The host refused the task: {reason}'**
-  String teamUiStartRunDirectRefused(String reason);
+  /// **'Creating your task…'**
+  String get teamDispatchCreating;
+
+  /// P6.3 direct task stage: the host created the task; the assignment to the team is on its way
+  ///
+  /// In en, this message translates to:
+  /// **'Task created · sending it to the team…'**
+  String get teamDispatchSending;
+
+  /// P6.3 Now line: the host accepted the assignment; no worker session seen yet
+  ///
+  /// In en, this message translates to:
+  /// **'Task sent to the team · waiting for a worker'**
+  String get teamDispatchAwaitingWorker;
+
+  /// P6.3 Now line: a running worker session on exactly this task was seen
+  ///
+  /// In en, this message translates to:
+  /// **'A worker started your task'**
+  String get teamDispatchWorkerStarted;
+
+  /// P6.3 direct task sheet: the create was refused; the host's words are only under Technical details
+  ///
+  /// In en, this message translates to:
+  /// **'The task wasn’t made. Change it and send it again.'**
+  String get teamDispatchCreateRefused;
+
+  /// P6.3 Now line: the task exists but the host refused to give it to the team
+  ///
+  /// In en, this message translates to:
+  /// **'Task created, but it could not be sent to the team'**
+  String get teamDispatchAssignRefused;
+
+  /// P6.3 Now line supporting sentence when the assignment was refused: the task is kept, never re-created
+  ///
+  /// In en, this message translates to:
+  /// **'The task stays on the board, given to no one.'**
+  String get teamDispatchAssignRefusedHint;
+
+  /// P6.3 Now line: the create got no answer or no task ID; the task may or may not exist
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t confirm whether the task was created'**
+  String get teamDispatchCreateUnconfirmed;
+
+  /// P6.3 Now line: the task exists; whether the assignment arrived is unknown
+  ///
+  /// In en, this message translates to:
+  /// **'Task created · couldn’t confirm it reached the team'**
+  String get teamDispatchDispatchUnconfirmed;
+
+  /// P6.3 Now line supporting sentence for an unconfirmed step: no blind resend
+  ///
+  /// In en, this message translates to:
+  /// **'Check the board before sending it again. Your words are kept.'**
+  String get teamDispatchCheckBoard;
+
+  /// P6.3 Now line: the assignment was accepted but the team cannot be observed now (disconnected or old data)
+  ///
+  /// In en, this message translates to:
+  /// **'Task sent · the team can’t be reached, so whether a worker started is unknown'**
+  String get teamDispatchUnknown;
+
+  /// P6.3 Now line action: read the team's state again (no request is resent)
+  ///
+  /// In en, this message translates to:
+  /// **'Check the team again'**
+  String get teamDispatchCheckAgain;
+
+  /// P6.3 Technical details label: the created task's ID
+  ///
+  /// In en, this message translates to:
+  /// **'Task ID'**
+  String get teamDispatchTaskId;
+
+  /// P6.3 Technical details note: the team host's own words about a refused or unconfirmed step follow (redacted)
+  ///
+  /// In en, this message translates to:
+  /// **'The team’s reply'**
+  String get teamDispatchHostWords;
 
   /// Pending card line when the host or the front refused; {reason} is the host's text
   ///

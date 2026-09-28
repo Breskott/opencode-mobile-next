@@ -1124,11 +1124,17 @@ class OrchestrationController extends ChangeNotifier {
   /// `<rig>/gastown.polecat`). Work and runs are fetched again afterwards
   /// so the new item shows without waiting for the stream. `assigned` is
   /// null when the create was refused or came back without an id.
+  ///
+  /// [onCreated] hears the create's record as soon as the host answered
+  /// it, before the assignment is sent (P6.3): the per-attempt signal a
+  /// caller shows as "Task created · sending it to the team", never
+  /// inferred from elapsed time.
   Future<({MutationRecord created, MutationRecord? assigned})> giveTask({
     required String title,
     String? description,
     required String projectId,
     required String agentId,
+    ValueChanged<MutationRecord>? onCreated,
   }) async {
     final created = await createWork(
       title: title,
@@ -1137,6 +1143,7 @@ class OrchestrationController extends ChangeNotifier {
     );
     final receipt = created.receipt;
     final workId = receipt?.createdId;
+    onCreated?.call(created);
     MutationRecord? assigned;
     if (receipt != null && receipt.isAccepted && workId != null) {
       assigned = await assignWork(workId, agentId: agentId);

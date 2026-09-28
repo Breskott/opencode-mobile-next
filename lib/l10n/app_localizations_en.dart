@@ -10240,9 +10240,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiStartRunDirectSend => 'Send to an agent';
 
   @override
-  String teamUiStartRunDirectRefused(String reason) {
-    return 'The host refused the task: $reason';
-  }
+  String get teamDispatchCreating => 'Creating your task…';
+
+  @override
+  String get teamDispatchSending => 'Task created · sending it to the team…';
+
+  @override
+  String get teamDispatchAwaitingWorker =>
+      'Task sent to the team · waiting for a worker';
+
+  @override
+  String get teamDispatchWorkerStarted => 'A worker started your task';
+
+  @override
+  String get teamDispatchCreateRefused =>
+      'The task wasn’t made. Change it and send it again.';
+
+  @override
+  String get teamDispatchAssignRefused =>
+      'Task created, but it could not be sent to the team';
+
+  @override
+  String get teamDispatchAssignRefusedHint =>
+      'The task stays on the board, given to no one.';
+
+  @override
+  String get teamDispatchCreateUnconfirmed =>
+      'Couldn’t confirm whether the task was created';
+
+  @override
+  String get teamDispatchDispatchUnconfirmed =>
+      'Task created · couldn’t confirm it reached the team';
+
+  @override
+  String get teamDispatchCheckBoard =>
+      'Check the board before sending it again. Your words are kept.';
+
+  @override
+  String get teamDispatchUnknown =>
+      'Task sent · the team can’t be reached, so whether a worker started is unknown';
+
+  @override
+  String get teamDispatchCheckAgain => 'Check the team again';
+
+  @override
+  String get teamDispatchTaskId => 'Task ID';
+
+  @override
+  String get teamDispatchHostWords => 'The team’s reply';
 
   @override
   String teamUiStartRunRefused(String reason) {

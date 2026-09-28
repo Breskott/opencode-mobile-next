@@ -3655,7 +3655,6 @@
   "teamUiStartRunDirectTitleRequired": "اكتب مهمة أولًا.",
   "teamUiStartRunDirectDetails": "التفاصيل (اختياري)",
   "teamUiStartRunDirectSend": "إرسال إلى وكيل",
-  "teamUiStartRunDirectRefused": "رفض المضيف المهمة: {reason}",
   "teamUiStartRunRefused": "رفض المضيف الهدف: {reason}",
   "teamUiMergeTitleReady": "جاهز للدمج",
   "teamUiMergeTitleNotReady": "غير جاهز للدمج",

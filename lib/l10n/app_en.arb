@@ -10732,14 +10732,61 @@
   "@teamUiStartRunDirectSend": {
     "description": "Primary button of the direct-task form: creates the work item and assigns it to the project's agent pool"
   },
-  "teamUiStartRunDirectRefused": "The host refused the task: {reason}",
-  "@teamUiStartRunDirectRefused": {
-    "description": "Inline error under the direct-task form when the host rejected the create",
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
+  "teamDispatchCreating": "Creating your task…",
+  "@teamDispatchCreating": {
+    "description": "P6.3 direct task stage: the create request is on its way (sheet notice and the team page's Now line)"
+  },
+  "teamDispatchSending": "Task created · sending it to the team…",
+  "@teamDispatchSending": {
+    "description": "P6.3 direct task stage: the host created the task; the assignment to the team is on its way"
+  },
+  "teamDispatchAwaitingWorker": "Task sent to the team · waiting for a worker",
+  "@teamDispatchAwaitingWorker": {
+    "description": "P6.3 Now line: the host accepted the assignment; no worker session seen yet"
+  },
+  "teamDispatchWorkerStarted": "A worker started your task",
+  "@teamDispatchWorkerStarted": {
+    "description": "P6.3 Now line: a running worker session on exactly this task was seen"
+  },
+  "teamDispatchCreateRefused": "The task wasn’t made. Change it and send it again.",
+  "@teamDispatchCreateRefused": {
+    "description": "P6.3 direct task sheet: the create was refused; the host's words are only under Technical details"
+  },
+  "teamDispatchAssignRefused": "Task created, but it could not be sent to the team",
+  "@teamDispatchAssignRefused": {
+    "description": "P6.3 Now line: the task exists but the host refused to give it to the team"
+  },
+  "teamDispatchAssignRefusedHint": "The task stays on the board, given to no one.",
+  "@teamDispatchAssignRefusedHint": {
+    "description": "P6.3 Now line supporting sentence when the assignment was refused: the task is kept, never re-created"
+  },
+  "teamDispatchCreateUnconfirmed": "Couldn’t confirm whether the task was created",
+  "@teamDispatchCreateUnconfirmed": {
+    "description": "P6.3 Now line: the create got no answer or no task ID; the task may or may not exist"
+  },
+  "teamDispatchDispatchUnconfirmed": "Task created · couldn’t confirm it reached the team",
+  "@teamDispatchDispatchUnconfirmed": {
+    "description": "P6.3 Now line: the task exists; whether the assignment arrived is unknown"
+  },
+  "teamDispatchCheckBoard": "Check the board before sending it again. Your words are kept.",
+  "@teamDispatchCheckBoard": {
+    "description": "P6.3 Now line supporting sentence for an unconfirmed step: no blind resend"
+  },
+  "teamDispatchUnknown": "Task sent · the team can’t be reached, so whether a worker started is unknown",
+  "@teamDispatchUnknown": {
+    "description": "P6.3 Now line: the assignment was accepted but the team cannot be observed now (disconnected or old data)"
+  },
+  "teamDispatchCheckAgain": "Check the team again",
+  "@teamDispatchCheckAgain": {
+    "description": "P6.3 Now line action: read the team's state again (no request is resent)"
+  },
+  "teamDispatchTaskId": "Task ID",
+  "@teamDispatchTaskId": {
+    "description": "P6.3 Technical details label: the created task's ID"
+  },
+  "teamDispatchHostWords": "The team’s reply",
+  "@teamDispatchHostWords": {
+    "description": "P6.3 Technical details note: the team host's own words about a refused or unconfirmed step follow (redacted)"
   },
   "teamUiStartRunRefused": "The host refused the objective: {reason}",
   "@teamUiStartRunRefused": {

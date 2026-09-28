@@ -128,6 +128,10 @@ abstract final class TeamConversation {
     }
     final TeamPendingTask pending;
     switch (record.kind) {
+      // Whether the task was made is unknown (no ID): there is no task to
+      // open yet. The team page's Now line says so (P6.3).
+      case MutationKind.createWork when record.receipt?.createdId == null:
+        return record;
       case MutationKind.createWork:
         pending = TeamPendingTask(
           title: record.request.targetId,
