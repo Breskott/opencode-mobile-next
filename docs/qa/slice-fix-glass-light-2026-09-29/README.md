@@ -38,3 +38,17 @@ Branch `revamp/slice-fix-glass-light`, merged with `feat/phone-setup-v2`.
 ## Not proven
 Physical phone not touched. Whether the emulator crash is the stroke, the shader inputs or the
 rectangle was not separated (all three fixed together).
+
+## Follow-up: real crashes only, and the person is told (2026-09-29)
+
+- Strike rule: a launch that finds the "glass on screen" flag set reads the previous exit
+  (`AppExitKind` from `AppLifecycleBridge.launchReport`, cached once per process natively) and
+  counts a strike only for `crash` (which includes ANR and native crash). Force-stop, low memory,
+  update, killed, normal or no record never count. Two strikes: glass off for 7 days.
+- Appearance › Effects shows "Liquid glass was turned off after the app closed unexpectedly
+  twice." with "Turn it back on", which clears strikes and the pause and reloads the shader.
+- Tests: test/kit/kit_glass_safety_test.dart (each non-crash kind and an unreadable record never
+  strike; crash does; turn-back-on resets), test/appearance_effects_test.dart (line + action).
+- Device: release build 2065 on emulator-5554 (fresh boot, under the shared emulator lock), Settings
+  › Appearance › Light with Glass effects on: app stayed up more than 95 s (same pid), frosted
+  fallback. Shot: emulator/build2065-light-glass-appearance-95s.png. Physical phone not touched.
