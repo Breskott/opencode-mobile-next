@@ -8,6 +8,7 @@
 // one over fakes (test/support/termux_migration_fakes.dart).
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -120,6 +121,12 @@ void main() {
     await unmountPhone(tester);
   }
 
+  /// Scrolls the review to its end, where the space line is.
+  Future<void> showSpace(WidgetTester tester) async {
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -5000));
+    await _frames(tester);
+  }
+
   Future<void> tapKey(WidgetTester tester, String key) async {
     await tester.ensureVisible(_key(key));
     await tester.tap(_key(key));
@@ -164,10 +171,19 @@ void main() {
     expect(find.text(_l10n.migrationNotMovedKeys), findsOneWidget);
     expect(find.text(_l10n.migrationTermuxKept), findsOneWidget);
     // The space it needs, and that the app stays open.
-    final space = formatPhoneStorage(
-      migrationSpaceEstimate([sampleInventory.first]),
+    final space = fixture.controller!.reviewSpace({
+      TermuxMigrationItem.projects,
+    });
+    await showSpace(tester);
+    expect(
+      _screenText(tester),
+      contains(
+        _l10n.migrationReviewSpace(
+          KitBidi.ltr(formatPhoneStorage(space.requiredBytes!)),
+          KitBidi.ltr(formatPhoneStorage(ampleSpace)),
+        ),
+      ),
     );
-    expect(_screenText(tester), contains(space));
     expect(_screenText(tester), contains(_l10n.migrationKeepOpen));
     // Nothing chosen: the start says why it is off.
     // Back to the top, clear of the pinned start.
@@ -271,10 +287,13 @@ void main() {
     expect(find.text(_l10n.migrationRemoveTermux), findsOneWidget);
     await tapKey(tester, 'migration-sign-in');
     expect(providersOpened, 1);
+    // Finished is the backend's record, not a key of the page's own.
+    final completed = await fixture.controller!.completedJob(migrationSource);
+    expect(completed?.jobId, migrationJob);
     final prefs = await SharedPreferences.getInstance();
     expect(
-      prefs.getString(TermuxMigrationOwner.doneKey(migrationSource)),
-      migrationJob,
+      prefs.getKeys().where((k) => k.startsWith('oc.termuxMigrationDone')),
+      isEmpty,
     );
     expect(_screenText(tester), isNot(contains(_secret)));
     await finish(tester, fixture);
@@ -285,11 +304,7 @@ void main() {
   ) async {
     final fixture = MigrationFixture()
       ..journal.saveUnfinished([TermuxMigrationItem.projects], done: true);
-    await _pumpPlain(
-      tester,
-      fixture,
-      values: {TermuxMigrationOwner.doneKey(migrationSource): migrationJob},
-    );
+    await _pumpPlain(tester, fixture);
     expect(_key('migration-done'), findsOneWidget);
     expect(_key('migration-projects-where'), findsOneWidget);
     expect(_key('migration-exports-where'), findsNothing);
@@ -353,56 +368,297 @@ void main() {
     await finish(tester, fixture);
   });
 
-  testWidgets('low space: how much is needed and free, then fewer items', (
-    tester,
-  ) async {
-    final fixture = await open(tester, arrange: (f) => f.freeBytes = 1024);
+  testWidgets('space that ran out after the review: how much is needed and '
+      'free, then fewer items', (tester) async {
+    final fixture = await open(tester);
+    fixture.freeBytes = 1024;
     await tapKey(tester, 'migration-start');
     expect(_key('migration-needs-space'), findsOneWidget);
     expect(_screenText(tester), contains(formatPhoneStorage(1024)));
     expect(fixture.transport.packCalls, 0);
     await tapKey(tester, 'migration-choose-fewer');
     expect(_key('migration-review'), findsOneWidget);
-    // The unknown free space is said, not shown as zero.
-    fixture.freeBytes = null;
-    await tapKey(tester, 'migration-start');
-    expect(_screenText(tester), contains("the free space couldn't be read"));
     await finish(tester, fixture);
   });
 
-  for (final code in TermuxMigrationFailure.values) {
-    if (code == TermuxMigrationFailure.unavailable ||
-        code == TermuxMigrationFailure.cancelled) {
-      continue;
+  group('discarding a saved copy', () {
+    Future<void> confirmDiscard(WidgetTester tester) async {
+      await tapKey(tester, 'migration-discard');
+      expect(_key('migration-discard-sheet'), findsOneWidget);
+      expect(find.text(_l10n.migrationDiscardTitle), findsOneWidget);
+      expect(find.text(_l10n.migrationDiscardBody), findsOneWidget);
+      await tapKey(tester, 'migration-discard-confirm');
     }
-    testWidgets('failure ${code.name}: plain words and a way forward; the '
-        'code only under Details', (tester) async {
-      final fixture = await open(tester);
-      fixture.transport.packError = TermuxMigrationException(code);
-      await tapKey(tester, 'migration-start');
-      expect(_key('migration-failed'), findsOneWidget);
-      final words = migrationFailureWords(_l10n, code);
-      expect(_screenText(tester), contains(words));
-      final codeValue = find.byKey(
-        const ValueKey('migration-failure-code'),
-        skipOffstage: false,
+
+    testWidgets('an unfinished copy: confirm, the temporary files go, and '
+        'the review starts again; cancelling changes nothing', (tester) async {
+      final fixture = await open(
+        tester,
+        arrange: (f) =>
+            f.journal.saveUnfinished([TermuxMigrationItem.projects]),
       );
-      expect(codeValue, findsNothing);
-      // A way forward is always there.
+      expect(_key('migration-unfinished'), findsOneWidget);
+      // Keep it: the sheet's Cancel leaves everything as it was.
+      await tapKey(tester, 'migration-discard');
+      await tester.tap(find.text('Cancel'));
+      await _frames(tester);
+      expect(fixture.archives.discarded, isEmpty);
+      expect(fixture.journal.records, isNotEmpty);
+      await confirmDiscard(tester);
+      expect(fixture.archives.discarded, [migrationJob]);
+      expect(fixture.journal.records, isEmpty);
+      expect(_key('migration-review'), findsOneWidget);
+      expect(fixture.transport.inspectCalls, 1, reason: 'a fresh look');
+      // The choice starts over: projects on, nothing else.
       expect(
-        _key('migration-try-again').evaluate().isNotEmpty ||
-            _key('migration-resume').evaluate().isNotEmpty ||
-            _key('migration-open-builtin').evaluate().isNotEmpty,
+        tester.widget<Switch>(_key('migration-switch-projects')).value,
         isTrue,
       );
-      await tester.ensureVisible(_key('kit-state-details'));
-      await tester.tap(_key('kit-state-details'));
-      await _frames(tester);
-      expect(codeValue, findsOneWidget);
-      expect(_screenText(tester), contains(code.name));
       await finish(tester, fixture);
     });
-  }
+
+    testWidgets('a stopped copy waits for the stop, then discards', (
+      tester,
+    ) async {
+      final fixture = await open(tester);
+      fixture.transport.packGate = Completer<void>();
+      await tapKey(tester, 'migration-start');
+      await tapKey(tester, 'migration-stop');
+      await tapKey(tester, 'migration-stop-confirm');
+      expect(_key('migration-cancelled'), findsOneWidget);
+      await confirmDiscard(tester);
+      expect(fixture.archives.discarded, [migrationJob]);
+      expect(fixture.journal.records, isEmpty);
+      expect(_key('migration-review'), findsOneWidget);
+      await finish(tester, fixture);
+    });
+
+    testWidgets('a failed copy can be discarded', (tester) async {
+      final fixture = await open(tester);
+      fixture.transport.packError = const TermuxMigrationException(
+        TermuxMigrationFailure.sourceChanged,
+      );
+      await tapKey(tester, 'migration-start');
+      expect(_key('migration-failed'), findsOneWidget);
+      await confirmDiscard(tester);
+      expect(fixture.journal.records, isEmpty);
+      expect(_key('migration-review'), findsOneWidget);
+      await finish(tester, fixture);
+    });
+
+    testWidgets('a failed removal says so in plain words, keeps the copy and '
+        'can be tried again', (tester) async {
+      final fixture = await open(
+        tester,
+        arrange: (f) =>
+            f.journal.saveUnfinished([TermuxMigrationItem.projects]),
+      );
+      fixture.archives.cleanupError = const FileSystemException(
+        '/data/data/secret/path',
+      );
+      await confirmDiscard(tester);
+      expect(_key('migration-discard-failed'), findsOneWidget);
+      expect(find.text(_l10n.migrationDiscardFailed), findsOneWidget);
+      expect(_screenText(tester), isNot(contains('/data/data')));
+      expect(_key('migration-unfinished'), findsOneWidget);
+      expect(fixture.journal.records, isNotEmpty);
+      fixture.archives.cleanupError = null;
+      await confirmDiscard(tester);
+      expect(_key('migration-review'), findsOneWidget);
+      await finish(tester, fixture);
+    });
+
+    testWidgets('a finished move offers no discard', (tester) async {
+      final fixture = MigrationFixture()
+        ..journal.saveUnfinished([TermuxMigrationItem.projects], done: true);
+      await _pumpPlain(tester, fixture);
+      expect(_key('migration-done'), findsOneWidget);
+      expect(_key('migration-discard'), findsNothing);
+      await fixture.close();
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
+
+  group('the backend says whether the move finished', () {
+    testWidgets('a completed record shows the done page with no key of the '
+        'page\'s own, and nothing is asked of Termux', (tester) async {
+      final fixture = MigrationFixture()
+        ..journal.saveUnfinished([TermuxMigrationItem.projects], done: true);
+      await _pumpPlain(tester, fixture);
+      expect(_key('migration-done'), findsOneWidget);
+      expect(fixture.transport.inspectCalls, 0);
+      await fixture.close();
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('a completed record that cannot be read is not "unfinished": '
+        'the page says it cannot look, with Try again', (tester) async {
+      final fixture = MigrationFixture();
+      fixture.journal.saveUnfinished([TermuxMigrationItem.projects]);
+      fixture.journal.records[migrationSource]!
+        ..['done'] = true
+        ..remove('destination');
+      await _pumpPlain(tester, fixture);
+      expect(_key('migration-unavailable'), findsOneWidget);
+      expect(_key('migration-unfinished'), findsNothing);
+      expect(_key('migration-resume'), findsNothing);
+      await fixture.close();
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
+
+  group('free space in the review', () {
+    testWidgets('needed and free are said; too little blocks the copy with '
+        'the way forward, and choosing fewer clears it', (tester) async {
+      final fixture = await open(
+        tester,
+        arrange: (f) => f.freeBytes = 200 * 1024 * 1024,
+      );
+      await showSpace(tester);
+      final text = _screenText(tester);
+      expect(text, contains(_l10n.migrationReviewSpaceShort));
+      expect(text, contains(formatPhoneStorage(200 * 1024 * 1024)));
+      expect(_key('migration-space'), findsOneWidget);
+      await tester.tap(_key('migration-start'), warnIfMissed: false);
+      await _frames(tester);
+      expect(fixture.transport.packCalls, 0);
+      expect(_key('migration-needs-space'), findsNothing);
+      expect(_key('migration-review'), findsOneWidget);
+      // Choosing fewer: with only the tiny Git settings the need fits.
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, 3000));
+      await _frames(tester);
+      await tester.tap(_key('migration-switch-projects'));
+      await _frames(tester);
+      await tapKey(tester, 'migration-switch-gitConfig');
+      await showSpace(tester);
+      expect(
+        _screenText(tester),
+        isNot(contains(_l10n.migrationReviewSpaceShort)),
+      );
+      await finish(tester, fixture);
+    });
+
+    testWidgets('ticking an item updates the need without another look', (
+      tester,
+    ) async {
+      final fixture = await open(tester);
+      final before = fixture.transport.inspectCalls;
+      final projectsOnly = fixture.controller!.reviewSpace({
+        TermuxMigrationItem.projects,
+      });
+      final both = fixture.controller!.reviewSpace({
+        TermuxMigrationItem.projects,
+        TermuxMigrationItem.sessions,
+      });
+      await tapKey(tester, 'migration-switch-sessions');
+      await showSpace(tester);
+      expect(
+        _screenText(tester),
+        contains(
+          _l10n.migrationReviewSpace(
+            KitBidi.ltr(formatPhoneStorage(both.requiredBytes!)),
+            KitBidi.ltr(formatPhoneStorage(ampleSpace)),
+          ),
+        ),
+      );
+      expect(both.requiredBytes, greaterThan(projectsOnly.requiredBytes!));
+      expect(fixture.transport.inspectCalls, before);
+      await finish(tester, fixture);
+    });
+
+    testWidgets('free space that cannot be read is said, and Copy still '
+        'goes to the backend, which decides', (tester) async {
+      final fixture = await open(tester, arrange: (f) => f.freeBytes = null);
+      await showSpace(tester);
+      final text = _screenText(tester);
+      expect(text, contains('Free space unknown'));
+      expect(text, isNot(contains(_l10n.migrationReviewSpaceShort)));
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, 3000));
+      await _frames(tester);
+      await tapKey(tester, 'migration-start');
+      expect(_key('migration-needs-space'), findsOneWidget);
+      await finish(tester, fixture);
+    });
+  });
+
+  testWidgets('Stop: "Stopping…" until the backend has settled, and Resume '
+      'and Discard wait for it', (tester) async {
+    final fixture = await open(tester);
+    fixture.transport
+      ..packGate = Completer<void>()
+      ..holdAfterCancel = true;
+    await tapKey(tester, 'migration-start');
+    await tapKey(tester, 'migration-stop');
+    await tapKey(tester, 'migration-stop-confirm');
+    expect(_key('migration-cancelled'), findsOneWidget);
+    expect(find.text(_l10n.migrationStopping), findsOneWidget);
+    expect(fixture.owner.busy, isTrue);
+    for (final key in ['migration-resume', 'migration-discard']) {
+      await tester.tap(_key(key), warnIfMissed: false);
+      await _frames(tester);
+    }
+    expect(_key('migration-discard-sheet'), findsNothing);
+    expect(fixture.transport.packCalls, 1, reason: 'Resume did not start');
+    // The stop settles: the words change and Resume works.
+    fixture.transport.packGate!.complete();
+    await _frames(tester);
+    expect(find.text(_l10n.migrationStopping), findsNothing);
+    expect(find.text(_l10n.migrationCancelled), findsOneWidget);
+    expect(fixture.owner.busy, isFalse);
+    fixture.transport
+      ..packGate = null
+      ..holdAfterCancel = false;
+    await tapKey(tester, 'migration-resume');
+    expect(_key('migration-done'), findsOneWidget);
+    await finish(tester, fixture);
+  });
+
+  group('providers to sign in to again', () {
+    testWidgets('a reopened finished move names them, offline', (tester) async {
+      final fixture = MigrationFixture()
+        ..journal.saveUnfinished(
+          [TermuxMigrationItem.projects, TermuxMigrationItem.config],
+          done: true,
+          configCopied: true,
+        )
+        ..archives.providers = ['Anthropic', 'OpenAI'];
+      await _pumpPlain(tester, fixture);
+      expect(_key('migration-done'), findsOneWidget);
+      expect(
+        find.text(_l10n.migrationSignInAgainNamed('Anthropic and OpenAI')),
+        findsOneWidget,
+      );
+      expect(fixture.transport.inspectCalls, 0);
+      await fixture.close();
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('the copy that just finished names them too', (tester) async {
+      final fixture = await open(
+        tester,
+        arrange: (f) => f.archives.providers = ['Anthropic'],
+      );
+      await tapKey(tester, 'migration-switch-config');
+      await tapKey(tester, 'migration-start');
+      expect(_key('migration-done'), findsOneWidget);
+      // Names come from the backend: the fake reads them once the config
+      // copy was received.
+      expect(
+        find.text(_l10n.migrationSignInAgainNamed('Anthropic')),
+        findsOneWidget,
+      );
+      await finish(tester, fixture);
+    });
+
+    testWidgets('unknown names keep the generic words', (tester) async {
+      final fixture = MigrationFixture()
+        ..journal.saveUnfinished([TermuxMigrationItem.projects], done: true);
+      await _pumpPlain(tester, fixture);
+      expect(find.text(_l10n.migrationSignInAgainAny), findsOneWidget);
+      await fixture.close();
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
 
   testWidgets('raw text and credentials from below never reach the screen', (
     tester,
@@ -624,29 +880,23 @@ void main() {
     });
   });
 
-  test('the owner\'s own keys are scoped to the profile and swept', () async {
-    SharedPreferences.setMockInitialValues({});
-    final prefs = await SharedPreferences.getInstance();
-    final store = _StaticStore(prefs, [_termux()]);
-    await prefs.setString(
-      TermuxMigrationOwner.doneKey(migrationSource),
-      migrationJob,
-    );
-    await prefs.setStringList(
-      TermuxMigrationOwner.providersKey(migrationSource),
-      ['Anthropic'],
-    );
-    expect(store.profileScopedPreferenceKeys(migrationSource), {
-      TermuxMigrationOwner.doneKey(migrationSource),
-      TermuxMigrationOwner.providersKey(migrationSource),
-    });
-    expect(
-      TermuxMigrationOwner.completedJob(store, migrationSource),
-      migrationJob,
-    );
-    await prefs.setString(TermuxMigrationOwner.doneKey(migrationSource), 'x');
-    expect(TermuxMigrationOwner.completedJob(store, migrationSource), isNull);
-  });
+  test(
+    'the owner keeps no key of its own; the offer key is still swept',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final store = _StaticStore(prefs, [_termux()]);
+      await prefs.setBool('oc.termuxMigrationOffer.$migrationSource', true);
+      expect(store.profileScopedPreferenceKeys(migrationSource), {
+        'oc.termuxMigrationOffer.$migrationSource',
+      });
+      final source = File(
+        'lib/state/termux_migration_owner.dart',
+      ).readAsStringSync();
+      expect(source, isNot(contains('oc.termuxMigrationDone')));
+      expect(source, isNot(contains('oc.termuxMigrationProviders')));
+    },
+  );
 }
 
 /// The migration page on its own, with [values] saved beforehand.

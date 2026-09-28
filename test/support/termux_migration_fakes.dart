@@ -47,6 +47,10 @@ class FakeMigrationTransport implements TermuxMigrationTransport {
   Completer<void>? copyGate;
   final cancelled = <String>[];
 
+  /// Cancel is answered but the held stage keeps running until the test
+  /// completes its gate: the backend has stopped yet not settled.
+  bool holdAfterCancel = false;
+
   @override
   Future<TermuxMigrationSource> inspect() async {
     inspectCalls++;
@@ -84,6 +88,7 @@ class FakeMigrationTransport implements TermuxMigrationTransport {
   Future<void> cancel(String jobId) async {
     cancelled.add(jobId);
     // Termux stops: the held stage ends.
+    if (holdAfterCancel) return;
     if (packGate case final gate? when !gate.isCompleted) gate.complete();
     if (copyGate case final gate? when !gate.isCompleted) gate.complete();
   }
@@ -93,6 +98,11 @@ class FakeMigrationArchives extends TermuxMigrationArchiveStore {
   FakeMigrationArchives() : super(support: Directory('/fake-app-private'));
   bool installed = true;
   final receipts = <TermuxMigrationItem, TermuxMigrationArchive>{};
+
+  /// The providers named in the imported settings copy (offline).
+  List<String> providers = const [];
+  final discarded = <String>[];
+  Object? cleanupError;
 
   @override
   Future<bool> builtinInstalled() async => installed;
@@ -124,7 +134,16 @@ class FakeMigrationArchives extends TermuxMigrationArchiveStore {
   }
 
   @override
-  Future<void> cleanupPartial(String jobId) async {}
+  Future<List<String>> providerNames(
+    String jobId,
+    TermuxMigrationArchive expected,
+  ) async => providers;
+
+  @override
+  Future<void> cleanupPartial(String jobId) async {
+    if (cleanupError case final Object error) throw error;
+    discarded.add(jobId);
+  }
 }
 
 class MemoryMigrationJournal implements TermuxMigrationJournal {
@@ -150,12 +169,18 @@ class MemoryMigrationJournal implements TermuxMigrationJournal {
   }
 
   /// A copy saved before the app was closed, for [items].
-  void saveUnfinished(List<TermuxMigrationItem> items, {bool done = false}) {
+  void saveUnfinished(
+    List<TermuxMigrationItem> items, {
+    bool done = false,
+    bool configCopied = false,
+  }) {
     records[migrationSource] = {
       'schema': 1,
       'job': migrationJob,
       'selected': [for (final item in items) item.name]..sort(),
-      'archives': <String, dynamic>{},
+      'archives': <String, dynamic>{
+        if (configCopied) 'config': {'bytes': 10240, 'sha256': _sha},
+      },
       if (done) 'done': true,
       if (done) 'destination': 'builtin',
     };

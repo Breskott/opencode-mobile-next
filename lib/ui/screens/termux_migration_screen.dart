@@ -139,15 +139,6 @@ TermuxMigrationFailure? migrationItemProblem(TermuxMigrationSize size) =>
         ? TermuxMigrationFailure.tooLarge
         : null);
 
-/// The disk the backend reserves before copying, by its published formula
-/// (hook-up contract): each item's bytes plus 4 KiB per file and the
-/// archive's end blocks, three times over (Termux's archive, the app's
-/// copy, the imported files), plus 64 MiB. Shown as "about"; the real
-/// check runs when copying starts.
-int migrationSpaceEstimate(Iterable<TermuxMigrationSize> items) =>
-    3 * items.fold<int>(0, (n, x) => n + x.bytes + x.files * 4096 + 10240) +
-    64 * 1024 * 1024;
-
 /// Moving from Termux to the in-app server (owner request 2026-09-28): one
 /// flow from what moves to done.
 ///
@@ -222,6 +213,9 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
   bool _chosen = false;
   Set<TermuxMigrationItem>? _saved;
   String? _movedJob;
+  List<String> _names = const [];
+  bool _namesLoaded = false;
+  bool _discardFailed = false;
   bool _settingUp = false;
   bool _setupFailed = false;
 
@@ -249,7 +243,8 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
 
   void _changed() {
     if (!mounted) return;
-    final source = _owner.snapshot?.source;
+    final snapshot = _owner.snapshot;
+    final source = snapshot?.source;
     // The review starts with projects on and every private copy off.
     if (!_chosen && source != null && _owner.source == _id) {
       _selected = {
@@ -260,6 +255,19 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
       };
     }
     setState(() {});
+    if (_entry == _Entry.live &&
+        !_namesLoaded &&
+        _owner.source == _id &&
+        snapshot?.phase == TermuxMigrationPhase.done) {
+      unawaited(_loadNames());
+    }
+  }
+
+  /// The providers named in the imported settings copy (offline, names only).
+  Future<void> _loadNames() async {
+    _namesLoaded = true;
+    final names = await _owner.providerNames(_id);
+    if (mounted) setState(() => _names = names);
   }
 
   Future<void> _open() async {
@@ -280,13 +288,26 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
       setState(() => _entry = _Entry.live);
       return;
     }
+    // Whether the move finished is the backend's record; a record that
+    // cannot be read is unknown, not "unfinished".
+    TermuxMigrationCompletedJob? moved;
+    try {
+      moved = await _owner.completedJob(_id);
+    } catch (_) {
+      if (mounted) setState(() => _entry = _Entry.unavailable);
+      return;
+    }
+    if (!mounted) return;
     final saved = await _owner.savedSelection(_id);
     if (!mounted) return;
-    final moved = TermuxMigrationOwner.completedJob(_connection.store, _id);
-    if (saved != null && moved != null) {
+    if (moved != null) {
+      final names = await _owner.providerNames(_id);
+      if (!mounted) return;
       setState(() {
         _saved = saved;
-        _movedJob = moved;
+        _movedJob = moved!.jobId;
+        _names = names;
+        _namesLoaded = true;
         _entry = _Entry.moved;
       });
       return;
@@ -299,7 +320,7 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
       return;
     }
     setState(() => _entry = _Entry.live);
-    await _owner.check(_id);
+    await _owner.check(_id, selected: _selected);
   }
 
   /// The AI providers the Termux server is signed in to, by name, while
@@ -313,19 +334,9 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
     ];
   }
 
-  List<String> _knownProviders() {
-    final saved = TermuxMigrationOwner.providers(_connection.store, _id);
-    return saved.isNotEmpty ? saved : _providerNames();
-  }
-
   Future<void> _start() async {
     if (_selected.isEmpty || _owner.busy) return;
-    await _owner.start(
-      _connection,
-      _id,
-      _selected,
-      providerNames: _providerNames(),
-    );
+    await _owner.start(_connection, _id, _selected);
   }
 
   Future<void> _resume() async {
@@ -353,8 +364,65 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
   Future<void> _check() async {
     if (_owner.busy) return;
     _chosen = true;
-    await _owner.check(_id);
+    await _owner.check(_id, selected: _selected);
   }
+
+  Future<void> _discard() async {
+    if (!await showKitConfirm(
+          context,
+          title: _l10n.migrationDiscardTitle,
+          body: _l10n.migrationDiscardBody,
+          confirmLabel: _l10n.migrationDiscard,
+          kind: KitConfirmKind.destructive,
+          icon: AppIconography.delete,
+          consequenceItems: [
+            KitConsequence(
+              _l10n.migrationTermuxKept,
+              mark: KitConsequenceMark.kept,
+            ),
+          ],
+          sheetKey: const ValueKey('migration-discard-sheet'),
+          confirmKey: const ValueKey('migration-discard-confirm'),
+        ) ||
+        !mounted) {
+      return;
+    }
+    setState(() => _discardFailed = false);
+    final result = await _owner.discard(_id);
+    if (!mounted) return;
+    if (result == null) {
+      setState(() => _discardFailed = true);
+      return;
+    }
+    // Back to the start: a fresh look, then a new choice of what to copy
+    // (or, when it turned out the move had finished, where the files went).
+    setState(() {
+      _selected = {};
+      _chosen = false;
+      _saved = null;
+      _movedJob = null;
+      _names = const [];
+      _namesLoaded = false;
+      _entry = _Entry.loading;
+    });
+    await _open();
+  }
+
+  /// Throwing the saved copy away, offered wherever a copy is saved and not
+  /// running; a failed attempt says so where the person is looking.
+  KitAction _discardAction() => KitAction(
+    key: const ValueKey('migration-discard'),
+    label: _l10n.migrationDiscard,
+    onPressed: _owner.busy ? null : () => unawaited(_discard()),
+  );
+
+  Widget? _discardNotice() => _discardFailed
+      ? KitNotice(
+          key: const ValueKey('migration-discard-failed'),
+          tone: AppStatusTone.failure,
+          message: _l10n.migrationDiscardFailed,
+        )
+      : null;
 
   Future<bool> _confirmStop() => showKitConfirm(
     context,
@@ -404,7 +472,7 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
       _setupFailed = failed;
     });
     // Setup finished or was left: a fresh look says which.
-    if (!failed) await _owner.check(_id);
+    if (!failed) await _owner.check(_id, selected: _selected);
   }
 
   Future<void> _openTermux() async {
@@ -533,12 +601,22 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
     icon: AppIconography.restore,
     title: l10n.migrationUnfinishedTitle,
     body: l10n.migrationUnfinishedBody,
-    content: _itemRows(TermuxMigrationOwner.ordered(_saved ?? const {})),
+    content: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _itemRows(TermuxMigrationOwner.ordered(_saved ?? const {})),
+        if (_discardNotice() case final notice?) ...[
+          SizedBox(height: KitTokens.of(context).space3),
+          notice,
+        ],
+      ],
+    ),
     primary: KitAction(
       key: const ValueKey('migration-resume'),
       label: l10n.migrationResume,
       onPressed: () => unawaited(_resume()),
     ),
+    tertiary: [_discardAction()],
     footer: KitText(l10n.migrationKeepOpen, role: KitTextRole.secondary),
   );
 
@@ -548,11 +626,14 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
     return KitStateView(
       key: const ValueKey('migration-cancelled'),
       icon: AppIconography.pause,
-      title: l10n.migrationCancelled,
+      tone: settling ? AppStatusTone.progress : AppStatusTone.neutral,
+      title: settling ? l10n.migrationStopping : l10n.migrationCancelled,
       body: _owner.stoppedByLeaving
           ? l10n.migrationStoppedLeaving
           : l10n.migrationCancelledBody,
       bodyKey: const ValueKey('migration-cancelled-body'),
+      content: _discardNotice(),
+      tertiary: resumable ? [_discardAction()] : const [],
       primary: KitAction(
         key: const ValueKey('migration-resume'),
         label: resumable ? l10n.migrationResume : l10n.commonRetry,
@@ -682,6 +763,8 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
       bodyKey: const ValueKey('migration-failed-body'),
       primary: primary,
       secondary: secondary,
+      content: _discardNotice(),
+      tertiary: snapshot.jobId != null ? [_discardAction()] : const [],
       detailValues: [
         KitTechnicalValue(
           l10n.migrationFailureCode,
@@ -703,7 +786,7 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
     required String? job,
     required List<TermuxMigrationItem> items,
   }) {
-    final names = _knownProviders();
+    final names = _names;
     final exports = [
       for (final item in items)
         if (item != TermuxMigrationItem.projects) item,
@@ -877,16 +960,25 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
 
   // --- The review ------------------------------------------------------------
 
-  Widget _startBlock(AppLocalizations l10n) => KitActionBlock(
-    primary: KitAction(
-      key: const ValueKey('migration-start'),
-      label: l10n.migrationStart,
-      onPressed: _selected.isEmpty || _owner.busy
-          ? null
-          : () => unawaited(_start()),
-      disabledReason: _selected.isEmpty ? l10n.migrationChooseOne : null,
-    ),
-  );
+  Widget _startBlock(AppLocalizations l10n) {
+    final short =
+        _selected.isNotEmpty &&
+        _owner.reviewSpace(_selected)?.sufficient == false;
+    return KitActionBlock(
+      primary: KitAction(
+        key: const ValueKey('migration-start'),
+        label: l10n.migrationStart,
+        onPressed: _selected.isEmpty || short || _owner.busy
+            ? null
+            : () => unawaited(_start()),
+        disabledReason: _selected.isEmpty
+            ? l10n.migrationChooseOne
+            : short
+            ? l10n.migrationReviewSpaceShort
+            : null,
+      ),
+    );
+  }
 
   String _sizeWords(AppLocalizations l10n, TermuxMigrationSize size) =>
       l10n.migrationItemSize(
@@ -948,7 +1040,8 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
         if (_selected.contains(size.item) && migrationItemProblem(size) == null)
           size,
     ];
-    final names = _knownProviders();
+    final names = _providerNames();
+    final space = chosen.isEmpty ? null : _owner.reviewSpace(_selected);
     return ListView(
       key: const ValueKey('migration-review'),
       padding: EdgeInsetsDirectional.only(
@@ -1010,15 +1103,27 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
                 ],
               ),
               SizedBox(height: tokens.sectionGap),
-              if (chosen.isNotEmpty)
+              if (space != null)
                 KitNotice(
                   key: const ValueKey('migration-space'),
                   icon: AppIconography.database,
-                  message: l10n.migrationSpaceNeeded(
-                    KitBidi.ltr(
-                      formatPhoneStorage(migrationSpaceEstimate(chosen)),
-                    ),
-                  ),
+                  tone: space.sufficient == false
+                      ? AppStatusTone.failure
+                      : AppStatusTone.neutral,
+                  message: space.availableBytes == null
+                      ? l10n.migrationReviewSpaceUnknown(
+                          KitBidi.ltr(
+                            formatPhoneStorage(space.requiredBytes ?? 0),
+                          ),
+                        )
+                      : l10n.migrationReviewSpace(
+                          KitBidi.ltr(
+                            formatPhoneStorage(space.requiredBytes ?? 0),
+                          ),
+                          KitBidi.ltr(
+                            formatPhoneStorage(space.availableBytes!),
+                          ),
+                        ),
                   notes: [l10n.migrationKeepOpen],
                   liveRegion: false,
                 ),

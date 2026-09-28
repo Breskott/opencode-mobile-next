@@ -28264,15 +28264,6 @@
   "@migrationTermuxKept": {
     "description": "Moving from Termux to the in-app server: what is kept: everything in Termux."
   },
-  "migrationSpaceNeeded": "Needs about {size} of free space while copying.",
-  "@migrationSpaceNeeded": {
-    "description": "Moving from Termux to the in-app server: the space the selected items need while they are copied (a conservative estimate).",
-    "placeholders": {
-      "size": {
-        "type": "String"
-      }
-    }
-  },
   "migrationKeepOpen": "Keep the app open while copying. Android stops it when you leave the app, and it picks up from here when you resume.",
   "@migrationKeepOpen": {
     "description": "Moving from Termux to the in-app server: why the app must stay open."
@@ -28487,7 +28478,7 @@
   "@migrationSignInAgain": {
     "description": "Moving from Termux to the in-app server: next step: provider sign-in on the in-app server."
   },
-  "migrationSignInAgainNamed": "{names} were signed in on Termux. Sign-ins never move: until you sign in here, replies use OpenCode's free model, which is slower.",
+  "migrationSignInAgainNamed": "{names} appear in your Termux settings. Sign in here to use them.",
   "@migrationSignInAgainNamed": {
     "description": "Moving from Termux to the in-app server: next step detail with the provider names.",
     "placeholders": {
@@ -29200,7 +29191,7 @@
   },
   "integrationsKeyOnlyHelper": "{name} does not allow browser sign-in from other apps, so use an API key. It is billed separately from any subscription. The key is stored on this server and never shown again.",
   "@integrationsKeyOnlyHelper": {
-    "description": "Providers \u203a API key dialog for Anthropic or Google: why browser sign-in is not offered, and where the key goes.",
+    "description": "Providers › API key dialog for Anthropic or Google: why browser sign-in is not offered, and where the key goes.",
     "placeholders": {
       "name": {
         "type": "String"
@@ -29209,7 +29200,7 @@
   },
   "integrationsGetKey": "Get a key from {name}",
   "@integrationsGetKey": {
-    "description": "Providers \u203a API key dialog: opens the provider's official key page in the browser.",
+    "description": "Providers › API key dialog: opens the provider's official key page in the browser.",
     "placeholders": {
       "name": {
         "type": "String"
@@ -29251,5 +29242,50 @@
         "type": "String"
       }
     }
+  },
+  "migrationReviewSpace": "Needs about {needed} · {free} free",
+  "@migrationReviewSpace": {
+    "description": "Moving from Termux to the in-app server: the review: the space the chosen items need while copying (a conservative estimate) and the phone's free space.",
+    "placeholders": {
+      "needed": {
+        "type": "String"
+      },
+      "free": {
+        "type": "String"
+      }
+    }
+  },
+  "migrationReviewSpaceUnknown": "Needs about {needed} · Free space unknown",
+  "@migrationReviewSpaceUnknown": {
+    "description": "Moving from Termux to the in-app server: the review: the space the chosen items need when the phone's free space could not be read.",
+    "placeholders": {
+      "needed": {
+        "type": "String"
+      }
+    }
+  },
+  "migrationReviewSpaceShort": "Not enough free space for this. Choose fewer items, or free up space on this phone.",
+  "@migrationReviewSpaceShort": {
+    "description": "Moving from Termux to the in-app server: the review: why copying cannot start, and the way forward, when the chosen items need more than the free space."
+  },
+  "migrationDiscard": "Discard saved copy",
+  "@migrationDiscard": {
+    "description": "Moving from Termux to the in-app server: action on a stopped or unfinished copy: throw away the temporary copy and start over."
+  },
+  "migrationDiscardTitle": "Discard this saved copy?",
+  "@migrationDiscardTitle": {
+    "description": "Moving from Termux to the in-app server: confirmation title for discarding the saved copy."
+  },
+  "migrationDiscardBody": "Temporary copy files will be removed. Files already imported and everything in Termux will stay.",
+  "@migrationDiscardBody": {
+    "description": "Moving from Termux to the in-app server: confirmation body for discarding the saved copy."
+  },
+  "migrationDiscardFailed": "The saved copy couldn't be removed. Try again in a moment.",
+  "@migrationDiscardFailed": {
+    "description": "Moving from Termux to the in-app server: shown when discarding the saved copy failed; it stays and can be discarded again."
+  },
+  "migrationStopping": "Stopping…",
+  "@migrationStopping": {
+    "description": "Moving from Termux to the in-app server: shown while a stopped copy is still finishing its current step."
   }
 }

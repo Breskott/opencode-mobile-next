@@ -513,16 +513,21 @@ final gServersArea = CensusArea(
 
     // -- profile-editor: reuse the motion-pass scenes for the add-server
     // flow, which is the same private screen for every entry point.
-    CensusShot('profile-editor', state: 'add-opencode', (kit) async {
-      final done = await mountServersMotionScene(
-        kit.tester,
-        ServersMotionScene.addOpenCode,
-        light: false,
-        boundary: kit.boundaryKey,
-      );
-      kit.onDispose(done);
-      kit.expectVisible(find.byKey(const ValueKey('server-profile-editor')));
-    }, note: 'Default "Add server": OpenCode chosen, the command and pairing.'),
+    CensusShot(
+      'profile-editor',
+      state: 'add-opencode',
+      (kit) async {
+        final done = await mountServersMotionScene(
+          kit.tester,
+          ServersMotionScene.addOpenCode,
+          light: false,
+          boundary: kit.boundaryKey,
+        );
+        kit.onDispose(done);
+        kit.expectVisible(find.byKey(const ValueKey('server-profile-editor')));
+      },
+      note: 'Default "Add server": OpenCode chosen, the command and pairing.',
+    ),
     CensusShot('profile-editor', state: 'add-codex', (kit) async {
       final done = await mountServersMotionScene(
         kit.tester,
@@ -535,16 +540,21 @@ final gServersArea = CensusArea(
         find.byKey(const ValueKey('codex-server-address-field')),
       );
     }),
-    CensusShot('profile-editor', state: 'first-run-connect', (kit) async {
-      final done = await mountServersMotionScene(
-        kit.tester,
-        ServersMotionScene.firstRunConnect,
-        light: false,
-        boundary: kit.boundaryKey,
-      );
-      kit.onDispose(done);
-      kit.expectVisible(find.byKey(const ValueKey('server-profile-editor')));
-    }, note: 'First-run "On my computer" -> OpenCode connect screen.'),
+    CensusShot(
+      'profile-editor',
+      state: 'first-run-connect',
+      (kit) async {
+        final done = await mountServersMotionScene(
+          kit.tester,
+          ServersMotionScene.firstRunConnect,
+          light: false,
+          boundary: kit.boundaryKey,
+        );
+        kit.onDispose(done);
+        kit.expectVisible(find.byKey(const ValueKey('server-profile-editor')));
+      },
+      note: 'First-run "On my computer" -> OpenCode connect screen.',
+    ),
     CensusShot('profile-editor', state: 'failed', (kit) async {
       final done = await mountServersMotionScene(
         kit.tester,
@@ -741,36 +751,41 @@ final gServersArea = CensusArea(
       );
       kit.expectText(_agentCard.name);
     }),
-    CensusShot('external-agents', state: 'pending-deletion', (kit) async {
-      final setup = await _agentSetup(kit);
-      final profile = await setup.agents.add(_agentCard, 'sk-demo-0000');
-      kit.mockChannel('plugins.it_nomads.com/flutter_secure_storage', (
-        call,
-      ) async {
-        if (call.method == 'delete') {
-          throw PlatformException(code: 'unavailable');
+    CensusShot(
+      'external-agents',
+      state: 'pending-deletion',
+      (kit) async {
+        final setup = await _agentSetup(kit);
+        final profile = await setup.agents.add(_agentCard, 'sk-demo-0000');
+        kit.mockChannel('plugins.it_nomads.com/flutter_secure_storage', (
+          call,
+        ) async {
+          if (call.method == 'delete') {
+            throw PlatformException(code: 'unavailable');
+          }
+          return switch (call.method) {
+            'readAll' => <String, String>{},
+            'containsKey' => false,
+            _ => null,
+          };
+        });
+        try {
+          await setup.agents.delete(profile.id);
+        } catch (_) {
+          // Expected: the mocked secure-storage delete above always fails.
         }
-        return switch (call.method) {
-          'readAll' => <String, String>{},
-          'containsKey' => false,
-          _ => null,
-        };
-      });
-      try {
-        await setup.agents.delete(profile.id);
-      } catch (_) {
-        // Expected: the mocked secure-storage delete above always fails.
-      }
-      await kit.pumpApp(
-        ExternalAgentsScreen(
-          store: setup.agents,
-          gatewayFactory: () => _AgentGateway(),
-        ),
-        controller: setup.controller,
-        store: setup.controller.store,
-      );
-      kit.expectText('Try removing again');
-    }, note: 'Local deletion left incomplete (secure-storage delete refused).'),
+        await kit.pumpApp(
+          ExternalAgentsScreen(
+            store: setup.agents,
+            gatewayFactory: () => _AgentGateway(),
+          ),
+          controller: setup.controller,
+          store: setup.controller.store,
+        );
+        kit.expectText('Try removing again');
+      },
+      note: 'Local deletion left incomplete (secure-storage delete refused).',
+    ),
 
     // -- external-agents-delete-sheet ---------------------------------------
     CensusShot('external-agents-delete-sheet', (kit) async {

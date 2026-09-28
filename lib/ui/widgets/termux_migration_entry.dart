@@ -44,6 +44,7 @@ class _TermuxMigrationRowState extends ConsumerState<TermuxMigrationRow> {
   late final TermuxMigrationOwner _owner =
       widget.owner ?? TermuxMigrationOwner.instance;
   bool _unfinished = false;
+  bool _moved = false;
 
   @override
   void initState() {
@@ -67,8 +68,21 @@ class _TermuxMigrationRowState extends ConsumerState<TermuxMigrationRow> {
   Future<void> _read() async {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     await _owner.obtain(ref.read(connProvider), l10n.phoneSetupProfileName);
-    final saved = await _owner.savedSelection(widget.profile.id);
-    if (mounted) setState(() => _unfinished = saved != null);
+    // Finished is the backend's record; one that cannot be read leaves the
+    // plain row, and the page says what happened.
+    var moved = false;
+    try {
+      moved = await _owner.completedJob(widget.profile.id) != null;
+    } catch (_) {
+      moved = false;
+    }
+    final saved = moved ? null : await _owner.savedSelection(widget.profile.id);
+    if (mounted) {
+      setState(() {
+        _moved = moved;
+        _unfinished = saved != null;
+      });
+    }
   }
 
   Future<void> _open() async {
@@ -79,9 +93,8 @@ class _TermuxMigrationRowState extends ConsumerState<TermuxMigrationRow> {
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final store = ref.watch(connProvider).store;
     final id = widget.profile.id;
-    final moved = TermuxMigrationOwner.completedJob(store, id) != null;
+    final moved = _moved;
     final running = _owner.copying && _owner.source == id;
     final (title, detail) = running
         ? (l10n.migrationRowRunning, l10n.migrationKeepOpen)
@@ -161,8 +174,9 @@ class _TermuxMigrationOfferState extends State<TermuxMigrationOffer> {
     final source = _source;
     if (source == null ||
         _dismissed ||
-        !TermuxMigrationService.shouldOffer(widget.store, source.id) ||
-        TermuxMigrationOwner.completedJob(widget.store, source.id) != null) {
+        // A saved or finished move keeps the backend's journal, which ends
+        // the offer (and a discarded copy brings it back unless dismissed).
+        !TermuxMigrationService.shouldOffer(widget.store, source.id)) {
       return const SizedBox.shrink();
     }
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
