@@ -118,7 +118,8 @@ class KitComposerVoice {
   /// Null: the "Read replies aloud" toggle is not shown.
   final ValueChanged<bool>? onReadRepliesAloudChanged;
 
-  /// micDenied / failed: the words.
+  /// micDenied / failed: the words; replyReady: why the reply was not read
+  /// aloud, when it was not.
   final String? reason;
 
   /// micDenied: "Allow microphone"; failed: "Try again".
@@ -913,7 +914,9 @@ class _VoiceContentState extends State<_VoiceContent> {
     final level = voice.level;
     final problem =
         phase == KitVoicePhase.micDenied || phase == KitVoicePhase.failed;
-    final reason = problem ? voice.reason : null;
+    final reason = problem || phase == KitVoicePhase.replyReady
+        ? voice.reason
+        : null;
 
     final Widget? trailing = switch (phase) {
       KitVoicePhase.listening => _Circle(
@@ -971,32 +974,32 @@ class _VoiceContentState extends State<_VoiceContent> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        // A Wrap, not a Row: at 320 dp with large text the meter and the
+        // elapsed time move to their own line instead of squeezing the words.
+        Wrap(
+          spacing: tokens.space2,
+          runSpacing: tokens.space1,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            if (phase == KitVoicePhase.listening && level != null) ...[
+            if (phase == KitVoicePhase.listening && level != null)
               ExcludeSemantics(
                 child: KitLevelMeter.listen(listenable: level, active: true),
               ),
-              SizedBox(width: tokens.space2),
-            ],
-            Flexible(
-              child: Semantics(
-                liveRegion: true,
-                container: true,
-                label: words,
-                excludeSemantics: true,
-                // Body, not secondary: the phase words take the field's
-                // place as the pill's main line, and 14 dp words beside the
-                // meter fall under G5's measured contrast (record §1).
-                child: KitText(
-                  words,
-                  role: KitTextRole.body,
-                  tone: KitTextTone.primary,
-                ),
+            Semantics(
+              liveRegion: true,
+              container: true,
+              label: words,
+              excludeSemantics: true,
+              // Body, not secondary: the phase words take the field's
+              // place as the pill's main line, and 14 dp words beside the
+              // meter fall under G5's measured contrast (record §1).
+              child: KitText(
+                words,
+                role: KitTextRole.body,
+                tone: KitTextTone.primary,
               ),
             ),
-            if (elapsed != null) ...[
-              SizedBox(width: tokens.space2),
+            if (elapsed != null)
               ExcludeSemantics(
                 child: KitText(
                   elapsed,
@@ -1005,7 +1008,6 @@ class _VoiceContentState extends State<_VoiceContent> {
                   tabular: true,
                 ),
               ),
-            ],
           ],
         ),
         if (reason != null && reason.isNotEmpty)

@@ -72,6 +72,7 @@ class _ChatComposer extends StatelessWidget {
     required this.onConversation,
     required this.onWebSources,
     this.conversationMode = false,
+    this.voice,
     required this.onSend,
     required this.onStop,
     this.stopping = false,
@@ -160,6 +161,10 @@ class _ChatComposer extends StatelessWidget {
   final VoidCallback onConversation;
   final VoidCallback onWebSources;
   final bool conversationMode;
+
+  /// Non-null: the pill is in voice mode (P10.3), dictating or in a voice
+  /// conversation.
+  final KitComposerVoice? voice;
   final VoidCallback onSend;
   final VoidCallback onStop;
   final bool stopping;
@@ -282,6 +287,7 @@ class _ChatComposer extends StatelessWidget {
                 ? null
                 : onVoice,
             onOpenEditor: isolated || conversationMode ? null : onOpenEditor,
+            voice: voice,
             onContentInserted: isolated || !promptAttachmentsSupported
                 ? null
                 : onContentInserted,

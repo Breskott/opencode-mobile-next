@@ -459,7 +459,58 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
         return TeamNowInput.forPlanning(activityKey: key, request: request);
       }
     }
-    // A direct task: made and given to the worker pool; no worker yet.
+    // A direct task: its stage from the attempt that made it (P6.3), never
+    // more than the host confirmed. Without that attempt (another device,
+    // an older page) the task was made and given to the worker pool.
+    final attempt = TeamDispatchAttempts.of(_team).latest;
+    final stage = attempt != null && attempt.workId == pending.workId
+        ? attempt.phase
+        : null;
+    TeamNowInput line(
+      TeamNowActivity activity,
+      TeamNowNext next,
+      TeamNowReason reason,
+    ) => TeamNowInput(
+      activityKey: '$key:${stage?.name}',
+      activity: activity,
+      next: next,
+      reason: reason,
+      since: pending.sentAt,
+    );
+    switch (stage) {
+      case TeamDispatchPhase.creating || TeamDispatchPhase.sending:
+        // The assignment is on its way: the turn says "starting"; the line
+        // waits for the host's answer instead of guessing it.
+        return null;
+      case TeamDispatchPhase.workerObserved:
+        return timed(
+          line(
+            TeamNowActivity.startingWorker,
+            TeamNowNext.work,
+            TeamNowReason.workerStarting,
+          ),
+        );
+      case TeamDispatchPhase.assignRefused:
+        return line(
+          TeamNowActivity.refused,
+          TeamNowNext.checkActivity,
+          TeamNowReason.requestRefused,
+        );
+      case TeamDispatchPhase.dispatchUnconfirmed:
+        return line(
+          TeamNowActivity.unconfirmed,
+          TeamNowNext.checkActivity,
+          TeamNowReason.confirmationMissing,
+        );
+      case TeamDispatchPhase.unknown:
+        return line(
+          TeamNowActivity.unavailable,
+          TeamNowNext.checkActivity,
+          TeamNowReason.connectionUnavailable,
+        );
+      default:
+        break;
+    }
     return timed(
       TeamNowInput(
         activityKey: key,
@@ -546,7 +597,8 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: _team,
+    // The task's dispatch stage (P6.3) moves with its own attempt.
+    listenable: Listenable.merge([_team, TeamDispatchAttempts.of(_team)]),
     builder: (context, _) {
       final l10n = _chatL10n(context);
       final run = _run();

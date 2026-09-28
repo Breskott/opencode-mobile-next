@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show compute, listEquals;
@@ -42,7 +43,10 @@ import '../../state/session_drafts.dart';
 import '../../state/session_auto_approval.dart';
 import '../../state/draft_attachments.dart';
 import '../../state/prompt_photos.dart';
+import '../../voice/audio.dart' show VoicePermissionDenied;
 import '../../voice/controller.dart';
+import '../../voice/device.dart' show voiceDevicePlatform;
+import '../../voice/presentation.dart' show voiceErrorText;
 import '../../voice/voice_ui.dart';
 import '../../voice/read_aloud.dart';
 import '../navigation/chat_route.dart';
@@ -84,6 +88,7 @@ import '../kit/kit.dart';
 import '../../domain/orchestration_gateway.dart';
 import '../../domain/team_agent_sessions.dart';
 import '../../state/orchestration.dart';
+import '../../state/team_dispatch.dart';
 import '../../state/team_conversation.dart';
 import '../../state/team_planning.dart'
     show
@@ -543,7 +548,24 @@ class _ChatScreenState extends State<ChatScreen>
   bool _voiceSpeakReplies = false;
   bool _voiceReplyPlayback = false;
   bool _speechSheetOpen = false;
-  final _voiceControlsScroll = ScrollController();
+
+  /// Dictation (P10.3): the mic turned the composer into voice mode and
+  /// what is said lands in the draft, chunk by chunk.
+  bool _voiceDictating = false;
+
+  /// The composer as dictation found it; the transcript is merged in at
+  /// its selection each time a chunk is written down.
+  TextEditingValue? _dictationBase;
+
+  /// The controller whose changes drive voice mode (listened to once).
+  VoiceComposerController? _voiceListened;
+  VoiceComposerState? _voiceShownState;
+  DateTime? _voiceListeningSince;
+  final ValueNotifier<double> _voiceLevel = ValueNotifier(0);
+
+  /// "Allow microphone in Android settings" was tapped: coming back to the
+  /// app tries the microphone again instead of leaving voice mode.
+  bool _voiceSettingsOpened = false;
 
   /// The turn sent from this conversation whose reply is still owed, or
   /// null. Only this turn's reply is ever spoken automatically.
@@ -722,10 +744,21 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) {
-      _interruptVoiceConversation();
+      if (_voiceSettingsOpened) {
+        // Off to Android settings for the microphone; nothing is recording.
+      } else if (_voiceDictating) {
+        // A shade or dialog over the app (inactive) keeps dictating; leaving
+        // the app stops the microphone at once and writes the rest down.
+        if (state != AppLifecycleState.inactive) _pauseDictation();
+      } else {
+        _interruptVoiceConversation();
+        unawaited(_voice?.handleLifecyclePause());
+      }
       unawaited(_stopReading());
-      unawaited(_voice?.handleLifecyclePause());
       _persistDraft();
+    } else if (_voiceSettingsOpened) {
+      _voiceSettingsOpened = false;
+      _retryVoiceAfterSettings();
     } else if (_watching && !_loading && !_loadingOlder) {
       // Back in front: catch up at once instead of on the next tick.
       _scheduleRecentHistoryRefresh();
@@ -743,6 +776,14 @@ class _ChatScreenState extends State<ChatScreen>
         if (mounted && !(route?.isCurrent ?? true)) {
           unawaited(_stopReading());
           if (!_voiceOpening) _interruptVoiceConversation();
+        }
+      });
+    }
+    // Another page over the chat: the microphone never records behind it.
+    if (_voiceDictating && !_voiceOpening && !(route?.isCurrent ?? true)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_voiceOpening && !(route?.isCurrent ?? true)) {
+          _pauseDictation();
         }
       });
     }
@@ -3108,6 +3149,10 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
+  /// The mic (P10.3): turns the composer into voice mode. Dictation puts
+  /// what is said into the draft; in a voice conversation it is sent. The
+  /// first time, P10.4's automatic setup picks and fetches the speech model
+  /// and hands over a recording already listening.
   Future<void> _openVoice() async {
     if (_conn.isIsolated) return;
     // The tools sheet hides the entry point off Android; this keeps a
@@ -3121,63 +3166,41 @@ class _ChatScreenState extends State<ChatScreen>
     }
     final scope = _speechScopeNow;
     final epoch = _voiceEpoch.value;
-    final original = _composer.value;
     _voiceOwnerScope = scope;
     bool current() =>
         mounted &&
         epoch == _voiceEpoch.value &&
         scope == _speechScopeNow &&
-        _conn.isProfileReadable(_conn.promptShelfProfileID);
+        _conn.isProfileReadable(_conn.promptShelfProfileID) &&
+        (ModalRoute.of(context)?.isCurrent ?? true);
     setState(() => _voiceOpening = true);
     try {
       await _stopReading();
-      if (!mounted ||
-          !current() ||
-          !(ModalRoute.of(context)?.isCurrent ?? true)) {
-        return;
-      }
+      if (!current()) return;
       final voice = await _getVoice();
-      if (!mounted ||
-          !current() ||
-          !(ModalRoute.of(context)?.isCurrent ?? true)) {
-        return;
-      }
+      if (!mounted || !current()) return;
+      _listenToVoice(voice);
       if (!voice.models.isReady) {
         final ready = await showVoiceAutomaticSetupSheet(context, voice);
-        if (!mounted ||
-            !ready ||
-            !current() ||
-            !(ModalRoute.of(context)?.isCurrent ?? true)) {
+        if (!ready || !current()) {
+          // A recording the setup started belongs to no mode now.
+          if (voice.state == VoiceComposerState.listening) {
+            unawaited(voice.cancel());
+          }
+          if (mounted && _voiceConversation && !ready) {
+            _interruptVoiceConversation();
+          }
           return;
         }
       }
-      final result = await showVoiceComposerResultSheet(
-        context,
-        voice,
-        conversation: _voiceConversation,
-        validity: _voiceEpoch,
-        isCurrent: current,
-      );
-      if (!mounted ||
-          !current() ||
-          result == null ||
-          result.text.trim().isEmpty ||
-          _composer.value != original ||
-          !(ModalRoute.of(context)?.isCurrent ?? true)) {
-        return;
+      if (!_voiceConversation && !_voiceDictating) {
+        _dictationBase = _composer.value;
+        _updateSpeech(() => _voiceDictating = true);
       }
-      final selection = _composer.selection;
-      _composer.text = mergeVoiceDraft(_composer.text, selection, result.text);
-      _composer.selection = TextSelection.collapsed(
-        offset: _composer.text.length,
-      );
-      _focus.requestFocus();
-      setState(() {});
-      // "Insert & send" goes through the one send path, so delivery mode,
-      // commands and attachments behave exactly as a typed prompt would.
-      if (result.send) await _send();
+      await voice.startListening();
     } catch (error) {
       if (mounted && current()) {
+        if (_voiceDictating) _leaveDictation();
         _showActionError(_chatL10n(context).voiceInputUnavailable);
       }
     } finally {
@@ -3867,7 +3890,6 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> _openTimeline() async {
     if (_messages.isEmpty) return;
     // A prompt's own Fork in the timeline lands like every fork (P10.2).
-    const forkMode = false;
     final selection = await showModalBottomSheet<_TimelineSelection>(
       context: context,
       isScrollControlled: true,
@@ -3877,7 +3899,6 @@ class _ChatScreenState extends State<ChatScreen>
         listenable: _historyChanges,
         builder: (context, _) => _TimelineSheet(
           messages: List.of(_visibleHistory),
-          forkMode: forkMode,
           forkAvailable: _conn.capabilities.sessionFork,
           hasOlder: _olderCursor != null,
           loadingOlder: _loading || _loadingOlder,
@@ -7410,7 +7431,6 @@ class _ChatScreenState extends State<ChatScreen>
               : _ComposerNote(key: _composerNoteKey, text: _composerNote!),
         ),
         _composerStatusStrip(),
-        if (_voiceConversation) _voiceConversationControls(),
         // First run's one notification question; the card is absent for
         // everyone it is not due for.
         FirstReplyNotifyCard(
@@ -7516,6 +7536,7 @@ class _ChatScreenState extends State<ChatScreen>
       onConversation: _startVoiceConversation,
       onWebSources: _addWebSources,
       conversationMode: _voiceConversation,
+      voice: _composerVoice(),
       onSend: _send,
       onStop: _abort,
       stopping: _aborting,
@@ -7967,14 +7988,15 @@ class _ChatScreenState extends State<ChatScreen>
     _findNavigationFocus.dispose();
     _composerNoteTimer?.cancel();
     _retryTicker?.cancel();
+    _voiceListened?.removeListener(_onVoiceChanged);
     unawaited(_voice?.cancel());
     if (widget.voiceController == null) _voice?.dispose();
+    _voiceLevel.dispose();
     _composer.dispose();
     _focus.dispose();
     _historyRefreshTimer?.cancel();
     _historyChanges.dispose();
     _backgroundSupportState.dispose();
-    _voiceControlsScroll.dispose();
     super.dispose();
   }
 }

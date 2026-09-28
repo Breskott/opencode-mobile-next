@@ -20,8 +20,12 @@
 /// project, a title and optional details go as one bead
 /// (`createWork`) slung at the project's worker pool
 /// (`<rig>/gastown.polecat`, [teamWorkerPoolId]) through
-/// [OrchestrationController.giveTask]. A planner with no live session is
-/// woken (`controlAgent(start)`) before the message goes.
+/// [OrchestrationController.giveTask], through one [TeamDispatchController]
+/// per tap ([TeamDispatchAttempts], P6.3): the sheet says each stage the
+/// host confirmed ("Creating your task…", then "Task created · sending it
+/// to the team…") and the team page's Now line carries it on once the
+/// sheet closes. A planner with no live session is woken
+/// (`controlAgent(start)`) before the message goes.
 ///
 /// Data safety (DATA-1, DATA-2): what the person typed is a [KitDraft] per
 /// server profile (`oc.draft.team.objective.<profileId>` and the direct
@@ -39,6 +43,7 @@ import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/automation_policy.dart';
 import '../../../state/orchestration.dart';
+import '../../../state/team_dispatch.dart';
 import '../../../state/team_planning.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
@@ -154,7 +159,13 @@ class _StartRunSheetState extends State<StartRunSheet> {
   bool _waking = false;
   bool _showEmpty = false;
   bool _showTaskEmpty = false;
+
+  /// The direct task's refused create: the host's words, for Technical
+  /// details only ('' when it gave none).
   String? _directError;
+
+  /// The direct task's attempt while this sheet sends it (P6.3).
+  TeamDispatchController? _attempt;
 
   /// The planner's refusal of the last send: the host's words.
   String? _refused;
@@ -188,6 +199,7 @@ class _StartRunSheetState extends State<StartRunSheet> {
 
   @override
   void dispose() {
+    _attempt?.removeListener(_changed);
     _objective.dispose();
     _task.dispose();
     _details.dispose();
@@ -214,8 +226,14 @@ class _StartRunSheetState extends State<StartRunSheet> {
     ]);
   }
 
-  void _close(MutationRecord record, {bool backlog = false}) {
-    unawaited(_clearDrafts());
+  /// Closes with [record]. The drafts are cleared only when the host made
+  /// the task ([clearDrafts]): an unconfirmed create keeps the words.
+  void _close(
+    MutationRecord record, {
+    bool backlog = false,
+    bool clearDrafts = true,
+  }) {
+    if (clearDrafts) unawaited(_clearDrafts());
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
       navigator.pop(StartRunResult(record, backlog: backlog));
@@ -344,16 +362,20 @@ class _StartRunSheetState extends State<StartRunSheet> {
     return projects.isEmpty ? null : projects.first.id;
   }
 
-  /// The planner is off, but this host creates work: the direct form.
+  /// The planner is off, but this host both creates and assigns work
+  /// (the dispatch contract's admission): the direct form.
   bool get _direct {
     final controller = widget.controller;
     final planner = teamPlannerAgent(controller.snapshot.agents);
     final off = planner == null || teamPlannerIsOff(planner);
     return off &&
         controller.capabilities.controlCreateWork &&
+        controller.capabilities.controlAssign &&
         controller.snapshot.projects.isNotEmpty;
   }
 
+  /// Sends the direct task through one attempt ([TeamDispatchAttempts]):
+  /// one create, then one assignment of that exact task, each once.
   Future<void> _sendDirect() async {
     final title = _task.text.trim();
     if (title.isEmpty) {
@@ -362,36 +384,76 @@ class _StartRunSheetState extends State<StartRunSheet> {
     }
     final projectId = _directProject;
     if (_sending || projectId == null) return;
+    final attempt = TeamDispatchAttempts.of(widget.controller).begin();
+    _attempt?.removeListener(_changed);
+    _attempt = attempt..addListener(_changed);
     setState(() {
       _sending = true;
       _directError = null;
     });
     try {
       final details = _details.text.trim();
-      final result = await widget.controller.giveTask(
+      await attempt.submit(
         title: title,
         description: details.isEmpty ? null : details,
         projectId: projectId,
         agentId: teamWorkerPoolId(projectId),
       );
       if (!mounted) return;
-      final created = result.created;
-      if (created.status == MutationStatus.rejected) {
-        // The bead was not made: stay, say why, let the person edit.
-        setState(() => _directError = created.receipt?.message?.trim() ?? '');
-        return;
+      switch (attempt.phase) {
+        case TeamDispatchPhase.createRefused:
+          // The task was not made: stay, say so, let the person edit. The
+          // host's words wait under Technical details.
+          setState(
+            () => _directError =
+                attempt.problemRecord?.receipt?.message?.trim() ?? '',
+          );
+          TeamDispatchAttempts.of(widget.controller).dismiss();
+        case TeamDispatchPhase.unavailable || TeamDispatchPhase.invalidInput:
+          TeamDispatchAttempts.of(widget.controller).dismiss();
+        case TeamDispatchPhase.createUnconfirmed:
+          // It may exist: no blind resend from here. The team page's Now
+          // line says so; the words stay for after a check.
+          final record = attempt.problemRecord;
+          if (record != null) _close(record, clearDrafts: false);
+        default:
+          // The task exists. A refused assignment comes back as its own
+          // record so no conversation opens on a task nobody took.
+          final assigned = attempt.assignMutationKey == null
+              ? null
+              : widget.controller.mutation(attempt.assignMutationKey!);
+          final created = widget.controller.mutation(
+            attempt.createMutationKey!,
+          )!;
+          _close(
+            attempt.phase == TeamDispatchPhase.assignRefused && assigned != null
+                ? assigned
+                : created,
+          );
       }
-      // The bead exists; a refused sling comes back as its own record so
-      // the home says so instead of "sent".
-      final assigned = result.assigned;
-      _close(
-        assigned != null && assigned.status == MutationStatus.rejected
-            ? assigned
-            : created,
-      );
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+  /// The direct task's stage while this sheet sends it: what the host
+  /// confirmed so far, never more.
+  Widget? _directStage(AppLocalizations l10n) {
+    final attempt = _attempt;
+    if (attempt == null || !_sending) return null;
+    final message = switch (attempt.phase) {
+      TeamDispatchPhase.creating => l10n.teamDispatchCreating,
+      TeamDispatchPhase.sending => l10n.teamDispatchSending,
+      _ => null,
+    };
+    if (message == null) return null;
+    return KitNotice(
+      key: const ValueKey('team-start-run-direct-stage'),
+      messageKey: const ValueKey('team-start-run-direct-stage-text'),
+      tone: AppStatusTone.progress,
+      icon: AppIconography.waiting,
+      message: message,
+    );
   }
 
   @override
@@ -442,7 +504,6 @@ class _StartRunSheetState extends State<StartRunSheet> {
           draft: _objectiveDraft,
           hint: l10n.teamUiStartRunObjectiveHint,
           autofocus: true,
-          enabled: !_sending,
           error: _showEmpty && _objective.text.trim().isEmpty
               ? l10n.teamUiStartRunObjectiveEmpty
               : null,
@@ -563,8 +624,11 @@ class _StartRunSheetState extends State<StartRunSheet> {
   }
 
   /// The direct task (TEAM-306): intro, project, title, details, Send to
-  /// an agent, the host's refusal when any, and the host guide below for
-  /// the person who would rather wake the planner.
+  /// an agent, the stage while it sends (P6.3), the host's refusal when
+  /// any, and the host guide below for the person who would rather wake
+  /// the planner. The fields stay editable while the host answers: what
+  /// was sent is already taken, and Send waits (a disabled field would
+  /// repeat its reason under each field).
   Widget _directForm(BuildContext context) {
     final l10n = _copy(context);
     final tokens = KitTokens.of(context);
@@ -608,7 +672,6 @@ class _StartRunSheetState extends State<StartRunSheet> {
           hint: l10n.teamUiStartRunDirectTitleHint,
           autofocus: true,
           textInputAction: TextInputAction.next,
-          enabled: !_sending,
           error: _showTaskEmpty && _task.text.trim().isEmpty
               ? l10n.teamUiStartRunDirectTitleRequired
               : null,
@@ -620,19 +683,28 @@ class _StartRunSheetState extends State<StartRunSheet> {
           kind: KitFieldKind.multiline,
           controller: _detailsDraft == null ? _details : null,
           draft: _detailsDraft,
-          enabled: !_sending,
           fieldKey: const ValueKey('team-start-run-direct-details'),
         ),
+        if (_directStage(l10n) case final stage?) ...[
+          SizedBox(height: tokens.space3),
+          stage,
+        ],
         if (error != null) ...[
           SizedBox(height: tokens.space3),
           KitNotice(
             key: const ValueKey('team-start-run-direct-error'),
             tone: AppStatusTone.failure,
             icon: AppIconography.error,
-            message: error.isEmpty
-                ? l10n.teamUiGateAnswerRejectedNoMessage
-                : l10n.teamUiStartRunDirectRefused(error),
+            message: l10n.teamDispatchCreateRefused,
           ),
+          // The host's own words: technical, redacted by the fold.
+          if (error.isNotEmpty)
+            KitDetailsFold(
+              label: l10n.teamUiTechnicalDetails,
+              foldKey: const ValueKey('team-start-run-direct-error-details'),
+              notes: [l10n.teamDispatchHostWords],
+              text: error,
+            ),
         ],
         ..._backlogRefusal(l10n, tokens),
         SizedBox(height: tokens.space5),

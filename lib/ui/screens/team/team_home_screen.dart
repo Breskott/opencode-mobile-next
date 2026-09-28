@@ -16,11 +16,17 @@
 ///    stop, remove; reachable in every state) and Turn off: the
 ///    team-plugin-sheet's switches, merged here. Turned off, [TeamPage]
 ///    shows the off state on the same page.
-/// 2. One line for the whole team when something is in flight: the heat
-///    guard's pause (why, and that it carries on by itself — never Resume),
-///    else the team's Now ([teamNowLine]). Android stopping the phone's
-///    Termux team is its own line above it, with Start the team again, and
-///    then the page says nothing that contradicts it.
+/// 2. One line for the whole team, in the screen's status slot (so it and
+///    the app's connection line never show at once: the slot draws the more
+///    urgent): old data, else the heat guard's pause (why, and that it
+///    carries on by itself — never Resume), else the stage of the task just
+///    given ([TeamDispatchAttempts], P6.3: "Task created · sending it to the
+///    team…", "Task sent to the team · waiting for a worker", "A worker
+///    started your task", each only once the host confirmed it; a refusal
+///    or an unconfirmed step comes before the team's Now), else the team's
+///    Now ([teamNowStatus]). Android stopping the phone's Termux team is its
+///    own line above the list, with Start the team again, and then the page
+///    says nothing that contradicts it.
 /// 3. What needs the person, only when something does, with no heading of
 ///    its own: one question as a request block with its answers. The one
 ///    question's block is also its task's row: it names the task, carries
@@ -48,8 +54,9 @@
 /// screen's one primary button, pinned below the list; it opens
 /// [StartRunSheet] through [TeamConversation.start], so a task given here
 /// lands in its conversation like one given from Solo · Team. A task the
-/// host made but its workers refused comes back as a notice at the top of
-/// the list. Old data shows the one status line with its age (the rows
+/// host made but its workers refused is said by the status line (the task
+/// stays on the board; the host's words only under Technical details). Old
+/// data shows the one status line with its age (the rows
 /// stay at full strength, LOOK-14); pull to refresh calls
 /// [OrchestrationController.refresh].
 library;
@@ -69,6 +76,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/orchestration.dart';
 import '../../../state/team_conversation.dart' show teamSessionState;
+import '../../../state/team_dispatch.dart';
 import '../../../state/team_overview.dart';
 import '../../../termux/team_runtime.dart';
 import '../../app_theme.dart';
@@ -77,7 +85,7 @@ import '../../kit/scenes/team_scenes.dart';
 import '../../widgets/relative_time.dart';
 import '../../widgets/team_now.dart';
 import '../../widgets/team_now_line_view.dart'
-    show TeamNowActivity, teamNowActivityLine;
+    show TeamNowActivity, teamNowActivityLine, teamWorkerStartUsual;
 import '../../widgets/team_discovery_card.dart'
     show teamHostDisclaimer, teamHostKindFor;
 import '../../widgets/team_host_form.dart'
@@ -176,10 +184,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
 
   bool _refreshing = false;
 
-  /// A task the host made but its workers refused, said once at the top
-  /// of the list until dismissed.
-  MutationRecord? _refusal;
-
   /// Android stopped the phone's Termux team ([TeamPhoneKilledNotice]).
   bool _killed = false;
 
@@ -240,7 +244,13 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
   /// subscribe again to a team that is being turned off.
   Listenable _watching() {
     final heat = _heat;
-    final parts = [widget.controller, heat, heat?.value, _connection];
+    final parts = [
+      widget.controller,
+      TeamDispatchAttempts.of(widget.controller),
+      heat,
+      heat?.value,
+      _connection,
+    ];
     var same = _merged != null && parts.length == _watched.length;
     for (var i = 0; same && i < parts.length; i++) {
       same = identical(parts[i], _watched[i]);
@@ -388,18 +398,11 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     }
   }
 
+  /// The task's conversation opens once the host took it (the planner's
+  /// message or the direct task); back here, the status line says where a
+  /// direct task stands ([TeamDispatchAttempts]).
   Future<void> _startRun() async {
-    // The task's conversation opens once the host took it (the planner's
-    // message or the direct task); back here, a refusal the sheet did not
-    // say (the work item made, its worker pool refused it) is said once.
-    final record = await TeamConversation.start(context, widget.controller);
-    if (!mounted) return;
-    if (record == null ||
-        record.kind == MutationKind.message ||
-        record.status != MutationStatus.rejected) {
-      return;
-    }
-    setState(() => _refusal = record);
+    await TeamConversation.start(context, widget.controller);
   }
 
   @override
@@ -422,14 +425,7 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             ready &&
             teamVisibleRuns(controller.snapshot.runs).length >
                 teamHomeSearchAfter;
-        final line = ready
-            ? teamStatusLine(
-                context,
-                controller: controller,
-                keyPrefix: 'team-home',
-                onRetry: _refreshing ? null : _refresh,
-              )
-            : null;
+        final line = ready ? _status(context, l10n, controller, hold) : null;
         return KitScreen(
           key: const ValueKey('team-home'),
           topBar: KitTopBar(
@@ -861,49 +857,8 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
       );
     }
 
-    // One status line (design standard §5): old data wins; else the team's
-    // Now (what it is doing, what happens next) heads the list, where it
-    // scrolls with it instead of taking room from the tasks.
-    final stale =
-        teamStatusLine(
-          context,
-          controller: controller,
-          keyPrefix: 'team-home',
-          onRetry: null,
-        ) !=
-        null;
-    // A pause for heat is the guard's, not the person's: it says why and
-    // that the team carries on by itself, and offers no Resume (waking the
-    // agents would heat the phone again).
-    final now = hold != null
-        ? _heatLine(context, l10n, hold)
-        : stale
-        ? null
-        : teamNowLine(
-            context,
-            controller: controller,
-            now: _now,
-            keyPrefix: 'team-home-now',
-          );
-    final refusal = _refusal;
-    final inset = EdgeInsetsDirectional.symmetric(
-      horizontal: tokens.gutter,
-      vertical: tokens.space2,
-    );
     final children = <Widget>[
       ?killed,
-      ?now,
-      if (refusal != null)
-        Padding(
-          padding: inset,
-          child: KitNotice(
-            key: const ValueKey('team-home-direct-receipt'),
-            tone: AppStatusTone.failure,
-            icon: AppIconography.error,
-            message: teamReceiptLine(l10n, refusal),
-            onDismiss: () => setState(() => _refusal = null),
-          ),
-        ),
       // 1. What needs the person, first, and only when something does: the
       // answer surface itself, no section heading over it.
       if (gates.length == 1) ...[
@@ -1064,15 +1019,62 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     );
   }
 
+  /// The page's one status line (design standard §5, the status slot):
+  /// old data, then the heat guard's hold, then a direct task's refusal or
+  /// unconfirmed step, then the team's Now, then the direct task's progress.
+  KitStatus? _status(
+    BuildContext context,
+    AppLocalizations l10n,
+    OrchestrationController controller,
+    ThermalTeamHold? hold,
+  ) {
+    final stale = teamStatusLine(
+      context,
+      controller: controller,
+      keyPrefix: 'team-home',
+      onRetry: _refreshing ? null : _refresh,
+    );
+    final attempt = TeamDispatchAttempts.of(controller).latest;
+    final dispatch = attempt == null
+        ? null
+        : _dispatchStatus(context, l10n, controller, attempt);
+    // A refusal or a step nobody confirmed comes before the team's Now;
+    // progress comes after it.
+    final problem = switch (attempt?.phase) {
+      TeamDispatchPhase.assignRefused ||
+      TeamDispatchPhase.createUnconfirmed ||
+      TeamDispatchPhase.dispatchUnconfirmed ||
+      TeamDispatchPhase.unknown => dispatch,
+      _ => null,
+    };
+    return KitStatus.highest([
+      stale,
+      // A pause for heat is the guard's, not the person's: it says why and
+      // that the team carries on by itself, and offers no Resume (waking
+      // the agents would heat the phone again).
+      if (hold != null) _heatStatus(context, l10n, hold),
+      problem,
+      teamNowStatus(
+        context,
+        controller: controller,
+        now: _now,
+        keyPrefix: 'team-home-now',
+      ),
+      if (problem == null) dispatch,
+    ]);
+  }
+
   /// The heat guard's line: paused (or stopped) since when, and that the
   /// team carries on by itself once the phone has cooled.
-  Widget _heatLine(
+  KitStatus _heatStatus(
     BuildContext context,
     AppLocalizations l10n,
     ThermalTeamHold hold,
   ) {
     final at = teamClockLabel(context, hold.since);
-    return KitStatusLine(
+    return KitStatus(
+      kind: KitStatusKind.heat,
+      id: 'team-home:heat',
       key: const ValueKey('team-home-heat'),
       icon: hold.serviceStopped
           ? AppIconography.stopCircle
@@ -1082,6 +1084,145 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           ? l10n.teamHomeHeatStoppedLine(at)
           : l10n.teamHomeHeatPausedLine(at),
     );
+  }
+
+  /// Where the task just given stands (P6.3,
+  /// docs/design/team-immediate-dispatch-contract.md): only what the host
+  /// confirmed. The host's own words are never the line; they wait behind
+  /// Technical details, redacted. Null when there is nothing to say here
+  /// (the sheet said it, or nothing was sent).
+  KitStatus? _dispatchStatus(
+    BuildContext context,
+    AppLocalizations l10n,
+    OrchestrationController controller,
+    TeamDispatchController attempt,
+  ) {
+    final attempts = TeamDispatchAttempts.of(controller);
+    final checkAgain = KitAction(
+      key: const ValueKey('team-home-dispatch-check'),
+      label: l10n.teamDispatchCheckAgain,
+      icon: AppIconography.retry,
+      onPressed: _refreshing ? null : () => unawaited(_refresh()),
+    );
+    final record = attempt.problemRecord;
+    final hostWords = record?.receipt?.message?.trim() ?? '';
+    final taskId = attempt.workId;
+    final details = record == null || (hostWords.isEmpty && taskId == null)
+        ? const <KitAction>[]
+        : [
+            KitAction(
+              key: const ValueKey('team-home-dispatch-details'),
+              label: l10n.teamUiTechnicalDetails,
+              icon: AppIconography.info,
+              onPressed: () => unawaited(
+                showKitTechnicalDetails(
+                  context,
+                  title: l10n.teamUiTechnicalDetails,
+                  sheetKey: const ValueKey('team-home-dispatch-details-sheet'),
+                  values: [
+                    if (taskId != null)
+                      KitTechnicalValue(l10n.teamDispatchTaskId, taskId),
+                  ],
+                  notes: [if (hostWords.isNotEmpty) l10n.teamDispatchHostWords],
+                  // Redacted by the kit before it is shown or copied.
+                  text: hostWords,
+                ),
+              ),
+            ),
+          ];
+    KitStatus line({
+      required String message,
+      required AppStatusTone tone,
+      required IconData icon,
+      String? supporting,
+      String? next,
+      KitAction? action,
+      List<KitAction> more = const [],
+      DateTime? since,
+      bool dismissible = true,
+    }) => KitStatus(
+      kind: KitStatusKind.work,
+      id: 'team-home:dispatch:${attempt.phase.name}',
+      key: ValueKey('team-home-dispatch-${attempt.phase.name}'),
+      messageKey: const ValueKey('team-home-dispatch-text'),
+      icon: icon,
+      tone: tone,
+      message: message,
+      supporting: supporting,
+      next: next,
+      action: action,
+      more: more,
+      since: since,
+      // Closing the line changes nothing on the host.
+      onDismiss: dismissible ? attempts.dismiss : null,
+    );
+    return switch (attempt.phase) {
+      TeamDispatchPhase.creating => line(
+        message: l10n.teamDispatchCreating,
+        tone: AppStatusTone.progress,
+        icon: AppIconography.waiting,
+        since: attempt.startedAt,
+        dismissible: false,
+      ),
+      TeamDispatchPhase.sending => line(
+        message: l10n.teamDispatchSending,
+        tone: AppStatusTone.progress,
+        icon: AppIconography.send,
+        since: attempt.startedAt,
+        dismissible: false,
+      ),
+      TeamDispatchPhase.awaitingWorker => line(
+        message: l10n.teamDispatchAwaitingWorker,
+        tone: AppStatusTone.progress,
+        icon: AppIconography.waiting,
+        // An expectation, never a deadline or a measured figure.
+        next: [
+          l10n.teamNowNextWorker,
+          l10n.teamNowUsuallyWithin(
+            KitSince.durationWords(l10n, teamWorkerStartUsual),
+          ),
+        ].join(' · '),
+      ),
+      TeamDispatchPhase.workerObserved => line(
+        message: l10n.teamDispatchWorkerStarted,
+        tone: AppStatusTone.ok,
+        icon: AppIconography.agent,
+      ),
+      TeamDispatchPhase.assignRefused => line(
+        message: l10n.teamDispatchAssignRefused,
+        tone: AppStatusTone.failure,
+        icon: AppIconography.error,
+        supporting: l10n.teamDispatchAssignRefusedHint,
+        action: checkAgain,
+        more: details,
+      ),
+      TeamDispatchPhase.createUnconfirmed => line(
+        message: l10n.teamDispatchCreateUnconfirmed,
+        tone: AppStatusTone.neutral,
+        icon: AppIconography.warning,
+        supporting: l10n.teamDispatchCheckBoard,
+        action: checkAgain,
+        more: details,
+      ),
+      TeamDispatchPhase.dispatchUnconfirmed => line(
+        message: l10n.teamDispatchDispatchUnconfirmed,
+        tone: AppStatusTone.neutral,
+        icon: AppIconography.warning,
+        supporting: l10n.teamDispatchCheckBoard,
+        action: checkAgain,
+        more: details,
+      ),
+      TeamDispatchPhase.unknown => line(
+        message: l10n.teamDispatchUnknown,
+        tone: AppStatusTone.neutral,
+        icon: AppIconography.cloudOff,
+        action: checkAgain,
+      ),
+      TeamDispatchPhase.idle ||
+      TeamDispatchPhase.unavailable ||
+      TeamDispatchPhase.invalidInput ||
+      TeamDispatchPhase.createRefused => null,
+    };
   }
 
   /// What the whole team spent today, as the host estimates it; null when

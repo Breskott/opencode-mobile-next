@@ -125,12 +125,12 @@ class ScriptedVoiceModels extends VoiceModelManager {
 }
 
 /// A composer controller that listens and drafts on command: startListening
-/// goes to listening, stopListening to a draft of [transcript].
+/// goes to listening, stopListening to a draft of [said].
 class ScriptedVoiceComposer extends VoiceComposerController {
-  ScriptedVoiceComposer({required super.models, this.transcript = ''})
+  ScriptedVoiceComposer({required super.models, this.said = ''})
     : super(recorder: FakeVoiceRecorder(), recognizer: FakeVoiceRecognizer());
 
-  final String transcript;
+  final String said;
   int cancels = 0;
 
   @override
@@ -143,7 +143,7 @@ class ScriptedVoiceComposer extends VoiceComposerController {
 
   @override
   Future<void> stopListening() async {
-    draft = transcript;
+    draft = said;
     state = VoiceComposerState.draft;
     notifyListeners();
   }

@@ -1,8 +1,8 @@
 // Golden renders of screen-voice-1's pages (wave 2b), rebuilt from kit
 // parts: the voice model setup sheet (not installed, installed, downloading,
-// failed), its delete confirmation, the voice input sheet (listening,
-// draft, microphone blocked) and the voice licenses page with one license
-// open. Phone 412x915 and one wide window (1280x800), dark and light
+// failed), its delete confirmation and the voice licenses page with one
+// license open. The voice input sheet is gone: voice is a composer mode
+// (P10.3, test/revamp/slice_p10_3_golden_test.dart). Phone 412x915 and one wide window (1280x800), dark and light
 // (owner decision 2026-09-27: no Arabic), with the app's real fonts at
 // DPR 1.
 //
@@ -13,8 +13,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencode_mobile/voice/audio.dart';
-import 'package:opencode_mobile/voice/controller.dart';
 import 'package:opencode_mobile/voice/model_manager.dart';
 import 'package:opencode_mobile/voice/model_manifest.dart';
 import 'package:opencode_mobile/voice/notices.dart';
@@ -152,67 +150,6 @@ void main() {
           await tester.ensureVisible(delete);
           await tester.pumpAndSettle();
           await tester.tap(delete);
-        },
-      );
-    });
-
-    for (final size in const [voicePhone, voiceWide]) {
-      testWidgets('composer listening ${size.width} · $mode', (tester) async {
-        final models = await ScriptedVoiceModels.create();
-        final voice = ScriptedVoiceComposer(models: models);
-        addTearDown(voice.dispose);
-        await _shot(
-          tester,
-          'composer_listening',
-          light: light,
-          size: size,
-          settle: false,
-          home: voiceLauncher((c) => showVoiceComposerResultSheet(c, voice)),
-          then: () => _open(tester),
-        );
-      });
-    }
-
-    testWidgets('composer draft · $mode', (tester) async {
-      final models = await ScriptedVoiceModels.create();
-      final voice = ScriptedVoiceComposer(
-        models: models,
-        transcript:
-            'Fix the flaky checkout test. It fails about one run in five '
-            'on CI.',
-      );
-      addTearDown(voice.dispose);
-      await _shot(
-        tester,
-        'composer_draft',
-        light: light,
-        settle: false,
-        home: voiceLauncher((c) => showVoiceComposerResultSheet(c, voice)),
-        then: () async {
-          await _open(tester);
-          await tester.tap(find.text('Stop recording'));
-          await pumpSheet(tester);
-        },
-      );
-    });
-
-    testWidgets('composer microphone blocked · $mode', (tester) async {
-      final models = await ScriptedVoiceModels.create();
-      final voice = ScriptedVoiceComposer(models: models);
-      addTearDown(voice.dispose);
-      await _shot(
-        tester,
-        'composer_mic_denied',
-        light: light,
-        settle: false,
-        home: voiceLauncher((c) => showVoiceComposerResultSheet(c, voice)),
-        then: () async {
-          await _open(tester);
-          voice.show(
-            VoiceComposerState.error,
-            failure: const VoicePermissionDenied(permanent: true),
-          );
-          await pumpSheet(tester);
         },
       );
     });

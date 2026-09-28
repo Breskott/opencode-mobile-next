@@ -15,13 +15,12 @@ class _TimelineSelection {
 }
 
 /// The message timeline in the kit's sheet frame: newest first,
-/// searchable, each row a jump; in [forkMode] only the prompts that can be
-/// forked. The host rebuilds it as older history loads into the transcript.
+/// searchable, each row a jump, a prompt's row with its own Fork. The host
+/// rebuilds it as older history loads into the transcript.
 /// A drag on the rows closes the search keyboard.
 class _TimelineSheet extends StatefulWidget {
   const _TimelineSheet({
     required this.messages,
-    required this.forkMode,
     required this.forkAvailable,
     this.hasOlder = false,
     this.loadingOlder = false,
@@ -31,7 +30,6 @@ class _TimelineSheet extends StatefulWidget {
   });
 
   final List<MessageWithParts> messages;
-  final bool forkMode;
   final bool forkAvailable;
   final bool hasOlder;
   final bool loadingOlder;
@@ -124,12 +122,11 @@ class _TimelineSheetState extends State<_TimelineSheet> {
     for (final hit in hits) {
       firstHits.putIfAbsent(hit.messageID, () => hit);
     }
-    final visible = widget.messages.reversed.where((message) {
-      if (widget.forkMode && !_isForkable(message)) return false;
-      if (query.isEmpty) return true;
-      if (!widget.forkMode) return firstHits.containsKey(message.info.id);
-      return _preview(message).toLowerCase().contains(query);
-    }).toList();
+    final visible = widget.messages.reversed
+        .where(
+          (message) => query.isEmpty || firstHits.containsKey(message.info.id),
+        )
+        .toList();
     final error = widget.olderError;
     final loadOlder = widget.loadOlder;
     final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.5;
@@ -140,13 +137,9 @@ class _TimelineSheetState extends State<_TimelineSheet> {
       key: const ValueKey('timeline-sheet'),
       height: height,
       child: KitSheet(
-        title: widget.forkMode
-            ? l10n.chatUiForkFromPrompt
-            : l10n.chatUiMessageTimeline,
+        title: l10n.chatUiMessageTimeline,
         // Only what the rows cannot say: what forking does.
-        subtitle: widget.forkMode
-            ? l10n.chatUiChooseAPromptToRestoreItIn
-            : widget.forkAvailable
+        subtitle: widget.forkAvailable
             ? l10n.chatUiJumpAnywhereForkRestoresAPromptFor
             : null,
         fill: true,
@@ -229,8 +222,7 @@ class _TimelineSheetState extends State<_TimelineSheet> {
     final l10n = _chatL10n(context);
     final isUser = message.info.role == 'user';
     final created = message.info.time?.created;
-    final fork =
-        widget.forkAvailable && !widget.forkMode && _isForkable(message);
+    final fork = widget.forkAvailable && _isForkable(message);
     return KitRow(
       key: ValueKey('timeline-row-${message.info.id}'),
       leading: KitRow.icon(
@@ -261,8 +253,8 @@ class _TimelineSheetState extends State<_TimelineSheet> {
         context,
         _TimelineSelection(
           message: message,
-          fork: widget.forkMode,
-          query: widget.forkMode ? '' : _search.text.trim(),
+          fork: false,
+          query: _search.text.trim(),
         ),
       ),
     );
