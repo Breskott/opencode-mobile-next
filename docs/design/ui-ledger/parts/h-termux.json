@@ -2913,6 +2913,24 @@
    ],
    "key": "termux-migration",
    "elements": []
+  },
+  {
+   "id": "manage-space",
+   "title": "Clear this app's storage",
+   "kind": "screen",
+   "file": "lib/ui/screens/manage_space_screen.dart",
+   "widget": "ManageSpaceScreen",
+   "presentedBy": [
+    "Android Settings › Apps › Storage › Manage space (manageSpaceActivity)"
+   ],
+   "line": 1,
+   "purpose": "Android's Clear storage button opens this first: what clearing deletes (in-app server, projects with sizes, conversations, saved servers) and keeps, Export projects first, clear the cache only, or a confirmed Delete everything (slice-clear-storage-guard, 2026-09-28).",
+   "reachedFrom": [],
+   "gates": [
+    "Android only; opened by the system, not from inside the app"
+   ],
+   "key": "manage-space",
+   "elements": []
   }
  ],
  "notPages": [

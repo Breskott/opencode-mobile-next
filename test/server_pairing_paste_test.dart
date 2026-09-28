@@ -252,7 +252,8 @@ void main() {
       find.byKey(const ValueKey('server-pairing-failure')),
       findsOneWidget,
     );
-    expect(find.textContaining('HTTPS is required'), findsWidgets);
+    // Plain words since slice-qa-ui (637b1827, B9).
+    expect(find.textContaining('https://'), findsWidgets);
   });
 
   testWidgets('a malformed pairing code fails honestly without a crash', (
