@@ -178,6 +178,16 @@ Finder _row(String id) => find.byKey(ValueKey('session-dismiss-$id'));
 
 double _top(WidgetTester tester, Finder finder) => tester.getTopLeft(finder).dy;
 
+/// New conversation's chooser is open: pick Solo.
+Future<void> _chooseSolo(WidgetTester tester) async {
+  expect(find.byKey(const ValueKey('new-conversation-sheet')), findsOneWidget);
+  final solo = find.byKey(const ValueKey('new-conversation-solo'));
+  await tester.ensureVisible(solo);
+  await tester.pump();
+  await tester.tap(solo);
+  await _pumpFrames(tester);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -216,6 +226,9 @@ void main() {
         expect(tester.takeException(), isNull);
         await tester.tap(find.widgetWithText(FilledButton, 'New conversation'));
         await _pumpFrames(tester);
+        // More than one way to start here (slice-P4.5, a2605a09): the
+        // chooser asks, and Solo starts the conversation.
+        await _chooseSolo(tester);
         expect(find.text('Created conversation'), findsOneWidget);
       },
     );
@@ -282,6 +295,10 @@ void main() {
       expect(tester.takeException(), isNull);
       await tester.tap(action);
       await _pumpFrames(tester);
+      // The one action asks how to start where there is more than one way
+      // (slice-P4.5, a2605a09); nothing is created until Solo is picked.
+      expect(controller.createCalls, 0);
+      await _chooseSolo(tester);
       expect(controller.createCalls, 1);
       expect(find.text('New session opened'), findsOneWidget);
     },

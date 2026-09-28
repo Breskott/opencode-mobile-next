@@ -365,13 +365,19 @@ void main() {
       // The sheet exists to show this one record, so it opens already
       // expanded: the output reads without another tap.
       expect(find.textContaining('All tests passed!'), findsOneWidget);
-      // Sized to its one record, not a fixed 60 % of the window.
-      expect(
-        tester.getSize(find.byKey(const Key('run-result-output-sheet'))).height,
-        lessThan(
-          tester.view.physicalSize.height / tester.view.devicePixelRatio * 0.6,
-        ),
+      // Sized to its one record, not a fixed share of the window: the sheet
+      // ends just under the record and stays short of the full window.
+      // (The KitSheet v2 header, bea04d0d, and the tool record rebuilt from
+      // kit parts, db11d2d9, make frame + record taller than the old 60 %
+      // of this 600 dp window, so the gap under the record is measured.)
+      final sheet = tester.getRect(
+        find.byKey(const Key('run-result-output-sheet')),
       );
+      final record = tester.getRect(find.byType(ToolCard));
+      final window =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      expect(sheet.bottom - record.bottom, lessThan(48));
+      expect(sheet.height, lessThan(window * 0.9));
       expect(tester.takeException(), isNull);
     });
 

@@ -420,10 +420,17 @@ void main() {
     );
     // Sessions come first now (audit UX-101): search is reachable before the
     // single management route at the foot of the list.
+    // The list's own scrollable: since Work is a KitScreen (9dbcc1a7,
+    // 23b2efb5) the page's status slot comes first in the tree.
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('search-all-sessions')),
       160,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find
+          .descendant(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     expect(find.byKey(const ValueKey('search-all-sessions')), findsOneWidget);
     // Project health is a Project tab tool (Manage project merged into

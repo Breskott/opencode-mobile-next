@@ -209,8 +209,13 @@ void main() {
 
     await tester.longPress(find.text('Fix the checkout test'));
     await tester.pumpAndSettle();
-    expect(find.text(_en.chatUiDetails), findsNothing);
-    await tester.tap(find.text(_en.e7SharedSessionContext).last);
+    // One entry leads there: since the conversation menu became "Go to" /
+    // "Do" (P10.2, 34353c2f) it is Go to › Details, never a second
+    // details entry beside a Conversation context one.
+    expect(find.byKey(const ValueKey('session-menu-details')), findsOneWidget);
+    expect(find.text(_en.sessionMenuDetails), findsOneWidget);
+    expect(find.text(_en.e7SharedSessionContext), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('session-menu-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
 

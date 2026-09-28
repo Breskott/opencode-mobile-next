@@ -1631,10 +1631,19 @@ void main() {
             textScale: 2.5,
           );
           Future<void> close() async {
-            // The close button scrolls with the sheet: back to the top.
+            // At 250 % text the header scrolls away with the body (the kit
+            // frame's header spacer, 2d0ac9fe): scroll the body back to the
+            // top and the close button is there again.
             final close = find.byKey(const ValueKey('kit-sheet-close'));
-            await tester.ensureVisible(close);
+            final body = tester.state<ScrollableState>(
+              find
+                  .descendant(of: sheet, matching: find.byType(Scrollable))
+                  .first,
+            );
+            body.position.jumpTo(0);
             await tester.pumpAndSettle();
+            final rect = tester.getRect(close);
+            expect(rect.top, greaterThanOrEqualTo(tester.getRect(sheet).top));
             expect(tester.getSize(close).height, greaterThanOrEqualTo(48));
             await tester.tap(close);
             await tester.pumpAndSettle();

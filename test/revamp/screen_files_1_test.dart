@@ -33,9 +33,13 @@ class _Api extends OpenCodeApi {
 }
 
 class _Repository implements ProductRepository {
-  _Repository([this.statuses = const []]);
+  _Repository([this.statuses = const [], this.diffs = const []]);
 
   final List<VersionControlFile> statuses;
+  final List<FileDiff> diffs;
+
+  @override
+  Future<List<FileDiff>> listVcsDiffs(VcsDiffMode mode) async => diffs;
 
   @override
   void setLocation({String? directory, String? workspace}) {}
@@ -53,12 +57,13 @@ class _Repository implements ProductRepository {
 Future<ConnectionController> _controller({
   String? directory,
   List<VersionControlFile> statuses = const [],
+  List<FileDiff> diffs = const [],
 }) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   return ConnectionController(ProfileStore(prefs: prefs))
     ..api = _Api()
-    ..repository = _Repository(statuses)
+    ..repository = _Repository(statuses, diffs)
     ..directory = directory
     ..status = StreamStatus.connected;
 }
@@ -146,8 +151,12 @@ void main() {
     expect(find.byKey(const ValueKey('project-hub-changes')), findsOneWidget);
   });
 
-  testWidgets('the changes sheet is one list by path, never grouped by '
-      'status; each row leads with its state word', (tester) async {
+  // slice-P3.7a (d4f01730) removed the changes sheet: the changed-files row
+  // says the count and totals once and opens the diff itself (Review, one
+  // "Change 1 of N" navigator). What this test guarded still holds: no
+  // per-status groups anywhere, one set of changed files.
+  testWidgets('the changes row says the set once, never grouped by status, '
+      'and opens the diff itself', (tester) async {
     final controller = await _controller(
       directory: '/srv/shopfront',
       statuses: const [
@@ -170,6 +179,29 @@ void main() {
           deletions: 2,
         ),
       ],
+      diffs: [
+        FileDiff(
+          file: 'lib/cart/cart_bloc.dart',
+          patch: '@@ -1 +1 @@\n-old cart\n+new cart',
+          additions: 1,
+          deletions: 1,
+          status: 'modified',
+        ),
+        FileDiff(
+          file: 'main.dart',
+          patch: '@@ -1 +1 @@\n-old main\n+new main',
+          additions: 6,
+          deletions: 2,
+          status: 'modified',
+        ),
+        FileDiff(
+          file: 'test/checkout_test.dart',
+          patch: '@@ -0,0 +1 @@\n+checkout test',
+          additions: 24,
+          deletions: 0,
+          status: 'added',
+        ),
+      ],
     );
     addTearDown(controller.dispose);
     await tester.pumpWidget(
@@ -180,40 +212,27 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('files-changes-card')));
-    await tester.pumpAndSettle();
 
+    // One row for the whole set: its count and totals, said once.
+    final row = find.byKey(const ValueKey('files-changes-card'));
+    expect(row, findsOneWidget);
+    expect(
+      find.descendant(of: row, matching: find.text('3 changed files')),
+      findsOneWidget,
+    );
+    expect(find.text(KitBidi.ltr('+31 −3')), findsOneWidget);
     // No per-status group labels with counts.
     expect(find.textContaining('Modified · 2'), findsNothing);
     expect(find.textContaining('Added · 1'), findsNothing);
-    // One list ordered by path.
-    final rows = [
-      'lib/cart/cart_bloc.dart',
-      'main.dart',
-      'test/checkout_test.dart',
-    ].map((path) => find.byKey(ValueKey('changed-file-$path'))).toList();
-    for (final row in rows) {
-      expect(row, findsOneWidget);
-    }
-    expect(
-      tester.getTopLeft(rows[0]).dy,
-      lessThan(tester.getTopLeft(rows[1]).dy),
-    );
-    expect(
-      tester.getTopLeft(rows[1]).dy,
-      lessThan(tester.getTopLeft(rows[2]).dy),
-    );
-    // The state word first, then the folder, then the counts.
-    expect(
-      find.text(
-        'Modified · ${KitBidi.ltr('lib/cart')} · ${KitBidi.ltr('+1 −1')}',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.text('Added · ${KitBidi.ltr('test')} · ${KitBidi.ltr('+24 −0')}'),
-      findsOneWidget,
-    );
-    expect(find.text('Modified · ${KitBidi.ltr('+6 −2')}'), findsOneWidget);
+
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+
+    // Straight into the diff with its one navigator; no list in between.
+    expect(find.byKey(const ValueKey('files-changes-sheet')), findsNothing);
+    expect(find.byKey(const Key('review-workspace')), findsOneWidget);
+    expect(find.text('Change 1 of 3'), findsOneWidget);
+    expect(find.textContaining('Modified · 2'), findsNothing);
+    expect(find.textContaining('Added · 1'), findsNothing);
   });
 }

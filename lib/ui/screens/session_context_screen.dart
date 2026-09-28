@@ -508,7 +508,7 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
       );
     }
     if (metrics.currentMessage == null) {
-      final facts = _sessionFacts(l10n);
+      final facts = _sessionFacts(l10n, withCost: true);
       final empty = KitStateView(
         icon: AppIconography.usageRing,
         title: l10n.e7SharedNoContextUsageYet,
@@ -764,14 +764,38 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
     );
   }
 
-  /// Where the conversation lives and its public link, copyable: the facts
-  /// the Work row's old details sheet held (map
+  /// Where the conversation lives and its public link, copyable, and how
+  /// much it changed: the facts the Work row's old details sheet held (map
   /// `workspace-session-details-sheet`, merged here in slice-P3.11a).
-  List<KitTechnicalValue> _sessionFacts(AppLocalizations l10n) {
+  /// [withCost] adds the server's cost while nothing is measured yet; once
+  /// usage loads, the totals row carries it (said once).
+  List<KitTechnicalValue> _sessionFacts(
+    AppLocalizations l10n, {
+    bool withCost = false,
+  }) {
     final session = widget.controller.sessionsById[widget.sessionID];
     final directory = session?.directory;
     final share = session?.shareUrl;
+    final cost = session?.cost;
+    final summary = session?.summary;
     return [
+      if (withCost && cost != null && cost >= 0.005)
+        KitTechnicalValue(
+          l10n.e7SharedAccumulatedCostReportedByServer,
+          '\$${cost.toStringAsFixed(2)}',
+          key: const ValueKey('session-context-server-cost'),
+          copyable: false,
+        ),
+      if (summary != null && (summary.additions > 0 || summary.deletions > 0))
+        KitTechnicalValue(
+          l10n.chatUiChanges,
+          [
+            '+${summary.additions} −${summary.deletions}',
+            if (summary.files > 0) l10n.e7WorkspaceFileCount(summary.files),
+          ].join(' · '),
+          key: const ValueKey('session-context-diff'),
+          copyable: false,
+        ),
       if (directory != null && directory.isNotEmpty)
         KitTechnicalValue(
           l10n.workspaceContextFolder,

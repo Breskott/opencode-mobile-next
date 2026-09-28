@@ -265,22 +265,31 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // One door, in the server's group.
-    final row = find.byKey(const ValueKey('settings-commands-tools'));
-    expect(find.text('Commands & tools'), findsOneWidget);
+    // One door (P3.10 Settings IA, 2bec3ed3): Settings › Tools, in the
+    // Agent group, holds Commands & tools.
+    final tools = find.byKey(const ValueKey('settings-tools'));
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('settings-group-server')),
-        matching: row,
+        of: find.byKey(const ValueKey('settings-group-agent')),
+        matching: tools,
       ),
       findsOneWidget,
     );
-    await tester.ensureVisible(row);
+    expect(find.byKey(const ValueKey('settings-commands-tools')), findsNothing);
+    await tester.ensureVisible(tools);
     await tester.pumpAndSettle();
+    await tester.tap(tools);
+    await tester.pumpAndSettle();
+
+    final row = find.byKey(const ValueKey('settings-commands-tools'));
+    expect(
+      find.descendant(of: row, matching: find.text('Commands & tools')),
+      findsOneWidget,
+    );
     await tester.tap(row);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(Tab, 'Tools'));
+    await tester.tap(find.byKey(const ValueKey('capabilities-tab-Tools')));
     await tester.pumpAndSettle();
 
     expect(find.byType(ToolsScreen), findsOneWidget);

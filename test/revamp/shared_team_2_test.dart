@@ -146,7 +146,10 @@ void main() {
       final address = controller.host?.url ?? controller.config.url;
       final copy = find.byTooltip(en.kitCopyValue('address'));
       expect(copy, findsOneWidget);
+      // The address sits below the glossary: scroll it into view and let
+      // the frame lay out before tapping.
       await tester.ensureVisible(copy);
+      await tester.pumpAndSettle();
       await tester.tap(copy);
       await tester.pump();
       expect(copied, [address]);

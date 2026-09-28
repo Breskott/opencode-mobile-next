@@ -116,7 +116,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(api.pages, [null, 'older']);
       expect(
-        tester.widget<TextField>(_arguments).controller!.text,
+        tester.widget<TextFormField>(_arguments).controller!.text,
         'keep my arguments',
       );
       await tester.ensureVisible(find.text('Older chat'));
@@ -147,7 +147,9 @@ void main() {
       await tester.pump();
       expect(api.creates, 1);
       expect(api.calls.single.args, 'pending changes');
-      expect(find.byType(AlertDialog), findsOneWidget);
+      // The review sheet stays open while the command starts (a kit sheet
+      // since 06102116, not a dialog).
+      expect(find.byKey(const ValueKey('run-command-sheet')), findsOneWidget);
       api.submission!.complete();
       await tester.pumpAndSettle();
       expect(find.text('/chat/new-chat'), findsOneWidget);
@@ -166,7 +168,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Try again'), findsOneWidget);
       expect(
-        tester.widget<TextField>(_arguments).controller!.text,
+        tester.widget<TextFormField>(_arguments).controller!.text,
         'my arguments',
       );
       api.failure = null;
