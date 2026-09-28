@@ -676,7 +676,7 @@
   "pendingAuthServerFailed": "The server reported that sign-in failed. Provider error details are hidden.",
   "pendingAuthExpired": "This sign-in has expired. Start a new one, or forget this one.",
   "pendingAuthFailed": "Could not confirm the action. Check pending sign-ins before trying again. No new sign-in was started.",
-  "pendingAuthSaveUncertain": "Recovery could not be saved reliably. Keep this app open and retry saving; restarting may lose this attempt. If no browser page opened, cancel the attempt before starting again.",
+  "pendingAuthSaveUncertain": "This phone couldn't save the sign-in to pick it up later. Keep the app open until it finishes.",
   "pendingAuthRetrySave": "Try saving recovery again",
   "pendingAuthForget": "Forget this sign-in",
   "pendingAuthUnsupported": "This server cannot recover earlier sign-ins. Legacy sign-ins work only while their original screen and connection remain available.",
@@ -702,7 +702,7 @@
   "@commandAuthStart": {
     "description": "Launch a command authentication attempt after confirmation"
   },
-  "commandAuthPending": "Sign-in is pending on the server. Finish any server-side interaction, then check its status. Closing this sheet does not cancel it.",
+  "commandAuthPending": "Signing in on the server… Finish any steps it asks for there. Closing this doesn't stop it.",
   "@commandAuthPending": {
     "description": "Pending status without fabricated instructions or automatic cancellation"
   },
@@ -710,23 +710,35 @@
   "@commandAuthCancel": {
     "description": "Cancel the selected command-auth attempt, not all credentials"
   },
-  "commandAuthFailed": "Could not complete or confirm server sign-in. Check the existing attempt before starting another.",
+  "commandAuthFailed": "Sign-in didn't finish.",
   "@commandAuthFailed": {
     "description": "Safe failure without raw provider logs or tokens"
   },
-  "commandAuthComplete": "The server reported that sign-in completed. Refresh Providers to see its current connections.",
+  "commandAuthStartFailed": "Sign-in didn't start.",
+  "@commandAuthStartFailed": {
+    "description": "Server sign-in sheet: starting the sign-in failed before anything reached the server; Try again is the button"
+  },
+  "commandAuthCheckFailed": "Couldn't check the sign-in. Try again.",
+  "@commandAuthCheckFailed": {
+    "description": "Server sign-in sheet: asking the server how the sign-in is going failed"
+  },
+  "commandAuthTryAgain": "Try again",
+  "@commandAuthTryAgain": {
+    "description": "Server sign-in sheet: starts a new sign-in after the last one failed, timed out or did not start"
+  },
+  "commandAuthComplete": "Signed in.",
   "@commandAuthComplete": {
     "description": "Terminal status reported by the server, not proof of a particular active credential"
   },
-  "commandAuthExpired": "This sign-in attempt expired. You can start a new attempt.",
+  "commandAuthExpired": "Sign-in timed out before it finished.",
   "@commandAuthExpired": {
     "description": "Server-reported terminal expiry"
   },
-  "commandAuthScopeChanged": "The server or project changed. Return to the original project and reopen sign-in to manage its attempt.",
+  "commandAuthScopeChanged": "You switched to another server or project. Go back to it to see this sign-in.",
   "@commandAuthScopeChanged": {
     "description": "Reject actions against the wrong provider authentication scope"
   },
-  "commandAuthUncertainStart": "The server may have started sign-in, but the app could not safely recover its attempt. Check on the server before retrying; automatic restart is blocked to avoid duplicate processes.",
+  "commandAuthUncertainStart": "The server may have started signing in. Check on the server before you try again.",
   "@commandAuthUncertainStart": {
     "description": "Unknown dispatch outcome blocks duplicate executable auth attempts"
   },
@@ -750,7 +762,7 @@
   "@readAloudConsentTitle": {
     "description": "Consent before any system speech engine access"
   },
-  "readAloudConsentDetail": "Your phone's speech engine reads the reply aloud. Code and tool details are skipped.",
+  "readAloudConsentDetail": "Your phone's speech engine reads the reply aloud. Code and tool details are skipped. This phone remembers your answer.",
   "@readAloudConsentDetail": {
     "description": "Discloses external engine access and audible output without promising network isolation"
   },
@@ -989,8 +1001,24 @@
       }
     }
   },
-  "draftLeaveTitle": "Draft could not be saved",
-  "draftLeaveMessage": "Keep editing to copy your text or retry saving. Leaving now may lose your unsaved changes.",
+  "draftLeaveTitle": "Your draft isn't saved",
+  "draftLeaveMessage": "Copy your text to keep it, or try saving again. If you leave without saving, your latest changes may be lost.",
+  "draftLeaveMessageNoText": "Try saving again. If you leave without saving, your latest changes to this draft may be lost.",
+  "@draftLeaveMessageNoText": {
+    "description": "Leave-unsaved-draft sheet body when the message box has no text (only attachments or a cleared draft)"
+  },
+  "draftLeaveCopyAction": "Copy draft and leave",
+  "@draftLeaveCopyAction": {
+    "description": "Leave-unsaved-draft sheet: main button; copies the draft text, then closes the conversation"
+  },
+  "draftLeaveRetry": "Try saving again",
+  "@draftLeaveRetry": {
+    "description": "Leave-unsaved-draft sheet: tries to save the draft again and leaves once it is saved"
+  },
+  "draftLeaveStillFailing": "Still not saved. Copy your text before you leave.",
+  "@draftLeaveStillFailing": {
+    "description": "Leave-unsaved-draft sheet: shown after Try saving again fails"
+  },
   "draftLeaveAction": "Leave without saving",
   "draftKeepEditing": "Keep editing",
   "draftUnsaved": "Unsaved",
@@ -1263,7 +1291,7 @@
   "setupOutputWaiting": "Waiting for Termux output…",
   "setupConnectExisting": "Connect existing server",
   "uncertainAuthDetail": "The server may have started this sign-in without confirming it. Check on the server before you start again.",
-  "uncertainAuthCloseHint": "Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.",
+  "uncertainAuthCloseHint": "To start over, close this and clear the unconfirmed sign-in from the provider's row.",
   "pluginsUnsupported": "This server does not support plugin inspection.",
   "pluginsDisconnected": "Connect to a server to inspect its plugins.",
   "pluginsEmpty": "No plugins reported for this project.",
@@ -1579,6 +1607,19 @@
   "queuedResendConfirm": "Send again",
   "@queuedResendConfirm": {
     "description": "Confirmation dialog affirmative button for resending an unconfirmed queued draft"
+  },
+  "queuedRetry": "Retry",
+  "@queuedRetry": {
+    "description": "Waiting-to-send bubble: sends a queued message the server refused again, now"
+  },
+  "queuedRetryAll": "{count, plural, other{Retry all {count}}}",
+  "@queuedRetryAll": {
+    "description": "Waiting-to-send bubble: sends every queued message the server refused again, now",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "queuedKeepForReview": "Keep for review",
   "@queuedKeepForReview": {
@@ -4581,6 +4622,28 @@
   "chatUiChooseModel": "Choose model",
   "@chatUiChooseModel": {
     "description": "Chat journey: Choose model"
+  },
+  "chatUiUseModelAndResend": "Use {model} and resend",
+  "@chatUiUseModelAndResend": {
+    "description": "A prompt failed because the server doesn't have the chosen model: switches this conversation to the model the server suggested and sends the prompt again",
+    "placeholders": {
+      "model": {
+        "type": "String",
+        "example": "GPT-5.6 Pro"
+      }
+    }
+  },
+  "chatUiChooseAnotherModel": "Choose another model",
+  "@chatUiChooseAnotherModel": {
+    "description": "Beside 'Use <model> and resend': opens the model picker instead"
+  },
+  "chatUiSendPromptAgain": "Send again",
+  "@chatUiSendPromptAgain": {
+    "description": "A prompt got no answer (the turn ended on an error): sends the same prompt again"
+  },
+  "chatUiPromptNotAnswered": "Not answered",
+  "@chatUiPromptNotAnswered": {
+    "description": "Under a prompt whose turn ended on an error before any answer"
   },
   "chatUiChooseTheActiveOpenCodeAgent": "Choose the active OpenCode agent",
   "@chatUiChooseTheActiveOpenCodeAgent": {
@@ -8873,10 +8936,6 @@
   "approvalsUiFollowParent": "Follow parent again",
   "@approvalsUiFollowParent": {
     "description": "Button that removes a child session's own approval choice so it follows its parent again"
-  },
-  "approvalsUiServerRulesNote": "The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects. New conversations always ask.",
-  "@approvalsUiServerRulesNote": {
-    "description": "Footnote in the approvals sheet about server rules, disconnects, and defaults"
   },
   "approvalsUiIndicatorOn": "Approving automatically",
   "@approvalsUiIndicatorOn": {
@@ -15083,6 +15142,22 @@
   "chatWatchEmptyBody": "This conversation fills in as the agent works.",
   "@chatWatchEmptyBody": {
     "description": "Chat, watching an AI Team worker: body of the empty state"
+  },
+  "chatWatchEndedTitle": "This session has ended",
+  "@chatWatchEndedTitle": {
+    "description": "Team worker's watching page when its session ended before it wrote anything"
+  },
+  "chatWatchEndedBody": "It ended before the worker wrote anything here.",
+  "@chatWatchEndedBody": {
+    "description": "Under 'This session has ended' on a worker's watching page"
+  },
+  "chatWatchBackToTask": "Back to the task",
+  "@chatWatchBackToTask": {
+    "description": "Ended worker session: returns to the task conversation it was opened from"
+  },
+  "chatWatchBackToWorker": "Back to the worker",
+  "@chatWatchBackToWorker": {
+    "description": "Ended worker session: returns to the worker's page it was opened from"
   },
   "teamWatchBanner": "Watching {name} · {role} · {state}",
   "@teamWatchBanner": {

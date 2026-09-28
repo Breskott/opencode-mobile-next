@@ -90,6 +90,7 @@ class KitField extends StatefulWidget {
     this.error,
     this.maxLength,
     this.maxLines,
+    this.minLines,
     this.decimal = false,
     this.draft,
     this.enabled = true,
@@ -137,6 +138,7 @@ class KitField extends StatefulWidget {
     this.fieldKey,
   }) : assert(enabled || disabledReason != null),
        kind = KitFieldKind.multiline,
+       minLines = null,
        helper = null,
        error = null,
        maxLength = null,
@@ -193,6 +195,7 @@ class KitField extends StatefulWidget {
        kind = KitFieldKind.secret,
        maxLength = null,
        maxLines = null,
+       minLines = null,
        decimal = false,
        draft = null,
        action = null,
@@ -223,6 +226,12 @@ class KitField extends StatefulWidget {
 
   /// Null: one line, or 3→8 growing for [KitFieldKind.multiline].
   final int? maxLines;
+
+  /// A one-line kind with [maxLines] over 1: 1 lets the field start at one
+  /// line and grow to [maxLines] as the value wraps (a long command read
+  /// whole), where null keeps it [maxLines] tall. Ignored for
+  /// [KitFieldKind.multiline], which grows from 3.
+  final int? minLines;
 
   /// [KitFieldKind.number] only: allow one decimal separator.
   final bool decimal;
@@ -608,8 +617,8 @@ class _KitFieldState extends State<KitField> {
       maxLines = cap;
       minLines = cap < 3 ? cap : 3;
     } else {
-      minLines = null;
       maxLines = widget.maxLines ?? 1;
+      minLines = maxLines > 1 ? widget.minLines : null;
     }
     final formatters = _formatters;
     final secret = widget._isSecret;

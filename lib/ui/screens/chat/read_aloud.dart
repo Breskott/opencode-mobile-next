@@ -1,5 +1,9 @@
 part of '../chat_screen.dart';
 
+/// Where this phone remembers the read-aloud consent (app-wide: the speech
+/// engine is the phone's, whatever server the reply came from).
+const _readAloudConsentKey = 'oc.readAloudConsent';
+
 extension _ChatReadAloud on _ChatScreenState {
   Object get _speechScopeNow {
     final profile = _conn.profile;
@@ -79,11 +83,10 @@ extension _ChatReadAloud on _ChatScreenState {
     if (_speechOwnerScope == null || _speechOwnerScope == _speechScopeNow) {
       return;
     }
-    _readAloudConsented = false;
     _readAloudVoiceID = null;
     _speechOwnerScope = null;
-    // Consent was scoped to the old server/session; automatic reading was
-    // granted on that consent and lapses with it.
+    // Consent is the phone's and stays; automatic reading of replies was
+    // turned on for the old server/session and lapses with it.
     _revokeVoiceSpeakReplies();
     unawaited(_stopReading());
   }
@@ -117,7 +120,7 @@ extension _ChatReadAloud on _ChatScreenState {
         _speechSheetOpen = false;
       }
       if (!accepted || !current()) return false;
-      _readAloudConsented = true;
+      await _conn.store.prefs.setBool(_readAloudConsentKey, true);
     }
     if (!current()) return false;
     final speech = _readAloud ??= (ReadAloudController()

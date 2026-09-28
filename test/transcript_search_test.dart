@@ -317,8 +317,11 @@ void main() {
       expect(find.textContaining('Loaded messages only.'), findsNothing);
       await tester.tap(find.byKey(const ValueKey('transcript-find-next')));
       await tester.pumpAndSettle();
+      // The count once, in the bar; the tool-data match is shown in an
+      // excerpt that says where it is, without repeating the count.
       expect(find.text('1 of 6 matches'), findsOneWidget);
-      expect(find.text('1 of 6 matches · Tool data'), findsOneWidget);
+      expect(find.text('Tool data'), findsOneWidget);
+      expect(find.textContaining('1 of 6 matches ·'), findsNothing);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('transcript-find-bar')), findsNothing);
@@ -377,6 +380,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.cursors, [null, 'older']);
     expect(find.textContaining('Loaded messages only.'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a match in words already on screen is marked in place, with '
+      'no excerpt repeating it', (tester) async {
+    await _pump(tester, _Api());
+    await _query(tester, 'expiry');
+    expect(find.text('1 match'), findsWidgets);
+    expect(find.byType(TranscriptMatchExcerpt), findsNothing);
     await tester.pumpWidget(const SizedBox());
   });
 

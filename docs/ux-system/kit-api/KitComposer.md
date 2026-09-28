@@ -154,7 +154,7 @@ class KitComposer extends StatefulWidget {
 | idle, text | Send in an `accent` circle, `onAccent` glyph | "Send" · offline: "Send when back online" |
 | sending | the Send circle shows its spinner (STATE-7: this tap only) | "Sending" |
 | busy, no text | Stop: a `text1` circle with a `ground` square | "Stop the reply" |
-| busy, text, `canSendWhileBusy` | Stop and Send, 48 dp each, at least 8 dp apart (B9, LAY-9) | Send: "Send after this reply" or "Add to this turn" |
+| busy, text, `canSendWhileBusy` | One trailing control, Send; Stop leads the row after "+" (48 dp each, never side by side; owner Fix "one trailing control", slice-close-chat 2026-09-28, supersedes B9's side-by-side pair) | Send: "Send after this reply" or "Add to this turn" |
 | busy, text, not `canSendWhileBusy` | Stop only; the note line says "You can send when this reply finishes" (STATE-8) | "Stop the reply" |
 
 - **Delivery.** While busy with text, `canSendWhileBusy` and `onDeliveryChanged` set, a two-segment `KitSegmented` ("Send after" · "Add to this turn", default `afterThisReply`, P6.6) sits at the top of the pill. Without `onDeliveryChanged` the note line states "Sends after this reply". The host remembers the choice per server (DATA-6).
@@ -252,7 +252,7 @@ The composer fills the width it is given; the host centres it in the conversatio
 14. Semantics and targets: every control labelled per the table; all targets ≥ 48×48.
 15. Desktop capabilities: Tab order as specified; focus rings visible; Esc behaviour order (suggestions, voice mode, unfocus).
 16. Reduced motion: one `pump()` settles.
-17. 200 % text at 320 dp, LTR and RTL: no overflow; Stop and Send stay 8 dp apart (G6, P9.5).
+17. 200 % text at 320 dp, LTR and RTL: no overflow; Stop leads the row and Send trails it, never side by side (G6, P9.5). The prompt editor opens from the field's top-end corner, shown while there is text.
 
 ## Galleries required
 

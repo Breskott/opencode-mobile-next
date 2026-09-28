@@ -2417,7 +2417,7 @@ abstract class AppLocalizations {
   /// No description provided for @pendingAuthSaveUncertain.
   ///
   /// In en, this message translates to:
-  /// **'Recovery could not be saved reliably. Keep this app open and retry saving; restarting may lose this attempt. If no browser page opened, cancel the attempt before starting again.'**
+  /// **'This phone couldn\'t save the sign-in to pick it up later. Keep the app open until it finishes.'**
   String get pendingAuthSaveUncertain;
 
   /// No description provided for @pendingAuthRetrySave.
@@ -2537,7 +2537,7 @@ abstract class AppLocalizations {
   /// Pending status without fabricated instructions or automatic cancellation
   ///
   /// In en, this message translates to:
-  /// **'Sign-in is pending on the server. Finish any server-side interaction, then check its status. Closing this sheet does not cancel it.'**
+  /// **'Signing in on the server… Finish any steps it asks for there. Closing this doesn\'t stop it.'**
   String get commandAuthPending;
 
   /// Cancel the selected command-auth attempt, not all credentials
@@ -2549,31 +2549,49 @@ abstract class AppLocalizations {
   /// Safe failure without raw provider logs or tokens
   ///
   /// In en, this message translates to:
-  /// **'Could not complete or confirm server sign-in. Check the existing attempt before starting another.'**
+  /// **'Sign-in didn\'t finish.'**
   String get commandAuthFailed;
+
+  /// Server sign-in sheet: starting the sign-in failed before anything reached the server; Try again is the button
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in didn\'t start.'**
+  String get commandAuthStartFailed;
+
+  /// Server sign-in sheet: asking the server how the sign-in is going failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check the sign-in. Try again.'**
+  String get commandAuthCheckFailed;
+
+  /// Server sign-in sheet: starts a new sign-in after the last one failed, timed out or did not start
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get commandAuthTryAgain;
 
   /// Terminal status reported by the server, not proof of a particular active credential
   ///
   /// In en, this message translates to:
-  /// **'The server reported that sign-in completed. Refresh Providers to see its current connections.'**
+  /// **'Signed in.'**
   String get commandAuthComplete;
 
   /// Server-reported terminal expiry
   ///
   /// In en, this message translates to:
-  /// **'This sign-in attempt expired. You can start a new attempt.'**
+  /// **'Sign-in timed out before it finished.'**
   String get commandAuthExpired;
 
   /// Reject actions against the wrong provider authentication scope
   ///
   /// In en, this message translates to:
-  /// **'The server or project changed. Return to the original project and reopen sign-in to manage its attempt.'**
+  /// **'You switched to another server or project. Go back to it to see this sign-in.'**
   String get commandAuthScopeChanged;
 
   /// Unknown dispatch outcome blocks duplicate executable auth attempts
   ///
   /// In en, this message translates to:
-  /// **'The server may have started sign-in, but the app could not safely recover its attempt. Check on the server before retrying; automatic restart is blocked to avoid duplicate processes.'**
+  /// **'The server may have started signing in. Check on the server before you try again.'**
   String get commandAuthUncertainStart;
 
   /// Explicitly read the loaded assistant reply, excluding code and tool details
@@ -2609,7 +2627,7 @@ abstract class AppLocalizations {
   /// Discloses external engine access and audible output without promising network isolation
   ///
   /// In en, this message translates to:
-  /// **'Your phone\'s speech engine reads the reply aloud. Code and tool details are skipped.'**
+  /// **'Your phone\'s speech engine reads the reply aloud. Code and tool details are skipped. This phone remembers your answer.'**
   String get readAloudConsentDetail;
 
   /// Accept the speech disclosure: the app reads the installed voices and uses the one for the app's language (a choice appears only when none speaks it)
@@ -3179,14 +3197,38 @@ abstract class AppLocalizations {
   /// No description provided for @draftLeaveTitle.
   ///
   /// In en, this message translates to:
-  /// **'Draft could not be saved'**
+  /// **'Your draft isn\'t saved'**
   String get draftLeaveTitle;
 
   /// No description provided for @draftLeaveMessage.
   ///
   /// In en, this message translates to:
-  /// **'Keep editing to copy your text or retry saving. Leaving now may lose your unsaved changes.'**
+  /// **'Copy your text to keep it, or try saving again. If you leave without saving, your latest changes may be lost.'**
   String get draftLeaveMessage;
+
+  /// Leave-unsaved-draft sheet body when the message box has no text (only attachments or a cleared draft)
+  ///
+  /// In en, this message translates to:
+  /// **'Try saving again. If you leave without saving, your latest changes to this draft may be lost.'**
+  String get draftLeaveMessageNoText;
+
+  /// Leave-unsaved-draft sheet: main button; copies the draft text, then closes the conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Copy draft and leave'**
+  String get draftLeaveCopyAction;
+
+  /// Leave-unsaved-draft sheet: tries to save the draft again and leaves once it is saved
+  ///
+  /// In en, this message translates to:
+  /// **'Try saving again'**
+  String get draftLeaveRetry;
+
+  /// Leave-unsaved-draft sheet: shown after Try saving again fails
+  ///
+  /// In en, this message translates to:
+  /// **'Still not saved. Copy your text before you leave.'**
+  String get draftLeaveStillFailing;
 
   /// No description provided for @draftLeaveAction.
   ///
@@ -3629,7 +3671,7 @@ abstract class AppLocalizations {
   /// No description provided for @uncertainAuthCloseHint.
   ///
   /// In en, this message translates to:
-  /// **'Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.'**
+  /// **'To start over, close this and clear the unconfirmed sign-in from the provider\'s row.'**
   String get uncertainAuthCloseHint;
 
   /// No description provided for @pluginsUnsupported.
@@ -4710,6 +4752,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send again'**
   String get queuedResendConfirm;
+
+  /// Waiting-to-send bubble: sends a queued message the server refused again, now
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get queuedRetry;
+
+  /// Waiting-to-send bubble: sends every queued message the server refused again, now
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, other{Retry all {count}}}'**
+  String queuedRetryAll(int count);
 
   /// Cancel label on the resend and discard dialogs for an unconfirmed queued draft; the draft stays queued for review
   ///
@@ -9223,6 +9277,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose model'**
   String get chatUiChooseModel;
+
+  /// A prompt failed because the server doesn't have the chosen model: switches this conversation to the model the server suggested and sends the prompt again
+  ///
+  /// In en, this message translates to:
+  /// **'Use {model} and resend'**
+  String chatUiUseModelAndResend(String model);
+
+  /// Beside 'Use <model> and resend': opens the model picker instead
+  ///
+  /// In en, this message translates to:
+  /// **'Choose another model'**
+  String get chatUiChooseAnotherModel;
+
+  /// A prompt got no answer (the turn ended on an error): sends the same prompt again
+  ///
+  /// In en, this message translates to:
+  /// **'Send again'**
+  String get chatUiSendPromptAgain;
+
+  /// Under a prompt whose turn ended on an error before any answer
+  ///
+  /// In en, this message translates to:
+  /// **'Not answered'**
+  String get chatUiPromptNotAnswered;
 
   /// Chat journey: Choose the active OpenCode agent
   ///
@@ -14591,12 +14669,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Follow parent again'**
   String get approvalsUiFollowParent;
-
-  /// Footnote in the approvals sheet about server rules, disconnects, and defaults
-  ///
-  /// In en, this message translates to:
-  /// **'The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects. New conversations always ask.'**
-  String get approvalsUiServerRulesNote;
 
   /// Quiet in-chat indicator while automatic approval is on for this session
   ///
@@ -22409,6 +22481,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This conversation fills in as the agent works.'**
   String get chatWatchEmptyBody;
+
+  /// Team worker's watching page when its session ended before it wrote anything
+  ///
+  /// In en, this message translates to:
+  /// **'This session has ended'**
+  String get chatWatchEndedTitle;
+
+  /// Under 'This session has ended' on a worker's watching page
+  ///
+  /// In en, this message translates to:
+  /// **'It ended before the worker wrote anything here.'**
+  String get chatWatchEndedBody;
+
+  /// Ended worker session: returns to the task conversation it was opened from
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the task'**
+  String get chatWatchBackToTask;
+
+  /// Ended worker session: returns to the worker's page it was opened from
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the worker'**
+  String get chatWatchBackToWorker;
 
   /// Chat status line while watching an AI Team agent's conversation: the agent's name, its role in plain words (Worker, Reviewer), and its state as its session reports it (Working, Idle, Stopped)
   ///

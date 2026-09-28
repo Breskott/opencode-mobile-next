@@ -277,6 +277,37 @@ void main() {
       await drain(tester);
     });
 
+    testWidgets('a session that ended before a word says so once, in place, '
+        'with the way back and the worker\'s page', (tester) async {
+      phoneViewport(tester);
+      final (team, gateway) = await bootTeam();
+      gateway.outputOverride = (_) =>
+          Stream.value(const AgentOutputEnded(reason: 'no live output'));
+      final connection = await teamConnection(
+        api: TeamChatApi(const {}),
+        repository: TeamChatRepository(const []),
+      );
+      await tester.pumpWidget(
+        teamChatApp(
+          connection,
+          TeamWatchLiveScreen(team: team, agentId: 'my-app/gastown.furiosa'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(_key('chat-watching-ended'), findsOneWidget);
+      expect(find.text('This session has ended'), findsOneWidget);
+      // Not the "fills in as the agent works" promise, and not said twice.
+      expect(_key('chat-watching-empty'), findsNothing);
+      expect(_key('chat-watching-banner'), findsNothing);
+      expect(find.text('Back to the task'), findsOneWidget);
+      expect(_key('chat-watching-ended-about'), findsOneWidget);
+      await tester.tap(_key('chat-watching-ended-about'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AgentScreen), findsOneWidget);
+      await drain(tester);
+    });
+
     testWidgets('a team that takes no messages says so in the composer', (
       tester,
     ) async {

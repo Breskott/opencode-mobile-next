@@ -1516,6 +1516,16 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر إتمام تسجيل الدخول على الخادم أو تأكيده. تحقّق من المحاولة الحالية قبل بدء أخرى.';
 
   @override
+  String get commandAuthStartFailed => 'Sign-in didn\'t start.';
+
+  @override
+  String get commandAuthCheckFailed =>
+      'Couldn\'t check the sign-in. Try again.';
+
+  @override
+  String get commandAuthTryAgain => 'Try again';
+
+  @override
   String get commandAuthComplete =>
       'أبلغ الخادم عن اكتمال تسجيل الدخول. حدّث مزوّدي الخدمة للاطّلاع على الاتصالات الحالية.';
 
@@ -1892,6 +1902,20 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get draftLeaveMessage =>
       'تابع التحرير لنسخ نصك أو إعادة محاولة الحفظ. قد تؤدي المغادرة الآن إلى فقدان تغييراتك غير المحفوظة.';
+
+  @override
+  String get draftLeaveMessageNoText =>
+      'Try saving again. If you leave without saving, your latest changes to this draft may be lost.';
+
+  @override
+  String get draftLeaveCopyAction => 'Copy draft and leave';
+
+  @override
+  String get draftLeaveRetry => 'Try saving again';
+
+  @override
+  String get draftLeaveStillFailing =>
+      'Still not saved. Copy your text before you leave.';
 
   @override
   String get draftLeaveAction => 'مغادرة دون حفظ';
@@ -2813,6 +2837,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get queuedResendConfirm => 'إرسال مجددًا';
+
+  @override
+  String get queuedRetry => 'Retry';
+
+  @override
+  String queuedRetryAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Retry all $count',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get queuedKeepForReview => 'الاحتفاظ للمراجعة';
@@ -5572,6 +5609,20 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiChooseModel => 'اختيار نموذج';
+
+  @override
+  String chatUiUseModelAndResend(String model) {
+    return 'Use $model and resend';
+  }
+
+  @override
+  String get chatUiChooseAnotherModel => 'Choose another model';
+
+  @override
+  String get chatUiSendPromptAgain => 'Send again';
+
+  @override
+  String get chatUiPromptNotAnswered => 'Not answered';
 
   @override
   String get chatUiChooseTheActiveOpenCodeAgent => 'اختيار وكيل OpenCode النشط';
@@ -8932,10 +8983,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get approvalsUiFollowParent => 'اتبع المحادثة الأصل مجددًا';
-
-  @override
-  String get approvalsUiServerRulesNote =>
-      'تبقى قواعد الرفض الخاصة بالخادم سارية، وتتوقف الموافقة التلقائية كلما انقطع اتصال هذا التطبيق. تسأل المحادثات الجديدة دائمًا.';
 
   @override
   String get approvalsUiIndicatorOn => 'الموافقة تلقائيًا';
@@ -13747,6 +13794,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatWatchEmptyBody => 'تمتلئ هذه المحادثة بينما يعمل الوكيل.';
+
+  @override
+  String get chatWatchEndedTitle => 'This session has ended';
+
+  @override
+  String get chatWatchEndedBody =>
+      'It ended before the worker wrote anything here.';
+
+  @override
+  String get chatWatchBackToTask => 'Back to the task';
+
+  @override
+  String get chatWatchBackToWorker => 'Back to the worker';
 
   @override
   String teamWatchBanner(String name, String role, String state) {

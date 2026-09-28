@@ -290,7 +290,7 @@ class KitComposer extends StatefulWidget {
   State<KitComposer> createState() => _KitComposerState();
 }
 
-enum _Trailing { mic, send, sendDisabled, sending, stop, stopAndSend, none }
+enum _Trailing { mic, send, sendDisabled, sending, stop, none }
 
 class _KitComposerState extends State<KitComposer> {
   bool _hasText = false;
@@ -390,19 +390,27 @@ class _KitComposerState extends State<KitComposer> {
           : _Trailing.none;
     }
     final stop = widget.onStop != null;
-    if (widget.sending) {
-      return widget.busy && stop ? _Trailing.stopAndSend : _Trailing.sending;
-    }
+    // One trailing control (owner Fix): Send when there is something to
+    // send, Stop when there is not. While a run works and words are typed,
+    // Stop moves to the start of the row ([_stopLeads]), never beside Send.
+    if (widget.sending) return _Trailing.sending;
     if (widget.busy) {
       if (!_hasContent) return stop ? _Trailing.stop : _Trailing.sendDisabled;
-      if (widget.canSendWhileBusy) {
-        return stop ? _Trailing.stopAndSend : _Trailing.send;
-      }
+      if (widget.canSendWhileBusy) return _Trailing.send;
       return stop ? _Trailing.stop : _Trailing.none;
     }
     if (_hasContent) return _Trailing.send;
     return widget.onVoice != null ? _Trailing.mic : _Trailing.sendDisabled;
   }
+
+  /// Stop while the trailing slot is Send: a run works and there is
+  /// something to send. It sits at the start of the row, after "+", so a
+  /// thumb reaching for Send never lands on it.
+  bool get _stopLeads =>
+      !_readOnly &&
+      widget.busy &&
+      widget.onStop != null &&
+      (widget.sending || (_hasContent && widget.canSendWhileBusy));
 
   String _sendWords(AppLocalizations l10n) {
     if (widget.sending) return l10n.kitComposerSending;
@@ -544,6 +552,7 @@ class _KitComposerState extends State<KitComposer> {
           tooltip: l10n.kitComposerTools,
           onPressed: widget.onTools,
         ),
+      if (_stopLeads) _stopControl(l10n),
       if (!readOnly && widget.model != null)
         Flexible(
           child: Align(
@@ -553,15 +562,31 @@ class _KitComposerState extends State<KitComposer> {
         )
       else
         const Spacer(),
-      if (!readOnly && _hasContent && widget.onOpenEditor != null)
-        KitIconButton(
-          key: widget.editorKey,
-          icon: AppIconography.expand,
-          tooltip: l10n.kitComposerEditor,
-          onPressed: widget.onOpenEditor,
-        ),
       KitSwap(child: _trailingControl(context, l10n)),
     ];
+    // The full-screen editor opens from the field's top corner, where it
+    // belongs to the words, not from the send row (owner Fix).
+    final editor = !readOnly && _hasContent && widget.onOpenEditor != null;
+    final fieldWithEditor = editor
+        ? Stack(
+            children: [
+              Padding(
+                padding: EdgeInsetsDirectional.only(end: tokens.minTarget),
+                child: field,
+              ),
+              PositionedDirectional(
+                top: 0,
+                end: 0,
+                child: KitIconButton(
+                  key: widget.editorKey,
+                  icon: AppIconography.expand,
+                  tooltip: l10n.kitComposerEditor,
+                  onPressed: widget.onOpenEditor,
+                ),
+              ),
+            ],
+          )
+        : field;
 
     // What sits above the field: the note, the delivery choice, the
     // suggestions and the attachments. When they do not fit (large text on
@@ -665,7 +690,7 @@ class _KitComposerState extends State<KitComposer> {
                 // A short room keeps the height for the field instead.
                 bottom: handleClearance,
               ),
-              child: field,
+              child: fieldWithEditor,
             ),
             Row(children: bottomRow),
           ],
@@ -674,21 +699,22 @@ class _KitComposerState extends State<KitComposer> {
     );
   }
 
+  Widget _stopControl(AppLocalizations l10n) => _Circle(
+    key: const ValueKey('kit-composer-stop'),
+    kind: _CircleKind.stop,
+    label: l10n.kitComposerStop,
+    tappableKey: widget.stopKey,
+    working: widget.stopping,
+    disabledReason: widget.stopping ? l10n.kitWorking : null,
+    onTap: widget.stopping ? null : widget.onStop,
+  );
+
   Widget _trailingControl(BuildContext context, AppLocalizations l10n) {
-    final tokens = KitTokens.of(context);
     final wide = KitLayout.windowOf(context).isWide;
     final trailing = _trailing();
     final sendShortcut = wide && !_readOnly ? 'Enter' : null;
 
-    Widget stop() => _Circle(
-      key: const ValueKey('kit-composer-stop'),
-      kind: _CircleKind.stop,
-      label: l10n.kitComposerStop,
-      tappableKey: widget.stopKey,
-      working: widget.stopping,
-      disabledReason: widget.stopping ? l10n.kitWorking : null,
-      onTap: widget.stopping ? null : widget.onStop,
-    );
+    Widget stop() => _stopControl(l10n);
 
     Widget send({bool enabled = true}) => _Circle(
       key: const ValueKey('kit-composer-send'),
@@ -716,12 +742,6 @@ class _KitComposerState extends State<KitComposer> {
       _Trailing.sending => send(),
       _Trailing.sendDisabled => send(enabled: false),
       _Trailing.stop => stop(),
-      _Trailing.stopAndSend => Row(
-        key: const ValueKey('stop-and-send'),
-        mainAxisSize: MainAxisSize.min,
-        spacing: tokens.space2,
-        children: [stop(), send()],
-      ),
     };
   }
 }

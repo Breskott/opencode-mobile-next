@@ -109,19 +109,15 @@ class TranscriptHighlight extends InheritedWidget {
   }
 }
 
-/// The active occurrence stays visible even inside a very long message, code
-/// block, or Markdown markup whose source is not rendered as prose: a
-/// surface2 panel above the transcript saying which match it is and where
-/// ("Match 2 of 5 · Tool"), with up to five lines around the hit in the
-/// active find mark.
+/// The active occurrence stays visible where the transcript does not show it
+/// in place (a thought, tool data, a file name, far down a very long
+/// message): a surface2 panel above the turn with up to five lines around
+/// the hit in the active find mark, headed by where it was found ("Tool
+/// data") when that is not the message's own words. The count lives in the
+/// find bar only.
 class TranscriptMatchExcerpt extends StatelessWidget {
-  const TranscriptMatchExcerpt({
-    super.key,
-    required this.match,
-    required this.label,
-  });
+  const TranscriptMatchExcerpt({super.key, required this.match});
   final TranscriptMatch match;
-  final String label;
   @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
@@ -146,11 +142,10 @@ class TranscriptMatchExcerpt extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              KitText(
-                source == null ? label : '$label · $source',
-                role: KitTextRole.label,
-              ),
-              SizedBox(height: tokens.space1),
+              if (source != null) ...[
+                KitText(source, role: KitTextRole.label),
+                SizedBox(height: tokens.space1),
+              ],
               KitText.rich(
                 TextSpan(
                   children: [

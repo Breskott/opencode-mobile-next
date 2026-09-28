@@ -213,6 +213,87 @@ void main() {
     expect(find.text('Adds to this turn'), findsOneWidget);
   });
 
+  group('a queued message the server refused', () {
+    const raw =
+        'APIError: 529 {"type":"error","error":{"type":"overloaded_error",'
+        '"message":"Overloaded"}}';
+
+    Future<(_V1ChatApi, ConnectionController)> pump(
+      WidgetTester tester, {
+      bool connected = true,
+    }) async {
+      final api = _V1ChatApi();
+      final controller = await _controller(api);
+      addTearDown(controller.dispose);
+      await controller.queuePrompt(
+        QueuedPrompt(
+          id: 'queued-1',
+          profileID: 'profile-1',
+          sessionID: 'session-1',
+          text: 'run the migration',
+          createdAt: 1,
+          error: raw,
+        ),
+      );
+      if (!connected) controller.status = StreamStatus.disconnected;
+      await _pumpChat(tester, controller);
+      return (api, controller);
+    }
+
+    testWidgets('says why in plain words and offers Retry, which sends it', (
+      tester,
+    ) async {
+      final (api, controller) = await pump(tester);
+      expect(find.text('run the migration'), findsOneWidget);
+      // The reason in words; the server's text never shows as copy.
+      expect(
+        find.textContaining('The model provider is overloaded right now.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('overloaded_error'), findsNothing);
+      // The bubble's one call to action is Retry.
+      final retry = find.byKey(const ValueKey('queued-bubble-retry'));
+      expect(retry, findsOneWidget);
+      expect(
+        find.descendant(of: retry, matching: find.text('Retry')),
+        findsOneWidget,
+      );
+      await tester.tap(retry);
+      await _settle(tester);
+      expect(api.prompts.map((prompt) => prompt.text), ['run the migration']);
+      expect(controller.queuedPromptsFor('session-1'), isEmpty);
+    });
+
+    testWidgets('its menu has Retry first, then Edit and Discard', (
+      tester,
+    ) async {
+      final (api, _) = await pump(tester);
+      await tester.tap(find.text('run the migration'));
+      await _settle(tester);
+      final retry = find.byKey(const ValueKey('queued-action-retry'));
+      expect(retry, findsOneWidget);
+      expect(
+        tester.getTopLeft(retry).dy,
+        lessThan(
+          tester
+              .getTopLeft(find.byKey(const ValueKey('queued-action-edit')))
+              .dy,
+        ),
+      );
+      await tester.tap(retry);
+      await _settle(tester);
+      expect(api.prompts, hasLength(1));
+    });
+
+    testWidgets('offline there is no Retry: it waits for the reconnect', (
+      tester,
+    ) async {
+      await pump(tester, connected: false);
+      expect(find.text('run the migration'), findsOneWidget);
+      expect(find.byKey(const ValueKey('queued-bubble-retry')), findsNothing);
+    });
+  });
+
   testWidgets('cancelling an inbox item returns its text to the draft, and '
       'Undo sends it again the same way', (tester) async {
     final api = _V2ChatApi();
@@ -530,7 +611,7 @@ void main() {
     });
   });
 
-  testWidgets('while busy on v2 Stop and Send sit side by side; the toggle '
+  testWidgets('while busy on v2 Stop leads and Send trails; the toggle '
       'queues', (tester) async {
     final api = _V2ChatApi();
     final controller = await _controller(api);
@@ -633,7 +714,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     // OpenCode 1 accepts a prompt mid-turn and runs it afterwards, so Stop
-    // and Send sit side by side and the composer says what Send will do.
+    // leads the row, Send trails it, and the composer says what Send will
+    // do.
     expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
     expect(find.byKey(const Key('chat-send-button')), findsNothing);
     // Nothing typed yet: no hint competes with the running reply.

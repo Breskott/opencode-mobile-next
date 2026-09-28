@@ -43,6 +43,7 @@ Future<String?> showKitInputDialog(
   String? helper,                         // wraps to 2 lines, never cut
   KitFieldKind kind = KitFieldKind.text,  // text | mono | path | url | number | secret
   int? maxLength,                         // counter from 80 %
+  int maxLines = 1,                       // > 1: wraps from one line up to this many (a long command reads whole); Enter submits, Shift+Enter adds a line
   String? Function(String value)? validate,          // null = valid; the reason otherwise
   Future<String?> Function(String value)? onSubmit,  // async; a non-null result is an error shown under the field
   KitAction? alternative,                 // e.g. "Remove budget": on its own line (destructive stacks)

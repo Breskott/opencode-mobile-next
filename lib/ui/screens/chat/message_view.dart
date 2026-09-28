@@ -55,6 +55,55 @@ bool _endsTurn(List<MessageWithParts> messages, int index) {
   return true;
 }
 
+/// The newest turn when it got no answer, as (prompt index, index of the
+/// step that ends it, or null when no step came): it ended on an error the
+/// agent did not get past, and no step wrote any words. [refused]: the
+/// server refused the prompt before any step (a session error), which is
+/// the only way a turn with no step yet counts; a turn still starting is
+/// not unanswered. Null when the newest turn was answered, stopped, or is
+/// still running ([running]).
+(int, int?)? _unansweredTurn(
+  List<MessageWithParts> messages, {
+  required bool refused,
+  required bool running,
+}) {
+  if (running) return null;
+  final prompt = messages.lastIndexWhere(_isPrompt);
+  if (prompt < 0) return null;
+  int? last;
+  for (var index = prompt + 1; index < messages.length; index += 1) {
+    final message = messages[index];
+    if (message.info.role != 'assistant') continue;
+    last = index;
+    final said = message.parts.any(
+      (part) => part.type == 'text' && part.text.trim().isNotEmpty,
+    );
+    if (said) return null;
+  }
+  if (last == null) return refused ? (prompt, null) : null;
+  final info = messages[last].info;
+  final raw = info.errorText;
+  if (raw == null) return null;
+  final kind = MessageErrorKind.refineFromText(
+    info.errorKind ?? MessageErrorKind.unknown,
+    raw,
+  );
+  if (kind == MessageErrorKind.aborted) return null;
+  return (prompt, last);
+}
+
+/// The words of a prompt, when that is all it is: null when it carried
+/// files, which a resend from here could not bring along.
+String? _promptWordsOnly(MessageWithParts prompt) {
+  if (prompt.parts.any((part) => part.type == 'file')) return null;
+  final text = prompt.parts
+      .where((part) => part.type == 'text')
+      .map((part) => part.text)
+      .where((value) => value.trim().isNotEmpty)
+      .join('\n');
+  return text.trim().isEmpty ? null : text;
+}
+
 /// For each turn, the one message that carries its "more" control: the step
 /// that ends the turn when that step draws anything, otherwise the last step
 /// that does. A turn often ends on pure bookkeeping (a `step-finish`), and
@@ -502,12 +551,28 @@ KitWorkCounts _workCounts(Iterable<Part> tools, {required int steps}) {
 
 bool _isToolPart(Part part) => part.type == 'tool';
 
-/// What a finished turn did on its way to the answer: the text the agent
-/// said between steps ("Now let me test each command:") and the notices the
-/// server filed mid-turn (a background command finishing). Once the turn is
-/// over they belong with the work, folded under its line; only the turn's
-/// last words stand as the answer.
+/// What a finished turn did on its way to the answer: the passing words the
+/// agent said between steps ("Now let me test each command:") and the
+/// notices the server filed mid-turn (a background command finishing). Once
+/// the turn is over they belong with the work, folded under its line.
+///
+/// Only passing words fold (decision 2026-09-28, review board "chat", gap
+/// 17): an explanation the agent wrote before its last step ("The
+/// flakiness comes from CheckoutBloc…") is part of the answer and stays in
+/// view, below the turn's one work line. The work folds; the prose never
+/// hides.
 final _foldedIntoWork = Expando<bool>('folded into work');
+
+/// Whether [text], said between steps, is passing words ("Looking into
+/// it.", "Now let me run the tests:") rather than an explanation: one short
+/// line, or one line that leads into the next step with a colon. A second
+/// line, a paragraph break or a code block makes it an explanation.
+bool _isPassingWords(String text) {
+  final words = text.trim();
+  if (words.isEmpty) return true;
+  if (words.contains('\n') || words.contains('```')) return false;
+  return words.length <= 80 || (words.endsWith(':') && words.length <= 200);
+}
 
 bool _isFoldedIntoWork(Object item) => _foldedIntoWork[item] ?? false;
 
@@ -561,11 +626,16 @@ void _markFoldedWork(List<MessageWithParts> messages, {bool liveTail = false}) {
       }
     }
     for (var i = 0; i < entries.length; i += 1) {
-      // Text folds only on the way to the answer; a notice (a background
-      // command finishing) is part of the work wherever it landed.
-      if ((isText(entries[i]) && i < cutoff) ||
-          entries[i] is MessageWithParts) {
-        _foldedIntoWork[entries[i]] = true;
+      // Text folds only on the way to the answer, and only passing words;
+      // a notice (a background command finishing) is part of the work
+      // wherever it landed.
+      final entry = entries[i];
+      if ((entry is Part &&
+              isText(entry) &&
+              i < cutoff &&
+              _isPassingWords(entry.text)) ||
+          entry is MessageWithParts) {
+        _foldedIntoWork[entry] = true;
       }
     }
   }
@@ -588,13 +658,27 @@ List<List<Part>> _timelineDisplayParts(
   String? pendingType;
   int? pendingOwner;
   int? lastAssistant;
+  // The turn still running keeps its work where it happened, between the
+  // words, so the reader can follow along; a finished turn gathers its
+  // work into one line (the first stretch's place) with the explanation it
+  // kept in view after it (see [_foldedIntoWork]).
+  final liveFrom = liveTail ? messages.lastIndexWhere(_isPrompt) + 1 : null;
+  int? poolOwner;
+  var poolEnd = 0;
 
   void flushPending() {
     if (pendingOwner case final owner?) {
       if (pendingType == 'text') {
         display[owner].add(_mergeTextParts(pendingParts));
+      } else if (poolOwner case final pool?) {
+        display[pool].insertAll(poolEnd, pendingParts);
+        poolEnd += pendingParts.length;
       } else {
         display[owner].addAll(pendingParts);
+        if (liveFrom == null || owner < liveFrom) {
+          poolOwner = owner;
+          poolEnd = display[owner].length;
+        }
       }
     }
     pendingParts.clear();
@@ -610,6 +694,7 @@ List<List<Part>> _timelineDisplayParts(
         _isFoldedIntoWork(part);
     if (!mergeable) {
       flushPending();
+      poolOwner = null;
       display[owner].add(part);
       return;
     }
@@ -641,6 +726,7 @@ List<List<Part>> _timelineDisplayParts(
     }
     if (message.info.role != 'assistant') {
       flushPending();
+      poolOwner = null;
       display[index].addAll(parts);
       continue;
     }
@@ -650,7 +736,11 @@ List<List<Part>> _timelineDisplayParts(
     for (final part in parts) {
       appendPart(index, part);
     }
-    if (message.info.errorText != null) flushPending();
+    if (message.info.errorText != null) {
+      flushPending();
+      // An error is drawn where it happened: work after it starts anew.
+      poolOwner = null;
+    }
 
     final nextIsAssistant =
         index + 1 < messages.length &&
@@ -1020,7 +1110,6 @@ class _MessageView extends StatelessWidget {
   final bool highlighted;
   final String searchQuery;
   final TranscriptMatch? searchMatch;
-  final String searchLabel;
   final ValueChanged<BuildContext>? onSearchExcerptContext;
 
   /// The message's actions as menu entries (copy, fork, read aloud, revert,
@@ -1040,6 +1129,16 @@ class _MessageView extends StatelessWidget {
   final VoidCallback? onContinue;
   final VoidCallback? onChooseModel;
 
+  /// This turn got no answer: [onResendPrompt] sends its prompt again, and
+  /// a "model not found" names [suggestedModel], which
+  /// [onUseSuggestedModel] switches to before resending (see
+  /// [_AssistantErrorRow]). On the prompt, [unanswered] marks it "Not
+  /// answered".
+  final VoidCallback? onResendPrompt;
+  final String? suggestedModel;
+  final VoidCallback? onUseSuggestedModel;
+  final bool unanswered;
+
   /// Opens the child session a `task` tool call delegated to (its id is the
   /// argument); null hides the action on task cards.
   final ValueChanged<String>? onOpenSession;
@@ -1054,7 +1153,6 @@ class _MessageView extends StatelessWidget {
     this.highlighted = false,
     this.searchQuery = '',
     this.searchMatch,
-    this.searchLabel = '',
     this.onSearchExcerptContext,
     this.contextActions,
     required this.filePreviewLoader,
@@ -1064,6 +1162,10 @@ class _MessageView extends StatelessWidget {
     this.onOpenProviders,
     this.onContinue,
     this.onChooseModel,
+    this.onResendPrompt,
+    this.suggestedModel,
+    this.onUseSuggestedModel,
+    this.unanswered = false,
     this.onOpenSession,
     this.queued = false,
     this.showActions = true,
@@ -1108,30 +1210,58 @@ class _MessageView extends StatelessWidget {
     return _frame(context, _replyTurn(context, visibleParts));
   }
 
-  /// The find-in-conversation excerpt above the turn, and the highlight of
-  /// the words it matched.
+  /// Where a find match shows. In place when the words are on screen as
+  /// prose: the find mark highlights them and the bar holds the count.
+  /// Only a match the transcript does not show where it is (a thought, tool
+  /// data, a file name, folded passing words, or far down a very long
+  /// message) gets an excerpt above the turn, which says where it is found
+  /// and never repeats the count (review board: find bar).
+  bool _matchNeedsExcerpt(TranscriptMatch match) {
+    if (match.kind != 'text') return true;
+    if (match.start > _inPlaceMatchReach) return true;
+    final index = match.partIndex;
+    return index >= 0 &&
+        index < m.parts.length &&
+        _isFoldedIntoWork(m.parts[index]);
+  }
+
+  /// How far into a message (in characters) a match can sit and still be
+  /// in view when the find brings the message's start on screen.
+  static const _inPlaceMatchReach = 480;
+
+  /// The find-in-conversation excerpt above the turn when the match is not
+  /// visible in place, and the highlight of the words it matched.
   Widget _frame(BuildContext context, Widget turn) {
     final match = searchMatch;
+    if (match == null) {
+      return TranscriptHighlight(query: searchQuery, child: turn);
+    }
+    if (!_matchNeedsExcerpt(match)) {
+      return TranscriptHighlight(
+        query: searchQuery,
+        child: Builder(
+          builder: (context) {
+            onSearchExcerptContext?.call(context);
+            return turn;
+          },
+        ),
+      );
+    }
     return TranscriptHighlight(
       query: searchQuery,
-      child: match == null
-          ? turn
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Builder(
-                  builder: (context) {
-                    onSearchExcerptContext?.call(context);
-                    return TranscriptMatchExcerpt(
-                      match: match,
-                      label: searchLabel,
-                    );
-                  },
-                ),
-                turn,
-              ],
-            ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Builder(
+            builder: (context) {
+              onSearchExcerptContext?.call(context);
+              return TranscriptMatchExcerpt(match: match);
+            },
+          ),
+          turn,
+        ],
+      ),
     );
   }
 
@@ -1167,6 +1297,19 @@ class _MessageView extends StatelessWidget {
               _chatL10n(context).chatUiQueuedRunsAfterThisTurn,
               role: KitTextRole.caption,
               tone: KitTextTone.tertiary,
+            ),
+          ),
+        // The prompt got no answer: said on the prompt itself, so the
+        // failure and the prompt it concerns read together (the error and
+        // its Send again sit right under it).
+        if (unanswered)
+          Align(
+            key: ValueKey('prompt-not-answered-${m.info.id}'),
+            alignment: AlignmentDirectional.centerEnd,
+            child: KitText(
+              _chatL10n(context).chatUiPromptNotAnswered,
+              role: KitTextRole.caption,
+              tone: KitTextTone.secondary,
             ),
           ),
       ],
@@ -1277,6 +1420,9 @@ class _MessageView extends StatelessWidget {
           onOpenProviders: onOpenProviders,
           onContinue: onContinue,
           onChooseModel: onChooseModel,
+          onResend: onResendPrompt,
+          suggestion: suggestedModel,
+          onUseSuggestion: onUseSuggestedModel,
         ),
       if (m.info.finish == 'length' &&
           m.info.errorKind != MessageErrorKind.outputLength)
@@ -1477,6 +1623,9 @@ class _AssistantErrorRow extends StatelessWidget {
     this.onOpenProviders,
     this.onContinue,
     this.onChooseModel,
+    this.onResend,
+    this.suggestion,
+    this.onUseSuggestion,
   });
 
   final MessageInfo info;
@@ -1489,6 +1638,15 @@ class _AssistantErrorRow extends StatelessWidget {
   final VoidCallback? onContinue;
   final VoidCallback? onChooseModel;
 
+  /// Sends the turn's prompt again as it was: given only for the newest
+  /// turn when it got no answer and the prompt is words alone.
+  final VoidCallback? onResend;
+
+  /// The model the server suggested in a "model not found" error, by name,
+  /// when this server has it; [onUseSuggestion] switches to it and resends.
+  final String? suggestion;
+  final VoidCallback? onUseSuggestion;
+
   @override
   Widget build(BuildContext context) {
     final strings = _chatL10n(context);
@@ -1500,10 +1658,20 @@ class _AssistantErrorRow extends StatelessWidget {
     );
     // Words, never the server's text: that is under Error details.
     final text = _plainErrorHeadline(words, kind, strings);
+    final useSuggestion = onUseSuggestion;
+    final named = suggestion;
     final (String id, KitAction? fix) = switch (kind) {
       MessageErrorKind.modelNotFound => (
         'model-not-found',
-        onChooseModel == null
+        // The server named a model it has: one tap switches to it and sends
+        // the prompt again (review board: prompt error).
+        useSuggestion != null && named != null && !recovered
+            ? KitAction(
+                key: const Key('error-action-use-suggestion'),
+                label: strings.chatUiUseModelAndResend(named),
+                onPressed: useSuggestion,
+              )
+            : onChooseModel == null
             ? null
             : KitAction(
                 key: const Key('error-action-choose-model'),
@@ -1541,7 +1709,17 @@ class _AssistantErrorRow extends StatelessWidget {
                 onPressed: onContinue,
               ),
       ),
-      _ => ('generic', null),
+      // Nothing to fix first: the same prompt can simply go again.
+      _ => (
+        'generic',
+        onResend == null || recovered || kind == MessageErrorKind.contentFilter
+            ? null
+            : KitAction(
+                key: const Key('error-action-resend'),
+                label: strings.chatUiSendPromptAgain,
+                onPressed: onResend,
+              ),
+      ),
     };
     final hint =
         kind == MessageErrorKind.contentFilter ||
@@ -1762,6 +1940,7 @@ class _PendingSendsStrip extends StatelessWidget {
     required this.isAcceptedUnrecorded,
     required this.onEdit,
     required this.onResend,
+    required this.onRetry,
     required this.onDiscard,
     required this.onCancelInbox,
     required this.onFlipDelivery,
@@ -1780,6 +1959,10 @@ class _PendingSendsStrip extends StatelessWidget {
 
   /// Explicit resend of a draft whose earlier send was never confirmed.
   final ValueChanged<QueuedPrompt> onResend;
+
+  /// Sends a draft the server refused again, now; null while there is no
+  /// connection to send it on (it then waits for the reconnect).
+  final ValueChanged<QueuedPrompt>? onRetry;
   final ValueChanged<QueuedPrompt> onDiscard;
   final ValueChanged<Api2InboxItem> onCancelInbox;
   final ValueChanged<Api2InboxItem> onFlipDelivery;
@@ -1788,6 +1971,11 @@ class _PendingSendsStrip extends StatelessWidget {
   /// again (the person decides; it never resends on its own).
   bool _unconfirmed(QueuedPrompt entry) =>
       entry.dispatched && !isSending(entry) && !isAcceptedUnrecorded(entry);
+
+  /// A draft whose send the server refused before anything was delivered:
+  /// sending it again is safe, so Retry is offered.
+  bool _refused(QueuedPrompt entry) =>
+      !entry.dispatched && !isSending(entry) && entry.error != null;
 
   KitQueuedItem _draftItem(
     BuildContext context,
@@ -1813,8 +2001,23 @@ class _PendingSendsStrip extends StatelessWidget {
       text: entry.text,
       state: state,
       attachmentCount: entry.attachments.length,
-      reason: entry.error,
+      // The server's words never show as copy: its plain headline only
+      // (agentErrorWords), the same words the transcript uses.
+      reason: switch (entry.error) {
+        final raw?
+            when state == KitQueuedState.failed ||
+                state == KitQueuedState.notConfirmed =>
+          agentErrorWords(raw, strings).headline,
+        _ => null,
+      },
       menu: [
+        if (_refused(entry) && onRetry != null)
+          KitMenuItem(
+            key: const ValueKey('queued-action-retry'),
+            icon: AppIconography.retry,
+            label: strings.queuedRetry,
+            onSelected: () => onRetry!(entry),
+          ),
         if (review && !accepted)
           KitMenuItem(
             key: const ValueKey('queued-action-resend'),
@@ -1896,12 +2099,31 @@ class _PendingSendsStrip extends StatelessWidget {
     // (the host confirms each resend; a batch resend waits for its own
     // confirmation).
     final unconfirmed = drafts.where(_unconfirmed).toList();
-    final resend = unconfirmed.length == 1
+    // Otherwise, Retry for what the server refused: safe to send again, so
+    // one tap sends every refused draft (each keeps Retry in its menu).
+    final refused = onRetry == null
+        ? const <QueuedPrompt>[]
+        : drafts.where(_refused).toList();
+    final strings = _chatL10n(context);
+    final action = unconfirmed.length == 1
         ? KitAction(
             key: const ValueKey('queued-bubble-resend'),
             icon: AppIconography.send,
-            label: _chatL10n(context).messageViewSendAgain,
+            label: strings.messageViewSendAgain,
             onPressed: () => onResend(unconfirmed.single),
+          )
+        : refused.isNotEmpty
+        ? KitAction(
+            key: const ValueKey('queued-bubble-retry'),
+            icon: AppIconography.retry,
+            label: refused.length == 1
+                ? strings.queuedRetry
+                : strings.queuedRetryAll(refused.length),
+            onPressed: () {
+              for (final entry in refused) {
+                onRetry!(entry);
+              }
+            },
           )
         : null;
     return Center(
@@ -1924,7 +2146,7 @@ class _PendingSendsStrip extends StatelessWidget {
           children: [
             KitQueuedMessage(
               items: [for (final entry in entries) entry.item],
-              action: resend,
+              action: action,
             ),
           ],
         ),

@@ -2374,9 +2374,8 @@ void main() {
     },
   );
 
-  testWidgets('groups a tool chain until assistant text appears', (
-    tester,
-  ) async {
+  testWidgets('a finished turn gathers its tool chain into one work line; '
+      'the words it said stay in view', (tester) async {
     final api = _FakeOpenCodeApi()
       ..messagesHandler = (_) async => [
         _message('assistant-tools', 'assistant', [
@@ -2453,15 +2452,18 @@ void main() {
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('work-group')), findsNWidgets(2));
+    // The turn is over: its work is one line (the turn model, gap 17), and
+    // the words stay below it.
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
     // What was done is the title; no generic "Tools" beside it.
     expect(find.text('Tools'), findsNothing);
-    expect(
-      find.text('Read 1 file · searched once · ran 1 command'),
-      findsOneWidget,
-    );
-    expect(find.text('Edited 2 files'), findsOneWidget);
+    expect(find.textContaining('Read 1 file'), findsOneWidget);
+    expect(find.textContaining('dited 2 files'), findsOneWidget);
     expect(find.text('Tool chain finished.'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('work-group'))).dy,
+      lessThan(tester.getTopLeft(find.text('Tool chain finished.')).dy),
+    );
     expect(find.text('Shell'), findsNothing);
     expect(find.text('Read'), findsNothing);
     expect(find.text('Search text'), findsNothing);
@@ -2475,7 +2477,6 @@ void main() {
     expect(find.text('Read'), findsOneWidget);
     expect(find.text('Search text'), findsOneWidget);
     expect(find.text('Shell'), findsOneWidget);
-    expect(find.text('Edit'), findsNothing);
 
     // KitToolRow: a grouped row is a line on the ground surface, never a
     // nested card; at rest it paints no fill of its own.
@@ -3612,8 +3613,8 @@ void main() {
     await tester.tap(find.byKey(const Key('timeline-row-user-0')));
     await tester.pumpAndSettle();
 
-    // Search deliberately displays both a source excerpt and the unchanged
-    // message body. Verify the actual body and active excerpt independently.
+    // A match in a prompt's own words is highlighted in place: no excerpt
+    // repeating the prompt above it (review board: find bar).
     expect(
       find.descendant(
         of: find.byType(KitMarkdown),
@@ -3623,10 +3624,10 @@ void main() {
     );
     expect(
       find.byKey(const ValueKey('transcript-match-user-0/0/0')),
-      findsOneWidget,
+      findsNothing,
     );
     expect(
-      find.byKey(const ValueKey('transcript-match-user-0/0/0')).hitTestable(),
+      find.byKey(const ValueKey('user-prompt-user-0')).hitTestable(),
       findsOneWidget,
     );
     // The found turn carries the find band (painted around it, so nothing

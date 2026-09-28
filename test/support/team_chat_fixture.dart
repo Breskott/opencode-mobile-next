@@ -118,9 +118,13 @@ class TeamChatGateway
   Stream<OrchestrationEvent> events({
     EventCursor resumeFrom = EventCursor.none,
   }) => stream.stream;
+
+  /// A scripted live output (an ended session), in place of the fixture's.
+  Stream<AgentOutputEvent> Function(String sessionId)? outputOverride;
+
   @override
   Stream<AgentOutputEvent> agentOutput(String sessionId) =>
-      inner.agentOutput(sessionId);
+      outputOverride?.call(sessionId) ?? inner.agentOutput(sessionId);
   @override
   Future<MutationReceipt> respond(
     String gateId,

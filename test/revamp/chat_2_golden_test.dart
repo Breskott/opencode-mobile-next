@@ -319,7 +319,6 @@ void main() {
     testWidgets('find excerpt $mode', (tester) async {
       await _shot(tester, 'chat_find_excerpt', [
         const TranscriptMatchExcerpt(
-          label: 'Match 2 of 5',
           match: TranscriptMatch(
             messageID: 'm1',
             partIndex: 0,

@@ -183,10 +183,11 @@ class _SessionApprovalsSheetState extends State<SessionApprovalsSheet> {
             _AutoApprovalRecord(
               approved: _controller.autoApprovedFor(widget.sessionID),
             ),
+          // What holds whatever is chosen above. What new conversations do
+          // is said once, by the "Approve everything" switch.
           KitNotice(
-            message: _controller.approvesEverything
-                ? strings.approvalsUiServerRulesNoteEverything
-                : strings.approvalsUiServerRulesNote,
+            key: const Key('approvals-rules-note'),
+            message: strings.approvalsUiServerRulesNoteEverything,
             liveRegion: false,
           ),
         ];

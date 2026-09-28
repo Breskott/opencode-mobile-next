@@ -582,9 +582,10 @@ void main() {
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('leave-unsaved-draft')), findsOneWidget);
-    await tester.ensureVisible(find.text('Keep editing'));
-    await tester.tap(find.text('Keep editing'));
+    // Back keeps editing: the sheet's own way out.
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('leave-unsaved-draft')), findsNothing);
     tester.view.viewInsets = const FakeViewPadding(bottom: 260);
     addTearDown(tester.view.resetViewInsets);
     await tester.pumpAndSettle();
@@ -608,6 +609,129 @@ void main() {
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
     expect(find.text('Open chat'), findsOneWidget);
+  });
+
+  group('leaving with a draft that could not be saved', () {
+    Future<(ConnectionController, _DraftStorage)> open(
+      WidgetTester tester, {
+      String text = 'Keep this draft',
+    }) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      late _DraftStorage disk;
+      final c = await _controller(
+        _FakeApi(),
+        configureStorage: (value) => disk = value,
+      );
+      addTearDown(c.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [connProvider.overrideWithValue(c)],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: TextButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ChatScreen(sessionID: 'session-1'),
+                    ),
+                  ),
+                  child: const Text('Open chat'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open chat'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('chat-composer-field')),
+        text,
+      );
+      disk.refuse = true;
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+      return (c, disk);
+    }
+
+    testWidgets('the sheet offers what it says: copy and leave first, try '
+        'saving again, or leave without saving', (tester) async {
+      await open(tester);
+      expect(find.byKey(const ValueKey('leave-unsaved-draft')), findsOneWidget);
+      expect(find.text("Your draft isn't saved"), findsOneWidget);
+      expect(find.textContaining('Copy your text to keep it'), findsOneWidget);
+      // Every action the words name is there, and nothing else.
+      expect(find.text('Copy draft and leave'), findsOneWidget);
+      expect(find.text('Try saving again'), findsOneWidget);
+      expect(find.text('Leave without saving'), findsOneWidget);
+      expect(find.text('Keep editing'), findsNothing);
+      // Copy is the main answer: the first button, above the others.
+      final copy = tester.getTopLeft(find.text('Copy draft and leave')).dy;
+      expect(
+        copy,
+        lessThan(tester.getTopLeft(find.text('Try saving again')).dy),
+      );
+      expect(
+        copy,
+        lessThan(tester.getTopLeft(find.text('Leave without saving')).dy),
+      );
+    });
+
+    testWidgets('Copy draft and leave copies the text, then leaves', (
+      tester,
+    ) async {
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await open(tester);
+      await tester.tap(find.text('Copy draft and leave'));
+      await tester.pumpAndSettle();
+      expect(copied, 'Keep this draft');
+      expect(find.text('Open chat'), findsOneWidget);
+    });
+
+    testWidgets('Try saving again says so when it fails, and leaves once the '
+        'draft is saved', (tester) async {
+      final (c, disk) = await open(tester);
+      await tester.tap(find.text('Try saving again'));
+      await tester.pumpAndSettle();
+      // Still refused: the sheet stays, says so, and the chat is still here.
+      expect(find.byKey(const ValueKey('leave-unsaved-draft')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('leave-draft-still-failing')),
+        findsOneWidget,
+      );
+      disk.refuse = false;
+      await tester.tap(find.text('Try saving again'));
+      await tester.pumpAndSettle();
+      expect(c.sessionDraft('session-1'), 'Keep this draft');
+      expect(find.text('Open chat'), findsOneWidget);
+    });
+
+    testWidgets('Leave without saving leaves', (tester) async {
+      await open(tester);
+      await tester.tap(find.text('Leave without saving'));
+      await tester.pumpAndSettle();
+      expect(find.text('Open chat'), findsOneWidget);
+    });
   });
 
   test('session drafts persist and reload', () async {

@@ -1406,7 +1406,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pendingAuthSaveUncertain =>
-      'Recovery could not be saved reliably. Keep this app open and retry saving; restarting may lose this attempt. If no browser page opened, cancel the attempt before starting again.';
+      'This phone couldn\'t save the sign-in to pick it up later. Keep the app open until it finishes.';
 
   @override
   String get pendingAuthRetrySave => 'Try saving recovery again';
@@ -1481,30 +1481,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commandAuthPending =>
-      'Sign-in is pending on the server. Finish any server-side interaction, then check its status. Closing this sheet does not cancel it.';
+      'Signing in on the server… Finish any steps it asks for there. Closing this doesn\'t stop it.';
 
   @override
   String get commandAuthCancel => 'Cancel sign-in';
 
   @override
-  String get commandAuthFailed =>
-      'Could not complete or confirm server sign-in. Check the existing attempt before starting another.';
+  String get commandAuthFailed => 'Sign-in didn\'t finish.';
 
   @override
-  String get commandAuthComplete =>
-      'The server reported that sign-in completed. Refresh Providers to see its current connections.';
+  String get commandAuthStartFailed => 'Sign-in didn\'t start.';
 
   @override
-  String get commandAuthExpired =>
-      'This sign-in attempt expired. You can start a new attempt.';
+  String get commandAuthCheckFailed =>
+      'Couldn\'t check the sign-in. Try again.';
+
+  @override
+  String get commandAuthTryAgain => 'Try again';
+
+  @override
+  String get commandAuthComplete => 'Signed in.';
+
+  @override
+  String get commandAuthExpired => 'Sign-in timed out before it finished.';
 
   @override
   String get commandAuthScopeChanged =>
-      'The server or project changed. Return to the original project and reopen sign-in to manage its attempt.';
+      'You switched to another server or project. Go back to it to see this sign-in.';
 
   @override
   String get commandAuthUncertainStart =>
-      'The server may have started sign-in, but the app could not safely recover its attempt. Check on the server before retrying; automatic restart is blocked to avoid duplicate processes.';
+      'The server may have started signing in. Check on the server before you try again.';
 
   @override
   String get readAloudAction => 'Read reply prose';
@@ -1523,7 +1530,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readAloudConsentDetail =>
-      'Your phone\'s speech engine reads the reply aloud. Code and tool details are skipped.';
+      'Your phone\'s speech engine reads the reply aloud. Code and tool details are skipped. This phone remembers your answer.';
 
   @override
   String get readAloudContinue => 'Read aloud';
@@ -1865,11 +1872,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get draftLeaveTitle => 'Draft could not be saved';
+  String get draftLeaveTitle => 'Your draft isn\'t saved';
 
   @override
   String get draftLeaveMessage =>
-      'Keep editing to copy your text or retry saving. Leaving now may lose your unsaved changes.';
+      'Copy your text to keep it, or try saving again. If you leave without saving, your latest changes may be lost.';
+
+  @override
+  String get draftLeaveMessageNoText =>
+      'Try saving again. If you leave without saving, your latest changes to this draft may be lost.';
+
+  @override
+  String get draftLeaveCopyAction => 'Copy draft and leave';
+
+  @override
+  String get draftLeaveRetry => 'Try saving again';
+
+  @override
+  String get draftLeaveStillFailing =>
+      'Still not saved. Copy your text before you leave.';
 
   @override
   String get draftLeaveAction => 'Leave without saving';
@@ -2148,7 +2169,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get uncertainAuthCloseHint =>
-      'Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.';
+      'To start over, close this and clear the unconfirmed sign-in from the provider\'s row.';
 
   @override
   String get pluginsUnsupported =>
@@ -2787,6 +2808,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queuedResendConfirm => 'Send again';
+
+  @override
+  String get queuedRetry => 'Retry';
+
+  @override
+  String queuedRetryAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Retry all $count',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get queuedKeepForReview => 'Keep for review';
@@ -5527,6 +5561,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiChooseModel => 'Choose model';
+
+  @override
+  String chatUiUseModelAndResend(String model) {
+    return 'Use $model and resend';
+  }
+
+  @override
+  String get chatUiChooseAnotherModel => 'Choose another model';
+
+  @override
+  String get chatUiSendPromptAgain => 'Send again';
+
+  @override
+  String get chatUiPromptNotAnswered => 'Not answered';
 
   @override
   String get chatUiChooseTheActiveOpenCodeAgent =>
@@ -8841,10 +8889,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get approvalsUiFollowParent => 'Follow parent again';
-
-  @override
-  String get approvalsUiServerRulesNote =>
-      'The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects. New conversations always ask.';
 
   @override
   String get approvalsUiIndicatorOn => 'Approving automatically';
@@ -13649,6 +13693,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatWatchEmptyBody =>
       'This conversation fills in as the agent works.';
+
+  @override
+  String get chatWatchEndedTitle => 'This session has ended';
+
+  @override
+  String get chatWatchEndedBody =>
+      'It ended before the worker wrote anything here.';
+
+  @override
+  String get chatWatchBackToTask => 'Back to the task';
+
+  @override
+  String get chatWatchBackToWorker => 'Back to the worker';
 
   @override
   String teamWatchBanner(String name, String role, String state) {

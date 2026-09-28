@@ -340,6 +340,17 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('session-approvals-sheet')), findsOneWidget);
+    // The rule for new conversations is said once, by the switch; nothing
+    // on the sheet contradicts it (review board: session approvals).
+    expect(find.textContaining('new ones and subagents included'), findsOne);
+    expect(find.textContaining('New conversations always ask'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('approvals-rules-note')),
+        matching: find.textContaining('deny rules still apply'),
+      ),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const Key('approvals-everything-switch')));
     await tester.pumpAndSettle();

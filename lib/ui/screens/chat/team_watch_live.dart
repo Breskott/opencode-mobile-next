@@ -213,6 +213,9 @@ class _TeamWatchLiveScreenState extends State<TeamWatchLiveScreen> {
         : _waiting(l10n, agent);
     final canFollow = !tail.ended && tail.available;
     final details = watch.onDetails;
+    // Ended before a word arrived: nothing will fill in. The page says so
+    // once, in place (not also on the status line), with the ways on.
+    final endedEmpty = tail.ended && text.isEmpty;
     return KitScreen(
       key: const ValueKey('chat-watching-live'),
       topBar: KitTopBar(
@@ -239,19 +242,21 @@ class _TeamWatchLiveScreenState extends State<TeamWatchLiveScreen> {
       // The one status line (design standard §5): who, live, connecting,
       // unavailable or ended. In the window's one slot, so a connection or
       // app line outranks it instead of stacking above it (P4.4).
-      status: KitStatus(
-        kind: KitStatusKind.work,
-        id: 'chat:watching-live',
-        key: const ValueKey('chat-watching-banner'),
-        icon: tail.ended
-            ? AppIconography.cloudOff
-            : !tail.available
-            ? AppIconography.warning
-            : AppIconography.agent,
-        tone: tone,
-        message: status,
-        action: action,
-      ),
+      status: endedEmpty
+          ? null
+          : KitStatus(
+              kind: KitStatusKind.work,
+              id: 'chat:watching-live',
+              key: const ValueKey('chat-watching-banner'),
+              icon: tail.ended
+                  ? AppIconography.cloudOff
+                  : !tail.available
+                  ? AppIconography.warning
+                  : AppIconography.agent,
+              tone: tone,
+              message: status,
+              action: action,
+            ),
       body: _watchLayer(
         watch: watch,
         body: KitJumpPillLayer(
@@ -291,7 +296,29 @@ class _TeamWatchLiveScreenState extends State<TeamWatchLiveScreen> {
                       liveRegion: false,
                     ),
                   ),
-                if (text.isEmpty)
+                if (endedEmpty)
+                  KitStateView(
+                    key: const ValueKey('chat-watching-ended'),
+                    size: KitStateSize.inline,
+                    icon: AppIconography.cloudOff,
+                    title: l10n.chatWatchEndedTitle,
+                    body: l10n.chatWatchEndedBody,
+                    primary: KitAction(
+                      key: const ValueKey('chat-watching-ended-back'),
+                      label: widget.details
+                          ? l10n.chatWatchBackToTask
+                          : l10n.chatWatchBackToWorker,
+                      onPressed: () => unawaited(Navigator.maybePop(context)),
+                    ),
+                    secondary: details == null || watch.detailsLabel == null
+                        ? null
+                        : KitAction(
+                            key: const ValueKey('chat-watching-ended-about'),
+                            label: watch.detailsLabel!,
+                            onPressed: () => details(context),
+                          ),
+                  )
+                else if (text.isEmpty)
                   // Nothing said yet; the status line says why.
                   Padding(
                     padding: EdgeInsetsDirectional.symmetric(

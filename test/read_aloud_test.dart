@@ -75,13 +75,16 @@ Future<ConnectionController> _pumpChat(
   WidgetTester tester,
   _Api api, {
   VoiceComposerController? voice,
+  bool keepPreferences = false,
 }) async {
-  SharedPreferences.setMockInitialValues({
-    'oc.profiles': jsonEncode([
-      {'id': 'profile', 'name': 'Synthetic', 'baseUrl': 'http://localhost'},
-    ]),
-    'oc.activeProfile': 'profile',
-  });
+  if (!keepPreferences) {
+    SharedPreferences.setMockInitialValues({
+      'oc.profiles': jsonEncode([
+        {'id': 'profile', 'name': 'Synthetic', 'baseUrl': 'http://localhost'},
+      ]),
+      'oc.activeProfile': 'profile',
+    });
+  }
   final prefs = await SharedPreferences.getInstance();
   final store = ProfileStore(prefs: prefs);
   await store.load();
@@ -295,6 +298,31 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
       expect(calls.last.method, 'stop');
+    },
+  );
+
+  testWidgets(
+    'consent is asked once: another conversation, or the app opened again, '
+    'reads without asking',
+    (tester) async {
+      await _pumpChat(tester, _Api());
+      await _openReadReply(tester);
+      expect(find.text('Read replies aloud?'), findsOneWidget);
+      await tester.tap(find.text('Read aloud'));
+      await tester.pumpAndSettle();
+      expect(calls.map((call) => call.method), contains('speak'));
+
+      // A fresh screen and controller on the same phone (a new chat, or a
+      // restart): the answer is remembered.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      calls.clear();
+      await _pumpChat(tester, _Api(), keepPreferences: true);
+      await _openReadReply(tester);
+      expect(find.text('Read replies aloud?'), findsNothing);
+      expect(calls.map((call) => call.method), ['voices', 'speak']);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
     },
   );
 

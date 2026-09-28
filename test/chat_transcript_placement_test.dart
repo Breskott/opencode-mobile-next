@@ -300,6 +300,49 @@ void main() {
     },
   );
 
+  testWidgets('a finished turn keeps the agent\'s explanation in view; only '
+      'the work folds, under one line (gap 17)', (tester) async {
+    const explanation =
+        'The flakiness comes from CheckoutBloc: it reads the balance before '
+        'the save completes.\n\nSo the test sometimes sees the old value.';
+    await _pump(tester, [
+      _message('u1', 'user', [
+        _text('u1-t', 'Why is the test flaky?'),
+      ], created: 1),
+      _message('a1', 'assistant', [
+        _text('a1-t', 'Looking into it.'),
+        tool('t1', 'read'),
+        tool('t2', 'read'),
+      ], created: 2),
+      _message('a2', 'assistant', [
+        _text('a2-t', explanation),
+        tool('t3', 'edit'),
+      ], created: 3),
+      _message('a3', 'assistant', [_text('a3-t', 'Fixed.')], created: 4),
+    ]);
+
+    // The explanation and the closing words stay; the passing words fold.
+    expect(
+      find.textContaining('The flakiness comes from CheckoutBloc'),
+      findsOneWidget,
+    );
+    expect(find.text('Fixed.'), findsOneWidget);
+    expect(find.text('Looking into it.'), findsNothing);
+    // One work line for the whole turn, above the answer it led to.
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    final work = tester.getTopLeft(find.byKey(const Key('work-group'))).dy;
+    expect(
+      work,
+      lessThan(
+        tester
+            .getTopLeft(
+              find.textContaining('The flakiness comes from CheckoutBloc'),
+            )
+            .dy,
+      ),
+    );
+  });
+
   testWidgets('a notice filed mid-turn folds into the work, not between it', (
     tester,
   ) async {

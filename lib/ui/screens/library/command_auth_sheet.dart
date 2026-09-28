@@ -27,6 +27,10 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
   bool _uncertainStart = false;
   String? _error;
 
+  /// The last attempt ended without signing in (it failed or timed out):
+  /// the start button reads "Try again".
+  bool _ended = false;
+
   /// The server has had [_answerWait] to finish a started sign-in without
   /// the sheet hearing back: "Check {provider} sign-in now" is offered.
   /// An attempt found already running when the sheet opens offers it at
@@ -99,6 +103,7 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
         _attempt = launch.attemptID;
         _status = IntegrationAuthState.pending;
         _checkOffered = false;
+        _ended = false;
       });
       _waitForAnswer();
     } catch (_) {
@@ -114,7 +119,10 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
           _attempt = recovered;
           _checkOffered = recovered != null;
           _uncertainStart = dispatched && recovered == null;
-          _error = _l10n.commandAuthFailed;
+          // Nothing left the phone: say it did not start, and Start is
+          // there again. Once it left, the pending or unconfirmed state
+          // says what is known instead.
+          _error = dispatched ? null : _l10n.commandAuthStartFailed;
         });
       }
     } finally {
@@ -150,14 +158,23 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
         if (!_current) return;
         setState(() {
           _status = result.state;
-          if (result.state == IntegrationAuthState.complete) _attempt = null;
+          switch (result.state) {
+            case IntegrationAuthState.complete:
+              _attempt = null;
+            case IntegrationAuthState.failed || IntegrationAuthState.expired:
+              // Over on the server: nothing to check or cancel, only to
+              // try again.
+              _attempt = null;
+              _ended = true;
+            case IntegrationAuthState.pending:
+          }
         });
         if (result.state == IntegrationAuthState.complete) {
           await widget.controller.refreshCatalog();
         }
       }
     } catch (_) {
-      if (_current) setState(() => _error = _l10n.commandAuthFailed);
+      if (_current) setState(() => _error = _l10n.commandAuthCheckFailed);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -236,7 +253,9 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
             primary: canStart
                 ? KitAction(
                     key: const ValueKey('command-auth-start'),
-                    label: l10n.commandAuthStart,
+                    label: _ended || _error != null
+                        ? l10n.commandAuthTryAgain
+                        : l10n.commandAuthStart,
                     working: _busy,
                     onPressed: _busy ? null : _start,
                   )

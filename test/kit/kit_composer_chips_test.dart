@@ -12,6 +12,7 @@ import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/chat/kit_composer_chips.dart';
 import 'package:opencode_mobile/ui/kit/kit_image.dart';
 import 'package:opencode_mobile/ui/kit/kit_menu.dart';
+import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
 import 'kit_motion_still.dart';
@@ -202,6 +203,81 @@ void main() {
       );
       expect(find.text('Server default'), findsOneWidget);
       expect(find.text('Choose a model'), findsNothing);
+    });
+  });
+
+  group('tap feedback on the next frame (KitPressTracker)', () {
+    /// The model chip's pill fill: surface3 at rest, surface2 pressed.
+    Color? pillFill(WidgetTester tester) {
+      final boxes = tester.widgetList<DecoratedBox>(
+        find.descendant(
+          of: find.byType(KitComposerChips),
+          matching: find.byType(DecoratedBox),
+        ),
+      );
+      for (final box in boxes) {
+        final decoration = box.decoration;
+        if (decoration is ShapeDecoration && decoration.color != null) {
+          return decoration.color;
+        }
+      }
+      return null;
+    }
+
+    testWidgets('pointer-down fills the model chip on the first frame', (
+      tester,
+    ) async {
+      await _pump(tester, _model());
+      final roles = _roles(tester);
+      expect(pillFill(tester), roles.surface3);
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byKey(_chipKey)),
+      );
+      await tester.pump();
+      expect(pillFill(tester), roles.surface2, reason: 'no 100 ms wait');
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(pillFill(tester), roles.surface3);
+    });
+
+    testWidgets('a quick tap on the model chip is still seen', (tester) async {
+      var taps = 0;
+      await _pump(tester, _model(onPressed: () => taps++));
+      final roles = _roles(tester);
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byKey(_chipKey)),
+      );
+      await gesture.up();
+      await tester.pump();
+      expect(taps, 1);
+      expect(pillFill(tester), roles.surface2, reason: 'held after up');
+      await tester.pump(KitMotion.pressHold);
+      await tester.pumpAndSettle();
+      expect(pillFill(tester), roles.surface3, reason: 'clears after the hold');
+    });
+
+    testWidgets('a quick tap on an attachment body is still seen', (
+      tester,
+    ) async {
+      var opened = 0;
+      await _pump(
+        tester,
+        KitComposerChips.attachments(
+          items: [_file(onOpen: () => opened++)],
+          onRemove: (_) {},
+        ),
+      );
+      final roles = _roles(tester);
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('notes.txt')),
+      );
+      await gesture.up();
+      await tester.pump();
+      expect(opened, 1);
+      expect(pillFill(tester), roles.surface2);
+      await tester.pump(KitMotion.pressHold);
+      await tester.pumpAndSettle();
+      expect(pillFill(tester), roles.surface3);
     });
   });
 

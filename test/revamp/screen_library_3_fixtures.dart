@@ -99,6 +99,20 @@ class Library3Controller extends ConnectionController {
   @override
   Future<void> refreshCatalog() async {}
 
+  /// What a server sign-in check answers (null: it cannot be reached).
+  IntegrationAuthState? commandStatus = IntegrationAuthState.pending;
+
+  @override
+  Future<IntegrationAuthStatus> integrationCommandStatus(
+    String integrationID,
+    String attemptID, {
+    required int locationRevision,
+  }) async {
+    final state = commandStatus;
+    if (state == null) throw StateError('synthetic');
+    return IntegrationAuthStatus(state: state);
+  }
+
   @override
   String? pendingIntegrationCommand(
     String integrationID, {
