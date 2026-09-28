@@ -38009,7 +38009,7 @@ abstract class AppLocalizations {
   /// Model picker: signed-in providers the server still could not load after a provider reload
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{Signed in to {providers}, but this server could not load that sign-in even after a reload, so its models cannot answer. Sign in another way under Providers, or pick another model.} other{Signed in to {providers}, but this server could not load those sign-ins even after a reload, so their models cannot answer. Sign in another way under Providers, or pick another model.}}'**
+  /// **'{count, plural, one{Signed in to {providers}, but this server could not load that sign-in even after a reload, so its models cannot answer. Browser sign-ins for some providers, such as Anthropic and Google, do not load on this server. Add an API key under Providers instead, or pick another model.} other{Signed in to {providers}, but this server could not load those sign-ins even after a reload, so their models cannot answer. Browser sign-ins for some providers, such as Anthropic and Google, do not load on this server. Add an API key under Providers instead, or pick another model.}}'**
   String e7ModelUiUnusableProviders(int count, String providers);
 
   /// Model picker: a provider reload is held back while replies run on the server
@@ -38021,13 +38021,13 @@ abstract class AppLocalizations {
   /// Shown when the connected server has no provider signed in and answers with OpenCode's free default model (shared, rate-limited, slower).
   ///
   /// In en, this message translates to:
-  /// **'Using OpenCode\'s free model — it\'s slower. Sign in to your provider to use your own.'**
+  /// **'Using OpenCode\'s free model — it\'s slower. Add an API key from your provider to use your own.'**
   String get freeModelNotice;
 
-  /// Action under the free-model notice: opens the server's provider sign-in list.
+  /// Action under the free-model notice: opens the server's provider list, where an API key is added.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to a provider'**
+  /// **'Add an API key'**
   String get freeModelSignIn;
 
   /// This phone: row title for how fast the last reply on this phone's server came.
@@ -38119,6 +38119,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone.'**
   String get manageSpaceIntroNothingToExport;
+
+  /// Providers › API key dialog for Anthropic or Google: why browser sign-in is not offered, and where the key goes.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} does not allow browser sign-in from other apps, so use an API key. It is billed separately from any subscription. The key is stored on this server and never shown again.'**
+  String integrationsKeyOnlyHelper(String name);
+
+  /// Providers › API key dialog: opens the provider's official key page in the browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a key from {name}'**
+  String integrationsGetKey(String name);
+
+  /// Providers: status after an API key was added and the server loaded the provider.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} key saved. Pick one of its models in the model picker.'**
+  String integrationsKeySavedReady(String name);
+
+  /// Providers: status after a key was added while replies run, so the reload waits.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} key saved. It loads once the running replies finish.'**
+  String integrationsKeySavedWaiting(String name);
+
+  /// Providers: status after a key was added and the server still could not load the provider.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} key saved, but this server could not load it after a refresh. Check the key, or try Reload providers in the model picker.'**
+  String integrationsKeySavedUnusable(String name);
+
+  /// Providers: status after a key was added and the provider is not loaded yet.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} key saved. The server has not loaded it yet.'**
+  String integrationsKeySavedPending(String name);
 }
 
 class _AppLocalizationsDelegate
