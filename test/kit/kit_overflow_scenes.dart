@@ -1637,6 +1637,32 @@ final kitOverflowScenes = <KitOverflowScene>[
           caption: c.t('Project checks', 'فحوصات المشروع'),
         ),
       ),
+    // kit_sheet.dart (showKitFramedSheet, slice-P9.10): a body that draws
+    // its own frame.
+    KitOverflowScene(
+      const ['showKitFramedSheet'],
+      'default',
+      host: KitOverflowHost.modal,
+      open: (context, c) => showKitFramedSheet<void>(
+        context,
+        maxWidth: 720,
+        useSafeArea: true,
+        builder: (sheetContext) => KitSheet(
+          title: c.t('Choose a project folder', 'اختر مجلد المشروع'),
+          subtitle: c.t(
+            'Claude Code works inside one folder of the Ubuntu on this phone.',
+            'يعمل Claude Code داخل مجلد واحد في أوبونتو على هذا الهاتف.',
+          ),
+          handle: false,
+          onClose: () => Navigator.of(sheetContext).pop(),
+          primary: KitAction(
+            label: c.t('Continue', 'متابعة'),
+            onPressed: _noop,
+          ),
+          child: KitText(c.t('my-first-project', 'my-first-project')),
+        ),
+      ),
+    ),
   ]),
 ];
 

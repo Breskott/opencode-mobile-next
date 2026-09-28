@@ -12,6 +12,7 @@ import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/widgets/request_routes.dart';
 
 import 'kit_harness.dart';
+import 'kit_motion_still.dart';
 
 void main() {
   testWidgets('the frame: title, subtitle, close, body and pinned actions', (
@@ -622,4 +623,22 @@ void main() {
       expect(result, isNull);
     });
   });
+
+  Future<void> openFramed(BuildContext context) => showKitFramedSheet<void>(
+    context,
+    builder: (sheetContext) => KitSheet(
+      title: 'Choose a folder',
+      handle: false,
+      onClose: () => Navigator.of(sheetContext).pop(),
+      child: const Text('my-first-project'),
+    ),
+  );
+
+  kitMotionStillTests(
+    'showKitFramedSheet',
+    opens: {'default': KitMotionOpen(openFramed, shows: 'Choose a folder')},
+    changes: {
+      'dismissed': kitModalDismiss(openFramed, shows: 'Choose a folder'),
+    },
+  );
 }

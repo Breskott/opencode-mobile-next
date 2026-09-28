@@ -292,6 +292,10 @@ Future<T?> showKitFramedSheet<T>(
   // The frame is drawn with `handle: false`: the route draws the one
   // handle, as the theme does.
   showDragHandle: true,
+  // Reduced motion (MOT-7): no slide; otherwise the route's own.
+  sheetAnimationStyle: KitMotion.reduced(context)
+      ? AnimationStyle.noAnimation
+      : null,
   constraints: maxWidth == null ? null : BoxConstraints(maxWidth: maxWidth),
   builder: (sheetContext) =>
       KeyedSubtree(key: sheetKey, child: builder(sheetContext)),
