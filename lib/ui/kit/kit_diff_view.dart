@@ -1253,24 +1253,38 @@ class _KitDiffViewState extends State<KitDiffView> {
     );
   }
 
-  Widget _loading(KitTokens tokens) => Column(
-    mainAxisSize: MainAxisSize.min,
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Container(
-        height: tokens.rowHeight,
-        decoration: BoxDecoration(
-          color: tokens.roles.surface1,
-          border: Border(
-            bottom: BorderSide(
-              color: tokens.roles.hairline,
-              width: KitTokens.hairlineWidth(context),
+  /// The header bar and up to six skeleton rows: in a short bounded room
+  /// (a phone in landscape) only the whole rows that fit, never an
+  /// overflow.
+  Widget _loading(KitTokens tokens) => LayoutBuilder(
+    builder: (context, constraints) {
+      final room = constraints.maxHeight - tokens.rowHeight;
+      final rows = constraints.maxHeight.isFinite
+          ? math.max(
+              0,
+              math.min(6, (room / KitTokens.skeletonRowHeight).floor()),
+            )
+          : 6;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            height: tokens.rowHeight,
+            decoration: BoxDecoration(
+              color: tokens.roles.surface1,
+              border: Border(
+                bottom: BorderSide(
+                  color: tokens.roles.hairline,
+                  width: KitTokens.hairlineWidth(context),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-      const KitSkeletonRows(count: 6),
-    ],
+          if (rows > 0) KitSkeletonRows(count: rows),
+        ],
+      );
+    },
   );
 
   String _statusLine(KitDiffFile file, AppLocalizations l10n) =>

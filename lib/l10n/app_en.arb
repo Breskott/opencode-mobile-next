@@ -27131,5 +27131,9 @@
   "aiSetupAllSources": "All sources",
   "@aiSetupAllSources": {
     "description": "AI setup: the fold holding every configuration source with secrets hidden"
+  },
+  "integrationsPageLoadFailed": "Could not load this page",
+  "@integrationsPageLoadFailed": {
+    "description": "Providers and MCP page: headline when more than one of its sections (providers, MCP servers, resources) failed to load; one Try again reloads them all"
   }
 }

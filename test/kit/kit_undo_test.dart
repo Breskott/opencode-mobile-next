@@ -202,6 +202,61 @@ void main() {
       },
     );
 
+    testWidgets(
+      '5e. a sheet opened over the page commits the bar (popup routes too)',
+      (tester) async {
+        final context = await pumpKitHost(tester);
+        var commits = 0;
+        showKitUndo(
+          context,
+          message: 'Added main.dart',
+          onUndo: () {},
+          onCommit: () => commits++,
+        );
+        await tester.pump();
+        expect(KitUndo.debugHasPending, isTrue);
+        // A sheet is a popup route: it never drives the page's secondary
+        // animation, yet the bar must not stay over the sheet's rows.
+        unawaited(
+          showKitSheet<void>(
+            context,
+            title: 'Changes',
+            body: (_) => const SizedBox(height: 200),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(commits, 1);
+        expect(KitUndo.debugHasPending, isFalse);
+      },
+    );
+
+    testWidgets(
+      '5f. a bar shown as its sheet closes stays until something covers it',
+      (tester) async {
+        final context = await pumpKitHost(tester);
+        var commits = 0;
+        final closed = showKitSheet<void>(
+          context,
+          title: 'Changes',
+          body: (_) => const SizedBox(height: 200),
+        );
+        await tester.pumpAndSettle();
+        Navigator.of(context).pop();
+        await closed;
+        showKitUndo(
+          context,
+          message: 'Added main.dart',
+          onUndo: () {},
+          onCommit: () => commits++,
+        );
+        await tester.pumpAndSettle();
+        expect(commits, 0);
+        expect(KitUndo.debugHasPending, isTrue);
+        KitUndo.commitPending(); // ends the window's timer inside the test
+        expect(commits, 1);
+      },
+    );
+
     testWidgets('5b. AppLifecycleState.paused commits the pending bar', (
       tester,
     ) async {
