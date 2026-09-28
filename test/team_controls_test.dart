@@ -1258,6 +1258,44 @@ void main() {
       );
 
       testWidgets(
+        'the task\'s own conversation Now line follows the same attempt: '
+        'nothing claimed before the host answers, then the real stage',
+        (tester) async {
+          await size(tester, const Size(412, 915));
+          final assignGate = Completer<void>();
+          final (controller, gateway) = await boot(
+            capabilities: OrchestrationCapabilities.gascityLoopback,
+            timeout: const Duration(seconds: 5),
+            configure: (g) {
+              g.agentList = [fox(), mayor(suspended: true)];
+              g.answer = (call) async {
+                if (call.verb == 'createWork') return created(call);
+                await assignGate.future;
+                return slung(call);
+              };
+            },
+          );
+          String nowText() => textOf(tester, 'team-conversation-now-text');
+          await openDirect(tester, controller, 'Add a docstring');
+          await tester.tap(key('team-start-run-direct-send'));
+          await tester.pump();
+          await tester.pump();
+          assignGate.complete();
+          await tester.pumpAndSettle();
+          expect(find.byType(TeamConversationScreen), findsOneWidget);
+          expect(nowText(), contains('Waiting for a worker'));
+
+          // Only a running session on this exact task says more.
+          gateway.agentList = [fox(), mayor(suspended: true), worker()];
+          await controller.refresh();
+          await settle(tester);
+          expect(nowText(), contains('Starting a worker'));
+          expect(gateway.calls.map((c) => c.verb), ['createWork', 'assign']);
+          await drain(tester);
+        },
+      );
+
+      testWidgets(
         'an assignment the host never confirms reads "couldn\'t confirm", '
         'not sent',
         (tester) async {
