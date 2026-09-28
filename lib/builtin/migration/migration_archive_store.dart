@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 
 import '../../domain/termux_migration.dart';
+import 'migration_provider_names.dart';
 
 /// Private, bounded USTAR importer. Exports are never activated as configuration.
 /// A manifest travels in the atomic directory rename so a lost journal write
@@ -205,6 +206,19 @@ class TermuxMigrationArchiveStore {
     } catch (_) {
       _fail(TermuxMigrationFailure.destinationConflict);
     }
+  }
+
+  /// Only verified inactive config exports can supply advisory provider labels.
+  Future<List<String>> providerNames(
+    String jobId,
+    TermuxMigrationArchive expected,
+  ) async {
+    if (!await imported(jobId, TermuxMigrationItem.config, expected)) {
+      return const [];
+    }
+    return readMigrationProviderNames(
+      _destination(jobId, TermuxMigrationItem.config),
+    );
   }
 
   Future<void> cleanupPartial(String jobId) async {

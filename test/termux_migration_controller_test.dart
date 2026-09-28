@@ -44,6 +44,252 @@ void main() {
   );
 
   test(
+    'discard failed pack is repeatable and a fresh copy can start',
+    () async {
+      final fixture = _Fixture();
+      fixture.transport.packError = const TermuxMigrationException(
+        TermuxMigrationFailure.timedOut,
+      );
+      final controller = fixture.controller();
+      await controller.start(sourceProfileId: 'termux', selected: _selected);
+      expect(controller.snapshot.failure, TermuxMigrationFailure.timedOut);
+      expect(await controller.savedSelection('termux'), _selected);
+      expect(
+        await controller.discardSavedCopy('termux'),
+        TermuxMigrationDiscardResult.discarded,
+      );
+      expect(await controller.savedSelection('termux'), isNull);
+      expect(
+        await controller.discardSavedCopy('termux'),
+        TermuxMigrationDiscardResult.nothingSaved,
+      );
+      expect(fixture.archives.cleanupCalls, 1);
+      expect(fixture.transport.cancelledJobs, isEmpty);
+      fixture.transport.packError = null;
+      await controller.start(sourceProfileId: 'termux', selected: _selected);
+      expect(controller.snapshot.phase, TermuxMigrationPhase.done);
+      expect(fixture.switches, 1);
+      controller.dispose();
+    },
+  );
+
+  test(
+    'discard preserves committed files and retains journal on cleanup failure',
+    () async {
+      final fixture = _Fixture();
+      fixture.archives.afterCommit = () => throw StateError('simulated exit');
+      final controller = fixture.controller();
+      await controller.start(sourceProfileId: 'termux', selected: _selected);
+      fixture.archives.cleanupError = StateError('synthetic-private-error');
+      await expectLater(
+        controller.discardSavedCopy('termux'),
+        throwsA(
+          isA<TermuxMigrationException>().having(
+            (e) => e.code,
+            'code',
+            TermuxMigrationFailure.storage,
+          ),
+        ),
+      );
+      expect(await controller.savedSelection('termux'), _selected);
+      fixture.archives.cleanupError = null;
+      await controller.discardSavedCopy('termux');
+      expect(
+        fixture.archives.receipts.keys,
+        contains(TermuxMigrationItem.projects),
+      );
+      expect(fixture.switches, 0);
+      controller.dispose();
+    },
+  );
+
+  test(
+    'completion query survives restart and user edits without contacting source',
+    () async {
+      final fixture = _Fixture();
+      final first = fixture.controller();
+      expect(await first.completedJob('termux'), isNull);
+      await first.start(sourceProfileId: 'termux', selected: _selected);
+      first.dispose();
+      fixture.archives.receipts
+          .clear(); // User changed files; historical copy still finished.
+      fixture.transport.inspectError = StateError('offline');
+      final restarted = fixture.controller();
+      final before = restarted.snapshot;
+      final completed = await restarted.completedJob('termux');
+      expect(completed?.jobId, _job);
+      expect(completed?.destinationProfileId, 'builtin');
+      expect(identical(before, restarted.snapshot), isTrue);
+      expect(
+        await restarted.discardSavedCopy('termux'),
+        TermuxMigrationDiscardResult.alreadyCompleted,
+      );
+      expect(await restarted.completedJob('termux'), isNotNull);
+      expect(fixture.transport.inspectCalls, 1);
+      expect(fixture.archives.cleanupCalls, 1);
+      expect(fixture.switches, 1);
+      fixture.journal.records['termux']!['destination'] = null;
+      await expectLater(
+        restarted.completedJob('termux'),
+        throwsA(
+          isA<TermuxMigrationException>().having(
+            (e) => e.code,
+            'code',
+            TermuxMigrationFailure.storage,
+          ),
+        ),
+      );
+      restarted.dispose();
+    },
+  );
+
+  test(
+    'review reports capacity before pack and uses start budget for selection',
+    () async {
+      final fixture = _Fixture()..freeBytes = 50;
+      fixture.transport.sourceFreeBytes = 80;
+      final controller = fixture.controller();
+      await controller.check(selected: _selected);
+      expect(controller.snapshot.phase, TermuxMigrationPhase.ready);
+      expect(controller.snapshot.availableBytes, 50);
+      final review = controller.reviewSpace(_selected);
+      expect(review.appAvailableBytes, 50);
+      expect(review.sourceAvailableBytes, 80);
+      expect(review.sufficient, isFalse);
+      expect(controller.reviewSpace({}).requiredBytes, 0);
+      await controller.start(sourceProfileId: 'termux', selected: _selected);
+      expect(controller.snapshot.phase, TermuxMigrationPhase.needsSpace);
+      expect(controller.snapshot.requiredBytes, review.requiredBytes);
+      expect(fixture.transport.packCalls, 0);
+      fixture.freeBytes = null;
+      await controller.check(selected: _selected);
+      expect(controller.snapshot.availableBytes, isNull);
+      expect(controller.reviewSpace(_selected).sufficient, isNull);
+      controller.dispose();
+    },
+  );
+
+  test(
+    'stop settles only after copy and stop command, then notifies idle',
+    () async {
+      final fixture = _Fixture();
+      final entered = Completer<void>();
+      final releaseCopy = Completer<void>();
+      final releaseStop = Completer<void>();
+      fixture.transport.onCopy = (_) async {
+        entered.complete();
+        await releaseCopy.future;
+      };
+      fixture.transport.onCancel = () => releaseStop.future;
+      final controller = fixture.controller();
+      var idleNotifications = 0;
+      controller.addListener(() {
+        if (!controller.busy) idleNotifications++;
+      });
+      final running = controller.start(
+        sourceProfileId: 'termux',
+        selected: _selected,
+      );
+      await entered.future;
+      final stop = controller.cancel();
+      var settled = false;
+      final settlement = controller.whenSettled.then((_) => settled = true);
+      await expectLater(
+        controller.discardSavedCopy('termux'),
+        throwsA(
+          isA<TermuxMigrationException>().having(
+            (e) => e.code,
+            'code',
+            TermuxMigrationFailure.sourceBusy,
+          ),
+        ),
+      );
+      releaseCopy.complete();
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.busy, isTrue);
+      expect(settled, isFalse);
+      releaseStop.complete();
+      await stop;
+      await settlement;
+      await running;
+      expect(controller.busy, isFalse);
+      expect(idleNotifications, 1);
+      expect(fixture.archives.importCalls, 0);
+      await controller.discardSavedCopy('termux');
+      expect(fixture.journal.records, isEmpty);
+      controller.dispose();
+    },
+  );
+
+  test('resume owns settlement before its first journal read', () async {
+    final fixture = _Fixture();
+    fixture.transport.packError = const TermuxMigrationException(
+      TermuxMigrationFailure.timedOut,
+    );
+    final controller = fixture.controller();
+    await controller.start(sourceProfileId: 'termux', selected: _selected);
+    final read = Completer<void>();
+    fixture.journal.readGate = read.future;
+    final resume = controller.resume('termux');
+    expect(controller.busy, isTrue);
+    await controller.cancel();
+    var settled = false;
+    final settlement = controller.whenSettled.then((_) => settled = true);
+    await Future<void>.delayed(Duration.zero);
+    expect(settled, isFalse);
+    read.complete();
+    await resume;
+    await settlement;
+    expect(controller.snapshot.phase, TermuxMigrationPhase.cancelled);
+    expect(fixture.transport.packCalls, 1);
+    controller.dispose();
+  });
+
+  test(
+    'provider query is offline and ignores unexported or failed config',
+    () async {
+      final fixture = _Fixture();
+      final controller = fixture.controller();
+      expect(await controller.providerNames('termux'), isEmpty);
+      fixture.journal.records['termux'] = {
+        'schema': 1,
+        'job': _job,
+        'selected': ['config'],
+        'archives': {
+          'config': {'bytes': _archive.bytes, 'sha256': _archive.sha256},
+        },
+      };
+      fixture.archives.names = ['Anthropic'];
+      expect(await controller.providerNames('termux'), ['Anthropic']);
+      fixture.archives.namesError = StateError('synthetic-private-config');
+      expect(await controller.providerNames('termux'), isEmpty);
+      expect(fixture.transport.inspectCalls, 0);
+      expect(fixture.transport.packCalls, 0);
+      expect(fixture.switches, 0);
+      controller.dispose();
+    },
+  );
+
+  test(
+    'journal removal is scoped and idempotent even after profile deletion',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'oc.termuxMigration.termux': '{}',
+        'oc.termuxMigration.other': '{}',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final journal = PreferencesTermuxMigrationJournal(
+        prefs,
+        mayWrite: (_) => false,
+      );
+      await journal.remove('termux');
+      await journal.remove('termux');
+      expect(prefs.containsKey('oc.termuxMigration.termux'), isFalse);
+      expect(prefs.containsKey('oc.termuxMigration.other'), isTrue);
+    },
+  );
+
+  test(
     'verified import switches profile once and completed retry is local',
     () async {
       final fixture = _Fixture();
@@ -335,6 +581,8 @@ class _FakeTransport implements TermuxMigrationTransport {
   int copyCalls = 0;
   int sourceFreeBytes = _ampleSpace;
   Object? inspectError;
+  Object? packError;
+  Future<void> Function()? onCancel;
   TermuxMigrationArchive archive = _archive;
   Future<void> Function(bool Function() cancelled)? onCopy;
   final cancelledJobs = <String>[];
@@ -357,6 +605,7 @@ class _FakeTransport implements TermuxMigrationTransport {
     required int maxBytes,
   }) async {
     packCalls++;
+    if (packError case final Object error) throw error;
     return archive;
   }
 
@@ -373,7 +622,10 @@ class _FakeTransport implements TermuxMigrationTransport {
   }
 
   @override
-  Future<void> cancel(String jobId) async => cancelledJobs.add(jobId);
+  Future<void> cancel(String jobId) async {
+    cancelledJobs.add(jobId);
+    await onCancel?.call();
+  }
 }
 
 class _FakeArchives extends TermuxMigrationArchiveStore {
@@ -382,6 +634,9 @@ class _FakeArchives extends TermuxMigrationArchiveStore {
   int importCalls = 0;
   int cleanupCalls = 0;
   Object? verifyError;
+  Object? cleanupError;
+  Object? namesError;
+  List<String> names = [];
   void Function()? afterCommit;
   final receipts = <TermuxMigrationItem, TermuxMigrationArchive>{};
 
@@ -422,14 +677,33 @@ class _FakeArchives extends TermuxMigrationArchiveStore {
   }
 
   @override
-  Future<void> cleanupPartial(String jobId) async => cleanupCalls++;
+  Future<void> cleanupPartial(String jobId) async {
+    cleanupCalls++;
+    if (cleanupError case final Object error) throw error;
+  }
+
+  @override
+  Future<List<String>> providerNames(
+    String jobId,
+    TermuxMigrationArchive expected,
+  ) async {
+    if (namesError case final Object error) throw error;
+    return names;
+  }
 }
 
 class _MemoryJournal implements TermuxMigrationJournal {
+  Future<void>? readGate;
   final records = <String, Map<String, dynamic>>{};
 
   @override
+  Future<void> remove(String sourceProfileId) async {
+    records.remove(sourceProfileId);
+  }
+
+  @override
   Future<Map<String, dynamic>?> read(String sourceProfileId) async {
+    await readGate;
     final value = records[sourceProfileId];
     return value == null ? null : _clone(value);
   }
