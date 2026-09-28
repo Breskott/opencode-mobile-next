@@ -731,7 +731,7 @@ class _TermuxMigrationScreenState extends ConsumerState<TermuxMigrationScreen> {
                   : l10n.migrationSignInAgainNamed(joinSetupNames(l10n, names)),
             ),
             supportingKey: const ValueKey('migration-sign-in-detail'),
-            supportingMaxLines: 3,
+            supportingMaxLines: 4,
             trailing: const KitChevron(),
             onTap: () => unawaited(_openProviders()),
           ),

@@ -336,8 +336,9 @@ void main() {
       expect(moving.left, greaterThan(leading(tester).right));
       await tester.pumpAndSettle();
       final joined = trailing(tester);
-      // Touching: the smaller drop's edge meets the leading piece.
-      expect(joined.left, closeTo(leading(tester).right - 2, .01));
+      // Close, never melted: the smaller drop (2 dp in from its box) sits
+      // one 8 dp gap after the leading piece, so no neck is drawn (F9).
+      expect(joined.left, closeTo(leading(tester).right + 8 - 2, .01));
       // Still the same piece, and it still answers where it now is.
       expect(joined.size, rest.size);
       await tester.tap(find.text('Find'));
@@ -352,7 +353,10 @@ void main() {
     ) async {
       await tester.pumpWidget(pair(joined: false, effects: _still));
       await tester.pumpWidget(pair(joined: true, effects: _still));
-      expect(trailing(tester).left, closeTo(leading(tester).right - 2, .01));
+      expect(
+        trailing(tester).left,
+        closeTo(leading(tester).right + 8 - 2, .01),
+      );
       expect(SchedulerBinding.instance.transientCallbackCount, 0);
     });
 
@@ -363,7 +367,10 @@ void main() {
       await tester.pumpWidget(pair(joined: true, effects: _off));
       await tester.pumpAndSettle();
       expect(find.byType(BackdropFilter), findsNothing);
-      expect(trailing(tester).left, closeTo(leading(tester).right - 2, .01));
+      expect(
+        trailing(tester).left,
+        closeTo(leading(tester).right + 8 - 2, .01),
+      );
       expect(tester.takeException(), isNull);
     });
   });

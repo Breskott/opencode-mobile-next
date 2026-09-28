@@ -669,8 +669,8 @@ enum KitShellControlsLayout {
 /// (they hold words) sharing one BackdropGroup provided by the shell. Each
 /// gives under a finger (fluid glass). In the bar, pill and search are one
 /// [KitGlass.pair]: while the page is scrolled ([KitGlass.scrolledOf]) search
-/// slides next to the pill and the two join like drops; back at the top they
-/// pull apart.
+/// slides up to the pill, one small gap from it; back at the top they pull
+/// apart.
 ///
 /// States: connected, reconnecting (word + working mark), not answering,
 /// needs-you badge. In the bar the status word is always visible (STATE-9).
@@ -951,25 +951,39 @@ class _KitServerPillContent extends StatelessWidget {
       );
     }
     // Keep the status in full (STATE-9). At large text it may be wider
-    // than the whole pill, so let it wrap below the name instead.
+    // than the whole pill, so let it wrap below the name instead; and at
+    // large text the name never gives way to the status word ("127.…" at
+    // 2.0, emulator QA F8): when the two do not fit on one line the status
+    // goes under the name, which may take two lines.
     final label = LayoutBuilder(
       builder: (context, constraints) {
         final statusText = ' · $status';
-        final painter = TextPainter(
-          text: TextSpan(
-            text: statusText,
-            style: KitText.styleOf(context, KitTextRole.caption),
-          ),
-          textDirection: Directionality.of(context),
-          textScaler: MediaQuery.textScalerOf(context),
-          maxLines: 1,
-        )..layout();
-        final stack = painter.width + tokens.minTarget > constraints.maxWidth;
-        painter.dispose();
+        final scaler = MediaQuery.textScalerOf(context);
+        final direction = Directionality.of(context);
+        double widthOf(String text, KitTextRole role) {
+          final painter = TextPainter(
+            text: TextSpan(text: text, style: KitText.styleOf(context, role)),
+            textDirection: direction,
+            textScaler: scaler,
+            maxLines: 1,
+          )..layout();
+          final width = painter.width;
+          painter.dispose();
+          return width;
+        }
+
+        final statusWidth = widthOf(statusText, KitTextRole.caption);
+        final largeText = scaler.scale(1) >= 1.3;
+        final stack =
+            statusWidth + tokens.minTarget > constraints.maxWidth ||
+            (largeText &&
+                statusWidth +
+                        widthOf(KitBidi.auto(server), KitTextRole.rowTitle) >
+                    constraints.maxWidth);
         final name = KitText(
           KitBidi.auto(server),
           role: KitTextRole.rowTitle,
-          maxLines: 1,
+          maxLines: stack ? 2 : 1,
           overflow: TextOverflow.ellipsis,
         );
         if (stack) {

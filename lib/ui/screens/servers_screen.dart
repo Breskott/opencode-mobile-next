@@ -1189,7 +1189,7 @@ class _ServerRow extends StatelessWidget {
       leading: waiting > 0
           ? KitNeedsYou.mark()
           : KitRowIcon(
-              isLoopbackHost(Uri.tryParse(p.baseUrl)?.host ?? '')
+              isPhoneOwnServer(p)
                   ? AppIconography.phone
                   : AppIconography.server,
               current: connected,

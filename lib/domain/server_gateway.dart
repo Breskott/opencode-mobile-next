@@ -815,6 +815,19 @@ class ProductException implements Exception {
   String toString() => message;
 }
 
+/// A provider runtime refresh refused because replies are still running.
+///
+/// Refreshing an OpenCode 1 provider runtime disposes the server instance,
+/// which aborts every reply running in it. Nothing was disposed; retry once
+/// [runningReplies] have finished, or leave the reload to the automatic
+/// retry that runs when the server goes idle.
+class ProviderRuntimeBusyException extends ProductException {
+  final int runningReplies;
+
+  const ProviderRuntimeBusyException(this.runningReplies)
+    : super('Providers reload after the running replies finish');
+}
+
 /// Feature switches for server abilities that depend on the connected
 /// protocol generation. The v1 server exposes every listed feature, so its
 /// gateway reports [allV1]; a v2 gateway narrows these per endpoint support.

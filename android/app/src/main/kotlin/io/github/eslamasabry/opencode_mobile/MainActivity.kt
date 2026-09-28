@@ -490,6 +490,14 @@ class MainActivity : FlutterActivity() {
                 val tail = call.argument<Int>("tailBytes") ?: 16_384
                 inBackground { linux.serverLogTail(tail) }
             }
+            // Keeps the phone awake while a reply runs on the in-app server
+            // (bounded: every hold times out; the app renews it).
+            "holdAwakeForWork" -> {
+                val on = call.argument<Boolean>("on") == true
+                val forMs = call.argument<Number>("forMs")?.toLong() ?: 0L
+                inBackground { linux.holdAwakeForWork(on, forMs) }
+            }
+            "performance" -> inBackground { linux.performance() }
             // Named long-running services beside the OpenCode server (the AI
             // Team supervisor); the server itself is the service "server".
             "startService" -> {

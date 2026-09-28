@@ -317,7 +317,9 @@ class _KitSearchFieldState extends State<KitSearchField> {
                 child: Text(
                   widget.label,
                   style: hintStyle,
-                  maxLines: 1,
+                  // Large text wraps the hint rather than cutting it to a
+                  // few words ("Find settings, tools, …", emulator QA F8).
+                  maxLines: scaler.scale(1) >= 1.3 ? 2 : 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),

@@ -176,6 +176,13 @@ class _SetupProgressViewState extends State<SetupProgressView> {
   /// to read); the panel's Wrap toggle still wraps them on request.
   bool _wrapLog = false;
 
+  /// The time left as shown, in seconds, for this job: it never goes up,
+  /// and the steps not started yet count at least their own estimates, so
+  /// a fast download never reads "Less than a minute" with the install
+  /// still to come (emulator QA F11: "Less than a minute" at 30 %, then
+  /// "~5 min left"). Null until the engine gives an estimate.
+  int? _eta;
+
   /// When the engine last reported progress: the working row escalates
   /// after 8 s without a new report (STATE-5).
   late DateTime _lastReport;
@@ -189,6 +196,7 @@ class _SetupProgressViewState extends State<SetupProgressView> {
     _furthest = progress.overall.clamp(0, 1).toDouble();
     _lastReport = clock.now();
     _signature = _signatureOf(progress);
+    _trackEta(progress);
   }
 
   @override
@@ -214,6 +222,7 @@ class _SetupProgressViewState extends State<SetupProgressView> {
       _jobKey = key;
       _generation++;
       _furthest = next.overall.clamp(0, 1).toDouble();
+      _eta = null;
     } else {
       _furthest = math.max(_furthest, next.overall.clamp(0, 1).toDouble());
     }
@@ -222,7 +231,23 @@ class _SetupProgressViewState extends State<SetupProgressView> {
       _signature = signature;
       _lastReport = clock.now();
     }
+    _trackEta(next);
     _syncLog(next);
+  }
+
+  void _trackEta(SetupProgress progress) {
+    final raw = progress.etaSeconds;
+    if (progress.state != SetupState.running || raw == null) return;
+    var later = 0;
+    for (final row in progress.components) {
+      if (row.state != ComponentState.pending) continue;
+      for (final component in widget.components) {
+        if (component.id == row.id) later += component.estimatedSeconds;
+      }
+    }
+    final estimate = math.max(raw, later);
+    final shown = _eta;
+    _eta = shown == null ? estimate : math.min(shown, estimate);
   }
 
   @override
@@ -514,13 +539,19 @@ class _SetupProgressViewState extends State<SetupProgressView> {
   }
 
   /// The one line under the bar while it moves: how long is left, only
-  /// when the engine knows.
+  /// when the engine knows ([_eta]). "Less than a minute" only on the last
+  /// step; before it, at least "~1 min left".
   String _timeLine(AppLocalizations l10n, SetupProgress progress) {
     if (progress.state == SetupState.done) return l10n.setupProgressViewDone;
-    final eta = progress.etaSeconds;
-    if (eta == null) return l10n.setupProgressViewGettingStarted;
-    if (eta < 60) return l10n.setupProgressViewUnderMinute;
-    return l10n.setupProgressViewMinutesLeft((eta / 60).round());
+    final eta = _eta;
+    if (progress.etaSeconds == null || eta == null) {
+      return l10n.setupProgressViewGettingStarted;
+    }
+    final lastStep = !progress.components.any(
+      (row) => row.state == ComponentState.pending,
+    );
+    if (eta < 60 && lastStep) return l10n.setupProgressViewUnderMinute;
+    return l10n.setupProgressViewMinutesLeft(math.max(1, (eta / 60).round()));
   }
 
   /// A row's supporting line, from the row's own signal only: the version
