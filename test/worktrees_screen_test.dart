@@ -336,7 +336,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.textContaining('Bad state'), findsNothing);
-    expect(find.text('OpenCode is unreachable. Try again.'), findsOneWidget);
+    expect(
+      find.text(
+        "That didn't work. Details show what happened. Try again, or report the problem.",
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('reset explains and confirms every destructive file class', (

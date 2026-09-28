@@ -25132,6 +25132,10 @@
   "@productErrorRejected": {
     "description": "Error words: the server answered another 4xx status."
   },
+  "productErrorUnknown": "That didn't work. Details show what happened. Try again, or report the problem.",
+  "@productErrorUnknown": {
+    "description": "Fallback for an error the app could not classify: never blame the network or the server when nothing says so."
+  },
   "productErrorUnexpected": "The server's answer didn't make sense to the app. Try again, or report the problem.",
   "@productErrorUnexpected": {
     "description": "Error words: the server answered with something the app could not read."

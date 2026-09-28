@@ -31,7 +31,7 @@ String productErrorText(Object error, {AppLocalizations? l10n}) {
   final failure = ProductFailure.from(error);
   return switch (failure.category) {
     ProductFailureCategory.words =>
-      failure.authoredMessage ?? copy.e7SharedOpenCodeUnreachableTryAgain,
+      failure.authoredMessage ?? copy.productErrorUnknown,
     ProductFailureCategory.stagedRevert => copy.productErrorStagedRevert,
     ProductFailureCategory.folderNotInstalled =>
       copy.folderBrowserErrorNotInstalled,
@@ -53,7 +53,9 @@ String productErrorText(Object error, {AppLocalizations? l10n}) {
     ProductFailureCategory.device => copy.productErrorDevice,
     ProductFailureCategory.storage => copy.productErrorStorage,
     ProductFailureCategory.termux => copy.productErrorTermux,
-    ProductFailureCategory.unknown => copy.e7SharedOpenCodeUnreachableTryAgain,
+    // An error nobody classified is not a network failure: saying
+    // "unreachable" here sent the Add tools investigation the wrong way.
+    ProductFailureCategory.unknown => copy.productErrorUnknown,
   };
 }
 

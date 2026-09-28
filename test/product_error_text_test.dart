@@ -168,10 +168,10 @@ void main() {
       );
     });
 
-    test('collapses a StateError to the generic connectivity line', () {
+    test('says a StateError plainly, without blaming the network', () {
       expect(
         productErrorText(StateError('stream already closed')),
-        'OpenCode is unreachable. Try again.',
+        'That didn\'t work. Details show what happened. Try again, or report the problem.',
       );
       expect(
         productErrorDetails(StateError('stream already closed')),
@@ -307,10 +307,10 @@ void main() {
       );
     });
 
-    test('collapses unknown objects to the generic connectivity line', () {
+    test('says an unknown error plainly, without blaming the network', () {
       expect(
         productErrorText(Exception('boom')),
-        'OpenCode is unreachable. Try again.',
+        'That didn\'t work. Details show what happened. Try again, or report the problem.',
       );
     });
   });

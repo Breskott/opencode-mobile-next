@@ -21140,6 +21140,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The server didn\'t accept the request. Try again, or report the problem.';
 
   @override
+  String get productErrorUnknown =>
+      'That didn\'t work. Details show what happened. Try again, or report the problem.';
+
+  @override
   String get productErrorUnexpected =>
       'The server\'s answer didn\'t make sense to the app. Try again, or report the problem.';
 

@@ -33376,6 +33376,12 @@ abstract class AppLocalizations {
   /// **'The server didn\'t accept the request. Try again, or report the problem.'**
   String get productErrorRejected;
 
+  /// Fallback for an error the app could not classify: never blame the network or the server when nothing says so.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t work. Details show what happened. Try again, or report the problem.'**
+  String get productErrorUnknown;
+
   /// Error words: the server answered with something the app could not read.
   ///
   /// In en, this message translates to:

@@ -4686,7 +4686,12 @@ void main() {
         tester.widget<TextField>(find.byType(TextField)).controller?.text,
         'try once',
       );
-      expect(find.text('OpenCode is unreachable. Try again.'), findsOneWidget);
+      expect(
+        find.text(
+          "That didn't work. Details show what happened. Try again, or report the problem.",
+        ),
+        findsOneWidget,
+      );
     },
   );
 
