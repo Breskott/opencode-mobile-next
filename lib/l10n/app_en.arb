@@ -27161,5 +27161,242 @@
         "type": "String"
       }
     }
+  },
+  "serverRowQueuedWaiting": "{count, plural, =1{1 prompt waiting to send} other{{count} prompts waiting to send}}",
+  "@serverRowQueuedWaiting": {
+    "description": "Servers › a server row that is not connected: how many prompts are queued for it, waiting until it can be reached.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serverRowMoveQueued": "{count, plural, =1{Move 1 waiting prompt to {destination}} other{Move {count} waiting prompts to {destination}}}",
+  "@serverRowMoveQueued": {
+    "description": "Servers › a server row's menu: opens the sheet that moves the prompts waiting for this server into a conversation on the connected server, named by destination.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveTitle": "Move queued prompts",
+  "@queuedMoveTitle": {
+    "description": "Move queued prompts sheet: its title."
+  },
+  "queuedMoveSubtitle": "From {source}",
+  "@queuedMoveSubtitle": {
+    "description": "Move queued prompts sheet: the server the prompts wait for, which cannot be reached.",
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMovePromptsLabel": "Prompts",
+  "@queuedMovePromptsLabel": {
+    "description": "Move queued prompts sheet: the label over the list of queued prompts the person picks from."
+  },
+  "queuedMoveConversationLabel": "Conversation",
+  "@queuedMoveConversationLabel": {
+    "description": "Move queued prompts sheet: the label over the list of conversations on the destination server."
+  },
+  "queuedMoveNewConversation": "New conversation",
+  "@queuedMoveNewConversation": {
+    "description": "Move queued prompts sheet: the choice that starts a new conversation on the destination server for the moved prompts."
+  },
+  "queuedMoveQueuedAt": "Queued {time}",
+  "@queuedMoveQueuedAt": {
+    "description": "Move queued prompts sheet: a prompt row's line; time is a relative age such as '3h ago'.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveFiles": "{count, plural, =1{1 file} other{{count} files}}",
+  "@queuedMoveFiles": {
+    "description": "Move queued prompts sheet: how many files a queued prompt carries.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "queuedMoveBlockedUncertain": "May already have been sent. Check it on {source} first.",
+  "@queuedMoveBlockedUncertain": {
+    "description": "Move queued prompts sheet: why a prompt whose send started and was never confirmed cannot move.",
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveBlockedFile": "Has a file only {source} can open",
+  "@queuedMoveBlockedFile": {
+    "description": "Move queued prompts sheet: why a prompt with a file stored on the source server cannot move.",
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveBlockedMentions": "Hiding a password in it would break its agent mentions",
+  "@queuedMoveBlockedMentions": {
+    "description": "Move queued prompts sheet: why a prompt with agent mentions and a password or key in its text cannot move."
+  },
+  "queuedMoveHidesSecrets": "{count, plural, =1{Passwords and keys in 1 prompt stay hidden} other{Passwords and keys in {count} prompts stay hidden}}",
+  "@queuedMoveHidesSecrets": {
+    "description": "Move queued prompts sheet: a fact about the move; secrets in the moved prompts are masked, as in every kept queued prompt.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "queuedMoveUsesCurrentModel": "{count, plural, =1{1 prompt uses the model chosen on {destination}} other{{count} prompts use the model chosen on {destination}}}",
+  "@queuedMoveUsesCurrentModel": {
+    "description": "Move queued prompts sheet: a fact about the move; the destination does not offer these prompts' model or agent, so its current choice is used.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveAction": "{count, plural, =1{Move 1 prompt to {destination}} other{Move {count} prompts to {destination}}}",
+  "@queuedMoveAction": {
+    "description": "Move queued prompts sheet: the primary; names how many prompts move and the destination server.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveChooseOne": "Choose at least one prompt",
+  "@queuedMoveChooseOne": {
+    "description": "Move queued prompts sheet: why the primary is disabled."
+  },
+  "queuedMoveNoneLeft": "Nothing waits for {source} any more",
+  "@queuedMoveNoneLeft": {
+    "description": "Move queued prompts sheet: the prompt list is empty because they were sent, removed or moved.",
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveFailedDisconnected": "{destination} disconnected, so nothing moved. Connect to it and try again.",
+  "@queuedMoveFailedDisconnected": {
+    "description": "Move queued prompts sheet: the destination server stopped being the connected one before the move.",
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveFailedConversationGone": "That conversation is no longer on {destination}, so nothing moved. Choose another one.",
+  "@queuedMoveFailedConversationGone": {
+    "description": "Move queued prompts sheet: the picked conversation was deleted or archived.",
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveFailedNothing": "These prompts no longer wait for {source}, so nothing moved.",
+  "@queuedMoveFailedNothing": {
+    "description": "Move queued prompts sheet: the picked prompts were sent, removed or cannot move any more.",
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveFailedNewConversation": "Could not start a new conversation on {destination}, so nothing moved. Try again or choose an existing conversation.",
+  "@queuedMoveFailedNewConversation": {
+    "description": "Move queued prompts sheet: creating the destination conversation failed.",
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveFailedNotSaved": "Could not save the move, so nothing moved. The prompts still wait for {source}.",
+  "@queuedMoveFailedNotSaved": {
+    "description": "Move queued prompts sheet: the queue could not be read or the write was refused.",
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveDone": "{count, plural, =1{1 prompt moved to {destination}} other{{count} prompts moved to {destination}}}",
+  "@queuedMoveDone": {
+    "description": "Undo bar after a move: how many prompts moved and where.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveDonePartial": "Moved {moved} of {total} prompts to {destination}. The rest no longer waited.",
+  "@queuedMoveDonePartial": {
+    "description": "Undo bar after a move where some picked prompts had been sent or removed meanwhile.",
+    "placeholders": {
+      "moved": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveUndoNone": "The prompts already started sending on {destination}, so they stay there.",
+  "@queuedMoveUndoNone": {
+    "description": "Servers: Undo of a move found every moved prompt already sending or sent.",
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveUndoPartial": "{count, plural, =1{1 prompt already started sending on {destination} and stays there. The rest wait for {source} again.} other{{count} prompts already started sending on {destination} and stay there. The rest wait for {source} again.}}",
+  "@queuedMoveUndoPartial": {
+    "description": "Servers: Undo of a move put some prompts back; others had already started sending.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "destination": {
+        "type": "String"
+      },
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedMoveUndoFailed": "Could not put the prompts back. They stay on {destination}.",
+  "@queuedMoveUndoFailed": {
+    "description": "Servers: Undo of a move could not be saved.",
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
   }
 }

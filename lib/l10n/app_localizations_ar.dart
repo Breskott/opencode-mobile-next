@@ -22817,4 +22817,178 @@ class AppLocalizationsAr extends AppLocalizations {
   String lastKnownUpdatedAgo(String ago) {
     return 'Updated $ago';
   }
+
+  @override
+  String serverRowQueuedWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count prompts waiting to send',
+      one: '1 prompt waiting to send',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String serverRowMoveQueued(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Move $count waiting prompts to $destination',
+      one: 'Move 1 waiting prompt to $destination',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queuedMoveTitle => 'Move queued prompts';
+
+  @override
+  String queuedMoveSubtitle(String source) {
+    return 'From $source';
+  }
+
+  @override
+  String get queuedMovePromptsLabel => 'Prompts';
+
+  @override
+  String get queuedMoveConversationLabel => 'Conversation';
+
+  @override
+  String get queuedMoveNewConversation => 'New conversation';
+
+  @override
+  String queuedMoveQueuedAt(String time) {
+    return 'Queued $time';
+  }
+
+  @override
+  String queuedMoveFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queuedMoveBlockedUncertain(String source) {
+    return 'May already have been sent. Check it on $source first.';
+  }
+
+  @override
+  String queuedMoveBlockedFile(String source) {
+    return 'Has a file only $source can open';
+  }
+
+  @override
+  String get queuedMoveBlockedMentions =>
+      'Hiding a password in it would break its agent mentions';
+
+  @override
+  String queuedMoveHidesSecrets(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Passwords and keys in $count prompts stay hidden',
+      one: 'Passwords and keys in 1 prompt stay hidden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queuedMoveUsesCurrentModel(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count prompts use the model chosen on $destination',
+      one: '1 prompt uses the model chosen on $destination',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queuedMoveAction(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Move $count prompts to $destination',
+      one: 'Move 1 prompt to $destination',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queuedMoveChooseOne => 'Choose at least one prompt';
+
+  @override
+  String queuedMoveNoneLeft(String source) {
+    return 'Nothing waits for $source any more';
+  }
+
+  @override
+  String queuedMoveFailedDisconnected(String destination) {
+    return '$destination disconnected, so nothing moved. Connect to it and try again.';
+  }
+
+  @override
+  String queuedMoveFailedConversationGone(String destination) {
+    return 'That conversation is no longer on $destination, so nothing moved. Choose another one.';
+  }
+
+  @override
+  String queuedMoveFailedNothing(String source) {
+    return 'These prompts no longer wait for $source, so nothing moved.';
+  }
+
+  @override
+  String queuedMoveFailedNewConversation(String destination) {
+    return 'Could not start a new conversation on $destination, so nothing moved. Try again or choose an existing conversation.';
+  }
+
+  @override
+  String queuedMoveFailedNotSaved(String source) {
+    return 'Could not save the move, so nothing moved. The prompts still wait for $source.';
+  }
+
+  @override
+  String queuedMoveDone(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count prompts moved to $destination',
+      one: '1 prompt moved to $destination',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queuedMoveDonePartial(int moved, int total, String destination) {
+    return 'Moved $moved of $total prompts to $destination. The rest no longer waited.';
+  }
+
+  @override
+  String queuedMoveUndoNone(String destination) {
+    return 'The prompts already started sending on $destination, so they stay there.';
+  }
+
+  @override
+  String queuedMoveUndoPartial(int count, String destination, String source) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count prompts already started sending on $destination and stay there. The rest wait for $source again.',
+      one:
+          '1 prompt already started sending on $destination and stays there. The rest wait for $source again.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queuedMoveUndoFailed(String destination) {
+    return 'Could not put the prompts back. They stay on $destination.';
+  }
 }

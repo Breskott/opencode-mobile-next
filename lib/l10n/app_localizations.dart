@@ -35919,6 +35919,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Updated {ago}'**
   String lastKnownUpdatedAgo(String ago);
+
+  /// Servers › a server row that is not connected: how many prompts are queued for it, waiting until it can be reached.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 prompt waiting to send} other{{count} prompts waiting to send}}'**
+  String serverRowQueuedWaiting(int count);
+
+  /// Servers › a server row's menu: opens the sheet that moves the prompts waiting for this server into a conversation on the connected server, named by destination.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Move 1 waiting prompt to {destination}} other{Move {count} waiting prompts to {destination}}}'**
+  String serverRowMoveQueued(int count, String destination);
+
+  /// Move queued prompts sheet: its title.
+  ///
+  /// In en, this message translates to:
+  /// **'Move queued prompts'**
+  String get queuedMoveTitle;
+
+  /// Move queued prompts sheet: the server the prompts wait for, which cannot be reached.
+  ///
+  /// In en, this message translates to:
+  /// **'From {source}'**
+  String queuedMoveSubtitle(String source);
+
+  /// Move queued prompts sheet: the label over the list of queued prompts the person picks from.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompts'**
+  String get queuedMovePromptsLabel;
+
+  /// Move queued prompts sheet: the label over the list of conversations on the destination server.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation'**
+  String get queuedMoveConversationLabel;
+
+  /// Move queued prompts sheet: the choice that starts a new conversation on the destination server for the moved prompts.
+  ///
+  /// In en, this message translates to:
+  /// **'New conversation'**
+  String get queuedMoveNewConversation;
+
+  /// Move queued prompts sheet: a prompt row's line; time is a relative age such as '3h ago'.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued {time}'**
+  String queuedMoveQueuedAt(String time);
+
+  /// Move queued prompts sheet: how many files a queued prompt carries.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file} other{{count} files}}'**
+  String queuedMoveFiles(int count);
+
+  /// Move queued prompts sheet: why a prompt whose send started and was never confirmed cannot move.
+  ///
+  /// In en, this message translates to:
+  /// **'May already have been sent. Check it on {source} first.'**
+  String queuedMoveBlockedUncertain(String source);
+
+  /// Move queued prompts sheet: why a prompt with a file stored on the source server cannot move.
+  ///
+  /// In en, this message translates to:
+  /// **'Has a file only {source} can open'**
+  String queuedMoveBlockedFile(String source);
+
+  /// Move queued prompts sheet: why a prompt with agent mentions and a password or key in its text cannot move.
+  ///
+  /// In en, this message translates to:
+  /// **'Hiding a password in it would break its agent mentions'**
+  String get queuedMoveBlockedMentions;
+
+  /// Move queued prompts sheet: a fact about the move; secrets in the moved prompts are masked, as in every kept queued prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Passwords and keys in 1 prompt stay hidden} other{Passwords and keys in {count} prompts stay hidden}}'**
+  String queuedMoveHidesSecrets(int count);
+
+  /// Move queued prompts sheet: a fact about the move; the destination does not offer these prompts' model or agent, so its current choice is used.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 prompt uses the model chosen on {destination}} other{{count} prompts use the model chosen on {destination}}}'**
+  String queuedMoveUsesCurrentModel(int count, String destination);
+
+  /// Move queued prompts sheet: the primary; names how many prompts move and the destination server.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Move 1 prompt to {destination}} other{Move {count} prompts to {destination}}}'**
+  String queuedMoveAction(int count, String destination);
+
+  /// Move queued prompts sheet: why the primary is disabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one prompt'**
+  String get queuedMoveChooseOne;
+
+  /// Move queued prompts sheet: the prompt list is empty because they were sent, removed or moved.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing waits for {source} any more'**
+  String queuedMoveNoneLeft(String source);
+
+  /// Move queued prompts sheet: the destination server stopped being the connected one before the move.
+  ///
+  /// In en, this message translates to:
+  /// **'{destination} disconnected, so nothing moved. Connect to it and try again.'**
+  String queuedMoveFailedDisconnected(String destination);
+
+  /// Move queued prompts sheet: the picked conversation was deleted or archived.
+  ///
+  /// In en, this message translates to:
+  /// **'That conversation is no longer on {destination}, so nothing moved. Choose another one.'**
+  String queuedMoveFailedConversationGone(String destination);
+
+  /// Move queued prompts sheet: the picked prompts were sent, removed or cannot move any more.
+  ///
+  /// In en, this message translates to:
+  /// **'These prompts no longer wait for {source}, so nothing moved.'**
+  String queuedMoveFailedNothing(String source);
+
+  /// Move queued prompts sheet: creating the destination conversation failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start a new conversation on {destination}, so nothing moved. Try again or choose an existing conversation.'**
+  String queuedMoveFailedNewConversation(String destination);
+
+  /// Move queued prompts sheet: the queue could not be read or the write was refused.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the move, so nothing moved. The prompts still wait for {source}.'**
+  String queuedMoveFailedNotSaved(String source);
+
+  /// Undo bar after a move: how many prompts moved and where.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 prompt moved to {destination}} other{{count} prompts moved to {destination}}}'**
+  String queuedMoveDone(int count, String destination);
+
+  /// Undo bar after a move where some picked prompts had been sent or removed meanwhile.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved {moved} of {total} prompts to {destination}. The rest no longer waited.'**
+  String queuedMoveDonePartial(int moved, int total, String destination);
+
+  /// Servers: Undo of a move found every moved prompt already sending or sent.
+  ///
+  /// In en, this message translates to:
+  /// **'The prompts already started sending on {destination}, so they stay there.'**
+  String queuedMoveUndoNone(String destination);
+
+  /// Servers: Undo of a move put some prompts back; others had already started sending.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 prompt already started sending on {destination} and stays there. The rest wait for {source} again.} other{{count} prompts already started sending on {destination} and stay there. The rest wait for {source} again.}}'**
+  String queuedMoveUndoPartial(int count, String destination, String source);
+
+  /// Servers: Undo of a move could not be saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not put the prompts back. They stay on {destination}.'**
+  String queuedMoveUndoFailed(String destination);
 }
 
 class _AppLocalizationsDelegate

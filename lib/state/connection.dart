@@ -71,6 +71,7 @@ import 'session_inventory_cache.dart';
 import 'session_tail_cache.dart';
 import 'session_auto_approval.dart';
 import 'prompt_shelf.dart';
+import 'queued_prompt_move.dart';
 import 'queued_prompt_removal.dart';
 import 'session_read_state.dart';
 import 'automatic_activity.dart';
@@ -6212,6 +6213,122 @@ class ConnectionController extends ChangeNotifier {
   /// what a "remove this server" confirmation has to disclose.
   int queuedPromptCountForProfile(String profileID) =>
       _queue.where((entry) => entry.profileID == profileID).length;
+
+  /// Queued prompts belonging to [profileID], oldest first, for the move
+  /// sheet (slice-queue-move).
+  List<QueuedPrompt> queuedPromptsForProfile(String profileID) => [
+    for (final entry in _queue)
+      if (entry.profileID == profileID) entry,
+  ];
+
+  /// The server queued prompts can move to: the one the app is connected
+  /// to, when it keeps a queue. Null when there is none.
+  ServerProfile? get queuedPromptMoveDestination {
+    final target = _connectedProfile ?? profile;
+    if (isIsolated ||
+        !isConnected ||
+        !capabilities.offlinePromptQueue ||
+        target == null ||
+        target.id != profile?.id ||
+        target.usesAgentSocket ||
+        _closedQueueProfiles.contains(target.id)) {
+      return null;
+    }
+    return target;
+  }
+
+  /// Moves [promptIDs] of [sourceProfileID] into [sessionID] (or a new
+  /// conversation when null) on [queuedPromptMoveDestination], in one queue
+  /// write. Nothing is sent here; [flushOfflineQueue] sends them. Throws
+  /// [QueuedPromptMoveException] and moves nothing on any failure.
+  Future<QueuedPromptMoveResult> moveQueuedPrompts({
+    required String sourceProfileID,
+    required Set<String> promptIDs,
+    String? sessionID,
+  }) async {
+    final destination = queuedPromptMoveDestination;
+    if (destination == null || destination.id == sourceProfileID) {
+      throw const QueuedPromptMoveException(
+        QueuedPromptMoveProblem.noDestination,
+      );
+    }
+    if (!queuedPromptsForProfile(sourceProfileID).any(
+      (p) => promptIDs.contains(p.id) && QueuedPromptMove.blockFor(p) == null,
+    )) {
+      throw const QueuedPromptMoveException(
+        QueuedPromptMoveProblem.nothingToMove,
+      );
+    }
+    final String target;
+    if (sessionID != null) {
+      if (!sessionsById.containsKey(sessionID)) {
+        throw const QueuedPromptMoveException(
+          QueuedPromptMoveProblem.conversationGone,
+        );
+      }
+      target = sessionID;
+    } else {
+      try {
+        target = (await createSession()).id;
+      } catch (error) {
+        throw QueuedPromptMoveException(
+          QueuedPromptMoveProblem.newConversationFailed,
+          cause: error,
+        );
+      }
+    }
+    return _serializeQueueChange(() async {
+      if (queuedPromptMoveDestination?.id != destination.id) {
+        throw const QueuedPromptMoveException(
+          QueuedPromptMoveProblem.destinationChanged,
+        );
+      }
+      final models = catalog == null ? null : modelAvailable;
+      final move = QueuedPromptMove.apply(
+        removal: _keptQueued,
+        queue: _queue,
+        sourceProfileID: sourceProfileID,
+        destinationProfileID: destination.id,
+        availableProfileIDs: {for (final p in store.profiles) p.id},
+        promptIDs: promptIDs,
+        sessionID: target,
+        newConversation: sessionID == null,
+        keepsSelection: (p) => QueuedPromptMove.keepsSelection(
+          p,
+          modelAvailable: models,
+          agents: agents,
+        ),
+      );
+      if (!await _queueStore.save(move.queue)) {
+        throw const QueuedPromptMoveException(QueuedPromptMoveProblem.notSaved);
+      }
+      _offlineQueue = move.queue;
+      if (!_disposed) notifyListeners();
+      return move.result;
+    });
+  }
+
+  /// Undo for [moveQueuedPrompts]: puts back every moved prompt that is
+  /// still waiting, unsent, on the destination. Returns how many returned.
+  /// A storage refusal throws [QueuedPromptMoveException] and changes
+  /// nothing.
+  Future<int> undoQueuedPromptMove(QueuedPromptMoveResult result) =>
+      _serializeQueueChange(() async {
+        final undo = QueuedPromptMove.undo(
+          queue: _queue,
+          result: result,
+          inFlightID: _queuedPromptInFlight,
+        );
+        if (undo.restored == 0) return 0;
+        if (!await _queueStore.save(undo.queue)) {
+          throw const QueuedPromptMoveException(
+            QueuedPromptMoveProblem.notSaved,
+          );
+        }
+        _offlineQueue = undo.queue;
+        if (!_disposed) notifyListeners();
+        return undo.restored;
+      });
 
   /// Unsent composer drafts that removing [profileID] would delete.
   int draftCountForProfile(String profileID) =>

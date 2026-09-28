@@ -154,11 +154,14 @@ class QueuedPromptRemoval {
   /// validates destination session ownership and model/agent compatibility
   /// through its domain gateway first. Existing send selections are preserved.
   /// Uncertain sends and nonportable attachments block a move; Keep is available.
+  /// [only] limits the move to those source prompt IDs (the person's pick);
+  /// the rest of the plan stays where it is. Null moves the whole plan.
   List<QueuedPrompt> moveToSessions(
     QueuedPromptRemovalPlan plan, {
     required String destinationProfileID,
     required Set<String> availableProfileIDs,
     required Map<String, String> destinationSessions,
+    Set<String>? only,
   }) {
     validateCurrent(plan);
     if (destinationProfileID == plan.profileID ||
@@ -168,6 +171,7 @@ class QueuedPromptRemoval {
     }
     final moved = <String, QueuedPrompt>{};
     for (final source in plan.prompts) {
+      if (only != null && !only.contains(source.id)) continue;
       final session = destinationSessions[source.id];
       if (source.dispatched || session == null || session.isEmpty) {
         throw StateError('Review delivery and choose a destination session');
