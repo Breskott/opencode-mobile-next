@@ -685,13 +685,10 @@ void main() {
     expect(tester.binding.hasScheduledFrame, isFalse);
   });
 
-  group('teamGateRowReceipt (C24; the wrapper retired by slice-P4.1c)', () {
-    Widget row(MutationRecord record, VoidCallback onOpen) => Builder(
-      builder: (context) =>
-          teamGateRowReceipt(context, record, onOpen: onOpen) ??
-          const SizedBox.shrink(),
-    );
-
+  // slice-close-team: a gate row's receipt is a word and its mark in the
+  // row's supporting line (never a trailing chip), so the row keeps its
+  // chevron and the row itself opens the gate, where Try again lives.
+  group('teamGateRowLine', () {
     MutationRecord record(MutationStatus status) => MutationRecord(
       key: 'r-1',
       request: MutationRequest.message('mayor', 'Add dark mode'),
@@ -699,104 +696,86 @@ void main() {
       status: status,
     );
 
-    testWidgets('confirmed renders nothing', (tester) async {
+    Future<String> line(WidgetTester tester, MutationRecord? r) async {
+      late InlineSpan span;
       await tester.pumpWidget(
-        _app(row(record(MutationStatus.confirmed), () {})),
+        _app(
+          Builder(
+            builder: (context) {
+              span = teamGateRowLine(context, const [
+                'Question',
+                'Add dark mode',
+                '2m ago',
+              ], record: r);
+              return Text.rich(span);
+            },
+          ),
+        ),
       );
-      await tester.pumpAndSettle();
-      expect(find.byType(KitReceipt), findsNothing);
-    });
-
-    testWidgets('sending and rejected show their words; tap opens', (
-      tester,
-    ) async {
-      var opens = 0;
-      await tester.pumpWidget(
-        _app(row(record(MutationStatus.sent), () => opens++)),
-      );
-      // Sending moves (its mark spins): pump, never settle.
       await tester.pump();
-      expect(_visible(tester), 'Sending…');
-      await tester.tap(find.byType(KitReceipt));
-      expect(opens, 1);
+      // The mark is a WidgetSpan: one object-replacement character.
+      return span.toPlainText().replaceAll('\uFFFC', '<mark>');
+    }
 
-      await tester.pumpWidget(
-        _app(row(record(MutationStatus.rejected), () => opens++)),
+    testWidgets('no record or a confirmed one: the plain line', (tester) async {
+      expect(await line(tester, null), 'Question · Add dark mode · 2m ago');
+      expect(
+        await line(tester, record(MutationStatus.confirmed)),
+        'Question · Add dark mode · 2m ago',
       );
-      await tester.pumpAndSettle();
-      expect(_visible(tester), 'Not accepted');
     });
 
-    testWidgets('unconfirmed is one tap target into onOpen, keeps its label', (
+    testWidgets('the receipt word follows the first part, with its mark', (
       tester,
     ) async {
-      final semantics = tester.ensureSemantics();
-      var opens = 0;
-      await tester.pumpWidget(
-        _app(row(record(MutationStatus.unconfirmed), () => opens++)),
-      );
-      await tester.pumpAndSettle();
-      expect(_visible(tester), 'Not confirmed yet');
-      // The sheet it opens is where the retry lives: no second target.
-      expect(find.text('Try again'), findsNothing);
-      expect(find.byType(InkWell), findsOneWidget);
-      expect(
-        find.bySemanticsLabel('Unconfirmed, open to retry'),
-        findsOneWidget,
-      );
-      await tester.tap(find.text('Not confirmed yet'));
-      expect(opens, 1);
-      semantics.dispose();
+      for (final (status, word) in const [
+        (MutationStatus.sent, 'Sending…'),
+        (MutationStatus.unconfirmed, 'Not confirmed yet'),
+        (MutationStatus.rejected, 'Not accepted'),
+      ]) {
+        expect(
+          await line(tester, record(status)),
+          'Question · <mark>$word · Add dark mode · 2m ago',
+        );
+      }
+      // A mark inside text never spins.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
-    // The wrapper's live call sites put it in KitRow.trailing (an unflexed
-    // Row child, team_needs_you.dart) behind a leading icon and a two-line
-    // title: it must fit a 360 dp phone at large text.
+    // The line wraps inside a row at large text on a 360 dp phone.
     for (final scale in const [1.3, 2.0]) {
-      testWidgets(
-        'unconfirmed fits a KitRow trailing at 360 dp, text x$scale',
-        (tester) async {
-          tester.view.physicalSize = const Size(360, 800);
-          tester.view.devicePixelRatio = 1;
-          addTearDown(tester.view.reset);
-          var opens = 0;
-          await tester.pumpWidget(
-            MediaQuery(
-              data: MediaQueryData(
-                size: const Size(360, 800),
-                textScaler: TextScaler.linear(scale),
-              ),
-              child: _app(
-                Builder(
-                  builder: (context) => KitRow(
-                    leading: KitRow.icon(context, AppIconography.warning),
-                    title:
-                        'Approve the database migration for the release '
-                        'branch before the nightly run',
-                    titleMaxLines: 2,
-                    supporting: const TextSpan(text: 'Approval · 2m ago'),
-                    trailing: Padding(
-                      padding: const EdgeInsetsDirectional.only(
-                        start: 8,
-                        end: 12,
-                      ),
-                      child: row(
-                        record(MutationStatus.unconfirmed),
-                        () => opens++,
-                      ),
-                    ),
-                    onTap: () {},
-                  ),
+      testWidgets('fits a KitRow at 360 dp, text x$scale', (tester) async {
+        tester.view.physicalSize = const Size(360, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          MediaQuery(
+            data: MediaQueryData(
+              size: const Size(360, 800),
+              textScaler: TextScaler.linear(scale),
+            ),
+            child: _app(
+              Builder(
+                builder: (context) => KitRow(
+                  leading: KitRow.icon(context, AppIconography.warning),
+                  title:
+                      'Approve the database migration for the release '
+                      'branch before the nightly run',
+                  titleMaxLines: 2,
+                  supporting: teamGateRowLine(context, const [
+                    'Approval',
+                    '2m ago',
+                  ], record: record(MutationStatus.unconfirmed)),
+                  supportingMaxLines: 2,
+                  onTap: () {},
                 ),
               ),
             ),
-          );
-          await tester.pumpAndSettle();
-          expect(tester.takeException(), isNull);
-          await tester.tap(find.byType(KitReceipt));
-          expect(opens, 1);
-        },
-      );
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
     }
   });
 }

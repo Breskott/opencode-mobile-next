@@ -12,9 +12,12 @@
 /// Sending is one `messageAgent` to `gastown.mayor` — the supervisor has
 /// no objective endpoint, so the objective and the supervision line go as
 /// the message ([composeTeamPlanningMessage]). A planner the host lists as
-/// suspended or stopped (the lean profile) turns the form into "The
-/// planner (Mayor) is off on this host" with the host guide; nothing is
-/// sent — unless the host can create work itself
+/// suspended or stopped (the lean profile), or no planner at all, means
+/// the team can't take a task: the sheet opens as "Team can't take
+/// tasks" with the reason in plain words and a way on — Wake
+/// the planner where the host takes agent controls, else Try again and
+/// the host guide — and moves on to the form by itself once the planner is
+/// awake; nothing is sent — unless the host can create work itself
 /// (`controlCreateWork`, the phone's loopback supervisor, TEAM-306), in
 /// which case the sheet offers the **direct task** form instead: a
 /// project, a title and optional details go as one bead
@@ -48,6 +51,7 @@ import '../../../state/team_planning.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../widgets/team_host_form.dart';
+import '../../widgets/team_now.dart' show teamAgentKeptOff;
 import 'policy_block.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -70,7 +74,11 @@ class StartRunResult {
 
 /// Opens the sheet; resolves with the message record once sent (the
 /// `createWork` record for a direct task), null when the person backed
-/// out or the planner was off with no direct path.
+/// out or the team could not take a task.
+///
+/// When the team can't take a task ([teamStartBlocked]) the sheet opens
+/// first as "Team can't take tasks" with the way on; once
+/// the planner is awake it closes and the task sheet opens in its place.
 ///
 /// [offerBacklog] (the board, P3.5: its add sheet is this one sheet) adds
 /// **Keep in backlog** beside the send where the host creates work: the
@@ -81,8 +89,22 @@ Future<StartRunResult?> showStartRunSheet(
   OrchestrationController controller, {
   bool offerBacklog = false,
   String? projectId,
-}) {
+}) async {
   final l10n = _copy(context);
+  if (teamStartBlocked(controller)) {
+    final ready = await showKitSheet<bool>(
+      context,
+      title: l10n.teamStartRunBlockedTitle,
+      icon: AppIconography.agent,
+      sheetKey: const ValueKey('team-start-run-blocked-sheet'),
+      body: (sheetContext) => TeamStartBlocked(
+        controller: controller,
+        onReady: () => Navigator.of(sheetContext).pop(true),
+      ),
+    );
+    if (ready != true || !context.mounted) return null;
+  }
+  if (!context.mounted) return null;
   return showKitSheet<StartRunResult>(
     context,
     title: l10n.teamUiStartRunTitle,
@@ -114,6 +136,26 @@ Future<StartRunResult?> showStartRunSheet(
     l10n.teamUiStartRunSupervisionAutonomousHint,
   ),
 };
+
+/// The planner is off (or missing), but this host both creates and
+/// assigns work and lists a project (the dispatch contract's admission):
+/// a task goes straight to a project's worker.
+bool teamStartHasDirectPath(OrchestrationController controller) {
+  final planner = teamPlannerAgent(controller.snapshot.agents);
+  final off = planner == null || teamPlannerIsOff(planner);
+  return off &&
+      controller.capabilities.controlCreateWork &&
+      controller.capabilities.controlAssign &&
+      controller.snapshot.projects.isNotEmpty;
+}
+
+/// True when this team can't take a task now: no planner, or one that is
+/// switched off, and no direct path to a worker.
+bool teamStartBlocked(OrchestrationController controller) {
+  if (teamStartHasDirectPath(controller)) return false;
+  final planner = teamPlannerAgent(controller.snapshot.agents);
+  return planner == null || teamPlannerIsOff(planner);
+}
 
 /// "Let the planner choose": the project choice with no project.
 const _anyProject = '';
@@ -364,15 +406,7 @@ class _StartRunSheetState extends State<StartRunSheet> {
 
   /// The planner is off, but this host both creates and assigns work
   /// (the dispatch contract's admission): the direct form.
-  bool get _direct {
-    final controller = widget.controller;
-    final planner = teamPlannerAgent(controller.snapshot.agents);
-    final off = planner == null || teamPlannerIsOff(planner);
-    return off &&
-        controller.capabilities.controlCreateWork &&
-        controller.capabilities.controlAssign &&
-        controller.snapshot.projects.isNotEmpty;
-  }
+  bool get _direct => teamStartHasDirectPath(widget.controller);
 
   /// Sends the direct task through one attempt ([TeamDispatchAttempts]):
   /// one create, then one assignment of that exact task, each once.
@@ -460,22 +494,12 @@ class _StartRunSheetState extends State<StartRunSheet> {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: widget.controller,
     builder: (context, _) {
-      final l10n = _copy(context);
       final planner = teamPlannerAgent(widget.controller.snapshot.agents);
       if (_direct) return _directForm(context);
-      if (planner == null) {
-        return _PlannerOff(
-          key: const ValueKey('team-start-run-planner-missing'),
-          title: l10n.teamUiStartRunPlannerMissingTitle,
-          message: l10n.teamUiStartRunPlannerMissingBody,
-        );
-      }
-      if (teamPlannerIsOff(planner)) {
-        return _PlannerOff(
-          key: const ValueKey('team-start-run-planner-off'),
-          title: l10n.teamUiStartRunPlannerOffTitle,
-          message: l10n.teamUiStartRunPlannerOffBody,
-        );
+      // The planner went off while the sheet was open: the same reason and
+      // way on as the sheet that opens when it is off.
+      if (planner == null || teamPlannerIsOff(planner)) {
+        return TeamStartBlocked(controller: widget.controller);
       }
       return _form(context, planner);
     },
@@ -744,29 +768,241 @@ class _StartRunSheetState extends State<StartRunSheet> {
   }
 }
 
-/// The planner is missing or off: the reason and the host guide; no form.
-class _PlannerOff extends StatelessWidget {
-  const _PlannerOff({super.key, required this.title, required this.message});
+/// Why this team can't take a task, in plain words, and the way on: Wake
+/// the planner where the host takes agent controls (never for an agent the
+/// app keeps off on its phone team), else Try again with the host guide.
+/// [onReady] runs once the team can take a task again (the planner woke,
+/// or a check found it on), so the blocked sheet can hand over to the task
+/// sheet.
+class TeamStartBlocked extends StatefulWidget {
+  const TeamStartBlocked({super.key, required this.controller, this.onReady});
 
-  final String title;
-  final String message;
+  final OrchestrationController controller;
+  final VoidCallback? onReady;
+
+  @override
+  State<TeamStartBlocked> createState() => _TeamStartBlockedState();
+}
+
+/// The reason the team can't take a task.
+enum _Blocked { plannerOff, noPlanner, noProject }
+
+class _TeamStartBlockedState extends State<TeamStartBlocked> {
+  bool _busy = false;
+
+  /// The host took the wake; the planner is not listed awake yet.
+  bool _asked = false;
+
+  /// A check found the planner still off.
+  bool _stillOff = false;
+
+  /// The host refused the wake: its words, for Technical details only
+  /// ('' when it gave none).
+  String? _refused;
+  bool _handedOver = false;
+
+  OrchestrationController get _controller => widget.controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_changed);
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_changed);
+    super.dispose();
+  }
+
+  void _changed() {
+    if (!mounted) return;
+    if (!teamStartBlocked(_controller)) {
+      _handOver();
+      return;
+    }
+    setState(() {});
+  }
+
+  void _handOver() {
+    final onReady = widget.onReady;
+    if (_handedOver || onReady == null) return;
+    _handedOver = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) onReady();
+    });
+  }
+
+  _Blocked get _reason {
+    final planner = teamPlannerAgent(_controller.snapshot.agents);
+    final caps = _controller.capabilities;
+    // A host that gives tasks straight to a worker needs only a project.
+    if (caps.controlCreateWork &&
+        caps.controlAssign &&
+        _controller.snapshot.projects.isEmpty &&
+        (planner == null || teamAgentKeptOff(_controller.config, planner))) {
+      return _Blocked.noProject;
+    }
+    return planner == null ? _Blocked.noPlanner : _Blocked.plannerOff;
+  }
+
+  /// The planner the app may wake from here, if any.
+  OrchestrationAgent? get _wakeable {
+    final planner = teamPlannerAgent(_controller.snapshot.agents);
+    if (planner == null || !_controller.capabilities.controlAgent) return null;
+    if (teamAgentKeptOff(_controller.config, planner)) return null;
+    return planner;
+  }
+
+  Future<void> _wake(OrchestrationAgent planner) async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _refused = null;
+      _stillOff = false;
+    });
+    try {
+      final record = await _controller.controlAgent(
+        planner.id,
+        AgentControlAction.resume,
+      );
+      if (!mounted) return;
+      if (record.status == MutationStatus.rejected) {
+        setState(() => _refused = record.receipt?.message?.trim() ?? '');
+        return;
+      }
+      setState(() => _asked = true);
+      await _controller.refresh();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _check() async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _stillOff = false;
+    });
+    try {
+      await _controller.refresh();
+      if (!mounted) return;
+      if (!teamStartBlocked(_controller)) {
+        _handOver();
+        return;
+      }
+      setState(() => _stillOff = true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
+    final reason = _reason;
+    final planner = reason == _Blocked.plannerOff ? _wakeable : null;
+    final refused = _refused;
+    final (String title, String body, Key key) = switch (reason) {
+      _Blocked.plannerOff => (
+        l10n.teamStartRunPlannerOff,
+        planner != null
+            ? l10n.teamStartRunPlannerOffWakeBody
+            : l10n.teamStartRunPlannerOffHostBody,
+        const ValueKey('team-start-run-planner-off'),
+      ),
+      _Blocked.noPlanner => (
+        l10n.teamStartRunNoPlanner,
+        l10n.teamStartRunNoPlannerBody,
+        const ValueKey('team-start-run-planner-missing'),
+      ),
+      _Blocked.noProject => (
+        l10n.teamStartRunNoProject,
+        l10n.teamStartRunNoProjectBody,
+        const ValueKey('team-start-run-no-project'),
+      ),
+    };
+    final check = KitAction(
+      key: const ValueKey('team-start-run-check'),
+      label: l10n.teamUiCardRetry,
+      icon: AppIconography.sync,
+      working: _busy && planner == null,
+      onPressed: _busy ? null : () => unawaited(_check()),
+    );
+    // Waking is the one primary where the app can do it; after the host
+    // took it, Try again. Elsewhere Try again, with the host guide for
+    // switching it on where the team runs.
+    final KitAction primary = planner != null && !_asked
+        ? KitAction(
+            key: const ValueKey('team-start-run-wake'),
+            label: l10n.teamStartRunWake,
+            icon: AppIconography.play,
+            working: _busy,
+            onPressed: _busy ? null : () => unawaited(_wake(planner)),
+          )
+        : check;
+    final guide = KitAction(
+      key: const ValueKey('team-start-run-host-guide'),
+      label: l10n.teamUiStartRunHostGuide,
+      icon: AppIconography.guide,
+      onPressed: () => showTeamHostGuideSheet(context),
+    );
+    final notices = <Widget>[
+      if (_asked && refused == null)
+        KitNotice(
+          key: const ValueKey('team-start-run-wake-asked'),
+          tone: AppStatusTone.progress,
+          icon: AppIconography.waiting,
+          message: l10n.teamStartRunWakeAsked,
+        ),
+      if (_stillOff)
+        KitNotice(
+          key: const ValueKey('team-start-run-still-off'),
+          icon: AppIconography.info,
+          message: reason == _Blocked.noProject
+              ? l10n.teamStartRunStillNoProject
+              : l10n.teamStartRunStillOff,
+        ),
+      if (refused != null) ...[
+        KitNotice(
+          key: const ValueKey('team-start-run-wake-refused'),
+          tone: AppStatusTone.failure,
+          icon: AppIconography.error,
+          title: l10n.teamStartRunWakeRefused,
+          message: l10n.teamStartRunWakeRefusedNext,
+        ),
+        // The host's own words: technical, redacted by the fold.
+        if (refused.isNotEmpty)
+          KitDetailsFold(
+            label: l10n.teamUiTechnicalDetails,
+            foldKey: const ValueKey('team-start-run-wake-refused-details'),
+            notes: [l10n.teamDispatchHostWords],
+            text: refused,
+          ),
+      ],
+    ];
     // A state, not a form (design standard §3): what is wrong, and the
-    // one way on from here.
+    // way on from here.
     return KitStateView(
+      key: key,
       size: KitStateSize.inline,
       icon: AppIconography.warning,
       title: title,
-      body: message,
-      secondary: KitAction(
-        key: const ValueKey('team-start-run-host-guide'),
-        label: l10n.teamUiStartRunHostGuide,
-        icon: AppIconography.guide,
-        onPressed: () => showTeamHostGuideSheet(context),
-      ),
+      body: body,
+      content: notices.isEmpty
+          ? null
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final (i, notice) in notices.indexed) ...[
+                  if (i > 0) SizedBox(height: KitTokens.of(context).space2),
+                  notice,
+                ],
+              ],
+            ),
+      primary: primary,
+      secondary: reason == _Blocked.noProject ? null : guide,
     );
   }
 }

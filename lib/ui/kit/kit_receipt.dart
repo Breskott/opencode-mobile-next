@@ -126,6 +126,12 @@ class KitReceipt extends StatelessWidget {
   /// "Not confirmed yet · ", "Not accepted: {reason} · ",
   /// "Answered on {where} · ". No actions: a row's actions live in its
   /// KitRowMenu or its sheet.
+  ///
+  /// With [mark] the state's glyph leads the word (a row's receipt as a
+  /// word and icon in its supporting line, so the row's trailing slot keeps
+  /// its chevron); a sending receipt shows the still dot rather than a
+  /// spinner inside text. It is then only the glyph and the word: the
+  /// caller places it among the line's parts and their separators.
   static InlineSpan span(
     BuildContext context,
     KitReceiptState state, {
@@ -133,8 +139,10 @@ class KitReceipt extends StatelessWidget {
     String? label,
     String? where,
     String? sendingLabel,
+    bool mark = false,
   }) {
-    final roles = KitTokens.of(context).roles;
+    final tokens = KitTokens.of(context);
+    final roles = tokens.roles;
     final word = _visibleWord(
       context,
       state,
@@ -143,9 +151,29 @@ class KitReceipt extends StatelessWidget {
       where: where,
       sendingLabel: sendingLabel,
     );
+    final style = TextStyle(color: _wordColor(roles, state));
+    if (!mark) {
+      return TextSpan(text: '$word · ', style: style);
+    }
+    final size = _glyphSize(context, tokens);
+    // The glyph is decoration: the word beside it says the state.
+    final glyph = WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: EdgeInsetsDirectional.only(end: tokens.space1),
+          child: SizedBox.square(
+            dimension: size,
+            child: _mark(context, state, roles, size, reduced: true),
+          ),
+        ),
+      ),
+    );
     return TextSpan(
-      text: '$word · ',
-      style: TextStyle(color: _wordColor(roles, state)),
+      children: [
+        glyph,
+        TextSpan(text: word, style: style),
+      ],
     );
   }
 

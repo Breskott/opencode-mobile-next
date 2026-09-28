@@ -121,7 +121,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get isolatedTaskScopeChanged =>
-      'The server or project changed. Close this sheet and reopen the task from the intended project.';
+      'The server or project changed while this was open. Close it and start again from the project you want.';
 
   @override
   String get appTitle => 'OpenCode Mobile';
@@ -1865,11 +1865,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get draftLeaveTitle => 'Draft could not be saved';
+  String get draftLeaveTitle => 'Your draft isn\'t saved';
 
   @override
   String get draftLeaveMessage =>
-      'Keep editing to copy your text or retry saving. Leaving now may lose your unsaved changes.';
+      'Copy your text to keep it, or try saving again. If you leave without saving, your latest changes may be lost.';
 
   @override
   String get draftLeaveAction => 'Leave without saving';
@@ -2818,90 +2818,72 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get isolatedTaskTitle => 'New task in a fresh worktree';
+  String get isolatedTaskTitle => 'Start in a separate copy';
 
   @override
-  String isolatedTaskIntro(String project) {
-    return 'OpenCode creates a new Git worktree and branch for $project and runs the project\'s setup. The worktree stays listed under Manage project until you remove it there.';
-  }
+  String get isolatedTaskIntro =>
+      'Works on its own branch, so it can\'t clash with your other conversations.';
 
   @override
-  String get isolatedTaskNameLabel => 'Worktree name (optional)';
+  String get isolatedTaskNameLabel => 'Name of the copy (optional)';
 
   @override
   String get isolatedTaskNameHelper =>
-      'Leave empty to let OpenCode choose a name.';
+      'Leave it empty and a name is chosen for you.';
 
   @override
-  String get isolatedTaskStart => 'Create and start';
+  String get isolatedTaskStart => 'Start';
 
   @override
-  String get isolatedTaskCreating => 'Creating the worktree…';
+  String get isolatedTaskCreating => 'Making the copy…';
 
   @override
   String get isolatedTaskCreatingHint =>
-      'Stopping now cannot undo a create the server may already be running.';
+      'If you stop waiting, the copy may still be made. You\'ll find it under Project › Worktrees.';
 
   @override
   String isolatedTaskPreparing(String name) {
-    return '$name was created. OpenCode is preparing it…';
+    return 'Setting up $name…';
   }
 
   @override
   String isolatedTaskReady(String name) {
-    return '$name is ready. Opening a blank conversation…';
+    return '$name is ready. Opening the conversation…';
   }
 
   @override
   String isolatedTaskReadyIdle(String name) {
-    return '$name is ready.';
+    return '$name is ready, but the conversation didn\'t open.';
   }
 
   @override
   String isolatedTaskUnconfirmed(String name) {
-    return '$name was created, but its setup status is not confirmed.';
+    return '$name is made, but its setup hasn\'t reported back.';
   }
 
   @override
   String get isolatedTaskUnconfirmedHint =>
-      'You can keep waiting or open it now. Setup may still be running.';
+      'Setup may still be running. Keep waiting, or start in it now.';
 
   @override
-  String get isolatedTaskFailed => 'OpenCode could not prepare the worktree.';
-
-  @override
-  String get isolatedTaskCreateFailed => 'The worktree could not be created.';
-
-  @override
-  String isolatedTaskFailedKept(String name) {
-    return '$name stays listed under Manage project. Nothing was deleted.';
+  String isolatedTaskFailed(String name) {
+    return 'Setup failed in $name';
   }
+
+  @override
+  String get isolatedTaskCreateFailed => 'Couldn\'t make the copy';
 
   @override
   String get isolatedTaskCancelled => 'Stopped waiting.';
 
   @override
-  String isolatedTaskCancelledKept(String name) {
-    return '$name was created and stays listed under Manage project.';
-  }
-
-  @override
-  String get isolatedTaskCancelledUnknown =>
-      'If OpenCode created the worktree, it appears under Manage project.';
-
-  @override
   String isolatedTaskOpening(String name) {
-    return 'Opening a blank conversation in $name…';
+    return 'Opening the conversation in $name…';
   }
 
   @override
   String isolatedTaskOpened(String name) {
-    return 'Conversation ready in $name. Nothing has been sent.';
-  }
-
-  @override
-  String isolatedTaskBranch(String branch) {
-    return 'Branch $branch';
+    return 'The conversation in $name is ready.';
   }
 
   @override
@@ -2911,13 +2893,80 @@ class AppLocalizationsEn extends AppLocalizations {
   String get isolatedTaskKeepWaiting => 'Keep waiting';
 
   @override
-  String get isolatedTaskOpenAnyway => 'Open anyway';
-
-  @override
   String get isolatedTaskRetryOpen => 'Try again';
 
   @override
   String get isolatedTaskClose => 'Close';
+
+  @override
+  String get isolatedTaskPromptLabel => 'What should it work on?';
+
+  @override
+  String get isolatedTaskPromptHelper =>
+      'Sent once the copy is ready. Leave it empty to write it in the conversation.';
+
+  @override
+  String get isolatedTaskOptions => 'Options';
+
+  @override
+  String get isolatedTaskPreparingHint =>
+      'If you stop waiting, the copy stays. You\'ll find it under Project › Worktrees.';
+
+  @override
+  String get isolatedTaskFailedBody =>
+      'The copy is made, but its setup didn\'t finish. Start in it anyway, or remove it.';
+
+  @override
+  String isolatedTaskSending(String name) {
+    return 'Sending your task to $name…';
+  }
+
+  @override
+  String get isolatedTaskSendFailed => 'Couldn\'t send your task';
+
+  @override
+  String get isolatedTaskSendFailedBody =>
+      'It\'s waiting in the conversation\'s message box, ready to send.';
+
+  @override
+  String get isolatedTaskSendFailedLost =>
+      'Copy your task below and send it in the conversation.';
+
+  @override
+  String get isolatedTaskOpenConversation => 'Open the conversation';
+
+  @override
+  String get isolatedTaskStartAnyway => 'Start anyway';
+
+  @override
+  String get isolatedTaskRemove => 'Remove the copy';
+
+  @override
+  String isolatedTaskRemoveTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get isolatedTaskRemoveBody =>
+      'Its folder and branch are deleted. Your project itself is not touched.';
+
+  @override
+  String isolatedTaskRemoved(String name) {
+    return 'Removed $name. You can start again.';
+  }
+
+  @override
+  String get isolatedTaskSetupOutput => 'What the setup reported';
+
+  @override
+  String get isolatedTaskCopyFolder => 'Folder of the copy';
+
+  @override
+  String get isolatedTaskBranchLabel => 'Branch';
+
+  @override
+  String get isolatedTaskStageSend =>
+      'Opening the conversation and sending your task';
 
   @override
   String get returnBriefStatusUnknown => 'Review status unknown';
@@ -9958,10 +10007,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'The host did not accept this answer.';
 
   @override
-  String get teamUiGateAnswerChipUnconfirmedSemantics =>
-      'Unconfirmed, open to retry';
-
-  @override
   String get teamUiGateAnswerConfirmApproveTitle =>
       'Approve this destructive action?';
 
@@ -10099,22 +10144,55 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiStartRunPlannerOffTitle =>
-      'The planner (Mayor) is off on this host';
-
-  @override
-  String get teamUiStartRunPlannerOffBody =>
-      'Wake it on the host or switch it to the full profile, then come back.';
-
-  @override
-  String get teamUiStartRunPlannerMissingTitle => 'No planner on this host';
-
-  @override
-  String get teamUiStartRunPlannerMissingBody =>
-      'The Gas Town pack with its Mayor is not running here. The host guide shows how to enable it.';
-
-  @override
   String get teamUiStartRunHostGuide => 'Host guide';
+
+  @override
+  String get teamStartRunBlockedTitle => 'Team can\'t take tasks';
+
+  @override
+  String get teamStartRunPlannerOff => 'The planner is switched off';
+
+  @override
+  String get teamStartRunPlannerOffWakeBody =>
+      'The planner turns each task into steps for the team. Wake it to give the team your task.';
+
+  @override
+  String get teamStartRunPlannerOffHostBody =>
+      'The planner turns each task into steps for the team, and this app can\'t switch it on. Switch it on where the team runs, then try again.';
+
+  @override
+  String get teamStartRunNoPlanner => 'This team has no planner';
+
+  @override
+  String get teamStartRunNoPlannerBody =>
+      'A planner turns each task into steps for the team. Add one where the team runs, then try again.';
+
+  @override
+  String get teamStartRunNoProject => 'This team has no project yet';
+
+  @override
+  String get teamStartRunNoProjectBody =>
+      'Tasks go straight to a project\'s worker. Add a project to the team, then try again.';
+
+  @override
+  String get teamStartRunWake => 'Wake the planner';
+
+  @override
+  String get teamStartRunWakeAsked =>
+      'Waking the planner. The task form opens as soon as it\'s awake.';
+
+  @override
+  String get teamStartRunStillOff => 'The planner is still switched off.';
+
+  @override
+  String get teamStartRunStillNoProject => 'The team still has no project.';
+
+  @override
+  String get teamStartRunWakeRefused => 'Couldn\'t wake the planner';
+
+  @override
+  String get teamStartRunWakeRefusedNext =>
+      'Try again, or switch it on where the team runs.';
 
   @override
   String get teamUiStartRunWaking => 'Waking the planner…';
@@ -13141,16 +13219,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiAgentRoleOther => 'Agent';
 
   @override
-  String get teamUiRunStageWaiting => 'Waiting';
+  String get teamUiRunStageWaiting => 'Planned';
 
   @override
   String get teamUiRunStageWorking => 'Working';
 
   @override
-  String get teamUiRunStageReviewing => 'Reviewing';
+  String get teamUiRunStageReviewing => 'In review';
 
   @override
-  String get teamUiRunStageDone => 'Done';
+  String get teamUiRunStageDone => 'Merged';
 
   @override
   String teamUiRunStageSemantics(int position, String stage) {
@@ -16575,13 +16653,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get isolatedTaskProjectFolder => 'Project folder';
 
   @override
-  String get isolatedTaskStageCreate => 'Creating the worktree';
+  String get isolatedTaskStageCreate => 'Making the copy';
 
   @override
   String get isolatedTaskStagePrepare => 'Running the project setup';
 
   @override
-  String get isolatedTaskStageOpen => 'Opening a conversation';
+  String get isolatedTaskStageOpen => 'Opening the conversation';
 
   @override
   String get isolatedTaskUsually => 'Usually 1–3 minutes';

@@ -14,6 +14,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/codex/gateway.dart'
     show codexServerCapabilities;
@@ -304,7 +305,22 @@ void main() {
       );
     });
 
-    // --- Isolated task sheet ------------------------------------------------
+    // --- Isolated task sheet (Start in a separate copy) --------------------
+
+    Future<void> openAndStart(WidgetTester tester, {String? task}) async {
+      await tester.tap(find.byKey(const Key('open-sheet')));
+      await tester.pumpAndSettle();
+      if (task != null) {
+        await tester.enterText(
+          find.byKey(const Key('isolated-task-prompt')),
+          task,
+        );
+      }
+      await tester.ensureVisible(find.byKey(const Key('isolated-task-start')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('isolated-task-start')));
+      await tester.pump();
+    }
 
     for (final size in [_phone, _wide]) {
       testWidgets('isolated task form ($theme, $size)', (tester) async {
@@ -330,12 +346,7 @@ void main() {
         light: light,
         settle: false,
         home: Scaffold(body: SheetHost(controller: controller)),
-        act: () async {
-          await tester.tap(find.byKey(const Key('open-sheet')));
-          await tester.pumpAndSettle();
-          await tester.tap(find.byKey(const Key('isolated-task-start')));
-          await tester.pump();
-        },
+        act: () => openAndStart(tester, task: 'Fix the login redirect'),
       );
     });
 
@@ -349,15 +360,47 @@ void main() {
         light: light,
         home: Scaffold(body: SheetHost(controller: controller)),
         act: () async {
-          await tester.tap(find.byKey(const Key('open-sheet')));
-          await tester.pumpAndSettle();
-          await tester.tap(find.byKey(const Key('isolated-task-start')));
-          await tester.pump();
+          await openAndStart(tester);
+          // A server's refusal: its own words go under Details only.
           repository.create.completeError(
-            const ProductException('fatal: not a git repository'),
+            ApiException('fatal: not a git repository', statusCode: 500),
           );
         },
       );
     });
+
+    for (final size in [_phone, _wide]) {
+      testWidgets('isolated task setup failed ($theme, $size)', (tester) async {
+        final repository = ProjectsRepository();
+        final controller = await projectsController(repository);
+        addTearDown(controller.dispose);
+        await _shot(
+          tester,
+          'work_isolated_task_sheet_setup_failed',
+          light: light,
+          size: size,
+          home: Scaffold(body: SheetHost(controller: controller)),
+          act: () async {
+            await openAndStart(tester, task: 'Fix the login redirect');
+            repository.create.complete(
+              const WorktreeInfo(
+                name: 'wake-fix',
+                directory: '/work/app-wake-fix',
+                branch: 'opencode/wake-fix',
+              ),
+            );
+            await tester.pump();
+            controller.handleEventForTesting(
+              EventEnvelope(
+                type: 'worktree.failed',
+                directory: '/work/app-wake-fix',
+                project: 'project-1',
+                properties: const {'message': 'npm install exited 1'},
+              ),
+            );
+          },
+        );
+      });
+    }
   }
 }

@@ -1,6 +1,6 @@
 /// The receipt a gate's card, its rows and the Gate sheet share (TEAM-203,
 /// 02-ux §6): which [MutationRecord] answers a gate, the copy per status
-/// and the row's trailing [KitReceipt]. A row leaves the list only once the
+/// and the row's receipt span ([teamGateReceiptSpan]). A row leaves the list only once the
 /// host confirmed; nothing here sends.
 library;
 
@@ -74,21 +74,14 @@ String teamReceiptLine(AppLocalizations l10n, MutationRecord record) =>
       },
     };
 
-/// A gate answer's receipt at the end of a row that points to the gate
-/// (the Activity list, the AI Team lists): the one [KitReceipt] —
-/// "Sending…", "Not confirmed yet" or "Not accepted" — that opens the gate
-/// ([onOpen]), where Try again lives. Null for a confirmed answer (the row
-/// leaves the list) so the row shows its chevron instead.
-///
-/// A row's trailing slot gives unbounded width, so the receipt stays one
-/// compact tap target at most [teamGateReceiptMaxWidthFraction] of the
-/// screen wide: its words wrap instead of squeezing the row's title.
-Widget? teamGateRowReceipt(
-  BuildContext context,
-  MutationRecord record, {
-  required VoidCallback onOpen,
-  Key? key,
-}) {
+/// A gate answer's receipt inside a row that points to the gate (the
+/// Activity list, the AI Team lists): the state's glyph and word — "Sending…",
+/// "Not confirmed yet" or "Not accepted" — as a span of the row's
+/// supporting line, right after its first word ("Question · Not confirmed
+/// yet · …"), so the row's trailing slot keeps its chevron and the row
+/// itself opens the gate, where Try again lives. Null for a confirmed
+/// answer (the row leaves the list).
+InlineSpan? teamGateReceiptSpan(BuildContext context, MutationRecord record) {
   final state = switch (record.status) {
     MutationStatus.sent => KitReceiptState.sending,
     MutationStatus.unconfirmed => KitReceiptState.notConfirmed,
@@ -96,25 +89,31 @@ Widget? teamGateRowReceipt(
     MutationStatus.confirmed => null,
   };
   if (state == null) return null;
-  final maxWidth =
-      (MediaQuery.sizeOf(context).width * teamGateReceiptMaxWidthFraction)
-          .floorToDouble();
-  final Widget receipt = ConstrainedBox(
-    key: key,
-    constraints: BoxConstraints(maxWidth: maxWidth),
-    child: KitReceipt(state: state, onTap: onOpen),
-  );
-  if (state != KitReceiptState.notConfirmed) return receipt;
-  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-  // One button that opens the gate, where the retry lives.
-  return Semantics(
-    label: l10n.teamUiGateAnswerChipUnconfirmedSemantics,
-    button: true,
-    onTap: onOpen,
-    excludeSemantics: true,
-    child: receipt,
+  return KitReceipt.span(context, state, mark: true);
+}
+
+/// A gate row's supporting line: [parts] joined by " · ", with the answer's
+/// receipt ([teamGateReceiptSpan]) after the first part while the host has
+/// not confirmed it — "Question · Not confirmed yet · Add dark mode · 3 min
+/// ago".
+InlineSpan teamGateRowLine(
+  BuildContext context,
+  List<String> parts, {
+  MutationRecord? record,
+}) {
+  final receipt = record == null ? null : teamGateReceiptSpan(context, record);
+  if (receipt == null || parts.isEmpty) {
+    return TextSpan(text: parts.join(_separator));
+  }
+  final rest = parts.skip(1).join(_separator);
+  return TextSpan(
+    children: [
+      TextSpan(text: '${parts.first}$_separator'),
+      receipt,
+      if (rest.isNotEmpty) TextSpan(text: '$_separator$rest'),
+    ],
   );
 }
 
-/// The share of the screen width a row's gate receipt may take.
-const double teamGateReceiptMaxWidthFraction = .4;
+/// The team's one separator (teamUsageSeparator).
+const _separator = ' · ';

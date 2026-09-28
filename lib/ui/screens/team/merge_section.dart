@@ -14,6 +14,11 @@
 /// Review changes
 /// ```
 ///
+/// Once merged (the host reports the merge commit, or the merge was
+/// confirmed) the section says only where it landed, "Merged into main ·
+/// 4f9c2a1", with Review changes: no checks, and no Merge that can no
+/// longer do anything.
+///
 /// The readiness lines come from the front's `/merge-readiness` as one
 /// [KitChecklist]; any missing line disables Merge and says why. The next
 /// step is the one primary: **Approve request** while the request waits
@@ -290,6 +295,39 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
       // The next step is the one primary: Approve while the request waits
       // for it, then Merge.
       final approveFirst = approve != null && !approved && !merged;
+      final review = KitAction(
+        key: const ValueKey('team-merge-review'),
+        label: l10n.teamUiMergeReviewChanges,
+        onPressed: () => _openChanges(readiness),
+      );
+      if (merged) {
+        // Merged: only where it landed and the way to look at it. The
+        // checks, the request and a Merge that can no longer do anything
+        // are behind it now.
+        return Padding(
+          padding: EdgeInsetsDirectional.only(top: tokens.space5),
+          child: KitPanel(
+            key: const ValueKey('team-merge-section'),
+            tone: tone,
+            icon: AppIconography.branch,
+            title: title,
+            titleKey: const ValueKey('team-merge-title'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                KitText(
+                  _mergedLine(l10n, readiness, mergeRecord),
+                  key: const ValueKey('team-merge-receipt'),
+                  role: KitTextRole.secondary,
+                  tone: KitTextTone.success,
+                ),
+                SizedBox(height: tokens.space4),
+                KitActionBlock(secondary: review),
+              ],
+            ),
+          ),
+        );
+      }
 
       return Padding(
         padding: EdgeInsetsDirectional.only(top: tokens.space5),
@@ -314,13 +352,11 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
                 _Lines(readiness: readiness),
                 SizedBox(height: tokens.space2),
                 KitText(
-                  merged && readiness.alreadyMerged
-                      ? l10n.teamUiMergeAlready(readiness.targetBranch ?? '')
-                      : l10n.teamUiMergeFiles(
-                          readiness.files,
-                          readiness.additions,
-                          readiness.deletions,
-                        ),
+                  l10n.teamUiMergeFiles(
+                    readiness.files,
+                    readiness.additions,
+                    readiness.deletions,
+                  ),
                   key: const ValueKey('team-merge-files'),
                   role: KitTextRole.secondary,
                   tone: KitTextTone.secondary,
@@ -350,20 +386,13 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
               KitActionBlock(
                 primary: approveFirst ? approve : merge,
                 secondary: approveFirst ? merge : null,
-                tertiary: [
-                  KitAction(
-                    key: const ValueKey('team-merge-review'),
-                    label: l10n.teamUiMergeReviewChanges,
-                    onPressed: () => _openChanges(readiness),
-                  ),
-                ],
+                tertiary: [review],
               ),
               ..._notes(
                 l10n,
                 tokens,
                 readiness: readiness,
                 request: request,
-                merged: merged,
                 mergeRecord: mergeRecord,
                 approveRecord: approveRecord,
               ),
@@ -374,6 +403,28 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
     },
   );
 
+  /// Where a merged task landed: "Merged into main · 4f9c2a1", from the
+  /// merge's own answer first, else the host's readiness; "Already on
+  /// main" when no commit is known.
+  String _mergedLine(
+    AppLocalizations l10n,
+    MergeReadiness? readiness,
+    MutationRecord? mergeRecord,
+  ) {
+    final confirmed = mergeRecord?.status == MutationStatus.confirmed
+        ? mergeRecord
+        : null;
+    final branch =
+        (confirmed == null ? null : _branchOf(confirmed)) ??
+        readiness?.targetBranch ??
+        '';
+    final commit =
+        (confirmed == null ? null : _commitOf(confirmed)) ??
+        readiness?.mergeCommit;
+    if (commit == null) return l10n.teamUiMergeAlready(branch);
+    return l10n.teamUiMergeMerged(branch, _shortCommit(commit));
+  }
+
   /// The helper lines under the buttons: why Merge is off, the boundary
   /// that blocks, the approval, and the receipts; a refused merge is a
   /// notice with its next step.
@@ -382,7 +433,6 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
     KitTokens tokens, {
     required MergeReadiness? readiness,
     required MergeRequestInfo? request,
-    required bool merged,
     required MutationRecord? mergeRecord,
     required MutationRecord? approveRecord,
   }) {
@@ -401,7 +451,7 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
       );
     }
 
-    if (readiness != null && !merged) {
+    if (readiness != null) {
       final missing = readiness.firstMissing;
       final blocking = readiness.firstBlocking;
       if (missing != null) {
@@ -492,15 +542,6 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
         tone: mergeRecord.status == MutationStatus.confirmed
             ? KitTextTone.success
             : KitTextTone.secondary,
-      );
-    } else if (merged && readiness?.mergeCommit != null) {
-      note(
-        l10n.teamUiMergeMerged(
-          readiness?.targetBranch ?? '',
-          _shortCommit(readiness?.mergeCommit),
-        ),
-        key: const ValueKey('team-merge-receipt'),
-        tone: KitTextTone.success,
       );
     }
     return notes;

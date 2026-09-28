@@ -346,7 +346,9 @@ void main() {
       final controller = await projectsController();
       addTearDown(controller.dispose);
       final host = await open(tester, controller);
-      expect(find.byKey(const Key('isolated-task-name')), findsOneWidget);
+      expect(find.byKey(const Key('isolated-task-prompt')), findsOneWidget);
+      await tester.ensureVisible(find.byKey(const Key('isolated-task-close')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('isolated-task-close')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('isolated-task-sheet')), findsNothing);
@@ -360,19 +362,25 @@ void main() {
       expect(host.results, [null, null]);
     });
 
-    testWidgets('the wait is staged and says how long it usually takes', (
-      tester,
-    ) async {
+    Future<void> start(WidgetTester tester) async {
+      await tester.ensureVisible(find.byKey(const Key('isolated-task-start')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('isolated-task-start')));
+    }
+
+    testWidgets('the wait is staged, says how long it usually takes and '
+        'what stopping means', (tester) async {
       final controller = await projectsController();
       addTearDown(controller.dispose);
       await open(tester, controller);
-      await tester.tap(find.byKey(const Key('isolated-task-start')));
+      await start(tester);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
-      expect(find.text('Creating the worktree…'), findsOneWidget);
-      expect(rich('Creating the worktree'), findsWidgets);
+      expect(find.text('Making the copy…'), findsOneWidget);
+      expect(rich('Making the copy'), findsWidgets);
       expect(rich('1 of 3'), findsOneWidget);
       expect(rich('Usually 1–3 minutes'), findsOneWidget);
+      expect(rich('Project › Worktrees'), findsOneWidget);
       expect(find.byKey(const Key('isolated-task-stop')), findsOneWidget);
       await tester.tap(find.byKey(const Key('isolated-task-stop')));
       await tester.pump();
@@ -381,19 +389,24 @@ void main() {
       expect(find.byKey(const Key('isolated-task-sheet')), findsNothing);
     });
 
-    testWidgets('a failed create says so and offers Close', (tester) async {
+    testWidgets('a failed create says so in words and offers Try again and '
+        'Close', (tester) async {
       final repository = ProjectsRepository();
       final controller = await projectsController(repository);
       addTearDown(controller.dispose);
       await open(tester, controller);
-      await tester.tap(find.byKey(const Key('isolated-task-start')));
+      await start(tester);
       await tester.pump();
       repository.create.completeError(
         const ProductException('Not a Git repository'),
       );
       await tester.pumpAndSettle();
-      expect(find.text('The worktree could not be created.'), findsOneWidget);
-      expect(find.textContaining('Not a Git repository'), findsOneWidget);
+      expect(find.text("Couldn't make the copy"), findsOneWidget);
+      expect(find.byKey(const Key('isolated-task-try-again')), findsOneWidget);
+      await tester.ensureVisible(
+        find.byKey(const Key('isolated-task-dismiss')),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('isolated-task-dismiss')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('isolated-task-sheet')), findsNothing);

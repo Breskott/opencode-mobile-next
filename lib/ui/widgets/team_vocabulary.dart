@@ -107,14 +107,17 @@ String teamHostPlace(
   };
 }
 
-/// The four stages a task moves through, in order. At most these show,
-/// on the task's Overview only.
+/// The four stages a task moves through, in order, each named by its
+/// outcome: Planned, Working, In review, Merged. At most these show, on
+/// the task's Overview only.
 enum TeamStage { waiting, working, reviewing, done }
 
-/// The stage [run] is at: done once completed, reviewing while its work is
-/// in the merge agent's hands ([teamRunAwaitsMerge]), working while work
-/// moves (held-up work included), waiting before that. Null for a failed or
-/// cancelled task: it left the stages, and its status line says so.
+/// The stage [run] is at: done (Merged) only once it is completed and every
+/// step of it is closed, reviewing while its work is in the merge agent's
+/// hands ([teamRunAwaitsMerge]) or a completed task still has a step open,
+/// working while work moves (held-up work included), waiting before that.
+/// Null for a failed or cancelled task: it left the stages, and its status
+/// line says so.
 TeamStage? teamRunStage(
   OrchestrationRun run,
   List<WorkItem> work, {
@@ -122,7 +125,12 @@ TeamStage? teamRunStage(
 }) {
   switch (run.state) {
     case RunState.completed:
-      return TeamStage.done;
+      // Merged means every step landed: a step still open (in review,
+      // say) keeps the task in review.
+      final open = work.any(
+        (item) => item.runId == run.id && teamWorkIsOpen(item.state),
+      );
+      return open ? TeamStage.reviewing : TeamStage.done;
     case RunState.failed || RunState.cancelled:
       return null;
     case RunState.working ||
@@ -152,10 +160,20 @@ String teamStageWord(AppLocalizations l10n, TeamStage stage) => switch (stage) {
 /// A task's leading mark: needs you, then failed, done, stopped
 /// (cancelled), working (planning and the merge wait included) and
 /// waiting (held up or not started).
-KitTaskState teamRunMark(OrchestrationRun run, {required bool needsYou}) {
+///
+/// With [work], a completed task with a step still open is in review, not
+/// done ([teamRunStage]), and its mark says so.
+KitTaskState teamRunMark(
+  OrchestrationRun run, {
+  required bool needsYou,
+  List<WorkItem>? work,
+}) {
   if (needsYou) return KitTaskState.needsYou;
   return switch (run.state) {
     RunState.failed => KitTaskState.failed,
+    RunState.completed
+        when work != null && teamRunStage(run, work) == TeamStage.reviewing =>
+      KitTaskState.working,
     RunState.completed => KitTaskState.done,
     RunState.cancelled => KitTaskState.stopped,
     RunState.working || RunState.planning => KitTaskState.working,
@@ -543,6 +561,11 @@ String teamRunStateWordFor(
   DispatchCycle? Function(String workId)? cycleOf,
 }) => teamRunAwaitsMerge(run, work, cycleOf: cycleOf)
     ? l10n.teamUiCardRunStateWaitingMerge
+    // Done only once every step landed: a completed task with a step still
+    // open is in review, as its stage line says.
+    : teamRunStage(run, work, cycleOf: cycleOf) == TeamStage.reviewing &&
+          run.state == RunState.completed
+    ? l10n.teamUiCardRunStateWaitingMerge
     : run.state == RunState.completed && run.merged
     ? l10n.teamUiCardRunStateMerged
     : teamRunStateWord(l10n, run.state);
@@ -683,6 +706,18 @@ int teamWorkStateRank(WorkState state) => teamWorkStateOrder.indexOf(state);
 /// Whether an item in [state] still holds up what depends on it.
 bool teamWorkIsOpen(WorkState state) =>
     state != WorkState.completed && state != WorkState.cancelled;
+
+/// The dependencies of [item] that still hold it up: the ones [work] lists
+/// as open. A dependency the host no longer lists is not counted (the board
+/// counts the same way), so a finished step never reads as a wait.
+List<WorkItem> teamOpenDependencies(WorkItem item, List<WorkItem> work) {
+  if (item.dependsOn.isEmpty) return const [];
+  final ids = item.dependsOn.toSet();
+  return [
+    for (final other in work)
+      if (ids.contains(other.id) && teamWorkIsOpen(other.state)) other,
+  ];
+}
 
 /// Whether an item in [state] is stuck: blocked, waiting on the person or
 /// failed. These start the graph's highlighted blocked chain.

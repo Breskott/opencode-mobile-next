@@ -445,34 +445,20 @@ class TeamGateRow extends StatelessWidget {
             l10n: l10n,
           );
     final task = teamGateRun(controller.snapshot, gate)?.title;
-    final supporting = [
-      teamGateKindWord(l10n, gate.kind),
-      ?task,
-      ?age,
-    ].join(teamUsageSeparator);
+    // "Question · Not confirmed yet · <task> · 3 min ago": the answer's
+    // receipt as a word after the kind while the host has not confirmed
+    // it. The row opens the Gate sheet, where Try again lives.
     return KitRow(
       leading: KitRow.icon(context, icon, color: color),
       title: gate.title,
       titleMaxLines: 2,
-      supporting: TextSpan(text: supporting),
-      // The receipt while the host has not confirmed the answer; the
-      // chevron otherwise (the row opens the Gate sheet).
-      trailing: switch (record == null
-          ? null
-          : teamGateRowReceipt(
-              context,
-              record,
-              key: receiptKey,
-              onOpen: onTap,
-            )) {
-        final receipt? => Padding(
-          padding: EdgeInsetsDirectional.symmetric(
-            horizontal: KitTokens.of(context).space2,
-          ),
-          child: receipt,
-        ),
-        null => const KitChevron(),
-      },
+      supporting: teamGateRowLine(context, [
+        teamGateKindWord(l10n, gate.kind),
+        ?task,
+        ?age,
+      ], record: record),
+      supportingKey: receiptKey,
+      trailing: const KitChevron(),
       onTap: onTap,
     );
   }

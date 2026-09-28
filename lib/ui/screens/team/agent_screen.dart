@@ -242,13 +242,21 @@ class _AgentScreenState extends State<AgentScreen> {
   }
 
   /// What holds the agent's task up, as the end of the top bar's subtitle:
-  /// "nothing blocking it", "blocked", "waiting on 2 other steps".
-  static String _workHold(AppLocalizations l10n, WorkItem work) =>
-      work.isBlocked
-      ? l10n.teamAgentWorkBlockedShort
-      : work.dependsOn.isNotEmpty
-      ? l10n.teamUiRunBlockedByDeps(work.dependsOn.length)
-      : l10n.teamAgentWorkUnblockedShort;
+  /// "nothing blocking it", "blocked", "waiting on 2 other steps". Only a
+  /// dependency the host lists as still open counts: one that finished
+  /// (or was stopped) holds nothing up, so "Working" and "waiting on…"
+  /// never show together for a step whose dependencies are done.
+  static String _workHold(
+    AppLocalizations l10n,
+    WorkItem work,
+    List<WorkItem> all,
+  ) {
+    if (work.isBlocked) return l10n.teamAgentWorkBlockedShort;
+    final open = teamOpenDependencies(work, all).length;
+    return open > 0
+        ? l10n.teamUiRunBlockedByDeps(open)
+        : l10n.teamAgentWorkUnblockedShort;
+  }
 
   /// The newest control record for this agent, by any of its ids.
   MutationRecord? _receipt(OrchestrationAgent agent) {
@@ -390,7 +398,7 @@ class _AgentScreenState extends State<AgentScreen> {
               ? null
               : [
                   l10n.teamAgentWorksOn(work.title),
-                  _workHold(l10n, work),
+                  _workHold(l10n, work, _controller.snapshot.work),
                 ].join(teamUsageSeparator),
           titleKey: const ValueKey('team-agent-title'),
           actions: [

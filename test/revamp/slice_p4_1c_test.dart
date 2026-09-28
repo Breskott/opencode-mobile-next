@@ -395,8 +395,11 @@ void main() {
       status: status,
     );
 
-    testWidgets('confirmed has none; others are a KitReceipt', (tester) async {
-      Widget? built;
+    testWidgets('confirmed has none; others are the receipt word', (
+      tester,
+    ) async {
+      InlineSpan? confirmed;
+      final others = <InlineSpan?>[];
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -404,31 +407,30 @@ void main() {
           home: Scaffold(
             body: Builder(
               builder: (context) {
-                built = teamGateRowReceipt(
+                confirmed = teamGateReceiptSpan(
                   context,
                   record(MutationStatus.confirmed),
-                  onOpen: () {},
                 );
-                return Column(
-                  children: [
+                others
+                  ..clear()
+                  ..addAll([
                     for (final status in [
                       MutationStatus.sent,
                       MutationStatus.rejected,
                     ])
-                      ?teamGateRowReceipt(
-                        context,
-                        record(status),
-                        onOpen: () {},
-                      ),
-                  ],
-                );
+                      teamGateReceiptSpan(context, record(status)),
+                  ]);
+                return const SizedBox.shrink();
               },
             ),
           ),
         ),
       );
-      expect(built, isNull);
-      expect(find.byType(KitReceipt), findsNWidgets(2));
+      expect(confirmed, isNull);
+      expect(
+        others.map((span) => span?.toPlainText().replaceAll('\uFFFC', '')),
+        ['Sending…', 'Not accepted'],
+      );
     });
   });
 
