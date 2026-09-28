@@ -757,10 +757,6 @@
      "element": "team-conversation-family-agent"
     },
     {
-     "page": "embedded-team-cycle-strip",
-     "element": "embedded-team-cycle-strip-open-output"
-    },
-    {
      "page": "gate-sheet",
      "element": "gate-sheet-run-logs"
     },

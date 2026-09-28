@@ -5,9 +5,11 @@
 // details folded last), at 412x915 and 1280x800, light and dark, with the
 // app's real fonts and the screen-team-3 fixture.
 //
-// Regenerate deliberately and look at every image:
+// Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/screen_team_3_golden_test.dart
+// and look at every changed image before committing it.
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -21,8 +23,8 @@ const _phone = Size(412, 915);
 const _wide = Size(1280, 800);
 
 enum _Shot {
-  agents('team_agents', _phone),
-  agentsWide('team_agents', _wide),
+  agents('team_agents_list', _phone),
+  agentsWide('team_agents_list', _wide),
   workSheet('team_work_sheet', _phone),
   workSheetWide('team_work_sheet', _wide);
 
@@ -53,39 +55,44 @@ void main() {
         final (controller, _) = await team3Controller();
         addTearDown(controller.dispose);
         final boundary = GlobalKey();
-        await tester.pumpWidget(
-          MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: captureTheme(light: light),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(disableAnimations: true),
-              child: RepaintBoundary(key: boundary, child: child),
+        debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
+        try {
+          await tester.pumpWidget(
+            MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: captureTheme(light: light),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(disableAnimations: true),
+                child: RepaintBoundary(key: boundary, child: child),
+              ),
+              home: TeamAgentsScreen(
+                controller: controller,
+                now: () => team3Clock,
+                // The sheet opens over the list, from any row.
+                onOpenAgent: (_) {},
+              ),
             ),
-            home: TeamAgentsScreen(
-              controller: controller,
-              now: () => team3Clock,
-              // The sheet opens over the list, from any row.
-              onOpenAgent: (_) {},
-            ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
-        if (shot.sheet) {
-          final context = tester.element(
-            find.byKey(const ValueKey('team-agents')),
           );
-          showWorkSheet(context, controller, 'oc-loy', now: () => team3Clock);
           await tester.pump();
-          await tester.pump(const Duration(milliseconds: 600));
+          await tester.pump(const Duration(milliseconds: 500));
+          if (shot.sheet) {
+            final context = tester.element(
+              find.byKey(const ValueKey('team-agents')),
+            );
+            showWorkSheet(context, controller, 'oc-loy', now: () => team3Clock);
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 600));
+          }
+          expect(tester.takeException(), isNull);
+          await expectLater(
+            find.byKey(boundary),
+            matchesGoldenFile('goldens/${shot.name(light)}.png'),
+          );
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
         }
-        expect(tester.takeException(), isNull);
-        await expectLater(
-          find.byKey(boundary),
-          matchesGoldenFile('goldens/${shot.name(light)}.png'),
-        );
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump(const Duration(seconds: 1));
       });

@@ -1212,8 +1212,7 @@ void main() {
           await tester.pump();
           watch.stop();
           expect(stage(tester), 'Task created · sending it to the team…');
-          // ignore: avoid_print
-          print(
+          debugPrint(
             'P6.3 timing probe: create receipt -> "Task created" visible in '
             '1 frame, ${watch.elapsedMicroseconds} µs test time',
           );

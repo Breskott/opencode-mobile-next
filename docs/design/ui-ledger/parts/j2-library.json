@@ -677,13 +677,13 @@
      "type": "icon-button",
      "label": "Add MCP server",
      "key": "add-mcp-server",
-     "line": 564,
-     "action": "navigate",
-     "target": "mcp-setup",
-     "targetWidget": "McpSetupScreen",
-     "effect": "_openMcpSetup(): pushes McpSetupScreen; when it pops true and the location is unchanged, _load() and snackbar (runtime added / saved in OpenCode).",
+     "line": 681,
+     "action": "open-sheet",
+     "target": "mcp-add-sheet",
+     "targetWidget": "showMcpAddSheet",
+     "effect": "_openMcpAdd(): the add chooser (catalogue or manual); the catalogue or McpSetupScreen follows, then _load().",
      "gates": [
-      "_showMcp (widget.mode != IntegrationsMode.providers)"
+      "_showMcp && _catalogAvailable"
      ],
      "destructive": false
     },
@@ -1026,12 +1026,12 @@
      "id": "integrations-mcp-empty-add",
      "type": "button",
      "label": "Add an MCP server",
-     "key": null,
-     "line": 944,
-     "action": "navigate",
-     "target": "mcp-setup",
-     "targetWidget": "McpSetupScreen",
-     "effect": "ProductInlineEmpty action -> _openMcpSetup().",
+     "key": "mcp-empty-add",
+     "line": 1427,
+     "action": "open-sheet",
+     "target": "mcp-add-sheet",
+     "targetWidget": "showMcpAddSheet",
+     "effect": "_openMcpAdd(): the add chooser (catalogue or manual); the catalogue or McpSetupScreen follows, then _load().",
      "gates": [
       "_showMcp (widget.mode != IntegrationsMode.providers)",
       "servers.isEmpty"
@@ -1563,7 +1563,7 @@
      "type": "button",
      "label": "Disconnect provider",
      "key": "confirm-provider-disconnect",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
@@ -1577,7 +1577,7 @@
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
@@ -1614,7 +1614,7 @@
      "type": "button",
      "label": "Remove",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
@@ -1628,7 +1628,7 @@
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
@@ -1926,7 +1926,7 @@
      "type": "button",
      "label": "Remove",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
@@ -1940,7 +1940,7 @@
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
@@ -1963,15 +1963,23 @@
    "reachedFrom": [
     {
      "page": "integrations",
-     "element": "integrations-add-mcp"
-    },
-    {
-     "page": "integrations",
-     "element": "integrations-mcp-empty-add"
-    },
-    {
-     "page": "integrations",
      "element": "integrations-resources-empty-add"
+    },
+    {
+     "page": "mcp-add-sheet",
+     "element": "mcp-add-sheet-manual"
+    },
+    {
+     "page": "mcp-catalog",
+     "element": "mcp-catalog-switch"
+    },
+    {
+     "page": "mcp-catalog",
+     "element": "mcp-catalog-manual"
+    },
+    {
+     "page": "mcp-catalog-node-sheet",
+     "element": "mcp-catalog-node-sheet-continue"
     }
    ],
    "gates": [
@@ -2174,6 +2182,283 @@
      "target": null,
      "targetWidget": null,
      "effect": "_save(): validates, builds McpServerDraft, repository.addMcpServer(draft, scope: _scope); for persisted config also controller.reloadAfterConfigurationChange(); pops true. After a save whose reconnect failed the label becomes 'Close' and it just Navigator.pop(context, true). Disabled while saving or when detached before saving.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "mcp-add-sheet",
+   "title": "Add an MCP server",
+   "kind": "sheet",
+   "file": "lib/ui/screens/mcp_catalog_screen.dart",
+   "widget": "showMcpAddSheet",
+   "presentedBy": [
+    "showKitChoiceSheet"
+   ],
+   "line": 36,
+   "purpose": "MCP › Add: choose the public catalogue or the manual form.",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-add-mcp"
+    },
+    {
+     "page": "integrations",
+     "element": "integrations-mcp-empty-add"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "mcp-add-sheet-catalog",
+     "type": "list-tile",
+     "label": "Browse the catalogue",
+     "key": "mcp-add-catalog",
+     "line": 48,
+     "action": "navigate",
+     "target": "mcp-catalog",
+     "targetWidget": "McpCatalogScreen",
+     "effect": "Pops McpAddPath.catalog; IntegrationsScreen pushes McpCatalogScreen.",
+     "gates": [
+      "disabled with its reason unless mcpAddSupported(capabilities)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-add-sheet-manual",
+     "type": "list-tile",
+     "label": "Enter manually",
+     "key": "mcp-add-manual",
+     "line": 58,
+     "action": "navigate",
+     "target": "mcp-setup",
+     "targetWidget": "McpSetupScreen",
+     "effect": "Pops McpAddPath.manual; IntegrationsScreen pushes McpSetupScreen.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "mcp-catalog",
+   "title": "MCP catalogue",
+   "kind": "screen",
+   "file": "lib/ui/screens/mcp_catalog_screen.dart",
+   "widget": "McpCatalogScreen",
+   "presentedBy": [],
+   "line": 90,
+   "purpose": "Servers from the public MCP registry as switches, the ones on this server first; On opens the manual form filled in, Off removes it with the MCP page's question. Loading the registry is the person's choice, remembered per server.",
+   "reachedFrom": [
+    {
+     "page": "mcp-add-sheet",
+     "element": "mcp-add-sheet-catalog"
+    }
+   ],
+   "gates": [
+    "mcpAddSupported(capabilities), else the unavailable state"
+   ],
+   "elements": [
+    {
+     "id": "mcp-catalog-forget",
+     "type": "menu-item",
+     "label": "Stop using the registry",
+     "key": "mcp-catalog-forget",
+     "line": 405,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_stopUsingRegistry(): forgets the opt-in for this server.",
+     "gates": [
+      "registry opted in"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-catalog-load",
+     "type": "button",
+     "label": "Load the list",
+     "key": "mcp-catalog-load",
+     "line": 441,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_optIn(): remembers the choice and reads the registry.",
+     "gates": [
+      "not opted in (consent state)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-catalog-manual",
+     "type": "button",
+     "label": "Enter manually",
+     "key": "mcp-catalog-manual",
+     "line": 447,
+     "action": "navigate",
+     "target": "mcp-setup",
+     "targetWidget": "McpSetupScreen",
+     "effect": "_openManual(): pushes McpSetupScreen; a save reads the list again.",
+     "gates": [
+      "consent, failed or empty state"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-catalog-search",
+     "type": "text-field",
+     "label": "Search the registry",
+     "key": "mcp-catalog-search",
+     "line": 467,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Debounced registry search; empty shows the saved list.",
+     "gates": [
+      "opted in"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-catalog-pull-refresh",
+     "type": "gesture",
+     "label": "[pull to refresh]",
+     "key": null,
+     "line": 456,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_refresh(): reads this server's MCP list and the registry again.",
+     "gates": [
+      "opted in"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-catalog-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": null,
+     "line": 539,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Reads the registry (or this server's MCP list) again.",
+     "gates": [
+      "registry unreachable, stale, or inventory unreadable"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-catalog-switch",
+     "type": "toggle",
+     "label": "<server title> (on | off)",
+     "key": "mcp-catalog-switch-<server name>",
+     "line": 631,
+     "action": "navigate",
+     "target": "mcp-setup",
+     "targetWidget": "McpSetupScreen",
+     "effect": "On: _turnOn opens McpSetupScreen filled in from the listing (a Node server on a phone host asks first); Off: _turnOff asks with showKitConfirm and removes it with removeMcpServer.",
+     "gates": [
+      "disabled with its reason while busy, when removal is unsupported, or when the listing has no endpoint / needs Docker"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "mcp-catalog-node-sheet",
+   "title": "{title} runs with Node",
+   "kind": "sheet",
+   "file": "lib/ui/screens/mcp_catalog_screen.dart",
+   "widget": "_askNode",
+   "presentedBy": [
+    "showKitChoiceSheet"
+   ],
+   "line": 331,
+   "purpose": "On a phone host, turning on a Node server asks whether to add Node first.",
+   "reachedFrom": [
+    {
+     "page": "mcp-catalog",
+     "element": "mcp-catalog-switch"
+    }
+   ],
+   "gates": [
+    "item.runtime == node && phone host"
+   ],
+   "elements": [
+    {
+     "id": "mcp-catalog-node-sheet-add-node",
+     "type": "list-tile",
+     "label": "Add Node to this phone",
+     "key": "mcp-catalog-add-node",
+     "line": 337,
+     "action": "navigate",
+     "target": "termux-setup-installed",
+     "targetWidget": "openThisPhone",
+     "effect": "Opens This phone to add tools.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "mcp-catalog-node-sheet-continue",
+     "type": "list-tile",
+     "label": "Node is already on this phone",
+     "key": "mcp-catalog-node-continue",
+     "line": 344,
+     "action": "navigate",
+     "target": "mcp-setup",
+     "targetWidget": "McpSetupScreen",
+     "effect": "Continues to the filled-in form.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "mcp-catalog-remove-sheet",
+   "title": "Remove {name} until restart?",
+   "kind": "sheet",
+   "file": "lib/ui/screens/mcp_catalog_screen.dart",
+   "widget": "_turnOff",
+   "presentedBy": [
+    "showKitConfirm"
+   ],
+   "line": 364,
+   "purpose": "Confirms the runtime removal of a catalogue server that is on.",
+   "reachedFrom": [
+    {
+     "page": "mcp-catalog",
+     "element": "mcp-catalog-switch"
+    }
+   ],
+   "gates": [
+    "controller.capabilities.mcpRuntimeRemovals"
+   ],
+   "elements": [
+    {
+     "id": "mcp-catalog-remove-sheet-confirm",
+     "type": "button",
+     "label": "Remove until restart",
+     "key": "confirm-mcp-remove",
+     "line": 372,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "removeMcpServer(name, locationRevision), then reads the list again.",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "mcp-catalog-remove-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 371,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops false; nothing changes.",
      "gates": [],
      "destructive": false
     }

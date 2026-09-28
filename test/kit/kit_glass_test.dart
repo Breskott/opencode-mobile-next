@@ -634,8 +634,7 @@ void main() {
       // Debug-mode build, layout and paint of the whole shell on the test
       // host (Skia, no GPU); a coarse guard that no frame does a rebuild's
       // or a shader compile's work. Printed for the QA record.
-      // ignore: avoid_print
-      print(
+      debugPrint(
         'fluid glass frames: mean ${(mean / 1000).toStringAsFixed(2)} ms, '
         'max ${(frames.reduce((a, b) => a > b ? a : b) / 1000).toStringAsFixed(2)} ms',
       );

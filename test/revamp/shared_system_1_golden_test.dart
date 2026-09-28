@@ -98,7 +98,7 @@ void main() {
       testWidgets('external link, https ($where)', (tester) async {
         await _shot(
           tester,
-          'system_external-link-dialog_https',
+          'system_external_link_dialog_https',
           light: light,
           size: size,
           open: (context) => openExternalLink(
@@ -112,7 +112,7 @@ void main() {
       testWidgets('external link, insecure http ($where)', (tester) async {
         await _shot(
           tester,
-          'system_external-link-dialog_insecure-http',
+          'system_external_link_dialog_insecure_http',
           light: light,
           size: size,
           open: (context) => openExternalLink(
@@ -126,7 +126,7 @@ void main() {
       testWidgets('external link, blocked ($where)', (tester) async {
         await _shot(
           tester,
-          'system_external-link-dialog_blocked',
+          'system_external_link_dialog_blocked',
           light: light,
           size: size,
           open: (context) => openExternalLink(context, 'intent://steal#end'),
@@ -175,13 +175,13 @@ void main() {
       }
 
       testWidgets('run command, idle ($where)', (tester) async {
-        await openRun(tester, 'system_run-command-dialog_idle');
+        await openRun(tester, 'system_run_command_dialog_idle');
       });
 
       testWidgets('run command, run failed ($where)', (tester) async {
         await openRun(
           tester,
-          'system_run-command-dialog_run-failed',
+          'system_run_command_dialog_run_failed',
           failure: const ProductException(
             'The command review is not installed on this server.',
           ),

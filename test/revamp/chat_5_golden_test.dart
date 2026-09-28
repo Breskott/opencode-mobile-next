@@ -103,6 +103,8 @@ void main() {
           final conn = await chat3Controller(api: _Api());
           addTearDown(conn.dispose);
           final boundary = GlobalKey();
+          debugDefaultTargetPlatformOverride =
+              TargetPlatform.android; // ARCH-11
           try {
             await pumpChat3(
               tester,

@@ -28,7 +28,7 @@ const _phone = Size(412, 915);
 const _wide = Size(1280, 800);
 
 String _name(String shot, Size size, bool light) => [
-  'review_$shot',
+  'review_workspace_$shot',
   if (size != _phone) '${size.width.toInt()}x${size.height.toInt()}',
   light ? 'light' : 'dark',
 ].join('_');

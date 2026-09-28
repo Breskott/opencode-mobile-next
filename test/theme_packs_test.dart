@@ -5,6 +5,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_nav.dart';
+import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/theme_packs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -195,9 +196,12 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         theme: AppTheme.light(),
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: const TextScaler.linear(2)),
+          // Reduced motion: the preview sheet's working mark (KitThemePreview,
+          // 063f4741) holds still, so the tree settles.
+          data: MediaQuery.of(context).copyWith(
+            textScaler: const TextScaler.linear(2),
+            disableAnimations: true,
+          ),
           child: child!,
         ),
         home: AppearanceSettingsScreen(controller: controller),
@@ -232,18 +236,17 @@ void main() {
     await tester.tap(solarized);
     await tester.pumpAndSettle();
     expect(controller.themePack.value, ThemePackId.opencode);
-    await tester.scrollUntilVisible(
-      find.text('Apply'),
-      160,
-      scrollable: find.descendant(
-        of: find.byKey(const Key('appearance-picker')),
-        matching: find.byType(Scrollable),
-      ),
-    );
+    // Apply ends the preview sheet's scrolling body; it is built before
+    // it is on screen, so bring it into view rather than scroll until it
+    // exists.
+    await tester.ensureVisible(find.text('Apply'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(controller.themePack.value, ThemePackId.solarized);
     expect(tester.takeException(), isNull);
+    // Apply offers Undo (063f4741); close its window.
+    KitUndo.commitPending();
   });
 
   testWidgets('a harvested Material You pack becomes selectable', (
@@ -264,6 +267,12 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: AppTheme.light(),
+        // Reduced motion: the preview sheet's working mark
+        // (KitThemePreview, 063f4741) holds still, so the tree settles.
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
         home: AppearanceSettingsScreen(controller: controller),
       ),
     );
@@ -285,17 +294,16 @@ void main() {
     await tester.tap(dynamicTile);
     await tester.pumpAndSettle();
     expect(controller.themePack.value, ThemePackId.opencode);
-    await tester.scrollUntilVisible(
-      find.text('Apply'),
-      160,
-      scrollable: find.descendant(
-        of: find.byKey(const Key('appearance-picker')),
-        matching: find.byType(Scrollable),
-      ),
-    );
+    // Apply ends the preview sheet's scrolling body; it is built before
+    // it is on screen, so bring it into view rather than scroll until it
+    // exists.
+    await tester.ensureVisible(find.text('Apply'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(controller.themePack.value, ThemePackId.dynamic);
+    // Apply offers Undo (063f4741); close its window.
+    KitUndo.commitPending();
   });
 
   group('screen-settings-1: appearance', () {

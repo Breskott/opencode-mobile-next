@@ -232,7 +232,7 @@ const _baselinePath = 'test/repository_hygiene_baseline.json';
 /// The most TEST-12 baseline entries there may ever be: the 24 golden-failure
 /// files tracked when the gate landed. Edits may only LOWER this number
 /// (lower it whenever the baseline shrinks); raising it re-opens the ratchet.
-const _test12Ceiling = 24;
+const _test12Ceiling = 0;
 
 /// True when the suite runs on a CI runner (GitHub Actions sets both).
 final _onCi =

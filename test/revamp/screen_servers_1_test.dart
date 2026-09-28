@@ -8,12 +8,13 @@
 // default; a saved server's actions are on long-press (KIT-28); the loaded
 // list lays out at every LAY-4 overflow width.
 //
-// Goldens (TEST-20 names, phone 412x915 and 1280x800, dark and light, owner
-// decision 2026-09-27): regenerate deliberately with
+// Goldens: TEST-20 names, phone 412x915 and 1280x800, dark and light (owner
+// decision 2026-09-27). Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/screen_servers_1_test.dart
 // and look at every changed image before committing it.
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -456,6 +457,7 @@ void main() {
           light: light,
           size: size,
         );
+        debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
         try {
           await then?.call();
           expect(tester.takeException(), isNull);
@@ -464,6 +466,7 @@ void main() {
             matchesGoldenFile('goldens/${name}_$mode.png'),
           );
         } finally {
+          debugDefaultTargetPlatformOverride = null;
           await done();
         }
       }
@@ -481,13 +484,13 @@ void main() {
       });
 
       testWidgets('welcome · $mode', (tester) async {
-        await shoot(tester, 'servers_servers-welcome_first-run', seeded: []);
+        await shoot(tester, 'servers_servers_welcome_first_run', seeded: []);
       });
 
       testWidgets('remove sheet · $mode', (tester) async {
         await shoot(
           tester,
-          'servers_servers-remove-server-sheet_confirm',
+          'servers_servers_remove_server_sheet_confirm',
           then: () async {
             await _openRowMenu(tester, 'studio');
             await tester.tap(find.text('Remove').last);
@@ -499,7 +502,7 @@ void main() {
       testWidgets('editor, saved password · $mode', (tester) async {
         await shoot(
           tester,
-          'servers_profile-editor_edit',
+          'servers_profile_editor_edit',
           then: () => _openEditor(tester, 'laptop'),
         );
       });
@@ -533,7 +536,7 @@ void main() {
       testWidgets('editor, add · $mode', (tester) async {
         await shoot(
           tester,
-          'servers_profile-editor_add-opencode',
+          'servers_profile_editor_add_opencode',
           then: () async {
             await openAdd(tester);
             await chooseServerKind(tester);
@@ -654,7 +657,7 @@ void main() {
       testWidgets('discard sheet · $mode', (tester) async {
         await shoot(
           tester,
-          'servers_profile-editor-discard-sheet_confirm',
+          'servers_profile_editor_discard_sheet_confirm',
           then: () async {
             await _openEditor(tester, 'studio');
             await tester.enterText(

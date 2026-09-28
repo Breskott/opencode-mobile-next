@@ -5,12 +5,14 @@
 // 1280x800 with the app's real fonts. The same file runs on the base
 // commit for the "before" images (it drives only keys both share).
 //
-// Regenerate deliberately and look at every image:
+// Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/slice_p63_golden_test.dart
+// and look at every changed image before committing it.
 
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
@@ -163,46 +165,51 @@ void main() {
       addTearDown(team.dispose);
       await team.start();
       final boundary = GlobalKey();
-      await tester.pumpWidget(
-        MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: captureTheme(light: true),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(disableAnimations: true),
-            child: RepaintBoundary(key: boundary, child: child),
+      debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: captureTheme(light: true),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: RepaintBoundary(key: boundary, child: child),
+            ),
+            home: TeamHomeScreen(controller: team, now: () => _clock),
           ),
-          home: TeamHomeScreen(controller: team, now: () => _clock),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('team-home-start-run')));
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const ValueKey('team-start-run-direct-title')),
-        'Add a docstring to add() in calc.py',
-      );
-      await tester.pump();
-      await tester.tap(
-        find.byKey(const ValueKey('team-start-run-direct-send')),
-      );
-      if (shot == _Shot.sheetSending) {
-        for (var i = 0; i < 6; i++) {
-          await tester.pump(const Duration(milliseconds: 16));
-        }
-      } else {
+        );
         await tester.pumpAndSettle();
-        final conversation = find.byType(TeamConversationScreen);
-        if (conversation.evaluate().isNotEmpty) {
-          Navigator.of(tester.element(conversation)).pop();
+        await tester.tap(find.byKey(const ValueKey('team-home-start-run')));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const ValueKey('team-start-run-direct-title')),
+          'Add a docstring to add() in calc.py',
+        );
+        await tester.pump();
+        await tester.tap(
+          find.byKey(const ValueKey('team-start-run-direct-send')),
+        );
+        if (shot == _Shot.sheetSending) {
+          for (var i = 0; i < 6; i++) {
+            await tester.pump(const Duration(milliseconds: 16));
+          }
+        } else {
           await tester.pumpAndSettle();
+          final conversation = find.byType(TeamConversationScreen);
+          if (conversation.evaluate().isNotEmpty) {
+            Navigator.of(tester.element(conversation)).pop();
+            await tester.pumpAndSettle();
+          }
         }
+        await expectLater(
+          find.byKey(boundary),
+          matchesGoldenFile('goldens/${shot.name}.png'),
+        );
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
       }
-      await expectLater(
-        find.byKey(boundary),
-        matchesGoldenFile('goldens/${shot.name}.png'),
-      );
       gateway.holdAssign?.complete();
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(minutes: 11));

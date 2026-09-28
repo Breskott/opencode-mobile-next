@@ -1,7 +1,6 @@
 // KitChoiceList, KitChoiceRow, KitPickerRow (docs/ux-system/kit-api/
 // KitChoiceList.md): the frozen "Tests required" contract (G9, G14, G37,
 // TEST-15). Arabic/RTL is dropped by the owner decision of 2026-09-27.
-// ignore_for_file: deprecated_member_use_from_same_package
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';

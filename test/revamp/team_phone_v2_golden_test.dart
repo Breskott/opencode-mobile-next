@@ -13,6 +13,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -182,36 +183,41 @@ Future<void> _shot(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final boundary = GlobalKey();
-  await tester.pumpWidget(
-    RepaintBoundary(
-      key: boundary,
-      child: ProviderScope(
-        overrides: [
-          bootstrapProvider.overrideWithValue(AppBootstrap(controller.store)),
-          connProvider.overrideWithValue(controller),
-        ],
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: captureTheme(light: true),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(disableAnimations: true),
-            child: child!,
+  debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
+  try {
+    await tester.pumpWidget(
+      RepaintBoundary(
+        key: boundary,
+        child: ProviderScope(
+          overrides: [
+            bootstrapProvider.overrideWithValue(AppBootstrap(controller.store)),
+            connProvider.overrideWithValue(controller),
+          ],
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: captureTheme(light: true),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: child!,
+            ),
+            home: Builder(builder: home),
           ),
-          home: Builder(builder: home),
         ),
       ),
-    ),
-  );
-  await _settle(tester);
-  if (act != null) await act();
-  await _settle(tester);
-  expect(tester.takeException(), isNull);
-  await expectLater(
-    find.byKey(boundary),
-    matchesGoldenFile('goldens/$name.png'),
-  );
+    );
+    await _settle(tester);
+    if (act != null) await act();
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
+    await expectLater(
+      find.byKey(boundary),
+      matchesGoldenFile('goldens/$name.png'),
+    );
+  } finally {
+    debugDefaultTargetPlatformOverride = null;
+  }
   await tester.pumpWidget(const SizedBox.shrink());
 }
 
@@ -386,6 +392,7 @@ void main() {
       ..optionalInstalled = {'python', 'aiteam', 'voice'};
     PhoneSetup.termux = termux;
     final boundary = GlobalKey();
+    debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
     try {
       await pumpPhone(
         tester,
@@ -407,6 +414,7 @@ void main() {
         matchesGoldenFile('goldens/team_v2_this_phone_installed_light.png'),
       );
     } finally {
+      debugDefaultTargetPlatformOverride = null;
       await unmountPhone(tester);
     }
   });
@@ -432,6 +440,7 @@ void main() {
         );
       PhoneSetup.termux = termux;
       final boundary = GlobalKey();
+      debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
       try {
         await pumpPhone(
           tester,
@@ -449,6 +458,7 @@ void main() {
           ),
         );
       } finally {
+        debugDefaultTargetPlatformOverride = null;
         await unmountPhone(tester);
       }
     });

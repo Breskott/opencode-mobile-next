@@ -255,14 +255,19 @@ void main() {
       testWidgets('loading', (tester) async {
         await _shot(
           tester,
-          'aisetup_loading',
+          'settings_aisetup_loading',
           light: light,
           gateway: _Gateway(hold: true),
           settle: false,
         );
       });
       testWidgets('empty', (tester) async {
-        await _shot(tester, 'aisetup_empty', light: light, gateway: _Gateway());
+        await _shot(
+          tester,
+          'settings_aisetup_empty',
+          light: light,
+          gateway: _Gateway(),
+        );
       });
       testWidgets('offline with the last read', (tester) async {
         await _shot(
@@ -274,7 +279,12 @@ void main() {
         );
       });
       testWidgets('unsupported', (tester) async {
-        await _shot(tester, 'aisetup_unsupported', light: light, gateway: null);
+        await _shot(
+          tester,
+          'settings_aisetup_unsupported',
+          light: light,
+          gateway: null,
+        );
       });
       testWidgets('needs sign-in', (tester) async {
         await _shot(
@@ -292,7 +302,7 @@ void main() {
       testWidgets('error', (tester) async {
         await _shot(
           tester,
-          'aisetup_error',
+          'settings_aisetup_error',
           light: light,
           gateway: _Gateway(
             failure: const SetupFailure(

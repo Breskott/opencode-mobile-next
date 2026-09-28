@@ -7,9 +7,6 @@
 //   flutter test --concurrency=1 tool/capture/bugfix_nonchat_test.dart
 //
 // Output: docs/qa/slice-bugfix-nonchat-2026-09-28/<before|after>-<page>.png
-//
-// Same as the sibling capture files (capture_test, isolated_task_test):
-// ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
@@ -20,6 +17,7 @@ import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_context_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 
 import 'fixtures.dart';
 
@@ -74,8 +72,12 @@ Future<void> _shoot(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
-  SharedPreferences.setMockInitialValues({});
+  // An empty in-memory store per capture, through the public platform
+  // interface (setMockInitialValues is test-only API and this is tool/).
+  SharedPreferencesStorePlatform.instance =
+      InMemorySharedPreferencesStore.empty();
   final prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
   final controller = await captureController(
     prefs: prefs,
     api: api,

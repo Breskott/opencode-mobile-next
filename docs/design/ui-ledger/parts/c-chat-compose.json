@@ -471,10 +471,10 @@
           "label": "Voice input",
           "key": "composer-tool-voice",
           "line": 688,
-          "action": "open-sheet",
-          "target": "voice-composer-result-sheet",
-          "targetWidget": "showVoiceComposerResultSheet",
-          "effect": "Pops _PromptTool.voice; onVoice -> ChatScreen._openVoice() (chat_screen.dart:2801): shows showVoiceModelSetupSheet first when voice.models is not ready, then showVoiceComposerResultSheet; the transcript is merged into the draft and optionally sent.",
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onVoice -> ChatScreen._openVoice(): the voice model setup sheet when no model is ready; otherwise voice is a composer mode (slice-P10.3, 3273d7ef) and dictation lands in the draft; no voice sheet opens.",
           "gates": [
             "platformCapabilities.supportsVoice",
             "disabled when voiceBlocked (busy || sending)"
@@ -750,21 +750,6 @@
             "Commands tab only",
             "search text is not empty",
             "each entry's own gate in lib/ui/search/search_index.dart"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "command-launcher-sheet-agents-refresh-gesture",
-          "type": "gesture",
-          "label": "[pull to refresh subagents]",
-          "key": null,
-          "line": 468,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "RefreshIndicator.onRefresh -> _refresh() -> controller.refreshCatalog() (also wraps the empty state at line 431).",
-          "gates": [
-            "Delegate tab"
           ],
           "destructive": false
         },

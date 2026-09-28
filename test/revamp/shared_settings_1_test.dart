@@ -166,6 +166,11 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('appearance-preview-light')));
       await tester.pumpAndSettle();
       expect(controller.appearance.value, appearance);
+      // Apply ends the sheet's scrolling body (appearance_picker.dart); on
+      // the 800x600 test window it sits below the fold, as on a short
+      // landscape phone, so bring it into view first.
+      await tester.ensureVisible(find.text(_l10n.e7AppearanceApply));
+      await tester.pumpAndSettle();
       await tester.tap(find.text(_l10n.e7AppearanceApply));
       await tester.pumpAndSettle();
       expect(controller.themePack.value, ThemePackId.gruvbox);

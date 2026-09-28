@@ -9,6 +9,7 @@
 // and look at every changed image before committing it.
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
@@ -119,60 +120,69 @@ void main() {
           tester.view.devicePixelRatio = 1;
           addTearDown(tester.view.reset);
           final boundary = GlobalKey();
-          await tester.pumpWidget(
-            RepaintBoundary(
-              key: boundary,
-              child: MaterialApp(
-                debugShowCheckedModeBanner: false,
-                theme: light ? AppTheme.light() : AppTheme.dark(),
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                builder: (context, child) => MediaQuery(
-                  data: MediaQuery.of(
-                    context,
-                  ).copyWith(disableAnimations: true),
-                  child: child!,
-                ),
-                home: Scaffold(
-                  body: SafeArea(
-                    child: Builder(
-                      builder: (context) => ListView(
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 700),
-                              child: TeamNeedsYouCard(
-                                keyPrefix: 'gate',
-                                controller: controller,
-                                gate: gate,
-                                title: 'fox',
-                                onOpen: () => unawaited(
-                                  showGateSheet(
-                                    context,
-                                    controller,
-                                    gate.id,
-                                    now: DateTime.now,
+          debugDefaultTargetPlatformOverride =
+              TargetPlatform.android; // ARCH-11
+          try {
+            await tester.pumpWidget(
+              RepaintBoundary(
+                key: boundary,
+                child: MaterialApp(
+                  debugShowCheckedModeBanner: false,
+                  theme: light ? AppTheme.light() : AppTheme.dark(),
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  builder: (context, child) => MediaQuery(
+                    data: MediaQuery.of(
+                      context,
+                    ).copyWith(disableAnimations: true),
+                    child: child!,
+                  ),
+                  home: Scaffold(
+                    body: SafeArea(
+                      child: Builder(
+                        builder: (context) => ListView(
+                          padding: const EdgeInsets.all(16),
+                          children: [
+                            Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 700,
+                                ),
+                                child: TeamNeedsYouCard(
+                                  keyPrefix: 'gate',
+                                  controller: controller,
+                                  gate: gate,
+                                  title: 'fox',
+                                  onOpen: () => unawaited(
+                                    showGateSheet(
+                                      context,
+                                      controller,
+                                      gate.id,
+                                      now: DateTime.now,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
-          await _settle(tester);
-          await act?.call(tester);
-          expect(tester.takeException(), isNull);
-          await expectLater(
-            find.byKey(boundary),
-            matchesGoldenFile('goldens/$file.png'),
-          );
+            );
+            await _settle(tester);
+            await act?.call(tester);
+            expect(tester.takeException(), isNull);
+            await expectLater(
+              find.byKey(boundary),
+              matchesGoldenFile('goldens/$file.png'),
+            );
+          } finally {
+            debugDefaultTargetPlatformOverride = null;
+          }
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pump(const Duration(seconds: 61));
         });

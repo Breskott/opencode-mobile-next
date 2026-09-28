@@ -8,6 +8,7 @@
 // Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/shared_chat_1_golden_test.dart
 // and look at every changed image before committing it.
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -155,6 +156,7 @@ Future<void> _shot(
   final boundary = GlobalKey();
   final conn = controller ?? await _controller();
   addTearDown(conn.dispose);
+  debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
   try {
     await tester.pumpWidget(
       ProviderScope(
@@ -196,6 +198,7 @@ Future<void> _shot(
       matchesGoldenFile('goldens/${_name(shot, size, light)}.png'),
     );
   } finally {
+    debugDefaultTargetPlatformOverride = null;
     await tester.pumpWidget(const SizedBox.shrink());
   }
 }

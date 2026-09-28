@@ -245,7 +245,7 @@ void main() {
       ) async {
         await _golden(
           tester,
-          wide ? 'chat_transcript_1280x800' : 'chat_transcript',
+          wide ? 'chat_transcript_turn_1280x800' : 'chat_transcript_turn',
           light: light,
           size: wide ? const Size(1280, 800) : const Size(412, 915),
           api: _Api()
@@ -340,7 +340,7 @@ void main() {
     testWidgets('chat · find · $mode', (tester) async {
       await _golden(
         tester,
-        'chat_find',
+        'chat_find_open',
         light: light,
         api: _Api()
           ..busy = {}

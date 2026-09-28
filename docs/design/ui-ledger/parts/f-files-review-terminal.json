@@ -1738,7 +1738,7 @@
           "type": "button",
           "label": "Stop (running) / Remove (exited)",
           "key": null,
-          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "file": "lib/ui/kit/kit_confirm_sheet.dart",
           "line": 344,
           "action": "mutate",
           "target": null,
@@ -1751,7 +1751,7 @@
           "type": "button",
           "label": "Cancel",
           "key": null,
-          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "file": "lib/ui/kit/kit_confirm_sheet.dart",
           "line": 327,
           "action": "dismiss",
           "target": null,
@@ -2545,13 +2545,13 @@
       "id": "diff-view",
       "title": "Review",
       "kind": "screen",
-      "file": "lib/ui/widgets/diff_view.dart",
-      "widget": "DiffView",
+      "file": "lib/ui/screens/review_workspace.dart",
+      "widget": "DiffPage",
       "presentedBy": [
         "DiffView.open",
         "DiffView.single"
       ],
-      "line": 23,
+      "line": 981,
       "purpose": "Read-only full-screen diff of one or more files with sticky file headers and expandable context gaps.",
       "reachedFrom": [
         {
@@ -2758,10 +2758,6 @@
     }
   ],
   "notPages": [
-    {
-      "file": "lib/ui/widgets/code_highlight.dart",
-      "reason": "pure syntax-highlighting helper, no surface and no interactive element"
-    },
     {
       "file": "lib/ui/screens/local_terminal_screen.dart",
       "reason": "LocalTerminalView: the \"This phone\" source of the Terminal page (terminal_screen.dart, same route), a shell in the built-in Ubuntu with its key bar and the shell list in the top bar's menu; not a page of its own (docs/design/local-terminal-2026-09-24.md)."

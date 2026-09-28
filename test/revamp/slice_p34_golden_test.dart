@@ -5,9 +5,11 @@
 // switches the AI Team sheet used to hold, and the page while the team is
 // off, saying why nothing was found.
 //
-// Regenerate deliberately and look at every image:
+// Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/slice_p34_golden_test.dart
+// and look at every changed image before committing it.
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -175,32 +177,37 @@ void main() {
         home = await _onPage(shot, team);
       }
       final boundary = GlobalKey();
-      await tester.pumpWidget(
-        MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: captureTheme(light: true),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(disableAnimations: true),
-            child: RepaintBoundary(key: boundary, child: child),
+      debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: captureTheme(light: true),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: RepaintBoundary(key: boundary, child: child),
+            ),
+            home: home,
           ),
-          home: home,
-        ),
-      );
-      for (var i = 0; i < 10; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
+        );
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        if (shot == _Shot.menu) {
+          await tester.tap(find.byKey(const ValueKey('team-home-more')));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 600));
+        }
+        expect(tester.takeException(), isNull);
+        await expectLater(
+          find.byKey(boundary),
+          matchesGoldenFile('goldens/${shot.name}.png'),
+        );
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
       }
-      if (shot == _Shot.menu) {
-        await tester.tap(find.byKey(const ValueKey('team-home-more')));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 600));
-      }
-      expect(tester.takeException(), isNull);
-      await expectLater(
-        find.byKey(boundary),
-        matchesGoldenFile('goldens/${shot.name}.png'),
-      );
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 1));
     });

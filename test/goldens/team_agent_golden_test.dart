@@ -199,7 +199,7 @@ Future<void> _golden(
     final suffix = size == _phone ? '' : '_${size.width.toInt()}x800';
     await expectLater(
       find.byKey(boundary),
-      matchesGoldenFile('${name}_${light ? 'light' : 'dark'}$suffix.png'),
+      matchesGoldenFile('$name${suffix}_${light ? 'light' : 'dark'}.png'),
     );
   } finally {
     await tester.pumpWidget(const SizedBox.shrink());
@@ -229,7 +229,7 @@ void main() {
       final at = size == _phone ? 'phone' : 'wide';
 
       testWidgets('agent · top · $mode · $at', (tester) async {
-        await _golden(tester, 'team_agent', light: light, size: size);
+        await _golden(tester, 'team_agent_top', light: light, size: size);
       });
 
       testWidgets('gate · choice · $mode · $at', (tester) async {

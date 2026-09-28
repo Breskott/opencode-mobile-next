@@ -9,7 +9,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/domain/connection_status.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
@@ -40,6 +40,14 @@ class _Controller extends ConnectionController {
 
   int queued = 0;
   int drafts = 0;
+
+  /// The controller-owned connection truth the status line presents
+  /// (3d64653c); an isolated controller's own is always hidden.
+  ConnectionStatusSnapshot? shownStatus;
+
+  @override
+  ConnectionStatusSnapshot get connectionStatus =>
+      shownStatus ?? super.connectionStatus;
 
   @override
   int queuedPromptCountForProfile(String profileID) => queued;
@@ -199,8 +207,15 @@ void main() {
   });
 
   group('embedded-connection-status-banner', () {
+    // Since 3d64653c the line presents the controller's connection
+    // snapshot: a server that stopped answering, not a raw stream state.
     Future<_Controller> lost() async =>
-        (await _controller())..status = StreamStatus.disconnected;
+        (await _controller())
+          ..shownStatus = const ConnectionStatusSnapshot(
+            phase: ConnectionStatusPhase.notAnswering,
+            profileId: 'laptop',
+            serverName: 'Laptop',
+          );
 
     testWidgets('a lost connection is a failure line, not "needs you"', (
       tester,
@@ -213,7 +228,7 @@ void main() {
 
       final line = tester.widget<KitStatusLine>(find.byType(KitStatusLine));
       expect(line.tone, AppStatusTone.failure);
-      expect(find.text('Connection lost'), findsOneWidget);
+      expect(find.text("Laptop isn't answering"), findsOneWidget);
       // The one action names what it retries (R2).
       expect(find.textContaining('Reconnect to '), findsOneWidget);
       expect(find.text('Try again'), findsNothing);

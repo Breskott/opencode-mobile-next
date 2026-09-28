@@ -245,7 +245,7 @@ lives in `packages/opencode_sdk/`, and is covered by this project's
 | `cupertino_icons` | 1.0.9 | MIT | Copyright (c) 2016 Vladimir Kharlampidi | runtime |
 | `dbus` | 0.7.15 | MPL-2.0 | — | runtime |
 | `desktop_drop` | 0.8.4 | Apache-2.0 | copyright notice that is included in or attached to the work | runtime |
-| `dio` | 5.11.0 | MIT | Copyright (c) 2018 Wen Du (wendux) | runtime |
+| `dio` | 5.11.1 | MIT | Copyright (c) 2018 Wen Du (wendux) | runtime |
 | `dio_web_adapter` | 2.2.1 | MIT | Copyright (c) 2018 Wen Du (wendux) | runtime |
 | `dynamic_color` | 1.9.0 | Apache-2.0 | — | runtime |
 | `equatable` | 2.0.7 | MIT | Copyright (c) 2024 Felix Angelov | runtime |
@@ -266,10 +266,10 @@ lives in `packages/opencode_sdk/`, and is covered by this project's
 | `flutter_lints` | 6.0.0 | BSD-3-Clause | Copyright 2013 The Flutter Authors. All rights reserved | test-only |
 | `flutter_plugin_android_lifecycle` | 2.0.35 | BSD-3-Clause | Copyright 2013 The Flutter Authors | runtime |
 | `flutter_riverpod` | 3.4.3 | MIT | Copyright (c) 2020 Remi Rousselet | runtime |
-| `flutter_secure_storage` | 11.0.0 | BSD-3-Clause | Copyright 2017 German Saprykin | runtime |
+| `flutter_secure_storage` | 11.2.0 | BSD-3-Clause | Copyright 2017 German Saprykin | runtime |
 | `flutter_secure_storage_darwin` | 0.4.0 | BSD-3-Clause | Copyright 2025 Julian Steenbakker | runtime |
 | `flutter_secure_storage_linux` | 3.0.2 | BSD-3-Clause | Copyright 2017 German Saprykin | runtime |
-| `flutter_secure_storage_platform_interface` | 2.0.3 | BSD-3-Clause | Copyright 2017 German Saprykin | runtime |
+| `flutter_secure_storage_platform_interface` | 2.1.1 | BSD-3-Clause | Copyright 2017 German Saprykin | runtime |
 | `flutter_secure_storage_web` | 2.1.1 | BSD-3-Clause | Copyright 2017 German Saprykin | runtime |
 | `flutter_secure_storage_windows` | 4.2.2 | BSD-3-Clause | Copyright 2017 German Saprykin | runtime |
 | `flutter_svg` | 2.3.0 | MIT | Copyright (c) 2018 Dan Field | runtime |

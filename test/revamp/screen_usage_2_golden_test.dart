@@ -161,13 +161,13 @@ void main() {
     final theme = light ? 'light' : 'dark';
 
     testWidgets('quota setup, $theme', (tester) async {
-      await _shot(tester, 'quota_setup', light: light);
+      await _shot(tester, 'usage_quota_setup', light: light);
     });
 
     testWidgets('quota loaded, $theme', (tester) async {
       await _shot(
         tester,
-        'quota_loaded',
+        'usage_quota_loaded',
         light: light,
         monitored: true,
         act: _readToTop,
@@ -177,7 +177,7 @@ void main() {
     testWidgets('quota loaded, window panel, $theme', (tester) async {
       await _shot(
         tester,
-        'quota_window',
+        'usage_quota_window',
         light: light,
         monitored: true,
         act: (tester) async {
@@ -190,7 +190,7 @@ void main() {
     testWidgets('quota loaded at 1280x800, $theme', (tester) async {
       await _shot(
         tester,
-        'quota_loaded',
+        'usage_quota_loaded',
         light: light,
         size: _wide,
         monitored: true,

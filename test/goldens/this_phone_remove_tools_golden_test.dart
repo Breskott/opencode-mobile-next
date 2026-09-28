@@ -7,6 +7,7 @@
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/this_phone_remove_tools_golden_test.dart
 // and look at every changed image before committing it.
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +35,7 @@ Future<void> _shot(
 }) async {
   final boundary = GlobalKey();
   final linux = ToolsLinux(present: present);
+  debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
   try {
     await pumpPhone(
       tester,
@@ -73,6 +75,7 @@ Future<void> _shot(
       matchesGoldenFile('this_phone_${name}_$suffix.png'),
     );
   } finally {
+    debugDefaultTargetPlatformOverride = null;
     await unmountPhone(tester);
   }
 }

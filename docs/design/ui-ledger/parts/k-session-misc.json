@@ -1031,14 +1031,6 @@
   ],
   "notPages": [
     {
-      "file": "lib/ui/widgets/technical_direction.dart",
-      "reason": "Directionality(ltr) wrapper only; no surface and no interactive element"
-    },
-    {
-      "file": "lib/ui/widgets/agent_color.dart",
-      "reason": "colour helper functions and AgentColorScope InheritedWidget; no interactive element"
-    },
-    {
       "file": "lib/ui/widgets/provider_logo.dart",
       "reason": "ProviderLogo / ProviderMonogram / BrandTile pure rendering; no tap handlers or tooltips"
     },
