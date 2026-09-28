@@ -115,7 +115,7 @@ Behaviour (frozen):
 
 - **Dock (compact):** floats `space2` above the system gesture inset with `gutter` side margins; 60 dp tall (`navHeight`) or taller when labels grow; `KitGlass(dim: true)` with radius `navRadius` (22); the selected tab is a glass lens (a clear pill of the glass behind the glyph) with the fill glyph and `text1` label; others `text2`. Hidden while the keyboard is open (as today). Publishes `KitBottomInset` bottom = system inset + `space2` + dock height, and the same as `MediaQuery.padding.bottom` for its child (the `extendBody` contract of today).
 - **Rail (medium):** a floating glass column (`KitGlass(dim: true)`, radius `navRadius`) inset `space2` from the start, top and bottom edges; icon with its label under it for every destination; the selected one on the lens. Publishes `KitBottomInset` start = `KitLayout.railWidth` + `space2`.
-- **Sidebar (expanded/large):** a solid column `KitLayout.paneListWidth` (296) wide on `ground`, a 1 physical px `hairline` at its end edge; from top: `sidebarHeader` (its controls are glass, VL §6), the destinations as 48 dp rows (icon + `rowTitle` label + trailing needs-you badge), the selected destination's `pane` (scrolls on its own, below a `sectionGap`), and `sidebarPrimary` pinned at the bottom as a full-width primary `KitButton`. Publishes `KitBottomInset` start = 296.
+- **Sidebar (expanded/large):** a solid column `KitLayout.sidebarWidth(context)` wide (296 at 1.0 text, wider with larger text) on `ground`, a 1 physical px `hairline` at its end edge; from top: `sidebarHeader` (its controls are glass, VL §6), the destinations as 48 dp rows (icon + `rowTitle` label + trailing needs-you badge), the selected destination's `pane` (scrolls on its own, below a `sectionGap`), and `sidebarPrimary` pinned at the bottom as a full-width primary `KitButton`. Publishes `KitBottomInset` start = that width.
 - The layout switches at the `KitLayout` classes only: dock < 600, rail 600–839, sidebar ≥ 840 (the shell's 760/1040 go). A window < 480 dp tall keeps the dock (compact) or the rail (medium-or-wider).
 - `KitNav.hostsPane` is true only in the sidebar layout and only when the selected destination has a `pane`.
 - Switching destination never rebuilds the other destinations' content (the shell keeps `KitTabSwitcher`).
@@ -147,7 +147,7 @@ Declared (KIT-12): default (one selected), needs-you (a badge on a destination),
 
 - Each destination is a button with `selected` state and label "Inbox, 1 needs you" (count in words from KitNeedsYou; the badge is excluded as a separate node).
 - 48 dp minimum per destination in every layout; dock destinations fill the full bar height.
-- Labels always visible (no icon-only navigation); at 200 % text the dock grows and labels scale to the named clamp; the sidebar rows grow and wrap.
+- Labels always visible (no icon-only navigation); at 200 % text the dock grows and labels scale to the named clamp; the sidebar widens with the text (`KitLayout.sidebarWidth`: 296 × the text scale, at most `sidebarMaxWidth` 400 dp and a third of the window, kit-polish 2026-09-27) so its header and pinned primary keep their words whole, and its rows grow and wrap.
 - Traversal: navigation before content in the rail/sidebar layouts; after content in the dock layout (reading order: it is at the bottom), A11Y-4.
 - A badge count change is announced once by the destination's live region (KitNeedsYou, A11Y-3).
 

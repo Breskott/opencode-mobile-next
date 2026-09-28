@@ -140,12 +140,12 @@ Nothing else changes: the composer's layout and `KitBottomInset` height still up
 
 ## Tests
 
-- `test/kit/kit_glass_test.dart` (behaviour): press swell and spring back, reduced motion and glass off still; flow from the old size on the bottom edge; the pair joining, tappable where it now is, instant when reduced, solid outline when off; the shell joining on scroll and parting at the top and on a new tab; the lens stretching and settling, the drag lift and select on the dock and the rail, reduced-motion drag; the frame budget.
+- `test/kit/kit_glass_test.dart` (behaviour): press swell and spring back, reduced motion and glass off still; flow from the old size on the bottom edge; the pair joining, tappable where it now is, instant when reduced, solid outline when off; the shell joining on scroll and parting at the top and on a new tab; the lens stretching and settling, the drag lift and select on the dock and the rail, reduced-motion drag; a finger lifted after the glass (or the pair) left the screen is ignored; the frame budget.
 - `test/kit_glass_test.dart` (looks, unchanged), `test/glass_surface_test.dart` (contrast on every theme pack, unchanged), `test/kit/kit_nav_test.dart`, `test/kit/kit_top_bar_test.dart` (the shell's controls are one dim pair).
 
 ## Galleries
 
-`test/goldens/kit/kit_glass_golden_test.dart`: the shell at the five §8.4 sizes, light and dark, and with 2.0 text at 412×915 and 1280×800; motion samples at 412×915 (`kit_glass_lens_stretch`, `kit_glass_lens_lift`, `kit_glass_pressed`, `kit_glass_joining`, `kit_glass_joined`, `kit_glass_flow`) and `kit_glass_solid`. The liquid look needs Impeller: `flutter test --enable-impeller tool/capture/fluid_glass_test.dart` writes renders into the unit's QA record.
+`test/goldens/kit/kit_glass_golden_test.dart`: the shell at the five §8.4 sizes, light and dark, and with 2.0 text at 412×915 and 1280×800; motion samples at 412×915 (`kit_glass_lens_stretch`, `kit_glass_lens_lift`, `kit_glass_pressed`, `kit_glass_joining`, `kit_glass_joined`, `kit_glass_flow`) `kit_glass_solid`, and `kit_glass_joined_catppuccin` (a theme pack the person picks; contrast on every pack stays in `test/glass_surface_test.dart`). The liquid look needs Impeller: `flutter test --enable-impeller tool/capture/fluid_glass_test.dart` writes renders into the unit's QA record.
 
 ## Non-goals
 

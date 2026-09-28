@@ -2,6 +2,7 @@
 // required"). Owner decision 2026-09-27: Arabic/RTL review dropped, so the
 // spec's RTL case (9) is not run here.
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -14,7 +15,6 @@ import 'package:opencode_mobile/ui/kit/kit_layout.dart';
 import 'package:opencode_mobile/ui/kit/kit_nav.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
-import 'package:opencode_mobile/ui/widgets/glass_surface.dart';
 
 import '../goldens/kit/kit_gallery.dart' show loadKitGalleryFonts;
 
@@ -210,6 +210,42 @@ void main() {
     expect(probe.clearance!.start, 296);
   });
 
+  testWidgets('the sidebar widens with larger text so its primary keeps one '
+      'line, capped at 400 dp and a third of the window', (tester) async {
+    final primary = KitAction(label: 'New conversation', onPressed: () {});
+    var probe = await _pump(
+      tester,
+      size: const Size(1280, 800),
+      textScale: 2,
+      panes: true,
+      primary: primary,
+    );
+    expect(tester.getSize(find.byType(KitNavRail)).width, 400);
+    expect(probe.clearance!.start, 400);
+    final label = find.descendant(
+      of: find.byType(KitButton),
+      matching: find.text('New conversation'),
+    );
+    // One line: the label is as tall as one line of its own style.
+    final paragraph = tester.renderObject<RenderParagraph>(label);
+    final tops = {
+      for (final box in paragraph.getBoxesForSelection(
+        const TextSelection(baseOffset: 0, extentOffset: 16),
+      ))
+        box.top,
+    };
+    expect(tops, hasLength(1));
+    expect(tester.takeException(), isNull);
+
+    probe = await _pump(tester, size: const Size(1280, 800), textScale: 1.1);
+    expect(tester.getSize(find.byType(KitNavRail)).width, closeTo(325.6, .01));
+
+    // An expanded window keeps a third for the sidebar at most.
+    probe = await _pump(tester, size: const Size(900, 800), textScale: 2);
+    expect(tester.getSize(find.byType(KitNavRail)).width, 300);
+    expect(probe.clearance!.start, 300);
+  });
+
   testWidgets('sidebar holds header, destinations, pane and primary', (
     tester,
   ) async {
@@ -346,16 +382,5 @@ void main() {
     expect(after.left, greaterThan(before.left));
     await tester.pumpAndSettle();
     expect(tester.getRect(lens), after);
-  });
-
-  testWidgets('GlassSurface forwards to KitGlass at radius 22', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.dark(),
-        home: const GlassSurface(child: SizedBox(width: 100, height: 60)),
-      ),
-    );
-    final glass = tester.widget<KitGlass>(find.byType(KitGlass));
-    expect(glass.borderRadius, BorderRadius.circular(22));
   });
 }

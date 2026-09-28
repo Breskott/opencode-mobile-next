@@ -78,6 +78,9 @@ class _KitGlassPairState extends State<_KitGlassPair>
     double target,
     SpringDescription spring,
   ) {
+    // A finger lifted after the pair left the screen still reaches its
+    // listener: nothing to spring then.
+    if (!mounted) return;
     controller
         .animateWith(
           SpringSimulation(

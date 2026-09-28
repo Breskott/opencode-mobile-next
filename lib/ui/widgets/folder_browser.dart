@@ -16,13 +16,14 @@ import '../kit/kit_notice.dart';
 import '../kit/kit_progress.dart';
 import '../kit/kit_row.dart';
 import '../kit/kit_row_parts.dart';
+import '../kit/kit_section_label.dart';
 import '../kit/kit_sheet.dart';
 import '../kit/kit_since.dart';
 import '../kit/kit_state_view.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import '../kit/scenes/folders_open_scene.dart';
-import 'product_states.dart' show SectionLabel, productErrorDetails;
+import 'product_states.dart' show productErrorDetails;
 
 /// Lists the folders directly inside an absolute path.
 typedef FolderLister = Future<List<FolderEntry>> Function(String path);
@@ -516,7 +517,11 @@ class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SectionLabel.inline(l10n.projectFolderNewProject),
+        KitSectionLabel(
+          l10n.projectFolderNewProject,
+          margin: EdgeInsets.zero,
+          gapBefore: 0,
+        ),
         KitField(
           key: const ValueKey('in-app-new-project-name'),
           controller: _name,

@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'background/live_background.dart';
 import 'builtin/app_exit_recovery.dart';
 import 'builtin/builtin_server.dart';
+import 'builtin/phone_server_healing.dart';
 import 'builtin/setup/phone_setup.dart';
 import 'builtin/setup/setup_finish.dart';
 import 'builtin/setup/termux_setup_finish.dart';
@@ -49,6 +50,7 @@ import 'ui/navigation/chat_route.dart';
 import 'ui/screens/settings_screen.dart';
 import 'ui/widgets/product_states.dart' show productErrorText;
 import 'ui/widgets/saved_server_connection_card.dart';
+import 'ui/widgets/app_connection_status.dart';
 import 'ui/widgets/phone_server_card.dart' show serverDisplayName;
 import 'ui/screens/guide_screen.dart';
 import 'ui/screens/about_screen.dart';
@@ -101,10 +103,18 @@ typedef AppBootstrapLoader = Future<AppBootstrap> Function();
 /// Renders immediately so a preferences or secure-storage failure can never
 /// leave Android showing a blank native window.
 class AppBootstrapGate extends StatefulWidget {
-  const AppBootstrapGate({super.key, required this.diagnostics, this.loader});
+  const AppBootstrapGate({
+    super.key,
+    required this.diagnostics,
+    this.loader,
+    this.resetSavedSignIns,
+  });
 
   final AppDiagnosticsController diagnostics;
   final AppBootstrapLoader? loader;
+
+  /// Injectable boundary for the confirmed reset; never loads saved metadata.
+  final Future<void> Function()? resetSavedSignIns;
 
   @override
   State<AppBootstrapGate> createState() => _AppBootstrapGateState();
@@ -116,6 +126,10 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
   Object? _error;
   bool _loading = true;
   int _generation = 0;
+  bool _resetting = false;
+  bool _resetFailed = false;
+  bool _resetConfirming = false;
+  final Set<Future<void>> _loads = {};
 
   /// When this attempt to open began: after 8 s the page says it is still
   /// opening and offers Try again (STATE-5).
@@ -132,13 +146,23 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
     unawaited(_load());
   }
 
-  Future<void> _load() async {
+  Future<void> _load() {
+    if (_resetting) return Future<void>.value();
+    final pending = _runLoad();
+    _loads.add(pending);
+    unawaited(pending.whenComplete(() => _loads.remove(pending)));
+    return pending;
+  }
+
+  Future<void> _runLoad() async {
     final generation = ++_generation;
     setState(() {
       _loading = true;
+      _resetFailed = false;
       _error = null;
       _since = DateTime.now();
     });
+    ConnectionController? pendingController;
     try {
       final bootstrap = await PerfTrace.span(
         'app.bootstrap',
@@ -149,6 +173,7 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
         bootstrap.store,
         diagnostics: widget.diagnostics,
       );
+      pendingController = controller;
       // Before any conversation reads its draft: the older drafts move into
       // Saved prompts, then a photo the camera handed back after Android
       // stopped the app joins its own conversation's draft (P3.2). Both keep
@@ -170,6 +195,7 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
         return;
       }
       _controller?.dispose();
+      pendingController = null;
       setState(() {
         _bootstrap = bootstrap;
         _controller = controller;
@@ -179,11 +205,60 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
         (_) => PerfTrace.markOnce('app.shell_frame'),
       );
     } catch (error, stack) {
+      pendingController?.dispose();
       widget.diagnostics.record(error, stack, source: 'bootstrap');
       if (!mounted || generation != _generation) return;
       setState(() {
         _error = error;
         _loading = false;
+      });
+    }
+  }
+
+  Future<void> _startFresh(BuildContext context) async {
+    if (_resetting || _resetConfirming) return;
+    _resetConfirming = true;
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showKitConfirm(
+      context,
+      kind: KitConfirmKind.destructive,
+      title: l10n.bootstrapStartFreshTitle,
+      body: l10n.bootstrapStartFreshBody,
+      confirmLabel: l10n.bootstrapStartFreshConfirm,
+      confirmKey: const ValueKey('confirm-start-fresh'),
+    );
+    _resetConfirming = false;
+    if (!confirmed || !mounted) return;
+    await _resetSignIns();
+  }
+
+  Future<void> _resetSignIns() async {
+    if (_resetting || !mounted) return;
+    // Invalidate loaders before waiting: no old result can mount a controller
+    // or reconnect with the credentials this reset is about to erase.
+    ++_generation;
+    setState(() {
+      _resetting = true;
+      _error = null;
+    });
+    await Future.wait(_loads.toList());
+    if (!mounted) return;
+    _controller?.dispose();
+    _controller = null;
+    _bootstrap = null;
+    try {
+      await (widget.resetSavedSignIns ?? AppBootstrap.resetSavedSignIns)();
+      if (!mounted) return;
+      setState(() => _resetting = false);
+      await _load();
+    } catch (error, stack) {
+      widget.diagnostics.record(error, stack, source: 'bootstrap-reset');
+      if (!mounted) return;
+      setState(() {
+        _resetting = false;
+        _loading = false;
+        _resetFailed = true;
+        _error = error;
       });
     }
   }
@@ -224,10 +299,25 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
   /// again, Copy details and Report a problem; the reason is under Details.
   Widget _bootstrapState(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    if (_resetting) {
+      return KitStateView(
+        key: const ValueKey('app-bootstrap-resetting'),
+        icon: AppIconography.waiting,
+        tone: AppStatusTone.progress,
+        title: l10n.bootstrapResettingTitle,
+        body: l10n.bootstrapResettingBody,
+        progress: const KitProgress.waiting(),
+      );
+    }
     final retry = KitAction(
       key: const ValueKey('retry-app-bootstrap'),
       label: l10n.commonRetry,
-      onPressed: () => unawaited(_load()),
+      onPressed: () => unawaited(_resetFailed ? _resetSignIns() : _load()),
+    );
+    final reset = KitAction(
+      key: const ValueKey('start-fresh-app-bootstrap'),
+      label: l10n.bootstrapStartFresh,
+      onPressed: () => unawaited(_startFresh(context)),
     );
     final error = _error;
     if (_loading || error == null) {
@@ -244,11 +334,16 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
     }
     return KitStateView.error(
       key: const ValueKey('app-bootstrap-failed'),
-      title: l10n.bootstrapFailedTitle,
-      body: l10n.bootstrapFailedBody,
+      title: _resetFailed
+          ? l10n.bootstrapResetFailedTitle
+          : l10n.bootstrapFailedTitle,
+      body: _resetFailed
+          ? l10n.bootstrapResetFailedBody
+          : l10n.bootstrapFailedBody,
       error: error,
       details: widget.diagnostics.sanitize(error.toString(), limit: 300),
       retry: retry,
+      secondary: reset,
       reportSource: 'bootstrap-gate',
     );
   }
@@ -334,6 +429,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     // Every capabilities.json enable flow resolves to its page (C20), so a
     // missing capability offers "Turn it on" wherever that can happen here.
     registerCapabilityFlows(_controller);
+    ref.read(phoneServerHealingProvider);
     _controller.addListener(_controllerChanged);
     _share = widget.shareIntent ?? ShareIntent();
     _share.pending.addListener(_scheduleShareRoute);
@@ -361,6 +457,9 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    ref
+        .read(phoneServerHealingProvider)
+        .setForeground(state == AppLifecycleState.resumed);
     switch (state) {
       case AppLifecycleState.resumed:
         unawaited(_resumeAndConsumeCodingAlert());
@@ -384,49 +483,13 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     ]);
   }
 
-  /// Coming back to the app with OpenCode-inside-the-app selected: if Android
-  /// stopped that server meanwhile, start it once before reconnecting, so
-  /// the person returns to their work rather than a "stopped" card.
+  /// Resume uses the same durable recovery budget as crash monitoring.
   Future<void> _resumeTransport() async {
     final profile = _controller.profile;
-    var started = false;
-    if (profile != null &&
-        looksLikeInAppServer(profile) &&
-        AutomationPolicyController.forProfile(
-          _controller.store.prefs,
-          profile.id,
-        ).value.allows(AutomationBehavior.restartPhoneServer)) {
-      final starter = ref.read(builtinServerStarterProvider)..allowAutoStart();
-      started = await starter.autoStartIfStopped(
-        profile,
-        mayStart: () => AutomationPolicyController.forProfile(
-          _controller.store.prefs,
-          profile.id,
-        ).value.allows(AutomationBehavior.restartPhoneServer),
-      );
-      if (started) {
-        final at = DateTime.now();
-        await _controller.recordServerAct(
-          profileId: profile.id,
-          kind: AutomaticActKind.restart,
-          eventId: 'phone.resume:${at.microsecondsSinceEpoch}',
-          at: at,
-        );
-      }
-    }
+    final healing = ref.read(phoneServerHealingProvider);
+    if (looksLikeInAppServer(profile)) await healing.check(profile!);
     await _controller.resumeFromLifecycle();
-    // The opening card was up (nothing to resume): connect to the server
-    // that now answers.
-    if (started &&
-        AutomationPolicyController.forProfile(
-          _controller.store.prefs,
-          profile!.id,
-        ).value.allows(AutomationBehavior.reconnect) &&
-        !_controller.hasConnectedServer &&
-        _controller.api == null &&
-        _controller.profile?.id == profile.id) {
-      await _controller.connect(profile);
-    }
+    if (looksLikeInAppServer(profile)) await healing.connectIfNeeded(profile!);
   }
 
   /// Shows [status] as the app's line. A [lasting] one stays until its
@@ -1435,57 +1498,61 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
                   ),
                   // The app's own line joins the conditions every screen's
                   // status slot reads; the update notices below add theirs.
-                  child: ValueListenableBuilder<KitStatus?>(
-                    valueListenable: _notice,
-                    builder: (context, notice, notices) =>
-                        UpdateStatusScope(status: notice, child: notices!),
-                    child: ShorebirdUpdateNotice(
-                      service: _updateService,
-                      currentProfileId: () => _controller.profile?.id,
-                      allowsAutomaticUpdate: (id) =>
-                          AutomationPolicyController.forProfile(
-                            _controller.store.prefs,
-                            id,
-                          ).value.allows(AutomationBehavior.applyCodePush),
-                      onDownloaded:
-                          ({
-                            required profileId,
-                            required eventId,
-                            required at,
-                          }) async {
-                            await _controller.recordServerAct(
-                              profileId: profileId,
-                              kind: AutomaticActKind.update,
-                              eventId: eventId,
-                              at: at,
-                            );
-                          },
-                      child: DesktopReleaseNotice(
-                        navigatorKey: _navigatorKey,
-                        // Desktop only. On Android this returns its child
-                        // untouched, so the touch product gains no key handling.
-                        child: AppShortcuts(
-                          navigatorKey: _navigatorKey,
-                          signals: _shortcutSignals,
-                          handlers: AppShortcutHandlers(
-                            onNewSession: () => unawaited(_startNewSession()),
-                            onOpenSettings: _openSettings,
-                            paletteCommands: _shellCommands,
-                          ),
-                          // Settings › Appearance › Effects, above the
-                          // navigator so every route and its transitions read
-                          // the same choices. Calls without a context (a send
-                          // from a controller) obey Vibration via the flag.
-                          child: ValueListenableBuilder<KitEffects>(
-                            valueListenable: _controller.effects,
-                            builder: (context, effects, navigator) {
-                              KitHaptics.enabled = effects.haptics;
-                              return KitEffectsScope(
-                                effects: effects,
-                                child: navigator!,
+                  child: AppConnectionStatusScope(
+                    controller: _controller,
+                    navigatorKey: _navigatorKey,
+                    child: ValueListenableBuilder<KitStatus?>(
+                      valueListenable: _notice,
+                      builder: (context, notice, notices) =>
+                          UpdateStatusScope(status: notice, child: notices!),
+                      child: ShorebirdUpdateNotice(
+                        service: _updateService,
+                        currentProfileId: () => _controller.profile?.id,
+                        allowsAutomaticUpdate: (id) =>
+                            AutomationPolicyController.forProfile(
+                              _controller.store.prefs,
+                              id,
+                            ).value.allows(AutomationBehavior.applyCodePush),
+                        onDownloaded:
+                            ({
+                              required profileId,
+                              required eventId,
+                              required at,
+                            }) async {
+                              await _controller.recordServerAct(
+                                profileId: profileId,
+                                kind: AutomaticActKind.update,
+                                eventId: eventId,
+                                at: at,
                               );
                             },
-                            child: child ?? const SizedBox.shrink(),
+                        child: DesktopReleaseNotice(
+                          navigatorKey: _navigatorKey,
+                          // Desktop only. On Android this returns its child
+                          // untouched, so the touch product gains no key handling.
+                          child: AppShortcuts(
+                            navigatorKey: _navigatorKey,
+                            signals: _shortcutSignals,
+                            handlers: AppShortcutHandlers(
+                              onNewSession: () => unawaited(_startNewSession()),
+                              onOpenSettings: _openSettings,
+                              paletteCommands: _shellCommands,
+                            ),
+                            // Settings › Appearance › Effects, above the
+                            // navigator so every route and its transitions read
+                            // the same choices. Calls without a context (a send
+                            // from a controller) obey Vibration via the flag.
+                            child: ValueListenableBuilder<KitEffects>(
+                              valueListenable: _controller.effects,
+                              builder: (context, effects, navigator) {
+                                KitHaptics.enabled = effects.haptics;
+                                return KitEffectsScope(
+                                  effects: effects,
+                                  child: navigator!,
+                                );
+                              },
+                              child: child ?? const SizedBox.shrink(),
+                            ),
                           ),
                         ),
                       ),
@@ -1654,6 +1721,14 @@ class _RootState extends ConsumerState<_Root> {
     _builtin = ref.read(builtinServerStarterProvider)..addListener(_changed);
     _attachPhoneSetup();
     _recoverFromLastExit();
+    // The status scope is above this route. Publish the guard after mounting
+    // so its slot notification cannot rebuild an ancestor during this build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _startThermalGuard();
+    });
+  }
+
+  void _startThermalGuard() {
     // Pause the AI Team on this phone while Android says it is hot.
     startThermalGuard(
       ref.read(thermalGuardSlotProvider),
@@ -1688,13 +1763,7 @@ class _RootState extends ConsumerState<_Root> {
             active: _controller.profile,
             starter: _builtin,
             diagnostics: _controller.diagnostics,
-            onRestart: ({required profileId, required eventId, required at}) =>
-                _controller.recordServerAct(
-                  profileId: profileId,
-                  kind: AutomaticActKind.restart,
-                  eventId: eventId,
-                  at: at,
-                ),
+            recover: ref.read(phoneServerHealingProvider).check,
           ),
     );
   }
@@ -1800,7 +1869,7 @@ class _RootState extends ConsumerState<_Root> {
     }
     _started = true;
     _attempts += 1;
-    if (looksLikeInAppServer(profile) && _builtin.autoStartAvailable) {
+    if (looksLikeInAppServer(profile)) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => unawaited(_autoStartThenConnect(profile)),
       );
@@ -1809,47 +1878,26 @@ class _RootState extends ConsumerState<_Root> {
     WidgetsBinding.instance.addPostFrameCallback((_) => conn.connect(profile));
   }
 
-  /// The app opened on OpenCode-inside-the-app: when that server is stopped
-  /// (the app was closed or updated), start it first, so the person sees
-  /// "Starting…" instead of a failure. Runs once; a start that fails leaves
-  /// the card with its Start button rather than trying again by itself.
+  /// Launch joins the same foreground recovery owner as resume and polling.
   Future<void> _autoStartThenConnect(ServerProfile profile) async {
-    final allowed = AutomationPolicyController.forProfile(
-      _controller.store.prefs,
-      profile.id,
-    ).value.allows(AutomationBehavior.restartPhoneServer);
-    final started =
-        allowed &&
-        await _builtin.autoStartIfStopped(
-          profile,
-          mayStart: () => AutomationPolicyController.forProfile(
-            _controller.store.prefs,
-            profile.id,
-          ).value.allows(AutomationBehavior.restartPhoneServer),
-        );
-    if (started) {
-      final at = DateTime.now();
-      await _controller.recordServerAct(
-        profileId: profile.id,
-        kind: AutomaticActKind.restart,
-        eventId: 'phone.launch:${at.microsecondsSinceEpoch}',
-        at: at,
-      );
-    }
-    if (!mounted || _builtin.failureFor(profile) != null) return;
-    if (_controller.api != null || _controller.profile?.id != profile.id) {
-      return;
-    }
-    await _controller.connect(profile);
+    final healing = ref.read(phoneServerHealingProvider);
+    await healing.check(profile);
+    if (mounted) await healing.connectIfNeeded(profile);
   }
 
   Future<void> _startInAppServer() async {
     final profile = _controller.profile;
     if (profile == null || _builtin.starting) return;
     final failure = await _builtin.start(profile);
-    if (!mounted || failure != null) return;
-    _started = false;
-    _connectSaved();
+    if (!mounted || failure != null || _controller.profile?.id != profile.id) {
+      return;
+    }
+    // This explicit action also authorizes connecting when automatic
+    // reconnect is off. The recovery owner may already have connected it.
+    _started = true;
+    await ref
+        .read(phoneServerHealingProvider)
+        .connectIfNeeded(profile, automatic: false);
   }
 
   @override

@@ -12,7 +12,6 @@ import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/mutation_store.dart';
 import '../app_theme.dart';
-import '../kit/kit_buttons.dart';
 import '../kit/kit_field.dart';
 import '../kit/kit_receipt.dart';
 import '../kit/kit_sheet.dart';
@@ -91,110 +90,6 @@ KitReceipt teamControlReceipt(
     onRetry: retry != null && record.canRetry ? () => retry() : null,
     retryKey: retryKey ?? const ValueKey('team-receipt-retry'),
   );
-}
-
-/// The field an agent's message and a task's objective are typed in: a
-/// multi-line [KitField] with its send action at the end. No attachments,
-/// commands or history: an agent gets words only (§5.2).
-///
-/// Retired by shared-team-1: use [KitField] with
-/// `kind: KitFieldKind.multiline` and an `action`. A thin forwarding
-/// wrapper (STANDARDS KIT-43); [hint] becomes the field's visible label
-/// unless [label] names it.
-class TeamComposerField extends StatefulWidget {
-  const TeamComposerField({
-    super.key,
-    required this.controller,
-    required this.hint,
-    required this.sendLabel,
-    required this.onSend,
-    this.minLines = 1,
-    this.maxLines = 6,
-    this.autofocus = true,
-    this.fieldKey,
-    this.sendKey,
-    this.enabled = true,
-    this.label,
-    this.disabledReason,
-    this.draft,
-  });
-
-  final TextEditingController controller;
-  final String hint;
-  final String sendLabel;
-  final VoidCallback onSend;
-
-  /// Kept for the old signature; the kit field grows by itself.
-  final int minLines;
-  final int maxLines;
-  final bool autofocus;
-  final Key? fieldKey;
-  final Key? sendKey;
-  final bool enabled;
-
-  /// The visible label above the field; null uses [hint].
-  final String? label;
-
-  /// Why the field cannot take words now; shown when not [enabled].
-  final String? disabledReason;
-
-  /// Keeps the typed words across a dismissal (DATA-2).
-  final KitDraft? draft;
-
-  @override
-  State<TeamComposerField> createState() => _TeamComposerFieldState();
-}
-
-class _TeamComposerFieldState extends State<TeamComposerField> {
-  @override
-  void initState() {
-    super.initState();
-    widget.controller.addListener(_changed);
-  }
-
-  @override
-  void didUpdateWidget(TeamComposerField old) {
-    super.didUpdateWidget(old);
-    if (old.controller != widget.controller) {
-      old.controller.removeListener(_changed);
-      widget.controller.addListener(_changed);
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_changed);
-    super.dispose();
-  }
-
-  void _changed() {
-    if (mounted) setState(() {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final canSend = widget.enabled && widget.controller.text.trim().isNotEmpty;
-    return KitField(
-      label: widget.label ?? widget.hint,
-      controller: widget.controller,
-      kind: KitFieldKind.multiline,
-      maxLines: widget.maxLines,
-      autofocus: widget.autofocus,
-      enabled: widget.enabled,
-      disabledReason: widget.enabled
-          ? null
-          : widget.disabledReason ?? l10n.teamControlsFieldUnavailable,
-      draft: widget.draft,
-      fieldKey: widget.fieldKey,
-      actionKey: widget.sendKey,
-      action: KitAction(
-        label: widget.sendLabel,
-        icon: AppIconography.send,
-        onPressed: canSend ? widget.onSend : null,
-      ),
-    );
-  }
 }
 
 /// The two-step gate every control that ends work goes through: the first

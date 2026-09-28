@@ -19,8 +19,10 @@
 /// "Wake the paused agents" row above the list when the host lets the
 /// phone control agents, one at a time, stopping at the first the host
 /// does not confirm; the row carries the receipt, and when the team does
-/// not answer it says so in words with Check again. A row opens
-/// [AgentScreen].
+/// not answer it says so in words with Check again. A row opens the
+/// agent's conversation in watching mode (slice-P3.6); its own page
+/// (the agent screen: state, controls, technical details) is that
+/// conversation's top-bar action.
 ///
 /// The top bar says where the team runs and when the list was last
 /// checked ("On pop-os · checked 4 min ago"), so old data never passes as
@@ -42,7 +44,6 @@ import '../../../state/profiles.dart' show OrchestrationConfig;
 import '../../../state/team_conversation.dart' show teamSessionState;
 import '../../app_iconography.dart';
 import '../../kit/kit_buttons.dart';
-import '../../kit/kit_page_route.dart';
 import '../../kit/kit_receipt.dart';
 import '../../kit/kit_row.dart';
 import '../../kit/kit_screen.dart';
@@ -57,7 +58,8 @@ import '../../widgets/relative_time.dart';
 import '../../widgets/team_now.dart'
     show teamAgentKeptOff, teamAgentKind, teamAgentPaused;
 import '../../widgets/team_vocabulary.dart';
-import 'agent_screen.dart';
+import '../team_conversation/team_conversation.dart'
+    show openTeamAgentConversation;
 import 'team_states.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -215,7 +217,8 @@ class TeamAgentsScreen extends StatefulWidget {
 
   final OrchestrationController controller;
 
-  /// Opens an agent's detail; pushes [AgentScreen] when null.
+  /// Opens an agent; its conversation ([openTeamAgentConversation]) when
+  /// null.
   final ValueChanged<OrchestrationAgent>? onOpenAgent;
 
   /// Clock for relative ages; tests pin it.
@@ -319,15 +322,7 @@ class _TeamAgentsScreenState extends State<TeamAgentsScreen> {
     final open = widget.onOpenAgent;
     if (open != null) return open(agent);
     unawaited(
-      Navigator.of(context).push(
-        KitPageRoute<void>(
-          builder: (_) => AgentScreen(
-            controller: widget.controller,
-            agentId: agent.id,
-            now: widget.now,
-          ),
-        ),
-      ),
+      openTeamAgentConversation(context, agent, team: widget.controller),
     );
   }
 

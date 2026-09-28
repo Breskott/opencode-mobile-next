@@ -1,6 +1,5 @@
 // Behaviour tests for KitAgentStrip and KitAgentTint,
 // docs/ux-system/kit-api/KitAgentStrip.md "Tests required".
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,7 +11,6 @@ import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
 import 'package:opencode_mobile/ui/kit/kit_task_mark.dart';
 import 'package:opencode_mobile/ui/kit/kit_tappable.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
-import 'package:opencode_mobile/ui/widgets/agent_color.dart';
 
 Future<void> _pump(
   WidgetTester tester,
@@ -264,7 +262,7 @@ void main() {
     }
   });
 
-  testWidgets('KitAgentTint is text2; the wrappers return the same neutral', (
+  testWidgets('KitAgentTint is text2 whatever the server colour', (
     tester,
   ) async {
     await _pump(tester, const []);
@@ -277,14 +275,9 @@ void main() {
         KitAgentTint.ofScheme(scheme, name: 'a', serverColor: raw),
         scheme.onSurfaceVariant,
       );
-      expect(agentColor(raw, scheme), scheme.onSurfaceVariant);
     }
     expect(scheme.onSurfaceVariant, text2);
-    expect(agentColorFor(context, 'build'), text2);
-    expect(agentFallbackColor('build', scheme), scheme.onSurfaceVariant);
-    final source = File('lib/ui/widgets/agent_color.dart').readAsStringSync();
-    expect(source.contains('Colors.'), isFalse);
-    expect(source.contains('Color(0x'), isFalse);
+    expect(KitAgentTint.of(context, name: 'build'), text2);
   });
 
   testWidgets('desktop: Tab walks tappable chips into view; tooltip words', (

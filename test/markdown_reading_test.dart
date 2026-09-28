@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_code_block.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 
 Future<void> _pump(
@@ -54,7 +55,7 @@ void main() {
         tester,
         const Padding(
           padding: EdgeInsets.all(16),
-          child: CodeBlock(code: 'npm run dev', language: 'bash'),
+          child: MarkdownText('```bash\nnpm run dev\n```'),
         ),
         scale: scale,
       );
@@ -69,7 +70,7 @@ void main() {
       }
       // Even with 2.5x text, a one-line snippet should not become a card
       // dominated by several rows of actions.
-      expect(tester.getSize(find.byType(CodeBlock)).height, lessThan(125));
+      expect(tester.getSize(find.byType(KitCodeBlock)).height, lessThan(125));
       expect(tester.takeException(), isNull);
     });
   }
@@ -79,7 +80,7 @@ void main() {
   ) async {
     await _pump(
       tester,
-      CodeBlock(code: 'final start = ${'value' * 100};'),
+      MarkdownText('```\nfinal start = ${'value' * 100};\n```'),
       rtl: true,
     );
     final horizontal = find.byWidgetPredicate(
@@ -112,7 +113,7 @@ void main() {
         valueListenable: enabled,
         builder: (_, value, _) => MarkdownInteractionScope(
           enabled: value,
-          child: const CodeBlock(code: 'snapshot'),
+          child: const MarkdownText('```\nsnapshot\n```'),
         ),
       ),
     );
@@ -137,7 +138,7 @@ void main() {
       ValueListenableBuilder<bool>(
         valueListenable: visible,
         builder: (_, value, _) =>
-            value ? const CodeBlock(code: 'snapshot') : const SizedBox(),
+            value ? const MarkdownText('```\nsnapshot\n```') : const SizedBox(),
       ),
     );
     await _chooseCodeAction(tester, 'Full screen');
@@ -173,9 +174,9 @@ void main() {
     ) async {
       final (input, expected, closed) = fences[i];
       await _pump(tester, MarkdownText(input));
-      final block = tester.widget<CodeBlock>(find.byType(CodeBlock));
-      expect(block.code, expected);
-      expect(block.highlightEnabled, closed);
+      final block = tester.widget<KitCodeBlock>(find.byType(KitCodeBlock));
+      expect(block.text, expected);
+      expect(block.highlight, closed);
       if (!closed) {
         final span = tester
             .widget<SelectableText>(find.byType(SelectableText))
@@ -192,7 +193,7 @@ void main() {
       tester,
       const MarkdownText('```bad`info\ntext\n\n    ~~~dart\ncode'),
     );
-    expect(find.byType(CodeBlock), findsNothing);
+    expect(find.byType(KitCodeBlock), findsNothing);
   });
 
   testWidgets(
@@ -248,7 +249,7 @@ void main() {
         ),
       );
       final source = '${'x' * 1200}\n\n';
-      await _pump(tester, CodeBlock(code: source));
+      await _pump(tester, KitCodeBlock(text: source));
       await tester.tap(find.byTooltip('Copy code'));
       await tester.pumpAndSettle();
       expect(find.text('Could not copy code. Try again.'), findsOneWidget);
@@ -266,7 +267,7 @@ void main() {
       tester,
       const MarkdownInteractionScope(
         enabled: false,
-        child: CodeBlock(code: 'local only'),
+        child: MarkdownText('```\nlocal only\n```'),
       ),
     );
     expect(find.byTooltip('Copy code'), findsNothing);
@@ -389,7 +390,9 @@ void main() {
         ),
       );
       final before = MarkdownText.debugParseCount;
-      final first = tester.widgetList<CodeBlock>(find.byType(CodeBlock)).first;
+      final first = tester
+          .widgetList<KitCodeBlock>(find.byType(KitCodeBlock))
+          .first;
       parent.value++;
       await tester.pump();
       expect(MarkdownText.debugParseCount, before);
@@ -397,16 +400,16 @@ void main() {
       await tester.pump();
       expect(
         identical(
-          tester.widgetList<CodeBlock>(find.byType(CodeBlock)).first,
+          tester.widgetList<KitCodeBlock>(find.byType(KitCodeBlock)).first,
           first,
         ),
         isTrue,
       );
       expect(
         tester
-            .widgetList<CodeBlock>(find.byType(CodeBlock))
+            .widgetList<KitCodeBlock>(find.byType(KitCodeBlock))
             .last
-            .highlightEnabled,
+            .highlight,
         isFalse,
       );
     },
@@ -436,7 +439,7 @@ void main() {
       source.value += '\nfinal later = 2;\n~~~';
       await tester.pump();
       expect(
-        tester.widget<CodeBlock>(find.byType(CodeBlock)).code,
+        tester.widget<KitCodeBlock>(find.byType(KitCodeBlock)).text,
         'final first = 1;',
       );
       expect(
@@ -446,7 +449,7 @@ void main() {
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(
-        tester.widget<CodeBlock>(find.byType(CodeBlock)).code,
+        tester.widget<KitCodeBlock>(find.byType(KitCodeBlock)).text,
         contains('final later'),
       );
     },
@@ -465,7 +468,7 @@ void main() {
               child: Column(
                 children: [
                   const SizedBox(height: 150),
-                  CodeBlock(code: 'long ${'value ' * 80}'),
+                  MarkdownText('```\nlong ${'value ' * 80}\n```'),
                   const SizedBox(height: 900),
                 ],
               ),

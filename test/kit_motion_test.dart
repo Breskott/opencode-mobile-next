@@ -85,7 +85,6 @@ const _predatesG8x = {
   'KitRowIcon',
   'KitRowMenu',
   'KitScreen',
-  'KitSecretField',
   'KitSheet',
   'KitSkeletonRows',
   'KitSkeletonTranscript',
@@ -95,11 +94,6 @@ const _predatesG8x = {
   'KitSwitchRow',
   'KitTabSwitcher',
   'KitTaskMark',
-  'LoadingList',
-  'ProductEmptyState',
-  'ProductErrorState',
-  'ProductInlineEmpty',
-  'SectionLabel',
   'showKitConfirm',
   'showKitSheet',
 };
@@ -536,23 +530,6 @@ void _predatingParts() {
       ),
     },
   );
-  Widget secret() => KitSecretField(
-    controller: TextEditingController(text: 'hunter2'),
-    label: 'Password',
-    showLabel: 'Show password',
-    hideLabel: 'Hide password',
-  );
-  kitMotionStillTests(
-    'KitSecretField',
-    builds: {'default': secret},
-    changes: {
-      'revealed': KitMotionChange(
-        build: secret,
-        act: (tester, stage) => stage.press(find.byType(KitIconButton)),
-        shows: 'hunter2',
-      ),
-    },
-  );
   kitMotionStillTests(
     'KitSheet',
     builds: {
@@ -678,41 +655,6 @@ void _predatingParts() {
     },
   );
   kitMotionStillTests(
-    'LoadingList',
-    builds: {'default': () => const LoadingList()},
-  );
-  kitMotionStillTests(
-    'ProductEmptyState',
-    builds: {
-      'default': () => const ProductEmptyState(
-        icon: AppIconography.info,
-        title: 'No servers',
-        message: 'Add one to start.',
-      ),
-    },
-  );
-  kitMotionStillTests(
-    'ProductErrorState',
-    builds: {
-      'default': () =>
-          ProductErrorState(message: 'Could not load', onRetry: () async {}),
-    },
-  );
-  kitMotionStillTests(
-    'ProductInlineEmpty',
-    builds: {
-      'default': () => const ProductInlineEmpty(
-        icon: AppIconography.info,
-        title: 'Nothing here',
-        message: 'Items appear here.',
-      ),
-    },
-  );
-  kitMotionStillTests(
-    'SectionLabel',
-    builds: {'default': () => const SectionLabel('Servers')},
-  );
-  kitMotionStillTests(
     'showKitConfirm',
     opens: {
       'destructive': const KitMotionOpen(_openConfirm, shows: _confirmTitle),
@@ -765,7 +707,7 @@ void main() {
           'KitConfirmSheet',
           'KitStatusMark',
           'KitPortalScene',
-          'SectionLabel',
+          'KitRow',
         ]),
       );
       // Not parts: data, tokens, controllers, builders, unexported widgets,
@@ -776,7 +718,6 @@ void main() {
         'KitDraft',
         'KitEffects',
         'KitPageTransitionsBuilder',
-        'GatedRow',
         'TerminalKeyBar',
         'KitEffectsScope',
       ]) {

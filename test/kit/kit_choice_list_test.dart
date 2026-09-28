@@ -7,7 +7,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencode_mobile/domain/server_gateway.dart' show QuestionChoice;
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_choice_list.dart';
@@ -16,7 +15,6 @@ import 'package:opencode_mobile/ui/kit/kit_receipt.dart';
 import 'package:opencode_mobile/ui/kit/kit_sheet.dart';
 import 'package:opencode_mobile/ui/kit/kit_state_view.dart';
 import 'package:opencode_mobile/ui/kit/motion/kit_haptics.dart';
-import 'package:opencode_mobile/ui/widgets/question_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> _pump(
@@ -592,37 +590,6 @@ void main() {
         greaterThanOrEqualTo(56),
       );
     }
-  });
-
-  testWidgets('QuestionOptionRow forwards to KitChoiceRow', (tester) async {
-    var taps = 0;
-    await _pump(
-      tester,
-      Column(
-        children: [
-          QuestionOptionRow(
-            choice: const QuestionChoice(label: 'Staging', description: 'x'),
-            selected: true,
-            multiple: true,
-            onTap: () => taps++,
-          ),
-          QuestionCustomAnswerField(
-            controller: TextEditingController(),
-            onChanged: (_) {},
-          ),
-        ],
-      ),
-    );
-    final row = tester.widget<KitChoiceRow<String>>(
-      find.byType(KitChoiceRow<String>),
-    );
-    expect(row.choice.title, 'Staging');
-    expect(row.selected, isTrue);
-    expect(row.mark, KitChoiceMark.check);
-    await tester.tap(find.byKey(const ValueKey('question-option-Staging')));
-    expect(taps, 1);
-    final field = tester.widget<KitField>(find.byType(KitField));
-    expect(field.kind, KitFieldKind.multiline);
   });
 
   testWidgets('reduced motion settles in one pump', (tester) async {

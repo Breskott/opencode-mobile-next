@@ -24,6 +24,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/theme_packs.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 
 import 'kit_gallery.dart';
@@ -388,6 +389,34 @@ void main() {
           await tester.pump(const Duration(milliseconds: 60));
         },
         settleAfterThen: false,
+      );
+    });
+
+    // A theme pack the person picks: the glass reads on its colours too
+    // (contrast on every pack: test/glass_surface_test.dart).
+    testWidgets('joined on the Catppuccin pack ($mode)', (tester) async {
+      await kitGalleryShot(
+        tester,
+        name: kitGalleryName(
+          'kit_glass_joined_catppuccin',
+          phone,
+          light: light,
+        ),
+        size: phone,
+        light: light,
+        open: (context) => _open(
+          context,
+          Theme(
+            data: light
+                ? AppTheme.light(themePack(ThemePackId.catppuccin))
+                : AppTheme.dark(themePack(ThemePackId.catppuccin)),
+            child: _scene(const _Shell()),
+          ),
+        ),
+        then: (tester) => tester.drag(
+          find.byKey(const ValueKey('content')),
+          const Offset(0, -300),
+        ),
       );
     });
 

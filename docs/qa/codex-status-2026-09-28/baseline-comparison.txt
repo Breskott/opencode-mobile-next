@@ -1,0 +1,84 @@
+These are broad diagnostic runs before the last focused test-harness corrections.
+They are not a full-suite pass. Final focused results are in README.md.
+
+chat_live_events_test.dart: merge baseline c5d2a8ce=33 failures; initial status integration=33 failures
+Baseline failures:
+  /files attaches a project artifact back to the chat
+  /fork lists prompts and forks the selected message point
+  UXCHAT single foreground Stop preserves draft and targets this session
+  applies split text, reasoning, and tool input deltas
+  attachment remove action is accessible and at least 48dp
+  child chat exposes parent and sibling navigation
+  command launcher maps context to the native usage surface
+  command launcher maps diff to the native session viewer
+  composer keeps focus when the Android keyboard opens
+  composer tools delegates only to visible server subagents
+  context usage at 25 percent is disclosed at the right level
+  context usage at 75 percent is disclosed at the right level
+  debug command opens native app diagnostics
+  empty transcript starters are seeded from the active project
+  empty transcript starters fill the composer
+  fork from prompt restores text and file in the new composer
+  generated CSV opens as a literal table without sending a prompt
+  launcher combines mobile actions with server commands
+  mcps command opens its Settings hub destination
+  nested code scrolling does not change follow latest and new events respect reading position
+  opens non-image tool files in the shared preview
+  project reference screen adds an upstream directory prompt part
+  prompt editor preserves selection, attachments, and cancel
+  renders a generated image from a tool output filePath
+  renders attachment-only and mixed user prompts accessibly
+  renders current OpenCode unified patches and server counts
+  send waits for the wake-time replacement transport
+  session errors stop thinking and remain visible in chat
+  session sheets fit a 320dp phone at 2x text
+  staged revert keeps a composer draft until explicitly resolved
+  stages a selected diff comment as a composer reference
+  timeline remains usable at 320dp with 2x text
+  transcript controls update old messages and persist state
+Additional initial integration failures:
+  none
+
+home_navigation_test.dart: merge baseline c5d2a8ce=21 failures; initial status integration=21 failures
+Baseline failures:
+  Files Back clears search, ascends folders, returns home, then guards exit
+  Inbox Back returns Work before offering exit
+  cold start opens where the person is needed a read that finds nothing leaves Work, and a late request does not move the person
+  cold start opens where the person is needed an explicit destination is respected
+  cold start opens where the person is needed nothing waiting: Work
+  cold start opens where the person is needed picking a tab during the read is final
+  cold start opens where the person is needed something waiting: Inbox, on the request itself
+  cold start opens where the person is needed the first read of pending requests decides, once
+  failed reconnect keeps the product shell and location visible
+  frosted dock preserves last file reachability and yields to keyboard
+  inactive Files tab does not consume Back
+  navigation stays inside its glass surface at 320.0 and 2.5x (ar)
+  navigation stays inside its glass surface at 320.0 and 2.5x (en)
+  navigation stays inside its glass surface at 390.0 and 2.5x (en)
+  one pending badge, on the Inbox destination
+  phone header separates long local server and workspace labels
+  phone shell uses product bottom navigation
+  reduced motion switches destinations without animation
+  switching destinations fades through: the tab being left clears before the chosen one shows, never both half-visible
+  tablet shell switches to navigation rail
+  the Inbox tab shows cross-session sections
+Additional initial integration failures:
+  none
+
+work_tab_cleanup_test.dart: merge baseline c5d2a8ce=6 failures; initial status integration=7 failures
+Baseline failures:
+  item 10: a server that does not answer the connecting card says so after 8 s and offers the ways out
+  item 1: restoring the saved project a project picked for a fresh connection opens without the chooser flashing first
+  item 1: restoring the saved project no folder chooser; the header names the saved project
+  item 2: the project is named from the first frame, before the project list arrives
+  item 9: New conversation and the tab bar cover nothing at rest and at the end of the list
+  text scale 2 at 320 dp: nothing overflows
+Additional initial integration failures:
+  item 10: a server that does not answer the Work tab says so after 8 s, with Try again and Restart
+
+chat_states_standard_test.dart: merge baseline c5d2a8ce=2 failures; initial status integration=1 failures
+Baseline failures:
+  a conversation that could not load says so plainly, with Try again, and the raw error only under Details
+  a message that was not sent stays on the status line, with its text back in the box, until dismissed or sent again
+Additional initial integration failures:
+  none

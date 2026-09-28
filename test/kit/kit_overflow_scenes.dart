@@ -158,62 +158,6 @@ Future<void> _confirm(
 
 /// Every scene in the matrix, one block per part, appended at the end.
 final kitOverflowScenes = <KitOverflowScene>[
-  // product_states.dart (re-exported by kit.dart)
-  KitOverflowScene(
-    const ['LoadingList'],
-    'loading',
-    host: KitOverflowHost.fill,
-    build: (_, _) => const LoadingList(),
-  ),
-  KitOverflowScene(
-    const ['ProductEmptyState'],
-    'empty',
-    host: KitOverflowHost.fill,
-    build: (_, c) => ProductEmptyState(
-      icon: AppIconography.search,
-      title: c.t('No conversations yet', 'لا محادثات بعد'),
-      message: c.t(
-        'Start one from the composer below, or open a project first.',
-        'ابدأ واحدة من خانة الكتابة، أو افتح مشروعاً أولاً.',
-      ),
-      actionLabel: c.t('Open a project', 'فتح مشروع'),
-      onAction: _noop,
-    ),
-  ),
-  KitOverflowScene(
-    const ['ProductErrorState'],
-    'error',
-    host: KitOverflowHost.fill,
-    build: (_, c) => ProductErrorState(
-      message: c.t(
-        'The server did not answer. Check that it is running.',
-        'لم يرد الخادم. تأكد أنه يعمل.',
-      ),
-      onRetry: () async {},
-    ),
-  ),
-  KitOverflowScene(
-    const ['ProductInlineEmpty'],
-    'empty',
-    build: (_, c) => ProductInlineEmpty(
-      icon: AppIconography.info,
-      title: c.t('Nothing is waiting for you', 'لا شيء بانتظارك'),
-      message: c.t(
-        'Requests from your agents appear here.',
-        'تظهر طلبات الوكلاء هنا.',
-      ),
-      actionLabel: c.t('Open activity', 'فتح النشاط'),
-      onAction: _noop,
-    ),
-  ),
-  KitOverflowScene(
-    const ['SectionLabel'],
-    'default',
-    build: (_, c) => SectionLabel(
-      c.t('Servers on this network', 'الخوادم على هذه الشبكة'),
-      trailing: const KitChevron(),
-    ),
-  ),
   // kit_action_stack.dart
   KitOverflowScene(
     const ['KitActionStack'],
@@ -619,7 +563,7 @@ final kitOverflowScenes = <KitOverflowScene>[
     'default',
     host: KitOverflowHost.fill,
     build: (_, c) => KitScreen(
-      header: [SectionLabel(c.t('Servers', 'الخوادم'))],
+      header: [KitText(c.t('Servers', 'الخوادم'), role: KitTextRole.label)],
       body: ListView(children: [_row(c), _row(c), _row(c)]),
       bottom: KitActionBlock(
         primary: KitAction(
@@ -638,32 +582,6 @@ final kitOverflowScenes = <KitOverflowScene>[
       loading: true,
       loadingLabel: c.t('Loading servers', 'جارٍ تحميل الخوادم'),
       body: const KitSkeletonRows(),
-    ),
-  ),
-  // kit_secret_field.dart
-  KitOverflowScene(
-    const ['KitSecretField'],
-    'default',
-    build: (_, c) => KitSecretField(
-      controller: TextEditingController(text: 'sk-test-not-a-real-key'),
-      label: c.t('Provider key', 'مفتاح المزوّد'),
-      showLabel: c.t('Show the key', 'إظهار المفتاح'),
-      hideLabel: c.t('Hide the key', 'إخفاء المفتاح'),
-      hint: c.t(
-        'Paste the key from your account page',
-        'الصق المفتاح من صفحة حسابك',
-      ),
-    ),
-  ),
-  KitOverflowScene(
-    const ['KitSecretField'],
-    'disabled',
-    build: (_, c) => KitSecretField(
-      controller: TextEditingController(),
-      label: c.t('Provider key', 'مفتاح المزوّد'),
-      showLabel: c.t('Show the key', 'إظهار المفتاح'),
-      hideLabel: c.t('Hide the key', 'إخفاء المفتاح'),
-      enabled: false,
     ),
   ),
   // kit_sheet.dart (KitSheet, showKitSheet)
@@ -1324,6 +1242,155 @@ final kitOverflowScenes = <KitOverflowScene>[
           children: [_row(c)],
         ),
       ],
+    ),
+  ),
+  // kit-polish (2026-09-27): the text-2.0 cut-offs the kit-gates galleries
+  // showed. An unavailable row whose reason wraps in full, with its enable
+  // action under it from 1.3× text.
+  KitOverflowScene(
+    const ['KitRow'],
+    'unavailable',
+    build: (_, c) => KitRow.unavailable(
+      title: c.t('Voice typing', 'الكتابة بالصوت'),
+      reason: c.t(
+        'Needs a voice model on this phone. It downloads once, then works '
+            'without a connection.',
+        'تحتاج إلى نموذج صوت على هذا الهاتف. يُنزَّل مرة واحدة ثم يعمل دون '
+            'اتصال.',
+      ),
+      enable: KitAction(
+        label: c.t('Download voice model', 'تنزيل نموذج الصوت'),
+        onPressed: _noop,
+      ),
+    ),
+  ),
+  // kit_capability_explainer.dart: the row, the state and the offer.
+  KitOverflowScene(
+    const ['KitCapabilityExplainer'],
+    'default',
+    build: (_, c) {
+      // The enable flow needs a handler to show its action.
+      KitCapabilities.registerFlow(
+        KitEnableFlows.voiceModelSetup,
+        (context, request) async {},
+      );
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const KitCapabilityExplainer.row(capability: 'voice.model'),
+          const KitCapabilityExplainer.row(
+            capability: 'flag:fileBrowsing+terminal',
+            host: KitHost.codex,
+            serverName: 'laptop in the office',
+          ),
+          const KitCapabilityExplainer.state(
+            capability: 'voice.model',
+            cost: ['About 160 MB', 'about 2 min'],
+          ),
+          KitCapabilityExplainer.offer(
+            capability: 'voice.model',
+            onNotNow: _noop,
+          ),
+        ],
+      );
+    },
+  ),
+  // kit_task_card.dart: the meta line wraps between its pieces, never
+  // inside "12 min ago".
+  KitOverflowScene(
+    const ['KitTaskCard', 'KitPriorityGlyph'],
+    'default',
+    build: (_, c) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KitTaskCard(
+          title: c.t(
+            'Fix the sync engine dropping queued messages after a reconnect',
+            'إصلاح محرك المزامنة الذي يُسقط الرسائل بعد إعادة الاتصال',
+          ),
+          mark: KitTaskState.working,
+          onOpen: _noop,
+          meta: [
+            KitTaskMeta(
+              c.t('High', 'عالية'),
+              priority: KitPriority.high,
+              strong: true,
+            ),
+            KitTaskMeta(c.t('Bug', 'خلل'), icon: AppIconography.bug),
+            const KitTaskMeta('fox'),
+            KitTaskMeta(c.t('12 min ago', 'قبل 12 دقيقة')),
+          ],
+          action: KitAction(
+            label: c.t('Move or change', 'نقل أو تغيير'),
+            icon: AppIconography.swap,
+            onPressed: _noop,
+          ),
+        ),
+        KitTaskCard(
+          title: c.t('Choose the release branch', 'اختيار فرع الإصدار'),
+          mark: KitTaskState.needsYou,
+          onOpen: _noop,
+          meta: [
+            KitTaskMeta(c.t('owl', 'بومة')),
+            KitTaskMeta(c.t('1 h ago', 'قبل ساعة')),
+          ],
+          flag: KitTaskFlag(
+            kind: KitTaskFlagKind.needsYou,
+            label: c.t('Which branch to ship?', 'أي فرع يُشحن؟'),
+          ),
+        ),
+      ],
+    ),
+  ),
+  // kit_nav.dart: the dock, the rail and the sidebar by window; the
+  // sidebar widens with larger text so its header and primary keep whole.
+  KitOverflowScene(
+    const ['KitNav', 'KitNavBar', 'KitNavRail'],
+    'default',
+    host: KitOverflowHost.fill,
+    build: (_, c) => KitNav(
+      destinations: [
+        KitNavDestination(
+          label: c.t('Work', 'العمل'),
+          icon: AppIconography.workspace,
+          pane: (_) => KitText(
+            c.t(
+              'Conversation 1: the quick brown fox jumps over.',
+              'المحادثة 1: الثعلب البني السريع يقفز.',
+            ),
+          ),
+        ),
+        KitNavDestination(
+          label: c.t('Inbox', 'الوارد'),
+          icon: AppIconography.activity,
+          needsYou: 3,
+        ),
+        KitNavDestination(
+          label: c.t('Project', 'المشروع'),
+          icon: AppIconography.files,
+        ),
+        KitNavDestination(
+          label: c.t('Settings', 'الإعدادات'),
+          icon: AppIconography.settings,
+        ),
+      ],
+      selected: 0,
+      onSelected: (_) {},
+      sidebarHeader: KitShellControls(
+        server: c.t('phone', 'الهاتف'),
+        serverStatus: c.t('Connected', 'متصل'),
+        serverTone: AppStatusTone.ok,
+        onServer: _noop,
+        project: 'opencode',
+        onProject: _noop,
+        onSearch: _noop,
+        layout: KitShellControlsLayout.sidebar,
+      ),
+      sidebarPrimary: KitAction(
+        label: c.t('New conversation', 'محادثة جديدة'),
+        onPressed: _noop,
+      ),
+      child: const SizedBox.expand(),
     ),
   ),
 ];

@@ -35,6 +35,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const _baselinePath = 'test/kit/kit_draft_manifest_baseline.json';
 
+/// Drafts that belong to the app, not a server (`profileId:
+/// KitDraft.appWide`): target -> why. No profile sweep removes them, so each
+/// one is named here with its reason, and nothing else may use the app id.
+const _appWideDrafts = <String, String>{
+  'report-problem':
+      'Report a problem describes the app and also opens with no server '
+      '(a failure\'s details); one draft for every entry point, cleared when '
+      'the report is sent (app_diagnostics_screen.dart)',
+};
+
 /// The baseline when the gate was made (2026-09-27): file -> count. The
 /// committed baseline may only shrink from it (KIT-5).
 const _creationCeiling = <String, int>{'lib/voice/voice_ui.dart': 1};
@@ -351,6 +361,23 @@ class DraftManifest {
       problems.add('no profileId');
     } else if (RegExp(r'''^r?['"]''').hasMatch(profile)) {
       problems.add('profileId is the literal $profile, not the profile');
+    } else if (RegExp(r'''\?\?\s*r?['"]''').hasMatch(profile)) {
+      // `profile?.id ?? 'app'`: a draft saved with no profile is keyed to
+      // no profile, so no deletion sweep ever finds it.
+      problems.add(
+        'profileId falls back to a literal ($profile): a draft saved '
+        'without a profile is never swept — use the profile, or '
+        'KitDraft.appWide listed in _appWideDrafts',
+      );
+    } else if (profile.trim() == 'KitDraft.appWide') {
+      for (final l in literals) {
+        if (!_appWideDrafts.containsKey(l)) {
+          problems.add(
+            'target "$l" uses KitDraft.appWide but is not in _appWideDrafts '
+            '(an app-wide draft names its reason there)',
+          );
+        }
+      }
     }
     return DraftSite(where, literals, problems);
   }
@@ -493,6 +520,36 @@ void main() {
           for (final p in s.problems) '${s.where}: $p',
       ];
       expect(problems, isEmpty, reason: problems.join('\n'));
+    });
+
+    test('every app-wide draft is built with KitDraft.appWide, and no '
+        'profile sweep takes it', () async {
+      final appWide = {
+        for (final s in sites)
+          for (final t in s.targets)
+            if (_appWideDrafts.containsKey(t)) t: s.where,
+      };
+      expect(appWide.keys.toSet(), _appWideDrafts.keys.toSet());
+      for (final MapEntry(key: target, value: where) in appWide.entries) {
+        final source = File(where.split(':').first).readAsStringSync();
+        expect(
+          source,
+          contains('KitDraft.appWide'),
+          reason: '$where: "$target" is app-wide',
+        );
+      }
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      for (final target in _appWideDrafts.keys) {
+        final key = KitDraft.keyFor(target, KitDraft.appWide);
+        expect(key, 'oc.draft.$target.app');
+        await prefs.setString(key, 'about the app');
+        final store = ProfileStore(prefs: prefs);
+        expect(
+          store.profileScopedPreferenceKeys('prof-a'),
+          isNot(contains(key)),
+        );
+      }
     });
 
     group('the profile deletion sweep removes every draft target', () {
@@ -718,6 +775,21 @@ final c2 = KitDraft(target: 'reply', profileId: 'default', controller: c);
       expect(problems[0], contains('not traced to a string literal'));
       expect(problems[1], contains('does not start with a fixed namespace'));
       expect(problems[2], contains('profileId is the literal'));
+    });
+
+    test('a profile that falls back to a literal fails; KitDraft.appWide '
+        'passes only for a listed target', () {
+      final m = of({
+        'lib/a.dart': r'''
+final a = KitDraft(target: 'report-problem', profileId: widget.controller?.profile?.id ?? 'app', controller: c);
+final b = KitDraft(target: 'note.$id', profileId: KitDraft.appWide, controller: c);
+final c2 = KitDraft(target: 'report-problem', profileId: KitDraft.appWide, controller: c);
+''',
+      });
+      final problems = m.draftSites().map((s) => s.problems.join()).toList();
+      expect(problems[0], contains('falls back to a literal'));
+      expect(problems[1], contains('not in _appWideDrafts'));
+      expect(problems[2], isEmpty);
     });
 
     test(

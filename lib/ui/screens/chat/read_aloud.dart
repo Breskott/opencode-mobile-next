@@ -128,6 +128,18 @@ extension _ChatReadAloud on _ChatScreenState {
       if (voices.isEmpty) {
         throw const ReadAloudException(ReadAloudFailure.noOfflineVoice);
       }
+      // P10.4: the voice follows the app's language; the choice sheet
+      // opens only for "Choose voice", or when no voice speaks it.
+      if (!chooseVoice) {
+        final byLocale = readAloudVoiceForLocale(
+          voices,
+          Localizations.localeOf(context),
+        );
+        if (byLocale != null) {
+          _readAloudVoiceID = byLocale.id;
+          return current();
+        }
+      }
       _speechSheetOpen = true;
       ReadAloudVoice? selected;
       try {

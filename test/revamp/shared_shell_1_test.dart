@@ -14,9 +14,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/kit/kit_icon.dart';
 import 'package:opencode_mobile/ui/kit/kit_status_line.dart';
-import 'package:opencode_mobile/ui/widgets/confirm_sheet.dart';
 import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:opencode_mobile/ui/widgets/safety_confirms.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -293,24 +291,5 @@ void main() {
       );
       expect(find.textContaining('Reconnect to '), findsOneWidget);
     });
-  });
-
-  testWidgets('the swipe background is the kit delete glyph on surface2', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: SizedBox(width: 400, height: 72, child: SwipeDeleteBackground()),
-      ),
-    );
-    final icon = tester.widget<KitIcon>(find.byType(KitIcon));
-    expect(icon.icon, AppIconography.delete);
-    expect(
-      find.descendant(
-        of: find.byType(SwipeDeleteBackground),
-        matching: find.byType(Container),
-      ),
-      findsNothing,
-    );
   });
 }

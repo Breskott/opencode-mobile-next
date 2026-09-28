@@ -83,6 +83,45 @@ void main() {
       expect(_drawn(tester, finder).outerRect, box);
     });
 
+    testWidgets('a finger lifted after the glass left the screen is ignored', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_app(glass));
+      final gesture = await tester.startGesture(tester.getCenter(finder));
+      await tester.pump(const Duration(milliseconds: 40));
+      // The screen changes under the finger (a new page, a closed sheet).
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+      await gesture.up();
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a pair: a finger lifted after it left is ignored', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _app(
+          const Center(
+            child: SizedBox(
+              width: 300,
+              child: KitGlass.pair(
+                leading: SizedBox(width: 120, height: 48),
+                trailing: SizedBox(width: 48, height: 48),
+              ),
+            ),
+          ),
+        ),
+      );
+      final gesture = await tester.startGesture(
+        tester.getTopLeft(find.byType(KitGlass)) + const Offset(60, 24),
+      );
+      await tester.pump(const Duration(milliseconds: 40));
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+      await gesture.up();
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('reduced motion: no swell, nothing ticks', (tester) async {
       await tester.pumpWidget(_app(glass, effects: _still));
       final gesture = await tester.startGesture(tester.getCenter(finder));

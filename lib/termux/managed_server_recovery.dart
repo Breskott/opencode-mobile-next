@@ -15,6 +15,16 @@ typedef ManagedRestartRecorder =
       required DateTime at,
     });
 
+enum ManagedRecoveryPhase {
+  disabled,
+  waitingForServer,
+  monitoring,
+  waitingToRetry,
+  restarting,
+  paused,
+  exhausted,
+}
+
 enum ManagedRecoveryError {
   settingsUnreadable,
   enableFailed,
@@ -32,12 +42,12 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
     this._onRestart,
   ) {
     _policy = AutomationPolicyController.forProfile(prefs, profileID);
-    _policy.addListener(_schedule);
+    _policy.addListener(_policyChanged);
     _restore();
     WidgetsBinding.instance.addObserver(this);
     _foreground =
-        WidgetsBinding.instance.lifecycleState == null ||
         WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    _initialization = _migrateLegacyPreference();
     _schedule();
   }
 
@@ -48,11 +58,20 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
     Duration(seconds: 45),
   ];
   static final _instances =
-      Map<SharedPreferences, ManagedServerRecovery>.identity();
+      Map<SharedPreferences, Map<String, ManagedServerRecovery>>.identity();
+  static final _owners = Map<SharedPreferences, String>.identity();
+  static final _knownProfiles = Map<SharedPreferences, Set<String>>.identity();
+  static final _retiredProfiles =
+      Map<SharedPreferences, Set<String>>.identity();
+  static final _runtimes =
+      Map<SharedPreferences, Map<String, TermuxRuntime>>.identity();
   // Registration belongs to the connection scope, even before the person
   // enables recovery and a UI first creates the per-installation owner.
   static final _recorders =
       Map<SharedPreferences, ManagedRestartRecorder>.identity();
+  // A replacement owner must not re-arm before a previous scope's revocation
+  // has completed. Revocation itself never waits for a slow startup callback.
+  static final _revocations = Map<SharedPreferences, Future<void>>.identity();
   static String preferenceKey(String profileID) =>
       'oc.managedServerRecovery.$profileID';
 
@@ -64,8 +83,15 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
   }) {
     if (onRestart != null) _recorders[prefs] = onRestart;
     final recorder = onRestart ?? _recorders[prefs];
-    final instance = _instances.putIfAbsent(
-      prefs,
+    final profiles = _instances.putIfAbsent(prefs, () => {});
+    final known = _knownProfiles[prefs];
+    if (!_owners.containsKey(prefs) &&
+        ((known == null && profiles.isEmpty) ||
+            (known?.length == 1 && known!.contains(profileID)))) {
+      _owners[prefs] = profileID;
+    }
+    final instance = profiles.putIfAbsent(
+      profileID,
       () => ManagedServerRecovery._(
         prefs,
         profileID,
@@ -74,6 +100,7 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
       ),
     );
     if (recorder != null) instance._onRestart = recorder;
+    if (now != null) instance._now = now;
     return instance;
   }
 
@@ -81,37 +108,40 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
     SharedPreferences prefs,
     Iterable<String> managedProfileIDs, {
     ManagedRestartRecorder? onRestart,
+    Map<String, TermuxRuntime> runtimes = const {},
   }) {
     final ids = managedProfileIDs.toSet();
     if (ids.isEmpty) {
       disposeForPreferences(prefs);
       return;
     }
+    _knownProfiles[prefs] = ids;
+    _retiredProfiles[prefs]?.removeAll(ids);
+    _runtimes[prefs] = Map.of(runtimes);
     if (onRestart != null) _recorders[prefs] = onRestart;
-    final current = _instances[prefs];
-    if (current != null && ids.contains(current.profileID)) {
-      if (onRestart != null) current._onRestart = onRestart;
-      return;
+    final profiles = _instances[prefs];
+    for (final id in profiles?.keys.toList() ?? <String>[]) {
+      if (!ids.contains(id)) profiles!.remove(id)?.dispose();
     }
-    // Changing owners must preserve the connection's recorder registration.
-    _instances.remove(prefs)?.dispose();
+    if (!ids.contains(_owners[prefs])) _owners.remove(prefs);
     if (!TermuxBridge.supported) return;
-    // Duplicate profiles share a single installation and a single retry budget.
-    final owner = ids.where((id) {
-      try {
-        return (jsonDecode(prefs.getString(preferenceKey(id)) ?? '{}')
-                as Map)['enabled'] ==
-            true;
-      } catch (_) {
-        return false;
-      }
-    }).firstOrNull;
-    if (owner != null) forProfile(prefs, owner, onRestart: onRestart);
+    // With multiple saved generations, only a retained owner or an explicit
+    // manual start identifies whose policy controls this one installation.
+    for (final id in ids) {
+      forProfile(prefs, id, onRestart: onRestart);
+    }
   }
 
   static void disposeForPreferences(SharedPreferences prefs) {
     _recorders.remove(prefs);
-    _instances.remove(prefs)?.dispose();
+    for (final instance
+        in _instances.remove(prefs)?.values ?? <ManagedServerRecovery>[]) {
+      instance.dispose();
+    }
+    _owners.remove(prefs);
+    _knownProfiles.remove(prefs);
+    _runtimes.remove(prefs);
+    _retiredProfiles.remove(prefs);
   }
 
   /// Admission closes synchronously, including when profile deletion has more
@@ -120,20 +150,53 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
     SharedPreferences prefs,
     String profileID,
   ) {
-    final current = _instances[prefs];
-    if (current != null && current.profileID == profileID) {
-      return current.setEnabled(false);
+    (_retiredProfiles[prefs] ??= {}).add(profileID);
+    final current = _instances[prefs]?[profileID];
+    if (current != null) {
+      return current._disableForDeletion();
     }
-    final raw = prefs.getString(preferenceKey(profileID));
-    if (raw == null) return Future.value();
-    return _disableStored(prefs, profileID, raw);
+    return _disableStored(prefs, profileID);
   }
 
-  static Future<void> _disableStored(
+  /// An intentional stop/runtime switch suspends this installation without
+  /// changing the person's restart preference. Only an explicit successful
+  /// manual start may adopt the next operation.
+  static Future<void> suspendForProfile(
     SharedPreferences prefs,
-    String id,
-    String raw,
+    String profileID,
   ) async {
+    final owner = _instances[prefs]?[_owners[prefs]];
+    if (owner != null) await owner._suspend();
+    final requested = forProfile(prefs, profileID);
+    if (!identical(owner, requested)) await requested._suspend();
+  }
+
+  static Future<void> resumeAfterManualStartForProfile(
+    SharedPreferences prefs,
+    String profileID,
+  ) async {
+    final requested = forProfile(prefs, profileID);
+    final previous = _instances[prefs]?[_owners[prefs]];
+    if (previous != null && !identical(previous, requested)) {
+      await previous._suspend();
+    }
+    requested.attempts = requested._sharedAttempts();
+    requested._manuallySuspended = true;
+    // Copy the installation budget before this profile gains admission.
+    await requested._save();
+    _owners[prefs] = profileID;
+    await requested._resumeAfterManualStart();
+  }
+
+  static Future<void> _disableStored(SharedPreferences prefs, String id) async {
+    final raw = prefs.getString(preferenceKey(id));
+    // Profiles outside this installation have no recovery to revoke. Do not
+    // create or change their automation policy merely to delete the profile.
+    if (raw == null) return;
+    await AutomationPolicyController.forProfile(
+      prefs,
+      id,
+    ).setBehavior(AutomationBehavior.restartPhoneServer, false);
     final data = jsonDecode(raw) as Map<String, dynamic>;
     data['enabled'] = false;
     final token = data['token'];
@@ -152,7 +215,7 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
 
   final SharedPreferences prefs;
   final String profileID;
-  final DateTime Function() _now;
+  DateTime Function() _now;
   late final AutomationPolicyController _policy;
   ManagedRestartRecorder? _onRestart;
   String _unreportedOperation = '';
@@ -160,7 +223,17 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
   bool get _automationAllowed =>
       _policy.value.allows(AutomationBehavior.restartPhoneServer) &&
       _policy.value.allows(AutomationBehavior.pollRestartHealth);
-  bool enabled = false;
+  bool get enabled =>
+      !_admissionClosed &&
+      !(_retiredProfiles[prefs]?.contains(profileID) ?? false) &&
+      !_legacyMigrationPending &&
+      _policy.value.allows(AutomationBehavior.restartPhoneServer);
+  bool _admissionClosed = false;
+  bool _legacyMigrationPending = false;
+  bool? _legacyEnabled;
+  late final Future<void> _initialization;
+  bool _armed = false;
+  bool _manuallySuspended = false;
   int attempts = 0;
   DateTime? nextAttemptAt;
   ManagedRecoveryError? error;
@@ -174,21 +247,57 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
   bool _paused = false;
   int _epoch = 0;
   Timer? _timer;
+  Future<void>? _inFlightCheck;
 
+  bool get ownsInstallation => _owners[prefs] == profileID;
   bool get exhausted => attempts >= maxAttempts;
-  bool get paused => _paused || !_foreground;
+  bool get manuallySuspended => _manuallySuspended;
+  bool get foreground => _foreground;
+  bool get paused =>
+      _paused ||
+      _manuallySuspended ||
+      !_foreground ||
+      !_automationAllowed ||
+      !ownsInstallation;
+  ManagedRecoveryPhase get phase {
+    if (!enabled) return ManagedRecoveryPhase.disabled;
+    if (paused) return ManagedRecoveryPhase.paused;
+    if (_pendingOperation.isNotEmpty) return ManagedRecoveryPhase.restarting;
+    if (status?.isReady == true) return ManagedRecoveryPhase.monitoring;
+    if (exhausted) return ManagedRecoveryPhase.exhausted;
+    if (nextAttemptAt != null) return ManagedRecoveryPhase.waitingToRetry;
+    return ManagedRecoveryPhase.waitingForServer;
+  }
+
+  Future<void> _migrateLegacyPreference() async {
+    // Only a previously explicit opt-out with no policy record migrates. A
+    // current policy, including a corrupt fail-closed record, always wins.
+    if (_legacyEnabled == false &&
+        prefs.getString(AutomationPolicyController.keyFor(profileID)) == null) {
+      _legacyMigrationPending = true;
+      try {
+        await _policy.setBehavior(AutomationBehavior.restartPhoneServer, false);
+        _legacyMigrationPending = false;
+      } catch (_) {
+        error = ManagedRecoveryError.settingsUnreadable;
+      }
+    }
+    _notify();
+    _schedule();
+  }
 
   void _restore() {
     try {
       final raw = prefs.getString(preferenceKey(profileID));
       if (raw == null) return;
       final data = jsonDecode(raw) as Map<String, dynamic>;
+      _legacyEnabled = data['enabled'] is bool ? data['enabled'] as bool : null;
       final token = data['token'];
       final count = data['attempts'];
       final operation = data['operation'];
       final pending = data['pendingOperation'];
       if (token is! String ||
-          !RegExp(r'^[a-zA-Z0-9_-]{1,64}$').hasMatch(token) ||
+          !RegExp(r'^[a-zA-Z0-9_-]{0,64}$').hasMatch(token) ||
           count is! int ||
           count < 0 ||
           count > maxAttempts ||
@@ -196,7 +305,7 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
           pending is! String ||
           !RegExp(r'^[a-zA-Z0-9_-]{0,64}$').hasMatch(operation) ||
           !RegExp(r'^[a-zA-Z0-9_-]{0,64}$').hasMatch(pending)) {
-        return;
+        throw const FormatException('Invalid recovery settings');
       }
       _token = token;
       attempts = count;
@@ -212,18 +321,38 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
         _confirmedAt = DateTime.fromMillisecondsSinceEpoch(confirmed);
       }
       final next = data['nextAttemptAtMs'];
-      if (next != null && (next is! int || next < 0)) return;
+      if (next != null && (next is! int || next < 0)) {
+        throw const FormatException('Invalid recovery delay');
+      }
       nextAttemptAt = next is int
           ? DateTime.fromMillisecondsSinceEpoch(next)
           : null;
       _paused = data['paused'] == true;
-      enabled = data['enabled'] == true;
+      _manuallySuspended = data['manuallySuspended'] == true;
     } catch (_) {
+      _paused = true;
       error = ManagedRecoveryError.settingsUnreadable;
     }
   }
 
+  int _sharedAttempts() {
+    var spent = attempts;
+    final ids = (_knownProfiles[prefs] ?? _instances[prefs]?.keys.toSet() ?? {})
+        .difference(_retiredProfiles[prefs] ?? {});
+    for (final id in ids) {
+      final raw = prefs.getString(preferenceKey(id));
+      if (raw == null) continue;
+      final count = (jsonDecode(raw) as Map)['attempts'];
+      if (count is! int || count < 0 || count > maxAttempts) {
+        throw StateError('Could not read recovery attempts');
+      }
+      if (count > spent) spent = count;
+    }
+    return spent;
+  }
+
   Future<void> _save() async {
+    attempts = _sharedAttempts();
     if (!await prefs.setString(
       preferenceKey(profileID),
       jsonEncode({
@@ -236,81 +365,159 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
         'confirmedAtMs': _confirmedAt?.millisecondsSinceEpoch,
         'nextAttemptAtMs': nextAttemptAt?.millisecondsSinceEpoch,
         'paused': _paused,
+        'manuallySuspended': _manuallySuspended,
       }),
     )) {
       throw StateError('Could not save recovery preference');
     }
+    // Alias profiles share one installation. Mirror only the spent budget,
+    // never their policy, so deleting/switching owners cannot reset retries.
+    final ids = (_knownProfiles[prefs] ?? _instances[prefs]?.keys.toSet() ?? {})
+        .difference(_retiredProfiles[prefs] ?? {});
+    for (final id in ids.where((id) => id != profileID)) {
+      final raw = prefs.getString(preferenceKey(id));
+      final data = raw == null
+          ? <String, dynamic>{}
+          : Map<String, dynamic>.from(jsonDecode(raw) as Map);
+      final previous = data['attempts'] as int? ?? 0;
+      if (previous >= attempts) continue;
+      data['attempts'] = attempts;
+      data.putIfAbsent('token', () => _token);
+      data.putIfAbsent('operation', () => '');
+      data.putIfAbsent('pendingOperation', () => '');
+      if (!await prefs.setString(preferenceKey(id), jsonEncode(data))) {
+        throw StateError('Could not save recovery attempts');
+      }
+      final alias = _instances[prefs]?[id];
+      if (alias != null) alias.attempts = attempts;
+    }
   }
 
-  Future<void> setEnabled(bool value) async {
+  Future<void> _disableForDeletion() async {
+    await setEnabled(false);
+    await _inFlightCheck;
+  }
+
+  Future<void> _suspend() async {
+    ++_epoch;
+    _timer?.cancel();
+    _manuallySuspended = true;
+    _armed = false;
+    _notify();
+    try {
+      await _save();
+    } finally {
+      if (ownsInstallation) await _revokePermit();
+    }
+  }
+
+  Future<void> _resumeAfterManualStart() async {
+    if (_disposed || !_foreground) return;
     final epoch = ++_epoch;
     _timer?.cancel();
-    if (!value) {
-      enabled = false;
-      _paused = false;
-      _notify();
-      try {
-        await _save();
-      } finally {
-        if (_token.isNotEmpty) {
-          await TermuxBridge.run(
-            TermuxBridge.recoveryControlScript(_token, enable: false),
-          );
-        }
-      }
-      return;
-    }
-    if (busy || _disposed || !_foreground) return;
-    busy = true;
-    error = null;
-    _notify();
-    final token = List.generate(
-      16,
-      (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0'),
-    ).join();
     try {
-      final result = await TermuxBridge.run(
-        TermuxBridge.recoveryControlScript(token, enable: true),
-      );
-      if (_disposed || epoch != _epoch) {
-        await TermuxBridge.run(
-          TermuxBridge.recoveryControlScript(token, enable: false),
-        );
+      final observed = await TermuxBridge.status();
+      if (_disposed || epoch != _epoch || !_foreground) return;
+      final expectedRuntime = _runtimes[prefs]?[profileID];
+      if (!observed.isReady ||
+          (expectedRuntime != null && observed.runtime != expectedRuntime) ||
+          observed.switchPending ||
+          observed.runner != 'proot' ||
+          observed.port != TermuxBridge.managedServerPort ||
+          observed.operationID.isEmpty) {
         return;
       }
-      final snapshot = TermuxSetupStatus.parse(result.stdout);
-      if (!snapshot.isReady ||
-          snapshot.runner != 'proot' ||
-          snapshot.port != TermuxBridge.managedServerPort) {
-        await TermuxBridge.run(
-          TermuxBridge.recoveryControlScript(token, enable: false),
-        );
-        throw StateError('Managed server is not ready');
-      }
-      _token = token;
-      _operation = snapshot.operationID;
+      _operation = observed.operationID;
       _pendingOperation = '';
       _unreportedOperation = '';
       _confirmedAt = null;
-      attempts = 0;
       nextAttemptAt = null;
-      enabled = true;
+      _manuallySuspended = false;
       _paused = false;
-      status = snapshot;
+      _armed = false;
+      error = null;
+      status = observed;
       await _save();
     } catch (_) {
-      enabled = false;
-      error = ManagedRecoveryError.enableFailed;
-      // A failed preference write must never leave an armed policy invisible.
-      try {
-        await TermuxBridge.run(
-          TermuxBridge.recoveryControlScript(token, enable: false),
-        );
-      } catch (_) {}
+      _paused = true;
+      error = ManagedRecoveryError.uncertainResult;
     } finally {
-      busy = false;
       _notify();
       _schedule();
+    }
+  }
+
+  /// The two settings surfaces edit the same persisted automation behavior.
+  /// Re-enabling never replenishes the durable retry budget.
+  Future<void> setEnabled(bool value) async {
+    if (_disposed) return;
+    if (!value) {
+      _admissionClosed = true;
+      ++_epoch;
+      _timer?.cancel();
+      _armed = false;
+      _notify();
+      try {
+        await _initialization;
+        await _policy.setBehavior(AutomationBehavior.restartPhoneServer, false);
+        await _save();
+      } finally {
+        if (ownsInstallation) await _revokePermit();
+      }
+      return;
+    }
+    await _initialization;
+    await _policy.setBehavior(AutomationBehavior.restartPhoneServer, true);
+    _admissionClosed = false;
+    _notify();
+    await checkNow();
+    _schedule();
+  }
+
+  void _policyChanged() {
+    ++_epoch;
+    _timer?.cancel();
+    if (!_automationAllowed) {
+      _armed = false;
+      if (_pendingOperation.isNotEmpty) {
+        _paused = true;
+        error = ManagedRecoveryError.uncertainResult;
+      }
+      if (!_admissionClosed && ownsInstallation) {
+        unawaited(_revokeAfterPolicyChange());
+      }
+    } else {
+      _admissionClosed = false;
+    }
+    _notify();
+    _schedule();
+  }
+
+  Future<void> _revokePermit() {
+    if (_token.isEmpty) return Future.value();
+    final revoking = TermuxBridge.run(
+      TermuxBridge.recoveryControlScript(_token, enable: false),
+    ).then<void>((_) {});
+    final settled = revoking.then<void>((_) {}, onError: (Object _) {});
+    _revocations[prefs] = settled;
+    unawaited(
+      settled.then((_) {
+        if (identical(_revocations[prefs], settled)) _revocations.remove(prefs);
+      }),
+    );
+    return revoking;
+  }
+
+  Future<void> _revokeAfterPolicyChange() async {
+    try {
+      await _revokePermit();
+      if (!_disposed && _token.isNotEmpty) await _save();
+    } catch (_) {
+      if (!_disposed) {
+        _paused = true;
+        error = ManagedRecoveryError.uncertainResult;
+        _notify();
+      }
     }
   }
 
@@ -319,9 +526,12 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
     _foreground = state == AppLifecycleState.resumed;
     ++_epoch;
     _timer?.cancel();
-    if (!_foreground && _pendingOperation.isNotEmpty && _token.isNotEmpty) {
-      _paused = true;
-      error = ManagedRecoveryError.uncertainResult;
+    if (!_foreground && _token.isNotEmpty && ownsInstallation) {
+      _armed = false;
+      if (_pendingOperation.isNotEmpty) {
+        _paused = true;
+        error = ManagedRecoveryError.uncertainResult;
+      }
       final token = _token;
       final epoch = _epoch;
       unawaited(_revokeBackgroundRecovery(token, epoch));
@@ -332,10 +542,13 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _revokeBackgroundRecovery(String token, int epoch) async {
     try {
-      await TermuxBridge.run(
-        TermuxBridge.recoveryControlScript(token, enable: false),
-      );
-    } catch (_) {}
+      await _revokePermit();
+    } catch (_) {
+      if (!_disposed) {
+        _paused = true;
+        error = ManagedRecoveryError.uncertainResult;
+      }
+    }
     if (_disposed || _token != token || _epoch != epoch || !_paused) return;
     try {
       await _save();
@@ -349,10 +562,9 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
         !_automationAllowed ||
         !_foreground ||
         _paused ||
-        busy ||
-        (exhausted &&
-            _pendingOperation.isEmpty &&
-            _unreportedOperation.isEmpty)) {
+        _manuallySuspended ||
+        !ownsInstallation ||
+        busy) {
       return;
     }
     _timer = Timer(const Duration(seconds: 5), checkNow);
@@ -366,12 +578,23 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
     await checkNow();
   }
 
-  Future<void> checkNow() async {
+  Future<void> checkNow() {
+    if (busy) return _inFlightCheck ?? Future.value();
+    final checking = _checkNow();
+    _inFlightCheck = checking;
+    return checking.whenComplete(() {
+      if (identical(_inFlightCheck, checking)) _inFlightCheck = null;
+    });
+  }
+
+  Future<void> _checkNow() async {
     if (_disposed ||
         !enabled ||
         !_automationAllowed ||
         !_foreground ||
         _paused ||
+        _manuallySuspended ||
+        !ownsInstallation ||
         busy) {
       return;
     }
@@ -379,14 +602,57 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
     final epoch = _epoch;
     bool current() =>
         !_disposed &&
+        ownsInstallation &&
         enabled &&
         _automationAllowed &&
         _foreground &&
         epoch == _epoch;
     try {
+      await _revocations[prefs];
+      if (!current()) return;
       final snapshot = await TermuxBridge.status();
       if (!current()) return;
       status = snapshot;
+      final expectedRuntime = _runtimes[prefs]?[profileID];
+      if (expectedRuntime != null && snapshot.runtime != expectedRuntime) {
+        _paused = true;
+        error = ManagedRecoveryError.ownershipChanged;
+        await _save();
+        return;
+      }
+      if (_operation.isEmpty) {
+        // A missing/not-yet-installed/stopped/uncertain server is not a crash.
+        if ((!snapshot.isReady && !snapshot.canRecover) ||
+            snapshot.runner != 'proot' ||
+            snapshot.port != TermuxBridge.managedServerPort ||
+            snapshot.operationID.isEmpty) {
+          return;
+        }
+        _operation = snapshot.operationID;
+      }
+      if (!_armed &&
+          _pendingOperation.isEmpty &&
+          snapshot.operationID == _operation &&
+          (snapshot.isReady || snapshot.canRecover) &&
+          !exhausted) {
+        if (_token.isEmpty) {
+          _token = List.generate(
+            16,
+            (_) =>
+                Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0'),
+          ).join();
+        }
+        await _save();
+        if (!current()) return;
+        await TermuxBridge.run(
+          TermuxBridge.recoveryControlScript(_token, enable: true),
+        );
+        if (!current()) {
+          await _revokePermit();
+          return;
+        }
+        _armed = true;
+      }
       if (_pendingOperation.isNotEmpty &&
           snapshot.operationID == _pendingOperation) {
         _operation = _pendingOperation;
@@ -424,7 +690,7 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
         await _save();
         return;
       }
-      if (!snapshot.canRecover || exhausted) return;
+      if (!snapshot.canRecover || exhausted || !_armed) return;
       final now = _now();
       if (nextAttemptAt == null) {
         nextAttemptAt = now.add(backoff[attempts]);
@@ -440,7 +706,10 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
       final savedUnreportedOperation = _unreportedOperation;
       final savedConfirmedAt = _confirmedAt;
       attempts++;
-      _pendingOperation = '${_token.substring(0, 16)}-$attempts';
+      final operationPrefix = _token.length > 16
+          ? _token.substring(0, 16)
+          : _token;
+      _pendingOperation = '$operationPrefix-$attempts';
       _unreportedOperation = _pendingOperation;
       _confirmedAt = null;
       nextAttemptAt = attempts < maxAttempts
@@ -518,7 +787,10 @@ class ManagedServerRecovery extends ChangeNotifier with WidgetsBindingObserver {
     _disposed = true;
     ++_epoch;
     _timer?.cancel();
-    _policy.removeListener(_schedule);
+    _policy.removeListener(_policyChanged);
+    if (_pendingOperation.isNotEmpty && ownsInstallation) {
+      unawaited(_revokeAfterPolicyChange());
+    }
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

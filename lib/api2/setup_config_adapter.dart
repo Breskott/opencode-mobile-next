@@ -9,17 +9,26 @@ import 'transport.dart';
 /// The raw config map has a `sources` list in low-to-high priority order. It is
 /// intentionally NOT a guessed effective config merge. Only the controller may
 /// consume raw config; the UI receives its redacted snapshot.
+/// The borrowed client's later location changes cannot retarget this owner.
+/// Stable 2.0.10's experimental global PATCH accepts only `shell`, without a
+/// conditional snapshot or exact restore; it cannot apply setup proposals.
 class OpenCode2SetupConfigGateway implements SetupConfigGateway {
-  OpenCode2SetupConfigGateway({required Api2Client client}) : _client = client;
+  OpenCode2SetupConfigGateway({required Api2Client client})
+    : _client = client,
+      _directory = client.directory,
+      _workspace = client.workspace;
 
   final Api2Client _client;
+  final String? _directory;
+  final String? _workspace;
 
   @override
   SetupSupport get support => const SetupSupport(
     readConfig: true,
     mcpInventory: true,
     reason:
-        'This server has no verified reversible configuration endpoint. '
+        'This server cannot safely restore setup changes. Its global shell '
+        'setting cannot apply this proposal or protect against other edits. '
         'Apply and Undo are unavailable.',
   );
 
@@ -28,10 +37,8 @@ class OpenCode2SetupConfigGateway implements SetupConfigGateway {
       return await _client.transport.getJson(
         path,
         query: {
-          if (_client.directory != null)
-            'location[directory]': _client.directory,
-          if (_client.workspace != null)
-            'location[workspace]': _client.workspace,
+          if (_directory != null) 'location[directory]': _directory,
+          if (_workspace != null) 'location[workspace]': _workspace,
         },
       );
     } on Api2Error catch (error) {

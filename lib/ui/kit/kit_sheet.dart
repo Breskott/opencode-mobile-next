@@ -91,6 +91,15 @@ class KitDraft {
   /// The store; defaults to [SharedPreferences.getInstance].
   final SharedPreferences? prefs;
 
+  /// The [profileId] of a draft that belongs to the app, not to a server:
+  /// Report a problem, whose page opens with or without a server. Its key
+  /// (`oc.draft.<target>.app`) is the same from every entry point, no
+  /// profile's deletion sweep removes it, and the page clears it once the
+  /// report is sent. Every target that uses it is listed, with its reason,
+  /// in `test/kit/kit_draft_manifest_test.dart` (G10); any other draft
+  /// takes the server profile's id.
+  static const appWide = 'app';
+
   static String keyFor(String target, String profileId) {
     assert(target.isNotEmpty && profileId.isNotEmpty);
     return 'oc.draft.$target.$profileId';

@@ -233,6 +233,9 @@ class _KitGlassState extends State<KitGlass> with TickerProviderStateMixin {
   }
 
   void _pressTo(double target) {
+    // A finger lifted after the glass left the screen still reaches its
+    // listener: nothing to spring then.
+    if (!mounted) return;
     final press = _press ??= AnimationController.unbounded(vsync: this)
       ..addListener(() => _geometry.press = _press!.value);
     press

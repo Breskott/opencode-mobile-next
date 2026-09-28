@@ -4,9 +4,8 @@
 /// At most one thing is said at a time, and only when there is something to
 /// do about it, most urgent first:
 ///
-/// 1. the server is not answering (after [notAnsweringGrace], or at once
-///    when the last attempt already failed);
-/// 2. whatever the screen passes in [WorkStatusLine.others], in its order:
+/// The app-wide scope owns the connection. This contributes whatever the
+/// screen passes in [WorkStatusLine.others], in its order:
 ///    the project list failed, the waiting requests could not be refreshed
 ///    ("may be out of date"), a leftover process burning CPU, a location
 ///    notice.
@@ -21,7 +20,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show SemanticsService;
 
-import '../../api/sse.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../termux/bridge.dart' show TermuxBridgeException;
@@ -29,8 +27,6 @@ import '../../termux/processes.dart'
     show TermuxProcessStopResult, TermuxProcesses;
 import '../app_theme.dart';
 import '../kit/kit.dart';
-import 'connection_status_banner.dart' show showConnectionDetailsSheet;
-import 'grace_timer.dart';
 
 /// What the line can say.
 class WorkStatus {
@@ -184,7 +180,6 @@ class WorkStatusLine extends StatelessWidget {
     required this.serverOnThisPhone,
     this.onRestartServer,
     this.others = const [],
-    this.grace = notAnsweringGrace,
   });
 
   final ConnectionController controller;
@@ -199,98 +194,29 @@ class WorkStatusLine extends StatelessWidget {
 
   /// Lower-priority statuses, most urgent first; nulls are skipped.
   final List<WorkStatus?> others;
-  final Duration grace;
 
-  /// Not connected, and not for a reason the shell banner owns (a rejected
-  /// password or token has its own fix there).
+  /// Kept for callers that diagnose stale lists; timing belongs to the
+  /// controller snapshot, never to this screen.
   static bool serverLost(ConnectionController controller) =>
-      controller.status != StreamStatus.connected &&
-      !controller.passwordRejected;
-
-  /// The last attempt ended and nothing is in flight: say so at once.
-  static bool _failed(ConnectionController controller) =>
-      controller.status == StreamStatus.disconnected &&
-      controller.connectionError != null &&
-      !controller.manualReconnectInProgress;
-
-  WorkStatus _serverStatus(BuildContext context, AppLocalizations l10n) {
-    final retrying = controller.manualReconnectInProgress;
-    final restart = onRestartServer;
-    final retry = KitAction(
-      key: const ValueKey('work-status-retry'),
-      label: retrying ? l10n.e7BannerRetrying : l10n.commonRetry,
-      onPressed: retrying
-          ? null
-          : () => unawaited(controller.retryConnection()),
-    );
-    // The app keeps retrying by itself; for the phone's own server the way
-    // out it cannot take alone is a restart, so that comes first.
-    if (serverOnThisPhone && restart != null) {
-      return WorkStatus(
-        id: 'server',
-        icon: AppIconography.cloudOff,
-        tone: AppStatusTone.failure,
-        message: l10n.workServerNotAnsweringPhone,
-        action: KitAction(
-          key: const ValueKey('work-status-restart'),
-          label: l10n.workServerRestart,
-          onPressed: () => unawaited(_restart(context, restart)),
-        ),
-        more: [retry],
-      );
-    }
-    return WorkStatus(
-      id: 'server',
-      icon: AppIconography.cloudOff,
-      tone: AppStatusTone.failure,
-      message: serverOnThisPhone
-          ? l10n.workServerNotAnsweringPhone
-          : l10n.workServerNotAnswering(controller.profile?.name ?? 'OpenCode'),
-      action: retry,
-      more: [
-        KitAction(
-          key: const ValueKey('work-status-details'),
-          label: l10n.e7BannerDetails,
-          onPressed: () =>
-              unawaited(showConnectionDetailsSheet(context, controller)),
-        ),
-      ],
-    );
-  }
-
-  static Future<void> _restart(
-    BuildContext context,
-    Future<void> Function() restart,
-  ) async {
-    if (!await confirmPhoneServerRestart(context)) return;
-    await restart();
-  }
+      !controller.connectionStatus.reachable &&
+      controller.connectionStatus.visible;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, _) {
-        final lost = serverLost(controller);
-        return GraceTimer(
-          waiting: lost,
-          grace: grace,
-          restartKey: controller.connectionAttemptRevision,
-          builder: (context, overdue) {
-            WorkStatus? status;
-            if (lost && (overdue || _failed(controller))) {
-              status = _serverStatus(context, l10n);
-            } else {
-              for (final other in others) {
-                if (other != null) {
-                  status = other;
-                  break;
-                }
-              }
-            }
-            if (status == null) return const SizedBox.shrink();
-            return KitStatusLine(
+    WorkStatus? selected;
+    for (final other in others) {
+      if (other != null) {
+        selected = other;
+        break;
+      }
+    }
+    final status = selected;
+    return KitStatusContribution(
+      status: status == null
+          ? null
+          : KitStatus(
+              kind: KitStatusKind.work,
+              id: 'work:${status.id}',
               key: ValueKey('work-status-${status.id}'),
               icon: status.icon,
               tone: status.tone,
@@ -299,10 +225,8 @@ class WorkStatusLine extends StatelessWidget {
               action: status.action,
               more: status.more,
               onDismiss: status.onDismiss,
-            );
-          },
-        );
-      },
+            ),
+      child: const SizedBox.shrink(),
     );
   }
 }

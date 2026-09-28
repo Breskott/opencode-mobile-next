@@ -92,6 +92,7 @@ class AppExitRecovery extends ChangeNotifier {
     required BuiltinServerStarter starter,
     AppDiagnosticsController? diagnostics,
     Future<ReportProblemStartup?>? problemReport,
+    Future<void> Function(ServerProfile profile)? recover,
     Future<bool> Function({
       required String profileId,
       required String eventId,
@@ -160,6 +161,7 @@ class AppExitRecovery extends ChangeNotifier {
       eventId:
           'app-exit:${exit?.timestamp.microsecondsSinceEpoch ?? DateTime.now().microsecondsSinceEpoch}',
       onRestart: onRestart,
+      recover: recover,
     );
   }
 
@@ -169,6 +171,7 @@ class AppExitRecovery extends ChangeNotifier {
     required BuiltinServerStarter starter,
     required bool team,
     required String eventId,
+    Future<void> Function(ServerProfile profile)? recover,
     Future<bool> Function({
       required String profileId,
       required String eventId,
@@ -176,6 +179,13 @@ class AppExitRecovery extends ChangeNotifier {
     })?
     onRestart,
   }) async {
+    if (recover != null) {
+      final profile = looksLikeInAppServer(active)
+          ? active
+          : _inAppProfile(store, team: team);
+      if (profile != null) await recover(profile);
+      return;
+    }
     if (looksLikeInAppServer(active)) {
       // The shell starts the server it opens on; nothing to add here.
       PerfTrace.mark('app.recover', attrs: {'by': 'shell', 'team': team});

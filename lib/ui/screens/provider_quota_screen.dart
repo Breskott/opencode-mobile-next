@@ -13,7 +13,6 @@ import '../../state/quota_answers_controller.dart';
 import '../../state/provider_quota_monitor.dart' show QuotaMonitorTarget;
 import '../../state/provider_quota_overview.dart';
 import '../app_iconography.dart';
-import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit.dart';
 import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/quota_monitor_section.dart';
@@ -1167,10 +1166,11 @@ class _AccountAnswer extends StatelessWidget {
             SizedBox(height: tokens.space3),
           ],
           if (answers.attentionRequired) ...[
+            // A limit nearly used is a warning, not a request: the warning
+            // glyph in the neutral tone (LOOK-4: amber means needs you).
             KitNotice(
               key: const ValueKey('quota-answer-attention'),
               icon: AppIconography.warning,
-              tone: AppStatusTone.attention,
               message: l10n.quotaAnswerAttention(alertAt),
             ),
             SizedBox(height: tokens.space3),

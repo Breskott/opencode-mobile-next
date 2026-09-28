@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/builtin/setup/voice_component.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/voice/automatic_setup.dart';
 import 'package:opencode_mobile/voice/automatic_setup_platform.dart';
@@ -251,9 +252,12 @@ void main() {
   ]) {
     test('total RAM ${entry.$1} selects ${entry.$2} before consent', () async {
       final f = await _fixture(info: _deviceInfo(memory: entry.$1));
+      await f.models.initialize();
+      final setupPack = VoiceSetupComponent.packFor(f.models);
       await f.setup.requestMicrophone();
       expect(f.setup.stage, VoiceSetupStage.consentRequired);
       expect(f.setup.pack?.id, entry.$2);
+      expect(setupPack?.id, f.setup.pack?.id);
       expect(f.setup.downloadBytes, voiceModelPack(entry.$2).downloadBytes);
       expect(f.models.preferences.getString('voice.selected_pack'), entry.$2);
       expect(f.downloader.downloadCalls, 0);
@@ -275,9 +279,12 @@ void main() {
       'unknown or nonpositive total RAM $memory blocks automatic setup',
       () async {
         final f = await _fixture(info: _deviceInfo(memory: memory));
+        await f.models.initialize();
+        expect(VoiceSetupComponent.packFor(f.models), isNull);
         await f.setup.requestMicrophone();
         expect(f.setup.stage, VoiceSetupStage.blocked);
         expect(f.setup.problem, VoiceSetupProblem.unknownMemory);
+        expect(f.setup.pack, isNull);
         expect(f.downloader.downloadCalls, 0);
         expect(f.recorder.startCalls, 0);
       },
@@ -311,26 +318,65 @@ void main() {
     });
   }
 
-  test('storage can reduce the automatic choice to a supported pack', () async {
-    final bytes = voiceModelPack('base').downloadBytes + 128 * 1024 * 1024;
-    final f = await _fixture(info: _deviceInfo(storage: bytes));
-    await f.setup.requestMicrophone();
-    expect(f.setup.pack?.id, 'base');
-    expect(f.setup.stage, VoiceSetupStage.consentRequired);
-  });
+  test(
+    'low storage blocks the shared RAM choice instead of downsizing',
+    () async {
+      final bytes = voiceModelPack('base').downloadBytes + 128 * 1024 * 1024;
+      final f = await _fixture(info: _deviceInfo(storage: bytes));
+      await f.models.initialize();
+      final setupPack = VoiceSetupComponent.packFor(f.models);
+      await f.setup.requestMicrophone();
+      expect(setupPack?.id, 'small');
+      expect(f.setup.pack?.id, setupPack?.id);
+      expect(f.setup.stage, VoiceSetupStage.blocked);
+      expect(f.setup.problem, VoiceSetupProblem.noSupportedPack);
+      expect(f.downloader.downloadCalls, 0);
+      expect(f.recorder.startCalls, 0);
+      expect(f.platform.networkCalls, 0);
+    },
+  );
 
   test(
     'an installed selected eligible pack starts even while offline',
     () async {
       final f = await _fixture(selected: 'tiny', installed: {'tiny'});
+      await f.models.initialize();
+      final setupPack = VoiceSetupComponent.packFor(f.models);
       f.platform.currentNetwork = VoiceSetupNetwork.offline;
       await f.setup.requestMicrophone();
       expect(f.setup.pack?.id, 'tiny');
+      expect(setupPack?.id, f.setup.pack?.id);
       expect(f.setup.stage, VoiceSetupStage.listening);
       expect(f.recorder.startCalls, 1);
       expect(f.platform.networkCalls, 0);
       expect(f.platform.permissionCalls, 0);
       expect(f.downloader.downloadCalls, 0);
+    },
+  );
+
+  test(
+    'an uninstalled preference does not override the shared RAM choice',
+    () async {
+      final f = await _fixture(selected: 'tiny');
+      await f.models.initialize();
+      final setupPack = VoiceSetupComponent.packFor(f.models);
+      await f.setup.requestMicrophone();
+      expect(setupPack?.id, 'small');
+      expect(f.setup.pack?.id, setupPack?.id);
+      expect(f.setup.stage, VoiceSetupStage.consentRequired);
+    },
+  );
+
+  test(
+    'an installed unselected pack does not override the shared RAM choice',
+    () async {
+      final f = await _fixture(installed: {'tiny'});
+      await f.models.initialize();
+      final setupPack = VoiceSetupComponent.packFor(f.models);
+      await f.setup.requestMicrophone();
+      expect(setupPack?.id, 'small');
+      expect(f.setup.pack?.id, setupPack?.id);
+      expect(f.setup.stage, VoiceSetupStage.consentRequired);
     },
   );
 

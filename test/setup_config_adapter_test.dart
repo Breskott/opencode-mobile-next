@@ -9,6 +9,7 @@ import 'package:opencode_mobile/api2/client.dart';
 import 'package:opencode_mobile/api2/dialect.dart';
 import 'package:opencode_mobile/api2/setup_config_adapter.dart';
 import 'package:opencode_mobile/domain/setup_assistant.dart';
+import 'package:opencode_mobile/ui/kit/kit_redact.dart';
 
 class _Adapter implements HttpClientAdapter {
   final requests = <RequestOptions>[];
@@ -44,11 +45,13 @@ class _Adapter implements HttpClientAdapter {
 }
 
 void main() {
-  for (final v2 in [false, true]) {
-    group(v2 ? 'OpenCode 2 setup' : 'OpenCode 1 setup', () {
+  for (final dialect in [null, Api2Dialect.beta, Api2Dialect.stable]) {
+    final v2 = dialect != null;
+    group(v2 ? 'OpenCode 2 ${dialect.name} setup' : 'OpenCode 1 setup', () {
       late _Adapter http;
       late SetupConfigGateway gateway;
       late void Function() close;
+      late void Function() changeLocation;
 
       setUp(() {
         http = _Adapter();
@@ -59,10 +62,14 @@ void main() {
             directory: '/projects/app',
             workspace: 'workspace-one',
           );
-          client.transport.settleDialect(Api2Dialect.beta);
+          client.transport.settleDialect(dialect);
           client.transport.dio.httpClientAdapter = http;
           gateway = OpenCode2SetupConfigGateway(client: client);
           close = client.close;
+          changeLocation = () => client.setLocation(
+            directory: '/projects/other',
+            workspace: 'workspace-other',
+          );
         } else {
           final api =
               OpenCodeApi(
@@ -75,6 +82,10 @@ void main() {
           api.dio.httpClientAdapter = http;
           gateway = OpenCode1SetupConfigGateway(api: api);
           close = api.close;
+          changeLocation = () => api.setLocation(
+            directory: '/projects/other',
+            workspace: 'workspace-other',
+          );
         }
       });
 
@@ -124,18 +135,78 @@ void main() {
         expect(gateway.support.mcpInventory, isTrue);
         expect(gateway.support.writeConfig, isFalse);
         expect(gateway.support.assistant, isFalse);
-        await expectLater(
-          gateway.patchConfig({'model': 'example/changed'}),
-          throwsA(
-            isA<SetupFailure>().having(
-              (error) => error.code,
-              'code',
-              SetupFailureCode.unsupported,
+        for (final patch in <Map<String, Object?>>[
+          {'model': 'example/changed'},
+          {'shell': '/bin/sh'},
+          {
+            'mcp': {
+              'docs': {
+                'type': 'remote',
+                'url': 'https://example.com/mcp',
+                'enabled': false,
+              },
+            },
+          },
+          {
+            'mcp': {'docs': null},
+          },
+        ]) {
+          await expectLater(
+            gateway.patchConfig(patch),
+            throwsA(
+              isA<SetupFailure>().having(
+                (error) => error.code,
+                'code',
+                SetupFailureCode.unsupported,
+              ),
             ),
-          ),
-        );
+          );
+        }
         expect(http.requests, isEmpty);
       });
+
+      test(
+        'inspection keeps its captured location after client switches',
+        () async {
+          changeLocation();
+          http.payload = v2 ? <Object>[] : <String, Object?>{};
+          await gateway.readConfig();
+          http.payload = v2 ? {'data': <Object>[]} : <String, Object?>{};
+          await gateway.listMcpServers();
+          for (final request in http.requests) {
+            expect(request.method, 'GET');
+            expect(
+              request.queryParameters[v2 ? 'location[directory]' : 'directory'],
+              '/projects/app',
+            );
+            expect(
+              request.queryParameters[v2 ? 'location[workspace]' : 'workspace'],
+              'workspace-one',
+            );
+          }
+        },
+      );
+
+      test(
+        'loaded provider credentials are registered before returning config',
+        () async {
+          final secret = 'fixture-setup-${dialect?.name ?? 'v1'}-ingress-value';
+          final info = {
+            'providers': {
+              'example': {
+                'options': {'apiKey': secret},
+              },
+            },
+          };
+          http.payload = v2
+              ? [
+                  {'type': 'document', 'info': info},
+                ]
+              : info;
+          await gateway.readConfig();
+          expect(KitRedact.text(secret).contains(secret), isFalse);
+        },
+      );
 
       test('inventory preserves statuses without raw server errors', () async {
         http.payload = v2

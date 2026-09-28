@@ -58,7 +58,8 @@ class KitTaskFlag {
   final IconData? icon;
 }
 
-/// One piece of the meta line; pieces are joined with " · ".
+/// One piece of the meta line; pieces are joined with " · ". A piece stays
+/// whole on its line ("12 min ago"); the line wraps between pieces.
 @immutable
 class KitTaskMeta {
   const KitTaskMeta(
@@ -167,31 +168,27 @@ class KitTaskCard extends StatelessWidget {
     final scale = MediaQuery.textScalerOf(context).scale(1);
     final flag = receipt == null ? this.flag : null;
 
-    final metaStyle = KitText.styleOf(context, KitTextRole.secondary);
+    // Each piece is its own run in a Wrap, with its glyph and the
+    // separator after it, so the line wraps between pieces ("fox ·" /
+    // "12 min ago"), never inside one or between a glyph and its word; a
+    // piece wider than the whole line still wraps inside (A11Y-8: never
+    // truncated).
     final metaText = meta.isEmpty
         ? null
         : Padding(
             padding: EdgeInsetsDirectional.only(top: tokens.space1),
-            child: KitText.rich(
-              TextSpan(
-                children: [
-                  for (var i = 0; i < meta.length; i++) ...[
-                    if (i > 0)
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.middle,
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: tokens.space1,
-                          ),
-                          child: KitText('·', role: KitTextRole.secondary),
-                        ),
-                      ),
-                    ..._metaPiece(context, meta[i], tokens, metaStyle),
-                  ],
-                ],
-              ),
+            child: Wrap(
               key: metaKey,
-              role: KitTextRole.secondary,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                for (var i = 0; i < meta.length; i++)
+                  _metaPiece(
+                    context,
+                    meta[i],
+                    tokens,
+                    last: i == meta.length - 1,
+                  ),
+              ],
             ),
           );
 
@@ -330,12 +327,12 @@ class KitTaskCard extends StatelessWidget {
     );
   }
 
-  List<InlineSpan> _metaPiece(
+  Widget _metaPiece(
     BuildContext context,
     KitTaskMeta piece,
-    KitTokens tokens,
-    TextStyle base,
-  ) {
+    KitTokens tokens, {
+    required bool last,
+  }) {
     final roles = tokens.roles;
     final lead = piece.priority != null
         ? KitPriorityGlyph(priority: piece.priority!)
@@ -346,22 +343,32 @@ class KitTaskCard extends StatelessWidget {
             tone: KitTextTone.secondary,
           )
         : null;
-    return [
-      if (lead != null)
-        WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: Padding(
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (lead != null)
+          Padding(
             padding: EdgeInsetsDirectional.only(end: tokens.space1),
             child: lead,
           ),
+        Flexible(
+          child: KitText.rich(
+            TextSpan(
+              text: piece.label,
+              style: piece.strong
+                  ? TextStyle(color: roles.text1, fontWeight: FontWeight.w600)
+                  : null,
+            ),
+            role: KitTextRole.secondary,
+          ),
         ),
-      TextSpan(
-        text: piece.label,
-        style: piece.strong
-            ? TextStyle(color: roles.text1, fontWeight: FontWeight.w600)
-            : null,
-      ),
-    ];
+        if (!last)
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: tokens.space1),
+            child: KitText('·', role: KitTextRole.secondary),
+          ),
+      ],
+    );
   }
 
   Widget _flagLine(BuildContext context, KitTaskFlag flag, KitTokens tokens) {

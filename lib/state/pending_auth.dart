@@ -278,12 +278,17 @@ class PendingAuthStore {
     _blocked.add(owner);
   }
 
+  /// A retained profile can start fresh auth work after deletion drains.
+  void cancelDeletion(String owner) {
+    forget(owner);
+    _blocked.remove(owner);
+  }
+
   Future<void> drain(String owner) => _writes[owner] ?? Future<void>.value();
   void forget(String owner) {
     _cache.remove(owner);
     _uncertain.remove(owner);
     _corrupt.remove(owner);
-    // Keep blocked for this store's lifetime, including failed deletion.
-    // A new controller may recover any metadata whose deletion was refused.
+    // Committed deletion stays blocked; only cancelDeletion reopens admission.
   }
 }
