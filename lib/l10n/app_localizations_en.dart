@@ -12415,10 +12415,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get builtinServerLogTitle => 'Server log';
 
   @override
-  String get builtinServerRemoveBody =>
-      'This stops the server and deletes Ubuntu, OpenCode and every project folder inside it. The saved server entry stays.';
-
-  @override
   String get phoneSetupReadyTitle => 'OpenCode is ready';
 
   @override
@@ -12525,15 +12521,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneServerCardRemoveTitle => 'Remove OpenCode from this phone?';
-
-  @override
-  String phoneServerCardRemoveBody(String size) {
-    return 'This deletes OpenCode, its tools and every project on this phone, and frees $size.';
-  }
-
-  @override
-  String get phoneServerCardRemoveBodyUnmeasured =>
-      'This deletes OpenCode, its tools and every project on this phone, and frees the space they use.';
 
   @override
   String phoneServerCardActionFailed(String reason) {
@@ -20196,7 +20183,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String removeFromPhoneKeepBody(String size) {
-    return 'OpenCode and its tools are removed and $size comes back.';
+    return 'OpenCode and its tools are removed, freeing about $size.';
   }
 
   @override
@@ -20210,11 +20197,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeFromPhoneDeleteAll => 'Delete everything';
 
   @override
+  String get removeFromPhoneDeleteAllChoice => 'Delete everything…';
+
+  @override
+  String removeFromPhoneDeleteAllChoiceSize(String size) {
+    return 'Delete everything, freeing about $size…';
+  }
+
+  @override
+  String get phoneServerCardErrorDetail => 'Error';
+
+  @override
   String get removeFromPhoneDeleteTitle => 'Delete OpenCode and projects?';
 
   @override
   String removeFromPhoneDeleteBody(String size) {
-    return 'OpenCode, its tools and every project on this phone are deleted and $size comes back. This cannot be undone.';
+    return 'OpenCode, its tools and every project on this phone are deleted, freeing about $size. This cannot be undone.';
   }
 
   @override
