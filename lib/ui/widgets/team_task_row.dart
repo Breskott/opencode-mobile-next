@@ -16,6 +16,7 @@ import '../../state/team_conversation.dart' show TeamNowKind, teamNow;
 import '../kit/kit_row.dart';
 import '../kit/kit_task_mark.dart';
 import '../kit/kit_text.dart';
+import '../kit/kit_time.dart';
 import 'team_now.dart';
 import 'team_vocabulary.dart';
 import 'work_row_presentation.dart';
@@ -137,7 +138,11 @@ class TeamTaskRow extends StatelessWidget {
     // A stalled task says since when; a row that is not fresh says the
     // last seen state and as of when, with a still mark.
     final line = !status.isFresh
-        ? status.line(l10n, now: now)
+        ? status.line(
+            l10n,
+            now: now,
+            moment: (at) => KitTime.moment(context, at, now: now),
+          )
         : stall != null
         ? (stalledSince == null
               ? l10n.workStalled
@@ -181,15 +186,6 @@ class TeamTaskRow extends StatelessWidget {
   }
 }
 
-/// "14:02" today, else the short date with it.
-String _clock(BuildContext context, DateTime at, DateTime now) {
-  final local = at.toLocal();
-  final material = MaterialLocalizations.of(context);
-  final time = material.formatTimeOfDay(TimeOfDay.fromDateTime(local));
-  final today = now.toLocal();
-  final sameDay =
-      local.year == today.year &&
-      local.month == today.month &&
-      local.day == today.day;
-  return sameDay ? time : '${material.formatShortDate(local)} $time';
-}
+/// The clock today, else the day with it (KitTime, F15).
+String _clock(BuildContext context, DateTime at, DateTime now) =>
+    KitTime.moment(context, at, now: now);

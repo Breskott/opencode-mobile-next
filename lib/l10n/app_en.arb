@@ -15443,9 +15443,9 @@
   "@teamBoardProjectTooltip": {
     "description": "Board: the project switcher under the title"
   },
-  "appExitForceStopped": "Android closed OpenCode Mobile {time}",
+  "appExitForceStopped": "OpenCode Mobile was closed {time}",
   "@appExitForceStopped": {
-    "description": "After a force stop: first half of the one-time notice; time is like 'at 00:06' or 'on Sep 25 at 20:19'",
+    "description": "After a force stop (from Settings, a Recents swipe on some phones, or a battery manager: not always Android itself): first half of the one-time notice; time is like 'at 12:06 AM' or 'on Sep 25 at 8:19 PM'",
     "placeholders": {
       "time": {
         "type": "String"
@@ -15509,6 +15509,24 @@
   "appExitServerAndTeamStoppedManual": "{what}. Your phone's OpenCode and the AI Team stopped with it. Start them again when you're ready.",
   "@appExitServerAndTeamStoppedManual": {
     "description": "The notice when the phone's OpenCode and the AI Team were running and automatic restart is off, so nothing is restarting them",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "appExitServerBack": "{what}. Your phone's OpenCode stopped with it and is running again.",
+  "@appExitServerBack": {
+    "description": "The notice once the phone's OpenCode is connected again after the exit; what is one of the appExit first halves",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "appExitServerBackTeam": "{what}. Your phone's OpenCode and the AI Team stopped with it; OpenCode is running again.",
+  "@appExitServerBackTeam": {
+    "description": "The notice once the phone's OpenCode is connected again after the exit, when the AI Team had stopped with it too",
     "placeholders": {
       "what": {
         "type": "String"

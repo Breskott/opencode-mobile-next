@@ -10,6 +10,7 @@ import '../../domain/work_row_status.dart';
 import '../../l10n/app_localizations.dart';
 import '../kit/kit_task_mark.dart';
 import '../kit/kit_text.dart';
+import '../kit/kit_time.dart';
 
 /// The leading mark for [status]. Waiting-like phases (and a stalled task,
 /// which is not moving) share the still waiting ring.
@@ -39,6 +40,10 @@ TextSpan workRowStatusSpan(
   WorkRowStatus status, {
   required DateTime now,
 }) => TextSpan(
-  text: status.line(l10n, now: now),
+  text: status.line(
+    l10n,
+    now: now,
+    moment: (at) => KitTime.moment(context, at, now: now),
+  ),
   style: KitText.styleOf(context, KitTextRole.label, tone: KitTextTone.primary),
 );

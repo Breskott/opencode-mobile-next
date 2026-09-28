@@ -18,8 +18,17 @@ String presentedSessionTitle(
   Session? session, {
   String fallback = 'New conversation',
   AppLocalizations? l10n,
+}) => presentedSessionTitleText(session?.title, fallback: fallback, l10n: l10n);
+
+/// [presentedSessionTitle] for a title known without its session: a feed
+/// row or a saved act that kept only the title. The server's
+/// `New session - <ISO time>` placeholder never reaches the screen (F3).
+String presentedSessionTitleText(
+  String? rawTitle, {
+  String fallback = 'New conversation',
+  AppLocalizations? l10n,
 }) {
-  final title = displaySessionTitleText(session?.title);
+  final title = displaySessionTitleText(rawTitle);
   if (title.isEmpty) {
     return fallback == 'New conversation'
         ? l10n?.workspaceNewSession ?? fallback

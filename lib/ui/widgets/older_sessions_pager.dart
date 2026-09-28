@@ -12,6 +12,8 @@
 ///   conversations). A failed page or a changed list stops the paging
 ///   until the person acts; the others let it go on.
 /// - Nothing more: nothing.
+/// - The server not answering: no notice at all; the connection's status
+///   line is the one place that says so (F5).
 library;
 
 import 'package:flutter/material.dart';
@@ -63,7 +65,12 @@ class OlderSessionsPager extends StatelessWidget {
     final pinError = controller.pinnedSessionsLoadFailed;
     final changed = controller.sessionsNeedReload;
     Widget? notice;
-    if (listError != null || pageError != null || pinError) {
+    // While the server is not answering, the connection's own status line
+    // already says so with its Reconnect: a second panel for the same
+    // cause would say it twice and offer "Report a problem" for an outage
+    // (F5). The rows already listed stay, as last known.
+    final outage = !controller.isConnected;
+    if (!outage && (listError != null || pageError != null || pinError)) {
       // The list itself, or where it continues, is lost: start again from
       // the newest page. Only a failed older page is asked for again.
       final refresh = changed || pageError == null;

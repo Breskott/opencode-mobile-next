@@ -45,6 +45,7 @@
 /// | [KitUndo], [showKitUndo] | K2 §1.17, §4.1 the one Undo bar |
 /// | [KitBottomInset], [KitClearance] | K2 §2.12 how much of the bottom is covered by something pinned or floating |
 /// | [KitSince], [KitSincePhase], [KitSinceStatus], [KitSinceTicks] | the one wait timer: slow after a while, then minute ticks |
+/// | [KitTime] | F15 the one way a time is written: the clock in the person's 12/24-hour setting, a moment as clock, day or date |
 /// | [KitImage], [KitAvatar], [KitZoom], [KitZoomController] | kit v2 sharp raster images, the one identity mark, and the one pinch/pan/zoom viewer |
 /// | [KitQr] | kit v2 §5 a QR code another device can scan |
 /// | [KitSwatch], [KitSwatchGrid], [KitThemePreview] | kit v2 §5 choosing a theme or accent by looking, and a theme's live preview |
@@ -148,6 +149,7 @@ export 'kit_date_time_picker.dart';
 export 'kit_scanner.dart';
 export 'kit_segmented.dart';
 export 'kit_since.dart';
+export 'kit_time.dart';
 export 'kit_surface.dart';
 export 'kit_swatch.dart';
 export 'kit_term.dart';

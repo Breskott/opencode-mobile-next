@@ -17,7 +17,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../domain/profile_monitor.dart';
-import '../../domain/session_title_text.dart';
 import '../../domain/work_row_status.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/attention_feed.dart';
@@ -35,6 +34,7 @@ import '../screens/team/gate_sheet.dart' show showGateSheet;
 import '../screens/team_conversation/team_conversation.dart';
 import 'phone_server_card.dart' show serverDisplayName;
 import 'relative_time.dart';
+import 'session_title.dart';
 import 'work_row_presentation.dart';
 
 /// Which feed items the Inbox lists as feed rows: every item of another
@@ -103,8 +103,12 @@ class _AttentionFeedRowState extends State<AttentionFeedRow> {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final item = widget.item;
     final status = item.status;
-    final shown = displaySessionTitleText(item.title ?? '');
-    final title = shown.isNotEmpty ? shown : _genericTitle(l10n, item.kind);
+    // The server's untitled placeholder reads as Work shows it (F3).
+    final title = presentedSessionTitleText(
+      item.title,
+      fallback: _genericTitle(l10n, item.kind),
+      l10n: l10n,
+    );
     final server = _serverName(widget.controller, item, l10n);
     void onOpen() {
       if (!_opening) unawaited(_open());

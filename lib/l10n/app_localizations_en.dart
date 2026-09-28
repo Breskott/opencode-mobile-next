@@ -13863,7 +13863,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String appExitForceStopped(String time) {
-    return 'Android closed OpenCode Mobile $time';
+    return 'OpenCode Mobile was closed $time';
   }
 
   @override
@@ -13899,6 +13899,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String appExitServerAndTeamStoppedManual(String what) {
     return '$what. Your phone\'s OpenCode and the AI Team stopped with it. Start them again when you\'re ready.';
+  }
+
+  @override
+  String appExitServerBack(String what) {
+    return '$what. Your phone\'s OpenCode stopped with it and is running again.';
+  }
+
+  @override
+  String appExitServerBackTeam(String what) {
+    return '$what. Your phone\'s OpenCode and the AI Team stopped with it; OpenCode is running again.';
   }
 
   @override

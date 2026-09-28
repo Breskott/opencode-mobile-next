@@ -22704,10 +22704,10 @@ abstract class AppLocalizations {
   /// **'Choose project'**
   String get teamBoardProjectTooltip;
 
-  /// After a force stop: first half of the one-time notice; time is like 'at 00:06' or 'on Sep 25 at 20:19'
+  /// After a force stop (from Settings, a Recents swipe on some phones, or a battery manager: not always Android itself): first half of the one-time notice; time is like 'at 12:06 AM' or 'on Sep 25 at 8:19 PM'
   ///
   /// In en, this message translates to:
-  /// **'Android closed OpenCode Mobile {time}'**
+  /// **'OpenCode Mobile was closed {time}'**
   String appExitForceStopped(String time);
 
   /// After a low-memory kill: first half of the notice
@@ -22751,6 +22751,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{what}. Your phone\'s OpenCode and the AI Team stopped with it. Start them again when you\'re ready.'**
   String appExitServerAndTeamStoppedManual(String what);
+
+  /// The notice once the phone's OpenCode is connected again after the exit; what is one of the appExit first halves
+  ///
+  /// In en, this message translates to:
+  /// **'{what}. Your phone\'s OpenCode stopped with it and is running again.'**
+  String appExitServerBack(String what);
+
+  /// The notice once the phone's OpenCode is connected again after the exit, when the AI Team had stopped with it too
+  ///
+  /// In en, this message translates to:
+  /// **'{what}. Your phone\'s OpenCode and the AI Team stopped with it; OpenCode is running again.'**
+  String appExitServerBackTeam(String what);
 
   /// Time of the exit today, e.g. 'at 00:06'
   ///

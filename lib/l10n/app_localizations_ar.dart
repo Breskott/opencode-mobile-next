@@ -14007,6 +14007,16 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String appExitServerBack(String what) {
+    return '$what. Your phone\'s OpenCode stopped with it and is running again.';
+  }
+
+  @override
+  String appExitServerBackTeam(String what) {
+    return '$what. Your phone\'s OpenCode and the AI Team stopped with it; OpenCode is running again.';
+  }
+
+  @override
   String appExitAtTime(String time) {
     return 'عند $time';
   }
