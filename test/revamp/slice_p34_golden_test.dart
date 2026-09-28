@@ -9,6 +9,7 @@
 //   flutter test --update-goldens test/revamp/slice_p34_golden_test.dart
 // and look at every changed image before committing it.
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -164,52 +165,58 @@ void main() {
 
   for (final shot in _Shot.values) {
     testWidgets(shot.name, (tester) async {
-      tester.view.physicalSize = shot.size;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      resetTeamMoments();
-      final Widget home;
-      if (shot == _Shot.off || shot == _Shot.offWide) {
-        home = await _offPage();
-      } else {
-        final team = await teamSceneController(TeamScene.loaded, onPhone: true);
-        addTearDown(team.dispose);
-        home = await _onPage(shot, team);
-      }
-      final boundary = GlobalKey();
-      debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
-      try {
-        await tester.pumpWidget(
-          MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: captureTheme(light: true),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(disableAnimations: true),
-              child: RepaintBoundary(key: boundary, child: child),
-            ),
-            home: home,
-          ),
-        );
-        for (var i = 0; i < 10; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
-        if (shot == _Shot.menu) {
-          await tester.tap(find.byKey(const ValueKey('team-home-more')));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 600));
-        }
-        expect(tester.takeException(), isNull);
-        await expectLater(
-          find.byKey(boundary),
-          matchesGoldenFile('goldens/${shot.name}.png'),
-        );
-      } finally {
-        debugDefaultTargetPlatformOverride = null;
-      }
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump(const Duration(seconds: 1));
+      // Elapsed words ("waiting 12 min") read the pinned clock (TEST-11),
+      // not today's date: the scene's gates were made at teamSceneClock.
+      await withClock(Clock.fixed(teamSceneClock), () => _run(tester, shot));
     });
   }
+}
+
+Future<void> _run(WidgetTester tester, _Shot shot) async {
+  tester.view.physicalSize = shot.size;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  resetTeamMoments();
+  final Widget home;
+  if (shot == _Shot.off || shot == _Shot.offWide) {
+    home = await _offPage();
+  } else {
+    final team = await teamSceneController(TeamScene.loaded, onPhone: true);
+    addTearDown(team.dispose);
+    home = await _onPage(shot, team);
+  }
+  final boundary = GlobalKey();
+  debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
+  try {
+    await tester.pumpWidget(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: captureTheme(light: true),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: RepaintBoundary(key: boundary, child: child),
+        ),
+        home: home,
+      ),
+    );
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    if (shot == _Shot.menu) {
+      await tester.tap(find.byKey(const ValueKey('team-home-more')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+    }
+    expect(tester.takeException(), isNull);
+    await expectLater(
+      find.byKey(boundary),
+      matchesGoldenFile('goldens/${shot.name}.png'),
+    );
+  } finally {
+    debugDefaultTargetPlatformOverride = null;
+  }
+  await tester.pumpWidget(const SizedBox.shrink());
+  await tester.pump(const Duration(seconds: 1));
 }
