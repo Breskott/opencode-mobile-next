@@ -1024,10 +1024,6 @@
   "@quotaTitle": {
     "description": "Read-only subscription quota screen title"
   },
-  "quotaSource": "Collector server",
-  "@quotaSource": {
-    "description": "Label above the explicitly selected server origin"
-  },
   "quotaSourceTitle": "{profile} · {provider}",
   "@quotaSourceTitle": {
     "description": "Selected quota source profile and provider heading",
@@ -1072,10 +1068,6 @@
   "@quotaLoading": {
     "description": "Progress semantics for a quota read"
   },
-  "quotaForgetConsent": "Stop using this collector",
-  "@quotaForgetConsent": {
-    "description": "Clear this visit's consent and in-memory quota snapshot; no remote mutation"
-  },
   "quotaCollectorAuth": "The collector route did not accept this server sign-in. Ask the server operator to check its authentication setup.",
   "@quotaCollectorAuth": {
     "description": "Collector or proxy authentication failure, distinct from provider reauthentication"
@@ -1108,65 +1100,13 @@
   "@quotaAccountUnverified": {
     "description": "Missing or mismatched account identity must not display measurements"
   },
-  "quotaCodexAccount": "Codex account windows",
-  "@quotaCodexAccount": {
-    "description": "Heading for Codex entitlements, not all ChatGPT product allowances"
-  },
-  "quotaPlan": "Reported plan: {plan}",
-  "@quotaPlan": {
-    "description": "Provider-reported plan label, from a safe allowlist",
-    "placeholders": {
-      "plan": {
-        "type": "String"
-      }
-    }
-  },
-  "quotaChecked": "Snapshot checked {time}",
-  "@quotaChecked": {
-    "description": "Collector snapshot time, formatted in the device locale",
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "quotaStale": "Previous snapshot — refresh to check the latest allowance.",
+  "quotaStale": "This is the last reading. Refresh to see the latest.",
   "@quotaStale": {
     "description": "An expired, interrupted or failed-refresh snapshot is not live provider truth"
   },
   "quotaUseBlocked": "The provider reports that ordinary Codex use is currently blocked. Window percentages alone do not determine access.",
   "@quotaUseBlocked": {
     "description": "Explicit provider eligibility signal, independent of quota arithmetic"
-  },
-  "quotaNotReported": "Not reported",
-  "@quotaNotReported": {
-    "description": "Unknown allowance; never means zero or unlimited"
-  },
-  "quotaPrimaryWindow": "Primary window",
-  "@quotaPrimaryWindow": {
-    "description": "First provider rate-limit window without assuming a five-hour duration"
-  },
-  "quotaSecondaryWindow": "Secondary window",
-  "@quotaSecondaryWindow": {
-    "description": "Second provider rate-limit window without assuming a weekly duration"
-  },
-  "quotaOtherWindow": "Usage window {number}",
-  "@quotaOtherWindow": {
-    "description": "Safe display name for an additional bounded window",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
-  "quotaRemaining": "{percent} remaining",
-  "@quotaRemaining": {
-    "description": "Percentage remaining within one reported provider window",
-    "placeholders": {
-      "percent": {
-        "type": "String"
-      }
-    }
   },
   "quotaUsed": "{percent} used",
   "@quotaUsed": {
@@ -1176,19 +1116,6 @@
         "type": "String"
       }
     }
-  },
-  "quotaResetAt": "Reported reset: {time}",
-  "@quotaResetAt": {
-    "description": "Absolute provider reset time in device locale",
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "quotaResetUnknown": "Reset time not reported",
-  "@quotaResetUnknown": {
-    "description": "Missing provider reset time is not fabricated"
   },
   "quotaSourceDisclosure": "Read-only snapshot from the optional collector using an internal provider endpoint. Other product allowances, model-specific limits, credits and eligibility are not included. Missing data is unknown, not unlimited.",
   "@quotaSourceDisclosure": {
@@ -1221,10 +1148,6 @@
   "platformSecureStorageGuide": "Server passwords use this platform's secure credential storage. They are not stored in plain app preferences.",
   "@platformSecureStorageGuide": {
     "description": "Platform-neutral storage copy rather than incorrectly promising Linux libsecret everywhere"
-  },
-  "quotaClaudeAccount": "Claude login windows",
-  "@quotaClaudeAccount": {
-    "description": "Claude allowances for the operator-selected OAuth login"
   },
   "quotaSourceBound": "Tied to the collector's configured Claude login. The usage response does not independently identify the account.",
   "@quotaSourceBound": {
@@ -1284,7 +1207,6 @@
   "demoSetUpServer": "Set up your own server",
   "handoffCopyCommand": "Copy command",
   "quotaMiniMax": "MiniMax",
-  "quotaMiniMaxAccount": "MiniMax subscription windows",
   "quotaMiniMaxSourceBound": "Tied to the collector's configured MiniMax Subscription Key. The quota response does not independently identify the account. Only reported general-pool percentages are shown; other limits may apply.",
   "managedHealthLifetime": "Android may stop either app. Keeping the mobile connection alive does not guarantee the Termux server will keep running overnight.",
   "quotaBudgetOff": "Off",
@@ -1298,9 +1220,6 @@
   },
   "quotaBudgetSaveFailed": "Could not save this budget change. Your last saved settings remain in effect.",
   "quotaGlm": "GLM",
-  "quotaGlmAccount": "Configured GLM Coding Plan source",
-  "quotaGlmTokenWindow": "Reported token-plan window",
-  "quotaGlmMcpWindow": "Reported MCP window",
   "usageBudgetTitle": "Budgets",
   "usageBudgetDescription": "Budgets use all reported consumption for the selected server, project, timezone and date-window start. Model filters do not change them. A new window start needs a new budget. These do not change subscription allowances or stop requests.",
   "usageBudgetUsd": "Set USD budget",
@@ -1327,10 +1246,8 @@
   "usageBudgetClearAll": "Clear both budgets",
   "usageBudgetClearDescription": "Remove all current and past consumption budgets for this saved server? Provider thresholds are kept.",
   "usageBudgetClearTitle": "Clear consumption budgets?",
-  "monitorTitle": "Saved-server attention",
   "monitorScope": "Counts cover each server’s last selected project, not every project on that server.",
-  "monitorDisclosure": "Monitoring is off until you enable it for a server. Checks run about once a minute while this app is open. Background checks run no more often than every five minutes, only while Keep live is already on and Android’s service is running. Android can stop that service; no remaining runtime is promised.",
-  "monitorRefresh": "Check monitored servers",
+  "monitorDisclosure": "Monitoring is off until you enable it for a server. Checks run about once a minute while this app is open. Background checks run no more often than every five minutes, only while Stay connected in the background is on and Android’s service is running. Android can stop that service; no remaining runtime is promised.",
   "monitorOptIn": "Monitor this server",
   "monitorOptInDetail": "Check pending permissions, questions and forms in its last selected project.",
   "monitorNotifications": "Notify when attention is needed",
@@ -1338,15 +1255,6 @@
   "monitorQuiet": "Quiet hours",
   "monitorQuietStart": "Quiet hours start",
   "monitorQuietEnd": "Quiet hours end",
-  "monitorDisabled": "Not monitored · attention unknown",
-  "monitorWaiting": "Waiting for a check · attention unknown",
-  "monitorChecking": "Checking · attention unknown",
-  "monitorUnavailable": "Could not check · attention unknown",
-  "monitorWifiRequired": "Waiting for Wi-Fi · attention unknown",
-  "monitorPaused": "Paused in background · attention unknown",
-  "monitorCurrent": "Current observation",
-  "monitorAllClear": "No pending requests in the checked project",
-  "monitorNoServers": "Add a server to monitor attention.",
   "monitorSaveFailed": "Could not save monitoring settings. Try again.",
   "monitorOpenFailed": "This request or its project changed. Refresh the inbox and try again.",
   "monitorSession": "Conversation",
@@ -1355,7 +1263,6 @@
   "monitorForm": "Form response needed",
   "monitorUnknown": "Unknown",
   "monitorLastChecked": "Last checked",
-  "monitorNextCheck": "Next check",
   "monitorRequestSummary": "{profile} · {kind}\n{lastChecked}: {time}",
   "@monitorRequestSummary": {
     "description": "Saved-server request row summary",
@@ -1367,18 +1274,6 @@
         "type": "String"
       },
       "lastChecked": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "monitorLabeledTime": "{label}: {time}",
-  "@monitorLabeledTime": {
-    "description": "A localized monitor timestamp with its label",
-    "placeholders": {
-      "label": {
         "type": "String"
       },
       "time": {
@@ -1400,18 +1295,6 @@
     }
   },
   "monitorCheckInDue": "Time to check in",
-  "monitorObservedBusy": "Busy at checks spanning {minutes} min · first check {since}",
-  "@monitorObservedBusy": {
-    "description": "Span between busy samples, not a continuous duration or a lower bound on run length",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "since": {
-        "type": "String"
-      }
-    }
-  },
   "quotaBudgetClearAll": "Clear saved provider thresholds",
   "managedRecoveryAttempts": "Attempts used: {attempts} of 3. The limit survives app restarts.",
   "@managedRecoveryAttempts": {
@@ -1469,14 +1352,12 @@
   "mobileTaskPriorityLow": "Low priority",
   "quotaMonitorTitle": "Quota monitoring",
   "quotaMonitorRuntime": "Sources are checked in rotation, at most three per cycle; larger lists take several cycles. Background reads require the existing live service to be active; Android may stop it. Displayed readings expire when the collector says they do. Device alerts record past threshold readings, not current remaining allowance. This page never switches your active server.",
-  "quotaMonitorEmpty": "No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.",
   "quotaMonitorDisabled": "Monitoring is off.",
   "quotaMonitorWaiting": "Waiting for a fresh reading.",
-  "quotaMonitorChecking": "Checking the trusted collector…",
-  "quotaMonitorCurrent": "Fresh reading from the consented provider source.",
-  "quotaMonitorPaused": "Monitoring is paused. Open the app or check the existing background service.",
-  "quotaMonitorWifiRequired": "Waiting for confirmed Wi-Fi. Unknown network status does not permit a read.",
-  "quotaMonitorSourceChanged": "This provider account or source changed, or could not be verified. Open Remaining, read it again and review new consent.",
+  "quotaMonitorChecking": "Checking now…",
+  "quotaMonitorPaused": "Paused. Checks start again when the app is open or Stay connected in the background is on.",
+  "quotaMonitorWifiRequired": "Waiting for Wi-Fi to check again.",
+  "quotaMonitorSourceChanged": "The account on this server changed, so checks stopped. Open Remaining usage on that server and read it again.",
   "quotaMonitorSaveFailed": "Could not save quota monitoring. A failed disable stays paused in this app; retry before closing the app.",
   "quotaMonitorDisable": "Stop monitoring {provider} on {server}",
   "webSearchDisclosure": "Search sends your query to this server’s selected search provider. Review results before adding them to your editable draft. Nothing is sent to the model here.",
@@ -3173,7 +3054,7 @@
   "@e7SettingsUi32": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsUi34": "Android 15+ allows six hours of this per 24 hours and then stops it; the app turns the switch off and says so when that happens.",
+  "e7SettingsUi34": "Android stops this after 6 hours a day. The app will tell you when it does.",
   "@e7SettingsUi34": {
     "description": "Settings and appearance user interface."
   },
@@ -11872,10 +11753,6 @@
         "type": "String"
       }
     }
-  },
-  "monitorNotificationSettings": "Notification settings",
-  "@monitorNotificationSettings": {
-    "description": "Link from the saved-servers attention list and the Usage screen to the Notifications screen."
   },
   "usageSectionSpent": "Spent",
   "@usageSectionSpent": {
@@ -23333,6 +23210,24 @@
   "@projectHubHealthSubtitle": {
     "description": "Project tab: under Project health, what it checks (the changed files are the Changes row's job)."
   },
+  "projectHubChangedFiles": "{count, plural, =0{No changes} =1{1 file changed} other{{count} files changed}}",
+  "@projectHubChangedFiles": {
+    "description": "Project tab (slice-close-misc): the live line under Changes, from the project's working tree",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHubTerminalsRunning": "{count, plural, =1{1 running} other{{count} running}}",
+  "@projectHubTerminalsRunning": {
+    "description": "Project tab (slice-close-misc): the live line under Terminal, how many terminals are running; not shown when none are",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectHubCopyFolderPath": "Copy folder path",
   "@projectHubCopyFolderPath": {
     "description": "Project tab: the project menu item that copies the project folder's path."
@@ -23856,23 +23751,6 @@
   "monitorBackgroundChecks": "Background checks",
   "@monitorBackgroundChecks": {
     "description": "Title of the page that lists every saved server's last and next background check, and of the Servers page row that opens it"
-  },
-  "monitorRowLastChecked": "Last checked {when}",
-  "@monitorRowLastChecked": {
-    "description": "Supporting line of the Servers page's Background checks row, e.g. 'Last checked 5m ago'",
-    "placeholders": {
-      "when": {
-        "type": "String"
-      }
-    }
-  },
-  "monitorRowNotChecked": "Not checked yet",
-  "@monitorRowNotChecked": {
-    "description": "Supporting line of the Servers page's Background checks row when a server is monitored but no check has finished yet"
-  },
-  "monitorRowOff": "Off for every server",
-  "@monitorRowOff": {
-    "description": "Supporting line of the Servers page's Background checks row when no saved server is monitored"
   },
   "settingsTryDemo": "Try the demo",
   "@settingsTryDemo": {
@@ -24650,7 +24528,7 @@
   "@quotaCollectorHowTo": {
     "description": "Remaining: the fold with the steps to get the quota collector"
   },
-  "quotaCollectorStepInstall": "Ask whoever runs {server} to install the quota collector from tool/quota in the app’s repository. It needs Node 20 or later.",
+  "quotaCollectorStepInstall": "Ask whoever runs {server} to install the quota collector. It needs Node 20 or later.",
   "@quotaCollectorStepInstall": {
     "description": "Remaining: collector setup step 1",
     "placeholders": {
@@ -24666,6 +24544,59 @@
   "quotaCollectorStepRetry": "Then come back here and read again.",
   "@quotaCollectorStepRetry": {
     "description": "Remaining: collector setup step 3"
+  },
+  "quotaCollectorGuide": "Open the collector guide",
+  "@quotaCollectorGuide": {
+    "description": "Remaining (slice-close-misc): button under the collector steps; opens the collector's full guide on the web"
+  },
+  "quotaCollectorFrom": "{provider}, from the quota collector on {server}",
+  "@quotaCollectorFrom": {
+    "description": "Remaining (collector path, slice-close-misc): label over the answer rows read through the collector",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaCollectorNoWindows": "The quota collector on {server} reported no limits for {provider}.",
+  "@quotaCollectorNoWindows": {
+    "description": "Remaining (collector path, slice-close-misc): the reading has no window with a used percentage",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaStopCollector": "Stop using the quota collector on {server}",
+  "@quotaStopCollector": {
+    "description": "Remaining (collector path, slice-close-misc): row that stops reading through the collector for this visit",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaStopCollectorDetail": "The reading goes away, and Remaining asks you again before the next read.",
+  "@quotaStopCollectorDetail": {
+    "description": "Remaining (collector path): what stopping the collector does"
+  },
+  "quotaCollectorAddressLabel": "Collector address",
+  "@quotaCollectorAddressLabel": {
+    "description": "Remaining (collector path): Details label for the collector's web address"
+  },
+  "quotaPlanLabel": "Plan",
+  "@quotaPlanLabel": {
+    "description": "Remaining (collector path): Details label for the plan the provider reported"
+  },
+  "quotaReadAtLabel": "Read at",
+  "@quotaReadAtLabel": {
+    "description": "Remaining (collector path): Details label for when the collector took the reading"
   },
   "usageSpentToday": "Spent today",
   "@usageSpentToday": {

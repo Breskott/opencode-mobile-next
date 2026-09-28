@@ -1973,9 +1973,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get quotaTitle => 'رصيد الاستخدام المتبقي';
 
   @override
-  String get quotaSource => 'خادم جمع البيانات';
-
-  @override
   String quotaSourceTitle(String profile, String provider) {
     return '$profile · $provider';
   }
@@ -2006,9 +2003,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get quotaLoading => 'جارٍ قراءة الاستخدام المتبقي';
-
-  @override
-  String get quotaForgetConsent => 'التوقف عن استخدام جامع البيانات';
 
   @override
   String get quotaCollectorAuth =>
@@ -2043,56 +2037,17 @@ class AppLocalizationsAr extends AppLocalizations {
       'لم يتمكن جامع البيانات من التحقق من الحساب المحدد. لا يُعرض رصيد استخدام. تحقّق من مصدر تسجيل الدخول على الخادم.';
 
   @override
-  String get quotaCodexAccount => 'فترات حساب Codex';
-
-  @override
-  String quotaPlan(String plan) {
-    return 'الخطة المبلّغ عنها: $plan';
-  }
-
-  @override
-  String quotaChecked(String time) {
-    return 'تم التحقق من القراءة $time';
-  }
-
-  @override
-  String get quotaStale => 'قراءة سابقة — حدّث للتحقق من أحدث رصيد استخدام.';
+  String get quotaStale =>
+      'This is the last reading. Refresh to see the latest.';
 
   @override
   String get quotaUseBlocked =>
       'يفيد مزوّد الخدمة بأن استخدام Codex المعتاد محظور حاليًا. نسب الفترات وحدها لا تحدد إمكانية الاستخدام.';
 
   @override
-  String get quotaNotReported => 'غير مبلّغ عنه';
-
-  @override
-  String get quotaPrimaryWindow => 'الفترة الأساسية';
-
-  @override
-  String get quotaSecondaryWindow => 'الفترة الثانوية';
-
-  @override
-  String quotaOtherWindow(int number) {
-    return 'فترة الاستخدام $number';
-  }
-
-  @override
-  String quotaRemaining(String percent) {
-    return 'المتبقي $percent';
-  }
-
-  @override
   String quotaUsed(String percent) {
     return 'المستخدم $percent';
   }
-
-  @override
-  String quotaResetAt(String time) {
-    return 'موعد التجديد المبلّغ عنه: $time';
-  }
-
-  @override
-  String get quotaResetUnknown => 'لم يُبلّغ عن موعد التجديد';
 
   @override
   String get quotaSourceDisclosure =>
@@ -2122,9 +2077,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get platformSecureStorageGuide =>
       'تُحفظ كلمات مرور الخوادم في مخزن بيانات الاعتماد الآمن لهذه المنصة، ولا تُخزَّن في تفضيلات التطبيق العادية.';
-
-  @override
-  String get quotaClaudeAccount => 'فترات تسجيل دخول Claude';
 
   @override
   String get quotaSourceBound =>
@@ -2236,9 +2188,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get quotaMiniMax => 'MiniMax';
 
   @override
-  String get quotaMiniMaxAccount => 'فترات اشتراك MiniMax';
-
-  @override
   String get quotaMiniMaxSourceBound =>
       'مرتبط بمفتاح MiniMax Subscription Key المضبوط في جامع البيانات. استجابة الحصة لا تحدد الحساب بشكل مستقل. تُعرض فقط نسب الرصيد العام المبلّغ عنها؛ وقد تنطبق حدود أخرى.';
 
@@ -2260,15 +2209,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get quotaGlm => 'GLM';
-
-  @override
-  String get quotaGlmAccount => 'مصدر GLM Coding Plan المضبوط';
-
-  @override
-  String get quotaGlmTokenWindow => 'فترة خطة الرموز المبلّغ عنها';
-
-  @override
-  String get quotaGlmMcpWindow => 'فترة MCP المبلّغ عنها';
 
   @override
   String get usageBudgetTitle => 'ميزانيات الاستهلاك الشخصية';
@@ -2315,18 +2255,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get usageBudgetClearTitle => 'مسح ميزانيات الاستهلاك؟';
 
   @override
-  String get monitorTitle => 'ما يحتاج إلى انتباه في الخوادم المحفوظة';
-
-  @override
   String get monitorScope =>
       'تشمل الأعداد آخر مشروع محدد لكل خادم، وليس جميع مشاريعه.';
 
   @override
   String get monitorDisclosure =>
-      'المراقبة متوقفة حتى تفعّلها لخادم. تُجرى الفحوص كل دقيقة تقريبًا أثناء فتح التطبيق. لا تتكرر الفحوص في الخلفية أكثر من مرة كل خمس دقائق، وفقط عندما يكون «إبقاء الاتصال نشطًا» مفعّلًا وخدمة Android قيد التشغيل. قد يوقف Android هذه الخدمة؛ ولا توجد مدة تشغيل متبقية مضمونة.';
-
-  @override
-  String get monitorRefresh => 'فحص الخوادم الخاضعة للمراقبة';
+      'Monitoring is off until you enable it for a server. Checks run about once a minute while this app is open. Background checks run no more often than every five minutes, only while Stay connected in the background is on and Android’s service is running. Android can stop that service; no remaining runtime is promised.';
 
   @override
   String get monitorOptIn => 'مراقبة هذا الخادم';
@@ -2350,36 +2284,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get monitorQuietEnd => 'نهاية ساعات الهدوء';
-
-  @override
-  String get monitorDisabled =>
-      'غير خاضع للمراقبة · الحاجة إلى انتباه غير معروفة';
-
-  @override
-  String get monitorWaiting => 'بانتظار فحص · الحاجة إلى انتباه غير معروفة';
-
-  @override
-  String get monitorChecking => 'جارٍ الفحص · الحاجة إلى انتباه غير معروفة';
-
-  @override
-  String get monitorUnavailable => 'تعذّر الفحص · الحاجة إلى انتباه غير معروفة';
-
-  @override
-  String get monitorWifiRequired =>
-      'بانتظار Wi-Fi · الحاجة إلى انتباه غير معروفة';
-
-  @override
-  String get monitorPaused =>
-      'متوقف مؤقتًا في الخلفية · الحاجة إلى انتباه غير معروفة';
-
-  @override
-  String get monitorCurrent => 'الرصد الحالي';
-
-  @override
-  String get monitorAllClear => 'لا طلبات معلّقة في المشروع المفحوص';
-
-  @override
-  String get monitorNoServers => 'أضف خادمًا لمراقبة ما يحتاج إلى انتباه.';
 
   @override
   String get monitorSaveFailed => 'تعذّر حفظ إعدادات المراقبة. أعد المحاولة.';
@@ -2407,9 +2311,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get monitorLastChecked => 'آخر تحقق';
 
   @override
-  String get monitorNextCheck => 'التحقق التالي';
-
-  @override
   String monitorRequestSummary(
     String profile,
     String kind,
@@ -2417,11 +2318,6 @@ class AppLocalizationsAr extends AppLocalizations {
     String time,
   ) {
     return '$profile · $kind\n$lastChecked: $time';
-  }
-
-  @override
-  String monitorLabeledTime(String label, String time) {
-    return '$label: $time';
   }
 
   @override
@@ -2455,11 +2351,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get monitorCheckInDue => 'حان وقت المتابعة';
-
-  @override
-  String monitorObservedBusy(int minutes, String since) {
-    return 'رُصد انشغال في فحوص امتدت $minutes دقيقة · أول فحص $since';
-  }
 
   @override
   String get quotaBudgetClearAll => 'مسح حدود مزوّدي الخدمة المحفوظة';
@@ -2566,33 +2457,24 @@ class AppLocalizationsAr extends AppLocalizations {
       'تُفحص المصادر بالتناوب، ثلاثة مصادر كحد أقصى في الدورة؛ وتحتاج القوائم الأطول إلى عدة دورات. تتطلب القراءات في الخلفية أن تكون خدمة الاتصال الحالية نشطة؛ وقد يوقفها Android. تنتهي صلاحية القراءات المعروضة وفقًا لجامع البيانات. تسجل تنبيهات الجهاز قراءات سابقة بلغت الحد، ولا تعرض الرصيد المتبقي الحالي. لا تبدّل هذه الصفحة خادمك النشط مطلقًا.';
 
   @override
-  String get quotaMonitorEmpty =>
-      'لا توجد مصادر مزوّدي خدمة خاضعة للمراقبة. اقرأ الاستخدام المتبقي من جامع بيانات موثوق، ثم فعّل المراقبة لذلك المصدر.';
-
-  @override
   String get quotaMonitorDisabled => 'المراقبة متوقفة.';
 
   @override
   String get quotaMonitorWaiting => 'بانتظار قراءة حديثة.';
 
   @override
-  String get quotaMonitorChecking => 'جارٍ فحص جامع البيانات الموثوق…';
-
-  @override
-  String get quotaMonitorCurrent =>
-      'قراءة حديثة من مصدر مزوّد الخدمة الذي وافقت عليه.';
+  String get quotaMonitorChecking => 'Checking now…';
 
   @override
   String get quotaMonitorPaused =>
-      'المراقبة متوقفة مؤقتًا. افتح التطبيق أو افحص خدمة الخلفية الحالية.';
+      'Paused. Checks start again when the app is open or Stay connected in the background is on.';
 
   @override
-  String get quotaMonitorWifiRequired =>
-      'بانتظار شبكة Wi-Fi مؤكدة. حالة الشبكة غير المعروفة لا تسمح بالقراءة.';
+  String get quotaMonitorWifiRequired => 'Waiting for Wi-Fi to check again.';
 
   @override
   String get quotaMonitorSourceChanged =>
-      'تغيّر حساب مزوّد الخدمة هذا أو مصدره، أو تعذّر التحقق منه. افتح «المتبقي»، واقرأه مجددًا، وراجع الموافقة الجديدة.';
+      'The account on this server changed, so checks stopped. Open Remaining usage on that server and read it again.';
 
   @override
   String get quotaMonitorSaveFailed =>
@@ -4513,7 +4395,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SettingsUi34 =>
-      'يسمح Android 15 والإصدارات الأحدث بست ساعات من هذا العمل لكل 24 ساعة ثم يوقفه. يعطّل التطبيق المفتاح ويُعلمك عند حدوث ذلك.';
+      'Android stops this after 6 hours a day. The app will tell you when it does.';
 
   @override
   String get e7SettingsUi35 => 'الصدفة الافتراضية';
@@ -11148,9 +11030,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String notifyHubBackgroundSummary(String state) {
     return 'الخلفية: $state';
   }
-
-  @override
-  String get monitorNotificationSettings => 'إعدادات الإشعارات';
 
   @override
   String get usageSectionSpent => 'المصروف';
@@ -19923,6 +19802,29 @@ class AppLocalizationsAr extends AppLocalizations {
       'Branch, language services and formatters';
 
   @override
+  String projectHubChangedFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files changed',
+      one: '1 file changed',
+      zero: 'No changes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectHubTerminalsRunning(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count running',
+      one: '1 running',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get projectHubCopyFolderPath => 'Copy folder path';
 
   @override
@@ -20295,17 +20197,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get monitorBackgroundChecks => 'Background checks';
-
-  @override
-  String monitorRowLastChecked(String when) {
-    return 'Last checked $when';
-  }
-
-  @override
-  String get monitorRowNotChecked => 'Not checked yet';
-
-  @override
-  String get monitorRowOff => 'Off for every server';
 
   @override
   String get settingsTryDemo => 'Try the demo';
@@ -20899,7 +20790,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String quotaCollectorStepInstall(String server) {
-    return 'Ask whoever runs $server to install the quota collector from tool/quota in the app’s repository. It needs Node 20 or later.';
+    return 'Ask whoever runs $server to install the quota collector. It needs Node 20 or later.';
   }
 
   @override
@@ -20908,6 +20799,37 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get quotaCollectorStepRetry => 'Then come back here and read again.';
+
+  @override
+  String get quotaCollectorGuide => 'Open the collector guide';
+
+  @override
+  String quotaCollectorFrom(String provider, String server) {
+    return '$provider, from the quota collector on $server';
+  }
+
+  @override
+  String quotaCollectorNoWindows(String provider, String server) {
+    return 'The quota collector on $server reported no limits for $provider.';
+  }
+
+  @override
+  String quotaStopCollector(String server) {
+    return 'Stop using the quota collector on $server';
+  }
+
+  @override
+  String get quotaStopCollectorDetail =>
+      'The reading goes away, and Remaining asks you again before the next read.';
+
+  @override
+  String get quotaCollectorAddressLabel => 'Collector address';
+
+  @override
+  String get quotaPlanLabel => 'Plan';
+
+  @override
+  String get quotaReadAtLabel => 'Read at';
 
   @override
   String get usageSpentToday => 'Spent today';
