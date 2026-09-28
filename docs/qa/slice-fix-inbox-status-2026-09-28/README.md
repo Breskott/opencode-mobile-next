@@ -16,6 +16,34 @@ Fixes for the Inbox and status findings F3, F4, F5, F10, F15 and F16 from
 | F15 mixed time formats | fixed | New `KitTime` (`lib/ui/kit/kit_time.dart`) is the one formatter. The clock follows the device's 12/24-hour setting and locale; a moment is the clock alone today, "Sep 25, 8:19 PM" this year and "Dec 31, 2025, 8:00 AM" before. Now used by Inbox and Work "as of" (`WorkRowStatus.line(moment:)`), team task rows, KitProgressRow "as of", KitReceipt and the app-exit notice. |
 | F16 notification offer pushes the reply's actions up | **not done: needs `lib/ui/screens/chat_screen.dart`** | `FirstReplyNotifyCard` already shows after the reply finishes, as a one-line KitAskLine. The shift comes from where `chat_screen.dart` (~line 7630) hosts it, in the column above the composer. The chat lane owns that file; a placement proposal is in the lane notes. |
 
+### Added on the coordinator's request: the chat's free-model note
+
+After merging `feat/phone-setup-v2` (which brought slice-builtin-speed's
+`connectionUsesFreeModel` and the `freeModelNotice` and `freeModelSignIn`
+strings), a conversation whose replies come from OpenCode's free model,
+with no provider signed in, shows one quiet neutral line in the chat page's
+status slot: "Using OpenCode's free model — it's slower. Sign in to your
+provider to use your own." with **Sign in to a provider** (it opens
+Integrations › Providers) and a Dismiss.
+
+- It is not a banner: it is the last entry in the chat's own status list, so
+  every other chat line (a send error, queued drafts, a share) outranks it.
+- It is dismissed once per conversation: `FreeModelNoteDismissals` in
+  `lib/state/free_model_notice.dart`, key `oc.freeModelNoteDismissed.<profileId>`,
+  holding the newest 200 conversations. Deleting the server sweeps the key.
+- It does not move the reply. The status slot sits over the top of the
+  bottom-anchored transcript, so the reply and its actions stay put; the test
+  measures the reply's position before and after Dismiss.
+- The only edit to the chat library is the status entry and its two handlers
+  in `chat_screen.dart`. This was a coordinator-directed exception to the brief.
+- Images: `after_chat_free_model_note_dark.png` (phone; the long copy wraps
+  to three lines there) and `after_chat_free_model_note_1280x800_light.png`.
+
+The same status-slot placement is the proven no-shift home for F16's
+notification offer, too. F16 itself was not moved: `FirstReplyNotifyCard`'s
+claim, answer and failure flow would need turning into a status source, and
+that is recorded for the chat lane.
+
 Not reproduced here: in QA screenshot 64 the offline Work row's "as of" time
 kept moving to the current time. That timestamp comes from the row-status
 observation in the connection lane, and it is recorded in the lane notes.
@@ -48,10 +76,21 @@ Stop case waits on the `connection.dart` patch.
 - Changed to the new behaviour: `test/app_exit_recovery_test.dart` (wording,
   plus two new F10 tests) and `test/kit/kit_progress_row_test.dart` ("as of
   10:42 AM" in the device's 12-hour clock).
-- Run once: every test file that imports a changed file (93 files, listed in
-  the slice's run manifest), plus `kit_ratchet_test` and `kit_map_gate_test`.
-  Results are below.
-- `flutter analyze` on the whole project: no issues.
+- Run once, before the merge: every test file that imports a changed file
+  (93 files, including `kit_ratchet_test` and `kit_map_gate_test`). All pass
+  except the two `kit_progress_row_golden_test` "stale" shots, whose "as of
+  10:42" became "as of 10:42 AM". That was reviewed as the intended F15
+  change and refreshed. Three capture files skip unless their capture flag
+  is set. `text_scale_overflow_test` passes: 505 tests in 6 min 18 s.
+- New: `test/chat_free_model_note_test.dart`, 4 tests plus 2 evidence-only
+  shots: the line and its action, the reply not moving on Dismiss, dismissed
+  once per conversation (reopened, and another conversation), Sign in opens
+  the provider sign-ins, no line when a provider is signed in, and the
+  dismissal store's bound and sweep.
+- After the merge: `slice_p4_4_test`, `chat_speed_test`, `free_model_test`,
+  `this_phone_speed_test`, `ios_remote_platform_gating_test`,
+  `release_blockers_test` and `kit_ratchet_test` pass.
+- `flutter analyze` on the whole project after the merge: no issues.
 
 ## Still needs a device
 
