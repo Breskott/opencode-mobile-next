@@ -171,6 +171,11 @@ class _SetupProgressViewState extends State<SetupProgressView> {
   final _log = KitLogBuffer();
   String _logText = '';
 
+  /// apt's lines stay one line each, long ones scroll sideways, on a phone
+  /// too (design regressions ledger row 16: wrapped in two, they were hard
+  /// to read); the panel's Wrap toggle still wraps them on request.
+  bool _wrapLog = false;
+
   /// When the engine last reported progress: the working row escalates
   /// after 8 s without a new report (STATE-5).
   late DateTime _lastReport;
@@ -380,6 +385,8 @@ class _SetupProgressViewState extends State<SetupProgressView> {
       log: KitLogPanel(
         panelKey: const Key('setup-progress-log'),
         lines: _log,
+        wrap: _wrapLog,
+        onWrapChanged: (wrap) => setState(() => _wrapLog = wrap),
         live: running,
         emptyText: l10n.setupProgressViewNoLog,
         // A job that failed between components has no failed row to carry

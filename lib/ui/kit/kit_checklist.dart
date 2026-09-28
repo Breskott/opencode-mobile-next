@@ -1,7 +1,10 @@
 // KitChecklist: a job made of steps, with steps only the person can do mixed
 // in (docs/ux-system/kit-api/KitChecklist.md; kit-v2.md §1.12, §2.8, §4.9;
 // STATE-5, STATE-6, STATE-11, KIT-37, MOT-6, A11Y-3, TEST-5).
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
@@ -185,6 +188,9 @@ class KitChecklist extends StatefulWidget {
 class _KitChecklistState extends State<KitChecklist> {
   late bool _wasDone;
   bool _unfolded = false;
+
+  /// The person opened the log's fold (not a fold that was open already).
+  bool _logOpenedByPerson = false;
 
   @override
   void initState() {
@@ -397,7 +403,14 @@ class _KitChecklistState extends State<KitChecklist> {
           SizedBox(height: tokens.sectionGap),
           const KitDivider(),
           SizedBox(height: tokens.space2),
-          KitDetailsFold(foldKey: widget.detailsKey, child: log),
+          KitDetailsFold(
+            foldKey: widget.detailsKey,
+            // Opened, the log is brought into view as it unfolds: it sits
+            // last, so it would otherwise open below the fold (design
+            // regressions ledger row 16).
+            onExpansionChanged: (open) => _logOpenedByPerson = open,
+            child: _IntoView(enabled: () => _logOpenedByPerson, child: log),
+          ),
         ],
       ],
     );
@@ -646,4 +659,54 @@ class _StepBar extends StatelessWidget {
       builder: (context, shown, _) => track(shown),
     );
   }
+}
+
+/// Keeps [child] in view while it unfolds: after each frame of the reveal,
+/// the nearest scrollable shows its end (never scrolling past its start).
+/// Only when [enabled] says the person opened it, so a page that opens
+/// with the fold already open does not jump.
+class _IntoView extends StatefulWidget {
+  const _IntoView({required this.enabled, required this.child});
+
+  final bool Function() enabled;
+  final Widget child;
+
+  @override
+  State<_IntoView> createState() => _IntoViewState();
+}
+
+class _IntoViewState extends State<_IntoView> {
+  /// Frames the reveal may take before following stops (a reveal is a few
+  /// hundred milliseconds; this bounds it without a timer).
+  static const _maxFrames = 60;
+  int _frames = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.enabled()) _follow();
+  }
+
+  void _follow() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final object = context.findRenderObject();
+      final position = Scrollable.maybeOf(context)?.position;
+      if (object == null || position == null) return;
+      unawaited(
+        position.ensureVisible(
+          object,
+          alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+        ),
+      );
+      // Still unfolding: the next frame shows more of it.
+      if (++_frames < _maxFrames &&
+          SchedulerBinding.instance.hasScheduledFrame) {
+        _follow();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

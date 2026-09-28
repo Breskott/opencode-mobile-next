@@ -121,6 +121,7 @@ void main() {
           const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
           (_) async => null,
         );
+    useNoTermuxJob();
   });
 
   for (final light in [false, true]) {

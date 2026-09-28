@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
@@ -9,8 +10,10 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
-import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_screen.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_job_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/fake_setup_engine.dart';
 
 class _RemoteStore extends ProfileStore {
   _RemoteStore({required super.prefs});
@@ -60,7 +63,14 @@ Widget _app(
 
 void main() {
   const channel = MethodChannel('oc/termux');
-  setUp(() => debugPlatformCapabilities = const PlatformCapabilities.android());
+  setUp(() {
+    debugPlatformCapabilities = const PlatformCapabilities.android();
+    // No Termux job: phone setup's start screen also reads Termux's setup
+    // engine (320269a2, P1.7); this file is about the Termux discovery.
+    final previousTermux = PhoneSetup.termux;
+    PhoneSetup.termux = FakeSetupEngine();
+    addTearDown(() => PhoneSetup.termux = previousTermux);
+  });
   tearDown(() {
     debugPlatformCapabilities = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -144,31 +154,59 @@ void main() {
         final otherWays = find.byKey(
           const ValueKey('phone-setup-start-other-ways'),
         );
+        // Below the drawing, under the fold on this surface: scroll to it
+        // and let that frame land before the tap.
         await tester.ensureVisible(otherWays);
+        await tester.pumpAndSettle();
         await tester.tap(otherWays);
         await tester.pumpAndSettle();
         final useTermux = find.byKey(
           const ValueKey('phone-setup-start-use-termux'),
         );
         await tester.ensureVisible(useTermux);
+        await tester.pumpAndSettle();
         await tester.tap(useTermux);
         await tester.pumpAndSettle();
-        // Termux is a host of the same setup: its first row waits on the
-        // person (P1.3; the Termux wizard is gone).
-        expect(find.byType(PhoneSetupTermuxScreen), findsOneWidget);
+        // Termux is a host of the same setup (935945d6, P1.2): Use Termux
+        // opens that job's progress, whose first rows wait on the person.
+        expect(find.byType(PhoneSetupTermuxJobScreen), findsOneWidget);
         if (state == 'not installed') {
+          expect(
+            find.textContaining(
+              'Install the current F-Droid build of Termux, then return here.',
+            ),
+            findsOneWidget,
+          );
           expect(
             find.byKey(const ValueKey('phone-setup-termux-get')),
             findsOneWidget,
           );
+          expect(
+            find.byKey(const ValueKey('phone-setup-termux-allow')),
+            findsNothing,
+          );
         }
         if (state == 'permission needed') {
-          expect(find.text('Connect Termux once'), findsOneWidget);
+          expect(
+            find.textContaining(
+              'In Termux, paste the copied line and press Enter.',
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.byKey(const ValueKey('phone-setup-termux-allow')),
+            findsOneWidget,
+          );
         }
         if (state == 'unsupported version') {
+          expect(find.textContaining('This Termux is too old'), findsWidgets);
           expect(
-            find.textContaining('This version of Termux is too old'),
+            find.byKey(const ValueKey('phone-setup-termux-get-current')),
             findsOneWidget,
+          );
+          expect(
+            find.byKey(const ValueKey('phone-setup-termux-allow')),
+            findsNothing,
           );
         }
         expect(controller.store.activeId, 'remote');

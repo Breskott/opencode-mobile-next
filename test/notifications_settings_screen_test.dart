@@ -284,7 +284,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, '11');
     await tester.enterText(find.byType(TextField).last, '30');
-    await tester.tap(find.text('OK'));
+    // The picker's button says what it does (477e2075): "Set".
+    await tester.tap(find.text(_en.notifyQuietSet));
     await tester.pumpAndSettle();
     final start = prefs.getInt(NotificationPreferences.quietStartKey)!;
     expect(start % 720, 11 * 60 + 30);
@@ -369,7 +370,8 @@ void main() {
     expect(toggle('notify-quota-alerts').value, isTrue);
     expect(toggle('notify-check-ins').value, isTrue);
     expect(_key('notify-check-in-after'), findsOneWidget);
-    expect(find.text(_en.monitorMinutes(60)), findsOneWidget);
+    // KitPickerRow isolates the value's direction (477e2075).
+    expect(find.textContaining(_en.monitorMinutes(60)), findsOneWidget);
 
     await _tapSwitch(tester, 'notify-wifi-only');
     expect(controller.notificationPreferences.migrated, isTrue);
@@ -473,8 +475,12 @@ void main() {
       expect(find.text(_en.notifyBlockedTitle), findsOneWidget);
       expect(find.text(_en.notifyFinishedRunsDetail), findsOneWidget);
       expect(find.text(_en.notifyTurnOnInAndroid), findsOneWidget);
-      final finishedRuns = tester.widget<SwitchListTile>(
-        _key('notify-finished-runs'),
+      // The row is a KitSwitchRow since 477e2075; its switch is the control.
+      final finishedRuns = tester.widget<Switch>(
+        find.descendant(
+          of: _key('notify-finished-runs'),
+          matching: find.byType(Switch),
+        ),
       );
       expect(finishedRuns.onChanged, isNull);
 
@@ -496,8 +502,12 @@ void main() {
       );
       await tester.pump();
       expect(_key('notifications-blocked-notice'), findsNothing);
-      final finishedRuns = tester.widget<SwitchListTile>(
-        _key('notify-finished-runs'),
+      // The row is a KitSwitchRow since 477e2075; its switch is the control.
+      final finishedRuns = tester.widget<Switch>(
+        find.descendant(
+          of: _key('notify-finished-runs'),
+          matching: find.byType(Switch),
+        ),
       );
       expect(finishedRuns.onChanged, isNotNull);
       await _finish(tester, controller);

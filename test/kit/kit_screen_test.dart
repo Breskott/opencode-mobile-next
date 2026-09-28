@@ -19,6 +19,7 @@ import 'package:opencode_mobile/ui/kit/kit_status_line.dart';
 import 'package:opencode_mobile/ui/kit/kit_status_slot.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_top_bar.dart';
+import 'package:opencode_mobile/ui/kit/motion/kit_motion_parts.dart';
 
 KitStatus _status(KitStatusKind kind, String message) => KitStatus(
   kind: kind,
@@ -551,6 +552,48 @@ void main() {
         ),
       );
       expect(tester.takeException(), isA<AssertionError>());
+    });
+
+    testWidgets('a primary a KitSwap is fading out does not count', (
+      tester,
+    ) async {
+      // A page that swaps one state for another (phone setup's start
+      // screen) briefly draws both; the leaving one is not the page's.
+      final state = ValueNotifier(0);
+      addTearDown(state.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          // The page rebuilds with its state, as a screen's builder does,
+          // so its one-of-each check runs mid-swap.
+          home: ValueListenableBuilder<int>(
+            valueListenable: state,
+            builder: (context, value, _) => KitScreen(
+              topBar: _bar(),
+              body: KitSwap(
+                child: KeyedSubtree(
+                  key: ValueKey(value),
+                  child: KitButton.primary(
+                    label: 'State $value',
+                    onPressed: () {},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      state.value = 1;
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      // Both are drawn mid-swap; only the arriving one counts.
+      expect(find.text('State 0'), findsOneWidget);
+      expect(find.text('State 1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpAndSettle();
+      expect(find.text('State 0'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('a primary in an offstage tab does not count', (tester) async {

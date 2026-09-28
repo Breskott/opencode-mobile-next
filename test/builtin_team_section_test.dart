@@ -344,16 +344,17 @@ void main() {
     expect(identical(real.prepare(), preparing), isTrue);
     final turnOn = real.turnOn('/root/projects/my-app', notice: 'n');
     await Future<void>.delayed(const Duration(milliseconds: 20));
-    // Only the background store is being made; turn-on waits for it.
-    expect(scripts, [BuiltinTeam.cityScript]);
+    // Only the background store is being made, after prepare read that the
+    // team is not turned off (0f7f8d59); turn-on waits for it.
+    expect(scripts, [BuiltinTeam.disabledCheckScript, BuiltinTeam.cityScript]);
     release.complete();
     await preparing;
     await turnOn;
     expect(most, 1);
-    expect(scripts.first, BuiltinTeam.cityScript);
     expect(scripts[1], BuiltinTeam.cityScript);
+    expect(scripts[2], BuiltinTeam.cityScript);
     expect(
-      scripts[2],
+      scripts[3],
       BuiltinTeam.rigScript('/root/projects/my-app', 'my-app'),
     );
   });

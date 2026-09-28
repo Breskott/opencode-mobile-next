@@ -144,6 +144,15 @@ Widget startScreen({TermuxRunningServer? termux, bool inApp = false}) =>
       openProgress: (_) async {},
     );
 
+/// No Termux job on the phone: phone setup's start screen also reads
+/// Termux's setup engine (320269a2, P1.7), which must not reach the
+/// platform channel in a test. Call from `setUp`.
+void useNoTermuxJob() {
+  final previous = PhoneSetup.termux;
+  PhoneSetup.termux = FakeSetupEngine();
+  addTearDown(() => PhoneSetup.termux = previous);
+}
+
 /// Mounts [home] as the app would, with the providers the phone screens
 /// read, at [size]. Returns the fake engine behind `PhoneSetup.engine`.
 Future<FakeSetupEngine> pumpPhone(

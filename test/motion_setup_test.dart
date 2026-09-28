@@ -89,8 +89,10 @@ void main() {
       final drawing = find.byKey(const ValueKey('phone-setup-hero-drawing'));
       expect(drawing, findsOneWidget);
       expect(_drawing<SetupPhoneScene>(), findsOneWidget);
-      // No empty band above it: it starts right under the app bar.
-      final appBar = tester.getRect(find.byType(AppBar));
+      // No empty band above it: it starts right under the top bar (the
+      // kit's KitTopBar since the phone pages became KitScreen pages,
+      // 5088cc85).
+      final appBar = tester.getRect(find.byType(KitTopBar));
       expect(tester.getRect(drawing).top - appBar.bottom, lessThan(24));
       // The title follows it, in the upper half of the screen.
       final title = tester.getRect(
@@ -107,19 +109,19 @@ void main() {
   });
 
   group('setup progress', () {
-    testWidgets('the log opens in view, under a title and bar that stay', (
+    testWidgets('the log opens in view, under a bar that stays', (
       tester,
     ) async {
+      // Opening Details brings the log into view (design regressions ledger
+      // row 16). Since 231e31ec the job is one KitStateView whose drawing
+      // and title scroll with it, so on a 915 dp phone the title goes under
+      // the top bar; the progress bar stays in view above the log.
       await _scene(tester, 'setup_progress_log');
-      const screen = Rect.fromLTWH(0, 0, 412, 915);
-      final title = tester.getRect(
-        find.byKey(const Key('setup-progress-title')),
-      );
+      final topBar = tester.getRect(find.byType(KitTopBar));
       final bar = tester.getRect(
         find.byKey(const Key('setup-progress-overall')),
       );
-      expect(screen.contains(title.topLeft), isTrue);
-      expect(screen.contains(bar.bottomRight), isTrue);
+      expect(bar.top, greaterThanOrEqualTo(topBar.bottom));
       // The newest log line is on screen, not below the fold.
       final log = tester.getRect(find.byKey(const Key('setup-progress-log')));
       expect(log.bottom, lessThanOrEqualTo(915));
@@ -127,28 +129,41 @@ void main() {
     });
 
     testWidgets('each log line takes one line, in one box', (tester) async {
+      // The log is the kit's KitLogPanel since 231e31ec (KitChecklist): it
+      // is the one tinted box, and each line is one row of one height.
       await _scene(tester, 'setup_progress_log');
       final log = find.byKey(const Key('setup-progress-log'));
-      final text = find.descendant(
-        of: log,
-        matching: find.byType(SelectableText),
-      );
-      final context = tester.element(text);
-      final style = Theme.of(context).textTheme.bodySmall!;
-      final lineHeight = style.fontSize! * 1.45;
-      // The tail: 40 lines. Wrapped apt lines would make it far taller.
-      expect(tester.getSize(text).height / lineHeight, closeTo(40, 2));
-      // One tinted box around the log: nothing inside it draws another.
+      expect(log, findsOneWidget);
+      // One tinted box: nothing inside the panel draws another (the live
+      // dot is a circle, not a box).
+      bool tintedBox(Decoration? decoration) =>
+          decoration is BoxDecoration &&
+          decoration.color != null &&
+          decoration.shape == BoxShape.rectangle;
       final boxes = find.descendant(
-        of: find.ancestor(of: log, matching: find.byType(Container)).first,
+        of: log,
         matching: find.byWidgetPredicate(
           (w) =>
-              w is Container &&
-              w.decoration is BoxDecoration &&
-              (w.decoration! as BoxDecoration).color != null,
+              (w is DecoratedBox && tintedBox(w.decoration)) ||
+              (w is Container && tintedBox(w.decoration)),
         ),
       );
       expect(boxes, findsNothing);
+      final lines = find.descendant(
+        of: log,
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w.key is ValueKey<String> &&
+              (w.key! as ValueKey<String>).value.startsWith('kit-log-line-'),
+        ),
+      );
+      expect(lines, findsWidgets);
+      final heights = {
+        for (final element in lines.evaluate())
+          tester.getSize(find.byWidget(element.widget)).height,
+      };
+      // Wrapped apt lines would give rows of two heights.
+      expect(heights, hasLength(1));
     });
 
     testWidgets('Cancel sits with the steps, before the folded Details', (
@@ -180,7 +195,7 @@ void main() {
       expect(find.byType(BottomSheet), findsNothing);
       expect(find.text('Create and open'), findsOneWidget);
       expect(find.text('Open a folder instead'), findsOneWidget);
-      final appBar = tester.getRect(find.byType(AppBar));
+      final appBar = tester.getRect(find.byType(KitTopBar));
       final drawing = find.byKey(const ValueKey('phone-setup-hero-drawing'));
       expect(tester.getRect(drawing).top - appBar.bottom, lessThan(24));
     });
@@ -246,11 +261,16 @@ void main() {
       expect(tester.hasRunningAnimations, isFalse);
     });
 
-    testWidgets('another server that failed keeps its icon', (tester) async {
+    testWidgets('another server that did not answer draws the plug, never '
+        'the phone', (tester) async {
+      // Since c274356e (coord-main, map page root-connecting) a remote
+      // server that did not answer shows the unplugged drawing; the phone
+      // drawing is only for this phone's own server.
       await tester.pumpWidget(_card(error: 'Connection refused', phone: false));
       await tester.pumpAndSettle();
-      expect(find.byType(KitIllustration), findsNothing);
-      expect(find.byKey(const ValueKey('kit-state-icon')), findsOneWidget);
+      expect(_drawing<SetupUnpluggedScene>(), findsOneWidget);
+      expect(_drawing<SetupPhoneScene>(), findsNothing);
+      expect(find.byType(KitIllustration), findsOneWidget);
     });
 
     testWidgets('reduced motion shows the drawing finished and still', (
