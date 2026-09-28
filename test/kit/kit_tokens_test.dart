@@ -18,11 +18,9 @@ void main() {
     final theme = base.copyWith(
       extensions: [
         ...base.extensions.values,
-        KitTokens.fallback(base).copyWith(
-          sheetSurface: surface,
-          scrim: scrim,
-          sheetRadius: 4,
-        ),
+        KitTokens.fallback(
+          base,
+        ).copyWith(sheetSurface: surface, scrim: scrim, sheetRadius: 4),
       ],
     );
     late BuildContext context;

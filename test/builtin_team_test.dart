@@ -73,25 +73,29 @@ void main() {
           shell,
     ];
 
-    test('every team script parses', () async {
-      final scripts = {
-        'city': BuiltinTeam.cityScript,
-        'rig': BuiltinTeam.rigScript('/root/projects/my app', 'my-app'),
-        'service': BuiltinTeam.serviceScript,
-        'register': BuiltinTeam.registerScript,
-        'status': BuiltinTeam.statusScript,
-      };
-      for (final entry in scripts.entries) {
-        for (final shell in shells) {
-          final result = await Process.run(shell, ['-n', '-c', entry.value]);
-          expect(
-            result.exitCode,
-            0,
-            reason: '${entry.key} in $shell: ${result.stderr}',
-          );
+    test(
+      'every team script parses',
+      () async {
+        final scripts = {
+          'city': BuiltinTeam.cityScript,
+          'rig': BuiltinTeam.rigScript('/root/projects/my app', 'my-app'),
+          'service': BuiltinTeam.serviceScript,
+          'register': BuiltinTeam.registerScript,
+          'status': BuiltinTeam.statusScript,
+        };
+        for (final entry in scripts.entries) {
+          for (final shell in shells) {
+            final result = await Process.run(shell, ['-n', '-c', entry.value]);
+            expect(
+              result.exitCode,
+              0,
+              reason: '${entry.key} in $shell: ${result.stderr}',
+            );
+          }
         }
-      }
-    }, skip: shells.isEmpty ? 'no dash or bash here' : false);
+      },
+      skip: shells.isEmpty ? 'no dash or bash here' : false,
+    );
 
     test('the supervisor listens on loopback only, on its own port', () {
       expect(BuiltinTeam.supervisorConfig, contains('bind = "127.0.0.1"'));

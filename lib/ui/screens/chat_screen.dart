@@ -31,6 +31,7 @@ import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/offline_queue.dart';
 import '../../state/connection.dart';
+import '../../state/first_reply_notify_offer.dart';
 import '../../state/free_model_notice.dart'
     show FreeModelNoteDismissals, freeModelNoteDue;
 import '../../state/session_tail_cache.dart' show SessionTailPreview;
@@ -65,7 +66,6 @@ import '../widgets/session_menu.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/default_notices.dart';
 import '../widgets/file_preview.dart';
-import '../widgets/first_reply_notify_card.dart';
 import '../widgets/markdown.dart';
 import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/pickers.dart';
@@ -731,6 +731,8 @@ class _ChatScreenState extends State<ChatScreen>
       unawaited(_loadRunningShells());
     }
     _sub = _conn.events.listen(_onEvent);
+    _notifyOffer = FirstReplyNotifyOffer(_conn)
+      ..addListener(_notifyOfferChanged);
     _wasBusy = _conn.busySessions.contains(widget.sessionID);
     if (_watching) {
       _startWatchPolling();
@@ -4647,6 +4649,62 @@ class _ChatScreenState extends State<ChatScreen>
   /// Hidden at once on Dismiss, before the save lands.
   bool _freeModelNoteDismissed = false;
 
+  /// First run's one notification question, asked in the status slot.
+  late final FirstReplyNotifyOffer _notifyOffer;
+
+  void _notifyOfferChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// True once this conversation holds a finished reply and is idle. A
+  /// reply that failed (or a message that was not sent) is not the moment
+  /// to offer "get told when it needs you".
+  bool get _replyCompleted =>
+      !_conn.busySessions.contains(widget.sessionID) &&
+      _promptError == null &&
+      _sendError == null &&
+      _messages.any(
+        (message) =>
+            message.info.role == 'assistant' && message.info.errorText == null,
+      );
+
+  /// The notification question, or why "Notify me" did not work: a line in
+  /// the status slot over the transcript's top, so the reply and its actions
+  /// at the bottom never move when it comes or goes (F16).
+  _ChatStatus? _notifyOfferStatus(BuildContext context) {
+    final l10n = _chatL10n(context);
+    final offer = _notifyOffer;
+    if (offer.failure case final failure?) {
+      final error = offer.failureError;
+      return _ChatStatus(
+        id: 'notify-failed',
+        icon: AppIconography.error,
+        tone: AppStatusTone.failure,
+        message: switch (failure) {
+          FirstReplyNotifyFailure.saveFailed => l10n.consentSaveFailed,
+          // The app's own sentence from the Android side ("Notification
+          // access is required.") stays; exception text is said in words.
+          FirstReplyNotifyFailure.notEnabled =>
+            error == null ? l10n.e7SettingsUi22 : productErrorText(error),
+        },
+        onDismiss: offer.dismissFailure,
+      );
+    }
+    if (!offer.showFor(replyCompleted: _replyCompleted)) return null;
+    return _ChatStatus(
+      id: 'notify-offer',
+      icon: AppIconography.inbox,
+      message: l10n.firstRunNotifyTitle,
+      action: KitAction(
+        key: const ValueKey('chat-notify-offer-accept'),
+        label: l10n.firstRunNotifyAccept,
+        onPressed: offer.working ? null : () => unawaited(offer.accept()),
+      ),
+      onDismiss: offer.working ? null : () => unawaited(offer.decline()),
+      dismissTooltip: l10n.firstRunNotifyDecline,
+    );
+  }
+
   /// The free-model note's Dismiss: hidden now, and kept dismissed for this
   /// conversation on this server.
   void _dismissFreeModelNote() {
@@ -7658,23 +7716,6 @@ class _ChatScreenState extends State<ChatScreen>
               : _ComposerNote(key: _composerNoteKey, text: _composerNote!),
         ),
         _composerStatusStrip(),
-        // First run's one notification question; the card is absent for
-        // everyone it is not due for.
-        FirstReplyNotifyCard(
-          controller: _conn,
-          compact: compactComposer,
-          replyCompleted:
-              !_conn.busySessions.contains(widget.sessionID) &&
-              // A reply that failed (or a message that was not sent) is not
-              // the moment to offer "get told when it's done".
-              _promptError == null &&
-              _sendError == null &&
-              _messages.any(
-                (message) =>
-                    message.info.role == 'assistant' &&
-                    message.info.errorText == null,
-              ),
-        ),
       ],
     );
   }
@@ -8019,6 +8060,9 @@ class _ChatScreenState extends State<ChatScreen>
               ),
             if (!_conn.isIsolated && shareUrl != null)
               _sharedStatus(context, url: shareUrl, onStop: _stopSharing),
+            // Below every real status line: first run's one notification
+            // question (and what went wrong turning it on).
+            _notifyOfferStatus(context),
             // Last, so anything else this chat says outranks it: replies
             // here come from OpenCode's free model because no provider is
             // signed in. A quiet line in the page's status slot, over the
@@ -8248,6 +8292,9 @@ class _ChatScreenState extends State<ChatScreen>
     WidgetsBinding.instance.removeObserver(this);
     _conn.removeListener(_onConnectionChanged);
     _stopNudges();
+    _notifyOffer
+      ..removeListener(_notifyOfferChanged)
+      ..dispose();
     if (_conn.isIsolated) {
       _handoff.store.dispose();
     } else {

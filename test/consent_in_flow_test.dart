@@ -17,6 +17,7 @@ import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/automation_policy.dart';
 import 'package:opencode_mobile/state/consent_owners.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/state/first_reply_notify_offer.dart';
 import 'package:opencode_mobile/state/first_run.dart';
 import 'package:opencode_mobile/state/in_flow_consent.dart';
 import 'package:opencode_mobile/state/profiles.dart';
@@ -26,7 +27,6 @@ import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
 import 'package:opencode_mobile/ui/screens/automation_settings_screen.dart';
 import 'package:opencode_mobile/ui/widgets/always_allow_invitation.dart';
-import 'package:opencode_mobile/ui/widgets/first_reply_notify_card.dart';
 import 'package:opencode_mobile/ui/widgets/phone_server_consents.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -358,16 +358,18 @@ void main() {
   });
 
   group('Tell me when the agent needs me', () {
-    Widget card(ConnectionController c) => _app(
-      Scaffold(
-        body: Column(
-          children: [
-            const Expanded(child: SizedBox()),
-            FirstReplyNotifyCard(controller: c, replyCompleted: true),
-          ],
-        ),
-      ),
-    );
+    // The question itself is a line in the chat's status slot
+    // (test/chat_notify_offer_test.dart); here only its answers.
+    Future<FirstReplyNotifyOffer> ask(
+      WidgetTester tester,
+      ConnectionController c,
+    ) async {
+      final offer = FirstReplyNotifyOffer(c);
+      addTearDown(offer.dispose);
+      offer.showFor(replyCompleted: true);
+      await tester.pumpAndSettle();
+      return offer;
+    }
 
     const pending = <String, Object>{
       FirstRun.stateKey: 'done',
@@ -379,9 +381,8 @@ void main() {
     ) async {
       final c = await _controller(values: pending);
       addTearDown(c.dispose);
-      await tester.pumpWidget(card(c));
-      await tester.pumpAndSettle();
-      expect(find.text(_en.firstRunNotifyTitle), findsOneWidget);
+      final offer = await ask(tester, c);
+      expect(offer.showFor(replyCompleted: true), isTrue);
       // Claimed before it showed: a closed app leaves "Not answered".
       expect(
         ConsentOwners.inFlowLoaded(
@@ -391,9 +392,7 @@ void main() {
         InFlowConsentChoice.offered,
       );
 
-      await tester.tap(
-        find.byKey(const ValueKey('first-reply-notify-decline')),
-      );
+      await offer.decline();
       await tester.pumpAndSettle();
       expect(_native.calls, isEmpty);
 
@@ -420,9 +419,8 @@ void main() {
       addTearDown(c.dispose);
       await c.setNotifyFinishedRuns(false);
       await c.setNotifyRequests(false);
-      await tester.pumpWidget(card(c));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('first-reply-notify-accept')));
+      final offer = await ask(tester, c);
+      await offer.accept();
       await tester.pumpAndSettle();
       expect(_native.calls, contains('enable'));
       expect(c.notificationPreferences.requests, isTrue);
@@ -443,11 +441,10 @@ void main() {
       final consent = await ConsentOwners.inFlow(c.store.prefs, 'phone');
       expect(await consent.requestNeedsYouPreset(), isTrue);
 
-      await tester.pumpWidget(card(c));
-      await tester.pumpAndSettle();
-      expect(find.text(_en.firstRunNotifyTitle), findsNothing);
+      final offer = await ask(tester, c);
+      expect(offer.showFor(replyCompleted: true), isFalse);
       // The one-time question is settled, so tips are no longer held back.
-      expect(FirstReplyNotifyCard.pendingFor(c), isFalse);
+      expect(FirstReplyNotifyOffer.pendingFor(c), isFalse);
       await _openSettings(tester, c);
       expect(find.text(_en.consentWhyUnfinished), findsOneWidget);
       expect(find.text(_en.consentValueUnanswered), findsOneWidget);

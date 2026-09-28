@@ -148,67 +148,79 @@ void main() {
       }
     });
 
-    test('a merge fast-forwards a clean project, bookkeeping aside', () {
-      installHook();
-      // The team's own bookkeeping changes in the project do not count.
-      File('$project/.beads/interactions.jsonl').writeAsStringSync('{}\n');
-      File('$project/.gitignore').writeAsStringSync('*.db\n.beads/*\n');
-      final (code, merged) = teamMerges('hello.py', 'print("hi")\n');
-      expect(code, 0);
-      expect(out(project, ['rev-parse', 'HEAD']), merged);
-      expect(File('$project/hello.py').readAsStringSync(), 'print("hi")\n');
-      // The bookkeeping is untouched.
-      expect(
-        File('$project/.beads/interactions.jsonl').readAsStringSync(),
-        '{}\n',
-      );
-      final last = log().last;
-      expect(last.outcome, BuiltinTeamBringInOutcome.broughtIn);
-      expect(last.rig, 'my-app');
-      expect(merged, startsWith(last.commit!));
-      expect(last.detail, 'Add hello.py');
-    }, skip: _hasGit ? false : 'no git');
+    test(
+      'a merge fast-forwards a clean project, bookkeeping aside',
+      () {
+        installHook();
+        // The team's own bookkeeping changes in the project do not count.
+        File('$project/.beads/interactions.jsonl').writeAsStringSync('{}\n');
+        File('$project/.gitignore').writeAsStringSync('*.db\n.beads/*\n');
+        final (code, merged) = teamMerges('hello.py', 'print("hi")\n');
+        expect(code, 0);
+        expect(out(project, ['rev-parse', 'HEAD']), merged);
+        expect(File('$project/hello.py').readAsStringSync(), 'print("hi")\n');
+        // The bookkeeping is untouched.
+        expect(
+          File('$project/.beads/interactions.jsonl').readAsStringSync(),
+          '{}\n',
+        );
+        final last = log().last;
+        expect(last.outcome, BuiltinTeamBringInOutcome.broughtIn);
+        expect(last.rig, 'my-app');
+        expect(merged, startsWith(last.commit!));
+        expect(last.detail, 'Add hello.py');
+      },
+      skip: _hasGit ? false : 'no git',
+    );
 
-    test('a project with changes of its own is left alone', () {
-      installHook();
-      final before = out(project, ['rev-parse', 'HEAD']);
-      File('$project/README.md').writeAsStringSync('mine, edited\n');
-      final (code, _) = teamMerges('hello.py', 'print("hi")\n');
-      expect(code, 0, reason: 'the push never fails');
-      expect(out(project, ['rev-parse', 'HEAD']), before);
-      expect(File('$project/hello.py').existsSync(), isFalse);
-      expect(File('$project/README.md').readAsStringSync(), 'mine, edited\n');
-      final last = log().last;
-      expect(last.outcome, BuiltinTeamBringInOutcome.dirty);
-      expect(last.detail, contains('README.md'));
-      expect(last.leftBehind, isTrue);
+    test(
+      'a project with changes of its own is left alone',
+      () {
+        installHook();
+        final before = out(project, ['rev-parse', 'HEAD']);
+        File('$project/README.md').writeAsStringSync('mine, edited\n');
+        final (code, _) = teamMerges('hello.py', 'print("hi")\n');
+        expect(code, 0, reason: 'the push never fails');
+        expect(out(project, ['rev-parse', 'HEAD']), before);
+        expect(File('$project/hello.py').existsSync(), isFalse);
+        expect(File('$project/README.md').readAsStringSync(), 'mine, edited\n');
+        final last = log().last;
+        expect(last.outcome, BuiltinTeamBringInOutcome.dirty);
+        expect(last.detail, contains('README.md'));
+        expect(last.leftBehind, isTrue);
 
-      // Once the person's change is gone, the app's "Bring the team's work
-      // in" does what the hook would have.
-      git(project, ['checkout', '--', 'README.md']);
-      final now = Process.runSync('sh', [
-        '-c',
-        local(BuiltinTeam.bringInScript(project, 'my-app')),
-      ], environment: env);
-      expect(now.exitCode, 0);
-      final printed = BuiltinTeamBringIn.parse(
-        (now.stdout as String).trim().split('\n').last,
-      );
-      expect(printed?.outcome, BuiltinTeamBringInOutcome.broughtIn);
-      expect(File('$project/hello.py').existsSync(), isTrue);
-    }, skip: _hasGit ? false : 'no git');
+        // Once the person's change is gone, the app's "Bring the team's work
+        // in" does what the hook would have.
+        git(project, ['checkout', '--', 'README.md']);
+        final now = Process.runSync('sh', [
+          '-c',
+          local(BuiltinTeam.bringInScript(project, 'my-app')),
+        ], environment: env);
+        expect(now.exitCode, 0);
+        final printed = BuiltinTeamBringIn.parse(
+          (now.stdout as String).trim().split('\n').last,
+        );
+        expect(printed?.outcome, BuiltinTeamBringInOutcome.broughtIn);
+        expect(File('$project/hello.py').existsSync(), isTrue);
+      },
+      skip: _hasGit ? false : 'no git',
+    );
 
-    test('a project with commits of its own is never rewritten', () {
-      installHook();
-      File('$project/notes.txt').writeAsStringSync('local\n');
-      git(project, ['add', 'notes.txt']);
-      git(project, ['commit', '-q', '-m', 'Local work']);
-      final before = out(project, ['rev-parse', 'HEAD']);
-      final (code, _) = teamMerges('hello.py', 'print("hi")\n');
-      expect(code, 0);
-      expect(out(project, ['rev-parse', 'HEAD']), before);
-      expect(log().last.outcome, BuiltinTeamBringInOutcome.diverged);
-    }, skip: _hasGit ? false : 'no git');
+    test(
+      'a project with commits of its own is never rewritten',
+      () {
+        installHook();
+        File('$project/notes.txt').writeAsStringSync('local\n');
+        git(project, ['add', 'notes.txt']);
+        git(project, ['commit', '-q', '-m', 'Local work']);
+        final before = out(project, ['rev-parse', 'HEAD']);
+        final (code, _) = teamMerges('hello.py', 'print("hi")\n');
+        expect(code, 0);
+        expect(out(project, ['rev-parse', 'HEAD']), before);
+        expect(log().last.outcome, BuiltinTeamBringInOutcome.diverged);
+      },
+      skip: _hasGit ? false : 'no git',
+    );
 
     test('a push to another branch does nothing', () {
       installHook();
@@ -235,54 +247,62 @@ void main() {
       return {...env, 'PATH': '${bin.path}:${env['PATH']}'};
     }
 
-    test('makes the origin with the hook, and puts it back when re-run', () {
-      final runEnv = withFakeGc();
-      // A project with no origin yet.
-      git(project, ['remote', 'remove', 'origin']);
-      Directory(origin).deleteSync(recursive: true);
-      ProcessResult run() => Process.runSync('sh', [
-        '-c',
-        local(BuiltinTeam.rigScript(project, 'my-app')),
-      ], environment: runEnv);
+    test(
+      'makes the origin with the hook, and puts it back when re-run',
+      () {
+        final runEnv = withFakeGc();
+        // A project with no origin yet.
+        git(project, ['remote', 'remove', 'origin']);
+        Directory(origin).deleteSync(recursive: true);
+        ProcessResult run() => Process.runSync('sh', [
+          '-c',
+          local(BuiltinTeam.rigScript(project, 'my-app')),
+        ], environment: runEnv);
 
-      var result = run();
-      expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
-      final hook = File('$origin/hooks/post-receive');
-      expect(hook.existsSync(), isTrue);
-      expect(out(origin, ['config', '--get', 'oc-mobile.project']), project);
-      expect(out(origin, ['config', '--get', 'oc-mobile.rig']), 'my-app');
-      // Brought up to date once when added.
-      expect(log().last.outcome, BuiltinTeamBringInOutcome.upToDate);
+        var result = run();
+        expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
+        final hook = File('$origin/hooks/post-receive');
+        expect(hook.existsSync(), isTrue);
+        expect(out(origin, ['config', '--get', 'oc-mobile.project']), project);
+        expect(out(origin, ['config', '--get', 'oc-mobile.rig']), 'my-app');
+        // Brought up to date once when added.
+        expect(log().last.outcome, BuiltinTeamBringInOutcome.upToDate);
 
-      // A project added by an older version: no hook. Adding it again
-      // installs it, and the work merged meanwhile comes in.
-      hook.deleteSync();
-      final (_, merged) = teamMerges('hello.py', 'print("hi")\n');
-      expect(out(project, ['rev-parse', 'HEAD']), isNot(merged));
-      result = run();
-      expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
-      expect(hook.existsSync(), isTrue);
-      expect(out(project, ['rev-parse', 'HEAD']), merged);
-      expect(log().last.outcome, BuiltinTeamBringInOutcome.broughtIn);
+        // A project added by an older version: no hook. Adding it again
+        // installs it, and the work merged meanwhile comes in.
+        hook.deleteSync();
+        final (_, merged) = teamMerges('hello.py', 'print("hi")\n');
+        expect(out(project, ['rev-parse', 'HEAD']), isNot(merged));
+        result = run();
+        expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
+        expect(hook.existsSync(), isTrue);
+        expect(out(project, ['rev-parse', 'HEAD']), merged);
+        expect(log().last.outcome, BuiltinTeamBringInOutcome.broughtIn);
 
-      // From now on a merge comes in by itself.
-      final (_, next) = teamMerges('two.py', 'print(2)\n');
-      expect(out(project, ['rev-parse', 'HEAD']), next);
-    }, skip: _hasGit ? false : 'no git');
+        // From now on a merge comes in by itself.
+        final (_, next) = teamMerges('two.py', 'print(2)\n');
+        expect(out(project, ['rev-parse', 'HEAD']), next);
+      },
+      skip: _hasGit ? false : 'no git',
+    );
 
-    test('leaves an origin of the project\'s own alone', () {
-      final runEnv = withFakeGc();
-      final own = '${root.path}/elsewhere.git';
-      git(root.path, ['init', '-q', '--bare', own]);
-      git(project, ['remote', 'set-url', 'origin', own]);
-      final result = Process.runSync('sh', [
-        '-c',
-        local(BuiltinTeam.rigScript(project, 'my-app')),
-      ], environment: runEnv);
-      expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
-      expect(File('$own/hooks/post-receive').existsSync(), isFalse);
-      expect(log(), isEmpty);
-    }, skip: _hasGit ? false : 'no git');
+    test(
+      'leaves an origin of the project\'s own alone',
+      () {
+        final runEnv = withFakeGc();
+        final own = '${root.path}/elsewhere.git';
+        git(root.path, ['init', '-q', '--bare', own]);
+        git(project, ['remote', 'set-url', 'origin', own]);
+        final result = Process.runSync('sh', [
+          '-c',
+          local(BuiltinTeam.rigScript(project, 'my-app')),
+        ], environment: runEnv);
+        expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
+        expect(File('$own/hooks/post-receive').existsSync(), isFalse);
+        expect(log(), isEmpty);
+      },
+      skip: _hasGit ? false : 'no git',
+    );
   });
 
   test('the status script reports the newest outcome per project', () {

@@ -133,7 +133,6 @@
     },
     "lib/ui/screens/workspace_screen.dart": {},
     "lib/ui/widgets/connection_status_banner.dart": {},
-    "lib/ui/widgets/first_reply_notify_card.dart": {},
     "lib/ui/widgets/folder_browser.dart": {},
     "lib/ui/widgets/local_server_row.dart": {},
     "lib/ui/widgets/managed_server_recovery_option.dart": {},
