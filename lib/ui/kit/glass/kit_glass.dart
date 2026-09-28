@@ -310,21 +310,25 @@ class _KitGlassState extends State<KitGlass> with TickerProviderStateMixin {
 
     final trailing = widget.trailing;
     if (trailing != null) {
-      return _KitGlassPair(
-        look: look,
-        program: program,
-        still: still,
-        joined: widget.joined,
-        radius: widget.borderRadius,
-        shadow: widget.shadow,
-        dim: widget.dim,
-        respond: widget.respond,
-        leading: widget.child,
-        trailing: trailing,
+      return _GlassPixelSnap(
+        devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+        child: _KitGlassPair(
+          look: look,
+          program: program,
+          still: still,
+          joined: widget.joined,
+          radius: widget.borderRadius,
+          shadow: widget.shadow,
+          dim: widget.dim,
+          respond: widget.respond,
+          leading: widget.child,
+          trailing: trailing,
+        ),
       );
     }
 
     final paint = _GlassPaint.of(context, look, widget.dim, widget.shadow);
+    _geometry.pixelRatio = paint.dpr;
     final borderRadius =
         widget.borderRadius ?? BorderRadius.circular(paint.tokens.navRadius);
     final solid = look == KitGlassLook.solid;
@@ -344,9 +348,8 @@ class _KitGlassState extends State<KitGlass> with TickerProviderStateMixin {
               )
             : null,
       ),
-      // The rim (§7, LOOK-21): one physical pixel, the `glassRimLight` role
-      // along the top edge and `glassRimDark` along the bottom, never a
-      // soft glow.
+      // The rim (§7, LOOK-21): one physical pixel on the pixel grid, light
+      // along the top edge and darker along the bottom, never a soft glow.
       child: solid
           ? widget.child
           : CustomPaint(
@@ -382,12 +385,18 @@ class _KitGlassState extends State<KitGlass> with TickerProviderStateMixin {
       ),
     };
 
-    Widget result = DecoratedBox(
-      decoration: _GlassDecoration(
-        geometry: _geometry,
-        borderRadius: borderRadius,
-        boxShadow: solid ? const [] : paint.shadows,
-      ),
+    // The one shadow is painted after the glass and only outside its
+    // shape: the glass never reads its own shadow from the backdrop (the
+    // grey ledge inside its bottom edge on light grounds), and nothing of it
+    // shows through the thinner edge of the lens.
+    Widget result = CustomPaint(
+      foregroundPainter: solid || paint.shadows.isEmpty
+          ? null
+          : _GlassShadowPainter(
+              geometry: _geometry,
+              radius: borderRadius,
+              paint: paint,
+            ),
       child: _GlassClip(
         borderRadius: borderRadius,
         clipper: _GlassClipper(_geometry, borderRadius),
@@ -404,7 +413,7 @@ class _KitGlassState extends State<KitGlass> with TickerProviderStateMixin {
       );
     }
     if (widget.flow) result = _FlowProbe(onLaidOut: _laid, child: result);
-    return result;
+    return _GlassPixelSnap(devicePixelRatio: paint.dpr, child: result);
   }
 
   static double _largestRadius(BorderRadius borderRadius) => [
@@ -433,8 +442,9 @@ class _GlassPaint {
     required this.solidFill,
     required this.hairline,
     required this.hairlineWidth,
-    required this.rimLight,
-    required this.rimDark,
+    required this.rimTop,
+    required this.rimBottom,
+    required this.rimHighlight,
     required this.rimStrength,
     required this.shadows,
     required this.dpr,
@@ -469,8 +479,15 @@ class _GlassPaint {
           : roles.surface2.withValues(alpha: .94),
       hairline: roles.hairline,
       hairlineWidth: KitTokens.hairlineWidth(context),
-      rimLight: roles.glassRimLight,
-      rimDark: roles.glassRimDark,
+      // The rim (§7): the edge's physical pixel runs from a light line at
+      // the top to a darker one at the bottom. On a light ground white
+      // glass has no edge of its own, so the edge line is the darker line,
+      // lighter at the top, and the light line is the pixel just inside.
+      rimTop: dark
+          ? roles.glassRimLight
+          : roles.glassRimDark.withValues(alpha: roles.glassRimDark.a * .6),
+      rimBottom: roles.glassRimDark,
+      rimHighlight: dark ? null : roles.glassRimLight,
       rimStrength: dark ? .7 : 1,
       shadows: shadow ? tokens.glassShadows : const [],
       dpr: MediaQuery.devicePixelRatioOf(context),
@@ -483,8 +500,9 @@ class _GlassPaint {
   final Color solidFill;
   final Color hairline;
   final double hairlineWidth;
-  final Color rimLight;
-  final Color rimDark;
+  final Color rimTop;
+  final Color rimBottom;
+  final Color? rimHighlight;
   final double rimStrength;
   final List<BoxShadow> shadows;
   final double dpr;
@@ -497,8 +515,9 @@ class _GlassPaint {
       other.solidFill == solidFill &&
       other.hairline == hairline &&
       other.hairlineWidth == hairlineWidth &&
-      other.rimLight == rimLight &&
-      other.rimDark == rimDark &&
+      other.rimTop == rimTop &&
+      other.rimBottom == rimBottom &&
+      other.rimHighlight == rimHighlight &&
       other.rimStrength == rimStrength &&
       listEquals(other.shadows, shadows) &&
       other.dpr == dpr;
@@ -510,42 +529,186 @@ class _GlassPaint {
     solidFill,
     hairline,
     hairlineWidth,
-    rimLight,
-    rimDark,
+    rimTop,
+    rimBottom,
+    rimHighlight,
     rimStrength,
     Object.hashAll(shadows),
     dpr,
   );
 
-  /// The rim (§7, LOOK-21): one physical pixel, the `glassRimLight` role
-  /// along the top edge and `glassRimDark` along the bottom, never a soft
-  /// glow. Drawn inside [clip]'s edge.
-  Paint rimPaint(Rect bounds) => Paint()
-    ..style = PaintingStyle.stroke
-    ..isAntiAlias = true
-    ..shader = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        rimLight,
-        rimLight.withValues(alpha: 0),
-        rimDark.withValues(alpha: 0),
-        rimDark,
-      ],
-      stops: const [0, .35, .65, 1],
-    ).createShader(bounds);
-
-  /// The shadows along [shape] (a joined pair's outline).
-  void paintShadows(Canvas canvas, Path shape) {
-    for (final shadow in shadows) {
-      canvas.drawPath(shape.shift(shadow.offset), shadow.toPaint());
+  /// The rim (§7, LOOK-21) inside [shape]'s edge: its outermost physical
+  /// pixel runs from [rimTop] at the top to [rimBottom] at the bottom, with
+  /// no gap along the sides; on light glass the next pixel in is a light
+  /// line across the top ([rimHighlight]). Never a soft glow. [shape]'s
+  /// straight edges lie on physical pixels ([GlassGeometry.snap]).
+  void paintRim(Canvas canvas, Path shape) {
+    final bounds = shape.getBounds();
+    final px = 1 / dpr;
+    canvas
+      ..save()
+      ..clipPath(shape);
+    final highlight = rimHighlight;
+    if (highlight != null) {
+      canvas.drawPath(
+        shape,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = px * 4
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [highlight, highlight.withValues(alpha: 0)],
+            stops: const [0, .45],
+          ).createShader(bounds),
+      );
     }
+    canvas
+      ..drawPath(
+        shape,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = px * 2
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [rimTop, rimBottom],
+            // Lit from the top left, as the shader's specular line: the
+            // line darkens a few levels along a wide edge instead of being
+            // one flat colour (which also keeps a label, not the rim, the
+            // darkest common colour for the text-contrast check, G5).
+            transform: const GradientRotation(-.04),
+          ).createShader(bounds),
+      )
+      ..restore();
+  }
+
+  /// The one shadow (§7: y 6, blur 16, 30 %, no halo), only outside the
+  /// glass's [shape]. [cast] is the shape grown by a shadow's spread
+  /// (negative: pulled in). The blur is CSS's, sigma half the blur radius,
+  /// so it stays as tight as the canvas's.
+  void paintShadows(
+    Canvas canvas,
+    Path shape,
+    Path Function(double spread) cast,
+  ) {
+    if (shadows.isEmpty) return;
+    final bounds = shape.getBounds();
+    canvas
+      ..save()
+      ..clipPath(
+        Path()
+          ..fillType = PathFillType.evenOdd
+          ..addRect(bounds.inflate(64))
+          ..addPath(shape, Offset.zero),
+      );
+    for (final shadow in shadows) {
+      canvas.drawPath(
+        cast(shadow.spreadRadius).shift(shadow.offset),
+        Paint()
+          ..color = shadow.color
+          ..maskFilter = MaskFilter.blur(
+            BlurStyle.normal,
+            shadow.blurRadius / 2,
+          ),
+      );
+    }
+    canvas.restore();
+  }
+}
+
+/// The one shadow of a [KitGlass], outside its drawn shape.
+class _GlassShadowPainter extends CustomPainter {
+  _GlassShadowPainter({
+    required this.geometry,
+    required this.radius,
+    required _GlassPaint paint,
+  }) : _paint = paint,
+       super(repaint: geometry);
+
+  final GlassGeometry geometry;
+  final BorderRadius radius;
+  final _GlassPaint _paint;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = geometry.rectFor(size);
+    _paint.paintShadows(
+      canvas,
+      Path()..addRRect(GlassGeometry.rrect(radius, rect)),
+      (spread) => Path()
+        ..addRRect(
+          GlassGeometry.rrect(radius, rect).inflate(spread).scaleRadii(),
+        ),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_GlassShadowPainter old) =>
+      old.geometry != geometry || old.radius != radius || old._paint != _paint;
+}
+
+/// Puts the glass's origin on a physical pixel, so its clip and its
+/// one-physical-pixel rim land on the pixel grid (§7: "a golden that shows
+/// soft edges ... or a half-pixel offset is a bug"). Moves the glass by less
+/// than half a physical pixel; the shader reads the moved place.
+class _GlassPixelSnap extends SingleChildRenderObjectWidget {
+  const _GlassPixelSnap({required this.devicePixelRatio, super.child});
+
+  final double devicePixelRatio;
+
+  @override
+  _RenderGlassPixelSnap createRenderObject(BuildContext context) =>
+      _RenderGlassPixelSnap(devicePixelRatio);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderGlassPixelSnap renderObject,
+  ) {
+    renderObject.devicePixelRatio = devicePixelRatio;
+  }
+}
+
+class _RenderGlassPixelSnap extends RenderProxyBox {
+  _RenderGlassPixelSnap(this._devicePixelRatio);
+
+  double _devicePixelRatio;
+  set devicePixelRatio(double value) {
+    if (value == _devicePixelRatio) return;
+    _devicePixelRatio = value;
+    markNeedsPaint();
+  }
+
+  Offset _nudge = Offset.zero;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    final child = this.child;
+    if (child == null) return;
+    final dpr = _devicePixelRatio;
+    if (dpr > 0) {
+      // getTransformTo(null) stops below the view's device pixel ratio:
+      // logical pixels.
+      final origin = MatrixUtils.transformPoint(
+        getTransformTo(null),
+        Offset.zero,
+      );
+      double on(double v) => (v * dpr).roundToDouble() / dpr - v;
+      _nudge = Offset(on(origin.dx), on(origin.dy));
+    }
+    context.paintChild(child, offset + _nudge);
+  }
+
+  @override
+  void applyPaintTransform(RenderBox child, Matrix4 transform) {
+    transform.translateByDouble(_nudge.dx, _nudge.dy, 0, 1);
   }
 }
 
 /// A [BoxDecoration] painted along the glass's drawn shape
-/// ([GlassGeometry.rectFor]) instead of its box: the fill, the solid
-/// hairline and the one shadow follow a press or a flow by repainting,
+/// ([GlassGeometry.rectFor]) instead of its box: the fill and the solid
+/// hairline follow a press or a flow by repainting,
 /// never by rebuilding. At rest it paints exactly as the plain decoration.
 class _GlassDecoration extends BoxDecoration {
   const _GlassDecoration({
@@ -553,17 +716,12 @@ class _GlassDecoration extends BoxDecoration {
     super.color,
     super.border,
     super.borderRadius,
-    super.boxShadow,
   });
 
   final GlassGeometry geometry;
 
-  BoxDecoration get _plain => BoxDecoration(
-    color: color,
-    border: border,
-    borderRadius: borderRadius,
-    boxShadow: boxShadow,
-  );
+  BoxDecoration get _plain =>
+      BoxDecoration(color: color, border: border, borderRadius: borderRadius);
 
   @override
   BoxPainter createBoxPainter([VoidCallback? onChanged]) =>
@@ -623,11 +781,9 @@ class _GlassRimPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = geometry.rectFor(size);
-    final px = 1 / _paint.dpr;
-    canvas.drawRRect(
-      GlassGeometry.rrect(radius, rect.deflate(px / 2)),
-      _paint.rimPaint(rect)..strokeWidth = px,
+    _paint.paintRim(
+      canvas,
+      Path()..addRRect(GlassGeometry.rrect(radius, geometry.rectFor(size))),
     );
   }
 

@@ -84,13 +84,14 @@ void main() {
       expect(theme.textTheme.bodyMedium?.fontFamily, AppTheme.sansFamily);
       expect(AppTheme.liveTint(theme).a, closeTo(.06, .001));
       // LOOK-20: one shadow, under floating glass only: y 6, blur 16, the
-      // glassShadow role at 30 % black in both brightnesses.
+      // glassShadow role at 30 % black in both brightnesses; pulled in 6 so
+      // no halo shows above the glass (slice-glass-crisp, build 2057).
       final shadows = theme.extension<KitTokens>()!.glassShadows;
       expect(shadows, hasLength(1));
       expect(shadows.single.color, const Color(0x4D000000));
       expect(shadows.single.offset, const Offset(0, 6));
       expect(shadows.single.blurRadius, 16);
-      expect(shadows.single.spreadRadius, 0);
+      expect(shadows.single.spreadRadius, -6);
     }
   });
 

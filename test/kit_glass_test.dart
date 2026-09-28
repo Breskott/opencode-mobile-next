@@ -159,25 +159,116 @@ void main() {
       expect(_look(tester), KitGlassLook.frosted);
     }
 
-    testWidgets('the one shadow is the glassShadow role, y 6, blur 16', (
+    testWidgets('the one shadow is the glassShadow role, tight, only '
+        'outside the glass', (tester) async {
+      // Build 2057 (owner, light theme): a wide grey halo round the glass
+      // and a grey ledge inside its bottom edge, where the glass read its
+      // own shadow from the backdrop.
+      KitGlassShader.debugSupportedOverride = false;
+      const shot = ValueKey('shadow-shot');
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: Scaffold(
+            body: Center(
+              child: RepaintBoundary(
+                key: shot,
+                child: ColoredBox(
+                  color: const Color(0xFFFFFFFF),
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: _glass,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      final tokens = theme.extension<KitTokens>()!;
+      final spec = tokens.glassShadows.single;
+      expect(spec.color, shadow);
+      expect(spec.offset, const Offset(0, 6));
+      expect(spec.blurRadius, 16);
+      final dpr = tester.view.devicePixelRatio;
+      final render = tester.renderObject<RenderRepaintBoundary>(
+        find.byKey(shot),
+      );
+      final image = (await tester.runAsync(
+        () => render.toImage(pixelRatio: dpr),
+      ))!;
+      final bytes = (await tester.runAsync(
+        () => image.toByteData(format: ui.ImageByteFormat.rawRgba),
+      ))!;
+      // How green (the shadow role) a logical point is: green over red.
+      int green(double x, double y) {
+        final i = ((y * dpr).round() * image.width + (x * dpr).round()) * 4;
+        return bytes.getUint8(i + 1) - bytes.getUint8(i);
+      }
+
+      const middle = 32 + 160.0;
+      // Below the glass: the shadow.
+      expect(green(middle, 32 + 72 + 4), greaterThan(12));
+      // Just above it: no halo (this test's shadow is 50 % green, stronger
+      // than the real 30 % black; what is left here is under 1 % there).
+      expect(green(middle, 32 - 2), lessThan(6));
+      // Inside, by the bottom edge: no ledge (the glass never reads its
+      // own shadow).
+      expect(green(middle, 32 + 72 - 3), lessThan(4));
+      image.dispose();
+    });
+
+    testWidgets('the glass sits on physical pixels wherever it is laid out', (
       tester,
     ) async {
-      await pumpGlass(tester);
-      final shadows = tester
-          .widgetList<DecoratedBox>(
+      // §7: a half-pixel offset is a bug. The glass may be laid out at any
+      // fraction (a centred pill, text-sized pieces); its edges still land
+      // on the pixel grid, so the one-physical-pixel rim is crisp.
+      KitGlassShader.debugSupportedOverride = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: const Scaffold(
+            body: Padding(
+              padding: EdgeInsets.fromLTRB(10.1, 7.37, 0, 0),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: 200.45,
+                  height: 47.9,
+                  child: KitGlass(child: Text('Laptop')),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      final dpr = tester.view.devicePixelRatio;
+      final clip = tester.renderObject<RenderBox>(
+        find.descendant(
+          of: find.byType(KitGlass),
+          matching: find.byWidgetPredicate((w) => w is ClipRRect),
+        ),
+      );
+      final clipper = tester
+          .widget<ClipRRect>(
             find.descendant(
               of: find.byType(KitGlass),
-              matching: find.byType(DecoratedBox),
+              matching: find.byWidgetPredicate((w) => w is ClipRRect),
             ),
           )
-          .map((box) => box.decoration)
-          .whereType<BoxDecoration>()
-          .expand((box) => box.boxShadow ?? const <BoxShadow>[])
-          .toList();
-      expect(shadows, hasLength(1));
-      expect(shadows.single.color, shadow);
-      expect(shadows.single.offset, const Offset(0, 6));
-      expect(shadows.single.blurRadius, 16);
+          .clipper!;
+      final drawn = clipper.getClip(clip.size);
+      final origin = clip.localToGlobal(Offset.zero);
+      for (final edge in [
+        origin.dx + drawn.left,
+        origin.dy + drawn.top,
+        origin.dx + drawn.right,
+        origin.dy + drawn.bottom,
+      ]) {
+        final physical = edge * dpr;
+        expect(physical, closeTo(physical.roundToDouble(), 1e-6));
+      }
     });
 
     testWidgets('the corners default to the floating tab bar token', (

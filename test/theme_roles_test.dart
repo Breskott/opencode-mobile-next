@@ -405,10 +405,10 @@ void main() {
     const shadow = Color(0x4D000000);
     expect(graphiteDark.glassShadow, shadow);
     expect(graphiteLight.glassShadow, shadow);
-    expect(graphiteDark.glassRimLight, const Color(0x33FFFFFF));
+    expect(graphiteDark.glassRimLight, const Color(0x47FFFFFF));
     expect(graphiteDark.glassRimDark, const Color(0x80000000));
     expect(graphiteLight.glassRimLight, const Color(0xE6FFFFFF));
-    expect(graphiteLight.glassRimDark, const Color(0x1A000000));
+    expect(graphiteLight.glassRimDark, const Color(0x2E000000));
     for (final roles in [graphiteDark, graphiteLight]) {
       expect(
         roles.glassRimLight.computeLuminance(),

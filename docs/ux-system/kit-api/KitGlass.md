@@ -31,7 +31,7 @@ class KitGlass extends StatefulWidget {
     Key? key,
     required Widget child,
     BorderRadius? borderRadius,   // null: KitTokens.navRadius (22)
-    bool shadow = true,           // the one glassShadow (y 6, blur 16)
+    bool shadow = true,           // the one glassShadow (y 6, blur 16, spread -6), outside only
     bool dim = true,              // glass that holds words: surface2 at 88 %
     bool respond = false,         // gives under a finger
     bool flow = false,            // follows a size change from the old size
@@ -93,18 +93,28 @@ None — a surface around its child; it holds no data. Looks (`KitGlassLook`), u
 
 | Look | When | Draws |
 |---|---|---|
-| liquid | Impeller, shader loaded, Glass on, no accessibility override | `kit_glass.frag` over a light frost (σ 5, was 8: crisper), clipped by the drawn shape; one-physical-pixel shader rim plus the painted rim |
+| liquid | Impeller, shader loaded, Glass on, no accessibility override | `kit_glass.frag` over a light frost (σ 5), clipped by the drawn shape; the tint clears over the outer few pixels (a clear lens ring), a faint sheen over the top half; one-physical-pixel shader rim (no halo) plus the painted rim |
 | frosted | Skia, or before the shader has loaded | blur σ 12, `surface2` at 82 / 88 %, painted rim |
 | solid | Glass off; or high contrast, accessible navigation, remove animations | `surface2` at 94 % (opaque under the accessibility settings) with the hairline rim, no shadow |
 
+## Look: shadow, rim, lens (slice-glass-crisp, 2026-09-28)
+
+Owner feedback on build 2057 (Impeller, light theme, `docs/qa/owner-glass-2057-light.jpg`): a wide soft grey shadow under the pill, search and dock, the glass a plain white blob, soft edges. Against visual language §6–7 and the canvas `GlassWork.png`:
+
+- **Shadow (§7, LOOK-20):** one shadow, `KitTokens.glassShadows`: y 6, blur 16 with CSS's sigma (8), 30 % `glassShadow`, pulled in 6 on every side (spread −6) so no halo shows above or beside the glass. It is painted **after** the glass and **only outside** its shape (`_GlassPaint.paintShadows`), so the glass never reads its own shadow from the backdrop: that was the grey ledge inside the bottom edge on light grounds.
+- **Rim (§7, LOOK-21):** the outermost physical pixel runs from a light line at the top to a darker one at the bottom with no gap on the sides (`_GlassPaint.paintRim`). On dark: `glassRimLight` (white .28) → `glassRimDark` (black .50). On light, where white glass has no edge of its own: `glassRimDark` at 60 % (black .11) → `glassRimDark` (black .18), and the pixel just inside the top is the light line (`glassRimLight`, white .90). The frosted pair and the liquid pair paint the same rim along their outline. The shader's own line is one physical pixel; its soft halo and band glow are gone.
+- **Lens and tint:** the tint stays full over the middle, where labels sit (their 4.5:1, `test/glass_surface_test.dart`), and clears to about a quarter over the outer few pixels of the band, so the bent backdrop shows as a clear lens ring; a faint sheen lit from above over the top half gives the glass a body on a flat ground.
+- **Ambient ground (§6):** a page under `KitNav` (`KitNav.hosts`) paints the theme's `ambient` fields on its ground (`KitScreen`'s page frame): Graphite dark a green field at the top start and a blue one at the end middle, Graphite light one green field, a theme pack one field in its accent. Pages outside the shell keep a flat ground.
+- **Dimming behind text:** unchanged. Glass that holds words keeps `surface2` at 88 % over the middle over a σ 5 frost; the renders of the list scrolled under the dock show letters behind as colour only.
+
 ## Motion rules
 
-- Only the drawn shape moves: `GlassGeometry` (press, flow) and the pair's own layout of where each piece is painted. The clip, the fill and shadow (`_GlassDecoration`, a `BoxDecoration` painted along the drawn shape), the rim and the shader read it and **repaint**; nothing rebuilds, the content is never scaled (MOT-2: no scale transition; G21 bans `Transform.scale`), and no list relays out (MOT-5). The lens is laid out alone (`CustomSingleChildLayout`, a relayout boundary).
+- Only the drawn shape moves: `GlassGeometry` (press, flow) and the pair's own layout of where each piece is painted. The clip, the fill (`_GlassDecoration`, a `BoxDecoration` painted along the drawn shape), the shadow (`_GlassShadowPainter`), the rim and the shader read it and **repaint**; nothing rebuilds, the content is never scaled (MOT-2: no scale transition; G21 bans `Transform.scale`), and no list relays out (MOT-5). The lens is laid out alone (`CustomSingleChildLayout`, a relayout boundary).
 - Taps follow the layout, never the drawn shape (`slice-glass-flow`, 2026-09-28): the clip (`_GlassClip`, a `ClipRRect` whose render object hit-tests its layout box) clips **paint** to the moving shape, but hit testing uses the box the content was just laid out in. A control that appears at the edge of glass still flowing towards it (the composer's delivery choice, a confirm row) takes the first tap, before the shape catches up. At rest the drawn shape and the box are the same, so nothing changes there; a pressed swell draws past the box but still takes taps only inside it.
 - Springs come only from `KitMotion` (MOT-1). The lens's springs are stepped on one ticker so a dragging finger moves their targets every frame without restarting them.
 - Reduced motion (`KitMotion.reduced`: the system's remove animations or Animations: Off): every state is instant — no swell, no flow, the pair joins and parts at once, the lens jumps and follows a drag directly without lifting; no ticker runs (MOT-7).
 - Glass off and the accessibility settings: solid glass never moves (no press, no flow); the pair still joins, as one solid outline with its hairline.
-- Edges land on physical pixels at rest (the press and flow controllers end exactly at their targets; the lens rounds its edges to device pixels), so the rim is a crisp single pixel.
+- Edges land on physical pixels: the glass's origin is snapped to the device pixel grid (`_GlassPixelSnap`, under half a physical pixel, read by the shader too) and `GlassGeometry.rectFor` rounds every edge to a physical pixel (`GlassGeometry.snap`); the press and flow controllers end exactly at their targets and the lens rounds its edges to device pixels. So the rim is a crisp single pixel.
 
 ## Performance
 

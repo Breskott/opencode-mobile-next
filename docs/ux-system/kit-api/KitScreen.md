@@ -239,7 +239,7 @@ Declared (KIT-12): default, loading (the one bar under the header), status (a li
 
 ## Tokens
 
-- ThemeRoles: `ground` (frame and panes), `hairline` (pane separators).
+- ThemeRoles: `ground` (frame and panes), `hairline` (pane separators), `ambient` (a page under `KitNav`, `KitNav.hosts`: the theme's soft colour fields on the ground, so the floating glass has something to bend; visual language §6, slice-glass-crisp).
 - KitText: none directly (its slots bring their own).
 - KitTokens: `gutter` (16), `space2` (8), `space4` (16), `hairlineWidth(context)` (§0.5 step 2 seam, `_new-tokens.md`).
 - KitLayout: `readingWidth` 720, `listWidth` 960, `shortHeight` 480, `paneListWidth` 296 (**changed**), `paneDetailMaxWidth` 700, `paneSideWidth` 340 (pre-wave, §0.5 step 2 named widths, `_new-tokens.md`).

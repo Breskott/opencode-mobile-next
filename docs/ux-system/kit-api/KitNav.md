@@ -83,6 +83,7 @@ class KitNav extends StatelessWidget {
   /// [KitNavDestination.pane]. KitScreen.twoPane reads it and leaves its own
   /// list out (the list is already in the sidebar).
   static bool hostsPane(BuildContext context);
+  static bool hosts(BuildContext context);   // below any KitNav: the page's ground carries the theme's ambient fields
 }
 
 /// The floating dock (compact). Public for galleries and tests; the app
@@ -118,6 +119,7 @@ Behaviour (frozen):
 - **Sidebar (expanded/large):** a solid column `KitLayout.sidebarWidth(context)` wide (296 at 1.0 text, wider with larger text) on `ground`, a 1 physical px `hairline` at its end edge; from top: `sidebarHeader` (its controls are glass, VL §6), the destinations as 48 dp rows (icon + `rowTitle` label + trailing needs-you badge), the selected destination's `pane` (scrolls on its own, below a `sectionGap`), and `sidebarPrimary` pinned at the bottom as a full-width primary `KitButton`. Publishes `KitBottomInset` start = that width.
 - The layout switches at the `KitLayout` classes only: dock < 600, rail 600–839, sidebar ≥ 840 (the shell's 760/1040 go). A window < 480 dp tall keeps the dock (compact) or the rail (medium-or-wider).
 - `KitNav.hostsPane` is true only in the sidebar layout and only when the selected destination has a `pane`.
+- `KitNav.hosts` is true anywhere below a KitNav; `KitScreen`'s page frame then paints the theme's `ambient` fields on the ground (slice-glass-crisp, KitGlass.md).
 - Switching destination never rebuilds the other destinations' content (the shell keeps `KitTabSwitcher`).
 - Order of destinations is the caller's; LAY-15 (Work · Inbox · Project · Settings, Project only with project tools) is the shell's rule, checked by `home_navigation_test.dart`.
 

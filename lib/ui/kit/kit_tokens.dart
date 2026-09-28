@@ -218,10 +218,17 @@ class KitTokens extends ThemeExtension<KitTokens> {
   /// floating glass only, one tight drop (y 6, blur 16) in the theme's
   /// `glassShadow` role (30 % black in both brightnesses). Content, cards
   /// and sheets get none.
+  ///
+  /// Tight, no halo (§7): the blur is CSS's (sigma 8, as the canvas), the
+  /// shadow is pulled in 6 on every side (spread -6) so none of it shows
+  /// above or much beside the glass, and KitGlass paints it only outside
+  /// the glass (owner feedback on build 2057: a wide grey halo and a ledge
+  /// on light grounds).
   List<BoxShadow> get glassShadows => [
     BoxShadow(
       color: roles.glassShadow,
       blurRadius: 16,
+      spreadRadius: -6,
       offset: const Offset(0, 6),
     ),
   ];

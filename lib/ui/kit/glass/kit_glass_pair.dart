@@ -437,10 +437,18 @@ class _RenderGlassPair extends RenderBox
   /// The drawn rounded rectangles, this box's coordinates.
   (RRect, RRect) _shapes() {
     final t = _t.clamp(0.0, 1.0);
-    final leading = GlassGeometry.swell(_box(_leading), _pressLeading.value);
-    final trailing = GlassGeometry.swell(
-      _box(_trailing).deflate(_shrink * t),
-      _pressTrailing.value,
+    final dpr = _paint.dpr;
+    // On physical pixels (the pair's origin is snapped): crisp edges.
+    final leading = GlassGeometry.snap(
+      GlassGeometry.swell(_box(_leading), _pressLeading.value),
+      dpr,
+    );
+    final trailing = GlassGeometry.snap(
+      GlassGeometry.swell(
+        _box(_trailing).deflate(_shrink * t),
+        _pressTrailing.value,
+      ),
+      dpr,
     );
     return (
       GlassGeometry.rrect(_radius, leading),
@@ -463,9 +471,6 @@ class _RenderGlassPair extends RenderBox
     final outline = _outline(a, b, _blend);
     final shaders = _shaders;
     final paint = _paint;
-    if (paint.look != KitGlassLook.solid) {
-      paint.paintShadows(context.canvas, outline.shift(offset));
-    }
     if (paint.look == KitGlassLook.solid) {
       _clipPath.layer = null;
       _clipRect.layer = null;
@@ -488,8 +493,12 @@ class _RenderGlassPair extends RenderBox
         needsCompositing,
         offset,
         bounds,
-        (context, offset) =>
-            _pushBackdrop(context, offset, _lens(a, b, shaders), (_) {}),
+        (context, offset) => _pushBackdrop(
+          context,
+          offset,
+          _lens(a, b, shaders),
+          (canvas) => paint.paintRim(canvas, outline.shift(offset)),
+        ),
         oldLayer: _clipRect.layer,
       );
     } else {
@@ -510,11 +519,24 @@ class _RenderGlassPair extends RenderBox
           (canvas) {
             final shape = outline.shift(offset);
             canvas.drawPath(shape, Paint()..color = paint.fill);
-            final px = 1 / paint.dpr;
-            _strokeInside(canvas, shape, paint.rimPaint(shape.getBounds()), px);
+            paint.paintRim(canvas, shape);
           },
         ),
         oldLayer: _clipPath.layer,
+      );
+    }
+    // The one shadow, after the glass (which so never reads it from the
+    // backdrop) and only outside it, before the pieces (a badge may
+    // overhang).
+    if (paint.look != KitGlassLook.solid) {
+      paint.paintShadows(
+        context.canvas,
+        outline.shift(offset),
+        (spread) => _outline(
+          a.inflate(spread).scaleRadii(),
+          b.inflate(spread).scaleRadii(),
+          _blend,
+        ).shift(offset),
       );
     }
     // The pieces sit on the glass, outside its clip (a badge may overhang).
