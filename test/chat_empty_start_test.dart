@@ -440,10 +440,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const ValueKey('chat-start-tip')), findsNothing);
     expect(_composerField, findsOneWidget);
-    expect(
-      tester.getRect(_composerField).bottom,
-      lessThanOrEqualTo(640 - 280),
-    );
+    expect(tester.getRect(_composerField).bottom, lessThanOrEqualTo(640 - 280));
     final row = find.byKey(const ValueKey('chat-starters'));
     if (row.evaluate().isNotEmpty) {
       expect(

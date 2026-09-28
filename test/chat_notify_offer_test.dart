@@ -9,6 +9,7 @@
 //   flutter test --update-goldens --dart-define=CAPTURE_EVIDENCE=true \
 //     [--dart-define=EVIDENCE_TAG=before] test/chat_notify_offer_test.dart
 // and look at every changed image before committing it.
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
