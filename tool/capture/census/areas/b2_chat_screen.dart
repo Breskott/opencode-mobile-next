@@ -39,11 +39,16 @@ Future<void> _longPressPrompt(CensusKit kit) async {
 final b2ChatScreenArea = CensusArea(
   'b2-chat-screen',
   shots: [
-    CensusShot('chat-message-actions-sheet', state: 'prompt', (kit) async {
-      await openChat(kit);
-      await _longPressPrompt(kit);
-      kit.expectVisible(find.byKey(const ValueKey('message-action-fork')));
-    }, note: 'Long-press on your own prompt.'),
+    CensusShot(
+      'chat-message-actions-sheet',
+      state: 'prompt',
+      (kit) async {
+        await openChat(kit);
+        await _longPressPrompt(kit);
+        kit.expectVisible(find.byKey(const ValueKey('message-action-fork')));
+      },
+      note: 'Long-press on your own prompt.',
+    ),
     CensusShot(
       'chat-message-actions-sheet',
       state: 'reply',
@@ -72,18 +77,22 @@ final b2ChatScreenArea = CensusArea(
           'Conversation menu › Conversation actions › Revert last prompt '
           '(OpenCode 1, no staged revert).',
     ),
-    CensusShot('chat-run-shell-dialog', (kit) async {
-      await openChat(kit);
-      await sessionMenuAction(kit, 'Run shell command');
-      kit.expectVisible(find.byType(AlertDialog));
-      await kit.enterText(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.byType(TextField),
-        ),
-        checkoutCommand,
-      );
-    }, note: 'Conversation menu › Run shell command, with a command typed.'),
+    CensusShot(
+      'chat-run-shell-dialog',
+      (kit) async {
+        await openChat(kit);
+        await sessionMenuAction(kit, 'Run shell command');
+        kit.expectVisible(find.byType(AlertDialog));
+        await kit.enterText(
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.byType(TextField),
+          ),
+          checkoutCommand,
+        );
+      },
+      note: 'Conversation menu › Run shell command, with a command typed.',
+    ),
     CensusShot('command-launcher-sheet', state: 'commands', (kit) async {
       await openChat(kit);
       await openCommandLauncher(kit);
@@ -105,19 +114,24 @@ final b2ChatScreenArea = CensusArea(
           'Typing filters the commands (and would list "Go to" results '
           'from the rest of the app when any match).',
     ),
-    CensusShot('command-launcher-sheet', state: 'delegate', (kit) async {
-      await openChat(
-        kit,
-        configure: (c) => c.catalog = CatalogSnapshot(
-          providers: sampleCatalog().providers,
-          models: sampleCatalog().models,
-          agents: _subagents,
-        ),
-      );
-      await openCommandLauncher(kit);
-      await kit.tapKey('composer-tools-agents-tab');
-      kit.expectVisible(find.byKey(const Key('composer-agent-reviewer')));
-    }, note: 'The Delegate tab with three server subagents.'),
+    CensusShot(
+      'command-launcher-sheet',
+      state: 'delegate',
+      (kit) async {
+        await openChat(
+          kit,
+          configure: (c) => c.catalog = CatalogSnapshot(
+            providers: sampleCatalog().providers,
+            models: sampleCatalog().models,
+            agents: _subagents,
+          ),
+        );
+        await openCommandLauncher(kit);
+        await kit.tapKey('composer-tools-agents-tab');
+        kit.expectVisible(find.byKey(const Key('composer-agent-reviewer')));
+      },
+      note: 'The Delegate tab with three server subagents.',
+    ),
     CensusShot('chat-rename-session-dialog', (kit) async {
       await openChat(kit);
       await openCommandLauncher(kit);
@@ -129,23 +143,33 @@ final b2ChatScreenArea = CensusArea(
       kit.expectText('Rename conversation');
       kit.expectVisible(find.byType(AlertDialog));
     }, note: 'Commands › /rename.'),
-    CensusShot('session-menu-sheet', state: 'closed', (kit) async {
-      await openChat(kit);
-      await openSessionMenu(kit);
-      kit.expectText('Conversation actions');
-    }, note: 'The chat app bar overflow, sections folded.'),
+    CensusShot(
+      'session-menu-sheet',
+      state: 'closed',
+      (kit) async {
+        await openChat(kit);
+        await openSessionMenu(kit);
+        kit.expectText('Conversation actions');
+      },
+      note: 'The chat app bar overflow, sections folded.',
+    ),
     CensusShot('session-menu-sheet', state: 'actions', (kit) async {
       await openChat(kit);
       await openSessionMenu(kit);
       await kit.tapText('Conversation actions');
       kit.expectText('Run shell command');
     }, note: 'Conversation actions unfolded.'),
-    CensusShot('session-menu-sheet', state: 'display', (kit) async {
-      await openChat(kit);
-      await openSessionMenu(kit);
-      await kit.tapText('Display and context');
-      kit.expectText('Context usage');
-    }, note: 'Display and context unfolded (transcript toggles).'),
+    CensusShot(
+      'session-menu-sheet',
+      state: 'display',
+      (kit) async {
+        await openChat(kit);
+        await openSessionMenu(kit);
+        await kit.tapText('Display and context');
+        kit.expectText('Context usage');
+      },
+      note: 'Display and context unfolded (transcript toggles).',
+    ),
     CensusShot(
       'chat-leave-unsaved-draft-sheet',
       (kit) async {

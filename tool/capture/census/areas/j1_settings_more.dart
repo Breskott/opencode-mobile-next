@@ -240,16 +240,21 @@ final j1SettingsMoreArea = CensusArea(
   'j1-settings-more',
   shots: [
     // ---- Settings hub ----------------------------------------------------
-    CensusShot('settings', state: 'pushed', (kit) async {
-      final done = await mountSettingsScene(
-        kit.tester,
-        SettingsScene.hub,
-        light: false,
-        boundary: kit.boundaryKey,
-      );
-      kit.onDispose(done);
-      kit.expectText('This server');
-    }, note: 'Pushed via Ctrl/Cmd+, or a search result, with its own app bar.'),
+    CensusShot(
+      'settings',
+      state: 'pushed',
+      (kit) async {
+        final done = await mountSettingsScene(
+          kit.tester,
+          SettingsScene.hub,
+          light: false,
+          boundary: kit.boundaryKey,
+        );
+        kit.onDispose(done);
+        kit.expectText('This server');
+      },
+      note: 'Pushed via Ctrl/Cmd+, or a search result, with its own app bar.',
+    ),
     CensusShot(
       'settings',
       state: 'in-shell',
@@ -408,14 +413,18 @@ final j1SettingsMoreArea = CensusArea(
       await _pumpAbout(kit);
       kit.expectTextContaining('Open source');
     }, note: 'top of the screen: build identity, then Open source'),
-    CensusShot('about-open-source-tab', (kit) async {
-      await _pumpAbout(kit);
-      await kit.tester.drag(
-        find.byKey(const ValueKey('about-page')),
-        const Offset(0, -600),
-      );
-      await kit.settle();
-    }, note: "About's Open source section (no tabs since slice-P3.10)"),
+    CensusShot(
+      'about-open-source-tab',
+      (kit) async {
+        await _pumpAbout(kit);
+        await kit.tester.drag(
+          find.byKey(const ValueKey('about-page')),
+          const Offset(0, -600),
+        );
+        await kit.settle();
+      },
+      note: "About's Open source section (no tabs since slice-P3.10)",
+    ),
 
     // ---- Guide, diagnostics, misc -------------------------------------------
     CensusShot('guide', (kit) async {

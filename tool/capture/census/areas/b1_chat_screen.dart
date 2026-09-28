@@ -47,25 +47,35 @@ final b1ChatScreenArea = CensusArea(
           "answer's opening paragraph (visible in the working state) is "
           'folded under the work line once the turn finishes.',
     ),
-    CensusShot('chat', state: 'working', (kit) async {
-      await openChat(
-        kit,
-        busy: true,
-        transcript: () => sampleTranscript(streaming: true),
-      );
-      kit.expectText(userPrompt);
-      kit.expectVisible(find.byKey(const Key('chat-stop-button')));
-    }, note: 'The reply is streaming (cut mid-answer); Stop is live.'),
-    CensusShot('chat', state: 'needs-you', (kit) async {
-      await openChat(
-        kit,
-        busy: true,
-        transcript: () => sampleTranscript(awaitingPermission: true),
-        configure: (c) =>
-            c.permissions = {samplePermission().id: samplePermission()},
-      );
-      kit.expectVisible(find.byKey(const Key('permission-card-review')));
-    }, note: 'The run waits for approval to run the checkout tests.'),
+    CensusShot(
+      'chat',
+      state: 'working',
+      (kit) async {
+        await openChat(
+          kit,
+          busy: true,
+          transcript: () => sampleTranscript(streaming: true),
+        );
+        kit.expectText(userPrompt);
+        kit.expectVisible(find.byKey(const Key('chat-stop-button')));
+      },
+      note: 'The reply is streaming (cut mid-answer); Stop is live.',
+    ),
+    CensusShot(
+      'chat',
+      state: 'needs-you',
+      (kit) async {
+        await openChat(
+          kit,
+          busy: true,
+          transcript: () => sampleTranscript(awaitingPermission: true),
+          configure: (c) =>
+              c.permissions = {samplePermission().id: samplePermission()},
+        );
+        kit.expectVisible(find.byKey(const Key('permission-card-review')));
+      },
+      note: 'The run waits for approval to run the checkout tests.',
+    ),
     CensusShot('chat', state: 'empty', (kit) async {
       await openChat(kit, sessionID: darkModeSessionID, transcript: null);
       kit.expectVisible(find.byKey(const Key('chat-composer-field')));
@@ -121,15 +131,19 @@ final b1ChatScreenArea = CensusArea(
           'Discard on a draft queued while offline (the queue is faked; the '
           'connection itself is up).',
     ),
-    CensusShot('chat-resend-queued-draft-sheet', (kit) async {
-      await openChat(
-        kit,
-        configure: (c) =>
-            c.queued = [_queued(dispatchedAt: _now - 2 * 60 * 1000)],
-      );
-      await kit.tapKey('queued-action-resend');
-      kit.expectText('Send this draft again?');
-    }, note: 'A queued draft whose send was never confirmed (faked queue).'),
+    CensusShot(
+      'chat-resend-queued-draft-sheet',
+      (kit) async {
+        await openChat(
+          kit,
+          configure: (c) =>
+              c.queued = [_queued(dispatchedAt: _now - 2 * 60 * 1000)],
+        );
+        await kit.tapKey('queued-action-resend');
+        kit.expectText('Send this draft again?');
+      },
+      note: 'A queued draft whose send was never confirmed (faked queue).',
+    ),
     CensusShot(
       'chat-cancel-inbox-send-sheet',
       (kit) async {
@@ -156,11 +170,15 @@ final b1ChatScreenArea = CensusArea(
           'OpenCode 2 inbox: a message waiting for the running turn (faked '
           'inbox capability and item).',
     ),
-    CensusShot('chat-share-confirm-sheet', (kit) async {
-      await openChat(kit);
-      await sessionMenuAction(kit, 'Share conversation');
-      kit.expectText('Share this conversation?');
-    }, note: 'Conversation menu › Conversation actions › Share conversation.'),
+    CensusShot(
+      'chat-share-confirm-sheet',
+      (kit) async {
+        await openChat(kit);
+        await sessionMenuAction(kit, 'Share conversation');
+        kit.expectText('Share this conversation?');
+      },
+      note: 'Conversation menu › Conversation actions › Share conversation.',
+    ),
   ],
   notRendered: {},
 );

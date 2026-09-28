@@ -295,48 +295,82 @@ final eWorkspaceArea = CensusArea(
           'conversation, recent ones; archived row and other projects '
           'below the fold.',
     ),
-    CensusShot('workspace', state: 'needs-you', (kit) async {
-      final conn = await eController(otherProjects: true);
-      conn
-        ..permissions = {samplePermission().id: samplePermission()}
-        ..questions = {sampleQuestion().id: sampleQuestion()};
-      await _work(kit, controller: conn);
-      kit.expectText('Fix flaky checkout test');
-    }, note: 'A command permission and a question are waiting.'),
-    CensusShot('workspace', state: 'empty', (kit) async {
-      final conn = await eController(sessions: const {}, busy: const {});
-      await _work(kit, controller: conn, settleFor: const Duration(seconds: 3));
-      kit.expectText('shopfront');
-    }, note: 'A project with no conversations yet (teaching state).'),
-    CensusShot('workspace', state: 'loading', (kit) async {
-      final repository = ERepository()..holdProjects = Completer<void>();
-      final conn =
-          await eController(
-              sessions: const {},
-              busy: const {},
-              repository: repository,
-              otherProjects: true,
-            )
-            ..sessionsLoading = true;
-      await _work(kit, controller: conn);
-      kit.expectText('shopfront');
-    }, note: 'First load: the project list and conversations are on the way.'),
-    CensusShot('workspace-folder-chooser', state: 'phone-server', (kit) async {
-      await _chooser(kit);
-      kit.expectText('Create a new folder');
-    }, note: 'A server this app runs: Create a new folder comes first.'),
-    CensusShot('workspace-folder-chooser', state: 'remote-server', (kit) async {
-      await _chooser(kit, canCreate: false);
-      kit.expectText('Open a project folder');
-    }, note: 'Any other server: folders can only be opened by path.'),
-    CensusShot('workspace-folder-chooser', state: 'error', (kit) async {
-      await _chooser(
-        kit,
-        projectsError: const ProductException(
-          'Could not load projects: the connection was reset',
-        ),
-      );
-    }, note: 'The project list could not load.'),
+    CensusShot(
+      'workspace',
+      state: 'needs-you',
+      (kit) async {
+        final conn = await eController(otherProjects: true);
+        conn
+          ..permissions = {samplePermission().id: samplePermission()}
+          ..questions = {sampleQuestion().id: sampleQuestion()};
+        await _work(kit, controller: conn);
+        kit.expectText('Fix flaky checkout test');
+      },
+      note: 'A command permission and a question are waiting.',
+    ),
+    CensusShot(
+      'workspace',
+      state: 'empty',
+      (kit) async {
+        final conn = await eController(sessions: const {}, busy: const {});
+        await _work(
+          kit,
+          controller: conn,
+          settleFor: const Duration(seconds: 3),
+        );
+        kit.expectText('shopfront');
+      },
+      note: 'A project with no conversations yet (teaching state).',
+    ),
+    CensusShot(
+      'workspace',
+      state: 'loading',
+      (kit) async {
+        final repository = ERepository()..holdProjects = Completer<void>();
+        final conn =
+            await eController(
+                sessions: const {},
+                busy: const {},
+                repository: repository,
+                otherProjects: true,
+              )
+              ..sessionsLoading = true;
+        await _work(kit, controller: conn);
+        kit.expectText('shopfront');
+      },
+      note: 'First load: the project list and conversations are on the way.',
+    ),
+    CensusShot(
+      'workspace-folder-chooser',
+      state: 'phone-server',
+      (kit) async {
+        await _chooser(kit);
+        kit.expectText('Create a new folder');
+      },
+      note: 'A server this app runs: Create a new folder comes first.',
+    ),
+    CensusShot(
+      'workspace-folder-chooser',
+      state: 'remote-server',
+      (kit) async {
+        await _chooser(kit, canCreate: false);
+        kit.expectText('Open a project folder');
+      },
+      note: 'Any other server: folders can only be opened by path.',
+    ),
+    CensusShot(
+      'workspace-folder-chooser',
+      state: 'error',
+      (kit) async {
+        await _chooser(
+          kit,
+          projectsError: const ProductException(
+            'Could not load projects: the connection was reset',
+          ),
+        );
+      },
+      note: 'The project list could not load.',
+    ),
     // The folder dialog merged into the project sheet (slice-P3.11a): the
     // folder row opens the sheet with its Details open on that folder.
     CensusShot(
@@ -357,12 +391,18 @@ final eWorkspaceArea = CensusArea(
       note:
           'Work open in packages/api inside shopfront; the folder row opened.',
     ),
-    CensusShot('workspace-context-sheet', (kit) async {
-      await _work(kit);
-      await kit.tapKey('current-project-entry');
-      kit.expectVisible(find.byKey(const ValueKey('workspace-context-sheet')));
-      kit.expectText('Switch project');
-    }, note: 'Project header tapped; one cloud workspace listed.'),
+    CensusShot(
+      'workspace-context-sheet',
+      (kit) async {
+        await _work(kit);
+        await kit.tapKey('current-project-entry');
+        kit.expectVisible(
+          find.byKey(const ValueKey('workspace-context-sheet')),
+        );
+        kit.expectText('Switch project');
+      },
+      note: 'Project header tapped; one cloud workspace listed.',
+    ),
     CensusShot('workspace-rename-session-dialog', (kit) async {
       await _work(kit);
       await _rowMenu(kit, darkModeSessionID, 'Rename');
@@ -413,18 +453,23 @@ final eWorkspaceArea = CensusArea(
       );
       kit.expectTextContaining('took too long');
     }),
-    CensusShot('projects', state: 'read-only', (kit) async {
-      final conn = await eController(otherProjects: true)
-        ..capabilityOverride = const ServerCapabilities(
-          projectManagement: false,
+    CensusShot(
+      'projects',
+      state: 'read-only',
+      (kit) async {
+        final conn = await eController(otherProjects: true)
+          ..capabilityOverride = const ServerCapabilities(
+            projectManagement: false,
+          );
+        await _overWork(
+          kit,
+          (conn) => ProjectsScreen(controller: conn, selectedProjectID: null),
+          controller: conn,
         );
-      await _overWork(
-        kit,
-        (conn) => ProjectsScreen(controller: conn, selectedProjectID: null),
-        controller: conn,
-      );
-      kit.expectVisible(find.byKey(const ValueKey('projects-context-list')));
-    }, note: 'A server that cannot manage projects: the read-only context.'),
+        kit.expectVisible(find.byKey(const ValueKey('projects-context-list')));
+      },
+      note: 'A server that cannot manage projects: the read-only context.',
+    ),
     CensusShot('projects-rename-dialog', (kit) async {
       await _overWork(
         kit,
@@ -443,39 +488,54 @@ final eWorkspaceArea = CensusArea(
       );
       kit.expectVisible(find.byKey(const ValueKey('new-folder-create')));
     }, note: 'From the folder chooser, a name typed.'),
-    CensusShot('project-folder-open-dialog', state: 'filled', (kit) async {
-      await _chooser(kit, canCreate: false);
-      await kit.tapKey('workspace-open-folder');
-      await kit.enterText(
-        find.byKey(const ValueKey('open-folder-path')),
-        '/home/dev/loyalty-app',
-      );
-      kit.expectVisible(find.byKey(const ValueKey('open-folder-confirm')));
-    }, note: 'From the folder chooser on a remote server, a path typed.'),
-    CensusShot('project-folder-open-dialog', state: 'missing', (kit) async {
-      final conn = await _chooser(kit, canCreate: false);
-      conn.folderProblem = 'There is no folder at /home/dev/loyalty-app.';
-      await kit.tapKey('workspace-open-folder');
-      await kit.enterText(
-        find.byKey(const ValueKey('open-folder-path')),
-        '/home/dev/loyalty-app',
-      );
-      await kit.tapKey('open-folder-confirm');
-      kit.expectTextContaining('no folder at');
-    }, note: 'The server says the typed folder does not exist.'),
-    CensusShot('project-folder-browser', state: 'projects', (kit) async {
-      await _folderBrowser(
-        kit,
-        (path) async => _entries(path, [
-          ('design-system', true),
-          ('notes', false),
-          ('scratch', false),
-          ('shopfront', true),
-          ('storefront-api', true),
-        ]),
-      );
-      kit.expectText('shopfront');
-    }, note: 'Server on this phone, at its projects folder.'),
+    CensusShot(
+      'project-folder-open-dialog',
+      state: 'filled',
+      (kit) async {
+        await _chooser(kit, canCreate: false);
+        await kit.tapKey('workspace-open-folder');
+        await kit.enterText(
+          find.byKey(const ValueKey('open-folder-path')),
+          '/home/dev/loyalty-app',
+        );
+        kit.expectVisible(find.byKey(const ValueKey('open-folder-confirm')));
+      },
+      note: 'From the folder chooser on a remote server, a path typed.',
+    ),
+    CensusShot(
+      'project-folder-open-dialog',
+      state: 'missing',
+      (kit) async {
+        final conn = await _chooser(kit, canCreate: false);
+        conn.folderProblem = 'There is no folder at /home/dev/loyalty-app.';
+        await kit.tapKey('workspace-open-folder');
+        await kit.enterText(
+          find.byKey(const ValueKey('open-folder-path')),
+          '/home/dev/loyalty-app',
+        );
+        await kit.tapKey('open-folder-confirm');
+        kit.expectTextContaining('no folder at');
+      },
+      note: 'The server says the typed folder does not exist.',
+    ),
+    CensusShot(
+      'project-folder-browser',
+      state: 'projects',
+      (kit) async {
+        await _folderBrowser(
+          kit,
+          (path) async => _entries(path, [
+            ('design-system', true),
+            ('notes', false),
+            ('scratch', false),
+            ('shopfront', true),
+            ('storefront-api', true),
+          ]),
+        );
+        kit.expectText('shopfront');
+      },
+      note: 'Server on this phone, at its projects folder.',
+    ),
     CensusShot('project-folder-browser', state: 'inside', (kit) async {
       await _folderBrowser(
         kit,
@@ -540,21 +600,26 @@ final eWorkspaceArea = CensusArea(
         find.byKey(const ValueKey('initialize-git-repository')),
       );
     }),
-    CensusShot('project-health', state: 'error', (kit) async {
-      final repository = ERepository()
-        ..healthError = const ProductException(
-          'Version control status is unavailable on this server',
+    CensusShot(
+      'project-health',
+      state: 'error',
+      (kit) async {
+        final repository = ERepository()
+          ..healthError = const ProductException(
+            'Version control status is unavailable on this server',
+          );
+        await _overWork(
+          kit,
+          (conn) => ProjectHealthScreen(
+            repository: repository,
+            capabilities: conn.capabilities,
+          ),
+          controller: await eController(repository: repository),
         );
-      await _overWork(
-        kit,
-        (conn) => ProjectHealthScreen(
-          repository: repository,
-          capabilities: conn.capabilities,
-        ),
-        controller: await eController(repository: repository),
-      );
-      kit.expectTextContaining('unavailable on this server');
-    }, note: 'Version control failed; language services still listed.'),
+        kit.expectTextContaining('unavailable on this server');
+      },
+      note: 'Version control failed; language services still listed.',
+    ),
     CensusShot('project-health-git-init-dialog', (kit) async {
       final repository = ERepository()
         ..health = const VersionControlHealth(
@@ -576,16 +641,22 @@ final eWorkspaceArea = CensusArea(
     }),
 
     // -- Cloud environments ---------------------------------------------------
-    CensusShot('managed-workspaces', state: 'loaded', (kit) async {
-      final conn = await eController()
-        ..workspace = 'wrk_ci';
-      await _overWork(
-        kit,
-        (conn) => ManagedWorkspacesScreen(controller: conn, project: eProject),
-        controller: conn,
-      );
-      kit.expectText('perf-lab');
-    }, note: 'ci-sandbox is the open workspace.'),
+    CensusShot(
+      'managed-workspaces',
+      state: 'loaded',
+      (kit) async {
+        final conn = await eController()
+          ..workspace = 'wrk_ci';
+        await _overWork(
+          kit,
+          (conn) =>
+              ManagedWorkspacesScreen(controller: conn, project: eProject),
+          controller: conn,
+        );
+        kit.expectText('perf-lab');
+      },
+      note: 'ci-sandbox is the open workspace.',
+    ),
     CensusShot('managed-workspaces', state: 'empty', (kit) async {
       final conn = await eController(repository: ERepository()..managed = []);
       await _overWork(
@@ -661,17 +732,21 @@ final eWorkspaceArea = CensusArea(
       await kit.tapKey('create-worktree');
       kit.expectVisible(find.byKey(const ValueKey('confirm-create-worktree')));
     }),
-    CensusShot('worktrees-reset-dialog', (kit) async {
-      await _overWork(
-        kit,
-        (conn) => WorktreesScreen(controller: conn, project: eProject),
-      );
-      await kit.longPress(
-        find.byKey(const ValueKey('worktree-$eWorktreeRoot/dark-mode')),
-      );
-      await kit.tap(find.text('Reset').last);
-      kit.expectVisible(find.byKey(const ValueKey('confirm-reset-worktree')));
-    }, note: 'The worktree has two changed files, listed as a warning.'),
+    CensusShot(
+      'worktrees-reset-dialog',
+      (kit) async {
+        await _overWork(
+          kit,
+          (conn) => WorktreesScreen(controller: conn, project: eProject),
+        );
+        await kit.longPress(
+          find.byKey(const ValueKey('worktree-$eWorktreeRoot/dark-mode')),
+        );
+        await kit.tap(find.text('Reset').last);
+        kit.expectVisible(find.byKey(const ValueKey('confirm-reset-worktree')));
+      },
+      note: 'The worktree has two changed files, listed as a warning.',
+    ),
     CensusShot('worktrees-remove-dialog', (kit) async {
       await _overWork(
         kit,
@@ -685,10 +760,15 @@ final eWorkspaceArea = CensusArea(
     }),
 
     // -- All conversations ----------------------------------------------------
-    CensusShot('global-sessions', state: 'loaded', (kit) async {
-      await _overWork(kit, (conn) => GlobalSessionsScreen(controller: conn));
-      kit.expectText('Rename the spacing tokens');
-    }, note: 'Conversations from three folders and a cloud environment.'),
+    CensusShot(
+      'global-sessions',
+      state: 'loaded',
+      (kit) async {
+        await _overWork(kit, (conn) => GlobalSessionsScreen(controller: conn));
+        kit.expectText('Rename the spacing tokens');
+      },
+      note: 'Conversations from three folders and a cloud environment.',
+    ),
     CensusShot('global-sessions', state: 'search', (kit) async {
       await _overWork(kit, (conn) => GlobalSessionsScreen(controller: conn));
       await kit.enterText(
@@ -711,71 +791,89 @@ final eWorkspaceArea = CensusArea(
       );
       kit.expectTextContaining('took too long');
     }),
-    CensusShot('global-sessions-continue-here-sheet', (kit) async {
-      await _overWork(kit, (conn) => GlobalSessionsScreen(controller: conn));
-      await kit.longPress(
-        find.byKey(const ValueKey('global-session-ses_sandbox')),
-      );
-      await kit.tap(find.text('Continue here').last);
-      kit.expectVisible(
-        find.byKey(const ValueKey('global-sessions-move-confirm')),
-      );
-    }, note: 'A conversation in the perf-lab cloud environment.'),
+    CensusShot(
+      'global-sessions-continue-here-sheet',
+      (kit) async {
+        await _overWork(kit, (conn) => GlobalSessionsScreen(controller: conn));
+        await kit.longPress(
+          find.byKey(const ValueKey('global-session-ses_sandbox')),
+        );
+        await kit.tap(find.text('Continue here').last);
+        kit.expectVisible(
+          find.byKey(const ValueKey('global-sessions-move-confirm')),
+        );
+      },
+      note: 'A conversation in the perf-lab cloud environment.',
+    ),
 
     // -- From the chat ----------------------------------------------------------
-    CensusShot('session-destination-sheet', state: 'move', (kit) async {
-      final conn = await _chat(kit);
-      await kit.present(
-        (context) => showSessionDestinationSheet(
-          context,
-          controller: conn,
-          sessionID: checkoutSessionID,
-          mode: SessionDestinationMode.move,
-        ),
-        settleFor: const Duration(seconds: 2),
-      );
-      kit.expectText('Move conversation');
-      kit.expectText('api');
-    }, note: 'Opened over the chat (command /move).'),
-    CensusShot('session-destination-sheet', state: 'warp', (kit) async {
-      final repository = ERepository()
-        ..workspaces = [
-          ...ERepository().workspaces,
-          const WorkspaceInfo(
-            id: 'wrk_perf',
-            projectID: 'project_shopfront',
-            name: 'perf-lab',
-            type: 'daytona',
-            directory: '/workspace/shopfront',
-            status: 'disconnected',
+    CensusShot(
+      'session-destination-sheet',
+      state: 'move',
+      (kit) async {
+        final conn = await _chat(kit);
+        await kit.present(
+          (context) => showSessionDestinationSheet(
+            context,
+            controller: conn,
+            sessionID: checkoutSessionID,
+            mode: SessionDestinationMode.move,
           ),
-        ];
-      final conn = await _chat(kit, repository: repository);
-      await kit.present(
-        (context) => showSessionDestinationSheet(
-          context,
-          controller: conn,
-          sessionID: checkoutSessionID,
-          mode: SessionDestinationMode.warp,
-        ),
-        settleFor: const Duration(seconds: 2),
-      );
-      kit.expectText('ci-sandbox');
-    }, note: 'Opened over the chat (command /warp).'),
-    CensusShot('session-destination-confirm-dialog', (kit) async {
-      final conn = await _chat(kit);
-      await kit.present(
-        (context) => showSessionDestinationSheet(
-          context,
-          controller: conn,
-          sessionID: checkoutSessionID,
-          mode: SessionDestinationMode.move,
-        ),
-        settleFor: const Duration(seconds: 2),
-      );
-      await kit.tapKey('move-destination-$eApiDirectory');
-      kit.expectText('Move conversation?');
-    }, note: 'Three uncommitted changes, so both move choices are offered.'),
+          settleFor: const Duration(seconds: 2),
+        );
+        kit.expectText('Move conversation');
+        kit.expectText('api');
+      },
+      note: 'Opened over the chat (command /move).',
+    ),
+    CensusShot(
+      'session-destination-sheet',
+      state: 'warp',
+      (kit) async {
+        final repository = ERepository()
+          ..workspaces = [
+            ...ERepository().workspaces,
+            const WorkspaceInfo(
+              id: 'wrk_perf',
+              projectID: 'project_shopfront',
+              name: 'perf-lab',
+              type: 'daytona',
+              directory: '/workspace/shopfront',
+              status: 'disconnected',
+            ),
+          ];
+        final conn = await _chat(kit, repository: repository);
+        await kit.present(
+          (context) => showSessionDestinationSheet(
+            context,
+            controller: conn,
+            sessionID: checkoutSessionID,
+            mode: SessionDestinationMode.warp,
+          ),
+          settleFor: const Duration(seconds: 2),
+        );
+        kit.expectText('ci-sandbox');
+      },
+      note: 'Opened over the chat (command /warp).',
+    ),
+    CensusShot(
+      'session-destination-confirm-dialog',
+      (kit) async {
+        final conn = await _chat(kit);
+        await kit.present(
+          (context) => showSessionDestinationSheet(
+            context,
+            controller: conn,
+            sessionID: checkoutSessionID,
+            mode: SessionDestinationMode.move,
+          ),
+          settleFor: const Duration(seconds: 2),
+        );
+        await kit.tapKey('move-destination-$eApiDirectory');
+        kit.expectText('Move conversation?');
+      },
+      note: 'Three uncommitted changes, so both move choices are offered.',
+    ),
     CensusShot('console-organization-sheet', (kit) async {
       final conn = await _chat(kit);
       await kit.present(
@@ -868,24 +966,29 @@ final eWorkspaceArea = CensusArea(
     }),
 
     // -- Tasks and command output ----------------------------------------------
-    CensusShot('running-work-sheet', state: 'loaded', (kit) async {
-      final conn = await _chat(
-        kit,
-        busy: const {checkoutSessionID, 'ses_child_review'},
-      );
-      await kit.present(
-        (context) => showRunningWorkSheet(
-          context,
-          controller: conn,
-          sessionID: checkoutSessionID,
-          shellIDs: const {'sh_analyze', 'sh_build'},
-          onBackground: () async => null,
-        ),
-        settleFor: const Duration(seconds: 2),
-      );
-      kit.expectText('Work in this conversation');
-      kit.expectVisible(find.byKey(const ValueKey('work-shell-sh_tests')));
-    }, note: 'Opened over the chat: one agent and one command running.'),
+    CensusShot(
+      'running-work-sheet',
+      state: 'loaded',
+      (kit) async {
+        final conn = await _chat(
+          kit,
+          busy: const {checkoutSessionID, 'ses_child_review'},
+        );
+        await kit.present(
+          (context) => showRunningWorkSheet(
+            context,
+            controller: conn,
+            sessionID: checkoutSessionID,
+            shellIDs: const {'sh_analyze', 'sh_build'},
+            onBackground: () async => null,
+          ),
+          settleFor: const Duration(seconds: 2),
+        );
+        kit.expectText('Work in this conversation');
+        kit.expectVisible(find.byKey(const ValueKey('work-shell-sh_tests')));
+      },
+      note: 'Opened over the chat: one agent and one command running.',
+    ),
     CensusShot('running-work-sheet', state: 'empty', (kit) async {
       final repository = ERepository()
         ..shells = []
@@ -925,13 +1028,17 @@ final eWorkspaceArea = CensusArea(
     }),
 
     // -- Embedded parts -----------------------------------------------------------
-    CensusShot('embedded-mobile-task-list', (kit) async {
-      await _chat(kit, transcript: _todoTranscript);
-      final tasks = find.text('Tasks');
-      await kit.scrollTo(tasks);
-      await kit.tap(tasks.last);
-      kit.expectVisible(find.byKey(const ValueKey('mobile-tasks-copy-all')));
-    }, note: 'Host: the chat, the agent\'s task list tool card opened.'),
+    CensusShot(
+      'embedded-mobile-task-list',
+      (kit) async {
+        await _chat(kit, transcript: _todoTranscript);
+        final tasks = find.text('Tasks');
+        await kit.scrollTo(tasks);
+        await kit.tap(tasks.last);
+        kit.expectVisible(find.byKey(const ValueKey('mobile-tasks-copy-all')));
+      },
+      note: 'Host: the chat, the agent\'s task list tool card opened.',
+    ),
   ],
   notRendered: {},
 );

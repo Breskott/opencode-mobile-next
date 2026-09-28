@@ -302,18 +302,23 @@ final i1TeamCoreArea = CensusArea(
         throw CensusMismatch('team did not fail: ${team.phase}');
       }
     }),
-    CensusShot('team-home', state: 'not-answering', (kit) async {
-      final (team, _) = await _team(
-        kit,
-        probe: (_) => Completer<ProbeVerdict>().future,
-        start: false,
-      );
-      await kit.pumpApp(
-        TeamHomeScreen(controller: team, now: teamNow),
-        settleFor: const Duration(seconds: 10),
-      );
-      kit.expectVisible(find.byKey(const ValueKey('team-home')));
-    }, note: 'The host probe never answers; past the 8 s rule.'),
+    CensusShot(
+      'team-home',
+      state: 'not-answering',
+      (kit) async {
+        final (team, _) = await _team(
+          kit,
+          probe: (_) => Completer<ProbeVerdict>().future,
+          start: false,
+        );
+        await kit.pumpApp(
+          TeamHomeScreen(controller: team, now: teamNow),
+          settleFor: const Duration(seconds: 10),
+        );
+        kit.expectVisible(find.byKey(const ValueKey('team-home')));
+      },
+      note: 'The host probe never answers; past the 8 s rule.',
+    ),
     CensusShot(
       'team-home-runs-tab',
       state: 'search-open',
@@ -328,23 +333,33 @@ final i1TeamCoreArea = CensusArea(
           'tasks are one list on the home. Twelve tasks, so the search and '
           'the filters are offered.',
     ),
-    CensusShot('team-home-runs-tab', state: 'filtered', (kit) async {
-      final (team, _) = await _team(kit, configure: _busy);
-      await _home(kit, team);
-      await kit.tapKey('team-home-search-open');
-      await kit.tapKey('team-home-filter-menu');
-      await kit.tapKey('team-home-filter-completed');
-      kit.expectVisible(find.byKey(const ValueKey('team-home-search')));
-    }, note: 'Filters › Completed on the long task list.'),
-    CensusShot('team-home-runs-tab', state: 'done-expanded', (kit) async {
-      final (team, _) = await _team(kit, configure: _manyDone);
-      await _home(kit, team);
-      await kit.tap(find.byKey(const ValueKey('team-home-completed-more')));
-      await kit.scrollTo(find.byKey(const ValueKey('team-home-agents-row')));
-      kit.expectVisible(
-        find.byKey(const ValueKey('team-home-completed-group')),
-      );
-    }, note: 'Six tasks finished today; the rows past the first three shown.'),
+    CensusShot(
+      'team-home-runs-tab',
+      state: 'filtered',
+      (kit) async {
+        final (team, _) = await _team(kit, configure: _busy);
+        await _home(kit, team);
+        await kit.tapKey('team-home-search-open');
+        await kit.tapKey('team-home-filter-menu');
+        await kit.tapKey('team-home-filter-completed');
+        kit.expectVisible(find.byKey(const ValueKey('team-home-search')));
+      },
+      note: 'Filters › Completed on the long task list.',
+    ),
+    CensusShot(
+      'team-home-runs-tab',
+      state: 'done-expanded',
+      (kit) async {
+        final (team, _) = await _team(kit, configure: _manyDone);
+        await _home(kit, team);
+        await kit.tap(find.byKey(const ValueKey('team-home-completed-more')));
+        await kit.scrollTo(find.byKey(const ValueKey('team-home-agents-row')));
+        kit.expectVisible(
+          find.byKey(const ValueKey('team-home-completed-group')),
+        );
+      },
+      note: 'Six tasks finished today; the rows past the first three shown.',
+    ),
     CensusShot(
       'team-home-agents-tab',
       (kit) async {
@@ -395,21 +410,26 @@ final i1TeamCoreArea = CensusArea(
       await _details(kit, team, runId: teamFormulaRunId);
       kit.expectVisible(find.byKey(const ValueKey('team-task-details')));
     }),
-    CensusShot('team-task-details', state: 'reported', (kit) async {
-      final (team, gateway) = await _team(kit);
-      await _conversation(kit, team);
-      _emitTimeline(gateway);
-      await kit.settle(const Duration(seconds: 1));
-      await kit.present(
-        (context) =>
-            showTeamTaskDetails(context, team, teamRunId, now: teamNow),
-        settleFor: const Duration(seconds: 2),
-      );
-      await kit.tapKey('team-task-details-technical');
-      kit.expectVisible(
-        find.byKey(const ValueKey('team-task-details-reported')),
-      );
-    }, note: 'Technical details open: what the host reported (the Timeline).'),
+    CensusShot(
+      'team-task-details',
+      state: 'reported',
+      (kit) async {
+        final (team, gateway) = await _team(kit);
+        await _conversation(kit, team);
+        _emitTimeline(gateway);
+        await kit.settle(const Duration(seconds: 1));
+        await kit.present(
+          (context) =>
+              showTeamTaskDetails(context, team, teamRunId, now: teamNow),
+          settleFor: const Duration(seconds: 2),
+        );
+        await kit.tapKey('team-task-details-technical');
+        kit.expectVisible(
+          find.byKey(const ValueKey('team-task-details-reported')),
+        );
+      },
+      note: 'Technical details open: what the host reported (the Timeline).',
+    ),
     CensusShot('team-task-details', state: 'missing', (kit) async {
       final (team, _) = await _team(kit);
       await _details(kit, team, runId: 'oc-gone');
@@ -445,18 +465,23 @@ final i1TeamCoreArea = CensusArea(
       await kit.settle();
       kit.expectVisible(find.byKey(const ValueKey('team-agent-controls')));
     }),
-    CensusShot('team-agent', state: 'unconfirmed', (kit) async {
-      final (team, gateway) = await _team(kit);
-      gateway.controlStatus = MutationReceiptStatus.pending;
-      await team.controlAgent('fox', AgentControlAction.nudge);
-      await _agent(kit, team);
-      await kit.scrollTo(find.byKey(const ValueKey('team-agent-receipt')));
-      await kit.tester.ensureVisible(
-        find.byKey(const ValueKey('team-agent-receipt')),
-      );
-      await kit.settle();
-      kit.expectVisible(find.byKey(const ValueKey('team-agent-receipt')));
-    }, note: 'After a Nudge the host did not confirm: the receipt chip.'),
+    CensusShot(
+      'team-agent',
+      state: 'unconfirmed',
+      (kit) async {
+        final (team, gateway) = await _team(kit);
+        gateway.controlStatus = MutationReceiptStatus.pending;
+        await team.controlAgent('fox', AgentControlAction.nudge);
+        await _agent(kit, team);
+        await kit.scrollTo(find.byKey(const ValueKey('team-agent-receipt')));
+        await kit.tester.ensureVisible(
+          find.byKey(const ValueKey('team-agent-receipt')),
+        );
+        await kit.settle();
+        kit.expectVisible(find.byKey(const ValueKey('team-agent-receipt')));
+      },
+      note: 'After a Nudge the host did not confirm: the receipt chip.',
+    ),
     CensusShot('team-agent', state: 'stopped', (kit) async {
       final (team, _) = await _team(kit);
       await _agent(kit, team, agentId: 'gastown.deacon');
@@ -493,55 +518,90 @@ final i1TeamCoreArea = CensusArea(
     }),
     // team-agent-output merged into the chat's watching mode (slice-P3.6):
     // the same watching page drawn from the team's live output.
-    CensusShot('chat-watching-live', state: 'live', (kit) async {
-      final (team, _) = await _team(kit);
-      await kit.pumpApp(TeamWatchLiveScreen(team: team, agentId: 'fox'));
-      kit.expectVisible(find.byKey(const ValueKey('chat-watching-live')));
-      kit.expectVisible(find.byKey(const ValueKey('chat-watching-live-text')));
-    }, note: 'The recorded polecat transcript, following the end.'),
-    CensusShot('chat-watching-live', state: 'ended', (kit) async {
-      final (team, _) = await _team(kit);
-      await kit.pumpApp(TeamWatchLiveScreen(team: team, agentId: 'wolf'));
-      kit.expectVisible(find.byKey(const ValueKey('chat-watching-live')));
-    }, note: 'A session the host no longer serves (404).'),
-    CensusShot('chat-watching-live', state: 'scrolled-up', (kit) async {
-      final (team, _) = await _team(kit);
-      await kit.pumpApp(TeamWatchLiveScreen(team: team, agentId: 'fox'));
-      await kit.tester.drag(
-        find.byKey(const ValueKey('chat-watching-live-list')),
-        const Offset(0, 600),
-      );
-      await kit.settle();
-      kit.expectVisible(find.byKey(const ValueKey('chat-watching-live')));
-    }, note: 'Dragged away from the end: Jump to latest.'),
+    CensusShot(
+      'chat-watching-live',
+      state: 'live',
+      (kit) async {
+        final (team, _) = await _team(kit);
+        await kit.pumpApp(TeamWatchLiveScreen(team: team, agentId: 'fox'));
+        kit.expectVisible(find.byKey(const ValueKey('chat-watching-live')));
+        kit.expectVisible(
+          find.byKey(const ValueKey('chat-watching-live-text')),
+        );
+      },
+      note: 'The recorded polecat transcript, following the end.',
+    ),
+    CensusShot(
+      'chat-watching-live',
+      state: 'ended',
+      (kit) async {
+        final (team, _) = await _team(kit);
+        await kit.pumpApp(TeamWatchLiveScreen(team: team, agentId: 'wolf'));
+        kit.expectVisible(find.byKey(const ValueKey('chat-watching-live')));
+      },
+      note: 'A session the host no longer serves (404).',
+    ),
+    CensusShot(
+      'chat-watching-live',
+      state: 'scrolled-up',
+      (kit) async {
+        final (team, _) = await _team(kit);
+        await kit.pumpApp(TeamWatchLiveScreen(team: team, agentId: 'fox'));
+        await kit.tester.drag(
+          find.byKey(const ValueKey('chat-watching-live-list')),
+          const Offset(0, 600),
+        );
+        await kit.settle();
+        kit.expectVisible(find.byKey(const ValueKey('chat-watching-live')));
+      },
+      note: 'Dragged away from the end: Jump to latest.',
+    ),
 
     // -- The step's Now line (slice-P5.1: it replaced the dispatch cycle
     // strip, its How sheet and its Stop confirmation) ----------------------
-    CensusShot('work-sheet', state: 'now-line-host-not-started', (kit) async {
-      final (team, _) = await _team(
-        kit,
-        configure: (g) => g.workList = [...g.workList, _routedStep()],
-      );
-      await _conversation(kit, team);
-      await _openWork(kit, team, 'w-banner');
-      kit.expectVisible(find.byKey(const ValueKey('team-work-sheet-now')));
-    }, note: 'Host: the Work sheet over the task\'s conversation.'),
-    CensusShot('work-sheet', state: 'now-line-provider-limit', (kit) async {
-      final (team, _) = await _team(kit, configure: _providerLimit);
-      await _conversation(kit, team);
-      await _openWork(kit, team, 'w-limit');
-      kit.expectVisible(find.byKey(const ValueKey('team-work-sheet-now')));
-    }, note: 'Host: the Work sheet over the task\'s conversation.'),
+    CensusShot(
+      'work-sheet',
+      state: 'now-line-host-not-started',
+      (kit) async {
+        final (team, _) = await _team(
+          kit,
+          configure: (g) => g.workList = [...g.workList, _routedStep()],
+        );
+        await _conversation(kit, team);
+        await _openWork(kit, team, 'w-banner');
+        kit.expectVisible(find.byKey(const ValueKey('team-work-sheet-now')));
+      },
+      note: 'Host: the Work sheet over the task\'s conversation.',
+    ),
+    CensusShot(
+      'work-sheet',
+      state: 'now-line-provider-limit',
+      (kit) async {
+        final (team, _) = await _team(kit, configure: _providerLimit);
+        await _conversation(kit, team);
+        await _openWork(kit, team, 'w-limit');
+        kit.expectVisible(find.byKey(const ValueKey('team-work-sheet-now')));
+      },
+      note: 'Host: the Work sheet over the task\'s conversation.',
+    ),
 
     // -- Receipt chip on Activity ------------------------------------------------
-    CensusShot('embedded-team-receipt-chip', state: 'unconfirmed', (kit) async {
-      await _activityReceipt(kit, MutationReceiptStatus.pending);
-    }, note: 'Host: Activity, the AI Team question row.'),
-    CensusShot('embedded-team-receipt-chip', state: 'not-accepted', (
-      kit,
-    ) async {
-      await _activityReceipt(kit, MutationReceiptStatus.rejected);
-    }, note: 'Host: Activity, the AI Team question row.'),
+    CensusShot(
+      'embedded-team-receipt-chip',
+      state: 'unconfirmed',
+      (kit) async {
+        await _activityReceipt(kit, MutationReceiptStatus.pending);
+      },
+      note: 'Host: Activity, the AI Team question row.',
+    ),
+    CensusShot(
+      'embedded-team-receipt-chip',
+      state: 'not-accepted',
+      (kit) async {
+        await _activityReceipt(kit, MutationReceiptStatus.rejected);
+      },
+      note: 'Host: Activity, the AI Team question row.',
+    ),
   ],
 );
 

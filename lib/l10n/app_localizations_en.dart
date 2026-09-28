@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -1261,8 +1262,7 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other:
           '$count earlier steps reported errors; the newest step decides the outcome.',
-      one:
-          'An earlier step reported an error; the newest step decides the outcome.',
+      one: 'An earlier step reported an error; the newest step decides the outcome.',
     );
     return '$_temp0';
   }
@@ -6188,8 +6188,7 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other:
           '$count references are added as text when you send. Not saved with your draft.',
-      one:
-          '1 reference is added as text when you send. Not saved with your draft.',
+      one: '1 reference is added as text when you send. Not saved with your draft.',
     );
     return '$_temp0';
   }
@@ -15228,8 +15227,7 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other:
           '$count messages waiting to send stay on this phone until you connect again.',
-      one:
-          '1 message waiting to send stays on this phone until you connect again.',
+      one: '1 message waiting to send stays on this phone until you connect again.',
     );
     return '$_temp0';
   }
@@ -18156,8 +18154,7 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other:
           'The $count errors kept on this phone are removed, also from the saved report. This can\'t be undone.',
-      one:
-          'The error kept on this phone is removed, also from the saved report. This can\'t be undone.',
+      one: 'The error kept on this phone is removed, also from the saved report. This can\'t be undone.',
     );
     return '$_temp0';
   }
@@ -20293,10 +20290,8 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other:
           'This prompt and the $count messages after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.',
-      one:
-          'This prompt and the message after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.',
-      zero:
-          'This prompt is removed, and files go back to how they were before it. You can put it back until you send another prompt.',
+      one: 'This prompt and the message after it are removed, and files go back to how they were before it. You can put them back until you send another prompt.',
+      zero: 'This prompt is removed, and files go back to how they were before it. You can put it back until you send another prompt.',
     );
     return '$_temp0';
   }
@@ -20325,10 +20320,8 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other:
           'This prompt and the $count messages after it are hidden. Nothing is final until you choose below.',
-      one:
-          'This prompt and the message after it are hidden. Nothing is final until you choose below.',
-      zero:
-          'This prompt is hidden; nothing came after it. Nothing is final until you choose below.',
+      one: 'This prompt and the message after it are hidden. Nothing is final until you choose below.',
+      zero: 'This prompt is hidden; nothing came after it. Nothing is final until you choose below.',
     );
     return '$_temp0';
   }
@@ -23501,9 +23494,35 @@ class AppLocalizationsEn extends AppLocalizations {
       'Termux stays as it is, and its server keeps working until you remove it';
 
   @override
-  String migrationSpaceNeeded(String size) {
-    return 'Needs about $size of free space while copying.';
+  String migrationReviewSpace(String needed, String free) {
+    return 'Needs about $needed · $free free';
   }
+
+  @override
+  String migrationReviewSpaceUnknown(String needed) {
+    return 'Needs about $needed · Free space unknown';
+  }
+
+  @override
+  String get migrationReviewSpaceShort =>
+      'Not enough free space for this. Choose fewer items, or free up space on this phone.';
+
+  @override
+  String get migrationDiscard => 'Discard saved copy';
+
+  @override
+  String get migrationDiscardTitle => 'Discard this saved copy?';
+
+  @override
+  String get migrationDiscardBody =>
+      'Temporary copy files will be removed. Files already imported and everything in Termux will stay.';
+
+  @override
+  String get migrationDiscardFailed =>
+      'The saved copy couldn\'t be removed. Try again in a moment.';
+
+  @override
+  String get migrationStopping => 'Stopping…';
 
   @override
   String get migrationKeepOpen =>
@@ -23678,7 +23697,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String migrationSignInAgainNamed(String names) {
-    return '$names were signed in on Termux. Sign-ins never move: until you sign in here, replies use OpenCode\'s free model, which is slower.';
+    return '$names appear in your Termux settings. Sign in here to use them.';
   }
 
   @override
@@ -24161,8 +24180,7 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other:
           'The reload waits for $count running replies to finish, because reloading would stop them.',
-      one:
-          'The reload waits for 1 running reply to finish, because reloading would stop it.',
+      one: 'The reload waits for 1 running reply to finish, because reloading would stop it.',
     );
     return '$_temp0';
   }
