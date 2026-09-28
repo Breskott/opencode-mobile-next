@@ -886,14 +886,19 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
                   onControl: _control,
                   today: clock,
                 ),
+              // An Inbox row or a notification for one gate lands on its
+              // card (P4.2a).
               for (final gate in gates)
-                TeamNeedsYouCard(
-                  keyPrefix: 'team-conversation-gate-${gate.id}',
-                  controller: _team,
-                  gate: gate,
-                  title: teamGateWho(l10n, _team.snapshot, gate),
-                  onOpen: () => unawaited(
-                    showGateSheet(context, _team, gate.id, now: widget.now),
+                KitArrival(
+                  id: chatRequestArrivalId(gate.id),
+                  child: TeamNeedsYouCard(
+                    keyPrefix: 'team-conversation-gate-${gate.id}',
+                    controller: _team,
+                    gate: gate,
+                    title: teamGateWho(l10n, _team.snapshot, gate),
+                    onOpen: () => unawaited(
+                      showGateSheet(context, _team, gate.id, now: widget.now),
+                    ),
                   ),
                 ),
               if (stop != null)

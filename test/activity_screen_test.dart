@@ -8,6 +8,7 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
+import 'package:opencode_mobile/ui/navigation/chat_route.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -198,42 +199,63 @@ void main() {
     expect(find.byKey(const ValueKey('activity-all-sessions')), findsNothing);
   });
 
-  testWidgets('a permission row resolves that permission in place', (
+  // P4.2a: on a phone a request row lands on its card in the conversation
+  // (the chat marks it), never on a sheet over this list.
+  testWidgets('a permission row lands on its card in the conversation', (
     tester,
   ) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
-    await tester.pumpWidget(_app(ActivityScreen(controller: controller)));
+    Object? arguments;
+    await tester.pumpWidget(
+      _app(
+        ActivityScreen(controller: controller),
+        routes: {
+          '/chat/ses_run': (context) {
+            arguments = ModalRoute.of(context)!.settings.arguments;
+            return const Text('run chat');
+          },
+        },
+      ),
+    );
     await tester.pump();
 
     await tester.tap(find.text('Edit a file'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
 
-    // The exact resolver, not the related chat.
-    final sheet = find.byKey(const Key('permission-sheet'));
-    expect(sheet, findsOneWidget);
-    await tester.tap(
-      find.descendant(of: sheet, matching: find.text('Allow once')),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-
-    expect(controller.answeredPermissionID, 'perm-1');
+    expect(find.byKey(const Key('permission-sheet')), findsNothing);
+    expect(find.text('run chat'), findsOneWidget);
+    expect((arguments as ChatRouteArguments).landOnRequestID, 'perm-1');
+    expect(controller.answeredPermissionID, isNull);
   });
 
-  testWidgets('a question row opens the exact answer sheet', (tester) async {
+  testWidgets('a question row lands on its card in the conversation', (
+    tester,
+  ) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
-    await tester.pumpWidget(_app(ActivityScreen(controller: controller)));
+    Object? arguments;
+    await tester.pumpWidget(
+      _app(
+        ActivityScreen(controller: controller),
+        routes: {
+          '/chat/ses_idle': (context) {
+            arguments = ModalRoute.of(context)!.settings.arguments;
+            return const Text('idle chat');
+          },
+        },
+      ),
+    );
     await tester.pump();
 
     await tester.tap(find.text('Direction'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
 
-    expect(find.text('OpenCode needs input'), findsOneWidget);
-    expect(find.text('Send answers'), findsOneWidget);
+    expect(find.text('Send answers'), findsNothing);
+    expect(find.text('idle chat'), findsOneWidget);
+    expect((arguments as ChatRouteArguments).landOnRequestID, 'q-1');
   });
 
   testWidgets('session rows open the exact chat', (tester) async {

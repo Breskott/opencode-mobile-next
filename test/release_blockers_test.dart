@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'support/complete_message_history.dart';
 
 import 'dart:convert';
@@ -675,15 +676,15 @@ void main() {
         repository: _ReleaseRepository(questions: [question]),
       );
       addTearDown(controller.dispose);
-      await tester.pumpWidget(
-        _scaledApp(
-          ActivityScreen(
-            controller: controller,
-            // Use the same route as a notification deep link so the question
-            // sheet opens even when its inbox row is below this short viewport.
-            initialQuestionSessionID: 's1',
-          ),
-          bottomInset: 96,
+      // The sheet as the chat's question card opens it (P4.2a: the
+      // notification deep link now lands on that card, not on this sheet).
+      await tester.pumpWidget(_scaledApp(const Scaffold(), bottomInset: 96));
+      await controller.refreshPendingQuestions();
+      unawaited(
+        showQuestionSheet(
+          tester.element(find.byType(Scaffold).first),
+          controller,
+          controller.questions['q1']!,
         ),
       );
       await tester.pumpAndSettle();

@@ -22,6 +22,35 @@ class _ChatLoadingBody extends StatelessWidget {
       const KitSkeletonTranscript(key: ValueKey('chat-loading'));
 }
 
+/// The end of the conversation as it read last time
+/// (`ConnectionController.cachedSessionTail`), read-only while the live
+/// history loads: the chat opens with its own words (speed contract item
+/// 2). Clear of the floating composer, like the transcript it gives way to.
+class _ChatOpeningExcerpt extends StatelessWidget {
+  const _ChatOpeningExcerpt({required this.preview});
+
+  final SessionTailPreview preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return KitTranscriptExcerpt(
+      key: const ValueKey('chat-opening-excerpt'),
+      labelKey: const ValueKey('chat-opening-excerpt-updated'),
+      updated: LastKnownSessions.updatedLabel(l10n, preview.fetchedAt),
+      bottomClearance: KitBottomInset.of(context).bottom,
+      messages: [
+        for (final message in preview.messages)
+          KitExcerptMessage(
+            key: ValueKey('chat-opening-excerpt-${message.id}'),
+            text: message.text,
+            fromPerson: message.role == 'user',
+          ),
+      ],
+    );
+  }
+}
+
 /// The conversation could not be loaded and nothing of it is on screen yet.
 class _ChatLoadError extends StatelessWidget {
   const _ChatLoadError({required this.error, required this.onRetry});
@@ -322,6 +351,55 @@ _ChatStatus _sharedStatus(
         onPressed: onStop,
       ),
     ],
+  );
+}
+
+/// The drafts that wait (the connection-status unification left this
+/// unsaid): offline, the drafts this server's next reconnect sends, those
+/// whose send was never confirmed, and those waiting for other servers; on
+/// a connected server that keeps a queue, the ones waiting for other
+/// servers with the way to move them here ([onMove], one action per source
+/// server). Null when nothing waits.
+_ChatStatus? _queuedDraftsStatus(
+  BuildContext context,
+  ConnectionController conn, {
+  required void Function(ServerProfile source) onMove,
+}) {
+  if (conn.isIsolated) return null;
+  final l10n = _chatL10n(context);
+  final review = conn.queuedPromptReviewCount;
+  final mine = conn.queuedPromptCount - review;
+  final others = conn.queuedPromptCountForOtherProfiles;
+  final offline = !conn.isConnected;
+  final destination = conn.queuedPromptMoveDestination;
+  final parts = <String>[
+    if (offline && mine > 0) l10n.chatUiDraftsQueued(mine),
+    if (offline && review > 0) l10n.queuedBannerReview(review),
+    if (others > 0 && (offline || destination != null))
+      l10n.chatUiOtherDraftsWaiting(others),
+  ];
+  if (parts.isEmpty) return null;
+  final profiles = conn.store.profiles;
+  final moves = [
+    if (destination != null)
+      for (final source in profiles)
+        if (source.id != conn.profile?.id &&
+            conn.queuedPromptCountForProfile(source.id) > 0)
+          KitAction(
+            key: ValueKey('chat-status-move-queued-${source.id}'),
+            label: l10n.serverRowMoveQueued(
+              conn.queuedPromptCountForProfile(source.id),
+              serverDisplayName(destination, l10n, among: profiles),
+            ),
+            onPressed: () => onMove(source),
+          ),
+  ];
+  return _ChatStatus(
+    id: 'queued-drafts',
+    icon: AppIconography.queueAdd,
+    message: parts.join(' '),
+    action: moves.firstOrNull,
+    more: moves.skip(1).toList(),
   );
 }
 

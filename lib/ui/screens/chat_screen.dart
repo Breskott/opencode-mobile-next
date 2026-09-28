@@ -30,7 +30,8 @@ import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/offline_queue.dart';
 import '../../state/connection.dart';
-import '../../state/profiles.dart' show ServerBackend;
+import '../../state/session_tail_cache.dart' show SessionTailPreview;
+import '../../state/profiles.dart' show ServerBackend, ServerProfile;
 import '../../state/conversation_nudges.dart';
 import '../../state/nudges.dart';
 import '../../state/review_handoff.dart';
@@ -57,7 +58,6 @@ import '../search/search_index.dart';
 import '../widgets/always_allow_invitation.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/default_notices.dart';
-import '../widgets/diff_view.dart';
 import '../widgets/file_preview.dart';
 import '../widgets/first_reply_notify_card.dart';
 import '../widgets/markdown.dart';
@@ -66,6 +66,9 @@ import '../widgets/pickers.dart';
 import '../widgets/model_shortcuts.dart';
 import '../widgets/product_states.dart';
 import '../widgets/prompt_history_navigation.dart';
+import '../widgets/last_known_sessions.dart' show LastKnownSessions;
+import '../widgets/queued_prompt_move_sheet.dart'
+    show showQueuedPromptMoveSheet;
 import '../widgets/transcript_highlight.dart';
 import '../widgets/question_options.dart';
 import '../widgets/session_title.dart';
@@ -235,6 +238,12 @@ class ChatScreen extends StatefulWidget {
   final bool showAppBar;
   final Widget? emptyState;
 
+  /// The page embedding this chat without its bar (the demo) has the
+  /// keyboard up. That page's frame takes the keyboard's inset, so the chat
+  /// cannot see it: the host says so, and the chat's own header action
+  /// gives its room to the conversation and what waits on the person.
+  final bool hostKeyboardUp;
+
   /// Overrides the app-wide review handoff store; tests inject their own so
   /// staged references do not leak between cases.
   final ReviewHandoffStore? handoffStore;
@@ -243,6 +252,16 @@ class ChatScreen extends StatefulWidget {
   /// Team worker's) read-only, with [ChatWatch.onMessage] in place of the
   /// composer. Null is the ordinary chat.
   final ChatWatch? watch;
+
+  /// P4.2a: the request (permission, question or form) an Inbox row or a
+  /// notification opened this chat for. Its card leads the requests above
+  /// the composer and is washed once when it appears (KitArrival, under a
+  /// [KitArrivalScope] named by `chatRequestArrivalId`).
+  final String? landOnRequestID;
+
+  /// P4.2a: opened for a failed run: once the history is in, the transcript
+  /// scrolls to the newest failed turn and marks it.
+  final bool landOnFailure;
 
   const ChatScreen({
     super.key,
@@ -254,8 +273,11 @@ class ChatScreen extends StatefulWidget {
     this.focusComposer = false,
     this.showAppBar = true,
     this.emptyState,
+    this.hostKeyboardUp = false,
     this.handoffStore,
     this.watch,
+    this.landOnRequestID,
+    this.landOnFailure = false,
   });
 
   @override
@@ -540,6 +562,9 @@ class _ChatScreenState extends State<ChatScreen>
   bool _serverCommandsLoading = false;
   Future<void>? _serverCommandsRequest;
   String? _highlightedMessageID;
+
+  /// [ChatScreen.landOnFailure] happens once, after the first history.
+  bool _landedOnFailure = false;
   Timer? _highlightTimer;
   final _findController = TextEditingController();
   final _findFocus = FocusNode();
@@ -1986,12 +2011,24 @@ class _ChatScreenState extends State<ChatScreen>
           earlyAppLocalizations(context).chatUiOpenCodeIsReconnecting,
         );
       }
-      final page = await readHistoryAtStagedBoundary(
-        api,
-        scope.session,
-        boundary: _conn.sessionsById[scope.session]?.stagedRevert?.messageID,
-        isCurrent: () => _currentHistory(generation, scope),
-      );
+      // The controller's newest-page read is shared with a prefetch fired
+      // on the tap that opened this chat (one HTTP call for both) and saves
+      // the opening excerpt for next time. A host without a saved,
+      // connected server (the demo, tests) reads the gateway directly, and
+      // so does watching: its poll must not rewrite the saved excerpt.
+      final page =
+          !_conn.isIsolated &&
+              !_watching &&
+              identical(api, _conn.api) &&
+              _conn.canLoadSessionTail(scope.session)
+          ? await _conn.loadSessionTail(scope.session)
+          : await readHistoryAtStagedBoundary(
+              api,
+              scope.session,
+              boundary:
+                  _conn.sessionsById[scope.session]?.stagedRevert?.messageID,
+              isCurrent: () => _currentHistory(generation, scope),
+            );
       if (!_currentHistory(generation, scope)) return;
       final anchor = _historyAnchor();
       final pinnedEnd = _renderedMessageCount == 0
@@ -2028,6 +2065,7 @@ class _ChatScreenState extends State<ChatScreen>
         }
       });
       _restoreHistoryAnchor(anchor, generation);
+      _landOnFailedTurn();
     } catch (e) {
       if (!_currentHistory(generation, scope)) return;
       setState(() => _error = e);
@@ -4158,6 +4196,22 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  /// [ChatScreen.landOnFailure]: the newest turn that ended in an error,
+  /// scrolled to and marked once. None in the loaded history: the chat
+  /// opens at its newest turn as usual.
+  void _landOnFailedTurn() {
+    if (!widget.landOnFailure || _landedOnFailure) return;
+    _landedOnFailure = true;
+    MessageWithParts? failed;
+    for (final message in _visibleHistory) {
+      if (message.info.errorText != null) failed = message;
+    }
+    if (failed == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _jumpToMessage(failed!.info.id, alignment: .3);
+    });
+  }
+
   void _jumpToMessage(String messageID, {double alignment = .5}) {
     final chronologicalIndex = _messages.indexWhere(
       (message) => message.info.id == messageID,
@@ -6042,7 +6096,17 @@ class _ChatScreenState extends State<ChatScreen>
       profileID: _conn.profile?.id,
       sessionID: widget.sessionID,
     );
-    await showContinueOnPhoneSheet(context, link: link);
+    await showContinueOnPhoneSheet(
+      context,
+      link: link,
+      // P3.9: "Include this server's address", offered only where the
+      // server and the address coordinator allow it (gated off for now).
+      address: SessionAddressOffer.of(
+        context,
+        connection: _conn,
+        sessionID: widget.sessionID,
+      ),
+    );
   }
 
   Future<void> _showContext() async {
@@ -6160,7 +6224,7 @@ class _ChatScreenState extends State<ChatScreen>
       if (!mounted) return;
       await Navigator.of(context).push<void>(
         KitPageRoute<void>(
-          builder: (_) => DiffView(diffs: diffs, allowCopy: false),
+          builder: (_) => DiffPage(diffs: diffs, allowCopy: false),
         ),
       );
       return;
@@ -6671,46 +6735,62 @@ class _ChatScreenState extends State<ChatScreen>
   /// slot unfolds when one arrives and folds away when none is left
   /// ([KitReveal], instant under reduced motion); one card replacing
   /// another changes in place.
-  Widget _attentionRegion(List<PermissionRequest> pendingPermissions) {
+  Widget _attentionRegion(
+    List<PermissionRequest> pendingPermissions, {
+    bool arrive = true,
+  }) {
     final permission = pendingPermissions.firstOrNull;
     final question = _conn.questionForSession(widget.sessionID);
     final retry = _retryState;
+    // The card an Inbox row or a notification opened this chat for is
+    // washed once where it settles (above the composer), never in the
+    // loading layout it leaves a moment later.
+    Widget landing(String requestID, Widget card) => arrive
+        ? KitArrival(id: chatRequestArrivalId(requestID), child: card)
+        : card;
     // Automatic approval is never silent, but it is a standing fact, not an
     // event: it lives in the chip strip above the composer
     // ([_composerStatusStrip]), not in this slot.
     return KitReveal(
       child: permission != null
-          ? Column(
-              key: ValueKey('permission-region-${permission.id}'),
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _PermissionAttentionCard(
-                  key: ValueKey('permission-card-${permission.id}'),
-                  permission: permission,
-                  autoApprovalFailed:
-                      _conn.autoApprovalFailure(permission.id) != null,
-                  onReview: () => unawaited(_showPermissionDialog(permission)),
-                ),
-                // P6.7: the third identical ask offers "Always allow"
-                // once, directly under its card.
-                if (!_conn.isIsolated)
-                  AlwaysAllowInvitation(
-                    key: ValueKey('always-allow-${permission.id}'),
-                    controller: _conn,
-                    sessionID: permission.sessionID,
-                    requestID: permission.id,
+          ? landing(
+              permission.id,
+              Column(
+                key: ValueKey('permission-region-${permission.id}'),
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _PermissionAttentionCard(
+                    key: ValueKey('permission-card-${permission.id}'),
+                    permission: permission,
+                    autoApprovalFailed:
+                        _conn.autoApprovalFailure(permission.id) != null,
+                    onReview: () =>
+                        unawaited(_showPermissionDialog(permission)),
                   ),
-              ],
+                  // P6.7: the third identical ask offers "Always allow"
+                  // once, directly under its card.
+                  if (!_conn.isIsolated)
+                    AlwaysAllowInvitation(
+                      key: ValueKey('always-allow-${permission.id}'),
+                      controller: _conn,
+                      sessionID: permission.sessionID,
+                      requestID: permission.id,
+                    ),
+                ],
+              ),
             )
           : question != null
-          ? _QuestionAttentionCard(
-              key: ValueKey('question-card-${question.id}'),
-              question: question,
-              replying: _questionReplying,
-              onAnswer: (answers) =>
-                  unawaited(_answerQuestion(question, answers)),
-              onMore: () => unawaited(_showQuestionSheet(question)),
+          ? landing(
+              question.id,
+              _QuestionAttentionCard(
+                key: ValueKey('question-card-${question.id}'),
+                question: question,
+                replying: _questionReplying,
+                onAnswer: (answers) =>
+                    unawaited(_answerQuestion(question, answers)),
+                onMore: () => unawaited(_showQuestionSheet(question)),
+              ),
             )
           : retry != null
           ? _RetryAttentionCard(
@@ -6978,6 +7058,23 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  /// Whether the request slot over the composer has something in it.
+  bool _attentionPending(List<PermissionRequest> pendingPermissions) =>
+      pendingPermissions.isNotEmpty ||
+      _conn.questionForSession(widget.sessionID) != null ||
+      _retryState != null ||
+      (!_conn.isIsolated && _conn.autoApprovalFor(widget.sessionID).automatic);
+
+  /// The height the composer leaves free over itself while a request waits,
+  /// so a tall composer (large text, keyboard up) never squeezes the
+  /// request to nothing: its Details and answers stay one scroll away.
+  double _aboveComposerFloor(
+    BoxConstraints bodyConstraints,
+    List<PermissionRequest> pendingPermissions,
+  ) => bodyConstraints.hasBoundedHeight && _attentionPending(pendingPermissions)
+      ? bodyConstraints.maxHeight * .3
+      : 0;
+
   /// What sits over the composer, most urgent first: find, then what needs
   /// the person, then what the draft is waiting on. Solid parts on the
   /// ground; only the composer below them is glass.
@@ -7034,15 +7131,13 @@ class _ChatScreenState extends State<ChatScreen>
                   _conn.dismissSessionNoteReceipt(widget.sessionID),
             ),
           ),
-        // On short keyboard layouts the request shares the remaining height
-        // with the rest, after the composer is measured. Keep its actions
-        // reachable by scrolling instead of pushing Send off screen.
-        if (short &&
-            (pendingPermissions.isNotEmpty ||
-                _conn.questionForSession(widget.sessionID) != null ||
-                _retryState != null ||
-                (!_conn.isIsolated &&
-                    _conn.autoApprovalFor(widget.sessionID).automatic)))
+        // The request shares the height left over the composer with the
+        // rest (a tip, waiting drafts): it takes what is left and scrolls,
+        // its actions reachable, instead of overflowing or pushing Send off
+        // screen. The composer keeps a share free for it
+        // ([_aboveComposerFloor]).
+        if (bodyConstraints.hasBoundedHeight &&
+            _attentionPending(pendingPermissions))
           Flexible(
             child: ListView(
               shrinkWrap: true,
@@ -7058,10 +7153,13 @@ class _ChatScreenState extends State<ChatScreen>
         // a form card onto a server that cannot answer it.
         if (_conn.formForSession(widget.sessionID) case final pendingForm?
             when _conn.capabilities.forms)
-          _FormRequestCard(
-            key: ValueKey('form-request-card-${pendingForm.id}'),
-            form: pendingForm,
-            onAnswer: () => unawaited(_openForm(pendingForm)),
+          KitArrival(
+            id: chatRequestArrivalId(pendingForm.id),
+            child: _FormRequestCard(
+              key: ValueKey('form-request-card-${pendingForm.id}'),
+              form: pendingForm,
+              onAnswer: () => unawaited(_openForm(pendingForm)),
+            ),
           ),
         // The one nudge slot: below whatever needs the person. It gives way
         // to a short (keyboard) layout like every quiet strip. At large text
@@ -7372,7 +7470,17 @@ class _ChatScreenState extends State<ChatScreen>
       running: _conn.busySessions.contains(widget.sessionID),
     );
     final showAttachmentNote = _attachmentNoteVisible();
-    final pendingPermissions = _conn.permissionsForSession(widget.sessionID);
+    var pendingPermissions = _conn.permissionsForSession(widget.sessionID);
+    // The request this chat was opened for leads (P4.2a).
+    if (widget.landOnRequestID case final landing?
+        when pendingPermissions.length > 1 &&
+            pendingPermissions.first.id != landing &&
+            pendingPermissions.any((p) => p.id == landing)) {
+      pendingPermissions = [
+        ...pendingPermissions.where((p) => p.id == landing),
+        ...pendingPermissions.where((p) => p.id != landing),
+      ];
+    }
 
     final session = _conn.sessionsById[widget.sessionID];
     final shareUrl = _shareUrl;
@@ -7423,6 +7531,14 @@ class _ChatScreenState extends State<ChatScreen>
             among: _conn.store.profiles,
           );
     final reconnecting = _conn.connectionStatus.waiting;
+    // Speed contract item 2: while the first history read is on its way the
+    // chat shows the end it had last time, read-only, instead of
+    // placeholder turns. Never part of [_messages].
+    final openingExcerpt =
+        _loading && _messages.isEmpty && !_watching && !_conn.isIsolated
+        ? _conn.cachedSessionTail(widget.sessionID)
+        : null;
+    final showExcerpt = openingExcerpt?.messages.isNotEmpty ?? false;
 
     final screen = PopScope(
       canPop: _conn.isIsolated || _allowRoutePop || _watching,
@@ -7474,6 +7590,18 @@ class _ChatScreenState extends State<ChatScreen>
                         sessionID: widget.sessionID,
                       ),
               ),
+            _queuedDraftsStatus(
+              context,
+              _conn,
+              onMove: (source) => unawaited(
+                showQueuedPromptMoveSheet(
+                  context,
+                  connection: _conn,
+                  source: source,
+                  onProblem: (message, {details}) => _showComposerNote(message),
+                ),
+              ),
+            ),
             if (!_conn.isIsolated &&
                 _conn.supportsStagedRevert &&
                 session?.reverted == true)
@@ -7499,8 +7627,14 @@ class _ChatScreenState extends State<ChatScreen>
         ]),
         header: [
           // The demo has no bar of its own here; its one extra action sits
-          // under the host's bar.
-          if (!widget.showAppBar && _conn.isIsolated && _messages.isNotEmpty)
+          // under the host's bar. While the keyboard is up the room goes to
+          // the conversation and what waits on the person; the action is
+          // back when the keyboard is down.
+          if (!widget.showAppBar &&
+              _conn.isIsolated &&
+              _messages.isNotEmpty &&
+              !keyboardUp &&
+              !widget.hostKeyboardUp)
             Align(
               alignment: AlignmentDirectional.centerEnd,
               child: KitButton.tertiary(
@@ -7514,11 +7648,12 @@ class _ChatScreenState extends State<ChatScreen>
         // full-screen error over an already-visible transcript. A
         // permission card must not wait for the transcript: it is pinned to
         // the bottom of the skeleton and error states too.
-        body: _loading && _messages.isEmpty
+        body: _loading && _messages.isEmpty && !showExcerpt
             ? Column(
                 children: [
                   const Expanded(child: _ChatLoadingBody()),
-                  if (!_watching) _attentionRegion(pendingPermissions),
+                  if (!_watching)
+                    _attentionRegion(pendingPermissions, arrive: false),
                 ],
               )
             : _error != null && _messages.isEmpty
@@ -7530,7 +7665,8 @@ class _ChatScreenState extends State<ChatScreen>
                       onRetry: () => unawaited(_load()),
                     ),
                   ),
-                  if (!_watching) _attentionRegion(pendingPermissions),
+                  if (!_watching)
+                    _attentionRegion(pendingPermissions, arrive: false),
                 ],
               )
             : LayoutBuilder(
@@ -7541,6 +7677,7 @@ class _ChatScreenState extends State<ChatScreen>
                   final compactComposer =
                       keyboardUp || bodyConstraints.maxHeight < 420;
                   final startEmpty =
+                      !showExcerpt &&
                       _visibleHistory.isEmpty &&
                       _olderCursor == null &&
                       widget.emptyState == null &&
@@ -7548,8 +7685,9 @@ class _ChatScreenState extends State<ChatScreen>
                   if (startEmpty) _requestStartFacts();
                   final showStarters = startEmpty && !_voiceConversation;
                   final watch = widget.watch;
-                  final Widget conversation =
-                      _visibleHistory.isEmpty && _olderCursor == null
+                  final Widget conversation = showExcerpt
+                      ? _ChatOpeningExcerpt(preview: openingExcerpt!)
+                      : _visibleHistory.isEmpty && _olderCursor == null
                       ? Builder(
                           // Clear of the floating composer (watching
                           // floats one too: it writes to the worker).
@@ -7603,6 +7741,10 @@ class _ChatScreenState extends State<ChatScreen>
                   // the glass composer, the only glass on the page.
                   return KitComposer.layer(
                     body: conversation,
+                    aboveMinHeight: _aboveComposerFloor(
+                      bodyConstraints,
+                      pendingPermissions,
+                    ),
                     above: _aboveComposer(
                       bodyConstraints: bodyConstraints,
                       compactComposer: compactComposer,

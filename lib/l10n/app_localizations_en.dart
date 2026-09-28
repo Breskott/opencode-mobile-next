@@ -22277,52 +22277,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workStalled => 'Stalled';
 
   @override
-  String workStalledSince(String time) {
-    return 'Stalled since $time';
-  }
-
-  @override
-  String attentionOnServer(String server) {
-    return 'on $server';
-  }
-
-  @override
-  String get attentionTeamTask => 'Team task';
-
-  @override
-  String attentionChecksOff(String servers) {
-    return 'Not checking $servers';
-  }
-
-  @override
-  String get attentionChecksOffDetail =>
-      'Their requests don\'t show here. Turn on checks in Notifications.';
-
-  @override
-  String attentionUnchecked(String server) {
-    return 'Couldn\'t check $server';
-  }
-
-  @override
-  String get attentionUncheckedDetail =>
-      'Requests waiting there may be missing here.';
-
-  @override
-  String attentionUncheckedSince(String time) {
-    return 'Last checked $time. Requests waiting there may be missing here.';
-  }
-
-  @override
-  String attentionWaitsForWifi(String server) {
-    return '$server is checked on Wi-Fi only';
-  }
-
-  @override
-  String attentionChecksPaused(String server) {
-    return 'Checks on $server are paused';
-  }
-
-  @override
   String get teamNowActivityPlanning => 'Waiting for a plan';
 
   @override
@@ -22693,6 +22647,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Saved from last time. They open once the live list loads.';
 
   @override
+  String get kitTranscriptExcerptHint =>
+      'Saved from last time. The conversation opens fully once it loads.';
+
+  @override
   String get lastKnownUpdatedJustNow => 'Updated just now';
 
   @override
@@ -22872,6 +22830,52 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String queuedMoveUndoFailed(String destination) {
     return 'Could not put the prompts back. They stay on $destination.';
+  }
+
+  @override
+  String workStalledSince(String time) {
+    return 'Stalled since $time';
+  }
+
+  @override
+  String attentionOnServer(String server) {
+    return 'on $server';
+  }
+
+  @override
+  String get attentionTeamTask => 'Team task';
+
+  @override
+  String attentionChecksOff(String servers) {
+    return 'Not checking $servers';
+  }
+
+  @override
+  String get attentionChecksOffDetail =>
+      'Their requests don\'t show here. Turn on checks in Notifications.';
+
+  @override
+  String attentionUnchecked(String server) {
+    return 'Couldn\'t check $server';
+  }
+
+  @override
+  String get attentionUncheckedDetail =>
+      'Requests waiting there may be missing here.';
+
+  @override
+  String attentionUncheckedSince(String time) {
+    return 'Last checked $time. Requests waiting there may be missing here.';
+  }
+
+  @override
+  String attentionWaitsForWifi(String server) {
+    return '$server is checked on Wi-Fi only';
+  }
+
+  @override
+  String attentionChecksPaused(String server) {
+    return 'Checks on $server are paused';
   }
 
   @override

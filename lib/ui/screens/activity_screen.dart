@@ -14,6 +14,7 @@ import '../../state/automatic_activity.dart';
 import '../../state/connection.dart';
 import '../../state/orchestration.dart';
 import '../app_iconography.dart';
+import '../navigation/chat_route.dart' show ChatRouteArguments;
 import '../kit/kit.dart';
 import '../kit/scenes/states_scenes.dart';
 import '../permission_presentation.dart';
@@ -158,31 +159,23 @@ class _ActivityScreenState extends State<ActivityScreen> {
   void _reviewDigest(String sessionID, Object scope) {
     if (_currentDigestScope != scope) return;
     final controller = widget.controller;
+    // P4.2a: what waits in the conversation is answered on its card there.
     for (final permission in controller.awaitingPermissions) {
       if (permission.sessionID == sessionID) {
-        showPermissionSheet(
-          context,
-          permission: permission,
-          controller: controller,
-        );
+        _openChat(sessionID, landOnRequestID: permission.id);
         return;
       }
     }
     for (final question in controller.questions.values) {
       if (question.sessionID == sessionID) {
-        showQuestionSheet(
-          context,
-          controller,
-          question,
-          onOpenConversation: () => _openChat(question.sessionID),
-        );
+        _openChat(sessionID, landOnRequestID: question.id);
         return;
       }
     }
     if (controller.capabilities.forms) {
       for (final form in controller.forms.values) {
         if (form.sessionID == sessionID) {
-          presentConnectionForm(context, controller, form);
+          _openChat(sessionID, landOnRequestID: form.id);
           return;
         }
       }
@@ -513,12 +506,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
       final current = widget.controller.questions[target!.id];
       if (current == null || current.sessionID != sessionID) return;
       _initialQuestionHandled = true;
-      showQuestionSheet(
-        context,
-        widget.controller,
-        current,
-        onOpenConversation: () => _openChat(current.sessionID),
-      );
+      // P4.2a: the notification lands on the question's card.
+      _openChat(current.sessionID, landOnRequestID: current.id);
     });
   }
 
@@ -576,7 +565,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
     return count;
   }
 
-  Future<void> _openChat(String sessionID) async {
+  /// Opens [sessionID]; with [landOnRequestID] the chat lands on that
+  /// request's card, with [landOnFailure] on its newest failed turn (P4.2a).
+  Future<void> _openChat(
+    String sessionID, {
+    String? landOnRequestID,
+    bool landOnFailure = false,
+  }) async {
     final controller = widget.controller;
     final location = controller.locationRevision;
     final profile = controller.profile?.id;
@@ -606,7 +601,15 @@ class _ActivityScreenState extends State<ActivityScreen> {
         );
       }
       if (mounted && controller.profile?.id == profile) {
-        Navigator.of(context).pushNamed('/chat/$sessionID');
+        // Speed contract item 2: the chat joins this history read.
+        unawaited(controller.prefetchSessionTail(sessionID));
+        Navigator.of(context).pushNamed(
+          '/chat/$sessionID',
+          arguments: ChatRouteArguments(
+            landOnRequestID: landOnRequestID,
+            landOnFailure: landOnFailure,
+          ),
+        );
       }
     } catch (error) {
       if (mounted) {
@@ -703,7 +706,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
               key: ValueKey('activity-detail-permission-${permission.id}'),
               permission: permission,
               controller: controller,
-              onOpenConversation: () => _openChat(permission.sessionID),
+              onOpenConversation: () => _openChat(
+                permission.sessionID,
+                landOnRequestID: permission.id,
+              ),
             );
           }
         }
@@ -714,7 +720,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
             key: ValueKey('activity-detail-question-${question.id}'),
             question: question,
             controller: controller,
-            onOpenConversation: () => _openChat(question.sessionID),
+            onOpenConversation: () =>
+                _openChat(question.sessionID, landOnRequestID: question.id),
           );
         }
       case _PickKind.form:
@@ -817,10 +824,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
           permission: permission,
           controller: controller,
           selected: isPicked(_PickKind.permission, permission.id),
-          onOpen: _opener((
-            kind: _PickKind.permission,
-            id: permission.id,
-          ), () => _openPermissionSheet(context, controller, permission)),
+          // P4.2a: on a phone the row lands on its card in the
+          // conversation, never on a sheet over this list.
+          onOpen: _opener(
+            (kind: _PickKind.permission, id: permission.id),
+            () =>
+                _openChat(permission.sessionID, landOnRequestID: permission.id),
+          ),
         ),
       for (final question in questions)
         ActivityQuestionTile(
@@ -828,15 +838,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
           question: question,
           controller: controller,
           selected: isPicked(_PickKind.question, question.id),
-          onOpen: _opener(
-            (kind: _PickKind.question, id: question.id),
-            () => showQuestionSheet(
-              context,
-              controller,
-              question,
-              onOpenConversation: () => _openChat(question.sessionID),
-            ),
-          ),
+          onOpen: _opener((
+            kind: _PickKind.question,
+            id: question.id,
+          ), () => _openChat(question.sessionID, landOnRequestID: question.id)),
         ),
       for (final form in sessionForms)
         ActivityFormTile(
@@ -847,7 +852,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
           onOpen: _opener((
             kind: _PickKind.form,
             id: form.id,
-          ), () => presentConnectionForm(context, controller, form)),
+          ), () => _openChat(form.sessionID, landOnRequestID: form.id)),
         ),
       for (final row in team)
         if (row.rank > teamActivityPermissionRank) row.widget,
@@ -876,7 +881,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
           controller: controller,
           item: item,
           now: now,
-          onOpenConversation: _openChat,
+          onOpenConversation: (sessionID, landing) => _openChat(
+            sessionID,
+            landOnRequestID: landing.landOnRequestID,
+            landOnFailure: landing.landOnFailure,
+          ),
         ),
     ];
     // Other servers this list cannot speak for, and the way forward.

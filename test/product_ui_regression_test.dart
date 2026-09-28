@@ -24,7 +24,8 @@ import 'package:opencode_mobile/ui/kit/kit_status_line.dart';
 import 'package:opencode_mobile/ui/screens/review_workspace.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
 import 'package:opencode_mobile/ui/widgets/pickers.dart' show ModelCatalogView;
-import 'package:opencode_mobile/ui/screens/activity_screen.dart';
+import 'package:opencode_mobile/ui/screens/chat/permission_sheet.dart'
+    show showPermissionSheet;
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/terminal_screen.dart';
 import 'package:opencode_mobile/ui/widgets/file_preview.dart';
@@ -1561,14 +1562,19 @@ void main() {
       ),
     };
     addTearDown(controller.dispose);
-    await tester.pumpWidget(
-      MaterialApp(home: ActivityScreen(controller: controller)),
+    // P4.2a: an Inbox row now lands on the request's card in its chat; the
+    // card's Details opens this same shared sheet, opened directly here.
+    await tester.pumpWidget(const MaterialApp(home: Scaffold()));
+    unawaited(
+      showPermissionSheet(
+        tester.element(find.byType(Scaffold)),
+        permission: controller.permissions['permission-1']!,
+        controller: controller,
+      ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Run a shell command'));
-    await tester.pumpAndSettle();
 
-    // The tile opens the shared request sheet: its pinned Allow once and
+    // The shared request sheet: its pinned Allow once and
     // Reject and the "Always allow" switch must all render at 280dp.
     final sheet = find.byKey(const Key('permission-sheet'));
     expect(sheet, findsOneWidget);

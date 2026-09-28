@@ -267,14 +267,23 @@ class KitComposer extends StatefulWidget {
   /// on its own gutters, so the body passes under it unseen; the composer
   /// stays the only glass (visual language §6). The published height
   /// counts both, and the layer never grows past the body: [above] gets
-  /// the room the composer leaves.
+  /// the room the composer leaves. [aboveMinHeight] is kept free for
+  /// [above] whatever the composer's height (a waiting request at large
+  /// text with the keyboard up): the composer then scrolls within the rest,
+  /// its field and Send in view. Zero when [above] has nothing to protect.
   static Widget layer({
     Key? key,
     required Widget body,
     required Widget composer,
     Widget? above,
-  }) =>
-      _KitComposerLayer(key: key, body: body, composer: composer, above: above);
+    double aboveMinHeight = 0,
+  }) => _KitComposerLayer(
+    key: key,
+    body: body,
+    composer: composer,
+    above: above,
+    aboveMinHeight: aboveMinHeight,
+  );
 
   @override
   State<KitComposer> createState() => _KitComposerState();
@@ -330,6 +339,10 @@ class _KitComposerState extends State<KitComposer> {
   }
 
   bool get _hasContent => _hasText || widget.hasAttachments;
+
+  /// The height a touch caret handle hangs below the line it marks (the
+  /// Material handle; Cupertino's is shorter).
+  static const double _handleClearance = 22;
 
   bool get _readOnly => widget.readOnlyReason != null;
 
@@ -611,6 +624,9 @@ class _KitComposerState extends State<KitComposer> {
         ),
     ];
 
+    final handleClearance = _hasText && available >= 6 * tokens.minTarget
+        ? _handleClearance
+        : 0.0;
     return LayoutBuilder(
       builder: (context, constraints) {
         final above = accessories.isEmpty
@@ -641,6 +657,11 @@ class _KitComposerState extends State<KitComposer> {
                 start: tokens.space3,
                 end: tokens.space3,
                 top: tokens.space2,
+                // With words in the field its caret handle can hang below
+                // the last line; this keeps it off the send row, so the
+                // prompt editor and Send stay pressable (320 dp, 2x text).
+                // A short room keeps the height for the field instead.
+                bottom: handleClearance,
               ),
               child: field,
             ),
@@ -1041,11 +1062,13 @@ class _KitComposerLayer extends StatefulWidget {
     required this.body,
     required this.composer,
     this.above,
+    this.aboveMinHeight = 0,
   });
 
   final Widget body;
   final Widget composer;
   final Widget? above;
+  final double aboveMinHeight;
 
   @override
   State<_KitComposerLayer> createState() => _KitComposerLayerState();
@@ -1093,7 +1116,12 @@ class _KitComposerLayerState extends State<_KitComposerLayer> {
           // size (320 dp, 2.5x) the composer scrolls within it, its field
           // and Send in view, instead of running off the screen.
           ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxHeight),
+            constraints: BoxConstraints(
+              maxHeight: (maxHeight - widget.aboveMinHeight).clamp(
+                0.0,
+                maxHeight,
+              ),
+            ),
             child: SingleChildScrollView(
               key: const ValueKey('kit-composer-room'),
               reverse: true,

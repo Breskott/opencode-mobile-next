@@ -18,6 +18,7 @@
 /// | [KitLoadingBar], [KitSkeletonRows], [KitProgress] | §4 progress |
 /// | [KitSkeletonTranscript] | §4 a conversation loading |
 /// | [KitLastKnown], [KitLastKnownRow] | §4 what a list held last time, read-only while the live list loads |
+/// | [KitTranscriptExcerpt], [KitExcerptMessage] | §4 a conversation's end as it read last time, read-only while its history loads |
 /// | [KitStatusLine] | §5 one status line |
 /// | [KitAskLine] | §2, §5 a one-time question with its two answers |
 /// | [KitRequestCard] | §2, §3 a request the person answers (permission, question) |
@@ -163,6 +164,7 @@ export 'motion/kit_reveal.dart';
 export 'motion/kit_tab_switcher.dart';
 export 'glass/kit_glass.dart';
 export 'chat/kit_message.dart';
+export 'chat/kit_transcript_excerpt.dart';
 export 'chat/kit_turn.dart';
 export 'kit_request_sheet.dart';
 export 'kit_context_region.dart';

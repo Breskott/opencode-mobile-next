@@ -28,6 +28,10 @@ import '../app_iconography.dart';
 import '../kit/kit.dart';
 import '../screens/profile_monitor_screen.dart' show openMonitoredRequest;
 import '../screens/settings_screen.dart' show NotificationsSettingsScreen;
+import '../../state/orchestration.dart'
+    show OrchestrationController, OrchestrationPhase;
+import '../navigation/chat_route.dart';
+import '../screens/team/gate_sheet.dart' show showGateSheet;
 import '../screens/team_conversation/team_conversation.dart';
 import 'phone_server_card.dart' show serverDisplayName;
 import 'relative_time.dart';
@@ -68,8 +72,9 @@ class AttentionFeedRow extends StatefulWidget {
   final DateTime now;
 
   /// Opens a conversation of the connected server by id, the Inbox's own
-  /// route (location first, then `/chat/<id>`).
-  final ValueChanged<String> onOpenConversation;
+  /// route (location first, then `/chat/<id>`), landing where [landing]
+  /// says (P4.2a).
+  final AttentionConversationOpener onOpenConversation;
 
   @override
   State<AttentionFeedRow> createState() => _AttentionFeedRowState();
@@ -182,13 +187,15 @@ String _serverName(
 /// a team item with a conversation opens that conversation there; a team
 /// item without one opens its task. Nothing is answered from the row.
 ///
-/// P4.2a hook: the target's `requestID` is the card to land on once the
-/// conversation opens; the chat lane owns that focus.
+/// P4.2a: a request lands on its card in the conversation, a failed run on
+/// its newest failed turn, and a team gate on its card in the task's
+/// conversation (or its Gate sheet when the task has none) — on another
+/// server after the switch too.
 Future<void> openAttentionItem(
   BuildContext context,
   ConnectionController controller,
   String identity, {
-  required ValueChanged<String> onOpenConversation,
+  required AttentionConversationOpener onOpenConversation,
 }) async {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   final item = controller.attentionFeed.items
@@ -207,16 +214,16 @@ Future<void> openAttentionItem(
   }
   final target = item.target;
   if (controller.profile?.id == profile.id) {
+    // A gate's card lives in its task's conversation, not the worker's.
+    if (item.kind == AttentionKind.teamGate &&
+        _openTeamTarget(context, controller, target)) {
+      return;
+    }
     if (target.hasConversation) {
-      onOpenConversation(target.sessionID!);
+      onOpenConversation(target.sessionID!, _landing(item));
       return;
     }
-    final team = controller.orchestration;
-    final runID = target.runID ?? _runOfTask(controller, target.taskID);
-    if (team != null && runID != null) {
-      unawaited(TeamConversation.open(context, team, runId: runID));
-      return;
-    }
+    if (_openTeamTarget(context, controller, target)) return;
     await _changed(context, l10n);
     return;
   }
@@ -234,6 +241,7 @@ Future<void> openAttentionItem(
     await openMonitoredRequest(
       context,
       controller,
+      landOnFailure: item.kind == AttentionKind.failedRun,
       MonitoredRoute(
         profileID: profile.id,
         requestID: requestID,
@@ -249,8 +257,99 @@ Future<void> openAttentionItem(
     return;
   }
   // A team gate with no worker conversation yet: its task lives on that
-  // server's team, so switch there first (asking when a run is going here).
-  await _switchTo(context, controller, profile, l10n);
+  // server's team, so switch there first (asking when a run is going here),
+  // then open the gate itself once that team has listed it.
+  final navigator = Navigator.of(context);
+  // The switch rebuilds the list this row was in; the navigator stays.
+  BuildContext here() => context.mounted
+      ? context
+      : navigator.overlay?.context ?? navigator.context;
+  if (!await _switchTo(context, controller, profile, l10n)) return;
+  if (controller.profile?.id != profile.id) return;
+  final listed = await _teamListed(controller);
+  if (!navigator.mounted) return;
+  if (!listed || !_openTeamTarget(here(), controller, target)) {
+    await _changed(here(), l10n);
+  }
+}
+
+/// Where a connected-server row lands in its chat (P4.2a).
+ChatRouteArguments _landing(AttentionFeedItem item) => ChatRouteArguments(
+  landOnRequestID: switch (item.kind) {
+    AttentionKind.permission ||
+    AttentionKind.question ||
+    AttentionKind.form => item.target.requestID,
+    AttentionKind.teamGate || AttentionKind.failedRun => null,
+  },
+  landOnFailure: item.kind == AttentionKind.failedRun,
+);
+
+/// Opens a team gate or task of the connected server exactly: the task's
+/// conversation (on the gate's card for a gate), or a gate's own sheet when
+/// its task has no run yet. False when this team does not list it: a run is
+/// never taken for a task and nothing is guessed.
+bool _openTeamTarget(
+  BuildContext context,
+  ConnectionController controller,
+  AttentionTarget target,
+) {
+  final team = controller.orchestration;
+  if (team == null || team.profileId != target.profileID) return false;
+  final gateID = target.kind == AttentionKind.teamGate
+      ? target.requestID
+      : null;
+  final runID = target.runID ?? _runOfTask(controller, target.taskID);
+  if (runID != null) {
+    unawaited(
+      Navigator.of(
+        context,
+      ).push(TeamConversation.route(team, runId: runID, landOnGateId: gateID)),
+    );
+    return true;
+  }
+  if (gateID != null && team.snapshot.gates.any((gate) => gate.id == gateID)) {
+    unawaited(showGateSheet(context, team, gateID));
+    return true;
+  }
+  return false;
+}
+
+/// Waits (bounded) until the connected server's team has its first
+/// snapshot, or says it cannot: a switch starts the team controller, which
+/// loads after the connection.
+Future<bool> _teamListed(ConnectionController controller) async {
+  bool settled() {
+    final team = controller.orchestration;
+    return team != null &&
+        (team.snapshot.hasData ||
+            team.phase == OrchestrationPhase.failed ||
+            team.phase == OrchestrationPhase.stopped);
+  }
+
+  if (settled()) return controller.orchestration!.snapshot.hasData;
+  final done = Completer<void>();
+  OrchestrationController? watched;
+  void check() {
+    final team = controller.orchestration;
+    if (team != watched) {
+      watched?.removeListener(check);
+      watched = team;
+      team?.addListener(check);
+    }
+    if (settled() && !done.isCompleted) done.complete();
+  }
+
+  controller.addListener(check);
+  check();
+  try {
+    await done.future.timeout(const Duration(seconds: 15));
+  } on TimeoutException {
+    return false;
+  } finally {
+    controller.removeListener(check);
+    watched?.removeListener(check);
+  }
+  return controller.orchestration?.snapshot.hasData ?? false;
 }
 
 String? _runOfTask(ConnectionController controller, String? taskID) {
@@ -263,7 +362,9 @@ String? _runOfTask(ConnectionController controller, String? taskID) {
   return null;
 }
 
-Future<void> _switchTo(
+/// Switches to [profile], asking first while a run is going here. False
+/// when the person declined.
+Future<bool> _switchTo(
   BuildContext context,
   ConnectionController controller,
   ServerProfile profile,
@@ -287,14 +388,21 @@ Future<void> _switchTo(
       confirmLabel: l10n.monitorSwitchTo(target),
       icon: AppIconography.swap,
     );
-    if (!accepted) return;
+    if (!accepted) return false;
   }
   try {
     await controller.connect(profile);
   } catch (_) {
     // The connection reports its own failure where connections do.
   }
+  return true;
 }
+
+/// Opens a connected-server conversation, landing where the chat is told
+/// (P4.2a): the Inbox passes its own route (location first, then
+/// `/chat/<id>` with [ChatRouteArguments]).
+typedef AttentionConversationOpener =
+    void Function(String sessionID, ChatRouteArguments landing);
 
 Future<void> _changed(BuildContext context, AppLocalizations l10n) async {
   if (!context.mounted) return;

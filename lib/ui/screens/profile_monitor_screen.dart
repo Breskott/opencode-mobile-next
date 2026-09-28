@@ -8,6 +8,7 @@ import '../../state/profile_monitor.dart' show ProfileMonitor;
 import '../../state/profiles.dart';
 import '../app_theme.dart';
 import '../kit/kit_buttons.dart';
+import '../navigation/attention_landing.dart' show chatLandingRoute;
 import '../kit/kit_dialog.dart';
 import '../kit/kit_icon.dart';
 import '../kit/kit_needs_you.dart';
@@ -20,19 +21,22 @@ import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import '../kit/kit_top_bar.dart';
 import '../widgets/phone_server_card.dart' show serverDisplayName;
-import 'activity_screen.dart' show showQuestionSheet;
 import 'chat/form_flow.dart';
-import 'chat/permission_sheet.dart';
-import 'chat_screen.dart' show ChatScreen;
 import 'settings_screen.dart' show NotificationsSettingsScreen;
 
 /// Shared explicit route: revalidates profile, location and exact request before
 /// displaying the existing resolver. It never answers from monitor metadata.
+///
+/// P4.2a: a permission, question or form lands on its card in its
+/// conversation (never a sheet over a list); a check-in opens its
+/// conversation, on its newest failed turn with [landOnFailure] (an Inbox
+/// row for a failed run on another server).
 Future<void> openMonitoredRequest(
   BuildContext context,
   ConnectionController controller,
-  MonitoredRoute route,
-) async {
+  MonitoredRoute route, {
+  bool landOnFailure = false,
+}) async {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   if (controller.profile?.id != route.profileID &&
       controller.busySessions.isNotEmpty) {
@@ -69,35 +73,45 @@ Future<void> openMonitoredRequest(
         !navigator.mounted) {
       throw StateError('Changed');
     }
+    // P4.2a: a request lands on its card in its conversation, never on a
+    // sheet over a list. A server-wide form has no conversation: its own
+    // flow opens.
+    Future<void> land() => navigator.push(
+      chatLandingRoute(
+        sessionID: route.sessionID,
+        landOnRequestID: route.requestID,
+      ),
+    );
     switch (route.kind) {
       case MonitoredRequestKind.permission:
         final request = controller.permissions[route.requestID];
         if (request == null || request.sessionID != route.sessionID) {
           throw StateError('Changed');
         }
-        await showPermissionSheet(
-          here(),
-          permission: request,
-          controller: controller,
-        );
+        await land();
       case MonitoredRequestKind.question:
         final request = controller.questions[route.requestID];
         if (request == null || request.sessionID != route.sessionID) {
           throw StateError('Changed');
         }
-        await showQuestionSheet(here(), controller, request);
+        await land();
       case MonitoredRequestKind.form:
         final request = controller.forms[route.requestID];
         if (request == null || request.sessionID != route.sessionID) {
           throw StateError('Changed');
         }
-        await presentConnectionForm(here(), controller, request);
+        if (route.sessionID == 'global') {
+          await presentConnectionForm(here(), controller, request);
+        } else {
+          await land();
+        }
       case MonitoredRequestKind.checkIn:
         // The reminder's answer is the conversation itself, on the existing
         // chat route; nothing is sent or resolved on the user's behalf.
         await navigator.push(
-          KitPageRoute<void>(
-            builder: (_) => ChatScreen(sessionID: route.sessionID),
+          chatLandingRoute(
+            sessionID: route.sessionID,
+            landOnFailure: landOnFailure,
           ),
         );
     }
@@ -109,9 +123,14 @@ Future<void> openMonitoredRequest(
     if (navigator.mounted &&
         controller.profile?.id == route.profileID &&
         route.sessionID != 'global') {
+      // It lands on the card once the conversation lists the request.
       await navigator.push(
-        KitPageRoute<void>(
-          builder: (_) => ChatScreen(sessionID: route.sessionID),
+        chatLandingRoute(
+          sessionID: route.sessionID,
+          landOnRequestID: route.kind == MonitoredRequestKind.checkIn
+              ? null
+              : route.requestID,
+          landOnFailure: landOnFailure,
         ),
       );
       return;

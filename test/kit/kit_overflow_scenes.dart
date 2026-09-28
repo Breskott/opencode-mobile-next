@@ -1073,6 +1073,28 @@ final kitOverflowScenes = <KitOverflowScene>[
       ],
     ),
   ),
+  // chat/kit_transcript_excerpt.dart (slice-chat-speed-fixes): a chat's
+  // saved end while its history loads.
+  KitOverflowScene(
+    const ['KitTranscriptExcerpt'],
+    'default',
+    build: (_, _) => const SizedBox(
+      height: 360,
+      child: KitTranscriptExcerpt(
+        updated: 'Updated 12m ago',
+        messages: [
+          KitExcerptMessage(
+            text: 'Fix the flaky checkout test before the release',
+            fromPerson: true,
+          ),
+          KitExcerptMessage(
+            text: 'The checkout test waited on a timer the stub never fired.',
+            fromPerson: false,
+          ),
+        ],
+      ),
+    ),
+  ),
   KitOverflowScene(
     const ['KitSince'],
     'default',

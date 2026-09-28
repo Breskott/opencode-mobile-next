@@ -164,6 +164,7 @@ class _DemoScreenState extends State<DemoScreen> {
         child: ChatScreen(
           sessionID: DemoGateway.sessionID,
           showAppBar: false,
+          hostKeyboardUp: keyboard,
           emptyState: KitStateView(
             icon: AppIconography.experiments,
             title: l10n.demoTaskTitle,

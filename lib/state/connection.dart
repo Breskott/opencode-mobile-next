@@ -1132,6 +1132,18 @@ class ConnectionController extends ChangeNotifier {
     );
   }
 
+  /// Whether [loadSessionTail] can read [sessionID] now. Chat hydration uses
+  /// the shared read when it can and reads the gateway itself otherwise (an
+  /// isolated or test host with a gateway but no saved, connected server).
+  bool canLoadSessionTail(String sessionID) {
+    final owner = _connectedProfile ?? profile;
+    return owner != null &&
+        api != null &&
+        hasConnectedServer &&
+        isProfileReadable(owner.id) &&
+        !_deletedSessionIDs.contains(sessionID);
+  }
+
   /// Authoritative newest page; prefetch and route hydration share an in-flight
   /// read. UI still applies its event-version merge and uses gateway.messagePage
   /// for older cursors. Failures retain existing product-error handling.
@@ -1139,11 +1151,7 @@ class ConnectionController extends ChangeNotifier {
     final owner = _connectedProfile ?? profile;
     final currentApi = api;
     final generation = _generation;
-    if (owner == null ||
-        currentApi == null ||
-        !hasConnectedServer ||
-        !isProfileReadable(owner.id) ||
-        _deletedSessionIDs.contains(sessionID)) {
+    if (owner == null || currentApi == null || !canLoadSessionTail(sessionID)) {
       return Future.error(const ProductException('OpenCode is reconnecting.'));
     }
     final historyRevision = sessionHistoryRevision(sessionID);
