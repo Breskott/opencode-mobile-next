@@ -13,11 +13,15 @@ class RegistryEntry {
     required this.description,
     required this.remotes,
     required this.packages,
+    this.title = '',
   });
 
   final String name;
   final String version;
   final String description;
+
+  /// The listing's display name (`title`), plain text; empty when absent.
+  final String title;
   final List<RegistryRemote> remotes;
   final List<RegistryPackage> packages;
   String get id => '$name@$version';
@@ -46,6 +50,7 @@ class RegistryEntry {
       name: name,
       version: version,
       description: _safeText(value['description'], 1000),
+      title: _safeText(value['title'], 120),
       remotes: List.unmodifiable([
         for (final item in _items(value['remotes']))
           ?RegistryRemote.fromJson(item),
@@ -61,19 +66,30 @@ class RegistryEntry {
     'name': KitRedact.text(name),
     'version': KitRedact.text(version),
     'description': KitRedact.text(description),
+    if (title.isNotEmpty) 'title': KitRedact.text(title),
     'remotes': remotes.map((entry) => entry.toJson()).toList(),
     'packages': packages.map((entry) => entry.toJson()).toList(),
   };
 }
 
 class RegistryRemote {
-  RegistryRemote._(this.type, this.url, this.requiresConfiguration);
+  RegistryRemote._(
+    this.type,
+    this.url,
+    this.requiresConfiguration, {
+    this.headers = const [],
+  });
   final String type;
   final String url;
 
-  /// Registry header/variable declarations are deliberately not retained.
-  /// This is not evidence that OAuth is supported or that sign-in is required.
+  /// Registry header values, defaults and descriptions are deliberately not
+  /// retained. This is not evidence that OAuth is supported or that sign-in
+  /// is required.
   final bool requiresConfiguration;
+
+  /// The header names the listing declares (names only, never a value), so
+  /// a form can ask for each value as a secret.
+  final List<RegistryVariable> headers;
 
   static RegistryRemote? fromJson(Object? value) {
     if (value is! Map) return null;
@@ -98,6 +114,10 @@ class RegistryRemote {
       value['requiresConfiguration'] == true ||
           (value['headers'] is List && (value['headers'] as List).isNotEmpty) ||
           (value['variables'] is Map && (value['variables'] as Map).isNotEmpty),
+      headers: List.unmodifiable([
+        for (final item in _items(value['headers']))
+          ?RegistryVariable.fromJson(item, header: true),
+      ]),
     );
   }
 
@@ -116,14 +136,78 @@ class RegistryRemote {
     'type': KitRedact.text(type),
     'url': KitRedact.text(url),
     'requiresConfiguration': requiresConfiguration,
+    if (headers.isNotEmpty)
+      'headers': headers.map((entry) => entry.toJson()).toList(),
+  };
+}
+
+/// A header or environment variable a listing declares: its name and
+/// whether it is required or secret. The value, default, description and
+/// format are never retained (registry text is untrusted, and a "value" or
+/// "default" can carry a credential).
+class RegistryVariable {
+  const RegistryVariable._(
+    this.name, {
+    this.required = false,
+    this.secret = false,
+  });
+
+  final String name;
+  final bool required;
+  final bool secret;
+
+  static final _envName = RegExp(r'^[A-Za-z_][A-Za-z0-9_]{0,127}$');
+  static final _headerName = RegExp(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$');
+
+  static RegistryVariable? fromJson(Object? value, {bool header = false}) {
+    if (value is! Map) return null;
+    final name = value['name'];
+    if (name is! String ||
+        !(header ? _headerName : _envName).hasMatch(name) ||
+        KitRedact.containsSecret(name)) {
+      return null;
+    }
+    return RegistryVariable._(
+      name,
+      required: value['isRequired'] == true,
+      secret: value['isSecret'] == true,
+    );
+  }
+
+  Map<String, Object?> toJson() => {
+    'name': name,
+    if (required) 'isRequired': true,
+    if (secret) 'isSecret': true,
   };
 }
 
 class RegistryPackage {
-  RegistryPackage._(this.registryType, this.identifier, this.version);
+  RegistryPackage._(
+    this.registryType,
+    this.identifier,
+    this.version, {
+    this.transport,
+    this.runtimeHint,
+    this.environment = const [],
+    this.requiresArguments = false,
+  });
   final String registryType;
   final String identifier;
   final String version;
+
+  /// `stdio`, `streamable-http` or `sse`; null when the listing names none.
+  final String? transport;
+
+  /// The runner the listing suggests (`npx`, `uvx`, `docker`), an
+  /// identifier only; null when absent.
+  final String? runtimeHint;
+
+  /// Environment variable names the package declares (never values).
+  final List<RegistryVariable> environment;
+
+  /// The listing declares required runtime or package arguments. Their
+  /// values are never retained: an argument list is a command line.
+  final bool requiresArguments;
 
   static RegistryPackage? fromJson(Object? value) {
     if (value is! Map) return null;
@@ -131,13 +215,44 @@ class RegistryPackage {
     final identifier = _identifier(value['identifier']);
     final version = _identifier(value['version']);
     if (type == null || identifier == null || version == null) return null;
-    return RegistryPackage._(type, identifier, version);
+    final transport = value['transport'];
+    final transportType = transport is Map
+        ? transport['type']
+        : value['transport'];
+    bool required(Object? list) =>
+        list is List &&
+        list.any((item) => item is Map && item['isRequired'] == true);
+    return RegistryPackage._(
+      type,
+      identifier,
+      version,
+      transport:
+          const {'stdio', 'streamable-http', 'sse'}.contains(transportType)
+          ? transportType as String
+          : null,
+      runtimeHint: _identifier(value['runtimeHint']),
+      environment: List.unmodifiable([
+        for (final item in _items(value['environmentVariables']))
+          ?RegistryVariable.fromJson(item),
+      ]),
+      requiresArguments:
+          value['requiresArguments'] == true ||
+          required(value['runtimeArguments']) ||
+          required(value['packageArguments']),
+    );
   }
 
   Map<String, Object?> toJson() => {
     'registryType': KitRedact.text(registryType),
     'identifier': KitRedact.text(identifier),
     'version': KitRedact.text(version),
+    'transport': ?transport,
+    'runtimeHint': ?runtimeHint,
+    if (environment.isNotEmpty)
+      'environmentVariables': environment
+          .map((entry) => entry.toJson())
+          .toList(),
+    if (requiresArguments) 'requiresArguments': true,
   };
 }
 
@@ -163,13 +278,23 @@ class SetupRegistryClient {
   static const maxEntries = 100;
   final Dio _dio;
 
-  Future<List<RegistryEntry>> fetch({CancelToken? cancelToken}) async {
+  /// [search] narrows the list on the registry's side (its `search`
+  /// parameter, a substring match on the listing name); it is the person's
+  /// own words, never a credential.
+  Future<List<RegistryEntry>> fetch({
+    CancelToken? cancelToken,
+    String? search,
+  }) async {
     try {
       final deadline = DateTime.now().add(const Duration(seconds: 30));
       final response = await _dio
           .get<ResponseBody>(
             endpoint,
-            queryParameters: const {'limit': maxEntries, 'version': 'latest'},
+            queryParameters: {
+              'limit': maxEntries,
+              'version': 'latest',
+              'search': ?_searchTerm(search),
+            },
             cancelToken: cancelToken,
             options: Options(
               responseType: ResponseType.stream,
@@ -222,6 +347,16 @@ class SetupRegistryClient {
   }
 
   void dispose() => _dio.close(force: true);
+}
+
+/// A search term the registry may see: trimmed, at most 100 characters,
+/// and dropped when it looks like a credential (never sent anywhere).
+String? _searchTerm(String? value) {
+  final term = value?.trim() ?? '';
+  if (term.isEmpty || term.length > 100 || KitRedact.containsSecret(term)) {
+    return null;
+  }
+  return term;
 }
 
 Iterable<Object?> _items(Object? value) =>

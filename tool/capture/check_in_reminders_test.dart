@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profile_monitor.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
-import 'package:opencode_mobile/ui/screens/profile_monitor_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart' show StreamStatus;
 
@@ -92,9 +91,9 @@ void main() {
                   ? const HomeScreen(initialTab: 2)
                   // The check-in controls live in Notifications; the list
                   // keeps the observed intervals.
-                  : scenario == 'controls' || scenario == 'narrow'
-                  ? NotificationsSettingsScreen(controller: controller)
-                  : ProfileMonitorScreen(controller: controller),
+                  // Background checks moved into Notifications
+                  // (slice-close-misc), so every other scenario opens there.
+                  : NotificationsSettingsScreen(controller: controller),
             ),
           );
           await tester.pump();

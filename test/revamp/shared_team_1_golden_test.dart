@@ -222,6 +222,23 @@ void main() {
       );
     });
 
+    // slice-close-security: the end of the guide, the checked front
+    // download and the published guide opened through the link gate.
+    testWidgets('host guide sheet end ($theme)', (tester) async {
+      await _shot(
+        tester,
+        'team_host_guide_sheet_end',
+        light: light,
+        open: showTeamHostGuideSheet,
+        then: (tester) async {
+          await tester.ensureVisible(
+            find.byKey(const ValueKey('team-host-guide-open')),
+          );
+          await tester.pumpAndSettle();
+        },
+      );
+    });
+
     testWidgets('turn-off question ($theme)', (tester) async {
       await _shot(
         tester,

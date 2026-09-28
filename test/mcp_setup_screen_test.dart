@@ -321,7 +321,8 @@ void main() {
     await _reveal(tester, const ValueKey('mcp-oauth-detection'));
     await tester.tap(find.byKey(const ValueKey('mcp-oauth-detection')));
     await _reveal(tester, const ValueKey('mcp-timeout'));
-    await tester.enterText(find.byKey(const ValueKey('mcp-timeout')), '12000');
+    // Seconds on the form, milliseconds on the wire.
+    await tester.enterText(find.byKey(const ValueKey('mcp-timeout')), '12');
     await tester.tap(find.byKey(const ValueKey('mcp-save')));
     await tester.pumpAndSettle();
 
@@ -365,6 +366,17 @@ void main() {
       find.byKey(const ValueKey('mcp-command')),
       'npx\n-y\n@example/mcp-server',
     );
+    // Environment variables are name + secret value rows (P0.1, P2.5).
+    await _reveal(tester, const ValueKey('mcp-env-key-0'));
+    await tester.enterText(
+      find.byKey(const ValueKey('mcp-env-key-0')),
+      'LOG_LEVEL',
+    );
+    await _reveal(tester, const ValueKey('mcp-env-value-0'));
+    await tester.enterText(
+      find.byKey(const ValueKey('mcp-env-value-0')),
+      'warn',
+    );
     await _reveal(tester, const ValueKey('mcp-advanced'));
     await tester.tap(find.text('Advanced'));
     await tester.pumpAndSettle();
@@ -372,11 +384,6 @@ void main() {
     await tester.enterText(
       find.byKey(const ValueKey('mcp-cwd')),
       '/work/mobile',
-    );
-    await _reveal(tester, const ValueKey('mcp-environment'));
-    await tester.enterText(
-      find.byKey(const ValueKey('mcp-environment')),
-      'LOG_LEVEL=warn',
     );
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();

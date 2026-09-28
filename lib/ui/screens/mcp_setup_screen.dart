@@ -21,11 +21,31 @@ AppLocalizations _l10nOf(BuildContext context) =>
 /// draft kept); saved but the app did not reconnect (Try reconnecting
 /// again); location changed while open (the draft kept, saving stopped);
 /// not available on this server (explained, P7.4); discard question when
-/// leaving with unsaved input.
+/// leaving with unsaved input; filled in from the MCP catalogue (P2.5).
+///
+/// The MCP catalogue opens this same form with [prefill], so a catalogue
+/// server is saved by the same checks and the same Save as one typed by
+/// hand: the person sees the address or command before anything is
+/// written. A prefill carries names only for headers and environment
+/// variables; their values are always typed here, in secret fields.
 class McpSetupScreen extends StatefulWidget {
   final ConnectionController controller;
 
-  const McpSetupScreen({super.key, required this.controller});
+  /// The catalogue listing's starting point: name, how it runs, address or
+  /// command, and the header / variable names it needs. Any values in it
+  /// are ignored.
+  final McpServerDraft? prefill;
+
+  /// The listing's title, for the line that says where the form's values
+  /// came from; shown only with [prefill].
+  final String? prefillSource;
+
+  const McpSetupScreen({
+    super.key,
+    required this.controller,
+    this.prefill,
+    this.prefillSource,
+  });
 
   @override
   State<McpSetupScreen> createState() => _McpSetupScreenState();
@@ -37,9 +57,10 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
   final _command = TextEditingController();
   final _cwd = TextEditingController();
   // P0.1: a header's value is a secret (Authorization: Bearer …). One row
-  // per pair, each value a secret KitField.
-  final List<_HeaderRow> _headerRows = [_HeaderRow()];
-  final _environment = TextEditingController();
+  // per pair, each value a secret KitField. Environment variables follow
+  // the same rule (an API key is one, P2.5).
+  final List<_PairRow> _headerRows = [];
+  final List<_PairRow> _envRows = [];
   final _timeout = TextEditingController();
 
   late McpConfigScope _scope;
@@ -78,18 +99,26 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
           ? widget.controller.capabilities.mcpRuntimeAdds
           : widget.controller.capabilities.mcpConfigWrites);
 
-  /// Something typed that leaving would lose.
+  /// Something typed that leaving would lose: anything that differs from
+  /// how the form opened (empty, or a catalogue listing's starting point).
   bool get _hasInput =>
-      !_configurationSaved &&
+      !_configurationSaved && _inputSignature() != _startSignature;
+
+  String _startSignature = '';
+
+  String _inputSignature() =>
       [
-        _name,
-        _url,
-        _command,
-        _cwd,
-        _environment,
-        _timeout,
-        for (final row in _headerRows) ...[row.key, row.value],
-      ].any((controller) => controller.text.trim().isNotEmpty);
+            _name.text,
+            _url.text,
+            _command.text,
+            _cwd.text,
+            _timeout.text,
+            for (final row in [..._headerRows, ..._envRows])
+              '${row.key.text.trim()}=${row.value.text.trim()}',
+          ]
+          .map((text) => text.trim())
+          .where((text) => text.isNotEmpty && text != '=')
+          .join('\u0000');
 
   @override
   void initState() {
@@ -107,7 +136,31 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
         ? McpConfigScope.project
         : McpConfigScope.global;
     _detached = _supported && !_locationMatches;
+    _applyPrefill(widget.prefill);
+    if (_headerRows.isEmpty) _headerRows.add(_PairRow());
+    if (_envRows.isEmpty) _envRows.add(_PairRow());
+    _startSignature = _inputSignature();
     widget.controller.addListener(_connectionChanged);
+  }
+
+  /// A catalogue listing's starting point (P2.5). Names only: a header or
+  /// variable value is never prefilled, so a secret is only ever typed
+  /// into its own secret field (P0.1, SEC-3).
+  void _applyPrefill(McpServerDraft? draft) {
+    if (draft == null) return;
+    _name.text = draft.normalizedName;
+    _kind = draft.kind;
+    if (draft.kind == McpServerKind.remote) {
+      _url.text = draft.url ?? '';
+      for (final name in draft.headers.keys) {
+        _headerRows.add(_PairRow(name: name));
+      }
+    } else {
+      _command.text = draft.command.join('\n');
+      for (final name in draft.environment.keys) {
+        _envRows.add(_PairRow(name: name));
+      }
+    }
   }
 
   void _connectionChanged() {
@@ -125,10 +178,9 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
     _url.dispose();
     _command.dispose();
     _cwd.dispose();
-    for (final row in _headerRows) {
+    for (final row in [..._headerRows, ..._envRows]) {
       row.dispose();
     }
-    _environment.dispose();
     _timeout.dispose();
     super.dispose();
   }
@@ -157,16 +209,32 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
       : null;
 
   String? get _headersError => _kind == McpServerKind.remote
-      ? _pairError(_headersDraftText(), _l10nOf(context).e7LibraryHTTPHeader)
+      ? _requiredError(_headerRows) ??
+            _pairError(
+              _draftText(_headerRows),
+              _l10nOf(context).e7LibraryHTTPHeader,
+            )
       : null;
 
   String? get _environmentError => _kind == McpServerKind.local
-      ? _pairError(
-          _environment.text,
-          _l10nOf(context).e7LibraryEnvironmentVariable,
-        )
+      ? _requiredError(_envRows) ??
+            _pairError(
+              _draftText(_envRows),
+              _l10nOf(context).e7LibraryEnvironmentVariable,
+            )
       : null;
 
+  /// A header or variable the catalogue listing requires, left empty.
+  String? _requiredError(List<_PairRow> rows) {
+    for (final row in rows) {
+      if (row.prefilled && row.value.text.trim().isEmpty) {
+        return _l10nOf(context).mcpSetupValueRequired(row.key.text.trim());
+      }
+    }
+    return null;
+  }
+
+  /// The time limit in seconds (the server takes milliseconds).
   String? get _timeoutError {
     final text = _timeout.text.trim();
     if (text.isEmpty) return null;
@@ -177,9 +245,7 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
   }
 
   /// Errors under Advanced: it opens so the reason is never hidden.
-  bool get _advancedHasError =>
-      _timeoutError != null ||
-      (_kind == McpServerKind.local && _environmentError != null);
+  bool get _advancedHasError => _timeoutError != null;
 
   bool get _formValid =>
       _nameError == null &&
@@ -224,13 +290,13 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
             : const [],
         cwd: _kind == McpServerKind.local ? _cwd.text : null,
         headers: _kind == McpServerKind.remote
-            ? _pairs(_headersDraftText(), l10n.e7LibraryHTTPHeader)
+            ? _pairs(_draftText(_headerRows), l10n.e7LibraryHTTPHeader)
             : const {},
         environment: _kind == McpServerKind.local
-            ? _pairs(_environment.text, l10n.e7LibraryEnvironmentVariable)
+            ? _pairs(_draftText(_envRows), l10n.e7LibraryEnvironmentVariable)
             : const {},
         detectOAuth: _detectOAuth,
-        timeoutMs: timeoutText.isEmpty ? null : int.parse(timeoutText),
+        timeoutMs: timeoutText.isEmpty ? null : int.parse(timeoutText) * 1000,
       );
       // Keep repository validation authoritative even if a field check is
       // changed later.
@@ -407,6 +473,17 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
           key: const ValueKey('mcp-setup-form'),
           padding: KitScreen.padding(context),
           children: [
+            if (widget.prefill != null) ...[
+              KitNotice(
+                key: const ValueKey('mcp-setup-from-catalog'),
+                icon: AppIconography.info,
+                message: l10n.mcpSetupFromCatalog(
+                  widget.prefillSource ?? widget.prefill!.normalizedName,
+                  widget.controller.profile?.name ?? l10n.mcpSetupThisServer,
+                ),
+              ),
+              _gap(context),
+            ],
             ..._whereSection(context, l10n),
             _gap(context),
             KitField(
@@ -678,7 +755,6 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
   }
 
   List<Widget> _remoteFields(BuildContext context, AppLocalizations l10n) {
-    final tokens = KitTokens.of(context);
     return [
       KitField(
         label: l10n.e7LibraryMCPEndpointURL,
@@ -694,33 +770,58 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
         fieldKey: const ValueKey('mcp-url'),
       ),
       _gap(context),
-      _label(context, l10n.mcpSetupHeaders),
-      for (var index = 0; index < _headerRows.length; index++) ...[
-        _headerRow(context, l10n, index),
+      ..._pairRows(context, l10n, _headerRows, header: true),
+    ];
+  }
+
+  /// Name-and-secret-value rows (headers for a remote server, environment
+  /// variables for a local one), with Add another under them.
+  List<Widget> _pairRows(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<_PairRow> rows, {
+    required bool header,
+  }) {
+    final tokens = KitTokens.of(context);
+    return [
+      _label(
+        context,
+        header ? l10n.mcpSetupHeaders : l10n.e7LibraryEnvironmentVariables,
+      ),
+      for (var index = 0; index < rows.length; index++) ...[
+        _pairRow(context, l10n, rows, index, header: header),
         SizedBox(height: tokens.space4),
       ],
       Align(
         alignment: AlignmentDirectional.centerStart,
         child: KitButton.tertiary(
-          key: const ValueKey('mcp-header-add'),
-          label: l10n.mcpAddHeader,
+          key: ValueKey(header ? 'mcp-header-add' : 'mcp-env-add'),
+          label: header ? l10n.mcpAddHeader : l10n.mcpAddVariable,
           icon: AppIconography.add,
           onPressed: !_editable
               ? null
-              : () => setState(() => _headerRows.add(_HeaderRow())),
+              : () => setState(() => rows.add(_PairRow())),
         ),
       ),
     ];
   }
 
-  /// One header: its name stays visible; its value is a secret field that
-  /// is never prefilled (P0.1, SEC-3). The pair's error sits under the
-  /// value.
-  Widget _headerRow(BuildContext context, AppLocalizations l10n, int index) {
+  /// One header or variable: its name stays visible; its value is a
+  /// secret field that is never prefilled (P0.1, SEC-3). The pair's error
+  /// sits under the last value. A name the catalogue listing requires is
+  /// fixed, and its row cannot be removed.
+  Widget _pairRow(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<_PairRow> rows,
+    int index, {
+    required bool header,
+  }) {
     final tokens = KitTokens.of(context);
-    final row = _headerRows[index];
+    final row = rows[index];
     final denyNewlines = [FilteringTextInputFormatter.deny(RegExp(r'[\r\n]'))];
-    final last = index == _headerRows.length - 1;
+    final last = index == rows.length - 1;
+    final prefix = header ? 'mcp-header' : 'mcp-env';
     return Column(
       key: ObjectKey(row),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -730,28 +831,32 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
           children: [
             Expanded(
               child: KitField(
-                label: l10n.mcpHeaderName,
+                label: header ? l10n.mcpHeaderName : l10n.mcpVariableName,
                 controller: row.key,
                 kind: KitFieldKind.mono,
-                hint: index == 0 ? 'Authorization' : null,
-                enabled: _editable,
-                disabledReason: _disabledReason(l10n),
+                hint: index == 0
+                    ? (header ? 'Authorization' : 'API_KEY')
+                    : null,
+                enabled: _editable && !row.prefilled,
+                disabledReason: row.prefilled && _editable
+                    ? l10n.mcpSetupNameFromCatalog
+                    : _disabledReason(l10n),
                 inputFormatters: denyNewlines,
                 onChanged: _edited,
-                fieldKey: ValueKey('mcp-header-key-$index'),
+                fieldKey: ValueKey('$prefix-key-$index'),
               ),
             ),
-            if (_headerRows.length > 1) ...[
+            if (rows.length > 1 && !row.prefilled) ...[
               SizedBox(width: tokens.space1),
               KitIconButton(
-                key: ValueKey('mcp-header-remove-$index'),
+                key: ValueKey('$prefix-remove-$index'),
                 icon: AppIconography.close,
-                tooltip: l10n.mcpRemoveHeader,
+                tooltip: header ? l10n.mcpRemoveHeader : l10n.mcpRemoveVariable,
                 onPressed: !_editable
                     ? null
                     : () => setState(() {
-                        _headerRows[index].dispose();
-                        _headerRows.removeAt(index);
+                        rows[index].dispose();
+                        rows.removeAt(index);
                       }),
               ),
             ],
@@ -759,16 +864,18 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
         ),
         SizedBox(height: tokens.space2),
         KitField.secret(
-          label: l10n.mcpHeaderValue,
+          label: header ? l10n.mcpHeaderValue : l10n.mcpVariableValue,
           controller: row.value,
-          hint: index == 0 ? 'Bearer token' : null,
-          error: last ? _shown(_headersError) : null,
+          hint: index == 0 && header && !row.prefilled ? 'Bearer token' : null,
+          error: last
+              ? _shown(header ? _headersError : _environmentError)
+              : null,
           enabled: _editable,
           disabledReason: _disabledReason(l10n),
           inputFormatters: denyNewlines,
           onChanged: _edited,
-          fieldKey: ValueKey('mcp-header-value-$index'),
-          revealKey: ValueKey('mcp-header-reveal-$index'),
+          fieldKey: ValueKey('$prefix-value-$index'),
+          revealKey: ValueKey('$prefix-reveal-$index'),
         ),
       ],
     );
@@ -788,6 +895,8 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
       onChanged: _edited,
       fieldKey: const ValueKey('mcp-command'),
     ),
+    _gap(context),
+    ..._pairRows(context, l10n, _envRows, header: false),
   ];
 
   /// The rarer settings, folded (map proposal "the rest under Advanced").
@@ -826,24 +935,10 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
               onChanged: _edited,
               fieldKey: const ValueKey('mcp-cwd'),
             ),
-            gap,
-            KitField(
-              label: l10n.e7LibraryEnvironmentVariables,
-              controller: _environment,
-              kind: KitFieldKind.mono,
-              maxLines: 5,
-              hint: 'LOG_LEVEL=warn',
-              helper: l10n.e7LibraryOptionalEnterOneKEYVALUEPairPer,
-              error: _shown(_environmentError),
-              enabled: _editable,
-              disabledReason: _disabledReason(l10n),
-              onChanged: _edited,
-              fieldKey: const ValueKey('mcp-environment'),
-            ),
           ],
           gap,
           KitField(
-            label: l10n.e7LibraryTimeoutInMilliseconds,
+            label: l10n.mcpSetupTimeoutSeconds,
             controller: _timeout,
             kind: KitFieldKind.number,
             hint: l10n.e7LibraryOptional,
@@ -861,7 +956,7 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
   /// The rows as `KEY=VALUE` lines, exactly what the old single field held,
   /// so [_pairs] and [_pairError] need no change. A row left entirely empty
   /// (the default extra row) never becomes a line.
-  String _headersDraftText() => _headerRows
+  String _draftText(List<_PairRow> rows) => rows
       .where(
         (row) =>
             row.key.text.trim().isNotEmpty || row.value.text.trim().isNotEmpty,
@@ -913,13 +1008,19 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
   }
 }
 
-/// One HTTP header pair's editing state (P0.1). Its value field masks
-/// itself (KitField.secret) until the person presses show for that row.
-class _HeaderRow {
-  _HeaderRow() : key = TextEditingController(), value = TextEditingController();
+/// One header or environment variable pair's editing state (P0.1). Its
+/// value field masks itself (KitField.secret) until the person presses show
+/// for that row. [prefilled]: the name came from a catalogue listing that
+/// requires it, so the name is fixed and the value must be entered.
+class _PairRow {
+  _PairRow({String? name})
+    : key = TextEditingController(text: name),
+      value = TextEditingController(),
+      prefilled = name != null;
 
   final TextEditingController key;
   final TextEditingController value;
+  final bool prefilled;
 
   void dispose() {
     key.dispose();
