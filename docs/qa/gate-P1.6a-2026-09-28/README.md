@@ -254,6 +254,10 @@ The stable app remains present at **versionCode 2055**. Its version, first-insta
 
 The release build passed. QA source files are unchanged from the prior analyzed commit; no new Flutter analyzer/full-suite run is claimed for this documentation-only update. JSON parsing, local evidence links and whitespace checks passed. Sanitized machine-readable evidence is in [arm64-awake-measurements.json](arm64-awake-measurements.json). A future owner-authorized awake retry must diagnose the missing native optional dependency and complete the remaining measurements before GO.
 
+## Off-phone installer follow-up
+
+The [npm diagnosis and prepared native installer fix](installer-fix.md) bypass npm optional-package selection while retaining Claude 2.1.283 and its official checksums. The x64 emulator regression passed; ARM64 static checks passed, but ARM64 execution and gate GO remain pending. The phone was not accessed for this follow-up.
+
 ## Primary sources checked on 2026-09-28
 
 - [Claude setup and current hardware/npm requirements](https://code.claude.com/docs/en/setup)
