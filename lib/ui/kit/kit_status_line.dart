@@ -101,6 +101,27 @@ class KitStatus {
   /// Lower is more important ([kind]'s index).
   int get priority => kind.index;
 
+  /// The same condition as one line: the words and More, with the action
+  /// folded into More (first) and no supporting, Now or slow line. For a
+  /// page about something else (the phone's own setup under a saved
+  /// server's connection problem, B6): the truth stays on screen, its ways
+  /// out one tap away, without pushing every step of the page down.
+  KitStatus compact() {
+    final action = this.action;
+    return KitStatus(
+      kind: kind,
+      icon: icon,
+      message: message,
+      id: id,
+      key: key,
+      messageKey: messageKey,
+      dismissTooltip: dismissTooltip,
+      tone: tone,
+      more: [?action, ...more],
+      onDismiss: onDismiss,
+    );
+  }
+
   /// The one status to show among [statuses] (nulls ignored): the lowest
   /// [priority] value; ties keep the first. Used by `KitStatusLineSlot`.
   static KitStatus? highest(Iterable<KitStatus?> statuses) {

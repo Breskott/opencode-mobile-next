@@ -20484,17 +20484,23 @@ abstract class AppLocalizations {
   /// **'This app\'s Ubuntu only runs on a 64-bit Arm or Intel phone; this one reports {abi}.'**
   String phoneSetupPreflightUnsupportedBody(String abi);
 
-  /// Pre-flight (P0.8): shown instead of the promise when total RAM is under the floor.
+  /// Pre-flight (P0.8, B2): shown instead of the promise when total RAM is under the hard floor (1,800 MB).
   ///
   /// In en, this message translates to:
-  /// **'This phone may not have enough memory'**
+  /// **'This phone doesn\'t have enough memory'**
   String get phoneSetupPreflightLowMemoryHeadline;
 
-  /// Pre-flight (P0.8): why a low-memory phone is blocked, before anything downloads.
+  /// Pre-flight (P0.8, B2): why a low-memory phone is blocked before anything downloads, and the way forward.
   ///
   /// In en, this message translates to:
-  /// **'Setup wants a phone with at least {minimum} MB of memory; this one has {actual} MB.'**
+  /// **'OpenCode needs a phone with at least {minimum} MB of memory; this one has {actual} MB. Run it on a computer instead and connect this phone to it.'**
   String phoneSetupPreflightLowMemoryBody(int minimum, int actual);
+
+  /// Pre-flight (B2): setup is allowed on a phone with 1,800 MB to 3 GB of total RAM; this plain note sits above 'Includes …' on the start page.
+  ///
+  /// In en, this message translates to:
+  /// **'It may be slow on this phone, which has {memory} MB of memory.'**
+  String phoneSetupPreflightMayBeSlow(int memory);
 
   /// Pre-flight (P0.8): shown instead of the promise, or in Add tools, when free space is short.
   ///

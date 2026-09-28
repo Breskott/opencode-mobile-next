@@ -568,15 +568,13 @@ void main() {
       },
     );
 
-    testWidgets('a low-memory phone is told why, not left on the promise', (
-      tester,
-    ) async {
+    Future<_Harness> pumpWithMemory(WidgetTester tester, int memoryMb) async {
       final harness = _Harness(
-        device: const VoiceDeviceInfo(
+        device: VoiceDeviceInfo(
           availableStorageBytes: 2000000000,
           memoryClassMb: 256,
-          totalMemoryMb: 1024,
-          supportedAbis: ['arm64-v8a'],
+          totalMemoryMb: memoryMb,
+          supportedAbis: const ['arm64-v8a'],
           hasMicrophone: false,
         ),
       );
@@ -584,25 +582,82 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller, home: harness.screen));
       await tester.pumpAndSettle();
+      return harness;
+    }
+
+    FilledButton primaryButton(WidgetTester tester) =>
+        tester.widget<FilledButton>(
+          find.descendant(
+            of: find.byKey(const ValueKey('phone-setup-start-primary')),
+            matching: find.byType(FilledButton),
+          ),
+        );
+
+    // B2: under 1,800 MB of total RAM setup is refused, with the way
+    // forward (a computer), before anything downloads.
+    testWidgets('a 1,700 MB phone is told why and where to go instead', (
+      tester,
+    ) async {
+      final harness = await pumpWithMemory(tester, 1700);
 
       expect(
-        find.text('This phone may not have enough memory'),
+        find.text("This phone doesn't have enough memory"),
         findsOneWidget,
       );
       expect(
         find.text(
-          'Setup wants a phone with at least 2048 MB of memory; this one '
-          'has 1024 MB.',
+          'OpenCode needs a phone with at least 1,800 MB of memory; this one '
+          'has 1,700 MB. Run it on a computer instead and connect this phone '
+          'to it.',
         ),
         findsOneWidget,
       );
-      final primary = tester.widget<FilledButton>(
-        find.descendant(
-          of: find.byKey(const ValueKey('phone-setup-start-primary')),
-          matching: find.byType(FilledButton),
-        ),
+      expect(primaryButton(tester).onPressed, isNull);
+      expect(
+        find.byKey(const ValueKey('phone-setup-start-may-be-slow')),
+        findsNothing,
       );
-      expect(primary.onPressed, isNull);
+      expect(harness.engine.runs, isEmpty);
+    });
+
+    // B2: a nominal 2 GB phone reports 1,972 MB; it may set up, told once
+    // and plainly that it may be slow, naming the amount.
+    for (final memory in [1972, 2900]) {
+      testWidgets('a $memory MB phone may set up, with a plain slow note', (
+        tester,
+      ) async {
+        final harness = await pumpWithMemory(tester, memory);
+        final amount = memory == 1972 ? '1,972' : '2,900';
+
+        expect(find.text('Run a coding agent right here'), findsOneWidget);
+        expect(
+          find.text("This phone doesn't have enough memory"),
+          findsNothing,
+        );
+        expect(
+          find.text(
+            'It may be slow on this phone, which has $amount MB of memory.',
+          ),
+          findsOneWidget,
+        );
+        expect(primaryButton(tester).onPressed, isNotNull);
+        final primary = find.byKey(const ValueKey('phone-setup-start-primary'));
+        await tester.ensureVisible(primary);
+        await tester.pumpAndSettle();
+        await tester.tap(primary);
+        await tester.pumpAndSettle();
+        expect(harness.engine.runs, hasLength(1));
+      });
+    }
+
+    testWidgets('a 4,096 MB phone has no memory note', (tester) async {
+      await pumpWithMemory(tester, 4096);
+      expect(find.text('Run a coding agent right here'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('phone-setup-start-may-be-slow')),
+        findsNothing,
+      );
+      expect(primaryButton(tester).onPressed, isNotNull);
     });
 
     testWidgets('a supported phone with room keeps the plain promise', (

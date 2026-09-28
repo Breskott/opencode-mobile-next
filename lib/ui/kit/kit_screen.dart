@@ -76,6 +76,7 @@ class KitScreen extends StatelessWidget {
     this.search,
     this.status,
     this.bodySays = const {},
+    this.bodyQuiets = const {},
     this.jump,
     this.width = KitScreenWidth.full,
     this.bottomKey,
@@ -100,6 +101,7 @@ class KitScreen extends StatelessWidget {
     this.search,
     this.status,
     this.bodySays = const {},
+    this.bodyQuiets = const {},
     this.loading = false,
     this.loadingLabel = '',
     this.bottom,
@@ -128,6 +130,7 @@ class KitScreen extends StatelessWidget {
     this.search,
     this.status,
     this.bodySays = const {},
+    this.bodyQuiets = const {},
     this.loading = false,
     this.loadingLabel = '',
     this.bottom,
@@ -181,6 +184,14 @@ class KitScreen extends StatelessWidget {
   /// the slot does not repeat them, so nothing is said twice. Applies only
   /// to the slot this screen owns; under an outer slot it has no effect.
   final Set<KitStatusKind> bodySays;
+
+  /// Kinds of app-wide condition that are about something other than this
+  /// page (a saved server not answering, over the phone's own setup): the
+  /// slot still says them, as one line with their actions behind More
+  /// ([KitStatus.compact]), so the page is not pushed down by another
+  /// thing's controls. [bodySays] wins for a kind in both. Applies only to
+  /// the slot this screen owns; under an outer slot it has no effect.
+  final Set<KitStatusKind> bodyQuiets;
 
   /// Floats over [body], above [bottom].
   final KitJumpPill? jump;
@@ -263,7 +274,12 @@ class KitScreen extends StatelessWidget {
     );
     final slotted = KitStatusLineSlot.existsAbove(context)
         ? KitStatusContribution(status: status, child: content)
-        : KitStatusLineSlot(status: status, omit: bodySays, child: content);
+        : KitStatusLineSlot(
+            status: status,
+            omit: bodySays,
+            compact: bodyQuiets,
+            child: content,
+          );
     final topBar = this.topBar;
     final isPage = topBar != null || page;
     final Widget framed;

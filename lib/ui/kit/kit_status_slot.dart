@@ -70,6 +70,7 @@ class KitStatusLineSlot extends StatefulWidget {
     this.status,
     this.slotKey,
     this.omit = const {},
+    this.compact = const {},
     this.child,
   });
 
@@ -78,6 +79,11 @@ class KitStatusLineSlot extends StatefulWidget {
   /// App-wide condition kinds this slot does not draw, because the page
   /// under it already is that condition (`KitScreen.bodySays`).
   final Set<KitStatusKind> omit;
+
+  /// App-wide condition kinds this slot draws as one line
+  /// ([KitStatus.compact]), because the page under it is about something
+  /// else (`KitScreen.bodyQuiets`).
+  final Set<KitStatusKind> compact;
   final Key? slotKey;
 
   /// What sits below the line, inside this slot's reach (null: the line
@@ -130,7 +136,12 @@ class _KitStatusLineSlotState extends State<KitStatusLineSlot> {
         builder: (context, appWide, _) {
           final shown = KitStatus.highest([
             for (final condition in appWide)
-              if (!widget.omit.contains(condition.kind)) condition,
+              if (widget.omit.contains(condition.kind))
+                null
+              else if (widget.compact.contains(condition.kind))
+                condition.compact()
+              else
+                condition,
             widget.status,
             for (final contribution in _contributions)
               if (contribution.active) contribution.widget.status,

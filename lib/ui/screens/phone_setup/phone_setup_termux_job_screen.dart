@@ -558,6 +558,9 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
     final running =
         _hasJob && _engine.progress.value.state == SetupState.running;
     return KitScreen(
+      // B6: a saved server's connection problem is not about this
+      // phone's own setup: one line, its ways out behind More.
+      bodyQuiets: const {KitStatusKind.connection},
       topBar: KitTopBar(title: l10n.phoneSetupStartScreenTitle),
       width: KitScreenWidth.reading,
       body: KeyedSubtree(
@@ -621,6 +624,9 @@ class PhoneSetupUnsupportedScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     return KitScreen(
+      // B6: a saved server's connection problem is not about this
+      // phone's own setup: one line, its ways out behind More.
+      bodyQuiets: const {KitStatusKind.connection},
       topBar: KitTopBar(title: l10n.phoneSetupStartScreenTitle),
       width: KitScreenWidth.reading,
       body: KitStateView(

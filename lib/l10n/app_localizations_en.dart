@@ -12446,11 +12446,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneSetupPreflightLowMemoryHeadline =>
-      'This phone may not have enough memory';
+      'This phone doesn\'t have enough memory';
 
   @override
   String phoneSetupPreflightLowMemoryBody(int minimum, int actual) {
-    return 'Setup wants a phone with at least $minimum MB of memory; this one has $actual MB.';
+    final intl.NumberFormat minimumNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minimumString = minimumNumberFormat.format(minimum);
+    final intl.NumberFormat actualNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String actualString = actualNumberFormat.format(actual);
+
+    return 'OpenCode needs a phone with at least $minimumString MB of memory; this one has $actualString MB. Run it on a computer instead and connect this phone to it.';
+  }
+
+  @override
+  String phoneSetupPreflightMayBeSlow(int memory) {
+    final intl.NumberFormat memoryNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String memoryString = memoryNumberFormat.format(memory);
+
+    return 'It may be slow on this phone, which has $memoryString MB of memory.';
   }
 
   @override

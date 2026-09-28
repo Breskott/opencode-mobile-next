@@ -145,6 +145,9 @@ class _PhoneSetupProgressScreenState extends State<PhoneSetupProgressScreen> {
     // the job belongs to, as the start screen does; the job's own title is
     // the view's headline.
     return KitScreen(
+      // B6: a saved server's connection problem is not about this
+      // phone's own setup: one line, its ways out behind More.
+      bodyQuiets: const {KitStatusKind.connection},
       topBar: KitTopBar(title: l10n.phoneSetupStartScreenTitle),
       width: KitScreenWidth.reading,
       body: ValueListenableBuilder<SetupProgress>(
