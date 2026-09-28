@@ -62,8 +62,24 @@ sudo apt install tmux git jq
 ```
 
 `~/.local/bin` is on `PATH` by default on Ubuntu once it exists; log out
-and in (or `source ~/.profile`) if `which gc` finds nothing. Tailscale:
-`curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`.
+and in (or `source ~/.profile`) if `which gc` finds nothing.
+
+Tailscale comes from its signed apt repository, not from an install script
+piped into a shell. These are the steps Tailscale publishes for Ubuntu 24.04
+at <https://pkgs.tailscale.com/stable/#linux>; `apt` checks every package
+against the keyring from the first step:
+
+```sh
+sudo mkdir -p --mode=0755 /usr/share/keyrings
+curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg | sudo tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list | sudo tee /etc/apt/sources.list.d/tailscale.list
+sudo apt-get update && sudo apt-get install tailscale
+sudo tailscale up
+```
+
+On another release, replace `ubuntu/noble` in both URLs with the path that
+page lists for it (for example `ubuntu/jammy` for 22.04 or
+`debian/bookworm` for Debian 12).
 
 ### 1b. Fedora / Arch (not verified here)
 
@@ -126,8 +142,8 @@ distribution, and your project should live on the Linux side
      it; `tailscale ip -4` inside WSL will not work then, so read the
      address from the Windows tray icon or `tailscale ip -4` in
      PowerShell and use that address in §5; or
-   - the WSL client (`curl -fsSL https://tailscale.com/install.sh | sh`
-     inside Ubuntu, then `sudo tailscaled &` and `sudo tailscale up`).
+   - the WSL client (§1a's Tailscale apt repository steps inside Ubuntu,
+     then `sudo tailscaled &` and `sudo tailscale up`).
      WSL has no systemd unless `systemd=true` is set in `/etc/wsl.conf`,
      so `tailscaled` has to be started by hand or by the keep-alive below.
 4. WSL stops the whole distribution a few seconds after its last terminal

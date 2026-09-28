@@ -1,16 +1,62 @@
 // The host scripts the app tells people to download are pinned to one
 // published commit and checked against a SHA-256 before they run
 // (slice-close-security). These tests keep that pin honest: a script edit
-// without a new pin and checksum fails here, and so does a guide or a
-// screen that tells anyone to pipe a download straight into a shell.
+// that neither moves the pin nor records a pending update fails here, and
+// so does a guide, a host script or a screen that tells anyone to pipe a
+// download straight into a shell.
 
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/ui/setup_commands.dart';
 
 const _scripts = {'ubuntu': HostScripts.ubuntu, 'front': HostScripts.front};
+
+/// PIN UPDATE PENDING PUSH (slice-script-pins, 2026-09-28).
+///
+/// These scripts changed in the repository after [HostScripts.commit]. The
+/// app keeps downloading the pinned bytes (whose checksum still matches)
+/// until a commit that holds the new bytes is published. Each entry is the
+/// SHA-256 of the file as it is now in the repository; a further edit to
+/// the file must update it here, or the checkout test below fails.
+///
+/// After the owner approves a push of a commit holding these files:
+/// 1. `HostScripts.commit` in lib/ui/setup_commands.dart = that full
+///    40-character commit hash, and `HostScripts.release` = the release it
+///    belongs to (or reword the line that names it).
+/// 2. `HostScripts.ubuntu.sha256` = the value below; this must print it:
+///    `git show COMMIT:scripts/host/ubuntu-opencode.sh | sha256sum`
+///    `HostScripts.front.sha256` stays as it is: front.py did not change.
+/// 3. Replace the pinned command in docs/ubuntu-host.md and
+///    docs/ai-team-host.md with the new `verifiedDownload` text, and drop
+///    the "release 1.0.44 script" paragraphs in docs/ubuntu-host.md.
+/// 4. Empty this map.
+/// Details: docs/qa/slice-script-pins-2026-09-28/README.md.
+const _pendingPinUpdate = <String, String>{
+  'scripts/host/ubuntu-opencode.sh':
+      '7c0f335cf7667e5b00d48ffb71bed1d2593c842d47823e76721ba5e7976b3c45',
+};
+
+/// Files that show or run shell commands: the app's own copy, the guides at
+/// the top of docs/, and every host-side script.
+List<File> _commandSources() => [
+  ...Directory('lib')
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.dart'))
+      .where((f) => !f.path.contains('app_localizations')),
+  File('lib/l10n/app_en.arb'),
+  ...Directory(
+    'docs',
+  ).listSync().whereType<File>().where((f) => f.path.endsWith('.md')),
+  for (final dir in ['scripts', 'tool/host'])
+    ...Directory(dir)
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => !f.path.contains('__pycache__')),
+];
 
 /// `curl … | bash`, `wget … | sh` and friends: a download run unchecked.
 final _pipedToShell = RegExp(
@@ -33,19 +79,34 @@ void main() {
   });
 
   for (final MapEntry(key: name, value: script) in _scripts.entries) {
-    test('$name: the checksum matches the file in this checkout', () {
-      final bytes = File(script.path).readAsBytesSync();
+    test('$name: the checkout holds the pinned bytes or a recorded update', () {
+      final actual = sha256
+          .convert(File(script.path).readAsBytesSync())
+          .toString();
+      if (actual == script.sha256) {
+        expect(
+          _pendingPinUpdate,
+          isNot(contains(script.path)),
+          reason:
+              'The pin already covers ${script.path}; remove its '
+              '_pendingPinUpdate entry.',
+        );
+        return;
+      }
       expect(
-        sha256.convert(bytes).toString(),
-        script.sha256,
+        _pendingPinUpdate[script.path],
+        actual,
         reason:
-            '${script.path} changed. Publish a commit that holds it, then '
-            'move HostScripts.commit and its sha256 in '
-            'lib/ui/setup_commands.dart together.',
+            '${script.path} differs from ${HostScripts.commit}. Until a '
+            'commit holding it is published and pinned, record its SHA-256 '
+            'in _pendingPinUpdate above.',
       );
     });
 
-    test('$name: the pinned commit holds exactly those bytes', () {
+    // The checksum is compared with the pinned commit's bytes, not the
+    // working tree, so an unpublished script edit leaves the app's pin
+    // valid: what people download is what this checksum describes.
+    test('$name: the checksum matches the pinned commit\'s bytes', () {
       final result = Process.runSync('git', [
         'cat-file',
         'blob',
@@ -112,17 +173,49 @@ void main() {
     }
   });
 
-  test('nothing in the app tells anyone to pipe a download into a shell', () {
+  test('the pending update is still waiting for a published commit', () {
+    // An entry here means the app's pin is behind the repository. Once the
+    // pin moves, the checkout test above insists the entry goes.
+    for (final MapEntry(key: path, value: sha) in _pendingPinUpdate.entries) {
+      expect(_scripts.values.map((s) => s.path), contains(path));
+      expect(sha, matches(RegExp(r'^[0-9a-f]{64}$')));
+    }
+  });
+
+  test('the repository script installs a pinned, checked OpenCode', () {
+    final text = File(HostScripts.ubuntu.path).readAsStringSync();
+    // No installer piped into a shell, and no unpinned self-upgrade.
+    expect(_pipedToShell.hasMatch(text), isFalse);
+    expect(text, isNot(contains('opencode.ai/install')));
+    expect(text, isNot(contains('" upgrade')));
+    // The release is the one the app pins, from OpenCode's GitHub releases.
+    expect(
+      text,
+      contains(
+        'readonly OPENCODE_VERSION="'
+        '${TermuxRuntime.openCode1.pinnedVersion}"',
+      ),
+    );
+    expect(
+      text,
+      contains('https://github.com/anomalyco/opencode/releases/download'),
+    );
+    for (final arch in ['X64', 'ARM64']) {
+      expect(
+        text,
+        matches(RegExp('readonly OPENCODE_${arch}_SHA256="[0-9a-f]{64}"')),
+      );
+    }
+    // The checksum is compared before the archive is unpacked.
+    final check = text.indexOf(r'if [[ "$actual" != "$expected" ]]; then');
+    final unpack = text.indexOf(r'tar -xzf "$WORK_DIR/$asset"');
+    expect(check, greaterThan(0));
+    expect(unpack, greaterThan(check));
+  });
+
+  test('nothing the app or its guides show pipes a download into a shell', () {
     final offenders = <String>[];
-    final files = [
-      ...Directory('lib')
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.dart'))
-          .where((f) => !f.path.contains('app_localizations')),
-      File('lib/l10n/app_en.arb'),
-    ];
-    for (final file in files) {
+    for (final file in _commandSources()) {
       final lines = file.readAsLinesSync();
       for (final (i, line) in lines.indexed) {
         if (_pipedToShell.hasMatch(line)) {

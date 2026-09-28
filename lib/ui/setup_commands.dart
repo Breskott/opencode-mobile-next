@@ -94,9 +94,16 @@ final class HostScript {
 ///
 /// `test/host_script_pin_test.dart` hashes the files in this checkout and at
 /// [commit]; a script edit that does not move the pin and the checksum here
-/// (after the commit holding it is published) fails that test. The guides in
-/// `docs/ubuntu-host.md` and `docs/ai-team-host.md` show the same commands
-/// and are checked by the same test.
+/// (after the commit holding it is published), or record the edit as a
+/// pending pin update in that test's `_pendingPinUpdate`, fails that test.
+/// The guides in `docs/ubuntu-host.md` and `docs/ai-team-host.md` show the
+/// same commands and are checked by the same test.
+///
+/// Pin update pending push (2026-09-28): `scripts/host/ubuntu-opencode.sh`
+/// now installs a pinned, checksummed OpenCode, but no published commit
+/// holds it yet, so [commit] still names release 1.0.44. The exact change to
+/// make after the push is listed at `_pendingPinUpdate` and in
+/// `docs/qa/slice-script-pins-2026-09-28/README.md`.
 abstract final class HostScripts {
   static const repository = 'Eslamasabry/opencode-mobile-next';
 
