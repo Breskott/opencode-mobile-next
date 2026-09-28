@@ -8,8 +8,12 @@ import 'package:flutter/widgets.dart';
 import 'device.dart';
 
 const voiceSampleRate = 16000;
-const voiceMaximumDuration = Duration(seconds: 30);
-const voiceMaximumSamples = voiceSampleRate * 30;
+
+/// The recognizer hears 30 s at a time, so a recording is cut into 30 s
+/// chunks: each finished chunk is transcribed while listening goes on.
+/// There is no cap on the recording itself (P10.3).
+const voiceChunkDuration = Duration(seconds: 30);
+const voiceChunkSamples = voiceSampleRate * 30;
 
 class VoicePermissionDenied implements Exception {
   const VoicePermissionDenied({this.permanent = false});
@@ -104,7 +108,7 @@ class RecordVoiceRecorder implements VoiceRecorder {
 }
 
 class Pcm16Accumulator {
-  Pcm16Accumulator({this.maximumSamples = voiceMaximumSamples})
+  Pcm16Accumulator({this.maximumSamples = voiceChunkSamples})
     : _samples = Float32List(maximumSamples);
 
   final int maximumSamples;
@@ -118,9 +122,11 @@ class Pcm16Accumulator {
   Duration get duration =>
       Duration(microseconds: (_length * 1000000) ~/ voiceSampleRate);
 
-  void add(Uint8List bytes) {
-    if (bytes.isEmpty || isFull) return;
-    var index = 0;
+  /// Adds PCM16 bytes from [start] until the buffer is full and returns
+  /// how many bytes it took; the rest belongs to the next chunk.
+  int add(Uint8List bytes, [int start = 0]) {
+    if (start >= bytes.length || isFull) return 0;
+    var index = start;
     var sumSquares = 0.0;
     var levelSamples = 0;
     if (_pendingLowByte != null && index < bytes.length) {
@@ -137,10 +143,11 @@ class Pcm16Accumulator {
       sumSquares += value * value;
       levelSamples++;
     }
-    if (!isFull && index < bytes.length) _pendingLowByte = bytes[index];
+    if (!isFull && index < bytes.length) _pendingLowByte = bytes[index++];
     if (levelSamples > 0) {
       level = math.sqrt(sumSquares / levelSamples).clamp(0, 1);
     }
+    return index - start;
   }
 
   double _decode(int low, int high) {

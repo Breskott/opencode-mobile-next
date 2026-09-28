@@ -348,25 +348,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pump();
-      // Conversation mode deliberately requires an explicit first listen.
-      expect(voice.state, VoiceComposerState.idle);
-      await tester.tap(find.text('Start listening'));
-      await tester.pump();
-      await tester.tap(find.byKey(const Key('stop-voice-recording')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-      await tester.ensureVisible(find.byKey(const Key('insert-voice-draft')));
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const Key('insert-voice-draft')).hitTestable(),
-        findsOneWidget,
-      );
-      await tester.tap(find.byKey(const Key('insert-voice-draft')));
-      await tester.pumpAndSettle();
-      expect(
-        tester.widget<TextField>(find.byType(TextField).first).controller!.text,
-        _transcript,
-      );
+      // Choosing Voice conversation is the explicit start: the composer is
+      // in voice mode and listening; what is said is sent only by Send.
+      expect(voice.state, VoiceComposerState.listening);
+      expect(find.byKey(const Key('voice-mode')), findsOneWidget);
       await tester.pump(const Duration(seconds: 2));
       final prefs = await SharedPreferences.getInstance();
       void expectPrivate() {
@@ -398,6 +383,8 @@ void main() {
         tester.binding.handleAppLifecycleStateChanged(state);
       }
       await tester.pumpAndSettle();
+      // Leaving the app ends the conversation: back to an empty composer.
+      expect(find.byKey(const Key('voice-mode')), findsNothing);
       expect(
         tester.widget<TextField>(find.byType(TextField).first).controller!.text,
         isEmpty,

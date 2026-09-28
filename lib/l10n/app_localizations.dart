@@ -2459,38 +2459,8 @@ abstract class AppLocalizations {
   /// No description provided for @voiceConversationDescription.
   ///
   /// In en, this message translates to:
-  /// **'Listen, review, then Send. No automatic listening; replies are read aloud only if you turn that on.'**
+  /// **'Talk, then tap Send: what you said goes to the agent. Replies are read aloud only if you turn that on.'**
   String get voiceConversationDescription;
-
-  /// No description provided for @voiceConversationSpeakReplies.
-  ///
-  /// In en, this message translates to:
-  /// **'Speak replies'**
-  String get voiceConversationSpeakReplies;
-
-  /// No description provided for @voiceConversationSpeakRepliesDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Read a matched reply once after Send. Tap Listen to use the microphone.'**
-  String get voiceConversationSpeakRepliesDetail;
-
-  /// No description provided for @voiceConversationWaitingReply.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for the reply…'**
-  String get voiceConversationWaitingReply;
-
-  /// No description provided for @voiceConversationSpeakingReply.
-  ///
-  /// In en, this message translates to:
-  /// **'Speaking the reply'**
-  String get voiceConversationSpeakingReply;
-
-  /// No description provided for @voiceConversationReadReply.
-  ///
-  /// In en, this message translates to:
-  /// **'Read reply'**
-  String get voiceConversationReadReply;
 
   /// No description provided for @voiceConversationReplyReviewNeeded.
   ///
@@ -2516,12 +2486,6 @@ abstract class AppLocalizations {
   /// **'The reply could not be read aloud.'**
   String get voiceConversationReplyFailed;
 
-  /// No description provided for @voiceConversationPausedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Voice conversation paused'**
-  String get voiceConversationPausedTitle;
-
   /// No description provided for @voiceConversationPausedDetail.
   ///
   /// In en, this message translates to:
@@ -2534,41 +2498,11 @@ abstract class AppLocalizations {
   /// **'Send, save, or clear your current draft before starting voice conversation.'**
   String get voiceConversationDraftFirst;
 
-  /// No description provided for @voiceConversationListen.
-  ///
-  /// In en, this message translates to:
-  /// **'Listen'**
-  String get voiceConversationListen;
-
-  /// No description provided for @voiceConversationExit.
-  ///
-  /// In en, this message translates to:
-  /// **'Exit voice mode'**
-  String get voiceConversationExit;
-
   /// No description provided for @voiceConversationCommandsOnly.
   ///
   /// In en, this message translates to:
   /// **'Use the typed composer for slash commands.'**
   String get voiceConversationCommandsOnly;
-
-  /// No description provided for @voiceReviewExplicitAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit before inserting. Sending always requires an explicit action.'**
-  String get voiceReviewExplicitAction;
-
-  /// No description provided for @voiceInputInterrupted.
-  ///
-  /// In en, this message translates to:
-  /// **'Voice input was interrupted. Close and start again when ready.'**
-  String get voiceInputInterrupted;
-
-  /// No description provided for @voiceInputClose.
-  ///
-  /// In en, this message translates to:
-  /// **'Close voice input'**
-  String get voiceInputClose;
 
   /// No description provided for @voiceInputUnavailable.
   ///
@@ -2576,11 +2510,29 @@ abstract class AppLocalizations {
   /// **'Voice input is unavailable. Check the local model and microphone settings.'**
   String get voiceInputUnavailable;
 
-  /// No description provided for @voiceConversationInstructions.
+  /// No description provided for @voiceModeMicAsk.
   ///
   /// In en, this message translates to:
-  /// **'Review and insert your transcript, then tap Send in the composer. Replies are read aloud only while Speak replies is on, and only the reply to what you just sent. Unsent text is discarded when you leave voice mode, the conversation, or the app.'**
-  String get voiceConversationInstructions;
+  /// **'Voice typing needs the microphone. Tap Allow microphone, then choose Allow.'**
+  String get voiceModeMicAsk;
+
+  /// No description provided for @voiceModeMicAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow microphone'**
+  String get voiceModeMicAllow;
+
+  /// No description provided for @voiceModeMicBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Android blocks the microphone for this app. Turn it on in Android settings, then come back here.'**
+  String get voiceModeMicBlocked;
+
+  /// No description provided for @voiceModeNothingHeard.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was heard. Tap the mic and try again.'**
+  String get voiceModeNothingHeard;
 
   /// No description provided for @desktopDropFailedTitle.
   ///
@@ -9278,12 +9230,6 @@ abstract class AppLocalizations {
   /// **'Changes'**
   String get chatUiChanges;
 
-  /// Chat journey: Choose a prompt to restore it in a new session.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a prompt to restore it in a new conversation.'**
-  String get chatUiChooseAPromptToRestoreItIn;
-
   /// Chat journey: Choose a server model by provider and capability
   ///
   /// In en, this message translates to:
@@ -9607,12 +9553,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Follow Android or choose the native light or dark theme'**
   String get chatUiFollowAndroidOrChooseTheNativeLight;
-
-  /// Chat journey: Fork from prompt
-  ///
-  /// In en, this message translates to:
-  /// **'Fork from prompt'**
-  String get chatUiForkFromPrompt;
 
   /// Chat journey: Fork from this prompt
   ///
@@ -14227,12 +14167,6 @@ abstract class AppLocalizations {
   /// **'Re-download'**
   String get e7VoiceUiRedownload;
 
-  /// Shared voice or model selection UI: e7VoiceUiReviewTranscript
-  ///
-  /// In en, this message translates to:
-  /// **'Transcript'**
-  String get e7VoiceUiReviewTranscript;
-
   /// Shared voice or model selection UI: e7VoiceUiOpenSettings
   ///
   /// In en, this message translates to:
@@ -14251,48 +14185,6 @@ abstract class AppLocalizations {
   /// **'Start listening'**
   String get e7VoiceUiStartListening;
 
-  /// Shared voice or model selection UI: e7VoiceUiCancel
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get e7VoiceUiCancel;
-
-  /// Shared voice or model selection UI: e7VoiceUiInsert
-  ///
-  /// In en, this message translates to:
-  /// **'Insert'**
-  String get e7VoiceUiInsert;
-
-  /// Shared voice or model selection UI: e7VoiceUiInsertSend
-  ///
-  /// In en, this message translates to:
-  /// **'Insert & send'**
-  String get e7VoiceUiInsertSend;
-
-  /// Shared voice or model selection UI: e7VoiceUiStartingMic
-  ///
-  /// In en, this message translates to:
-  /// **'Starting microphone…'**
-  String get e7VoiceUiStartingMic;
-
-  /// Shared voice or model selection UI: e7VoiceUiLoadingModel
-  ///
-  /// In en, this message translates to:
-  /// **'Loading local model…'**
-  String get e7VoiceUiLoadingModel;
-
-  /// Shared voice or model selection UI: e7VoiceUiTranscribing
-  ///
-  /// In en, this message translates to:
-  /// **'Transcribing on this device…'**
-  String get e7VoiceUiTranscribing;
-
-  /// Shared voice or model selection UI: e7VoiceUiFinishingCancel
-  ///
-  /// In en, this message translates to:
-  /// **'Finishing canceled transcription…'**
-  String get e7VoiceUiFinishingCancel;
-
   /// Shared voice or model selection UI: e7VoiceUiDraftReady
   ///
   /// In en, this message translates to:
@@ -14305,47 +14197,11 @@ abstract class AppLocalizations {
   /// **'Voice input needs attention'**
   String get e7VoiceUiNeedsAttention;
 
-  /// Shared voice or model selection UI: e7VoiceUiReady
-  ///
-  /// In en, this message translates to:
-  /// **'Ready for local voice input'**
-  String get e7VoiceUiReady;
-
   /// Shared voice or model selection UI: e7VoiceUiModelRequired
   ///
   /// In en, this message translates to:
   /// **'A local model is required'**
   String get e7VoiceUiModelRequired;
-
-  /// Shared voice or model selection UI: e7VoiceUiDownloading
-  ///
-  /// In en, this message translates to:
-  /// **'Downloading voice model…'**
-  String get e7VoiceUiDownloading;
-
-  /// Shared voice or model selection UI: e7VoiceUiVerifyingModel
-  ///
-  /// In en, this message translates to:
-  /// **'Verifying voice model…'**
-  String get e7VoiceUiVerifyingModel;
-
-  /// Shared voice or model selection UI: e7VoiceUiListeningHint
-  ///
-  /// In en, this message translates to:
-  /// **'Listening. Double tap Stop recording when done.'**
-  String get e7VoiceUiListeningHint;
-
-  /// Shared voice or model selection UI: e7VoiceUiPrivacy
-  ///
-  /// In en, this message translates to:
-  /// **'Audio stays on this device'**
-  String get e7VoiceUiPrivacy;
-
-  /// Shared voice or model selection UI: e7VoiceUiStopRecording
-  ///
-  /// In en, this message translates to:
-  /// **'Stop recording'**
-  String get e7VoiceUiStopRecording;
 
   /// Shared voice or model selection UI: e7ModelUiCount
   ///
@@ -14441,18 +14297,6 @@ abstract class AppLocalizations {
     String badges,
     String description,
   );
-
-  /// Shared voice or model selection UI: e7VoiceUiListeningTime
-  ///
-  /// In en, this message translates to:
-  /// **'Listening {elapsed} of {maximum}'**
-  String e7VoiceUiListeningTime(String elapsed, String maximum);
-
-  /// Shared voice or model selection UI: e7VoiceUiRecordingCap
-  ///
-  /// In en, this message translates to:
-  /// **'Up to {seconds} s per recording'**
-  String e7VoiceUiRecordingCap(int seconds);
 
   /// Shared voice or model selection UI: e7VoiceUiLicenses
   ///
@@ -29626,18 +29470,6 @@ abstract class AppLocalizations {
   /// **'Speech model'**
   String get voiceSetupModelLabel;
 
-  /// Voice input sheet: the sheet's title.
-  ///
-  /// In en, this message translates to:
-  /// **'Voice input'**
-  String get voiceComposerTitle;
-
-  /// Voice input sheet: tertiary button naming the speech model and language in use; opens the voice model setup sheet.
-  ///
-  /// In en, this message translates to:
-  /// **'{model} model · {language}'**
-  String voiceComposerModelLine(String model, String language);
-
   /// Voice licenses page: the page title (Settings > Voice).
   ///
   /// In en, this message translates to:
@@ -32127,18 +31959,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This phone is not connected. Automatic approval resumes when it reconnects.'**
   String get approvalsUiPausedDetail;
-
-  /// Voice conversation: why the Speak replies switch is unavailable for a moment.
-  ///
-  /// In en, this message translates to:
-  /// **'Getting the voice ready…'**
-  String get voiceConversationSpeakRepliesBusy;
-
-  /// Voice conversation: stops reading the agent reply aloud.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop reading the reply'**
-  String get voiceConversationStopReading;
 
   /// AI Team home: the end of a working task's line, what happens after the work (owner rule 2026-09-27: said on the task's row, not in a line above the list)
   ///

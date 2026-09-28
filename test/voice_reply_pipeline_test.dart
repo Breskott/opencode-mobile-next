@@ -14,6 +14,7 @@ import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitChip;
 import 'package:opencode_mobile/voice/controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -277,9 +278,8 @@ Future<void> _nativeStatus(
   await _settle(tester);
 }
 
-/// Enters voice conversation (which opens the voice sheet), listens, reviews
-/// the transcript and inserts it, leaving the strip visible with the
-/// transcript in the composer and nothing sent.
+/// Enters voice conversation from the "+" sheet: the composer turns into
+/// voice mode and listens at once (P10.3). Nothing is sent yet.
 Future<void> _enterAndListen(WidgetTester tester, _Api api) async {
   await tester.tap(find.byKey(const Key('composer-tools-button')));
   await _settle(tester);
@@ -295,33 +295,21 @@ Future<void> _enterAndListen(WidgetTester tester, _Api api) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 400));
   await tester.pump();
-  await tester.tap(find.text('Start listening'));
-  await tester.pump();
-  await tester.tap(find.byKey(const Key('stop-voice-recording')));
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 200));
-  await tester.ensureVisible(find.byKey(const Key('insert-voice-draft')));
-  await _settle(tester);
-  expect(
-    find.byKey(const Key('insert-voice-draft')).hitTestable(),
-    findsOneWidget,
-  );
-  await tester.tap(find.byKey(const Key('insert-voice-draft')));
-  await _settle(tester);
-  expect(
-    tester.widget<TextField>(find.byType(TextField).first).controller!.text,
-    _transcript,
-  );
+  expect(find.byKey(const Key('voice-mode')), findsOneWidget);
+  expect(find.text('Listening…'), findsOneWidget);
   expect(api.prompts, isEmpty);
 }
 
+final _readAloudChip = find.widgetWithText(KitChip, 'Read replies aloud');
+
+bool _readAloudOn(WidgetTester tester) =>
+    tester.widget<KitChip>(_readAloudChip).selected ?? false;
+
 /// Turns "Speak replies" on through the consent and voice sheets.
 Future<void> _optIn(WidgetTester tester, List<MethodCall> calls) async {
-  final toggle = find.byKey(const Key('voice-speak-replies'));
+  final toggle = _readAloudChip;
   expect(toggle, findsOneWidget);
-  await tester.ensureVisible(toggle);
-  await _settle(tester);
-  expect(tester.widget<Switch>(toggle).value, isFalse);
+  expect(_readAloudOn(tester), isFalse);
   await tester.tap(toggle);
   await _settle(tester);
   expect(find.text('Read replies aloud?'), findsOneWidget);
@@ -332,29 +320,20 @@ Future<void> _optIn(WidgetTester tester, List<MethodCall> calls) async {
   // is asked for (P10.4).
   expect(find.text('Installed voice'), findsNothing);
   expect(calls.map((call) => call.method), ['voices']);
-  expect(tester.widget<Switch>(toggle).value, isTrue);
+  expect(_readAloudOn(tester), isTrue);
   // Opting in never speaks anything by itself.
   expect(calls.map((call) => call.method), ['voices']);
 }
 
-/// The explicit Send of the reviewed transcript.
+/// Voice mode's Send: the recording ends and what was said is sent.
 Future<void> _send(WidgetTester tester, _Api api) async {
-  await tester.tap(find.byTooltip('Send'));
+  await tester.tap(find.byKey(const ValueKey('kit-voice-stop-listening')));
   await _settle(tester);
   expect(api.prompts, [_transcript]);
 }
 
 Future<void> _showReadReply(WidgetTester tester) async {
-  final controls = find
-      .ancestor(
-        of: find.byKey(const Key('voice-speak-replies')),
-        matching: find.byType(Scrollable),
-      )
-      .first;
-  final read = find.byKey(const Key('voice-reply-read'));
-  await tester.scrollUntilVisible(read, 100, scrollable: controls);
-  await _settle(tester);
-  expect(read.hitTestable(), findsOneWidget);
+  expect(find.text('Read it aloud').hitTestable(), findsOneWidget);
 }
 
 void main() {
@@ -403,22 +382,16 @@ void main() {
     final api = _Api();
     final connection = await _pumpChat(tester, api, voice);
     await _enterAndListen(tester, api);
-    expect(
-      tester.widget<Switch>(find.byKey(const Key('voice-speak-replies'))).value,
-      isFalse,
-    );
+    expect(_readAloudOn(tester), isFalse);
     await _send(tester, api);
     await _completeTurn(tester, connection);
     expect(calls, isEmpty);
     expect(voice.listens, 1);
-    await tester.tap(find.text('Exit voice mode'));
+    await tester.tap(find.byTooltip('Leave voice mode'));
     await _settle(tester);
     api.prompts.clear();
     await _enterAndListen(tester, api);
-    expect(
-      tester.widget<Switch>(find.byKey(const Key('voice-speak-replies'))).value,
-      isFalse,
-    );
+    expect(_readAloudOn(tester), isFalse);
     expect(calls, isEmpty);
     expect(voice.listens, 2);
   });
@@ -442,12 +415,8 @@ void main() {
       await _settle(tester);
       switch (interruption) {
         case 'Stop':
-          // Stop pending playback also preserves independently typed work.
-          await tester.enterText(
-            find.byType(TextField).first,
-            'Keep this draft',
-          );
-          await tester.tap(find.byKey(const Key('voice-reply-stop')));
+          // Turning "Read replies aloud" off drops the reading owed.
+          await tester.tap(_readAloudChip);
         case 'background':
           binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
           binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
@@ -490,15 +459,6 @@ void main() {
       expect(api.prompts, [_transcript]);
       expect(voice.listens, 1);
       expect(find.text(_newReply), findsOneWidget);
-      if (interruption == 'Stop') {
-        expect(
-          tester
-              .widget<TextField>(find.byType(TextField).first)
-              .controller!
-              .text,
-          'Keep this draft',
-        );
-      }
     });
   }
 
@@ -624,7 +584,7 @@ void main() {
       _status(connection, 'idle');
       await _settle(tester);
       expect(calls.where((call) => call.method == 'speak'), hasLength(1));
-      await tester.tap(find.byKey(const Key('voice-reply-read')));
+      await tester.tap(find.text('Read it aloud'));
       await _settle(tester);
       expect(calls.where((call) => call.method == 'speak'), hasLength(2));
       expect(api.prompts, [_transcript]);
@@ -673,7 +633,7 @@ void main() {
     await _send(tester, api);
     _status(connection, 'busy');
     await _settle(tester);
-    await tester.tap(find.byKey(const Key('voice-reply-stop')));
+    await tester.tap(_readAloudChip);
     await _settle(tester);
     api.promptGate!.complete();
     await _settle(tester);
@@ -722,12 +682,6 @@ void main() {
       );
       Future<void> capture(String state) async {
         await _settle(tester);
-        if (state != 'off') {
-          await tester.ensureVisible(
-            find.byKey(const Key('voice-reply-status')),
-          );
-          await _settle(tester);
-        }
         expect(tester.takeException(), isNull);
         final png = await capturePng(tester, boundary, pixelRatio: 1);
         File('$captureDirectory/$variant-$state.png').writeAsBytesSync(png);
@@ -736,7 +690,7 @@ void main() {
       await _enterAndListen(tester, api);
       await capture('off');
       if (variant == 'large') {
-        await tester.ensureVisible(find.text('Exit voice mode'));
+        await tester.ensureVisible(find.byTooltip('Leave voice mode'));
         await _settle(tester);
         final png = await capturePng(tester, boundary, pixelRatio: 1);
         File('$captureDirectory/large-off-actions.png').writeAsBytesSync(png);
@@ -816,18 +770,15 @@ void main() {
     expect(speaks, hasLength(1));
     expect((speaks.single.arguments as Map)['text'], _newReply);
     expect((speaks.single.arguments as Map)['voiceID'], 'offline');
-    expect(find.text('Speaking the reply'), findsOneWidget);
+    expect(find.text('Reading the reply aloud'), findsOneWidget);
 
-    // Stop ends playback and nothing else: no resend, composer untouched.
-    await tester.tap(find.byKey(const Key('voice-reply-stop')));
+    // Stop ends playback and nothing else: no resend, no new recording.
+    await tester.tap(find.byKey(const ValueKey('kit-voice-stop-reading')));
     await _settle(tester);
     expect(calls.last.method, 'stop');
     expect(api.prompts, [_transcript]);
-    expect(
-      tester.widget<TextField>(find.byType(TextField).first).controller!.text,
-      isEmpty,
-    );
-    expect(find.byKey(const Key('voice-reply-stop')), findsNothing);
+    expect(voice.listens, 1);
+    expect(find.byKey(const ValueKey('kit-voice-stop-reading')), findsNothing);
 
     // A later idle/refresh cycle never replays the reply.
     connection.handleEventForTesting(
@@ -878,7 +829,7 @@ void main() {
       await _showReadReply(tester);
 
       // Reading stays explicit and, once tapped, reads the latest reply.
-      await tester.tap(find.byKey(const Key('voice-reply-read')));
+      await tester.tap(find.text('Read it aloud'));
       await _settle(tester);
       final speaks = calls.where((c) => c.method == 'speak').toList();
       expect(speaks, hasLength(1));
@@ -904,9 +855,9 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.text('Exit voice mode'));
+      await tester.tap(find.byTooltip('Leave voice mode'));
       await _settle(tester);
-      expect(find.byKey(const Key('voice-speak-replies')), findsNothing);
+      expect(_readAloudChip, findsNothing);
 
       connection.handleEventForTesting(
         _event('message.part.updated', {

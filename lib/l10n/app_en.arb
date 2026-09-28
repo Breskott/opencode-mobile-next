@@ -683,27 +683,19 @@
   "pendingAuthOtherSource": "Other pending sign-ins belong to another server or project. Return to their original source to manage them.",
   "connectionHelpGuideTip": "Keep the server off the public internet. Reach it over Tailscale's private HTTPS, or an encrypted tunnel ending on the device running this app. Localhost on your computer is not localhost on your phone.",
   "voiceConversationTitle": "Voice conversation",
-  "voiceConversationDescription": "Listen, review, then Send. No automatic listening; replies are read aloud only if you turn that on.",
-  "voiceConversationSpeakReplies": "Speak replies",
-  "voiceConversationSpeakRepliesDetail": "Read a matched reply once after Send. Tap Listen to use the microphone.",
-  "voiceConversationWaitingReply": "Waiting for the reply…",
-  "voiceConversationSpeakingReply": "Speaking the reply",
-  "voiceConversationReadReply": "Read reply",
+  "voiceConversationDescription": "Talk, then tap Send: what you said goes to the agent. Replies are read aloud only if you turn that on.",
   "voiceConversationReplyReviewNeeded": "The reply finished, but it could not be matched to your message for certain. Read it if you want.",
   "voiceConversationReplyInterrupted": "The reply needed a decision on screen, so it was not read automatically.",
   "voiceConversationReplyNoProse": "The reply has no prose to read. Code and tool details are not spoken.",
   "voiceConversationReplyFailed": "The reply could not be read aloud.",
-  "voiceConversationPausedTitle": "Voice conversation paused",
   "voiceConversationPausedDetail": "Voice conversation is paused. Reconnect, wait for the reply, or review pending decisions on screen.",
   "voiceConversationDraftFirst": "Send, save, or clear your current draft before starting voice conversation.",
-  "voiceConversationListen": "Listen",
-  "voiceConversationExit": "Exit voice mode",
   "voiceConversationCommandsOnly": "Use the typed composer for slash commands.",
-  "voiceReviewExplicitAction": "Edit before inserting. Sending always requires an explicit action.",
-  "voiceInputInterrupted": "Voice input was interrupted. Close and start again when ready.",
-  "voiceInputClose": "Close voice input",
   "voiceInputUnavailable": "Voice input is unavailable. Check the local model and microphone settings.",
-  "voiceConversationInstructions": "Review and insert your transcript, then tap Send in the composer. Replies are read aloud only while Speak replies is on, and only the reply to what you just sent. Unsent text is discarded when you leave voice mode, the conversation, or the app.",
+  "voiceModeMicAsk": "Voice typing needs the microphone. Tap Allow microphone, then choose Allow.",
+  "voiceModeMicAllow": "Allow microphone",
+  "voiceModeMicBlocked": "Android blocks the microphone for this app. Turn it on in Android settings, then come back here.",
+  "voiceModeNothingHeard": "Nothing was heard. Tap the mic and try again.",
   "desktopDropFailedTitle": "Could not attach dropped files",
   "desktopDropFailedRecovery": "Check the attachments already added before trying again. You can also use the keyboard to open Add, then Attach file.",
   "commandAuthMethodHint": "Runs the provider's sign-in method on your selected server, not on this phone. You may need to finish interactive steps on the server.",
@@ -4582,10 +4574,6 @@
   "@chatUiChanges": {
     "description": "Chat journey: Changes"
   },
-  "chatUiChooseAPromptToRestoreItIn": "Choose a prompt to restore it in a new conversation.",
-  "@chatUiChooseAPromptToRestoreItIn": {
-    "description": "Chat journey: Choose a prompt to restore it in a new session."
-  },
   "chatUiChooseAServerModelByProviderAnd": "Choose a server model by provider and capability",
   "@chatUiChooseAServerModelByProviderAnd": {
     "description": "Chat journey: Choose a server model by provider and capability"
@@ -4801,10 +4789,6 @@
   "chatUiFollowAndroidOrChooseTheNativeLight": "Follow Android or choose the native light or dark theme",
   "@chatUiFollowAndroidOrChooseTheNativeLight": {
     "description": "Chat journey: Follow Android or choose the native light or dark theme"
-  },
-  "chatUiForkFromPrompt": "Fork from prompt",
-  "@chatUiForkFromPrompt": {
-    "description": "Chat journey: Fork from prompt"
   },
   "chatUiForkFromThisPrompt": "Fork from this prompt",
   "@chatUiForkFromThisPrompt": {
@@ -8467,10 +8451,6 @@
   "@e7VoiceUiRedownload": {
     "description": "Shared voice or model selection UI: e7VoiceUiRedownload"
   },
-  "e7VoiceUiReviewTranscript": "Transcript",
-  "@e7VoiceUiReviewTranscript": {
-    "description": "Shared voice or model selection UI: e7VoiceUiReviewTranscript"
-  },
   "e7VoiceUiOpenSettings": "Open app settings",
   "@e7VoiceUiOpenSettings": {
     "description": "Shared voice or model selection UI: e7VoiceUiOpenSettings"
@@ -8483,34 +8463,6 @@
   "@e7VoiceUiStartListening": {
     "description": "Shared voice or model selection UI: e7VoiceUiStartListening"
   },
-  "e7VoiceUiCancel": "Cancel",
-  "@e7VoiceUiCancel": {
-    "description": "Shared voice or model selection UI: e7VoiceUiCancel"
-  },
-  "e7VoiceUiInsert": "Insert",
-  "@e7VoiceUiInsert": {
-    "description": "Shared voice or model selection UI: e7VoiceUiInsert"
-  },
-  "e7VoiceUiInsertSend": "Insert & send",
-  "@e7VoiceUiInsertSend": {
-    "description": "Shared voice or model selection UI: e7VoiceUiInsertSend"
-  },
-  "e7VoiceUiStartingMic": "Starting microphone…",
-  "@e7VoiceUiStartingMic": {
-    "description": "Shared voice or model selection UI: e7VoiceUiStartingMic"
-  },
-  "e7VoiceUiLoadingModel": "Loading local model…",
-  "@e7VoiceUiLoadingModel": {
-    "description": "Shared voice or model selection UI: e7VoiceUiLoadingModel"
-  },
-  "e7VoiceUiTranscribing": "Transcribing on this device…",
-  "@e7VoiceUiTranscribing": {
-    "description": "Shared voice or model selection UI: e7VoiceUiTranscribing"
-  },
-  "e7VoiceUiFinishingCancel": "Finishing canceled transcription…",
-  "@e7VoiceUiFinishingCancel": {
-    "description": "Shared voice or model selection UI: e7VoiceUiFinishingCancel"
-  },
   "e7VoiceUiDraftReady": "Transcript ready to review",
   "@e7VoiceUiDraftReady": {
     "description": "Shared voice or model selection UI: e7VoiceUiDraftReady"
@@ -8519,33 +8471,9 @@
   "@e7VoiceUiNeedsAttention": {
     "description": "Shared voice or model selection UI: e7VoiceUiNeedsAttention"
   },
-  "e7VoiceUiReady": "Ready for local voice input",
-  "@e7VoiceUiReady": {
-    "description": "Shared voice or model selection UI: e7VoiceUiReady"
-  },
   "e7VoiceUiModelRequired": "A local model is required",
   "@e7VoiceUiModelRequired": {
     "description": "Shared voice or model selection UI: e7VoiceUiModelRequired"
-  },
-  "e7VoiceUiDownloading": "Downloading voice model…",
-  "@e7VoiceUiDownloading": {
-    "description": "Shared voice or model selection UI: e7VoiceUiDownloading"
-  },
-  "e7VoiceUiVerifyingModel": "Verifying voice model…",
-  "@e7VoiceUiVerifyingModel": {
-    "description": "Shared voice or model selection UI: e7VoiceUiVerifyingModel"
-  },
-  "e7VoiceUiListeningHint": "Listening. Double tap Stop recording when done.",
-  "@e7VoiceUiListeningHint": {
-    "description": "Shared voice or model selection UI: e7VoiceUiListeningHint"
-  },
-  "e7VoiceUiPrivacy": "Audio stays on this device",
-  "@e7VoiceUiPrivacy": {
-    "description": "Shared voice or model selection UI: e7VoiceUiPrivacy"
-  },
-  "e7VoiceUiStopRecording": "Stop recording",
-  "@e7VoiceUiStopRecording": {
-    "description": "Shared voice or model selection UI: e7VoiceUiStopRecording"
   },
   "e7ModelUiCount": "{count, plural, one{1 model} other{{count} models}}",
   "@e7ModelUiCount": {
@@ -8692,27 +8620,6 @@
       },
       "description": {
         "type": "String"
-      }
-    }
-  },
-  "e7VoiceUiListeningTime": "Listening {elapsed} of {maximum}",
-  "@e7VoiceUiListeningTime": {
-    "description": "Shared voice or model selection UI: e7VoiceUiListeningTime",
-    "placeholders": {
-      "elapsed": {
-        "type": "String"
-      },
-      "maximum": {
-        "type": "String"
-      }
-    }
-  },
-  "e7VoiceUiRecordingCap": "Up to {seconds} s per recording",
-  "@e7VoiceUiRecordingCap": {
-    "description": "Shared voice or model selection UI: e7VoiceUiRecordingCap",
-    "placeholders": {
-      "seconds": {
-        "type": "int"
       }
     }
   },
@@ -21560,22 +21467,6 @@
   "@voiceSetupModelLabel": {
     "description": "Voice model setup sheet: label above the list of speech models."
   },
-  "voiceComposerTitle": "Voice input",
-  "@voiceComposerTitle": {
-    "description": "Voice input sheet: the sheet's title."
-  },
-  "voiceComposerModelLine": "{model} model · {language}",
-  "@voiceComposerModelLine": {
-    "description": "Voice input sheet: tertiary button naming the speech model and language in use; opens the voice model setup sheet.",
-    "placeholders": {
-      "model": {
-        "type": "String"
-      },
-      "language": {
-        "type": "String"
-      }
-    }
-  },
   "voiceNoticesTitle": "Voice licenses",
   "@voiceNoticesTitle": {
     "description": "Voice licenses page: the page title (Settings > Voice)."
@@ -23830,14 +23721,6 @@
   "approvalsUiPausedDetail": "This phone is not connected. Automatic approval resumes when it reconnects.",
   "@approvalsUiPausedDetail": {
     "description": "Approvals sheet and chip: why automatic approval is paused and when it resumes."
-  },
-  "voiceConversationSpeakRepliesBusy": "Getting the voice ready…",
-  "@voiceConversationSpeakRepliesBusy": {
-    "description": "Voice conversation: why the Speak replies switch is unavailable for a moment."
-  },
-  "voiceConversationStopReading": "Stop reading the reply",
-  "@voiceConversationStopReading": {
-    "description": "Voice conversation: stops reading the agent reply aloud."
   },
   "teamUiHomeRunReviewNext": "a reviewer checks it next",
   "@teamUiHomeRunReviewNext": {

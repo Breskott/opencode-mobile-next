@@ -1431,23 +1431,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get voiceConversationDescription =>
-      'Listen, review, then Send. No automatic listening; replies are read aloud only if you turn that on.';
-
-  @override
-  String get voiceConversationSpeakReplies => 'Speak replies';
-
-  @override
-  String get voiceConversationSpeakRepliesDetail =>
-      'Read a matched reply once after Send. Tap Listen to use the microphone.';
-
-  @override
-  String get voiceConversationWaitingReply => 'Waiting for the reply…';
-
-  @override
-  String get voiceConversationSpeakingReply => 'Speaking the reply';
-
-  @override
-  String get voiceConversationReadReply => 'Read reply';
+      'Talk, then tap Send: what you said goes to the agent. Replies are read aloud only if you turn that on.';
 
   @override
   String get voiceConversationReplyReviewNeeded =>
@@ -1466,9 +1450,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'The reply could not be read aloud.';
 
   @override
-  String get voiceConversationPausedTitle => 'Voice conversation paused';
-
-  @override
   String get voiceConversationPausedDetail =>
       'Voice conversation is paused. Reconnect, wait for the reply, or review pending decisions on screen.';
 
@@ -1477,33 +1458,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Send, save, or clear your current draft before starting voice conversation.';
 
   @override
-  String get voiceConversationListen => 'Listen';
-
-  @override
-  String get voiceConversationExit => 'Exit voice mode';
-
-  @override
   String get voiceConversationCommandsOnly =>
       'Use the typed composer for slash commands.';
-
-  @override
-  String get voiceReviewExplicitAction =>
-      'Edit before inserting. Sending always requires an explicit action.';
-
-  @override
-  String get voiceInputInterrupted =>
-      'Voice input was interrupted. Close and start again when ready.';
-
-  @override
-  String get voiceInputClose => 'Close voice input';
 
   @override
   String get voiceInputUnavailable =>
       'Voice input is unavailable. Check the local model and microphone settings.';
 
   @override
-  String get voiceConversationInstructions =>
-      'Review and insert your transcript, then tap Send in the composer. Replies are read aloud only while Speak replies is on, and only the reply to what you just sent. Unsent text is discarded when you leave voice mode, the conversation, or the app.';
+  String get voiceModeMicAsk =>
+      'Voice typing needs the microphone. Tap Allow microphone, then choose Allow.';
+
+  @override
+  String get voiceModeMicAllow => 'Allow microphone';
+
+  @override
+  String get voiceModeMicBlocked =>
+      'Android blocks the microphone for this app. Turn it on in Android settings, then come back here.';
+
+  @override
+  String get voiceModeNothingHeard =>
+      'Nothing was heard. Tap the mic and try again.';
 
   @override
   String get desktopDropFailedTitle => 'Could not attach dropped files';
@@ -5558,10 +5533,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiChanges => 'Changes';
 
   @override
-  String get chatUiChooseAPromptToRestoreItIn =>
-      'Choose a prompt to restore it in a new conversation.';
-
-  @override
   String get chatUiChooseAServerModelByProviderAnd =>
       'Choose a server model by provider and capability';
 
@@ -5738,9 +5709,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatUiFollowAndroidOrChooseTheNativeLight =>
       'Follow Android or choose the native light or dark theme';
-
-  @override
-  String get chatUiForkFromPrompt => 'Fork from prompt';
 
   @override
   String get chatUiForkFromThisPrompt => 'Fork from this prompt';
@@ -8586,9 +8554,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7VoiceUiRedownload => 'Re-download';
 
   @override
-  String get e7VoiceUiReviewTranscript => 'Transcript';
-
-  @override
   String get e7VoiceUiOpenSettings => 'Open app settings';
 
   @override
@@ -8598,53 +8563,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7VoiceUiStartListening => 'Start listening';
 
   @override
-  String get e7VoiceUiCancel => 'Cancel';
-
-  @override
-  String get e7VoiceUiInsert => 'Insert';
-
-  @override
-  String get e7VoiceUiInsertSend => 'Insert & send';
-
-  @override
-  String get e7VoiceUiStartingMic => 'Starting microphone…';
-
-  @override
-  String get e7VoiceUiLoadingModel => 'Loading local model…';
-
-  @override
-  String get e7VoiceUiTranscribing => 'Transcribing on this device…';
-
-  @override
-  String get e7VoiceUiFinishingCancel => 'Finishing canceled transcription…';
-
-  @override
   String get e7VoiceUiDraftReady => 'Transcript ready to review';
 
   @override
   String get e7VoiceUiNeedsAttention => 'Voice input needs attention';
 
   @override
-  String get e7VoiceUiReady => 'Ready for local voice input';
-
-  @override
   String get e7VoiceUiModelRequired => 'A local model is required';
-
-  @override
-  String get e7VoiceUiDownloading => 'Downloading voice model…';
-
-  @override
-  String get e7VoiceUiVerifyingModel => 'Verifying voice model…';
-
-  @override
-  String get e7VoiceUiListeningHint =>
-      'Listening. Double tap Stop recording when done.';
-
-  @override
-  String get e7VoiceUiPrivacy => 'Audio stays on this device';
-
-  @override
-  String get e7VoiceUiStopRecording => 'Stop recording';
 
   @override
   String e7ModelUiCount(int count) {
@@ -8728,16 +8653,6 @@ class AppLocalizationsEn extends AppLocalizations {
     String description,
   ) {
     return '$model, $size, $badges. $description';
-  }
-
-  @override
-  String e7VoiceUiListeningTime(String elapsed, String maximum) {
-    return 'Listening $elapsed of $maximum';
-  }
-
-  @override
-  String e7VoiceUiRecordingCap(int seconds) {
-    return 'Up to $seconds s per recording';
   }
 
   @override
@@ -18577,14 +18492,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get voiceSetupModelLabel => 'Speech model';
 
   @override
-  String get voiceComposerTitle => 'Voice input';
-
-  @override
-  String voiceComposerModelLine(String model, String language) {
-    return '$model model · $language';
-  }
-
-  @override
   String get voiceNoticesTitle => 'Voice licenses';
 
   @override
@@ -20173,12 +20080,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get approvalsUiPausedDetail =>
       'This phone is not connected. Automatic approval resumes when it reconnects.';
-
-  @override
-  String get voiceConversationSpeakRepliesBusy => 'Getting the voice ready…';
-
-  @override
-  String get voiceConversationStopReading => 'Stop reading the reply';
 
   @override
   String get teamUiHomeRunReviewNext => 'a reviewer checks it next';
