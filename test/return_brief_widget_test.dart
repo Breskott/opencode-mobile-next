@@ -33,15 +33,16 @@ Finder _containing(String part) => find.byWidgetPredicate(
 
 Finder get _mark => _containing('Unreviewed');
 
+// Since 23b2efb5 (Work tab from kit parts) on KitRow v2 (08a7741e) a row has
+// no per-row menu button: its rarer actions open on long-press.
 Future<void> _menu(WidgetTester tester, String item) async {
-  await tester.tap(
-    find.descendant(
-      of: find.ancestor(
-        of: find.text('Polish the mobile checkout'),
-        matching: find.byType(KitRow),
-      ),
-      matching: find.byType(PopupMenuButton<String>),
-    ),
+  await tester.longPress(
+    find
+        .ancestor(
+          of: find.text('Polish the mobile checkout'),
+          matching: find.byType(KitRow),
+        )
+        .first,
   );
   await frames(tester);
   await tester.tap(find.text(item).last);

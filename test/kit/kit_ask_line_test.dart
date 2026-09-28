@@ -76,8 +76,11 @@ void main() {
     });
 
     for (final light in [false, true]) {
-      testWidgets('paints the glyph, question and answers in opaque text '
-          'roles, never the accent (${light ? 'light' : 'dark'})', (
+      // R5 (4e49ccde, KitAskLine.md updated): enabled tertiary buttons use
+      // the accent so an inline answer never reads as disabled; the glyph
+      // and question keep their opaque text roles.
+      testWidgets('paints the glyph and question in opaque text roles and '
+          'both answers in the tertiary accent (${light ? 'light' : 'dark'})', (
         tester,
       ) async {
         _setWidth(tester, 412);
@@ -98,15 +101,14 @@ void main() {
         final accept = only(find.text('Notify me'));
         expect(glyph, roles.text2);
         expect(question, roles.text1);
-        expect(decline, roles.text2);
-        expect(accept, anyOf(roles.text1, roles.text2));
+        expect(decline, roles.accent);
+        expect(accept, roles.accent);
 
         final all = _paintedTextColours(tester, find.byType(KitAskLine));
         expect(all, isNotEmpty);
         for (final colour in all) {
           expect(_opaque(colour), isTrue, reason: '$colour is translucent');
-          expect(colour, isNot(roles.accent));
-          expect([roles.text1, roles.text2], contains(colour));
+          expect([roles.text1, roles.text2, roles.accent], contains(colour));
         }
       });
     }

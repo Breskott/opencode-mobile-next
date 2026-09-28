@@ -24192,6 +24192,24 @@ abstract class AppLocalizations {
   /// **'Copy output'**
   String get kitCodeCopyOutput;
 
+  /// KitCodeBlock: shown under a code block when the clipboard refused the copy; Try again sits next to it
+  ///
+  /// In en, this message translates to:
+  /// **'Could not copy code. Try again.'**
+  String get kitCodeCopyFailedCode;
+
+  /// KitCodeBlock: shown under a command block when the clipboard refused the copy; Try again sits next to it
+  ///
+  /// In en, this message translates to:
+  /// **'Could not copy the command. Try again.'**
+  String get kitCodeCopyFailedCommand;
+
+  /// KitCodeBlock: shown under an output block when the clipboard refused the copy; Try again sits next to it
+  ///
+  /// In en, this message translates to:
+  /// **'Could not copy the output. Try again.'**
+  String get kitCodeCopyFailedOutput;
+
   /// KitCodeBlock: the tertiary action that unfolds a capped block in place
   ///
   /// In en, this message translates to:

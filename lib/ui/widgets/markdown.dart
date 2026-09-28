@@ -3,6 +3,9 @@
 // and path chip live in lib/ui/kit/chat/kit_markdown.dart. What stays here
 // forwards to the kit, so callers keep compiling until their unit moves
 // them. No @Deprecated (KIT-43 wins over R12).
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -149,22 +152,71 @@ class _MarkdownTextState extends State<MarkdownText> {
 
   void _saveWrap(bool wrap) => saveReaderPreferences(context, wrapCode: wrap);
 
-  void _openCode(String code, String? language) {
+  /// Whether an open code reader may still offer its controls. The reader
+  /// is a snapshot page that can outlive this reply: it retires Copy, Wrap
+  /// and selection once the source turns inert or leaves the tree.
+  ValueNotifier<bool>? _readerLive;
+  bool _readerLiveDisposed = false;
+  int _readersOpen = 0;
+
+  void _openCode(String code, String? language) =>
+      unawaited(_pushReader(code, language));
+
+  Future<void> _pushReader(String code, String? language) async {
     final store = ReaderPreferencesScope.maybeOf(context);
-    pushKitPage<void>(
-      context,
-      (_) => _CodeReaderPage(
-        code: code,
-        language: language,
-        initialWrap: store?.value.wrapCode,
-        onWrapChanged: store == null ? null : _saveWrap,
-      ),
-    );
+    final live = _readerLive ??= ValueNotifier(true);
+    _readersOpen++;
+    try {
+      await pushKitPage<void>(
+        context,
+        (_) => _CodeReaderPage(
+          code: code,
+          language: language,
+          initialWrap: store?.value.wrapCode,
+          onWrapChanged: store == null ? null : _saveWrap,
+          live: live,
+        ),
+      );
+    } finally {
+      _readersOpen--;
+      if (!mounted && _readersOpen == 0 && !_readerLiveDisposed) {
+        _readerLiveDisposed = true;
+        live.dispose();
+      }
+    }
+  }
+
+  /// Follows [interactive] after this build: the reader route listens to
+  /// [_readerLive], and a listener must not be dirtied mid-build.
+  void _syncReaders(bool interactive) {
+    final live = _readerLive;
+    if (live == null || live.value == interactive) return;
+    scheduleMicrotask(() {
+      if (!_readerLiveDisposed) live.value = interactive;
+    });
+  }
+
+  @override
+  void dispose() {
+    final live = _readerLive;
+    if (live != null && !_readerLiveDisposed) {
+      if (_readersOpen > 0) {
+        // The reader closes later and disposes it; retire it now.
+        scheduleMicrotask(() {
+          if (!_readerLiveDisposed) live.value = false;
+        });
+      } else {
+        _readerLiveDisposed = true;
+        live.dispose();
+      }
+    }
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final interactive = MarkdownInteractionScope.enabledOf(context);
+    _syncReaders(interactive);
     final preferences = ReaderPreferencesScope.maybeOf(context);
     final secondary = widget.baseStyle != null;
     return AgentChoiceScope(
@@ -195,12 +247,17 @@ class _CodeReaderPage extends StatefulWidget {
     required this.language,
     required this.initialWrap,
     required this.onWrapChanged,
+    required this.live,
   });
 
   final String code;
   final String? language;
   final bool? initialWrap;
   final ValueChanged<bool>? onWrapChanged;
+
+  /// False once the source reply is inert or gone: no Copy, Wrap or
+  /// selection on what is left of it.
+  final ValueListenable<bool> live;
 
   @override
   State<_CodeReaderPage> createState() => _CodeReaderPageState();
@@ -213,37 +270,47 @@ class _CodeReaderPageState extends State<_CodeReaderPage> {
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final wrap = _wrap ?? KitCodeBlock.defaultWrap(context, KitCodeKind.code);
-    return KitSurface(
-      level: KitSurfaceLevel.ground,
-      shape: KitShape.square,
-      padding: KitSurfacePadding.none,
-      child: SafeArea(
-        child: KitScreen(
-          header: [
-            KitTopBar(
-              title: l10n.markdownReaderTitle,
-              actions: [
-                KitAction(
-                  label: wrap ? l10n.markdownScrollCode : l10n.markdownWrapCode,
-                  icon: AppIconography.wrapText,
-                  onPressed: () {
-                    setState(() => _wrap = !wrap);
-                    widget.onWrapChanged?.call(!wrap);
-                  },
-                ),
-                KitAction.copy(
-                  label: l10n.kitCodeCopyCode,
-                  icon: AppIconography.copy,
-                  text: () => widget.code,
-                ),
-              ],
+    return ValueListenableBuilder<bool>(
+      valueListenable: widget.live,
+      builder: (context, live, _) => KitSurface(
+        level: KitSurfaceLevel.ground,
+        shape: KitShape.square,
+        padding: KitSurfacePadding.none,
+        child: SafeArea(
+          child: KitScreen(
+            header: [
+              KitTopBar(
+                title: l10n.markdownReaderTitle,
+                actions: [
+                  if (live) ...[
+                    KitAction(
+                      label: wrap
+                          ? l10n.markdownScrollCode
+                          : l10n.markdownWrapCode,
+                      icon: AppIconography.wrapText,
+                      onPressed: () {
+                        setState(() => _wrap = !wrap);
+                        widget.onWrapChanged?.call(!wrap);
+                      },
+                    ),
+                    KitAction.copy(
+                      label: l10n.kitCodeCopyCode,
+                      icon: AppIconography.copy,
+                      text: () => widget.code,
+                    ),
+                  ],
+                ],
+              ),
+            ],
+            body: IgnorePointer(
+              ignoring: !live,
+              child: KitCodeBlock.fill(
+                text: widget.code,
+                language: widget.language,
+                copyText: widget.code,
+                wrap: wrap,
+              ),
             ),
-          ],
-          body: KitCodeBlock.fill(
-            text: widget.code,
-            language: widget.language,
-            copyText: widget.code,
-            wrap: wrap,
           ),
         ),
       ),

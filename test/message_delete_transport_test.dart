@@ -52,49 +52,61 @@ void main() {
     }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
   });
 
-  test('declared message delete errors retain product details', () async {
-    await HttpOverrides.runZoned(() async {
-      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      server.listen((request) async {
-        await request.drain<void>();
-        request.response.statusCode = HttpStatus.badRequest;
-        request.response.headers.contentType = ContentType.json;
-        request.response.write(
-          jsonEncode({
-            '_tag': 'InvalidRequestError',
-            'requestID': 'request-delete-1',
-            'message': 'message is part of an active response',
-          }),
+  // Since 0436b230 (keep server error prose out of product messages) the
+  // declared refusal is kept as the technical cause for redacted Details and
+  // the product message is the app's own words.
+  test(
+    'declared message delete errors keep server prose in the cause',
+    () async {
+      await HttpOverrides.runZoned(() async {
+        final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+        server.listen((request) async {
+          await request.drain<void>();
+          request.response.statusCode = HttpStatus.badRequest;
+          request.response.headers.contentType = ContentType.json;
+          request.response.write(
+            jsonEncode({
+              '_tag': 'InvalidRequestError',
+              'requestID': 'request-delete-1',
+              'message': 'message is part of an active response',
+            }),
+          );
+          await request.response.close();
+        });
+
+        final api = OpenCodeApi(
+          baseUrl: 'http://${server.address.host}:${server.port}',
         );
-        await request.response.close();
-      });
+        try {
+          final repository = SdkProductRepository(api.sdkClient)
+            ..setLocation(directory: '/work/acme');
 
-      final api = OpenCodeApi(
-        baseUrl: 'http://${server.address.host}:${server.port}',
-      );
-      try {
-        final repository = SdkProductRepository(api.sdkClient)
-          ..setLocation(directory: '/work/acme');
-
-        await expectLater(
-          repository.deleteMessage(
-            sessionID: 'session-1',
-            messageID: 'msg_123',
-          ),
-          throwsA(
-            isA<ProductException>().having(
-              (error) => error.toString(),
-              'message',
-              contains('message is part of an active response'),
+          await expectLater(
+            repository.deleteMessage(
+              sessionID: 'session-1',
+              messageID: 'msg_123',
             ),
-          ),
-        );
-      } finally {
-        api.close();
-        await server.close(force: true);
-      }
-    }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
-  });
+            throwsA(
+              isA<ProductException>()
+                  .having(
+                    (error) => error.message,
+                    'message',
+                    'Could not delete the message',
+                  )
+                  .having(
+                    (error) => error.cause.toString(),
+                    'original cause preserved',
+                    contains('message is part of an active response'),
+                  ),
+            ),
+          );
+        } finally {
+          api.close();
+          await server.close(force: true);
+        }
+      }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
+    },
+  );
 
   test('a repository without message deletion stays a bounded error', () async {
     final repository = _MinimalRepository();

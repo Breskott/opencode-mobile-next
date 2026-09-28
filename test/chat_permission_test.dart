@@ -39,7 +39,9 @@ class _FakeOpenCodeApi extends OpenCodeApi with CompleteMessageHistory {
         requestID: requestID,
       );
     }
-    if (failReplies) throw ApiException('server refused the reply');
+    if (failReplies) {
+      throw ApiException('server refused the reply', statusCode: 400);
+    }
   }
 
   @override
@@ -162,7 +164,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Not accepted'), findsOneWidget);
-    expect(find.textContaining('server refused the reply'), findsOneWidget);
+    // The refusal in plain words; the server's prose is Details only
+    // (6cdfca4e, a65dcea9: no raw errors as copy).
+    expect(
+      find.textContaining("The server didn't accept the request."),
+      findsOneWidget,
+    );
+    expect(find.textContaining('server refused the reply'), findsNothing);
     expect(controller.permissions, contains('request-1'));
     expect(find.byKey(const Key('permission-card-allow')), findsOneWidget);
   });

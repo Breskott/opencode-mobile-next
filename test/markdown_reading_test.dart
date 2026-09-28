@@ -28,21 +28,48 @@ Future<void> _pump(
   await tester.pump();
 }
 
-Future<void> _chooseCodeAction(WidgetTester tester, String label) async {
-  await tester.tap(find.byTooltip('Code options').first);
-  await tester.pumpAndSettle();
-  await tester.tap(
-    find
-        .ancestor(
-          of: find.text(label),
-          matching: find.byWidgetPredicate(
-            (widget) => widget is PopupMenuEntry,
-          ),
-        )
-        .first,
-  );
+// Since 79d941e4 (KitMarkdown; markdown.dart forwards to it) a fence is a
+// KitCodeBlock: Copy (and Wrap, while a line is wider than the block) sit at
+// the end of the first line, there is no "Code options" menu, and the full
+// reader opens from a capped block's "Open full output" (K2 §1.9, R3).
+
+/// A fence longer than KitMarkdown's 12-line cap, so it offers the reader.
+String _cappedFence(
+  String first, {
+  String fence = '```',
+  String info = '',
+  bool close = true,
+}) =>
+    '$fence$info\n$first\n${List.generate(13, (i) => 'line $i').join('\n')}'
+    '${close ? '\n$fence' : ''}';
+
+Future<void> _openReader(WidgetTester tester) async {
+  await tester.tap(find.text('Open full output'));
   await tester.pumpAndSettle();
 }
+
+/// The leaf texts of the code body's spans (one Text.rich per block).
+List<String> _codeLeaves(WidgetTester tester) {
+  final leaves = <String>[];
+  void walk(InlineSpan span) {
+    if (span is! TextSpan) return;
+    if (span.text?.isNotEmpty == true) leaves.add(span.text!);
+    for (final child in span.children ?? const <InlineSpan>[]) {
+      walk(child);
+    }
+  }
+
+  final text = tester.widget<Text>(
+    find.descendant(of: find.byType(KitCodeBlock), matching: find.byType(Text)),
+  );
+  walk(text.textSpan!);
+  return leaves;
+}
+
+/// A Markdown table: KitMarkdown labels its box "Table, n rows".
+final _table = find.byWidgetPredicate(
+  (w) => w is Semantics && (w.properties.label ?? '').startsWith('Table, '),
+);
 
 void main() {
   for (final scale in [1.0, 2.5]) {
@@ -59,18 +86,35 @@ void main() {
         ),
         scale: scale,
       );
-      final actions = ['Code options', 'Copy code'];
-      final top = tester.getTopLeft(find.byTooltip(actions.first)).dy;
-      for (final label in actions) {
-        final action = find.byTooltip(label);
-        expect(tester.getSize(action), const Size(48, 48));
-        expect(tester.getTopLeft(action).dy, top);
-        final data = tester.getSemantics(action).getSemanticsData();
-        expect('${data.label} ${data.tooltip}', contains(label));
+      // No menu: Copy is the block's one action, on its first line, with
+      // Wrap stacked under it only while a line is wider than the block.
+      expect(find.byTooltip('Code options'), findsNothing);
+      final block = tester.getTopLeft(find.byType(KitCodeBlock)).dy;
+      final copy = find.byTooltip('Copy code');
+      expect(tester.getSize(copy), const Size(48, 48));
+      expect(tester.getTopLeft(copy).dy - block, lessThanOrEqualTo(4));
+      final data = tester.getSemantics(copy).getSemanticsData();
+      expect('${data.label} ${data.tooltip}', contains('Copy code'));
+      final wrap = find.byTooltip('Wrap lines');
+      if (wrap.evaluate().isNotEmpty) {
+        expect(tester.getSize(wrap), const Size(48, 48));
       }
       // Even with 2.5x text, a one-line snippet should not become a card
-      // dominated by several rows of actions.
-      expect(tester.getSize(find.byType(KitCodeBlock)).height, lessThan(125));
+      // dominated by several rows of actions: the card is as tall as the
+      // taller of its lines and its one column of controls, plus insets.
+      final lines = tester
+          .getSize(
+            find.descendant(
+              of: find.byType(KitCodeBlock),
+              matching: find.byType(Text),
+            ),
+          )
+          .height;
+      final controls = wrap.evaluate().isEmpty ? 48.0 : 96.0;
+      expect(
+        tester.getSize(find.byType(KitCodeBlock)).height,
+        lessThanOrEqualTo((lines > controls ? lines : controls) + 8 + 1),
+      );
       expect(tester.takeException(), isNull);
     });
   }
@@ -80,7 +124,7 @@ void main() {
   ) async {
     await _pump(
       tester,
-      MarkdownText('```\nfinal start = ${'value' * 100};\n```'),
+      MarkdownText(_cappedFence('final start = ${'value' * 100};')),
       rtl: true,
     );
     final horizontal = find.byWidgetPredicate(
@@ -88,12 +132,15 @@ void main() {
           w is Scrollable &&
           axisDirectionToAxis(w.axisDirection) == Axis.horizontal,
     );
+    // This host reads as a compact window, where code wraps by default;
+    // turning Wrap off gives the block its sideways scroller.
+    await tester.tap(find.byTooltip('Wrap lines'));
+    await tester.pump();
     final state = tester.state<ScrollableState>(horizontal);
     expect(state.position.axisDirection, AxisDirection.right);
     expect(state.position.pixels, state.position.minScrollExtent);
     expect(state.position.maxScrollExtent, greaterThan(0));
-    await _chooseCodeAction(tester, 'Full screen');
-    await tester.pumpAndSettle();
+    await _openReader(tester);
     final readerState = tester.state<ScrollableState>(horizontal);
     expect(readerState.position.axisDirection, AxisDirection.right);
     expect(readerState.position.pixels, readerState.position.minScrollExtent);
@@ -113,12 +160,12 @@ void main() {
         valueListenable: enabled,
         builder: (_, value, _) => MarkdownInteractionScope(
           enabled: value,
-          child: const MarkdownText('```\nsnapshot\n```'),
+          child: MarkdownText(_cappedFence('snapshot')),
         ),
       ),
     );
-    await _chooseCodeAction(tester, 'Full screen');
-    await tester.pumpAndSettle();
+    await _openReader(tester);
+    expect(find.byTooltip('Copy code'), findsOneWidget);
     enabled.value = false;
     await tester.pumpAndSettle();
     expect(find.byTooltip('Copy code'), findsNothing);
@@ -138,11 +185,11 @@ void main() {
       ValueListenableBuilder<bool>(
         valueListenable: visible,
         builder: (_, value, _) =>
-            value ? const MarkdownText('```\nsnapshot\n```') : const SizedBox(),
+            value ? MarkdownText(_cappedFence('snapshot')) : const SizedBox(),
       ),
     );
-    await _chooseCodeAction(tester, 'Full screen');
-    await tester.pumpAndSettle();
+    await _openReader(tester);
+    expect(find.byTooltip('Copy code'), findsOneWidget);
     visible.value = false;
     await tester.pumpAndSettle();
     expect(find.byTooltip('Copy code'), findsNothing);
@@ -178,10 +225,11 @@ void main() {
       expect(block.text, expected);
       expect(block.highlight, closed);
       if (!closed) {
-        final span = tester
-            .widget<SelectableText>(find.byType(SelectableText))
-            .textSpan!;
-        expect(span.children, isNull);
+        // A streaming fence is plain mono: each line is one unstyled leaf.
+        expect(
+          _codeLeaves(tester).where((leaf) => leaf != '\n'),
+          expected.split('\n'),
+        );
       }
     });
   }
@@ -215,15 +263,14 @@ void main() {
           null,
         ),
       );
-      await _pump(
-        tester,
-        const MarkdownText('  ~~~dart\r\n  final a = 1;  \r\n  \r\n  ~~~'),
-      );
-      await _chooseCodeAction(tester, 'Wrap lines');
+      // A line wider than the block, so Wrap is offered and changes.
+      final line = '  final a = 1; // ${'value ' * 30} ';
+      await _pump(tester, MarkdownText('  ~~~dart\r\n$line\r\n  \r\n  ~~~'));
+      await tester.tap(find.byTooltip('Wrap lines'));
       await tester.pump();
       await tester.tap(find.byTooltip('Copy code'));
       await tester.pump();
-      expect(copies, ['  final a = 1;  \r\n  \r\n']);
+      expect(copies, ['$line\r\n  \r\n']);
     },
   );
 
@@ -265,17 +312,17 @@ void main() {
   testWidgets('inert code has selection and actions disabled', (tester) async {
     await _pump(
       tester,
-      const MarkdownInteractionScope(
+      MarkdownInteractionScope(
         enabled: false,
-        child: MarkdownText('```\nlocal only\n```'),
+        child: MarkdownText(_cappedFence('local only ${'value ' * 40}')),
       ),
     );
     expect(find.byTooltip('Copy code'), findsNothing);
-    expect(find.byTooltip('Full screen'), findsNothing);
+    expect(find.text('Open full output'), findsNothing);
     expect(find.byTooltip('Code options'), findsNothing);
     expect(find.byTooltip('Wrap lines'), findsNothing);
     final ignored = find.ancestor(
-      of: find.byType(SelectableText),
+      of: find.byType(KitCodeBlock),
       matching: find.byType(IgnorePointer),
     );
     expect(
@@ -298,8 +345,7 @@ void main() {
         ),
         scale: 2,
       );
-      final data = tester.widget<DataTable>(find.byType(DataTable));
-      expect(data.dataRowMaxHeight, double.infinity);
+      expect(_table, findsOneWidget);
       final center = tester.widget<Text>(
         find.byWidgetPredicate(
           (w) => w is Text && w.textSpan?.toPlainText() == 'middle',
@@ -311,8 +357,10 @@ void main() {
           (w) => w is Text && w.textSpan?.toPlainText() == '123',
         ),
       );
-      expect(right.textAlign, TextAlign.right);
-      expect(tester.getSize(find.byType(DataTable)).height, greaterThan(180));
+      // Directional end (LAY-8): the right edge in this LTR table.
+      expect(right.textAlign, TextAlign.end);
+      // Rows grow with their cells rather than clipping them.
+      expect(tester.getSize(_table).height, greaterThan(180));
       expect(tester.takeException(), isNull);
     },
   );
@@ -328,7 +376,7 @@ void main() {
     double paintedWidth(String value) {
       final box = tester.renderObject<RenderBox>(
         find.byWidgetPredicate(
-          (w) => w is Text && w.textSpan?.toPlainText() == value,
+          (w) => w is RichText && w.text.toPlainText() == value,
         ),
       );
       return (box.localToGlobal(Offset(box.size.width, 0)) -
@@ -340,10 +388,11 @@ void main() {
     await tester.pumpAndSettle();
     // Plain inline code is part of the paragraph and scales with it; the
     // validated path stays a chip and must scale exactly once.
-    final pathWidth = paintedWidth('lib/a.dart\uFFFC');
+    // The confirmed path is a link drawn by its own RichText.
+    final pathWidth = paintedWidth('lib/a.dart');
     await _pump(tester, content(), scale: 2);
     await tester.pumpAndSettle();
-    expect(paintedWidth('lib/a.dart\uFFFC'), closeTo(pathWidth * 2, 0.1));
+    expect(paintedWidth('lib/a.dart'), closeTo(pathWidth * 2, 0.1));
     expect(tester.takeException(), isNull);
   });
 
@@ -358,7 +407,7 @@ void main() {
           r'| x\|y | z |',
         ),
       );
-      expect(find.byType(DataTable), findsOneWidget);
+      expect(_table, findsOneWidget);
       expect(
         find.byWidgetPredicate(
           (w) => w is Text && w.textSpan?.toPlainText() == 'x|y',
@@ -366,7 +415,7 @@ void main() {
         findsOneWidget,
       );
       await _pump(tester, const MarkdownText('| A | B |\n| --- |\n| C | D |'));
-      expect(find.byType(DataTable), findsNothing);
+      expect(_table, findsNothing);
     },
   );
 
@@ -418,7 +467,14 @@ void main() {
   testWidgets(
     'reader retains snapshot and selection across parent streaming then returns',
     (tester) async {
-      final source = ValueNotifier('~~~dart\nfinal first = 1;');
+      final source = ValueNotifier(
+        _cappedFence(
+          'final first = 1;',
+          fence: '~~~',
+          info: 'dart',
+          close: false,
+        ),
+      );
       addTearDown(source.dispose);
       await _pump(
         tester,
@@ -427,25 +483,19 @@ void main() {
           builder: (_, text, _) => MarkdownText(text),
         ),
       );
-      await _chooseCodeAction(tester, 'Full screen');
-      await tester.pumpAndSettle();
+      final snapshot = source.value.substring('~~~dart\n'.length);
+      await _openReader(tester);
       expect(find.text('Code reader'), findsOneWidget);
-      expect(find.textContaining('Snapshot of the code'), findsOneWidget);
-      final editable = tester.widget<EditableText>(find.byType(EditableText));
-      editable.controller.selection = const TextSelection(
-        baseOffset: 0,
-        extentOffset: 5,
-      );
+      // The reader's selection lives in its selection region: the same
+      // region (and the same text) across parent streaming keeps it.
+      final region = tester.state(find.byType(SelectableRegion));
       source.value += '\nfinal later = 2;\n~~~';
       await tester.pump();
       expect(
         tester.widget<KitCodeBlock>(find.byType(KitCodeBlock)).text,
-        'final first = 1;',
+        snapshot,
       );
-      expect(
-        editable.controller.selection,
-        const TextSelection(baseOffset: 0, extentOffset: 5),
-      );
+      expect(tester.state(find.byType(SelectableRegion)), same(region));
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(
@@ -468,7 +518,7 @@ void main() {
               child: Column(
                 children: [
                   const SizedBox(height: 150),
-                  MarkdownText('```\nlong ${'value ' * 80}\n```'),
+                  MarkdownText(_cappedFence('long ${'value ' * 80}')),
                   const SizedBox(height: 900),
                 ],
               ),
@@ -479,17 +529,16 @@ void main() {
       scroll.jumpTo(100);
       await tester.pump();
       final before = scroll.offset;
-      for (final label in ['Code options', 'Copy code']) {
+      for (final label in ['Wrap lines', 'Copy code']) {
         expect(
           tester.getSize(find.byTooltip(label)).height,
           greaterThanOrEqualTo(48),
         );
       }
-      await _chooseCodeAction(tester, 'Wrap lines');
+      await tester.tap(find.byTooltip('Wrap lines'));
       await tester.pump();
       expect(scroll.offset, before);
-      await _chooseCodeAction(tester, 'Full screen');
-      await tester.pumpAndSettle();
+      await _openReader(tester);
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(scroll.offset, before);
