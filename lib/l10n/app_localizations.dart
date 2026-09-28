@@ -4558,13 +4558,13 @@ abstract class AppLocalizations {
   /// Waiting-to-send bubble: sends a queued message the server refused again, now
   ///
   /// In en, this message translates to:
-  /// **'Retry'**
+  /// **'Try again'**
   String get queuedRetry;
 
   /// Waiting-to-send bubble: sends every queued message the server refused again, now
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, other{Retry all {count}}}'**
+  /// **'{count, plural, other{Try all {count} again}}'**
   String queuedRetryAll(int count);
 
   /// Cancel label on the resend and discard dialogs for an unconfirmed queued draft; the draft stays queued for review
@@ -22203,7 +22203,7 @@ abstract class AppLocalizations {
   /// Team worker's watching page when its session ended before it wrote anything
   ///
   /// In en, this message translates to:
-  /// **'This session has ended'**
+  /// **'This conversation has ended'**
   String get chatWatchEndedTitle;
 
   /// Under 'This session has ended' on a worker's watching page

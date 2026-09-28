@@ -2694,14 +2694,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queuedResendConfirm => 'Send again';
 
   @override
-  String get queuedRetry => 'Retry';
+  String get queuedRetry => 'Try again';
 
   @override
   String queuedRetryAll(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Retry all $count',
+      other: 'Try all $count again',
     );
     return '$_temp0';
   }
@@ -13525,7 +13525,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'This conversation fills in as the agent works.';
 
   @override
-  String get chatWatchEndedTitle => 'This session has ended';
+  String get chatWatchEndedTitle => 'This conversation has ended';
 
   @override
   String get chatWatchEndedBody =>

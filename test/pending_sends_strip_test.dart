@@ -240,31 +240,32 @@ void main() {
       return (api, controller);
     }
 
-    testWidgets('says why in plain words and offers Retry, which sends it', (
-      tester,
-    ) async {
-      final (api, controller) = await pump(tester);
-      expect(find.text('run the migration'), findsOneWidget);
-      // The reason in words; the server's text never shows as copy.
-      expect(
-        find.textContaining('The model provider is overloaded right now.'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('overloaded_error'), findsNothing);
-      // The bubble's one call to action is Retry.
-      final retry = find.byKey(const ValueKey('queued-bubble-retry'));
-      expect(retry, findsOneWidget);
-      expect(
-        find.descendant(of: retry, matching: find.text('Retry')),
-        findsOneWidget,
-      );
-      await tester.tap(retry);
-      await _settle(tester);
-      expect(api.prompts.map((prompt) => prompt.text), ['run the migration']);
-      expect(controller.queuedPromptsFor('session-1'), isEmpty);
-    });
+    testWidgets(
+      'says why in plain words and offers Try again, which sends it',
+      (tester) async {
+        final (api, controller) = await pump(tester);
+        expect(find.text('run the migration'), findsOneWidget);
+        // The reason in words; the server's text never shows as copy.
+        expect(
+          find.textContaining('The model provider is overloaded right now.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('overloaded_error'), findsNothing);
+        // The bubble's one call to action is Retry.
+        final retry = find.byKey(const ValueKey('queued-bubble-retry'));
+        expect(retry, findsOneWidget);
+        expect(
+          find.descendant(of: retry, matching: find.text('Try again')),
+          findsOneWidget,
+        );
+        await tester.tap(retry);
+        await _settle(tester);
+        expect(api.prompts.map((prompt) => prompt.text), ['run the migration']);
+        expect(controller.queuedPromptsFor('session-1'), isEmpty);
+      },
+    );
 
-    testWidgets('its menu has Retry first, then Edit and Discard', (
+    testWidgets('its menu has Try again first, then Edit and Discard', (
       tester,
     ) async {
       final (api, _) = await pump(tester);
@@ -285,7 +286,7 @@ void main() {
       expect(api.prompts, hasLength(1));
     });
 
-    testWidgets('offline there is no Retry: it waits for the reconnect', (
+    testWidgets('offline there is no Try again: it waits for the reconnect', (
       tester,
     ) async {
       await pump(tester, connected: false);

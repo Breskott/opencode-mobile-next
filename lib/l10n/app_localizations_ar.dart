@@ -2721,14 +2721,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get queuedResendConfirm => 'إرسال مجددًا';
 
   @override
-  String get queuedRetry => 'Retry';
+  String get queuedRetry => 'Try again';
 
   @override
   String queuedRetryAll(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Retry all $count',
+      other: 'Try all $count again',
     );
     return '$_temp0';
   }
@@ -13625,7 +13625,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatWatchEmptyBody => 'تمتلئ هذه المحادثة بينما يعمل الوكيل.';
 
   @override
-  String get chatWatchEndedTitle => 'This session has ended';
+  String get chatWatchEndedTitle => 'This conversation has ended';
 
   @override
   String get chatWatchEndedBody =>

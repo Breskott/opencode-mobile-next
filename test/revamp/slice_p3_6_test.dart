@@ -296,7 +296,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(_key('chat-watching-ended'), findsOneWidget);
-      expect(find.text('This session has ended'), findsOneWidget);
+      expect(find.text('This conversation has ended'), findsOneWidget);
       // Not the "fills in as the agent works" promise, and not said twice.
       expect(_key('chat-watching-empty'), findsNothing);
       expect(_key('chat-watching-banner'), findsNothing);

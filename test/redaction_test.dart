@@ -292,12 +292,14 @@ const _verbatimOwnContent = <String, (int, String)>{
         'to paste into their own prompt (SEC-13)',
   ),
   'lib/ui/screens/chat_screen.dart': (
-    3,
+    4,
     'chat chain (P3.5): Copy on a message and the composer draft are the '
         'person\'s own text; Copy transcript keeps only the person\'s '
         'prompts verbatim and masks everything else (replies, tool output, '
         'errors, the title) through KitRedact before the copy '
-        '(_transcriptMarkdown). The share link copy is redacted',
+        '(_transcriptMarkdown). The share link copy is redacted. '
+        'slice-close-chat: "Copy draft and leave" copies the unsaved draft, '
+        'the person\'s own words',
   ),
 };
 

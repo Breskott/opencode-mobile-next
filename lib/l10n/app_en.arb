@@ -1489,11 +1489,11 @@
   "@queuedResendConfirm": {
     "description": "Confirmation dialog affirmative button for resending an unconfirmed queued draft"
   },
-  "queuedRetry": "Retry",
+  "queuedRetry": "Try again",
   "@queuedRetry": {
     "description": "Waiting-to-send bubble: sends a queued message the server refused again, now"
   },
-  "queuedRetryAll": "{count, plural, other{Retry all {count}}}",
+  "queuedRetryAll": "{count, plural, other{Try all {count} again}}",
   "@queuedRetryAll": {
     "description": "Waiting-to-send bubble: sends every queued message the server refused again, now",
     "placeholders": {
@@ -14953,7 +14953,7 @@
   "@chatWatchEmptyBody": {
     "description": "Chat, watching an AI Team worker: body of the empty state"
   },
-  "chatWatchEndedTitle": "This session has ended",
+  "chatWatchEndedTitle": "This conversation has ended",
   "@chatWatchEndedTitle": {
     "description": "Team worker's watching page when its session ended before it wrote anything"
   },
