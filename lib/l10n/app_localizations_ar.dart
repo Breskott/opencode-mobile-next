@@ -8773,10 +8773,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get approvalsUiFollowParent => 'اتبع المحادثة الأصل مجددًا';
 
   @override
-  String get approvalsUiServerRulesNote =>
-      'تبقى قواعد الرفض الخاصة بالخادم سارية، وتتوقف الموافقة التلقائية كلما انقطع اتصال هذا التطبيق. تسأل المحادثات الجديدة دائمًا.';
-
-  @override
   String get approvalsUiIndicatorOn => 'الموافقة تلقائيًا';
 
   @override
@@ -23420,4 +23416,68 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiHostGuideEnterAddress => 'Enter the address';
+
+  @override
+  String get commandAuthStartFailed => 'Sign-in didn\'t start.';
+
+  @override
+  String get commandAuthCheckFailed =>
+      'Couldn\'t check the sign-in. Try again.';
+
+  @override
+  String get commandAuthTryAgain => 'Try again';
+
+  @override
+  String get draftLeaveMessageNoText =>
+      'Try saving again. If you leave without saving, your latest changes to this draft may be lost.';
+
+  @override
+  String get draftLeaveCopyAction => 'Copy draft and leave';
+
+  @override
+  String get draftLeaveRetry => 'Try saving again';
+
+  @override
+  String get draftLeaveStillFailing =>
+      'Still not saved. Copy your text before you leave.';
+
+  @override
+  String get queuedRetry => 'Try again';
+
+  @override
+  String queuedRetryAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Try all $count again',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String chatUiUseModelAndResend(String model) {
+    return 'Use $model and resend';
+  }
+
+  @override
+  String get chatUiChooseAnotherModel => 'Choose another model';
+
+  @override
+  String get chatUiSendPromptAgain => 'Send again';
+
+  @override
+  String get chatUiPromptNotAnswered => 'Not answered';
+
+  @override
+  String get chatWatchEndedTitle => 'This conversation has ended';
+
+  @override
+  String get chatWatchEndedBody =>
+      'It ended before the worker wrote anything here.';
+
+  @override
+  String get chatWatchBackToTask => 'Back to the task';
+
+  @override
+  String get chatWatchBackToWorker => 'Back to the worker';
 }
