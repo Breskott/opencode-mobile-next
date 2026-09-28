@@ -341,6 +341,18 @@ void main() {
       expect(find.text('• $check'), findsOneWidget);
     }
     expect(find.byType(KitDetailsFold), findsOneWidget);
+    // The raw error waits folded: the plain diagnosis is what is read
+    // first, and one tap opens the technical text.
+    expect(
+      find.textContaining('Health check failed: connection refused'),
+      findsNothing,
+    );
+    await tester.tap(_key('kit-details-toggle'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('Health check failed: connection refused'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 

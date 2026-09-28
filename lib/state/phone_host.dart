@@ -33,6 +33,48 @@ enum PhoneHostState {
   running,
 }
 
+/// What [PhoneHost.failure] was about, so the page can say it in plain
+/// words and offer the act that fixes it: a failed install is installed
+/// again, a failed start is started again.
+enum PhoneHostProblem {
+  /// The server did not start, or stopped by itself (a crash).
+  start,
+
+  /// The server did not stop.
+  stop,
+
+  /// An install or an update did not finish.
+  install,
+
+  /// The page could not ask the host how the server is (Termux did not
+  /// answer, or the in-app Linux could not be read).
+  check,
+}
+
+/// Whether the manager's failure [message] (with its [failureKind]) is about
+/// the server starting or running rather than an install or update: the
+/// manager writes these while it starts, waits for or watches the server.
+@visibleForTesting
+PhoneHostProblem termuxProblemOf(String failureKind, String message) {
+  if (failureKind == 'crash' || failureKind == 'recovery') {
+    return PhoneHostProblem.start;
+  }
+  const startMessages = [
+    'OpenCode server exited',
+    'OpenCode server did not become',
+    'The local OpenCode server stopped unexpectedly',
+    'Managed server did not start',
+    'The local server port is still in use',
+    'The local server password is missing',
+    'Could not record the managed server process identity',
+    'Automatic recovery was disabled',
+  ];
+  for (final start in startMessages) {
+    if (message.startsWith(start)) return PhoneHostProblem.start;
+  }
+  return PhoneHostProblem.install;
+}
+
 /// OpenCode on this phone, whichever host runs it: the one model This phone
 /// reads, so the page is the same for the in-app Linux and for Termux.
 ///
@@ -54,8 +96,12 @@ abstract class PhoneHost extends ChangeNotifier {
   /// own folder; Termux has its own Storage page).
   int? get bytesUsed;
 
-  /// What went wrong last, in words.
+  /// What went wrong last, as the host said it: technical text, shown
+  /// only under Details.
   String? get failure;
+
+  /// What [failure] was about; null when nothing failed.
+  PhoneHostProblem? get problem => null;
 
   /// The saved connection for [runtime], or null when there is none yet.
   ServerProfile? get profile;
@@ -109,6 +155,7 @@ class InAppPhoneHost extends PhoneHost {
   BuiltinLinuxStatus? _status;
   bool _stopping = false;
   String? _failure;
+  PhoneHostProblem? _problem;
   Timer? _poll;
   bool _disposed = false;
 
@@ -166,6 +213,9 @@ class InAppPhoneHost extends PhoneHost {
   String? get failure => _failure;
 
   @override
+  PhoneHostProblem? get problem => _failure == null ? null : _problem;
+
+  @override
   PhoneHostState get state {
     if (engine?.progress.value.state == SetupState.running) {
       return PhoneHostState.settingUp;
@@ -191,6 +241,7 @@ class InAppPhoneHost extends PhoneHost {
       if (_disposed) return;
       _status ??= const BuiltinLinuxStatus.absent();
       _failure = error.message;
+      _problem = PhoneHostProblem.check;
       notifyListeners();
     }
     final interval = pollInterval;
@@ -211,6 +262,7 @@ class InAppPhoneHost extends PhoneHost {
     if (_disposed) return;
     if (failed != null) {
       _failure = l10n.builtinServerStartFailed(failed.reason(l10n));
+      _problem = PhoneHostProblem.start;
     }
     await refresh();
   }
@@ -224,6 +276,7 @@ class InAppPhoneHost extends PhoneHost {
       await linux.stopServer();
     } on BuiltinLinuxException catch (error) {
       _failure = error.message;
+      _problem = PhoneHostProblem.stop;
     }
     if (_disposed) return;
     await refresh();
@@ -263,6 +316,7 @@ class TermuxPhoneHost extends PhoneHost {
   bool _stopping = false;
   bool _checked = false;
   String? _failure;
+  PhoneHostProblem? _problem;
   bool _disposed = false;
 
   ProfileStore get _store => connection.store;
@@ -336,6 +390,9 @@ class TermuxPhoneHost extends PhoneHost {
   String? get failure => _failure;
 
   @override
+  PhoneHostProblem? get problem => _failure == null ? null : _problem;
+
+  @override
   TermuxRuntime? get switchTarget =>
       _status?.switchPending == true ? _status!.switchTarget : null;
 
@@ -363,6 +420,10 @@ class TermuxPhoneHost extends PhoneHost {
           : PhoneHostState.settingUp;
     }
     if (status != null && status.isReady) return PhoneHostState.running;
+    // Termux did not answer: not knowing is not "not set up".
+    if (status == null && problem == PhoneHostProblem.check) {
+      return PhoneHostState.needsYou;
+    }
     if (version == null) return PhoneHostState.notSetUp;
     if (status != null && status.isFailed) return PhoneHostState.needsYou;
     return _failure != null ? PhoneHostState.needsYou : PhoneHostState.stopped;
@@ -382,10 +443,19 @@ class TermuxPhoneHost extends PhoneHost {
       _log = snapshot.output;
       if (snapshot.status.isFailed && !snapshot.status.switchPending) {
         _failure = snapshot.status.message;
+        _problem = termuxProblemOf(
+          snapshot.status.failureKind,
+          snapshot.status.message,
+        );
+      } else if (_problem == PhoneHostProblem.check) {
+        // Termux answers again: its not answering is over.
+        _failure = null;
+        _problem = null;
       }
     } on TermuxBridgeException catch (error) {
       if (_disposed) return;
       _failure = error.message;
+      _problem = PhoneHostProblem.check;
     }
     try {
       _installation = await TermuxBridge.inspectInstallation();
@@ -426,6 +496,7 @@ class TermuxPhoneHost extends PhoneHost {
       _failure = error.message.isEmpty
           ? l10n.e7SetupRestartFailed(l10n.phoneServerCardStopped)
           : error.message;
+      _problem = PhoneHostProblem.start;
     }
     _starting = false;
     if (_disposed) return;
@@ -441,6 +512,7 @@ class TermuxPhoneHost extends PhoneHost {
       await _controls.stop();
     } on LocalServerControlFailure catch (error) {
       _failure = l10n.e7SetupStopFailed(error.message);
+      _problem = PhoneHostProblem.stop;
     }
     _stopping = false;
     if (_disposed) return;

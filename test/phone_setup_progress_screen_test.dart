@@ -234,10 +234,16 @@ void main() {
           ),
         ),
       );
+      // The stage in words; the job's own reason is under Details (no raw
+      // errors; slice-close-servers).
       expect(
-        find.text('Checking the download: The file was damaged'),
+        find.text(
+          'Stopped during: Checking the download. '
+          'What went wrong is under Details.',
+        ),
         findsOneWidget,
       );
+      expect(find.textContaining('The file was damaged'), findsNothing);
       expect(find.text("Setup didn't finish"), findsOneWidget);
       final bar = tester.widget<LinearProgressIndicator>(
         find.byKey(const Key('setup-progress-overall')),
@@ -276,7 +282,8 @@ void main() {
       expect(find.textContaining('Exit code 6'), findsNothing);
     });
 
-    testWidgets('a failure between components still says why', (tester) async {
+    testWidgets('a failure between components still says it stopped, with '
+        'the reason under Details', (tester) async {
       await _pump(
         tester,
         initial: _job(
@@ -286,7 +293,16 @@ void main() {
           error: 'OpenCode did not start',
         ),
       );
-      expect(find.text('OpenCode did not start'), findsOneWidget);
+      expect(
+        find.text(
+          'Setup stopped before it finished. What went wrong is under Details.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('OpenCode did not start'), findsNothing);
+      await _tapVisible(tester, find.text('Details'));
+      await _settle(tester);
+      expect(find.textContaining('OpenCode did not start'), findsOneWidget);
       expect(find.text('Continue setup'), findsOneWidget);
     });
 

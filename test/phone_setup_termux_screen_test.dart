@@ -194,6 +194,12 @@ void main() {
     await pump(tester, frames: 15);
     final resume = find.byKey(const Key('setup-progress-continue'));
     expect(resume, findsOneWidget);
+    // The script's words are under Details, not the row's (no raw errors).
+    expect(find.textContaining('npm could not install'), findsNothing);
+    final details = find.byKey(const Key('setup-progress-details'));
+    await tester.ensureVisible(details);
+    await tester.tap(details);
+    await pump(tester, frames: 4);
     expect(find.textContaining('npm could not install'), findsWidgets);
 
     termux.statusOutput = null;

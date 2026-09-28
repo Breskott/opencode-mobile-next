@@ -53,7 +53,9 @@ import 'profile_monitor_screen.dart' show ProfileMonitorScreen;
 /// What the servers list learns back from the editor's save: whether the
 /// profile reached the store, and the product-facing failure to show inline
 /// when connecting (or saving) did not work out.
-typedef _SubmitOutcome = ({bool saved, String? failure});
+/// A save's outcome: [failure] in plain words when it did not finish, and
+/// [details], the redacted technical text for the Details fold under it.
+typedef _SubmitOutcome = ({bool saved, String? failure, String? details});
 
 /// Checks a Paseo daemon or a Codex app-server, the two socket backends.
 typedef SocketAgentProbe =
@@ -549,7 +551,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           );
         }
       }
-      return (saved: true, failure: null);
+      return (saved: true, failure: null, details: null);
     } catch (error) {
       final detail = productErrorText(error);
       return (
@@ -557,6 +559,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         failure: saved
             ? copy.e7SetupSavedConnectFailed(result.name, detail)
             : copy.e7SetupSaveFailed(result.name, detail),
+        details: productErrorDetails(error),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -1189,15 +1192,32 @@ class _ServerRow extends StatelessWidget {
   final VoidCallback onRemove;
   final VoidCallback onAccount;
 
+  /// Where the server is, which the row itself no longer says: its full
+  /// address and, for Codex and Paseo, the project folder.
+  Future<void> _showDetails(BuildContext context, AppLocalizations copy) =>
+      showKitTechnicalDetails(
+        context,
+        title: copy.serverRowDetailsTitle(profile.name),
+        text: '',
+        sheetKey: ValueKey('server-details-sheet-${profile.id}'),
+        values: [
+          KitTechnicalValue(copy.connectionServerAddress, profile.baseUrl),
+          if (profile.usesAgentSocket && profile.codexDirectory.isNotEmpty)
+            KitTechnicalValue(copy.codexProjectFolder, profile.codexDirectory),
+        ],
+      );
+
   @override
   Widget build(BuildContext context) {
     final copy = lookupAppLocalizations(Localizations.localeOf(context));
     final p = profile;
-    final kind = p.usesAgentSocket
-        ? '${p.backend == ServerBackend.paseo ? 'Paseo' : 'Codex'}${p.codexDirectory.isEmpty ? '' : ' · ${p.codexDirectory}'}'
-        : p.backend == ServerBackend.openCode
-        ? _knownOpenCodeGeneration(p)
-        : null;
+    // What it is, never where: the address and the folder are in the
+    // menu's Details.
+    final kind = switch (p.backend) {
+      ServerBackend.paseo => copy.addServerTypePaseo,
+      ServerBackend.codex => copy.addServerTypeCodex,
+      ServerBackend.openCode => _knownOpenCodeGeneration(p),
+    };
     final reentry = p.requiresPasswordReentry
         ? copy.e7SetupPasswordRequired
         : p.requiresCodexTokenReentry
@@ -1211,7 +1231,7 @@ class _ServerRow extends StatelessWidget {
       tone: KitTextTone.primary,
     );
     // The state first, in words (R1, the switcher's words): "Needs you",
-    // "2 working", a credential to enter again, then what it is and where.
+    // "2 working", a credential to enter again, then what it is.
     return KitRow(
       key: ValueKey('server-row-${p.id}'),
       leading: waiting > 0
@@ -1240,8 +1260,7 @@ class _ServerRow extends StatelessWidget {
               text: '${copy.serverRowQueuedWaiting(queued)} · ',
               style: wordStyle,
             ),
-          if (kind != null) TextSpan(text: '$kind · '),
-          TextSpan(text: _shortAddress(p.baseUrl)),
+          TextSpan(text: kind),
         ],
       ),
       supportingMaxLines: 2,
@@ -1261,6 +1280,11 @@ class _ServerRow extends StatelessWidget {
             onSelected: onMoveQueued,
           ),
         KitMenuItem(label: copy.e7SetupEdit, onSelected: onEdit),
+        KitMenuItem(
+          key: ValueKey('server-details-${p.id}'),
+          label: copy.kitDetails,
+          onSelected: () => unawaited(_showDetails(context, copy)),
+        ),
         // Destructive: last, confirmed by the sheet it opens.
         KitMenuItem(
           label: copy.capsuleRemove,
@@ -1270,16 +1294,6 @@ class _ServerRow extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Where a saved server is, as a row shows it: the host and an explicit
-/// port, without the scheme, so the line reads as a place and does not
-/// break at "https://". The full address is in the server's editor.
-String _shortAddress(String baseUrl) {
-  final uri = Uri.tryParse(baseUrl.trim());
-  if (uri == null || uri.host.isEmpty) return baseUrl;
-  final host = uri.host.contains(':') ? '[${uri.host}]' : uri.host;
-  return uri.hasPort ? '$host:${uri.port}' : host;
 }
 
 /// First run asks the only real fork, one question with plain answers (UX
@@ -1631,6 +1645,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// Why the last save or connect did not finish, in product copy.
   String? _submitFailure;
 
+  /// The failed save's technical text, folded under its verdict.
+  String? _submitDetails;
+
   /// The keyring problem [_ProfileEditorScreen.secureStorageProbe] found.
   String? _secureStorageNotice;
 
@@ -1661,11 +1678,18 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// put the server behind TLS.
   String? _pairingFailure;
 
-  /// Where the verdicts (the check's, a failed save's) are shown, so a save
-  /// that failed can bring them into view.
+  /// The head of the form: the link drawing and a slow check's offer to
+  /// stop. A check or a save scrolls back to it as it starts.
   final _statusKey = GlobalKey();
 
-  /// Add server's step line, just above the verdicts: a check scrolls back
+  /// The verdicts (the check's, a failed save's), under the address field
+  /// they are about; an answer scrolls them into view with that field.
+  final _verdictKey = GlobalKey();
+
+  /// The address field, with its label: the verdict is revealed under it.
+  final _addressKey = GlobalKey();
+
+  /// Add server's step line, at the head of the form: a check scrolls back
   /// to it, so the step it is on stays in view.
   final _stepLineKey = GlobalKey();
 
@@ -1740,8 +1764,39 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     node.requestFocus();
   }
 
-  /// Brings the drawing and the verdicts into view: when a check or a
-  /// connect starts from a button further down, and when it answered.
+  /// Brings the address field and the verdict under it into view once a
+  /// check or a save answered: the field at the top, so what went wrong and
+  /// the field that fixes it are read together above the pinned button.
+  /// "Enter the address instead" opens first when the verdict is under it.
+  void _revealVerdict() {
+    if (_foldsManualAddress && _addressKey.currentContext == null) {
+      setState(() {
+        _manualForcedOpen = true;
+        _manualFold++;
+      });
+    }
+    // After the verdict has unfolded (KitReveal, KitMotion.standard): until
+    // then the form is not yet tall enough to bring the field to the top.
+    _verdictRevealTimer?.cancel();
+    _verdictRevealTimer = Timer(KitMotion.standard, () {
+      _verdictRevealTimer = null;
+      final context = _addressKey.currentContext ?? _verdictKey.currentContext;
+      if (!mounted || context == null) return;
+      unawaited(
+        Scrollable.ensureVisible(
+          context,
+          duration: KitMotion.standard,
+          curve: KitMotion.enter,
+          alignment: 0,
+        ),
+      );
+    });
+  }
+
+  Timer? _verdictRevealTimer;
+
+  /// Brings the drawing (and the step it is on) into view as a check or a
+  /// connect starts from a button further down.
   void _revealStatus() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final context = _stepLineKey.currentContext ?? _statusKey.currentContext;
@@ -1787,6 +1842,23 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     super.initState();
     if (!_isCodex) _probeSecureStorage();
     _urlLength = _url.text.length;
+    _urlFocus.addListener(_checkSocketAddressOnLeave);
+  }
+
+  /// A Codex or Paseo address is checked when the person moves on from its
+  /// field (the rule a standing helper used to recite): a wrong one says
+  /// why under the field at once, a right one clears it.
+  void _checkSocketAddressOnLeave() {
+    if (!mounted || !_isCodex || _urlFocus.hasFocus || _submitting) return;
+    final typed = _url.text.trim();
+    if (typed.isEmpty) return;
+    final url = _isPaseo
+        ? normalizePaseoServerUrl(typed)
+        : normalizeCodexServerUrl(typed);
+    final error = _isPaseo
+        ? validatePaseoServerUrl(url)
+        : validateCodexServerUrl(url);
+    if (error != _error) setState(() => _error = error);
   }
 
   /// A paste is a jump of several characters at once. When it lands without a
@@ -1903,6 +1975,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     _testing = false;
     _verdictFromSave = false;
     _submitFailure = null;
+    _submitDetails = null;
     _pairing = false;
     _error = null;
     _testResult = null;
@@ -1980,6 +2053,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _testing = false;
       _stopSlowWatch();
       _submitFailure = null;
+      _submitDetails = null;
       _testResult = result;
       _verdictFromSave = forSave && !result.ok;
     });
@@ -1997,7 +2071,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       }
       _focusField(_passFocus);
     }
-    if (!auto) _revealStatus();
+    if (!auto) _revealVerdict();
     return result.ok;
   }
 
@@ -2065,11 +2139,12 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         _testing = false;
         _stopSlowWatch();
         _submitFailure = null;
+        _submitDetails = null;
         _codexTestResult = result;
         _verdictFromSave = forSave && !result.ok;
       });
       if (!result.ok && !auto) _codexTokenFocus.requestFocus();
-      if (!auto) _revealStatus();
+      if (!auto) _revealVerdict();
       return result.ok;
     } catch (error) {
       if (!mounted || generation != _probeGeneration) return false;
@@ -2299,13 +2374,16 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   void dispose() {
     _autoTestTimer?.cancel();
     _slowTimer?.cancel();
+    _verdictRevealTimer?.cancel();
     _name.dispose();
     _url.dispose();
     _user.dispose();
     _pass.dispose();
     _codexDirectory.dispose();
     _codexToken.dispose();
-    _urlFocus.dispose();
+    _urlFocus
+      ..removeListener(_checkSocketAddressOnLeave)
+      ..dispose();
     _nameFocus.dispose();
     _userFocus.dispose();
     _passFocus.dispose();
@@ -2572,6 +2650,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _invalidateProbe();
       _submitting = true;
       _submitFailure = null;
+      _submitDetails = null;
     });
     await _submit(profile);
   }
@@ -2605,6 +2684,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _invalidateProbe();
       _submitting = true;
       _submitFailure = null;
+      _submitDetails = null;
     });
     await _submit(profile);
   }
@@ -2632,8 +2712,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     setState(() {
       _submitting = false;
       _submitFailure = outcome.failure;
+      _submitDetails = outcome.details;
     });
-    _revealStatus();
+    _revealVerdict();
   }
 
   /// The Codex and Paseo fields: address, project folder, token, then the
@@ -2641,22 +2722,27 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// token is the secret kind, never prefilled).
   List<Widget> _buildCodexFields(AppLocalizations copy, KitTokens tokens) => [
     SizedBox(height: tokens.space3),
-    KitField(
-      label: copy.connectionServerAddress,
-      kind: KitFieldKind.url,
-      controller: _url,
-      focusNode: _urlFocus,
-      fieldKey: const ValueKey('codex-server-address-field'),
-      hint: _isPaseo ? copy.paseoAddressHint : copy.codexAddressHint,
-      helper: _isPaseo ? copy.paseoAddressHelp : copy.codexAddressHelp,
-      error: _error,
-      enabled: !_submitting,
-      disabledReason: _submitting ? copy.e7SetupSaving : null,
-      textInputAction: TextInputAction.next,
-      onSubmitted: (_) => _codexDirectoryFocus.requestFocus(),
-      onChanged: _urlChanged,
+    KeyedSubtree(
+      key: _addressKey,
+      child: KitField(
+        label: copy.connectionServerAddress,
+        kind: KitFieldKind.url,
+        controller: _url,
+        focusNode: _urlFocus,
+        fieldKey: const ValueKey('codex-server-address-field'),
+        hint: _isPaseo ? copy.paseoAddressHint : copy.codexAddressHint,
+        // No standing ws:// / wss:// rule: the field checks the address
+        // when the person moves on and says what is wrong right here.
+        error: _error == null ? null : setupUiMessage(copy, _error!),
+        enabled: !_submitting,
+        disabledReason: _submitting ? copy.e7SetupSaving : null,
+        textInputAction: TextInputAction.next,
+        onSubmitted: (_) => _codexDirectoryFocus.requestFocus(),
+        onChanged: _urlChanged,
+      ),
     ),
     ?_notSameNetworkLink(),
+    _verdicts(copy, tokens),
     SizedBox(height: tokens.space4),
     KitField(
       label: copy.codexProjectFolder,
@@ -2842,27 +2928,33 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(height: _foldsManualAddress ? tokens.space1 : tokens.space3),
-          KitField(
-            label: copy.e7SetupServerUrl,
-            kind: KitFieldKind.url,
-            controller: _url,
-            focusNode: _urlFocus,
-            fieldKey: const ValueKey('server-url-field'),
-            hint: 'https://server.example',
-            helper: _tailscale
-                ? copy.tailscaleAddressDetail
-                : copy.e7SetupHttpsHint,
-            error: _error,
-            enabled: !_submitting,
-            disabledReason: _submitting ? copy.e7SetupSaving : null,
-            textInputAction: TextInputAction.next,
-            // Straight to the password: the name and username are under
-            // More options and rarely needed.
-            onSubmitted: (_) => _passFocus.requestFocus(),
-            onChanged: _urlChanged,
+          KeyedSubtree(
+            key: _addressKey,
+            child: KitField(
+              label: copy.e7SetupServerUrl,
+              kind: KitFieldKind.url,
+              controller: _url,
+              focusNode: _urlFocus,
+              fieldKey: const ValueKey('server-url-field'),
+              hint: 'https://server.example',
+              helper: _tailscale
+                  ? copy.tailscaleAddressDetail
+                  : copy.e7SetupHttpsHint,
+              error: _error,
+              enabled: !_submitting,
+              disabledReason: _submitting ? copy.e7SetupSaving : null,
+              textInputAction: TextInputAction.next,
+              // Straight to the password: the name and username are under
+              // More options and rarely needed.
+              onSubmitted: (_) => _passFocus.requestFocus(),
+              onChanged: _urlChanged,
+            ),
           ),
           ?_notSameNetworkLink(),
           ?_remoteHttpAdvice(copy, tokens),
+          // What the check (or the save) found, under the field it is
+          // about.
+          _verdicts(copy, tokens),
           SizedBox(height: tokens.space4),
           // Paste is the main way in for the per-run random serve password;
           // the kit field carries it beside the reveal toggle.
@@ -2920,81 +3012,82 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     ),
   );
 
-  /// The verdicts, in one place near the action that produced them: a save
-  /// that failed, and what the check found.
-  Widget _status(AppLocalizations copy, KitTokens tokens) {
+  /// Each verdict unfolds in when it arrives and folds away when it goes
+  /// (design standard §10); the slots stay in place so a new check that
+  /// clears the old verdict and brings the next one moves smoothly.
+  Widget _slot(KitTokens tokens, Widget? child) => KitReveal(
+    child: child == null
+        ? null
+        : Padding(
+            padding: EdgeInsetsDirectional.only(top: tokens.space2),
+            child: child,
+          ),
+  );
+
+  /// A check that has not answered for a while offers to stop, so a server
+  /// that never answers never holds the person. At the head of the form,
+  /// under the drawing that shows the check.
+  Widget _progress(AppLocalizations copy, KitTokens tokens) => _Rails(
+    child: _slot(
+      tokens,
+      !_slowCheck
+          ? null
+          : KitNotice(
+              key: const ValueKey('server-check-slow'),
+              tone: AppStatusTone.neutral,
+              message: copy.addServerCheckSlow(_host),
+              actions: [
+                KitAction(
+                  key: const ValueKey('server-check-cancel'),
+                  label: copy.addServerCheckCancel,
+                  onPressed: _cancelCheck,
+                ),
+              ],
+            ),
+    ),
+  );
+
+  /// The verdicts, under the address field they are about: a save that
+  /// failed, and what the check found. Plain words; the technical text is
+  /// folded under Details.
+  Widget _verdicts(AppLocalizations copy, KitTokens tokens) {
     final failure = _submitFailure;
     final result = _isCodex ? null : _testResult;
     final codex = _isCodex ? _codexTestResult : null;
-    // Each verdict unfolds in when it arrives and folds away when it goes
-    // (design standard §10); the slots stay in place so a new check that
-    // clears the old verdict and brings the next one moves smoothly.
-    Widget slot(Widget? child) => KitReveal(
-      child: child == null
-          ? null
-          : Padding(
-              padding: EdgeInsetsDirectional.only(top: tokens.space2),
-              child: child,
-            ),
-    );
-    return _Rails(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // A check that has not answered for a while offers to stop, so a
-          // server that never answers never holds the person.
-          slot(
-            !_slowCheck
-                ? null
-                : KitNotice(
-                    key: const ValueKey('server-check-slow'),
-                    tone: AppStatusTone.neutral,
-                    message: copy.addServerCheckSlow(_host),
-                    actions: [
-                      KitAction(
-                        key: const ValueKey('server-check-cancel'),
-                        label: copy.addServerCheckCancel,
-                        onPressed: _cancelCheck,
-                      ),
-                    ],
-                  ),
-          ),
-          slot(
-            failure == null
-                ? null
-                : KitNotice(
+    return Column(
+      key: _verdictKey,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _slot(
+          tokens,
+          failure == null
+              ? null
+              : _WithDetails(
+                  details: _submitDetails,
+                  detailsKey: const ValueKey('server-save-failure-details'),
+                  child: KitNotice(
                     key: const ValueKey('server-save-failure'),
                     tone: AppStatusTone.failure,
                     message: failure,
                   ),
-          ),
-          slot(codex == null ? null : _buildCodexProbeVerdict(copy)),
-          slot(
-            result == null
-                ? null
-                : KeyedSubtree(
-                    key: const ValueKey('server-probe-verdict'),
-                    child: _ProbeVerdict(
-                      result: result,
-                      saveAnyway: !result.ok && _verdictFromSave
-                          ? _saveAnywayAction(copy)
-                          : null,
-                    ),
+                ),
+        ),
+        _slot(tokens, codex == null ? null : _buildCodexProbeVerdict(copy)),
+        _slot(
+          tokens,
+          result == null
+              ? null
+              : KeyedSubtree(
+                  key: const ValueKey('server-probe-verdict'),
+                  child: _ProbeVerdict(
+                    result: result,
+                    saveAnyway: !result.ok && _verdictFromSave
+                        ? _saveAnywayAction(copy)
+                        : null,
                   ),
-          ),
-          // The air under the verdicts, only while there is one.
-          KitReveal(
-            fade: false,
-            child:
-                failure == null &&
-                    result == null &&
-                    codex == null &&
-                    !_slowCheck
-                ? null
-                : SizedBox(height: tokens.space2),
-          ),
-        ],
-      ),
+                ),
+        ),
+      ],
     );
   }
 
@@ -3242,13 +3335,14 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
           ],
         ),
       ),
-    // The connection's moment and what it found, together
-    // at the head of the form: the drawing, its line, then
-    // the verdict. Every check and save scrolls back to it.
+    // The connection's moment at the head of the form: the
+    // drawing, its line, and a slow check's offer to stop.
+    // Every check and save starts by scrolling back to it; the
+    // verdict itself is under the address field.
     Column(
       key: _statusKey,
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [if (isNew) _linkMoment(copy, tokens), _status(copy, tokens)],
+      children: [if (isNew) _linkMoment(copy, tokens), _progress(copy, tokens)],
     ),
     if (showsCommand) ...[
       SizedBox(height: tokens.space1),
@@ -3377,7 +3471,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         key: const ValueKey('server-tailscale-continue'),
         onPressed: () => _goTo(_AddStep.connect),
         icon: AppIconography.forward,
-        label: copy.tailscaleContinue,
+        label: copy.addServerTailscaleNext,
       ),
       _AddStep.ready => KitButton.primary(
         key: const ValueKey('server-ready-open'),
@@ -3722,24 +3816,70 @@ class _ProbeVerdict extends StatelessWidget {
         notes: [if (result.flavor == ServerFlavor.v1) copy.e7SetupV1Limited],
       );
     }
-    return KitNotice(
-      key: const ValueKey('server-test-failure'),
-      tone: AppStatusTone.failure,
-      // A missing password answers 401 on OpenCode 1 and 2 alike; which one
-      // it is shows once the password is in.
-      title: result.flavor == ServerFlavor.v2 && !result.needsPassword
-          ? copy.e7SetupIsV2
-          : null,
-      message: setupUiMessage(copy, result.message!),
-      notes: [if (result.suggestsMissingServer) copy.e7SetupNoServerGuide],
-      actions: [
-        if (result.suggestsMissingServer)
-          KitAction(
-            key: const ValueKey('server-test-guide'),
-            label: copy.e7SetupOpenSetupGuide,
-            onPressed: () => Navigator.pushNamed(context, '/guide'),
-          ),
-        ?saveAnyway,
+    // A check that failed before the server could answer carries the raw
+    // error (a socket or TLS message): plain words lead, the error waits
+    // under Details.
+    final raw = _rawCheckError(result.message!);
+    return _WithDetails(
+      details: raw,
+      detailsKey: const ValueKey('server-test-failure-details'),
+      child: KitNotice(
+        key: const ValueKey('server-test-failure'),
+        tone: AppStatusTone.failure,
+        // A missing password answers 401 on OpenCode 1 and 2 alike; which
+        // one it is shows once the password is in.
+        title: result.flavor == ServerFlavor.v2 && !result.needsPassword
+            ? copy.e7SetupIsV2
+            : null,
+        message: raw != null
+            ? copy.addServerCheckFailedPlain
+            : setupUiMessage(copy, result.message!),
+        notes: [if (result.suggestsMissingServer) copy.e7SetupNoServerGuide],
+        actions: [
+          if (result.suggestsMissingServer)
+            KitAction(
+              key: const ValueKey('server-test-guide'),
+              label: copy.e7SetupOpenSetupGuide,
+              onPressed: () => Navigator.pushNamed(context, '/guide'),
+            ),
+          ?saveAnyway,
+        ],
+      ),
+    );
+  }
+}
+
+/// The raw error inside a probe's "Connection test failed: …" message, or
+/// null for the probe's own plain verdicts.
+String? _rawCheckError(String message) {
+  const prefix = 'Connection test failed: ';
+  if (!message.startsWith(prefix)) return null;
+  final raw = message.substring(prefix.length).trim();
+  return raw.isEmpty ? null : raw;
+}
+
+/// A verdict with its technical text folded under Details right below it
+/// (no raw errors as copy: the words lead, the text waits, redacted).
+class _WithDetails extends StatelessWidget {
+  const _WithDetails({
+    required this.child,
+    required this.details,
+    required this.detailsKey,
+  });
+
+  final Widget child;
+  final String? details;
+  final Key detailsKey;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = details;
+    if (text == null || text.isEmpty) return child;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        child,
+        KitDetailsFold(key: detailsKey, text: text),
       ],
     );
   }

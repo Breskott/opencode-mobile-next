@@ -3614,12 +3614,6 @@ abstract class AppLocalizations {
   /// **'Waiting for Termux output…'**
   String get setupOutputWaiting;
 
-  /// No description provided for @setupConnectExisting.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect existing server'**
-  String get setupConnectExisting;
-
   /// Sign-in sheet: a start the server may have taken without confirming it.
   ///
   /// In en, this message translates to:
@@ -4513,12 +4507,6 @@ abstract class AppLocalizations {
   /// **'ws://100.64.0.1:6767 or wss://paseo.example'**
   String get paseoAddressHint;
 
-  /// No description provided for @paseoAddressHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'The Paseo daemon on your computer. ws:// works on this device and on Tailscale addresses; use wss:// elsewhere.'**
-  String get paseoAddressHelp;
-
   /// No description provided for @paseoPasswordLabel.
   ///
   /// In en, this message translates to:
@@ -4560,12 +4548,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'wss://codex.example or ws://127.0.0.1:4500'**
   String get codexAddressHint;
-
-  /// No description provided for @codexAddressHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Use wss:// for remote servers. ws:// is limited to this device.'**
-  String get codexAddressHelp;
 
   /// No description provided for @codexProjectFolder.
   ///
@@ -4624,7 +4606,7 @@ abstract class AppLocalizations {
   /// No description provided for @termuxPermissionDenied.
   ///
   /// In en, this message translates to:
-  /// **'Android denied the Termux command permission. Allow it in OpenCode app settings.'**
+  /// **'Android didn\'t let this app run commands in Termux.'**
   String get termuxPermissionDenied;
 
   /// Snackbar shown once when the New task home-screen shortcut arrives while the saved server is still connecting
@@ -4734,12 +4716,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OpenCode 2'**
   String get setupRuntimeTwo;
-
-  /// Names the selected runtime and pinned version in the update confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'The app will install {runtime} {version}, restart only the managed local server, and reconnect this server.'**
-  String setupRuntimeUpdateDetail(String runtime, String version);
 
   /// Connection banner line counting queued drafts whose send was never confirmed
   ///
@@ -4978,7 +4954,7 @@ abstract class AppLocalizations {
   /// No description provided for @tailscaleInstalled.
   ///
   /// In en, this message translates to:
-  /// **'Tailscale is installed. VPN connection is unverified.'**
+  /// **'Tailscale is installed.'**
   String get tailscaleInstalled;
 
   /// No description provided for @tailscaleMissing.
@@ -5056,8 +5032,14 @@ abstract class AppLocalizations {
   /// No description provided for @tailscaleContinue.
   ///
   /// In en, this message translates to:
-  /// **'Continue to authentication'**
+  /// **'Continue to sign-in'**
   String get tailscaleContinue;
+
+  /// Add server, Tailscale step: the primary that moves on to the step where the Tailscale address is entered.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the address'**
+  String get addServerTailscaleNext;
 
   /// No description provided for @tailscaleHelp.
   ///
@@ -5500,7 +5482,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentAccountHostNote.
   ///
   /// In en, this message translates to:
-  /// **'The official Codex runtime keeps your provider credentials. Account changes apply to this host, including other saved servers connected to it.'**
+  /// **'The sign-in is kept on the server\'s computer, not in this app. Signing in or out here changes it for every saved server on that computer.'**
   String get agentAccountHostNote;
 
   /// No description provided for @agentAccountUnsupportedDetail.
@@ -5524,7 +5506,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentAccountSignInNote.
   ///
   /// In en, this message translates to:
-  /// **'Start an official device-code sign-in on this host. Complete it in your browser; the app never receives your provider tokens.'**
+  /// **'Sign in with your ChatGPT account. You finish in the browser; this app never sees your password.'**
   String get agentAccountSignInNote;
 
   /// No description provided for @agentAccountLimits.
@@ -7925,7 +7907,7 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode {version} is installed, but this server process is still running {current}. Restart that process on the server host; mobile will reconnect and confirm the running version.'**
+  /// **'OpenCode {version} is installed, but the server is still running {current}. Restart it on its computer the way you started it; the app then checks it again.'**
   String e7SettingsRestartBody(String version, String current);
 
   /// Settings and appearance user interface.
@@ -12070,7 +12052,7 @@ abstract class AppLocalizations {
   /// Setup journey: termux no answer.
   ///
   /// In en, this message translates to:
-  /// **'Termux did not answer. Open Termux once, run the unlock line, then verify again.'**
+  /// **'Termux didn\'t answer. Tap Copy & open Termux, paste the line in Termux and press Enter, then come back here.'**
   String get e7SetupTermuxNoAnswer;
 
   /// Setup journey: copy open termux.
@@ -12580,7 +12562,7 @@ abstract class AppLocalizations {
   /// Setup journey: termux outdated.
   ///
   /// In en, this message translates to:
-  /// **'This version of Termux is too old for the app to control it. Install the current F-Droid or GitHub build of Termux, then check again.'**
+  /// **'This Termux is too old for the app to use. Install the current one, then tap Continue setup.'**
   String get e7SetupTermuxOutdated;
 
   /// Setup journey: camera needed.
@@ -12667,11 +12649,29 @@ abstract class AppLocalizations {
   /// **'Failure report copied.'**
   String get e7SetupReportCopied;
 
-  /// Setup journey: app settings.
+  /// Setup journey, Allow Termux row after Android denied the permission: opens this app's page in Android Settings, where the person allows running commands in Termux.
   ///
   /// In en, this message translates to:
-  /// **'App settings'**
+  /// **'Allow the permission in Settings'**
   String get e7SetupAppSettings;
+
+  /// Setup journey, failed Get Termux row when the installed Termux is too old: opens the current Termux download page in the browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Get the current Termux'**
+  String get phoneSetupTermuxGetCurrent;
+
+  /// Phone setup reached on a device that cannot run it (not Android): title of the page that points to connecting a server instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a server'**
+  String get phoneSetupUnsupportedTitle;
+
+  /// Phone setup reached on a device that cannot run it: body above the command to copy (opencode2 pair).
+  ///
+  /// In en, this message translates to:
+  /// **'Setting up on the device itself works only on Android phones. On your computer, run this command, then add the server here with the code it prints.'**
+  String get phoneSetupUnsupportedBody;
 
   /// Setup journey: no camera.
   ///
@@ -12928,7 +12928,7 @@ abstract class AppLocalizations {
   /// Setup journey: unsupported setup.
   ///
   /// In en, this message translates to:
-  /// **'On-device setup requires Termux on Android. On this computer, run `opencode serve` and add its address.'**
+  /// **'Setting up on the device itself works only on Android phones. On this computer, start OpenCode yourself and add it as a server.'**
   String get e7SetupUnsupportedSetup;
 
   /// Setup journey: send key.
@@ -13150,7 +13150,7 @@ abstract class AppLocalizations {
   /// Setup journey: no server answer.
   ///
   /// In en, this message translates to:
-  /// **'The server did not answer. Check that opencode serve is running on that address.'**
+  /// **'The server did not answer. Check that it is running and that the address is right.'**
   String get e7SetupNoServerAnswer;
 
   /// Setup journey: pair password rejected.
@@ -13234,7 +13234,7 @@ abstract class AppLocalizations {
   /// Setup journey: refused.
   ///
   /// In en, this message translates to:
-  /// **'The connection was refused. Is opencode serve running on that host and port?'**
+  /// **'The computer refused the connection. Check that the server is running there and that the address and port are right.'**
   String get e7SetupRefused;
 
   /// Setup journey: timeout.
@@ -13324,7 +13324,7 @@ abstract class AppLocalizations {
   /// Setup journey: codex plain.
   ///
   /// In en, this message translates to:
-  /// **'Plain WebSocket is allowed only for a local Codex server.'**
+  /// **'ws:// works only for a server on this phone. Use a wss:// address for another computer.'**
   String get e7SetupCodexPlain;
 
   /// Setup journey: codex directory.
@@ -17091,7 +17091,7 @@ abstract class AppLocalizations {
   /// Storage screen: paragraph before the first scan
   ///
   /// In en, this message translates to:
-  /// **'See the storage used by Termux, including the local server and other tools. Expand a category to inspect it. Only selected regenerable caches can be cleaned here; projects, team data, sign-ins and conversation history stay in place.'**
+  /// **'See what Termux uses on this phone. Only caches that rebuild themselves can be cleaned here; your projects, sign-ins and conversations stay.'**
   String get termuxStorageIntro;
 
   /// Storage screen: heading while a scan runs
@@ -17099,6 +17099,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Measuring storage'**
   String get termuxStorageScanning;
+
+  /// Storage screen: the scan's last row while it runs, measuring everything Termux uses
+  ///
+  /// In en, this message translates to:
+  /// **'The whole Termux install'**
+  String get termuxStorageStageTotal;
 
   /// Storage screen: line under the scanning heading
   ///
@@ -19866,23 +19872,29 @@ abstract class AppLocalizations {
   /// **'Starting'**
   String get setupProgressViewStarting;
 
-  /// What failed in a setup component: its last stage and the reason
-  ///
-  /// In en, this message translates to:
-  /// **'{stage}: {reason}'**
-  String setupProgressViewFailedStageReason(String stage, String reason);
-
   /// A setup component failed; only its last stage is known
   ///
   /// In en, this message translates to:
-  /// **'Stopped during: {stage}'**
+  /// **'Stopped during: {stage}. What went wrong is under Details.'**
   String setupProgressViewFailedDuring(String stage);
 
-  /// A setup component failed with no reason given
+  /// A setup job failed and the app does not know at which component
   ///
   /// In en, this message translates to:
-  /// **'Something went wrong. Show details for the log.'**
+  /// **'Setup stopped before it finished. What went wrong is under Details.'**
   String get setupProgressViewFailedUnknown;
+
+  /// A setup component failed; neither its stage nor a reason the app can word is known (the raw text is in the Details log)
+  ///
+  /// In en, this message translates to:
+  /// **'This step didn\'t finish. What went wrong is under Details.'**
+  String get setupProgressViewFailedStep;
+
+  /// A setup job failed between components; name is the component it was at
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped at {name}. What went wrong is under Details.'**
+  String setupProgressViewFailedAt(String name);
 
   /// A setup component failed because the network was unreachable
   ///
@@ -21347,6 +21359,28 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OpenCode has been busy in {project} for {duration} with nothing to do'**
   String workRunawayInProject(String project, String duration);
+
+  /// Status line: a leftover helper process on the phone (not OpenCode itself) keeps using the CPU; helper is the process's own name, e.g. 'node'
+  ///
+  /// In en, this message translates to:
+  /// **'A leftover {helper} process has been busy for {duration} with nothing to do'**
+  String workRunawayHelper(String helper, String duration);
+
+  /// Status line: a leftover helper process in a project folder (not OpenCode itself) keeps using the CPU
+  ///
+  /// In en, this message translates to:
+  /// **'A leftover {helper} process in {project} has been busy for {duration} with nothing to do'**
+  String workRunawayHelperInProject(
+    String helper,
+    String project,
+    String duration,
+  );
+
+  /// Status line menu: opens Running on this phone, the list of processes on the phone
+  ///
+  /// In en, this message translates to:
+  /// **'See what\'s running'**
+  String get workRunawaySeeRunning;
 
   /// Connecting screen title while the phone's own server starts
   ///
@@ -26868,10 +26902,10 @@ abstract class AppLocalizations {
   /// **'The agent waits until you answer'**
   String get profileMonitorIfIgnored;
 
-  /// Restart sheet: label above the restart command
+  /// Restart sheet: the fold that holds the helper script's restart command, for servers set up with it
   ///
   /// In en, this message translates to:
-  /// **'If it runs as a Linux service, run this there'**
+  /// **'Set up with the Linux service script?'**
   String get serverSettingsRestartCommandLabel;
 
   /// Restart sheet primary: closes and checks the server again
@@ -31738,6 +31772,78 @@ abstract class AppLocalizations {
   /// **'Installs version {version}'**
   String thisPhoneUpdateDetail(String version);
 
+  /// Technical: This phone: the row in place of Update when the installed OpenCode is already the version the app installs, e.g. 'Up to date · 1.18.29'
+  ///
+  /// In en, this message translates to:
+  /// **'Up to date · {version}'**
+  String thisPhoneUpToDate(String version);
+
+  /// This phone: the title of the question before an update in Termux; runtime is 'OpenCode' or 'OpenCode 2'
+  ///
+  /// In en, this message translates to:
+  /// **'Update {runtime}?'**
+  String thisPhoneUpdateTitle(String runtime);
+
+  /// Technical: This phone: what an update does, in the question before it, naming the version it installs
+  ///
+  /// In en, this message translates to:
+  /// **'Installs version {version}, restarts the server on this phone and connects again.'**
+  String thisPhoneUpdateBody(String version);
+
+  /// This phone: the consequence line in the question before an update
+  ///
+  /// In en, this message translates to:
+  /// **'Your conversations are kept. The server is away for a minute while it restarts.'**
+  String get thisPhoneUpdateKept;
+
+  /// This phone: why Update waits while a conversation is still working
+  ///
+  /// In en, this message translates to:
+  /// **'A reply is still being written. Stop it or let it finish, then update.'**
+  String get thisPhoneUpdateBusy;
+
+  /// This phone: the line under the status when the server did not start or stopped by itself
+  ///
+  /// In en, this message translates to:
+  /// **'{runtime} didn\'t start. Start it again; Details below says what went wrong.'**
+  String thisPhoneStartFailed(String runtime);
+
+  /// This phone: the button after the server did not start
+  ///
+  /// In en, this message translates to:
+  /// **'Start again'**
+  String get thisPhoneStartAgain;
+
+  /// This phone: the line under the status when an install or update did not finish
+  ///
+  /// In en, this message translates to:
+  /// **'Installing {runtime} didn\'t finish. Install it again; your conversations are kept.'**
+  String thisPhoneInstallFailed(String runtime);
+
+  /// This phone: the button after an install or update did not finish; it installs the same version again
+  ///
+  /// In en, this message translates to:
+  /// **'Install again'**
+  String get thisPhoneInstallAgain;
+
+  /// This phone: the line under the status when stopping the server failed
+  ///
+  /// In en, this message translates to:
+  /// **'{runtime} didn\'t stop. Try stopping it again.'**
+  String thisPhoneStopFailed(String runtime);
+
+  /// This phone: the line under the status when the host (Termux or the in-app Linux) did not answer
+  ///
+  /// In en, this message translates to:
+  /// **'This phone couldn\'t check on {runtime}. Try again in a moment.'**
+  String thisPhoneCheckFailed(String runtime);
+
+  /// This phone: the line under the status when a switch between OpenCode versions stopped half way; runtime is the version it switched to
+  ///
+  /// In en, this message translates to:
+  /// **'{runtime} didn\'t start after the switch. Your conversations are kept.'**
+  String thisPhoneSwitchStopped(String runtime);
+
   /// This phone: the row (and sheet title) that adds optional tools
   ///
   /// In en, this message translates to:
@@ -32535,6 +32641,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{host} has not answered yet. A slow network can take a while.'**
   String addServerCheckSlow(String host);
+
+  /// Add server: a connection check failed before the server could answer (a socket or TLS error); the raw error is under Details.
+  ///
+  /// In en, this message translates to:
+  /// **'The server could not be checked. Check the address and this phone’s connection, then try again.'**
+  String get addServerCheckFailedPlain;
+
+  /// Servers: title of the sheet a saved server's menu Details opens, with its full address and project folder.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} details'**
+  String serverRowDetailsTitle(String name);
 
   /// Add server: action on the slow-check notice; the answer, when it comes, is ignored.
   ///

@@ -2140,9 +2140,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setupOutputWaiting => 'Waiting for Termux output…';
 
   @override
-  String get setupConnectExisting => 'Connect existing server';
-
-  @override
   String get uncertainAuthDetail =>
       'The server may have started this sign-in without confirming it. Check on the server before you start again.';
 
@@ -2670,10 +2667,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paseoAddressHint => 'ws://100.64.0.1:6767 or wss://paseo.example';
 
   @override
-  String get paseoAddressHelp =>
-      'The Paseo daemon on your computer. ws:// works on this device and on Tailscale addresses; use wss:// elsewhere.';
-
-  @override
   String get paseoPasswordLabel => 'Daemon password (optional)';
 
   @override
@@ -2695,10 +2688,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get codexAddressHint => 'wss://codex.example or ws://127.0.0.1:4500';
-
-  @override
-  String get codexAddressHelp =>
-      'Use wss:// for remote servers. ws:// is limited to this device.';
 
   @override
   String get codexProjectFolder => 'Project folder on server';
@@ -2733,7 +2722,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termuxPermissionDenied =>
-      'Android denied the Termux command permission. Allow it in OpenCode app settings.';
+      'Android didn\'t let this app run commands in Termux.';
 
   @override
   String get launchShortcutWaiting =>
@@ -2800,11 +2789,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get setupRuntimeTwo => 'OpenCode 2';
-
-  @override
-  String setupRuntimeUpdateDetail(String runtime, String version) {
-    return 'The app will install $runtime $version, restart only the managed local server, and reconnect this server.';
-  }
 
   @override
   String queuedBannerReview(int count) {
@@ -2957,8 +2941,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tailscaleChecking => 'Checking for the Tailscale app…';
 
   @override
-  String get tailscaleInstalled =>
-      'Tailscale is installed. VPN connection is unverified.';
+  String get tailscaleInstalled => 'Tailscale is installed.';
 
   @override
   String get tailscaleMissing =>
@@ -3005,7 +2988,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Continue only with an address you recognize. The next screen reviews your server credentials before you explicitly test or save. This app cannot confirm that an address is private from its name alone.';
 
   @override
-  String get tailscaleContinue => 'Continue to authentication';
+  String get tailscaleContinue => 'Continue to sign-in';
+
+  @override
+  String get addServerTailscaleNext => 'Enter the address';
 
   @override
   String get tailscaleHelp => 'Tailscale setup and recovery';
@@ -3258,7 +3244,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentAccountHostNote =>
-      'The official Codex runtime keeps your provider credentials. Account changes apply to this host, including other saved servers connected to it.';
+      'The sign-in is kept on the server\'s computer, not in this app. Signing in or out here changes it for every saved server on that computer.';
 
   @override
   String get agentAccountUnsupportedDetail =>
@@ -3273,7 +3259,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentAccountSignInNote =>
-      'Start an official device-code sign-in on this host. Complete it in your browser; the app never receives your provider tokens.';
+      'Sign in with your ChatGPT account. You finish in the browser; this app never sees your password.';
 
   @override
   String get agentAccountLimits => 'Rate limits';
@@ -4712,7 +4698,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7SettingsRestartBody(String version, String current) {
-    return 'OpenCode $version is installed, but this server process is still running $current. Restart that process on the server host; mobile will reconnect and confirm the running version.';
+    return 'OpenCode $version is installed, but the server is still running $current. Restart it on its computer the way you started it; the app then checks it again.';
   }
 
   @override
@@ -7306,7 +7292,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupTermuxNoAnswer =>
-      'Termux did not answer. Open Termux once, run the unlock line, then verify again.';
+      'Termux didn\'t answer. Tap Copy & open Termux, paste the line in Termux and press Enter, then come back here.';
 
   @override
   String get e7SetupCopyOpenTermux => 'Copy & open Termux';
@@ -7587,7 +7573,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupTermuxOutdated =>
-      'This version of Termux is too old for the app to control it. Install the current F-Droid or GitHub build of Termux, then check again.';
+      'This Termux is too old for the app to use. Install the current one, then tap Continue setup.';
 
   @override
   String get e7SetupCameraNeeded => 'Camera access is needed to scan';
@@ -7633,7 +7619,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SetupReportCopied => 'Failure report copied.';
 
   @override
-  String get e7SetupAppSettings => 'App settings';
+  String get e7SetupAppSettings => 'Allow the permission in Settings';
+
+  @override
+  String get phoneSetupTermuxGetCurrent => 'Get the current Termux';
+
+  @override
+  String get phoneSetupUnsupportedTitle => 'Connect a server';
+
+  @override
+  String get phoneSetupUnsupportedBody =>
+      'Setting up on the device itself works only on Android phones. On your computer, run this command, then add the server here with the code it prints.';
 
   @override
   String get e7SetupNoCamera => 'This device has no camera';
@@ -7779,7 +7775,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupUnsupportedSetup =>
-      'On-device setup requires Termux on Android. On this computer, run `opencode serve` and add its address.';
+      'Setting up on the device itself works only on Android phones. On this computer, start OpenCode yourself and add it as a server.';
 
   @override
   String get e7SetupSendKey => 'Sends this key to the terminal';
@@ -7958,7 +7954,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupNoServerAnswer =>
-      'The server did not answer. Check that opencode serve is running on that address.';
+      'The server did not answer. Check that it is running and that the address is right.';
 
   @override
   String get e7SetupPairPasswordRejected =>
@@ -8012,7 +8008,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupRefused =>
-      'The connection was refused. Is opencode serve running on that host and port?';
+      'The computer refused the connection. Check that the server is running there and that the address and port are right.';
 
   @override
   String get e7SetupTimeout =>
@@ -8069,7 +8065,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupCodexPlain =>
-      'Plain WebSocket is allowed only for a local Codex server.';
+      'ws:// works only for a server on this phone. Use a wss:// address for another computer.';
 
   @override
   String get e7SetupCodexDirectory =>
@@ -10319,10 +10315,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termuxStorageIntro =>
-      'See the storage used by Termux, including the local server and other tools. Expand a category to inspect it. Only selected regenerable caches can be cleaned here; projects, team data, sign-ins and conversation history stay in place.';
+      'See what Termux uses on this phone. Only caches that rebuild themselves can be cleaned here; your projects, sign-ins and conversations stay.';
 
   @override
   String get termuxStorageScanning => 'Measuring storage';
+
+  @override
+  String get termuxStorageStageTotal => 'The whole Termux install';
 
   @override
   String get termuxStorageScanningDetail =>
@@ -12068,18 +12067,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setupProgressViewStarting => 'Starting';
 
   @override
-  String setupProgressViewFailedStageReason(String stage, String reason) {
-    return '$stage: $reason';
-  }
-
-  @override
   String setupProgressViewFailedDuring(String stage) {
-    return 'Stopped during: $stage';
+    return 'Stopped during: $stage. What went wrong is under Details.';
   }
 
   @override
   String get setupProgressViewFailedUnknown =>
-      'Something went wrong. Show details for the log.';
+      'Setup stopped before it finished. What went wrong is under Details.';
+
+  @override
+  String get setupProgressViewFailedStep =>
+      'This step didn\'t finish. What went wrong is under Details.';
+
+  @override
+  String setupProgressViewFailedAt(String name) {
+    return 'Stopped at $name. What went wrong is under Details.';
+  }
 
   @override
   String get setupProgressViewNoInternet =>
@@ -12998,6 +13001,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String workRunawayInProject(String project, String duration) {
     return 'OpenCode has been busy in $project for $duration with nothing to do';
   }
+
+  @override
+  String workRunawayHelper(String helper, String duration) {
+    return 'A leftover $helper process has been busy for $duration with nothing to do';
+  }
+
+  @override
+  String workRunawayHelperInProject(
+    String helper,
+    String project,
+    String duration,
+  ) {
+    return 'A leftover $helper process in $project has been busy for $duration with nothing to do';
+  }
+
+  @override
+  String get workRunawaySeeRunning => 'See what\'s running';
 
   @override
   String get connectStartingPhone => 'Starting OpenCode on this phone…';
@@ -16802,7 +16822,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverSettingsRestartCommandLabel =>
-      'If it runs as a Linux service, run this there';
+      'Set up with the Linux service script?';
 
   @override
   String get serverSettingsRestartedIt => 'I restarted it';
@@ -19947,6 +19967,60 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String thisPhoneUpToDate(String version) {
+    return 'Up to date · $version';
+  }
+
+  @override
+  String thisPhoneUpdateTitle(String runtime) {
+    return 'Update $runtime?';
+  }
+
+  @override
+  String thisPhoneUpdateBody(String version) {
+    return 'Installs version $version, restarts the server on this phone and connects again.';
+  }
+
+  @override
+  String get thisPhoneUpdateKept =>
+      'Your conversations are kept. The server is away for a minute while it restarts.';
+
+  @override
+  String get thisPhoneUpdateBusy =>
+      'A reply is still being written. Stop it or let it finish, then update.';
+
+  @override
+  String thisPhoneStartFailed(String runtime) {
+    return '$runtime didn\'t start. Start it again; Details below says what went wrong.';
+  }
+
+  @override
+  String get thisPhoneStartAgain => 'Start again';
+
+  @override
+  String thisPhoneInstallFailed(String runtime) {
+    return 'Installing $runtime didn\'t finish. Install it again; your conversations are kept.';
+  }
+
+  @override
+  String get thisPhoneInstallAgain => 'Install again';
+
+  @override
+  String thisPhoneStopFailed(String runtime) {
+    return '$runtime didn\'t stop. Try stopping it again.';
+  }
+
+  @override
+  String thisPhoneCheckFailed(String runtime) {
+    return 'This phone couldn\'t check on $runtime. Try again in a moment.';
+  }
+
+  @override
+  String thisPhoneSwitchStopped(String runtime) {
+    return '$runtime didn\'t start after the switch. Your conversations are kept.';
+  }
+
+  @override
   String get thisPhoneAddTools => 'Add tools';
 
   @override
@@ -20514,6 +20588,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String addServerCheckSlow(String host) {
     return '$host has not answered yet. A slow network can take a while.';
+  }
+
+  @override
+  String get addServerCheckFailedPlain =>
+      'The server could not be checked. Check the address and this phone’s connection, then try again.';
+
+  @override
+  String serverRowDetailsTitle(String name) {
+    return '$name details';
   }
 
   @override

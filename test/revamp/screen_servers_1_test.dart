@@ -574,6 +574,55 @@ void main() {
         });
       }
 
+      // slice-close-servers: a refused check said plainly under the
+      // address field; Codex's one-line command; a row's Details.
+      for (final size in const [Size(412, 915), Size(1280, 800)]) {
+        final suffix = size.width > 1000 ? '_1280x800' : '';
+        testWidgets('add server, refused $suffix· $mode', (tester) async {
+          await shoot(
+            tester,
+            'servers_addserver_refused$suffix',
+            size: size,
+            then: () async {
+              await saveTyped(
+                tester,
+                () async => const ServerProbeResult.failure(
+                  'The connection was refused. Is opencode serve running on '
+                  'that host and port?',
+                  suggestsMissingServer: true,
+                ),
+              );
+              await _settle(tester, frames: 20);
+            },
+          );
+        });
+
+        testWidgets('add server, Codex $suffix· $mode', (tester) async {
+          await shoot(
+            tester,
+            'servers_addserver_codex$suffix',
+            size: size,
+            then: () async {
+              await openAdd(tester);
+              await chooseServerKind(tester, kind: 'codex');
+            },
+          );
+        });
+
+        testWidgets('server row details $suffix· $mode', (tester) async {
+          await shoot(
+            tester,
+            'servers_row_details$suffix',
+            size: size,
+            then: () async {
+              await _openRowMenu(tester, 'studio');
+              await tester.tap(find.text('Details').last);
+              await _settle(tester);
+            },
+          );
+        });
+      }
+
       testWidgets('add server, Tailscale step · $mode', (tester) async {
         await shoot(
           tester,

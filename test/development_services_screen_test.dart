@@ -271,6 +271,52 @@ void main() {
     },
   );
 
+  testWidgets(
+    'the open log follows new output on its own, without flicker, and stops '
+    'reading once the sheet closes',
+    (tester) async {
+      final gateway = ServiceRepository();
+      final connection = await connectionFor(gateway);
+      addTearDown(connection.dispose);
+      await seed(connection);
+      await tester.pumpWidget(
+        app(DevelopmentServicesScreen(controller: connection)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(_tip('Start'));
+      await tester.pumpAndSettle();
+      KitUndo.commitPending();
+      await tester.pumpAndSettle();
+      await tester.tap(_row);
+      await tester.pumpAndSettle();
+      expect(rich('VITE ready'), findsOneWidget);
+
+      // New output lands on the server while the sheet is open.
+      gateway.output = '${gateway.output}page reload src/App.tsx\n';
+      final before = gateway.cursors.length;
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(seconds: 1));
+        // The earlier lines never blank out while it reads again.
+        expect(rich('VITE ready'), findsOneWidget);
+      }
+      await tester.pumpAndSettle();
+      expect(rich('page reload src/App.tsx'), findsOneWidget);
+      // One read at a time: the polls did not pile up.
+      final reads = gateway.cursors.length - before;
+      expect(reads, inInclusiveRange(2, 8));
+
+      // Closed: no more reads.
+      Navigator.of(
+        tester.element(find.byKey(const ValueKey('development-services-logs'))),
+      ).pop();
+      await tester.pumpAndSettle();
+      final closed = gateway.cursors.length;
+      await tester.pump(const Duration(seconds: 10));
+      expect(gateway.cursors.length, closed);
+      await done(tester);
+    },
+  );
+
   testWidgets('Undo after Start stops the command it started', (tester) async {
     final gateway = ServiceRepository();
     final connection = await connectionFor(gateway);

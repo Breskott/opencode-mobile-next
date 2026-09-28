@@ -128,14 +128,13 @@ void main() {
   );
 
   testWidgets(
-    'installed is unverified; open and resume preserve the typed address',
+    'installed says only that; open and resume preserve the typed address',
     (tester) async {
       final bridge = _Bridge();
       await _show(tester, bridge);
-      expect(
-        find.text('Tailscale is installed. VPN connection is unverified.'),
-        findsOneWidget,
-      );
+      expect(find.text('Tailscale is installed.'), findsOneWidget);
+      // The app cannot see the VPN; the row does not guess about it.
+      expect(find.textContaining('unverified'), findsNothing);
       expect(bridge.opens, 0);
       await tester.enterText(find.byType(TextField), 'work.example.ts.net');
       await _tap(tester, 'Open Tailscale');
@@ -185,11 +184,11 @@ void main() {
     await _tap(tester, 'Open Tailscale');
     expect(find.textContaining('didn’t open'), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'http://100.64.0.1:4096');
-    await _tap(tester, 'Continue to authentication');
+    await _tap(tester, 'Continue to sign-in');
     expect(result, isNull);
     expect(find.textContaining('valid port'), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'work.example.ts.net');
-    await _tap(tester, 'Continue to authentication');
+    await _tap(tester, 'Continue to sign-in');
     expect(result, 'https://work.example.ts.net');
   });
 
@@ -213,7 +212,7 @@ void main() {
       String? result;
       await _show(tester, bridge, result: (value) => result = value);
       expect(find.text('Enter your server’s address first.'), findsOneWidget);
-      await tester.tap(find.text('Continue to authentication'));
+      await tester.tap(find.text('Continue to sign-in'));
       await tester.pumpAndSettle();
       expect(result, isNull);
       expect(find.textContaining('valid port'), findsNothing);
@@ -244,10 +243,7 @@ void main() {
     bridge.state = TailscaleAppState.installed;
     await _tap(tester, 'Check Tailscale again');
     expect(find.text('Open Tailscale'), findsOneWidget);
-    expect(
-      find.text('Tailscale is installed. VPN connection is unverified.'),
-      findsOneWidget,
-    );
+    expect(find.text('Tailscale is installed.'), findsOneWidget);
   });
 
   testWidgets(
@@ -385,7 +381,7 @@ void main() {
           const Offset(0, -200),
         );
         await tester.enterText(find.byType(TextField), 'http://bad');
-        await _tap(tester, 'Continue to authentication');
+        await _tap(tester, 'Continue to sign-in');
         expect(tester.takeException(), isNull);
       });
     }

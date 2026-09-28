@@ -145,7 +145,8 @@ void main() {
         // The generation leads the row's supporting line (standard §6).
         final finder = find.byKey(ValueKey('server-row-${entry.key}'));
         await _reveal(tester, finder);
-        expect(_supporting(tester, entry.key), startsWith('${entry.value} · '));
+        // The kind, never the address (that is in the row menu's Details).
+        expect(_supporting(tester, entry.key), entry.value);
       }
       expect(_supporting(tester, 'codex'), isNot(contains('OpenCode')));
       expect(store.saved.first.flavor, ServerFlavor.v1);
@@ -339,7 +340,7 @@ void main() {
   });
 }
 
-/// The saved server row's supporting line: generation · address.
+/// The saved server row's supporting line: its state and generation.
 String _supporting(WidgetTester tester, String id) => tester
     .widget<KitRow>(find.byKey(ValueKey('server-row-$id')))
     .supporting!

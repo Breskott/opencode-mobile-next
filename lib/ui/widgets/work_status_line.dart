@@ -78,8 +78,8 @@ class WorkRunawayNotice {
   /// The process's own name ("java", "node"), as the phone reports it.
   final String helper;
 
-  /// The project folder's name when the process runs inside one; null means
-  /// the server or its projects folder, which is called "OpenCode".
+  /// The project folder's name when the process runs inside one; null for
+  /// the projects folder itself or anywhere else.
   final String? project;
 
   /// Already formatted ("10 min").
@@ -92,22 +92,48 @@ class WorkRunawayNotice {
   /// The last stop did not end the process.
   final bool stopFailed;
 
-  WorkStatus status(AppLocalizations l10n) => WorkStatus(
-    id: 'runaway',
-    icon: stopFailed ? AppIconography.warning : AppIconography.processor,
-    tone: stopFailed ? AppStatusTone.failure : AppStatusTone.neutral,
-    message: stopFailed
-        ? l10n.workRunawayStopFailed(helper)
-        : project == null
-        ? l10n.workRunaway(busyFor)
-        : l10n.workRunawayInProject(project!, busyFor),
-    action: KitAction(
-      key: const ValueKey('work-status-runaway-stop'),
-      label: l10n.termuxProcsStopSemantics(helper),
-      onPressed: onStop,
-    ),
-    onDismiss: onDismiss,
-  );
+  /// The process's name as the line says it: its last path part, never a
+  /// folder ("/usr/bin/node" is "node").
+  String get helperName {
+    final parts = helper.split('/').where((part) => part.isNotEmpty);
+    return parts.isEmpty ? helper.trim() : parts.last;
+  }
+
+  /// OpenCode itself is the one busy, not a helper it left behind: only
+  /// then does the line name OpenCode.
+  bool get isOpenCode => helperName.toLowerCase().startsWith('opencode');
+
+  /// [onSeeRunning] opens Running on this phone, where every process is,
+  /// offered under the line's More.
+  WorkStatus status(AppLocalizations l10n, {VoidCallback? onSeeRunning}) =>
+      WorkStatus(
+        id: 'runaway',
+        icon: stopFailed ? AppIconography.warning : AppIconography.processor,
+        tone: stopFailed ? AppStatusTone.failure : AppStatusTone.neutral,
+        message: stopFailed
+            ? l10n.workRunawayStopFailed(helperName)
+            : isOpenCode
+            ? (project == null
+                  ? l10n.workRunaway(busyFor)
+                  : l10n.workRunawayInProject(project!, busyFor))
+            : project == null
+            ? l10n.workRunawayHelper(helperName, busyFor)
+            : l10n.workRunawayHelperInProject(helperName, project!, busyFor),
+        action: KitAction(
+          key: const ValueKey('work-status-runaway-stop'),
+          label: l10n.termuxProcsStopSemantics(helperName),
+          onPressed: onStop,
+        ),
+        more: [
+          if (onSeeRunning != null)
+            KitAction(
+              key: const ValueKey('work-status-runaway-see-running'),
+              label: l10n.workRunawaySeeRunning,
+              onPressed: onSeeRunning,
+            ),
+        ],
+        onDismiss: onDismiss,
+      );
 }
 
 /// How [stopRunawayHelper] ended.

@@ -1803,6 +1803,17 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+    // The raw error waits folded under the sheet's own Details.
+    expect(find.textContaining('Endpoint is unavailable'), findsNothing);
+    final fold = find.descendant(
+      of: find.byKey(const ValueKey('connection-banner-details-sheet')),
+      matching: find.byKey(const ValueKey('kit-details-toggle')),
+    );
+    await tester.ensureVisible(fold);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(fold);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.textContaining('Endpoint is unavailable'), findsOneWidget);
     expect(find.text('Switch server'), findsOneWidget);
   });
