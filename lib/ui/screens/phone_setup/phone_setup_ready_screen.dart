@@ -258,6 +258,9 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
         if (!didPop && !_busy) _leave();
       },
       child: KitScreen(
+        // B6: a saved server's connection problem is not about this
+        // phone's own setup: one line, its ways out behind More.
+        bodyQuiets: const {KitStatusKind.connection},
         // Close only (map chrome "close-only"): the celebration below is
         // the page's title.
         topBar: KitTopBar(

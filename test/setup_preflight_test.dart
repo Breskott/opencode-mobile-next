@@ -76,12 +76,75 @@ void main() {
       expect(result.totalMemoryMb, 1024);
     });
 
-    test('exactly at the memory floor passes', () {
+    // B2 (emulator QA 2026-09-28): the floor is 1,800 MB of total RAM, so a
+    // nominal 2 GB phone (which reports ~1,972 MB) may set up; up to 3 GB
+    // it is told plainly that it may be slow.
+    test('1,700 MB is under the floor: refused', () {
+      final result = checkSetupPreflight(
+        _device(memoryMb: 1700),
+        downloadBytes: _download,
+      );
+      expect(result.supported, isFalse);
+      expect(result.issue, SetupPreflightIssue.lowMemory);
+      expect(result.totalMemoryMb, 1700);
+      expect(result.mayBeSlow, isFalse);
+    });
+
+    test('a nominal 2 GB phone (1,972 MB) may set up, with the slow note', () {
+      final result = checkSetupPreflight(
+        _device(memoryMb: 1972),
+        downloadBytes: _download,
+      );
+      expect(result.supported, isTrue);
+      expect(result.mayBeSlow, isTrue);
+      expect(result.totalMemoryMb, 1972);
+    });
+
+    test('exactly at the memory floor passes, with the slow note', () {
       final result = checkSetupPreflight(
         _device(memoryMb: minimumSetupMemoryMb),
         downloadBytes: _download,
       );
+      expect(minimumSetupMemoryMb, 1800);
       expect(result.supported, isTrue);
+      expect(result.mayBeSlow, isTrue);
+    });
+
+    test('a nominal 3 GB phone (2,900 MB) still gets the slow note', () {
+      final result = checkSetupPreflight(
+        _device(memoryMb: 2900),
+        downloadBytes: _download,
+      );
+      expect(result.supported, isTrue);
+      expect(result.mayBeSlow, isTrue);
+      expect(result.totalMemoryMb, 2900);
+    });
+
+    test('4,096 MB passes with no note', () {
+      final result = checkSetupPreflight(
+        _device(memoryMb: 4096),
+        downloadBytes: _download,
+      );
+      expect(result.supported, isTrue);
+      expect(result.mayBeSlow, isFalse);
+      expect(result.totalMemoryMb, isNull);
+    });
+
+    test('3 GB (3,072 MB) and over carries no note', () {
+      final result = checkSetupPreflight(
+        _device(memoryMb: comfortableSetupMemoryMb),
+        downloadBytes: _download,
+      );
+      expect(result.mayBeSlow, isFalse);
+    });
+
+    test('low space on a slow phone still blocks: space is checked first', () {
+      final result = checkSetupPreflight(
+        _device(memoryMb: 1972, availableBytes: 100000000),
+        downloadBytes: _download,
+      );
+      expect(result.issue, SetupPreflightIssue.lowSpace);
+      expect(result.mayBeSlow, isFalse);
     });
 
     test('an unknown (null) memory reading never blocks', () {
@@ -90,6 +153,7 @@ void main() {
         downloadBytes: _download,
       );
       expect(result.supported, isTrue);
+      expect(result.mayBeSlow, isFalse);
     });
 
     test('blocks low space, naming exactly how many bytes to free', () {

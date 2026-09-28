@@ -165,15 +165,16 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
     if (mounted) setState(() => _device = device);
   }
 
-  /// Null while the device has not answered yet, or nothing is wrong.
+  /// Null while the device has not answered yet. A supported result may
+  /// still carry a "may be slow" memory note
+  /// ([SetupPreflightResult.mayBeSlow]).
   SetupPreflightResult? _preflightFor(List<SetupComponent> install) {
     final device = _device;
     if (device == null) return null;
-    final result = checkSetupPreflight(
+    return checkSetupPreflight(
       device,
       downloadBytes: setupTotals(install).bytes,
     );
-    return result.supported ? null : result;
   }
 
   Future<void> _probeInApp() async {
@@ -462,6 +463,9 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
         // Until the job on disk is read the screen promises nothing: the
         // one loading bar, and no state that might be the wrong one.
         return KitScreen(
+          // B6: a saved server's connection problem is not about this
+          // phone's own setup: one line, its ways out behind More.
+          bodyQuiets: const {KitStatusKind.connection},
           topBar: KitTopBar(title: l10n.phoneSetupStartScreenTitle),
           loading: hero == _Hero.loading,
           loadingLabel: l10n.workLoadingLabel,
@@ -507,7 +511,13 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
         ? null
         : l10n.phoneSetupStartIncludes(joinSetupNames(l10n, included));
     // P0.8: told why before anything downloads, never after a failed one.
-    final preflight = hero == _Hero.fresh ? _preflightFor(install) : null;
+    final check = hero == _Hero.fresh ? _preflightFor(install) : null;
+    final preflight = check == null || check.supported ? null : check;
+    // B2: over the memory floor but under a comfortable amount, setup goes
+    // ahead and the page says once, plainly, that it may be slow.
+    final slowNote = check != null && check.mayBeSlow
+        ? l10n.phoneSetupPreflightMayBeSlow(check.totalMemoryMb!)
+        : null;
     final String headline;
     final String body;
     final String action;
@@ -598,13 +608,28 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
           : const ValueKey('phone-setup-start-body'),
       bodyTone: failure != null && !_opening ? AppStatusTone.failure : null,
       progress: _opening ? const KitProgress.waiting() : meter,
-      // What Set up puts on the phone, next to the promise it counts.
-      content: fresh && includesText != null
-          ? KitText(
-              includesText,
-              key: const ValueKey('phone-setup-start-includes'),
-              role: KitTextRole.secondary,
-              tone: KitTextTone.secondary,
+      // What Set up puts on the phone, next to the promise it counts, and
+      // (B2) that it may be slow on a phone with little memory.
+      content: fresh && (includesText != null || slowNote != null)
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              spacing: KitTokens.of(context).space2,
+              children: [
+                if (slowNote != null)
+                  KitText(
+                    slowNote,
+                    key: const ValueKey('phone-setup-start-may-be-slow'),
+                    role: KitTextRole.secondary,
+                  ),
+                if (includesText != null)
+                  KitText(
+                    includesText,
+                    key: const ValueKey('phone-setup-start-includes'),
+                    role: KitTextRole.secondary,
+                    tone: KitTextTone.secondary,
+                  ),
+              ],
             )
           : null,
       primary: _opening

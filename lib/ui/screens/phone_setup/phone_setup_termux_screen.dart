@@ -381,6 +381,9 @@ class _PhoneSetupTermuxScreenState extends ConsumerState<PhoneSetupTermuxScreen>
     final busy = _setup.busy;
     final permissionDenied = _setup.error == l10n.termuxPermissionDenied;
     return KitScreen(
+      // B6: a saved server's connection problem is not about this
+      // phone's own setup: one line, its ways out behind More.
+      bodyQuiets: const {KitStatusKind.connection},
       topBar: KitTopBar(title: l10n.phoneSetupStartScreenTitle),
       width: KitScreenWidth.reading,
       body: KeyedSubtree(
