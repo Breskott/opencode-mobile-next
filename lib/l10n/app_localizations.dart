@@ -38197,6 +38197,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stopping…'**
   String get migrationStopping;
+
+  /// Model picker: last row and free-model note action; opens Providers to add or sign in to a provider.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a provider'**
+  String get pickerConnectProvider;
+
+  /// Model picker: supporting line under Connect a provider.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an API key or sign in to use its models'**
+  String get pickerConnectProviderHint;
+
+  /// Model picker: row that opens the API key dialog of one provider.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an API key for {name}'**
+  String pickerAddKeyFor(String name);
+
+  /// Model picker: supporting line for a provider that is not connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Its models are not in this list yet'**
+  String get pickerAddKeyNotConnectedHint;
+
+  /// Model picker: supporting line for a provider that is connected but not loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in, but the server has not loaded it. A key can load it.'**
+  String get pickerAddKeyNotLoadedHint;
+
+  /// Model picker: row that opens the sign-in of one provider whose methods are not a key.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to {name}'**
+  String pickerSignInTo(String name);
+
+  /// Model picker: supporting line under Sign in to a provider.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens the sign-in choices for this server'**
+  String get pickerSignInHint;
+
+  /// Model picker: top note when no provider is signed in and only OpenCode's free models are listed.
+  ///
+  /// In en, this message translates to:
+  /// **'Only OpenCode\'s free model is available — it\'s slower.'**
+  String get pickerFreeOnlyNote;
+
+  /// Model picker: status after signing in from the picker and the provider loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is ready. Its models are in the list.'**
+  String pickerProviderReady(String name);
+
+  /// Model picker: status after signing in from the picker when the provider is not loaded yet.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is saved, but the server has not loaded it yet.'**
+  String pickerProviderNotLoaded(String name);
 }
 
 class _AppLocalizationsDelegate

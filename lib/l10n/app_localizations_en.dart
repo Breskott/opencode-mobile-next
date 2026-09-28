@@ -24283,4 +24283,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get migrationStopping => 'Stopping…';
+
+  @override
+  String get pickerConnectProvider => 'Connect a provider';
+
+  @override
+  String get pickerConnectProviderHint =>
+      'Add an API key or sign in to use its models';
+
+  @override
+  String pickerAddKeyFor(String name) {
+    return 'Add an API key for $name';
+  }
+
+  @override
+  String get pickerAddKeyNotConnectedHint =>
+      'Its models are not in this list yet';
+
+  @override
+  String get pickerAddKeyNotLoadedHint =>
+      'Signed in, but the server has not loaded it. A key can load it.';
+
+  @override
+  String pickerSignInTo(String name) {
+    return 'Sign in to $name';
+  }
+
+  @override
+  String get pickerSignInHint => 'Opens the sign-in choices for this server';
+
+  @override
+  String get pickerFreeOnlyNote =>
+      'Only OpenCode\'s free model is available — it\'s slower.';
+
+  @override
+  String pickerProviderReady(String name) {
+    return '$name is ready. Its models are in the list.';
+  }
+
+  @override
+  String pickerProviderNotLoaded(String name) {
+    return '$name is saved, but the server has not loaded it yet.';
+  }
 }

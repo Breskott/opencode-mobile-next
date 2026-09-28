@@ -8,6 +8,7 @@ import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/kit/kit_chip.dart';
 import 'package:opencode_mobile/ui/kit/kit_icon_button.dart';
 import 'package:opencode_mobile/ui/kit/kit_menu.dart';
+import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/kit/kit_notice.dart';
 import 'package:opencode_mobile/ui/kit/kit_page_route.dart';
 import 'package:opencode_mobile/ui/kit/kit_progress.dart';
@@ -24,6 +25,8 @@ import '../../api/models.dart';
 import '../../api/provider_presentation.dart';
 import '../../api/product_repository.dart';
 import '../../state/connection.dart';
+import '../../domain/free_model.dart' show openCodeFreeProviderID;
+import '../widgets/connect_methods.dart';
 import '../../state/model_library.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
@@ -276,10 +279,15 @@ class ModelCatalogView extends StatefulWidget {
   State<ModelCatalogView> createState() => _ModelCatalogViewState();
 }
 
-class _ModelCatalogViewState extends State<ModelCatalogView> {
+class _ModelCatalogViewState extends State<ModelCatalogView>
+    with WidgetsBindingObserver {
   AppLocalizations get _strings => _pickerStrings(context);
 
   final _search = TextEditingController();
+
+  /// The search row: brought to the top of the scrolling body whenever the
+  /// keyboard is up, so the results sit right under it, not below the fold.
+  final _searchRow = GlobalKey();
   String _query = '';
   String _provider = '*';
   _ModelIntent _intent = _ModelIntent.all;
@@ -304,6 +312,11 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
       widget.controller.profile?.id == _scopeProfile &&
       widget.controller.locationRevision == _scopeLocation;
 
+  /// What the server offers to connect (its methods), for the provider
+  /// actions; null until loaded or when this server has none.
+  List<IntegrationInfo>? _integrations;
+  String? _connectStatus;
+
   ScrollController? _ownedScroll;
 
   ScrollController get _listScroll =>
@@ -319,6 +332,8 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     _observedVariant = _currentVariant;
     _observedAgent = _currentAgent;
     widget.controller.addListener(_selectionChanged);
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(_loadIntegrations());
     widget._apply?._handler = _applyDraft;
     widget._apply?.footer = _footer;
   }
@@ -408,10 +423,36 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
       widget._apply?._handler = null;
       widget._apply?.footer = null;
     }
+    WidgetsBinding.instance.removeObserver(this);
     widget.controller.removeListener(_selectionChanged);
     _ownedScroll?.dispose();
     _search.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() => _revealSearch();
+
+  /// While the keyboard is up, the search row goes to the top of the body:
+  /// the sheet shrinks above the keyboard and the banner, notices and
+  /// filters above the search would otherwise leave the results no room.
+  void _revealSearch() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final row = _searchRow.currentContext;
+      if (row == null) return;
+      if (MediaQuery.viewInsetsOf(context).bottom <= 0) return;
+      unawaited(
+        Scrollable.ensureVisible(
+          row,
+          alignment: 0,
+          duration: KitMotion.reduced(context)
+              ? Duration.zero
+              : KitMotion.quick,
+          curve: KitMotion.enter,
+        ),
+      );
+    });
   }
 
   void _setApplying(bool value) {
@@ -536,6 +577,13 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
           tone: AppStatusTone.failure,
           message: error,
         ),
+      if (_connectStatus case final status?)
+        KitNotice(
+          key: const Key('model-picker-connect-status'),
+          tone: AppStatusTone.ok,
+          message: status,
+        ),
+      if (catalog != null && _canConnect && _freeOnly(catalog)) _freeOnlyNote(),
       if (catalog != null) ..._catalogNotices(context, catalog),
     ];
     return [
@@ -641,6 +689,168 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     );
   }
 
+  // --- Connecting a provider from here -----------------------------------
+
+  bool get _canConnect =>
+      !widget.controller.isIsolated &&
+      widget.controller.capabilities.serverCatalog;
+
+  Future<void> _loadIntegrations() async {
+    final controller = widget.controller;
+    final repository = controller.repository;
+    if (!_canConnect || repository == null) return;
+    try {
+      final integrations = await repository.listIntegrations();
+      if (mounted) setState(() => _integrations = integrations);
+    } catch (_) {
+      // The rows fall back to the general "Connect a provider" one.
+    }
+  }
+
+  bool _hasModelsOf(String id) =>
+      widget.controller.catalog?.models.any((m) => m.providerID == id) ?? false;
+
+  /// Opens Providers (for [id], straight into its key dialog or sign-in)
+  /// and comes back here with the catalog refreshed.
+  Future<void> _connect({String? id}) async {
+    final controller = widget.controller;
+    await pushKitPage<void>(
+      context,
+      (_) => IntegrationsScreen(
+        controller: controller,
+        mode: IntegrationsMode.providers,
+        connectProviderID: id,
+      ),
+    );
+    if (!mounted) return;
+    await controller.refreshCatalog();
+    unawaited(_loadIntegrations());
+    if (!mounted) return;
+    setState(() {
+      _connectStatus = null;
+      if (id == null) return;
+      final integration = _integrations
+          ?.where((candidate) => candidate.id == id)
+          .firstOrNull;
+      final name = integration == null
+          ? presentedProviderName(id, controller.catalog?.providers ?? const [])
+          : presentIntegrations([integration]).first.name;
+      if (controller.unloadedProviderIDs.contains(id)) {
+        // The reload row above names it and any running replies it waits on.
+        _connectStatus = _strings.pickerProviderNotLoaded(name);
+      } else if (_hasModelsOf(id)) {
+        _provider = id;
+        _visible = _modelPage;
+        _connectStatus = _strings.pickerProviderReady(name);
+      }
+    });
+  }
+
+  /// One provider that could give models: an API key when the server offers
+  /// one, else its sign-in.
+  Widget? _providerAction(BuildContext context, IntegrationInfo integration) {
+    final key = integration.methods.any((m) => m.type == 'key');
+    final other = integration.methods.any(
+      (m) => m.type == 'oauth' || m.type == 'command',
+    );
+    if (!key && !other) return null;
+    final name =
+        presentIntegrations([integration]).firstOrNull?.name ??
+        integration.name;
+    final unloaded = widget.controller.unloadedProviderIDs.contains(
+      integration.id,
+    );
+    return KitRow(
+      key: ValueKey('picker-connect-${integration.id}'),
+      leading: KitRow.icon(
+        context,
+        key ? AppIconography.permissions : AppIconography.login,
+      ),
+      title: key
+          ? _strings.pickerAddKeyFor(name)
+          : _strings.pickerSignInTo(name),
+      supporting: TextSpan(
+        text: !key
+            ? _strings.pickerSignInHint
+            : unloaded
+            ? _strings.pickerAddKeyNotLoadedHint
+            : _strings.pickerAddKeyNotConnectedHint,
+      ),
+      supportingMaxLines: 2,
+      onTap: () => unawaited(_connect(id: integration.id)),
+    );
+  }
+
+  /// Providers worth an action of their own: signed in but not loaded, or
+  /// Anthropic and Google (key-led) while they have no models here.
+  List<IntegrationInfo> _actionableProviders() {
+    final unloaded = widget.controller.unloadedProviderIDs;
+    return [
+      for (final integration in _integrations ?? const <IntegrationInfo>[])
+        if (unloaded.contains(integration.id) ||
+            (providerKeyPageUrl(integration.id) != null &&
+                integration.connectionCount == 0 &&
+                !_hasModelsOf(integration.id)))
+          integration,
+    ];
+  }
+
+  /// The end of the list: each provider that could give models, then the
+  /// general way in. Nothing when this server has no providers to connect.
+  Widget _connectGroup(BuildContext context) {
+    final rows = [
+      for (final integration in _actionableProviders())
+        ?_providerAction(context, integration),
+    ];
+    return KitRowGroup(
+      key: const Key('model-picker-connect'),
+      margin: EdgeInsets.zero,
+      children: [
+        ...rows,
+        KitRow(
+          key: const Key('model-picker-connect-provider'),
+          leading: KitRow.icon(context, AppIconography.add),
+          title: _strings.pickerConnectProvider,
+          supporting: TextSpan(text: _strings.pickerConnectProviderHint),
+          supportingMaxLines: 2,
+          onTap: () => unawaited(_connect()),
+        ),
+      ],
+    );
+  }
+
+  /// Only OpenCode's free models are listed: nobody is signed in.
+  bool _freeOnly(CatalogSnapshot catalog) =>
+      catalog.models.isNotEmpty &&
+      catalog.models.every((m) => m.providerID == openCodeFreeProviderID);
+
+  Widget _freeOnlyNote() => KitNotice(
+    key: const Key('model-picker-free-only'),
+    icon: AppIconography.speed,
+    message: _strings.pickerFreeOnlyNote,
+    actions: [
+      KitAction(
+        key: const Key('model-picker-free-add-key'),
+        label: _strings.freeModelSignIn,
+        onPressed: () => unawaited(_connectFirstKeyProvider()),
+      ),
+      KitAction(
+        key: const Key('model-picker-free-connect'),
+        label: _strings.pickerConnectProvider,
+        onPressed: () => unawaited(_connect()),
+      ),
+    ],
+  );
+
+  /// "Add an API key" from the note: the first provider that takes one
+  /// (Anthropic, Google), else the general Providers page.
+  Future<void> _connectFirstKeyProvider() {
+    final key = _actionableProviders().where(
+      (i) => i.methods.any((m) => m.type == 'key'),
+    );
+    return _connect(id: key.firstOrNull?.id);
+  }
+
   // --- Footer: thinking and agent ----------------------------------------
 
   /// What the chosen model can do, its output limit and prices, in words,
@@ -699,6 +909,11 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
   Widget _footer(BuildContext context) {
     final catalog = widget.controller.catalog;
     if (catalog == null || catalog.models.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    // With the keyboard up the results need the room: the thinking and
+    // agent choices wait until it closes.
+    if (MediaQuery.viewInsetsOf(context).bottom > 0) {
       return const SizedBox.shrink();
     }
     final drafted = _draftedModel(catalog);
@@ -948,6 +1163,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     return [
       // Search with its filter menu, and Refresh for the catalog beside it.
       Row(
+        key: _searchRow,
         children: [
           Expanded(
             child: KitSearchField(
@@ -957,10 +1173,13 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
               clearKey: const Key('model-picker-search-clear'),
               filterKey: const Key('model-picker-filters'),
               resultCount: _query.trim().isEmpty ? null : models.length,
-              onChanged: (value) => setState(() {
-                _query = value;
-                _visible = _modelPage;
-              }),
+              onChanged: (value) {
+                setState(() {
+                  _query = value;
+                  _visible = _modelPage;
+                });
+                _revealSearch();
+              },
               filters: [
                 for (final intent in _ModelIntent.values)
                   KitMenuItem(
@@ -1038,6 +1257,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
               ),
           ],
         ),
+      if (_canConnect) ...[gap, _connectGroup(context)],
     ];
   }
 
@@ -1083,15 +1303,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
           : KitAction(
               key: const Key('model-picker-open-providers'),
               label: _strings.chatUiOpenProviders,
-              onPressed: () => unawaited(
-                pushKitPage<void>(
-                  context,
-                  (_) => IntegrationsScreen(
-                    controller: controller,
-                    mode: IntegrationsMode.providers,
-                  ),
-                ),
-              ),
+              onPressed: () => unawaited(_connect()),
             ),
       secondary: KitAction(
         label: _strings.e7ModelUiRefresh,

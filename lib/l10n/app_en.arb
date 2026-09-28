@@ -29287,5 +29287,65 @@
   "migrationStopping": "Stopping…",
   "@migrationStopping": {
     "description": "Moving from Termux to the in-app server: shown while a stopped copy is still finishing its current step."
+  },
+  "pickerConnectProvider": "Connect a provider",
+  "@pickerConnectProvider": {
+    "description": "Model picker: last row and free-model note action; opens Providers to add or sign in to a provider."
+  },
+  "pickerConnectProviderHint": "Add an API key or sign in to use its models",
+  "@pickerConnectProviderHint": {
+    "description": "Model picker: supporting line under Connect a provider."
+  },
+  "pickerAddKeyFor": "Add an API key for {name}",
+  "@pickerAddKeyFor": {
+    "description": "Model picker: row that opens the API key dialog of one provider.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerAddKeyNotConnectedHint": "Its models are not in this list yet",
+  "@pickerAddKeyNotConnectedHint": {
+    "description": "Model picker: supporting line for a provider that is not connected."
+  },
+  "pickerAddKeyNotLoadedHint": "Signed in, but the server has not loaded it. A key can load it.",
+  "@pickerAddKeyNotLoadedHint": {
+    "description": "Model picker: supporting line for a provider that is connected but not loaded."
+  },
+  "pickerSignInTo": "Sign in to {name}",
+  "@pickerSignInTo": {
+    "description": "Model picker: row that opens the sign-in of one provider whose methods are not a key.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerSignInHint": "Opens the sign-in choices for this server",
+  "@pickerSignInHint": {
+    "description": "Model picker: supporting line under Sign in to a provider."
+  },
+  "pickerFreeOnlyNote": "Only OpenCode's free model is available — it's slower.",
+  "@pickerFreeOnlyNote": {
+    "description": "Model picker: top note when no provider is signed in and only OpenCode's free models are listed."
+  },
+  "pickerProviderReady": "{name} is ready. Its models are in the list.",
+  "@pickerProviderReady": {
+    "description": "Model picker: status after signing in from the picker and the provider loaded.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerProviderNotLoaded": "{name} is saved, but the server has not loaded it yet.",
+  "@pickerProviderNotLoaded": {
+    "description": "Model picker: status after signing in from the picker when the provider is not loaded yet.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

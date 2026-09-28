@@ -16,11 +16,18 @@ class IntegrationsScreen extends StatefulWidget {
   final Future<bool> Function(Uri destination)? authorizationLauncher;
   final IntegrationsMode mode;
 
+  /// Opens the connect flow of this provider as soon as the list loads, and
+  /// goes back to the caller (the model picker) once a key was saved or the
+  /// person cancelled. A browser sign-in stays on this page: it has steps
+  /// to finish here.
+  final String? connectProviderID;
+
   const IntegrationsScreen({
     super.key,
     required this.controller,
     this.authorizationLauncher,
     this.mode = IntegrationsMode.all,
+    this.connectProviderID,
   });
 
   @override
@@ -81,7 +88,22 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _load();
+    final connectID = widget.connectProviderID;
+    if (connectID == null) {
+      _load();
+    } else {
+      unawaited(_load().then((_) => _autoConnect(connectID)));
+    }
+  }
+
+  Future<void> _autoConnect(String id) async {
+    if (!mounted) return;
+    final integration = _integrations
+        ?.where((candidate) => candidate.id == id)
+        .firstOrNull;
+    if (integration == null) return;
+    final done = await _connectIntegration(integration);
+    if (done && mounted) await Navigator.of(context).maybePop();
   }
 
   @override
@@ -1727,7 +1749,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   /// "Connect {name}": one method goes straight to it; several open a
   /// titled sheet whose rows say where each one goes. [onlyCommand] runs
   /// the server sign-in command from the row menu.
-  Future<void> _connectIntegration(
+  Future<bool> _connectIntegration(
     IntegrationInfo integration, {
     bool onlyCommand = false,
   }) async {
@@ -1754,7 +1776,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
             .toList(),
       ),
     );
-    if (methods.isEmpty) return;
+    if (methods.isEmpty) return false;
     final method = methods.length == 1
         ? methods.single
         : await showKitChoiceSheet<IntegrationMethodInfo>(
@@ -1781,7 +1803,8 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
                 ),
             ],
           );
-    if (method == null || !mounted || source != _mcpSource) return;
+    if (method == null) return true;
+    if (!mounted || source != _mcpSource) return false;
     if (method.type == 'command') {
       await showKitSheet<void>(
         context,
@@ -1796,11 +1819,13 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         ),
       );
       if (mounted && source == _mcpSource) await _retryIntegrations();
+      return true;
     } else if (method.type == 'key') {
       await _connectWithKey(integration, method, name);
-    } else {
-      await _connectWithOAuth(integration, method, name);
+      return true;
     }
+    await _connectWithOAuth(integration, method, name);
+    return false;
   }
 
   /// The key goes straight to the server inside the dialog: it shows it is
