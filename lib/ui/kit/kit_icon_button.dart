@@ -42,6 +42,7 @@ class KitIconButton extends StatefulWidget {
        assert(size == 20 || size == 22 || size == 24, 'LOOK-33 sizes only'),
        tooltip = tooltip ?? label,
        copyText = null,
+       onCopyFailed = null,
        redact = true;
 
   /// Copies what [text] returns, read at tap time, through `KitCopy.copy`.
@@ -58,6 +59,7 @@ class KitIconButton extends StatefulWidget {
     this.size = 24,
     this.shortcut,
     this.redact = true,
+    this.onCopyFailed,
   }) : copyText = text,
        icon = AppIconography.copy,
        onPressed = null,
@@ -112,6 +114,11 @@ class KitIconButton extends StatefulWidget {
   /// true). Always true on a plain button, which copies nothing.
   final bool redact;
 
+  /// On [KitIconButton.copy]: called with the text it tried to copy when the
+  /// clipboard refused it. The glyph then stays the copy glyph (no check);
+  /// the host says so in words and offers to try again.
+  final ValueChanged<String>? onCopyFailed;
+
   @override
   State<KitIconButton> createState() => _KitIconButtonState();
 }
@@ -151,7 +158,17 @@ class _KitIconButtonState extends State<KitIconButton> {
   }
 
   Future<void> _copy(String value) async {
-    await KitCopy.copy(context, value, redact: widget.redact);
+    try {
+      await KitCopy.copy(context, value, redact: widget.redact);
+    } on Exception {
+      // The clipboard refused (the platform denied it, or there is none):
+      // no check, and the host says so in words. A host without words for
+      // it keeps the error as before.
+      final failed = widget.onCopyFailed;
+      if (failed == null) rethrow;
+      if (mounted) failed(value);
+      return;
+    }
     if (!mounted) return;
     setState(() => _copied = true);
     _copiedTimer?.cancel();

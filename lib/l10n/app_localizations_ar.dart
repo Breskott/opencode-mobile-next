@@ -11880,10 +11880,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String terminalShowEarlier(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'عرض $count سطرًا سابقًا',
+      other: 'عرض $countString سطرًا سابقًا',
       one: 'عرض سطر سابق',
     );
     return '$_temp0';
@@ -11891,7 +11895,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String terminalOpenFull(int count) {
-    return 'فتح كل الأسطر ($count)';
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'فتح كل الأسطر ($countString)';
   }
 
   @override
@@ -15126,6 +15134,16 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitCodeCopyOutput => 'Copy output';
+
+  @override
+  String get kitCodeCopyFailedCode => 'Could not copy code. Try again.';
+
+  @override
+  String get kitCodeCopyFailedCommand =>
+      'Could not copy the command. Try again.';
+
+  @override
+  String get kitCodeCopyFailedOutput => 'Could not copy the output. Try again.';
 
   @override
   String kitCodeShowAll(int count) {

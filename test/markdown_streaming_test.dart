@@ -45,11 +45,13 @@ void main() {
     // Settled blocks come back as the same widget instances, so Flutter
     // skips them: no re-highlighting of the closed fence, no re-parse of the
     // heading, list or earlier paragraph on each delta.
+    // Block widget names since 79d941e4 (KitMarkdown): _KitMdHeading,
+    // _KitMdList, and _KitMdText for a paragraph's rich lines.
     expect(counts['KitCodeBlock'], isNull);
-    expect(counts['_Heading'], isNull);
-    expect(counts['_List'], isNull);
+    expect(counts['_KitMdHeading'], isNull);
+    expect(counts['_KitMdList'], isNull);
     // Only the growing paragraph rebuilds, once per delta.
-    expect(counts['_RichLines'], 3);
+    expect(counts['_KitMdText'], 3);
     expect(find.textContaining('The tail in.', findRichText: true), findsOne);
   });
 

@@ -12,6 +12,7 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/web_sources_overview.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitIconButton;
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/web_sources_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -131,7 +132,8 @@ Future<void> _openSearchFromChat(
   await tester.ensureVisible(find.byKey(const Key('composer-tools-advanced')));
   await tester.tap(find.byKey(const Key('composer-tools-advanced')));
   await _chatFrames(tester);
-  final entry = find.widgetWithText(ListTile, 'Add web source');
+  // The tools sheet is kit rows since e28442b0 (composer from kit parts).
+  final entry = find.byKey(const Key('composer-tool-web-sources'));
   await tester.ensureVisible(entry);
   await tester.pump();
   await tester.tap(entry);
@@ -139,22 +141,24 @@ Future<void> _openSearchFromChat(
   expect(find.byType(WebSourcesScreen), findsOneWidget);
 }
 
+// Web sources are kit parts since e2543231; the confirm names what it adds
+// ("Add 1 source to prompt") since 531bb6ab.
 Future<void> _searchAndReview(WidgetTester tester, _SearchApi api) async {
-  final search = find.widgetWithText(FilledButton, 'Search');
-  expect(tester.widget<FilledButton>(search).onPressed, isNull);
+  final search = find.byKey(const ValueKey('web-search-submit'));
+  expect(tester.widget<KitIconButton>(search).onPressed, isNull);
   expect(api.searches, 0);
   await tester.enterText(
     find.byKey(const ValueKey('web-search-query')),
     'Flutter documentation',
   );
   await tester.pump();
-  expect(tester.widget<FilledButton>(search).onPressed, isNotNull);
+  expect(tester.widget<KitIconButton>(search).onPressed, isNotNull);
   await tester.tap(search);
   await tester.pumpAndSettle();
   expect(api.searches, 1);
   expect(api.prompts, isEmpty);
   expect(find.text('Documentation'), findsOneWidget);
-  final add = find.widgetWithText(TextButton, 'Add to review');
+  final add = find.byTooltip('Add Documentation to prompt');
   await tester.ensureVisible(add);
   await tester.pump();
   await tester.tap(add);
@@ -175,7 +179,7 @@ Future<void> _searchAndReview(WidgetTester tester, _SearchApi api) async {
     find.byKey(const ValueKey('web-sources-confirm')).hitTestable(),
     findsOneWidget,
   );
-  expect(find.text('Use selected sources (1)'), findsOneWidget);
+  expect(find.text('Add 1 source to prompt'), findsOneWidget);
   expect(find.byKey(const ValueKey('web-source-url')), findsNothing);
 }
 
@@ -379,12 +383,14 @@ void main() {
     await tester.pump();
     await tester.tap(add);
     await tester.pumpAndSettle();
+    // Since e2543231 the confirm is pinned in the action block and pasted
+    // links are listed at the foot of the page.
     await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('web-sources-confirm')),
+      find.text('Pasted source'),
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('Use selected sources (1)'), findsOneWidget);
+    expect(find.text('Add 1 source to prompt'), findsOneWidget);
     expect(find.text('Pasted source'), findsOneWidget);
     expect(api.searches, 0);
     expect(api.prompts, isEmpty);
@@ -403,7 +409,7 @@ void main() {
       await _chatFrames(tester);
       expect(find.byType(WebSourcesScreen), findsNothing);
       final composer = find.byKey(const Key('chat-composer-field'));
-      final text = tester.widget<TextField>(composer).controller!.text;
+      final text = tester.widget<TextFormField>(composer).controller!.text;
       expect(text, startsWith('Check these sources\n\n'));
       expect(text, contains('https://example.com/doc'));
       expect(text, contains('Untrusted excerpt'));
@@ -412,7 +418,7 @@ void main() {
       await tester.enterText(composer, 'Edited after review');
       await tester.pump();
       expect(
-        tester.widget<TextField>(composer).controller!.text,
+        tester.widget<TextFormField>(composer).controller!.text,
         'Edited after review',
       );
       expect(api.searches, 1);

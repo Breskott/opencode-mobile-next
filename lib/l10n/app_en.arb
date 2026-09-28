@@ -12494,7 +12494,8 @@
     "description": "Button above the end of a command output, revealing the lines before it",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -12503,7 +12504,8 @@
     "description": "Opens a very long command output in the file viewer",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -16887,6 +16889,18 @@
   "kitCodeCopyOutput": "Copy output",
   "@kitCodeCopyOutput": {
     "description": "KitCodeBlock: the copy button's tooltip and label for an output block"
+  },
+  "kitCodeCopyFailedCode": "Could not copy code. Try again.",
+  "@kitCodeCopyFailedCode": {
+    "description": "KitCodeBlock: shown under a code block when the clipboard refused the copy; Try again sits next to it"
+  },
+  "kitCodeCopyFailedCommand": "Could not copy the command. Try again.",
+  "@kitCodeCopyFailedCommand": {
+    "description": "KitCodeBlock: shown under a command block when the clipboard refused the copy; Try again sits next to it"
+  },
+  "kitCodeCopyFailedOutput": "Could not copy the output. Try again.",
+  "@kitCodeCopyFailedOutput": {
+    "description": "KitCodeBlock: shown under an output block when the clipboard refused the copy; Try again sits next to it"
   },
   "kitCodeShowAll": "{count, plural, other{Show all {count} lines}}",
   "@kitCodeShowAll": {

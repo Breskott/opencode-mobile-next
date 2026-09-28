@@ -174,8 +174,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Stop Audit the image sizes'), findsNothing);
+      // The handoff item reads "Continue … on computer" since 00cafa13.
       expect(
-        find.text('Copy handoff for Audit the image sizes'),
+        find.text('Continue Audit the image sizes on computer'),
         findsOneWidget,
       );
     });
@@ -202,7 +203,15 @@ void main() {
       await tester.tap(find.text('Clear search'));
       await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
-      expect(find.text('3 messages'), findsOneWidget);
+      // No count line since 253a6919 (R16: the search field says how many
+      // match): clearing brings every message row back.
+      expect(
+        find.byKey(const ValueKey('active-context-no-match')),
+        findsNothing,
+      );
+      for (final id in ['msg_01', 'msg_02', 'msg_03']) {
+        expect(find.byKey(ValueKey('active-context-$id')), findsOneWidget);
+      }
     });
   });
 

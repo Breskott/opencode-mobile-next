@@ -2748,7 +2748,8 @@ class _ChatScreenState extends State<ChatScreen>
             !hasStagedReferences)) {
       return;
     }
-    if (!_conn.isIsolated) KitHaptics.send(context);
+    // The send tick belongs to the composer's Send (KitComposer), which
+    // already gave it for this tap: one send, one haptic.
     if (!_conn.isIsolated &&
         _attachments.isEmpty &&
         _composer.text.trimLeft().startsWith('/') &&

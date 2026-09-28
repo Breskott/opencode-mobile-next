@@ -505,12 +505,15 @@ void main() {
       ),
     );
 
-    testWidgets('classic scope keeps the v1 wording', (tester) async {
+    // Since 531bb6ab (rethink R1-R6) the classic apply names what it applies:
+    // "Use <model>" (or "Use <model> · <agent>" once an agent is chosen).
+    testWidgets('classic scope names the model it applies', (tester) async {
       await tester.pumpWidget(
         picker(await controller(), ModelPickerApplyScope.classic),
       );
       await tester.pump();
-      expect(find.text('Use model and mode'), findsOneWidget);
+      expect(find.text('Use GPT-5.6 Sol'), findsOneWidget);
+      expect(find.text('Use for this conversation'), findsNothing);
     });
 
     testWidgets('session scope labels the apply for this session', (

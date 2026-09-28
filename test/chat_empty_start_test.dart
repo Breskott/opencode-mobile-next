@@ -172,8 +172,9 @@ Finder _starter(String label) => find.byKey(ValueKey('chat-starter-$label'));
 
 final _composerField = find.byKey(const Key('chat-composer-field'));
 
+// The composer is a KitField (a TextFormField) since a1410445/0b6c298c.
 String _composerText(WidgetTester tester) =>
-    tester.widget<TextField>(_composerField).controller?.text ?? '';
+    tester.widget<TextFormField>(_composerField).controller?.text ?? '';
 
 void _useSurface(WidgetTester tester, Size size) {
   tester.view.physicalSize = size;
@@ -320,7 +321,9 @@ void main() {
 
     // The sentence is left open for the person to finish.
     expect(_composerText(tester), 'Write a Python script that ');
-    final field = tester.widget<TextField>(_composerField);
+    final field = tester.widget<TextField>(
+      find.descendant(of: _composerField, matching: find.byType(TextField)),
+    );
     expect(field.controller!.selection.baseOffset, 27);
     expect(field.focusNode!.hasFocus, isTrue);
     expect(api.prompts, isEmpty);
@@ -416,8 +419,18 @@ void main() {
       tester.getSize(find.byKey(const ValueKey('chat-starters'))).height,
       lessThanOrEqualTo(chatStartersHeight(const TextScaler.linear(2.5))),
     );
+    // The row scrolls sideways to reach the last starter.
+    final keyboardDownRow = find.byKey(const ValueKey('chat-starters'));
+    await tester.drag(keyboardDownRow, const Offset(-600, 0));
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
 
-    // Now with the keyboard up.
+    // Now with the keyboard up. Since the composer rebuild on kit parts
+    // (e28442b0, chat-3) the taller composer leaves 320dp at 2.5x text with
+    // the keyboard up less room than the row needs, so the row steps aside
+    // (the empty chat's rule: the composer never loses a pixel to a
+    // shortcut). Whatever shows is whole: nothing overflows, the composer
+    // sits above the keyboard, and a row that shows sits above it.
     await _pumpChat(
       tester,
       await _controller(api),
@@ -426,16 +439,18 @@ void main() {
     );
     expect(tester.takeException(), isNull);
     expect(find.byKey(const ValueKey('chat-start-tip')), findsNothing);
-    final row = find.byKey(const ValueKey('chat-starters'));
-    expect(row, findsOneWidget);
+    expect(_composerField, findsOneWidget);
     expect(
-      tester.getRect(row).bottom,
-      lessThanOrEqualTo(tester.getRect(_composerField).top),
+      tester.getRect(_composerField).bottom,
+      lessThanOrEqualTo(640 - 280),
     );
-    // The row scrolls sideways to reach the last starter.
-    await tester.drag(row, const Offset(-600, 0));
-    await _settle(tester);
-    expect(tester.takeException(), isNull);
+    final row = find.byKey(const ValueKey('chat-starters'));
+    if (row.evaluate().isNotEmpty) {
+      expect(
+        tester.getRect(row).bottom,
+        lessThanOrEqualTo(tester.getRect(_composerField).top),
+      );
+    }
   });
 
   testWidgets('a window too short for the row keeps the composer whole', (

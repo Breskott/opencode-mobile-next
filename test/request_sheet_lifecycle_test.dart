@@ -36,7 +36,7 @@ class _Repository extends ProductRepository {
   @override
   Future<void> answerQuestion(String id, List<List<String>> answers) async {
     this.answers = answers;
-    if (fail) throw ApiException('Temporarily unavailable');
+    if (fail) throw ApiException('Temporarily unavailable', statusCode: 503);
     await pending?.future;
   }
 
@@ -251,7 +251,15 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('question-send')));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Temporarily unavailable'), findsOneWidget);
+      // Plain words for the failure, never the server's prose (6cdfca4e,
+      // a65dcea9).
+      expect(
+        find.text(
+          'The server had a problem (error 503). Try again in a moment.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Temporarily unavailable'), findsNothing);
       expect(
         tester.widget<TextField>(find.byType(TextField)).controller!.text,
         'Canary',

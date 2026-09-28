@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
 import '../theme_roles.dart';
 import 'kit_buttons.dart';
+import 'kit_copy.dart';
 import 'kit_icon_button.dart';
 import 'kit_layout.dart';
 import 'kit_motion.dart';
@@ -285,7 +286,12 @@ List<String> _splitLines(String text) {
 class _KitCodeBlockState extends State<KitCodeBlock> {
   bool? _wrap;
   bool _expanded = false;
+
+  /// The exact text a refused Copy tried to put on the clipboard; Try again
+  /// copies this snapshot, not whatever the block shows by then.
+  String? _copyFailed;
   final ScrollController _fillController = ScrollController();
+  final ScrollController _fillSideways = ScrollController();
 
   @override
   void initState() {
@@ -311,6 +317,7 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
   @override
   void dispose() {
     _fillController.dispose();
+    _fillSideways.dispose();
     super.dispose();
   }
 
@@ -373,6 +380,44 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
 
   AppLocalizations _l10n(BuildContext context) =>
       lookupAppLocalizations(Localizations.localeOf(context));
+
+  String _copyFailedText(AppLocalizations l10n) => switch (widget.kind) {
+    KitCodeKind.code => l10n.kitCodeCopyFailedCode,
+    KitCodeKind.command => l10n.kitCodeCopyFailedCommand,
+    KitCodeKind.output => l10n.kitCodeCopyFailedOutput,
+  };
+
+  Future<void> _retryCopy(String snapshot) async {
+    try {
+      await KitCopy.copy(context, snapshot);
+    } on Exception {
+      return; // Still refused: the words and Try again stay.
+    }
+    if (mounted) setState(() => _copyFailed = null);
+  }
+
+  /// What failed, in words, and the way forward, under the block.
+  Widget _copyFailure(KitTokens tokens, AppLocalizations l10n, String value) =>
+      Padding(
+        padding: EdgeInsetsDirectional.only(top: tokens.space2),
+        child: Wrap(
+          key: const ValueKey('kit-code-copy-failed'),
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: tokens.space2,
+          children: [
+            KitText(
+              _copyFailedText(l10n),
+              role: KitTextRole.secondary,
+              tone: KitTextTone.danger,
+            ),
+            KitButton.tertiary(
+              key: const ValueKey('kit-code-copy-retry'),
+              label: l10n.kitTryAgain,
+              onPressed: () => _retryCopy(value),
+            ),
+          ],
+        ),
+      );
 
   String _copyLabel(AppLocalizations l10n) {
     if (widget.copyLabel != null) return widget.copyLabel!;
@@ -445,6 +490,8 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
           children: [
             if (header != null) ...[header, SizedBox(height: tokens.space2)],
             body,
+            if (_copyFailed case final failed?)
+              _copyFailure(tokens, l10n, failed),
           ],
         );
         // space4 (16), not space3 (12): codeRadius is 14, and padding under
@@ -599,8 +646,15 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
 
   Widget _copyIcon(AppLocalizations l10n) => KitIconButton.copy(
     key: widget.copyKey ?? const ValueKey('kit-code-copy'),
-    text: () => widget.copyText ?? widget.text,
+    text: () {
+      // A new tap replaces an earlier refusal's words.
+      if (_copyFailed != null) setState(() => _copyFailed = null);
+      return widget.copyText ?? widget.text;
+    },
     tooltip: _copyLabel(l10n),
+    onCopyFailed: (value) {
+      if (mounted) setState(() => _copyFailed = value);
+    },
   );
 
   // ---------------------------------------------------------------------
@@ -894,7 +948,41 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
       ),
     );
 
-    return SelectionArea(child: list);
+    final selectable = SelectionArea(child: list);
+    if (wrap) return selectable;
+    // Unwrapped, a line wider than the host scrolls sideways with every
+    // other line (one horizontal scroller for the whole block, K2 §1.9)
+    // instead of overflowing it. A host that already lays the block out
+    // at its natural width (KitViewer) leaves nothing to scroll here.
+    final natural =
+        (_longestLineWidth(context, monoStyle, lines) +
+                (_hasGutter ? gutterWidth + tokens.space2 : 0))
+            .ceilToDouble() +
+        1;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (!constraints.hasBoundedHeight ||
+            !constraints.hasBoundedWidth ||
+            natural <= constraints.maxWidth) {
+          return selectable;
+        }
+        return Scrollbar(
+          controller: _fillSideways,
+          thumbVisibility: KitLayout.finePointer(context),
+          notificationPredicate: (n) => n.depth == 0,
+          child: SingleChildScrollView(
+            key: const ValueKey('kit-code-horizontal'),
+            controller: _fillSideways,
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: natural,
+              height: constraints.maxHeight,
+              child: selectable,
+            ),
+          ),
+        );
+      },
+    );
   }
 
   /// Each line's start offset into the joined (redacted) text, so marks

@@ -2399,8 +2399,8 @@ class SdkProductRepository extends ProductRepository
     required String sessionID,
     required String messageID,
   }) =>
-      // The detail-preserving guard: a declared refusal (for example a message
-      // still owned by an active response) surfaces OpenCode's own words.
+      // A declared refusal (for example a message still owned by an active
+      // response) stays in the cause for redacted Details, never the copy.
       _guardWorktree(
         'Could not delete the message',
         () async => _client.getSessionApi().sessionDeleteMessage(

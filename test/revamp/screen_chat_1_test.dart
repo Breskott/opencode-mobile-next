@@ -247,8 +247,11 @@ void main() {
     );
   });
 
-  testWidgets('the demo is titled, says it is simulated, and keeps "Set up '
-      'your own server" reachable', (tester) async {
+  // Since 253a6919 (R16 say things once): Reset demo sits on the status
+  // line, the X is "Leave demo", and the top-bar set-up menu is gone — "Set
+  // up your own server" waits on the finished notice (demo_isolation_test).
+  testWidgets('the demo is titled, says it is simulated, offers Reset demo '
+      'and names its one way out', (tester) async {
     await tester.pumpWidget(
       chatOneApp(
         opener(
@@ -261,12 +264,16 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     expect(find.text('Try it offline'), findsOneWidget);
     expect(find.text('Simulated · nothing is saved'), findsOneWidget);
-    expect(find.byTooltip('Reset demo'), findsOneWidget);
+    expect(find.byKey(const Key('demo-reset')), findsOneWidget);
+    expect(find.text('Reset demo'), findsOneWidget);
+    expect(find.byTooltip('Leave demo'), findsOneWidget);
+    expect(find.byTooltip('More'), findsNothing);
+    // Before the loop is finished there is nothing to set up yet.
     expect(find.text('Set up your own server'), findsNothing);
-    await tester.tap(find.byTooltip('More'));
+    await tester.tap(find.byTooltip('Leave demo'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Set up your own server'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Try it offline'), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

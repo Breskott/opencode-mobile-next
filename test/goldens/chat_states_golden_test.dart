@@ -15,6 +15,8 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/first_run.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
+import 'package:opencode_mobile/ui/widgets/app_connection_status.dart';
+import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../tool/capture/fixtures.dart';
@@ -106,11 +108,31 @@ Future<void> _golden(
   );
   setUp?.call(controller);
   final boundary = GlobalKey();
+  final navigatorKey = GlobalKey<NavigatorState>();
   try {
+    // Since 3d64653c (one controller-owned connection status) the chat no
+    // longer draws its own connection line: the app's status slot above the
+    // navigator does, so the harness hosts it the way main.dart does.
     await tester.pumpWidget(
       captureApp(
-        home: ChatScreen(sessionID: sessionID),
+        home: Builder(
+          builder: (context) => ListenableBuilder(
+            listenable: controller,
+            builder: (context, _) => AppConditionsScope(
+              conditions: [
+                connectionKitStatus(
+                  context,
+                  controller,
+                  actionContext: () =>
+                      navigatorKey.currentState?.overlay?.context,
+                ),
+              ],
+              child: ChatScreen(sessionID: sessionID),
+            ),
+          ),
+        ),
         boundaryKey: boundary,
+        navigatorKey: navigatorKey,
         controller: controller,
         light: light,
       ),

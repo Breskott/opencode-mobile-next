@@ -15,6 +15,7 @@ import 'package:opencode_mobile/api2/transport.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -323,7 +324,8 @@ void main() {
       );
       expect(
         tester
-            .widget<FilledButton>(find.byKey(const ValueKey('skill-activate')))
+            // A KitButton since cf8f5eda (Skills rebuilt from kit parts).
+            .widget<KitButton>(find.byKey(const ValueKey('skill-activate')))
             .onPressed,
         isNull,
       );

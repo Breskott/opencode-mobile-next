@@ -592,7 +592,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Open external link?'), findsOneWidget);
-    expect(find.text('login.example.org:8443'), findsOneWidget);
+    // The real host stays in sight in the body (06102116 link gate on kit
+    // parts: "Opens {host} outside this app.").
+    expect(
+      find.text('Opens login.example.org:8443 outside this app.'),
+      findsOneWidget,
+    );
 
     // Declining is a real outcome: nothing opens.
     await tester.tap(find.text('Cancel'));
@@ -723,11 +728,16 @@ void main() {
     expect(find.byKey(const Key('form-error-banner')), findsNothing);
     await submit(tester);
     expect(find.byKey(const Key('form-error-banner')), findsOneWidget);
-    // The server's reason in words; the transport text is details only.
+    // Plain words, never the server's prose (a65dcea9 maps protocol
+    // failures to domain-owned categories); transport text is details only.
     expect(
-      find.text("The server didn't accept it: server rejected the answer"),
+      find.text(
+        "The server didn't accept the request. Try again, or report the "
+        'problem.',
+      ),
       findsOneWidget,
     );
+    expect(find.textContaining('server rejected the answer'), findsNothing);
     expect(find.textContaining('HTTP 400'), findsNothing);
     expect(find.byKey(const Key('form-sheet')), findsOneWidget);
     expect(closed, isFalse);

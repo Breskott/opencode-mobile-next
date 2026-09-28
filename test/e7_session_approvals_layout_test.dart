@@ -7,6 +7,7 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/state/automation_policy.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/session_auto_approval.dart';
@@ -62,11 +63,26 @@ class _Controller extends ConnectionController {
       ServerProfile(id: 'server-a', name: 'A', baseUrl: 'http://localhost');
 }
 
+/// The server is known to the store, as a saved profile is.
+class _Store extends ProfileStore {
+  _Store({required super.prefs});
+  @override
+  List<ServerProfile> get profiles => [
+    ServerProfile(id: 'server-a', name: 'A', baseUrl: 'http://localhost'),
+  ];
+}
+
 Future<(_Controller, _FakeApi)> _boot() async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
+  // Since 9bcf3cca (enforce automation policy) a session's automatic
+  // approval acts only when the server's automation policy allows it.
+  await AutomationPolicyController.forProfile(
+    prefs,
+    'server-a',
+  ).setSupervision(AutomationSupervision.balanced);
   final api = _FakeApi();
-  final controller = _Controller(ProfileStore(prefs: prefs))
+  final controller = _Controller(_Store(prefs: prefs))
     ..api = api
     ..status = StreamStatus.connected;
   addTearDown(controller.dispose);
@@ -123,10 +139,16 @@ Future<void> _openApprovals(WidgetTester tester) async {
   await tester.tap(commands);
   await tester.pumpAndSettle();
   await tester.pumpAndSettle();
-  await tester.enterText(
-    find.byKey(const Key('command-launcher-search')),
-    'approvals',
+  // At 2.5x text on 320dp the kit sheet's header scrolls away with the body
+  // (KitSheet: no room to keep it fixed), so the search starts below the
+  // fold: bring it into view first.
+  final search = find.byKey(
+    const Key('command-launcher-search'),
+    skipOffstage: false,
   );
+  await tester.ensureVisible(search);
+  await tester.pumpAndSettle();
+  await tester.enterText(search, 'approvals');
   await tester.pump();
   final approvals = find.byKey(const Key('command-mobile-approvals'));
   await tester.ensureVisible(approvals);
@@ -375,6 +397,15 @@ void main() {
     // test. (A permission card next to the reconnecting banner at 320dp/2.5x
     // is a pre-existing layout limit unrelated to this slice.)
     expect(api.replies, isEmpty);
+
+    // Past the controller's eight-second connection grace period (3d64653c,
+    // one controller-owned connection status) the indicator still stays,
+    // paused.
+    await tester.pump(const Duration(seconds: 8));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byKey(const Key('auto-approval-indicator')), findsOneWidget);
+    expect(find.text('Auto-approve paused'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('a failed automatic reply shows the request with the reason', (
