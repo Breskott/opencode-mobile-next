@@ -639,11 +639,15 @@ class _KitRequestSheetBodyState extends State<_KitRequestSheetBody> {
   }
 
   /// The whole command, path or pattern list: left to right, copyable,
-  /// never truncated (it scrolls sideways inside its box).
+  /// never truncated. It wraps (continuation lines hang past the `$`), so
+  /// the tail of a command the person is asked to allow is never hidden
+  /// behind a sideways scroll and its edge fade (KitRequestSheet.md: the
+  /// full text wraps and never truncates).
   Widget _command(String text, {required bool path}) => KitCodeBlock(
     text: text,
     kind: path ? KitCodeKind.output : KitCodeKind.command,
     maxLines: null,
+    wrap: true,
     showWrapToggle: false,
     highlight: false,
   );

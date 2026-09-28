@@ -729,10 +729,16 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
             : _copyIcon(l10n),
     ];
 
-    return Row(
+    final leading = name != null || counts != null;
+    final labelledCopy = showCopy && _labelledCopy;
+
+    Widget row({double? copyMaxWidth}) => Row(
+      // With nothing at the start, the controls sit at the end.
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        if (name != null || counts != null)
+        if (leading)
+          // The name takes every width the controls leave, so it always
+          // starts at the block's edge.
           Expanded(
             child: Row(
               children: [
@@ -748,16 +754,32 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
             ),
           ),
         for (var i = 0; i < trailing.length; i++) ...[
-          if (i > 0 || name != null || counts != null)
-            SizedBox(width: tokens.space2),
+          if (i > 0 || leading) SizedBox(width: tokens.space2),
           // Icon controls keep their target size. A labelled copy action
-          // needs a width bound so its words can wrap at large text sizes.
-          if (showCopy && _labelledCopy && i == trailing.length - 1)
-            Flexible(child: trailing[i])
+          // needs a width bound so its words can wrap at large text sizes:
+          // beside a name it is capped (never flex, which would share the
+          // row with the name and push the name off the edge); alone it
+          // takes the row.
+          if (labelledCopy && i == trailing.length - 1)
+            copyMaxWidth != null
+                ? ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: copyMaxWidth),
+                    child: trailing[i],
+                  )
+                : Flexible(child: trailing[i])
           else
             trailing[i],
         ],
       ],
+    );
+
+    if (!(leading && labelledCopy)) return row();
+    return LayoutBuilder(
+      builder: (context, constraints) => row(
+        copyMaxWidth: constraints.maxWidth.isFinite
+            ? constraints.maxWidth * .6
+            : double.infinity,
+      ),
     );
   }
 
