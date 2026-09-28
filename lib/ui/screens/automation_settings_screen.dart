@@ -13,7 +13,7 @@ import '../../state/profiles.dart';
 import '../../state/team_planning.dart' show TeamSupervision;
 import '../app_theme.dart';
 import '../kit/kit.dart';
-import '../widgets/first_reply_notify_card.dart'
+import '../../state/first_reply_notify_offer.dart'
     show turnOnNeedsYouNotifications;
 import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/phone_server_consents.dart';

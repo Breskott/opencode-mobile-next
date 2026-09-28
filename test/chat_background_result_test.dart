@@ -215,53 +215,55 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
-  testWidgets('capture canonical result at normal, narrow and large RTL scales', (
-    tester,
-  ) async {
-    final captureDir = Platform.environment['E7_CHAT_CAPTURE_DIR']!;
-    await loadCaptureFonts();
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    for (final variant in [
-      (390.0, 1.0, false),
-      (320.0, 1.0, false),
-      (320.0, 2.5, true),
-    ]) {
-      tester.view.physicalSize = Size(variant.$1, 900);
-      await tester.pumpWidget(const SizedBox.shrink());
-      final boundary = GlobalKey();
-      await tester.pumpWidget(
-        RepaintBoundary(
-          key: boundary,
-          child: _host(
-            V2TranscriptRow(
-              part: _result(
-                description: variant.$3
-                    ? 'مراجعة تدفق الدفع ومعالجة الأخطاء'
-                    : 'Review checkout validation',
-                body: variant.$3
-                    ? 'تمت مراجعة التحقق.\n\n`lib/checkout.dart`\n\nKeep authored English intact.'
-                    : 'Validation now reports missing fields clearly.\n\nUpdated `lib/checkout.dart`. Existing checkout drafts remain intact.',
+  testWidgets(
+    'capture canonical result at normal, narrow and large RTL scales',
+    (tester) async {
+      final captureDir = Platform.environment['E7_CHAT_CAPTURE_DIR']!;
+      await loadCaptureFonts();
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      for (final variant in [
+        (390.0, 1.0, false),
+        (320.0, 1.0, false),
+        (320.0, 2.5, true),
+      ]) {
+        tester.view.physicalSize = Size(variant.$1, 900);
+        await tester.pumpWidget(const SizedBox.shrink());
+        final boundary = GlobalKey();
+        await tester.pumpWidget(
+          RepaintBoundary(
+            key: boundary,
+            child: _host(
+              V2TranscriptRow(
+                part: _result(
+                  description: variant.$3
+                      ? 'مراجعة تدفق الدفع ومعالجة الأخطاء'
+                      : 'Review checkout validation',
+                  body: variant.$3
+                      ? 'تمت مراجعة التحقق.\n\n`lib/checkout.dart`\n\nKeep authored English intact.'
+                      : 'Validation now reports missing fields clearly.\n\nUpdated `lib/checkout.dart`. Existing checkout drafts remain intact.',
+                ),
+                messageId: 'capture-result',
+                parentSessionID: 'ses_parent',
+                knownSessions: {
+                  'ses_child': Session(id: 'ses_child', parentID: 'ses_parent'),
+                },
+                onOpenChild: (_) {},
               ),
-              messageId: 'capture-result',
-              parentSessionID: 'ses_parent',
-              knownSessions: {
-                'ses_child': Session(id: 'ses_child', parentID: 'ses_parent'),
-              },
-              onOpenChild: (_) {},
+              direction: variant.$3 ? TextDirection.rtl : TextDirection.ltr,
+              scale: variant.$2,
             ),
-            direction: variant.$3 ? TextDirection.rtl : TextDirection.ltr,
-            scale: variant.$2,
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      final bytes = await capturePng(tester, boundary);
-      File(
-        '$captureDir/result-${variant.$1.toInt()}-${variant.$2}x-${variant.$3 ? 'rtl' : 'ltr'}.png',
-      ).writeAsBytesSync(bytes);
-    }
-  }, skip: Platform.environment['E7_CHAT_CAPTURE_DIR'] == null);
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        final bytes = await capturePng(tester, boundary);
+        File(
+          '$captureDir/result-${variant.$1.toInt()}-${variant.$2}x-${variant.$3 ? 'rtl' : 'ltr'}.png',
+        ).writeAsBytesSync(bytes);
+      }
+    },
+    skip: Platform.environment['E7_CHAT_CAPTURE_DIR'] == null,
+  );
 }

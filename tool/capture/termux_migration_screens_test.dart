@@ -5,7 +5,7 @@
 //
 //   flutter test --concurrency=1 tool/capture/termux_migration_screens_test.dart
 //
-// Output: docs/qa/slice-migration-ui-2026-09-28/after-<state>-<size>-<mode>.png
+// Output: docs/qa/slice-migration-gaps-ui-2026-09-29/after-<state>-<size>-<mode>.png
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -13,19 +13,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/termux_migration.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/state/termux_migration_owner.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/ui/screens/termux_migration_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../test/revamp/screen_phone_1_fixtures.dart';
 import '../../test/support/termux_migration_fakes.dart';
 import 'fixtures.dart';
 
-const _out = 'docs/qa/slice-migration-ui-2026-09-28';
+const _out = 'docs/qa/slice-migration-gaps-ui-2026-09-29';
 
 enum _State {
   review,
+  reviewShort,
+  stopping,
+  discardConfirm,
   progress,
   stoppedLeaving,
   needsSpace,
@@ -36,7 +37,7 @@ enum _State {
   done,
 }
 
-const _wideStates = {_State.review, _State.progress, _State.done};
+const _wideStates = {_State.review, _State.reviewShort, _State.done};
 
 ServerProfile _termux() => ServerProfile(
   id: migrationSource,
@@ -82,12 +83,26 @@ void main() {
               fixture.transport.inspectError = const TermuxMigrationException(
                 TermuxMigrationFailure.unavailable,
               );
-            case _State.unfinished || _State.done:
+            case _State.reviewShort:
+              fixture.freeBytes = 900 * 1024 * 1024;
+            case _State.unfinished || _State.discardConfirm:
               fixture.journal.saveUnfinished([
                 TermuxMigrationItem.projects,
                 TermuxMigrationItem.config,
                 TermuxMigrationItem.gitConfig,
               ]);
+            case _State.done:
+              // Reopened later, offline: the backend's own record and names.
+              fixture.journal.saveUnfinished(
+                [
+                  TermuxMigrationItem.projects,
+                  TermuxMigrationItem.config,
+                  TermuxMigrationItem.gitConfig,
+                ],
+                done: true,
+                configCopied: true,
+              );
+              fixture.archives.providers = ['Anthropic', 'OpenAI'];
             default:
               break;
           }
@@ -131,13 +146,20 @@ void main() {
                 TermuxMigrationFailure.sourceChanged,
               );
               await _tap(tester, 'migration-start');
-            case _State.done:
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.setStringList(
-                TermuxMigrationOwner.providersKey(migrationSource),
-                ['Anthropic', 'OpenAI'],
+            case _State.reviewShort:
+              await tester.drag(
+                find.byType(Scrollable).first,
+                const Offset(0, -5000),
               );
-              await _tap(tester, 'migration-resume');
+            case _State.stopping:
+              fixture.transport
+                ..packGate = Completer<void>()
+                ..holdAfterCancel = true;
+              await _tap(tester, 'migration-start');
+              await _tap(tester, 'migration-stop');
+              await _tap(tester, 'migration-stop-confirm');
+            case _State.discardConfirm:
+              await _tap(tester, 'migration-discard');
             default:
               break;
           }

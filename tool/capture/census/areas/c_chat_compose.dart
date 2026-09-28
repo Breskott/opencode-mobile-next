@@ -301,19 +301,29 @@ final cChatComposeArea = CensusArea(
       },
       note: 'Host: ChatScreen after a finished turn, a three-line draft typed.',
     ),
-    CensusShot('embedded-composer', state: 'slash-commands', (kit) async {
-      await _chat(kit);
-      await _type(kit, '/');
-      kit.expectText('Show all commands');
-    }, note: 'Host: ChatScreen; "/" typed opens the inline command list.'),
-    CensusShot('embedded-composer', state: 'working', (kit) async {
-      await _chat(
-        kit,
-        api: _Api()
-          ..messagesHandler = (_) async => sampleTranscript(streaming: true),
-      );
-      kit.expectVisible(find.byKey(const Key('chat-stop-button')));
-    }, note: 'Host: ChatScreen while a run streams: Stop, activity ring.'),
+    CensusShot(
+      'embedded-composer',
+      state: 'slash-commands',
+      (kit) async {
+        await _chat(kit);
+        await _type(kit, '/');
+        kit.expectText('Show all commands');
+      },
+      note: 'Host: ChatScreen; "/" typed opens the inline command list.',
+    ),
+    CensusShot(
+      'embedded-composer',
+      state: 'working',
+      (kit) async {
+        await _chat(
+          kit,
+          api: _Api()
+            ..messagesHandler = (_) async => sampleTranscript(streaming: true),
+        );
+        kit.expectVisible(find.byKey(const Key('chat-stop-button')));
+      },
+      note: 'Host: ChatScreen while a run streams: Stop, activity ring.',
+    ),
     CensusShot(
       'embedded-composer',
       state: 'working-steer-queue',
@@ -348,12 +358,17 @@ final cChatComposeArea = CensusArea(
       await kit.tapKey('composer-tools-advanced');
       kit.expectText('Prompt tools');
     }, note: 'Advanced group expanded.'),
-    CensusShot('prompt-tools-sheet', state: 'prompts', (kit) async {
-      await _chat(kit);
-      await _openTools(kit, draft: 'Run the checkout tests on CI too');
-      await kit.tapKey('composer-tools-prompts');
-      kit.expectVisible(find.byKey(const Key('composer-tool-stash')));
-    }, note: 'A draft typed; the Prompts group expanded.'),
+    CensusShot(
+      'prompt-tools-sheet',
+      state: 'prompts',
+      (kit) async {
+        await _chat(kit);
+        await _openTools(kit, draft: 'Run the checkout tests on CI too');
+        await kit.tapKey('composer-tools-prompts');
+        kit.expectVisible(find.byKey(const Key('composer-tool-stash')));
+      },
+      note: 'A draft typed; the Prompts group expanded.',
+    ),
 
     // -- prompt-editor and its discard sheet ---------------------------------
     CensusShot('prompt-editor', (kit) async {
@@ -382,18 +397,22 @@ final cChatComposeArea = CensusArea(
     }),
 
     // -- prompt-history-sheet ------------------------------------------------
-    CensusShot('prompt-history-sheet', (kit) async {
-      await _chat(
-        kit,
-        api: _Api()
-          ..busy = {}
-          ..messagesHandler = (_) async => _longTranscript(),
-      );
-      await _openTools(kit);
-      await kit.tapKey('composer-tools-prompts');
-      await kit.tapKey('composer-tool-history');
-      kit.expectText('Reuse a prompt');
-    }, note: 'Three prompts sent earlier in this conversation.'),
+    CensusShot(
+      'prompt-history-sheet',
+      (kit) async {
+        await _chat(
+          kit,
+          api: _Api()
+            ..busy = {}
+            ..messagesHandler = (_) async => _longTranscript(),
+        );
+        await _openTools(kit);
+        await kit.tapKey('composer-tools-prompts');
+        await kit.tapKey('composer-tool-history');
+        kit.expectText('Reuse a prompt');
+      },
+      note: 'Three prompts sent earlier in this conversation.',
+    ),
 
     // -- prompt-stash-sheet and delete ---------------------------------------
     CensusShot('prompt-stash-sheet', state: 'loaded', (kit) async {
@@ -406,20 +425,30 @@ final cChatComposeArea = CensusArea(
       await _openStash(kit);
     }),
     // -- embedded-transcript-find-bar ----------------------------------------
-    CensusShot('embedded-transcript-find-bar', state: 'open', (kit) async {
-      await _chat(kit);
-      await _openFind(kit);
-    }, note: 'Host: ChatScreen; opened from the conversation menu.'),
-    CensusShot('embedded-transcript-find-bar', state: 'matches', (kit) async {
-      await _chat(kit);
-      await _openFind(kit);
-      await kit.enterText(
-        find.byKey(const ValueKey('transcript-find-input')),
-        'checkout',
-      );
-      await kit.settle();
-      kit.expectTextContaining('of');
-    }, note: '"checkout" typed: match count and navigation.'),
+    CensusShot(
+      'embedded-transcript-find-bar',
+      state: 'open',
+      (kit) async {
+        await _chat(kit);
+        await _openFind(kit);
+      },
+      note: 'Host: ChatScreen; opened from the conversation menu.',
+    ),
+    CensusShot(
+      'embedded-transcript-find-bar',
+      state: 'matches',
+      (kit) async {
+        await _chat(kit);
+        await _openFind(kit);
+        await kit.enterText(
+          find.byKey(const ValueKey('transcript-find-input')),
+          'checkout',
+        );
+        await kit.settle();
+        kit.expectTextContaining('of');
+      },
+      note: '"checkout" typed: match count and navigation.',
+    ),
     CensusShot('embedded-transcript-find-bar', state: 'no-match', (kit) async {
       await _chat(kit);
       await _openFind(kit);
@@ -431,33 +460,45 @@ final cChatComposeArea = CensusArea(
     }),
 
     // -- read aloud ----------------------------------------------------------
-    CensusShot('chat-read-aloud-consent-sheet', (kit) async {
-      _mockVoices(kit);
-      await _chat(kit);
-      await _startReadAloud(kit);
-      kit.expectText('Use the system speech engine?');
-    }, note: 'Message actions of the reply › Read reply prose.'),
-    CensusShot('chat-read-aloud-voice-sheet', (kit) async {
-      _mockVoices(kit);
-      await _chat(kit);
-      await _startReadAloud(kit);
-      // Consent reads with the voice for the app's language (P10.4); the
-      // choice is "Read with another voice".
-      await kit.tapText('Read aloud');
-      await kit.realWait();
-      await kit.tapKey('message-actions-msg_assistant');
-      await kit.tapText('Read with another voice');
-      await kit.realWait();
-      kit.expectText('Choose a reading voice');
-    }, note: 'Four offline voices from a mocked system engine.'),
+    CensusShot(
+      'chat-read-aloud-consent-sheet',
+      (kit) async {
+        _mockVoices(kit);
+        await _chat(kit);
+        await _startReadAloud(kit);
+        kit.expectText('Use the system speech engine?');
+      },
+      note: 'Message actions of the reply › Read reply prose.',
+    ),
+    CensusShot(
+      'chat-read-aloud-voice-sheet',
+      (kit) async {
+        _mockVoices(kit);
+        await _chat(kit);
+        await _startReadAloud(kit);
+        // Consent reads with the voice for the app's language (P10.4); the
+        // choice is "Read with another voice".
+        await kit.tapText('Read aloud');
+        await kit.realWait();
+        await kit.tapKey('message-actions-msg_assistant');
+        await kit.tapText('Read with another voice');
+        await kit.realWait();
+        kit.expectText('Choose a reading voice');
+      },
+      note: 'Four offline voices from a mocked system engine.',
+    ),
 
     // -- embedded-transcript-display-toggles ---------------------------------
-    CensusShot('embedded-transcript-display-toggles', (kit) async {
-      await _chat(kit);
-      await _openSessionMenu(kit);
-      await kit.tapText('Display and context');
-      kit.expectVisible(find.byKey(const ValueKey('session-view-thinking')));
-    }, note: 'Host: the conversation menu, Display and context expanded.'),
+    CensusShot(
+      'embedded-transcript-display-toggles',
+      (kit) async {
+        await _chat(kit);
+        await _openSessionMenu(kit);
+        await kit.tapText('Display and context');
+        kit.expectVisible(find.byKey(const ValueKey('session-view-thinking')));
+      },
+      note: 'Host: the conversation menu, Display and context expanded.',
+    ),
 
     // -- prompt error banner and its details ---------------------------------
     CensusShot(
@@ -480,54 +521,62 @@ final cChatComposeArea = CensusArea(
     }),
 
     // -- subagent and shared banners -----------------------------------------
-    CensusShot('embedded-subagent-context-banner', (kit) async {
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final api = _Api()
-        ..busy = {}
-        ..messagesHandler = (id) async => [
-          _reply(
-            'msg_child_1',
-            'The coupon validation lives in `lib/checkout/coupon.dart`; '
-                'expiry is checked only on apply, not at payment.',
-            now - 3 * 60 * 1000,
-          ),
-        ];
-      api.sessionsById[_childSessionID] = Session(
-        id: _childSessionID,
-        parentID: checkoutSessionID,
-        title: 'Explore coupon validation',
-        directory: projectDirectory,
-        time: SessionTime(created: now - 5 * 60 * 1000, updated: now),
-      );
-      api.sessionsById['ses_checkout_review'] = Session(
-        id: 'ses_checkout_review',
-        parentID: checkoutSessionID,
-        title: 'Review the checkout diff',
-        directory: projectDirectory,
-        time: SessionTime(created: now - 4 * 60 * 1000, updated: now),
-      );
-      await _chat(kit, api: api, sessionID: _childSessionID);
-      kit.expectTextContaining('Subagent');
-    }, note: 'Host: a delegated (child) conversation, one of two siblings.'),
-    CensusShot('embedded-shared-session-banner', (kit) async {
-      final api = _Api()
-        ..busy = {}
-        ..messagesHandler = (_) async => sampleTranscript();
-      final base = api.sessionsById[checkoutSessionID]!;
-      api.sessionsById[checkoutSessionID] = Session(
-        id: base.id,
-        title: base.title,
-        directory: base.directory,
-        time: base.time,
-        cost: base.cost,
-        summary: base.summary,
-        model: base.model,
-        agent: base.agent,
-        shareUrl: _shareUrl,
-      );
-      await _chat(kit, api: api);
-      kit.expectText('Shared: anyone with the link can view');
-    }, note: 'Host: ChatScreen for a conversation shared by link.'),
+    CensusShot(
+      'embedded-subagent-context-banner',
+      (kit) async {
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final api = _Api()
+          ..busy = {}
+          ..messagesHandler = (id) async => [
+            _reply(
+              'msg_child_1',
+              'The coupon validation lives in `lib/checkout/coupon.dart`; '
+                  'expiry is checked only on apply, not at payment.',
+              now - 3 * 60 * 1000,
+            ),
+          ];
+        api.sessionsById[_childSessionID] = Session(
+          id: _childSessionID,
+          parentID: checkoutSessionID,
+          title: 'Explore coupon validation',
+          directory: projectDirectory,
+          time: SessionTime(created: now - 5 * 60 * 1000, updated: now),
+        );
+        api.sessionsById['ses_checkout_review'] = Session(
+          id: 'ses_checkout_review',
+          parentID: checkoutSessionID,
+          title: 'Review the checkout diff',
+          directory: projectDirectory,
+          time: SessionTime(created: now - 4 * 60 * 1000, updated: now),
+        );
+        await _chat(kit, api: api, sessionID: _childSessionID);
+        kit.expectTextContaining('Subagent');
+      },
+      note: 'Host: a delegated (child) conversation, one of two siblings.',
+    ),
+    CensusShot(
+      'embedded-shared-session-banner',
+      (kit) async {
+        final api = _Api()
+          ..busy = {}
+          ..messagesHandler = (_) async => sampleTranscript();
+        final base = api.sessionsById[checkoutSessionID]!;
+        api.sessionsById[checkoutSessionID] = Session(
+          id: base.id,
+          title: base.title,
+          directory: base.directory,
+          time: base.time,
+          cost: base.cost,
+          summary: base.summary,
+          model: base.model,
+          agent: base.agent,
+          shareUrl: _shareUrl,
+        );
+        await _chat(kit, api: api);
+        kit.expectText('Shared: anyone with the link can view');
+      },
+      note: 'Host: ChatScreen for a conversation shared by link.',
+    ),
 
     // -- embedded-message-view -----------------------------------------------
     CensusShot(
@@ -548,33 +597,48 @@ final cChatComposeArea = CensusArea(
           'command), then code and choices. The expanded group repeats the '
           'same summary line inside itself (as rendered).',
     ),
-    CensusShot('embedded-message-view', state: 'working', (kit) async {
-      await _chat(
-        kit,
-        api: _Api()
-          ..messagesHandler = (_) async => sampleTranscript(streaming: true),
-      );
-      kit.expectText(userPrompt);
-    }, note: 'The reply is still streaming.'),
-    CensusShot('embedded-message-view', state: 'empty', (kit) async {
-      await _chat(
-        kit,
-        api: _Api()
-          ..busy = {}
-          ..messagesHandler = (_) async => [],
-        sessionID: darkModeSessionID,
-      );
-      kit.expectVisible(find.byKey(const Key('chat-composer-field')));
-    }, note: 'A conversation with no messages yet: the start area.'),
-    CensusShot('embedded-message-view', state: 'model-error', (kit) async {
-      await _chat(
-        kit,
-        api: _Api()
-          ..busy = {}
-          ..messagesHandler = (_) async => _modelErrorTurn(),
-      );
-      kit.expectVisible(find.byKey(const Key('error-action-details')));
-    }, note: 'The reply ended on a model the server does not know.'),
+    CensusShot(
+      'embedded-message-view',
+      state: 'working',
+      (kit) async {
+        await _chat(
+          kit,
+          api: _Api()
+            ..messagesHandler = (_) async => sampleTranscript(streaming: true),
+        );
+        kit.expectText(userPrompt);
+      },
+      note: 'The reply is still streaming.',
+    ),
+    CensusShot(
+      'embedded-message-view',
+      state: 'empty',
+      (kit) async {
+        await _chat(
+          kit,
+          api: _Api()
+            ..busy = {}
+            ..messagesHandler = (_) async => [],
+          sessionID: darkModeSessionID,
+        );
+        kit.expectVisible(find.byKey(const Key('chat-composer-field')));
+      },
+      note: 'A conversation with no messages yet: the start area.',
+    ),
+    CensusShot(
+      'embedded-message-view',
+      state: 'model-error',
+      (kit) async {
+        await _chat(
+          kit,
+          api: _Api()
+            ..busy = {}
+            ..messagesHandler = (_) async => _modelErrorTurn(),
+        );
+        kit.expectVisible(find.byKey(const Key('error-action-details')));
+      },
+      note: 'The reply ended on a model the server does not know.',
+    ),
     CensusShot('chat-message-error-details-dialog', (kit) async {
       await _chat(
         kit,
@@ -627,15 +691,22 @@ final cChatComposeArea = CensusArea(
     ),
 
     // -- embedded-chat-nudge-slot --------------------------------------------
-    CensusShot('embedded-chat-nudge-slot', (kit) async {
-      final controller = await _chat(
-        kit,
-        prefValues: {NudgeRegistry.firstReplySeenKey: true},
-      );
-      controller.nudges.offer(NudgeId.reviewChanges, scope: checkoutSessionID);
-      await kit.settle();
-      kit.expectTextContaining('This run changed files');
-    }, note: 'Host: ChatScreen after a run that edited files: the review tip.'),
+    CensusShot(
+      'embedded-chat-nudge-slot',
+      (kit) async {
+        final controller = await _chat(
+          kit,
+          prefValues: {NudgeRegistry.firstReplySeenKey: true},
+        );
+        controller.nudges.offer(
+          NudgeId.reviewChanges,
+          scope: checkoutSessionID,
+        );
+        await kit.settle();
+        kit.expectTextContaining('This run changed files');
+      },
+      note: 'Host: ChatScreen after a run that edited files: the review tip.',
+    ),
   ],
   notRendered: {
     'embedded-model-shortcuts':

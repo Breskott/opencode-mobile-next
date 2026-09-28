@@ -4,7 +4,6 @@ import 'package:flutter/widgets.dart';
 
 import '../domain/termux_migration_service.dart';
 import 'connection.dart';
-import 'profiles.dart';
 
 /// What the owner last asked the migration to do, so "Try again" repeats it.
 enum TermuxMigrationRequest { check, start, resume }
@@ -16,14 +15,10 @@ enum TermuxMigrationRequest { check, start, resume }
 /// copy no background lifetime. The page, This phone's row and the Servers
 /// offer only read it and ask it to act.
 ///
-/// It keeps three facts of its own, each scoped to the source profile so the
-/// profile deletion sweep removes them (`oc.<what>.<profileId>`):
-/// - `oc.termuxMigrationDone.<id>`: the job id of a move that finished and
-///   was verified, so This phone says "Moved" and the page shows where the
-///   files went instead of offering Resume (files the person edited since
-///   are theirs: the receipts are not checked again on every visit);
-/// - `oc.termuxMigrationProviders.<id>`: the names (never keys) of the AI
-///   providers the Termux server was signed in to, for "Sign in again".
+/// It keeps no durable facts of its own: whether a move finished, which
+/// providers to sign in to again, and discarding a saved copy are all asked
+/// of the backend (the controller's journal), so nothing here needs a
+/// profile-scoped key or a deletion sweep entry.
 class TermuxMigrationOwner extends ChangeNotifier with WidgetsBindingObserver {
   TermuxMigrationOwner({this.create});
 
@@ -37,11 +32,6 @@ class TermuxMigrationOwner extends ChangeNotifier with WidgetsBindingObserver {
     String builtinProfileName,
   )?
   create;
-
-  static String doneKey(String profileId) =>
-      'oc.termuxMigrationDone.$profileId';
-  static String providersKey(String profileId) =>
-      'oc.termuxMigrationProviders.$profileId';
 
   TermuxMigrationController? _controller;
   Future<TermuxMigrationController?>? _creating;
@@ -116,9 +106,8 @@ class TermuxMigrationOwner extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> _run(
     String sourceId,
     TermuxMigrationRequest what,
-    Future<void> Function(TermuxMigrationController c) op, {
-    ProfileStore? store,
-  }) {
+    Future<void> Function(TermuxMigrationController c) op,
+  ) {
     final c = _controller;
     if (c == null) return Future.value();
     final running = _inFlight;
@@ -132,12 +121,9 @@ class TermuxMigrationOwner extends ChangeNotifier with WidgetsBindingObserver {
       } catch (_) {
         // The controller publishes every failure as a fixed state.
       }
-      final job = c.snapshot.jobId;
-      if (store != null &&
-          job != null &&
-          c.snapshot.phase == TermuxMigrationPhase.done) {
-        await _remember(store, sourceId, job);
-      }
+      // Busy ends only when the backend says it settled, which can come
+      // after the cancelled state (its stop command is bounded, not instant).
+      await c.whenSettled;
     }();
     final settled = done.whenComplete(() {
       _inFlight = null;
@@ -148,32 +134,28 @@ class TermuxMigrationOwner extends ChangeNotifier with WidgetsBindingObserver {
     return settled;
   }
 
-  /// A fresh look at Termux and the phone: sizes, space, the in-app server.
-  Future<void> check(String sourceId) =>
-      _run(sourceId, TermuxMigrationRequest.check, (c) => c.check());
+  /// A fresh look at Termux and the phone: sizes, free space for [selected]
+  /// (nothing chosen yet needs none), the in-app server.
+  Future<void> check(
+    String sourceId, {
+    Set<TermuxMigrationItem> selected = const {},
+  }) => _run(
+    sourceId,
+    TermuxMigrationRequest.check,
+    (c) => c.check(selected: selected),
+  );
 
-  /// Starts copying [selected] from [sourceId]. [providerNames] are the AI
-  /// providers the Termux server is signed in to (names only), kept for
-  /// the "sign in again" step.
+  /// Starts copying [selected] from [sourceId].
   Future<void> start(
     ConnectionController connection,
     String sourceId,
-    Set<TermuxMigrationItem> selected, {
-    List<String> providerNames = const [],
-  }) {
+    Set<TermuxMigrationItem> selected,
+  ) {
     items = ordered(selected);
-    if (providerNames.isNotEmpty && connection.isProfileReadable(sourceId)) {
-      unawaited(
-        connection.store.prefs
-            .setStringList(providersKey(sourceId), providerNames)
-            .then((_) {}, onError: (Object _) {}),
-      );
-    }
     return _run(
       sourceId,
       TermuxMigrationRequest.start,
       (c) => c.start(sourceProfileId: sourceId, selected: items.toSet()),
-      store: connection.store,
     );
   }
 
@@ -201,7 +183,6 @@ class TermuxMigrationOwner extends ChangeNotifier with WidgetsBindingObserver {
       sourceId,
       TermuxMigrationRequest.resume,
       (c) => c.resume(sourceId),
-      store: connection.store,
     );
   }
 
@@ -234,30 +215,82 @@ class TermuxMigrationOwner extends ChangeNotifier with WidgetsBindingObserver {
   /// Completes when no operation runs.
   Future<void> settled() => _inFlight ?? Future.value();
 
-  /// The job id of the finished, verified move from [profileId]; null
-  /// when it has not finished.
-  static String? completedJob(ProfileStore store, String profileId) {
-    final job = store.prefs.get(doneKey(profileId));
-    return job is String && RegExp(r'^[a-f0-9]{32}$').hasMatch(job)
-        ? job
-        : null;
+  /// The finished move from [profileId] (the backend's durable record; it
+  /// stays true after the person edits the files), or null when it has not
+  /// finished. Throws [TermuxMigrationException] when the record cannot be
+  /// read: unknown is not "unfinished".
+  Future<TermuxMigrationCompletedJob?> completedJob(String profileId) async {
+    final c = _controller;
+    if (c == null) return null;
+    return c.completedJob(profileId);
   }
 
-  /// The AI providers the Termux server was signed in to, by name.
-  static List<String> providers(ProfileStore store, String profileId) =>
-      store.prefs.getStringList(providersKey(profileId)) ?? const [];
+  final Map<String, List<String>> _providerNames = {};
 
-  Future<void> _remember(
-    ProfileStore store,
-    String profileId,
-    String job,
-  ) async {
-    if (!store.profiles.any((p) => p.id == profileId)) return;
+  /// The AI providers found in the imported settings copy of [profileId],
+  /// by name, also offline. Empty means unknown. Kept in memory only.
+  Future<List<String>> providerNames(String profileId) async {
+    final c = _controller;
+    if (c == null) return _providerNames[profileId] ?? const [];
     try {
-      await store.prefs.setString(doneKey(profileId), job);
+      return _providerNames[profileId] = await c.providerNames(profileId);
     } catch (_) {
-      // This phone then offers Resume, which verifies the same receipts.
+      return _providerNames[profileId] ?? const [];
     }
+  }
+
+  /// The reviewed space for [selected] from the last look, or null when
+  /// there was none or the selection is refused.
+  TermuxMigrationSpace? reviewSpace(Set<TermuxMigrationItem> selected) {
+    try {
+      return _controller?.reviewSpace(selected);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Throws away the saved copy of [sourceId] (the backend removes only its
+  /// temporary transfer files; what was imported and Termux stay). Stops
+  /// and waits for a running copy first, holds the owner's guard through
+  /// the removal, and on success forgets what this owner remembered of the
+  /// copy. Null when it could not be removed (it stays and can be retried).
+  Future<TermuxMigrationDiscardResult?> discard(String sourceId) async {
+    final c = _controller;
+    if (c == null) return null;
+    if (busy) {
+      await cancel();
+      await settled();
+    }
+    final running = _inFlight;
+    if (running != null) await running;
+    source = sourceId;
+    final done = () async {
+      try {
+        final result = await c.discardSavedCopy(sourceId);
+        await c.whenSettled;
+        return result;
+      } catch (_) {
+        return null;
+      }
+    }();
+    final guard = done.then((_) {}).whenComplete(() {
+      _inFlight = null;
+      _changed();
+    });
+    _inFlight = guard;
+    _changed();
+    final result = await done;
+    await guard;
+    if (result == TermuxMigrationDiscardResult.discarded ||
+        result == TermuxMigrationDiscardResult.nothingSaved) {
+      source = null;
+      request = null;
+      items = const [];
+      stoppedByLeaving = false;
+      _providerNames.remove(sourceId);
+      _changed();
+    }
+    return result;
   }
 
   @override

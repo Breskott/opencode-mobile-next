@@ -247,7 +247,10 @@ void main() {
         active: null,
         starter: starter,
         diagnostics: diagnostics,
-        problemReport: ReportProblemStartup.start(diagnostics, directory: directory),
+        problemReport: ReportProblemStartup.start(
+          diagnostics,
+          directory: directory,
+        ),
       );
       await Future<void>.delayed(Duration.zero);
     }

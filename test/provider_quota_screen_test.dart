@@ -1384,56 +1384,60 @@ void main() {
   );
 
   final capturePath = Platform.environment['OC_QUOTA_CAPTURE'];
-  testWidgets('synthetic remaining usage rendered preview', (tester) async {
-    // Opt-in only, with a pre-existing output directory. This is a synthetic
-    // widget rendering, not a device capture or an automatically updated golden.
-    final output = File(capturePath!);
-    expect(
-      output.parent.existsSync(),
-      isTrue,
-      reason:
-          'Verify/create the capture parent before setting OC_QUOTA_CAPTURE',
-    );
-    final h = await harness(tester);
-    await loadCaptureFonts();
-    addTearDown(tester.view.reset);
-    tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(411, 1100);
-    final boundary = GlobalKey();
-    await tester.pumpWidget(
-      RepaintBoundary(
-        key: boundary,
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: captureTheme(light: true),
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(disableAnimations: true),
-            child: child!,
-          ),
-          home: _OverviewOwner(
-            overview: h.overview,
-            child: ProviderQuotaScreen(
-              controller: h.connection,
+  testWidgets(
+    'synthetic remaining usage rendered preview',
+    (tester) async {
+      // Opt-in only, with a pre-existing output directory. This is a synthetic
+      // widget rendering, not a device capture or an automatically updated golden.
+      final output = File(capturePath!);
+      expect(
+        output.parent.existsSync(),
+        isTrue,
+        reason:
+            'Verify/create the capture parent before setting OC_QUOTA_CAPTURE',
+      );
+      final h = await harness(tester);
+      await loadCaptureFonts();
+      addTearDown(tester.view.reset);
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(411, 1100);
+      final boundary = GlobalKey();
+      await tester.pumpWidget(
+        RepaintBoundary(
+          key: boundary,
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: captureTheme(light: true),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: child!,
+            ),
+            home: _OverviewOwner(
               overview: h.overview,
+              child: ProviderQuotaScreen(
+                controller: h.connection,
+                overview: h.overview,
+              ),
             ),
           ),
         ),
-      ),
-    );
-    await _frames(tester);
-    await _consentAndRead(tester, h);
-    await _finishRead(tester, h, _snapshot());
-    await tester.pump(const Duration(seconds: 1));
-    expect(find.textContaining('About 75% left'), findsOneWidget);
-    // An unreported window is left out (slice-close-misc).
-    expect(find.text('Not reported'), findsNothing);
-    _expectNoPrivateCopy();
-    expect(tester.takeException(), isNull);
-    final png = await capturePng(tester, boundary, pixelRatio: 1);
-    expect(png, isNotEmpty);
-    output.writeAsBytesSync(png, flush: true);
-  }, skip: capturePath == null || capturePath.trim().isEmpty);
+      );
+      await _frames(tester);
+      await _consentAndRead(tester, h);
+      await _finishRead(tester, h, _snapshot());
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.textContaining('About 75% left'), findsOneWidget);
+      // An unreported window is left out (slice-close-misc).
+      expect(find.text('Not reported'), findsNothing);
+      _expectNoPrivateCopy();
+      expect(tester.takeException(), isNull);
+      final png = await capturePng(tester, boundary, pixelRatio: 1);
+      expect(png, isNotEmpty);
+      output.writeAsBytesSync(png, flush: true);
+    },
+    skip: capturePath == null || capturePath.trim().isEmpty,
+  );
 }
