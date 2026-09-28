@@ -22,6 +22,7 @@ import '../screens/terminal_screen.dart' show TerminalPage, TerminalSource;
 import '../screens/this_phone_screen.dart' show openThisPhone;
 import 'phone_server_consents.dart';
 import 'product_states.dart';
+import 'queued_prompt_move_sheet.dart' show showQueuedPromptMoveSheet;
 import 'termux_running_server_entry.dart' show isManagedPhoneProfile;
 
 /// Screen D of phone setup (docs/design/phone-setup-v2-2026-09-24.md): the
@@ -42,6 +43,10 @@ enum PhoneServerAction {
   switchRuntime,
   addTools,
   update,
+
+  /// Moves the prompts waiting for this phone's server into a conversation
+  /// on the connected server (slice-queue-move), as the Servers rows do.
+  moveQueued,
   remove,
 }
 
@@ -158,6 +163,9 @@ Future<bool> runPhoneServerAction(
   required ServerProfile profile,
   int? bytesUsed,
   VoidCallback? onRemoving,
+  // True while a confirmed removal attempt runs, false once it ended (a
+  // failed one leaves the question open with Try again).
+  ValueChanged<bool>? onRemovingChanged,
 }) async {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   Future<void> fail(List<String> messages) async {
@@ -233,6 +241,31 @@ Future<bool> runPhoneServerAction(
       if (ids == null || ids.isEmpty || !context.mounted) return false;
       await install(ids, params: SetupJobParams.adding(ids));
       return false;
+    case PhoneServerAction.moveQueued:
+      await showQueuedPromptMoveSheet(
+        context,
+        connection: connection,
+        source: profile,
+        // An Undo that could not put every prompt back, in words; the
+        // technical text only under Details.
+        onProblem: (message, {details}) {
+          if (!context.mounted) return;
+          unawaited(
+            showKitAlert(
+              context,
+              title: l10n.phoneServerCardFailedTitle,
+              body: message,
+              details: [
+                if (details != null)
+                  KitTechnicalValue(l10n.phoneServerCardErrorDetail, details),
+              ],
+              icon: AppIconography.warning,
+              alertKey: const ValueKey('phone-server-action-failed'),
+            ),
+          );
+        },
+      );
+      return false;
     case PhoneServerAction.remove:
       return _removePhoneServer(
         context,
@@ -241,62 +274,87 @@ Future<bool> runPhoneServerAction(
         connection: connection,
         linux: linux,
         onRemoving: onRemoving,
+        onRemovingChanged: onRemovingChanged,
       );
   }
 }
 
-/// The remove-from-phone sheet (P0.7, P1.5): it says what survives. The
-/// default removes OpenCode and its tools and keeps the projects; its
-/// lines say what goes and what stays, with the measured sizes. "Delete
-/// everything" is the heavy path and asks for the typed name. Removal runs
-/// inside the question, so a failure keeps it open with Try again (DATA-14)
-/// and the saved entries stay until it worked. Then the saved entries are
-/// forgotten: a "This phone" entry left behind would point at nothing and
-/// could only fail.
-Future<bool> _removePhoneServer(
+/// What the person chose in [confirmPhoneRuntimeRemoval].
+enum PhoneRuntimeRemoval {
+  /// Closed the question; nothing changed.
+  cancelled,
+
+  /// The default: OpenCode, its tools and settings are gone; every project
+  /// under /root/projects stayed on the phone (it lives outside Ubuntu, at
+  /// `<filesDir>/projects`), and setting OpenCode up again shows them.
+  keptProjects,
+
+  /// The typed-name path: OpenCode and every project were deleted.
+  deletedEverything;
+
+  bool get removed => this != cancelled;
+}
+
+/// Asks how to remove OpenCode from this phone and removes it (P0.7).
+///
+/// The question says what survives: its confirm, "Remove OpenCode, keep my
+/// projects", removes the runtime and tools but keeps the project folders,
+/// and names the space it frees. "Delete everything" is the heavy path, so
+/// it is the question's quiet alternative and names its own larger figure;
+/// it opens a second question that stays disabled until
+/// [BuiltinLinux.deletionConfirmationName] is typed.
+///
+/// Sizes are measured afresh ([BuiltinLinux.projectStorage]); a failed or
+/// slow reading (many projects) leaves them out rather than holding the
+/// question back or showing a made-up figure. [queuedPrompts] waiting for
+/// this phone's server are said to move to Saved prompts (P7.2) on both
+/// paths. Removal runs inside the question ([showKitConfirm]'s action): a
+/// failure keeps it open with Try again (DATA-14). [beforeRemove] runs
+/// first on every attempt; [onWorking] is true while an attempt runs and
+/// false once it ended, so a failed attempt no longer reads as removing.
+Future<PhoneRuntimeRemoval> confirmPhoneRuntimeRemoval(
   BuildContext context, {
-  required AppLocalizations l10n,
-  required Future<void> Function(List<String>) fail,
-  required ConnectionController connection,
   required BuiltinLinux linux,
-  VoidCallback? onRemoving,
+  int queuedPrompts = 0,
+  Future<void> Function()? beforeRemove,
+  ValueChanged<bool>? onWorking,
+  Duration measureTimeout = const Duration(seconds: 3),
 }) async {
-  // Measured afresh: sizes come from a real reading or are not said. A
-  // slow reading (many projects) does not hold the question back.
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   BuiltinProjectStorage? storage;
   try {
-    storage = await linux.projectStorage().timeout(const Duration(seconds: 3));
+    storage = await linux.projectStorage().timeout(measureTimeout);
   } catch (_) {
-    storage = null;
+    storage = null; // Unknown: the copy leaves the figures out.
   }
-  if (!context.mounted) return false;
-  // Queued prompts for this phone's server are kept in Saved prompts (P7.2).
-  var queued = 0;
-  for (final profile in connection.store.profiles) {
-    if (looksLikeInAppServer(profile)) {
-      queued += connection.queuedPromptCountForProfile(profile.id);
-    }
-  }
+  if (!context.mounted) return PhoneRuntimeRemoval.cancelled;
 
   String? size(int? bytes) =>
       bytes != null && bytes > 0 ? formatPhoneStorage(bytes) : null;
   final keepFrees = size(storage?.keepProjectsFreedBytes);
   final kept = size(storage?.projectsBytes);
   final allFrees = size(storage?.deleteEverythingFreedBytes);
+  final queuedKept = [
+    if (queuedPrompts > 0)
+      KitConsequence(
+        l10n.serversRemoveQueuedKept(queuedPrompts),
+        mark: KitConsequenceMark.kept,
+        key: const ValueKey('phone-server-remove-queued-kept'),
+      ),
+  ];
 
-  // One attempt, from the question's confirm: leave the server before it
-  // disappears, so the app does not spend the next minute reconnecting to
-  // something that is gone, then remove it.
   Future<void> attempt(Future<void> Function() remove) async {
-    onRemoving?.call();
-    if (connection.api != null && looksLikeInAppServer(connection.profile)) {
-      await connection.disconnect(keepActive: true);
+    onWorking?.call(true);
+    try {
+      await beforeRemove?.call();
+      await remove();
+    } finally {
+      onWorking?.call(false);
     }
-    await remove();
   }
 
   var deleteEverything = false;
-  final removed = await showKitConfirm(
+  final keep = await showKitConfirm(
     context,
     title: l10n.phoneServerCardRemoveTitle,
     body: keepFrees != null
@@ -317,15 +375,13 @@ Future<bool> _removePhoneServer(
         mark: KitConsequenceMark.kept,
         key: const ValueKey('phone-server-remove-kept'),
       ),
-      if (queued > 0)
-        KitConsequence(
-          l10n.serversRemoveQueuedKept(queued),
-          mark: KitConsequenceMark.kept,
-        ),
+      ...queuedKept,
     ],
     alternative: KitAction(
       key: const ValueKey('phone-server-remove-everything'),
-      label: l10n.removeFromPhoneDeleteAll,
+      label: allFrees != null
+          ? l10n.removeFromPhoneDeleteAllChoiceSize(allFrees)
+          : l10n.removeFromPhoneDeleteAllChoice,
       destructive: true,
       onPressed: () => deleteEverything = true,
     ),
@@ -334,37 +390,80 @@ Future<bool> _removePhoneServer(
     sheetKey: const ValueKey('phone-server-remove-sheet'),
     confirmKey: const ValueKey('phone-server-remove-confirm'),
   );
-  if (!removed) {
-    if (!deleteEverything || !context.mounted) return false;
-    final deleted = await showKitConfirm(
-      context,
-      title: l10n.removeFromPhoneDeleteTitle,
-      body: allFrees != null
-          ? l10n.removeFromPhoneDeleteBody(allFrees)
-          : l10n.removeFromPhoneDeleteBodyUnmeasured,
-      confirmLabel: l10n.removeFromPhoneDeleteAll,
-      kind: KitConfirmKind.destructive,
-      icon: AppIconography.delete,
-      consequenceItems: [
-        KitConsequence(
-          l10n.removeFromPhoneDeleteLost,
-          mark: KitConsequenceMark.lost,
-        ),
-      ],
-      // The kit keeps the confirm disabled until the exact name is typed;
-      // native code checks it again.
-      typedName: BuiltinLinux.deletionConfirmationName,
-      action: () => attempt(
-        () => linux.remove(
-          alsoDeleteProjects: true,
-          confirmationName: BuiltinLinux.deletionConfirmationName,
-        ),
-      ),
-      sheetKey: const ValueKey('phone-server-delete-everything-sheet'),
-      confirmKey: const ValueKey('phone-server-delete-everything-confirm'),
-    );
-    if (!deleted) return false;
+  if (keep) return PhoneRuntimeRemoval.keptProjects;
+  if (!deleteEverything || !context.mounted) {
+    return PhoneRuntimeRemoval.cancelled;
   }
+  final deleted = await showKitConfirm(
+    context,
+    title: l10n.removeFromPhoneDeleteTitle,
+    body: allFrees != null
+        ? l10n.removeFromPhoneDeleteBody(allFrees)
+        : l10n.removeFromPhoneDeleteBodyUnmeasured,
+    confirmLabel: l10n.removeFromPhoneDeleteAll,
+    kind: KitConfirmKind.destructive,
+    icon: AppIconography.delete,
+    consequenceItems: [
+      KitConsequence(
+        l10n.removeFromPhoneDeleteLost,
+        mark: KitConsequenceMark.lost,
+      ),
+      ...queuedKept,
+    ],
+    // The kit keeps the confirm disabled until the exact name is typed;
+    // native code checks it again.
+    typedName: BuiltinLinux.deletionConfirmationName,
+    action: () => attempt(
+      () => linux.remove(
+        alsoDeleteProjects: true,
+        confirmationName: BuiltinLinux.deletionConfirmationName,
+      ),
+    ),
+    sheetKey: const ValueKey('phone-server-delete-everything-sheet'),
+    confirmKey: const ValueKey('phone-server-delete-everything-confirm'),
+  );
+  return deleted
+      ? PhoneRuntimeRemoval.deletedEverything
+      : PhoneRuntimeRemoval.cancelled;
+}
+
+/// Asks with [confirmPhoneRuntimeRemoval] and removes OpenCode, then
+/// forgets the saved entries: a "This phone" entry left behind would point
+/// at nothing and could only fail. The saved entries stay until removal
+/// worked; setting up again saves a new one and finds the kept projects.
+Future<bool> _removePhoneServer(
+  BuildContext context, {
+  required AppLocalizations l10n,
+  required Future<void> Function(List<String>) fail,
+  required ConnectionController connection,
+  required BuiltinLinux linux,
+  VoidCallback? onRemoving,
+  ValueChanged<bool>? onRemovingChanged,
+}) async {
+  // Queued prompts for this phone's server are kept in Saved prompts (P7.2).
+  var queued = 0;
+  for (final profile in connection.store.profiles) {
+    if (looksLikeInAppServer(profile)) {
+      queued += connection.queuedPromptCountForProfile(profile.id);
+    }
+  }
+  final outcome = await confirmPhoneRuntimeRemoval(
+    context,
+    linux: linux,
+    queuedPrompts: queued,
+    onWorking: (working) {
+      if (working) onRemoving?.call();
+      onRemovingChanged?.call(working);
+    },
+    // Leave the server before it disappears, so the app does not spend the
+    // next minute reconnecting to something that is gone.
+    beforeRemove: () async {
+      if (connection.api != null && looksLikeInAppServer(connection.profile)) {
+        await connection.disconnect(keepActive: true);
+      }
+    },
+  );
+  if (!outcome.removed) return false;
   final saved = [
     for (final profile in connection.store.profiles)
       if (looksLikeInAppServer(profile)) profile,
@@ -525,14 +624,73 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
   void initState() {
     super.initState();
     _starter.addListener(_starterChanged);
+    widget.connection.addListener(_connectionChanged);
+    _queue = _readQueue();
     unawaited(_refresh());
+  }
+
+  @override
+  void didUpdateWidget(PhoneServerCard old) {
+    super.didUpdateWidget(old);
+    if (old.connection != widget.connection) {
+      old.connection.removeListener(_connectionChanged);
+      widget.connection.addListener(_connectionChanged);
+    }
+    _queue = _readQueue();
   }
 
   @override
   void dispose() {
     _poll?.cancel();
     _starter.removeListener(_starterChanged);
+    widget.connection.removeListener(_connectionChanged);
     super.dispose();
+  }
+
+  /// Prompts waiting for this server and the saved id of the server they
+  /// can move to, as last read.
+  late ({int count, String? destination}) _queue;
+
+  /// The same reading as a Servers row (slice-queue-move): prompts queued
+  /// for this server while it cannot send them (never while it is the one
+  /// in use, never in an isolated view), and the connected server they can
+  /// move to.
+  ({int count, String? destination}) _readQueue() {
+    final connection = widget.connection;
+    if (connection.isIsolated ||
+        (connection.api != null &&
+            connection.profile?.id == widget.profile.id)) {
+      return (count: 0, destination: null);
+    }
+    final count = connection.queuedPromptCountForProfile(widget.profile.id);
+    final target = connection.queuedPromptMoveDestination;
+    return (
+      count: count,
+      destination:
+          count == 0 || target == null || target.id == widget.profile.id
+          ? null
+          : target.id,
+    );
+  }
+
+  /// The server [_queue]'s prompts can move to, by name; null: none.
+  String? _moveDestinationName(AppLocalizations l10n) {
+    final id = _queue.destination;
+    if (id == null) return null;
+    final profiles = widget.connection.store.profiles;
+    final target = profiles.where((p) => p.id == id).firstOrNull;
+    return target == null
+        ? null
+        : serverDisplayName(target, l10n, among: profiles);
+  }
+
+  /// The connection speaks often (streams, status); the card redraws only
+  /// when what it says about waiting prompts changed.
+  void _connectionChanged() {
+    if (!mounted) return;
+    final next = _readQueue();
+    if (next == _queue) return;
+    setState(() => _queue = next);
   }
 
   void _starterChanged() {
@@ -657,9 +815,10 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       linux: _linux,
       profile: widget.profile,
       bytesUsed: bytes,
-      // Busy only once confirmed: the question itself changes nothing.
-      onRemoving: () {
-        if (mounted) setState(() => _removing = true);
+      // Busy only while a confirmed attempt runs: the question itself
+      // changes nothing, and a failed attempt is no longer removing.
+      onRemovingChanged: (working) {
+        if (mounted) setState(() => _removing = working);
       },
     );
     if (!mounted) return;
@@ -731,6 +890,8 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
     // said where it matters (removing it frees the space).
     final detail = what;
 
+    final queue = _queue;
+    final moveTo = _moveDestinationName(l10n);
     final running = state == _Status.running;
     final installed = state != _Status.notSetUp && state != _Status.checking;
     final canOpen = running && !widget.connected && widget.onOpen != null;
@@ -782,6 +943,15 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
           label: l10n.thisPhoneManage,
           icon: AppIconography.phone,
           onSelected: () => choose(PhoneServerAction.manage),
+        ),
+      // Prompts waiting for this server go to the one in use, named (the
+      // Servers row's act, slice-queue-move).
+      if (!terminalOnly && !_removing && moveTo != null)
+        KitMenuItem(
+          key: const ValueKey('phone-server-move-queued'),
+          label: l10n.serverRowMoveQueued(queue.count, moveTo),
+          icon: AppIconography.forward,
+          onSelected: () => choose(PhoneServerAction.moveQueued),
         ),
       // A setup that stopped part way, when a filled button leads already.
       if (!terminalOnly && continueSetup != null && lead != continueSetup)
@@ -928,11 +1098,13 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
           children: [
             if (widget.connected)
               kitCurrentSpan(context, l10n.serverRowConnected),
+            ?_queuedSpan(context, l10n, queue.count),
             TextSpan(text: detail),
           ],
         ),
         supportingKey: const ValueKey('phone-server-detail'),
-        supportingMaxLines: large ? 3 : 1,
+        // Waiting prompts lead the line; what it runs wraps under them.
+        supportingMaxLines: large ? 3 : (queue.count > 0 ? 2 : 1),
         below: below.isEmpty
             ? null
             : Column(
@@ -960,6 +1132,20 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
       children: [row],
     );
   }
+
+  /// "2 prompts waiting to send · " in the strong label weight, as a
+  /// Servers row says it; null when none wait.
+  TextSpan? _queuedSpan(BuildContext context, AppLocalizations l10n, int n) =>
+      n > 0
+      ? TextSpan(
+          text: '${l10n.serverRowQueuedWaiting(n)} · ',
+          style: KitText.styleOf(
+            context,
+            KitTextRole.label,
+            tone: KitTextTone.primary,
+          ),
+        )
+      : null;
 
   /// [PhoneServerCard.row]: the shape of a [LocalServerRow]. The line reads
   /// "Connected · OpenCode 2 · Running"; Start or Set up is a small trailing
@@ -1037,12 +1223,13 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
             children: [
               if (widget.connected)
                 kitCurrentSpan(context, l10n.serverRowConnected),
+              ?_queuedSpan(context, l10n, _queue.count),
               TextSpan(text: detail),
               TextSpan(text: ' · $label'),
             ],
           ),
           supportingKey: const ValueKey('phone-server-detail'),
-          supportingMaxLines: large ? 3 : 1,
+          supportingMaxLines: large ? 3 : (_queue.count > 0 ? 2 : 1),
           below: below.isEmpty
               ? null
               : Column(

@@ -1526,7 +1526,8 @@ class _KitDiffViewState extends State<KitDiffView> {
           ),
           if (switcher)
             TextSpan(
-              text: ' · $position',
+              // Isolated: in a right-to-left window "1 of 3" stays whole.
+              text: ' · ${KitBidi.auto(position)}',
               style: KitText.styleOf(
                 context,
                 KitTextRole.secondary,

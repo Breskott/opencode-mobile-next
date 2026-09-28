@@ -1,6 +1,7 @@
 // Golden renders of screen-files-1's pages (wave 2b), rebuilt from kit
 // parts: Files (the tree under the Project tab's one bar, the row menu, the
-// kit viewer as a sheet and beside the list, the Changes sheet) and the
+// kit viewer as a sheet and beside the list; the Changes sheet is gone,
+// slice-P3.7a: the row opens the diff) and the
 // Project tab (loaded, and with no project open offering the chooser).
 // Phone 412x915 and one wide window (1280x800), dark and light (owner
 // decision 2026-09-27: no Arabic), with the app's real fonts at DPR 1.
@@ -229,16 +230,6 @@ void main() {
         light: light,
         home: _files,
         then: () => tester.tap(find.text('README.md')),
-      );
-    });
-    testWidgets('files changes sheet · $mode', (tester) async {
-      await _shot(
-        tester,
-        'files_changes_sheet',
-        light: light,
-        home: _files,
-        then: () =>
-            tester.tap(find.byKey(const ValueKey('files-changes-card'))),
       );
     });
     testWidgets('project hub · $mode', (tester) async {

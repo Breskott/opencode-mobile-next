@@ -8,6 +8,7 @@ import '../../l10n/app_localizations.dart';
 import '../agent_error_words.dart';
 import '../app_theme.dart';
 import '../kit/kit_buttons.dart';
+import '../kit/kit_diff_view.dart';
 import '../kit/kit_layout.dart';
 import '../kit/kit_notice.dart';
 import '../kit/kit_row.dart';
@@ -15,13 +16,17 @@ import '../kit/kit_sheet.dart';
 import '../kit/kit_technical_value.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
+import 'reader_preferences.dart';
 import 'tool_card.dart';
 
 /// Pure presentation of one [RunResult], built from kit parts only
 /// (STANDARDS KIT-1). Every line is either copied from a server record or an
-/// explicit "unknown"; the only actions are opening the conversation and
-/// opening a tool's own recorded output (a sheet titled with the command or
-/// file, sized to that one record and already open).
+/// explicit "unknown"; the only actions are opening the conversation,
+/// opening a changed file's recorded diff (straight into the kit's diff page,
+/// KitDiffView with its one "Change 1 of N" navigator across the run's
+/// files) and opening a tool's own recorded output (a sheet titled with the
+/// command or file, sized to that one record and already open) when there is
+/// no diff to show.
 ///
 /// The page's top bar carries the conversation's title, so the body opens
 /// with the outcome row ("Completed" over "2 steps · 5 min · gpt-5"). The
@@ -352,14 +357,103 @@ class RunResultView extends StatelessWidget {
       trailing: pruned ? null : const KitRowValue(''),
       onTap: pruned
           ? null
-          : () => _openOutput(
-              context,
-              AppIconography.editNote,
-              name.isEmpty ? file.path : name,
-              file.toolName,
-              file.state,
-            ),
+          : () => _diffOf(file) == null
+                ? _openOutput(
+                    context,
+                    AppIconography.editNote,
+                    name.isEmpty ? file.path : name,
+                    file.toolName,
+                    file.state,
+                  )
+                : _openDiff(context, l10n, file),
     );
+  }
+
+  /// The run's recorded diffs on the kit's diff page, opened at [file]: one
+  /// navigator walks every change of the run, file by file.
+  Future<void> _openDiff(
+    BuildContext context,
+    AppLocalizations l10n,
+    RunChangedFile file,
+  ) {
+    final files = <KitDiffFile>[];
+    var at = 0;
+    for (final changed in result.changedFiles) {
+      final diff = changed.state.pruned ? null : _diffOf(changed);
+      if (diff == null) continue;
+      if (identical(changed, file)) at = files.length;
+      files.add(diff);
+    }
+    final store = ReaderPreferencesScope.maybeOf(context);
+    return showKitDiff(
+      context,
+      title: l10n.runResultsChangedFilesTitle,
+      files: files,
+      initialFile: at,
+      pageKey: const Key('run-result-diff'),
+      wrap: store?.value.wrapCode,
+      onWrapChanged: store == null
+          ? null
+          : (wrap) => saveReaderPreferences(context, wrapCode: wrap),
+    );
+  }
+
+  static final _diffs = Expando<Object>('run result diffs');
+  static const _none = Object();
+
+  /// [file]'s change as the tool recorded it (edit: the patch, or the old
+  /// and new text; patch: that file's own patch), or null when the record
+  /// has no diff (a write records only the new content).
+  static KitDiffFile? _diffOf(RunChangedFile file) {
+    final cached = _diffs[file] ??= _readDiff(file) ?? _none;
+    return cached is KitDiffFile ? cached : null;
+  }
+
+  static KitDiffFile? _readDiff(RunChangedFile file) {
+    final state = file.state;
+    final metadata = state.metadata ?? const <String, dynamic>{};
+    String? text(Object? raw) =>
+        raw is String && raw.trim().isNotEmpty ? raw : null;
+    switch (file.change) {
+      case RunFileChange.written:
+        return null;
+      case RunFileChange.edited:
+        final filediff = metadata['filediff'];
+        final patch =
+            (filediff is Map ? text(filediff['patch']) : null) ??
+            text(metadata['diff']);
+        if (patch != null) return KitDiffFile.fromPatch(file.path, patch);
+        final before = state.input['oldString'];
+        final after = state.input['newString'];
+        if (before is! String && after is! String) return null;
+        return KitDiffFile.fromTexts(
+          file.path,
+          before: before is String ? before : '',
+          after: after is String ? after : '',
+          status: KitDiffFileStatus.modified,
+        );
+      case RunFileChange.patched:
+        final files = metadata['files'];
+        if (files is List) {
+          for (final entry in files.whereType<Map>()) {
+            final names = [
+              entry['relativePath'],
+              entry['path'],
+              entry['filePath'],
+              entry['movePath'],
+              entry['file'],
+            ];
+            if (!names.contains(file.path)) continue;
+            final patch = text(entry['patch']);
+            return patch == null
+                ? null
+                : KitDiffFile.fromPatch(file.path, patch);
+          }
+          return null;
+        }
+        final patch = text(metadata['diff']);
+        return patch == null ? null : KitDiffFile.fromPatch(file.path, patch);
+    }
   }
 
   /// One command: the command itself as the title, then how it ended,

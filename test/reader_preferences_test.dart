@@ -17,7 +17,6 @@ import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
 import 'package:opencode_mobile/ui/screens/review_workspace.dart';
-import 'package:opencode_mobile/ui/widgets/diff_view.dart';
 import 'package:opencode_mobile/ui/widgets/file_preview.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 import 'package:opencode_mobile/ui/widgets/reader_preferences.dart';
@@ -304,7 +303,7 @@ void main() {
       await _pump(
         tester,
         prefs,
-        DiffView(
+        DiffPage(
           diffs: [
             FileDiff(file: 'lib/main.dart', patch: '@@ -1 +1 @@\n-old\n+$code'),
           ],
@@ -314,7 +313,7 @@ void main() {
       );
       expect(find.byKey(const Key('diff-horizontal')), findsNothing);
       // The diff's own Wrap toggle (KitDiffView's header) saves the reader
-      // preference through the DiffView wrapper.
+      // preference through the DiffPage wrapper.
       await tester.tap(find.byTooltip('Wrap lines'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('diff-horizontal')), findsOneWidget);

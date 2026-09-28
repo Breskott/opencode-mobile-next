@@ -308,7 +308,10 @@ void main() {
       expect(_key('kit-diff-file-list'), findsNothing);
       // The count is said once, in the switcher; no "3 files" bar.
       expect(find.text('3 files'), findsNothing);
-      expect(find.text('${KitBidi.ltr('one.dart')} · 1 of 3'), findsOneWidget);
+      expect(
+        find.text('${KitBidi.ltr('one.dart')} · ${KitBidi.auto('1 of 3')}'),
+        findsOneWidget,
+      );
       // The counts sit on the same row, at its end.
       final picker = tester.getRect(_key('kit-diff-file-picker'));
       final counts = tester.getRect(
@@ -332,7 +335,7 @@ void main() {
       expect(_key('kit-diff-file-header-lib/three.dart'), findsOneWidget);
       expect(find.text('changed lib/three.dart 1'), findsOneWidget);
       expect(
-        find.text('${KitBidi.ltr('three.dart')} · 3 of 3'),
+        find.text('${KitBidi.ltr('three.dart')} · ${KitBidi.auto('3 of 3')}'),
         findsOneWidget,
       );
       expect(changed, [2]);

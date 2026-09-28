@@ -362,8 +362,10 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
       linux: ref.read(builtinLinuxProvider),
       profile: profile,
       bytesUsed: _host.bytesUsed,
-      onRemoving: () {
-        if (mounted) setState(() => _removing = true);
+      // Busy only while a confirmed attempt runs; a failed one leaves the
+      // question open with Try again and the page no longer removing.
+      onRemovingChanged: (working) {
+        if (mounted) setState(() => _removing = working);
       },
     );
     if (!mounted) return;
