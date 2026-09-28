@@ -13248,10 +13248,6 @@
   "@builtinServerLogTitle": {
     "description": "Title of the server log sheet"
   },
-  "builtinServerRemoveBody": "This stops the server and deletes Ubuntu, OpenCode and every project folder inside it. The saved server entry stays.",
-  "@builtinServerRemoveBody": {
-    "description": "Remove confirmation body"
-  },
   "phoneSetupReadyTitle": "OpenCode is ready",
   "@phoneSetupReadyTitle": {
     "description": "Screen C heading once phone setup finished"
@@ -13403,19 +13399,6 @@
   "phoneServerCardRemoveTitle": "Remove OpenCode from this phone?",
   "@phoneServerCardRemoveTitle": {
     "description": "Title of the remove confirmation"
-  },
-  "phoneServerCardRemoveBody": "This deletes OpenCode, its tools and every project on this phone, and frees {size}.",
-  "@phoneServerCardRemoveBody": {
-    "description": "Remove confirmation with the space that comes back",
-    "placeholders": {
-      "size": {
-        "type": "String"
-      }
-    }
-  },
-  "phoneServerCardRemoveBodyUnmeasured": "This deletes OpenCode, its tools and every project on this phone, and frees the space they use.",
-  "@phoneServerCardRemoveBodyUnmeasured": {
-    "description": "Remove confirmation before the space has been measured"
   },
   "phoneServerCardActionFailed": "That did not work: {reason}",
   "@phoneServerCardActionFailed": {
@@ -23825,9 +23808,9 @@
   "@phoneSetupTermuxCost": {
     "description": "Phone setup start: the cost line under 'Use Termux instead', said before anything installs"
   },
-  "removeFromPhoneKeepBody": "OpenCode and its tools are removed and {size} comes back.",
+  "removeFromPhoneKeepBody": "OpenCode and its tools are removed, freeing about {size}.",
   "@removeFromPhoneKeepBody": {
-    "description": "Remove from this phone: the default choice's body, with the space freed, e.g. '1.2 GB'",
+    "description": "Remove from this phone: the default choice's body, with the estimated space it frees, e.g. '700.0 MB'",
     "placeholders": {
       "size": {
         "type": "String"
@@ -23850,9 +23833,9 @@
   "@removeFromPhoneDeleteTitle": {
     "description": "Remove from this phone: the title of the heavy delete"
   },
-  "removeFromPhoneDeleteBody": "OpenCode, its tools and every project on this phone are deleted and {size} comes back. This cannot be undone.",
+  "removeFromPhoneDeleteBody": "OpenCode, its tools and every project on this phone are deleted, freeing about {size}. This cannot be undone.",
   "@removeFromPhoneDeleteBody": {
-    "description": "Remove from this phone: the heavy delete's body with the space freed",
+    "description": "Remove from this phone: the heavy delete's body with the estimated space it frees",
     "placeholders": {
       "size": {
         "type": "String"
@@ -27633,5 +27616,22 @@
   "sessionAddressFailCancelled": "Opening this link was cancelled.",
   "@sessionAddressFailCancelled": {
     "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code cancelled"
+  },
+  "removeFromPhoneDeleteAllChoice": "Delete everything…",
+  "@removeFromPhoneDeleteAllChoice": {
+    "description": "Remove from this phone: the other choice, before the space was measured; opens a second question that asks for the typed name"
+  },
+  "removeFromPhoneDeleteAllChoiceSize": "Delete everything, freeing about {size}…",
+  "@removeFromPhoneDeleteAllChoiceSize": {
+    "description": "Remove from this phone: the other choice with the estimated space it frees (OpenCode and every project), e.g. '1.9 GB'; opens a second question that asks for the typed name",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneServerCardErrorDetail": "Error",
+  "@phoneServerCardErrorDetail": {
+    "description": "This phone: the label of the technical error text under Details, when moving its waiting prompts could not be fully undone"
   }
 }

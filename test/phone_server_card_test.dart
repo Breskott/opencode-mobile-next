@@ -671,7 +671,7 @@ void main() {
       // What survives is said first: the default keeps the projects.
       expect(
         find.text(
-          'OpenCode and its tools are removed and 700.0 MB comes back.',
+          'OpenCode and its tools are removed, freeing about 700.0 MB.',
         ),
         findsOneWidget,
       );
