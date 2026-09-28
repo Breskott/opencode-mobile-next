@@ -16,12 +16,15 @@ import '../../orchestration/adapters/gascity/gascity_probe.dart';
 import '../../state/profiles.dart';
 import '../app_theme.dart';
 import '../kit/kit_buttons.dart';
+import '../kit/kit_code_block.dart';
 import '../kit/kit_details_fold.dart';
 import '../kit/kit_field.dart';
 import '../kit/kit_notice.dart';
 import '../kit/kit_sheet.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
+import '../setup_commands.dart';
+import 'external_link.dart';
 
 export '../../orchestration/adapters/gascity/gascity_probe.dart'
     show
@@ -474,19 +477,23 @@ class _TeamHostFormState extends State<TeamHostForm> {
   }
 }
 
-// revamp: redesign (slice-P3.4)
+// revamp: redesign (slice-P3.4, slice-close-security)
 /// The four host steps of docs/ai-team-host.md, as a sheet; the app has no
-/// bundled markdown viewer for repository docs. Map `team-host-guide-sheet`
-/// is a redesign (copyable commands, the published guide, "Enter the
-/// address" as the next step), deferred to slice-P3.4; this is the kit-only
-/// rebuild of today's steps.
+/// bundled markdown viewer for repository docs. Each step is one sentence
+/// and its exact command in the kit's code block, with Copy; the front is
+/// downloaded from a pinned commit and checked against its SHA-256 before
+/// it runs ([HostScripts]). The sheet ends by opening the published guide
+/// in the browser, never by naming a file in the repository.
+// Map `team-host-guide-sheet` also asks for "Enter the address" as the
+// sheet's primary; its hosts differ (one is the address form itself), so
+// that waits for a slice that owns them.
 Future<void> showTeamHostGuideSheet(BuildContext context) {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   final steps = [
-    l10n.teamUiHostGuideStep1,
-    l10n.teamUiHostGuideStep2,
-    l10n.teamUiHostGuideStep3,
-    l10n.teamUiHostGuideStep4,
+    (l10n.teamUiHostGuideStep1, HostScripts.teamCheckTools),
+    (l10n.teamUiHostGuideStep2, HostScripts.teamCreateCity),
+    (l10n.teamUiHostGuideStep3, HostScripts.teamStart),
+    (l10n.teamUiHostGuideStep4, HostScripts.teamFront),
   ];
   return showKitSheet<void>(
     context,
@@ -506,9 +513,9 @@ Future<void> showTeamHostGuideSheet(BuildContext context) {
               tone: KitTextTone.secondary,
             ),
           ),
-          for (final (i, step) in steps.indexed)
+          for (final (i, (step, command)) in steps.indexed)
             Padding(
-              padding: EdgeInsetsDirectional.only(bottom: tokens.space3),
+              padding: EdgeInsetsDirectional.only(bottom: tokens.space4),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -520,14 +527,37 @@ Future<void> showTeamHostGuideSheet(BuildContext context) {
                       tabular: true,
                     ),
                   ),
-                  Expanded(child: KitText(step)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        KitText(step),
+                        SizedBox(height: tokens.space2),
+                        KitCodeBlock(
+                          text: command,
+                          kind: KitCodeKind.command,
+                          // Several lines get a labelled Copy in a header; one line
+                          // keeps the kit's own Copy on the line.
+                          copyLabel: command.contains('\n')
+                              ? l10n.kitCodeCopyCommand
+                              : null,
+                          copyKey: ValueKey('team-host-guide-copy-${i + 1}'),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          KitText(
-            l10n.teamUiHostGuideDocs,
-            role: KitTextRole.secondary,
-            tone: KitTextTone.secondary,
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: KitButton.tertiary(
+              key: const ValueKey('team-host-guide-open'),
+              label: l10n.teamUiHostGuideOpen,
+              icon: AppIconography.externalLink,
+              onPressed: () =>
+                  openExternalLink(sheetContext, HostScripts.teamGuideUrl),
+            ),
           ),
         ],
       );

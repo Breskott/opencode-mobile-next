@@ -11,9 +11,20 @@ server's actual port.
 ## One-time setup (on the Ubuntu machine)
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Eslamasabry/opencode-mobile-next/master/scripts/host/ubuntu-opencode.sh -o ubuntu-opencode.sh
-bash ubuntu-opencode.sh install
+curl -fsSLo ubuntu-opencode.sh.part \
+  https://raw.githubusercontent.com/Eslamasabry/opencode-mobile-next/c62f159ae3c1741cb4ec0ef92b4941c0ddfc0a18/scripts/host/ubuntu-opencode.sh &&
+echo '1f42642fe92c9a8a46e26f27dfa200ffd2274e9cdf9dfafc08e6a9bc7511d721  ubuntu-opencode.sh.part' | sha256sum -c - &&
+mv ubuntu-opencode.sh.part ubuntu-opencode.sh &&
+OPENCODE_PORT=4096 bash ubuntu-opencode.sh install
 ```
+
+The script comes from one published commit (release 1.0.44), not from a
+branch that can change under you, and `sha256sum -c` checks it before it is
+given its real name. If the check fails, nothing runs and no unchecked copy
+is left behind. The app shows the same command, and the pin and checksum
+live in one place: `HostScripts` in `lib/ui/setup_commands.dart`, which
+`test/host_script_pin_test.dart` checks against the script in the
+repository.
 
 This installs OpenCode with the official installer if it is missing, writes a
 `systemd --user` unit that runs `opencode serve --hostname 127.0.0.1 --port
