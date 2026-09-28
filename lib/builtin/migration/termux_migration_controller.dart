@@ -8,11 +8,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/termux_migration.dart';
 import 'migration_archive_store.dart';
+import 'migration_space.dart';
 import 'termux_migration_transport.dart';
 
 abstract class TermuxMigrationJournal {
   Future<Map<String, dynamic>?> read(String sourceProfileId);
   Future<void> write(String sourceProfileId, Map<String, dynamic> value);
+  Future<void> remove(String sourceProfileId);
 }
 
 /// The existing profile deletion sweep includes this source-scoped key.
@@ -25,6 +27,13 @@ class PreferencesTermuxMigrationJournal implements TermuxMigrationJournal {
   Future<Map<String, dynamic>?> read(String sourceProfileId) async {
     final raw = preferences.getString(key(sourceProfileId));
     return raw == null ? null : jsonDecode(raw) as Map<String, dynamic>;
+  }
+
+  @override
+  Future<void> remove(String sourceProfileId) async {
+    if (!await preferences.remove(key(sourceProfileId))) {
+      throw const TermuxMigrationException(TermuxMigrationFailure.storage);
+    }
   }
 
   @override
@@ -72,8 +81,8 @@ class TermuxMigrationController extends ChangeNotifier {
   final MigrationProfileSwitch switchProfile;
   final bool Function(String) sourceProfileExists;
   final String Function() _newJobId;
-  static const maxArchiveBytes = 512 * 1024 * 1024;
-  static const reserveBytes = 64 * 1024 * 1024;
+  static const maxArchiveBytes = migrationMaxArchiveBytes;
+  static const reserveBytes = migrationReserveBytes;
   static TermuxMigrationController? _active;
   static const attemptLimit = Duration(minutes: 15);
   Stopwatch? _attempt;
@@ -81,6 +90,39 @@ class TermuxMigrationController extends ChangeNotifier {
   bool _cancelled = false;
   bool _disposed = false;
   bool _busy = false;
+  Completer<void>? _settlement;
+  Future<void>? _stopCommand;
+  TermuxMigrationSource? _reviewSource;
+  int? _appAvailableBytes;
+
+  /// Completes once the admitted operation AND its stop command have exited.
+  /// Capture after starting/checking/cancelling. Idle controllers are settled.
+  Future<void> get whenSettled => _settlement?.future ?? Future<void>.value();
+
+  bool _beginOperation() {
+    if (_disposed || _busy || (_active != null && _active != this)) {
+      return false;
+    }
+    _busy = true;
+    _active = this;
+    _cancelled = false;
+    _stopCommand = null;
+    _settlement = Completer<void>();
+    return true;
+  }
+
+  Future<void> _finishOperation() async {
+    final stop = _stopCommand;
+    if (stop != null) await stop;
+    _busy = false;
+    if (_active == this) _active = null;
+    _attempt?.stop();
+    _attempt = null;
+    _sourceProfileId = null;
+    _settlement?.complete();
+    if (!_disposed) notifyListeners();
+  }
+
   String? _jobId;
   String? _sourceProfileId;
   TermuxMigrationSnapshot _snapshot = const TermuxMigrationSnapshot(
@@ -134,16 +176,107 @@ class TermuxMigrationController extends ChangeNotifier {
   }
 
   /// Fresh inventory; no archive, destination or profile is written here.
-  Future<void> check() async {
-    if (_busy) return;
-    _busy = true;
-    _cancelled = false;
+  Future<void> check({Set<TermuxMigrationItem> selected = const {}}) async {
+    if (!_beginOperation()) return;
+    _jobId = null;
     try {
-      await _preflight();
+      await _preflight(selected);
     } catch (e) {
       _failure(e);
     } finally {
-      _busy = false;
+      await _finishOperation();
+    }
+  }
+
+  /// Recomputes selection cost from the latest check, with no bridge call.
+  /// Call check(selected: ...) again to refresh the capacity reading.
+  TermuxMigrationSpace reviewSpace(Set<TermuxMigrationItem> selected) {
+    final source = _reviewSource;
+    if (source == null) {
+      throw const TermuxMigrationException(
+        TermuxMigrationFailure.invalidSelection,
+      );
+    }
+    return migrationSpaceFor(source, selected, _appAvailableBytes);
+  }
+
+  String _recordJob(Map<String, dynamic> record) {
+    final job = record['job'];
+    if (record['schema'] != 1 ||
+        job is! String ||
+        !RegExp(r'^[a-f0-9]{32}$').hasMatch(job)) {
+      throw const TermuxMigrationException(TermuxMigrationFailure.storage);
+    }
+    return job;
+  }
+
+  /// Historical completion, not a fresh health/integrity check. Does not read
+  /// imported files (which users may edit), contact Termux or switch profiles.
+  Future<TermuxMigrationCompletedJob?> completedJob(
+    String sourceProfileId,
+  ) async {
+    try {
+      final record = await journal.read(sourceProfileId);
+      if (record == null || record['done'] != true) return null;
+      final job = _recordJob(record);
+      final destination = record['destination'];
+      if (destination is! String ||
+          destination.isEmpty ||
+          destination.length > 256) {
+        throw const TermuxMigrationException(TermuxMigrationFailure.storage);
+      }
+      return TermuxMigrationCompletedJob(
+        jobId: job,
+        destinationProfileId: destination,
+      );
+    } catch (_) {
+      throw const TermuxMigrationException(TermuxMigrationFailure.storage);
+    }
+  }
+
+  /// Offline, fixed provider labels from a receipt-verified config export.
+  /// Empty means unknown/not exported, never proof that no sign-in is needed.
+  Future<List<String>> providerNames(String sourceProfileId) async {
+    try {
+      final record = await journal.read(sourceProfileId);
+      if (record == null) return const [];
+      final job = _recordJob(record);
+      final expected = _expected(record, TermuxMigrationItem.config);
+      if (expected == null) return const [];
+      return await archives.providerNames(job, expected);
+    } catch (_) {
+      // Names are advisory; never return paths, content or parser errors.
+      return const [];
+    }
+  }
+
+  /// Discards only local transfer cache and unfinished metadata. Call cancel(),
+  /// then await whenSettled first; active operations reject with sourceBusy.
+  /// Committed imports, completed receipts, profiles and Termux are preserved.
+  Future<TermuxMigrationDiscardResult> discardSavedCopy(
+    String sourceProfileId,
+  ) async {
+    if (!_beginOperation()) {
+      throw const TermuxMigrationException(TermuxMigrationFailure.sourceBusy);
+    }
+    _jobId = null;
+    try {
+      final record = await journal.read(sourceProfileId);
+      if (record == null) return TermuxMigrationDiscardResult.nothingSaved;
+      final job = _recordJob(record);
+      if (record['done'] == true) {
+        return TermuxMigrationDiscardResult.alreadyCompleted;
+      }
+      await archives.cleanupPartial(job);
+      // Retain the journal until cleanup succeeds, so a failed discard retries.
+      await journal.remove(sourceProfileId);
+      _jobId = null;
+      _publish(TermuxMigrationPhase.cancelled);
+      return TermuxMigrationDiscardResult.discarded;
+    } catch (_) {
+      throw const TermuxMigrationException(TermuxMigrationFailure.storage);
+    } finally {
+      await _finishOperation();
     }
   }
 
@@ -166,21 +299,14 @@ class TermuxMigrationController extends ChangeNotifier {
     }
   }
 
-  Future<void> resume(String sourceProfileId) async {
-    try {
-      final selection = await savedSelection(sourceProfileId);
-      if (selection == null) {
-        throw const TermuxMigrationException(
-          TermuxMigrationFailure.invalidSelection,
-        );
-      }
-      await start(sourceProfileId: sourceProfileId, selected: selection);
-    } catch (error) {
-      _failure(error);
-    }
-  }
+  Future<void> resume(String sourceProfileId) =>
+      _start(sourceProfileId: sourceProfileId);
 
-  Future<TermuxMigrationSource?> _preflight() async {
+  Future<TermuxMigrationSource?> _preflight(
+    Set<TermuxMigrationItem> selected,
+  ) async {
+    _reviewSource = null;
+    _appAvailableBytes = null;
     _publish(TermuxMigrationPhase.checking);
     if (!await archives.builtinInstalled()) {
       _publish(TermuxMigrationPhase.needsBuiltin);
@@ -190,7 +316,20 @@ class TermuxMigrationController extends ChangeNotifier {
     final source = await transport.inspect();
     _validateSource(source);
     _checkCancelled();
-    _publish(TermuxMigrationPhase.ready, source: source);
+    _reviewSource = source;
+    try {
+      _appAvailableBytes = await availableBytes();
+    } catch (_) {
+      // Capacity unavailable is unknown, not a successful zero-cost check.
+    }
+    _checkCancelled();
+    final space = reviewSpace(selected);
+    _publish(
+      TermuxMigrationPhase.ready,
+      source: source,
+      requiredBytes: space.requiredBytes,
+      available: space.availableBytes,
+    );
     return source;
   }
 
@@ -215,20 +354,30 @@ class TermuxMigrationController extends ChangeNotifier {
     required String sourceProfileId,
     required Set<TermuxMigrationItem> selected,
   }) async {
-    if (_busy || (_active != null && _active != this)) return;
-    _busy = true;
-    _active = this;
-    _cancelled = false;
+    await _start(sourceProfileId: sourceProfileId, selected: selected);
+  }
+
+  Future<void> _start({
+    required String sourceProfileId,
+    Set<TermuxMigrationItem>? selected,
+  }) async {
+    if (!_beginOperation()) return;
+    _jobId = null;
     _attempt = Stopwatch()..start();
     Map<String, dynamic>? record;
     try {
-      if (!sourceProfileExists(sourceProfileId) || selected.isEmpty) {
+      _sourceProfileId = sourceProfileId;
+      selected ??= await savedSelection(sourceProfileId);
+      _checkCancelled();
+      if (!sourceProfileExists(sourceProfileId) ||
+          selected == null ||
+          selected.isEmpty) {
         throw const TermuxMigrationException(
           TermuxMigrationFailure.invalidSelection,
         );
       }
-      _sourceProfileId = sourceProfileId;
       record = await journal.read(sourceProfileId);
+      _checkCancelled();
       final names = selected.map((x) => x.name).toList()..sort();
       if (record != null) {
         if (record['schema'] != 1 ||
@@ -266,49 +415,25 @@ class TermuxMigrationController extends ChangeNotifier {
             );
           }
         }
+        _checkCancelled();
         _publish(
           TermuxMigrationPhase.done,
           destination: record['destination'] as String?,
         );
         return;
       }
-      final source = await _preflight();
+      final source = await _preflight(selected);
       if (source == null) return;
-      final items = source.items
-          .where((x) => selected.contains(x.item))
-          .toList();
-      if (items.length != selected.length) {
-        throw const TermuxMigrationException(
-          TermuxMigrationFailure.invalidSelection,
-        );
-      }
-      for (final item in items) {
-        if (item.problem != null) throw TermuxMigrationException(item.problem!);
-      }
-      // Conservative retained disk budget: payload plus allocation per entry
-      // and tar end blocks; include each source/app archive and extracted copy.
-      final total = items.fold<int>(
-        0,
-        (n, x) => n + x.bytes + x.files * 4096 + 10240,
-      );
-      if (items.any(
-        (x) => x.bytes + x.files * 1024 + 10240 > maxArchiveBytes,
-      )) {
-        throw const TermuxMigrationException(TermuxMigrationFailure.tooLarge);
-      }
-      // Both private sandboxes can occupy the same partition: source archive,
-      // app archive and extracted tree all coexist. Conservatively budget all
-      // three against BOTH free readings, before any packing or importing.
-      final needed = 3 * total + reserveBytes;
-      final free = await availableBytes();
-      if (free == null || free < needed || source.freeBytes < needed) {
+      final space = reviewSpace(selected);
+      if (space.sufficient != true) {
         _publish(
           TermuxMigrationPhase.needsSpace,
-          requiredBytes: needed,
-          available: free == null ? null : min(free, source.freeBytes),
+          requiredBytes: space.requiredBytes,
+          available: space.availableBytes,
         );
         return;
       }
+      _checkCancelled();
       await journal.write(sourceProfileId, record);
       for (final item in selected) {
         _checkCancelled();
@@ -400,11 +525,7 @@ class TermuxMigrationController extends ChangeNotifier {
     } catch (e) {
       _failure(e);
     } finally {
-      _busy = false;
-      if (_active == this) _active = null;
-      _attempt?.stop();
-      _attempt = null;
-      _sourceProfileId = null;
+      await _finishOperation();
     }
   }
 
@@ -445,21 +566,25 @@ class TermuxMigrationController extends ChangeNotifier {
     );
   }
 
-  /// Stops admission immediately; the current bounded source command may
-  /// take up to its timeout to exit. Await start() before offering Resume.
+  /// Requests a stop immediately; this awaits only the bounded stop command.
+  /// Await whenSettled before Resume/Discard/navigation that releases ownership.
   Future<void> cancel() async {
+    if (!_busy) return;
     _cancelled = true;
+    final job = _jobId;
+    if (job != null) _stopCommand ??= _sendStop(job);
     _publish(
       TermuxMigrationPhase.cancelled,
       failure: TermuxMigrationFailure.cancelled,
     );
-    final job = _jobId;
-    if (job != null) {
-      try {
-        await transport.cancel(job);
-      } catch (_) {
-        /* fixed public state */
-      }
+    await _stopCommand;
+  }
+
+  Future<void> _sendStop(String job) async {
+    try {
+      await transport.cancel(job);
+    } catch (_) {
+      // Fixed public state only; the operation still has its own timeout.
     }
   }
 
@@ -469,7 +594,7 @@ class TermuxMigrationController extends ChangeNotifier {
     _cancelled = true;
     final job = _jobId;
     if (_busy && job != null) {
-      unawaited(transport.cancel(job).catchError((Object _) {}));
+      _stopCommand ??= _sendStop(job);
     }
     super.dispose();
   }

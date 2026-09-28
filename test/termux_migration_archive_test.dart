@@ -32,6 +32,42 @@ void main() {
     );
   }
 
+  test('only verified private config yields offline provider labels', () async {
+    final (file, expected) = await archive([
+      const _Entry(
+        '.config/opencode/opencode.json',
+        content:
+            '{"provider":{"anthropic":{"options":{"apiKey":"synthetic-private-key"}}}}',
+      ),
+      const _Entry(
+        '.oc-opencode2/config/opencode/opencode.jsonc',
+        content: '{/* isolated */ "provider":{"openai":{}}}',
+      ),
+    ]);
+    expect(await store.providerNames('names', expected), isEmpty);
+    await store.importItem(
+      'names',
+      TermuxMigrationItem.config,
+      file,
+      expected,
+      cancelled: () => false,
+    );
+    await store.cleanupPartial('names');
+    expect(await store.providerNames('names', expected), [
+      'Anthropic',
+      'OpenAI',
+    ]);
+    final exported = File(
+      '${support.path}/linux/ubuntu/root/.oc-migration-exports/names/config/.config/opencode/opencode.json',
+    );
+    expect((await exported.stat()).mode & 511, 384);
+    await exported.writeAsString('{"provider":{"google":{}}}');
+    await expectLater(
+      store.providerNames('names', expected),
+      throwsA(_failure(TermuxMigrationFailure.destinationConflict)),
+    );
+  });
+
   test(
     'imports projects privately, preserves executability and resumes commit',
     () async {
