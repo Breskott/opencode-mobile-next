@@ -1576,11 +1576,8 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
             navigatorKey: _navigatorKey,
             navigatorObservers: [_routeTracker, _routeTiming],
             builder: (context, child) {
-              // Global text-scale safety net: the system setting passes
-              // through untouched below the ceiling — including scales under
-              // 1.0, which users pick deliberately — and only the extreme top
-              // end is capped so a runaway scale cannot break the shell.
-              final scale = MediaQuery.textScalerOf(context).scale(1);
+              // Global text-scale safety net: only the extreme top end is
+              // capped (KitText.appScaler).
               return Theme(
                 data: AppTheme.forLocale(
                   Theme.of(context),
@@ -1588,10 +1585,9 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
                 ),
                 child: MediaQuery(
                   data: MediaQuery.of(context).copyWith(
-                    textScaler: TextScaler.linear(
-                      scale > AppTheme.maxTextScale
-                          ? AppTheme.maxTextScale
-                          : scale,
+                    textScaler: KitText.appScaler(
+                      MediaQuery.textScalerOf(context),
+                      max: AppTheme.maxTextScale,
                     ),
                   ),
                   // The app's own line joins the conditions every screen's

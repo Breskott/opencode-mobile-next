@@ -423,7 +423,6 @@ class _Rule {
     this.allow = const {},
     this.absolute = false,
     this.skipThemeFiles = false,
-    this.note,
   });
 
   final String gate;
@@ -456,9 +455,6 @@ class _Rule {
 
   /// G17 and G21 skip app_theme.dart, theme_packs*.dart and theme_roles.dart.
   final bool skipThemeFiles;
-
-  /// Why a row STANDARDS.md calls absolute is a ratchet today.
-  final String? note;
 }
 
 bool _isThemeFile(String path) {
@@ -709,12 +705,7 @@ const _sceneRadiusFiles = <String, String>{
 /// that slice brings them to zero; each names its owner, and the map only
 /// shrinks (a file that reaches zero must leave it).
 const _lookGates = {'G17', 'G21'};
-const _kitLookDeferrals = <String, String>{
-  'lib/ui/kit/kit_row.dart':
-      'slice-R4 (row groups on one inset) holds kit_row.dart',
-  'lib/ui/kit/kit_row_parts.dart':
-      'slice-R4 (row groups on one inset) holds kit_row_parts.dart',
-};
+const _kitLookDeferrals = <String, String>{};
 
 /// Whether [rule]'s hit in [path] is never baselined.
 bool _absoluteAt(_Rule rule, String path) =>

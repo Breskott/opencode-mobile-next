@@ -1257,10 +1257,10 @@ The gate is an allowlist of Flutter framework widgets (G16). App-defined widgets
 | Allowed outside `lib/ui/kit/` | Widgets |
 |---|---|
 | Layout | `Column`, `Row`, `Flex`, `Expanded`, `Flexible`, `Spacer`, `Padding`, `SizedBox`, `Center`, `Align`, `Stack`, `PositionedDirectional`, `Wrap`, `ConstrainedBox`, `LimitedBox`, `AspectRatio`, `FittedBox`, `SafeArea`, `Offstage`, `Visibility`, `KeyedSubtree`, `RepaintBoundary`, `IgnorePointer`, `AbsorbPointer` |
-| Scrolling | `ListView`, `CustomScrollView`, `SliverList`, `SliverToBoxAdapter`, `SliverPadding`, `SliverFillRemaining` |
+| Scrolling | `ListView`, `CustomScrollView`, `SliverList`, `SliverToBoxAdapter`, `SliverPadding`, `SliverFillRemaining`, `NotificationListener` (it only hears notifications; P9.10) |
 | Builders | `Builder`, `StatefulBuilder`, `LayoutBuilder`, `ValueListenableBuilder`, `ListenableBuilder`, `AnimatedBuilder` (with `KitMotion`), `StreamBuilder`, `FutureBuilder` |
 | Semantics, focus and input plumbing | `Semantics`, `MergeSemantics`, `ExcludeSemantics`, `Focus`, `FocusScope`, `FocusTraversalGroup`, `Shortcuts`, `Actions`, `CallbackShortcuts`, `PopScope`, `Hero` |
-| Routes | `MaterialPageRoute` and `PageRouteBuilder`, until `KitPageRoute` exists |
+| Routes | none: `KitPageRoute`, `pushKitPage` and `replaceWithKitPage` (KIT-7); `MaterialPageRoute` and `PageRouteBuilder` left the allowlist |
 
 Everything else that draws or takes input comes from the kit. That includes `Text`, `RichText`, `Icon`, `Image`, every button, the `ListTile` family, `TextField`, `Card`, `Container`, `DecoratedBox`, `Material`, `InkWell`, `GestureDetector`, the chips, `Divider`, progress indicators, `Tooltip`, `Scaffold`, `AppBar`, dialogs, sheets, snackbars, menus, `Switch`, `Checkbox`, `Radio`, and `Theme` or `DefaultTextStyle` overrides.
 
@@ -1293,6 +1293,6 @@ Counted on 2026-09-26 in `lib/ui` outside the kit (224 files):
 ### 9.3 Gate G16: kit only
 
 - `test/kit_ratchet_test.dart` resolves constructor calls in `lib/ui/**` outside `lib/ui/kit/` against the framework's widget class names, minus the §9.1 allowlist.
-- It keeps a per-file, per-widget baseline in `test/kit_ratchet_baseline.json` that can only shrink, and new files start at zero.
-- When the baseline is empty, the test switches to absolute: any framework widget outside the allowlist fails.
+- It kept a per-file, per-widget baseline in `test/kit_ratchet_baseline.json` that could only shrink while screens moved to the kit.
+- The baseline emptied in slice-P9.10 (2026-09-28) and the gate is now absolute, together with G1 (modal and toast entry points) and G15 (width literals): any framework widget outside the allowlist fails, with no per-file allowance and no baseline to regenerate. The failure names the kit part to use instead and, when none fits, how to add one to `lib/ui/kit/` (manifest, spec, test, gallery).
 - **Done** for P9 means the G16 baseline is empty and every kit part has its gallery.

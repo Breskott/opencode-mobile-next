@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../ui/kit/kit_redact.dart';
+import '../ui/kit/kit_text.dart' show KitText, KitTextRole;
+import '../ui/kit/kit_tokens.dart' show KitTokens;
+import '../ui/theme_roles.dart' show ThemeRoles;
 
 @immutable
 class AppDiagnosticEntry {
@@ -235,15 +238,20 @@ AppErrorCaptureHandle installAppErrorCapture(
   };
   ErrorWidget.builder = (details) {
     diagnostics.record(details.exception, details.stack, source: 'widget');
-    return const Directionality(
+    // Drawn wherever the failed widget was, possibly above every theme and
+    // MediaQuery: fixed colours and the body role's style, nothing that
+    // looks anything up.
+    return Directionality(
       textDirection: TextDirection.ltr,
       child: ColoredBox(
-        color: Color(0xFF201A18),
+        color: ThemeRoles.bootErrorGround,
         child: Padding(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(KitTokens.panelPadding),
           child: Text(
             'This part of OpenCode hit an error. Open App diagnostics for details.',
-            style: TextStyle(color: Color(0xFFFFDCCB)),
+            style: KitText.styleFor(
+              KitTextRole.body,
+            ).copyWith(color: ThemeRoles.bootErrorText),
           ),
         ),
       ),

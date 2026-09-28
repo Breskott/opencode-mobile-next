@@ -74,9 +74,16 @@ class AppExitNoticeLine extends ConsumerWidget {
         return KitReveal(
           child: Padding(
             key: const ValueKey('app-exit-notice'),
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 4, 4),
+            padding: EdgeInsetsDirectional.fromSTEB(
+              KitTokens.of(context).gutter,
+              KitTokens.of(context).space2,
+              KitTokens.of(context).space1,
+              KitTokens.of(context).space1,
+            ),
             child: KitNotice(
-              tone: AppStatusTone.attention,
+              // Neutral, as its KitStatus twin: amber is needs-you only
+              // (LOOK-24).
+              tone: AppStatusTone.neutral,
               icon: AppIconography.restart,
               message: appExitMessage(l10n, notice, at),
               actions: [
