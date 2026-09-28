@@ -412,15 +412,26 @@ class _PendingIntegrationOAuth {
       );
 }
 
-/// A provider sign-in that waits on the person, folded into the provider
-/// list (owner rule 2026-09-27: no state sections): the yellow needs-you
-/// mark, the provider's name and its worded state ("Sign-in waiting",
-/// "Sign-in may not have started"). A tap opens [_showSignInSheet]; the
-/// same acts are the row's menu.
+/// A provider sign-in folded into the provider list (owner rule
+/// 2026-09-27: no state sections): its mark, the provider's name and its
+/// worded state. Only a sign-in the person must finish in the browser
+/// ("Sign-in waiting") takes the needs-you mark (visual language: amber is
+/// "needs you" only); a failed or expired one takes the failed mark, a
+/// finished one the done mark, and a start the server never confirmed
+/// ("Sign-in may not have started") stays neutral — the provider's logo —
+/// with its way forward after the word ([next]). A tap opens
+/// [_showSignInSheet]; the same acts are the row's menu.
 class _SignInRow extends StatelessWidget {
   final String integrationID;
   final String name;
   final String word;
+
+  /// The row's mark: [KitTaskState.needsYou] only while the person must
+  /// finish in the browser; null is neutral (the provider's logo).
+  final KitTaskState? mark;
+
+  /// The way forward after the word, for a neutral row.
+  final String? next;
   final bool busy;
   final VoidCallback onOpen;
   final List<KitMenuItem> menu;
@@ -430,6 +441,8 @@ class _SignInRow extends StatelessWidget {
     required this.integrationID,
     required this.name,
     required this.word,
+    required this.mark,
+    this.next,
     required this.busy,
     required this.onOpen,
     required this.menu,
@@ -441,13 +454,28 @@ class _SignInRow extends StatelessWidget {
     final l10n = _libraryCopy(context);
     return KitRow(
       key: rowKey ?? ValueKey('pending-auth-$integrationID'),
-      leading: KitNeedsYou.mark(),
+      leading: switch (mark) {
+        KitTaskState.needsYou => KitNeedsYou.mark(),
+        final KitTaskState state => KitTaskMark(state: state),
+        null => ProviderLogo(integrationID),
+      },
       title: name,
       supporting: TextSpan(
         children: [
-          _stateWord(context, word, last: true, tone: KitTextTone.primary),
+          _stateWord(
+            context,
+            word,
+            last: next == null,
+            tone: switch (mark) {
+              KitTaskState.needsYou => KitTextTone.primary,
+              KitTaskState.failed => KitTextTone.danger,
+              _ => KitTextTone.secondary,
+            },
+          ),
+          if (next case final next?) TextSpan(text: next),
         ],
       ),
+      supportingMaxLines: next == null ? 1 : 2,
       trailing: busy
           ? const KitTaskMark(state: KitTaskState.working)
           : const KitChevron(),

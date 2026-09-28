@@ -951,6 +951,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
           integrationID: pending.integrationID,
           name: name,
           word: _signInWord(state),
+          mark: _signInMark(state),
           busy: _checkingOAuth,
           onOpen: () => unawaited(_openLiveSignIn(pending)),
           menu: _signInMenu(
@@ -971,6 +972,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
           integrationID: entry.integrationID,
           name: name,
           word: _signInWord(status ?? IntegrationAuthState.pending),
+          mark: _signInMark(status ?? IntegrationAuthState.pending),
           busy: _signInBusy.contains(entry.key),
           onOpen: () => unawaited(_openSavedSignIn(entry, name)),
           menu: _signInMenu(
@@ -988,6 +990,10 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
           integrationID: entry.integrationID,
           name: name,
           word: l10n.integrationsSignInMayNotHaveStarted,
+          // Neutral: nothing waits on the person in the browser; the way
+          // forward is on the row.
+          mark: null,
+          next: l10n.integrationsSignInUncertainNext,
           busy: false,
           onOpen: () => unawaited(_openUncertainSignIn(entry, name)),
           menu: _signInMenu(
@@ -1006,6 +1012,15 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     IntegrationAuthState.failed => _l10n.integrationsSignInFailed,
     IntegrationAuthState.expired => _l10n.integrationsSignInExpired,
   };
+
+  /// Amber only where the person must act: finishing in the browser.
+  static KitTaskState _signInMark(IntegrationAuthState state) =>
+      switch (state) {
+        IntegrationAuthState.pending => KitTaskState.needsYou,
+        IntegrationAuthState.complete => KitTaskState.done,
+        IntegrationAuthState.failed ||
+        IntegrationAuthState.expired => KitTaskState.failed,
+      };
 
   List<KitMenuItem> _signInMenu(
     List<(_SignInChoice, KitAction)> actions,

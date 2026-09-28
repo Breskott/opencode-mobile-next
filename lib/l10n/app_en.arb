@@ -28564,5 +28564,33 @@
   "migrationOfferAction": "Review what moves",
   "@migrationOfferAction": {
     "description": "Moving from Termux to the in-app server: the offer's action: opens the review; nothing starts yet."
+  },
+  "integrationsSignInUncertainNext": "Check the server before you start again",
+  "@integrationsSignInUncertainNext": {
+    "description": "Providers: after 'Sign-in may not have started' on a provider's row (neutral, not needs-you): the way forward. The row's sheet offers to forget it on this phone."
+  },
+  "teamHomeLastKnownTasks": "Tasks as of {time}",
+  "@teamHomeLastKnownTasks": {
+    "description": "AI Team page while Android has the phone's team stopped: label over the tasks as the app last read them (dimmed, not live). {time} is a clock time, or a date and time before today.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "10:42 AM"
+      }
+    }
+  },
+  "teamHomeLastKnownAgents": "Agents as of {time}",
+  "@teamHomeLastKnownAgents": {
+    "description": "AI Team page while Android has the phone's team stopped: label over the agents as the app last read them (dimmed, not live). {time} is a clock time, or a date and time before today.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "10:42 AM"
+      }
+    }
+  },
+  "teamHomeStoppedStartFirst": "Start the team again to give it a task or open one.",
+  "@teamHomeStoppedStartFirst": {
+    "description": "AI Team page while Android has the phone's team stopped: why Start a task is off and why the last-known tasks do not open."
   }
 }

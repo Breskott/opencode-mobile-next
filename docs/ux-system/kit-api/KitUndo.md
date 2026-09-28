@@ -90,7 +90,7 @@ Declared (KIT-12): default (message + Undo), working (Undo tapped and an async `
 - expanded / large: 480 dp, bottom-start, clear of the rail or sidebar (`KitClearance.start`).
 - Short window (< 480 dp tall): compact placement.
 - Fine pointer: hover and focus ring on Undo and Dismiss come with `KitButton`/`KitIconButton`; Ctrl+Z as above. Targets stay 48 dp.
-- Insets are read at show time; if the keyboard opens while the bar shows, the bar rises with it.
+- Insets are read at show time and again after each frame while the bar shows (from the context that showed it), so a composer or pinned block that grows under the bar lifts it; if the keyboard opens while the bar shows, the bar rises with it. A host with a floating composer shows the bar from a context under `KitComposer.layer`, whose published clearance includes the composer (slice-polish 2026-09-28).
 
 ## Accessibility
 

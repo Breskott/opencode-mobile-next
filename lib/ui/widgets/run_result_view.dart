@@ -344,6 +344,7 @@ class RunResultView extends StatelessWidget {
       key: Key('run-result-file-${file.path}'),
       leading: KitRow.icon(context, AppIconography.editNote),
       title: name.isEmpty ? file.path : name,
+      titleIsFileName: true,
       supporting: TextSpan(
         text: pruned ? '$change · ${l10n.runResultsOutputPruned}' : change,
       ),

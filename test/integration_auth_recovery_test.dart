@@ -275,8 +275,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      // The word, then its way forward, on the provider's (neutral) row.
       expect(
-        find.text('Sign-in may not have started', findRichText: true),
+        find.textContaining('Sign-in may not have started', findRichText: true),
         findsOneWidget,
       );
       await tester.tap(find.byKey(const ValueKey('pending-auth-cloud')));

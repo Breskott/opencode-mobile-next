@@ -86,14 +86,14 @@ class KitProgressSegment {
 | loading (`value == null`) | A skeleton bar, the same shape at `surface3`, with no motion. The value label is hidden. Semantics: "loading". |
 | loaded, under 80 % | Bar in `accent`, with the value label. |
 | near limit, 80–99 % (automatic) | Bar in `accent`. The value label is followed by the word "Near limit" (`kitProgressRowNearLimit`) in `text1` `label` weight. |
-| at limit, 100 % (automatic) | Bar full in `text1`. The word "Limit reached" (`kitProgressRowAtLimit`). |
+| at limit, 100 % (automatic) | Bar full in `danger`, the word "Limit reached" (`kitProgressRowAtLimit`) in `danger` too (owner polish 2026-09-28: a full or exceeded limit is a failure, not text colour and never amber). |
 | stale (`asOf != null`) | "as of 10:42" (`kitProgressRowAsOf`, the time via `intl` for the locale) after the value label, in `text3`. The bar keeps its last value. |
 | segments | A stacked bar and a legend of rows (mark swatch, label, value label). The legend always has the words (STATE-9). |
 | empty (`segments` empty, or `value == 0` with no label) | The bar track only, and the caller's `valueLabel` (for example "Nothing used yet"). |
 | error | Not in this part. The host shows a `KitNotice` error on its section (STATE-20), and the row may keep its last value with `asOf`. |
 | disabled | Not in this part: it is not a control. With `onTap: null` it is simply not tappable. |
 
-**Tone and LOOK-4.** K2 §1.13 says "attention from 80 %, failure at 100 %". STANDARDS LOOK-4 reserves the attention roles for "needs you", and LOOK-5 (interim B2) keeps failures out of red. So near and at the limit are carried by the words, and the bar keeps the accent (it is a measured amount), except when full at the limit, where it uses `text1`. An explicit `tone` may be `neutral` (a paused meter, `text3` bar), `progress`, `ok` (`success` bar) or `failure` (`text1` bar, with a word from the caller). `attention` throws an `AssertionError`.
+**Tone and LOOK-4.** K2 §1.13 says "attention from 80 %, failure at 100 %". STANDARDS LOOK-4 reserves the attention roles for "needs you", and LOOK-5 (interim B2) keeps failures out of red. So near and at the limit are carried by the words, and the bar keeps the accent (it is a measured amount), except when full at the limit, where it uses `danger` (owner polish 2026-09-28). An explicit `tone` may be `neutral` (a paused meter, `text3` bar), `progress`, `ok` (`success` bar) or `failure` (`danger` bar, with a word from the caller). `attention` throws an `AssertionError`.
 
 ## Tokens
 

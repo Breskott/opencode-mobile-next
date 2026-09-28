@@ -411,6 +411,19 @@ class _ChatScreenState extends State<ChatScreen>
   /// Session-scoped expansion state for tool cards, tool groups, and
   /// reasoning blocks, so list recycling does not collapse them.
   final Map<String, bool> _transcriptExpansion = {};
+
+  /// A context under the composer layer (set as the conversation builds):
+  /// the clearance an Undo bar reads there includes the composer.
+  BuildContext? _undoBodyContext;
+
+  /// Where this page's Undo bars are shown from: under the composer layer
+  /// when it is built, so the bar floats above the composer (phone and
+  /// wide), else the page itself.
+  BuildContext get _undoHost {
+    final body = _undoBodyContext;
+    return body != null && body.mounted ? body : context;
+  }
+
   late final List<PromptAttachment> _attachments = DraftAttachmentList(
     _scheduleDraftSave,
   );
@@ -1299,7 +1312,7 @@ class _ChatScreenState extends State<ChatScreen>
       _focus.requestFocus();
       final unavailable = recovered.unavailable;
       showKitUndo(
-        context,
+        _undoHost,
         key: const Key('prompt-restored-undo'),
         message: unavailable.isEmpty
             ? l10n.promptRestored
@@ -1346,7 +1359,7 @@ class _ChatScreenState extends State<ChatScreen>
     _composer.clear();
     _persistDraft();
     showKitUndo(
-      context,
+      _undoHost,
       message: _chatL10n(context).composerDraftCleared,
       key: const Key('composer-cleared-undo'),
       onUndo: () {
@@ -2480,7 +2493,7 @@ class _ChatScreenState extends State<ChatScreen>
     ];
     setState(() => _attachments.addAll(added));
     returnWithdrawnToDraft(
-      context,
+      _undoHost,
       composer: _composer,
       text: live.text,
       focus: _focus,
@@ -2614,7 +2627,7 @@ class _ChatScreenState extends State<ChatScreen>
       _ => null,
     };
     returnWithdrawnToDraft(
-      context,
+      _undoHost,
       composer: _composer,
       text: withdrawn,
       focus: _focus,
@@ -4064,7 +4077,7 @@ class _ChatScreenState extends State<ChatScreen>
     );
     if (!mounted || expanded == null) return;
     showKitUndo(
-      context,
+      _undoHost,
       message: expanded
           ? _chatL10n(context).chatUiReasoningExpandedInTheTranscript
           : _chatL10n(context).chatUiLongReasoningCollapsedInTheTranscript,
@@ -4093,7 +4106,7 @@ class _ChatScreenState extends State<ChatScreen>
     await _conn.setTranscriptTimestampsVisible(visible);
     if (!mounted) return;
     showKitUndo(
-      context,
+      _undoHost,
       message: visible
           ? _chatL10n(context).chatUiMessageTimestampsShown
           : _chatL10n(context).chatUiMessageTimestampsHidden,
@@ -8084,13 +8097,22 @@ class _ChatScreenState extends State<ChatScreen>
                   // Watching: the composer writes to the worker through
                   // the team; nothing above it asks the person to act on
                   // the worker's session.
+                  // The Undo bars read their clearance from a context under
+                  // the composer layer, so they float above the composer
+                  // instead of over it ([_undoHost]).
+                  final anchored = Builder(
+                    builder: (context) {
+                      _undoBodyContext = context;
+                      return conversation;
+                    },
+                  );
                   if (watch != null) {
-                    return _watchLayer(watch: watch, body: conversation);
+                    return _watchLayer(watch: watch, body: anchored);
                   }
                   // The floating layer (VL §6): the transcript scrolls under
                   // the glass composer, the only glass on the page.
                   return KitComposer.layer(
-                    body: conversation,
+                    body: anchored,
                     aboveMinHeight: _aboveComposerFloor(
                       bodyConstraints,
                       pendingPermissions,

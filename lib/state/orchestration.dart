@@ -74,6 +74,7 @@ export '../orchestration/dispatch.dart'
     show deriveDispatchCycle, isRefineryName, workHandedToMerge;
 export 'mutation_store.dart'
     show MutationKind, MutationRecord, MutationRequest, MutationStatus;
+export 'orchestration_store.dart' show TeamLastKnown;
 
 /// Mints one idempotency key per mutation.
 typedef MutationKeyMinter = String Function();
@@ -415,6 +416,20 @@ class OrchestrationController extends ChangeNotifier {
   /// [OrchestrationCapabilities.none] until the gateway is built.
   OrchestrationCapabilities get capabilities => _capabilities;
   OrchestrationSnapshot get snapshot => _snapshot;
+
+  /// The team as the app last read it (this run or an earlier one, from
+  /// the device), for a page that shows it dimmed while the team is
+  /// stopped; null before any read. Never acted on.
+  TeamLastKnown? get lastKnown {
+    if (!_lastKnownRead) {
+      _lastKnownRead = true;
+      _lastKnown = _store.readLastKnown(profile.id);
+    }
+    return _lastKnown;
+  }
+
+  TeamLastKnown? _lastKnown;
+  bool _lastKnownRead = false;
   OrchestrationStreamStatus get streamStatus => _streamStatus;
   OrchestrationError? get lastError => _lastError;
 
@@ -1014,6 +1029,14 @@ class OrchestrationController extends ChangeNotifier {
     _snapshot = next;
     _lastError = failure;
     if (succeeded) {
+      final lastKnown = TeamLastKnown.of(
+        asOf: next.refreshedAt!,
+        runs: next.runs,
+        agents: next.agents,
+      );
+      _lastKnown = lastKnown;
+      _lastKnownRead = true;
+      unawaited(_store.saveLastKnown(profile.id, lastKnown));
       unawaited(_store.saveSnapshot(profile.id, next.toCache()));
       unawaited(_store.saveCursor(profile.id, _cursor));
     }

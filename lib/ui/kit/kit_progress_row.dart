@@ -53,7 +53,8 @@ class _Slice {
 /// amount in words and, when the data is old, its age.
 ///
 /// States: loading (`value == null`), loaded (under 80 %), near limit
-/// (80–99 %, automatic), at limit (100 %, automatic), stale (`asOf` set),
+/// (80–99 %, automatic), at limit (100 %, automatic: bar and word in the
+/// danger role), stale (`asOf` set),
 /// segments, empty. Error and disabled are not in this part: the host
 /// carries an error on a `KitNotice` on its section, and a `null` [onTap]
 /// is simply not tappable.
@@ -198,9 +199,11 @@ class KitProgressRow extends StatelessWidget {
       final color = switch (tone) {
         AppStatusTone.neutral => roles.text3,
         AppStatusTone.ok => roles.success,
-        AppStatusTone.failure => roles.text1,
+        // A full or exceeded limit is a failure: the danger role, never
+        // amber (that is "needs you" only) and never the text colour.
+        AppStatusTone.failure => roles.danger,
         AppStatusTone.progress => roles.accent,
-        _ => _atLimit ? roles.text1 : roles.accent,
+        _ => _atLimit ? roles.danger : roles.accent,
       };
       fills = [
         _BarFill(
@@ -390,7 +393,7 @@ class KitProgressRow extends StatelessWidget {
     if (_atLimit) {
       words.add((
         l10n.kitProgressRowAtLimit,
-        KitText.styleFor(KitTextRole.label).copyWith(color: roles.text1),
+        KitText.styleFor(KitTextRole.label).copyWith(color: roles.danger),
       ));
     }
     if (asOf case final at?) {

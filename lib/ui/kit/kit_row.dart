@@ -46,6 +46,7 @@ class KitRow extends StatelessWidget {
     this.onLongPress,
     this.titleMaxLines = 1,
     this.supportingMaxLines = 1,
+    this.titleIsFileName = false,
     this.below,
     this.titleKey,
     this.supportingKey,
@@ -92,6 +93,7 @@ class KitRow extends StatelessWidget {
        onLongPress = null,
        titleMaxLines = 2,
        supportingMaxLines = 2,
+       titleIsFileName = false,
        below = null,
        destructive = false,
        menu = const [],
@@ -120,6 +122,12 @@ class KitRow extends StatelessWidget {
   /// One line by default (§6); two where the line's end carries the state
   /// ("… · Finished 5h ago").
   final int supportingMaxLines;
+
+  /// The title is a file name ("checkout_page.dart"): from 1.3× text it
+  /// wraps only after `_`, `-` or before the extension's dot, never
+  /// mid-word ("checkout_page.da / rt"), and is shown whole (no line cap,
+  /// no ellipsis). Screen readers read the name as given.
+  final bool titleIsFileName;
 
   /// Shown under the supporting line: where a trailing state word moves at
   /// large text instead of squeezing the title.
@@ -250,6 +258,9 @@ class KitRow extends StatelessWidget {
     final titleLines = textScale >= 1.3
         ? math.max(titleMaxLines, 2)
         : titleMaxLines;
+    // From 1.3× text a file name wraps between its words and is shown
+    // whole ([titleIsFileName]).
+    final wholeFileName = titleIsFileName && titleLines > 1;
 
     // The unavailable row's enable flow, or an enabled row's own action:
     // one tertiary button, trailing, under the text from 1.3× text.
@@ -302,10 +313,12 @@ class KitRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    title,
+                    wholeFileName ? kitBreakableFileName(title) : title,
                     key: titleKey,
-                    maxLines: titleLines,
-                    overflow: TextOverflow.ellipsis,
+                    semanticsLabel: wholeFileName ? title : null,
+                    // A wrapping file name is shown whole, never cut.
+                    maxLines: wholeFileName ? null : titleLines,
+                    overflow: wholeFileName ? null : TextOverflow.ellipsis,
                     style: tokens.rowTitle.copyWith(color: titleColor),
                   ),
                   if (line != null) ...[
@@ -775,4 +788,21 @@ class KitRowGroup extends StatelessWidget {
       ),
     );
   }
+}
+
+/// [name] with zero-width break chances after `_` and `-` and before the
+/// extension's dot, so a wrapping file name breaks between its words
+/// ("checkout_page" / ".dart") instead of mid-word. A part longer than a
+/// line still breaks where it must. [KitRow.titleIsFileName] uses it.
+String kitBreakableFileName(String name) {
+  const zwsp = '\u200B';
+  final dot = name.lastIndexOf('.');
+  final out = StringBuffer();
+  for (var i = 0; i < name.length; i++) {
+    final char = name[i];
+    if (i == dot && i > 0) out.write(zwsp);
+    out.write(char);
+    if ((char == '_' || char == '-') && i < name.length - 1) out.write(zwsp);
+  }
+  return out.toString();
 }

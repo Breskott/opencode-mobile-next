@@ -247,6 +247,7 @@ Widget _editedFileRow(AppLocalizations l10n, String path) {
     key: ValueKey('stage-revert-edited-$path'),
     leading: const KitRowIcon(AppIconography.file),
     title: name,
+    titleIsFileName: true,
     supporting: folder == null ? null : TextSpan(text: KitBidi.ltr(folder)),
   );
 }
@@ -701,6 +702,7 @@ class _StagedRevertScreenState extends State<StagedRevertScreen> {
       key: ValueKey('staged-revert-file-${file.file}'),
       leading: const KitRowIcon(AppIconography.file),
       title: name,
+      titleIsFileName: true,
       supporting: TextSpan(
         text: folder.isEmpty
             ? lines
