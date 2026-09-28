@@ -16,6 +16,7 @@ import 'package:opencode_mobile/ui/widgets/saved_server_connection_card.dart';
 import 'package:opencode_mobile/ui/widgets/setup_terminal.dart';
 
 import 'support/first_run_path.dart';
+import 'support/kit_field_finders.dart';
 import 'support/server_editor.dart';
 
 import '../tool/capture/fixtures.dart'
@@ -210,7 +211,7 @@ void main() {
             final address = find.byKey(const ValueKey('server-url-field'));
             await tester.ensureVisible(address);
             expect(
-              tester.widget<TextField>(address).textDirection,
+              editableOf(tester, address).textDirection,
               TextDirection.ltr,
             );
           }

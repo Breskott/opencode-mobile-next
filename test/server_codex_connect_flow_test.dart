@@ -16,6 +16,7 @@ import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/kit_field_finders.dart';
 import 'support/server_editor.dart';
 
 class _RecordingProfileStore extends ProfileStore {
@@ -229,38 +230,32 @@ void main() {
 
     expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
     expect(
-      tester
-          .widget<TextField>(
-            find.byKey(const ValueKey('codex-project-directory-field')),
-          )
-          .controller
-          ?.text,
+      editableOf(
+        tester,
+        find.byKey(const ValueKey('codex-project-directory-field')),
+      ).controller?.text,
       '/work/project',
     );
     expect(
-      tester
-          .widget<TextField>(
-            find.byKey(const ValueKey('codex-connection-token-field')),
-          )
-          .controller
-          ?.text,
+      editableOf(
+        tester,
+        find.byKey(const ValueKey('codex-connection-token-field')),
+      ).controller?.text,
       'token-value',
     );
     expect(find.byKey(const ValueKey('server-save-failure')), findsOneWidget);
     expect(
-      tester
-          .widget<TextField>(
-            find.byKey(const ValueKey('codex-project-directory-field')),
-          )
-          .enabled,
+      editableOf(
+        tester,
+        find.byKey(const ValueKey('codex-project-directory-field')),
+      ).enabled,
       isTrue,
     );
     expect(
-      tester
-          .widget<TextField>(
-            find.byKey(const ValueKey('codex-connection-token-field')),
-          )
-          .enabled,
+      editableOf(
+        tester,
+        find.byKey(const ValueKey('codex-connection-token-field')),
+      ).enabled,
       isTrue,
     );
   });
@@ -316,15 +311,13 @@ void main() {
         findsOneWidget,
       );
       expect(
-        tester
-            .widget<TextField>(
-              find.descendant(
-                of: find.byKey(const ValueKey('server-password-field')),
-                matching: find.byType(TextField),
-              ),
-            )
-            .controller
-            ?.text,
+        editableOf(
+          tester,
+          find.descendant(
+            of: find.byKey(const ValueKey('server-password-field')),
+            matching: find.byType(TextField),
+          ),
+        ).controller?.text,
         'replacement-token',
       );
     },
@@ -419,28 +412,24 @@ void main() {
       expect(submitted.codexDirectory, '/work/project');
       expect(submitted.codexToken, 'token-value');
       expect(
-        tester
-            .widget<TextField>(
-              find.byKey(const ValueKey('codex-project-directory-field')),
-            )
-            .enabled,
+        editableOf(
+          tester,
+          find.byKey(const ValueKey('codex-project-directory-field')),
+        ).enabled,
         isFalse,
       );
       expect(
-        tester
-            .widget<TextField>(
-              find.byKey(const ValueKey('codex-connection-token-field')),
-            )
-            .enabled,
+        editableOf(
+          tester,
+          find.byKey(const ValueKey('codex-connection-token-field')),
+        ).enabled,
         isFalse,
       );
+      // The backend is Add server's first step (P3.9, 3d251f37): it is not
+      // on the connect step, and Back to it does nothing mid-save.
       expect(
-        tester
-            .widget<KitRow>(
-              find.byKey(const ValueKey('server-backend-opencode')),
-            )
-            .enabled,
-        isFalse,
+        find.byKey(const ValueKey('server-backend-opencode')),
+        findsNothing,
       );
 
       // A test attempt against disabled controls must leave both the submitted
@@ -450,33 +439,32 @@ void main() {
         warnIfMissed: false,
       );
       expect(
-        tester
-            .widget<TextField>(
-              find.byKey(const ValueKey('codex-project-directory-field')),
-            )
-            .focusNode!
-            .hasFocus,
+        editableOf(
+          tester,
+          find.byKey(const ValueKey('codex-project-directory-field')),
+        ).focusNode!.hasFocus,
         isFalse,
       );
       await tester.tap(
-        find.byKey(const ValueKey('server-backend-opencode')),
+        find.byKey(const ValueKey('server-editor-back')),
         warnIfMissed: false,
       );
       await tester.pump();
+      expect(find.byKey(const ValueKey('server-kind-step')), findsNothing);
       expect(submitted.backend, ServerBackend.codex);
       expect(submitted.codexDirectory, '/work/project');
       expect(
-        tester
-            .widget<TextField>(
-              find.byKey(const ValueKey('codex-project-directory-field')),
-            )
-            .controller
-            ?.text,
+        editableOf(
+          tester,
+          find.byKey(const ValueKey('codex-project-directory-field')),
+        ).controller?.text,
         '/work/project',
       );
 
       gate.complete();
       await tester.pumpAndSettle();
+      // Add server ends on its ready step, left through "Open" (P3.9).
+      await openReadyServer(tester);
       expect(find.text('home-route'), findsOneWidget);
       expect(store.saved.single.codexDirectory, '/work/project');
     },

@@ -186,6 +186,11 @@ final _scope = PermissionConsentScope(
   alwaysPatterns: const ['git *'],
 );
 
+/// The background service and home-screen widget channel, and the
+/// launcher shortcuts' one.
+const _background = MethodChannel('oc/background');
+const _shortcut = MethodChannel('oc/shortcut');
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -204,6 +209,11 @@ void main() {
       const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
       (_) async => null,
     );
+    // Android capabilities turn on the home-screen widget, the launcher
+    // shortcuts and the tile, whose writes profile deletion waits for;
+    // unanswered, their channels would hang inside testWidgets.
+    messenger.setMockMethodCallHandler(_background, (_) async => null);
+    messenger.setMockMethodCallHandler(_shortcut, (_) async => null);
     messenger.setMockMethodCallHandler(
       const MethodChannel(AppLifecycleBridge.channelName),
       (call) async {
@@ -225,6 +235,8 @@ void main() {
       const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
       null,
     );
+    messenger.setMockMethodCallHandler(_background, null);
+    messenger.setMockMethodCallHandler(_shortcut, null);
     messenger.setMockMethodCallHandler(
       const MethodChannel(AppLifecycleBridge.channelName),
       null,

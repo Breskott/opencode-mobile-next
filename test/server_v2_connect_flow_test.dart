@@ -13,6 +13,7 @@ import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/kit_field_finders.dart';
 import 'support/server_editor.dart';
 
 class _RecordingProfileStore extends ProfileStore {
@@ -32,6 +33,22 @@ class _RecordingProfileStore extends ProfileStore {
       ..clear()
       ..add(profile);
   }
+}
+
+class _ActiveProfileStore extends ProfileStore {
+  _ActiveProfileStore({required super.prefs});
+
+  final studio = ServerProfile(
+    id: 'studio',
+    name: 'Studio',
+    baseUrl: 'https://studio.example.net',
+  );
+
+  @override
+  List<ServerProfile> get profiles => [studio];
+
+  @override
+  String? get activeId => studio.id;
 }
 
 class _StubGateway implements ServerGateway {
@@ -228,7 +245,8 @@ void main() {
       find.text('This server requires its serve password.'),
       findsOneWidget,
     );
-    final password = tester.widget<TextField>(
+    final password = editableOf(
+      tester,
       find.byKey(const ValueKey('server-password-field')),
     );
     expect(password.focusNode?.hasFocus, isTrue);
@@ -256,9 +274,10 @@ void main() {
 
     expect(find.textContaining('Password rejected'), findsOneWidget);
     // Select-all primes a clean repaste of the rotated password.
-    final controllerText = tester
-        .widget<TextField>(find.byKey(const ValueKey('server-password-field')))
-        .controller!;
+    final controllerText = editableOf(
+      tester,
+      find.byKey(const ValueKey('server-password-field')),
+    ).controller!;
     expect(controllerText.selection.baseOffset, 0);
     expect(controllerText.selection.extentOffset, 'stale-password'.length);
   });
@@ -402,12 +421,10 @@ void main() {
 
     // The copied `server password ` line prefix and whitespace are trimmed.
     expect(
-      tester
-          .widget<TextField>(
-            find.byKey(const ValueKey('server-password-field')),
-          )
-          .controller!
-          .text,
+      editableOf(
+        tester,
+        find.byKey(const ValueKey('server-password-field')),
+      ).controller!.text,
       'abc123DEF456==',
     );
   });
@@ -423,21 +440,19 @@ void main() {
     final toggle = find.byKey(const ValueKey('server-password-visibility'));
     await _reveal(tester, toggle);
     expect(
-      tester
-          .widget<TextField>(
-            find.byKey(const ValueKey('server-password-field')),
-          )
-          .obscureText,
+      editableOf(
+        tester,
+        find.byKey(const ValueKey('server-password-field')),
+      ).obscureText,
       isTrue,
     );
     await tester.tap(toggle);
     await tester.pump();
     expect(
-      tester
-          .widget<TextField>(
-            find.byKey(const ValueKey('server-password-field')),
-          )
-          .obscureText,
+      editableOf(
+        tester,
+        find.byKey(const ValueKey('server-password-field')),
+      ).obscureText,
       isFalse,
     );
   });
@@ -446,7 +461,11 @@ void main() {
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
-    final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+    // The connection status belongs to a saved server; with none it stays
+    // hidden (3d64653c), so the rejected password names an active one.
+    final store = _ActiveProfileStore(
+      prefs: await SharedPreferences.getInstance(),
+    );
     final controller = ConnectionController(store);
     addTearDown(controller.dispose);
     controller.passwordRejected = true;

@@ -580,6 +580,10 @@ void main() {
     expect(repository.shellLoadCalls, loadsBeforeRetry + 1);
     expect(find.byKey(const ValueKey('server-shell-/bin/bash')), findsNothing);
     expect(find.text('bash'), findsOneWidget);
+    // The resume above arms the phone server's recovery check (6ed0ec26),
+    // which the connection scope owns: end that scope inside the test.
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
   });
 
   testWidgets('failed shell update retains the server-reported selection', (
@@ -934,9 +938,10 @@ void main() {
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-background');
 
-    // The limit is stated on the switch itself, before it is ever hit.
+    // The limit is stated on the switch itself, before it is ever hit, in
+    // the short line d0047ca3 gave it.
     expect(
-      find.textContaining('six hours of this per 24 hours'),
+      find.textContaining('Android stops this after 6 hours a day'),
       findsOneWidget,
     );
     expect(

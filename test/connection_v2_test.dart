@@ -1865,6 +1865,10 @@ void main() {
       expect(unwritableController.lastError, contains('Could not save'));
       expect(unwritableApi.healthCalls, 0);
       expect(unwritableApi.closed, isTrue);
+      // Each attempt keeps its eight-second connection-status grace clock
+      // until it runs out or the controller is disposed (3d64653c); let both
+      // run out inside the test instead of leaving them to tearDown.
+      await tester.pump(const Duration(seconds: 8));
     },
   );
 
