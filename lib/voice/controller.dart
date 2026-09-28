@@ -62,8 +62,17 @@ class VoiceComposerController extends ChangeNotifier {
   StreamSubscription<Uint8List>? _audioSubscription;
   Completer<void>? _audioDone;
   Timer? _clock;
-  Timer? _captureDeadline;
   VoiceRecognitionHandle? _recognition;
+
+  /// The words of this recording's chunks, in order ('' until a chunk is
+  /// written down). A chunk is 30 s of audio ([voiceChunkDuration]).
+  final List<String> _chunks = [];
+  int _pendingChunks = 0;
+  Future<void> _recognitionTail = Future<void>.value();
+
+  /// Audio already handed to the recognizer in earlier chunks.
+  Duration _recordedBefore = Duration.zero;
+  Object? _chunkFailure;
   int _generation = 0;
   bool _disposed = false;
   bool _starting = false;
@@ -80,6 +89,18 @@ class VoiceComposerController extends ChangeNotifier {
       ownsModels: false,
     );
   }
+
+  /// What this recording has said so far: the chunks written down while
+  /// listening goes on. The host shows it in the draft as it grows, so what
+  /// was said survives the app going away mid-recording.
+  String get transcript => _chunks.where((text) => text.isNotEmpty).join(' ');
+
+  /// Chunks still waiting for the recognizer.
+  int get pendingChunks => _pendingChunks;
+
+  /// True while [startListening] runs: its own clean-up passes through
+  /// idle on the way to listening.
+  bool get starting => _starting;
 
   void _onModelStateChanged() {
     if (_disposed ||
@@ -139,6 +160,11 @@ class VoiceComposerController extends ChangeNotifier {
     final generation = ++_generation;
     final audio = Pcm16Accumulator();
     _audio = audio;
+    _chunks.clear();
+    _pendingChunks = 0;
+    _chunkFailure = null;
+    _recognitionTail = Future<void>.value();
+    _recordedBefore = Duration.zero;
     elapsed = Duration.zero;
     level = 0;
     draft = '';
@@ -152,21 +178,25 @@ class VoiceComposerController extends ChangeNotifier {
         return;
       }
       state = VoiceComposerState.listening;
-      // The sample cap alone cannot stop a stalled recorder with no frames.
-      _captureDeadline = Timer(voiceMaximumDuration, () {
-        if (!_disposed && generation == _generation) {
-          unawaited(stopListening());
-        }
-      });
       _audioDone = Completer<void>();
       _audioSubscription = stream.listen(
         (bytes) {
           if (generation != _generation) return;
-          audio.add(bytes);
-          elapsed = audio.duration;
+          // No cap: a full 30 s chunk goes to the recognizer and the rest
+          // of these bytes start the next one.
+          var offset = 0;
+          while (offset < bytes.length) {
+            offset += audio.add(bytes, offset);
+            if (audio.isFull) {
+              final heard = audio.level;
+              _recordedBefore += audio.duration;
+              _enqueueChunk(audio.takeSamples(), generation);
+              audio.level = heard;
+            }
+          }
+          elapsed = _recordedBefore + audio.duration;
           level = audio.level;
           notifyListeners();
-          if (audio.isFull) unawaited(stopListening());
         },
         onError: (Object exception, StackTrace stackTrace) {
           if (generation == _generation) {
@@ -185,7 +215,7 @@ class VoiceComposerController extends ChangeNotifier {
       _clock = Timer.periodic(const Duration(milliseconds: 100), (_) {
         if (generation == _generation &&
             state == VoiceComposerState.listening) {
-          elapsed = audio.duration;
+          elapsed = _recordedBefore + audio.duration;
           notifyListeners();
         }
       });
@@ -201,49 +231,49 @@ class VoiceComposerController extends ChangeNotifier {
     }
   }
 
-  Future<void> stopListening() async {
-    if (state != VoiceComposerState.listening) return;
-    final generation = _generation;
-    final audioDone = _audioDone;
-    state = VoiceComposerState.loading;
-    models.markLoading();
-    _clock?.cancel();
-    _captureDeadline?.cancel();
-    notifyListeners();
-    try {
-      await recorder.stop();
-      await audioDone?.future.timeout(const Duration(seconds: 2));
-    } catch (_) {
-      // The stream may already have closed after an interruption.
-    }
-    if (_disposed || generation != _generation) return;
-    await _audioSubscription?.cancel();
-    if (_disposed || generation != _generation) return;
-    _audioSubscription = null;
-    final samples = _audio?.takeSamples() ?? Float32List(0);
-    _audio = null;
-    if (_disposed || generation != _generation) return;
-    if (samples.isEmpty) {
-      models.markReady();
-      error = StateError('No audio was captured.');
-      state = VoiceComposerState.error;
-      notifyListeners();
-      return;
-    }
-    final pack = models.selectedPack;
-    final request = VoiceRecognitionRequest(
-      encoderPath: models.downloader.filePath(models.root, pack, pack.encoder),
-      decoderPath: models.downloader.filePath(models.root, pack, pack.decoder),
-      tokensPath: models.downloader.filePath(models.root, pack, pack.tokens),
-      language: models.language,
-      samples: samples,
-      numThreads: conservativeVoiceThreadCount(),
+  /// Queues [samples] behind the chunks before it: the recognizer runs one
+  /// at a time, and chunk order is kept.
+  void _enqueueChunk(Float32List samples, int generation) {
+    final index = _chunks.length;
+    _chunks.add('');
+    _pendingChunks++;
+    _recognitionTail = _recognitionTail.then(
+      (_) => _recognizeChunk(index, samples, generation),
     );
+  }
+
+  Future<void> _recognizeChunk(
+    int index,
+    Float32List samples,
+    int generation,
+  ) async {
     try {
+      if (_disposed || generation != _generation || _chunkFailure != null) {
+        return;
+      }
+      final pack = models.selectedPack;
+      final request = VoiceRecognitionRequest(
+        encoderPath: models.downloader.filePath(
+          models.root,
+          pack,
+          pack.encoder,
+        ),
+        decoderPath: models.downloader.filePath(
+          models.root,
+          pack,
+          pack.decoder,
+        ),
+        tokensPath: models.downloader.filePath(models.root, pack, pack.tokens),
+        language: models.language,
+        samples: samples,
+        numThreads: conservativeVoiceThreadCount(),
+      );
       final handle = await recognizer.start(
         request,
         onLoaded: () {
-          if (!_disposed && generation == _generation) {
+          if (!_disposed &&
+              generation == _generation &&
+              state == VoiceComposerState.loading) {
             state = VoiceComposerState.transcribing;
             notifyListeners();
           }
@@ -255,30 +285,100 @@ class VoiceComposerController extends ChangeNotifier {
       }
       _recognition = handle;
       final text = await handle.result;
+      if (identical(_recognition, handle)) _recognition = null;
       if (_disposed || generation != _generation) return;
-      _recognition = null;
       await handle.finished;
       if (_disposed || generation != _generation) return;
-      models.markReady();
-      draft = text;
-      state = VoiceComposerState.draft;
-      notifyListeners();
-    } on VoiceRecognitionCancelled {
-      if (_disposed || generation != _generation) return;
-      _recognition = null;
-      models.markReady();
-      state = models.isReady
-          ? VoiceComposerState.idle
-          : VoiceComposerState.modelRequired;
+      _chunks[index] = text.trim();
       notifyListeners();
     } catch (exception) {
       if (_disposed || generation != _generation) return;
       _recognition = null;
-      models.markReady();
+      _chunkFailure = exception;
+      // A chunk that could not be written down stops the recording: the
+      // words so far stay in [transcript]; the rest would be lost silently.
+      if (state == VoiceComposerState.listening) {
+        unawaited(_failListening(exception, generation));
+      }
+    } finally {
+      if (generation == _generation && _pendingChunks > 0) _pendingChunks--;
+    }
+  }
+
+  Future<void> _failListening(Object exception, int generation) async {
+    _clock?.cancel();
+    final subscription = _audioSubscription;
+    _audioSubscription = null;
+    _audio?.clear();
+    _audio = null;
+    unawaited(subscription?.cancel());
+    try {
+      await recorder.cancel();
+    } catch (_) {}
+    if (_disposed || generation != _generation) return;
+    level = 0;
+    if (exception is VoiceRecognitionCancelled) {
+      state = models.isReady
+          ? VoiceComposerState.idle
+          : VoiceComposerState.modelRequired;
+    } else {
       error = exception;
       state = VoiceComposerState.error;
+    }
+    notifyListeners();
+  }
+
+  /// Ends the recording: the last chunk is written down after the ones
+  /// before it, then [draft] holds everything that was said.
+  Future<void> stopListening() async {
+    if (state != VoiceComposerState.listening) return;
+    final generation = _generation;
+    final audioDone = _audioDone;
+    state = VoiceComposerState.loading;
+    models.markLoading();
+    _clock?.cancel();
+    notifyListeners();
+    try {
+      await recorder.stop();
+      await audioDone?.future.timeout(const Duration(seconds: 2));
+    } catch (_) {
+      // The stream may already have closed after an interruption.
+    }
+    if (_disposed || generation != _generation) return;
+    unawaited(_audioSubscription?.cancel());
+    _audioSubscription = null;
+    final samples = _audio?.takeSamples() ?? Float32List(0);
+    _audio = null;
+    if (_disposed || generation != _generation) return;
+    if (samples.isNotEmpty) _enqueueChunk(samples, generation);
+    if (_chunks.isEmpty) {
+      models.markReady();
+      error = StateError('No audio was captured.');
+      state = VoiceComposerState.error;
+      notifyListeners();
+      return;
+    }
+    if (samples.isEmpty && state == VoiceComposerState.loading) {
+      // Only earlier chunks are left; the model is already loaded.
+      state = VoiceComposerState.transcribing;
       notifyListeners();
     }
+    await _recognitionTail;
+    if (_disposed || generation != _generation) return;
+    models.markReady();
+    final failure = _chunkFailure;
+    if (failure is VoiceRecognitionCancelled) {
+      state = models.isReady
+          ? VoiceComposerState.idle
+          : VoiceComposerState.modelRequired;
+    } else if (failure != null) {
+      error = failure;
+      state = VoiceComposerState.error;
+    } else {
+      draft = transcript;
+      state = VoiceComposerState.draft;
+    }
+    notifyListeners();
   }
 
   Future<void> cancel({String? reason, bool clearError = false}) async {
@@ -287,8 +387,10 @@ class VoiceComposerController extends ChangeNotifier {
     final generation = _generation;
     _clock?.cancel();
     _clock = null;
-    _captureDeadline?.cancel();
-    _captureDeadline = null;
+    _chunks.clear();
+    _pendingChunks = 0;
+    _chunkFailure = null;
+    _recordedBefore = Duration.zero;
     final recognition = _recognition;
     recognition?.cancel();
     _recognition = null;
@@ -298,8 +400,9 @@ class VoiceComposerController extends ChangeNotifier {
     _audio?.clear();
     _audio = null;
     draft = '';
-    await subscription?.cancel();
-    if (_disposed || generation != _generation) return;
+    // Cancelling stops delivery at once; its future only reports clean-up
+    // (and is a root-zone future, which a test's fake clock never runs).
+    unawaited(subscription?.cancel());
     try {
       await recorder.cancel();
     } catch (_) {}
@@ -344,7 +447,7 @@ class VoiceComposerController extends ChangeNotifier {
     _disposed = true;
     ++_generation;
     _clock?.cancel();
-    _captureDeadline?.cancel();
+    _chunks.clear();
     _audio?.clear();
     _audio = null;
     draft = '';

@@ -112,6 +112,13 @@ extension _ChatVoiceConversation on _ChatScreenState {
     _voiceOwnerScope = null;
     unawaited(_voice?.cancel());
     unawaited(_stopReading());
+    if (_voiceDictating) {
+      // A scope change or a covered route ends dictation; the words already
+      // written down stay in the draft.
+      _dictationBase = null;
+      _voiceSettingsOpened = false;
+      _updateSpeech(() => _voiceDictating = false);
+    }
     if (_voiceConversation) {
       // Clear while the persistence guard is still active.
       _composer.clear();
@@ -361,178 +368,271 @@ extension _ChatVoiceConversation on _ChatScreenState {
     }
   }
 
-  /// The latest assistant message of this session, for the explicit
-  /// "Read reply" fallback; null when there is none loaded.
-  MessageWithParts? get _latestAssistantMessage {
-    for (final message in _messages.reversed) {
-      if (message.info.role == 'assistant') return message;
-    }
-    return null;
-  }
-
   bool get _speakingVoiceReply =>
       _readAloud?.speaking == true &&
       (_readAloud?.activeID?.startsWith(_voiceReplyUtterancePrefix) ?? false);
 
-  // revamp: redesign (slice-P10.3) — voice as a composer mode (the mic in
-  // the send slot, a listen → send → speak loop without the sheet) is that
-  // slice's work; this is today's controls rebuilt from kit parts.
+  // --- voice mode (P10.3) ----------------------------------------------
 
-  /// The voice conversation's controls, in place of the attention slot:
-  /// what the mode is doing now, "Speak replies", the reply's state in
-  /// words, Listen as the one primary (secondary while a request waits on
-  /// the person), and the ways out.
-  Widget _voiceConversationControls() {
+  void _listenToVoice(VoiceComposerController voice) {
+    if (identical(_voiceListened, voice)) return;
+    _voiceListened?.removeListener(_onVoiceChanged);
+    _voiceListened = voice..addListener(_onVoiceChanged);
+  }
+
+  /// The recording's changes: the level and clock go to the pill without a
+  /// rebuild; dictation's words go into the draft as each chunk is written
+  /// down; a conversation's finished words are sent.
+  void _onVoiceChanged() {
+    final voice = _voiceListened;
+    if (!mounted || voice == null) return;
+    final state = voice.state;
+    final listening = state == VoiceComposerState.listening;
+    _voiceLevel.value = listening ? voice.level : 0;
+    if (_voiceDictating) {
+      _mergeDictation(
+        state == VoiceComposerState.draft ? voice.draft : voice.transcript,
+      );
+      if (state == VoiceComposerState.draft) {
+        _finishDictation(voice);
+        return;
+      }
+      if (state == VoiceComposerState.idle &&
+          !_voiceOpening &&
+          !voice.starting) {
+        // Cancelled from elsewhere (the app paused, the setup closing).
+        _leaveDictation();
+        return;
+      }
+    } else if (_voiceConversation && state == VoiceComposerState.draft) {
+      final words = voice.draft.trim();
+      unawaited(voice.cancel());
+      if (words.isEmpty) {
+        _showComposerNote(_chatL10n(context).voiceModeNothingHeard);
+      } else {
+        // Conversation mode says it sends: the words go through the one send
+        // path, so commands, delivery and the reply watch behave as typed.
+        _composer.text = words;
+        unawaited(_send());
+      }
+    }
+    if (state != _voiceShownState) {
+      _voiceShownState = state;
+      _voiceListeningSince = listening
+          ? clock.now().subtract(voice.elapsed)
+          : null;
+      _updateSpeech(() {});
+    }
+  }
+
+  /// The composer as dictation found it, with what was said so far merged
+  /// in at its selection. The draft store saves it like typed text.
+  void _mergeDictation(String words) {
+    final base = _dictationBase;
+    if (base == null) return;
+    final text = words.trim().isEmpty
+        ? base.text
+        : mergeVoiceDraft(base.text, base.selection, words);
+    if (text == _composer.text) return;
+    _composer.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  void _finishDictation(VoiceComposerController voice) {
+    final heardNothing = voice.draft.trim().isEmpty;
+    _dictationBase = null;
+    _updateSpeech(() => _voiceDictating = false);
+    unawaited(voice.cancel());
+    unawaited(_persistDraft());
+    if (heardNothing) {
+      _showComposerNote(_chatL10n(context).voiceModeNothingHeard);
+    } else {
+      _focus.requestFocus();
+    }
+  }
+
+  /// Leave (the pill's close, Esc): the recording stops; the words already
+  /// written down stay in the draft.
+  void _leaveDictation() {
+    if (!_voiceDictating) return;
+    _dictationBase = null;
+    _voiceSettingsOpened = false;
+    _updateSpeech(() => _voiceDictating = false);
+    unawaited(_voice?.cancel());
+    unawaited(_persistDraft());
+  }
+
+  /// The app went away or a page covered the chat: the microphone stops at
+  /// once and what was recorded is still written into the draft.
+  void _pauseDictation() {
+    final voice = _voice;
+    if (!_voiceDictating || voice == null) return;
+    switch (voice.state) {
+      case VoiceComposerState.listening:
+        unawaited(voice.stopListening());
+      case VoiceComposerState.initializing:
+        _leaveDictation();
+      default:
+        break;
+    }
+  }
+
+  void _openMicSettings() {
+    _voiceSettingsOpened = true;
+    unawaited(voiceDevicePlatform.openAppSettings());
+  }
+
+  void _retryVoiceAfterSettings() {
+    final voice = _voice;
+    if (voice == null || (!_voiceDictating && !_voiceConversation)) return;
+    if (voice.state == VoiceComposerState.error &&
+        voice.error is VoicePermissionDenied) {
+      unawaited(voice.startListening());
+    }
+  }
+
+  /// The pill's voice mode, or null when the composer is for typing.
+  KitComposerVoice? _composerVoice() {
+    if (!_voiceDictating && !_voiceConversation) return null;
     final l10n = _chatL10n(context);
-    final tokens = KitTokens.of(context);
-    final waiting = _voiceReplyWatch != null;
-    final speaking = _speakingVoiceReply;
-    final latest = _latestAssistantMessage;
-    final String? replyLine = speaking
-        ? l10n.voiceConversationSpeakingReply
-        : waiting
-        ? l10n.voiceConversationWaitingReply
-        : switch (_voiceReplyState) {
-            _VoiceReplyState.idle => null,
-            _VoiceReplyState.waiting => l10n.voiceConversationWaitingReply,
-            _VoiceReplyState.reviewNeeded =>
-              l10n.voiceConversationReplyReviewNeeded,
-            _VoiceReplyState.interrupted =>
-              l10n.voiceConversationReplyInterrupted,
-            _VoiceReplyState.noProse => l10n.voiceConversationReplyNoProse,
-            _VoiceReplyState.failed => l10n.voiceConversationReplyFailed,
-          };
-    final offerRead =
-        !speaking &&
-        !waiting &&
-        latest != null &&
-        (_voiceReplyState == _VoiceReplyState.reviewNeeded ||
-            _voiceReplyState == _VoiceReplyState.interrupted ||
-            _voiceReplyState == _VoiceReplyState.failed);
-    final canSend = _conversationCanSend;
-    final paused = !canSend && !waiting && !speaking;
-    final listenReady = !_voiceOpening && !_sending && canSend;
-    final requestWaiting =
-        _conn.permissionsForSession(widget.sessionID).isNotEmpty ||
-        _conn.questionForSession(widget.sessionID) != null ||
-        (_conn.capabilities.forms &&
-            _conn.formForSession(widget.sessionID) != null);
-    final listen = KitAction(
-      key: const Key('voice-listen'),
-      icon: AppIconography.mic,
-      label: l10n.voiceConversationListen,
-      onPressed: listenReady ? _openVoice : null,
-      disabledReason: listenReady ? null : _conversationPauseCopy,
+    final voice = _voice;
+    final state = voice?.state;
+    final error = voice?.error;
+    final recorded = (voice?.elapsed ?? Duration.zero) > Duration.zero;
+    final tryAgain = KitAction(
+      key: const Key('voice-mode-try-again'),
+      label: l10n.e7VoiceUiRetry,
+      icon: AppIconography.retry,
+      onPressed: () => unawaited(_openVoice()),
     );
-    return Padding(
-      padding: EdgeInsetsDirectional.fromSTEB(
-        tokens.space3,
-        tokens.space1,
-        tokens.space3,
-        tokens.space2,
-      ),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * .36,
-        ),
-        child: KitSurface(
-          outlined: true,
-          padding: KitSurfacePadding.none,
-          child: KitScrollbar(
-            controller: _voiceControlsScroll,
-            child: ListView(
-              controller: _voiceControlsScroll,
-              shrinkWrap: true,
-              padding: EdgeInsets.all(tokens.space4),
-              children: [
-                Semantics(
-                  liveRegion: true,
-                  label: canSend
-                      ? l10n.voiceConversationTitle
-                      : _conversationPauseCopy,
-                  excludeSemantics: true,
-                  child: KitText(
-                    paused
-                        ? l10n.voiceConversationPausedTitle
-                        : l10n.voiceConversationTitle,
-                    role: KitTextRole.headline,
-                  ),
-                ),
-                if (paused) ...[
-                  SizedBox(height: tokens.space1),
-                  KitText(
-                    _conversationPauseCopy,
-                    role: KitTextRole.secondary,
-                    tone: KitTextTone.secondary,
-                  ),
-                ],
-                if (platformCapabilities.supportsReadAloud) ...[
-                  SizedBox(height: tokens.space2),
-                  KitSwitchRow(
-                    switchKey: const Key('voice-speak-replies'),
-                    title: l10n.voiceConversationSpeakReplies,
-                    supporting: l10n.voiceConversationSpeakRepliesDetail,
-                    value: _voiceSpeakReplies,
-                    onChanged: _readAloudRequestBusy && !_voiceSpeakReplies
-                        ? null
-                        : (value) => unawaited(_setVoiceSpeakReplies(value)),
-                    disabledReason: l10n.voiceConversationSpeakRepliesBusy,
-                  ),
-                ],
-                if (replyLine != null) ...[
-                  SizedBox(height: tokens.space2),
-                  KitNotice(
-                    key: const Key('voice-reply-status'),
-                    message: replyLine,
-                    tone: waiting || speaking
-                        ? AppStatusTone.progress
-                        : _voiceReplyState == _VoiceReplyState.failed
-                        ? AppStatusTone.failure
-                        : AppStatusTone.neutral,
-                  ),
-                ],
-                SizedBox(height: tokens.space3),
-                KitActionBlock(
-                  // One primary per screen: while a request waits on the
-                  // person its answer is the primary, and Listen steps down.
-                  primary: requestWaiting ? null : listen,
-                  secondary: requestWaiting ? listen : null,
-                  tertiary: [
-                    if (speaking || waiting)
-                      KitAction(
-                        key: const Key('voice-reply-stop'),
-                        icon: AppIconography.stop,
-                        label: l10n.voiceConversationStopReading,
-                        onPressed: () => unawaited(_stopReading()),
-                      ),
-                    if (offerRead)
-                      KitAction(
-                        key: const Key('voice-reply-read'),
-                        icon: AppIconography.volume,
-                        label: l10n.voiceConversationReadReply,
-                        onPressed: _readAloudRequestBusy
-                            ? null
-                            : () {
-                                _updateSpeech(
-                                  () =>
-                                      _voiceReplyState = _VoiceReplyState.idle,
-                                );
-                                unawaited(_readReply(latest));
-                              },
-                      ),
-                    KitAction(
-                      key: const Key('voice-exit'),
-                      icon: AppIconography.close,
-                      label: l10n.voiceConversationExit,
-                      onPressed: _interruptVoiceConversation,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    KitVoicePhase phase;
+    String? reason;
+    KitAction? fix;
+    switch (state) {
+      case VoiceComposerState.listening:
+        phase = KitVoicePhase.listening;
+      case VoiceComposerState.loading when !recorded:
+      case VoiceComposerState.initializing:
+      case VoiceComposerState.downloading:
+      case VoiceComposerState.verifying:
+      case null:
+        phase = KitVoicePhase.starting;
+      case VoiceComposerState.loading:
+      case VoiceComposerState.transcribing:
+      case VoiceComposerState.finishingCancellation:
+        phase = KitVoicePhase.transcribing;
+      case VoiceComposerState.error when error is VoicePermissionDenied:
+        phase = KitVoicePhase.micDenied;
+        reason = error.permanent
+            ? l10n.voiceModeMicBlocked
+            : l10n.voiceModeMicAsk;
+        fix = error.permanent
+            ? KitAction(
+                key: const Key('voice-mode-open-settings'),
+                label: l10n.voiceAllowMicInSettings,
+                icon: AppIconography.settings,
+                onPressed: _openMicSettings,
+              )
+            : KitAction(
+                key: const Key('voice-mode-allow-mic'),
+                label: l10n.voiceModeMicAllow,
+                icon: AppIconography.mic,
+                onPressed: () => unawaited(voice!.startListening()),
+              );
+      case VoiceComposerState.error:
+        phase = KitVoicePhase.failed;
+        reason = voiceErrorText(error, l10n, manager: voice!.models);
+        fix = tryAgain;
+      case VoiceComposerState.modelRequired:
+        phase = KitVoicePhase.failed;
+        reason = l10n.e7VoiceUiModelRequired;
+        fix = tryAgain;
+      case VoiceComposerState.idle || VoiceComposerState.draft:
+        if (!_voiceConversation) {
+          // Dictation hands its words over and leaves in the same frame.
+          phase = KitVoicePhase.transcribing;
+        } else {
+          (phase, reason, fix) = _conversationPhase(l10n);
+        }
+    }
+    final conversation = _voiceConversation;
+    return KitComposerVoice(
+      voiceKey: const Key('voice-mode'),
+      phase: phase,
+      conversation: conversation,
+      level: _voiceLevel,
+      listeningSince: phase == KitVoicePhase.listening
+          ? _voiceListeningSince
+          : null,
+      reason: reason,
+      fix: fix,
+      onExit: conversation ? _interruptVoiceConversation : _leaveDictation,
+      onStopListening: voice == null
+          ? null
+          : () => unawaited(voice.stopListening()),
+      onStopSpeaking: () => unawaited(_stopReading()),
+      onListen: _conversationCanSend && !_voiceOpening && !_sending
+          ? () => unawaited(_openVoice())
+          : null,
+      onReadReply: _offerReadReply
+          ? () {
+              _updateSpeech(() => _voiceReplyState = _VoiceReplyState.idle);
+              unawaited(_readReply(_latestReadableReply!));
+            }
+          : null,
+      readRepliesAloud: _voiceSpeakReplies,
+      onReadRepliesAloudChanged:
+          conversation && platformCapabilities.supportsReadAloud
+          ? (value) {
+              if (_readAloudRequestBusy && !_voiceSpeakReplies) return;
+              unawaited(_setVoiceSpeakReplies(value));
+            }
+          : null,
     );
+  }
+
+  bool get _offerReadReply =>
+      _voiceConversation &&
+      !_speakingVoiceReply &&
+      _voiceReplyWatch == null &&
+      _latestReadableReply != null;
+
+  /// The newest reply with words to read, for "Read it aloud".
+  MessageWithParts? get _latestReadableReply {
+    for (final message in _messages.reversed) {
+      if (_canReadReply(message)) return message;
+    }
+    return null;
+  }
+
+  /// Between recordings in a voice conversation: a request on screen
+  /// pauses it; a sent turn waits for its reply, which may be read aloud;
+  /// then the reply is ready and Listen starts the next turn.
+  (KitVoicePhase, String?, KitAction?) _conversationPhase(
+    AppLocalizations l10n,
+  ) {
+    if (_conversationBlockedByRequest) {
+      return (KitVoicePhase.paused, null, null);
+    }
+    if (_speakingVoiceReply) return (KitVoicePhase.speakingReply, null, null);
+    if (_sending ||
+        _voiceReplyWatch != null ||
+        _conn.busySessions.contains(widget.sessionID)) {
+      return (KitVoicePhase.waitingReply, null, null);
+    }
+    if (!_conversationCanSend) {
+      // Offline, or the server's data is not readable: nothing can be sent.
+      return (KitVoicePhase.failed, _conversationPauseCopy, null);
+    }
+    final String? reason = switch (_voiceReplyState) {
+      _VoiceReplyState.idle || _VoiceReplyState.waiting => null,
+      _VoiceReplyState.reviewNeeded => l10n.voiceConversationReplyReviewNeeded,
+      _VoiceReplyState.interrupted => l10n.voiceConversationReplyInterrupted,
+      _VoiceReplyState.noProse => l10n.voiceConversationReplyNoProse,
+      _VoiceReplyState.failed => l10n.voiceConversationReplyFailed,
+    };
+    return (KitVoicePhase.replyReady, reason, null);
   }
 }

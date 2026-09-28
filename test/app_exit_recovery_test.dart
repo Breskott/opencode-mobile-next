@@ -554,8 +554,11 @@ void main() {
       );
       expect(
         find.text(
+          // No saved in-app server here, so nothing restarts it: the
+          // notice must not promise that it is starting again.
           'Android closed OpenCode Mobile at 00:06. Your phone\'s OpenCode '
-          'and the AI Team stopped with it; they\'re starting again.',
+          'and the AI Team stopped with it. Start them again when you\'re '
+          'ready.',
         ),
         findsOneWidget,
       );
@@ -563,6 +566,34 @@ void main() {
       await tester.pumpAndSettle();
       expect(recovery.notice, isNull);
       expect(find.byKey(const ValueKey('app-exit-notice')), findsNothing);
+    });
+
+    test('never says "starting again" when automatic restart is off', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      for (final team in [false, true]) {
+        final off = appExitMessage(
+          l10n,
+          AppExitNotice(
+            kind: AppExitKind.forceStop,
+            at: DateTime(2026, 9, 27, 21, 21),
+            teamStopped: team,
+            recoveryAllowed: false,
+          ),
+          'at 21:21',
+        );
+        expect(off, isNot(contains('starting again')));
+        expect(off, contains('Start '));
+        final on = appExitMessage(
+          l10n,
+          AppExitNotice(
+            kind: AppExitKind.forceStop,
+            at: DateTime(2026, 9, 27, 21, 21),
+            teamStopped: team,
+          ),
+          'at 21:21',
+        );
+        expect(on, contains('starting again'));
+      }
     });
 
     testWidgets('Keep it running opens the guidance', (tester) async {

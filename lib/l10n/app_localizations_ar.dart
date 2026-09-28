@@ -1460,22 +1460,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'استمع وراجع، ثم أرسل. لا يبدأ الاستماع تلقائيًا؛ تُقرأ الردود بصوت عالٍ فقط إذا فعّلت ذلك.';
 
   @override
-  String get voiceConversationSpeakReplies => 'قراءة الردود بصوت عالٍ';
-
-  @override
-  String get voiceConversationSpeakRepliesDetail =>
-      'قراءة الرد المرتبط برسالتك مرة واحدة بعد الإرسال. اضغط «استماع» لاستخدام الميكروفون.';
-
-  @override
-  String get voiceConversationWaitingReply => 'بانتظار الرد…';
-
-  @override
-  String get voiceConversationSpeakingReply => 'جارٍ قراءة الرد بصوت عالٍ';
-
-  @override
-  String get voiceConversationReadReply => 'قراءة الرد';
-
-  @override
   String get voiceConversationReplyReviewNeeded =>
       'اكتمل الرد، لكن تعذّر التأكد من ارتباطه برسالتك. يمكنك قراءته إن أردت.';
 
@@ -1491,9 +1475,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get voiceConversationReplyFailed => 'تعذّرت قراءة الرد بصوت عالٍ.';
 
   @override
-  String get voiceConversationPausedTitle => 'المحادثة الصوتية متوقفة مؤقتًا';
-
-  @override
   String get voiceConversationPausedDetail =>
       'المحادثة الصوتية متوقفة مؤقتًا. أعد الاتصال أو انتظر الرد أو راجع القرارات المنتظرة على الشاشة.';
 
@@ -1502,33 +1483,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'أرسل مسودتك الحالية أو احفظها أو امسحها قبل بدء المحادثة الصوتية.';
 
   @override
-  String get voiceConversationListen => 'استماع';
-
-  @override
-  String get voiceConversationExit => 'الخروج من الوضع الصوتي';
-
-  @override
   String get voiceConversationCommandsOnly =>
       'استخدم محرّر الرسالة النصي للأوامر التي تبدأ بشرطة مائلة.';
 
   @override
-  String get voiceReviewExplicitAction =>
-      'عدّل النص قبل إدراجه. يتطلب الإرسال دائمًا إجراءً صريحًا منك.';
-
-  @override
-  String get voiceInputInterrupted =>
-      'انقطع الإدخال الصوتي. أغلقه وابدأ مجددًا عندما تكون جاهزًا.';
-
-  @override
-  String get voiceInputClose => 'إغلاق الإدخال الصوتي';
-
-  @override
   String get voiceInputUnavailable =>
       'الإدخال الصوتي غير متاح. تحقّق من إعدادات النموذج المحلي والميكروفون.';
-
-  @override
-  String get voiceConversationInstructions =>
-      'راجع النص المنسوخ من صوتك وأدرجه، ثم اضغط «إرسال» في محرّر الرسالة. تُقرأ الردود بصوت عالٍ فقط عند تفعيل خيار القراءة، ويُقرأ الرد على ما أرسلته للتو فقط. يُحذف النص غير المرسل عند مغادرة الوضع الصوتي أو المحادثة أو التطبيق.';
 
   @override
   String get desktopDropFailedTitle => 'تعذّر إرفاق الملفات المُسقطة';
@@ -5603,10 +5563,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiChanges => 'التغييرات';
 
   @override
-  String get chatUiChooseAPromptToRestoreItIn =>
-      'اختر طلبًا لاستعادته في محادثة جديدة.';
-
-  @override
   String get chatUiChooseAServerModelByProviderAnd =>
       'اختيار نموذج على الخادم بحسب مزوّد الخدمة والقدرات';
 
@@ -5783,9 +5739,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get chatUiFollowAndroidOrChooseTheNativeLight =>
       'اتباع Android أو اختيار المظهر الفاتح أو الداكن للنظام';
-
-  @override
-  String get chatUiForkFromPrompt => 'إنشاء فرع من طلب';
 
   @override
   String get chatUiForkFromThisPrompt => 'إنشاء فرع من هذا الطلب';
@@ -8676,9 +8629,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7VoiceUiRedownload => 'إعادة التنزيل';
 
   @override
-  String get e7VoiceUiReviewTranscript => 'مراجعة النص';
-
-  @override
   String get e7VoiceUiOpenSettings => 'فتح إعدادات التطبيق';
 
   @override
@@ -8688,54 +8638,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7VoiceUiStartListening => 'بدء الاستماع';
 
   @override
-  String get e7VoiceUiCancel => 'إلغاء';
-
-  @override
-  String get e7VoiceUiInsert => 'إدراج';
-
-  @override
-  String get e7VoiceUiInsertSend => 'إدراج وإرسال';
-
-  @override
-  String get e7VoiceUiStartingMic => 'جارٍ تشغيل الميكروفون…';
-
-  @override
-  String get e7VoiceUiLoadingModel => 'جارٍ تحميل النموذج المحلي…';
-
-  @override
-  String get e7VoiceUiTranscribing =>
-      'جارٍ تحويل الكلام إلى نص على هذا الجهاز…';
-
-  @override
-  String get e7VoiceUiFinishingCancel => 'جارٍ إنهاء عملية التحويل الملغاة…';
-
-  @override
   String get e7VoiceUiDraftReady => 'النص جاهز للمراجعة';
 
   @override
   String get e7VoiceUiNeedsAttention => 'الإدخال الصوتي يحتاج إلى انتباهك';
 
   @override
-  String get e7VoiceUiReady => 'جاهز للإدخال الصوتي المحلي';
-
-  @override
   String get e7VoiceUiModelRequired => 'يلزم نموذج محلي';
-
-  @override
-  String get e7VoiceUiDownloading => 'جارٍ تنزيل النموذج الصوتي…';
-
-  @override
-  String get e7VoiceUiVerifyingModel => 'جارٍ التحقّق من النموذج الصوتي…';
-
-  @override
-  String get e7VoiceUiListeningHint =>
-      'جارٍ الاستماع. اضغط مرتين على إيقاف التسجيل عند الانتهاء.';
-
-  @override
-  String get e7VoiceUiPrivacy => 'يبقى الصوت على هذا الجهاز';
-
-  @override
-  String get e7VoiceUiStopRecording => 'إيقاف التسجيل';
 
   @override
   String e7ModelUiCount(int count) {
@@ -8823,16 +8732,6 @@ class AppLocalizationsAr extends AppLocalizations {
     String description,
   ) {
     return '$model، $size، $badges. $description';
-  }
-
-  @override
-  String e7VoiceUiListeningTime(String elapsed, String maximum) {
-    return 'جارٍ الاستماع: $elapsed من $maximum';
-  }
-
-  @override
-  String e7VoiceUiRecordingCap(int seconds) {
-    return 'حتى $seconds ثانية لكل تسجيل';
   }
 
   @override
@@ -10332,11 +10231,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiStartRunDirectSend => 'إرسال إلى وكيل';
-
-  @override
-  String teamUiStartRunDirectRefused(String reason) {
-    return 'رفض المضيف المهمة: $reason';
-  }
 
   @override
   String teamUiStartRunRefused(String reason) {
@@ -14289,6 +14183,16 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String appExitServerAndTeamStopped(String what) {
     return '$what. توقّف OpenCode على هاتفك وفريق الذكاء الاصطناعي معه، وهما يبدآن من جديد.';
+  }
+
+  @override
+  String appExitServerStoppedManual(String what) {
+    return '$what. Your phone\'s OpenCode stopped with it. Start it again when you\'re ready.';
+  }
+
+  @override
+  String appExitServerAndTeamStoppedManual(String what) {
+    return '$what. Your phone\'s OpenCode and the AI Team stopped with it. Start them again when you\'re ready.';
   }
 
   @override
@@ -18702,14 +18606,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get voiceSetupModelLabel => 'Speech model';
 
   @override
-  String get voiceComposerTitle => 'Voice input';
-
-  @override
-  String voiceComposerModelLine(String model, String language) {
-    return '$model model · $language';
-  }
-
-  @override
   String get voiceNoticesTitle => 'Voice licenses';
 
   @override
@@ -20298,12 +20194,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get approvalsUiPausedDetail =>
       'This phone is not connected. Automatic approval resumes when it reconnects.';
-
-  @override
-  String get voiceConversationSpeakRepliesBusy => 'Getting the voice ready…';
-
-  @override
-  String get voiceConversationStopReading => 'Stop reading the reply';
 
   @override
   String get teamUiHomeRunReviewNext => 'a reviewer checks it next';
@@ -23206,4 +23096,69 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get commandSheetSubtitleAppOnly =>
       'Run one of the app\'s actions in this conversation';
+
+  @override
+  String get voiceModeMicAsk =>
+      'Voice typing needs the microphone. Tap Allow microphone, then choose Allow.';
+
+  @override
+  String get voiceModeMicAllow => 'Allow microphone';
+
+  @override
+  String get voiceModeMicBlocked =>
+      'Android blocks the microphone for this app. Turn it on in Android settings, then come back here.';
+
+  @override
+  String get voiceModeNothingHeard =>
+      'Nothing was heard. Tap the mic and try again.';
+
+  @override
+  String get teamDispatchCreating => 'Creating your task…';
+
+  @override
+  String get teamDispatchSending => 'Task created · sending it to the team…';
+
+  @override
+  String get teamDispatchAwaitingWorker =>
+      'Task sent to the team · waiting for a worker';
+
+  @override
+  String get teamDispatchWorkerStarted => 'A worker started your task';
+
+  @override
+  String get teamDispatchCreateRefused =>
+      'The task wasn’t made. Change it and send it again.';
+
+  @override
+  String get teamDispatchAssignRefused =>
+      'Task created, but it could not be sent to the team';
+
+  @override
+  String get teamDispatchAssignRefusedHint =>
+      'The task stays on the board, given to no one.';
+
+  @override
+  String get teamDispatchCreateUnconfirmed =>
+      'Couldn’t confirm whether the task was created';
+
+  @override
+  String get teamDispatchDispatchUnconfirmed =>
+      'Task created · couldn’t confirm it reached the team';
+
+  @override
+  String get teamDispatchCheckBoard =>
+      'Check the board before sending it again. Your words are kept.';
+
+  @override
+  String get teamDispatchUnknown =>
+      'Task sent · the team can’t be reached, so whether a worker started is unknown';
+
+  @override
+  String get teamDispatchCheckAgain => 'Check the team again';
+
+  @override
+  String get teamDispatchTaskId => 'Task ID';
+
+  @override
+  String get teamDispatchHostWords => 'The team’s reply';
 }

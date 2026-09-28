@@ -12,7 +12,7 @@
 ///   when one starts; past two checks (three minutes when the interval is
 ///   unknown), or when the host saw the start stall, it says no worker
 ///   has started.
-/// - [teamNowLine]: the team page's one line for the whole team, with the
+/// - [teamNowStatus]: the team page's one status for the whole team, with the
 ///   one action that helps (wake a worker, resume the team, or Why?
 ///   opening the Technical details).
 library;
@@ -324,7 +324,12 @@ KitAction teamUnstickAction(
 /// say — it is paused, or it is not starting a worker for a waiting task —
 /// with the one action that helps. Never a task's title or its wait: the
 /// task's own row says those (nothing shown twice). Null otherwise.
-Widget? teamNowLine(
+///
+/// A [KitStatus] of kind `work` for the page's status slot
+/// (`KitScreen.status`), so a connection line and this one never show at
+/// once: the slot draws the more urgent (P4.4 hand-off, P6.3). Keys:
+/// `<prefix>-paused`, `<prefix>-stuck`, and the action's.
+KitStatus? teamNowStatus(
   BuildContext context, {
   required OrchestrationController controller,
   required DateTime now,
@@ -344,7 +349,9 @@ Widget? teamNowLine(
         run,
   ];
   if (rest == TeamRest.paused && open.isNotEmpty) {
-    return KitStatusLine(
+    return KitStatus(
+      kind: KitStatusKind.work,
+      id: '$keyPrefix:paused',
       key: ValueKey('$keyPrefix-paused'),
       icon: AppIconography.pause,
       tone: AppStatusTone.neutral,
@@ -374,7 +381,9 @@ Widget? teamNowLine(
   );
   if (stuck) {
     final worker = teamSleepingWorker(agents);
-    return KitStatusLine(
+    return KitStatus(
+      kind: KitStatusKind.work,
+      id: '$keyPrefix:stuck',
       key: ValueKey('$keyPrefix-stuck'),
       icon: AppIconography.warning,
       tone: AppStatusTone.neutral,

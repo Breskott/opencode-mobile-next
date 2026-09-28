@@ -32,7 +32,9 @@ String appExitTimeText(
 }
 
 /// The notice's one sentence: what ended the app, what stopped with it and
-/// that it is coming back.
+/// whether it is coming back. It says "starting again" only when the
+/// automation policy lets this launch restart it ([AppExitNotice.
+/// recoveryAllowed]); otherwise the person starts it.
 String appExitMessage(AppLocalizations l10n, AppExitNotice notice, String at) {
   final what = switch (notice.kind) {
     AppExitKind.lowMemory => l10n.appExitLowMemory(at),
@@ -40,6 +42,11 @@ String appExitMessage(AppLocalizations l10n, AppExitNotice notice, String at) {
     AppExitKind.killed => l10n.appExitKilled(at),
     _ => l10n.appExitForceStopped(at),
   };
+  if (!notice.recoveryAllowed) {
+    return notice.teamStopped
+        ? l10n.appExitServerAndTeamStoppedManual(what)
+        : l10n.appExitServerStoppedManual(what);
+  }
   return notice.teamStopped
       ? l10n.appExitServerAndTeamStopped(what)
       : l10n.appExitServerStopped(what);

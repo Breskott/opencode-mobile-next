@@ -18,6 +18,7 @@ class _Gateway extends FixtureOrchestrationGateway {
   final calls = <String>[];
   List<OrchestrationAgent> workers = [];
   Completer<void>? holdCreate;
+  Completer<void>? holdAssign;
   MutationReceiptStatus createReceipt = MutationReceiptStatus.accepted;
   MutationReceiptStatus assignReceipt = MutationReceiptStatus.accepted;
   bool includeId = true;
@@ -55,6 +56,7 @@ class _Gateway extends FixtureOrchestrationGateway {
     required String requestId,
   }) async {
     calls.add('assign:$workId:$agentId');
+    await holdAssign?.future;
     return MutationReceipt(
       id: requestId,
       status: assignReceipt,
@@ -66,8 +68,11 @@ class _Gateway extends FixtureOrchestrationGateway {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<OrchestrationController> boot(_Gateway gateway) async {
-    SharedPreferences.setMockInitialValues({});
+  Future<OrchestrationController> boot(
+    _Gateway gateway, {
+    bool freshStore = true,
+  }) async {
+    if (freshStore) SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final config = OrchestrationConfig(
       provider: OrchestrationProvider.fixture,
@@ -139,7 +144,7 @@ void main() {
       dispatch.addListener(() => notifications++);
       final first = submit(dispatch);
       expect(identical(first, submit(dispatch)), isTrue);
-      expect(dispatch.phase, TeamDispatchPhase.submitting);
+      expect(dispatch.phase, TeamDispatchPhase.creating);
       gateway.holdCreate!.complete();
       await first;
       // giveTask's work/run refresh is deliberately fire-and-forget. Drain
@@ -218,7 +223,9 @@ void main() {
         await submit(dispatch);
         expect(
           dispatch.phase,
-          rejected ? TeamDispatchPhase.rejected : TeamDispatchPhase.unconfirmed,
+          rejected
+              ? TeamDispatchPhase.createRefused
+              : TeamDispatchPhase.createUnconfirmed,
         );
         expect(dispatch.assignMutationKey, isNull);
         await submit(dispatch);
@@ -238,7 +245,7 @@ void main() {
         agentId: 'project/pool',
       );
       expect(gateway.sentTitle, 'Fix startup token=fake-test-value');
-      expect(dispatch.phase, TeamDispatchPhase.unconfirmed);
+      expect(dispatch.phase, TeamDispatchPhase.dispatchUnconfirmed);
       expect(dispatch.workId, 'new-task');
       expect(dispatch.assignmentReceipt, MutationReceiptStatus.pending);
       await submit(dispatch);
@@ -266,4 +273,131 @@ void main() {
       expect(gateway.calls.length, 2);
     },
   );
+
+  test('each stage appears once the host confirmed the step before it, '
+      'with one request per step (P6.3)', () async {
+    final gateway = _Gateway()
+      ..holdCreate = Completer<void>()
+      ..holdAssign = Completer<void>();
+    final source = await boot(gateway);
+    final dispatch = track(source);
+    final seen = <TeamDispatchPhase>[];
+    dispatch.addListener(() {
+      if (seen.isEmpty || seen.last != dispatch.phase) seen.add(dispatch.phase);
+    });
+    final done = submit(dispatch);
+    expect(dispatch.phase, TeamDispatchPhase.creating);
+    expect(dispatch.title, 'Fix startup');
+    expect(dispatch.startedAt, isNotNull);
+    await Future<void>.delayed(Duration.zero);
+    expect(gateway.calls, ['create']);
+    gateway.holdCreate!.complete();
+    // The create's answer is said before the assignment returns.
+    for (var i = 0; i < 5 && dispatch.phase != TeamDispatchPhase.sending; i++) {
+      await Future<void>.delayed(Duration.zero);
+    }
+    expect(dispatch.phase, TeamDispatchPhase.sending);
+    expect(dispatch.workId, 'new-task');
+    expect(gateway.calls, ['create', 'assign:new-task:project/pool']);
+    gateway.holdAssign!.complete();
+    await done;
+    expect(dispatch.phase, TeamDispatchPhase.awaitingWorker);
+    expect(seen, [
+      TeamDispatchPhase.creating,
+      TeamDispatchPhase.sending,
+      TeamDispatchPhase.awaitingWorker,
+    ]);
+    await Future<void>.delayed(Duration.zero);
+    expect(gateway.calls, ['create', 'assign:new-task:project/pool']);
+  });
+
+  test('a refused assignment keeps the created task: no re-create, no '
+      'delete, no second assignment', () async {
+    final gateway = _Gateway()..assignReceipt = MutationReceiptStatus.rejected;
+    final dispatch = track(await boot(gateway));
+    await submit(dispatch);
+    expect(dispatch.phase, TeamDispatchPhase.assignRefused);
+    expect(dispatch.workId, 'new-task');
+    expect(dispatch.problemRecord?.key, dispatch.assignMutationKey);
+    await submit(dispatch);
+    await Future<void>.delayed(Duration.zero);
+    expect(gateway.calls, ['create', 'assign:new-task:project/pool']);
+  });
+
+  test('an accepted task on a team that cannot be seen is unknown, even '
+      'after a worker was seen', () async {
+    final gateway = _Gateway();
+    final source = await boot(gateway);
+    final dispatch = track(source);
+    await submit(dispatch);
+    await Future<void>.delayed(Duration.zero);
+    expect(dispatch.phase, TeamDispatchPhase.awaitingWorker);
+    gateway.workers = [
+      const OrchestrationAgent(
+        id: 'worker',
+        name: 'Worker',
+        state: AgentState.working,
+        currentWorkId: 'new-task',
+        sessionId: 'matching',
+        sessionRunning: true,
+      ),
+    ];
+    await source.refresh();
+    expect(dispatch.phase, TeamDispatchPhase.workerObserved);
+    // The worker finished: it did start; never "waiting for a worker".
+    gateway.workers = [];
+    await source.refresh();
+    expect(dispatch.phase, TeamDispatchPhase.workerObserved);
+    expect(dispatch.observedSessionId, 'matching');
+    gateway.failAgentRead = true;
+    await source.refresh();
+    expect(dispatch.phase, TeamDispatchPhase.unknown);
+    await source.stop();
+    expect(dispatch.phase, TeamDispatchPhase.unknown);
+  });
+
+  test('after a restart nothing is sent again: a fresh attempt starts idle '
+      'and the old records stay the host\'s', () async {
+    final gateway = _Gateway()..assignReceipt = MutationReceiptStatus.pending;
+    final first = await boot(gateway);
+    final attempt = TeamDispatchAttempts.of(first).begin();
+    await submit(attempt);
+    expect(attempt.phase, TeamDispatchPhase.dispatchUnconfirmed);
+    expect(gateway.calls.length, 2);
+    await first.stop();
+
+    final again = _Gateway();
+    final restarted = await boot(again, freshStore: false);
+    expect(TeamDispatchAttempts.of(restarted).latest, isNull);
+    final fresh = track(restarted);
+    expect(fresh.phase, TeamDispatchPhase.idle);
+    expect(fresh.workId, isNull);
+    await Future<void>.delayed(Duration.zero);
+    expect(again.calls, isEmpty);
+    // The persisted records are still there to inspect.
+    expect(
+      restarted.mutations.map((r) => r.kind),
+      containsAll([MutationKind.createWork, MutationKind.assign]),
+    );
+  });
+
+  test('the attempts holder keeps only the latest attempt; dismissing '
+      'sends nothing', () async {
+    final gateway = _Gateway();
+    final source = await boot(gateway);
+    final attempts = TeamDispatchAttempts.of(source);
+    expect(identical(attempts, TeamDispatchAttempts.of(source)), isTrue);
+    var heard = 0;
+    attempts.addListener(() => heard++);
+    final one = attempts.begin();
+    await submit(one);
+    expect(heard, greaterThan(0));
+    final two = attempts.begin();
+    expect(attempts.latest, same(two));
+    expect(two.phase, TeamDispatchPhase.idle);
+    attempts.dismiss();
+    expect(attempts.latest, isNull);
+    await Future<void>.delayed(Duration.zero);
+    expect(gateway.calls, ['create', 'assign:new-task:project/pool']);
+  });
 }

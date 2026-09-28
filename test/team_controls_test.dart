@@ -25,6 +25,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/state/team_dispatch.dart';
 import 'package:opencode_mobile/state/team_planning.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
@@ -1116,13 +1117,301 @@ void main() {
       expect(gateway.calls.map((c) => c.verb), ['createWork']);
       expect(key('team-start-run-sheet'), findsOneWidget);
       expect(key('team-start-run-direct-error'), findsOneWidget);
+      // Plain words; the host's own words only under Technical details.
       expect(
-        find.text('The host refused the task: rig ocproof unknown'),
+        find.text('The task wasn’t made. Change it and send it again.'),
         findsOneWidget,
       );
+      expect(find.textContaining('rig ocproof unknown'), findsNothing);
+      await tapVisible(tester, key('team-start-run-direct-error-details'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('rig ocproof unknown'), findsOneWidget);
       expect(
         controller.latestMutation(kind: MutationKind.createWork)?.status,
         MutationStatus.rejected,
+      );
+      // Nothing was made, so nothing is said on the page behind.
+      expect(TeamDispatchAttempts.of(controller).latest, isNull);
+    });
+
+    group('P6.3 dispatch stages', () {
+      Future<void> openDirect(
+        WidgetTester tester,
+        OrchestrationController controller,
+        String title,
+      ) async {
+        await pumpHome(tester, controller);
+        await tester.tap(key('team-home-start-run'));
+        await tester.pumpAndSettle();
+        expect(key('team-start-run-direct'), findsOneWidget);
+        await tester.enterText(key('team-start-run-direct-title'), title);
+        await tester.pump();
+      }
+
+      String textOf(WidgetTester tester, String value) {
+        final text = tester.widget<Text>(
+          find
+              .descendant(
+                of: key(value),
+                matching: find.byType(Text),
+                matchRoot: true,
+              )
+              .first,
+        );
+        return text.data ?? text.textSpan?.toPlainText() ?? '';
+      }
+
+      String stage(WidgetTester tester) =>
+          textOf(tester, 'team-start-run-direct-stage-text');
+
+      String homeLine(WidgetTester tester) =>
+          textOf(tester, 'team-home-dispatch-text');
+
+      OrchestrationAgent worker({bool running = true}) => OrchestrationAgent(
+        id: 'ocproof/polecat-1',
+        name: 'polecat-1',
+        state: AgentState.working,
+        rawState: 'active',
+        pool: 'gastown.polecat',
+        sessionId: 'bl-new',
+        sessionRunning: running,
+        currentWorkId: 'fx-new-1',
+      );
+
+      testWidgets(
+        'the sheet says each stage once the host confirmed it; the home '
+        'status line carries it on; one request per step; timing probe',
+        (tester) async {
+          await size(tester, const Size(412, 915));
+          final createGate = Completer<void>();
+          final assignGate = Completer<void>();
+          final (controller, gateway) = await boot(
+            capabilities: OrchestrationCapabilities.gascityLoopback,
+            configure: (g) {
+              g.agentList = [fox(), mayor(suspended: true)];
+              g.answer = (call) async {
+                if (call.verb == 'createWork') {
+                  await createGate.future;
+                  return created(call);
+                }
+                await assignGate.future;
+                return slung(call);
+              };
+            },
+          );
+          await openDirect(tester, controller, 'Add a docstring');
+          await tester.tap(key('team-start-run-direct-send'));
+          await tester.pump();
+          expect(stage(tester), 'Creating your task…');
+          expect(gateway.calls.map((c) => c.verb), ['createWork']);
+
+          // Timing probe: create receipt -> first visible next stage.
+          final watch = Stopwatch()..start();
+          createGate.complete();
+          await tester.pump();
+          watch.stop();
+          expect(stage(tester), 'Task created · sending it to the team…');
+          // ignore: avoid_print
+          print(
+            'P6.3 timing probe: create receipt -> "Task created" visible in '
+            '1 frame, ${watch.elapsedMicroseconds} µs test time',
+          );
+          expect(gateway.calls.map((c) => c.verb), ['createWork', 'assign']);
+          expect(gateway.calls[1].target, 'fx-new-1');
+
+          assignGate.complete();
+          await tester.pumpAndSettle();
+          // The task's conversation opened; back on the page, the line.
+          expect(find.byType(TeamConversationScreen), findsOneWidget);
+          Navigator.of(
+            tester.element(find.byType(TeamConversationScreen)),
+          ).pop();
+          await tester.pumpAndSettle();
+          expect(key('team-home-dispatch-awaitingWorker'), findsOneWidget);
+          expect(
+            homeLine(tester),
+            'Task sent to the team · waiting for a worker',
+          );
+          expect(
+            find.text('Next: a worker starts · usually within 5 min'),
+            findsOneWidget,
+          );
+
+          // Only a running session on this exact task says more.
+          gateway.agentList = [fox(), mayor(suspended: true), worker()];
+          await controller.refresh();
+          await settle(tester);
+          expect(key('team-home-dispatch-workerObserved'), findsOneWidget);
+          expect(homeLine(tester), 'A worker started your task');
+
+          // Reopening the page sends nothing again.
+          await tester.pumpWidget(const SizedBox());
+          await pumpHome(tester, controller);
+          expect(key('team-home-dispatch-workerObserved'), findsOneWidget);
+          expect(gateway.calls.map((c) => c.verb), ['createWork', 'assign']);
+          await tester.tap(find.byKey(const ValueKey('kit-status-dismiss')));
+          await settle(tester);
+          expect(key('team-home-dispatch-workerObserved'), findsNothing);
+          expect(gateway.calls.length, 2);
+          await drain(tester);
+        },
+      );
+
+      testWidgets(
+        'the task\'s own conversation Now line follows the same attempt: '
+        'nothing claimed before the host answers, then the real stage',
+        (tester) async {
+          await size(tester, const Size(412, 915));
+          final assignGate = Completer<void>();
+          final (controller, gateway) = await boot(
+            capabilities: OrchestrationCapabilities.gascityLoopback,
+            timeout: const Duration(seconds: 5),
+            configure: (g) {
+              g.agentList = [fox(), mayor(suspended: true)];
+              g.answer = (call) async {
+                if (call.verb == 'createWork') return created(call);
+                await assignGate.future;
+                return slung(call);
+              };
+            },
+          );
+          String nowText() => textOf(tester, 'team-conversation-now-text');
+          await openDirect(tester, controller, 'Add a docstring');
+          await tester.tap(key('team-start-run-direct-send'));
+          await tester.pump();
+          await tester.pump();
+          assignGate.complete();
+          await tester.pumpAndSettle();
+          expect(find.byType(TeamConversationScreen), findsOneWidget);
+          expect(nowText(), contains('Waiting for a worker'));
+
+          // Only a running session on this exact task says more.
+          gateway.agentList = [fox(), mayor(suspended: true), worker()];
+          await controller.refresh();
+          await settle(tester);
+          expect(nowText(), contains('Starting a worker'));
+          expect(gateway.calls.map((c) => c.verb), ['createWork', 'assign']);
+          await drain(tester);
+        },
+      );
+
+      testWidgets(
+        'an assignment the host never confirms reads "couldn\'t confirm", '
+        'not sent',
+        (tester) async {
+          await size(tester, const Size(412, 915));
+          final (controller, gateway) = await boot(
+            capabilities: OrchestrationCapabilities.gascityLoopback,
+            timeout: const Duration(seconds: 5),
+            configure: (g) {
+              g.agentList = [fox(), mayor(suspended: true)];
+              g.answer = (call) async =>
+                  call.verb == 'createWork' ? created(call) : slung(call);
+            },
+          );
+          await openDirect(tester, controller, 'Add a docstring');
+          await tester.tap(key('team-start-run-direct-send'));
+          await tester.pumpAndSettle();
+          Navigator.of(
+            tester.element(find.byType(TeamConversationScreen)),
+          ).pop();
+          await tester.pumpAndSettle();
+          expect(key('team-home-dispatch-awaitingWorker'), findsOneWidget);
+          await tester.pump(const Duration(seconds: 6));
+          await settle(tester);
+          expect(key('team-home-dispatch-dispatchUnconfirmed'), findsOneWidget);
+          expect(
+            homeLine(tester),
+            'Task created · couldn’t confirm it reached the team',
+          );
+          expect(gateway.calls.map((c) => c.verb), ['createWork', 'assign']);
+          await drain(tester);
+        },
+      );
+
+      testWidgets(
+        'a refused assignment keeps the task; the host\'s words only under '
+        'Technical details, redacted',
+        (tester) async {
+          await size(tester, const Size(412, 915));
+          const secret = 'sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789';
+          final (controller, gateway) = await boot(
+            capabilities: OrchestrationCapabilities.gascityLoopback,
+            configure: (g) {
+              g.agentList = [fox(), mayor(suspended: true)];
+              g.answer = (call) async => call.verb == 'createWork'
+                  ? created(call)
+                  : MutationReceipt.rejected(
+                      call.requestId,
+                      'pool suspended (key $secret)',
+                    );
+            },
+          );
+          await openDirect(tester, controller, 'Add a docstring');
+          await tester.tap(key('team-start-run-direct-send'));
+          await tester.pumpAndSettle();
+          // No conversation opens on a task nobody took.
+          expect(find.byType(TeamConversationScreen), findsNothing);
+          expect(key('team-start-run-sheet'), findsNothing);
+          expect(key('team-home-dispatch-assignRefused'), findsOneWidget);
+          expect(
+            homeLine(tester),
+            'Task created, but it could not be sent to the team',
+          );
+          expect(
+            find.text('The task stays on the board, given to no one.'),
+            findsOneWidget,
+          );
+          expect(find.textContaining('pool suspended'), findsNothing);
+          expect(gateway.calls.map((c) => c.verb), ['createWork', 'assign']);
+
+          await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Technical details').last);
+          await tester.pumpAndSettle();
+          expect(key('team-home-dispatch-details-sheet'), findsOneWidget);
+          expect(find.textContaining('fx-new-1'), findsWidgets);
+          expect(find.textContaining('pool suspended'), findsOneWidget);
+          expect(find.textContaining(secret), findsNothing);
+          expect(gateway.calls.length, 2);
+        },
+      );
+
+      testWidgets(
+        'a create with no task ID opens nothing, keeps the words and sends '
+        'nothing more',
+        (tester) async {
+          await size(tester, const Size(412, 915));
+          final (controller, gateway) = await boot(
+            capabilities: OrchestrationCapabilities.gascityLoopback,
+            timeout: const Duration(seconds: 5),
+            configure: (g) {
+              g.agentList = [fox(), mayor(suspended: true)];
+              g.answer = (call) async => MutationReceipt(
+                id: call.requestId,
+                status: MutationReceiptStatus.accepted,
+                upstreamStatus: 202,
+              );
+            },
+          );
+          await openDirect(tester, controller, 'Add a docstring');
+          await tester.tap(key('team-start-run-direct-send'));
+          await tester.pumpAndSettle();
+          expect(find.byType(TeamConversationScreen), findsNothing);
+          expect(key('team-start-run-sheet'), findsNothing);
+          expect(key('team-home-dispatch-createUnconfirmed'), findsOneWidget);
+          expect(
+            homeLine(tester),
+            'Couldn’t confirm whether the task was created',
+          );
+          expect(gateway.calls.map((c) => c.verb), ['createWork']);
+          // The words wait for a deliberate new send.
+          await tester.tap(key('team-home-start-run'));
+          await tester.pumpAndSettle();
+          expect(find.text('Add a docstring'), findsOneWidget);
+          expect(gateway.calls.length, 1);
+          await drain(tester);
+        },
       );
     });
 

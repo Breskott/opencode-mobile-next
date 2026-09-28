@@ -289,6 +289,22 @@ void main() {
     await _close(tester);
   });
 
+  testWidgets('the connecting page stays below the status bar', (tester) async {
+    // A phone with a 40 dp status bar and a 24 dp gesture bar.
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.padding = const FakeViewPadding(top: 40, bottom: 24);
+    tester.view.viewPadding = const FakeViewPadding(top: 40, bottom: 24);
+    addTearDown(tester.view.reset);
+    await _seed();
+    await _open(tester);
+    final page = find.byKey(const ValueKey('opening-shell'));
+    expect(page, findsOneWidget);
+    expect(tester.getTopLeft(page).dy, greaterThanOrEqualTo(40));
+    expect(tester.getBottomLeft(page).dy, lessThanOrEqualTo(915 - 24));
+    await _close(tester);
+  });
+
   testWidgets('a failed connect keeps the titles, no longer "Refreshing"', (
     tester,
   ) async {
