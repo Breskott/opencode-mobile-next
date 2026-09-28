@@ -29046,5 +29046,9 @@
   "thisPhoneExportProjectsDetail": "Save them as a zip file, to keep or move",
   "@thisPhoneExportProjectsDetail": {
     "description": "This phone: under Export projects."
+  },
+  "demoNoCommands": "The demo has no commands — send the sample prompt to see a change reviewed.",
+  "@demoNoCommands": {
+    "description": "One line in the demo chat's suggestion area when the person types / : the demo has no slash commands."
   }
 }

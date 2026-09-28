@@ -395,6 +395,46 @@ void main() {
     },
   );
 
+  testWidgets(
+    'B12: a typed / in the demo says it has no commands, at the start and '
+    'mid-text, and offers none',
+    (tester) async {
+      await _isolatedJourney(tester, () async {
+        const noCommands =
+            'The demo has no commands — send the sample prompt to see a '
+            'change reviewed.';
+        final field = find.byKey(const Key('chat-composer-field'));
+        // The sample prompt alone: nothing in the suggestion area.
+        expect(find.text(noCommands), findsNothing);
+
+        await tester.enterText(field, '/');
+        await _pump(tester);
+        expect(find.byKey(const Key('demo-no-commands')), findsOneWidget);
+        expect(find.text(noCommands), findsOneWidget);
+        expect(
+          find.byKey(const Key('inline-command-suggestions')),
+          findsNothing,
+        );
+
+        // Words without a slash word at the caret: the line goes.
+        await tester.enterText(field, 'Add a welcome line');
+        await _pump(tester);
+        expect(find.text(noCommands), findsNothing);
+
+        // "/" typed mid-text (the backlog's case) says the same.
+        await tester.enterText(field, 'Add a welcome line /rev');
+        await _pump(tester);
+        expect(find.text(noCommands), findsOneWidget);
+
+        // A path inside a word is not a command.
+        await tester.enterText(field, 'Edit src/welcome.txt');
+        await _pump(tester);
+        expect(find.text(noCommands), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    },
+  );
+
   test(
     'demo preferences are independent maps with defensive list copies',
     () async {

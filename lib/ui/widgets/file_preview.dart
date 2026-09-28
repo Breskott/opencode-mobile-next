@@ -692,7 +692,7 @@ class _FilePreviewBodyState extends State<FilePreviewBody> {
   bool _effectiveWrap(BuildContext context) =>
       _wrap ??
       ReaderPreferencesScope.maybeOf(context)?.value.wrapCode ??
-      KitCodeBlock.defaultWrap(context, KitCodeKind.code);
+      kitViewerDefaultWrap(context, _currentPlan.content.kind);
 
   void _setWrap(bool wrap) {
     setState(() => _wrap = wrap);

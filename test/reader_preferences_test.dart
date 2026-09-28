@@ -223,11 +223,12 @@ void main() {
       _RefusingPreferences(),
       Scaffold(body: MarkdownText('```\n${'long_value_' * 20}\n```')),
     );
-    // Compact readers wrap by default; a refused save must keep that state.
-    expect(_horizontal(), findsNothing);
+    // Code scrolls sideways by default (polish2); a refused save must keep
+    // that state.
+    expect(_horizontal(), findsOneWidget);
     await _chooseCodeAction(tester, 'Wrap lines');
     await tester.pumpAndSettle();
-    expect(_horizontal(), findsNothing);
+    expect(_horizontal(), findsOneWidget);
     expect(
       find.text('Could not save reader preferences. Try again.'),
       findsOneWidget,

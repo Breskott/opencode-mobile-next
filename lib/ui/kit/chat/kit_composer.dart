@@ -362,9 +362,7 @@ class _KitComposerState extends State<KitComposer> {
 
   bool get _suggestionsShown {
     final s = widget.suggestions;
-    return s != null &&
-        !_suggestionsHidden &&
-        (s.suggestions?.isNotEmpty ?? false);
+    return s != null && !_suggestionsHidden && s.hasSuggestionContent;
   }
 
   void _escape() {

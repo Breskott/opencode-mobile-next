@@ -123,9 +123,10 @@ class KitCodeBlock extends StatefulWidget {
   final List<TextRange> marks;
   final Key? blockKey, copyKey, showAllKey;
 
-  /// The wrap a block uses when [wrap] is null: command never wraps; code
-  /// and output wrap on a compact window and scroll sideways from medium
-  /// up (today's reader default, ReaderWrapButton).
+  /// The wrap a block uses when [wrap] is null: command and code scroll
+  /// sideways on every window (slice-polish2: a long line is never broken
+  /// mid-identifier); output wraps on a compact window and scrolls sideways
+  /// from medium up. The Wrap toggle wraps any of them.
   static bool defaultWrap(BuildContext context, KitCodeKind kind);
 }
 
@@ -151,7 +152,7 @@ abstract final class KitCodeHighlight {
 |---|---|
 | default | the header (if any), then the lines on the code surface |
 | capped | `maxLines` lines, a 1 px hairline, "Show all N lines" or "Open full output" |
-| wrapped | lines wrap at word boundaries (or anywhere inside a long token); continuation lines are indented by the line-number gutter |
+| wrapped | lines wrap at spaces and, inside a long token, after punctuation (`kitCodeBreakable`: after `. , ; : ( [ { = & \| /`, never inside a run such as `::` or before a closing bracket); only a token with no such mark breaks where it must. The break chances are display-only zero-width spaces: Copy uses the source and a selection copies without them. Continuation lines are indented by the line-number gutter |
 | scrolling | one horizontal scroller for the whole block (not per line), a visible scrollbar on a fine pointer, and a `space6` edge fade at the end edge while more is off-screen; nothing is clipped |
 | copied | the copy glyph is a check for `KitMotion.copiedHold` (KitIconButton.copy) |
 | empty | a single `text3` line "Empty" (`kitCodeEmpty`); Copy is disabled |
@@ -171,7 +172,7 @@ Loading, error and disabled are the host's (a code block shows text it was given
 
 | Window | Behaviour |
 |---|---|
-| compact | full width of its host's rails; code and output wrap by default; command scrolls sideways |
+| compact | full width of its host's rails; output wraps by default; code and command scroll sideways (code with the Wrap toggle) |
 | medium | code and output scroll sideways by default, with the Wrap toggle |
 | expanded / large | the same, plus mouse text selection across lines and an always-visible horizontal scrollbar where the block scrolls (the desktop rule, `KitLayout.finePointer`) |
 

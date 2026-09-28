@@ -129,7 +129,8 @@ class KitSuggestion {
 ///
 /// Declared (KitComposerChips.md "States"): model chosen / server default /
 /// sign in needed / choose needed / context warning / narrow (glyph only);
-/// attachments editable / read-only / empty; suggestions list / empty. There
+/// attachments editable / read-only / empty; suggestions list / empty /
+/// note (one line saying why nothing is offered). There
 /// is no loading (the host has the data), no error of its own and no
 /// disabled chip (STATE-8: a chip that cannot act is not shown).
 ///
@@ -152,6 +153,7 @@ class KitComposerChips extends StatelessWidget {
        suggestions = null,
        onSelected = null,
        onShowAll = null,
+       note = null,
        stripKey = null,
        listKey = null;
 
@@ -170,17 +172,21 @@ class KitComposerChips extends StatelessWidget {
        suggestions = null,
        onSelected = null,
        onShowAll = null,
+       note = null,
        chipKey = null,
        contextKey = null,
        listKey = null;
 
   /// What `/` or `@` would insert. At most [visibleCount] rows, then
-  /// "Show all" when [onShowAll] is given.
+  /// "Show all" when [onShowAll] is given. With no rows, [note] is one plain
+  /// line in the same place that says why nothing is offered ("The demo has
+  /// no commands — …"), so a typed `/` never meets silence (B12).
   const KitComposerChips.suggestions({
     super.key,
     required List<KitSuggestion> this.suggestions,
     required ValueChanged<KitSuggestion> this.onSelected,
     this.onShowAll,
+    this.note,
     this.listKey,
   }) : label = null,
        onPressed = null,
@@ -209,7 +215,16 @@ class KitComposerChips extends StatelessWidget {
   final List<KitSuggestion>? suggestions;
   final ValueChanged<KitSuggestion>? onSelected;
   final VoidCallback? onShowAll;
+
+  /// Suggestions form only: the one line shown when [suggestions] is empty.
+  final String? note;
   final Key? chipKey, contextKey, stripKey, listKey;
+
+  /// Whether the suggestions form has anything to show: rows, or its
+  /// [note] when there are none.
+  bool get hasSuggestionContent =>
+      (suggestions?.isNotEmpty ?? false) ||
+      (suggestions != null && note != null);
 
   @override
   Widget build(BuildContext context) {
@@ -234,7 +249,11 @@ class KitComposerChips extends StatelessWidget {
       );
     }
     final suggestions = this.suggestions!;
-    if (suggestions.isEmpty) return const SizedBox.shrink();
+    if (suggestions.isEmpty) {
+      final note = this.note;
+      if (note == null) return const SizedBox.shrink();
+      return _SuggestionNote(key: listKey, note: note);
+    }
     return _SuggestionPanel(
       key: listKey,
       suggestions: suggestions,
@@ -1090,6 +1109,44 @@ String _cutAtWord(
     }
   }
   return best ?? text;
+}
+
+/// The suggestions form's one plain line when nothing can be offered: the
+/// panel's surface and inset, no tap target, read out when it appears.
+class _SuggestionNote extends StatelessWidget {
+  const _SuggestionNote({super.key, required this.note});
+
+  final String note;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          color: tokens.roles.surface2,
+          shape: tokens.shapeOf(KitShape.panel),
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: tokens.minTarget),
+          child: Padding(
+            padding: EdgeInsetsDirectional.symmetric(
+              horizontal: tokens.space4,
+              vertical: tokens.space2,
+            ),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              widthFactor: 1,
+              heightFactor: 1,
+              child: KitText(note, role: KitTextRole.secondary),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _SuggestionPanel extends StatelessWidget {

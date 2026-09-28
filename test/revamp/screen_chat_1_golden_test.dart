@@ -562,5 +562,29 @@ void main() {
         },
       );
     });
+
+    // B12 (slice-polish2): a typed "/" gets one line saying the demo has no
+    // commands, in the composer's suggestion area.
+    testWidgets('demo, a typed slash ($theme)', (tester) async {
+      await _shot(
+        tester,
+        'chat_demo_slash',
+        opener(
+          (context) => pushKitPage<void>(context, (_) => const DemoScreen()),
+        ),
+        light: light,
+        act: (tester) async {
+          await tester.tap(find.text('Open'));
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+          await tester.enterText(
+            find.byKey(const Key('chat-composer-field')),
+            '/',
+          );
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+        },
+      );
+    });
   }
 }

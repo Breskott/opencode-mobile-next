@@ -68,7 +68,7 @@ A message that belongs to one part of a form or list (a connection test's verdic
 - Rows: `KitRow`, with a leading icon or status dot, title (1 line), supporting line (1 line, muted), and a trailing value, chevron or single icon action.
   - A list of steps (setup's checklist) leads each row with `KitStatusMark`: waiting, working, done, failed. The mark is a state, not a second bar.
   - Only titles in the person's own words (conversation titles) may wrap, and app words may wrap at large text, so nothing is cut to a few letters.
-  - A setting whose supporting line explains what it does, or carries an error to act on, may take two lines (`supportingMaxLines: 2`). A list of things keeps one.
+  - A setting whose supporting line explains what it does, or carries an error to act on, may take two lines (`supportingMaxLines: 2`). A list of things keeps one at ordinary sizes; at large text every supporting line wraps (two lines from 1.3×, three from 2.0×) before it is cut.
   - An action that cannot run now dims (`enabled: false`) and its supporting line says why.
   - A row that deletes something is `destructive: true`: error-coloured title and icon, and it confirms before acting.
 - State lives in the row (dot, mark, "Needs you"), not in extra cards above the list.

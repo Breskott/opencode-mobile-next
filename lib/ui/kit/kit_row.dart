@@ -25,7 +25,8 @@ import 'kit_tokens.dart';
 /// One line each is the rule. A list whose titles are the person's own words
 /// (conversation titles) may let them wrap with [titleMaxLines] and
 /// [supportingMaxLines], so large text does not cut them to a few letters.
-/// From 1.3× text a title always gets at least two lines (A11Y-8).
+/// From 1.3× text a title always gets at least two lines, and a supporting
+/// line two (three from 2.0×) before its ellipsis (A11Y-8).
 ///
 /// The tap surface is a [KitTappable]: a 48 dp minimum, hover and pressed
 /// fills from the surface steps, a keyboard focus ring, Enter and Space.
@@ -120,7 +121,8 @@ class KitRow extends StatelessWidget {
   final int titleMaxLines;
 
   /// One line by default (§6); two where the line's end carries the state
-  /// ("… · Finished 5h ago").
+  /// ("… · Finished 5h ago"). At large text the row raises it: at least two
+  /// lines from 1.3×, three from 2.0×.
   final int supportingMaxLines;
 
   /// The title is a file name ("checkout_page.dart"): from 1.3× text it
@@ -258,6 +260,15 @@ class KitRow extends StatelessWidget {
     final titleLines = textScale >= 1.3
         ? math.max(titleMaxLines, 2)
         : titleMaxLines;
+    // A list keeps its supporting line to one line at ordinary sizes (§6);
+    // at large text the line wraps before it is cut, so it never ends after
+    // a few words ("Editing workflow fil…", A11Y-8): two lines from 1.3×,
+    // three from 2.0×.
+    final supportingLines = textScale >= 2.0
+        ? math.max(supportingMaxLines, 3)
+        : textScale >= 1.3
+        ? math.max(supportingMaxLines, 2)
+        : supportingMaxLines;
     // From 1.3× text a file name wraps between its words and is shown
     // whole ([titleIsFileName]).
     final wholeFileName = titleIsFileName && titleLines > 1;
@@ -328,7 +339,7 @@ class KitRow extends StatelessWidget {
                       key: supportingKey,
                       // An unavailable row's reason is why the row is dim:
                       // it wraps in full, never cut (A11Y-8, STATE-12).
-                      maxLines: _unavailable ? null : supportingMaxLines,
+                      maxLines: _unavailable ? null : supportingLines,
                       overflow: _unavailable ? null : TextOverflow.ellipsis,
                       style: tokens.rowSupporting,
                     ),
