@@ -306,7 +306,12 @@ class _KitIconButtonState extends State<KitIconButton> {
     // `tester.getSemantics(find.byType(KitIconButton))` walks the render
     // tree from the element's own render object outward, and a bare
     // Tooltip's MouseRegion in between would hide this node behind it).
+    //
+    // A container: the button is always its own node, never merged into a
+    // tappable parent (a KitRow's trailing action). Merged, its tap and the
+    // row's collided and left the row's tap on a node with no label.
     return Semantics(
+      container: true,
       button: true,
       label: tooltipText,
       hint: hint,

@@ -21,6 +21,8 @@ import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_destination_sheet.dart';
+import 'package:opencode_mobile/ui/widgets/app_connection_status.dart';
+import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:opencode_mobile/ui/widgets/external_link.dart';
 import 'package:opencode_mobile/ui/widgets/tool_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1001,7 +1003,9 @@ void main() {
   testWidgets('offline banner states that displayed data may be stale', (
     tester,
   ) async {
-    final controller = await _controller()
+    // The shared status speaks for a selected server only (3d64653c: no
+    // server, no status).
+    final controller = await _controller(savedProfile: true)
       ..status = StreamStatus.disconnected;
     addTearDown(controller.dispose);
     await tester.pumpWidget(
@@ -1010,20 +1014,25 @@ void main() {
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: HomeScreen(),
+          // The app root publishes the one connection status every screen's
+          // status slot reads (AppConnectionStatusScope, 3d64653c); this
+          // host mounts the same adapter without the rest of the app.
+          home: _SharedConnectionStatus(child: HomeScreen()),
         ),
       ),
     );
     await tester.pumpAndSettle();
-    // On Work the one status line says it after the grace time (work-tab
-    // cleanup); the staleness explanation and the raw error live behind its
-    // Details action, as they did behind the banner's.
+    // The one status line says it; the staleness explanation and the raw
+    // error live behind its Details action.
     await tester.pump(const Duration(seconds: 9));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.byKey(const ValueKey('work-status-server')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('connection-status-banner')),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const ValueKey('kit-status-more')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('work-status-details')));
+    await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
     await tester.pumpAndSettle();
     expect(find.textContaining('may be stale'), findsOneWidget);
     await tester.pumpWidget(const MaterialApp(home: SizedBox()));
@@ -1038,3 +1047,28 @@ String _hitTestOwners(WidgetTester tester, Finder finder) => tester
     .take(5)
     .map((entry) => (entry.target as RenderObject).debugCreator)
     .join('\n');
+
+/// The app root's shared connection status (main.dart
+/// AppConnectionStatusScope) without the rest of the app.
+class _SharedConnectionStatus extends ConsumerWidget {
+  const _SharedConnectionStatus({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.watch(connProvider);
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) => AppConditionsScope(
+        conditions: [
+          connectionKitStatus(
+            context,
+            controller,
+            actionContext: () => context,
+          ),
+        ],
+        child: child,
+      ),
+    );
+  }
+}

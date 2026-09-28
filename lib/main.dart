@@ -6,7 +6,8 @@ import 'dart:io' show Platform;
 import 'dart:ui' show PlatformDispatcher;
 
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
+import 'package:flutter/foundation.dart'
+    show ValueListenable, kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -2012,26 +2013,39 @@ class _RootState extends ConsumerState<_Root> {
       },
     );
     // A KitScreen, so the app's line (a share waiting for this server)
-    // shows above the card (map page root-connecting).
-    return _Ground(
-      child: KitScreen(
-        width: opening ? KitScreenWidth.list : KitScreenWidth.full,
-        body: lastKnown != null
-            ? ListView(
-                key: const ValueKey('opening-shell'),
-                children: [
-                  card,
-                  LastKnownSessions(
-                    preview: lastKnown,
-                    refreshing:
-                        error == null && !profile.requiresCodexTokenReentry,
-                  ),
-                ],
-              )
-            : card,
+    // shows above the card (map page root-connecting). The card is this
+    // server's connection state, with its own Try again and Details, so the
+    // shared connection line is left out here: the page says it once.
+    final conditions = KitStatusScope.of(context);
+    if (!identical(conditions, _appConditions)) {
+      _appConditions = conditions;
+      _withoutConnection = _WithoutConnectionLine(conditions);
+    }
+    return KitStatusScope(
+      conditions: _withoutConnection!,
+      child: _Ground(
+        child: KitScreen(
+          width: opening ? KitScreenWidth.list : KitScreenWidth.full,
+          body: lastKnown != null
+              ? ListView(
+                  key: const ValueKey('opening-shell'),
+                  children: [
+                    card,
+                    LastKnownSessions(
+                      preview: lastKnown,
+                      refreshing:
+                          error == null && !profile.requiresCodexTokenReentry,
+                    ),
+                  ],
+                )
+              : card,
+        ),
       ),
     );
   }
+
+  ValueListenable<List<KitStatus>>? _appConditions;
+  ValueListenable<List<KitStatus>>? _withoutConnection;
 
   @override
   void dispose() {
@@ -2039,6 +2053,29 @@ class _RootState extends ConsumerState<_Root> {
     _builtin.removeListener(_changed);
     super.dispose();
   }
+}
+
+/// The app's conditions without the connection line, for the page whose
+/// body already is the connection's state (the saved server connecting).
+/// Every other condition (a share waiting, the app stopped, heat) still
+/// reaches that page's status slot.
+class _WithoutConnectionLine implements ValueListenable<List<KitStatus>> {
+  _WithoutConnectionLine(this._conditions);
+
+  final ValueListenable<List<KitStatus>> _conditions;
+
+  @override
+  List<KitStatus> get value => [
+    for (final status in _conditions.value)
+      if (status.kind != KitStatusKind.connection) status,
+  ];
+
+  @override
+  void addListener(VoidCallback listener) => _conditions.addListener(listener);
+
+  @override
+  void removeListener(VoidCallback listener) =>
+      _conditions.removeListener(listener);
 }
 
 /// The page ground under a bar-less root page (the app opening, the saved

@@ -369,8 +369,19 @@ void main() {
       await tester.tap(find.text('Visit'));
       await tester.pumpAndSettle();
       expect(find.text('Open insecure HTTP link?'), findsOneWidget);
-      expect(find.text('192.168.1.20:5173'), findsOneWidget);
-      await tester.tap(find.text('Cancel'));
+      // The kit link gate (06102116) keeps the host in sight inside its
+      // one sentence; "Don't open" is the way back on http.
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('external-link-confirm')),
+          matching: find.textContaining(
+            '192.168.1.20:5173',
+            findRichText: true,
+          ),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text("Don't open"));
       await tester.pumpAndSettle();
       expect(gateway.starts, 0);
       await done(tester);

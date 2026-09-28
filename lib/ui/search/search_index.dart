@@ -35,6 +35,7 @@ import '../screens/project_hub_screen.dart';
 import '../screens/saved_permissions_screen.dart';
 import '../screens/server_capabilities_screen.dart';
 import '../screens/session_import_screen.dart';
+import '../screens/settings/ai_setup_screen.dart';
 import '../screens/settings/plugins_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/servers_screen.dart' show ServersRouteRequest;
@@ -46,6 +47,7 @@ import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/termux_storage_screen.dart';
 import '../screens/this_phone_screen.dart' show ThisPhoneScreen, openThisPhone;
 import '../screens/usage_hub_screen.dart';
+import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/pickers.dart';
 import '../widgets/product_states.dart';
 import '../kit/kit_arrival.dart';
@@ -974,6 +976,39 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
           initialSection: ServerSettingsScreen.disconnectSection,
         ),
       ),
+    ),
+    // AI setup (review only, 2026-09-28) is a row of the connected
+    // server's page; the result opens the page itself. Present exactly
+    // when that row is: a saved server that can share its configuration.
+    // The UI ledger has no page of its own for it yet, so the door page
+    // is the server's settings page.
+    SearchEntry(
+      id: 'inside-server-ai-setup',
+      kind: SearchEntryKind.insideSettings,
+      icon: AppIconography.sparkle,
+      title: l10n.aiSetupTitle,
+      parent: l10n.settingsHubThisServer,
+      keywords: l10n.aiSetupEntryDetail,
+      pages: const ['server-settings'],
+      gate: (scope) =>
+          scope.controller.profile != null &&
+          scope.capabilities.setupConfigRead,
+      serverGate: (scope) => scope.capabilities.setupConfigRead,
+      open: (context, scope) {
+        final profile = scope.controller.profile;
+        if (profile == null) return Future<void>.value();
+        return _push(
+          context,
+          AiSetupScreen(
+            controller: scope.controller,
+            serverName: serverDisplayName(
+              profile,
+              lookupAppLocalizations(Localizations.localeOf(context)),
+              among: scope.controller.store.profiles,
+            ),
+          ),
+        );
+      },
     ),
     SearchEntry(
       id: 'inside-notifications-what',

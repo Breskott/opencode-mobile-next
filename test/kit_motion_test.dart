@@ -824,6 +824,70 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  // The gate's one excuse: a LayoutBuilder deferring a rebuild asked for
+  // after the frame (a focus change, a scrollbar's first metrics) to the
+  // next frame is a one-shot rebuild, not a ticker. Nothing else is excused.
+  group('G8x leftovers', () {
+    Widget app(Widget child) => MaterialApp(home: Scaffold(body: child));
+
+    testWidgets('a LayoutBuilder rebuild deferred from one pump is no ticker', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        app(LayoutBuilder(builder: (_, _) => const _LateRebuild())),
+      );
+      // The deferred rebuild is a frame callback, as a ticker would be.
+      expect(tester.hasRunningAnimations, isTrue);
+      expect(await kitStillLeftovers(tester), isEmpty);
+      expect(find.text('late'), findsOneWidget);
+    });
+
+    testWidgets('a ticker the deferred rebuild starts still fails', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        app(LayoutBuilder(builder: (_, _) => const _LateRebuild(spin: true))),
+      );
+      expect(await kitStillLeftovers(tester), hasLength(1));
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a ticker next to a deferred rebuild still fails', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        app(
+          Column(
+            children: [
+              LayoutBuilder(builder: (_, _) => const _LateRebuild()),
+              const CircularProgressIndicator(),
+            ],
+          ),
+        ),
+      );
+      expect(await kitStillLeftovers(tester), hasLength(1));
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a part that rebuilds itself every frame fails', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        app(
+          LayoutBuilder(builder: (_, _) => const _LateRebuild(forever: true)),
+        ),
+      );
+      expect(await kitStillLeftovers(tester), hasLength(1));
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a ticker alone fails', (tester) async {
+      await tester.pumpWidget(app(const CircularProgressIndicator()));
+      expect(await kitStillLeftovers(tester), hasLength(1));
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
+
   for (final still in KitStill.values) {
     testWidgets('KitStatusMark working shows its still dot under '
         '${still.name}', (tester) async {
@@ -835,4 +899,38 @@ void main() {
       expect(find.byIcon(AppIconography.statusDot), findsOneWidget);
     });
   }
+}
+
+/// Rebuilds once after its first frame, as a focus change or a scrollbar's
+/// first metrics does; with [spin] that rebuild starts a spinner (a ticker);
+/// with [forever] it asks again after every frame.
+class _LateRebuild extends StatefulWidget {
+  const _LateRebuild({this.spin = false, this.forever = false});
+
+  final bool spin;
+  final bool forever;
+
+  @override
+  State<_LateRebuild> createState() => _LateRebuildState();
+}
+
+class _LateRebuildState extends State<_LateRebuild> {
+  bool _late = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _later();
+  }
+
+  void _later() => WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted) return;
+    setState(() => _late = true);
+    if (widget.forever) _later();
+  });
+
+  @override
+  Widget build(BuildContext context) => _late && widget.spin
+      ? const CircularProgressIndicator()
+      : Text(_late ? 'late' : 'early');
 }

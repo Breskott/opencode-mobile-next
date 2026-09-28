@@ -15,7 +15,6 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/kit/scenes/states_scenes.dart';
-import 'package:opencode_mobile/ui/kit/scenes/states_working_scene.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
@@ -388,8 +387,11 @@ void main() {
       await _unmount(tester);
     });
 
-    testWidgets('while a reply is written the working mark moves; it goes '
-        'when the run ends', (tester) async {
+    // chat-3 (e28442b0, LOOK-20) removed the composer's animated working
+    // mark: Stop is the working signal. It shows while a reply is written
+    // and goes when the run ends, and nothing is left moving.
+    testWidgets('while a reply is written Stop is the working signal; it '
+        'goes when the run ends', (tester) async {
       KitMotion.loops = true;
       final api = _ChatApi()..messagesHandler = (_) async => sampleTranscript();
       final controller = await _connected(api: api);
@@ -398,23 +400,19 @@ void main() {
         controller,
         const ChatScreen(sessionID: checkoutSessionID),
       );
-      final mark = find.byKey(const ValueKey('chat-working-mark'));
-      expect(mark, findsOneWidget);
-      final illustration = tester.widget<KitIllustration>(mark);
-      expect(illustration.scene, isA<StatesWorkingScene>());
-      expect(illustration.ambient, isTrue);
-      await tester.pump(KitMotion.breath ~/ 3);
-      expect(tester.hasRunningAnimations, isTrue);
+      final stop = find.byKey(const Key('chat-stop-button'));
+      expect(stop, findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-working-mark')), findsNothing);
 
       controller.busySessions.remove(checkoutSessionID);
       controller.notifyListeners();
       await _frames(tester, 4);
-      expect(mark, findsNothing);
+      expect(stop, findsNothing);
       expect(tester.hasRunningAnimations, isFalse);
       await _unmount(tester);
     });
 
-    testWidgets('under reduced motion the working mark is still', (
+    testWidgets('under reduced motion the working signal is still', (
       tester,
     ) async {
       KitMotion.loops = true;
@@ -425,7 +423,7 @@ void main() {
         const ChatScreen(sessionID: checkoutSessionID),
         reduce: true,
       );
-      expect(find.byKey(const ValueKey('chat-working-mark')), findsOneWidget);
+      expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
       expect(tester.hasRunningAnimations, isFalse);
       await _unmount(tester);
     });
