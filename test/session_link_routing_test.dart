@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'support/complete_message_history.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,8 @@ import 'package:opencode_mobile/main.dart';
 import 'package:opencode_mobile/platform/session_link.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/state/session_address_controller.dart';
+import 'package:opencode_mobile/state/session_link_bindings.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/update/shorebird_update_notice.dart';
@@ -156,6 +159,50 @@ class _NoUpdateService implements AppUpdateService {
   Future<void> downloadUpdate() async {}
 }
 
+const _addressOrigin = 'https://device.tailnet.ts.net';
+const _addressInstance = '9e30af6d-422d-4d89-baad-006ac07cb9d1';
+const _verifiedDeployment = SessionAddressDeployment(
+  privateIngress: true,
+  privateTransportEnforced: true,
+  requesterIdentityOnEveryRequest: true,
+  taggedPeerPolicyVerified: true,
+  noPublicAlternateIngress: true,
+  scopedSessionAuthorization: true,
+  sessionIdsAreBearerCredentials: false,
+);
+
+SessionAddressLink _addressLink() => SessionAddressLink.require(
+  'opencode-mobile://session/v2?server=${Uri.encodeQueryComponent(_addressOrigin)}'
+  '&instance=$_addressInstance&session=ses_link',
+);
+
+class _AddressReader implements SessionAddressDescriptorReader {
+  int calls = 0;
+  @override
+  Future<SessionAddressDescriptor> discover(String origin) async {
+    calls++;
+    return SessionAddressDescriptor.parse({
+      'schemaVersion': 1,
+      'canonicalOrigin': origin,
+      'instanceId': _addressInstance,
+      'linkVersions': [2],
+      'capabilities': {'sessionLookupById': true},
+    });
+  }
+}
+
+class _AddressLookup implements SessionAddressLookupGateway {
+  @override
+  SessionAddressDeployment get deployment => _verifiedDeployment;
+  @override
+  String get origin => _addressOrigin;
+  @override
+  String get instanceId => _addressInstance;
+  @override
+  Future<Session> lookupAuthorizedSession(String id) async =>
+      Session(id: id, directory: '/private/project');
+}
+
 final _active = ServerProfile(
   id: 'server-1',
   name: 'Local',
@@ -212,17 +259,18 @@ SessionLinkIntent _intent() {
   return intent;
 }
 
-Widget _app(ConnectionController controller, SessionLinkIntent intent) =>
-    ProviderScope(
-      overrides: [
-        bootstrapProvider.overrideWithValue(AppBootstrap(controller.store)),
-        connProvider.overrideWithValue(controller),
-      ],
-      child: OcApp(
-        updateService: _NoUpdateService(),
-        sessionLinkIntent: intent,
-      ),
-    );
+Widget _app(
+  ConnectionController controller,
+  SessionLinkIntent intent, {
+  SessionAddressController? addresses,
+}) => ProviderScope(
+  overrides: [
+    bootstrapProvider.overrideWithValue(AppBootstrap(controller.store)),
+    connProvider.overrideWithValue(controller),
+    if (addresses != null) sessionAddressProvider.overrideWithValue(addresses),
+  ],
+  child: OcApp(updateService: _NoUpdateService(), sessionLinkIntent: intent),
+);
 
 Future<void> _drainNotices(WidgetTester tester) =>
     tester.pump(const Duration(seconds: 9));
@@ -505,5 +553,111 @@ void main() {
 
     expect(api.created, 0);
     expect(api.prompted, 0);
+  });
+
+  testWidgets('an address link says plainly it is not available yet', (
+    tester,
+  ) async {
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    final api = controller.api! as _LinkApi;
+    final intent = _intent();
+    await tester.pumpWidget(_app(controller, intent));
+    await tester.pumpAndSettle();
+
+    intent.pendingAddress.value = _addressLink();
+    await tester.pumpAndSettle();
+
+    expect(intent.pendingAddress.value, isNull);
+    expect(find.byKey(const Key('session-address-sheet')), findsOneWidget);
+    expect(
+      find.text(
+        'Conversation links with a server address are not available yet.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('session-address-check')), findsNothing);
+    expect(find.byType(ChatScreen), findsNothing);
+    expect(find.byType(ServersScreen), findsNothing);
+    expect(api.created, 0);
+    expect(api.prompted, 0);
+  });
+
+  testWidgets('a link that failed to parse shows only its category', (
+    tester,
+  ) async {
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    final intent = _intent();
+    await tester.pumpWidget(_app(controller, intent));
+    await tester.pumpAndSettle();
+
+    intent.pendingAddressFailure.value = SessionAddressFailureCode.credentials;
+    await tester.pumpAndSettle();
+
+    expect(intent.pendingAddressFailure.value, isNull);
+    expect(
+      find.text(
+        'This link contains private sign-in information and cannot be used.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(ChatScreen), findsNothing);
+  });
+
+  testWidgets('a verified address link opens the existing conversation', (
+    tester,
+  ) async {
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    final api = controller.api! as _LinkApi;
+    final intent = _intent();
+    // The harness sees `server-1` at the link's address with a verified
+    // binding; the app then navigates exactly as for a local link.
+    final store = _MemoryProfileStore(
+      prefs: controller.store.prefs,
+      saved: [
+        ServerProfile(id: 'server-1', name: 'Local', baseUrl: _addressOrigin),
+      ],
+    );
+    await store.prefs.setString(
+      'oc.profiles',
+      jsonEncode([
+        {'id': 'server-1', 'name': 'Local', 'baseUrl': _addressOrigin},
+      ]),
+    );
+    await SessionLinkBindings.forProfile(store.prefs, 'server-1').save(
+      SessionLinkBinding(
+        origin: _addressOrigin,
+        instanceId: _addressInstance,
+        verifiedAt: DateTime.utc(2026, 9, 28),
+      ),
+    );
+    final reader = _AddressReader();
+    final addresses = SessionAddressController.verifiedTestHarness(
+      store: store,
+      descriptors: reader,
+      deploymentForOrigin: (_) => _verifiedDeployment,
+      lookupForProfile: (_) async => _AddressLookup(),
+    );
+    addTearDown(addresses.dispose);
+    await tester.pumpWidget(_app(controller, intent, addresses: addresses));
+    await tester.pumpAndSettle();
+
+    intent.pendingAddress.value = _addressLink();
+    await tester.pumpAndSettle();
+    expect(find.text('Open on this saved server?'), findsOneWidget);
+    expect(reader.calls, 0);
+
+    await tester.tap(find.byKey(const Key('session-address-check')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('session-address-open')));
+    await tester.pumpAndSettle();
+
+    final chat = tester.widget<ChatScreen>(find.byType(ChatScreen));
+    expect(chat.sessionID, 'ses_link');
+    expect(api.created, 0);
+    expect(api.prompted, 0);
+    expect(addresses.pending, isNull);
   });
 }

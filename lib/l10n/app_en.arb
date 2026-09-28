@@ -27441,5 +27441,197 @@
         "type": "String"
       }
     }
+  },
+  "sessionAddressInclude": "Include this server’s address",
+  "@sessionAddressInclude": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): switch on the Open on another phone sheet; off by default each time the sheet opens"
+  },
+  "sessionAddressDisclosure": "The link then shows this address and the conversation ID, never a password: the other phone still needs its own access. Screenshots, messages and the clipboard can keep it.",
+  "@sessionAddressDisclosure": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): what including the address discloses, under the switch"
+  },
+  "sessionAddressIntro": "Scan with OpenCode Mobile on the other phone. The code holds this server’s address and the conversation ID.",
+  "@sessionAddressIntro": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): sheet lead paragraph while the address is included"
+  },
+  "sessionAddressUnsupportedHost": "Only a private HTTPS address ending in .ts.net can go in a link.",
+  "@sessionAddressUnsupportedHost": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): why the switch is off for a server whose saved address cannot be shared"
+  },
+  "sessionAddressOpenTitle": "Open a shared conversation",
+  "@sessionAddressOpenTitle": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): title of the sheet an incoming link opens"
+  },
+  "sessionAddressConsentSaved": "Open on this saved server?",
+  "@sessionAddressConsentSaved": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): question before contacting a server this phone has saved"
+  },
+  "sessionAddressConsentNew": "Add this server?",
+  "@sessionAddressConsentNew": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): question before contacting a server this phone has not saved"
+  },
+  "sessionAddressNotSaved": "Not saved on this phone",
+  "@sessionAddressNotSaved": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): supporting line of the server row when no saved server matches"
+  },
+  "sessionAddressConsentNote": "The link grants no access. Checking only asks the server which installation it is; nothing signs in and no password is sent.",
+  "@sessionAddressConsentNote": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): what approving the check does"
+  },
+  "sessionAddressCheck": "Check server",
+  "@sessionAddressCheck": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): approves one anonymous check of the server named above"
+  },
+  "sessionAddressChecking": "Checking {host}…",
+  "@sessionAddressChecking": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): progress while the server is checked",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionAddressAddBody": "This server is not saved on this phone. Add it with your own sign-in; the link does not carry one.",
+  "@sessionAddressAddBody": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): unknown server state; the address is filled in, never connected automatically"
+  },
+  "sessionAddressAddServer": "Add server",
+  "@sessionAddressAddServer": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): opens Add server with only the address filled in"
+  },
+  "sessionAddressChooseBody": "More than one saved server uses this address. Choose the one to open the conversation on.",
+  "@sessionAddressChooseBody": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): several saved servers match the link"
+  },
+  "sessionAddressVerifyBody": "Confirm that {name} is the server this link came from. The phone remembers this for {name}; it does not sign in or share a password.",
+  "@sessionAddressVerifyBody": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): binding step for a saved server not yet verified",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionAddressVerify": "Verify server",
+  "@sessionAddressVerify": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): saves that the chosen saved server is the installation in the link"
+  },
+  "sessionAddressReadyBody": "{name} matches this link.",
+  "@sessionAddressReadyBody": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): matched to a saved server, ready to open",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionAddressSignInBody": "Sign in to {name} with your own account first, then open the conversation.",
+  "@sessionAddressSignInBody": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): the matched saved server needs its password or token entered again",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionAddressSignIn": "Sign in",
+  "@sessionAddressSignIn": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): opens Servers to sign in to the matched saved server"
+  },
+  "sessionAddressOpen": "Open conversation",
+  "@sessionAddressOpen": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): opens the existing conversation after the checks; never creates or resumes one"
+  },
+  "sessionAddressOpening": "Opening the conversation…",
+  "@sessionAddressOpening": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): progress while the conversation is looked up"
+  },
+  "sessionAddressReason": "Reason",
+  "@sessionAddressReason": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): label of the failure category under Details"
+  },
+  "sessionAddressFailUnavailable": "Conversation links with a server address are not available yet.",
+  "@sessionAddressFailUnavailable": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code unavailable"
+  },
+  "sessionAddressFailInvalidLink": "This conversation link is not valid. Scan or copy it again.",
+  "@sessionAddressFailInvalidLink": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code invalidLink"
+  },
+  "sessionAddressFailTooLarge": "This link is too long. Ask the sender for a new link.",
+  "@sessionAddressFailTooLarge": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code tooLarge"
+  },
+  "sessionAddressFailCredentials": "This link contains private sign-in information and cannot be used.",
+  "@sessionAddressFailCredentials": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code credentials"
+  },
+  "sessionAddressFailConsentRequired": "Choose whether to include this server’s address first.",
+  "@sessionAddressFailConsentRequired": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code consentRequired"
+  },
+  "sessionAddressFailPrivateRouteRequired": "This server cannot be reached through the required private connection. Check your connection.",
+  "@sessionAddressFailPrivateRouteRequired": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code privateRouteRequired"
+  },
+  "sessionAddressFailUnreachable": "The server could not be reached. Check your connection and try again.",
+  "@sessionAddressFailUnreachable": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code unreachable"
+  },
+  "sessionAddressFailTimedOut": "The server did not answer in time. Try again.",
+  "@sessionAddressFailTimedOut": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code timedOut"
+  },
+  "sessionAddressFailTlsRejected": "The server’s secure connection could not be verified, so the link was not opened.",
+  "@sessionAddressFailTlsRejected": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code tlsRejected"
+  },
+  "sessionAddressFailRedirectsRejected": "This server tried to send the request somewhere else. The link was not opened.",
+  "@sessionAddressFailRedirectsRejected": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code redirectsRejected"
+  },
+  "sessionAddressFailAccessDenied": "Your access to this server or conversation was refused.",
+  "@sessionAddressFailAccessDenied": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code accessDenied"
+  },
+  "sessionAddressFailInvalidDescriptor": "This server did not provide the information needed to open this link.",
+  "@sessionAddressFailInvalidDescriptor": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code invalidDescriptor"
+  },
+  "sessionAddressFailInstanceMismatch": "This link and the saved server do not identify the same installation.",
+  "@sessionAddressFailInstanceMismatch": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code instanceMismatch"
+  },
+  "sessionAddressFailBindingRequired": "Verify this saved server before opening the conversation.",
+  "@sessionAddressFailBindingRequired": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code bindingRequired"
+  },
+  "sessionAddressFailAmbiguousProfile": "Choose which saved server to use.",
+  "@sessionAddressFailAmbiguousProfile": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code ambiguousProfile"
+  },
+  "sessionAddressFailProfileMissing": "This saved server is no longer available.",
+  "@sessionAddressFailProfileMissing": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code profileMissing"
+  },
+  "sessionAddressFailStorage": "The server verification could not be saved or read. Try again after restarting the app.",
+  "@sessionAddressFailStorage": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code storage"
+  },
+  "sessionAddressFailSignInRequired": "Sign in to this server with your own account before continuing.",
+  "@sessionAddressFailSignInRequired": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code signInRequired"
+  },
+  "sessionAddressFailUnsafeLookup": "This server has not been verified for private conversation links.",
+  "@sessionAddressFailUnsafeLookup": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code unsafeLookup"
+  },
+  "sessionAddressFailSessionMissing": "This conversation is not available on this server.",
+  "@sessionAddressFailSessionMissing": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code sessionMissing"
+  },
+  "sessionAddressFailCancelled": "Opening this link was cancelled.",
+  "@sessionAddressFailCancelled": {
+    "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): failure in plain words for code cancelled"
   }
 }

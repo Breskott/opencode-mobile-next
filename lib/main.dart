@@ -29,6 +29,8 @@ import 'domain/server_gateway.dart' show ProductException;
 import 'l10n/app_localizations.dart';
 import 'platform/launch_shortcut.dart';
 import 'platform/session_link.dart';
+import 'state/session_address_controller.dart'
+    show SessionAddressFailure, sessionAddressProvider;
 import 'platform/platform_capabilities.dart';
 import 'platform/share_intent.dart';
 import 'domain/session_handoff.dart';
@@ -51,6 +53,7 @@ import 'ui/navigation/chat_route.dart';
 import 'ui/screens/settings_screen.dart';
 import 'ui/widgets/product_states.dart' show productErrorText;
 import 'ui/widgets/saved_server_connection_card.dart';
+import 'ui/widgets/session_address_sheets.dart';
 import 'ui/widgets/last_known_sessions.dart';
 import 'ui/widgets/app_connection_status.dart';
 import 'ui/widgets/phone_server_card.dart' show serverDisplayName;
@@ -425,6 +428,8 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   late final SessionLinkIntent _sessionLink;
   bool _linkRouteScheduled = false;
   bool _teamLinkRouteScheduled = false;
+  bool _addressLinkRouteScheduled = false;
+  bool _addressSheetOpen = false;
   bool _linkWaitingNoticeShown = false;
   // Tracks the route on top of the shell navigator so a shortcut never
   // stacks a second servers screen over one already showing.
@@ -465,6 +470,8 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     _sessionLink = widget.sessionLinkIntent ?? SessionLinkIntent();
     _sessionLink.pending.addListener(_scheduleSessionLinkRoute);
     _sessionLink.pendingTeam.addListener(_scheduleTeamLinkRoute);
+    _sessionLink.pendingAddress.addListener(_scheduleAddressLinkRoute);
+    _sessionLink.pendingAddressFailure.addListener(_scheduleAddressLinkRoute);
     unawaited(_sessionLink.start());
     // Only the Android build is Shorebird-released; desktop gets its update
     // news from the GitHub release check in DesktopReleaseNotice below.
@@ -1112,6 +1119,72 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     unawaited(navigator.pushNamed('/chat/${link.sessionID}'));
   }
 
+  /// A conversation link that carries the server's address (P3.9). Taken
+  /// once into the one address coordinator, which stays network-silent; the
+  /// sheet then asks before every step and says plainly when this link type
+  /// is not available yet. Only a found, existing conversation navigates,
+  /// through the same path as a local link. A link arriving while the sheet
+  /// is up replaces the one it shows.
+  void _scheduleAddressLinkRoute() {
+    if (_addressLinkRouteScheduled) return;
+    if (_sessionLink.pendingAddress.value == null &&
+        _sessionLink.pendingAddressFailure.value == null) {
+      return;
+    }
+    _addressLinkRouteScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _addressLinkRouteScheduled = false;
+      final navigator = _navigatorKey.currentState;
+      if (!mounted || navigator == null) return;
+      unawaited(_openAddressLink(navigator));
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  Future<void> _openAddressLink(NavigatorState navigator) async {
+    final addresses = ref.read(sessionAddressProvider);
+    var failure = _sessionLink.takeAddressFailure();
+    final link = _sessionLink.takeAddress();
+    if (link != null) {
+      failure = null;
+      try {
+        addresses.receive(link.encode());
+      } on SessionAddressFailure catch (error) {
+        addresses.cancel();
+        failure = error.code;
+      }
+    }
+    if (_addressSheetOpen) return;
+    _addressSheetOpen = true;
+    try {
+      final opened = await showSessionAddressSheet(
+        navigator.context,
+        controller: addresses,
+        failure: failure,
+        onAddServer: (origin) async {
+          await navigator.pushNamed(
+            '/servers',
+            arguments: ServersRouteRequest.add(initialUrl: origin),
+          );
+        },
+        onSignIn: (profileId) async {
+          await navigator.pushNamed(
+            '/servers',
+            arguments: ServersRouteRequest.connect(profileId),
+          );
+        },
+      );
+      if (opened == null || !mounted) return;
+      final route = SessionLink.tryCreate(
+        profileID: opened.profileId,
+        sessionID: opened.sessionId,
+      );
+      if (route != null) await _openSessionForLink(navigator, route);
+    } finally {
+      _addressSheetOpen = false;
+    }
+  }
+
   /// An AI Team link (TEAM-203) names a saved server and a gate or run and
   /// nothing else: the notification tap and the `opencode-mobile://team`
   /// link both land here. Known, active server: Activity opens with the
@@ -1666,6 +1739,10 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     if (widget.launchShortcut == null) _launchShortcut.dispose();
     _sessionLink.pending.removeListener(_scheduleSessionLinkRoute);
     _sessionLink.pendingTeam.removeListener(_scheduleTeamLinkRoute);
+    _sessionLink.pendingAddress.removeListener(_scheduleAddressLinkRoute);
+    _sessionLink.pendingAddressFailure.removeListener(
+      _scheduleAddressLinkRoute,
+    );
     if (widget.sessionLinkIntent == null) _sessionLink.dispose();
     _noticeTimer?.cancel();
     _notice.dispose();
