@@ -14,9 +14,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitSkeletonRows;
 import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_host_form.dart';
+import 'package:opencode_mobile/voice/device.dart';
 
 import '../../tool/capture/fixtures.dart' show captureApp, loadCaptureFonts;
 import '../support/work_tab_fixture.dart';
@@ -38,12 +40,22 @@ void _mockSecureStorage(WidgetTester tester) {
 const _phone = Size(412, 915);
 const _wide = Size(1280, 800);
 
+/// A phone the pre-flight lets the team run on.
+const _capablePhone = VoiceDeviceInfo(
+  supportedAbis: ['arm64-v8a'],
+  totalMemoryMb: 8192,
+  memoryClassMb: 512,
+  hasMicrophone: true,
+  availableStorageBytes: 20000000000,
+);
+
 Future<void> _golden(
   WidgetTester tester,
   String name, {
   required bool light,
   required Size size,
   required WorkController controller,
+  Future<VoiceDeviceInfo> Function()? deviceProbe,
 }) async {
   _mockSecureStorage(tester);
   tester.view.physicalSize = size;
@@ -54,7 +66,7 @@ Future<void> _golden(
   try {
     await tester.pumpWidget(
       captureApp(
-        home: TeamIntroScreen(controller: controller),
+        home: TeamIntroScreen(controller: controller, deviceProbe: deviceProbe),
         boundaryKey: boundary,
         controller: controller,
         light: light,
@@ -64,6 +76,9 @@ Future<void> _golden(
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump(KitMotion.celebration);
     expect(tester.takeException(), isNull);
+    // A gallery of the intro, never of its loading rows (the phone's
+    // pre-flight or the Gas City search still running).
+    expect(find.byType(KitSkeletonRows), findsNothing);
     final suffix = size == _phone ? '' : '_1280x800';
     await expectLater(
       find.byKey(boundary),
@@ -106,6 +121,9 @@ void main() {
           light: light,
           size: size,
           controller: controller,
+          // The phone's pre-flight (P1.7) asks the device; without an
+          // answer the page shows its loading rows, not the intro.
+          deviceProbe: () async => _capablePhone,
         );
       });
 
