@@ -284,11 +284,13 @@ Future<void> _enterAndListen(WidgetTester tester, _Api api) async {
   await tester.tap(find.byKey(const Key('composer-tools-button')));
   await _settle(tester);
   await tester.ensureVisible(find.byKey(const Key('composer-tools-advanced')));
+  await _settle(tester);
   await tester.tap(find.byKey(const Key('composer-tools-advanced')));
   await _settle(tester);
   await tester.ensureVisible(
     find.byKey(const Key('composer-tool-conversation')),
   );
+  await _settle(tester);
   await tester.tap(find.byKey(const Key('composer-tool-conversation')));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 400));
@@ -298,6 +300,12 @@ Future<void> _enterAndListen(WidgetTester tester, _Api api) async {
   await tester.tap(find.byKey(const Key('stop-voice-recording')));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 200));
+  await tester.ensureVisible(find.byKey(const Key('insert-voice-draft')));
+  await _settle(tester);
+  expect(
+    find.byKey(const Key('insert-voice-draft')).hitTestable(),
+    findsOneWidget,
+  );
   await tester.tap(find.byKey(const Key('insert-voice-draft')));
   await _settle(tester);
   expect(
@@ -312,10 +320,11 @@ Future<void> _optIn(WidgetTester tester, List<MethodCall> calls) async {
   final toggle = find.byKey(const Key('voice-speak-replies'));
   expect(toggle, findsOneWidget);
   await tester.ensureVisible(toggle);
-  expect(tester.widget<SwitchListTile>(toggle).value, isFalse);
+  await _settle(tester);
+  expect(tester.widget<Switch>(toggle).value, isFalse);
   await tester.tap(toggle);
   await _settle(tester);
-  expect(find.text('Use the system speech engine?'), findsOneWidget);
+  expect(find.text('Read replies aloud?'), findsOneWidget);
   expect(calls, isEmpty);
   await tester.tap(find.text('Read aloud'));
   await _settle(tester);
@@ -323,7 +332,7 @@ Future<void> _optIn(WidgetTester tester, List<MethodCall> calls) async {
   // is asked for (P10.4).
   expect(find.text('Installed voice'), findsNothing);
   expect(calls.map((call) => call.method), ['voices']);
-  expect(tester.widget<SwitchListTile>(toggle).value, isTrue);
+  expect(tester.widget<Switch>(toggle).value, isTrue);
   // Opting in never speaks anything by itself.
   expect(calls.map((call) => call.method), ['voices']);
 }
@@ -333,6 +342,19 @@ Future<void> _send(WidgetTester tester, _Api api) async {
   await tester.tap(find.byTooltip('Send'));
   await _settle(tester);
   expect(api.prompts, [_transcript]);
+}
+
+Future<void> _showReadReply(WidgetTester tester) async {
+  final controls = find
+      .ancestor(
+        of: find.byKey(const Key('voice-speak-replies')),
+        matching: find.byType(Scrollable),
+      )
+      .first;
+  final read = find.byKey(const Key('voice-reply-read'));
+  await tester.scrollUntilVisible(read, 100, scrollable: controls);
+  await _settle(tester);
+  expect(read.hitTestable(), findsOneWidget);
 }
 
 void main() {
@@ -382,9 +404,7 @@ void main() {
     final connection = await _pumpChat(tester, api, voice);
     await _enterAndListen(tester, api);
     expect(
-      tester
-          .widget<SwitchListTile>(find.byKey(const Key('voice-speak-replies')))
-          .value,
+      tester.widget<Switch>(find.byKey(const Key('voice-speak-replies'))).value,
       isFalse,
     );
     await _send(tester, api);
@@ -396,9 +416,7 @@ void main() {
     api.prompts.clear();
     await _enterAndListen(tester, api);
     expect(
-      tester
-          .widget<SwitchListTile>(find.byKey(const Key('voice-speak-replies')))
-          .value,
+      tester.widget<Switch>(find.byKey(const Key('voice-speak-replies'))).value,
       isFalse,
     );
     expect(calls, isEmpty);
@@ -503,7 +521,7 @@ void main() {
         _status(connection, 'idle');
         await _settle(tester);
         expect(calls.where((call) => call.method == 'speak'), isEmpty);
-        expect(find.byKey(const Key('voice-reply-read')), findsOneWidget);
+        await _showReadReply(tester);
         // The watch is consumed conservatively. Our own later echo/reply,
         // or another idle event when it never arrives, must not re-arm it.
         if (ownEcho == 'delayed') {
@@ -535,7 +553,7 @@ void main() {
     await _completeTurn(tester, connection);
     expect(api.dispatchedIDs, isEmpty);
     expect(calls.where((call) => call.method == 'speak'), isEmpty);
-    expect(find.byKey(const Key('voice-reply-read')), findsOneWidget);
+    await _showReadReply(tester);
     expect(voice.listens, 1);
   });
 
@@ -579,7 +597,7 @@ void main() {
       _status(connection, 'idle');
       await _settle(tester);
       expect(calls.where((call) => call.method == 'speak'), isEmpty);
-      expect(find.byKey(const Key('voice-reply-read')), findsOneWidget);
+      await _showReadReply(tester);
       expect(find.text(_newReply), findsOneWidget);
       expect(voice.listens, 1);
     });
@@ -599,7 +617,7 @@ void main() {
       await _nativeStatus(tester, calls, 'engineUnavailable');
       expect(find.text('The reply could not be read aloud.'), findsOneWidget);
       expect(find.text(_newReply), findsOneWidget);
-      expect(find.byKey(const Key('voice-reply-read')), findsOneWidget);
+      await _showReadReply(tester);
       expect(api.prompts, [_transcript]);
       expect(voice.listens, 1);
       _reply(connection);
@@ -857,7 +875,7 @@ void main() {
         find.textContaining('could not be matched to your message'),
         findsOneWidget,
       );
-      expect(find.byKey(const Key('voice-reply-read')), findsOneWidget);
+      await _showReadReply(tester);
 
       // Reading stays explicit and, once tapped, reads the latest reply.
       await tester.tap(find.byKey(const Key('voice-reply-read')));

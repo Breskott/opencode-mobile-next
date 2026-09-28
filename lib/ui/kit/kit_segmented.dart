@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart' show NumberFormat;
 
+import 'kit_choice_list.dart';
 import 'kit_motion.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
@@ -47,11 +48,18 @@ class KitSegment<T> {
 ///
 /// Its scenes (KitSegmented.md "States"): default (one selected),
 /// with-counts, segment-disabled (the reason under the control), disabled
-/// (the whole control, with its reason) and stacked (the labels do not fit,
-/// so a stack of `KitChoiceRow`s, KIT-24). The stacked form needs
-/// kit-KitChoiceList, which has not merged, so this build is held there
-/// (docs/qa/revamp-kit-KitSegmented-2026-09-26/README.md): until it lands, a
-/// label that does not fit is cut with an ellipsis rather than stacked.
+/// (the whole control, with its reason) and stacked.
+///
+/// Stacked (KIT-24, Appendix A #78): the part measures, the way KitAskLine
+/// does, whether every segment's check, icon, label and count fit on one
+/// line in its equal share of the width. When one does not, or the text
+/// scale is 2.0 or more, the track gives way to a vertical stack of
+/// full-width [KitChoiceRow]s with radio marks: the same order, values and
+/// keys, a disabled segment's reason on its own row, and still one
+/// mutually exclusive group with one Tab stop (Arrow Up and Down, Home and
+/// End, and Left and Right in reading order move focus there). Nothing
+/// truncates in either form. The switch is a layout change with no
+/// animation.
 ///
 /// States: disabled.
 class KitSegmented<T> extends StatelessWidget {
@@ -116,6 +124,10 @@ class _SegmentedGroup<T> extends StatefulWidget {
 class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
   late List<FocusNode> _nodes;
 
+  /// The stacked form's rows. Their own nodes: a [KitChoiceRow]'s
+  /// KitTappable installs its own key handler on the node it is given.
+  late List<FocusNode> _stackNodes;
+
   /// The segment holding keyboard focus; null while focus is outside the
   /// group, so Tab enters on the selected segment again.
   int? _focused;
@@ -135,6 +147,7 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
   void initState() {
     super.initState();
     _nodes = _buildNodes();
+    _stackNodes = _buildStackNodes();
   }
 
   List<FocusNode> _buildNodes() => [
@@ -145,21 +158,27 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
       ),
   ];
 
+  List<FocusNode> _buildStackNodes() => [
+    for (var i = 0; i < _segments.length; i++)
+      FocusNode(debugLabel: 'kit-segmented-row-$i'),
+  ];
+
   @override
   void didUpdateWidget(covariant _SegmentedGroup<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.part.segments.length != _segments.length) {
-      for (final node in _nodes) {
+      for (final node in [..._nodes, ..._stackNodes]) {
         node.dispose();
       }
       _nodes = _buildNodes();
+      _stackNodes = _buildStackNodes();
       _focused = _ring = _hovered = _pressed = null;
     }
   }
 
   @override
   void dispose() {
-    for (final node in _nodes) {
+    for (final node in [..._nodes, ..._stackNodes]) {
       node.dispose();
     }
     super.dispose();
@@ -183,17 +202,25 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
 
   /// The group is one Tab stop (§8.2, G14): only the focused segment, or
   /// the entry segment when nothing here is focused, takes part in Tab.
-  /// Applied on build, never inside a focus-change callback: the focus
-  /// manager is still walking its changed nodes then.
-  void _syncTabStop() {
+  int _stopIndex() {
     final focused = _focused;
-    final stop = focused != null && focused < _nodes.length
-        ? focused
-        : _entryIndex();
-    for (var i = 0; i < _nodes.length; i++) {
-      _nodes[i].skipTraversal = i != stop;
-    }
+    return focused != null && focused < _nodes.length ? focused : _entryIndex();
   }
+
+  /// [_OneStopPolicy]'s view of the group: which nodes are segments (both
+  /// forms; only one is mounted) and which of them Tab may reach.
+  bool _isSegmentNode(FocusNode node) =>
+      _nodes.contains(node) || _stackNodes.contains(node);
+
+  bool _isStopNode(FocusNode node) {
+    final stop = _stopIndex();
+    return node == _nodes[stop] || node == _stackNodes[stop];
+  }
+
+  late final _policy = _OneStopPolicy(
+    isSegment: _isSegmentNode,
+    isStop: _isStopNode,
+  );
 
   void _groupFocusChanged(bool hasFocus) {
     if (hasFocus || _focused == null) return;
@@ -229,6 +256,49 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
     final rtl = Directionality.of(context) == TextDirection.rtl;
     final target = _nextChoosable(index, forward: right != rtl);
     if (target != null && target != index) _nodes[target].requestFocus();
+    return KeyEventResult.handled;
+  }
+
+  /// The stacked form's arrows: Up and Down (Home and End jump; Left and
+  /// Right follow the reading direction), focus only, never a selection;
+  /// they stay inside the group.
+  KeyEventResult _handleStackKey(FocusNode _, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final at = _stackNodes.indexWhere((node) => node.hasPrimaryFocus);
+    if (at < 0) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+    final choosable = [
+      for (var i = 0; i < _segments.length; i++)
+        if (_canChoose(i)) i,
+    ];
+    // Left and Right keep working as in the row form (reading direction),
+    // so a person who learned them is not stranded when the part stacks.
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final next =
+        key == LogicalKeyboardKey.arrowDown ||
+        key ==
+            (rtl
+                ? LogicalKeyboardKey.arrowLeft
+                : LogicalKeyboardKey.arrowRight);
+    final previous =
+        key == LogicalKeyboardKey.arrowUp ||
+        key ==
+            (rtl
+                ? LogicalKeyboardKey.arrowRight
+                : LogicalKeyboardKey.arrowLeft);
+    final int? target;
+    if (next || previous) {
+      target = _nextChoosable(at, forward: next);
+    } else if (key == LogicalKeyboardKey.home) {
+      target = choosable.firstOrNull;
+    } else if (key == LogicalKeyboardKey.end) {
+      target = choosable.lastOrNull;
+    } else {
+      return KeyEventResult.ignored;
+    }
+    if (target != null && target != at) _stackNodes[target].requestFocus();
     return KeyEventResult.handled;
   }
 
@@ -268,21 +338,189 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
 
   @override
   Widget build(BuildContext context) {
-    _syncTabStop();
     return Semantics(
       container: true,
       label: _part.semanticsLabel,
-      child: Focus(
-        canRequestFocus: false,
-        skipTraversal: true,
-        includeSemantics: false,
-        onFocusChange: _groupFocusChanged,
-        child: _content(context),
+      child: FocusTraversalGroup(
+        policy: _policy,
+        child: Focus(
+          canRequestFocus: false,
+          skipTraversal: true,
+          includeSemantics: false,
+          onFocusChange: _groupFocusChanged,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final stacked = _stacks(context, constraints.maxWidth);
+              return _withReasons(
+                context,
+                stacked ? _stack(context) : _track(context),
+                // In the stack a disabled segment's reason is on its row;
+                // only the whole control's reason stays under it.
+                stacked
+                    ? [if (!_controlEnabled) _part.disabledReason!]
+                    : _reasons(),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
 
-  Widget _content(BuildContext context) {
+  /// KIT-24: whether any segment's one line (check, icon, label, count and
+  /// insets) is wider than its equal share of [width], or the text is at
+  /// 2.0 or more. Measured like KitAskLine, with the styles the row draws.
+  bool _stacks(BuildContext context, double width) {
+    final tokens = KitTokens.of(context);
+    final scaler = MediaQuery.textScalerOf(context);
+    final labelStyle = KitText.styleOf(context, KitTextRole.label);
+    if (labelStyle.fontSize case final size?
+        when scaler.scale(size) / size >= 2) {
+      return true;
+    }
+    if (!width.isFinite) return false;
+    final direction = Directionality.of(context);
+    double measure(String text, TextStyle style) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: direction,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      final result = painter.width.ceilToDouble();
+      painter.dispose();
+      return result;
+    }
+
+    final countStyle = KitText.styleOf(
+      context,
+      KitTextRole.caption,
+    ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+    final iconSize = tokens.iconSize(context, tokens.smallIconSize);
+    final share =
+        (width - 2 * KitTokens.hairlineWidth(context)) / _segments.length;
+    for (final segment in _segments) {
+      var needed =
+          2 * tokens.space2 +
+          iconSize +
+          tokens.space1 +
+          measure(segment.label, labelStyle);
+      if (segment.icon != null) needed += iconSize + tokens.space1;
+      if (segment.count case final count?) {
+        needed +=
+            tokens.space1 + measure(_formatCount(context, count), countStyle);
+      }
+      if (needed > share) return true;
+    }
+    return false;
+  }
+
+  Widget _withReasons(
+    BuildContext context,
+    Widget control,
+    List<String> reasons,
+  ) {
+    if (reasons.isEmpty) return control;
+    final tokens = KitTokens.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        control,
+        Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: tokens.space2,
+            top: tokens.space1,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final reason in reasons)
+                KitText(reason, role: KitTextRole.secondary),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The stacked form (KIT-24): one full-width [KitChoiceRow] per segment
+  /// in a `surface1` panel, as KitChoiceList draws its rows.
+  Widget _stack(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    final roles = tokens.roles;
+    final iconSize = tokens.iconSize(context, tokens.smallIconSize);
+    final rows = <Widget>[
+      for (var i = 0; i < _segments.length; i++)
+        Focus(
+          canRequestFocus: false,
+          skipTraversal: true,
+          includeSemantics: false,
+          onFocusChange: (focused) => _segmentFocusChanged(i, focused),
+          child: _row(context, i, iconSize: iconSize),
+        ),
+    ];
+    return Focus(
+      canRequestFocus: false,
+      skipTraversal: true,
+      includeSemantics: false,
+      onKeyEvent: _handleStackKey,
+      child: Material(
+        color: roles.surface1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(tokens.panelCornerRadius),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < rows.length; i++) ...[
+              if (i > 0)
+                Divider(
+                  height: 0,
+                  thickness: 0,
+                  indent: tokens.gutter + tokens.smallIconSize + tokens.space3,
+                  color: roles.hairline,
+                ),
+              rows[i],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _row(BuildContext context, int index, {required double iconSize}) {
+    final roles = KitTokens.of(context).roles;
+    final segment = _segments[index];
+    final enabled = _canChoose(index);
+    final count = segment.count;
+    return KitChoiceRow<T>(
+      key: segment.key,
+      choice: KitChoice<T>(
+        value: segment.value,
+        title: count == null
+            ? segment.label
+            : '${segment.label} · ${_formatCount(context, count)}',
+        leading: segment.icon == null
+            ? null
+            : Icon(
+                segment.icon,
+                size: iconSize,
+                color: enabled ? roles.text2 : roles.text3,
+              ),
+        enabled: segment.enabled,
+        disabledReason: segment.disabledReason,
+      ),
+      selected: segment.value == _part.selected,
+      focusNode: _stackNodes[index],
+      onTap: enabled ? () => _choose(index) : null,
+    );
+  }
+
+  Widget _track(BuildContext context) {
     final tokens = KitTokens.of(context);
     final roles = tokens.roles;
     final reduced = KitMotion.reduced(context);
@@ -292,9 +530,8 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
     final indicatorAlign = n > 1
         ? AlignmentDirectional(-1 + selectedIndex * (2 / (n - 1)), 0)
         : AlignmentDirectional.center;
-    final reasons = _reasons();
 
-    final track = Container(
+    return Container(
       // `BoxDecoration.border` already insets the child by its own width
       // (`Container` folds a decoration's padding in), so no extra padding
       // is added here; the track is taller by that inset so a segment never
@@ -340,29 +577,6 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
           ),
         ],
       ),
-    );
-
-    if (reasons.isEmpty) return track;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        track,
-        Padding(
-          padding: EdgeInsetsDirectional.only(
-            start: tokens.space2,
-            top: tokens.space1,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final reason in reasons)
-                KitText(reason, role: KitTextRole.secondary),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -425,12 +639,12 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
           SizedBox(width: tokens.space1),
         ],
         Flexible(
-          // The ellipsis stands in until the stacked form lands (see the
-          // class comment); the spec's rule is that nothing truncates.
+          // One line that always fits: when it would not, the part stacks
+          // instead (KIT-24, [_stacks]); nothing truncates.
           child: Text(
             segment.label,
             maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            softWrap: false,
             style: KitText.styleOf(context, KitTextRole.label, tone: tone),
           ),
         ),
@@ -516,4 +730,24 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
       ),
     );
   }
+}
+
+/// The group's one Tab stop (§8.2, G14), decided when Tab is pressed
+/// rather than by switching `skipTraversal` on the segments' nodes: a node
+/// property changed by a new selection is announced after the frame, and
+/// inside the part's LayoutBuilder that announcement would leave a frame
+/// callback behind, so one pump() would no longer settle (G8).
+class _OneStopPolicy extends WidgetOrderTraversalPolicy {
+  _OneStopPolicy({required this.isSegment, required this.isStop});
+
+  final bool Function(FocusNode node) isSegment;
+  final bool Function(FocusNode node) isStop;
+
+  @override
+  Iterable<FocusNode> sortDescendants(
+    Iterable<FocusNode> descendants,
+    FocusNode currentNode,
+  ) => super
+      .sortDescendants(descendants, currentNode)
+      .where((node) => node == currentNode || !isSegment(node) || isStop(node));
 }

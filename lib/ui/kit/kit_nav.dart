@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -137,7 +138,11 @@ class KitNav extends StatelessWidget {
           children: [
             KitBottomInset.add(
               extraBottom: keyboardOpen ? 0 : tokens.space2 + dockHeight,
-              child: _KitNavScope(hostsPane: false, child: child),
+              // The top controls join while the page is scrolled.
+              child: KitGlass.trackScroll(
+                resetOn: selected,
+                child: _KitNavScope(hostsPane: false, child: child),
+              ),
             ),
             if (!keyboardOpen)
               PositionedDirectional(
@@ -178,7 +183,10 @@ class KitNav extends StatelessWidget {
               child: KitBottomInset.add(
                 extraBottom: 0,
                 start: railBand,
-                child: _KitNavScope(hostsPane: false, child: child),
+                child: KitGlass.trackScroll(
+                  resetOn: selected,
+                  child: _KitNavScope(hostsPane: false, child: child),
+                ),
               ),
             ),
           ],
@@ -256,6 +264,7 @@ class KitNavBar extends StatelessWidget {
         );
         return KitGlass(
           dim: true,
+          respond: true,
           borderRadius: BorderRadius.circular(tokens.navRadius),
           child: SizedBox(
             height: _dockHeightFor(tokens, metrics),
@@ -314,6 +323,7 @@ class KitNavRail extends StatelessWidget {
       width: KitLayout.railWidth,
       child: KitGlass(
         dim: true,
+        respond: true,
         borderRadius: BorderRadius.circular(tokens.navRadius),
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: tokens.space2),
@@ -497,8 +507,28 @@ class _KitNavItems extends StatefulWidget {
   State<_KitNavItems> createState() => _KitNavItemsState();
 }
 
-class _KitNavItemsState extends State<_KitNavItems> {
+class _KitNavItemsState extends State<_KitNavItems>
+    with SingleTickerProviderStateMixin {
   final List<FocusNode> _nodes = [];
+
+  // The lens (fluid glass, visual language §6): its two edges along the bar
+  // ride separate springs, so it stretches towards a new tab, leading with
+  // its front edge, and settles on it; dragged along the bar it lifts and
+  // follows the finger. Positions are along the main axis in visual order
+  // (left to right, or top to bottom). Only the lens moves: it is laid out
+  // alone, the destinations never relayout or rebuild. One ticker steps
+  // the springs, and a finger moves their targets without restarting them.
+  final _LensMotion _motion = _LensMotion();
+  late final Ticker _ticker = createTicker(_tick);
+  Duration _lastTick = Duration.zero;
+
+  /// The track the lens was last placed on; null before the first build.
+  _LensTrack? _track;
+
+  /// The destination the lens rests on or is heading to.
+  int? _heading;
+  bool _dragging = false;
+  bool _reduced = false;
 
   void _syncNodes() {
     while (_nodes.length < widget.destinations.length) {
@@ -514,6 +544,8 @@ class _KitNavItemsState extends State<_KitNavItems> {
     for (final node in _nodes) {
       node.dispose();
     }
+    _ticker.dispose();
+    _motion.dispose();
     super.dispose();
   }
 
@@ -539,11 +571,135 @@ class _KitNavItemsState extends State<_KitNavItems> {
     return KeyEventResult.handled;
   }
 
+  // ── The lens ──
+
+  void _tick(Duration elapsed) {
+    final dt =
+        (elapsed - _lastTick).inMicroseconds / Duration.microsecondsPerSecond;
+    _lastTick = elapsed;
+    _motion.step(dt);
+    if (!_motion.moving) _ticker.stop();
+  }
+
+  void _run() {
+    if (_ticker.isActive) return;
+    _lastTick = Duration.zero;
+    _ticker.start();
+  }
+
+  /// Both edges to [start]–[end]: the edge in front leads on the stiffer
+  /// spring, the one behind follows, so the lens stretches on the way.
+  void _springEdges(
+    double start,
+    double end, {
+    required SpringDescription lead,
+    required SpringDescription trail,
+  }) {
+    final forward = start + end > _motion.start.x + _motion.end.x;
+    _motion.start.aim(start, forward ? trail : lead);
+    _motion.end.aim(end, forward ? lead : trail);
+    _run();
+  }
+
+  void _lift(double to) {
+    _motion.lift.aim(to, KitMotion.lensLift);
+    _run();
+  }
+
+  void _snap(double start, double end) {
+    _ticker.stop();
+    _motion.snap(start, end);
+  }
+
+  /// Puts the lens on the selected destination: at once the first time,
+  /// when the track changed (a new window size or text size) or under
+  /// reduced motion; on springs when the selection moved.
+  void _place(_LensTrack track) {
+    final (start, end) = track.rest(widget.selected);
+    final moved = _track != track;
+    _track = track;
+    if (_dragging) return;
+    if (moved || _reduced) {
+      _heading = widget.selected;
+      _snap(start, end);
+      return;
+    }
+    if (_heading == widget.selected) return;
+    _heading = widget.selected;
+    _springEdges(
+      start,
+      end,
+      lead: KitMotion.lensLead,
+      trail: KitMotion.lensTrail,
+    );
+  }
+
+  double _along(Offset local) =>
+      widget.axis == Axis.horizontal ? local.dx : local.dy;
+
+  void _dragStart(DragStartDetails details) {
+    _dragging = true;
+    if (!_reduced) _lift(1);
+    _dragTo(_along(details.localPosition));
+  }
+
+  void _dragUpdate(DragUpdateDetails details) =>
+      _dragTo(_along(details.localPosition));
+
+  /// The lens follows the finger, a little wider while it floats, and
+  /// resists past the first and last destinations.
+  void _dragTo(double position) {
+    final track = _track;
+    if (track == null) return;
+    final first = track.centre(0);
+    final last = track.centre(track.count - 1);
+    var at = position;
+    if (at < first) at = first - (first - at) * _LensTrack.overscroll;
+    if (at > last) at = last + (at - last) * _LensTrack.overscroll;
+    final half = track.length * (_reduced ? 1 : _LensTrack.floating) / 2;
+    if (_reduced) {
+      _motion.snap(at - half, at + half);
+      return;
+    }
+    _springEdges(
+      at - half,
+      at + half,
+      lead: KitMotion.lensDragLead,
+      trail: KitMotion.lensDragTrail,
+    );
+  }
+
+  /// Let go: the lens settles on the destination under it, which opens.
+  void _dragEnd() {
+    final track = _track;
+    if (!_dragging || track == null) return;
+    _dragging = false;
+    // The destination under the finger (the springs' target), not under
+    // the lens, which may still be catching up.
+    final index = track.indexAt(
+      (_motion.start.target + _motion.end.target) / 2,
+    );
+    _heading = index;
+    final (start, end) = track.rest(index);
+    if (_reduced) {
+      _snap(start, end);
+    } else {
+      _lift(0);
+      _springEdges(
+        start,
+        end,
+        lead: KitMotion.lensLead,
+        trail: KitMotion.lensTrail,
+      );
+    }
+    if (index != widget.selected) widget.onSelected(index);
+  }
+
   @override
   Widget build(BuildContext context) {
     _syncNodes();
     final tokens = KitTokens.of(context);
-    final reduced = KitMotion.reduced(context);
+    _reduced = KitMotion.reduced(context);
     final metrics = widget.metrics;
     final items = <Widget>[
       for (var i = 0; i < widget.destinations.length; i++)
@@ -573,34 +729,61 @@ class _KitNavItemsState extends State<_KitNavItems> {
     } else {
       final lensWidth = _lensWidth(tokens);
       final lensHeight = _lensHeight();
-      final duration = reduced ? Duration.zero : KitMotion.standard;
-      final double lensStart;
-      final double lensTop;
-      if (widget.axis == Axis.horizontal) {
-        lensStart =
-            widget.selected * widget.slotExtent +
-            (widget.slotExtent - lensWidth) / 2;
-        lensTop = _dockTopPad(tokens, metrics);
-      } else {
-        lensStart = (KitLayout.railWidth - lensWidth) / 2;
-        lensTop = widget.selected * widget.slotExtent + tokens.space1;
-      }
-      body = Stack(
+      final horizontal = widget.axis == Axis.horizontal;
+      final track = horizontal
+          ? _LensTrack(
+              axis: Axis.horizontal,
+              count: widget.destinations.length,
+              slot: widget.slotExtent,
+              length: lensWidth,
+              lead: (widget.slotExtent - lensWidth) / 2,
+              crossStart: _dockTopPad(tokens, metrics),
+              crossLength: lensHeight,
+              rtl: Directionality.of(context) == TextDirection.rtl,
+            )
+          : _LensTrack(
+              axis: Axis.vertical,
+              count: widget.destinations.length,
+              slot: widget.slotExtent,
+              length: lensHeight,
+              lead: tokens.space1,
+              crossStart: (KitLayout.railWidth - lensWidth) / 2,
+              crossLength: lensWidth,
+              rtl: false,
+            );
+      _place(track);
+      final stack = Stack(
         children: [
-          AnimatedPositionedDirectional(
-            duration: duration,
-            curve: KitMotion.emphasized,
-            start: lensStart,
-            top: lensTop,
-            width: lensWidth,
-            height: lensHeight,
-            child: const _KitNavLens(),
+          Positioned.fill(
+            child: CustomSingleChildLayout(
+              delegate: _LensLayout(
+                motion: _motion,
+                track: track,
+                grow: tokens.space2,
+                devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+              ),
+              child: _KitNavLens(motion: _motion),
+            ),
           ),
-          if (widget.axis == Axis.horizontal)
+          if (horizontal)
             Row(children: items)
           else
             Column(mainAxisSize: MainAxisSize.min, children: items),
         ],
+      );
+      // Drag along the bar to move the lens; a tap still opens at once.
+      // Screen readers keep the destinations' own actions.
+      body = GestureDetector(
+        excludeFromSemantics: true,
+        onHorizontalDragStart: horizontal ? _dragStart : null,
+        onHorizontalDragUpdate: horizontal ? _dragUpdate : null,
+        onHorizontalDragEnd: horizontal ? (_) => _dragEnd() : null,
+        onHorizontalDragCancel: horizontal ? _dragEnd : null,
+        onVerticalDragStart: horizontal ? null : _dragStart,
+        onVerticalDragUpdate: horizontal ? null : _dragUpdate,
+        onVerticalDragEnd: horizontal ? null : (_) => _dragEnd(),
+        onVerticalDragCancel: horizontal ? null : _dragEnd,
+        child: stack,
       );
     }
     return FocusTraversalGroup(
@@ -614,26 +797,274 @@ class _KitNavItemsState extends State<_KitNavItems> {
   }
 }
 
+/// Where the lens can rest along the dock or rail: one slot per
+/// destination, in visual order.
+@immutable
+class _LensTrack {
+  const _LensTrack({
+    required this.axis,
+    required this.count,
+    required this.slot,
+    required this.length,
+    required this.lead,
+    required this.crossStart,
+    required this.crossLength,
+    required this.rtl,
+  });
+
+  /// How far a drag past the first or last destination moves the lens.
+  static const double overscroll = .25;
+
+  /// The lens's length while it floats under a finger, as a share of rest.
+  static const double floating = 1.08;
+
+  final Axis axis;
+  final int count;
+
+  /// Along the main axis: a destination's extent, the lens's length and
+  /// the space before the lens in its slot.
+  final double slot;
+  final double length;
+  final double lead;
+
+  /// Across: where the lens starts and how thick it is at rest.
+  final double crossStart;
+  final double crossLength;
+
+  /// A right-to-left dock: the first destination is the rightmost slot.
+  final bool rtl;
+
+  int _visual(int index) => rtl ? count - 1 - index : index;
+
+  /// The lens's edges on destination [index].
+  (double, double) rest(int index) {
+    final start = _visual(index) * slot + lead;
+    return (start, start + length);
+  }
+
+  /// The middle of visual slot [slotIndex].
+  double centre(int slotIndex) => slotIndex * slot + lead + length / 2;
+
+  /// The destination whose slot holds [position].
+  int indexAt(double position) => _visual(
+    ((position - lead - length / 2) / slot).round().clamp(0, count - 1),
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      other is _LensTrack &&
+      other.axis == axis &&
+      other.count == count &&
+      other.slot == slot &&
+      other.length == length &&
+      other.lead == lead &&
+      other.crossStart == crossStart &&
+      other.crossLength == crossLength &&
+      other.rtl == rtl;
+
+  @override
+  int get hashCode => Object.hash(
+    axis,
+    count,
+    slot,
+    length,
+    lead,
+    crossStart,
+    crossLength,
+    rtl,
+  );
+}
+
+/// One value on a spring whose target may move every frame without
+/// restarting it (a finger dragging the lens).
+class _Spring {
+  double x = 0;
+  double v = 0;
+  double target = 0;
+  SpringDescription spring = KitMotion.lensLead;
+
+  /// Close enough to rest to stop: a hundredth of a dp.
+  static const double _rest = .01;
+
+  bool get moving => (x - target).abs() > _rest || v.abs() > _rest;
+
+  void aim(double to, SpringDescription description) {
+    target = to;
+    spring = description;
+  }
+
+  void snap(double value) {
+    x = target = value;
+    v = 0;
+  }
+
+  void step(double dt) {
+    final a =
+        (spring.stiffness * (target - x) - spring.damping * v) / spring.mass;
+    v += a * dt;
+    x += v * dt;
+  }
+}
+
+/// The lens's two edges and its lift, stepped together once per frame.
+class _LensMotion extends ChangeNotifier {
+  final _Spring start = _Spring();
+  final _Spring end = _Spring();
+  final _Spring lift = _Spring();
+
+  List<_Spring> get _all => [start, end, lift];
+
+  bool get moving => _all.any((spring) => spring.moving);
+
+  /// Longest step of the integration, seconds: small enough that the
+  /// stiffest spring stays stable at any frame rate.
+  static const double _substep = .004;
+
+  /// A frame longer than this (the app paused) moves no further.
+  static const double _longestFrame = 1 / 30;
+
+  void step(double dt) {
+    final frame = dt.clamp(0.0, _longestFrame);
+    final steps = math.max(1, (frame / _substep).ceil());
+    for (final spring in _all) {
+      if (!spring.moving) continue;
+      for (var i = 0; i < steps; i++) {
+        spring.step(frame / steps);
+      }
+      // Exactly at rest: the edges land on the pixel grid.
+      if (!spring.moving) spring.snap(spring.target);
+    }
+    notifyListeners();
+  }
+
+  void snap(double startAt, double endAt) {
+    start.snap(startAt);
+    end.snap(endAt);
+    lift.snap(0);
+    notifyListeners();
+  }
+}
+
+/// Lays the lens out alone from its springs: it stretches along the track,
+/// thins a little while stretched, grows by [grow] while lifted, and its
+/// edges sit on physical pixels (crisp at rest and in motion).
+class _LensLayout extends SingleChildLayoutDelegate {
+  _LensLayout({
+    required this.motion,
+    required this.track,
+    required this.grow,
+    required this.devicePixelRatio,
+  }) : super(relayout: motion);
+
+  final _LensMotion motion;
+  final _LensTrack track;
+  final double grow;
+  final double devicePixelRatio;
+
+  /// How much the lens thins per dp of stretch, and at most.
+  static const double _thinning = .12;
+  static const double _thinnest = .2;
+
+  Rect get _rect {
+    final start = motion.start.x;
+    final end = motion.end.x;
+    final lifted = grow * motion.lift.x;
+    final stretch = math.max(0.0, end - start - track.length);
+    final cross = math.max(
+      0.0,
+      track.crossLength -
+          math.min(track.crossLength * _thinnest, stretch * _thinning) +
+          lifted,
+    );
+    final middle = track.crossStart + track.crossLength / 2;
+    double snap(double value) =>
+        (value * devicePixelRatio).roundToDouble() / devicePixelRatio;
+    final a = snap(start - lifted / 2);
+    final b = math.max(a, snap(end + lifted / 2));
+    final c = snap(middle - cross / 2);
+    final d = math.max(c, snap(middle + cross / 2));
+    return track.axis == Axis.horizontal
+        ? Rect.fromLTRB(a, c, b, d)
+        : Rect.fromLTRB(c, a, d, b);
+  }
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      BoxConstraints.tight(_rect.size);
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) => _rect.topLeft;
+
+  @override
+  bool shouldRelayout(_LensLayout old) =>
+      old.motion != motion ||
+      old.track != track ||
+      old.grow != grow ||
+      old.devicePixelRatio != devicePixelRatio;
+}
+
 /// The selected tab's glass lens: a clear pill with a one physical pixel
 /// rim, never a second glass layer (glass never sits on glass, VL §6).
+/// Lifted under a finger, its rim catches the light.
 class _KitNavLens extends StatelessWidget {
-  const _KitNavLens();
+  const _KitNavLens({required this.motion});
+
+  final _LensMotion motion;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
-    return DecoratedBox(
-      decoration: ShapeDecoration(
-        color: tokens.roles.surface3,
-        shape: StadiumBorder(
-          side: BorderSide(
-            color: tokens.roles.hairline,
-            width: KitTokens.hairlineWidth(context),
-          ),
-        ),
+    final roles = KitTokens.of(context).roles;
+    return CustomPaint(
+      painter: _LensPainter(
+        motion: motion,
+        fill: roles.surface3,
+        rim: roles.hairline,
+        lit: roles.glassRimLight,
+        width: KitTokens.hairlineWidth(context),
       ),
     );
   }
+}
+
+class _LensPainter extends CustomPainter {
+  _LensPainter({
+    required this.motion,
+    required this.fill,
+    required this.rim,
+    required this.lit,
+    required this.width,
+  }) : super(repaint: motion);
+
+  final _LensMotion motion;
+  final Color fill;
+  final Color rim;
+  final Color lit;
+  final double width;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final pill = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(size.shortestSide / 2),
+    );
+    final lift = motion.lift.x.clamp(0.0, 1.0);
+    canvas
+      ..drawRRect(pill, Paint()..color = fill)
+      ..drawDRRect(
+        pill,
+        pill.deflate(width),
+        Paint()..color = Color.lerp(rim, lit, lift)!,
+      );
+  }
+
+  @override
+  bool shouldRepaint(_LensPainter old) =>
+      old.motion != motion ||
+      old.fill != fill ||
+      old.rim != rim ||
+      old.lit != lit ||
+      old.width != width;
 }
 
 class _KitNavItem extends StatefulWidget {

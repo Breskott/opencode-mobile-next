@@ -537,22 +537,33 @@ class _TerminalScreenState extends State<TerminalScreen> {
     if (mounted) await _load();
   }
 
+  /// Whether the list still shows the place an act started in: a rename or
+  /// removal that ends after the person moved on must not reload the new
+  /// place's list (it already loaded when the place changed).
+  bool Function() _startedHere() {
+    final repository = _repository;
+    final revision = _revisionOf(repository);
+    return () => repository != null && _isCurrentLocation(repository, revision);
+  }
+
   Future<void> _rename(TerminalProcess process) async {
+    final stillHere = _startedHere();
     final renamed = await _renameTerminal(
       context,
       process,
       _actionRepository(widget.controller.locationRevision),
     );
-    if (renamed != null && mounted) await _load();
+    if (renamed != null && stillHere()) await _load();
   }
 
   Future<void> _remove(TerminalProcess process) async {
+    final stillHere = _startedHere();
     final removed = await _removeTerminal(
       context,
       process,
       _actionRepository(widget.controller.locationRevision),
     );
-    if (removed && mounted) await _load();
+    if (removed && stillHere()) await _load();
   }
 
   /// Removes every ended terminal after one question; running ones stay.
@@ -560,6 +571,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
     if (_removingEnded || ended.isEmpty) return;
     final l10n = _l10nOf(context);
     final repository = _actionRepository(widget.controller.locationRevision);
+    final stillHere = _startedHere();
     setState(() => _removingEnded = true);
     try {
       final removed = await showKitConfirm(
@@ -580,7 +592,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
           }
         },
       );
-      if (removed && mounted) await _load();
+      if (removed && stillHere()) await _load();
     } finally {
       if (mounted) setState(() => _removingEnded = false);
     }

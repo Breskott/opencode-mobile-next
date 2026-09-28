@@ -393,6 +393,27 @@ void main() {
     );
   });
 
+  testWidgets('8b. Enter before typing settles reports the query once', (
+    tester,
+  ) async {
+    final changed = <String>[];
+    final submitted = <String>[];
+    await tester.pumpWidget(
+      _app(_Host(onChanged: changed.add, onSubmitted: submitted.add)),
+    );
+    await tester.enterText(find.byKey(_fieldKey), 'dark');
+    await tester.pump();
+    expect(changed, isEmpty); // still waiting for typing to settle
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    // The host acts on what was typed at once, before its submit handler.
+    expect(changed, ['dark']);
+    expect(submitted, ['dark']);
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 2));
+    // The cancelled wait never reports the same query a second time.
+    expect(changed, ['dark']);
+  });
+
   testWidgets('9. RTL: magnifier at the start, clear at the end, no mirror', (
     tester,
   ) async {

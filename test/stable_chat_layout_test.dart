@@ -126,7 +126,7 @@ Finder get _send => find.byKey(const Key('chat-send-button'));
 Finder get _stop => find.byKey(const Key('chat-stop-button'));
 
 String _draftText(WidgetTester tester) =>
-    tester.widget<TextField>(_field).controller!.text;
+    tester.widget<TextFormField>(_field).controller!.text;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -165,10 +165,20 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('session-actions-button')));
         await tester.pumpAndSettle();
         expect(find.text(_longTitle), findsWidgets);
-        await tester.ensureVisible(find.text('Results'));
+        final results = find.byKey(const ValueKey('session-menu-results'));
+        await tester.scrollUntilVisible(
+          results,
+          100,
+          scrollable: find
+              .descendant(
+                of: find.byKey(const Key('session-menu-sheet')),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
         await tester.pumpAndSettle();
-        expect(find.text('Results').hitTestable(), findsOneWidget);
-        await tester.tap(find.text('Results'));
+        expect(results.hitTestable(), findsOneWidget);
+        await tester.tap(results);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         expect(find.byKey(const Key('running-work-sheet')), findsOneWidget);
@@ -263,7 +273,10 @@ void main() {
         expect(tester.getRect(_field).top, greaterThanOrEqualTo(appBarBottom));
         expect(tester.getRect(_field).bottom, lessThanOrEqualTo(visibleBottom));
         expect(tester.getRect(_send).bottom, lessThanOrEqualTo(visibleBottom));
-        expect(tester.widget<IconButton>(_send).onPressed, isNotNull);
+        expect(
+          tester.getSemantics(_send),
+          isSemantics(isEnabled: true, hasTapAction: true),
+        );
 
         // A run starts: Stop joins Send, both stay above the keyboard, and
         // the delivery strip does not push them off screen.
@@ -272,8 +285,11 @@ void main() {
         await _pumpFrames(tester);
         expect(tester.takeException(), isNull);
         expect(_stop, findsOneWidget);
-        expect(find.byKey(const Key('composer-queue-hint')), findsOneWidget);
-        expect(tester.widget<IconButton>(_stop).onPressed, isNotNull);
+        expect(find.text('Sends after this reply'), findsOneWidget);
+        expect(
+          tester.getSemantics(_stop),
+          isSemantics(isEnabled: true, hasTapAction: true),
+        );
         expect(tester.getRect(_stop).bottom, lessThanOrEqualTo(visibleBottom));
         expect(tester.getRect(_send).bottom, lessThanOrEqualTo(visibleBottom));
         expect(tester.getRect(_field).bottom, lessThanOrEqualTo(visibleBottom));
@@ -287,8 +303,11 @@ void main() {
         final fieldRect = tester.getRect(_field);
         expect(
           fieldRect.height,
-          greaterThanOrEqualTo(editor.preferredLineHeight + 22),
+          greaterThanOrEqualTo(editor.preferredLineHeight),
         );
+        // KitField gives the editor a 48 dp target; its composer variant
+        // has no inner padding (the glass supplies the surrounding inset).
+        expect(fieldRect.height, greaterThanOrEqualTo(48));
         final editableTop = editor.localToGlobal(Offset.zero).dy;
         expect(
           editableTop,
@@ -299,7 +318,18 @@ void main() {
           editableTop + editor.size.height,
           lessThanOrEqualTo(fieldRect.bottom),
         );
-        expect(tester.widget<TextField>(_field).focusNode!.hasFocus, isTrue);
+        expect(
+          tester
+              .widget<EditableText>(
+                find.descendant(
+                  of: _field,
+                  matching: find.byType(EditableText),
+                ),
+              )
+              .focusNode
+              .hasFocus,
+          isTrue,
+        );
 
         // Compact rendering must not turn the editor into a single-line
         // input, which would silently remove newlines from user edits.

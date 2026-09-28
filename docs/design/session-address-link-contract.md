@@ -1,8 +1,8 @@
 # P3.9 — Address-bearing session links: privacy and transport contract
 
-Status: **proposal, not implemented or enabled**. Reviewed 2026-09-28 at `98c4c67a`. Finish line: a portable, credential-free session locator with explicit sender disclosure and receiver consent, private Tailscale access, and a safe Add server continuation. Non-goals: public sharing, account invitation, pairing credentials, session creation/resume, or a new relay. This is a docs-only follow-up to the [P3.9 blocker](../qa/slice-P3.9-2026-09-27/README.md).
+Status: **backend implemented, production capability off**. The 2026-09-28 implementation, callable APIs, acceptance evidence and remaining host/UI activation gates are recorded in [the backend handoff](../qa/codex-sessionlink-2026-09-28/README.md). The original research follows. Reviewed 2026-09-28 at `98c4c67a`. Finish line: a portable, credential-free session locator with explicit sender disclosure and receiver consent, private Tailscale access, and a safe Add server continuation. Non-goals: public sharing, account invitation, pairing credentials, session creation/resume, or a new relay. This is a docs-only follow-up to the [P3.9 blocker](../qa/slice-P3.9-2026-09-27/README.md).
 
-## Current evidence
+## Original review evidence
 
 | Boundary | Current behavior |
 | --- | --- |
@@ -23,7 +23,7 @@ Never include passwords, Basic/Bearer authorization, cookies, API/provider keys,
 
 The Tailscale HTTPS option has its own metadata cost: certificate transparency publishes the device's certificate name, including its tailnet DNS name. That is separate from link disclosure and needs to be explained during server setup; this link feature must not silently enable certificate provisioning. [Tailscale HTTPS documentation](https://tailscale.com/docs/how-to/set-up-https-certificates)
 
-## Proposed wire format
+## Wire format (implemented codec)
 
 ```text
 opencode-mobile://session/v2?server=https%3A%2F%2Fworkstation.example-tailnet.ts.net&instance=9e30af6d-422d-4d89-baad-006ac07cb9d1&session=ses_example
@@ -78,7 +78,7 @@ Client transport must validate TLS normally, refuse all redirects, restrict reso
 5. **Finish Add server, then read the session.** Retain the pending locator across the in-app setup flow; after connection succeeds, confirm the bound instance and use a domain operation to read/open the authorized session. A missing or denied session does not create/resume it, dispatch a prompt or search other servers. Cancellation consumes the locator. Process death may require rescanning; do not persist unknown-origin links just to avoid that friction.
 6. **Show truthful outcomes.** While waiting, show the actual stage: awaiting permission, checking server, sign-in required, opening session. A timeout says the server did not answer; it does not claim Tailscale is off. Failures use authored words plus redacted Details, excluding the complete link, host identifiers and session ID from diagnostics by default.
 
-The v2 route is an internal parsed navigation action, not an external `launchUrl`. Any supplied help/web destination still goes through [openExternalLink](../../lib/ui/widgets/external_link.dart#L40); do not widen its custom-scheme policy to implement v2. UI consumes a proposed domain `SessionAddressLink` and controller states; it must not parse links, construct HTTP requests or gate on a flavor enum. Suggested support flag: `ServerCapabilities.sessionAddressHandoff`, enabled only after the host requirements above are met. This name is proposed, not callable today.
+The v2 route is an internal parsed navigation action, not an external `launchUrl`. Any supplied help/web destination still goes through [openExternalLink](../../lib/ui/widgets/external_link.dart#L40); do not widen its custom-scheme policy to implement v2. UI consumes domain `SessionAddressLink` values and `SessionAddressController` states; it must not parse links, construct HTTP requests or gate on a flavor enum. The implemented support flag `ServerCapabilities.sessionAddressHandoff` defaults off on every adapter. Production coordinator admission also stays off until the host requirements and complete UI flow above are verified. See the backend handoff for callable APIs.
 
 ## Data lifecycle and refusal rules
 
@@ -88,7 +88,7 @@ Keep v2 generation and reception unavailable until the parser/native bounds, con
 
 ## Acceptance and validation
 
-Proposed behavior tests (not yet implemented):
+Acceptance requirements (client coverage and remaining live-host/UI evidence are tracked in the backend handoff):
 
 - Valid link round-trip is canonical and contains exactly three fields; old parser rejects `/v2`; malformed/duplicate/unknown/encoded keys and oversized input fail before any network request.
 - Password-bearing origins, token queries, fragments, credentials embedded in an ID, loopback, short DNS, IPv4/IPv6 literals, public hosts, certificate failures and redirects are refused without copying/logging input.
@@ -97,8 +97,8 @@ Proposed behavior tests (not yet implemented):
 - Authorized second phone on the tailnet can add the server and open its existing session. Tailscale off, another unauthorized tailnet peer, public/Funnel access, spoofed identity headers and ACL denial cannot reach authenticated session data. Tagged-peer behavior is explicit. Test DNS changes between validation and request.
 - Missing/denied session leaves the server saved but creates no session/task. Newer intent wins over late completion; cancellation and profile deletion invalidate pending routes. Cold and warm Android deliveries are each consumed once.
 
-This document adds no runtime API, backend change, storage or localization. Research is source/schema inspection plus official Tailscale/Android documentation accessed 2026-09-28; no live host, VPN, device, account or credential was used. Docs-only checks are relative-link/line-anchor validation and `git diff --check`; Flutter tests/analyzer/builds are not applicable to these prose changes.
+The original research revision added no runtime API, backend change, storage or localization. Its research was source/schema inspection plus official Tailscale/Android documentation accessed 2026-09-28; no live host, VPN, device, account or credential was used. Docs-only checks are relative-link/line-anchor validation and `git diff --check`; Flutter tests/analyzer/builds are not applicable to these prose changes.
 
-Documentation validation: all 73 relative links/line anchors across the four
+Original docs-only validation: all 73 relative links/line anchors across the four
 contracts resolve, both JSON examples parse, and the staged whitespace check
 passes. No application source changed; no runtime test pass is claimed.

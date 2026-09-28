@@ -22476,4 +22476,196 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamNowNotStartingLine => 'The team isn\'t starting a worker';
+
+  @override
+  String get aiSetupTitle => 'AI setup';
+
+  @override
+  String get aiSetupEntryDetail =>
+      'Models, tools and suggestions for this server';
+
+  @override
+  String get aiSetupRefresh => 'Read this server\'s setup again';
+
+  @override
+  String get aiSetupLoading => 'Reading this server\'s setup…';
+
+  @override
+  String get aiSetupReviewOnly =>
+      'Review only. Changes are made on the server for now.';
+
+  @override
+  String get aiSetupUnsupportedTitle => 'AI setup isn\'t available';
+
+  @override
+  String get aiSetupUnsupportedBody =>
+      'This server doesn\'t share its configuration with the app. Set up its models and tools on the server itself.';
+
+  @override
+  String get aiSetupSignInTitle => 'Sign-in needed';
+
+  @override
+  String aiSetupSignInBody(String server) {
+    return '$server didn\'t accept the saved sign-in, so its setup can\'t be read.';
+  }
+
+  @override
+  String get aiSetupErrorTitle => 'Couldn\'t read setup';
+
+  @override
+  String get aiSetupErrorBody =>
+      'The server didn\'t answer as expected. Try again, or check the server on its settings page.';
+
+  @override
+  String get aiSetupTryAgain => 'Try again';
+
+  @override
+  String get aiSetupOfflineTitle => 'You\'re offline';
+
+  @override
+  String aiSetupOfflineBody(String server) {
+    return 'Reconnect to $server to read its setup.';
+  }
+
+  @override
+  String aiSetupOfflineStale(String server) {
+    return 'Offline. This is $server\'s setup as last read; it updates when you reconnect.';
+  }
+
+  @override
+  String get aiSetupEmptyTitle => 'Nothing set up yet';
+
+  @override
+  String get aiSetupEmptyBody =>
+      'This server runs on its defaults, with no model chosen and no tool servers. Changes are made on the server for now.';
+
+  @override
+  String get aiSetupSuggestionsLabel => 'Suggestions';
+
+  @override
+  String aiSetupSuggestSignInTitle(String name) {
+    return 'Sign in to $name';
+  }
+
+  @override
+  String get aiSetupSuggestSignInDetail =>
+      'Its tools stay off until someone signs in to it on the server.';
+
+  @override
+  String aiSetupSuggestFixTitle(String name) {
+    return 'Check $name\'s settings';
+  }
+
+  @override
+  String get aiSetupSuggestFixDetail =>
+      'It failed to start. Fix its entry in the server\'s configuration, then restart the server.';
+
+  @override
+  String get aiSetupSuggestModelTitle => 'Choose a default model';
+
+  @override
+  String get aiSetupSuggestModelDetail =>
+      'No model is set, so new conversations use the server\'s own pick. Set “model” in the server\'s configuration.';
+
+  @override
+  String get aiSetupSuggestToolsTitle => 'Add tool servers';
+
+  @override
+  String get aiSetupSuggestToolsDetail =>
+      'No MCP servers are set up. Add one in the server\'s configuration to give the agent more tools.';
+
+  @override
+  String get aiSetupToolsLabel => 'Tool servers';
+
+  @override
+  String get aiSetupToolsTerm =>
+      'MCP servers give the agent extra tools. Each shows whether it is working now.';
+
+  @override
+  String get aiSetupToolConnected => 'Connected';
+
+  @override
+  String get aiSetupToolWaiting => 'Waiting';
+
+  @override
+  String get aiSetupToolOff => 'Off';
+
+  @override
+  String get aiSetupToolFailed => 'Failed';
+
+  @override
+  String get aiSetupToolNeedsSignIn => 'Needs sign-in';
+
+  @override
+  String get aiSetupToolUnknown => 'Unknown';
+
+  @override
+  String get aiSetupEffectiveLabel => 'Settings in effect';
+
+  @override
+  String get aiSetupEffectiveTerm =>
+      'What this server\'s conversations use, after combining its configuration files.';
+
+  @override
+  String get aiSetupModel => 'Model';
+
+  @override
+  String get aiSetupServerDefault => 'Not set: the server picks';
+
+  @override
+  String get aiSetupSmallModel => 'Small model';
+
+  @override
+  String get aiSetupDefaultAgent => 'Default agent';
+
+  @override
+  String get aiSetupProviders => 'Providers';
+
+  @override
+  String get aiSetupPermissions => 'Permissions';
+
+  @override
+  String aiSetupPermissionRules(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rules',
+      one: '1 rule',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiSetupAllSettings => 'All settings';
+
+  @override
+  String get aiSetupSourcesLabel => 'Configuration sources';
+
+  @override
+  String get aiSetupSourcesTerm =>
+      'Listed from lowest to highest priority, as the server reports them. The app doesn\'t combine them.';
+
+  @override
+  String get aiSetupNoSources => 'No configuration files';
+
+  @override
+  String get aiSetupNoSourcesDetail => 'This server runs on its defaults.';
+
+  @override
+  String aiSetupSourceUnnamed(String type) {
+    return 'Source without a file ($type)';
+  }
+
+  @override
+  String aiSetupSourceSets(int position, String keys) {
+    return '$position. Sets $keys';
+  }
+
+  @override
+  String aiSetupSourceEmpty(int position) {
+    return '$position. Sets nothing';
+  }
+
+  @override
+  String get aiSetupAllSources => 'All sources';
 }

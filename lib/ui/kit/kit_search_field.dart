@@ -39,7 +39,8 @@ import 'motion/kit_reveal.dart';
 /// [onChanged] runs once typing settles ([KitMotion.typingSettle]) and at
 /// once on clear. The count is announced once after settling, never on
 /// each keystroke (A11Y-3). Esc and the back gesture clear the query first;
-/// with no query they are left to the screen. Enter calls [onSubmitted];
+/// with no query they are left to the screen. Enter settles the query at
+/// once (a pending [onChanged] runs now, once) and calls [onSubmitted];
 /// Arrow Down moves focus to the first thing after the field.
 class KitSearchField extends StatefulWidget {
   const KitSearchField({
@@ -181,6 +182,21 @@ class _KitSearchFieldState extends State<KitSearchField> {
     });
   }
 
+  /// Enter settles the query now: a pending [onChanged] runs at once (not
+  /// again when the wait ends), so the host acts on what was typed and
+  /// hears it once.
+  void _submitted(String text) {
+    final pending = _settle;
+    if (pending != null) {
+      pending.cancel();
+      _settle = null;
+      _announcePending = true;
+      widget.onChanged(text);
+      if (widget.resultCount != null) _scheduleAnnounce();
+    }
+    widget.onSubmitted?.call(text);
+  }
+
   void _scheduleAnnounce() {
     _announcePending = false;
     SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -289,7 +305,7 @@ class _KitSearchFieldState extends State<KitSearchField> {
       ),
       cursorHeight: scaledLine,
       cursorColor: roles.accent,
-      onSubmitted: widget.onSubmitted,
+      onSubmitted: _submitted,
       decoration: InputDecoration(
         isCollapsed: true,
         // The hint equals the label, so nothing is lost when it goes; the

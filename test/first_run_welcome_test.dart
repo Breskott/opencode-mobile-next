@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
@@ -88,6 +89,14 @@ final Finder _editorList = find
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (_) async => null,
+        );
+  });
 
   test('bare pasted addresses gain the right scheme', () {
     expect(
@@ -187,7 +196,14 @@ void main() {
   ) async {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
+    final previousEngine = PhoneSetup.engine;
+    final previousTermux = PhoneSetup.termux;
     PhoneSetup.engine = FakeSetupEngine();
+    PhoneSetup.termux = FakeSetupEngine();
+    addTearDown(() {
+      PhoneSetup.engine = previousEngine;
+      PhoneSetup.termux = previousTermux;
+    });
     // "On this phone" opens phone setup, whose pre-flight reads the device.
     answerVoiceDeviceProbe();
     await tester.pumpWidget(
@@ -224,7 +240,11 @@ void main() {
     for (var i = 0; i < 8; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
-    expect(find.text('Offline demo'), findsOneWidget);
+    expect(find.text('Try it offline'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('demo-leave')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('first-run-welcome')), findsOneWidget);
+    expect(store.profiles, isEmpty);
   });
 
   testWidgets('a saved profile keeps the ordinary server list', (tester) async {
@@ -249,16 +269,11 @@ void main() {
     expect(find.byKey(const ValueKey('first-run-welcome')), findsNothing);
     expect(find.text('Workstation'), findsOneWidget);
     expect(find.text('Add server'), findsOneWidget);
-    expect(find.text('Try demo'), findsOneWidget);
-    await tester.tap(find.text('Try demo'));
-    for (var i = 0; i < 8; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(find.text('Offline demo'), findsOneWidget);
+    // R3 keeps the demo on the first-run welcome; saved servers have one
+    // way on, Add server, alongside their existing connection rows.
+    expect(find.text('Try demo'), findsNothing);
+    expect(find.byKey(const ValueKey('first-run-welcome')), findsNothing);
     expect(store.profiles.single.name, 'Workstation');
-    await tester.tap(find.byTooltip('Exit demo'));
-    await tester.pumpAndSettle();
-    expect(find.text('Workstation'), findsOneWidget);
   });
 
   for (final active in [false, true]) {
@@ -280,7 +295,7 @@ void main() {
         final controller = ConnectionController(store);
         addTearDown(controller.dispose);
         await tester.pumpWidget(_app(store, controller));
-        await tester.tap(find.byType(KitRowMenu));
+        await tester.longPress(find.text('Workstation'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Edit'));
         await tester.pumpAndSettle();
@@ -340,7 +355,7 @@ void main() {
 
     expect(
       tester
-          .widget<TextField>(find.byKey(const ValueKey('server-url-field')))
+          .widget<TextFormField>(find.byKey(const ValueKey('server-url-field')))
           .controller
           ?.text,
       'https://192.0.2.7:4096',
@@ -376,6 +391,11 @@ void main() {
       200,
       scrollable: _editorList,
     );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('test-server-connection')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('test-server-connection')));
     await tester.pumpAndSettle();
 
@@ -415,6 +435,11 @@ void main() {
       200,
       scrollable: _editorList,
     );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('test-server-connection')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('test-server-connection')));
     await tester.pumpAndSettle();
 
@@ -475,6 +500,11 @@ void main() {
       200,
       scrollable: _editorList,
     );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('test-server-connection')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('test-server-connection')));
     await tester.pumpAndSettle();
 
@@ -522,6 +552,11 @@ void main() {
       200,
       scrollable: _editorList,
     );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('test-server-connection')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('test-server-connection')));
     await tester.pumpAndSettle();
 
@@ -557,6 +592,11 @@ void main() {
       200,
       scrollable: _editorList,
     );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('test-server-connection')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('test-server-connection')));
     await tester.pumpAndSettle();
 

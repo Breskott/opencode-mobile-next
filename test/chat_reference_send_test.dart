@@ -159,7 +159,12 @@ Future<void> _type(WidgetTester tester, String text) async {
 
 String _composerText(WidgetTester tester) =>
     tester
-        .widget<TextField>(find.byKey(const Key('chat-composer-field')))
+        .widget<TextField>(
+          find.descendant(
+            of: find.byKey(const Key('chat-composer-field')),
+            matching: find.byType(TextField),
+          ),
+        )
         .controller
         ?.text ??
     '';
@@ -220,10 +225,7 @@ void main() {
 
     // References live in memory only, so the composer says so rather than
     // letting a restart lose them silently.
-    final note = tester.widget<Text>(
-      find.byKey(const Key('composer-reference-note')),
-    );
-    expect(note.data, contains('Not saved with your draft.'));
+    expect(find.textContaining('Not saved with your draft.'), findsOneWidget);
   });
 
   testWidgets('references still ride along on an ordinary prompt', (

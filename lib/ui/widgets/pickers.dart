@@ -134,7 +134,14 @@ Future<void> showModelPicker(
     body: (sheetContext) => ModelCatalogView._sheet(
       controller: controller,
       apply: apply,
-      onApplied: () => Navigator.of(sheetContext).maybePop(),
+      // Applied: the sheet closes. Not maybePop, which a search field's
+      // "back clears the query first" would intercept and keep it open.
+      onApplied: () {
+        final route = ModalRoute.of(sheetContext);
+        if (route != null && route.isCurrent) {
+          Navigator.of(sheetContext).pop();
+        }
+      },
       applyScope: scope,
       sessionID: sessionID,
       focusAgent: focusAgent,
@@ -409,7 +416,10 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
 
   void _setApplying(bool value) {
     _applying = value;
-    widget._apply?.applying.value = value;
+    // The sheet disposes its notifiers when it closes, while this body can
+    // still be finishing a save during the exit transition.
+    final apply = widget._apply;
+    if (apply != null && !apply._disposed) apply.applying.value = value;
   }
 
   @override
@@ -771,7 +781,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
           checked: !known,
           enabled: locked == null,
           disabledReason: locked,
-          onSelected: () => _setVariant(''),
+          onSelected: () => _setVariant(model, ''),
         ),
         for (final variant in variants)
           KitMenuItem(
@@ -780,15 +790,20 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
             checked: variant.id == _draftVariant,
             enabled: locked == null,
             disabledReason: locked,
-            onSelected: () => _setVariant(variant.id),
+            onSelected: () => _setVariant(model, variant.id),
           ),
       ],
     );
   }
 
-  void _setVariant(String value) {
+  /// A level chosen from the menu belongs to the model the menu listed:
+  /// if the draft moved on while it was open (another screen chose a
+  /// model), the pick brings the draft back to that model rather than
+  /// giving its level to a model that may not have it.
+  void _setVariant(CatalogModel model, String value) {
     if (!mounted) return;
     setState(() {
+      _draftModel = ModelRef(providerID: model.providerID, modelID: model.id);
       _draftVariant = value;
       _saveError = null;
     });

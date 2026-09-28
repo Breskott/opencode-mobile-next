@@ -5,6 +5,7 @@ import 'dart:ui' show Locale, PlatformDispatcher;
 import 'app_locale.dart';
 import 'automation_policy.dart';
 import 'builtin_server_owner.dart';
+import 'session_link_bindings.dart';
 import 'consent_owners.dart';
 
 import 'package:flutter/foundation.dart';
@@ -13,6 +14,7 @@ import 'package:opencode_sdk/opencode_sdk.dart' as sdk;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/models.dart';
+import '../domain/session_history.dart';
 import '../codex/gateway.dart';
 import '../codex/transport.dart' show CodexFailure, CodexFailureKind;
 import '../paseo/gateway.dart';
@@ -65,6 +67,8 @@ import 'migration_runner.dart';
 import 'prompt_photos.dart';
 import 'saved_prompts_controller.dart';
 import 'session_pins.dart';
+import 'session_inventory_cache.dart';
+import 'session_tail_cache.dart';
 import 'session_auto_approval.dart';
 import 'prompt_shelf.dart';
 import 'queued_prompt_removal.dart';
@@ -1056,6 +1060,147 @@ class ConnectionController extends ChangeNotifier {
   Future<void> _modelLibraryWrite = Future.value();
   bool transcriptReasoningExpanded = false;
   bool transcriptTimestampsVisible = false;
+
+  late final _sessionInventoryCache = SessionInventoryCache(store.prefs);
+
+  /// Last-known read-only labels for Work/session opening shells. Separate
+  /// from sessionsById: these rows never establish existence, running state,
+  /// capabilities, permission decisions or a connected transport.
+  SessionInventoryPreview? get cachedSessionInventory {
+    final owner = _connectedProfile ?? profile;
+    if (owner == null || !isProfileReadable(owner.id)) return null;
+    final saved = store.locationFor(owner.id);
+    final restoring = api == null || _restoringSavedLocation;
+    final previewDirectory = restoring
+        ? (owner.usesAgentSocket ? owner.codexDirectory : saved?.directory)
+        : directory;
+    final previewWorkspace = restoring
+        ? (owner.usesAgentSocket ? null : saved?.workspace)
+        : workspace;
+    return _sessionInventoryCache.read(
+      owner.id,
+      SessionInventoryCache.scopeFor(owner, previewDirectory, previewWorkspace),
+    );
+  }
+
+  late final _sessionTailCache = SessionTailCache(store.prefs);
+  final _sessionTailReads =
+      <(int, String, int, String?), Future<ServerPage<MessageWithParts>>>{};
+
+  /// A read-only text excerpt for the opening frame. It has no pagination or
+  /// message-state authority; replace it with the normal live hydration result.
+  SessionTailPreview? cachedSessionTail(String sessionID) {
+    final owner = _connectedProfile ?? profile;
+    if (owner == null ||
+        !isProfileReadable(owner.id) ||
+        _deletedSessionIDs.contains(sessionID) ||
+        sessionsById[sessionID]?.stagedRevert != null) {
+      return null;
+    }
+    final saved = store.locationFor(owner.id);
+    final restoring = api == null || _restoringSavedLocation;
+    return _sessionTailCache.read(
+      owner.id,
+      SessionInventoryCache.scopeFor(
+        owner,
+        restoring
+            ? (owner.usesAgentSocket ? owner.codexDirectory : saved?.directory)
+            : directory,
+        restoring
+            ? (owner.usesAgentSocket ? null : saved?.workspace)
+            : workspace,
+      ),
+      sessionID,
+    );
+  }
+
+  /// Authoritative newest page; prefetch and route hydration share an in-flight
+  /// read. UI still applies its event-version merge and uses gateway.messagePage
+  /// for older cursors. Failures retain existing product-error handling.
+  Future<ServerPage<MessageWithParts>> loadSessionTail(String sessionID) {
+    final owner = _connectedProfile ?? profile;
+    final currentApi = api;
+    final generation = _generation;
+    if (owner == null ||
+        currentApi == null ||
+        !hasConnectedServer ||
+        !isProfileReadable(owner.id) ||
+        _deletedSessionIDs.contains(sessionID)) {
+      return Future.error(const ProductException('OpenCode is reconnecting.'));
+    }
+    final historyRevision = sessionHistoryRevision(sessionID);
+    final boundary = sessionsById[sessionID]?.stagedRevert?.messageID;
+    final key = (generation, sessionID, historyRevision, boundary);
+    final existing = _sessionTailReads[key];
+    if (existing != null) return existing;
+    final scope = SessionInventoryCache.scopeFor(owner, directory, workspace);
+    final deletionRevision = _profileDeletionRevisions[owner.id];
+    bool current() =>
+        _isCurrent(generation, currentApi) &&
+        isProfileReadable(owner.id) &&
+        _profileDeletionRevisions[owner.id] == deletionRevision &&
+        sessionHistoryRevision(sessionID) == historyRevision &&
+        sessionsById[sessionID]?.stagedRevert?.messageID == boundary &&
+        !_deletedSessionIDs.contains(sessionID);
+    late final Future<ServerPage<MessageWithParts>> read;
+    read = () async {
+      try {
+        final page = await readHistoryAtStagedBoundary(
+          currentApi,
+          sessionID,
+          boundary: boundary,
+          isCurrent: current,
+        );
+        if (!current()) throw const ProductException('The session changed.');
+        // Disk caching is best effort and never delays authoritative hydration.
+        if (boundary == null) {
+          unawaited(
+            _sessionTailCache.save(
+              owner.id,
+              scope,
+              sessionID,
+              page.items,
+              isCurrent: current,
+            ),
+          );
+        }
+        return page;
+      } finally {
+        _sessionTailReads.remove(key);
+      }
+    }();
+    _sessionTailReads[key] = read;
+    return read;
+  }
+
+  /// Invoke only for the next intentional navigation, never every visible row.
+  /// A failed speculative read cannot surface a toast or raw transport error.
+  Future<void> prefetchSessionTail(String sessionID) async {
+    try {
+      await loadSessionTail(sessionID);
+    } catch (_) {}
+  }
+
+  void _saveSessionInventoryPreview() {
+    final owner = _connectedProfile ?? profile;
+    final currentApi = api;
+    final generation = _generation;
+    if (owner == null || currentApi == null || !isProfileReadable(owner.id)) {
+      return;
+    }
+    final deletionRevision = _profileDeletionRevisions[owner.id];
+    unawaited(
+      _sessionInventoryCache.save(
+        owner.id,
+        SessionInventoryCache.scopeFor(owner, directory, workspace),
+        sortedSessions(),
+        isCurrent: () =>
+            _isCurrent(generation, currentApi) &&
+            isProfileReadable(owner.id) &&
+            _profileDeletionRevisions[owner.id] == deletionRevision,
+      ),
+    );
+  }
 
   Map<String, Session> sessionsById = {};
   String? _sessionsCursor;
@@ -5402,6 +5547,16 @@ class ConnectionController extends ChangeNotifier {
     sessionsMoreError = null;
     notifyListeners();
     try {
+      // Both reads describe this location independently. Attach the status
+      // error handler immediately so even a failed/retired page cannot leave
+      // an unhandled background error. SSE revisions still win below.
+      final statusRead = () async {
+        try {
+          return (await currentApi.sessionStatuses(), null);
+        } catch (error) {
+          return (null, error);
+        }
+      }();
       final page = await currentApi.sessionPage();
       if (!_isCurrentSessionsRefresh(
         generation,
@@ -5410,13 +5565,7 @@ class ConnectionController extends ChangeNotifier {
       )) {
         return;
       }
-      Map<String, String>? statuses;
-      Object? statusError;
-      try {
-        statuses = await currentApi.sessionStatuses();
-      } catch (error) {
-        statusError = error;
-      }
+      final (statuses, statusError) = await statusRead;
       // Retry details ride on the same v1 status payload; fetch them only
       // when a session is actually retrying so the common path stays one
       // request.
@@ -5478,6 +5627,7 @@ class ConnectionController extends ChangeNotifier {
       sessionsError = statusError?.toString();
       if (statusError != null) _recordLocationError(sessionsError!);
       notifyListeners();
+      _saveSessionInventoryPreview();
       unawaited(_refreshPinnedSessions());
     } catch (error) {
       if (!_isCurrentSessionsRefresh(
@@ -5498,6 +5648,10 @@ class ConnectionController extends ChangeNotifier {
     _failedAttentionSessions.remove(id);
     _markSessionChanged(id);
     _deletedSessionIDs.add(id);
+    final tailOwner = _connectedProfile ?? profile;
+    if (tailOwner != null) {
+      unawaited(_sessionTailCache.removeSession(tailOwner.id, id));
+    }
     sessionsById.remove(id);
     sessionDetailsErrors.remove(id);
     _sessionInventoryIDs.remove(id);
@@ -5536,6 +5690,7 @@ class ConnectionController extends ChangeNotifier {
     }
     if (_inboxBySession.remove(id) != null) inboxRevision += 1;
     _syncInputAlerts();
+    _saveSessionInventoryPreview();
     notifyListeners();
   }
 
@@ -6408,6 +6563,10 @@ class ConnectionController extends ChangeNotifier {
     // Close admission synchronously, before any drain can yield. An epoch also
     // rejects old callbacks after a failed deletion makes the profile usable.
     _deletingReadProfiles.add(profileId);
+    final sessionLinkDrain = SessionLinkBindings.closeProfile(
+      store.prefs,
+      profileId,
+    );
     _profileDeletionRevisions[profileId] =
         (_profileDeletionRevisions[profileId] ?? 0) + 1;
     _monitorAttentionReader.forget(profileId);
@@ -6433,6 +6592,7 @@ class ConnectionController extends ChangeNotifier {
           await Future.wait([
             if (activity != null) activity.prepareForDeletion(),
             policy.pauseForDeletion(),
+            sessionLinkDrain,
           ]);
           // Admitted activity inverses have finished; from here no new prompt
           // may join this profile while the removal is in progress.
@@ -6445,13 +6605,14 @@ class ConnectionController extends ChangeNotifier {
             keepQueuedPrompts: keepQueuedPrompts,
           );
         })
-        .whenComplete(() {
+        .whenComplete(() async {
           _deletingReadProfiles.remove(profileId);
           if (store.profiles.any((p) => p.id == profileId)) {
             _closedQueueProfiles.remove(profileId);
             activity?.cancelDeletion();
             policy.cancelDeletion();
             ConsentOwners.cancelDeletion(store.prefs, profileId);
+            await SessionLinkBindings.cancelDeletion(store.prefs, profileId);
             BuiltinServerOwner.forPreferences(
               store.prefs,
             ).cancelDeletion(profileId);
@@ -6509,6 +6670,10 @@ class ConnectionController extends ChangeNotifier {
       await _promptShelf.drain(profileId);
     } catch (_) {}
 
+    await _sessionTailCache.drain(profileId);
+    _sessionTailCache.forget(profileId);
+    await _sessionInventoryCache.drain(profileId);
+    _sessionInventoryCache.forget(profileId);
     final scopedKeys = store.profileScopedPreferenceKeys(profileId);
     // Retain these owners through a failed row/Keystore commit as well as
     // through queue preflight. ProfileStore sweeps them after the row commits.
@@ -8427,27 +8592,41 @@ class ConnectionController extends ChangeNotifier {
     }
   }
 
+  List<Session>? _sortedSessionInputs;
+  Set<String>? _sortedSessionPins;
+  List<Session> _sortedSessionResult = const [];
+
+  /// Immutable ordering snapshot. Session and SessionTime ordering fields are
+  /// final; compare eligible object identities in input order so even callers
+  /// mutating the public map, equal-time reorders and inventory changes count.
+  /// Status-only notifications retain this list, without suppressing listeners.
   List<Session> sortedSessions() {
     final pins = pinnedSessionIDs;
-    final list =
-        sessionsById.values
-            .where(
-              (s) =>
-                  s.parentID == null &&
-                  !s.archived &&
-                  (!_sessionInventoryInitialized ||
-                      _sessionInventoryIDs.contains(s.id)),
-            )
-            .toList()
-          ..sort((a, b) {
-            final pinOrder =
-                (pins.contains(b.id) ? 1 : 0) - (pins.contains(a.id) ? 1 : 0);
-            if (pinOrder != 0) return pinOrder;
-            final au = a.time?.updated ?? a.time?.created ?? 0;
-            final bu = b.time?.updated ?? b.time?.created ?? 0;
-            return bu.compareTo(au);
-          });
-    return list;
+    final inputs = sessionsById.values
+        .where(
+          (s) =>
+              s.parentID == null &&
+              !s.archived &&
+              (!_sessionInventoryInitialized ||
+                  _sessionInventoryIDs.contains(s.id)),
+        )
+        .toList();
+    if (listEquals(inputs, _sortedSessionInputs) &&
+        setEquals(pins, _sortedSessionPins)) {
+      return _sortedSessionResult;
+    }
+    _sortedSessionInputs = inputs;
+    _sortedSessionPins = pins;
+    final sorted = List<Session>.of(inputs)
+      ..sort((a, b) {
+        final pinOrder =
+            (pins.contains(b.id) ? 1 : 0) - (pins.contains(a.id) ? 1 : 0);
+        if (pinOrder != 0) return pinOrder;
+        final au = a.time?.updated ?? a.time?.created ?? 0;
+        final bu = b.time?.updated ?? b.time?.created ?? 0;
+        return bu.compareTo(au);
+      });
+    return _sortedSessionResult = List.unmodifiable(sorted);
   }
 
   late final _sessionPins = SessionPinStore(store.prefs);
@@ -9406,6 +9585,8 @@ class ConnectionController extends ChangeNotifier {
 
   void _resetSessionHistory(String id, {String? removedFrom}) {
     _historyRevisions[id] = sessionHistoryRevision(id) + 1;
+    final owner = _connectedProfile ?? profile;
+    if (owner != null) unawaited(_sessionTailCache.removeSession(owner.id, id));
     _eventBus.add(
       EventEnvelope(
         type: 'session.history.reset',
@@ -9984,6 +10165,7 @@ class ConnectionController extends ChangeNotifier {
     _streamPolicy = null;
     _streamPolicyChanged = null;
     _transportReady = false;
+    _sessionTailReads.clear();
     _cancelPermissionHydration();
     final oldEvents = _events;
     _events = null;
@@ -10023,6 +10205,9 @@ class ConnectionController extends ChangeNotifier {
     sessionRevertErrors.clear();
     sessionSelectionErrors.clear();
     sessionsById = {};
+    _sortedSessionInputs = null;
+    _sortedSessionPins = null;
+    _sortedSessionResult = const [];
     _sessionsCursor = null;
     sessionsLoadingMore = false;
     sessionsMoreError = null;
@@ -10032,6 +10217,7 @@ class ConnectionController extends ChangeNotifier {
     _sessionInventoryIDs.clear();
     _sessionInventoryInitialized = false;
     _sessionReads.clear();
+    _sessionTailReads.clear();
     sessionDetailsErrors.clear();
     _deletedSessionIDs.clear();
     sessionModels = {};

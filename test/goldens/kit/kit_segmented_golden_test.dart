@@ -1,13 +1,8 @@
 // Gallery (gate G4) for KitSegmented (docs/ux-system/kit-api/KitSegmented.md
-// §"Galleries required"): the default, with-counts, segment-disabled and
-// disabled scenes at 412x915, the default state at the other §8.4 sizes, and
-// the default state in Arabic (right to left), each in dark and light.
-//
-// Not here yet, because they need kit-KitChoiceList's `KitChoiceRow`
-// (KIT-24), which has not merged: the "stacked" scene, and the default state
-// at text 2.0, which the spec says shows the stacked form. A text-2.0
-// baseline of the one-row form would contradict the spec, so none is
-// committed. See docs/qa/revamp-kit-KitSegmented-2026-09-26/README.md.
+// §"Galleries required"): the default, with-counts, segment-disabled,
+// disabled and stacked scenes at 412x915, the default state at the other
+// §8.4 sizes, and the default state at text 2.0 (the stacked form, KIT-24)
+// and in Arabic (right to left), each in dark and light.
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_segmented_golden_test.dart
@@ -38,6 +33,9 @@ class _Copy {
     required this.team,
     required this.workspace,
     required this.scopeReason,
+    required this.permission,
+    required this.thisConversation,
+    required this.everyConversation,
   });
 
   final String timeRange;
@@ -58,6 +56,9 @@ class _Copy {
   final String team;
   final String workspace;
   final String scopeReason;
+  final String permission;
+  final String thisConversation;
+  final String everyConversation;
 }
 
 const _en = _Copy(
@@ -79,6 +80,9 @@ const _en = _Copy(
   team: 'Team',
   workspace: 'Workspace',
   scopeReason: 'Set by your workspace admin',
+  permission: 'Permission scope',
+  thisConversation: 'Only this conversation',
+  everyConversation: 'Every conversation on this computer',
 );
 
 const _ar = _Copy(
@@ -100,6 +104,9 @@ const _ar = _Copy(
   team: 'الفريق',
   workspace: 'مساحة العمل',
   scopeReason: 'حدده مسؤول مساحة العمل',
+  permission: 'نطاق الإذن',
+  thisConversation: 'هذه المحادثة فقط',
+  everyConversation: 'كل المحادثات على هذا الكمبيوتر',
 );
 
 Widget _default(_Copy copy) => KitSegmented<String>(
@@ -111,6 +118,17 @@ Widget _default(_Copy copy) => KitSegmented<String>(
   selected: 'week',
   onChanged: (_) {},
   semanticsLabel: copy.timeRange,
+);
+
+/// Labels too long for one line in half a phone's width: the stack.
+Widget _stacked(_Copy copy) => KitSegmented<String>(
+  segments: [
+    KitSegment(value: 'session', label: copy.thisConversation),
+    KitSegment(value: 'server', label: copy.everyConversation),
+  ],
+  selected: 'session',
+  onChanged: (_) {},
+  semanticsLabel: copy.permission,
 );
 
 Widget _counts(_Copy copy) => KitSegmented<String>(
@@ -158,7 +176,7 @@ void main() {
   for (final light in [false, true]) {
     final mode = light ? 'light' : 'dark';
 
-    // Every scene the spec names (bar "stacked"), dark and light, at 412x915.
+    // Every scene the spec names, dark and light, at 412x915.
     testWidgets('default · $mode', (tester) async {
       await kitGalleryPart(
         tester,
@@ -212,6 +230,20 @@ void main() {
       );
     });
 
+    testWidgets('stacked · $mode', (tester) async {
+      await kitGalleryPart(
+        tester,
+        name: kitGalleryName(
+          'kit_segmented_stacked',
+          const Size(412, 915),
+          light: light,
+        ),
+        size: const Size(412, 915),
+        light: light,
+        child: _stacked(_en),
+      );
+    });
+
     // The default state at the other §8.4 sizes.
     for (final size in [
       ...kitGallerySizes.where((s) => s != const Size(412, 915)),
@@ -229,10 +261,25 @@ void main() {
       });
     }
 
-    // The default state in Arabic, at 412x915 and 1280x800. Its text-2.0
-    // twins wait for the stacked form (see the file header).
+    // The default state at text 2.0 and in Arabic, at 412x915 and 1280x800.
+    // At 2.0 it is the stacked form in every window (KIT-24).
     for (final size in kitGalleryScaledSizes) {
       final at = kitGallerySize(size);
+      testWidgets('default · text 2.0 · $at · $mode', (tester) async {
+        await kitGalleryPart(
+          tester,
+          name: kitGalleryName(
+            'kit_segmented_default',
+            size,
+            light: light,
+            text2: true,
+          ),
+          size: size,
+          light: light,
+          textScale: 2,
+          child: _default(_en),
+        );
+      });
       testWidgets('default · Arabic · $at · $mode', (tester) async {
         await kitGalleryPart(
           tester,

@@ -163,12 +163,7 @@ const _nullNotDisabled = <String, String>{
 
 /// Parts whose text-2.0 golden waits on another unit, per their frozen
 /// spec: part -> why. Remove the entry when that unit merges.
-const _text2Pending = <String, String>{
-  // KitSegmented.md: at 2.0 text it shows the stacked KitChoiceRow form,
-  // which needs kit-KitChoiceList (KIT-24); a one-row baseline would
-  // contradict the spec.
-  'KitSegmented': 'the stacked form needs kit-KitChoiceList',
-};
+const _text2Pending = <String, String>{};
 
 /// Element types of a List/Iterable/Map field that are UI, not server data.
 const _uiElementTypes = <String>{

@@ -30,6 +30,7 @@ import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/product_states.dart';
 import '../widgets/safety_confirms.dart';
 import 'app_diagnostics_screen.dart' show reportProblemErrorCount;
+import 'settings/ai_setup_screen.dart';
 import 'automation_settings_screen.dart' show AutomationSettingsSections;
 import 'host_management_screen.dart';
 import 'server_capabilities_screen.dart';

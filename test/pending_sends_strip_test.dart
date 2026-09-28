@@ -13,6 +13,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/offline_queue.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A v2-flavored fake: forms/inbox capabilities on, inbox mutations
@@ -517,7 +518,7 @@ void main() {
         'later please',
       );
       await tester.pump();
-      await tester.tap(find.text('Queue'));
+      await tester.tap(find.text('Send after'));
       await tester.pump();
       await tester.tap(find.byKey(const Key('chat-send-button')));
       await tester.pump();
@@ -541,7 +542,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
-    expect(find.byKey(const Key('chat-send-button')), findsOneWidget);
+    expect(find.byKey(const Key('chat-send-button')), findsNothing);
     // Watching a run with nothing typed shows no delivery strip.
     expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
 
@@ -553,11 +554,21 @@ void main() {
     // UX-P0-04: once there is something to send, the choice is stated in
     // words while the run is active.
     expect(find.byKey(const Key('composer-delivery-control')), findsOneWidget);
-    expect(find.text('Steer'), findsOneWidget);
-    expect(find.text('Queue'), findsOneWidget);
+    expect(find.text('Add to this turn'), findsOneWidget);
+    expect(find.text('Send after'), findsOneWidget);
 
-    // Steer is the selected default, and now rides explicitly so the sent
-    // delivery always matches the label the user can see.
+    expect(
+      tester
+          .widget<KitSegmented<KitComposerDelivery>>(
+            find.byKey(const Key('composer-delivery-control')),
+          )
+          .selected,
+      KitComposerDelivery.afterThisReply,
+    );
+    expect(find.byKey(const Key('chat-send-button')), findsOneWidget);
+    // Select the mid-turn choice; the kit defaults to sending after the reply.
+    await tester.tap(find.text('Add to this turn'));
+    await tester.pump();
     await tester.tap(find.byKey(const Key('chat-send-button')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
@@ -569,7 +580,7 @@ void main() {
       'after this run',
     );
     await tester.pump();
-    await tester.tap(find.byKey(const Key('composer-delivery-queue')));
+    await tester.tap(find.text('Send after'));
     await tester.pump();
     await tester.tap(find.byKey(const Key('chat-send-button')));
     await tester.pump();
@@ -578,6 +589,11 @@ void main() {
     expect(api.prompts.last.text, 'after this run');
     expect(api.prompts.last.delivery, PromptDelivery.queue);
     // No hidden gesture: a long press on Send opens nothing.
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      'one more',
+    );
+    await tester.pump();
     await tester.longPress(find.byKey(const Key('chat-send-button')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
@@ -619,22 +635,17 @@ void main() {
     // OpenCode 1 accepts a prompt mid-turn and runs it afterwards, so Stop
     // and Send sit side by side and the composer says what Send will do.
     expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
-    expect(find.byKey(const Key('chat-send-button')), findsOneWidget);
+    expect(find.byKey(const Key('chat-send-button')), findsNothing);
     // Nothing typed yet: no hint competes with the running reply.
-    expect(find.byKey(const Key('composer-queue-hint')), findsNothing);
+    expect(find.text('Sends after this reply'), findsNothing);
 
     await tester.enterText(
       find.byKey(const Key('chat-composer-field')),
       'after this run',
     );
     await tester.pump();
-    expect(find.byKey(const Key('composer-queue-hint')), findsOneWidget);
-    expect(
-      find.text(
-        'Sends after this run finishes. Steering mid-run needs OpenCode 2.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('chat-send-button')), findsOneWidget);
+    expect(find.text('Sends after this reply'), findsOneWidget);
     // v1 has no inbox, so there is nothing to choose between.
     expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
     await tester.tap(find.byKey(const Key('chat-send-button')));
@@ -654,7 +665,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.textContaining('Queued · runs after this turn'), findsNothing);
-    expect(find.byKey(const Key('composer-queue-hint')), findsNothing);
+    expect(find.text('Sends after this reply'), findsNothing);
   });
 
   testWidgets('the delivery control is absent until a run is active and '
@@ -712,7 +723,7 @@ void main() {
       'after this run',
     );
     await tester.pump();
-    await tester.tap(find.byKey(const Key('composer-delivery-queue')));
+    await tester.tap(find.text('Send after'));
     await tester.pump();
     await tester.tap(find.byKey(const Key('chat-send-button')));
     await tester.pump();
@@ -785,9 +796,9 @@ void main() {
       'queued through the toggle',
     );
     await tester.pump();
-    await tester.tap(find.byKey(const Key('composer-delivery-queue')));
+    await tester.tap(find.text('Send after'));
     await tester.pump();
-    expect(find.text('Send waits for this run to finish'), findsOneWidget);
+    expect(find.byTooltip('Send after this reply'), findsOneWidget);
     await tester.tap(find.byKey(const Key('chat-send-button')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
@@ -795,15 +806,15 @@ void main() {
     expect(api.prompts.single.delivery, PromptDelivery.queue);
     // The send cleared the field, so the strip is gone; typing the next
     // prompt brings it back still set to Queue.
-    expect(find.byType(SegmentedButton<PromptDelivery>), findsNothing);
+    expect(find.byType(KitSegmented<KitComposerDelivery>), findsNothing);
     await tester.enterText(
       find.byKey(const Key('chat-composer-field')),
       'next one',
     );
     await tester.pump();
-    final toggle = tester.widget<SegmentedButton<PromptDelivery>>(
-      find.byType(SegmentedButton<PromptDelivery>),
+    final toggle = tester.widget<KitSegmented<KitComposerDelivery>>(
+      find.byType(KitSegmented<KitComposerDelivery>),
     );
-    expect(toggle.selected, {PromptDelivery.queue});
+    expect(toggle.selected, KitComposerDelivery.afterThisReply);
   });
 }

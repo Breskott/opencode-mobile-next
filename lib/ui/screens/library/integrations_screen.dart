@@ -5,6 +5,9 @@ part of '../library_screen.dart';
 /// surface.
 enum IntegrationsMode { providers, mcp, all }
 
+/// The page's sections that can fail to load, in page order.
+enum _Section { providers, servers, resources }
+
 /// Providers and MCP servers of the current server, built from kit parts
 /// (screen-library-1). The map proposal for this page is `redesign`: the
 /// split into agent-driven and catalog MCP setup waits for its wave-3
@@ -569,6 +572,61 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     }
   }
 
+  bool get _providersFailed =>
+      _showProviders &&
+      (_integrationError != null ||
+          (_integrations != null && _integrationsSource != _mcpSource));
+  bool get _serversFailed =>
+      _showMcp &&
+      (_serverError != null ||
+          (_serversSource != null && _serversSource != _mcpSource));
+  bool get _resourcesFailed => _showMcp && _resourceError != null;
+
+  /// One Try again for the page (one primary per screen, LAY-12): the
+  /// first section that failed carries it, and it reloads every section
+  /// that failed, so a server that could not answer at all does not ask
+  /// for three separate retries.
+  Future<void> _retryFailed() => Future.wait([
+    if (_providersFailed) _retryIntegrations(),
+    if (_serversFailed) _retryServers(),
+    if (_resourcesFailed) _retryResources(),
+  ]);
+
+  /// The first section that failed, in page order; null when none did.
+  _Section? get _firstFailed => _providersFailed
+      ? _Section.providers
+      : _serversFailed
+      ? _Section.servers
+      : _resourcesFailed
+      ? _Section.resources
+      : null;
+
+  /// The one load error for [section]'s failure, or nothing: when several
+  /// sections failed (a server that could not answer at all) the page says
+  /// so once, at the first of them, with the one Try again that reloads
+  /// every failed section (one primary per screen, LAY-12; nothing shown
+  /// twice).
+  Widget? _loadError(_Section section, {required Key key, String? body}) {
+    if (_firstFailed != section) return null;
+    final l10n = _l10n;
+    final failed = [
+      _providersFailed,
+      _serversFailed,
+      _resourcesFailed,
+    ].where((failed) => failed).length;
+    return _railed(
+      KitStateView.error(
+        key: key,
+        title: failed > 1
+            ? l10n.integrationsPageLoadFailed
+            : l10n.e7LibraryCouldNotLoadThisSection,
+        body: body,
+        size: KitStateSize.inline,
+        retry: KitAction(label: l10n.commonRetry, onPressed: _retryFailed),
+      ),
+    );
+  }
+
   bool get _showMcp => widget.mode != IntegrationsMode.providers;
   bool get _showProviders => widget.mode != IntegrationsMode.mcp;
 
@@ -766,33 +824,13 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
         KitRowGroup(label: label, labelTerm: labelTerm, children: signIns),
         SizedBox(height: KitTokens.of(context).space3),
       ],
-      if (staleSource)
-        _railed(
-          KitStateView.error(
-            key: const ValueKey('providers-load-failed'),
-            title: l10n.e7LibraryCouldNotLoadThisSection,
-            body: l10n.credentialScopeChanged,
-            size: KitStateSize.inline,
-            retry: KitAction(
-              label: l10n.commonRetry,
-              onPressed: _retryIntegrations,
-            ),
-          ),
-        )
-      else if (_integrationError != null)
-        _railed(
-          KitStateView.error(
-            key: const ValueKey('providers-load-failed'),
-            title: l10n.e7LibraryCouldNotLoadThisSection,
-            body: _integrationError,
-            size: KitStateSize.inline,
-            retry: KitAction(
-              label: l10n.commonRetry,
-              onPressed: _retryIntegrations,
-            ),
-          ),
-        )
-      else if (integrations == null)
+      if (staleSource || _integrationError != null) ...[
+        ?_loadError(
+          _Section.providers,
+          key: const ValueKey('providers-load-failed'),
+          body: staleSource ? l10n.credentialScopeChanged : _integrationError,
+        ),
+      ] else if (integrations == null)
         const KitSkeletonRows(key: ValueKey('providers-loading'), count: 3)
       else if (integrations.isEmpty)
         _railed(
@@ -1346,14 +1384,10 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
           ),
         ),
       if (_serverError != null || scopeChanged)
-        _railed(
-          KitStateView.error(
-            key: const ValueKey('mcp-load-failed'),
-            title: l10n.e7LibraryCouldNotLoadThisSection,
-            body: _serverError ?? l10n.mcpScopeChanged,
-            size: KitStateSize.inline,
-            retry: KitAction(label: l10n.commonRetry, onPressed: _retryServers),
-          ),
+        ?_loadError(
+          _Section.servers,
+          key: const ValueKey('mcp-load-failed'),
+          body: _serverError ?? l10n.mcpScopeChanged,
         ),
       if (servers == null && _serverError == null)
         const KitSkeletonRows(key: ValueKey('mcp-loading'), count: 2)
@@ -1413,17 +1447,10 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     return [
       if (!labelLeads) SizedBox(height: KitTokens.of(context).sectionGap),
       if (_resourceError != null)
-        _railed(
-          KitStateView.error(
-            key: const ValueKey('resources-load-failed'),
-            title: l10n.e7LibraryCouldNotLoadThisSection,
-            body: _resourceError,
-            size: KitStateSize.inline,
-            retry: KitAction(
-              label: l10n.commonRetry,
-              onPressed: _retryResources,
-            ),
-          ),
+        ?_loadError(
+          _Section.resources,
+          key: const ValueKey('resources-load-failed'),
+          body: _resourceError,
         ),
       if (resources == null && _resourceError == null)
         const KitSkeletonRows(key: ValueKey('resources-loading'), count: 2)
