@@ -1,14 +1,14 @@
 part of 'kit_glass.dart';
 
-/// How far the joined pieces melt into each other, logical pixels (the
-/// smooth union's reach: a neck forms once the gap is under half of it).
-const double _joinBlend = 16;
-
 /// The frost of the joined glass, logical pixels (the shader's tap radius;
 /// light, so the bent edge stays sharp).
 const double _pairFrost = 4;
 
 /// [KitGlass.pair]: two pieces of glass in one row, drawn as one surface.
+/// Joined, the trailing piece slides up to one [KitTokens.space2] gap from
+/// the leading one and stays whole: the two never melt, since the melted
+/// neck between a pill's end and a round button read as a notch (emulator
+/// QA F9, landscape).
 class _KitGlassPair extends StatefulWidget {
   const _KitGlassPair({
     required this.look,
@@ -416,10 +416,10 @@ class _RenderGlassPair extends RenderBox
     double top(Size child) => (size.height - child.height) / 2;
     final leadingX = rtl ? size.width - leading.width : 0.0;
     final restX = rtl ? 0.0 : size.width - trailing.width;
-    // Joined, the smaller drop's edge touches the leading piece.
+    // Joined, the smaller drop's edge sits one gap from the leading piece.
     final joinedX = rtl
-        ? size.width - leading.width - trailing.width + _shrink
-        : leading.width - _shrink;
+        ? size.width - leading.width - _gap - trailing.width + _shrink
+        : leading.width + _gap - _shrink;
     final t = _t;
     (_leading.parentData! as _PairParentData).offset = Offset(
       leadingX,
@@ -456,8 +456,6 @@ class _RenderGlassPair extends RenderBox
     );
   }
 
-  double get _blend => _joinBlend * _t.clamp(0.0, 1.0);
-
   // ── Paint ──
 
   final LayerHandle<ClipPathLayer> _clipPath = LayerHandle();
@@ -468,7 +466,7 @@ class _RenderGlassPair extends RenderBox
   void paint(PaintingContext context, Offset offset) {
     _place();
     final (a, b) = _shapes();
-    final outline = _outline(a, b, _blend);
+    final outline = _outline(a, b);
     final shaders = _shaders;
     final paint = _paint;
     if (paint.look == KitGlassLook.solid) {
@@ -535,7 +533,6 @@ class _RenderGlassPair extends RenderBox
         (spread) => _outline(
           a.inflate(spread).scaleRadii(),
           b.inflate(spread).scaleRadii(),
-          _blend,
         ).shift(offset),
       );
     }
@@ -584,7 +581,6 @@ class _RenderGlassPair extends RenderBox
         radius: corner(a) * px,
         rect2: rectB,
         radius2: corner(b) * px,
-        blend: _blend * px,
         band: math.min(18, shortHalf * .8) * px,
         bend: math.min(10, shortHalf * .4) * px,
         rim: _paint.rimStrength,
@@ -616,46 +612,11 @@ class _RenderGlassPair extends RenderBox
       ..restore();
   }
 
-  /// The two rounded rectangles and, once they are closer than half the
-  /// [blend], the neck between them: the zero line of the shader's smooth
-  /// union, for the frosted and solid looks.
-  static Path _outline(RRect a, RRect b, double blend) {
-    final path = Path()
-      ..addRRect(a)
-      ..addRRect(b);
-    if (blend <= 0) return path;
-    final left = a.center.dx <= b.center.dx ? a : b;
-    final right = identical(left, a) ? b : a;
-    final rl = math.min(left.trRadiusX, left.height / 2);
-    final rr = math.min(right.tlRadiusX, right.height / 2);
-    final r = (rl + rr) / 2;
-    final c1 = Offset(left.right - rl, left.center.dy);
-    final c2 = Offset(right.left + rr, right.center.dy);
-    final half = (c2.dx - c1.dx) / 2;
-    final reach = r + blend / 4;
-    if (half >= reach || rl <= 0 || rr <= 0) return path;
-    // Where two circles' smooth union crosses the middle.
-    final neck = math.sqrt(reach * reach - half * half);
-    final mid = (c1 + c2) / 2;
-    final lift = math.min(r * .95, neck * 1.5);
-    final ax = c1.dx + math.sqrt(math.max(0.0, rl * rl - lift * lift));
-    final bx = c2.dx - math.sqrt(math.max(0.0, rr * rr - lift * lift));
-    Offset control(double sign) {
-      final through = Offset(mid.dx, mid.dy + sign * neck);
-      final ends = Offset((ax + bx) / 2, mid.dy + sign * lift);
-      return through * 2 - ends;
-    }
-
-    final top = control(-1);
-    final bottom = control(1);
-    final bridge = Path()
-      ..moveTo(ax, c1.dy - lift)
-      ..quadraticBezierTo(top.dx, top.dy, bx, c2.dy - lift)
-      ..lineTo(bx, c2.dy + lift)
-      ..quadraticBezierTo(bottom.dx, bottom.dy, ax, c1.dy + lift)
-      ..close();
-    return Path.combine(PathOperation.union, path, bridge);
-  }
+  /// The two rounded rectangles, one path: the frosted and solid looks
+  /// clip and fill, and the shadow's shape.
+  static Path _outline(RRect a, RRect b) => Path()
+    ..addRRect(a)
+    ..addRRect(b);
 
   @override
   bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>

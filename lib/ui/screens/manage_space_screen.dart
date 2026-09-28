@@ -111,12 +111,20 @@ class _ManageSpaceScreenState extends State<ManageSpaceScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    KitNotice(
-                      icon: AppIconography.warning,
-                      message: l10n.manageSpaceIntro,
-                    ),
-                    ...projectExportOutcome(context, _c),
-                    ..._cacheOutcome(l10n),
+                    // Notices sit on the page's rails, like the groups.
+                    for (final notice in [
+                      KitNotice(
+                        key: const ValueKey('manage-space-intro'),
+                        icon: AppIconography.warning,
+                        // It sends to Export only when the row is there.
+                        message: canExportProjects(_c)
+                            ? l10n.manageSpaceIntro
+                            : l10n.manageSpaceIntroNothingToExport,
+                      ),
+                      ...projectExportOutcome(context, _c),
+                      ..._cacheOutcome(l10n),
+                    ])
+                      _onRails(context, notice),
                     SizedBox(height: tokens.sectionGap),
                     _actions(context, l10n, facts),
                     SizedBox(height: tokens.sectionGap),
@@ -276,9 +284,7 @@ List<Widget> projectExportRows(
 }) {
   final l10n = AppLocalizations.of(context);
   final facts = c.facts;
-  if (facts == null || (facts.projects.isEmpty && !facts.serverInstalled)) {
-    return const [];
-  }
+  if (facts == null || !canExportProjects(c)) return const [];
   Widget icon(IconData data) => KitRow.icon(context, data);
   final exporting = c.exporting;
   return [
@@ -332,6 +338,26 @@ List<Widget> projectExportRows(
       disabledReason: exporting ? l10n.manageSpaceWaitForExport : null,
     ),
   ];
+}
+
+/// A notice on the page's rails (the screen gutter), where the row groups
+/// sit, never against the window's edge.
+Widget _onRails(BuildContext context, Widget notice) {
+  final tokens = KitTokens.of(context);
+  return Padding(
+    padding: EdgeInsetsDirectional.symmetric(
+      horizontal: tokens.gutter,
+      vertical: tokens.space1,
+    ),
+    child: notice,
+  );
+}
+
+/// Whether there is anything to export (projects, or the in-app server
+/// that holds them): the export rows show only then.
+bool canExportProjects(ProjectExportController c) {
+  final facts = c.facts;
+  return facts != null && (facts.projects.isNotEmpty || facts.serverInstalled);
 }
 
 /// How the last export ended, in words, with the way forward.
@@ -438,7 +464,8 @@ class _ProjectExportScreenState extends State<ProjectExportScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ...projectExportOutcome(context, c),
+                    for (final notice in projectExportOutcome(context, c))
+                      _onRails(context, notice),
                     KitRowGroup(
                       children: [
                         ...projectExportRows(

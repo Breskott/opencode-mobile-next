@@ -1884,7 +1884,15 @@
     }
   },
   "setupSwitchConfirmDetail": "Stops this phone’s server and running tasks. Conversations, provider settings and credentials stay separate; project files and configuration are shared. You can switch back.",
-  "setupSwitchConfirm": "Switch version",
+  "setupSwitchConfirm": "Switch to {runtime}",
+  "@setupSwitchConfirm": {
+    "description": "This phone › Switch runtime sheet: the confirm button, naming the target runtime.",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
   "setupSwitchPending": "The runtime switch has not finished. Retry the selected runtime or return to the previous one. Your saved runtime data is retained.",
   "setupSwitchReturn": "Return to {runtime}",
   "@setupSwitchReturn": {
@@ -28805,6 +28813,10 @@
   "manageSpaceIntro": "Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone. Export your projects first if you want to keep them.",
   "@manageSpaceIntro": {
     "description": "Manage-space page: the warning at the top."
+  },
+  "manageSpaceIntroNothingToExport": "Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone.",
+  "@manageSpaceIntroNothingToExport": {
+    "description": "Manage-space page: the warning at the top when there are no projects to export (so it offers no export)."
   },
   "manageSpaceExportFirst": "Export projects first",
   "@manageSpaceExportFirst": {

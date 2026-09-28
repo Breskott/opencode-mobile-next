@@ -3433,7 +3433,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Stops this phone’s server and running tasks. Conversations, provider settings and credentials stay separate; project files and configuration are shared. You can switch back.';
 
   @override
-  String get setupSwitchConfirm => 'Switch version';
+  String setupSwitchConfirm(String runtime) {
+    return 'Switch to $runtime';
+  }
 
   @override
   String get setupSwitchPending =>
@@ -23923,6 +23925,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get manageSpaceIntro =>
       'Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone. Export your projects first if you want to keep them.';
+
+  @override
+  String get manageSpaceIntroNothingToExport =>
+      'Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone.';
 
   @override
   String get manageSpaceExportFirst => 'Export projects first';

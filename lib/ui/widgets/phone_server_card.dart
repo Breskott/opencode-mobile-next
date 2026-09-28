@@ -1073,7 +1073,16 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
         ),
     ];
     final trailing = <Widget>[
-      if (!large) status,
+      // The state word ends where the row's words end (the row's own end
+      // inset), not against the card's edge; before the ⋮ the button's
+      // own padding gives that room.
+      if (!large)
+        menu.isEmpty
+            ? Padding(
+                padding: EdgeInsetsDirectional.only(end: tokens.space3),
+                child: status,
+              )
+            : status,
       if (menu.isNotEmpty)
         KitRowMenu(
           key: const ValueKey('phone-server-menu'),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/local_agent_server.dart';
@@ -638,6 +639,14 @@ ServerProfile? savedManagedPhoneProfile(Iterable<ServerProfile> profiles) {
 bool shownAsPhoneRow(ServerProfile profile) =>
     platformCapabilities.supportsTermux &&
     (isManagedPhoneProfile(profile) || isLocalAgentProfile(profile));
+
+/// Whether [profile] is a server this phone runs itself: the in-app
+/// server, the Termux server this app manages, or Claude Code on this
+/// phone. Only these lead with the phone mark; any other loopback address
+/// (a forwarded port, `adb reverse`, a server started by hand) is drawn as
+/// a server like any other.
+bool isPhoneOwnServer(ServerProfile profile) =>
+    looksLikeInAppServer(profile) || shownAsPhoneRow(profile);
 
 /// Whether [profile] reaches the OpenCode server this app runs in Termux.
 bool isManagedPhoneProfile(ServerProfile profile) =>

@@ -420,9 +420,7 @@ class _SavedServerRow extends StatelessWidget {
 }
 
 IconData _serverIcon(ServerProfile profile) =>
-    isLoopbackHost(Uri.tryParse(profile.baseUrl)?.host ?? '')
-    ? AppIconography.phone
-    : AppIconography.server;
+    isPhoneOwnServer(profile) ? AppIconography.phone : AppIconography.server;
 
 /// A needs-you span with no trailing " · ", for a line with nothing after.
 TextSpan _withoutSeparator(TextSpan span) => TextSpan(

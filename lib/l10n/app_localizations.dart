@@ -5815,11 +5815,11 @@ abstract class AppLocalizations {
   /// **'Stops this phone’s server and running tasks. Conversations, provider settings and credentials stay separate; project files and configuration are shared. You can switch back.'**
   String get setupSwitchConfirmDetail;
 
-  /// No description provided for @setupSwitchConfirm.
+  /// This phone › Switch runtime sheet: the confirm button, naming the target runtime.
   ///
   /// In en, this message translates to:
-  /// **'Switch version'**
-  String get setupSwitchConfirm;
+  /// **'Switch to {runtime}'**
+  String setupSwitchConfirm(String runtime);
 
   /// No description provided for @setupSwitchPending.
   ///
@@ -37711,6 +37711,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone. Export your projects first if you want to keep them.'**
   String get manageSpaceIntro;
+
+  /// Manage-space page: the warning at the top when there are no projects to export (so it offers no export).
+  ///
+  /// In en, this message translates to:
+  /// **'Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone.'**
+  String get manageSpaceIntroNothingToExport;
 
   /// Manage-space page: the export row's title.
   ///

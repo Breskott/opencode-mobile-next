@@ -4,6 +4,7 @@
 import 'kit_motion_still.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -386,6 +387,53 @@ void main() {
     for (final element in find.byType(KitGlass).evaluate()) {
       expect(KitGlass.lookOf(element), KitGlassLook.solid);
     }
+  });
+
+  // Emulator QA F8: at 2.0 the pill cut "127.0.0.1" to "127.…" to keep
+  // " · Connected" beside it.
+  testWidgets('shell at 200 % text: the server name is whole, the status '
+      'goes under it', (tester) async {
+    await _pump(
+      tester,
+      KitTopBar.shell(
+        controls: KitShellControls(
+          server: '127.0.0.1',
+          serverStatus: 'Connected',
+          serverTone: AppStatusTone.ok,
+          onServer: () {},
+          onSearch: () {},
+        ),
+      ),
+      textScale: 2,
+    );
+    expect(tester.takeException(), isNull);
+    final name = find.textContaining('127.0.0.1');
+    expect(name, findsOneWidget);
+    final painter = tester.renderObject<RenderParagraph>(name);
+    expect(painter.didExceedMaxLines, isFalse);
+    final status = find.text('Connected');
+    expect(status, findsOneWidget);
+    expect(
+      tester.getTopLeft(status).dy,
+      greaterThan(tester.getBottomLeft(name).dy - 1),
+    );
+  });
+
+  testWidgets('shell at 100 % text: name and status share one line', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      KitTopBar.shell(
+        controls: KitShellControls(
+          server: '127.0.0.1',
+          serverStatus: 'Connected',
+          onServer: () {},
+          onSearch: () {},
+        ),
+      ),
+    );
+    expect(find.text(' · Connected'), findsOneWidget);
   });
 
   testWidgets('sidebar: pill, project, search stacked; no project row '

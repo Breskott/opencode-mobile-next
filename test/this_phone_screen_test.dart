@@ -140,6 +140,41 @@ void main() {
     await unmountPhone(tester);
   });
 
+  // Emulator QA F13 and F12.
+  testWidgets('the state word keeps the row\'s end inset', (tester) async {
+    await inApp(tester);
+    final word = tester.getRect(find.byKey(const ValueKey('this-phone-state')));
+    final panel = tester.getRect(
+      find.byKey(const ValueKey('this-phone-status')),
+    );
+    // The group sits on the 16 dp gutter; inside its surface the word ends
+    // where the other rows' values do (16 dp in), not 4 dp from the edge.
+    expect(panel.right - 16 - word.right, greaterThanOrEqualTo(12));
+    await unmountPhone(tester);
+  });
+
+  testWidgets('Switch to OpenCode 2: the sheet\'s button names the target', (
+    tester,
+  ) async {
+    await inApp(tester);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('this-phone-switch')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.byKey(const ValueKey('this-phone-switch')));
+    await _settle(tester);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('this-phone-switch-confirm')),
+        matching: find.text('Switch to OpenCode 2'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Switch version'), findsNothing);
+    await unmountPhone(tester);
+  });
+
   testWidgets('in Termux: the same page, with Termux\'s own rows', (
     tester,
   ) async {
