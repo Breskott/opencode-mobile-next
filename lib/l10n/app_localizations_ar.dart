@@ -4660,10 +4660,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SettingsDetailUi27 => 'المراجع';
 
   @override
-  String get e7SettingsInformationFailed =>
-      'تعذّر تحميل معلومات التطبيق. حاول فتح هذه الصفحة مجددًا.';
-
-  @override
   String get e7SettingsAlphaBody =>
       'بُني هذا التطبيق المستقل بمساعدة كبيرة من الذكاء الاصطناعي. أندرويد هو المنصة الأساسية المدعومة. إصدارات الحاسوب تجريبية ولم تُختبر على أجهزة فعلية. أبلغ عن الأعطال للمساعدة في تحسين التطبيق.';
 
@@ -10707,14 +10703,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get phoneServerStopFailed => 'تعذّر إيقاف الخادم. أعد المحاولة.';
 
   @override
-  String get termuxRunningPermission =>
-      'اسمح بالوصول إلى Termux في إعداد الهاتف للتحقق من وجود خادم.';
-
-  @override
-  String get termuxRunningUnavailable =>
-      'تعذر التحقق من الخادم على هذا الهاتف.';
-
-  @override
   String get termuxStorageCatSharedCaches => 'ملفات مؤقتة وبيانات حزم أخرى';
 
   @override
@@ -12916,9 +12904,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get connectStartingBody =>
       'تبقى محادثاتك محفوظة. قد يستغرق هذا دقيقة.';
-
-  @override
-  String get settingsAboutLoadFailed => 'لم تُحمَّل الإشعارات';
 
   @override
   String aiteamBringInDone(String project, String commit) {
@@ -23931,4 +23916,116 @@ class AppLocalizationsAr extends AppLocalizations {
   String integrationsEnvironmentNote(String name) {
     return 'To connect $name without the app, set this where the server runs, then restart the server.';
   }
+
+  @override
+  String get termuxProblemAccessHeard =>
+      'OpenCode is running in Termux, but this app can\'t reach Termux yet. Allow access and it connects.';
+
+  @override
+  String get termuxProblemAccessNeeded =>
+      'This app can\'t reach Termux yet. Allow access so it can find OpenCode there and connect.';
+
+  @override
+  String get termuxProblemAccessBlocked =>
+      'Android blocked Termux access for this app. In this app\'s permissions, turn on “Run commands in Termux environment”.';
+
+  @override
+  String get termuxProblemOtherAppsOff =>
+      'Termux doesn\'t take commands from other apps yet. One line in Termux allows it.';
+
+  @override
+  String get termuxProblemAsleep =>
+      'Termux didn\'t answer. Android may have put it to sleep. Open Termux to wake it.';
+
+  @override
+  String termuxProblemNotAnswering(String runtime) {
+    return '$runtime is set up in Termux but isn\'t answering. A restart usually brings it back.';
+  }
+
+  @override
+  String get termuxProblemNotInstalled =>
+      'Termux isn\'t on this phone. Install it again, or set up the in-app server instead.';
+
+  @override
+  String get termuxProblemOutdated =>
+      'This Termux is too old for the app to use. Install the current Termux from F-Droid.';
+
+  @override
+  String termuxProblemUnknown(String runtime) {
+    return 'This phone couldn\'t check on $runtime in Termux. Try again in a moment.';
+  }
+
+  @override
+  String get termuxFixAllowAccess => 'Allow access to Termux';
+
+  @override
+  String get termuxFixOpenPermissions => 'Open this app\'s permissions';
+
+  @override
+  String get termuxFixAllowOtherApps => 'Allow other apps in Termux';
+
+  @override
+  String get termuxFixOpenTermux => 'Open Termux';
+
+  @override
+  String termuxFixRestart(String runtime) {
+    return 'Restart $runtime in Termux';
+  }
+
+  @override
+  String get termuxFixGetTermux => 'Get Termux';
+
+  @override
+  String get termuxFixGetCurrentTermux => 'Get the current Termux';
+
+  @override
+  String get termuxOtherAppsTitle => 'Allow other apps';
+
+  @override
+  String get termuxOtherAppsBody =>
+      'Paste this line in Termux and press Enter, then come back here. Open Termux copies it for you.';
+
+  @override
+  String get termuxLeadRunning => 'OpenCode is running in Termux';
+
+  @override
+  String get termuxLeadAccessLine =>
+      'This app can\'t reach Termux yet. Allow access and it connects to your conversations.';
+
+  @override
+  String get termuxLeadSetUp => 'OpenCode is set up in Termux';
+
+  @override
+  String get termuxLeadTermuxOnly => 'Termux is on this phone';
+
+  @override
+  String get termuxLeadRunningBody => 'Connect to pick up your conversations.';
+
+  @override
+  String get termuxLeadStoppedBody =>
+      'It\'s stopped. Start it to pick up your conversations.';
+
+  @override
+  String get termuxLeadConnect => 'Connect to the server in Termux';
+
+  @override
+  String get termuxLeadStart => 'Start the server in Termux';
+
+  @override
+  String get termuxInAppInstead => 'Set up the in-app server instead';
+
+  @override
+  String get termuxInAppInsteadDetail =>
+      'A fresh start that runs inside this app. No Termux needed.';
+
+  @override
+  String get termuxInAppInsteadBlocked =>
+      'A fresh start inside this app. To bring your projects from Termux, fix Termux access first.';
+
+  @override
+  String get aboutBundledComponents => 'Bundled components';
+
+  @override
+  String get aboutBundledComponentsDetail =>
+      'Icons, fonts and other parts shipped inside this app';
 }

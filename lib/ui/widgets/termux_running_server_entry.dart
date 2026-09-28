@@ -9,9 +9,12 @@ import '../../state/local_server_controls.dart';
 import '../../state/profiles.dart';
 import '../../state/termux_running_server.dart';
 import '../../termux/bridge.dart';
+import '../../termux/termux_reach.dart';
+import '../kit/kit.dart';
 import 'local_server_row.dart';
 import 'product_states.dart' show productErrorText;
 import 'safety_confirms.dart';
+import 'termux_problem_fix.dart';
 
 /// What the card can do to the phone's server, injected so the card stays a
 /// widget and tests can stand in for Termux.
@@ -53,7 +56,17 @@ class TermuxRunningServerEntry extends StatefulWidget {
     this.onManage,
     this.onOpenSaved,
     this.dividerAbove = false,
+    this.lead = false,
+    this.onObserved,
   });
+
+  /// The first screen with nothing saved: what the phone has leads the
+  /// page as a heading, one line and one primary act, in place of a row.
+  final bool lead;
+
+  /// Each finished look at the phone, so a host can arrange itself around
+  /// what was found (the first screen drops its welcome when Termux is).
+  final ValueChanged<TermuxRunningServer>? onObserved;
 
   final List<ServerProfile> profiles;
 
@@ -109,6 +122,10 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
   _Operation? _operation;
   String? _failure;
 
+  /// A fix was made (access asked, Termux opened, a line to paste): the
+  /// next look that finds OpenCode running connects without another tap.
+  bool _connectWhenRunning = false;
+
   @override
   void initState() {
     super.initState();
@@ -159,9 +176,53 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
       _server = result;
       _checking = false;
     });
+    widget.onObserved?.call(result);
     if (_recheckQueued) {
       _recheckQueued = false;
       unawaited(_check());
+      return;
+    }
+    if (_connectWhenRunning && result.problem == null) {
+      _connectWhenRunning = false;
+      if (result.isRunning) _open(result);
+    }
+  }
+
+  /// Opens the running [server]: the saved sign-in, or the app's own
+  /// password taken back from the phone.
+  void _open(TermuxRunningServer server) {
+    final saved = savedProfileForTermuxServer(widget.profiles, server);
+    if (saved == null ||
+        server.needsCredentials ||
+        saved.requiresPasswordReentry) {
+      widget.onEnterCredentials(server, saved);
+    } else {
+      widget.onConnect(saved);
+    }
+  }
+
+  /// The one act that fixes [problem]; when it could be done in the app,
+  /// the phone is read again at once, else when the person comes back.
+  Future<void> _fix(TermuxProblem problem) async {
+    if (_locked) return;
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final actions = widget.actions;
+    _connectWhenRunning = true;
+    final again = await fixTermuxProblem(
+      context,
+      problem,
+      restart: actions == null
+          ? null
+          : () => _run(
+              _Operation.restarting,
+              actions.restart,
+              l10n.phoneServerRestartFailed,
+            ),
+      retry: _check,
+    );
+    if (!mounted) return;
+    if (again && problem != TermuxProblem.notAnswering) {
+      await _check();
     }
   }
 
@@ -189,15 +250,9 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
       unawaited(_check());
       return;
     }
+    widget.onObserved?.call(fresh);
     if (!fresh.isRunning) return;
-    final saved = savedProfileForTermuxServer(widget.profiles, fresh);
-    if (saved == null ||
-        fresh.needsCredentials ||
-        saved.requiresPasswordReentry) {
-      widget.onEnterCredentials(fresh, saved);
-    } else {
-      widget.onConnect(saved);
-    }
+    _open(fresh);
   }
 
   Future<void> _run(
@@ -276,10 +331,15 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
     // The saved sign-in for the phone's server is this row: the list shows
     // no second row for it. So a saved server stays on the list while the
     // phone is checked, and when Termux cannot say whether it runs.
+    final problem = server?.problem;
     if (server == null ||
         server.state == TermuxRunningServerState.unsupported ||
         server.state == TermuxRunningServerState.absent) {
       if (saved == null) return const SizedBox.shrink();
+      // Termux itself is gone: said, with the way to get it back.
+      if (problem != null && !_checking && !widget.lead) {
+        return _problemRow(l10n, saved, server!, problem);
+      }
       return _unknownRow(
         l10n,
         saved,
@@ -289,14 +349,11 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
       );
     }
     if (!server.isRunning && !server.isStopped) {
-      return _unknownRow(
-        l10n,
-        saved,
-        server.state == TermuxRunningServerState.denied
-            ? l10n.termuxRunningPermission
-            : l10n.termuxRunningUnavailable,
-      );
+      final cause = problem ?? TermuxProblem.unknown;
+      if (widget.lead) return _lead(l10n, server, cause);
+      return _problemRow(l10n, saved, server, cause);
     }
+    if (widget.lead) return _lead(l10n, server, null);
 
     final profile = savedProfileForTermuxServer(widget.profiles, server);
     final connected =
@@ -355,6 +412,164 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
       onRestart: actions == null ? null : () => unawaited(_restart(l10n)),
       onStop: actions == null ? null : () => unawaited(_stop(l10n)),
       onOpen: widget.onManage,
+    );
+  }
+
+  /// The words of [problem] for [server].
+  TermuxProblemWords _words(
+    AppLocalizations l10n,
+    TermuxRunningServer server,
+    TermuxProblem problem,
+  ) => termuxProblemWords(
+    l10n,
+    problem,
+    heard: server.heardOnPhone,
+    runtime: server.runtime == null ? null : _runtimeName(l10n, server.runtime),
+  );
+
+  /// The phone's server when something keeps the app from it: the cause
+  /// in plain words after the one "Needs you", and the one act that fixes
+  /// it (the row's tap does the same). "Try again" only where it can help.
+  Widget _problemRow(
+    AppLocalizations l10n,
+    ServerProfile? saved,
+    TermuxRunningServer server,
+    TermuxProblem problem,
+  ) {
+    final words = _words(l10n, server, problem);
+    return LocalServerRow(
+      dividerAbove: widget.dividerAbove,
+      keyPrefix: 'termux-running-server',
+      title: l10n.phoneServerTermuxTitle,
+      status: words.line,
+      needsYou: true,
+      fixLabel: words.action,
+      onFix: () => unawaited(_fix(problem)),
+      // Not knowing why is not knowing it is down: the saved server may
+      // still connect, so the row opens it and the fix is the button.
+      onOpen:
+          problem == TermuxProblem.unknown &&
+              saved != null &&
+              widget.onOpenSaved != null
+          ? () => widget.onOpenSaved!(saved)
+          : null,
+      connectedLabel: l10n.serverRowConnected,
+      stopped: false,
+      running: false,
+      locked: _locked,
+      inProgress: _checking || _operation != null,
+      connected: false,
+      failure: _failure,
+      menuTooltip: l10n.phoneServerMore,
+      menuItems: [
+        if (widget.onManage != null)
+          LocalServerRowMenuItem(
+            keySuffix: 'manage',
+            label: l10n.phoneServerRowDetails,
+            onSelected: widget.onManage!,
+          ),
+        if (saved != null && widget.onForget != null)
+          LocalServerRowMenuItem(
+            keySuffix: 'forget',
+            label: l10n.phoneServerForget,
+            onSelected: () => widget.onForget!(saved),
+          ),
+      ],
+      startLabel: l10n.phoneServerStart,
+      restartLabel: l10n.termuxRestartConfirm,
+      stopLabel: l10n.phoneServerStop,
+    );
+  }
+
+  /// The first screen with nothing saved and something found in Termux:
+  /// what was found as the heading, one line, and the one act.
+  Widget _lead(
+    AppLocalizations l10n,
+    TermuxRunningServer server,
+    TermuxProblem? problem,
+  ) {
+    final tokens = KitTokens.of(context);
+    final String heading;
+    final String line;
+    final KitAction action;
+    final working = _locked;
+    if (problem != null) {
+      final words = _words(l10n, server, problem);
+      heading = server.heardOnPhone
+          ? l10n.termuxLeadRunning
+          : problem == TermuxProblem.notAnswering
+          ? l10n.termuxLeadSetUp
+          : l10n.termuxLeadTermuxOnly;
+      // The heading already says OpenCode runs: the line does not repeat it.
+      line =
+          server.heardOnPhone &&
+              (problem == TermuxProblem.accessNeeded ||
+                  problem == TermuxProblem.accessBlocked)
+          ? (problem == TermuxProblem.accessNeeded
+                ? l10n.termuxLeadAccessLine
+                : words.line)
+          : words.line;
+      action = KitAction(
+        key: const ValueKey('termux-lead-fix'),
+        label: words.action,
+        working: working,
+        onPressed: working ? null : () => unawaited(_fix(problem)),
+      );
+    } else if (server.isStopped) {
+      heading = l10n.termuxLeadSetUp;
+      line = l10n.termuxLeadStoppedBody;
+      action = KitAction(
+        key: const ValueKey('termux-lead-start'),
+        label: l10n.termuxLeadStart,
+        working: working,
+        onPressed: working || widget.actions == null
+            ? null
+            : () => unawaited(_start(l10n)),
+      );
+    } else {
+      heading = l10n.termuxLeadRunning;
+      line = l10n.termuxLeadRunningBody;
+      action = KitAction(
+        key: const ValueKey('termux-lead-connect'),
+        label: l10n.termuxLeadConnect,
+        working: working,
+        onPressed: working ? null : () => unawaited(_connect()),
+      );
+    }
+    final failure = _failure;
+    return Padding(
+      key: const ValueKey('termux-lead'),
+      padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
+      child: Semantics(
+        container: true,
+        liveRegion: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Semantics(
+              header: true,
+              child: KitText(
+                heading,
+                key: const ValueKey('termux-lead-heading'),
+                role: KitTextRole.largeTitle,
+              ),
+            ),
+            SizedBox(height: tokens.space2),
+            KitText(
+              line,
+              key: const ValueKey('termux-lead-line'),
+              tone: KitTextTone.secondary,
+            ),
+            if (failure != null) ...[
+              SizedBox(height: tokens.space2),
+              KitText(failure, role: KitTextRole.secondary),
+            ],
+            SizedBox(height: tokens.space4),
+            KitActionBlock(primary: action),
+          ],
+        ),
+      ),
     );
   }
 

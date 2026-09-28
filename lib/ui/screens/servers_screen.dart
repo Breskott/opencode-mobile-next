@@ -35,6 +35,7 @@ import '../widgets/local_agent_server_entry.dart';
 import '../widgets/phone_server_card.dart';
 import '../widgets/queued_prompt_move_sheet.dart';
 import '../widgets/termux_migration_entry.dart';
+import '../../state/termux_running_server.dart';
 import '../widgets/termux_running_server_entry.dart';
 import '../widgets/safety_confirms.dart';
 import '../../state/local_server_controls.dart';
@@ -174,6 +175,19 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   /// the phone instead of trusting what it saw before the user left.
   int _termuxRevision = 0;
 
+  /// The first screen's last look found OpenCode or Termux on this phone:
+  /// that leads the page, and the welcome steps back.
+  bool _termuxFound = false;
+
+  void _observedTermux(TermuxRunningServer server) {
+    final found =
+        server.state != TermuxRunningServerState.unsupported &&
+        server.state != TermuxRunningServerState.absent;
+    if (found != _termuxFound && mounted) {
+      setState(() => _termuxFound = found);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -274,6 +288,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     List<ServerProfile> profiles,
     ConnectionController connection, {
     bool dividerAbove = false,
+    bool lead = false,
   }) {
     // Both servers this app can run on the phone lead the list and are
     // controlled in place: OpenCode first, then the Claude Code daemon. Each
@@ -282,7 +297,12 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _openCodeServerEntry(profiles, connection, dividerAbove: dividerAbove),
+        _openCodeServerEntry(
+          profiles,
+          connection,
+          dividerAbove: dividerAbove,
+          lead: lead,
+        ),
         LocalAgentServerEntry(
           // In a list, a hairline above it whenever a row may precede it.
           dividerAbove:
@@ -311,9 +331,12 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     List<ServerProfile> profiles,
     ConnectionController connection, {
     bool dividerAbove = false,
+    bool lead = false,
   }) {
     final entry = TermuxRunningServerEntry(
       dividerAbove: dividerAbove,
+      lead: lead,
+      onObserved: lead ? _observedTermux : null,
       profiles: profiles,
       busy: _busy,
       revision: _termuxRevision,
@@ -821,7 +844,12 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         width: KitScreenWidth.reading,
         body: _WelcomeView(
           busy: _busy,
-          runningServer: _runningServerEntry(store.profiles, accountConnection),
+          found: _termuxFound,
+          runningServer: _runningServerEntry(
+            store.profiles,
+            accountConnection,
+            lead: true,
+          ),
           phoneSetup: PhoneSetupWelcomeEntry(revision: _termuxRevision),
           onComputer: () => unawaited(_edit()),
           onPhone: _openPhoneSetup,
@@ -1239,8 +1267,14 @@ class _WelcomeView extends StatelessWidget {
   final VoidCallback onPhone;
   final VoidCallback onDemo;
 
+  /// OpenCode or Termux was found on this phone: [runningServer] leads the
+  /// page, the in-app server is the fresh start after it, and the other
+  /// ways follow in a compact list. No welcome hero.
+  final bool found;
+
   const _WelcomeView({
     required this.busy,
+    this.found = false,
     required this.runningServer,
     required this.phoneSetup,
     required this.onComputer,
@@ -1272,6 +1306,58 @@ class _WelcomeView extends StatelessWidget {
       disabledReason: busyReason,
       onTap: onTap,
     );
+    // Keyed, so the found server keeps its state while the page around it
+    // changes shape.
+    final lead = KeyedSubtree(
+      key: const ValueKey('welcome-termux'),
+      child: runningServer,
+    );
+    final computer = choice(
+      key: 'welcome-choice-computer',
+      icon: AppIconography.server,
+      title: copy.firstRunOnComputer,
+      detail: copy.firstRunOnComputerDetail,
+      onTap: onComputer,
+    );
+    final demo = choice(
+      key: 'welcome-choice-demo',
+      icon: AppIconography.playCircle,
+      title: copy.firstRunJustShowMe,
+      detail: copy.onboardingDemoNote,
+      onTap: onDemo,
+    );
+    if (found) {
+      return ListView(
+        key: const ValueKey('first-run-welcome'),
+        padding: EdgeInsetsDirectional.only(
+          top: tokens.space6,
+          bottom: KitScreen.endPadding(context),
+        ),
+        children: [
+          lead,
+          SizedBox(height: tokens.sectionGap),
+          if (platformCapabilities.supportsTermux) phoneSetup,
+          KitRowGroup(
+            key: const ValueKey('welcome-in-app-instead'),
+            children: [
+              choice(
+                key: 'welcome-choice-in-app',
+                icon: AppIconography.phone,
+                title: copy.termuxInAppInstead,
+                detail: copy.termuxInAppInsteadDetail,
+                onTap: onPhone,
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.sectionGap),
+          KitRowGroup(
+            key: const ValueKey('welcome-other-ways'),
+            label: copy.phoneSetupStartOtherWays,
+            children: [computer, demo],
+          ),
+        ],
+      );
+    }
     return ListView(
       key: const ValueKey('first-run-welcome'),
       padding: EdgeInsetsDirectional.only(
@@ -1311,7 +1397,7 @@ class _WelcomeView extends StatelessWidget {
         ),
         SizedBox(height: tokens.space6),
         if (platformCapabilities.supportsTermux) phoneSetup,
-        runningServer,
+        lead,
         _Rails(
           child: Semantics(
             header: true,
@@ -1325,13 +1411,7 @@ class _WelcomeView extends StatelessWidget {
         SizedBox(height: tokens.space2),
         KitRowGroup(
           children: [
-            choice(
-              key: 'welcome-choice-computer',
-              icon: AppIconography.server,
-              title: copy.firstRunOnComputer,
-              detail: copy.firstRunOnComputerDetail,
-              onTap: onComputer,
-            ),
+            computer,
             if (platformCapabilities.supportsTermux)
               choice(
                 key: 'welcome-choice-phone',
@@ -1340,13 +1420,7 @@ class _WelcomeView extends StatelessWidget {
                 detail: copy.firstRunOnPhoneDetail,
                 onTap: onPhone,
               ),
-            choice(
-              key: 'welcome-choice-demo',
-              icon: AppIconography.playCircle,
-              title: copy.firstRunJustShowMe,
-              detail: copy.onboardingDemoNote,
-              onTap: onDemo,
-            ),
+            demo,
           ],
         ),
       ],

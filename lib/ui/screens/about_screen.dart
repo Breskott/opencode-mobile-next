@@ -189,6 +189,18 @@ class _AboutScreenState extends State<AboutScreen> {
     ),
   );
 
+  void _openNotices(AppLocalizations l10n) => unawaited(
+    showKitViewer(
+      context,
+      name: l10n.aboutBundledComponents,
+      interactive: false,
+      viewerKey: const ValueKey('about-notices-document'),
+      source: KitViewerSource.load(
+        () async => KitViewerContent.markdown(await _notices!),
+      ),
+    ),
+  );
+
   /// The platform line under the product name. The desktop bundle is the
   /// same app, but promising local voice recognition would describe a
   /// build the reader is not running.
@@ -209,11 +221,8 @@ class _AboutScreenState extends State<AboutScreen> {
     return KitScreen(
       topBar: KitTopBar(title: l10n.aboutTitle),
       width: KitScreenWidth.reading,
-      body: FutureBuilder<String>(
-        future: _notices,
-        builder: (context, notices) {
-          final loading = notices.connectionState != ConnectionState.done;
-          final text = notices.data;
+      body: Builder(
+        builder: (context) {
           final controller = widget.controller;
           final shortcuts = desktopInteractions;
           return ListView(
@@ -298,6 +307,19 @@ class _AboutScreenState extends State<AboutScreen> {
                     trailing: const KitChevron(),
                     onTap: () => _openLicences(l10n),
                   ),
+                  // The notices for what ships inside the app, on their own
+                  // page: About stays short (owner review, build 2061).
+                  KitRow(
+                    key: const ValueKey('about-bundled-components'),
+                    leading: KitRow.icon(context, AppIconography.info),
+                    title: l10n.aboutBundledComponents,
+                    supporting: TextSpan(
+                      text: l10n.aboutBundledComponentsDetail,
+                    ),
+                    supportingMaxLines: 2,
+                    trailing: const KitChevron(),
+                    onTap: () => _openNotices(l10n),
+                  ),
                   // The voice models' licences, where they can run.
                   if (platformCapabilities.supportsVoice)
                     KitRow(
@@ -311,25 +333,6 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                 ],
               ),
-              SizedBox(height: tokens.space4),
-              if (loading)
-                const KitSkeletonRows(count: 6)
-              else if (notices.hasError || text == null)
-                KitStateView(
-                  key: const ValueKey('about-documents-failed'),
-                  size: KitStateSize.inline,
-                  icon: AppIconography.error,
-                  tone: AppStatusTone.failure,
-                  title: l10n.settingsAboutLoadFailed,
-                  body: l10n.e7SettingsInformationFailed,
-                )
-              else
-                rails(
-                  KitMarkdown(
-                    text,
-                    key: const ValueKey('about-notices-document'),
-                  ),
-                ),
             ],
           );
         },
