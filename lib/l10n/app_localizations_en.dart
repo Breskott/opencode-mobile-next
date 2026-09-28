@@ -23901,4 +23901,214 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aboutBundledComponentsDetail =>
       'Icons, fonts and other parts shipped inside this app';
+
+  @override
+  String get manageSpaceTitle => 'Clear this app\'s storage';
+
+  @override
+  String get manageSpaceMeasuring => 'Measuring what is stored…';
+
+  @override
+  String get manageSpaceIntro =>
+      'Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone. Export your projects first if you want to keep them.';
+
+  @override
+  String get manageSpaceExportFirst => 'Export projects first';
+
+  @override
+  String get manageSpaceClearCache => 'Clear the app\'s cache only';
+
+  @override
+  String manageSpaceClearCacheDetail(String size) {
+    return 'Frees $size. Projects, servers and settings stay.';
+  }
+
+  @override
+  String get manageSpaceClearCacheKeeps =>
+      'Projects, servers and settings stay.';
+
+  @override
+  String manageSpaceCacheCleared(String size) {
+    return 'Cache cleared. $size freed.';
+  }
+
+  @override
+  String get manageSpaceCacheFailed => 'Could not clear the cache. Try again.';
+
+  @override
+  String get manageSpaceTryAgain => 'Try again';
+
+  @override
+  String get manageSpaceDeleteAll => 'Delete everything';
+
+  @override
+  String get manageSpaceDeleteAllDetail =>
+      'Deletes all of the list below and closes the app';
+
+  @override
+  String get manageSpaceDeleteTitle => 'Delete everything?';
+
+  @override
+  String get manageSpaceDeleteBody =>
+      'OpenCode Mobile then starts again as if it were new. This cannot be undone.';
+
+  @override
+  String get manageSpaceLostServer => 'The in-app server and its conversations';
+
+  @override
+  String manageSpaceLostProjects(int count, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count projects ($size)',
+      one: '1 project ($size)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String manageSpaceLostSettings(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count saved servers and all settings',
+      one: '1 saved server and all settings',
+      zero: 'All settings',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get manageSpaceKeptAll =>
+      'Termux, your computers and anything pushed to git stay';
+
+  @override
+  String get manageSpaceWaitForExport => 'Wait for the export to finish';
+
+  @override
+  String get manageSpaceDeletedLabel => 'Clearing deletes';
+
+  @override
+  String get manageSpaceServer => 'The in-app server';
+
+  @override
+  String get manageSpaceServerDetail =>
+      'Ubuntu, OpenCode, its sign-ins and its conversations';
+
+  @override
+  String get manageSpaceSettings => 'Saved servers and settings';
+
+  @override
+  String manageSpaceSavedServers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count saved servers',
+      one: '1 saved server',
+      zero: 'No saved servers',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get manageSpaceKeptLabel => 'Stays';
+
+  @override
+  String get manageSpaceKeptTermux => 'Termux and the projects in it';
+
+  @override
+  String get manageSpaceKeptComputers => 'Your computers and their servers';
+
+  @override
+  String get manageSpaceKeptGit => 'Anything you pushed to git';
+
+  @override
+  String projectExportDetail(int count, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count projects, $size, as one zip file where you choose',
+      one: '1 project, $size, as one zip file where you choose',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectExportNoProjects => 'No projects on the in-app server yet';
+
+  @override
+  String get projectExportSave => 'Save as a zip file';
+
+  @override
+  String get projectExportRunning => 'Exporting projects';
+
+  @override
+  String get projectExportPreparing => 'Listing files…';
+
+  @override
+  String projectExportProgress(String done, String total) {
+    return '$done of $total';
+  }
+
+  @override
+  String get projectExportStop => 'Stop the export';
+
+  @override
+  String get projectExportStopDetail => 'The half-written file is deleted';
+
+  @override
+  String get projectExportPrivate => 'Include sign-ins and conversations';
+
+  @override
+  String get projectExportPrivateDetail =>
+      'Private: anyone with the file can use your accounts';
+
+  @override
+  String projectExportDone(String size, int files) {
+    return 'Projects exported: $size in $files files.';
+  }
+
+  @override
+  String get projectExportDonePrivate =>
+      'This file holds sign-ins. Keep it private.';
+
+  @override
+  String projectExportDoneLeftOut(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files with sign-ins or keys were left out.',
+      one: '1 file with sign-ins or keys was left out.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectExportStopped => 'Export stopped. Nothing was saved.';
+
+  @override
+  String get projectExportFailedDestination =>
+      'Could not write to the place you chose. Try again, or pick another place.';
+
+  @override
+  String get projectExportFailedSpace =>
+      'The place you chose is full. Free some space there or pick another place.';
+
+  @override
+  String get projectExportFailedSource =>
+      'A project file could not be read. Try again.';
+
+  @override
+  String get projectExportFailed =>
+      'The export stopped before it finished. Try again.';
+
+  @override
+  String get projectExportProjectsLabel => 'Projects';
+
+  @override
+  String get thisPhoneExportProjects => 'Export projects';
+
+  @override
+  String get thisPhoneExportProjectsDetail =>
+      'Save them as a zip file, to keep or move';
 }

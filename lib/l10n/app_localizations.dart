@@ -37675,6 +37675,300 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Icons, fonts and other parts shipped inside this app'**
   String get aboutBundledComponentsDetail;
+
+  /// Manage-space page (Android App info › Storage › Manage space): page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear this app\'s storage'**
+  String get manageSpaceTitle;
+
+  /// Manage-space and Export projects pages: loading label while sizes are measured.
+  ///
+  /// In en, this message translates to:
+  /// **'Measuring what is stored…'**
+  String get manageSpaceMeasuring;
+
+  /// Manage-space page: the warning at the top.
+  ///
+  /// In en, this message translates to:
+  /// **'Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone. Export your projects first if you want to keep them.'**
+  String get manageSpaceIntro;
+
+  /// Manage-space page: the export row's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Export projects first'**
+  String get manageSpaceExportFirst;
+
+  /// Manage-space page: the safe action's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the app\'s cache only'**
+  String get manageSpaceClearCache;
+
+  /// Manage-space page: under Clear the app's cache only, with the measured cache size.
+  ///
+  /// In en, this message translates to:
+  /// **'Frees {size}. Projects, servers and settings stay.'**
+  String manageSpaceClearCacheDetail(String size);
+
+  /// Manage-space page: under Clear the app's cache only, when the cache size is unknown or empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects, servers and settings stay.'**
+  String get manageSpaceClearCacheKeeps;
+
+  /// Manage-space page: after clearing the cache.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache cleared. {size} freed.'**
+  String manageSpaceCacheCleared(String size);
+
+  /// Manage-space page: clearing the cache failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not clear the cache. Try again.'**
+  String get manageSpaceCacheFailed;
+
+  /// Manage-space and Export projects pages: retry action.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get manageSpaceTryAgain;
+
+  /// Manage-space page: the destructive row and its confirm button.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete everything'**
+  String get manageSpaceDeleteAll;
+
+  /// Manage-space page: under Delete everything.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes all of the list below and closes the app'**
+  String get manageSpaceDeleteAllDetail;
+
+  /// Manage-space page: the delete confirm's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete everything?'**
+  String get manageSpaceDeleteTitle;
+
+  /// Manage-space page: the delete confirm's body.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode Mobile then starts again as if it were new. This cannot be undone.'**
+  String get manageSpaceDeleteBody;
+
+  /// Manage-space delete confirm: lost item.
+  ///
+  /// In en, this message translates to:
+  /// **'The in-app server and its conversations'**
+  String get manageSpaceLostServer;
+
+  /// Manage-space delete confirm: lost projects with total size.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 project ({size})} other{{count} projects ({size})}}'**
+  String manageSpaceLostProjects(int count, String size);
+
+  /// Manage-space delete confirm: lost saved servers and settings.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{All settings} =1{1 saved server and all settings} other{{count} saved servers and all settings}}'**
+  String manageSpaceLostSettings(int count);
+
+  /// Manage-space delete confirm: what is kept.
+  ///
+  /// In en, this message translates to:
+  /// **'Termux, your computers and anything pushed to git stay'**
+  String get manageSpaceKeptAll;
+
+  /// Manage-space page: why an action is off during an export.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the export to finish'**
+  String get manageSpaceWaitForExport;
+
+  /// Manage-space page: label of the list of what is deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Clearing deletes'**
+  String get manageSpaceDeletedLabel;
+
+  /// Manage-space page: the in-app Ubuntu and OpenCode row.
+  ///
+  /// In en, this message translates to:
+  /// **'The in-app server'**
+  String get manageSpaceServer;
+
+  /// Manage-space page: under The in-app server.
+  ///
+  /// In en, this message translates to:
+  /// **'Ubuntu, OpenCode, its sign-ins and its conversations'**
+  String get manageSpaceServerDetail;
+
+  /// Manage-space page: settings row title.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved servers and settings'**
+  String get manageSpaceSettings;
+
+  /// Manage-space page: under Saved servers and settings.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No saved servers} =1{1 saved server} other{{count} saved servers}}'**
+  String manageSpaceSavedServers(int count);
+
+  /// Manage-space page: label of the list of what is kept.
+  ///
+  /// In en, this message translates to:
+  /// **'Stays'**
+  String get manageSpaceKeptLabel;
+
+  /// Manage-space page: kept row.
+  ///
+  /// In en, this message translates to:
+  /// **'Termux and the projects in it'**
+  String get manageSpaceKeptTermux;
+
+  /// Manage-space page: kept row.
+  ///
+  /// In en, this message translates to:
+  /// **'Your computers and their servers'**
+  String get manageSpaceKeptComputers;
+
+  /// Manage-space page: kept row.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything you pushed to git'**
+  String get manageSpaceKeptGit;
+
+  /// Export row: what it saves and where.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 project, {size}, as one zip file where you choose} other{{count} projects, {size}, as one zip file where you choose}}'**
+  String projectExportDetail(int count, String size);
+
+  /// Export row/page: nothing in the projects folder.
+  ///
+  /// In en, this message translates to:
+  /// **'No projects on the in-app server yet'**
+  String get projectExportNoProjects;
+
+  /// Export projects page: the act's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as a zip file'**
+  String get projectExportSave;
+
+  /// Export progress row title.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting projects'**
+  String get projectExportRunning;
+
+  /// Export progress row: before bytes are written.
+  ///
+  /// In en, this message translates to:
+  /// **'Listing files…'**
+  String get projectExportPreparing;
+
+  /// Export progress row: bytes written of the total.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total}'**
+  String projectExportProgress(String done, String total);
+
+  /// Export: cancel row title.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the export'**
+  String get projectExportStop;
+
+  /// Export: under Stop the export.
+  ///
+  /// In en, this message translates to:
+  /// **'The half-written file is deleted'**
+  String get projectExportStopDetail;
+
+  /// Export: switch that makes a private export.
+  ///
+  /// In en, this message translates to:
+  /// **'Include sign-ins and conversations'**
+  String get projectExportPrivate;
+
+  /// Export: under the private switch.
+  ///
+  /// In en, this message translates to:
+  /// **'Private: anyone with the file can use your accounts'**
+  String get projectExportPrivateDetail;
+
+  /// Export finished.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects exported: {size} in {files} files.'**
+  String projectExportDone(String size, int files);
+
+  /// Export finished: note for a private export.
+  ///
+  /// In en, this message translates to:
+  /// **'This file holds sign-ins. Keep it private.'**
+  String get projectExportDonePrivate;
+
+  /// Export finished: note that credential files were not included.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file with sign-ins or keys was left out.} other{{count} files with sign-ins or keys were left out.}}'**
+  String projectExportDoneLeftOut(int count);
+
+  /// Export cancelled by the person.
+  ///
+  /// In en, this message translates to:
+  /// **'Export stopped. Nothing was saved.'**
+  String get projectExportStopped;
+
+  /// Export failed: the destination refused or went away.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not write to the place you chose. Try again, or pick another place.'**
+  String get projectExportFailedDestination;
+
+  /// Export failed: destination full.
+  ///
+  /// In en, this message translates to:
+  /// **'The place you chose is full. Free some space there or pick another place.'**
+  String get projectExportFailedSpace;
+
+  /// Export failed: reading a project file failed.
+  ///
+  /// In en, this message translates to:
+  /// **'A project file could not be read. Try again.'**
+  String get projectExportFailedSource;
+
+  /// Export failed for another reason.
+  ///
+  /// In en, this message translates to:
+  /// **'The export stopped before it finished. Try again.'**
+  String get projectExportFailed;
+
+  /// Export projects page: label of the project list.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get projectExportProjectsLabel;
+
+  /// This phone (in-app server): row and page title for backing up projects.
+  ///
+  /// In en, this message translates to:
+  /// **'Export projects'**
+  String get thisPhoneExportProjects;
+
+  /// This phone: under Export projects.
+  ///
+  /// In en, this message translates to:
+  /// **'Save them as a zip file, to keep or move'**
+  String get thisPhoneExportProjectsDetail;
 }
 
 class _AppLocalizationsDelegate
