@@ -8,6 +8,7 @@ import '../../builtin/builtin_linux.dart';
 import '../../builtin/builtin_server.dart';
 import '../../builtin/project_export.dart' show MethodChannelProjectExport;
 import '../../builtin/project_export_controller.dart';
+import '../../builtin/reply_watch.dart';
 import '../../builtin/setup/component_removal.dart';
 import '../../builtin/setup/components.dart' show SetupComponentIds;
 import '../../builtin/setup/phone_setup.dart';
@@ -16,6 +17,7 @@ import '../../builtin/setup/termux_setup_host.dart';
 import '../../builtin/team/builtin_team.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
+import '../../state/free_model_notice.dart';
 import '../../state/orchestration_store.dart' show PhoneOffer;
 import '../../state/phone_host.dart';
 import '../../state/profiles.dart' show OrchestrationHostKind;
@@ -35,6 +37,7 @@ import '../widgets/termux_migration_entry.dart';
 import '../widgets/termux_phone_tools.dart';
 import '../widgets/termux_problem_fix.dart';
 import 'keep_running_screen.dart';
+import 'library_screen.dart' show IntegrationsScreen, IntegrationsMode;
 import 'local_agent_screen.dart';
 import 'manage_space_screen.dart' show ProjectExportScreen;
 import 'phone_setup/phone_setup_routes.dart';
@@ -136,6 +139,13 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
   final _log = KitLogBuffer();
   bool _detailsOpen = false;
 
+  /// How proot runs the in-app server and whether the phone is kept awake
+  /// (Performance, under Details); read when Details opens.
+  BuiltinPerformance? _performance;
+
+  /// Times replies (Reply speed, Performance); listened to while open.
+  late final ReplyWatch _replies;
+
   AppLocalizations get _l10n =>
       lookupAppLocalizations(Localizations.localeOf(context));
 
@@ -204,6 +214,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     _ownsHost = widget.host == null;
     _host = widget.host ?? _makeHost();
     _host.addListener(_changed);
+    _replies = ref.read(replyWatchProvider)..addListener(_changed);
     _removal = widget.removal ?? _makeRemoval();
     unawaited(_load());
   }
@@ -311,6 +322,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
   void dispose() {
     _lifecycle.dispose();
     _host.removeListener(_changed);
+    _replies.removeListener(_changed);
     if (_ownsHost) _host.dispose();
     _log.dispose();
     super.dispose();
@@ -653,8 +665,36 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
 
   void _details(bool open) {
     setState(() => _detailsOpen = open);
-    if (open) unawaited(_readLog());
+    if (open) {
+      unawaited(_readLog());
+      unawaited(_readPerformance());
+    }
   }
+
+  Future<void> _readPerformance() async {
+    if (_host.kind != PhoneHostKind.inApp) return;
+    try {
+      final performance = await ref.read(builtinLinuxProvider).performance();
+      if (mounted) setState(() => _performance = performance);
+    } catch (_) {
+      // Left out: the rows say nothing rather than a guess.
+    }
+  }
+
+  /// Provider sign-in on the connected server: the way off OpenCode's free
+  /// model.
+  Future<void> _signInToProvider() => pushKitPage<void>(
+    context,
+    (_) => IntegrationsScreen(
+      controller: _connection,
+      mode: IntegrationsMode.providers,
+    ),
+  );
+
+  /// "4.1 s": one decimal, isolated left to right.
+  String _seconds(AppLocalizations l10n, Duration duration) => KitBidi.ltr(
+    l10n.replySpeedSeconds((duration.inMilliseconds / 1000).toStringAsFixed(1)),
+  );
 
   // --- The page --------------------------------------------------------------
 
@@ -682,6 +722,30 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _status(context, l10n),
+              // Replies from OpenCode's free model are the slow ones: say
+              // so where this server is looked after, with the way out.
+              if (_connectedHere &&
+                  connectionUsesFreeModel(ref.watch(connProvider))) ...[
+                SizedBox(height: tokens.space3),
+                Padding(
+                  padding: EdgeInsetsDirectional.symmetric(
+                    horizontal: tokens.gutter,
+                  ),
+                  child: KitNotice(
+                    key: const ValueKey('this-phone-free-model'),
+                    icon: AppIconography.speed,
+                    message: l10n.freeModelNotice,
+                    liveRegion: false,
+                    actions: [
+                      KitAction(
+                        key: const ValueKey('this-phone-free-model-sign-in'),
+                        label: l10n.freeModelSignIn,
+                        onPressed: () => unawaited(_signInToProvider()),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               if (_host.installed) ...[
                 SizedBox(height: tokens.sectionGap),
                 _list(context, l10n),
@@ -1063,6 +1127,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
                     chevron: false,
                   ),
           ),
+        if (inApp) ?_replySpeed(context, l10n),
         if (inApp)
           KitRow(
             key: const ValueKey('this-phone-export-projects'),
@@ -1207,6 +1272,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
         // fold); the status row says it in plain words.
         text: _removing ? null : _host.failure,
         textKey: const ValueKey('this-phone-failure-details'),
+        values: _performanceValues(l10n),
         child: KitLogPanel(
           lines: _log,
           panelKey: const ValueKey('this-phone-log'),
@@ -1220,6 +1286,77 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
         ),
       ),
     );
+  }
+
+  /// How fast the last reply on this phone's server came, in plain words;
+  /// left out until one was timed since the app opened.
+  Widget? _replySpeed(BuildContext context, AppLocalizations l10n) {
+    final last = _replies.lastInApp;
+    if (last == null) return null;
+    final first = last.firstToken;
+    return KitRow(
+      key: const ValueKey('this-phone-reply-speed'),
+      leading: KitRow.icon(context, AppIconography.speed),
+      title: l10n.replySpeedTitle,
+      supporting: TextSpan(
+        text: first == null
+            ? l10n.replySpeedNoWords(_seconds(l10n, last.total))
+            : l10n.replySpeedLast(
+                _seconds(l10n, first),
+                _seconds(l10n, last.total),
+              ),
+      ),
+      supportingKey: const ValueKey('this-phone-reply-speed-detail'),
+      supportingMaxLines: 2,
+    );
+  }
+
+  /// Performance, technical and folded under Details: how proot runs the
+  /// server, whether the phone is kept awake for a reply, and the last
+  /// reply's first-words wait split between the app and the server.
+  List<KitTechnicalValue> _performanceValues(AppLocalizations l10n) {
+    if (_host.kind != PhoneHostKind.inApp) return const [];
+    final performance = _performance;
+    final last = _replies.lastInApp;
+    final first = last?.firstToken;
+    final server = last?.serverFirstToken;
+    return [
+      if (performance != null) ...[
+        KitTechnicalValue(
+          l10n.perfDetailLinuxMode,
+          switch (performance.prootMode) {
+            BuiltinProotMode.seccomp => l10n.perfLinuxModeFast,
+            BuiltinProotMode.ptrace => l10n.perfLinuxModeSlow,
+            BuiltinProotMode.unknown => l10n.perfLinuxModeUnknown,
+          },
+          key: const ValueKey('this-phone-perf-mode'),
+          copyable: false,
+        ),
+        KitTechnicalValue(
+          l10n.perfDetailAwake,
+          performance.workHeld ? l10n.perfAwakeNow : l10n.perfAwakeWhenWorking,
+          key: const ValueKey('this-phone-perf-awake'),
+          copyable: false,
+        ),
+      ],
+      if (first != null)
+        KitTechnicalValue(
+          l10n.perfDetailFirstWords,
+          server == null
+              ? _seconds(l10n, first)
+              : l10n.perfFirstWordsSplit(
+                  _seconds(l10n, first),
+                  _seconds(l10n, server),
+                ),
+          key: const ValueKey('this-phone-perf-first-words'),
+        ),
+      if (last?.model case final model?)
+        KitTechnicalValue(
+          l10n.perfDetailModel,
+          model,
+          key: const ValueKey('this-phone-perf-model'),
+        ),
+    ];
   }
 
   /// What is installed on this phone, folded: the parts setup put there,

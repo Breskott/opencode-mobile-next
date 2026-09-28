@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
 import 'package:opencode_mobile/builtin/builtin_server.dart';
@@ -166,6 +167,8 @@ Future<FakeSetupEngine> pumpPhone(
   BuiltinLinux? linux,
   GlobalKey? boundary,
   Map<String, WidgetBuilder> routes = const {},
+  void Function(ConnectionController controller)? configure,
+  List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -176,6 +179,7 @@ Future<FakeSetupEngine> pumpPhone(
     _Store(prefs: prefs, saved: [...profiles]),
   );
   addTearDown(controller.dispose);
+  configure?.call(controller);
   final engine = FakeSetupEngine()..optionalInstalled = optionalInstalled;
   if (progress != null) engine.emit(progress);
   final previous = PhoneSetup.engine;
@@ -198,6 +202,7 @@ Future<FakeSetupEngine> pumpPhone(
             ref.onDispose(starter.dispose);
             return starter;
           }),
+          ...overrides,
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,

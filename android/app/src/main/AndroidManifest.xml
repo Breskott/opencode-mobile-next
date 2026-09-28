@@ -8,6 +8,9 @@
     <!-- The OpenCode server running inside the app (BuiltinServerService). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+    <!-- Keeps the phone awake while a reply runs on the in-app server
+         (BuiltinLinux.holdAwakeForWork; every hold times out). -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <!-- QR pairing uses an ephemeral preview. The composer's explicit Take
          photo action also opens the system camera; that result is kept locally
          for review and is uploaded only when the user sends the prompt. -->
