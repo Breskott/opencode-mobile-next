@@ -12,7 +12,6 @@ import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/review_workspace.dart';
 import 'package:opencode_mobile/ui/screens/staged_revert_screen.dart';
 import 'package:opencode_mobile/ui/screens/terminal_screen.dart';
-import 'package:opencode_mobile/ui/widgets/diff_view.dart';
 import 'package:opencode_mobile/ui/widgets/file_preview.dart';
 import 'package:opencode_mobile/ui/widgets/run_command_dialog.dart';
 
@@ -314,13 +313,6 @@ final fFilesReviewTerminalArea = CensusArea(
       kit.expectText('README.md');
     }),
 
-    // -- files-changes-sheet ---------------------------------------------------
-    CensusShot('files-changes-sheet', (kit) async {
-      await _filesTab(kit, api: _FilesApi(), repository: _FilesRepository());
-      await kit.tapKey('files-changes-card');
-      kit.expectText('Review all changes');
-    }),
-
     // -- files-file-viewer-sheet -------------------------------------------------
     CensusShot('files-file-viewer-sheet', state: 'markdown', (kit) async {
       await _filesTab(kit, api: _FilesApi(), repository: _FilesRepository());
@@ -604,7 +596,7 @@ final fFilesReviewTerminalArea = CensusArea(
         _backdrop('Fix flaky checkout test'),
         controller: controller,
       );
-      await kit.push(DiffView(diffs: sampleDiffs()));
+      await kit.push(DiffPage(diffs: sampleDiffs()));
       kit.expectVisible(find.byKey(const ValueKey('diff-view')));
       kit.expectVisible(
         find.byKey(const ValueKey('diff-file-header-test/checkout_test.dart')),

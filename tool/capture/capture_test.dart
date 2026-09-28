@@ -32,7 +32,7 @@ import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
-import 'package:opencode_mobile/ui/widgets/diff_view.dart';
+import 'package:opencode_mobile/ui/screens/review_workspace.dart';
 import 'package:opencode_mobile/ui/widgets/provider_logo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -225,7 +225,7 @@ void main() {
       final key = GlobalKey();
       await tester.pumpWidget(
         captureApp(
-          home: DiffView(diffs: sampleDiffs(), title: 'Changes · 2 files'),
+          home: DiffPage(diffs: sampleDiffs(), title: 'Changes · 2 files'),
           boundaryKey: key,
           controller: controller,
         ),
@@ -499,7 +499,7 @@ Future<void> _demoBody(WidgetTester tester, String framesDir) async {
   navigator.currentState!.push(
     MaterialPageRoute<void>(
       builder: (_) =>
-          DiffView(diffs: sampleDiffs(), title: 'Changes · 2 files'),
+          DiffPage(diffs: sampleDiffs(), title: 'Changes · 2 files'),
     ),
   );
   await run(3);

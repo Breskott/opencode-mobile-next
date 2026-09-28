@@ -4973,9 +4973,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Try a different name. Some language services do not support project-wide symbol search.';
 
   @override
-  String get readerUiReviewAll => 'Review all changes';
-
-  @override
   String get readerUiFiles => 'Files';
 
   @override
@@ -5060,22 +5057,6 @@ class AppLocalizationsEn extends AppLocalizations {
       one: '$count changed file',
     );
     return '$_temp0';
-  }
-
-  @override
-  String readerUiChangeSummary(int count, int added, int removed) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count files',
-      one: '$count file',
-    );
-    return '$_temp0 · +$added −$removed';
-  }
-
-  @override
-  String readerUiAddPath(String path) {
-    return 'Add $path to the prompt';
   }
 
   @override

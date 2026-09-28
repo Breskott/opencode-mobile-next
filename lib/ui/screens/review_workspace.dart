@@ -16,6 +16,7 @@ import '../kit/kit_diff_view.dart';
 import '../kit/kit_field.dart';
 import '../kit/kit_menu.dart';
 import '../kit/kit_notice.dart';
+import '../kit/kit_page_route.dart';
 import '../kit/kit_screen.dart';
 import '../kit/kit_segmented.dart';
 import '../kit/kit_sheet.dart';
@@ -607,8 +608,6 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
   List<KitMenuItem> _fileActions(KitDiffFile file) {
     final l10n = _l10n;
     final name = KitBidi.ltr(_basename(file.path));
-    final patch = file.patch;
-    final fullText = file.fullText;
     return [
       KitMenuItem(
         key: const Key('review-file-comment'),
@@ -623,21 +622,7 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
           icon: AppIconography.note,
           onSelected: () => _stageFile(file),
         ),
-      // SEC-13: a diff is the person's own content; it copies verbatim.
-      if (patch != null && patch.isNotEmpty)
-        KitMenuItem(
-          key: const Key('review-copy-patch'),
-          label: l10n.reviewCopyPatch,
-          icon: AppIconography.copy,
-          onSelected: () => KitCopy.copy(context, patch, redact: false),
-        )
-      else if (fullText != null && fullText.isNotEmpty)
-        KitMenuItem(
-          key: const Key('review-copy-file'),
-          label: l10n.reviewCopyFile,
-          icon: AppIconography.copy,
-          onSelected: () => KitCopy.copy(context, fullText, redact: false),
-        ),
+      ?_copyAction(context, l10n, file, keyPrefix: 'review'),
     ];
   }
 
@@ -961,6 +946,96 @@ class _ReviewCommentBody extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+// The read-only diff page
+
+/// A file header's copy entry, verbatim (SEC-13: a diff is the person's own
+/// content): the patch when there is one, otherwise the updated file.
+KitMenuItem? _copyAction(
+  BuildContext context,
+  AppLocalizations l10n,
+  KitDiffFile file, {
+  required String keyPrefix,
+}) {
+  final patch = file.patch;
+  final fullText = file.fullText;
+  final (key, label, text) = patch != null && patch.isNotEmpty
+      ? ('copy-patch', l10n.reviewCopyPatch, patch)
+      : fullText != null && fullText.isNotEmpty
+      ? ('copy-file', l10n.reviewCopyFile, fullText)
+      : (null, null, null);
+  if (key == null) return null;
+  return KitMenuItem(
+    key: Key('$keyPrefix-$key'),
+    label: label!,
+    icon: AppIconography.copy,
+    onSelected: () => KitCopy.copy(context, text!, redact: false),
+  );
+}
+
+/// The read-only diff page (map page `diff-view`; slice-P3.7a replaced
+/// widgets/diff_view.dart with it): [KitDiffView] with its one "Change 1 of
+/// N" navigator (N / P and F7 on a keyboard) on a kit page. A single file
+/// names itself in the top bar (file name, folder under it); several files
+/// keep [title] (or "Review"). Copy is the file header's More menu,
+/// verbatim, unless [allowCopy] is false (the demo).
+class DiffPage extends StatelessWidget {
+  const DiffPage({
+    super.key,
+    required this.diffs,
+    this.title,
+    this.allowCopy = true,
+  });
+
+  DiffPage.single(FileDiff diff, {Key? key, bool allowCopy = true})
+    : this(key: key, diffs: [diff], allowCopy: allowCopy);
+
+  final List<FileDiff> diffs;
+  final bool allowCopy;
+
+  /// The page title for several files; defaults to "Review". A single file
+  /// is titled with its own name instead.
+  final String? title;
+
+  static Future<void> open(BuildContext context, List<FileDiff> diffs) =>
+      pushKitPage<void>(
+        context,
+        (_) => DiffPage(diffs: diffs),
+        fullscreenDialog: true,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final store = ReaderPreferencesScope.maybeOf(context);
+    final single = diffs.length == 1 ? diffs.single.file : null;
+    final slash = single?.lastIndexOf('/') ?? -1;
+    return KitScreen(
+      key: const Key('diff-view'),
+      topBar: KitTopBar(
+        title: single == null
+            ? title ?? l10n.reviewTitle
+            : single.substring(slash + 1),
+        subtitle: single != null && slash > 0
+            ? single.substring(0, slash)
+            : null,
+        exit: KitTopBarExit.close,
+      ),
+      body: KitDiffView(
+        keyPrefix: 'diff',
+        files: [for (final diff in diffs) _kitFileOf(diff)],
+        wrap: store?.value.wrapCode,
+        onWrapChanged: store == null
+            ? null
+            : (wrap) => saveReaderPreferences(context, wrapCode: wrap),
+        fileActions: allowCopy
+            ? (file) => [?_copyAction(context, l10n, file, keyPrefix: 'diff')]
+            : null,
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // FileDiff → KitDiffFile (the kit never sees lib/api types, ARCH-1)
 
 final _kitFiles = Expando<KitDiffFile>('review kit files');
@@ -990,12 +1065,13 @@ KitDiffFile _convert(FileDiff diff) {
           after: diff.after,
           status: _kitStatus(diff.status),
         );
-  final counts = diff.counts;
+  // The server's counts when it sent them; otherwise the parsed patch's.
+  final counted = diff.additions != null || diff.deletions != null;
   return KitDiffFile(
     path: parsed.path,
     segments: parsed.segments,
-    added: counts.added,
-    removed: counts.removed,
+    added: counted ? diff.additions ?? 0 : parsed.added,
+    removed: counted ? diff.deletions ?? 0 : parsed.removed,
     status: parsed.status,
     oldPath: parsed.oldPath,
     binary: parsed.binary,

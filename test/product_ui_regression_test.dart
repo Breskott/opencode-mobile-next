@@ -723,8 +723,8 @@ void main() {
     );
   });
 
-  testWidgets('changes card opens the changed set as one list, the state '
-      'word first on each row', (tester) async {
+  testWidgets('changes row opens the diff itself (slice-P3.7a): totals on '
+      'the row, no list of the same files in between', (tester) async {
     final api = _TestApi(
       files: (_) async => [
         FileNode(name: 'README.md', path: 'README.md', isDir: false),
@@ -772,64 +772,31 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Browsing keeps the review entry visible; totals wait for that choice.
+    // The row names the set and its totals.
     expect(find.byKey(const ValueKey('files-changes-card')), findsOneWidget);
     expect(find.text('2 changed files'), findsOneWidget);
-    expect(find.textContaining('+42 −2'), findsNothing);
+    expect(find.text(KitBidi.ltr('+42 −2')), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('files-changes-card')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('files-changes-sheet')), findsOneWidget);
-    expect(find.text('2 files · +42 −2'), findsOneWidget);
-    // One list by path, never split by status: no "Modified · 1" group
-    // labels; each row's second line starts with its state word.
-    expect(find.text('Modified · 1'), findsNothing);
-    expect(find.text('Added · 1'), findsNothing);
-    expect(find.text('Modified · ${KitBidi.ltr('+8 −2')}'), findsOneWidget);
-    expect(
-      find.text('Added · ${KitBidi.ltr('lib')} · ${KitBidi.ltr('+34 −0')}'),
-      findsOneWidget,
-    );
-    expect(
-      tester
-          .getTopLeft(find.byKey(const ValueKey('changed-file-README.md')))
-          .dy,
-      lessThan(
-        tester
-            .getTopLeft(
-              find.byKey(const ValueKey('changed-file-lib/main.dart')),
-            )
-            .dy,
-      ),
-    );
-    expect(find.byKey(const ValueKey('review-all-changes')), findsOneWidget);
+    // Straight into Review: the diff with its one navigator, no sheet.
+    expect(find.byKey(const ValueKey('files-changes-sheet')), findsNothing);
+    expect(find.byKey(const Key('review-workspace')), findsOneWidget);
+    expect(find.text('library change'), findsOneWidget);
+    expect(find.text('Change 1 of 1'), findsOneWidget);
 
-    // A changed file stages as a reference without opening review.
-    await tester.tap(find.byKey(const ValueKey('stage-change-lib/main.dart')));
+    // A changed file stages as a reference from the diff's own menu.
+    await tester.tap(find.byTooltip('More').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('review-add-file')));
     await tester.pumpAndSettle();
     final staged = store.referencesFor('s1').single;
     expect(staged.kind, ReviewReferenceKind.changedFile);
     expect(staged.path, 'lib/main.dart');
-    expect(staged.added, 34);
-    expect(staged.status, 'added');
-    expect(find.byKey(const Key('review-workspace')), findsNothing);
-
-    // Tapping the row itself opens review at that file.
-    await tester.tap(find.byKey(const ValueKey('files-changes-card')));
-    await tester.pumpAndSettle();
-    final changedFile = find.byKey(
-      const ValueKey('changed-file-lib/main.dart'),
-    );
-    expect(
-      changedFile.hitTestable(),
-      findsOneWidget,
-      reason: _hitTestOwners(tester, changedFile),
-    );
-    await tester.tap(changedFile);
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('review-workspace')), findsOneWidget);
-    expect(find.text('library change'), findsOneWidget);
+    expect(staged.added, 1);
+    // Let the staged notice's Undo window run out.
+    await tester.pump(const Duration(seconds: 9));
   });
 
   testWidgets('project files stage as references distinct from attachments', (
@@ -1783,11 +1750,3 @@ Future<void> _openViewerMenu(WidgetTester tester) async {
   await tester.tap(find.byKey(const ValueKey('kit-viewer-more')));
   await tester.pumpAndSettle();
 }
-
-String _hitTestOwners(WidgetTester tester, Finder finder) => tester
-    .hitTestOnBinding(tester.getCenter(finder))
-    .path
-    .where((entry) => entry.target is RenderObject)
-    .take(5)
-    .map((entry) => (entry.target as RenderObject).debugCreator)
-    .join('\n');

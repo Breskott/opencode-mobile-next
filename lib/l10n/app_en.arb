@@ -3761,10 +3761,6 @@
   "@readerUiSymbolsUnavailable": {
     "description": "Reader, Files and review user interface."
   },
-  "readerUiReviewAll": "Review all changes",
-  "@readerUiReviewAll": {
-    "description": "Reader, Files and review user interface."
-  },
   "readerUiFiles": "Files",
   "@readerUiFiles": {
     "description": "Reader, Files and review user interface."
@@ -3880,30 +3876,6 @@
     "placeholders": {
       "count": {
         "type": "int"
-      }
-    }
-  },
-  "readerUiChangeSummary": "{count, plural, one{{count} file} other{{count} files}} · +{added} −{removed}",
-  "@readerUiChangeSummary": {
-    "description": "Reader display, status or accessible label. Technical placeholders remain original.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "added": {
-        "type": "int"
-      },
-      "removed": {
-        "type": "int"
-      }
-    }
-  },
-  "readerUiAddPath": "Add {path} to the prompt",
-  "@readerUiAddPath": {
-    "description": "Reader display, status or accessible label. Technical placeholders remain original.",
-    "placeholders": {
-      "path": {
-        "type": "String"
       }
     }
   },

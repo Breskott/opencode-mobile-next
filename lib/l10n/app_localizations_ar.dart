@@ -5005,9 +5005,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'جرّب اسمًا آخر. بعض خدمات اللغات لا تدعم البحث عن الرموز في المشروع بأكمله.';
 
   @override
-  String get readerUiReviewAll => 'مراجعة جميع التغييرات';
-
-  @override
   String get readerUiFiles => 'الملفات';
 
   @override
@@ -5095,26 +5092,6 @@ class AppLocalizationsAr extends AppLocalizations {
       zero: 'لا توجد ملفات متغيرة',
     );
     return '$_temp0';
-  }
-
-  @override
-  String readerUiChangeSummary(int count, int added, int removed) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count ملف',
-      many: '$count ملفًا',
-      few: '$count ملفات',
-      two: 'ملفان',
-      one: 'ملف واحد',
-      zero: 'لا توجد ملفات',
-    );
-    return '$_temp0 · +$added −$removed';
-  }
-
-  @override
-  String readerUiAddPath(String path) {
-    return 'إضافة $path إلى الطلب';
   }
 
   @override
