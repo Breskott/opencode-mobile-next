@@ -36,6 +36,11 @@ class KitLoadingBar extends StatelessWidget {
 /// Placeholder rows while a list loads (§4): the shape of the rows to come,
 /// with no words and no motion, hidden from screen readers (the loading bar
 /// already says the screen is loading). Matches [KitRow]'s geometry.
+///
+/// The shapes are `text1` laid thinly over whatever they sit on, so they
+/// read on every surface level in light and dark: on the ground, on a
+/// grouped card (`surface1`, white in light, where a `surface2` bar
+/// vanished), on a sheet and on `surface3`.
 class KitSkeletonRows extends StatelessWidget {
   const KitSkeletonRows({super.key, this.count = 4});
 
@@ -43,10 +48,18 @@ class KitSkeletonRows extends StatelessWidget {
 
   static const _titleWidths = [0.72, 0.56, 0.64, 0.48, 0.6];
 
+  /// How much `text1` the leading mark and the title bar carry.
+  static const shapeAlpha = .12;
+
+  /// How much `text1` the supporting bar carries (a step lighter).
+  static const lineAlpha = .09;
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final tokens = KitTokens.of(context);
+    final ink = tokens.roles.text1;
+    final shape = ink.withValues(alpha: shapeAlpha);
+    final line = ink.withValues(alpha: lineAlpha);
     Widget bar(double height, Color color) => Container(
       height: height,
       decoration: BoxDecoration(
@@ -72,7 +85,7 @@ class KitSkeletonRows extends StatelessWidget {
                           width: 20,
                           height: 20,
                           decoration: BoxDecoration(
-                            color: scheme.surfaceContainer,
+                            color: shape,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -89,12 +102,12 @@ class KitSkeletonRows extends StatelessWidget {
                               width:
                                   constraints.maxWidth *
                                   _titleWidths[i % _titleWidths.length],
-                              child: bar(12, scheme.surfaceContainerHigh),
+                              child: bar(12, shape),
                             ),
                             SizedBox(height: tokens.space2),
                             SizedBox(
                               width: constraints.maxWidth * 0.28,
-                              child: bar(9, scheme.surfaceContainer),
+                              child: bar(9, line),
                             ),
                           ],
                         ),

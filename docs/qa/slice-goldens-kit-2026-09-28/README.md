@@ -39,6 +39,51 @@ Outside this slice's goldens: `lib/ui/screens/chat/permission_sheet.dart`
 uses the same sheet, so chat permission-sheet goldens that show a long
 command will wrap it too (recorded in lane-notes).
 
+## Kit hand-offs from the other golden lanes (after merging feat/phone-setup-v2)
+
+- **KitCodeBlock caption pushed in beside a labelled copy** (revamp-B,
+  98c064bd). The copy flexed beside the caption; both took half the header
+  and the unused rest landed before the caption (~70 dp in on 1280). Fix:
+  `lib/ui/kit/kit_code_block.dart` `_buildHeader` caps the labelled copy at
+  60 % of the header beside a name and never flexes it; alone it still fills.
+  Tests: `test/kit/kit_code_block_r3_test.dart` pins the caption edge at 412
+  and 1280, LTR and RTL (1280 fails on the base), and a long label at 2.0
+  text. Held goldens: the 4 `chat_continue_on_computer_sheet_available*`
+  refreshed (caption back at the edge, `$` prompt with hanging wrap
+  intended); the 4 `chat_continue_on_phone_sheet_qr*` match their committed
+  images again, so they are unchanged. Sheet: `kit-code-header-caption-fix.png`.
+- **KitSkeletonRows invisible on a light grouped card** (app lane). Bars were
+  `surfaceContainer`/`surfaceContainerHigh`, the card's own white in light.
+  Fix: `lib/ui/kit/kit_progress.dart` paints the shapes as `text1` at 12 %
+  (mark, title) and 9 % (supporting), laid over whatever surface they sit on.
+  Test: `test/kit/kit_skeleton_rows_test.dart` checks every shape against
+  ground, surface1, surface2 and surface3 in light and dark (>= 1.15:1; 7 of
+  8 fail on the base). G4 allowlist shrinks by KitSkeletonRows (it now has a
+  behaviour test). Sheet: `skeleton-rows-visible.png` (the folder browser's
+  slow state on a wide light card was an empty white box before).
+
+### Goldens outside the kit changed by these three fixes (47, refreshed)
+
+All 170 golden files were run after the fixes; 57 failed. 47 are these
+fixes and were refreshed after review:
+
+- skeleton rows now visible (37): kit_diff_view_loading*, kit_viewer_loading*,
+  kit_choice_list_loading*, kit_board_lane_loading*, team_board_loading*,
+  folder_browser_{loading,slow}{,_wide}*, work_{loading,restoring}*,
+  settings_about_light;
+- request-sheet command wraps (4): chat_permission_sheet_{dark,light},
+  chat_5_permission_sheet_{dark,light};
+- caption at the block edge (6+): add_server_{manual,codex,paseo,paired,testing}*,
+  first_run_connect*, sessionlink_send_address_off*.
+
+Sheet: `fix-consequences-wrap-and-caption.png`.
+
+Not mine, left failing and handed off (lane-notes): `team_home_loaded*` and
+`team_home_search*` (6) render "waiting 16 d 23 h" vs "17 d": the test has no
+pinned clock, so the golden drifts with the date; `work_workspace_context_sheet*`
+and `work_workspace_folder_chooser*` (4) still show "This device (Termux)",
+the copy 2fec0fc3 changed to "This phone · Termux" on purpose.
+
 ## Counts
 
 | Verdict | Goldens |
@@ -46,8 +91,9 @@ command will wrap it too (recorded in lane-notes).
 | Intended — R9 dark text3 | 122 |
 | Intended — other merged changes (sheets below) | 104 |
 | Intended after the product fix (request sheet) | 4 (+2 not failing before) |
-| Regressions fixed in the kit | 1 (request-sheet command wrap) |
-| Handed off | 0 |
+| Regressions fixed in the kit | 3 (request-sheet command wrap; code-block caption edge; skeleton rows contrast) |
+| Other goldens refreshed as consequences of the fixes | 47 (+4 held shared_chat_1) |
+| Handed off (not kit) | 10 goldens: team_home clock drift (6), work_workspace copy (4) |
 
 ## Contact sheets (before | after)
 
