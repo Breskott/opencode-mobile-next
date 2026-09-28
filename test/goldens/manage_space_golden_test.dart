@@ -4,10 +4,11 @@
 // projects page. Phone 412x915 (and a tall 412x1500 to show the whole
 // list) and one wide window (1280x800), dark and light, real fonts.
 //
-// Regenerate deliberately:
+// Regenerate deliberately, and look at every changed image before committing it:
 //   flutter test --update-goldens test/goldens/manage_space_golden_test.dart
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/builtin/project_export.dart';
@@ -38,6 +39,7 @@ Future<void> _shot(
   Future<void> Function()? act,
 }) async {
   final boundary = GlobalKey();
+  debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -67,7 +69,8 @@ Future<void> _shot(
   }
   expect(tester.takeException(), isNull);
   final suffix = [
-    if (size != _phone) '${size.width.toInt()}x${size.height.toInt()}',
+    if (size == _tall) 'full',
+    if (size == _wide) '1280x800',
     light ? 'light' : 'dark',
   ].join('_');
   await expectLater(
@@ -75,6 +78,7 @@ Future<void> _shot(
     matchesGoldenFile('manage_space_${name}_$suffix.png'),
   );
   await tester.pumpWidget(const SizedBox.shrink());
+  debugDefaultTargetPlatformOverride = null;
 }
 
 void main() {
