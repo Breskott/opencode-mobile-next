@@ -8887,7 +8887,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiAccessReadOnly => 'للقراءة فقط';
 
   @override
-  String get teamUiAddAddressHint => 'http://100.x.x.x:8372';
+  String get teamUiAddAddressHint => 'http://100.x.x.x:8373';
 
   @override
   String get teamUiAddAddressLabel => 'العنوان';
@@ -8918,14 +8918,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'قد يوقفه أندرويد عند انطفاء الشاشة؛ وهو أبطأ من الحاسوب';
 
   @override
-  String get teamUiDiscoveryNotNow => 'ليس الآن';
-
-  @override
-  String teamUiDiscoveryTitle(String server) {
-    return 'يشغّل $server أيضًا فريق ذكاء اصطناعي. هل تريد تشغيله؟';
-  }
-
-  @override
   String get teamUiEditorBody =>
       'إذا كان هذا الحاسوب يشغّل Gas City، فسيعثر عليه التطبيق تلقائيًا.';
 
@@ -8947,7 +8939,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiHostGuideStep2 =>
-      'Save the city file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:';
+      'Save the team file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:';
 
   @override
   String get teamUiHostGuideStep3 =>
@@ -9102,16 +9094,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamUiVerdictCityNotRunning =>
       'مضيف الفريق قيد البدء. حاول مجددًا بعد قليل.';
-
-  @override
-  String teamUiVerdictFound(String version, String city) {
-    return 'Gas City $version · المدينة $city · للقراءة فقط';
-  }
-
-  @override
-  String teamUiVerdictFoundControls(String version, String city) {
-    return 'Gas City $version · المدينة $city · القرارات والتحكم';
-  }
 
   @override
   String get teamUiVerdictNotGasCity =>
@@ -19638,9 +19620,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get teamDiscoverTurnOnNamed => 'Turn on AI Team';
-
-  @override
   String serverSettingsChangeSignIn(String server) {
     return 'Change sign-in for $server';
   }
@@ -23435,4 +23414,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String serverRowDetailsTitle(String name) {
     return '$name details';
   }
+
+  @override
+  String get pluginsTeamRowTurnOn => 'Turn on';
+
+  @override
+  String get teamUiHostGuideEnterAddress => 'Enter the address';
 }

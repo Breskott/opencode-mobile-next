@@ -14499,7 +14499,7 @@ abstract class AppLocalizations {
   /// Hint inside the host address field of the manual add form
   ///
   /// In en, this message translates to:
-  /// **'http://100.x.x.x:8372'**
+  /// **'http://100.x.x.x:8373'**
   String get teamUiAddAddressHint;
 
   /// Label of the host address field in the manual add form
@@ -14556,18 +14556,6 @@ abstract class AppLocalizations {
   /// **'Android may stop it when the screen is off; slower than a computer'**
   String get teamUiDisclaimerPhone;
 
-  /// Discovery card action that dismisses the offer for this server
-  ///
-  /// In en, this message translates to:
-  /// **'Not now'**
-  String get teamUiDiscoveryNotNow;
-
-  /// Discovery card headline when the server host answers on the AI Team port
-  ///
-  /// In en, this message translates to:
-  /// **'{server} also runs an AI team. Turn it on?'**
-  String teamUiDiscoveryTitle(String server);
-
   /// One-line copy of the AI Team (optional) section in the server editor
   ///
   /// In en, this message translates to:
@@ -14601,7 +14589,7 @@ abstract class AppLocalizations {
   /// Host guide step 2
   ///
   /// In en, this message translates to:
-  /// **'Save the city file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:'**
+  /// **'Save the team file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:'**
   String get teamUiHostGuideStep2;
 
   /// Host guide step 3
@@ -14879,18 +14867,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The team host is starting. Try again in a moment.'**
   String get teamUiVerdictCityNotRunning;
-
-  /// Verdict chip for a found host without a front
-  ///
-  /// In en, this message translates to:
-  /// **'Gas City {version} · city {city} · read-only'**
-  String teamUiVerdictFound(String version, String city);
-
-  /// Verdict chip for a found host with a front
-  ///
-  /// In en, this message translates to:
-  /// **'Gas City {version} · city {city} · decisions and controls'**
-  String teamUiVerdictFoundControls(String version, String city);
 
   /// Verdict when the address answered but is not a Gas City
   ///
@@ -31066,12 +31042,6 @@ abstract class AppLocalizations {
   /// **'Stop {service}'**
   String servicesStopNamed(String service);
 
-  /// AI Team offer card: the button that turns the AI Team on.
-  ///
-  /// In en, this message translates to:
-  /// **'Turn on AI Team'**
-  String get teamDiscoverTurnOnNamed;
-
   /// Server settings: the row that opens this server in the editor to change its password.
   ///
   /// In en, this message translates to:
@@ -36733,6 +36703,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} details'**
   String serverRowDetailsTitle(String name);
+
+  /// Plugins, the AI Team row when a team was found on the server: the row's own action that saves the found host and starts the team (the row title already names AI Team)
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on'**
+  String get pluginsTeamRowTurnOn;
+
+  /// Host guide sheet: the primary action, the next step after the host steps; opens the form for the team's address
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the address'**
+  String get teamUiHostGuideEnterAddress;
 }
 
 class _AppLocalizationsDelegate
