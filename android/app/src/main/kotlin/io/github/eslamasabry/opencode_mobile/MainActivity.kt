@@ -694,7 +694,7 @@ class MainActivity : FlutterActivity() {
         // replayed either.
         intent.action = Intent.ACTION_MAIN
         intent.data = null
-        if (text.isBlank() || text.length > LINK_MAX_LENGTH) return false
+        if (!SessionLinkIngress.accepts(text)) return false
         pendingSessionLink = text
         return true
     }
@@ -1248,7 +1248,6 @@ class MainActivity : FlutterActivity() {
         private const val LINK_SCHEME = "opencode-mobile"
         private const val LINK_HOST = "session"
         private const val TEAM_LINK_HOST = "team"
-        private const val LINK_MAX_LENGTH = 1024
         // Intent extra set by res/xml/shortcuts.xml; values are the shortcut
         // ids Dart's LaunchAction enum understands.
         const val EXTRA_LAUNCH_ACTION = "oc.shortcut"

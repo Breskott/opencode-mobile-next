@@ -20,6 +20,7 @@ import 'effects.dart' show KitEffects, KitMotionLevel;
 import 'model_library.dart';
 import 'interaction_defaults.dart';
 import 'setup_audit_store.dart';
+import 'session_link_bindings.dart';
 
 export '../api/server_probe.dart' show ServerFlavor;
 export '../domain/loopback_host.dart' show isLoopbackHost;
@@ -998,7 +999,11 @@ class ProfileStore {
       profileId,
     );
     final auditDrain = SetupAuditStore.closeProfile(prefs, profileId);
-    await Future.wait([defaultsDrain, auditDrain]);
+    await Future.wait([
+      defaultsDrain,
+      auditDrain,
+      SessionLinkBindings.closeProfile(prefs, profileId),
+    ]);
     final failed = <String>{};
     for (final key in profileScopedPreferenceKeys(profileId)) {
       if (excluding.contains(key)) continue;
