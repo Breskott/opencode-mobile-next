@@ -5977,10 +5977,6 @@
   "@e7LibraryLocalCommand": {
     "description": "Library and project tools UI: Local command"
   },
-  "e7LibraryTimeoutInMilliseconds": "Timeout in milliseconds",
-  "@e7LibraryTimeoutInMilliseconds": {
-    "description": "Library and project tools UI: Timeout in milliseconds"
-  },
   "e7LibraryOptional": "Optional",
   "@e7LibraryOptional": {
     "description": "Library and project tools UI: Optional"
@@ -6000,10 +5996,6 @@
   "e7LibraryEnterAValidHTTPOrHTTPSURL": "Enter a valid HTTP or HTTPS URL without credentials",
   "@e7LibraryEnterAValidHTTPOrHTTPSURL": {
     "description": "Library and project tools UI: Enter a valid HTTP or HTTPS URL without credentials"
-  },
-  "e7LibraryOptionalEnterOneKEYVALUEPairPer": "Optional. Enter one KEY=VALUE pair per line.",
-  "@e7LibraryOptionalEnterOneKEYVALUEPairPer": {
-    "description": "Library and project tools UI: Optional. Enter one KEY=VALUE pair per line."
   },
   "e7LibraryDetectOAuthAutomatically": "Detect OAuth automatically",
   "@e7LibraryDetectOAuthAutomatically": {
@@ -22340,7 +22332,7 @@
   "@mcpSetupAdvancedRemote": {
     "description": "screen-library-2: Add MCP server: what the Advanced fold holds for a remote server."
   },
-  "mcpSetupAdvancedLocal": "Working folder, environment and timeout",
+  "mcpSetupAdvancedLocal": "Working folder and timeout",
   "@mcpSetupAdvancedLocal": {
     "description": "screen-library-2: Add MCP server: what the Advanced fold holds for a local command."
   },
@@ -22671,6 +22663,222 @@
   "mcpSetupUnavailableBody": "It doesn't accept new MCP servers from the app. Add them in its configuration on the computer; they then show under MCP servers.",
   "@mcpSetupUnavailableBody": {
     "description": "screen-library-2: Add MCP server: why the page cannot add one here."
+  },
+  "mcpAddBrowseTitle": "Browse the catalogue",
+  "@mcpAddBrowseTitle": {
+    "description": "MCP add sheet (P2.4): the choice that opens the MCP catalogue"
+  },
+  "mcpAddBrowseDetail": "Servers from the public MCP registry, turned on with a switch",
+  "@mcpAddBrowseDetail": {
+    "description": "MCP add sheet: what the catalogue choice offers"
+  },
+  "mcpAddBrowseNone": "No catalogue for this server: it doesn't accept new MCP servers from the app.",
+  "@mcpAddBrowseNone": {
+    "description": "MCP add sheet: why the catalogue choice is unavailable on this server"
+  },
+  "mcpAddManualTitle": "Enter manually",
+  "@mcpAddManualTitle": {
+    "description": "MCP add sheet and catalogue: the choice that opens the manual MCP form"
+  },
+  "mcpAddManualDetail": "Type its address, or the command that starts it",
+  "@mcpAddManualDetail": {
+    "description": "MCP add sheet: what the manual choice is"
+  },
+  "mcpCatalogTitle": "MCP catalogue",
+  "@mcpCatalogTitle": {
+    "description": "MCP catalogue (P2.5): page title"
+  },
+  "mcpCatalogConsentTitle": "Load the MCP registry?",
+  "@mcpCatalogConsentTitle": {
+    "description": "MCP catalogue: title before the person agrees to load the registry list"
+  },
+  "mcpCatalogConsentBody": "The app asks registry.modelcontextprotocol.io for its list of MCP servers. It sends only what you search for, nothing about you or your servers.",
+  "@mcpCatalogConsentBody": {
+    "description": "MCP catalogue: what loading the registry list sends"
+  },
+  "mcpCatalogConsentLoad": "Load the list",
+  "@mcpCatalogConsentLoad": {
+    "description": "MCP catalogue: button that agrees and loads the registry list"
+  },
+  "mcpCatalogForget": "Stop using the registry",
+  "@mcpCatalogForget": {
+    "description": "MCP catalogue menu: forgets the consent and the saved registry list"
+  },
+  "mcpCatalogForgetFailed": "Couldn't forget the saved registry list. Try again.",
+  "@mcpCatalogForgetFailed": {
+    "description": "MCP catalogue: forgetting the saved list failed"
+  },
+  "mcpCatalogSearch": "Search the registry",
+  "@mcpCatalogSearch": {
+    "description": "MCP catalogue: search field label"
+  },
+  "mcpCatalogInventoryFailed": "Couldn't read this server's MCP servers",
+  "@mcpCatalogInventoryFailed": {
+    "description": "MCP catalogue: the server's MCP list could not be read"
+  },
+  "mcpCatalogInventoryFailedBody": "The switches need to know what is already on. Check the connection, then try again.",
+  "@mcpCatalogInventoryFailedBody": {
+    "description": "MCP catalogue: why the list waits for the server's MCP list"
+  },
+  "mcpCatalogFailed": "Couldn't load the public MCP registry",
+  "@mcpCatalogFailed": {
+    "description": "MCP catalogue: the registry list could not be loaded"
+  },
+  "mcpCatalogSearchFailed": "Couldn't search the public MCP registry",
+  "@mcpCatalogSearchFailed": {
+    "description": "MCP catalogue: a registry search failed"
+  },
+  "mcpCatalogFailedBody": "Check the phone's internet connection, then try again. You can still enter a server by hand.",
+  "@mcpCatalogFailedBody": {
+    "description": "MCP catalogue: way forward when the registry is unreachable"
+  },
+  "mcpCatalogEmpty": "The registry listed no servers",
+  "@mcpCatalogEmpty": {
+    "description": "MCP catalogue: the registry answered with an empty list"
+  },
+  "mcpCatalogNoMatch": "Nothing in the registry matches “{query}”",
+  "@mcpCatalogNoMatch": {
+    "description": "MCP catalogue: a search found nothing",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpCatalogEmptyBody": "Try other words, or enter the server by hand.",
+  "@mcpCatalogEmptyBody": {
+    "description": "MCP catalogue: way forward when nothing is listed"
+  },
+  "mcpCatalogStale": "Couldn't refresh the list from the registry. These are the listings loaded earlier.",
+  "@mcpCatalogStale": {
+    "description": "MCP catalogue: a refresh failed; the saved list is shown"
+  },
+  "mcpCatalogPriceNote": "The registry lists no prices. A hosted server's owner may charge for it or ask for an account.",
+  "@mcpCatalogPriceNote": {
+    "description": "MCP catalogue: note under the list about cost"
+  },
+  "mcpCatalogAdding": "Adding…",
+  "@mcpCatalogAdding": {
+    "description": "MCP catalogue: a row while its form is open"
+  },
+  "mcpCatalogRemoving": "Removing…",
+  "@mcpCatalogRemoving": {
+    "description": "MCP catalogue: a row while it is being removed"
+  },
+  "mcpCatalogCannotRemove": "On. This server keeps it in its configuration, and the app can't remove it.",
+  "@mcpCatalogCannotRemove": {
+    "description": "MCP catalogue: why an added server's switch cannot be turned off here"
+  },
+  "mcpCatalogNeedsDocker": "Runs in Docker. To add it anyway, use Enter manually.",
+  "@mcpCatalogNeedsDocker": {
+    "description": "MCP catalogue: why a container listing cannot be turned on"
+  },
+  "mcpCatalogNoEndpoint": "Lists nothing the app can start. To add it anyway, use Enter manually.",
+  "@mcpCatalogNoEndpoint": {
+    "description": "MCP catalogue: why a listing cannot be turned on"
+  },
+  "mcpCatalogHostedBy": "Hosted by {host}",
+  "@mcpCatalogHostedBy": {
+    "description": "MCP catalogue row: where a hosted server runs",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpCatalogNeedsNode": "Needs Node on the server",
+  "@mcpCatalogNeedsNode": {
+    "description": "MCP catalogue row: an npm package needs Node where OpenCode runs"
+  },
+  "mcpCatalogNeedsNodePhone": "Needs Node on this phone",
+  "@mcpCatalogNeedsNodePhone": {
+    "description": "MCP catalogue row: an npm package needs Node on this phone's OpenCode"
+  },
+  "mcpCatalogNeedsPython": "Needs Python with uv on the server",
+  "@mcpCatalogNeedsPython": {
+    "description": "MCP catalogue row: a PyPI package needs uv"
+  },
+  "mcpCatalogNeedsKey": "Needs an API key",
+  "@mcpCatalogNeedsKey": {
+    "description": "MCP catalogue row: the listing requires a secret"
+  },
+  "mcpCatalogNeedsSettings": "Needs extra settings",
+  "@mcpCatalogNeedsSettings": {
+    "description": "MCP catalogue row: the listing requires other settings or arguments"
+  },
+  "mcpCatalogNodeTitle": "{title} runs with Node",
+  "@mcpCatalogNodeTitle": {
+    "description": "MCP catalogue: sheet title when a Node server is turned on for this phone",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpCatalogNodeAdd": "Add Node to this phone",
+  "@mcpCatalogNodeAdd": {
+    "description": "MCP catalogue Node sheet: opens This phone to add Node"
+  },
+  "mcpCatalogNodeAddDetail": "Opens This phone. Choose Add tools, then Node, and turn this on again once it's added.",
+  "@mcpCatalogNodeAddDetail": {
+    "description": "MCP catalogue Node sheet: what adding Node involves"
+  },
+  "mcpCatalogNodeHave": "Node is already on this phone",
+  "@mcpCatalogNodeHave": {
+    "description": "MCP catalogue Node sheet: continue to the form"
+  },
+  "mcpCatalogNodeHaveDetail": "Check the details and add it",
+  "@mcpCatalogNodeHaveDetail": {
+    "description": "MCP catalogue Node sheet: what continuing does"
+  },
+  "mcpSetupFromCatalog": "Filled in from “{listing}” in the public MCP registry. Check it before you add it: {server} will run or connect to what is here.",
+  "@mcpSetupFromCatalog": {
+    "description": "MCP form opened from the catalogue: where the values came from",
+    "placeholders": {
+      "listing": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpSetupThisServer": "this server",
+  "@mcpSetupThisServer": {
+    "description": "MCP form: the server, when it has no name"
+  },
+  "mcpSetupValueRequired": "Enter a value for {name}",
+  "@mcpSetupValueRequired": {
+    "description": "MCP form: a header or variable the registry listing requires is empty",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpSetupNameFromCatalog": "The registry listing needs this one",
+  "@mcpSetupNameFromCatalog": {
+    "description": "MCP form: why a prefilled header or variable name is fixed"
+  },
+  "mcpVariableName": "Variable name",
+  "@mcpVariableName": {
+    "description": "MCP form: environment variable name field"
+  },
+  "mcpVariableValue": "Variable value",
+  "@mcpVariableValue": {
+    "description": "MCP form: environment variable value field (secret)"
+  },
+  "mcpAddVariable": "Add another variable",
+  "@mcpAddVariable": {
+    "description": "MCP form: adds an environment variable row"
+  },
+  "mcpRemoveVariable": "Remove variable",
+  "@mcpRemoveVariable": {
+    "description": "MCP form: removes an environment variable row"
+  },
+  "mcpSetupTimeoutSeconds": "Timeout in seconds",
+  "@mcpSetupTimeoutSeconds": {
+    "description": "MCP form: the optional timeout field, in seconds"
   },
   "commandAuthSheetWorking": "Asking the server…",
   "@commandAuthSheetWorking": {

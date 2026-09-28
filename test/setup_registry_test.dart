@@ -467,4 +467,98 @@ void main() {
       expect(entries, hasLength(99));
     },
   );
+
+  test(
+    'a search is sent as the registry search parameter, never saved',
+    () async {
+      await store.setOptIn(true);
+      await store.refresh();
+      final saved = prefs.getString(store.storageKey);
+      await store.refresh(query: ' weather ');
+      final request = transport.requests.last;
+      expect(request.uri.path, '/v0.1/servers');
+      expect(request.queryParameters, {
+        'limit': 100,
+        'version': 'latest',
+        'search': 'weather',
+      });
+      expect(request.headers.containsKey('Authorization'), isFalse);
+      expect(store.snapshot.query, 'weather');
+      expect(prefs.getString(store.storageKey), saved);
+      store.showSaved();
+      expect(store.snapshot.query, isNull);
+      expect(store.snapshot.entries.single.name, 'org.example/weather');
+    },
+  );
+
+  test('a search term that looks like a credential is not sent', () async {
+    await client.fetch(search: 'ghp_abcdefghijklmnopqrstuvwxyz0123456789');
+    expect(
+      transport.requests.single.queryParameters.containsKey('search'),
+      isFalse,
+    );
+  });
+
+  test('declared header and variable names are kept, never their values', () {
+    final entry = RegistryEntry.fromJson({
+      'name': 'org.example/both',
+      'version': '1.0.0',
+      'title': 'Both',
+      'remotes': [
+        {
+          'type': 'streamable-http',
+          'url': 'https://tools.example/mcp',
+          'headers': [
+            {
+              'name': 'Authorization',
+              'isRequired': true,
+              'isSecret': true,
+              'value': 'Bearer fake-header',
+              'default': 'fake-default',
+            },
+            {'name': 'bad name; rm', 'isRequired': true},
+          ],
+        },
+      ],
+      'packages': [
+        {
+          'registryType': 'npm',
+          'identifier': '@example/both',
+          'version': '1.0.0',
+          'runtimeHint': 'npx',
+          'transport': {'type': 'stdio'},
+          'packageArguments': [
+            {'value': 'fake-argument', 'isRequired': true},
+          ],
+          'environmentVariables': [
+            {'name': 'API_KEY', 'isSecret': true, 'default': 'fake-env'},
+          ],
+        },
+      ],
+    })!;
+    expect(entry.title, 'Both');
+    final header = entry.remotes.single.headers.single;
+    expect(
+      (header.name, header.required, header.secret),
+      ('Authorization', true, true),
+    );
+    final package = entry.packages.single;
+    expect(package.transport, 'stdio');
+    expect(package.runtimeHint, 'npx');
+    expect(package.requiresArguments, isTrue);
+    expect(package.environment.single.name, 'API_KEY');
+    final json = jsonEncode(entry.toJson());
+    for (final dropped in [
+      'fake-header',
+      'fake-default',
+      'fake-argument',
+      'fake-env',
+      'rm',
+    ]) {
+      expect(json.contains(dropped), isFalse, reason: dropped);
+    }
+    // The saved form reads back the same.
+    final again = RegistryEntry.fromJson(entry.toJson())!;
+    expect(jsonEncode(again.toJson()), json);
+  });
 }
