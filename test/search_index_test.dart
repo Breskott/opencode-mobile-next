@@ -290,9 +290,13 @@ void main() {
         _en.settingsHubPrivacyRow,
       );
       expect(byId['ai-team']!.parent, _en.librarySettingsTitle);
+      // Background checks folded into Notifications (slice-close-misc).
+      expect(byId['inside-servers-monitor'], isNull);
       expect(
-        byId['inside-servers-monitor']!.title,
-        _en.monitorBackgroundChecks,
+        byId['inside-notifications-servers']!.matches(
+          _en.monitorBackgroundChecks,
+        ),
+        isTrue,
       );
       expect(byId['settings-try-demo']!.parent, _en.onboardingSetupGuide);
       expect(byId['settings-mcp']!.parent, _en.settingsHubToolsRow);

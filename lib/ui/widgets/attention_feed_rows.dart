@@ -525,6 +525,10 @@ void _openNotifications(
 ) => unawaited(
   pushKitPage<void>(
     context,
-    (_) => NotificationsSettingsScreen(controller: controller),
+    // Lands on the section where each saved server's checks are turned on.
+    (_) => NotificationsSettingsScreen(
+      controller: controller,
+      initialSection: 'servers',
+    ),
   ),
 );

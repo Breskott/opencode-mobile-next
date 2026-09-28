@@ -34,7 +34,6 @@ import '../widgets/team_host_form.dart';
 import '../widgets/local_agent_server_entry.dart';
 import '../widgets/phone_server_card.dart';
 import '../widgets/queued_prompt_move_sheet.dart';
-import '../widgets/relative_time.dart';
 import '../widgets/termux_running_server_entry.dart';
 import '../widgets/safety_confirms.dart';
 import '../../state/local_server_controls.dart';
@@ -48,7 +47,6 @@ import 'tailscale_setup_screen.dart';
 import 'this_phone_screen.dart' show openThisPhone;
 import '../../state/tailscale_address.dart';
 import 'external_agents_screen.dart';
-import 'profile_monitor_screen.dart' show ProfileMonitorScreen;
 
 /// What the servers list learns back from the editor's save: whether the
 /// profile reached the store, and the product-facing failure to show inline
@@ -1016,64 +1014,8 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
               );
             },
           ),
-          // After the list, one row for the checks that watch every saved
-          // server in the background: when they last ran, and the page with
-          // each server's last and next check and "check now". An isolated
-          // profile never reads other servers, so it has none.
-          if (monitor != null) ...[
-            SizedBox(height: tokens.sectionGap),
-            ListenableBuilder(
-              listenable: Listenable.merge([accountConnection, monitor]),
-              builder: (context, _) => KitRowGroup(
-                children: [
-                  KitRow(
-                    key: const ValueKey('servers-background-checks'),
-                    leading: KitRow.icon(context, AppIconography.clock),
-                    title: copy.monitorBackgroundChecks,
-                    supporting: TextSpan(
-                      text: _backgroundChecksLine(copy, accountConnection),
-                    ),
-                    trailing: const KitChevron(),
-                    onTap: () => pushKitPage<void>(
-                      context,
-                      (_) =>
-                          ProfileMonitorScreen(controller: accountConnection),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
-    );
-  }
-
-  /// The Background checks row's line: off when no saved server is
-  /// monitored, else when the most recent check finished.
-  String _backgroundChecksLine(
-    AppLocalizations copy,
-    ConnectionController connection,
-  ) {
-    final monitor = connection.profileMonitor;
-    final monitored = [
-      for (final profile in connection.store.profiles)
-        if (connection.isProfileReadable(profile.id) &&
-            monitor.supportsProfile(profile) &&
-            monitor.rulesFor(profile.id).enabled)
-          profile,
-    ];
-    if (monitored.isEmpty) return copy.monitorRowOff;
-    DateTime? latest;
-    for (final profile in monitored) {
-      final checked = monitor.snapshotFor(profile.id).checkedAt;
-      if (checked != null && (latest == null || checked.isAfter(latest))) {
-        latest = checked;
-      }
-    }
-    if (latest == null) return copy.monitorRowNotChecked;
-    return copy.monitorRowLastChecked(
-      relativeTimeLabel(latest.millisecondsSinceEpoch, l10n: copy),
     );
   }
 

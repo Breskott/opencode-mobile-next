@@ -30,7 +30,6 @@ import '../screens/guide_screen.dart';
 import '../screens/keep_running_screen.dart';
 import '../screens/library_screen.dart';
 import '../screens/local_agent_screen.dart';
-import '../screens/profile_monitor_screen.dart';
 import '../screens/project_hub_screen.dart';
 import '../screens/saved_permissions_screen.dart';
 import '../screens/server_capabilities_screen.dart';
@@ -1077,8 +1076,12 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       icon: AppIconography.database,
       title: l10n.discoverNotifyServersTitle,
       parent: notifications,
-      keywords: l10n.discoverNotifyServersAliases,
-      pages: const ['notifications-settings'],
+      // "Background checks" was a page of its own until slice-close-misc;
+      // its words still find where each server's checks are turned on.
+      keywords:
+          '${l10n.discoverNotifyServersAliases} '
+          '${l10n.monitorBackgroundChecks} ${l10n.discoverMonitorAliases}',
+      pages: const ['notifications-settings', 'profile-monitor'],
       target: const SettingsSearchTarget(
         pageId: 'notifications-settings',
         sectionId: 'servers',
@@ -1359,23 +1362,6 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       pages: const ['local-agent-page'],
       gate: (scope) => !scope.platform.supportsTermux,
       open: _explainClaudeCodeGate,
-    ),
-    SearchEntry(
-      id: 'inside-servers-monitor',
-      kind: SearchEntryKind.insideSettings,
-      icon: AppIconography.notificationImportant,
-      title: l10n.monitorBackgroundChecks,
-      // A row of the Servers page (the hub's "Saved servers"), after the
-      // server list.
-      parent: l10n.activitySavedServers,
-      keywords: '${l10n.discoverMonitorAliases} ${l10n.monitorTitle}',
-      pages: const ['profile-monitor'],
-      gate: (scope) =>
-          !scope.controller.isIsolated &&
-          scope.controller.store.profiles.isNotEmpty,
-      open: _screen(
-        (scope) => ProfileMonitorScreen(controller: scope.controller),
-      ),
     ),
     SearchEntry(
       id: 'settings-add-server',

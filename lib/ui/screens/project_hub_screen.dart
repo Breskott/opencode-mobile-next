@@ -193,6 +193,17 @@ class _ProjectHubState extends State<ProjectHub> {
   bool _filesOpen = false;
   bool _opening = false;
 
+  /// The live lines under Changes and Terminal ("3 files changed", "1
+  /// running"): null until read, and left out when a read fails (the tool's
+  /// own page says why). No timer polls them: they are read when the tab
+  /// opens, when the project changes, when a tool closes and when the last
+  /// running conversation finishes, since that is when files change.
+  int? _changedFiles;
+  int? _runningTerminals;
+  int _statusGeneration = 0;
+  (String?, int, String?)? _statusScope;
+  bool _wasBusy = false;
+
   /// The hub's order: Changes first; Search is Files' own field.
   static const _hubOrder = [
     ProjectTool.changes,
@@ -210,6 +221,76 @@ class _ProjectHubState extends State<ProjectHub> {
     widget.focusSearchSignal?.addListener(_searchFiles);
     widget.openFilesSignal?.addListener(_openFiles);
     widget.backController?._handler = _handleBack;
+    widget.controller.addListener(_followConnection);
+    _wasBusy = widget.controller.busySessions.isNotEmpty;
+    _followConnection();
+  }
+
+  /// Reads the live lines again when the server, location or project
+  /// changed, or when the last busy conversation went idle.
+  void _followConnection() {
+    if (!mounted) return;
+    final controller = widget.controller;
+    final scope = (
+      controller.profile?.id,
+      controller.locationRevision,
+      controller.directory,
+    );
+    final busy = controller.busySessions.isNotEmpty;
+    final finished = _wasBusy && !busy;
+    _wasBusy = busy;
+    if (scope != _statusScope) {
+      _statusScope = scope;
+      _changedFiles = null;
+      _runningTerminals = null;
+      unawaited(_readStatus());
+    } else if (finished) {
+      unawaited(_readStatus());
+    }
+  }
+
+  Future<void> _readStatus() async {
+    final controller = widget.controller;
+    final generation = ++_statusGeneration;
+    final repository = controller.repository;
+    final directory = controller.directory;
+    if (!controller.isConnected ||
+        repository == null ||
+        directory == null ||
+        directory.isEmpty) {
+      return;
+    }
+    final capabilities = controller.capabilities;
+    bool current() =>
+        mounted &&
+        generation == _statusGeneration &&
+        identical(controller.repository, repository);
+    Future<int?> count(Future<int> Function() read) async {
+      try {
+        return await read();
+      } catch (_) {
+        // The row keeps its title only; the tool itself says what failed.
+        return null;
+      }
+    }
+
+    final results = await Future.wait([
+      capabilities.fileBrowsing
+          ? count(() async => (await repository.listFileStatuses()).length)
+          : Future<int?>.value(),
+      capabilities.terminal
+          ? count(
+              () async => (await repository.listTerminals())
+                  .where((terminal) => terminal.running)
+                  .length,
+            )
+          : Future<int?>.value(),
+    ]);
+    if (!current()) return;
+    setState(() {
+      _changedFiles = results[0];
+      _runningTerminals = results[1];
+    });
   }
 
   @override
@@ -227,6 +308,12 @@ class _ProjectHubState extends State<ProjectHub> {
       oldWidget.backController?._handler = null;
       widget.backController?._handler = _handleBack;
     }
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_followConnection);
+      widget.controller.addListener(_followConnection);
+      _statusScope = null;
+      _followConnection();
+    }
   }
 
   @override
@@ -234,6 +321,7 @@ class _ProjectHubState extends State<ProjectHub> {
     widget.focusSearchSignal?.removeListener(_searchFiles);
     widget.openFilesSignal?.removeListener(_openFiles);
     widget.backController?._handler = null;
+    widget.controller.removeListener(_followConnection);
     _focusFilesSearch.dispose();
     super.dispose();
   }
@@ -276,8 +364,12 @@ class _ProjectHubState extends State<ProjectHub> {
     }
   }
 
-  Future<void> _openTool(ProjectTool tool) =>
-      _guard(() => openProjectTool(context, widget.controller, tool));
+  /// Opens [tool]; coming back reads the live lines again, since Changes
+  /// and Terminal are where they change.
+  Future<void> _openTool(ProjectTool tool) => _guard(() async {
+    await openProjectTool(context, widget.controller, tool);
+    if (mounted) unawaited(_readStatus());
+  });
 
   /// Chooses a project: the Projects list (select one, create or open a
   /// folder), where the hub used to only say that none was open (map
@@ -443,9 +535,9 @@ class _ProjectHubState extends State<ProjectHub> {
     );
   }
 
-  /// Title-only rows until each tool has a live line to show ("3
-  /// changed", "1 running"); Project health keeps one line saying what it
-  /// checks, since its name does not.
+  /// Changes and Terminal carry a live line once read ("3 files changed",
+  /// "1 running"); the rest are titles, and Project health keeps one line
+  /// saying what it checks, since its name does not.
   Widget _toolRow(
     BuildContext context,
     AppLocalizations l10n,
@@ -461,6 +553,10 @@ class _ProjectHubState extends State<ProjectHub> {
       tool,
       icon: AppIconography.review,
       title: l10n.readerUiChanges,
+      subtitle: switch (_changedFiles) {
+        final count? => l10n.projectHubChangedFiles(count),
+        null => null,
+      },
       onTap: () => _openTool(tool),
     ),
     ProjectTool.terminal when !widget.controller.capabilities.terminal =>
@@ -475,6 +571,10 @@ class _ProjectHubState extends State<ProjectHub> {
       tool,
       icon: AppIconography.terminal,
       title: l10n.libraryTerminalTitle,
+      subtitle: switch (_runningTerminals) {
+        final count? when count > 0 => l10n.projectHubTerminalsRunning(count),
+        _ => null,
+      },
       onTap: () => _openTool(tool),
     ),
     ProjectTool.health => _row(

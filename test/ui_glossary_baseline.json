@@ -788,38 +788,14 @@
     "modelChoiceReloadProviders": {
       "verb Reload": 1
     },
-    "monitorChecking": {
-      "noun label attention": 1
-    },
-    "monitorDisabled": {
-      "noun label attention": 1
-    },
-    "monitorNoServers": {
-      "noun sentence attention": 1
-    },
     "monitorNotifications": {
-      "noun sentence attention": 1
-    },
-    "monitorPaused": {
       "noun sentence attention": 1
     },
     "monitorPendingSummary": {
       "noun sentence attention": 1
     },
-    "monitorTitle": {
-      "noun label attention": 1
-    },
-    "monitorUnavailable": {
-      "noun sentence attention": 1
-    },
     "monitorUnknownServers": {
       "noun label attention": 1
-    },
-    "monitorWaiting": {
-      "noun sentence attention": 1
-    },
-    "monitorWifiRequired": {
-      "noun sentence attention": 1
     },
     "notifyBlockedTitle": {
       "title over four words": 1
@@ -874,9 +850,6 @@
     },
     "quotaBudgetOptIn": {
       "noun label attention": 1
-    },
-    "quotaCodexAccount": {
-      "product name Codex": 1
     },
     "returnBriefContinue": {
       "bare Continue": 1

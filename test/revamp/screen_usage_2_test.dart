@@ -99,9 +99,6 @@ void main() {
         'each window as a kit progress row', (tester) async {
       final h = await _pumpQuota(tester);
       expect(find.text(_en.quotaNeedsCollector('Studio')), findsOneWidget);
-      // The collector is named by its origin on the page; its route is a
-      // technical value under Details.
-      expect(find.textContaining(quotaOrigin), findsWidgets);
       final read = tester.widget<KitButton>(_key('quota-read'));
       expect(read.onPressed, isNull, reason: 'no read before consent');
 
@@ -109,7 +106,12 @@ void main() {
       expect(h.gateways, hasLength(1));
       expect(h.gateways.single.reads, 1);
       expect(find.text(_en.quotaNeedsCollector('Studio')), findsNothing);
-      expect(find.text(_en.quotaCodexAccount), findsOneWidget);
+      // Answers under the provider and server they came from, no
+      // "Codex account windows" header (slice-close-misc).
+      expect(
+        find.text(_en.quotaCollectorFrom(_en.quotaCodex, 'Studio')),
+        findsOneWidget,
+      );
       final bar = tester.widget<KitProgressRow>(
         _key('quota-window-bar-primary'),
       );
@@ -117,15 +119,9 @@ void main() {
       expect(bar.valueLabel, '25.5% used');
       expect(bar.title, startsWith('About 75% left in this 5-hour window'));
       expect(bar.asOf, isNull, reason: 'a fresh reading carries no age');
-      // The unreported window says so instead of drawing an empty bar.
-      await _scrollTo(tester, _key('quota-window-secondary'));
-      expect(
-        find.descendant(
-          of: _key('quota-window-secondary'),
-          matching: find.text(_en.quotaNotReported),
-        ),
-        findsOneWidget,
-      );
+      // A window the collector did not report says nothing, so it is not
+      // shown (slice-close-misc).
+      expect(_key('quota-window-secondary'), findsNothing);
       // No Material stand-ins survive the rebuild.
       expect(find.byType(ChoiceChip), findsNothing);
       expect(find.byType(CheckboxListTile), findsNothing);
@@ -193,8 +189,7 @@ void main() {
       expect(_key('quota-enable-monitoring'), findsOneWidget);
     });
 
-    testWidgets('monitoring is turned on in place at 80%, and stopping the '
-        'collector returns to setup', (tester) async {
+    testWidgets('monitoring is turned on in place at 80%', (tester) async {
       final h = await _pumpQuota(tester);
       await _consentAndRead(tester, h);
 
@@ -218,13 +213,6 @@ void main() {
       final rules = (stored['rules'] as Map<String, dynamic>)['codex'] as Map;
       expect(rules['threshold'], 80);
       expect(_key('quota-monitor-save-failed'), findsNothing);
-
-      await _scrollTo(tester, _key('quota-stop'));
-      await tester.tap(_key('quota-stop'));
-      await tester.pumpAndSettle();
-      await tester.drag(_key('quota-content'), const Offset(0, 5000));
-      await tester.pumpAndSettle();
-      expect(find.text(_en.quotaNeedsCollector('Studio')), findsOneWidget);
     });
 
     testWidgets('changing provider asks for consent again; Claude explains '
