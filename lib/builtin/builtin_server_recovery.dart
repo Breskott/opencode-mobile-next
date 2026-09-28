@@ -277,7 +277,7 @@ class BuiltinServerRecovery extends ChangeNotifier {
       _publish(BuiltinRecoveryPhase.checking, budget);
       final status = await linux.status();
       if (!_eligible(phone, generation)) return;
-      starter.observeInstalled(status.installed);
+      starter.observeStatus(status);
       if (!status.installed ||
           !status.serverRestartWanted ||
           status.serverRecoveryGeneration == null) {

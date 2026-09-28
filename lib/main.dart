@@ -1973,8 +1973,9 @@ class _RootState extends ConsumerState<_Root> {
       // Until the launch start has had its turn, nothing here is a verdict:
       // no "stopped" page flashes before "Starting…" (QA B7).
       _autoStartPending = true;
+      final retry = _retrying;
       WidgetsBinding.instance.addPostFrameCallback(
-        (_) => unawaited(_autoStartThenConnect(profile)),
+        (_) => unawaited(_autoStartThenConnect(profile, retry: retry)),
       );
       return;
     }
@@ -1985,12 +1986,20 @@ class _RootState extends ConsumerState<_Root> {
   /// had its turn.
   bool _autoStartPending = false;
 
+  /// Set only while Try again calls [_connectSaved].
+  bool _retrying = false;
+
   /// Launch joins the same foreground recovery owner as resume and polling,
   /// then starts a stopped server the person did not stop themselves
   /// ([PhoneServerHealing.startForLaunch]) and connects.
-  Future<void> _autoStartThenConnect(ServerProfile profile) async {
+  Future<void> _autoStartThenConnect(
+    ServerProfile profile, {
+    bool retry = false,
+  }) async {
     try {
-      await ref.read(phoneServerHealingProvider).startForLaunch(profile);
+      await ref
+          .read(phoneServerHealingProvider)
+          .startForLaunch(profile, retry: retry);
     } finally {
       if (mounted) setState(() => _autoStartPending = false);
     }
@@ -2041,7 +2050,16 @@ class _RootState extends ConsumerState<_Root> {
     // While the launch start is pending, an early refused connect or a
     // first failed try is not the answer yet: the page keeps connecting.
     final pending = _autoStartPending && looksLikeInAppServer(profile);
-    final error = pending
+    // The in-app OpenCode process runs but the connect failed (a busy phone
+    // right after boot): it is not "stopped". Say it is not answering, as
+    // the status line does, while the healing owner keeps reconnecting.
+    final runningSilent =
+        !pending &&
+        inApp &&
+        startFailure == null &&
+        conn.lastError != null &&
+        _builtin.runningFor(profile);
+    final error = pending || runningSilent
         ? null
         : startFailure != null
         ? l10n.builtinServerStartFailed(startFailure.reason(l10n))
@@ -2059,9 +2077,10 @@ class _RootState extends ConsumerState<_Root> {
       // The controller's one eight-second clock, shared with every status
       // line; `since` is set once an attempt actually began (P4.4).
       notAnswering:
+          runningSilent ||
           !pending &&
-          status.phase == ConnectionStatusPhase.notAnswering &&
-          status.since != null,
+              status.phase == ConnectionStatusPhase.notAnswering &&
+              status.since != null,
       inAppServer: inApp,
       startingInAppServer: inApp && _builtin.starting,
       inAppStartFailed: !pending && startFailure != null,
@@ -2111,7 +2130,9 @@ class _RootState extends ConsumerState<_Root> {
       onRetry: () {
         _builtin.clearFailure();
         _started = false;
+        _retrying = true;
         _connectSaved();
+        _retrying = false;
       },
     );
     // A KitScreen, so the app's line (a share waiting for this server)

@@ -31,6 +31,7 @@ class BuiltinLinuxStatus {
     this.serverRunning = false,
     this.serverRestartWanted = false,
     this.serverRecoveryGeneration,
+    this.serverUptime,
     this.serverPort,
     this.abi = '',
     this.bytesUsed,
@@ -46,6 +47,7 @@ class BuiltinLinuxStatus {
       serverRunning = false,
       serverRestartWanted = false,
       serverRecoveryGeneration = null,
+      serverUptime = null,
       serverPort = null,
       abi = '',
       bytesUsed = null,
@@ -61,6 +63,10 @@ class BuiltinLinuxStatus {
       serverRunning: map['serverRunning'] == true,
       serverRestartWanted: map['serverRestartWanted'] == true,
       serverRecoveryGeneration: asInt(map['serverRecoveryGeneration']),
+      serverUptime: switch (asInt(map['serverUptimeMs'])) {
+        final int ms when ms >= 0 => Duration(milliseconds: ms),
+        _ => null,
+      },
       serverPort: asInt(map['serverPort']),
       abi: (map['abi'] ?? '').toString(),
       bytesUsed: asInt(map['bytesUsed']),
@@ -83,6 +89,10 @@ class BuiltinLinuxStatus {
 
   /// Admission token invalidated by pause, cancellation and manual actions.
   final int? serverRecoveryGeneration;
+
+  /// How long the app's own tracked OpenCode process has run; null when none
+  /// runs, or from an older APK that does not say.
+  final Duration? serverUptime;
   final int? serverPort;
   final String abi;
   final int? bytesUsed;

@@ -1,0 +1,93 @@
+Starting: Intent { cmp=io.github.eslamasabry.opencode_mobile/.MainActivity }
+--- t=4
+ 1828   372       00:02 221608 io.github.eslamasabry.opencode_mobile
+09-28 16:11:06.531  1828  1828 I flutter : OCTRACE mark app.main at=0.0ms
+09-28 16:11:06.652  1828  1828 I flutter : OCTRACE mark app.first_frame at=127ms
+--- t=7
+ 1828   372       00:05 246688 io.github.eslamasabry.opencode_mobile
+ 2244  1828       00:00   3580 libproot.so
+09-28 16:11:09.661  1828  1828 I flutter : OCTRACE 623ms linux.run label=write-password
+09-28 16:11:09.752  1828  1828 I flutter : OCTRACE 86ms linux.restartServer
+09-28 16:11:09.784  1828  1828 I flutter : OCTRACE 14ms http probe GET /api/health cause=connectionError outcome=error
+--- t=11
+ 1828   372       00:09 252128 io.github.eslamasabry.opencode_mobile
+ 2244  1828       00:04   3580 libproot.so
+ 2249  2244       00:04  42624 opencode
+09-28 16:11:09.752  1828  1828 I flutter : OCTRACE 86ms linux.restartServer
+09-28 16:11:09.784  1828  1828 I flutter : OCTRACE 14ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:11.836  1828  1828 I flutter : OCTRACE 0.9ms http probe GET /api/health cause=connectionError outcome=error
+--- t=14
+ 1828   372       00:12 242940 io.github.eslamasabry.opencode_mobile
+09-28 16:11:11.836  1828  1828 I flutter : OCTRACE 0.9ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:13.903  1828  1828 I flutter : OCTRACE 4.3ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:16.005  1828  1828 I flutter : OCTRACE mark app.main at=0.0ms
+--- t=17
+ 1828   372       00:15 255668 io.github.eslamasabry.opencode_mobile
+ 2650  1828       00:02   3584 libproot.so
+ 2656  2650       00:01  71296 opencode
+09-28 16:11:18.202  1828  1828 I flutter : OCTRACE 225ms linux.run label=write-password
+09-28 16:11:18.274  1828  1828 I flutter : OCTRACE 54ms linux.startServer
+09-28 16:11:18.315  1828  1828 I flutter : OCTRACE 1.8ms http probe GET /api/health cause=connectionError outcome=error
+--- t=20
+ 1828   372       00:19 255376 io.github.eslamasabry.opencode_mobile
+ 2650  1828       00:06   3712 libproot.so
+ 2656  2650       00:05 145464 opencode
+09-28 16:11:18.315  1828  1828 I flutter : OCTRACE 1.8ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:20.371  1828  1828 I flutter : OCTRACE 36ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:22.776  1828  1828 I flutter : OCTRACE 4.0ms http probe GET /api/health cause=connectionError outcome=error
+--- t=24
+ 1828   372       00:22 255376 io.github.eslamasabry.opencode_mobile
+ 2650  1828       00:09   3712 libproot.so
+ 2656  2650       00:08 194000 opencode
+09-28 16:11:20.371  1828  1828 I flutter : OCTRACE 36ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:22.776  1828  1828 I flutter : OCTRACE 4.0ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:24.838  1828  1828 I flutter : OCTRACE 2.0ms http probe GET /api/health cause=connectionError outcome=error
+--- t=27
+ 1828   372       00:25 255888 io.github.eslamasabry.opencode_mobile
+ 2650  1828       00:12   3712 libproot.so
+ 2656  2650       00:11 275344 opencode
+09-28 16:11:24.838  1828  1828 I flutter : OCTRACE 2.0ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:26.890  1828  1828 I flutter : OCTRACE 0.8ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:28.977  1828  1828 I flutter : OCTRACE 6.6ms http probe GET /api/health cause=connectionError outcome=error
+--- t=31
+ 1828   372       00:28 255888 io.github.eslamasabry.opencode_mobile
+ 2650  1828       00:15   3712 libproot.so
+ 2656  2650       00:14 297668 opencode
+   0: 0100007F:1001 00000000:0000 0A 00000000:00000000 00:00000000 00000000 10217        0 18623 1 0000000000000000 100 0 0 10 0                     
+   1: 0100007F:1001 0100007F:ECC0 01 00000000:00000000 00:00000000 00000000 10217        0 18647 1 0000000000000000 20 4 32 10 -1                    
+   2: 0100007F:ECC0 0100007F:1001 01 00000000:00000000 00:00000000 00000000 10217        0 18167 1 0000000000000000 20 0 0 10 -1                     
+09-28 16:11:24.838  1828  1828 I flutter : OCTRACE 2.0ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:26.890  1828  1828 I flutter : OCTRACE 0.8ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:28.977  1828  1828 I flutter : OCTRACE 6.6ms http probe GET /api/health cause=connectionError outcome=error
+--- t=34
+ 1828   372       00:32 255976 io.github.eslamasabry.opencode_mobile
+ 2650  1828       00:19   3712 libproot.so
+ 2656  2650       00:18 324336 opencode
+   0: 0100007F:1001 00000000:0000 0A 00000000:00000000 00:00000000 00000000 10217        0 18623 1 0000000000000000 100 0 0 10 0                     
+   1: 0100007F:1001 0100007F:ECC0 01 00000000:00000000 00:00000000 00000000 10217        0 18647 1 0000000000000000 20 4 32 10 -1                    
+   2: 0100007F:ECC0 0100007F:1001 01 00000000:00000000 00:00000000 00000000 10217        0 18167 1 0000000000000000 20 0 0 10 -1                     
+09-28 16:11:24.838  1828  1828 I flutter : OCTRACE 2.0ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:26.890  1828  1828 I flutter : OCTRACE 0.8ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:28.977  1828  1828 I flutter : OCTRACE 6.6ms http probe GET /api/health cause=connectionError outcome=error
+--- t=37
+ 1828   372       00:35 256104 io.github.eslamasabry.opencode_mobile
+ 2650  1828       00:22   3712 libproot.so
+ 2656  2650       00:21 324464 opencode
+   0: 0100007F:1001 00000000:0000 0A 00000000:00000000 00:00000000 00000000 10217        0 18623 1 0000000000000000 100 0 0 10 0                     
+   1: 0100007F:ECC0 0100007F:1001 06 00000000:00000000 03:00001723 00000000     0        0 0 3 0000000000000000                                      
+09-28 16:11:26.890  1828  1828 I flutter : OCTRACE 0.8ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:28.977  1828  1828 I flutter : OCTRACE 6.6ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:11:39.072  1828  1828 I flutter : OCTRACE 8013ms http probe GET /api/health cause=receiveTimeout outcome=error
+--- t=40
+ 1828   372       00:38 260444 io.github.eslamasabry.opencode_mobile
+ 2650  1828       00:25   3712 libproot.so
+ 2656  2650       00:24 362300 opencode
+   0: 0100007F:1001 00000000:0000 0A 00000000:00000001 00:00000000 00000000 10217        0 18623 2 0000000000000000 100 0 0 10 0                     
+   1: 0100007F:1001 0100007F:A3E4 01 00000000:00000000 00:00000000 00000000 10217        0 19592 1 0000000000000000 20 4 32 10 -1                    
+   2: 0100007F:1001 0100007F:A3C0 01 00000000:00000000 00:00000000 00000000 10217        0 19196 1 0000000000000000 23 4 32 10 -1                    
+09-28 16:11:42.916  1828  1828 I flutter : OCTRACE 787ms http oc1 GET /experimental/session status=200 bytes=503
+09-28 16:11:43.011  1828  1828 I flutter : OCTRACE 84ms http oc1 GET /session/status status=200 bytes=2
+09-28 16:11:43.057  1828  1828 I flutter : OCTRACE 67ms http probe GET /api/health status=200 bytes=16
+--- t=43
+adb: device 'emulator-5554' not found
+DEVICE-GONE

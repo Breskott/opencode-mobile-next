@@ -405,6 +405,7 @@ class MainActivity : FlutterActivity() {
                     "serverRestartWanted" to linux.serverRestartWanted,
                     "serverRecoveryGeneration" to linux.serverRecoveryGeneration,
                     "serverPort" to linux.port,
+                    "serverUptimeMs" to linux.serverUptimeMs,
                     "services" to linux.runningServices(),
                     "abi" to (Build.SUPPORTED_ABIS.firstOrNull() ?: ""),
                     "bytesUsed" to linux.bytesUsed(),
