@@ -8,6 +8,7 @@ import 'kit_bidi.dart';
 import 'kit_copy.dart';
 import 'kit_layout.dart';
 import 'kit_motion.dart';
+import 'kit_tappable.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
 
@@ -265,7 +266,15 @@ class KitButton extends StatelessWidget {
         redact: redact,
       );
     }
+    // A touch shows the pressed state on the next frame (KitPressTracker),
+    // not after Material's tap-or-scroll wait; a quick tap still shows it.
+    return _KitPressBuilder(
+      enabled: onPressed != null && !working,
+      builder: _buildButton,
+    );
+  }
 
+  Widget _buildButton(BuildContext context, KitPressTracker press) {
     final tokens = KitTokens.of(context);
     final roles = tokens.roles;
     final still = KitMotion.reduced(context);
@@ -341,8 +350,16 @@ class KitButton extends StatelessWidget {
     // an enabled callback becomes a no-op so the fill stays the enabled
     // colour (never partial opacity, C21 f) instead of reading as disabled.
     // A caller that passes null while working stays disabled, as before.
+    final onPressed = this.onPressed;
     final inFlight = working && onPressed != null;
-    final effectiveOnPressed = inFlight ? () {} : onPressed;
+    final VoidCallback? effectiveOnPressed = inFlight
+        ? () {}
+        : onPressed == null
+        ? null
+        : () {
+            press.confirm();
+            onPressed();
+          };
     // LOOK-21, LAY-10: keyboard focus draws a ring inside the button's own
     // shape, in a colour that reads on its fill (accent on the quiet
     // buttons; the fill's own foreground on a filled primary).
@@ -359,20 +376,49 @@ class KitButton extends StatelessWidget {
             )
           : null,
     );
+    // The pressed state layer is the button's own foreground at 16 %
+    // (Material's pressed overlay is 10 %; without its ripple on top that
+    // is too faint to read as an answer on a phone), painted under the
+    // label from the tracker; Material's splash and its delayed pressed
+    // highlight are off.
+    final pressedLayer = switch (role) {
+      KitButtonRole.primary =>
+        destructive ? roles.onDangerFill : roles.onAccent,
+      KitButtonRole.secondary => destructive ? roles.danger : roles.text1,
+      KitButtonRole.tertiary => destructive ? roles.danger : roles.accent,
+    }.withValues(alpha: 0.16);
+    final showPressed = press.shown && onPressed != null && !working;
+    ButtonStyle pressable(ButtonStyle style) => style.copyWith(
+      side: ring,
+      splashFactory: NoSplash.splashFactory,
+      overlayColor: WidgetStateProperty.resolveWith(
+        (states) =>
+            states.contains(WidgetState.pressed) ? Colors.transparent : null,
+      ),
+      backgroundBuilder: (context, states, child) => DecoratedBox(
+        decoration: ShapeDecoration(
+          shape: shape,
+          color: showPressed ? pressedLayer : Colors.transparent,
+        ),
+        child: child,
+      ),
+    );
     Widget result;
     switch (role) {
       case KitButtonRole.primary:
         // Destructive is primary only where the whole sheet or screen is
         // that one confirmed act (design standard §2): the one red fill.
-        final style = FilledButton.styleFrom(
-          minimumSize: minimum,
-          shape: shape,
-          elevation: 0,
-          backgroundColor: destructive ? roles.dangerFill : roles.accent,
-          foregroundColor: destructive ? roles.onDangerFill : roles.onAccent,
-          disabledBackgroundColor: roles.surface3,
-          disabledForegroundColor: roles.text3,
-        ).copyWith(side: ring);
+        final style = pressable(
+          FilledButton.styleFrom(
+            minimumSize: minimum,
+            shape: shape,
+            elevation: 0,
+            backgroundColor: destructive ? roles.dangerFill : roles.accent,
+            foregroundColor: destructive ? roles.onDangerFill : roles.onAccent,
+            disabledBackgroundColor: roles.surface3,
+            disabledForegroundColor: roles.text3,
+          ),
+        );
         result = leading == null
             ? FilledButton(
                 onPressed: effectiveOnPressed,
@@ -386,15 +432,17 @@ class KitButton extends StatelessWidget {
                 label: labelWidget,
               );
       case KitButtonRole.secondary:
-        final style = FilledButton.styleFrom(
-          minimumSize: minimum,
-          shape: shape,
-          elevation: 0,
-          backgroundColor: roles.surface3,
-          foregroundColor: destructive ? roles.danger : roles.text1,
-          disabledBackgroundColor: roles.surface3,
-          disabledForegroundColor: roles.text3,
-        ).copyWith(side: ring);
+        final style = pressable(
+          FilledButton.styleFrom(
+            minimumSize: minimum,
+            shape: shape,
+            elevation: 0,
+            backgroundColor: roles.surface3,
+            foregroundColor: destructive ? roles.danger : roles.text1,
+            disabledBackgroundColor: roles.surface3,
+            disabledForegroundColor: roles.text3,
+          ),
+        );
         result = leading == null
             ? FilledButton.tonal(
                 onPressed: effectiveOnPressed,
@@ -408,15 +456,17 @@ class KitButton extends StatelessWidget {
                 label: labelWidget,
               );
       case KitButtonRole.tertiary:
-        final style = TextButton.styleFrom(
-          minimumSize: minimum,
-          shape: shape,
-          padding: EdgeInsets.symmetric(horizontal: tokens.space2),
-          // Enabled words are the accent, so an inline action never reads
-          // as disabled beside muted text; disabled stays text3 (R5).
-          foregroundColor: destructive ? roles.danger : roles.accent,
-          disabledForegroundColor: roles.text3,
-        ).copyWith(side: ring);
+        final style = pressable(
+          TextButton.styleFrom(
+            minimumSize: minimum,
+            shape: shape,
+            padding: EdgeInsets.symmetric(horizontal: tokens.space2),
+            // Enabled words are the accent, so an inline action never reads
+            // as disabled beside muted text; disabled stays text3 (R5).
+            foregroundColor: destructive ? roles.danger : roles.accent,
+            disabledForegroundColor: roles.text3,
+          ),
+        );
         result = leading == null
             ? TextButton(
                 onPressed: effectiveOnPressed,
@@ -521,6 +571,37 @@ class _Spinner extends StatelessWidget {
       // one (a track would close it into a ring).
       backgroundColor: Colors.transparent,
     ),
+  );
+}
+
+/// Holds a [KitButton]'s press (KitPressTracker) and rebuilds the button
+/// when it shows or clears; KitButton itself stays stateless.
+class _KitPressBuilder extends StatefulWidget {
+  const _KitPressBuilder({required this.enabled, required this.builder});
+
+  final bool enabled;
+  final Widget Function(BuildContext context, KitPressTracker press) builder;
+
+  @override
+  State<_KitPressBuilder> createState() => _KitPressBuilderState();
+}
+
+class _KitPressBuilderState extends State<_KitPressBuilder> {
+  late final _press = KitPressTracker(() {
+    if (mounted) setState(() {});
+  });
+
+  @override
+  void dispose() {
+    _press.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => _press.listen(
+    context: context,
+    enabled: widget.enabled,
+    child: widget.builder(context, _press),
   );
 }
 

@@ -37,6 +37,13 @@ abstract final class KitMotion {
   /// KitStateView.md; MOT-1, kit-v2 G9 "escalate after 8 s").
   static const escalateAfter = Duration(seconds: 8);
 
+  /// The least time a press stays visible, so a quick tap (finger down and
+  /// up between two frames) still shows its pressed fill (KitPressTracker;
+  /// Android's pressed-state duration is 64 ms, this seam rounds up so the
+  /// fill registers). A state, not a movement: it holds under reduced
+  /// motion too, where the fill still appears and clears instantly.
+  static const pressHold = Duration(milliseconds: 100);
+
   /// How long an undo stays offered (KitReceipt.md, KitUndo.md: 8 s).
   static const undoWindow = Duration(seconds: 8);
 

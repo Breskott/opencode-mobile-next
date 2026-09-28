@@ -7,6 +7,7 @@ import 'kit_bidi.dart';
 import 'kit_buttons.dart';
 import 'kit_motion.dart';
 import 'kit_since.dart';
+import 'kit_tappable.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
 
@@ -476,10 +477,16 @@ class _TapTarget extends StatefulWidget {
 
 class _TapTargetState extends State<_TapTarget> {
   final WidgetStatesController _states = WidgetStatesController();
+  // The pressed fill answers a touch on the next frame (KitPressTracker);
+  // the InkWell's own highlight waits for the tap-or-scroll timeout.
+  late final _press = KitPressTracker(() {
+    if (mounted) setState(() {});
+  });
 
   @override
   void dispose() {
     _states.dispose();
+    _press.dispose();
     super.dispose();
   }
 
@@ -503,17 +510,31 @@ class _TapTargetState extends State<_TapTarget> {
         ),
         child: child,
       ),
-      child: InkWell(
-        onTap: widget.onTap,
-        statesController: _states,
-        borderRadius: radius,
-        hoverColor: roles.surface2,
-        focusColor: Colors.transparent,
-        highlightColor: roles.surface3,
-        splashFactory: NoSplash.splashFactory,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: tokens.minTarget),
-          child: widget.child,
+      child: _press.listen(
+        context: context,
+        enabled: true,
+        child: InkWell(
+          onTap: () {
+            _press.confirm();
+            widget.onTap();
+          },
+          onTapCancel: _press.cancel,
+          statesController: _states,
+          borderRadius: radius,
+          hoverColor: roles.surface2,
+          focusColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          splashFactory: NoSplash.splashFactory,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: _press.shown ? roles.surface3 : null,
+              borderRadius: radius,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: tokens.minTarget),
+              child: widget.child,
+            ),
+          ),
         ),
       ),
     );

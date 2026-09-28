@@ -5,6 +5,7 @@ import 'package:xterm/core.dart' as xterm;
 
 import '../../l10n/app_localizations.dart';
 import 'kit_layout.dart';
+import 'kit_tappable.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
 
@@ -456,11 +457,17 @@ class _Key extends StatefulWidget {
 
 class _KeyState extends State<_Key> {
   bool _hovered = false;
-  bool _pressed = false;
   bool _focused = false;
+  // The cap answers a touch on the next frame (KitPressTracker), and a
+  // quick tap still shows it.
+  late final _press = KitPressTracker(() {
+    if (mounted) setState(() {});
+  });
 
-  void _press(bool down) {
-    if (_pressed != down) setState(() => _pressed = down);
+  @override
+  void dispose() {
+    _press.dispose();
+    super.dispose();
   }
 
   @override
@@ -476,7 +483,7 @@ class _KeyState extends State<_Key> {
         ? roles.surface3
         : on
         ? roles.accent
-        : _hovered || _pressed
+        : _hovered || _press.shown
         ? Color.alphaBlend(roles.hairline, roles.surface3)
         : roles.surface3;
     final tone = !enabled
@@ -507,36 +514,43 @@ class _KeyState extends State<_Key> {
             },
           ),
         },
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          onTapDown: enabled ? (_) => _press(true) : null,
-          onTapUp: enabled ? (_) => _press(false) : null,
-          onTapCancel: enabled ? () => _press(false) : null,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: fill,
-              borderRadius: BorderRadius.circular(tokens.buttonRadius),
-              // Drawn inside the cap, so no parent clip cuts it (LOOK-21).
-              border: _focused && enabled
-                  ? Border.all(
-                      color: roles.accent,
-                      width: KitTokens.focusRingWidth(context),
-                    )
-                  : null,
-            ),
-            child: Center(
-              // Caps stop growing at 1.3x so "PgDn" fits a 48 dp key; the
-              // key's full name is in its semantics (A11Y-8).
-              child: MediaQuery.withClampedTextScaling(
-                maxScaleFactor: KitTokens.terminalKeyMaxTextScale,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: KitText(
-                    widget.face,
-                    role: KitTextRole.mono,
-                    tone: tone,
-                    maxLines: 1,
+        child: _press.listen(
+          context: context,
+          enabled: enabled,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap == null
+                ? null
+                : () {
+                    _press.confirm();
+                    onTap();
+                  },
+            onTapCancel: enabled ? _press.cancel : null,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: fill,
+                borderRadius: BorderRadius.circular(tokens.buttonRadius),
+                // Drawn inside the cap, so no parent clip cuts it (LOOK-21).
+                border: _focused && enabled
+                    ? Border.all(
+                        color: roles.accent,
+                        width: KitTokens.focusRingWidth(context),
+                      )
+                    : null,
+              ),
+              child: Center(
+                // Caps stop growing at 1.3x so "PgDn" fits a 48 dp key; the
+                // key's full name is in its semantics (A11Y-8).
+                child: MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: KitTokens.terminalKeyMaxTextScale,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: KitText(
+                      widget.face,
+                      role: KitTextRole.mono,
+                      tone: tone,
+                      maxLines: 1,
+                    ),
                   ),
                 ),
               ),
