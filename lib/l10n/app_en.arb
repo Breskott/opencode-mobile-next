@@ -14579,6 +14579,14 @@
   "@effectsVibrationHint": {
     "description": "Vibration row, supporting line."
   },
+  "effectsGlassCrashOff": "Liquid glass was turned off after the app closed unexpectedly twice.",
+  "@effectsGlassCrashOff": {
+    "description": "Appearance › Effects: shown while liquid glass is paused because the app crashed twice with it on screen."
+  },
+  "effectsGlassCrashOn": "Turn it back on",
+  "@effectsGlassCrashOn": {
+    "description": "Appearance › Effects: action under the liquid glass paused line; turns liquid glass back on."
+  },
   "effectsSaveFailed": "Could not save this choice on this device. Try again.",
   "@effectsSaveFailed": {
     "description": "Effects: a choice could not be saved; it was put back."

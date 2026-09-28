@@ -6,6 +6,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../platform/app_exit.dart';
+
 /// Whether this device may run the liquid glass shader, and a guard for
 /// the devices where it takes the renderer down (emulator QA of build 2062,
 /// F1: the Android emulator's software renderer died, QEMU SIGSEGV, with
@@ -17,12 +19,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// - **A software or emulated renderer** (the Android emulator: QEMU,
 ///   ranchu or goldfish hardware, the emulation or SwiftShader EGL): no
 ///   liquid glass there at all.
-/// - **The last sessions died with liquid glass on screen.** While liquid
+/// - **The last sessions crashed with liquid glass on screen.** While liquid
 ///   glass is shown in the foreground a flag is set, and it is cleared when
-///   the app goes to the background. A launch that finds it still set
-///   counts a strike (the app or the device's renderer died mid-frame); two
-///   in a row turn liquid glass off for [offFor]. A long healthy session
-///   clears the strikes.
+///   the app goes to the background. A launch that finds it still set asks
+///   Android how the last process ended (`AppExitKind`) and counts a strike
+///   only for a real crash (or an "isn't responding"): a force-stop (a swipe
+///   from Recents on some phones), a low-memory kill or an update never
+///   count. Two strikes in a row turn liquid glass off for [offFor], and
+///   Appearance says so and offers to turn it back on ([turnBackOn]). A long
+///   healthy session clears the strikes.
 ///
 /// Real phones that run the shader well never see either: their look is
 /// unchanged.
@@ -44,6 +49,14 @@ abstract final class KitGlassSafety {
   /// The store; tests replace it.
   static Future<SharedPreferences> Function() store =
       SharedPreferences.getInstance;
+
+  /// How the previous process ended, or null when Android did not say; tests
+  /// replace it. (The launch report is read once per process natively, so
+  /// the exit notice still gets it.)
+  static Future<AppExitKind?> Function() readExit = _readExit;
+
+  /// True while liquid glass is off because of crashes; Appearance says so.
+  static final ValueNotifier<bool> turnedOffAfterCrashes = ValueNotifier(false);
 
   /// The clock; tests replace it.
   static DateTime Function() now = DateTime.now;
@@ -81,13 +94,25 @@ abstract final class KitGlassSafety {
       final prefs = await store();
       final off = prefs.getInt(offUntilKey);
       if (off != null) {
-        if (now().millisecondsSinceEpoch < off) return false;
+        if (now().millisecondsSinceEpoch < off) {
+          turnedOffAfterCrashes.value = true;
+          return false;
+        }
         await prefs.remove(offUntilKey);
       }
       if (prefs.getBool(activeKey) ?? false) {
-        final strikes = (prefs.getInt(strikesKey) ?? 0) + 1;
         await prefs.setBool(activeKey, false);
+        AppExitKind? kind;
+        try {
+          kind = await readExit();
+        } catch (_) {}
+        // Only a real crash is a strike; the person's own stop, Android's
+        // memory kill and an update are not the glass's doing.
+        final strikes =
+            (prefs.getInt(strikesKey) ?? 0) +
+            (kind == AppExitKind.crash ? 1 : 0);
         if (strikes >= 2) {
+          turnedOffAfterCrashes.value = true;
           await prefs.setInt(strikesKey, 0);
           await prefs.setInt(
             offUntilKey,
@@ -101,6 +126,18 @@ abstract final class KitGlassSafety {
       // No store (a test without one): nothing to guard.
     }
     return true;
+  }
+
+  /// The person turned liquid glass back on: forget the strikes and the
+  /// pause. Loading it is [KitGlassShader.turnLiquidBackOn]'s job.
+  static Future<void> turnBackOn() async {
+    turnedOffAfterCrashes.value = false;
+    try {
+      final prefs = await store();
+      await prefs.remove(offUntilKey);
+      await prefs.remove(strikesKey);
+      await prefs.setBool(activeKey, false);
+    } catch (_) {}
   }
 
   static AppLifecycleListener? _listener;
@@ -149,7 +186,12 @@ abstract final class KitGlassSafety {
     readProperties = _getprop;
     store = SharedPreferences.getInstance;
     now = DateTime.now;
+    readExit = _readExit;
+    turnedOffAfterCrashes.value = false;
   }
+
+  static Future<AppExitKind?> _readExit() async =>
+      (await AppLifecycleBridge().launchReport()).exit?.kind;
 
   static Future<Map<String, String>> _getprop() async {
     final result = await Process.run(

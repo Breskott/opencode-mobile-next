@@ -21738,6 +21738,18 @@ abstract class AppLocalizations {
   /// **'A light tick when you send, a soft one when something finishes'**
   String get effectsVibrationHint;
 
+  /// Appearance › Effects: shown while liquid glass is paused because the app crashed twice with it on screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Liquid glass was turned off after the app closed unexpectedly twice.'**
+  String get effectsGlassCrashOff;
+
+  /// Appearance › Effects: action under the liquid glass paused line; turns liquid glass back on.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn it back on'**
+  String get effectsGlassCrashOn;
+
   /// Effects: a choice could not be saved; it was put back.
   ///
   /// In en, this message translates to:

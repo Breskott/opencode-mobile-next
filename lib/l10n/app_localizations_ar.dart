@@ -13364,6 +13364,13 @@ class AppLocalizationsAr extends AppLocalizations {
       'نقرة خفيفة عند الإرسال وأخرى ناعمة عند انتهاء شيء';
 
   @override
+  String get effectsGlassCrashOff =>
+      'Liquid glass was turned off after the app closed unexpectedly twice.';
+
+  @override
+  String get effectsGlassCrashOn => 'Turn it back on';
+
+  @override
   String get effectsSaveFailed =>
       'تعذّر حفظ هذا الاختيار على هذا الجهاز. حاول مرة أخرى.';
 

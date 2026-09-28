@@ -13258,6 +13258,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'A light tick when you send, a soft one when something finishes';
 
   @override
+  String get effectsGlassCrashOff =>
+      'Liquid glass was turned off after the app closed unexpectedly twice.';
+
+  @override
+  String get effectsGlassCrashOn => 'Turn it back on';
+
+  @override
   String get effectsSaveFailed =>
       'Could not save this choice on this device. Try again.';
 

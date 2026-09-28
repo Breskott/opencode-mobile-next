@@ -80,6 +80,14 @@ abstract final class KitGlassShader {
     );
   }
 
+  /// The person turned liquid glass back on after crashes: clear the
+  /// strikes and load the shader now.
+  static Future<void> turnLiquidBackOn() async {
+    await KitGlassSafety.turnBackOn();
+    _loading = null;
+    ensureLoaded();
+  }
+
   static Future<ui.FragmentProgram?> _load() async {
     if (!await KitGlassSafety.allowed()) return null;
     return ui.FragmentProgram.fromAsset(asset);

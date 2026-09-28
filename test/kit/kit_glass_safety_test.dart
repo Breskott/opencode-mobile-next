@@ -4,6 +4,7 @@
 // it.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/platform/app_exit.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -68,6 +69,59 @@ void main() {
     setUp(() {
       clock = DateTime(2026, 9, 29, 9);
       KitGlassSafety.now = () => clock;
+      KitGlassSafety.readExit = () async => AppExitKind.crash;
+    });
+
+    for (final kind in [
+      AppExitKind.forceStop,
+      AppExitKind.lowMemory,
+      AppExitKind.update,
+      AppExitKind.killed,
+      AppExitKind.normal,
+      null,
+    ]) {
+      test('${kind?.name ?? 'no exit record'} is never a strike', () async {
+        KitGlassSafety.readExit = () async => kind;
+        SharedPreferences.setMockInitialValues({
+          KitGlassSafety.activeKey: true,
+        });
+        final prefs = await SharedPreferences.getInstance();
+        for (var i = 0; i < 4; i++) {
+          expect(await KitGlassSafety.allowed(), isTrue);
+          await prefs.setBool(KitGlassSafety.activeKey, true);
+        }
+        expect(prefs.getInt(KitGlassSafety.strikesKey) ?? 0, 0);
+        expect(prefs.getInt(KitGlassSafety.offUntilKey), isNull);
+        expect(KitGlassSafety.turnedOffAfterCrashes.value, isFalse);
+      });
+    }
+
+    test('an unreadable exit record is not a strike', () async {
+      KitGlassSafety.readExit = () => Future.error(StateError('no channel'));
+      SharedPreferences.setMockInitialValues({KitGlassSafety.activeKey: true});
+      expect(await KitGlassSafety.allowed(), isTrue);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt(KitGlassSafety.strikesKey) ?? 0, 0);
+    });
+
+    test('turning it back on clears the strikes and the pause', () async {
+      SharedPreferences.setMockInitialValues({KitGlassSafety.activeKey: true});
+      final prefs = await SharedPreferences.getInstance();
+      expect(await KitGlassSafety.allowed(), isTrue);
+      await prefs.setBool(KitGlassSafety.activeKey, true);
+      expect(await KitGlassSafety.allowed(), isFalse);
+      expect(KitGlassSafety.turnedOffAfterCrashes.value, isTrue);
+
+      await KitGlassSafety.turnBackOn();
+      expect(KitGlassSafety.turnedOffAfterCrashes.value, isFalse);
+      expect(prefs.getInt(KitGlassSafety.offUntilKey), isNull);
+      expect(prefs.getInt(KitGlassSafety.strikesKey), isNull);
+      expect(await KitGlassSafety.allowed(), isTrue);
+
+      // One more crash after turning it back on is a first strike again.
+      await prefs.setBool(KitGlassSafety.activeKey, true);
+      expect(await KitGlassSafety.allowed(), isTrue);
+      expect(prefs.getInt(KitGlassSafety.strikesKey), 1);
     });
 
     test('a clean start allows liquid glass', () async {
@@ -75,7 +129,7 @@ void main() {
       expect(await KitGlassSafety.allowed(), isTrue);
     });
 
-    test('one session that died with glass on screen is one strike, still '
+    test('one session that crashed with glass on screen is one strike, still '
         'allowed; a second in a row turns it off for a week', () async {
       SharedPreferences.setMockInitialValues({KitGlassSafety.activeKey: true});
       expect(await KitGlassSafety.allowed(), isTrue);
