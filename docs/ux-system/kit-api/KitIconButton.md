@@ -161,7 +161,7 @@ Only names that exist on `feat/visual-language-v1`, except where flagged:
 
 ## Accessibility
 
-- **Semantic label:** `Semantics(button: true, label: tooltip)`. The glyph is excluded from semantics.
+- **Semantic label:** `Semantics(container: true, button: true, label: tooltip)`. The glyph is excluded from semantics. It is always its own node: inside a tappable parent (a `KitRow`'s trailing action) it is never merged into the row, whose own tap and label stay on the row's node (2026-09-28, slice-bugfix-nonchat2).
 - **Hint:** `disabledReason` when disabled, otherwise `shortcut`. G14x compares the tooltip's label span with the semantic label, and they must be equal.
 - **Target:** 48×48 dp, with 8 dp from any neighbouring target's 48 dp area when `destructive` is set (LAY-9, G37).
 - **Toggle:** `toggled` semantics when `selected != null`.

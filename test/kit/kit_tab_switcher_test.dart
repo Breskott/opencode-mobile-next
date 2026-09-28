@@ -443,6 +443,87 @@ void main() {
       expect(find.text('Page C 1'), findsOneWidget);
     });
 
+    testWidgets('lazy builds only the chosen and preloaded destinations, '
+        'then keeps each one it built', (tester) async {
+      var index = 0;
+      late StateSetter set;
+      final built = <String>[];
+      Widget page(String name) => Builder(
+        builder: (context) {
+          built.add(name);
+          return _Page(name);
+        },
+      );
+      await tester.pumpWidget(
+        _host(
+          StatefulBuilder(
+            builder: (context, setState) {
+              set = setState;
+              return KitTabSwitcher(
+                index: index,
+                lazy: true,
+                preload: const {0},
+                children: [page('Work'), page('Inbox'), page('Settings')],
+              );
+            },
+          ),
+        ),
+      );
+      // Startup: the home destination only; the others are not built.
+      expect(built.toSet(), {'Work'});
+      expect(find.text('Inbox 0', skipOffstage: false), findsNothing);
+      expect(find.text('Settings 0', skipOffstage: false), findsNothing);
+      // The first visit builds it, visible from that frame on.
+      set(() => index = 2);
+      await tester.pump();
+      expect(built, contains('Settings'));
+      expect(find.text('Inbox 0', skipOffstage: false), findsNothing);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Settings 0'));
+      await tester.pump();
+      expect(find.text('Settings 1'), findsOneWidget);
+      // Leaving and coming back keeps its state (no rebuild from scratch).
+      set(() => index = 0);
+      await tester.pumpAndSettle();
+      expect(find.text('Settings 1', skipOffstage: false), findsOneWidget);
+      set(() => index = 2);
+      await tester.pumpAndSettle();
+      expect(find.text('Settings 1'), findsOneWidget);
+      expect(find.text('Inbox 0', skipOffstage: false), findsNothing);
+    });
+
+    testWidgets('lazy starts on a destination other than the preloaded one', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          KitTabSwitcher(
+            index: 1,
+            lazy: true,
+            preload: const {0},
+            children: const [_Page('Work'), _Page('Inbox'), _Page('Settings')],
+          ),
+        ),
+      );
+      expect(find.text('Inbox 0'), findsOneWidget);
+      expect(find.text('Work 0', skipOffstage: false), findsOneWidget);
+      expect(find.text('Settings 0', skipOffstage: false), findsNothing);
+    });
+
+    testWidgets('without lazy every destination is built at once', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          KitTabSwitcher(
+            index: 0,
+            children: const [_Page('Work'), _Page('Inbox')],
+          ),
+        ),
+      );
+      expect(find.text('Inbox 0', skipOffstage: false), findsOneWidget);
+    });
+
     test('.tabs with mismatched lengths asserts', () {
       expect(
         () => KitTabSwitcher.tabs(

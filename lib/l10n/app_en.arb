@@ -27131,5 +27131,31 @@
   "integrationsPageLoadFailed": "Could not load this page",
   "@integrationsPageLoadFailed": {
     "description": "Providers and MCP page: headline when more than one of its sections (providers, MCP servers, resources) failed to load; one Try again reloads them all"
+  },
+  "kitLastKnownRefreshing": "{updated} · Refreshing",
+  "@kitLastKnownRefreshing": {
+    "description": "KitLastKnown (slice-speed-ui): the label over remembered rows while a fresh read is under way; updated is how old the rows are (\"Updated 5m ago\").",
+    "placeholders": {
+      "updated": {
+        "type": "String"
+      }
+    }
+  },
+  "kitLastKnownHint": "Saved from last time. They open once the live list loads.",
+  "@kitLastKnownHint": {
+    "description": "KitLastKnown (slice-speed-ui): screen-reader hint on a group of remembered, read-only rows shown while the live list loads."
+  },
+  "lastKnownUpdatedJustNow": "Updated just now",
+  "@lastKnownUpdatedJustNow": {
+    "description": "Opening shell and Work (slice-speed-ui): remembered conversation titles were read less than a minute ago."
+  },
+  "lastKnownUpdatedAgo": "Updated {ago}",
+  "@lastKnownUpdatedAgo": {
+    "description": "Opening shell and Work (slice-speed-ui): how old the remembered conversation titles are; ago is a short relative age (\"5m ago\", \"3h ago\", or a date).",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -185,9 +185,10 @@ void main() {
     expect(firstFrame, 0);
     expect(healthStarted, 40);
     expect(connected, 120);
-    // Home mounts its Settings tab eagerly; SettingsScreen._checkHealth
-    // performs a second read after transport readiness, before SSE connects.
-    expect(api.healthCalls, 2);
+    // Home builds each destination on its first visit (slice-speed-ui):
+    // the hidden Settings tab no longer runs its own second health read
+    // before the event stream connects. Before that change this was 2.
+    expect(api.healthCalls, 1);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });

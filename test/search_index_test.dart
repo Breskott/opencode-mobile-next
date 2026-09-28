@@ -20,6 +20,7 @@ import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/desktop/shortcuts.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings/ai_setup_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/search/search_index.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -358,6 +359,60 @@ void main() {
         );
       },
     );
+
+    test('AI setup is found by name where the server shares its setup, '
+        'and absent where its row is', () async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      final found = searchEntries(_en, scope(controller), 'ai setup');
+      expect(found.first.id, 'inside-server-ai-setup');
+      expect(found.first.parent, _en.settingsHubThisServer);
+      expect(
+        _ids(searchEntries(_en, scope(controller), 'suggestions')),
+        contains('inside-server-ai-setup'),
+      );
+
+      final codex = await _controller(capabilities: codexServerCapabilities);
+      addTearDown(codex.dispose);
+      expect(
+        _ids(searchIndex(_en, scope(codex))),
+        isNot(contains('inside-server-ai-setup')),
+      );
+      // The server, not this device, hides it: the hub can say so.
+      final entry = allSearchEntries(
+        _en,
+      ).singleWhere((entry) => entry.id == 'inside-server-ai-setup');
+      expect(entry.hiddenByServer(scope(codex)), isTrue);
+    });
+
+    testWidgets('the AI setup result opens the AI setup page', (tester) async {
+      final controller = await tester.runAsync(_controller);
+      addTearDown(controller!.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => searchEntries(
+                _en,
+                scope(controller),
+                'AI setup',
+              ).first.open(context, scope(controller)),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(AiSetupScreen), findsOneWidget);
+      expect(
+        tester.widget<AiSetupScreen>(find.byType(AiSetupScreen)).serverName,
+        'Workstation',
+      );
+    });
 
     for (final backend in {
       'Codex': codexServerCapabilities,

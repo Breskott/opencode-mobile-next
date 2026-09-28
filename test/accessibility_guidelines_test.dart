@@ -302,7 +302,11 @@ void main() {
         ..directory = _project.directory;
       addTearDown(conn.dispose);
       await tester.pumpWidget(
-        _scoped(conn, ProjectHub(controller: conn), brightness),
+        // Hosted as the shell hosts it: on the page ground (a Scaffold, as
+        // the Activity and Settings tab cases). Bare, its header text sat on
+        // transparent pixels once the header's icon buttons became their own
+        // semantics nodes and the title was checked alone.
+        _scoped(conn, Scaffold(body: ProjectHub(controller: conn)), brightness),
       );
       await _settle(tester);
       await _expectAccessible(tester);

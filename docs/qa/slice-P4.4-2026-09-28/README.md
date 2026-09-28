@@ -155,3 +155,22 @@ Known, not changed here: the team home's in-list Now/heat line
 connection line in the slot the window draws two lines (KitScreen's debug
 check would flag it). Moving the Now block into the slot changes P5.1's
 decision to let it scroll with the list; left for the team owner.
+
+## Merge with slice-bugfix-nonchat2 and the speed UI (2026-09-28)
+
+nonchat2 had fixed the same duplicate root-connecting line with a private
+`_WithoutConnectionLine` scope in `main.dart`. The merge keeps **one**
+mechanism: `KitScreen.bodySays: {connection}` on the root page (the private
+scope is removed), plus the controller's single 8 s clock feeding the card's
+`notAnswering`. The speed-UI opening shell is kept as is: the card at
+`KitStateSize.inline` above the last-known titles (`LastKnownSessions`)
+when a cached inventory exists. The coord_main "share waiting" goldens
+were not regenerated in the merge: nonchat2's images and this slice's are
+byte-identical (the same fix), and they pass unchanged.
+
+After the merge these pass: product_ui_regression (incl. "persisted startup
+waits for reconnect"), revamp/coord_main_golden, opening_shell,
+work_last_known, share_routing, revamp/slice_p4_4, kit/kit_status_slot,
+saved_server_connection_card, work_tab_cleanup, kit/kit_composer and the
+gates (272 tests). home_navigation now passes whole. `flutter analyze`: no
+issues.

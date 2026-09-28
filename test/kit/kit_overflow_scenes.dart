@@ -1058,6 +1058,21 @@ final kitOverflowScenes = <KitOverflowScene>[
     build: (_, c) =>
         KitBottomInset(insets: const KitClearance(bottom: 80), child: _row(c)),
   ),
+  // kit_last_known.dart (slice-speed-ui): remembered titles, refreshing.
+  KitOverflowScene(
+    const ['KitLastKnown'],
+    'default',
+    build: (_, _) => const KitLastKnown(
+      updated: 'Updated 12m ago',
+      rows: [
+        KitLastKnownRow(
+          title: 'Release notes for 1.0.45 and the store listing copy',
+          detail: '1h ago',
+        ),
+        KitLastKnownRow(title: 'New conversation'),
+      ],
+    ),
+  ),
   KitOverflowScene(
     const ['KitSince'],
     'default',
