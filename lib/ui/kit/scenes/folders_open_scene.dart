@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../kit_illustration.dart';
+import '../kit_motion.dart';
 
 /// A folder opening (design standard §10), for a folder with nothing in it
 /// yet: the back of the folder draws itself, a folded sheet rises out of
@@ -91,7 +92,7 @@ class KitFoldersOpenScene extends KitScene {
       KitDraw.pen(palette.muted),
     );
 
-    final rise = KitDraw.interval(t, .3, .7, Curves.easeOutCubic);
+    final rise = KitDraw.interval(t, .3, .7, KitMotion.enter);
     if (rise > 0) {
       canvas.save();
       canvas.translate(0, 14 * (1 - rise));
@@ -104,7 +105,7 @@ class KitFoldersOpenScene extends KitScene {
       canvas.restore();
     }
 
-    final swing = KitDraw.interval(t, .45, .9, Curves.easeOutBack);
+    final swing = KitDraw.interval(t, .45, .9, KitMotion.land);
     if (swing > 0) {
       canvas.save();
       // Hinged at the bottom edge: it tips up into place.
@@ -118,7 +119,7 @@ class KitFoldersOpenScene extends KitScene {
       canvas.restore();
     }
 
-    final land = KitDraw.interval(t, .75, 1, Curves.easeOutBack);
+    final land = KitDraw.interval(t, .75, 1, KitMotion.land);
     if (land > 0) {
       canvas.drawCircle(_spark, 4.5 * land, KitDraw.fill(palette.accent));
       final ray = KitDraw.pen(

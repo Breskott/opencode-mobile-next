@@ -20,7 +20,6 @@ import '../../state/phone_host.dart' show PhoneHostKind;
 import '../../state/profiles.dart';
 import '../../termux/bridge.dart';
 import '../app_theme.dart';
-import '../desktop/desktop_interaction.dart';
 import '../early_l10n.dart';
 import '../kit/kit.dart';
 import '../theme_packs.dart';
@@ -616,7 +615,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Not a lazy list: every group must exist for an entry point to scroll
     // to it, and the hub is a few dozen plain rows. One Column child keeps
     // them all laid out inside the scroll view.
-    Widget hubList({required bool scrollTargets}) => DesktopScrollbarArea(
+    Widget hubList({required bool scrollTargets}) => KitScrollArea(
       builder: (scrollController) => ListView(
         key: const ValueKey('settings-hub-list'),
         controller: scrollController,

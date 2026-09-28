@@ -40,7 +40,7 @@ class TeamDiscoverTeaserScene extends KitScene {
       (_left, 0.0, const Offset(.8, -.7)),
       (_right, .12, const Offset(-.8, -.7)),
     ]) {
-      final rise = KitDraw.interval(t, begin, begin + .45, Curves.easeOutBack);
+      final rise = KitDraw.interval(t, begin, begin + .45, KitMotion.land);
       TeamCast.agent(
         canvas,
         p,
@@ -54,8 +54,8 @@ class TeamDiscoverTeaserScene extends KitScene {
       );
     }
 
-    final lift = KitDraw.interval(t, .45, .85, Curves.easeOutBack);
-    final rise = KitDraw.interval(t, .2, .6, Curves.easeOutBack);
+    final lift = KitDraw.interval(t, .45, .85, KitMotion.land);
+    final rise = KitDraw.interval(t, .2, .6, KitMotion.land);
     final base = _lead + Offset(0, 10 * (1 - rise));
     TeamCast.agent(
       canvas,
@@ -137,7 +137,7 @@ class TeamDiscoverRelayScene extends KitScene {
     final t = frame.entrance;
 
     // The route draws itself in, dot by dot.
-    final route = KitDraw.interval(t, .1, .45, Curves.linear);
+    final route = KitDraw.interval(t, .1, .45, KitMotion.steady);
     if (route > 0) {
       final dot = KitDraw.fill(p.line);
       final shown = (_dots.length * route).ceil();
@@ -161,7 +161,7 @@ class TeamDiscoverRelayScene extends KitScene {
       );
     }
 
-    final arrive = KitDraw.interval(t, .3, .45, Curves.easeOutBack);
+    final arrive = KitDraw.interval(t, .3, .45, KitMotion.land);
     final at = _metric.getTangentForOffset(_metric.length * travel)!.position;
     final done = KitDraw.interval(t, .82, 1);
     TeamCast.card(
@@ -184,7 +184,7 @@ class TeamDiscoverRelayScene extends KitScene {
         KitDraw.pen(p.success, KitDraw.stroke * .7),
       );
       canvas.restore();
-      final burst = KitDraw.interval(t, .88, 1, Curves.easeOutBack);
+      final burst = KitDraw.interval(t, .88, 1, KitMotion.land);
       for (var i = 0; i < 5; i++) {
         final angle = -math.pi / 2 + (i - 2) * .55;
         TeamCast.spark(
@@ -201,7 +201,7 @@ class TeamDiscoverRelayScene extends KitScene {
     // The team, arriving one by one and watching the card go by.
     for (final (i, base) in _agents.indexed) {
       final begin = i * .1;
-      final rise = KitDraw.interval(t, begin, begin + .4, Curves.easeOutBack);
+      final rise = KitDraw.interval(t, begin, begin + .4, KitMotion.land);
       final dx = (at.dx - base.dx) / 60;
       final holding = i == 0 && travel <= 0;
       TeamCast.agent(

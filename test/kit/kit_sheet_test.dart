@@ -12,6 +12,7 @@ import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/widgets/request_routes.dart';
 
 import 'kit_harness.dart';
+import 'kit_motion_still.dart';
 
 void main() {
   testWidgets('the frame: title, subtitle, close, body and pinned actions', (
@@ -556,4 +557,88 @@ void main() {
       expect(routes.pushes, before);
     });
   });
+
+  group('showKitFramedSheet: a body that draws its own frame (P9.10)', () {
+    testWidgets('the route draws the one handle, caps the width, keys the '
+        'body and returns what the body pops with', (tester) async {
+      final context = await pumpKitHost(tester, size: const Size(1280, 800));
+      String? result;
+      unawaited(
+        showKitFramedSheet<String>(
+          context,
+          maxWidth: 720,
+          useSafeArea: true,
+          sheetKey: const ValueKey('framed-body'),
+          builder: (sheetContext) => KitSheet(
+            title: 'Choose a folder',
+            handle: false,
+            onClose: () => Navigator.of(sheetContext).pop(),
+            primary: KitAction(
+              label: 'Open here',
+              onPressed: () => Navigator.of(sheetContext).pop('/work'),
+            ),
+            child: const SizedBox(height: 120),
+          ),
+        ).then((v) => result = v),
+      );
+      await tester.pumpAndSettle();
+      final body = find.byKey(const ValueKey('framed-body'));
+      expect(body, findsOneWidget);
+      // One handle: the route's (the frame is drawn with handle: false).
+      expect(
+        find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == '_DragHandle',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('kit-sheet-handle')), findsNothing);
+      expect(tester.getSize(body).width, lessThanOrEqualTo(720));
+      await tester.tap(find.text('Open here'));
+      await tester.pumpAndSettle();
+      expect(result, '/work');
+    });
+
+    testWidgets('a dismissal returns null', (tester) async {
+      final context = await pumpKitHost(tester);
+      var done = false;
+      String? result = 'unset';
+      unawaited(
+        showKitFramedSheet<String>(
+          context,
+          builder: (sheetContext) => KitSheet(
+            title: 'Choose a folder',
+            handle: false,
+            onClose: () => Navigator.of(sheetContext).pop(),
+            child: const SizedBox(height: 120),
+          ),
+        ).then((v) {
+          done = true;
+          result = v;
+        }),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+      expect(done, isTrue);
+      expect(result, isNull);
+    });
+  });
+
+  Future<void> openFramed(BuildContext context) => showKitFramedSheet<void>(
+    context,
+    builder: (sheetContext) => KitSheet(
+      title: 'Choose a folder',
+      handle: false,
+      onClose: () => Navigator.of(sheetContext).pop(),
+      child: const Text('my-first-project'),
+    ),
+  );
+
+  kitMotionStillTests(
+    'showKitFramedSheet',
+    opens: {'default': KitMotionOpen(openFramed, shows: 'Choose a folder')},
+    changes: {
+      'dismissed': kitModalDismiss(openFramed, shows: 'Choose a folder'),
+    },
+  );
 }

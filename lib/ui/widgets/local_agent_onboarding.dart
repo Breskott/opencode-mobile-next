@@ -15,7 +15,6 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../builtin/builtin_linux.dart';
 import '../../l10n/app_localizations.dart';
@@ -585,14 +584,10 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
       widget.onConnected();
       return;
     }
-    final directory = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => LocalAgentProjectSheet(
-        runtime: _runtime,
-        initial: saved?.codexDirectory,
-      ),
+    final directory = await showLocalAgentProjectSheet(
+      context,
+      runtime: _runtime,
+      initial: saved?.codexDirectory,
     );
     if (directory == null || !mounted) return;
     setState(() {
@@ -631,15 +626,6 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
     }
   }
 
-  Future<void> _copyLog() async {
-    final l10n = _copy(context);
-    await Clipboard.setData(ClipboardData(text: _log));
-    if (!mounted) return;
-    ScaffoldMessenger.maybeOf(
-      context,
-    )?.showSnackBar(SnackBar(content: Text(l10n.workCopied)));
-  }
-
   @override
   Widget build(BuildContext context) {
     return switch (_view) {
@@ -654,62 +640,57 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
     };
   }
 
+  /// The block's one panel (slice-P9.10: kit parts only, `KitSurface.panel`
+  /// in place of the hand-drawn bordered box).
   Widget _card(
     BuildContext context, {
     required Key key,
     required List<Widget> children,
-  }) {
-    final theme = Theme.of(context);
-    return Container(
-      key: key,
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
+  }) => SizedBox(
+    key: key,
+    width: double.infinity,
+    child: KitSurface.panel(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: children,
       ),
-    );
-  }
+    ),
+  );
 
   Widget _title(BuildContext context, {bool menu = false}) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Text(
+          child: KitText(
             l10n.localAgentTitle,
             key: const ValueKey('local-agent-title'),
-            style: theme.textTheme.titleMedium,
+            role: KitTextRole.headline,
           ),
         ),
         if (menu)
-          PopupMenuButton<VoidCallback>(
+          KitRowMenu(
             key: const ValueKey('local-agent-menu'),
             tooltip: l10n.localAgentMore,
             enabled: !_busy && !_connecting,
-            onSelected: (action) => action(),
-            itemBuilder: (context) => [
-              PopupMenuItem(
+            items: [
+              KitMenuItem(
                 key: const ValueKey('local-agent-refresh'),
-                value: () => unawaited(_refresh()),
-                child: Text(l10n.workRefresh),
+                label: l10n.workRefresh,
+                onSelected: () => unawaited(_refresh()),
               ),
-              PopupMenuItem(
+              KitMenuItem(
                 key: const ValueKey('local-agent-update'),
-                value: () => unawaited(_update()),
-                child: Text(l10n.localAgentUpdate),
+                label: l10n.localAgentUpdate,
+                onSelected: () => unawaited(_update()),
               ),
-              PopupMenuItem(
+              KitMenuItem(
                 key: const ValueKey('local-agent-remove'),
-                value: () => unawaited(_remove()),
-                child: Text(l10n.localAgentRemove),
+                label: l10n.localAgentRemove,
+                destructive: true,
+                onSelected: () => unawaited(_remove()),
               ),
             ],
           ),
@@ -717,100 +698,71 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
     );
   }
 
-  TextStyle? _muted(ThemeData theme) => theme.textTheme.bodySmall?.copyWith(
-    color: AppTheme.mutedOf(theme),
-    height: 1.4,
+  /// A muted line under the title.
+  Widget _muted(String text, {Key? key}) =>
+      KitText(text, key: key, role: KitTextRole.secondary);
+
+  Widget _gap(BuildContext context, double Function(KitTokens) size) =>
+      SizedBox(height: size(KitTokens.of(context)));
+
+  Widget _noticeText(BuildContext context) => Padding(
+    padding: EdgeInsetsDirectional.only(top: KitTokens.of(context).space3),
+    child: KitNotice(
+      message: _notice!,
+      messageKey: const ValueKey('local-agent-notice'),
+      tone: AppStatusTone.failure,
+    ),
   );
 
-  Widget _noticeText(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Semantics(
-        liveRegion: true,
-        child: Text(
-          _notice!,
-          key: const ValueKey('local-agent-notice'),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.error,
-            height: 1.4,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _actions(List<Widget> buttons) => Padding(
-    padding: const EdgeInsets.only(top: 14),
-    child: Align(
-      alignment: AlignmentDirectional.centerEnd,
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        alignment: WrapAlignment.end,
-        children: buttons,
-      ),
+  Widget _actions(
+    BuildContext context, {
+    KitAction? primary,
+    KitAction? secondary,
+    List<KitAction> tertiary = const [],
+  }) => Padding(
+    padding: EdgeInsetsDirectional.only(top: KitTokens.of(context).space4),
+    child: KitActionBlock(
+      primary: primary,
+      secondary: secondary,
+      tertiary: tertiary,
     ),
   );
 
   Widget _offer(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     return _card(
       context,
       key: const ValueKey('local-agent-offer'),
       children: [
-        Text(
-          l10n.teamUiPhoneOptionalTag,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.primary,
-            fontWeight: FontWeight.w700,
-            letterSpacing: .6,
-          ),
-        ),
-        const SizedBox(height: 4),
+        KitText(l10n.teamUiPhoneOptionalTag, role: KitTextRole.label),
+        _gap(context, (t) => t.space1),
         _title(context),
-        const SizedBox(height: 6),
-        Text(
-          l10n.localAgentOfferBody,
-          style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
-        ),
-        const SizedBox(height: 4),
-        Text(
+        _gap(context, (t) => t.space2),
+        KitText(l10n.localAgentOfferBody),
+        _gap(context, (t) => t.space1),
+        _muted(
           l10n.localAgentOfferSize,
           key: const ValueKey('local-agent-offer-size'),
-          style: _muted(theme),
         ),
-        const SizedBox(height: 10),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              AppIconography.warning,
-              size: 18,
-              color: AppTheme.statusColor(theme, AppStatusTone.attention),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                l10n.localAgentOfferWarning,
-                style: theme.textTheme.bodySmall?.copyWith(height: 1.4),
-              ),
-            ),
-          ],
+        _gap(context, (t) => t.space3),
+        KitNotice(
+          message: l10n.localAgentOfferWarning,
+          icon: AppIconography.warning,
+          liveRegion: false,
         ),
-        _actions([
-          OutlinedButton(
-            key: const ValueKey('local-agent-skip'),
-            onPressed: _busy ? null : _skip,
-            child: Text(l10n.localAgentNotNow),
-          ),
-          FilledButton(
+        _actions(
+          context,
+          primary: KitAction(
             key: const ValueKey('local-agent-set-up'),
+            label: l10n.localAgentSetUp,
             onPressed: _busy ? null : _install,
-            child: Text(l10n.localAgentSetUp),
           ),
-        ]),
+          secondary: KitAction(
+            key: const ValueKey('local-agent-skip'),
+            label: l10n.localAgentNotNow,
+            onPressed: _busy ? null : _skip,
+          ),
+        ),
       ],
     );
   }
@@ -831,11 +783,11 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
       key: const ValueKey('local-agent-needs-ubuntu'),
       children: [
         _title(context),
-        const SizedBox(height: 6),
+        _gap(context, (t) => t.space2),
         KitNotice(
           message: body,
           messageKey: const ValueKey('local-agent-needs-ubuntu-body'),
-          tone: AppStatusTone.attention,
+          icon: AppIconography.warning,
           actions: [
             KitAction(
               key: const ValueKey('local-agent-needs-ubuntu-refresh'),
@@ -854,6 +806,8 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
     );
   }
 
+  /// The five steps as the kit's one step list ([KitChecklist]); each row
+  /// keeps its `local-agent-step-<name>` key.
   Widget _stepList(BuildContext context) {
     final l10n = _copy(context);
     final states = localAgentStepStates(_status);
@@ -864,16 +818,19 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
       LocalAgentUiStep.signIn: l10n.localAgentStepSignIn,
       LocalAgentUiStep.start: l10n.localAgentStepStart,
     };
-    return Column(
-      key: const ValueKey('local-agent-steps'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
+    return KitChecklist(
+      checklistKey: const ValueKey('local-agent-steps'),
+      steps: [
         for (final step in LocalAgentUiStep.values)
-          _StepRow(
+          KitStep(
             key: ValueKey('local-agent-step-${step.name}'),
-            number: step.index + 1,
             title: titles[step]!,
-            state: states[step]!,
+            state: switch (states[step]!) {
+              LocalAgentUiStepState.idle => KitMarkState.waiting,
+              LocalAgentUiStepState.running => KitMarkState.working,
+              LocalAgentUiStepState.done => KitMarkState.done,
+              LocalAgentUiStepState.error => KitMarkState.failed,
+            },
           ),
       ],
     );
@@ -881,28 +838,25 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
 
   Widget _steps(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     return _card(
       context,
       key: const ValueKey('local-agent-setup'),
       children: [
         _title(context),
-        const SizedBox(height: 4),
-        Text(l10n.localAgentInstalling, style: _muted(theme)),
-        const SizedBox(height: 12),
+        _gap(context, (t) => t.space1),
+        _muted(l10n.localAgentInstalling),
+        _gap(context, (t) => t.space3),
         _stepList(context),
-        const SizedBox(height: 12),
+        _gap(context, (t) => t.space3),
         SetupTerminal(
           output: _log,
           running: _busy || _status.busy,
           controller: _logController,
-          onCopy: _log.isEmpty ? null : _copyLog,
         ),
-        const SizedBox(height: 8),
-        Text(
+        _gap(context, (t) => t.space2),
+        _muted(
           l10n.localAgentLeaveNote,
           key: const ValueKey('local-agent-leave-note'),
-          style: _muted(theme),
         ),
       ],
     );
@@ -910,40 +864,41 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
 
   Widget _signInView(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     return _card(
       context,
       key: const ValueKey('local-agent-sign-in'),
       children: [
         _title(context, menu: true),
-        const SizedBox(height: 12),
+        _gap(context, (t) => t.space3),
         _stepList(context),
-        const SizedBox(height: 12),
-        Text(
+        _gap(context, (t) => t.space3),
+        KitText(
           l10n.localAgentSignInBody,
           key: const ValueKey('local-agent-sign-in-body'),
-          style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
         ),
         if (_notice != null) _noticeText(context),
-        _actions([
-          TextButton(
-            key: const ValueKey('local-agent-sign-in-already'),
-            onPressed: _busy ? null : _start,
-            child: Text(l10n.localAgentSignInAlready),
+        _actions(
+          context,
+          primary: KitAction(
+            key: const ValueKey('local-agent-sign-in-open'),
+            label: l10n.localAgentStepSignIn,
+            onPressed: _busy ? null : _signIn,
           ),
-          OutlinedButton(
+          secondary: KitAction(
             key: const ValueKey('local-agent-sign-in-refresh'),
+            label: l10n.workRefresh,
             onPressed: _busy
                 ? null
                 : () => unawaited(_refresh(afterSignIn: true)),
-            child: Text(l10n.workRefresh),
           ),
-          FilledButton(
-            key: const ValueKey('local-agent-sign-in-open'),
-            onPressed: _busy ? null : _signIn,
-            child: Text(l10n.localAgentStepSignIn),
-          ),
-        ]),
+          tertiary: [
+            KitAction(
+              key: const ValueKey('local-agent-sign-in-already'),
+              label: l10n.localAgentSignInAlready,
+              onPressed: _busy ? null : _start,
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -952,44 +907,37 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
     final l10n = _copy(context);
     final status = _status;
     if (status.claudeVersion.isEmpty) return const SizedBox.shrink();
-    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(top: 4),
+      padding: EdgeInsetsDirectional.only(top: KitTokens.of(context).space1),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            l10n.localAgentVersions(
-              status.claudeVersion,
-              status.paseoVersion,
-              status.nodeVersion,
+          KitLtr(
+            child: _muted(
+              l10n.localAgentVersions(
+                status.claudeVersion,
+                status.paseoVersion,
+                status.nodeVersion,
+              ),
+              key: const ValueKey('local-agent-versions'),
             ),
-            key: const ValueKey('local-agent-versions'),
-            textDirection: TextDirection.ltr,
-            style: _muted(theme),
           ),
           if (_updateAvailable)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  Icon(
-                    AppIconography.sparkle,
-                    size: 16,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      l10n.localAgentUpdateAvailable,
-                      key: const ValueKey('local-agent-update-available'),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ),
-                  TextButton(
+              padding: EdgeInsetsDirectional.only(
+                top: KitTokens.of(context).space2,
+              ),
+              child: KitNotice(
+                message: l10n.localAgentUpdateAvailable,
+                messageKey: const ValueKey('local-agent-update-available'),
+                icon: AppIconography.sparkle,
+                liveRegion: false,
+                actions: [
+                  KitAction(
                     key: const ValueKey('local-agent-update-now'),
+                    label: l10n.localAgentUpdateNow,
                     onPressed: _busy ? null : () => unawaited(_update()),
-                    child: Text(l10n.localAgentUpdateNow),
                   ),
                 ],
               ),
@@ -1001,52 +949,40 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
 
   Widget _stopped(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     return _card(
       context,
       key: const ValueKey('local-agent-stopped'),
       children: [
         _title(context, menu: true),
-        const SizedBox(height: 6),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (_status.killedByAndroid) ...[
-              Icon(
-                AppIconography.warning,
-                size: 18,
-                color: AppTheme.statusColor(theme, AppStatusTone.attention),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Expanded(
-              child: Text(
-                _status.killedByAndroid
-                    ? l10n.localAgentKilled
-                    : l10n.localAgentInstalledTitle,
-                key: const ValueKey('local-agent-stopped-text'),
-                style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
-              ),
-            ),
-          ],
-        ),
+        _gap(context, (t) => t.space2),
+        if (_status.killedByAndroid)
+          KitNotice(
+            message: l10n.localAgentKilled,
+            messageKey: const ValueKey('local-agent-stopped-text'),
+            icon: AppIconography.warning,
+          )
+        else
+          KitText(
+            l10n.localAgentInstalledTitle,
+            key: const ValueKey('local-agent-stopped-text'),
+          ),
         _versions(context),
         if (_notice != null) _noticeText(context),
-        _actions([
-          FilledButton.icon(
+        _actions(
+          context,
+          primary: KitAction(
             key: const ValueKey('local-agent-start'),
+            label: l10n.phoneServerStart,
+            icon: AppIconography.play,
             onPressed: _busy ? null : _start,
-            icon: const Icon(AppIconography.play),
-            label: Text(l10n.phoneServerStart),
           ),
-        ]),
+        ),
       ],
     );
   }
 
   Widget _ready(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     final saved = savedLocalAgentProfile(widget.connection.store.profiles);
     final connected =
         saved != null &&
@@ -1057,54 +993,42 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
       key: const ValueKey('local-agent-ready'),
       children: [
         _title(context, menu: true),
-        const SizedBox(height: 6),
+        _gap(context, (t) => t.space2),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              AppIconography.checkCircle,
-              size: 20,
-              color: AppTheme.statusColor(theme, AppStatusTone.ok),
-            ),
-            const SizedBox(width: 8),
+            const KitIcon.status(AppStatusTone.ok),
+            SizedBox(width: KitTokens.of(context).space2),
             Expanded(
-              child: Text(
+              child: KitText(
                 l10n.localAgentReadyTitle,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                role: KitTextRole.rowTitle,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 4),
-        Text(l10n.localAgentReadyBody, style: _muted(theme)),
+        _gap(context, (t) => t.space1),
+        _muted(l10n.localAgentReadyBody),
         _versions(context),
         if (_notice != null) _noticeText(context),
-        if (_connecting)
-          const Padding(
-            padding: EdgeInsets.only(top: 12),
-            child: LinearProgressIndicator(
-              key: ValueKey('local-agent-connecting'),
-            ),
-          ),
-        _actions([
-          FilledButton.icon(
+        _actions(
+          context,
+          // Connecting is this button's own tap in flight (STATE-7): its
+          // spinner, not a separate bar.
+          primary: KitAction(
             key: const ValueKey('local-agent-connect'),
+            label: connected ? l10n.phoneServerOpen : l10n.phoneServerConnect,
+            icon: AppIconography.forward,
+            working: _connecting,
             onPressed: _busy || _connecting ? null : _connect,
-            icon: const Icon(AppIconography.forward),
-            label: Text(
-              connected ? l10n.phoneServerOpen : l10n.phoneServerConnect,
-            ),
           ),
-        ]),
+        ),
       ],
     );
   }
 
   Widget _failed(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     final failure =
         _failure ??
         _status.failure ??
@@ -1114,287 +1038,233 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
       key: const ValueKey('local-agent-failed'),
       children: [
         _title(context, menu: _status.installed),
-        const SizedBox(height: 4),
-        Text(
+        _gap(context, (t) => t.space1),
+        KitText(
           l10n.localAgentFailedTitle,
-          style: theme.textTheme.titleSmall?.copyWith(
-            color: theme.colorScheme.error,
-          ),
+          role: KitTextRole.rowTitle,
+          tone: KitTextTone.danger,
         ),
-        const SizedBox(height: 6),
-        Text(
+        _gap(context, (t) => t.space2),
+        KitText(
           localAgentFailureText(l10n, failure.kind, failure.message),
           key: const ValueKey('local-agent-failed-reason'),
-          style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
         ),
-        const SizedBox(height: 12),
+        _gap(context, (t) => t.space3),
         _stepList(context),
-        const SizedBox(height: 12),
-        SetupTerminal(
-          output: _log,
-          running: false,
-          controller: _logController,
-          onCopy: _log.isEmpty ? null : _copyLog,
-        ),
-        _actions([
-          FilledButton.icon(
+        _gap(context, (t) => t.space3),
+        SetupTerminal(output: _log, running: false, controller: _logController),
+        _actions(
+          context,
+          primary: KitAction(
             key: const ValueKey('local-agent-retry'),
+            label: l10n.teamUiPhoneRetry,
+            icon: AppIconography.retry,
             onPressed: _busy ? null : _retry,
-            icon: const Icon(AppIconography.retry),
-            label: Text(l10n.teamUiPhoneRetry),
           ),
-        ]),
+        ),
       ],
     );
   }
 }
 
-class _StepRow extends StatelessWidget {
-  const _StepRow({
-    super.key,
-    required this.number,
-    required this.title,
-    required this.state,
-  });
+/// Picks the project folder Claude Code works in, on the kit's one sheet
+/// frame ([showKitSheet]): one of the folders under `~/projects` in Ubuntu
+/// (the script creates `my-first-project` when there are none) or a typed
+/// path. Returns the path as Ubuntu sees it, or null when closed.
+///
+/// [initial] is the folder the saved server already uses, preselected when
+/// listed.
+Future<String?> showLocalAgentProjectSheet(
+  BuildContext context, {
+  required LocalAgentRuntime runtime,
+  String? initial,
+}) async {
+  final l10n = _copy(context);
+  final pick = _ProjectPick(runtime, initial);
+  final primary = ValueNotifier<KitAction?>(null);
+  NavigatorState? navigator;
+  var open = true;
 
-  final int number;
-  final String title;
-  final LocalAgentUiStepState state;
+  Future<void> continueWith() async {
+    final path = await pick.resolve(l10n);
+    if (path != null && open) navigator?.pop(path);
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final Widget leading;
-    final Color color;
-    switch (state) {
-      case LocalAgentUiStepState.idle:
-        color = AppTheme.mutedOf(theme);
-        leading = Text(
-          '$number',
-          style: theme.textTheme.labelMedium?.copyWith(color: color),
-        );
-      case LocalAgentUiStepState.running:
-        color = scheme.primary;
-        leading = SizedBox.square(
-          dimension: 16,
-          child: CircularProgressIndicator(strokeWidth: 2, color: color),
-        );
-      case LocalAgentUiStepState.done:
-        color = AppTheme.statusColor(theme, AppStatusTone.ok);
-        leading = Icon(AppIconography.check, size: 18, color: color);
-      case LocalAgentUiStepState.error:
-        color = scheme.error;
-        leading = Icon(AppIconography.error, size: 18, color: color);
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: 24, height: 20, child: Center(child: leading)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              title,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: state == LocalAgentUiStepState.idle
-                    ? AppTheme.mutedOf(theme)
-                    : scheme.onSurface,
-                fontWeight: state == LocalAgentUiStepState.running
-                    ? FontWeight.w600
-                    : null,
-              ),
-            ),
-          ),
-        ],
-      ),
+  void publish() {
+    primary.value = KitAction(
+      key: const ValueKey('local-agent-project-continue'),
+      label: l10n.teamUiPhoneContinue,
+      working: pick.working,
+      onPressed: pick.canContinue ? () => unawaited(continueWith()) : null,
     );
+  }
+
+  pick.addListener(publish);
+  publish();
+  unawaited(pick.load());
+  try {
+    return await showKitSheet<String>(
+      context,
+      sheetKey: const ValueKey('local-agent-project-sheet'),
+      title: l10n.localAgentProjectTitle,
+      subtitle: l10n.localAgentProjectBody,
+      primaryListenable: primary,
+      body: (sheetContext) {
+        navigator = Navigator.of(sheetContext);
+        return ListenableBuilder(
+          listenable: pick,
+          builder: (context, _) =>
+              _LocalAgentProjectBody(pick: pick, onSubmit: continueWith),
+        );
+      },
+    );
+  } finally {
+    open = false;
+    pick.removeListener(publish);
+    primary.dispose();
+    pick.dispose();
   }
 }
 
-/// Picks the project folder Claude Code works in: one of the folders under
-/// `~/projects` in Ubuntu (the script creates `my-first-project` when there
-/// are none) or a typed path. Pops with the path as Ubuntu sees it.
-class LocalAgentProjectSheet extends StatefulWidget {
-  const LocalAgentProjectSheet({
-    super.key,
-    required this.runtime,
-    this.initial,
-  });
+/// What the project sheet holds while it is open.
+class _ProjectPick extends ChangeNotifier {
+  _ProjectPick(this.runtime, this.initial);
 
   final LocalAgentRuntime runtime;
-
-  /// The folder the saved server already uses, preselected when listed.
   final String? initial;
+  final path = TextEditingController();
 
-  @override
-  State<LocalAgentProjectSheet> createState() => _LocalAgentProjectSheetState();
-}
+  List<String>? projects;
+  String? selected;
+  String? problem;
+  bool working = false;
+  bool _disposed = false;
 
-class _LocalAgentProjectSheetState extends State<LocalAgentProjectSheet> {
-  List<String>? _projects;
-  String? _selected;
-  String? _problem;
-  bool _working = false;
-  final _path = TextEditingController();
+  bool get canContinue =>
+      !working &&
+      projects != null &&
+      (selected != null || path.text.trim().isNotEmpty);
 
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_load());
+  /// The listed folder in use: none while a path is typed.
+  String? get chosen => path.text.trim().isEmpty ? selected : null;
+
+  void _changed() {
+    if (!_disposed) notifyListeners();
+  }
+
+  Future<void> load() async {
+    List<String> found;
+    try {
+      found = await runtime.projects();
+    } on LocalAgentFailure {
+      found = const [];
+    }
+    if (_disposed) return;
+    projects = found;
+    final initial = this.initial;
+    if (initial != null && found.contains(initial)) {
+      selected = initial;
+    } else if (found.isNotEmpty) {
+      // A typed path wins over the list on Continue, so a remembered folder
+      // that is no longer offered (seen live: `/root` from an older setup,
+      // outside the agent user's home) must not be pre-typed over it.
+      selected = found.first;
+    } else if (initial != null && initial.isNotEmpty) {
+      path.text = initial;
+    }
+    _changed();
+  }
+
+  void select(String value) {
+    selected = value;
+    path.clear();
+    problem = null;
+    _changed();
+  }
+
+  void typed() {
+    problem = null;
+    _changed();
+  }
+
+  /// The folder to use, made when typed; null (with [problem] set) when it
+  /// cannot be used.
+  Future<String?> resolve(AppLocalizations l10n) async {
+    if (!canContinue) return null;
+    final typed = path.text.trim();
+    if (typed.isEmpty) return selected;
+    if (localAgentProjectPathProblem(typed) != null) {
+      problem = l10n.localAgentProjectPathInvalid;
+      _changed();
+      return null;
+    }
+    working = true;
+    problem = null;
+    _changed();
+    try {
+      return await runtime.ensureProject(typed);
+    } on LocalAgentFailure catch (failure) {
+      problem = productErrorText(failure, l10n: l10n);
+      return null;
+    } finally {
+      working = false;
+      _changed();
+    }
   }
 
   @override
   void dispose() {
-    _path.dispose();
+    _disposed = true;
+    path.dispose();
     super.dispose();
   }
+}
 
-  Future<void> _load() async {
-    List<String> projects;
-    try {
-      projects = await widget.runtime.projects();
-    } on LocalAgentFailure {
-      projects = const [];
-    }
-    if (!mounted) return;
-    setState(() {
-      _projects = projects;
-      final initial = widget.initial;
-      if (initial != null && projects.contains(initial)) {
-        _selected = initial;
-      } else if (projects.isNotEmpty) {
-        // A typed path wins over the list on Continue, so a remembered folder
-        // that is no longer offered (seen live: `/root` from an older setup,
-        // outside the agent user's home) must not be pre-typed over it.
-        _selected = projects.first;
-      } else if (initial != null && initial.isNotEmpty) {
-        _path.text = initial;
-      }
-    });
-  }
+/// The project sheet's body: the listed folders, then a path field.
+class _LocalAgentProjectBody extends StatelessWidget {
+  const _LocalAgentProjectBody({required this.pick, required this.onSubmit});
 
-  Future<void> _continue() async {
-    final l10n = _copy(context);
-    final typed = _path.text.trim();
-    if (typed.isEmpty) {
-      if (_selected != null) Navigator.of(context).pop(_selected);
-      return;
-    }
-    if (localAgentProjectPathProblem(typed) != null) {
-      setState(() => _problem = l10n.localAgentProjectPathInvalid);
-      return;
-    }
-    setState(() {
-      _working = true;
-      _problem = null;
-    });
-    try {
-      final path = await widget.runtime.ensureProject(typed);
-      if (mounted) Navigator.of(context).pop(path);
-    } on LocalAgentFailure catch (failure) {
-      if (mounted) {
-        setState(() {
-          _working = false;
-          _problem = productErrorText(failure, l10n: _copy(context));
-        });
-      }
-    }
-  }
+  final _ProjectPick pick;
+  final Future<void> Function() onSubmit;
 
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final projects = _projects;
-    return SingleChildScrollView(
-      key: const ValueKey('local-agent-project-sheet'),
-      padding: EdgeInsets.fromLTRB(
-        20,
-        12,
-        20,
-        20 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(l10n.localAgentProjectTitle, style: theme.textTheme.titleLarge),
-          const SizedBox(height: 6),
-          Text(
-            l10n.localAgentProjectBody,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.mutedOf(theme),
-              height: 1.4,
-            ),
+    final tokens = KitTokens.of(context);
+    final projects = pick.projects;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (projects == null || projects.isNotEmpty) ...[
+          KitChoiceList<String>.single(
+            loading: projects == null,
+            actsOnTap: false,
+            semanticsLabel: l10n.localAgentProjectTitle,
+            selected: pick.chosen,
+            onSelected: pick.select,
+            choices: [
+              for (var i = 0; i < (projects ?? const <String>[]).length; i++)
+                KitChoice(
+                  key: ValueKey('local-agent-project-$i'),
+                  value: projects![i],
+                  title: projects[i].split('/').last,
+                  supporting: projects[i],
+                ),
+            ],
           ),
-          const SizedBox(height: 12),
-          if (projects == null)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: LinearProgressIndicator(),
-            )
-          else
-            RadioGroup<String>(
-              groupValue: _path.text.trim().isEmpty ? _selected : null,
-              onChanged: (value) => setState(() {
-                _selected = value;
-                _path.clear();
-                _problem = null;
-              }),
-              child: Column(
-                children: [
-                  for (var i = 0; i < projects.length; i++)
-                    RadioListTile<String>(
-                      key: ValueKey('local-agent-project-$i'),
-                      contentPadding: EdgeInsets.zero,
-                      value: projects[i],
-                      title: Text(
-                        projects[i].split('/').last,
-                        style: theme.textTheme.bodyLarge,
-                      ),
-                      subtitle: Text(
-                        projects[i],
-                        textDirection: TextDirection.ltr,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontFamily: AppTheme.monoFamily,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          const SizedBox(height: 8),
-          TextField(
-            key: const ValueKey('local-agent-project-path'),
-            controller: _path,
-            enabled: !_working,
-            textDirection: TextDirection.ltr,
-            autocorrect: false,
-            keyboardType: TextInputType.url,
-            decoration: InputDecoration(
-              labelText: l10n.localAgentProjectPathLabel,
-              errorText: _problem,
-              errorMaxLines: 3,
-              border: const OutlineInputBorder(),
-            ),
-            onChanged: (_) => setState(() => _problem = null),
-            onSubmitted: (_) => _continue(),
-          ),
-          const SizedBox(height: 12),
-          FilledButton(
-            key: const ValueKey('local-agent-project-continue'),
-            onPressed:
-                _working ||
-                    projects == null ||
-                    (_selected == null && _path.text.trim().isEmpty)
-                ? null
-                : _continue,
-            child: Text(l10n.teamUiPhoneContinue),
-          ),
+          SizedBox(height: tokens.space3),
         ],
-      ),
+        KitField(
+          label: l10n.localAgentProjectPathLabel,
+          controller: pick.path,
+          kind: KitFieldKind.path,
+          error: pick.problem,
+          fieldKey: const ValueKey('local-agent-project-path'),
+          onChanged: (_) => pick.typed(),
+          onSubmitted: (_) => unawaited(onSubmit()),
+        ),
+      ],
     );
   }
 }

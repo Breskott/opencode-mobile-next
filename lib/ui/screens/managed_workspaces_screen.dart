@@ -332,11 +332,10 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
     final noProvider = adapters != null && adapters.isEmpty;
     final outcome = _outcome;
     final creatingSince = _creatingSince;
-    final gutter = EdgeInsetsDirectional.fromSTEB(
-      tokens.gutter,
-      tokens.space3,
-      tokens.gutter,
-      0,
+    final gutter = EdgeInsetsDirectional.only(
+      start: tokens.gutter,
+      top: tokens.space3,
+      end: tokens.gutter,
     );
     return KitScreen(
       // A status page read like settings: centred at the reading width.

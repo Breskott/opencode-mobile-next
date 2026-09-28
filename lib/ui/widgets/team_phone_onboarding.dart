@@ -784,7 +784,9 @@ class _TeamPhoneKilledNoticeState extends State<TeamPhoneKilledNotice> {
           ? KitNotice(
               key: const ValueKey('team-phone-killed'),
               icon: AppIconography.warning,
-              tone: AppStatusTone.attention,
+              // Neutral, as Claude Code's "Android stopped it": amber is
+              // needs-you only (LOOK-4).
+              tone: AppStatusTone.neutral,
               message: l10n.teamUiPhoneKilled,
               actions: [start],
             )

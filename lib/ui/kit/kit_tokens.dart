@@ -312,6 +312,10 @@ class KitTokens extends ThemeExtension<KitTokens> {
   /// padding must be a compile-time constant.
   static const double panelPadding = 16;
 
+  /// Between a row's title and the line under it (its supporting line or
+  /// its `below` part).
+  static const double rowLineGap = 2;
+
   /// One placeholder row of `KitSkeletonRows`.
   static const double skeletonRowHeight = 64;
 

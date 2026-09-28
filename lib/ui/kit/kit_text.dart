@@ -211,6 +211,20 @@ class KitText extends StatelessWidget {
   final bool _monoSelectable;
   final _KitTextKind _kind;
 
+  /// The app-wide text scale (A11Y-8: only kit parts clamp text scale): the
+  /// person's own [scaler] passes through untouched below [max], including
+  /// scales under 1.0, which people pick deliberately; only the extreme top
+  /// end is capped, so a runaway scale cannot break the shell.
+  static TextScaler appScaler(TextScaler scaler, {required double max}) {
+    final scale = scaler.scale(1);
+    return TextScaler.linear(scale > max ? max : scale);
+  }
+
+  /// [words] in sentence case: the first letter capitalised, nothing else
+  /// changed (LOOK-15: never all capitals).
+  static String sentenceCase(String words) =>
+      words.isEmpty ? words : words[0].toUpperCase() + words.substring(1);
+
   /// The base style of [role]: size, line height, weight, tracking and (for
   /// mono) the family. No colour: [styleOf] adds it.
   static TextStyle styleFor(KitTextRole role) => switch (role) {

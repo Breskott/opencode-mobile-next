@@ -143,6 +143,13 @@ class ThemeRoles extends ThemeExtension<ThemeRoles> {
   /// colour scheme (a bare `ThemeData` in a test).
   static ThemeRoles of(BuildContext context) => resolve(Theme.of(context));
 
+  /// The box a widget that failed to build shows instead
+  /// (`ErrorWidget.builder` in app_diagnostics.dart). It may be drawn above
+  /// any theme, so it reads no roles: these two fixed colours are its ground
+  /// and its words.
+  static const bootErrorGround = Color(0xFF201A18);
+  static const bootErrorText = Color(0xFFFFDCCB);
+
   static ThemeRoles resolve(ThemeData theme) =>
       theme.extension<ThemeRoles>() ??
       deriveRoles(

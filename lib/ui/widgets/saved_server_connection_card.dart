@@ -189,7 +189,9 @@ class SavedServerConnectionCard extends StatelessWidget {
       size: size,
       key: const ValueKey('saved-server-not-answering'),
       icon: AppIconography.cloudOff,
-      tone: AppStatusTone.attention,
+      // A degraded state, not a question for the person: never the
+      // attention look (LOOK-4).
+      tone: AppStatusTone.neutral,
       // The plug short of a quiet portal, nudging while the app keeps trying.
       illustration: const SetupUnpluggedScene(),
       illustrationAmbient: true,
@@ -330,7 +332,7 @@ class SavedServerConnectionCard extends StatelessWidget {
       size: size,
       key: const ValueKey('saved-server-failed'),
       icon: stopped ? AppIconography.stopCircle : AppIconography.cloudOff,
-      tone: stopped ? AppStatusTone.attention : AppStatusTone.failure,
+      tone: stopped ? AppStatusTone.neutral : AppStatusTone.failure,
       // The phone's own server at rest: a dark screen and a quiet portal.
       // Other failures keep the icon; a drawing would not say which.
       illustration: stopped

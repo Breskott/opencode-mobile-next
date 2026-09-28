@@ -37,6 +37,13 @@ enum ExternalLinkOutcome {
 /// confirmation dialog nor the platform intent should have to carry it.
 const _maxExternalLinkLength = 2048;
 
+/// The platform launch [openExternalLink] ends in: [uri] in the app that
+/// handles it, outside this one. Only for a `launcher` handed to
+/// [openExternalLink] that adds its own guard around the default; nothing
+/// else calls it, so every URL still passes the link policy first (SEC-1).
+Future<bool> launchExternalUri(Uri uri) =>
+    launchUrl(uri, mode: LaunchMode.externalApplication);
+
 /// The single gate every URL the app did not author must pass before it can
 /// reach the platform launcher — markdown links in agent output, OpenCode 2
 /// external form fields, update notices, and anything added later.
@@ -122,9 +129,7 @@ Future<ExternalLinkOutcome> openExternalLink(
   if (!context.mounted) return ExternalLinkOutcome.cancelled;
 
   try {
-    final opened =
-        await (launcher?.call(uri) ??
-            launchUrl(uri, mode: LaunchMode.externalApplication));
+    final opened = await (launcher?.call(uri) ?? launchExternalUri(uri));
     if (opened) return ExternalLinkOutcome.opened;
     if (context.mounted) {
       unawaited(

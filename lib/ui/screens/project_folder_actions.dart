@@ -148,10 +148,8 @@ class ProjectFolderActions {
     if (await isInAppServer(controller.profile, linux)) {
       if (!context.mounted) return null;
       final folders = BuiltinProjectFolders(linux);
-      final choice = await showModalBottomSheet<FolderBrowserChoice>(
-        context: context,
-        isScrollControlled: true,
-        showDragHandle: true,
+      final choice = await showKitFramedSheet<FolderBrowserChoice>(
+        context,
         builder: (_) => FolderBrowserSheet(
           list: folderListerOverride ?? BuiltinFolders(linux).list,
           knownProjects: () => _knownProjects(controller),
@@ -178,10 +176,8 @@ class ProjectFolderActions {
     if (await _termuxBrowsable(controller)) {
       if (!context.mounted) return null;
       final termux = TermuxFolders();
-      final choice = await showModalBottomSheet<FolderBrowserChoice>(
-        context: context,
-        isScrollControlled: true,
-        showDragHandle: true,
+      final choice = await showKitFramedSheet<FolderBrowserChoice>(
+        context,
         builder: (_) => FolderBrowserSheet(
           list: folderListerOverride ?? termux.list,
           knownProjects: () => _knownProjects(controller),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../kit_illustration.dart';
 import '../kit_tokens.dart';
 import 'setup_cast.dart';
+import '../kit_motion.dart';
 
 /// What the phone in [SetupPhoneScene] is doing.
 enum SetupPhoneMood {
@@ -193,7 +194,7 @@ class SetupPhoneScene extends KitScene {
         ),
       );
       if (last && drawn >= 1) {
-        final land = KitDraw.interval(t, .88, 1, Curves.easeOutBack);
+        final land = KitDraw.interval(t, .88, 1, KitMotion.land);
         canvas.drawCircle(
           start + Offset(length + 6, 0),
           2.4 * land,
@@ -222,7 +223,7 @@ class SetupPhoneScene extends KitScene {
       open: 1.6 * breath,
       width: 4.5,
     );
-    final land = KitDraw.interval(t, begin + .3, 1, Curves.easeOutBack);
+    final land = KitDraw.interval(t, begin + .3, 1, KitMotion.land);
     if (land > 0) {
       final spark = frame.looping
           ? SetupCast.orbit(center, 2.4, frame.loop)
@@ -234,8 +235,8 @@ class SetupPhoneScene extends KitScene {
   void _sparkles(Canvas canvas, KitSceneFrame frame, double breath) {
     final p = frame.palette;
     final t = frame.entrance;
-    final big = KitDraw.interval(t, .7, .95, Curves.easeOutBack);
-    final small = KitDraw.interval(t, .8, 1, Curves.easeOutBack);
+    final big = KitDraw.interval(t, .7, .95, KitMotion.land);
+    final small = KitDraw.interval(t, .8, 1, KitMotion.land);
     SetupCast.sparkle(
       canvas,
       const Offset(126, 26),
