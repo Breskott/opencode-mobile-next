@@ -521,6 +521,12 @@ class _AmbientPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // The fields stay on this page's ground. Unclipped they spill onto
+    // what the shell lays out beside the page (the rail, the sidebar, a
+    // pane before it) and, painted after it, wash over its words: the
+    // contrast rule (ambientFields, theme_roles.dart) holds for text on a
+    // field, not under one.
+    canvas.clipRect(Offset.zero & size);
     final rtl = textDirection == TextDirection.rtl;
     final longest = size.longestSide;
     for (var i = 0; i < fields.length && i < _places.length; i++) {
