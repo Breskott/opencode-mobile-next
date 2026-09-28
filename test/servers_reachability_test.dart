@@ -1,5 +1,4 @@
-// What the Servers page keeps reachable after the clutter pass: the
-// background checks for every saved server (a row after the list), and, for
+// What the Servers page keeps reachable after the clutter pass: for
 // a person with no server connected (no shell, so no Settings), Report a bug
 // and the Setup guide in its top-bar menu.
 import 'package:flutter/material.dart';
@@ -10,7 +9,6 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/guide_screen.dart';
-import 'package:opencode_mobile/ui/screens/profile_monitor_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 
 import 'support/profile_monitor_fixture.dart';
@@ -60,53 +58,6 @@ void main() {
     () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(secure, null),
   );
-
-  testWidgets('Background checks follows the server list, says when the '
-      'last check ran and opens every server\'s checks', (tester) async {
-    tester.view.physicalSize = const Size(412, 1400);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final controller = await _controller();
-    await tester.pumpWidget(_app(controller, const ServersScreen()));
-    await tester.pump();
-
-    final row = _key('servers-background-checks');
-    expect(row, findsOneWidget);
-    expect(
-      find.descendant(
-        of: row,
-        matching: find.text(_en.monitorBackgroundChecks),
-      ),
-      findsOneWidget,
-    );
-    // Nothing is monitored yet: the row says so instead of a time.
-    expect(
-      find.descendant(of: row, matching: find.text(_en.monitorRowOff)),
-      findsOneWidget,
-    );
-    // After the list, not among the servers.
-    expect(
-      tester.getTopLeft(row).dy,
-      greaterThan(tester.getBottomLeft(_key('servers-list')).dy - 1),
-    );
-
-    await controller.profileMonitor.setEnabled('profile-1', true);
-    await controller.profileMonitor.refresh();
-    await tester.pump();
-    expect(
-      find.descendant(
-        of: row,
-        matching: find.text(_en.monitorRowLastChecked(_en.e7WorkspaceJustNow)),
-      ),
-      findsOneWidget,
-    );
-
-    await tester.tap(row);
-    await tester.pumpAndSettle();
-    expect(find.byType(ProfileMonitorScreen), findsOneWidget);
-    expect(find.text(_en.monitorBackgroundChecks), findsWidgets);
-    await _finish(tester, controller);
-  });
 
   testWidgets('as the root page, the menu holds Report a problem and the Setup '
       'guide; the guide opens', (tester) async {

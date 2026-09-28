@@ -2,12 +2,14 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../domain/provider_quota.dart';
+import '../../domain/quota_answers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/provider_quota_monitor.dart';
 import '../app_theme.dart';
 import '../kit/kit_menu.dart';
 import '../kit/kit_notice.dart';
+import '../kit/kit_progress_row.dart';
 import '../kit/kit_row.dart';
 import '../kit/kit_row_parts.dart';
 import '../kit/kit_surface.dart';
@@ -15,11 +17,95 @@ import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import 'phone_server_card.dart' show serverDisplayName;
 
-String _sourceOrigin(String value, String fallback) {
-  try {
-    return Uri.parse(value).origin;
-  } catch (_) {
-    return fallback;
+/// A collector window as an answer, or null when the collector did not
+/// report how much of it is used (such a window says nothing, so it is
+/// not shown).
+QuotaAnswerWindow? quotaAnswerWindowOf(ProviderQuotaWindow window) {
+  final used = window.usedPercent;
+  if (used == null) return null;
+  final seconds = window.durationSeconds;
+  return QuotaAnswerWindow(
+    id: window.id,
+    usedPercent: used,
+    durationMinutes: seconds != null && seconds % 60 == 0
+        ? seconds ~/ 60
+        : null,
+    resetsAt: window.resetsAt,
+  );
+}
+
+/// "About 40% left this week · resets Tue": what is left of [window],
+/// rounded, over its length when reported, and when it resets. An unknown
+/// length or reset is left out, never guessed; a passed reset says so and
+/// never assumes the allowance came back.
+String quotaAnswerSentence(
+  AppLocalizations l10n,
+  String locale,
+  QuotaAnswerWindow window,
+  DateTime now,
+) {
+  final left = NumberFormat.percentPattern(
+    locale,
+  ).format(window.remainingPercent / 100);
+  final minutes = window.durationMinutes;
+  final amount = window.isWeekly
+      ? l10n.quotaAnswerLeftWeek(left)
+      : minutes != null && minutes > 0 && minutes % 1440 == 0
+      ? l10n.quotaAnswerLeftDays(left, minutes ~/ 1440)
+      : minutes != null && minutes > 0 && minutes % 60 == 0
+      ? l10n.quotaAnswerLeftHours(left, minutes ~/ 60)
+      : l10n.quotaAnswerLeft(left);
+  final reset = window.resetsAt?.toLocal();
+  if (reset == null) return amount;
+  final local = now.toLocal();
+  final String when;
+  if (!local.isBefore(reset)) {
+    when = l10n.quotaAnswerResetPassed;
+  } else if (reset.year == local.year &&
+      reset.month == local.month &&
+      reset.day == local.day) {
+    when = l10n.quotaAnswerResetsAt(DateFormat.jm(locale).format(reset));
+  } else if (reset.difference(local) < const Duration(days: 6)) {
+    when = l10n.quotaAnswerResetsOn(DateFormat.E(locale).format(reset));
+  } else {
+    when = l10n.quotaAnswerResetsOn(DateFormat.MMMd(locale).format(reset));
+  }
+  return '$amount · $when';
+}
+
+/// A quota window as one sentence row (KitProgressRow): the title says what
+/// is left, over which window and when it resets; the bar fills with what
+/// is used and its words say so, so bar and words agree. The same row on
+/// every Remaining path: a Codex account, a collector reading and a
+/// monitored source.
+class QuotaAnswerRow extends StatelessWidget {
+  const QuotaAnswerRow({
+    super.key,
+    required this.window,
+    required this.now,
+    this.asOf,
+    this.barKey,
+  });
+
+  final QuotaAnswerWindow window;
+  final DateTime now;
+  final DateTime? asOf;
+  final Key? barKey;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final percent = NumberFormat.percentPattern(locale)
+      ..maximumFractionDigits = 1;
+    return KitProgressRow(
+      key: barKey,
+      leading: KitRow.icon(context, AppIconography.usageRing),
+      title: quotaAnswerSentence(l10n, locale, window, now),
+      value: window.usedPercent / 100,
+      valueLabel: l10n.quotaUsed(percent.format(window.usedPercent / 100)),
+      asOf: asOf,
+    );
   }
 }
 
@@ -48,8 +134,9 @@ const _thresholdChoices = <double>[50, 75, 90, 100];
 /// shown twice (owner rule 2026-09-27).
 ///
 /// Built from kit parts only (kit-v2 §9): a headline, the Quota alerts row,
-/// then one [KitSurface.panel] per source, or an empty notice that says how
-/// to add one.
+/// then one [KitSurface.panel] per source. The page shows it only while
+/// something is monitored: a reading's own row turns its alert on, so an
+/// empty list has nothing to say.
 class QuotaMonitorSection extends StatelessWidget {
   final ConnectionController controller;
   final VoidCallback onOpenNotifications;
@@ -102,12 +189,6 @@ class QuotaMonitorSection extends StatelessWidget {
               ],
             ),
             SizedBox(height: tokens.space3),
-            if (all.isEmpty)
-              KitNotice(
-                key: const ValueKey('quota-monitor-empty'),
-                message: l10n.quotaMonitorEmpty,
-                liveRegion: false,
-              ),
             for (final target in shown) ...[
               _Source(
                 key: ValueKey(
@@ -125,20 +206,18 @@ class QuotaMonitorSection extends StatelessWidget {
   }
 }
 
-/// A monitored source's own controls: the percentage used that alerts,
-/// Check now and Stop monitoring, the last two named with the provider and
-/// server they act on. Used in a
-/// source's panel and, for the source the Remaining page shows, inside that
-/// account's block ([grouped]: the rows in their own panel, with icons).
+/// A monitored source's own controls, in their own row group: the
+/// percentage used that alerts, Check now and Stop monitoring, the last two
+/// named with the provider and server they act on. Under a monitored
+/// source's readings and, for the source the Remaining page shows, under
+/// that account's rows.
 class QuotaMonitorControls extends StatefulWidget {
   final ConnectionController controller;
   final QuotaMonitorTarget target;
-  final bool grouped;
   const QuotaMonitorControls({
     super.key,
     required this.controller,
     required this.target,
-    this.grouped = false,
   });
   @override
   State<QuotaMonitorControls> createState() => _QuotaMonitorControlsState();
@@ -190,8 +269,6 @@ class _QuotaMonitorControlsState extends State<QuotaMonitorControls> {
     }
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final tokens = KitTokens.of(context);
-    final grouped = widget.grouped;
-    final padding = grouped ? null : EdgeInsetsDirectional.zero;
     // Only the threshold is this source's own. Alerts, Wi-Fi only and quiet
     // hours are shared and set in Notifications; the record's copies of them
     // are carried over untouched for a build that has not migrated.
@@ -217,10 +294,7 @@ class _QuotaMonitorControlsState extends State<QuotaMonitorControls> {
       Builder(
         builder: (rowContext) => KitRow(
           key: ValueKey('quota-threshold-$id'),
-          padding: padding,
-          leading: grouped
-              ? KitRow.icon(context, AppIconography.notificationImportant)
-              : null,
+          leading: KitRow.icon(context, AppIconography.notificationImportant),
           title: l10n.quotaMonitorThreshold,
           supporting: saving ? TextSpan(text: l10n.quotaMonitorSaving) : null,
           enabled: !saving,
@@ -248,8 +322,7 @@ class _QuotaMonitorControlsState extends State<QuotaMonitorControls> {
       // cycle, which checks at most three sources at a time.
       KitRow(
         key: ValueKey('quota-check-now-$id'),
-        padding: padding,
-        leading: grouped ? KitRow.icon(context, AppIconography.retry) : null,
+        leading: KitRow.icon(context, AppIconography.retry),
         title: l10n.quotaMonitorCheckNow(provider, server),
         titleMaxLines: 2,
         supporting: checking ? TextSpan(text: l10n.quotaMonitorChecking) : null,
@@ -263,10 +336,7 @@ class _QuotaMonitorControlsState extends State<QuotaMonitorControls> {
       ),
       KitRow(
         key: ValueKey('quota-stop-monitoring-$id'),
-        padding: padding,
-        leading: grouped
-            ? KitRow.icon(context, AppIconography.stopCircle)
-            : null,
+        leading: KitRow.icon(context, AppIconography.stopCircle),
         title: l10n.quotaMonitorDisable(provider, server),
         titleMaxLines: 2,
         enabled: !saving,
@@ -282,10 +352,7 @@ class _QuotaMonitorControlsState extends State<QuotaMonitorControls> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (grouped)
-          KitRowGroup(margin: EdgeInsetsDirectional.zero, children: rows)
-        else
-          ...rows,
+        KitRowGroup(margin: EdgeInsetsDirectional.zero, children: rows),
         if (saveFailed) ...[
           SizedBox(height: tokens.space2),
           KitNotice(
@@ -299,6 +366,9 @@ class _QuotaMonitorControlsState extends State<QuotaMonitorControls> {
   }
 }
 
+/// One monitored source on any saved server: its readings as answer rows
+/// under "{server} · {provider}", a line only when the checks are not
+/// current (waiting, paused, stopped), then its own controls.
 class _Source extends StatelessWidget {
   final ConnectionController controller;
   final QuotaMonitorTarget target;
@@ -316,102 +386,97 @@ class _Source extends StatelessWidget {
     }
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final tokens = KitTokens.of(context);
-    final locale = Localizations.localeOf(context).toLanguageTag();
-    String when(DateTime time) =>
-        DateFormat.yMMMd(locale).add_jm().format(time.toLocal());
     final observation = monitor.observationFor(
       target.profileID,
       target.provider,
     );
     final snapshot = observation.snapshot;
-    // Attention is reserved for Needs you (LOOK-4): a pause or a wait for
-    // Wi-Fi is neutral, and a source that could not be verified stopped
-    // the reads, so it is said as a failure.
-    final (status, tone) = switch (observation.status) {
+    final current = observation.status == QuotaMonitorStatus.current;
+    final server = serverDisplayName(
+      profile,
+      l10n,
+      among: controller.store.profiles,
+    );
+    final provider = quotaProviderLabel(l10n, target.provider);
+    // A current source says nothing: its rows are the answer. Anything
+    // else is said in words beside a neutral mark (LOOK-4, LOOK-5).
+    final (String, IconData)? status = switch (observation.status) {
+      QuotaMonitorStatus.current => null,
       QuotaMonitorStatus.disabled => (
         l10n.quotaMonitorDisabled,
-        AppStatusTone.neutral,
+        AppIconography.info,
       ),
       QuotaMonitorStatus.waiting => (
         l10n.quotaMonitorWaiting,
-        AppStatusTone.neutral,
+        AppIconography.history,
       ),
       QuotaMonitorStatus.checking => (
         l10n.quotaMonitorChecking,
-        AppStatusTone.progress,
-      ),
-      QuotaMonitorStatus.current => (
-        l10n.quotaMonitorCurrent,
-        AppStatusTone.ok,
+        AppIconography.retry,
       ),
       QuotaMonitorStatus.paused => (
         l10n.quotaMonitorPaused,
-        AppStatusTone.neutral,
+        AppIconography.info,
       ),
       QuotaMonitorStatus.wifiRequired => (
         l10n.quotaMonitorWifiRequired,
-        AppStatusTone.neutral,
+        AppIconography.network,
       ),
       QuotaMonitorStatus.unavailable => (
         l10n.quotaUnavailable,
-        AppStatusTone.failure,
+        AppIconography.warning,
       ),
       QuotaMonitorStatus.sourceChanged => (
         l10n.quotaMonitorSourceChanged,
-        AppStatusTone.failure,
+        AppIconography.warning,
       ),
     };
-    final origin = Uri.tryParse(profile.baseUrl)?.hasScheme == true
-        ? _sourceOrigin(profile.baseUrl, l10n.quotaUnknownSource)
-        : null;
-    return KitSurface.panel(
-      title: l10n.quotaSourceTitle(
-        serverDisplayName(profile, l10n, among: controller.store.profiles),
-        quotaProviderLabel(l10n, target.provider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (origin != null)
-            KitText.mono(origin, tone: KitTextTone.secondary)
-          else
-            KitText(
-              l10n.quotaUnknownSource,
-              role: KitTextRole.secondary,
-              tone: KitTextTone.secondary,
-            ),
-          SizedBox(height: tokens.space3),
-          KitNotice(message: status, tone: tone, liveRegion: false),
-          if (snapshot != null) ...[
-            SizedBox(height: tokens.space2),
-            KitText(
-              l10n.quotaChecked(when(snapshot.fetchedAt)),
-              role: KitTextRole.secondary,
-              tone: KitTextTone.secondary,
-            ),
-            for (var i = 0; i < snapshot.windows.length; i++)
+    final windows = [
+      if (snapshot != null)
+        for (final window in snapshot.windows) ?quotaAnswerWindowOf(window),
+    ];
+    // The monitor's own clock, so a reset reads the same as its checks.
+    final now = monitor.clock();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        KitRowGroup(
+          margin: EdgeInsetsDirectional.zero,
+          label: l10n.quotaSourceTitle(server, provider),
+          children: [
+            if (status case (final text, final icon))
               KitRow(
-                padding: EdgeInsetsDirectional.zero,
-                title: l10n.quotaOtherWindow(i + 1),
-                supportingMaxLines: 2,
-                supporting: TextSpan(
-                  text: snapshot.windows[i].resetsAt == null
-                      ? l10n.quotaResetUnknown
-                      : l10n.quotaResetAt(when(snapshot.windows[i].resetsAt!)),
+                key: ValueKey(
+                  'quota-source-status-${target.profileID}-'
+                  '${target.provider.name}',
                 ),
-                trailing: KitRowValue(
-                  snapshot.windows[i].remainingPercent == null
-                      ? l10n.quotaNotReported
-                      : l10n.quotaRemaining(
-                          '${snapshot.windows[i].remainingPercent!.toStringAsFixed(1)}%',
-                        ),
-                  chevron: false,
+                leading: KitRow.icon(context, icon),
+                title: text,
+                titleMaxLines: 3,
+              )
+            else if (windows.isEmpty)
+              KitRow(
+                leading: KitRow.icon(context, AppIconography.info),
+                title: l10n.quotaCollectorNoWindows(provider, server),
+                titleMaxLines: 3,
+              ),
+            for (final window in windows)
+              QuotaAnswerRow(
+                key: ValueKey(
+                  'quota-source-window-${target.profileID}-'
+                  '${target.provider.name}-${window.id}',
                 ),
+                window: window,
+                now: now,
+                // A reading the checks could not renew keeps its time.
+                asOf: current ? null : snapshot?.fetchedAt,
               ),
           ],
-          QuotaMonitorControls(controller: controller, target: target),
-        ],
-      ),
+        ),
+        SizedBox(height: tokens.space2),
+        QuotaMonitorControls(controller: controller, target: target),
+      ],
     );
   }
 }

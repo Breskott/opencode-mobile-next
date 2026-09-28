@@ -3326,12 +3326,6 @@ abstract class AppLocalizations {
   /// **'Remaining usage'**
   String get quotaTitle;
 
-  /// Label above the explicitly selected server origin
-  ///
-  /// In en, this message translates to:
-  /// **'Collector server'**
-  String get quotaSource;
-
   /// Selected quota source profile and provider heading
   ///
   /// In en, this message translates to:
@@ -3386,12 +3380,6 @@ abstract class AppLocalizations {
   /// **'Reading remaining usage'**
   String get quotaLoading;
 
-  /// Clear this visit's consent and in-memory quota snapshot; no remote mutation
-  ///
-  /// In en, this message translates to:
-  /// **'Stop using this collector'**
-  String get quotaForgetConsent;
-
   /// Collector or proxy authentication failure, distinct from provider reauthentication
   ///
   /// In en, this message translates to:
@@ -3440,28 +3428,10 @@ abstract class AppLocalizations {
   /// **'The collector could not verify the selected account. No allowance is shown. Check the login source on the server.'**
   String get quotaAccountUnverified;
 
-  /// Heading for Codex entitlements, not all ChatGPT product allowances
-  ///
-  /// In en, this message translates to:
-  /// **'Codex account windows'**
-  String get quotaCodexAccount;
-
-  /// Provider-reported plan label, from a safe allowlist
-  ///
-  /// In en, this message translates to:
-  /// **'Reported plan: {plan}'**
-  String quotaPlan(String plan);
-
-  /// Collector snapshot time, formatted in the device locale
-  ///
-  /// In en, this message translates to:
-  /// **'Snapshot checked {time}'**
-  String quotaChecked(String time);
-
   /// An expired, interrupted or failed-refresh snapshot is not live provider truth
   ///
   /// In en, this message translates to:
-  /// **'Previous snapshot — refresh to check the latest allowance.'**
+  /// **'This is the last reading. Refresh to see the latest.'**
   String get quotaStale;
 
   /// Explicit provider eligibility signal, independent of quota arithmetic
@@ -3470,53 +3440,11 @@ abstract class AppLocalizations {
   /// **'The provider reports that ordinary Codex use is currently blocked. Window percentages alone do not determine access.'**
   String get quotaUseBlocked;
 
-  /// Unknown allowance; never means zero or unlimited
-  ///
-  /// In en, this message translates to:
-  /// **'Not reported'**
-  String get quotaNotReported;
-
-  /// First provider rate-limit window without assuming a five-hour duration
-  ///
-  /// In en, this message translates to:
-  /// **'Primary window'**
-  String get quotaPrimaryWindow;
-
-  /// Second provider rate-limit window without assuming a weekly duration
-  ///
-  /// In en, this message translates to:
-  /// **'Secondary window'**
-  String get quotaSecondaryWindow;
-
-  /// Safe display name for an additional bounded window
-  ///
-  /// In en, this message translates to:
-  /// **'Usage window {number}'**
-  String quotaOtherWindow(int number);
-
-  /// Percentage remaining within one reported provider window
-  ///
-  /// In en, this message translates to:
-  /// **'{percent} remaining'**
-  String quotaRemaining(String percent);
-
   /// Provider-reported percentage used within one window
   ///
   /// In en, this message translates to:
   /// **'{percent} used'**
   String quotaUsed(String percent);
-
-  /// Absolute provider reset time in device locale
-  ///
-  /// In en, this message translates to:
-  /// **'Reported reset: {time}'**
-  String quotaResetAt(String time);
-
-  /// Missing provider reset time is not fabricated
-  ///
-  /// In en, this message translates to:
-  /// **'Reset time not reported'**
-  String get quotaResetUnknown;
 
   /// Honest limits and provenance of optional provider quota collectors
   ///
@@ -3565,12 +3493,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Server passwords use this platform\'s secure credential storage. They are not stored in plain app preferences.'**
   String get platformSecureStorageGuide;
-
-  /// Claude allowances for the operator-selected OAuth login
-  ///
-  /// In en, this message translates to:
-  /// **'Claude login windows'**
-  String get quotaClaudeAccount;
 
   /// Distinguishes credential-bound Claude usage from provider-confirmed account identity
   ///
@@ -3752,12 +3674,6 @@ abstract class AppLocalizations {
   /// **'MiniMax'**
   String get quotaMiniMax;
 
-  /// No description provided for @quotaMiniMaxAccount.
-  ///
-  /// In en, this message translates to:
-  /// **'MiniMax subscription windows'**
-  String get quotaMiniMaxAccount;
-
   /// No description provided for @quotaMiniMaxSourceBound.
   ///
   /// In en, this message translates to:
@@ -3793,24 +3709,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'GLM'**
   String get quotaGlm;
-
-  /// No description provided for @quotaGlmAccount.
-  ///
-  /// In en, this message translates to:
-  /// **'Configured GLM Coding Plan source'**
-  String get quotaGlmAccount;
-
-  /// No description provided for @quotaGlmTokenWindow.
-  ///
-  /// In en, this message translates to:
-  /// **'Reported token-plan window'**
-  String get quotaGlmTokenWindow;
-
-  /// No description provided for @quotaGlmMcpWindow.
-  ///
-  /// In en, this message translates to:
-  /// **'Reported MCP window'**
-  String get quotaGlmMcpWindow;
 
   /// No description provided for @usageBudgetTitle.
   ///
@@ -3890,12 +3788,6 @@ abstract class AppLocalizations {
   /// **'Clear consumption budgets?'**
   String get usageBudgetClearTitle;
 
-  /// No description provided for @monitorTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Saved-server attention'**
-  String get monitorTitle;
-
   /// No description provided for @monitorScope.
   ///
   /// In en, this message translates to:
@@ -3905,14 +3797,8 @@ abstract class AppLocalizations {
   /// No description provided for @monitorDisclosure.
   ///
   /// In en, this message translates to:
-  /// **'Monitoring is off until you enable it for a server. Checks run about once a minute while this app is open. Background checks run no more often than every five minutes, only while Keep live is already on and Android’s service is running. Android can stop that service; no remaining runtime is promised.'**
+  /// **'Monitoring is off until you enable it for a server. Checks run about once a minute while this app is open. Background checks run no more often than every five minutes, only while Stay connected in the background is on and Android’s service is running. Android can stop that service; no remaining runtime is promised.'**
   String get monitorDisclosure;
-
-  /// No description provided for @monitorRefresh.
-  ///
-  /// In en, this message translates to:
-  /// **'Check monitored servers'**
-  String get monitorRefresh;
 
   /// No description provided for @monitorOptIn.
   ///
@@ -3955,60 +3841,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Quiet hours end'**
   String get monitorQuietEnd;
-
-  /// No description provided for @monitorDisabled.
-  ///
-  /// In en, this message translates to:
-  /// **'Not monitored · attention unknown'**
-  String get monitorDisabled;
-
-  /// No description provided for @monitorWaiting.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for a check · attention unknown'**
-  String get monitorWaiting;
-
-  /// No description provided for @monitorChecking.
-  ///
-  /// In en, this message translates to:
-  /// **'Checking · attention unknown'**
-  String get monitorChecking;
-
-  /// No description provided for @monitorUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not check · attention unknown'**
-  String get monitorUnavailable;
-
-  /// No description provided for @monitorWifiRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for Wi-Fi · attention unknown'**
-  String get monitorWifiRequired;
-
-  /// No description provided for @monitorPaused.
-  ///
-  /// In en, this message translates to:
-  /// **'Paused in background · attention unknown'**
-  String get monitorPaused;
-
-  /// No description provided for @monitorCurrent.
-  ///
-  /// In en, this message translates to:
-  /// **'Current observation'**
-  String get monitorCurrent;
-
-  /// No description provided for @monitorAllClear.
-  ///
-  /// In en, this message translates to:
-  /// **'No pending requests in the checked project'**
-  String get monitorAllClear;
-
-  /// No description provided for @monitorNoServers.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a server to monitor attention.'**
-  String get monitorNoServers;
 
   /// No description provided for @monitorSaveFailed.
   ///
@@ -4058,12 +3890,6 @@ abstract class AppLocalizations {
   /// **'Last checked'**
   String get monitorLastChecked;
 
-  /// No description provided for @monitorNextCheck.
-  ///
-  /// In en, this message translates to:
-  /// **'Next check'**
-  String get monitorNextCheck;
-
   /// Saved-server request row summary
   ///
   /// In en, this message translates to:
@@ -4074,12 +3900,6 @@ abstract class AppLocalizations {
     String lastChecked,
     String time,
   );
-
-  /// A localized monitor timestamp with its label
-  ///
-  /// In en, this message translates to:
-  /// **'{label}: {time}'**
-  String monitorLabeledTime(String label, String time);
 
   /// No description provided for @monitorCheckIn.
   ///
@@ -4116,12 +3936,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Time to check in'**
   String get monitorCheckInDue;
-
-  /// Span between busy samples, not a continuous duration or a lower bound on run length
-  ///
-  /// In en, this message translates to:
-  /// **'Busy at checks spanning {minutes} min · first check {since}'**
-  String monitorObservedBusy(int minutes, String since);
 
   /// No description provided for @quotaBudgetClearAll.
   ///
@@ -4297,12 +4111,6 @@ abstract class AppLocalizations {
   /// **'Sources are checked in rotation, at most three per cycle; larger lists take several cycles. Background reads require the existing live service to be active; Android may stop it. Displayed readings expire when the collector says they do. Device alerts record past threshold readings, not current remaining allowance. This page never switches your active server.'**
   String get quotaMonitorRuntime;
 
-  /// No description provided for @quotaMonitorEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.'**
-  String get quotaMonitorEmpty;
-
   /// No description provided for @quotaMonitorDisabled.
   ///
   /// In en, this message translates to:
@@ -4318,31 +4126,25 @@ abstract class AppLocalizations {
   /// No description provided for @quotaMonitorChecking.
   ///
   /// In en, this message translates to:
-  /// **'Checking the trusted collector…'**
+  /// **'Checking now…'**
   String get quotaMonitorChecking;
-
-  /// No description provided for @quotaMonitorCurrent.
-  ///
-  /// In en, this message translates to:
-  /// **'Fresh reading from the consented provider source.'**
-  String get quotaMonitorCurrent;
 
   /// No description provided for @quotaMonitorPaused.
   ///
   /// In en, this message translates to:
-  /// **'Monitoring is paused. Open the app or check the existing background service.'**
+  /// **'Paused. Checks start again when the app is open or Stay connected in the background is on.'**
   String get quotaMonitorPaused;
 
   /// No description provided for @quotaMonitorWifiRequired.
   ///
   /// In en, this message translates to:
-  /// **'Waiting for confirmed Wi-Fi. Unknown network status does not permit a read.'**
+  /// **'Waiting for Wi-Fi to check again.'**
   String get quotaMonitorWifiRequired;
 
   /// No description provided for @quotaMonitorSourceChanged.
   ///
   /// In en, this message translates to:
-  /// **'This provider account or source changed, or could not be verified. Open Remaining, read it again and review new consent.'**
+  /// **'The account on this server changed, so checks stopped. Open Remaining usage on that server and read it again.'**
   String get quotaMonitorSourceChanged;
 
   /// No description provided for @quotaMonitorSaveFailed.
@@ -7570,7 +7372,7 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Android 15+ allows six hours of this per 24 hours and then stops it; the app turns the switch off and says so when that happens.'**
+  /// **'Android stops this after 6 hours a day. The app will tell you when it does.'**
   String get e7SettingsUi34;
 
   /// Settings and appearance user interface.
@@ -18221,12 +18023,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Background: {state}'**
   String notifyHubBackgroundSummary(String state);
-
-  /// Link from the saved-servers attention list and the Usage screen to the Notifications screen.
-  ///
-  /// In en, this message translates to:
-  /// **'Notification settings'**
-  String get monitorNotificationSettings;
 
   /// Usage screen section (tab): what the connected server reports it used.
   ///
@@ -31504,6 +31300,18 @@ abstract class AppLocalizations {
   /// **'Branch, language services and formatters'**
   String get projectHubHealthSubtitle;
 
+  /// Project tab (slice-close-misc): the live line under Changes, from the project's working tree
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No changes} =1{1 file changed} other{{count} files changed}}'**
+  String projectHubChangedFiles(int count);
+
+  /// Project tab (slice-close-misc): the live line under Terminal, how many terminals are running; not shown when none are
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 running} other{{count} running}}'**
+  String projectHubTerminalsRunning(int count);
+
   /// Project tab: the project menu item that copies the project folder's path.
   ///
   /// In en, this message translates to:
@@ -32091,24 +31899,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Background checks'**
   String get monitorBackgroundChecks;
-
-  /// Supporting line of the Servers page's Background checks row, e.g. 'Last checked 5m ago'
-  ///
-  /// In en, this message translates to:
-  /// **'Last checked {when}'**
-  String monitorRowLastChecked(String when);
-
-  /// Supporting line of the Servers page's Background checks row when a server is monitored but no check has finished yet
-  ///
-  /// In en, this message translates to:
-  /// **'Not checked yet'**
-  String get monitorRowNotChecked;
-
-  /// Supporting line of the Servers page's Background checks row when no saved server is monitored
-  ///
-  /// In en, this message translates to:
-  /// **'Off for every server'**
-  String get monitorRowOff;
 
   /// Settings › Help row (and search result) that opens the offline demo conversation
   ///
@@ -32905,7 +32695,7 @@ abstract class AppLocalizations {
   /// Remaining: collector setup step 1
   ///
   /// In en, this message translates to:
-  /// **'Ask whoever runs {server} to install the quota collector from tool/quota in the app’s repository. It needs Node 20 or later.'**
+  /// **'Ask whoever runs {server} to install the quota collector. It needs Node 20 or later.'**
   String quotaCollectorStepInstall(String server);
 
   /// Remaining: collector setup step 2
@@ -32919,6 +32709,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Then come back here and read again.'**
   String get quotaCollectorStepRetry;
+
+  /// Remaining (slice-close-misc): button under the collector steps; opens the collector's full guide on the web
+  ///
+  /// In en, this message translates to:
+  /// **'Open the collector guide'**
+  String get quotaCollectorGuide;
+
+  /// Remaining (collector path, slice-close-misc): label over the answer rows read through the collector
+  ///
+  /// In en, this message translates to:
+  /// **'{provider}, from the quota collector on {server}'**
+  String quotaCollectorFrom(String provider, String server);
+
+  /// Remaining (collector path, slice-close-misc): the reading has no window with a used percentage
+  ///
+  /// In en, this message translates to:
+  /// **'The quota collector on {server} reported no limits for {provider}.'**
+  String quotaCollectorNoWindows(String provider, String server);
+
+  /// Remaining (collector path, slice-close-misc): row that stops reading through the collector for this visit
+  ///
+  /// In en, this message translates to:
+  /// **'Stop using the quota collector on {server}'**
+  String quotaStopCollector(String server);
+
+  /// Remaining (collector path): what stopping the collector does
+  ///
+  /// In en, this message translates to:
+  /// **'The reading goes away, and Remaining asks you again before the next read.'**
+  String get quotaStopCollectorDetail;
+
+  /// Remaining (collector path): Details label for the collector's web address
+  ///
+  /// In en, this message translates to:
+  /// **'Collector address'**
+  String get quotaCollectorAddressLabel;
+
+  /// Remaining (collector path): Details label for the plan the provider reported
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get quotaPlanLabel;
+
+  /// Remaining (collector path): Details label for when the collector took the reading
+  ///
+  /// In en, this message translates to:
+  /// **'Read at'**
+  String get quotaReadAtLabel;
 
   /// Usage (Spent): above the total, when the server covered exactly today
   ///
