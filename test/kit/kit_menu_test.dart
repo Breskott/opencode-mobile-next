@@ -234,6 +234,28 @@ void main() {
       expect(rows.where((r) => r is! KitMenuItem), hasLength(2));
     });
 
+    test('a named group leads with its heading (slice-P10.1-2)', () {
+      const goTo = KitMenuGroup('Go to');
+      const act = KitMenuGroup('Do');
+      final rows = kitMenuLayout([
+        item('open'),
+        item('find', group: goTo),
+        item('details', group: goTo),
+        item('fork', group: act),
+        item('delete', destructive: true),
+      ]);
+      expect(rows.whereType<KitMenuGroup>().map((g) => g.label), [
+        'Go to',
+        'Do',
+      ]);
+      // open | divider, Go to, find, details | divider, Do, fork | divider,
+      // delete: a heading follows its group's divider, never an item.
+      expect(rows.indexOf(goTo), rows.indexOf(rows[1]) + 1);
+      expect(rows[rows.indexOf(goTo) + 1], isA<KitMenuItem>());
+      expect(rows[rows.indexOf(act) + 1], isA<KitMenuItem>());
+      expect(rows.last, isA<KitMenuItem>());
+    });
+
     test('no leading divider when every item is destructive', () {
       final rows = kitMenuLayout([
         item('delete', destructive: true),
@@ -242,6 +264,50 @@ void main() {
       expect(rows.first, isA<KitMenuItem>());
       expect(rows.where((r) => r is! KitMenuItem), isEmpty);
     });
+  });
+
+  testWidgets('a named group heading is a header, never focused', (
+    tester,
+  ) async {
+    final context = await pumpKitHost(tester);
+    final handle = tester.ensureSemantics();
+    var runs = 0;
+    unawaited(
+      showKitMenu(
+        context,
+        items: [
+          KitMenuItem(
+            label: 'Find',
+            group: const KitMenuGroup('Go to'),
+            onSelected: () => runs++,
+          ),
+          KitMenuItem(
+            label: 'Fork conversation',
+            group: const KitMenuGroup('Do'),
+            onSelected: () => runs++,
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    final heading = find.byKey(const ValueKey('kit-menu-heading-Go to'));
+    expect(heading, findsOneWidget);
+    expect(
+      tester.getSemantics(find.text('Go to')),
+      isSemantics(isHeader: true, label: 'Go to'),
+    );
+    // Tapping a heading selects nothing and keeps the menu open.
+    await tester.tap(heading);
+    await tester.pumpAndSettle();
+    expect(runs, 0);
+    expect(find.text('Find'), findsOneWidget);
+    // The first focusable entry is the first item, not the heading.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(runs, 1);
+    handle.dispose();
   });
 
   testWidgets('1. returns the tapped item after onSelected ran exactly once', (

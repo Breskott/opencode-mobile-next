@@ -34,6 +34,7 @@ const paseoServerCapabilities = ServerCapabilities(
   sessionImportExport: false,
   sessionNotes: false,
   serverCatalog: false,
+  slashCommands: false,
   profileAttentionPolling: false,
   managedWorkspaces: false,
   workspaceWarp: false,

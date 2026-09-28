@@ -87,6 +87,10 @@ class KitTopBar extends StatelessWidget {
   final Key? titleKey;
   final Key? exitKey;
   final Key? menuKey;
+  // slice-P10.1-2: when the overflow is one thing's menu, its name is the
+  // button's tooltip and the menu's semantic name ("Conversation menu");
+  // default "More".
+  final String? menuLabel;
 }
 
 enum KitShellControlsLayout {

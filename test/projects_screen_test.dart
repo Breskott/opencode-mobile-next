@@ -695,6 +695,8 @@ void main() {
 
     await tester.longPress(find.text('Menu target'));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Delete'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
     expect(find.text('Delete conversation?'), findsOneWidget);

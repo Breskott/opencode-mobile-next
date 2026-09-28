@@ -54,8 +54,9 @@ import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
 import '../desktop/file_drop.dart';
 import '../desktop/shortcuts.dart';
-import '../search/search_index.dart';
 import '../widgets/always_allow_invitation.dart';
+import '../widgets/command_sheet.dart';
+import '../widgets/session_menu.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/default_notices.dart';
 import '../widgets/file_preview.dart';
@@ -77,7 +78,6 @@ import '../widgets/session_handoff_sheets.dart';
 import '../widgets/running_agents_strip.dart';
 import '../widgets/terminal_view.dart';
 import '../widgets/tool_card.dart';
-import '../widgets/transcript_display_toggles.dart';
 import '../../api2/models.dart' show Api2Delivery, Api2FormInfo, Api2InboxItem;
 import '../../feedback/bug_report.dart' show openBugReport;
 import '../kit/kit.dart';
@@ -263,6 +263,10 @@ class ChatScreen extends StatefulWidget {
   /// scrolls to the newest failed turn and marks it.
   final bool landOnFailure;
 
+  /// P10.2: a Work row's conversation-menu pick ("Changes", "Fork", …) that
+  /// needs the open conversation; run once, after the first history.
+  final SessionMenuAction? menuAction;
+
   const ChatScreen({
     super.key,
     required this.sessionID,
@@ -278,6 +282,7 @@ class ChatScreen extends StatefulWidget {
     this.watch,
     this.landOnRequestID,
     this.landOnFailure = false,
+    this.menuAction,
   });
 
   @override
@@ -598,6 +603,8 @@ class _ChatScreenState extends State<ChatScreen>
   bool get _supportsSessionCompact => _conn.capabilities.sessionCompact;
 
   bool _chatCommandSupported(_ChatCommand command) => switch (command.action) {
+    _ChatCommandAction.shell => _conn.capabilities.terminal,
+    _ChatCommandAction.note => _conn.supportsSessionNotes,
     _ChatCommandAction.sessions => _conn.capabilities.globalSessionSearch,
     _ChatCommandAction.workspaces ||
     _ChatCommandAction.move ||
@@ -2066,6 +2073,7 @@ class _ChatScreenState extends State<ChatScreen>
       });
       _restoreHistoryAnchor(anchor, generation);
       _landOnFailedTurn();
+      _runRouteMenuAction();
     } catch (e) {
       if (!_currentHistory(generation, scope)) return;
       setState(() => _error = e);
@@ -2701,6 +2709,30 @@ class _ChatScreenState extends State<ChatScreen>
       await _submitTypedCommand(typedCommand);
       return;
     }
+    if (!_conn.isIsolated && _attachments.isEmpty) {
+      final typed = _composer.text.trim();
+      // "!command" runs in this conversation's shell; its output joins the
+      // transcript as the shell step's card (P10.1).
+      if (_shellLine.firstMatch(typed) case final shell?) {
+        if (hasStagedReferences) _noteReferencesKeptForNextPrompt();
+        await _submitShellLine(shell.group(1)!.trim());
+        return;
+      }
+      // An agent that does not share its commands never gets "/compact" as
+      // a plain message pretending to be a command: say so, send nothing.
+      final slash = _conn.capabilities.slashCommands
+          ? null
+          : _slashWord.firstMatch(typed);
+      if (slash != null) {
+        _showComposerNote(
+          strings.commandSheetAgentCommandNotSent(
+            '/${slash.group(1)}',
+            _agentWord(strings),
+          ),
+        );
+        return;
+      }
+    }
     if (_conn.supportsStagedRevert &&
         (_conn.sessionsById[widget.sessionID]?.reverted == true ||
             _conn.sessionRevertSaving(widget.sessionID))) {
@@ -2976,6 +3008,43 @@ class _ChatScreenState extends State<ChatScreen>
     return null;
   }
 
+  static final _shellLine = RegExp(r'^!([^\s!][\s\S]*)$');
+  static final _slashWord = RegExp(r'^/(\S+)');
+
+  /// The agent's name for copy: "Codex", "Claude Code", else the server's.
+  String _agentWord(AppLocalizations strings) =>
+      commandSheetAgentName(_conn) ??
+      _conn.profile?.name ??
+      strings.commandSheetAgentFallback;
+
+  /// A composer line that starts with "!": the rest runs as a shell
+  /// command in this conversation, the same call as Run shell command. A
+  /// server with no shell for the conversation says so and sends nothing.
+  Future<void> _submitShellLine(String command) async {
+    final strings = _chatL10n(context);
+    if (!_conn.capabilities.terminal) {
+      _showComposerNote(
+        strings.commandSheetShellNotSent('!$command', _agentWord(strings)),
+      );
+      return;
+    }
+    final original = _composer.text;
+    setState(() => _sending = true);
+    try {
+      await _runShellCommand(command);
+      if (!mounted) return;
+      _composer.clear();
+      _focus.requestFocus();
+    } catch (error) {
+      if (!mounted) return;
+      _composer.text = original;
+      _composer.selection = TextSelection.collapsed(offset: original.length);
+      _showActionError(error);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
   Future<void> _submitTypedCommand(
     ({_ChatCommand command, String arguments}) typed,
   ) async {
@@ -2988,7 +3057,7 @@ class _ChatScreenState extends State<ChatScreen>
     }
     if (command.serverCommand == null) {
       _composer.clear();
-      await _runMobileCommand(command.action!);
+      await _runMobileCommand(command.action! as _ChatCommandAction);
       return;
     }
     if (_conn.supportsStagedRevert &&
@@ -3761,11 +3830,29 @@ class _ChatScreenState extends State<ChatScreen>
       final repository = await _requireActionRepository();
       final id = await repository.forkSession(widget.sessionID);
       await _conn.refreshSessions();
-      if (mounted) Navigator.of(context).pushReplacementNamed('/chat/$id');
+      if (mounted) await _landInFork(id);
     } catch (error) {
       if (mounted) _showActionError(error);
     }
   }
+
+  /// Every fork lands in one place (P10.2): the copy opens in place of
+  /// this conversation, from the menu's Fork, "/fork", a prompt's own Fork
+  /// and the timeline alike. A fork from a prompt brings that prompt back
+  /// into the copy's composer.
+  Future<void> _landInFork(
+    String id, {
+    String initialText = '',
+    List<PromptAttachment> initialAttachments = const [],
+  }) => Navigator.of(context).pushReplacement(
+    KitPageRoute<void>(
+      builder: (_) => ChatScreen(
+        sessionID: id,
+        initialText: initialText,
+        initialAttachments: initialAttachments,
+      ),
+    ),
+  );
 
   Future<ServerOperationsGateway> _requireActionRepository() async {
     final strings = _chatL10n(context);
@@ -3777,9 +3864,10 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  Future<void> _openTimeline({bool forkMode = false}) async {
+  Future<void> _openTimeline() async {
     if (_messages.isEmpty) return;
-    forkMode = forkMode && _conn.capabilities.sessionFork;
+    // A prompt's own Fork in the timeline lands like every fork (P10.2).
+    const forkMode = false;
     final selection = await showModalBottomSheet<_TimelineSelection>(
       context: context,
       isScrollControlled: true,
@@ -4454,15 +4542,7 @@ class _ChatScreenState extends State<ChatScreen>
       );
       await _conn.refreshSessions();
       if (!mounted) return;
-      await Navigator.of(context).pushReplacement(
-        KitPageRoute<void>(
-          builder: (_) => ChatScreen(
-            sessionID: id,
-            initialText: text,
-            initialAttachments: attachments,
-          ),
-        ),
-      );
+      await _landInFork(id, initialText: text, initialAttachments: attachments);
     } catch (error) {
       if (mounted) _showActionError(error);
     }
@@ -4954,7 +5034,7 @@ class _ChatScreenState extends State<ChatScreen>
       : (command) => unawaited(_runShellDialog(initial: command));
 
   Future<void> _loadServerCommands() {
-    if (_conn.isIsolated || !_conn.capabilities.serverCatalog) {
+    if (_conn.isIsolated || !_conn.capabilities.slashCommands) {
       return Future.value();
     }
     final existing = _serverCommandsRequest;
@@ -4995,16 +5075,18 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
-  /// The app's actions this server can run, then its own commands.
+  /// The app's actions this server can run, then its own commands (only
+  /// where the server lists them: [ServerCapabilities.slashCommands]).
   List<_ChatCommand> get _chatCommands {
     final supported = _builtinChatCommands
         .where(_chatCommandSupported)
         .toList();
-    if (!_conn.capabilities.serverCatalog) return supported;
-    final dynamic = [
-      for (final command in _serverCommands ?? const <CommandInfo>[])
-        _ChatCommand.server(command, _chatL10n(context)),
-    ];
+    if (!_conn.capabilities.slashCommands) return supported;
+    final dynamic = serverCommandEntries(
+      _chatL10n(context),
+      _serverCommands ?? const <CommandInfo>[],
+      serverName: _conn.profile?.name,
+    );
     return [...supported, ...dynamic];
   }
 
@@ -5020,19 +5102,18 @@ class _ChatScreenState extends State<ChatScreen>
           (command, capability),
   ];
 
-  static String? _missingCapability(_ChatCommandAction? action) =>
-      switch (action) {
-        _ChatCommandAction.files ||
-        _ChatCommandAction.terminal ||
-        _ChatCommandAction.references ||
-        _ChatCommandAction.workspaces ||
-        _ChatCommandAction.projectHealth => 'flag:fileBrowsing+terminal',
-        _ChatCommandAction.diff => 'flag:sessionDiff',
-        _ChatCommandAction.integrations ||
-        _ChatCommandAction.mcpServers ||
-        _ChatCommandAction.skills => 'flag:serverCatalog',
-        _ => null,
-      };
+  static String? _missingCapability(Object? action) => switch (action) {
+    _ChatCommandAction.files ||
+    _ChatCommandAction.terminal ||
+    _ChatCommandAction.references ||
+    _ChatCommandAction.workspaces ||
+    _ChatCommandAction.projectHealth => 'flag:fileBrowsing+terminal',
+    _ChatCommandAction.diff => 'flag:sessionDiff',
+    _ChatCommandAction.integrations ||
+    _ChatCommandAction.mcpServers ||
+    _ChatCommandAction.skills => 'flag:serverCatalog',
+    _ => null,
+  };
 
   List<_ChatCommand> get _builtinChatCommands {
     final session = _conn.sessionsById[widget.sessionID];
@@ -5041,7 +5122,7 @@ class _ChatScreenState extends State<ChatScreen>
           message.info.role == 'user' && !message.info.id.startsWith('local-'),
     );
     return <_ChatCommand>[
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'new',
         aliases: const ['clear'],
         title: _chatL10n(context).workspaceNewSession,
@@ -5049,7 +5130,7 @@ class _ChatScreenState extends State<ChatScreen>
         group: _chatL10n(context).chatUiNavigate,
         action: _ChatCommandAction.newSession,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'sessions',
         aliases: const ['resume', 'continue'],
         title: _chatL10n(context).usageSessions,
@@ -5059,7 +5140,7 @@ class _ChatScreenState extends State<ChatScreen>
         group: _chatL10n(context).chatUiNavigate,
         action: _ChatCommandAction.sessions,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'workspaces',
         aliases: const ['workspace'],
         title: _chatL10n(context).chatUiProjectsAndWorkspaces,
@@ -5067,7 +5148,7 @@ class _ChatScreenState extends State<ChatScreen>
         group: _chatL10n(context).chatUiNavigate,
         action: _ChatCommandAction.workspaces,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'move',
         title: _chatL10n(context).chatUiMoveSession,
         description: _chatL10n(
@@ -5079,7 +5160,7 @@ class _ChatScreenState extends State<ChatScreen>
       // §7 row 5: warping a session into a managed workspace has no v2
       // equivalent, so the command leaves the palette rather than failing.
       if (_conn.capabilities.workspaceWarp)
-        _ChatCommand.mobile(
+        CommandSheetEntry.app(
           slash: 'warp',
           title: _chatL10n(context).chatUiMoveSession,
           description: _chatL10n(
@@ -5088,14 +5169,14 @@ class _ChatScreenState extends State<ChatScreen>
           group: _chatL10n(context).chatUiCurrentSession,
           action: _ChatCommandAction.warp,
         ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'editor',
         title: _chatL10n(context).chatUiPromptEditor,
         description: _chatL10n(context).chatUiEditTheCurrentPromptInAFocused,
         group: _chatL10n(context).chatUiCompose,
         action: _ChatCommandAction.promptEditor,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'files',
         aliases: const ['open'],
         title: _chatL10n(context).chatUiProjectFiles,
@@ -5105,7 +5186,7 @@ class _ChatScreenState extends State<ChatScreen>
         group: _chatL10n(context).chatUiNavigate,
         action: _ChatCommandAction.files,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'health',
         title: _chatL10n(context).chatUiProjectHealth,
         description: _chatL10n(
@@ -5114,14 +5195,14 @@ class _ChatScreenState extends State<ChatScreen>
         group: _chatL10n(context).chatUiNavigate,
         action: _ChatCommandAction.projectHealth,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'terminal',
         title: _chatL10n(context).libraryTerminalTitle,
         description: _chatL10n(context).chatUiOpenPersistentWorkspaceTerminals,
         group: _chatL10n(context).chatUiNavigate,
         action: _ChatCommandAction.terminal,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'models',
         aliases: const ['model', 'mo'],
         title: _chatL10n(context).chatUiModel,
@@ -5129,7 +5210,7 @@ class _ChatScreenState extends State<ChatScreen>
         group: _chatL10n(context).chatUiModelAndAgent,
         action: _ChatCommandAction.model,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'agents',
         aliases: const ['agent'],
         title: _chatL10n(context).chatUiAgent,
@@ -5137,7 +5218,7 @@ class _ChatScreenState extends State<ChatScreen>
         group: _chatL10n(context).chatUiModelAndAgent,
         action: _ChatCommandAction.model,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'variants',
         title: _chatL10n(context).modelThinkingMode,
         description: _chatL10n(
@@ -5146,7 +5227,7 @@ class _ChatScreenState extends State<ChatScreen>
         group: _chatL10n(context).chatUiModelAndAgent,
         action: _ChatCommandAction.model,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'mcps',
         aliases: const ['mcp'],
         title: _chatL10n(context).chatUiMCPServers,
@@ -5156,7 +5237,7 @@ class _ChatScreenState extends State<ChatScreen>
         group: 'OpenCode',
         action: _ChatCommandAction.mcpServers,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'connect',
         title: _chatL10n(context).chatUiConnectProvider,
         description: _chatL10n(
@@ -5167,7 +5248,7 @@ class _ChatScreenState extends State<ChatScreen>
       ),
       // §7 row 8.
       if (_conn.capabilities.consoleOrganizations)
-        _ChatCommand.mobile(
+        CommandSheetEntry.app(
           slash: 'org',
           aliases: const ['orgs', 'switch-org'],
           title: _chatL10n(context).chatUiSwitchOrganization,
@@ -5177,7 +5258,7 @@ class _ChatScreenState extends State<ChatScreen>
           group: 'OpenCode',
           action: _ChatCommandAction.organization,
         ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'skills',
         title: _chatL10n(context).chatUiSkills,
         description: _chatL10n(context).chatUiBrowseProjectAndGlobalSkills,
@@ -5186,7 +5267,7 @@ class _ChatScreenState extends State<ChatScreen>
       ),
       // §7 row 20: no tool inventory endpoint, so the destination goes too.
       if (_conn.capabilities.toolInventory)
-        _ChatCommand.mobile(
+        CommandSheetEntry.app(
           slash: 'tools',
           title: _chatL10n(context).chatUiToolsAndCapabilities,
           description: _chatL10n(
@@ -5195,7 +5276,7 @@ class _ChatScreenState extends State<ChatScreen>
           group: 'OpenCode',
           action: _ChatCommandAction.tools,
         ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'references',
         aliases: const ['reference', 'refs'],
         title: _chatL10n(context).chatUiProjectReferences,
@@ -5205,7 +5286,7 @@ class _ChatScreenState extends State<ChatScreen>
         group: 'OpenCode',
         action: _ChatCommandAction.references,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'status',
         title: _chatL10n(context).chatUiServerStatus,
         description: _chatL10n(
@@ -5214,14 +5295,14 @@ class _ChatScreenState extends State<ChatScreen>
         group: 'OpenCode',
         action: _ChatCommandAction.status,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'debug',
         title: _chatL10n(context).chatUiAppDiagnostics,
         description: _chatL10n(context).chatUiReviewHandledAppErrorsAndSendA,
         group: 'OpenCode',
         action: _ChatCommandAction.diagnostics,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'themes',
         aliases: const ['theme'],
         title: _chatL10n(context).chatUiAppearance,
@@ -5231,14 +5312,17 @@ class _ChatScreenState extends State<ChatScreen>
         group: _chatL10n(context).chatUiTranscriptDisplay,
         action: _ChatCommandAction.appearance,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'diff',
         title: _chatL10n(context).chatUiSessionChanges,
         description: _chatL10n(context).chatUiReviewTheActualDiffForThisSession,
         group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.diff,
+        // The conversation menu is its one home (P10.2); typing it
+        // still works.
+        listed: false,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'context',
         aliases: const ['usage'],
         title: _chatL10n(context).chatUiSessionContext,
@@ -5247,6 +5331,9 @@ class _ChatScreenState extends State<ChatScreen>
         ).chatUiInspectCurrentTokensCacheCostAndContext,
         group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.context,
+        // The conversation menu is its one home (P10.2); typing it
+        // still works.
+        listed: false,
         enabled: _messages.any(
           (message) =>
               message.info.role == 'assistant' && message.info.tokens.total > 0,
@@ -5254,7 +5341,7 @@ class _ChatScreenState extends State<ChatScreen>
       ),
       // §7 rows 10–11.
       if (_conn.capabilities.sessionShare) ...[
-        _ChatCommand.mobile(
+        CommandSheetEntry.app(
           slash: 'share',
           title: _shareUrl == null
               ? _chatL10n(context).chatUiShareSession
@@ -5262,8 +5349,11 @@ class _ChatScreenState extends State<ChatScreen>
           description: _chatL10n(context).chatUiCreateOrCopyAPublicSessionLink,
           group: _chatL10n(context).chatUiCurrentSession,
           action: _ChatCommandAction.share,
+          // The conversation menu is its one home (P10.2); typing it
+          // still works.
+          listed: false,
         ),
-        _ChatCommand.mobile(
+        CommandSheetEntry.app(
           slash: 'unshare',
           title: _chatL10n(context).chatUiStopSharing,
           description: _chatL10n(
@@ -5271,34 +5361,46 @@ class _ChatScreenState extends State<ChatScreen>
           ).chatUiDisableTheCurrentPublicSessionLink,
           group: _chatL10n(context).chatUiCurrentSession,
           action: _ChatCommandAction.unshare,
+          // The conversation menu is its one home (P10.2); typing it
+          // still works.
+          listed: false,
           enabled: _shareUrl != null,
         ),
       ],
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'rename',
         title: _chatL10n(context).chatUiRenameSession,
         description: _chatL10n(context).chatUiChangeTheTitleShownInTheSession,
         group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.rename,
+        // The conversation menu is its one home (P10.2); typing it
+        // still works.
+        listed: false,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'timeline',
         aliases: const ['messages'],
         title: _chatL10n(context).chatUiMessageTimeline,
         description: _chatL10n(context).chatUiFindAMessageJumpToItOr,
         group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.timeline,
+        // The conversation menu is its one home (P10.2); typing it
+        // still works.
+        listed: false,
         enabled: _messages.isNotEmpty,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'fork',
-        title: _chatL10n(context).chatUiForkFromPrompt,
-        description: _chatL10n(context).chatUiChooseAPromptAndContinueItIn,
+        title: _chatL10n(context).chatUiForkSession,
+        description: _chatL10n(context).sessionMenuForkHint,
         group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.fork,
+        // The conversation menu is its one home (P10.2); typing it
+        // still works.
+        listed: false,
         enabled: hasUserMessage,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'compact',
         aliases: const ['summarize'],
         title: _chatL10n(context).chatUiCompactContext,
@@ -5307,9 +5409,12 @@ class _ChatScreenState extends State<ChatScreen>
         ).chatUiSummarizeTheSessionUsingTheSelectedModel,
         group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.compact,
+        // The conversation menu is its one home (P10.2); typing it
+        // still works.
+        listed: false,
         enabled: hasUserMessage,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'thinking',
         aliases: const ['toggle-thinking'],
         title: _conn.transcriptReasoningExpanded
@@ -5321,7 +5426,7 @@ class _ChatScreenState extends State<ChatScreen>
         group: _chatL10n(context).chatUiTranscriptDisplay,
         action: _ChatCommandAction.thinking,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'timestamps',
         aliases: const ['toggle-timestamps'],
         title: _conn.transcriptTimestampsVisible
@@ -5333,7 +5438,7 @@ class _ChatScreenState extends State<ChatScreen>
         group: _chatL10n(context).chatUiTranscriptDisplay,
         action: _ChatCommandAction.timestamps,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'undo',
         title: _chatL10n(context).chatUiRevertLastPrompt,
         description: _chatL10n(context).revertUndoDescription,
@@ -5345,7 +5450,7 @@ class _ChatScreenState extends State<ChatScreen>
             !_conn.sessionRevertSaving(widget.sessionID) &&
             !_conn.busySessions.contains(widget.sessionID),
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'redo',
         title: _conn.supportsStagedRevert
             ? _chatL10n(context).revertClearAction
@@ -5357,7 +5462,7 @@ class _ChatScreenState extends State<ChatScreen>
         action: _ChatCommandAction.redo,
         enabled: session?.reverted == true,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'copy',
         title: _chatL10n(context).chatUiCopyTranscript,
         description: _chatL10n(
@@ -5366,7 +5471,7 @@ class _ChatScreenState extends State<ChatScreen>
         group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.copy,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
         slash: 'export',
         title: _chatL10n(context).chatUiExportTranscript,
         description: _chatL10n(
@@ -5375,7 +5480,53 @@ class _ChatScreenState extends State<ChatScreen>
         group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.export,
       ),
-      _ChatCommand.mobile(
+      CommandSheetEntry.app(
+        slash: 'shell',
+        aliases: const ['!'],
+        title: _chatL10n(context).chatUiRunShellCommand,
+        description: _chatL10n(context).commandSheetShellDescription,
+        group: _chatL10n(context).chatUiCurrentSession,
+        action: _ChatCommandAction.shell,
+      ),
+      CommandSheetEntry.app(
+        slash: 'retry',
+        title: _chatL10n(context).chatUiRetryLastPrompt,
+        description: _chatL10n(context).commandSheetRetryDescription,
+        group: _chatL10n(context).chatUiCurrentSession,
+        action: _ChatCommandAction.retry,
+        enabled: hasUserMessage && !_sending,
+      ),
+      CommandSheetEntry.app(
+        slash: 'note',
+        title: _chatL10n(context).sessionNoteTitle,
+        description: _chatL10n(context).commandSheetNoteDescription,
+        group: _chatL10n(context).chatUiCurrentSession,
+        action: _ChatCommandAction.note,
+      ),
+      CommandSheetEntry.app(
+        slash: 'approvals',
+        title: _chatL10n(context).approvalsUiMenu,
+        description: _chatL10n(context).commandSheetApprovalsDescription,
+        group: _chatL10n(context).chatUiCurrentSession,
+        action: _ChatCommandAction.approvals,
+      ),
+      CommandSheetEntry.app(
+        slash: 'plan',
+        aliases: const ['todos'],
+        title: _chatL10n(context).chatUiTodos,
+        description: _chatL10n(context).commandSheetPlanDescription,
+        group: _chatL10n(context).chatUiCurrentSession,
+        action: _ChatCommandAction.plan,
+        enabled: _latestPlan != null,
+      ),
+      CommandSheetEntry.app(
+        slash: 'reload',
+        title: _chatL10n(context).chatUiReloadMessages,
+        description: _chatL10n(context).commandSheetReloadDescription,
+        group: _chatL10n(context).chatUiCurrentSession,
+        action: _ChatCommandAction.reload,
+      ),
+      CommandSheetEntry.app(
         slash: 'help',
         title: _chatL10n(context).chatUiCommandMap,
         description: _chatL10n(
@@ -5383,6 +5534,9 @@ class _ChatScreenState extends State<ChatScreen>
         ).chatUiSearchMobileActionsAndServerProvidedCommands,
         group: 'OpenCode',
         action: _ChatCommandAction.help,
+        // The conversation menu is its one home (P10.2); typing it
+        // still works.
+        listed: false,
       ),
     ];
   }
@@ -5446,12 +5600,14 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  /// The command sheet (slice-P10.1), the same one Settings › Tools ›
+  /// Commands shows: this server's commands and the app's, and the
+  /// subagents a prompt can be handed to. A pick runs in this conversation.
   Future<void> _openCommandLauncher({
-    _ComposerToolTab initialTab = _ComposerToolTab.commands,
+    CommandSheetTab initialTab = CommandSheetTab.commands,
   }) async {
     if (_conn.isIsolated) return;
-    if (!_supportsPromptAgentMentions &&
-        initialTab == _ComposerToolTab.agents) {
+    if (!_supportsPromptAgentMentions && initialTab == CommandSheetTab.agents) {
       return;
     }
     FocusManager.instance.primaryFocus?.unfocus();
@@ -5463,13 +5619,14 @@ class _ChatScreenState extends State<ChatScreen>
       isScrollControlled: true,
       useSafeArea: true,
       constraints: const BoxConstraints(maxWidth: 720),
-      builder: (sheetContext) => _CommandLauncherSheet(
+      builder: (sheetContext) => CommandSheet(
         controller: _conn,
         initialTab: initialTab,
         commands: () => _chatCommands,
         unavailable: () => _unavailableChatCommands,
         agents: () => _subagents,
         loading: () => _serverCommandsLoading,
+        loaded: () => _serverCommands != null,
         error: () => _serverCommandsError,
         onRefresh: _loadServerCommands,
         onSelected: (command) {
@@ -5500,7 +5657,7 @@ class _ChatScreenState extends State<ChatScreen>
       return;
     }
     if (_composer.text.trimLeft().startsWith('/')) _composer.clear();
-    unawaited(_runMobileCommand(command.action!));
+    unawaited(_runMobileCommand(command.action! as _ChatCommandAction));
   }
 
   Future<void> _runMobileCommand(_ChatCommandAction action) async {
@@ -5747,8 +5904,10 @@ class _ChatScreenState extends State<ChatScreen>
       case _ChatCommandAction.timeline:
         await _openTimeline();
         return;
+      // Fork lands in one place (P10.2): the copy opens at once, from the
+      // menu, "/fork" and a prompt's own Fork alike.
       case _ChatCommandAction.fork:
-        await _openTimeline(forkMode: true);
+        await _fork();
         return;
       case _ChatCommandAction.compact:
         await _compact();
@@ -5773,6 +5932,28 @@ class _ChatScreenState extends State<ChatScreen>
         return;
       case _ChatCommandAction.help:
         await _openCommandLauncher();
+        return;
+      case _ChatCommandAction.shell:
+        await _runShellDialog();
+        return;
+      case _ChatCommandAction.retry:
+        await _retryLast();
+        return;
+      case _ChatCommandAction.note:
+        await _openSessionNote();
+        return;
+      case _ChatCommandAction.approvals:
+        await showSessionApprovalsSheet(
+          context,
+          controller: _conn,
+          sessionID: widget.sessionID,
+        );
+        return;
+      case _ChatCommandAction.reload:
+        await _load();
+        return;
+      case _ChatCommandAction.plan:
+        _openPlan();
         return;
     }
   }
@@ -5928,134 +6109,88 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
-  /// One bottom sheet for every session view destination and the two
-  /// transcript display toggles, replacing the old app-bar popup menu.
-  /// One bottom sheet behind the app bar's single overflow: the session's
-  /// views and transcript toggles, then its mutation and utility actions.
-  Future<void> _openSessionMenu({
-    required bool reverted,
-    required bool shared,
-  }) async {
-    if (_conn.isIsolated) return;
-    final menuLocation = _conn.locationRevision;
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => LayoutBuilder(
-        builder: (context, constraints) => ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: constraints.maxHeight * .85),
-          child: SessionMenuSheet(
-            conversationTitle: presentedSessionTitle(
-              _conn.sessionsById[widget.sessionID],
-              fallback: _chatL10n(context).commandDestination,
-            ),
-            reasoningExpanded: _conn.transcriptReasoningExpanded,
-            timestampsVisible: _conn.transcriptTimestampsVisible,
-            // The plan lives in the transcript; the entry is offered when
-            // there is one to land on.
-            todosAvailable: _latestPlan != null,
-            changesAvailable: _conn.capabilities.sessionDiff,
-            forkAvailable: _conn.capabilities.sessionFork,
-            revertAvailable: _conn.capabilities.sessionRevert,
-            compactAvailable: _supportsSessionCompact,
-            terminalAvailable: _conn.capabilities.terminal,
-            subagentsAvailable: _conn.capabilities.projectManagement,
-            reverted: reverted,
-            stagedRevert: _conn.supportsStagedRevert,
-            notesAvailable: _conn.supportsSessionNotes,
-            skillsAvailable: _conn.supportsSessionSkills,
-            resultsAvailable: _conn.capabilities.projectManagement,
-            shared: shared,
-            sharingAvailable: _conn.capabilities.sessionShare,
-            approvalsAvailable: true,
-            continueOnComputerAvailable: _conn.capabilities.cliSessionResume,
-            continueOnPhoneAvailable: _conn.profile != null,
-          ),
-        ),
+  /// The conversation menu (slice-P10.2): "Go to" (Changes, Timeline,
+  /// Find, Subagents, Details) and "Do" (Share, Compact, Fork, Rename,
+  /// Continue on computer, Open on another phone), one [KitMenuItem] list in
+  /// the title bar's overflow. A Work row's menu is built by the same
+  /// [sessionMenuItems] and hands its conversation acts to this screen
+  /// ([ChatScreen.menuAction]). The app's other actions are commands, in
+  /// the command sheet.
+  List<KitMenuItem> _sessionMenu({required bool shared}) {
+    if (_conn.isIsolated || _watching) return const [];
+    final hasPrompt = _visibleHistory.any(
+      (message) =>
+          message.info.role == 'user' && !message.info.id.startsWith('local-'),
+    );
+    return sessionMenuItems(
+      _chatL10n(context),
+      SessionMenuOffer.of(
+        _conn.capabilities,
+        shared: shared,
+        savedServer: _conn.profile != null,
+        compact: _supportsSessionCompact,
+        timeline: _messages.isNotEmpty,
+        hasPrompt: hasPrompt,
+      ),
+      shortcuts: true,
+      onSelected: (action) => unawaited(_runSessionMenuAction(action)),
+    );
+  }
+
+  Future<void> _runSessionMenuAction(SessionMenuAction action) async {
+    if (!mounted || _conn.isIsolated) return;
+    switch (action) {
+      case SessionMenuAction.changes:
+        if (_conn.capabilities.sessionDiff) _showDiff();
+      case SessionMenuAction.timeline:
+        await _openTimeline();
+      case SessionMenuAction.find:
+        _openFind();
+      case SessionMenuAction.subagents:
+        await _openRunningWork();
+      case SessionMenuAction.details:
+        await _showContext();
+      case SessionMenuAction.share:
+        if (_conn.capabilities.sessionShare) await _share();
+      case SessionMenuAction.unshare:
+        if (_conn.capabilities.sessionShare) await _stopSharing();
+      case SessionMenuAction.compact:
+        if (_supportsSessionCompact) await _compact();
+      case SessionMenuAction.fork:
+        await _fork();
+      case SessionMenuAction.rename:
+        await _renameCurrentSession();
+      case SessionMenuAction.continueOnComputer:
+        if (_conn.capabilities.cliSessionResume) await _continueOnComputer();
+      case SessionMenuAction.continueOnPhone:
+        if (_conn.profile != null) await _continueOnPhone();
+    }
+  }
+
+  /// A Work row's "Go to" or "Do" pick for this conversation, run once
+  /// after the first history arrives (the transcript, find bar and prompts
+  /// it needs are there by then).
+  bool _menuActionRun = false;
+
+  void _runRouteMenuAction() {
+    final action = widget.menuAction;
+    if (action == null || _menuActionRun || !mounted) return;
+    _menuActionRun = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_runSessionMenuAction(action));
+    });
+  }
+
+  /// "Note for the agent" (the command sheet's /note).
+  Future<void> _openSessionNote() async {
+    final location = _conn.locationRevision;
+    await Navigator.of(context).push(
+      KitPageRoute<void>(
+        builder: (_) =>
+            SessionNoteScreen(controller: _conn, sessionID: widget.sessionID),
       ),
     );
-    if (!mounted || action == null) return;
-    switch (action) {
-      case 'approvals':
-        await showSessionApprovalsSheet(
-          context,
-          controller: _conn,
-          sessionID: widget.sessionID,
-        );
-      case 'skills':
-        if (_conn.locationRevision != menuLocation) {
-          _showActionError(_chatL10n(context).skillLocationChanged);
-          return;
-        }
-        final used = await Navigator.of(context).push<bool>(
-          KitPageRoute<bool>(
-            builder: (_) =>
-                SkillsScreen(controller: _conn, sessionID: widget.sessionID),
-          ),
-        );
-        if (mounted && used == true && _conn.locationRevision == menuLocation) {
-          _showComposerNote(_chatL10n(context).skillApplied);
-          await _load();
-        }
-      case 'note':
-        if (_conn.locationRevision != menuLocation) {
-          _showActionError(_chatL10n(context).sessionNoteChanged);
-          return;
-        }
-        await Navigator.of(context).push(
-          KitPageRoute<void>(
-            builder: (_) => SessionNoteScreen(
-              controller: _conn,
-              sessionID: widget.sessionID,
-            ),
-          ),
-        );
-        if (mounted) setState(() {});
-      case 'results':
-        await _openRunningWork();
-      case 'timeline':
-        await _openTimeline();
-      case 'find':
-        _openFind();
-      case 'context':
-        await _showContext();
-      case 'changes':
-        _showDiff();
-      case 'todos':
-        _openPlan();
-      case 'subagents':
-        await _showSubagents();
-      case 'thinking':
-        await _runMobileCommand(_ChatCommandAction.thinking);
-      case 'timestamps':
-        await _runMobileCommand(_ChatCommandAction.timestamps);
-      case 'retry':
-        await _retryLast();
-      case 'revert':
-        await _revertLast();
-      case 'restore':
-        await _restore();
-      case 'fork':
-        await _fork();
-      case 'compact':
-        await _compact();
-      case 'share':
-        await _share();
-      case 'unshare':
-        await _stopSharing();
-      case 'shell':
-        await _runShellDialog();
-      case 'slash':
-        await _openCommandLauncher();
-      case 'reload':
-        await _load();
-      case 'export':
-        await _exportTranscript();
-      case 'continue-computer':
-        await _continueOnComputer();
-      case 'continue-phone':
-        await _continueOnPhone();
-    }
+    if (mounted && _conn.locationRevision == location) setState(() {});
   }
 
   /// F4-S1: the terminal command that resumes this session on the computer
@@ -6852,21 +6987,12 @@ class _ChatScreenState extends State<ChatScreen>
           ),
         // Watching: the worker's own page (its state and controls).
         if (widget.watch case final watch?) ?_watchDetailsAction(watch),
-        // Watching: the conversation is the worker's; nothing in the menu
-        // (share, fork, revert, rename, delete) is ours.
-        if (!_conn.isIsolated && !_watching)
-          KitAction(
-            key: const ValueKey('session-actions-button'),
-            icon: AppIconography.menu,
-            label: l10n.chatUiSessionMenu,
-            onPressed: () => unawaited(
-              _openSessionMenu(
-                reverted: session?.reverted == true,
-                shared: shared,
-              ),
-            ),
-          ),
       ],
+      // Watching: the conversation is the worker's; nothing in the menu
+      // (share, fork, rename) is ours. The demo has none either.
+      menu: _sessionMenu(shared: shared),
+      menuKey: const ValueKey('session-actions-button'),
+      menuLabel: l10n.chatUiSessionMenu,
     );
   }
 
@@ -7341,7 +7467,7 @@ class _ChatScreenState extends State<ChatScreen>
       onSelectAgent: _insertAgentMention,
       onOpenCommands: _openCommandLauncher,
       onOpenAgents: () =>
-          _openCommandLauncher(initialTab: _ComposerToolTab.agents),
+          _openCommandLauncher(initialTab: CommandSheetTab.agents),
       onOpenEditor: _openPromptEditor,
       onReusePrompt: _recentPrompts.isEmpty ? null : _reusePrompt,
       onClearText: _clearDraftText,

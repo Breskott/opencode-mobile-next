@@ -176,6 +176,9 @@ void main() {
           await tester.longPress(find.text('Explain the budget rules engine'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 400));
+          // The row menu holds the conversation menu too (slice-P10.2).
+          await tester.ensureVisible(find.text('Delete'));
+          await tester.pump();
           await tester.tap(find.text('Delete'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 600));

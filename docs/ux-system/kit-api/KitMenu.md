@@ -104,7 +104,17 @@ class KitMenuItem {
 
   /// Items with the same [group] sit together; a hairline divider separates
   /// consecutive groups. Null is its own group. Replaces PopupMenuDivider.
+  /// A KitMenuGroup also names its group: a muted heading above its first
+  /// item ("Go to", "Do").
   final Object? group;
+}
+
+/// A named group (slice-P10.1-2): equal by label; its heading is a header,
+/// never focusable or selectable.
+@immutable
+class KitMenuGroup {
+  const KitMenuGroup(this.label);
+  final String label;
 
   /// "Ctrl+Shift+C", shown at the end on a fine pointer (display only).
   final String? shortcut;
@@ -161,6 +171,7 @@ class KitMenuPanel extends StatelessWidget {
 | with icons | a 20 dp glyph slot at the start; items without an icon keep the slot empty so labels align, when any item in the menu has an icon or a check |
 | checked | a check glyph in `accent` in the start slot; an unchecked checkable item leaves the slot empty |
 | groups | a 1-physical-pixel `hairline` divider between groups |
+| named groups | a `KitMenuGroup` group also draws its label (`label` role, secondary) above its first item, key `kit-menu-heading-<label>`, semantics header; the conversation menu's "Go to" and "Do" (slice-P10.1-2) |
 | destructive | the label and glyph in `danger`, last, after a divider |
 | with supporting (slice-P3.3) | `supporting` is one `text2` (`secondary`) line under the label that says what choosing the item means ("Edits files and runs commands"), for a menu of choices whose names alone do not say it |
 | disabled | the label in `text3`, the `disabledReason` line in `text2` (`secondary`), not focusable for selection, but still read by a screen reader |

@@ -627,21 +627,26 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
               onPressed: _openTeamPage,
             ),
           ],
+          // The conversation menu's two kinds (P10.2): "Go to" the task's
+          // details, "Do" refresh, and Stop task last (it confirms).
           menu: [
-            KitMenuItem(
-              key: const ValueKey('team-conversation-refresh'),
-              label: l10n.teamUiRefresh,
-              icon: AppIconography.sync,
-              enabled: !_refreshing,
-              onSelected: () => unawaited(_refresh()),
-            ),
-            if (run != null) ...[
+            if (run != null)
               KitMenuItem(
                 key: const ValueKey('team-conversation-details'),
                 label: l10n.teamChatTaskDetails,
                 icon: AppIconography.info,
+                group: KitMenuGroup(l10n.sessionMenuGoTo),
                 onSelected: () => _openDetails(run.id),
               ),
+            KitMenuItem(
+              key: const ValueKey('team-conversation-refresh'),
+              label: l10n.teamUiRefresh,
+              icon: AppIconography.sync,
+              group: KitMenuGroup(l10n.sessionMenuDo),
+              enabled: !_refreshing,
+              onSelected: () => unawaited(_refresh()),
+            ),
+            if (run != null) ...[
               // Only while the task runs and this host can stop it.
               if (_canStop(run))
                 KitMenuItem(

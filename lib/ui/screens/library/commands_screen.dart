@@ -1,16 +1,15 @@
 part of '../library_screen.dart';
 
-/// "Server commands" (map `commands`, proposal fix), built from kit parts
-/// (screen-library-4): the server's slash commands as one panel of
-/// [KitRow]s on the rails, one run metaphor (the lightning tile; a tap asks
-/// where to run it), the agent each command runs with, a search once the
-/// list is long, and the missing states: the loading skeleton, an empty
-/// page that says where commands come from, no match, and a failed first
-/// load that explains itself with Try again and Report a problem.
+/// Settings › Tools › Commands (map `commands`, slice-P10.1): the same
+/// command sheet the conversation's "/" opens ([CommandSheet]), inside its
+/// tab. The server's commands in plain words, searchable, grouped; a pick
+/// asks which conversation it runs in (the most recent one first) and
+/// opens it there. A server that does not share its commands says so and
+/// names what is missing, as the sheet does in a conversation.
 ///
-/// Running a command inside the conversation you came from belongs to the
-/// conversation's own command launcher, not here: this page has no
-/// conversation (see docs/qa/revamp-screen-library-4/README.md).
+/// States: loading (the list is on its way), empty (where commands come
+/// from), error (a failed read says so with Retry; a later failure keeps
+/// the last list), no match.
 class CommandsScreen extends StatefulWidget {
   final ConnectionController controller;
 
@@ -28,27 +27,25 @@ class CommandsScreen extends StatefulWidget {
 
 class _CommandsScreenState extends State<CommandsScreen> {
   List<CommandInfo>? _commands;
-  String? _error;
-  String _query = '';
+  Object? _error;
+  bool _loading = false;
   bool _openingCommand = false;
   int _loadGeneration = 0;
-  final _search = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _load();
+    unawaited(_load());
   }
 
-  @override
-  void dispose() {
-    _search.dispose();
-    super.dispose();
-  }
-
+  /// A newer read wins: an older one that lands later changes nothing.
   Future<void> _load() async {
+    if (!widget.controller.capabilities.slashCommands) return;
     final generation = ++_loadGeneration;
-    if (_commands == null) setState(() => _error = null);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final repository = await widget.controller.prepareActionRepository();
       if (!mounted || generation != _loadGeneration) return;
@@ -59,175 +56,56 @@ class _CommandsScreenState extends State<CommandsScreen> {
       }
       final commands = await repository.listCommands();
       if (!mounted || generation != _loadGeneration) return;
-      setState(() {
-        _commands = commands;
-        _error = null;
-      });
+      setState(() => _commands = commands);
     } catch (error) {
       if (mounted && generation == _loadGeneration) {
-        setState(() => _error = productErrorText(error));
+        setState(() => _error = error);
+      }
+    } finally {
+      if (mounted && generation == _loadGeneration) {
+        setState(() => _loading = false);
       }
     }
   }
 
-  void _clearSearch() {
-    _search.clear();
-    setState(() => _query = '');
-  }
-
-  List<CommandInfo> _matching() {
-    final query = _query.trim().toLowerCase();
-    return (_commands ?? const <CommandInfo>[])
-        .where(
-          (command) =>
-              query.isEmpty ||
-              command.name.toLowerCase().contains(query) ||
-              (command.description ?? '').toLowerCase().contains(query),
-        )
-        .toList();
-  }
+  List<CommandSheetEntry> _entries() => serverCommandEntries(
+    _libraryCopy(context),
+    _commands ?? const <CommandInfo>[],
+    serverName: widget.controller.profile?.name,
+  );
 
   @override
   Widget build(BuildContext context) {
     final l10n = _libraryCopy(context);
-    final commands = _commands;
-    final matching = _matching();
-    final showSearch =
-        commands != null &&
-        (KitSearchField.worthShowing(commands.length) || _query.isNotEmpty);
+    final sheet = KitRefresh(
+      onRefresh: _load,
+      child: CommandSheet(
+        controller: widget.controller,
+        embedded: true,
+        searchElsewhere: false,
+        // This page reads the list itself when it opens.
+        refreshOnOpen: false,
+        subtitle: widget.controller.capabilities.slashCommands
+            ? l10n.commandSheetLibrarySubtitle
+            : null,
+        commands: _entries,
+        loading: () => _loading && _commands == null,
+        loaded: () => _commands != null,
+        error: () => _error,
+        onRefresh: _load,
+        onSelected: (entry) {
+          if (entry.serverCommand case final command?) {
+            unawaited(_run(command));
+          }
+        },
+      ),
+    );
     return KitScreen(
       width: KitScreenWidth.list,
       topBar: widget.embedded
           ? null
           : KitTopBar(title: l10n.e7LibraryServerCommands),
-      loading: commands == null && _error == null,
-      loadingLabel: l10n.commandsScreenLoading,
-      search: showSearch
-          ? KitSearchField(
-              label: l10n.e7LibrarySearchServerCommands,
-              controller: _search,
-              fieldKey: const ValueKey('commands-search'),
-              resultCount: _query.trim().isEmpty ? null : matching.length,
-              onChanged: (value) => setState(() => _query = value),
-            )
-          : null,
-      body: KitRefresh(
-        onRefresh: _load,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsetsDirectional.only(
-            bottom: KitScreen.endPadding(context),
-          ),
-          children: _content(context, commands, matching),
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _content(
-    BuildContext context,
-    List<CommandInfo>? commands,
-    List<CommandInfo> matching,
-  ) {
-    final l10n = _libraryCopy(context);
-    final tokens = KitTokens.of(context);
-    Widget railed(Widget child) => Padding(
-      padding: EdgeInsetsDirectional.only(
-        start: tokens.gutter,
-        end: tokens.gutter,
-        bottom: tokens.space3,
-      ),
-      child: child,
-    );
-    final error = _error;
-    if (commands == null) {
-      if (error == null) {
-        return const [KitSkeletonRows(key: ValueKey('commands-loading'))];
-      }
-      return [
-        railed(
-          KitStateView.error(
-            key: const ValueKey('commands-load-failed'),
-            title: l10n.commandsScreenLoadFailed,
-            body: error,
-            reportSource: 'commands',
-            size: KitStateSize.inline,
-            retry: KitAction(label: l10n.commonRetry, onPressed: _load),
-          ),
-        ),
-      ];
-    }
-    return [
-      if (error != null)
-        railed(
-          KitNotice.error(
-            key: const ValueKey('product-refresh-failed'),
-            title: l10n.refreshFailed,
-            message: error,
-            retry: KitAction(label: l10n.refreshRetry, onPressed: _load),
-          ),
-        ),
-      if (commands.isEmpty)
-        railed(
-          KitStateView(
-            key: const ValueKey('commands-empty'),
-            size: KitStateSize.inline,
-            icon: AppIcons.run,
-            title: l10n.e7LibraryNoServerCommandsFound,
-            body: l10n.e7LibraryCommandsFromYourProjectAndSkillsAppear,
-          ),
-        )
-      else if (matching.isEmpty)
-        railed(
-          KitSearchNoMatch(
-            key: const ValueKey('commands-no-match'),
-            query: _query.trim(),
-            what: l10n.commandsScreenWhat,
-            onClear: _clearSearch,
-          ),
-        )
-      else
-        KitRowGroup(
-          children: [
-            for (final command in matching) _commandRow(context, command),
-          ],
-        ),
-    ];
-  }
-
-  Widget _commandRow(BuildContext context, CommandInfo command) {
-    final l10n = _libraryCopy(context);
-    final slash = KitBidi.ltr('/${command.name}');
-    final description = command.description?.trim();
-    final agent = command.agent?.trim();
-    final supporting = [
-      description?.isNotEmpty == true
-          ? description!
-          : l10n.e7LibraryNoDescription,
-      if (agent?.isNotEmpty == true)
-        l10n.commandsScreenRunsWith(KitBidi.auto(agent!)),
-    ].join(' · ');
-    return KitRow(
-      key: ValueKey('command-${command.name}'),
-      leading: const KitRowIcon(AppIcons.run),
-      // Plain: the app is left to right only (owner 2026-09-27), and the
-      // conversation's launcher and tests find a command by '/name'.
-      title: '/${command.name}',
-      supporting: TextSpan(text: supporting),
-      supportingMaxLines: 2,
-      onTap: () => _run(command),
-      menuLabel: l10n.commandsScreenMenuLabel,
-      menu: [
-        KitMenuItem(
-          label: l10n.commandsScreenRun(slash),
-          icon: AppIcons.run,
-          onSelected: () => _run(command),
-        ),
-        KitMenuItem.copy(
-          label: l10n.commandsScreenCopy(slash),
-          text: () => '/${command.name}',
-        ),
-      ],
+      body: sheet,
     );
   }
 

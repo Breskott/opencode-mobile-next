@@ -114,23 +114,22 @@ EventEnvelope _ask(String id, String session) => EventEnvelope(
 );
 
 Future<void> _openApprovals(WidgetTester tester) async {
-  await tester.tap(find.byKey(const ValueKey('session-actions-button')));
+  // Approvals is a command in the command sheet (slice-P10.1).
+  await tester.tap(find.byKey(const Key('composer-tools-button')));
   await tester.pumpAndSettle();
-  // The session menu is a lazy list: rows below the fold are built as it
-  // scrolls.
-  final menu = find
-      .descendant(
-        of: find.byKey(const Key('session-menu-sheet')),
-        matching: find.byType(Scrollable),
-      )
-      .first;
-  final actions = find.text('Conversation actions');
-  await tester.scrollUntilVisible(actions, 100, scrollable: menu);
+  final commands = find.byKey(const Key('composer-tool-commands'));
+  await tester.ensureVisible(commands);
   await tester.pumpAndSettle();
-  await tester.tap(actions);
+  await tester.tap(commands);
   await tester.pumpAndSettle();
-  final approvals = find.text('Approvals');
-  await tester.scrollUntilVisible(approvals, 100, scrollable: menu);
+  await tester.pumpAndSettle();
+  await tester.enterText(
+    find.byKey(const Key('command-launcher-search')),
+    'approvals',
+  );
+  await tester.pump();
+  final approvals = find.byKey(const Key('command-mobile-approvals'));
+  await tester.ensureVisible(approvals);
   await tester.pumpAndSettle();
   await tester.tap(approvals);
   await tester.pumpAndSettle();

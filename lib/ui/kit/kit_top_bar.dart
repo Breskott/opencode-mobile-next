@@ -74,6 +74,7 @@ class KitTopBar extends StatelessWidget {
     this.titleKey,
     this.exitKey,
     this.menuKey,
+    this.menuLabel,
   }) : controls = null,
        assert(
          onTitleTap == null || (titleTapLabel ?? '') != '',
@@ -94,6 +95,7 @@ class KitTopBar extends StatelessWidget {
     this.actions = const [],
     this.menu = const [],
     this.menuKey,
+    this.menuLabel,
   }) : title = '',
        subtitle = null,
        subtitleTone = AppStatusTone.neutral,
@@ -144,6 +146,11 @@ class KitTopBar extends StatelessWidget {
   final Key? exitKey;
   final Key? menuKey;
 
+  /// What the overflow holds, when [menu] is one thing's menu: the
+  /// button's tooltip and the menu's name ("Conversation menu"). Default
+  /// "More".
+  final String? menuLabel;
+
   /// The exit [exit] resolves to at [context]'s route.
   static KitTopBarExit resolveExit(BuildContext context, KitTopBarExit exit) {
     if (exit != KitTopBarExit.auto) return exit;
@@ -185,6 +192,7 @@ class KitTopBar extends StatelessWidget {
             ? KitWindow.compact
             : KitWindow.medium,
         menuKey: menuKey,
+        menuLabel: menuLabel,
         reserved: 0,
       );
       return Padding(
@@ -263,6 +271,7 @@ class KitTopBar extends StatelessWidget {
                 menu: menu,
                 window: window,
                 menuKey: menuKey,
+                menuLabel: menuLabel,
                 // The title keeps at least half the bar (KitTopBar.md).
                 reserved: constraints.maxWidth / 2,
                 maxWidth: constraints.maxWidth,
@@ -488,6 +497,7 @@ class _KitTopBarActions extends StatelessWidget {
     required this.window,
     required this.menuKey,
     required this.reserved,
+    this.menuLabel,
     this.maxWidth = 0,
   });
 
@@ -495,6 +505,7 @@ class _KitTopBarActions extends StatelessWidget {
   final List<KitMenuItem> menu;
   final KitWindow window;
   final Key? menuKey;
+  final String? menuLabel;
 
   /// The width the title keeps (expanded and up).
   final double reserved;
@@ -628,11 +639,11 @@ class _KitTopBarActions extends StatelessWidget {
           builder: (anchor) => KitIconButton(
             key: menuKey,
             icon: AppIconography.more,
-            tooltip: l10n.kitMore,
+            tooltip: menuLabel ?? l10n.kitMore,
             onPressed: () => showKitMenu(
               anchor,
               items: overflow,
-              semanticsLabel: l10n.kitTopBarMore,
+              semanticsLabel: menuLabel ?? l10n.kitTopBarMore,
             ),
           ),
         ),

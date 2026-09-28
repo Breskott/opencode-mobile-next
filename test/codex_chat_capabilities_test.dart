@@ -173,26 +173,29 @@ void main() {
     await tester.tap(find.byKey(const Key('session-actions-button')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Changes'), findsNothing);
-    expect(find.text('Fork conversation'), findsNothing);
-    expect(find.text('Undo last prompt'), findsNothing);
-    expect(find.text('Compact context'), findsNothing);
-    expect(find.text('Run shell command'), findsNothing);
-    expect(find.text('Subagent conversations'), findsNothing);
-    expect(find.text('Share conversation'), findsNothing);
-    // Utility actions live behind the collapsed Session actions group.
-    await tester.ensureVisible(find.text('Conversation actions'));
-    await tester.tap(find.text('Conversation actions'));
-    await tester.pumpAndSettle();
-    expect(find.text('Fork conversation'), findsNothing);
-    expect(find.text('Undo last prompt'), findsNothing);
-    expect(find.text('Compact context'), findsNothing);
-    expect(find.text('Run shell command'), findsNothing);
-    expect(find.text('Share conversation'), findsNothing);
-    await tester.ensureVisible(find.text('Refresh messages'));
-    expect(find.text('Refresh messages'), findsOneWidget);
-    // Codex has no `opencode --session` CLI, so no resume command is offered.
-    expect(find.text('Continue on computer'), findsNothing);
+    // Go to / Do (slice-P10.2) lists only what Codex can do.
+    for (final missing in [
+      'changes',
+      'subagents',
+      'share',
+      'compact',
+      'fork',
+      // No `opencode --session` CLI, so no resume command is offered.
+      'continue-computer',
+    ]) {
+      expect(
+        find.byKey(ValueKey('session-menu-$missing')),
+        findsNothing,
+        reason: missing,
+      );
+    }
+    for (final kept in ['find', 'details', 'rename']) {
+      expect(
+        find.byKey(ValueKey('session-menu-$kept')),
+        findsOneWidget,
+        reason: kept,
+      );
+    }
   });
 
   testWidgets('Codex command launcher hides unsupported server catalogs', (

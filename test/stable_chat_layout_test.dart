@@ -165,17 +165,9 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('session-actions-button')));
         await tester.pumpAndSettle();
         expect(find.text(_longTitle), findsWidgets);
-        final results = find.byKey(const ValueKey('session-menu-results'));
-        await tester.scrollUntilVisible(
-          results,
-          100,
-          scrollable: find
-              .descendant(
-                of: find.byKey(const Key('session-menu-sheet')),
-                matching: find.byType(Scrollable),
-              )
-              .first,
-        );
+        // Task details are the conversation menu's Subagents (P10.2).
+        final results = find.byKey(const ValueKey('session-menu-subagents'));
+        await tester.ensureVisible(results);
         await tester.pumpAndSettle();
         expect(results.hitTestable(), findsOneWidget);
         await tester.tap(results);

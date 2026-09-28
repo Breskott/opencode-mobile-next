@@ -60,10 +60,10 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('session-actions-button')));
       await tester.pumpAndSettle();
-      expect(find.text('Fix flaky checkout test'), findsWidgets);
-      await tester.tap(find.text('Results'));
+      // Task details are the conversation menu's Subagents (slice-P10.2).
+      await tester.tap(find.byKey(const ValueKey('session-menu-subagents')));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('session-menu-sheet')), findsNothing);
+      expect(find.byKey(const ValueKey('session-menu-find')), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },

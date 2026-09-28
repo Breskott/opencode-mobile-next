@@ -90,6 +90,8 @@ class KitMenuItem {
 
   /// Items with the same [group] sit together; a hairline divider separates
   /// consecutive groups. Null is its own group. Replaces `PopupMenuDivider`.
+  /// A [KitMenuGroup] also names its group: a muted heading above its first
+  /// item ("Go to", "Do").
   final Object? group;
 
   /// "Ctrl+Shift+C", shown at the end on a fine pointer (display only).
@@ -109,6 +111,25 @@ class KitMenuItem {
   final bool redact;
 }
 
+/// A named [KitMenuItem.group]: the menu draws [label] as a muted heading
+/// above the group's first item, so a long menu reads as a few kinds of
+/// act ("Go to", "Do") instead of one list. Equal by [label]. The heading
+/// is not an item: it takes no focus and is read as a header.
+@immutable
+class KitMenuGroup {
+  const KitMenuGroup(this.label);
+
+  /// Short, a kind of act: "Go to", "Do".
+  final String label;
+
+  @override
+  bool operator ==(Object other) =>
+      other is KitMenuGroup && other.label == label;
+
+  @override
+  int get hashCode => label.hashCode;
+}
+
 /// A divider marker used by [kitMenuLayout]; never a [KitMenuItem].
 class _KitMenuDividerMarker {
   const _KitMenuDividerMarker();
@@ -117,13 +138,15 @@ class _KitMenuDividerMarker {
 const _kitMenuDivider = _KitMenuDividerMarker();
 
 /// [items], each still in its original relative order, with a divider
-/// marker inserted where consecutive items' [KitMenuItem.group] differ.
+/// marker inserted where consecutive items' [KitMenuItem.group] differ,
+/// and a named group's [KitMenuGroup] (its heading) before its first item.
 List<Object> _withGroupDividers(List<KitMenuItem> items) {
   final out = <Object>[];
   for (var i = 0; i < items.length; i++) {
-    if (i > 0 && items[i].group != items[i - 1].group) {
-      out.add(_kitMenuDivider);
-    }
+    final starts = i == 0 || items[i].group != items[i - 1].group;
+    if (i > 0 && starts) out.add(_kitMenuDivider);
+    final group = items[i].group;
+    if (starts && group is KitMenuGroup) out.add(group);
     out.add(items[i]);
   }
   return out;
@@ -136,8 +159,9 @@ List<Object> _withGroupDividers(List<KitMenuItem> items) {
 /// 3. All `destructive` items are then moved, in a stable order, after a
 ///    divider at the end.
 ///
-/// The result is a list of [KitMenuItem]s and divider markers (never
-/// exposed directly; check `is KitMenuItem` to tell them apart).
+/// The result is a list of [KitMenuItem]s, [KitMenuGroup] headings and
+/// divider markers (never exposed directly; check `is KitMenuItem` to tell
+/// them apart).
 @visibleForTesting
 List<Object> kitMenuLayout(List<KitMenuItem> items) {
   final normal = [
@@ -425,6 +449,8 @@ class _KitMenuBodyState extends State<_KitMenuBody> {
             focusNode: row.enabled ? _itemFocus[itemCursor++] : null,
             onSelected: widget.onSelected,
           )
+        else if (row is KitMenuGroup)
+          _KitMenuHeading(label: row.label)
         else
           // The outer key keeps siblings apart; the inner one is the
           // frozen TEST-5 handle, the same on every divider.
@@ -510,6 +536,36 @@ class _KitMenuBodyState extends State<_KitMenuBody> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A named group's heading: the label in the muted label role, read as a
+/// header, never focusable or selectable.
+class _KitMenuHeading extends StatelessWidget {
+  const _KitMenuHeading({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    return Semantics(
+      header: true,
+      child: Padding(
+        key: ValueKey('kit-menu-heading-$label'),
+        padding: EdgeInsetsDirectional.fromSTEB(
+          tokens.space4,
+          tokens.space3,
+          tokens.space4,
+          tokens.space1,
+        ),
+        child: KitText(
+          label,
+          role: KitTextRole.label,
+          tone: KitTextTone.secondary,
         ),
       ),
     );

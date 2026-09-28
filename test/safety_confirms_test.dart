@@ -325,7 +325,11 @@ void main() {
             buttons: kSecondaryMouseButton,
           );
           await tester.pumpAndSettle();
-          await tester.tap(find.byKey(const ValueKey('session-menu-share')));
+          await tester.ensureVisible(
+            find.byKey(const ValueKey('session-menu-unshare')),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(const ValueKey('session-menu-unshare')));
           await tester.pumpAndSettle();
         });
       } finally {

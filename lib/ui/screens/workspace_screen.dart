@@ -17,6 +17,7 @@ import '../../state/attention_feed.dart' show AttentionKind;
 import '../../state/session_inventory_cache.dart' show SessionInventoryPreview;
 import '../../state/work_row_status_controller.dart';
 import '../desktop/desktop_interaction.dart';
+import '../navigation/attention_landing.dart' show chatLandingPage;
 import '../navigation/chat_route.dart';
 import '../widgets/default_notices.dart';
 import '../widgets/grace_timer.dart';
@@ -28,13 +29,13 @@ import '../kit/kit.dart';
 import '../kit/scenes/states_scenes.dart';
 import '../widgets/product_states.dart' show productErrorText;
 import '../widgets/relative_time.dart';
+import '../widgets/session_menu.dart';
 import '../widgets/session_title.dart';
 import '../widgets/request_routes.dart';
 import '../widgets/older_sessions_pager.dart';
 import '../widgets/team_task_row.dart';
 import '../widgets/team_discover.dart' show teamPossibleOn;
 import '../widgets/team_vocabulary.dart' show teamGatedRuns;
-import 'chat_screen.dart' show ChatScreen;
 import 'team_conversation/team_conversation.dart';
 import 'team/team_page.dart';
 import '../widgets/termux_phone_tools.dart';
@@ -129,6 +130,13 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
   /// The conversation open in the detail pane (expanded and wider).
   String? _selectedSessionID;
+
+  /// The wide detail pane's landing: the waiting request its card opens on,
+  /// or a conversation-menu pick the chat runs once open. [_detailOpen]
+  /// counts opens, so a second pick on the same row runs too.
+  String? _detailRequestID;
+  SessionMenuAction? _detailAction;
+  int _detailOpen = 0;
 
   /// A failed act, said once above the list until dismissed (§4.8: where the
   /// thing is, never a snackbar).
@@ -816,16 +824,12 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           unreviewed: busy ? null : unreviewed(session),
           selected: session.id == detailID,
           onOpen: _openSession,
-          onDetails: _openSessionContext,
+          onMenuAction: _sessionMenuAction,
           onReview: _review,
           onMarkReviewed: _markReviewed,
           onPin: _togglePin,
-          onRename: _rename,
-          onShare: _share,
-          onUnshare: _unshare,
           onDelete: _delete,
           archive: capabilities.sessionArchive ? _archiveSwipe(session) : null,
-          sharingAvailable: capabilities.sessionShare,
         );
 
     // The top of the one list, most urgent first: needs you (the team's
@@ -1165,9 +1169,18 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       ),
       detail: detailID == null
           ? null
-          : ChatScreen(
-              key: ValueKey('work-detail-$detailID'),
-              sessionID: detailID,
+          : KeyedSubtree(
+              // A new landing (a waiting request, a menu pick) opens the
+              // conversation afresh; a plain reopen keeps it.
+              key: ValueKey(
+                'work-detail-$detailID'
+                '${_detailAction != null || _detailRequestID != null ? '-$_detailOpen' : ''}',
+              ),
+              child: chatLandingPage(
+                sessionID: detailID,
+                landOnRequestID: _detailRequestID,
+                menuAction: _detailAction,
+              ),
             ),
       emptyDetail: KitStateView(
         key: const ValueKey('work-detail-empty'),
@@ -1353,14 +1366,52 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   }
 
   /// Opens [session]: beside the list from expanded, else as a page.
-  void _openSession(Session session) {
+  /// Opens [session]: a conversation that needs you lands on the waiting
+  /// request's card (P4.2a, from Work too); [action] is a conversation-menu
+  /// pick the chat runs once open (P10.2, the same menu as the chat's).
+  void _openSession(Session session, {SessionMenuAction? action}) {
     // Speed contract item 2: the chat joins this history read (one call).
     unawaited(widget.controller.prefetchSessionTail(session.id));
+    final controller = widget.controller;
+    final waiting = action != null
+        ? null
+        : controller.permissionForSession(session.id)?.id ??
+              controller.questionForSession(session.id)?.id ??
+              controller.formForSession(session.id)?.id;
     if (KitScreen.showsDetail(context)) {
-      setState(() => _selectedSessionID = session.id);
+      setState(() {
+        _selectedSessionID = session.id;
+        _detailRequestID = waiting;
+        _detailAction = action;
+        _detailOpen++;
+      });
       return;
     }
-    Navigator.of(context).pushNamed('/chat/${session.id}');
+    Navigator.of(context).pushNamed(
+      '/chat/${session.id}',
+      arguments: ChatRouteArguments(
+        landOnRequestID: waiting,
+        menuAction: action,
+      ),
+    );
+  }
+
+  /// A Work row's conversation-menu pick: the acts this page can do alone
+  /// (Details, Share, Stop sharing, Rename) run here; the rest open the
+  /// conversation and run there.
+  void _sessionMenuAction(Session session, SessionMenuAction action) {
+    switch (action) {
+      case SessionMenuAction.details:
+        unawaited(_openSessionContext(session));
+      case SessionMenuAction.share:
+        unawaited(_share(session));
+      case SessionMenuAction.unshare:
+        unawaited(_unshare(session));
+      case SessionMenuAction.rename:
+        unawaited(_rename(session));
+      default:
+        _openSession(session, action: action);
+    }
   }
 
   /// Asks once per server whether it can run a team; the answer shows or
@@ -1965,21 +2016,18 @@ class _SessionRow extends StatelessWidget {
   final bool selected;
 
   final ValueChanged<Session> onOpen;
-  final ValueChanged<Session> onDetails;
+
+  /// The conversation menu's picks ([sessionMenuItems], the same menu as
+  /// the chat's title bar, P10.2).
+  final void Function(Session, SessionMenuAction) onMenuAction;
   final ValueChanged<Session> onReview;
   final ValueChanged<Session> onMarkReviewed;
   final ValueChanged<Session> onPin;
-  final ValueChanged<Session> onRename;
-  final ValueChanged<Session> onShare;
-  final ValueChanged<Session> onUnshare;
   final ValueChanged<Session> onDelete;
 
   /// The row's one swipe, and its twin in the menu; null where this server
   /// cannot archive. Delete is never on a swipe (KIT-29): it confirms.
   final KitSwipeAction? archive;
-
-  /// §7 rows 10–12: menus list possible actions only.
-  final bool sharingAvailable;
 
   const _SessionRow({
     required this.controller,
@@ -1991,16 +2039,12 @@ class _SessionRow extends StatelessWidget {
     this.unreviewed,
     this.selected = false,
     required this.onOpen,
-    required this.onDetails,
+    required this.onMenuAction,
     required this.onReview,
     required this.onMarkReviewed,
     required this.onPin,
-    required this.onRename,
-    required this.onShare,
-    required this.onUnshare,
     required this.onDelete,
     this.archive,
-    this.sharingAvailable = true,
   });
 
   @override
@@ -2164,32 +2208,25 @@ class _SessionRow extends StatelessWidget {
           icon: AppIconography.externalLink,
           onSelected: () => onOpen(session),
         ),
-        KitMenuItem(
-          key: const ValueKey('session-menu-details'),
-          // Opens Conversation context, which holds the folder and link.
-          label: l10n.e7SharedSessionContext,
-          icon: AppIconography.info,
-          onSelected: () => onDetails(session),
+        // The conversation menu, the same as the chat's title bar (P10.2):
+        // "Go to" and "Do".
+        ...sessionMenuItems(
+          l10n,
+          SessionMenuOffer.of(
+            controller.capabilities,
+            shared: shared,
+            savedServer: controller.profile != null,
+          ),
+          explain: false,
+          onSelected: (action) => onMenuAction(session, action),
         ),
         if (controller.canPinSessions)
           KitMenuItem(
             key: const ValueKey('session-menu-pin'),
             label: pinned ? l10n.sessionUnpin : l10n.sessionPin,
             icon: AppIconography.pin,
+            group: 'row',
             onSelected: () => onPin(session),
-          ),
-        KitMenuItem(
-          key: const ValueKey('session-menu-rename'),
-          label: l10n.e7WorkspaceRename,
-          icon: AppIconography.edit,
-          onSelected: () => onRename(session),
-        ),
-        if (sharingAvailable)
-          KitMenuItem(
-            key: const ValueKey('session-menu-share'),
-            label: shared ? l10n.e7WorkspaceStopSharing : l10n.e7WorkspaceShare,
-            icon: AppIconography.globe,
-            onSelected: () => shared ? onUnshare(session) : onShare(session),
           ),
         KitMenuItem(
           key: const ValueKey('session-menu-delete'),
