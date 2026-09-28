@@ -22808,6 +22808,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'Saved from last time. They open once the live list loads.';
 
   @override
+  String get kitTranscriptExcerptHint =>
+      'Saved from last time. The conversation opens fully once it loads.';
+
+  @override
   String get lastKnownUpdatedJustNow => 'Updated just now';
 
   @override

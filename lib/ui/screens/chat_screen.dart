@@ -30,6 +30,7 @@ import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/offline_queue.dart';
 import '../../state/connection.dart';
+import '../../state/session_tail_cache.dart' show SessionTailPreview;
 import '../../state/profiles.dart' show ServerBackend;
 import '../../state/conversation_nudges.dart';
 import '../../state/nudges.dart';
@@ -66,6 +67,7 @@ import '../widgets/pickers.dart';
 import '../widgets/model_shortcuts.dart';
 import '../widgets/product_states.dart';
 import '../widgets/prompt_history_navigation.dart';
+import '../widgets/last_known_sessions.dart' show LastKnownSessions;
 import '../widgets/transcript_highlight.dart';
 import '../widgets/question_options.dart';
 import '../widgets/session_title.dart';
@@ -1986,12 +1988,24 @@ class _ChatScreenState extends State<ChatScreen>
           earlyAppLocalizations(context).chatUiOpenCodeIsReconnecting,
         );
       }
-      final page = await readHistoryAtStagedBoundary(
-        api,
-        scope.session,
-        boundary: _conn.sessionsById[scope.session]?.stagedRevert?.messageID,
-        isCurrent: () => _currentHistory(generation, scope),
-      );
+      // The controller's newest-page read is shared with a prefetch fired
+      // on the tap that opened this chat (one HTTP call for both) and saves
+      // the opening excerpt for next time. A host without a saved,
+      // connected server (the demo, tests) reads the gateway directly, and
+      // so does watching: its poll must not rewrite the saved excerpt.
+      final page =
+          !_conn.isIsolated &&
+              !_watching &&
+              identical(api, _conn.api) &&
+              _conn.canLoadSessionTail(scope.session)
+          ? await _conn.loadSessionTail(scope.session)
+          : await readHistoryAtStagedBoundary(
+              api,
+              scope.session,
+              boundary:
+                  _conn.sessionsById[scope.session]?.stagedRevert?.messageID,
+              isCurrent: () => _currentHistory(generation, scope),
+            );
       if (!_currentHistory(generation, scope)) return;
       final anchor = _historyAnchor();
       final pinnedEnd = _renderedMessageCount == 0
@@ -7423,6 +7437,14 @@ class _ChatScreenState extends State<ChatScreen>
             among: _conn.store.profiles,
           );
     final reconnecting = _conn.connectionStatus.waiting;
+    // Speed contract item 2: while the first history read is on its way the
+    // chat shows the end it had last time, read-only, instead of
+    // placeholder turns. Never part of [_messages].
+    final openingExcerpt =
+        _loading && _messages.isEmpty && !_watching && !_conn.isIsolated
+        ? _conn.cachedSessionTail(widget.sessionID)
+        : null;
+    final showExcerpt = openingExcerpt?.messages.isNotEmpty ?? false;
 
     final screen = PopScope(
       canPop: _conn.isIsolated || _allowRoutePop || _watching,
@@ -7514,7 +7536,7 @@ class _ChatScreenState extends State<ChatScreen>
         // full-screen error over an already-visible transcript. A
         // permission card must not wait for the transcript: it is pinned to
         // the bottom of the skeleton and error states too.
-        body: _loading && _messages.isEmpty
+        body: _loading && _messages.isEmpty && !showExcerpt
             ? Column(
                 children: [
                   const Expanded(child: _ChatLoadingBody()),
@@ -7541,6 +7563,7 @@ class _ChatScreenState extends State<ChatScreen>
                   final compactComposer =
                       keyboardUp || bodyConstraints.maxHeight < 420;
                   final startEmpty =
+                      !showExcerpt &&
                       _visibleHistory.isEmpty &&
                       _olderCursor == null &&
                       widget.emptyState == null &&
@@ -7548,8 +7571,9 @@ class _ChatScreenState extends State<ChatScreen>
                   if (startEmpty) _requestStartFacts();
                   final showStarters = startEmpty && !_voiceConversation;
                   final watch = widget.watch;
-                  final Widget conversation =
-                      _visibleHistory.isEmpty && _olderCursor == null
+                  final Widget conversation = showExcerpt
+                      ? _ChatOpeningExcerpt(preview: openingExcerpt!)
+                      : _visibleHistory.isEmpty && _olderCursor == null
                       ? Builder(
                           // Clear of the floating composer (watching
                           // floats one too: it writes to the worker).

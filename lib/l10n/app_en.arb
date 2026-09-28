@@ -27145,6 +27145,10 @@
   "@kitLastKnownHint": {
     "description": "KitLastKnown (slice-speed-ui): screen-reader hint on a group of remembered, read-only rows shown while the live list loads."
   },
+  "kitTranscriptExcerptHint": "Saved from last time. The conversation opens fully once it loads.",
+  "@kitTranscriptExcerptHint": {
+    "description": "KitTranscriptExcerpt (slice-chat-speed-fixes): screen-reader hint on the remembered, read-only end of a conversation shown while its live history loads."
+  },
   "lastKnownUpdatedJustNow": "Updated just now",
   "@lastKnownUpdatedJustNow": {
     "description": "Opening shell and Work (slice-speed-ui): remembered conversation titles were read less than a minute ago."

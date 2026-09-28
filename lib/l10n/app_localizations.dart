@@ -35902,6 +35902,12 @@ abstract class AppLocalizations {
   /// **'Saved from last time. They open once the live list loads.'**
   String get kitLastKnownHint;
 
+  /// KitTranscriptExcerpt (slice-chat-speed-fixes): screen-reader hint on the remembered, read-only end of a conversation shown while its live history loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved from last time. The conversation opens fully once it loads.'**
+  String get kitTranscriptExcerptHint;
+
   /// Opening shell and Work (slice-speed-ui): remembered conversation titles were read less than a minute ago.
   ///
   /// In en, this message translates to:

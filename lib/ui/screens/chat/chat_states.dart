@@ -22,6 +22,35 @@ class _ChatLoadingBody extends StatelessWidget {
       const KitSkeletonTranscript(key: ValueKey('chat-loading'));
 }
 
+/// The end of the conversation as it read last time
+/// (`ConnectionController.cachedSessionTail`), read-only while the live
+/// history loads: the chat opens with its own words (speed contract item
+/// 2). Clear of the floating composer, like the transcript it gives way to.
+class _ChatOpeningExcerpt extends StatelessWidget {
+  const _ChatOpeningExcerpt({required this.preview});
+
+  final SessionTailPreview preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return KitTranscriptExcerpt(
+      key: const ValueKey('chat-opening-excerpt'),
+      labelKey: const ValueKey('chat-opening-excerpt-updated'),
+      updated: LastKnownSessions.updatedLabel(l10n, preview.fetchedAt),
+      bottomClearance: KitBottomInset.of(context).bottom,
+      messages: [
+        for (final message in preview.messages)
+          KitExcerptMessage(
+            key: ValueKey('chat-opening-excerpt-${message.id}'),
+            text: message.text,
+            fromPerson: message.role == 'user',
+          ),
+      ],
+    );
+  }
+}
+
 /// The conversation could not be loaded and nothing of it is on screen yet.
 class _ChatLoadError extends StatelessWidget {
   const _ChatLoadError({required this.error, required this.onRetry});

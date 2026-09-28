@@ -549,6 +549,11 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
           widget.controller.workspace != session.workspaceID) {
         throw ProductException(_l10n(context).e7WorkspaceLocationChangedReturn);
       }
+      // Speed contract item 2: the conversation's newest history is read
+      // while its details are checked; the chat joins that same read.
+      if (!handoff && !related) {
+        unawaited(widget.controller.prefetchSessionTail(session.id));
+      }
       final scope = SessionNavigationScope(widget.controller);
       final repository = await _repository();
       scope.check(widget.controller);
