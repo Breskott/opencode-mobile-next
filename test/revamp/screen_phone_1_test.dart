@@ -48,6 +48,7 @@ void main() {
           if (call.method == 'getDeviceInfo') return <String, Object?>{};
           return null;
         });
+    useNoTermuxJob();
   });
 
   group('phone-setup-start', () {

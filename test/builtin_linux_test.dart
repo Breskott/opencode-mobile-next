@@ -304,14 +304,15 @@ void main() {
     // refactor provably changed nothing for Termux. A deliberate edit to the
     // manager script or the shared setup text updates this hash with it.
     // Pinned so the manager on people's phones never changes by accident.
-    // Last deliberate change: OpenCode 1 1.18.32 and Canonical Ubuntu Base
-    // 24.04.5 pins (2026-09-27).
+    // Last deliberate change: recovery_arm also arms a permit after a
+    // confirmed crash, on port 4096 only (6ed0ec26, phone-server healing,
+    // 2026-09-28).
     test('the Termux manager script changes only on purpose', () {
       final script = TermuxBridge.managerScriptForTesting();
-      expect(script.length, 51360);
+      expect(script.length, 51772);
       expect(
         sha256.convert(utf8.encode(script)).toString(),
-        '55199f944184781a42bc642990ef38c5e589e4c08b50dbeaf5113ed3166cfc49',
+        '87886a2aa22329be1e2b4007b3b142fe17b57940412f22523cb709d2280ceb1a',
       );
     });
 

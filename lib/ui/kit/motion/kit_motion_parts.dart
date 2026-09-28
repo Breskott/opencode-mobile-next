@@ -63,6 +63,15 @@ class KitSwap extends StatelessWidget {
   static Widget _layer(Widget child, Animation<double> animation) =>
       _KitSwapLayer(animation: animation, child: child);
 
+  /// Whether [element] is the child a swap is fading out: it takes no taps
+  /// and is hidden from assistive technology, so page checks that count
+  /// what is on screen (KitScreen's one primary) leave it out.
+  static bool isLeaving(Element element) {
+    final widget = element.widget;
+    return widget is _KitSwapLayer &&
+        _KitSwapLayerState._isLeaving(widget.animation.status);
+  }
+
   @override
   Widget build(BuildContext context) => AnimatedSwitcher(
     duration: _durationOf(context, pace),

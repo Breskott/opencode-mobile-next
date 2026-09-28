@@ -135,6 +135,11 @@ void main() {
       expect(sessions.shells.single.number, 2);
       expect(sessions.shells.single.running, isTrue);
       expect(backend.calls, contains('remove 1'));
+      // The key bar comes back inside the one terminal surface (6b2903df),
+      // so the new shell's screen changes size once more: that size reaches
+      // the new shell after the resize debounce.
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(backend.calls, contains(startsWith('resize 2 ')));
     });
 
     testWidgets('a shell that cannot start says so, with Try again', (

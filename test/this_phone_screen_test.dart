@@ -288,8 +288,10 @@ void main() {
       findsNothing,
     );
     await unmountPhone(tester);
-    // A status poll that was in flight at unmount ends on its own.
-    await tester.pump(const Duration(seconds: 6));
+    // A status poll that was in flight at unmount ends on its own, and so
+    // does the connection's eight-second "still connecting" grace clock
+    // (3d64653c): the fake server never answers the connect.
+    await tester.pump(const Duration(seconds: 9));
   });
 
   testWidgets('Add tools opens Customize in add mode, priced before it '

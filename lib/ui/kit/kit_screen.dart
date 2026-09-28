@@ -17,6 +17,7 @@ import 'kit_status_line.dart';
 import 'kit_status_slot.dart';
 import 'kit_tokens.dart';
 import 'kit_top_bar.dart';
+import 'motion/kit_motion_parts.dart';
 import 'motion/kit_refresh.dart';
 
 /// How wide a single-pane body may grow on medium and wider windows.
@@ -603,9 +604,10 @@ class _RenderMeasure extends RenderProxyBox {
 }
 
 /// Debug only (G37, LAY-12, K2 §2.7): after each frame, the visible subtree
-/// (skipping offstage and TickerMode-disabled parts, and nested panes,
-/// which check themselves) holds at most one primary [KitButton], one drawn
-/// [KitStatusLine], one [KitRefresh] and one [KitDetailsFold].
+/// (skipping offstage and TickerMode-disabled parts, the state a [KitSwap]
+/// is fading out, and nested panes, which check themselves) holds at most
+/// one primary [KitButton], one drawn [KitStatusLine], one [KitRefresh] and
+/// one [KitDetailsFold].
 class _KitScreenCheck extends StatefulWidget {
   const _KitScreenCheck({required this.child});
 
@@ -644,6 +646,8 @@ class _KitScreenCheckState extends State<_KitScreenCheck> {
       if (widget is TickerMode && !widget.enabled) return;
       if (widget is Visibility && !widget.visible) return;
       if (widget is _KitScreenScope && widget.pane) return;
+      // The state a KitSwap is fading out is on its way off the page.
+      if (KitSwap.isLeaving(element)) return;
       if (widget is KitButton && widget.role == KitButtonRole.primary) {
         primaries++;
       } else if (widget is KitStatusLine) {
