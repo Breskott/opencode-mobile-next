@@ -3,6 +3,7 @@
 // drops Arabic and RTL review, so the spec's test 14 (RTL) is not written.
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -691,6 +692,57 @@ void main() {
     // KitDiffView splits only in a box of 840 dp or wider.
     expect(tester.getSize(diff).width, lessThan(840));
   });
+
+  for (final size in const [Size(412, 915), Size(1280, 800)]) {
+    testWidgets('10b. the command to allow wraps whole at '
+        '${size.width.toInt()} wide: no sideways scroll hides its tail', (
+      tester,
+    ) async {
+      final context = await _host(tester, size: size);
+      final (_, routes) = _routes();
+      const long =
+          'flutter test --concurrency=1 test/offline_queue_test.dart '
+          '&& rm -rf build/very/long/output/directory/that/must/stay/visible';
+      showKitRequestSheet(
+        context,
+        card: _permission(),
+        routes: routes,
+        fullText: long,
+      );
+      await tester.pumpAndSettle();
+      final block = find.byType(KitCodeBlock);
+      expect(block, findsOneWidget);
+      expect(
+        find.descendant(
+          of: block,
+          matching: find.byWidgetPredicate(
+            (w) => w is Scrollable && w.axisDirection == AxisDirection.right,
+          ),
+        ),
+        findsNothing,
+      );
+      // Every glyph of the command lies inside the block.
+      final text = find.descendant(
+        of: block,
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is RichText &&
+              w.text.toPlainText().contains('must/stay/visible'),
+        ),
+      );
+      expect(text, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(text);
+      expect(paragraph.didExceedMaxLines, isFalse);
+      final blockRect = tester.getRect(block);
+      final textRect = tester.getRect(text);
+      expect(textRect.right, lessThanOrEqualTo(blockRect.right + .5));
+      expect(
+        paragraph.getMaxIntrinsicWidth(double.infinity),
+        greaterThan(textRect.width),
+        reason: 'the command is longer than one line, so it must wrap',
+      );
+    });
+  }
 
   testWidgets('11. details render last and collapsed in one fold', (
     tester,
