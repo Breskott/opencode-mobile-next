@@ -10,7 +10,7 @@
 #   bash ubuntu-opencode.sh restart    # restart the service
 #   bash ubuntu-opencode.sh status     # service state and listening check
 #   bash ubuntu-opencode.sh logs       # follow the server log
-#   bash ubuntu-opencode.sh update     # upgrade OpenCode, then restart
+#   bash ubuntu-opencode.sh update     # move to the pinned OpenCode, restart
 #   bash ubuntu-opencode.sh password   # print the server password for the app
 #
 # Configuration (environment variables, all optional):
@@ -25,6 +25,13 @@
 # WireGuard address. A password is generated on install and required on every
 # request; it lives in a 0600 environment file, never on the command line.
 #
+# OpenCode itself comes from one pinned release on GitHub, never from a
+# script piped into a shell: the archive for this CPU is downloaded, checked
+# against the SHA-256 recorded below, and only then unpacked and installed
+# to ~/.opencode/bin. A download that does not match stops before anything
+# runs. Moving to a newer OpenCode means a new version of this script with a
+# new version and new checksums.
+#
 # Full walkthrough: docs/ubuntu-host.md in https://github.com/Eslamasabry/opencode-mobile-next
 set -euo pipefail
 
@@ -34,6 +41,27 @@ readonly BIND_HOST="${OPENCODE_HOSTNAME:-127.0.0.1}"
 readonly ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/$SERVICE_NAME.env"
 readonly UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 readonly UNIT_FILE="$UNIT_DIR/$SERVICE_NAME.service"
+
+# The OpenCode 1 release the app pins (lib/termux/bridge.dart), and the
+# SHA-256 of each Linux archive as GitHub publishes it for that release
+# (asset digests of https://github.com/anomalyco/opencode/releases/tag/v1.18.32,
+# read 2026-09-28 and matched against the downloaded files). x64 uses the
+# baseline build, which also runs on CPUs without AVX2, as the app does.
+readonly OPENCODE_VERSION="1.18.32"
+readonly OPENCODE_RELEASES="https://github.com/anomalyco/opencode/releases/download"
+readonly OPENCODE_X64_ASSET="opencode-linux-x64-baseline.tar.gz"
+readonly OPENCODE_X64_SHA256="763af386ef88a8cab18df00fcf055690e5a55e31a7088beabe02307142a6adce"
+readonly OPENCODE_ARM64_ASSET="opencode-linux-arm64.tar.gz"
+readonly OPENCODE_ARM64_SHA256="568461b7d4d8c19865c97e9a1102e613049c6039d01fe772154de873c1865840"
+readonly OPENCODE_BIN_DIR="$HOME/.opencode/bin"
+
+WORK_DIR=""
+cleanup_work_dir() {
+  if [[ -n "$WORK_DIR" ]]; then
+    rm -rf -- "$WORK_DIR"
+  fi
+}
+trap cleanup_work_dir EXIT
 
 fail() {
   echo "ERROR: $*" >&2
@@ -66,15 +94,80 @@ find_opencode() {
   return 1
 }
 
+# The version an opencode binary reports, without a leading 'v'.
+opencode_version() {
+  "$1" --version 2>/dev/null | head -n 1 | tr -d '[:space:]' | sed 's/^v//'
+}
+
+# True when version $1 is $2 or newer.
+version_at_least() {
+  [[ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n 1)" == "$2" ]]
+}
+
+# Download the pinned release for this CPU, check its SHA-256, and only
+# then unpack it into $OPENCODE_BIN_DIR. Prints nothing on stdout.
+install_pinned_opencode() {
+  local asset expected actual tool
+  case "$(uname -m)" in
+    x86_64 | amd64)
+      asset="$OPENCODE_X64_ASSET"
+      expected="$OPENCODE_X64_SHA256"
+      ;;
+    aarch64 | arm64)
+      asset="$OPENCODE_ARM64_ASSET"
+      expected="$OPENCODE_ARM64_SHA256"
+      ;;
+    *)
+      fail "OpenCode $OPENCODE_VERSION has no Linux build for this CPU ($(uname -m)). Use a 64-bit x86 or ARM machine."
+      ;;
+  esac
+  for tool in curl tar sha256sum; do
+    command -v "$tool" >/dev/null 2>&1 ||
+      fail "'$tool' is needed to install OpenCode. Install it (sudo apt install curl tar coreutils) and re-run this script."
+  done
+
+  local url="$OPENCODE_RELEASES/v$OPENCODE_VERSION/$asset"
+  WORK_DIR="$(mktemp -d)"
+  echo "==> Downloading OpenCode $OPENCODE_VERSION ($asset)" >&2
+  curl -fsSL --retry 3 --connect-timeout 20 -o "$WORK_DIR/$asset" "$url" ||
+    fail "Could not download OpenCode $OPENCODE_VERSION from $url. Check the network and re-run this script."
+
+  actual="$(sha256sum "$WORK_DIR/$asset" | cut -d ' ' -f 1)"
+  if [[ "$actual" != "$expected" ]]; then
+    fail "The OpenCode download does not match its published checksum, so nothing was installed.
+  file:     $asset
+  expected: $expected
+  got:      $actual
+Re-run this script; if it fails again, do not install this file."
+  fi
+  echo "==> Checksum matches ($expected)" >&2
+
+  tar -xzf "$WORK_DIR/$asset" -C "$WORK_DIR" opencode ||
+    fail "Could not unpack the OpenCode archive. Re-run this script."
+  [[ -f "$WORK_DIR/opencode" && ! -L "$WORK_DIR/opencode" ]] ||
+    fail "The OpenCode archive did not contain the opencode program. Nothing was installed."
+  mkdir -p "$OPENCODE_BIN_DIR"
+  # Rename over the old copy so a running server keeps its file until restart.
+  install -m 0755 "$WORK_DIR/opencode" "$OPENCODE_BIN_DIR/opencode.new"
+  mv -f "$OPENCODE_BIN_DIR/opencode.new" "$OPENCODE_BIN_DIR/opencode"
+  cleanup_work_dir
+  WORK_DIR=""
+
+  local installed
+  installed="$(opencode_version "$OPENCODE_BIN_DIR/opencode")"
+  [[ "$installed" == "$OPENCODE_VERSION" ]] ||
+    fail "OpenCode was installed but reports version '${installed:-unknown}' instead of $OPENCODE_VERSION."
+  echo "==> Installed OpenCode $OPENCODE_VERSION to $OPENCODE_BIN_DIR/opencode" >&2
+}
+
 install_opencode_if_missing() {
   if find_opencode >/dev/null; then
     echo "==> OpenCode is already installed: $(find_opencode)"
     return
   fi
-  echo "==> Installing OpenCode with the official installer"
-  curl -fsSL https://opencode.ai/install | bash
+  install_pinned_opencode
   find_opencode >/dev/null ||
-    fail "The installer finished but 'opencode' was not found. Open a new shell and re-run this script."
+    fail "OpenCode was installed but 'opencode' was not found. Open a new shell and re-run this script."
 }
 
 validate_bind() {
@@ -115,9 +208,12 @@ ensure_password() {
   echo "==> Generated a server password in $ENV_FILE (0600)"
 }
 
+# write_unit [binary]: the service runs [binary], or the first opencode found.
 write_unit() {
-  local opencode_bin
-  opencode_bin="$(find_opencode)" || fail "OpenCode is not installed. Run: bash $0 install"
+  local opencode_bin="${1:-}"
+  if [[ -z "$opencode_bin" ]]; then
+    opencode_bin="$(find_opencode)" || fail "OpenCode is not installed. Run: bash $0 install"
+  fi
   validate_bind
   ensure_password
   mkdir -p "$UNIT_DIR"
@@ -180,10 +276,18 @@ cmd_update() {
   require_systemd_user
   local opencode_bin
   opencode_bin="$(find_opencode)" || fail "OpenCode is not installed. Run: bash $0 install"
-  echo "==> Upgrading OpenCode"
-  "$opencode_bin" upgrade
-  # The binary path can change across upgrades; refresh the unit before restart.
-  write_unit
+  local installed
+  installed="$(opencode_version "$opencode_bin")"
+  if [[ -n "$installed" ]] && version_at_least "$installed" "$OPENCODE_VERSION"; then
+    # Never downgrade: a newer OpenCode may have moved its data forward.
+    echo "==> OpenCode $installed is already at or past the pinned $OPENCODE_VERSION: $opencode_bin"
+  else
+    echo "==> Moving OpenCode ${installed:-(unknown version)} to the pinned $OPENCODE_VERSION"
+    install_pinned_opencode
+    opencode_bin="$OPENCODE_BIN_DIR/opencode"
+  fi
+  # The binary can move to $OPENCODE_BIN_DIR; refresh the unit before restart.
+  write_unit "$opencode_bin"
   systemctl --user restart "$SERVICE_NAME"
   echo "==> Restarted $SERVICE_NAME"
   listening_check

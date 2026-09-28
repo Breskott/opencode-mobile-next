@@ -84,7 +84,9 @@ No other `curl … | bash` / `| sh` instruction is shown to people anywhere in
 `lib/termux/`, `lib/builtin/` are scripts the app runs itself, not
 instructions, and none pipe into a shell.
 
-Found outside `lib/`, not changed (follow-ups):
+Found outside `lib/`, not changed (follow-ups; both addressed in
+[`slice-script-pins`](../slice-script-pins-2026-09-28/README.md), whose
+script still awaits a push before the pin can move):
 
 - `scripts/host/ubuntu-opencode.sh` itself runs `curl -fsSL
   https://opencode.ai/install | bash` when OpenCode is missing (the upstream
