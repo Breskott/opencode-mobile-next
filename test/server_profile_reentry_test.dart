@@ -192,7 +192,7 @@ void main() {
       find.text("Can't read the saved token for Workstation"),
       findsOneWidget,
     );
-    expect(find.text('Nothing is listening on this device'), findsNothing);
+    expect(find.text('Nothing answered on this phone'), findsNothing);
     await tester.tap(find.text('Workstation'));
     await tester.pumpAndSettle();
     expect(find.text('Re-enter connection token'), findsNWidgets(2));

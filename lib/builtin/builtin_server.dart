@@ -96,31 +96,85 @@ Future<ServerProfile> ensureBuiltinProfile(
   return profile;
 }
 
+/// What kind of thing stopped a start, so the page can say why in plain
+/// words and the launch path knows whether one more try can help.
+enum BuiltinStartProblem {
+  /// OpenCode's process ended before it answered.
+  exited,
+
+  /// OpenCode kept running but did not answer in time.
+  timedOut,
+
+  /// The start was withdrawn (the app left the screen, a policy changed).
+  interrupted,
+
+  /// The saved server password is missing: setup has to make a new one.
+  passwordMissing,
+
+  /// The password file inside Ubuntu could not be written.
+  passwordNotSaved,
+
+  /// The phone did not let the app start OpenCode (the bridge refused).
+  refused,
+
+  /// Another start is already running.
+  busy,
+}
+
 /// Why a start did not end with a server answering our password.
 class BuiltinServerStartFailure {
-  const BuiltinServerStartFailure.detail(String this._detail)
-    : _exited = false,
-      _timeoutSeconds = null;
+  const BuiltinServerStartFailure.detail(
+    String this._detail, {
+    this.problem = BuiltinStartProblem.refused,
+  }) : _timeoutSeconds = null;
   const BuiltinServerStartFailure.exited()
     : _detail = null,
-      _exited = true,
+      problem = BuiltinStartProblem.exited,
       _timeoutSeconds = null;
   const BuiltinServerStartFailure.timedOut(int seconds)
     : _detail = null,
-      _exited = false,
+      problem = BuiltinStartProblem.timedOut,
       _timeoutSeconds = seconds;
 
   final String? _detail;
-  final bool _exited;
   final int? _timeoutSeconds;
+  final BuiltinStartProblem problem;
 
-  /// A short reason for [AppLocalizations.builtinServerStartFailed].
+  /// A fast failure that one more start can fix. A timeout already waited
+  /// long, a withdrawn start was not wanted, and a missing password needs
+  /// setup, so none of those is tried again on its own.
+  bool get retryable => switch (problem) {
+    BuiltinStartProblem.exited ||
+    BuiltinStartProblem.passwordNotSaved ||
+    BuiltinStartProblem.refused => true,
+    _ => false,
+  };
+
+  /// A short reason for [AppLocalizations.builtinServerStartFailed]: the
+  /// technical line kept under Details.
   String reason(AppLocalizations l10n) {
-    if (_exited) return l10n.builtinServerExited;
-    final seconds = _timeoutSeconds;
-    if (seconds != null) return l10n.builtinServerTimedOut(seconds);
-    return _detail!;
+    switch (problem) {
+      case BuiltinStartProblem.exited:
+        return l10n.builtinServerExited;
+      case BuiltinStartProblem.timedOut:
+        return l10n.builtinServerTimedOut(_timeoutSeconds!);
+      default:
+        return _detail!;
+    }
   }
+
+  /// Why, in plain words, with the way forward: the page's explanation.
+  String explanation(AppLocalizations l10n) => switch (problem) {
+    BuiltinStartProblem.exited => l10n.inAppServerStartExitedBody,
+    BuiltinStartProblem.timedOut => l10n.inAppServerStartTimedOutBody(
+      _timeoutSeconds!,
+    ),
+    BuiltinStartProblem.interrupted => l10n.inAppServerStartInterruptedBody,
+    BuiltinStartProblem.passwordMissing ||
+    BuiltinStartProblem.passwordNotSaved => l10n.inAppServerStartPasswordBody,
+    BuiltinStartProblem.refused => l10n.inAppServerStartRefusedBody,
+    BuiltinStartProblem.busy => l10n.inAppServerStartFailedBody,
+  };
 }
 
 /// Writes the password file, starts the server (restarting one that runs)
@@ -138,12 +192,14 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
 }) async {
   const cancelled = BuiltinServerStartFailure.detail(
     'The server start was not confirmed.',
+    problem: BuiltinStartProblem.interrupted,
   );
   bool wanted() => stillWanted?.call() ?? true;
   if (!wanted()) return cancelled;
   if (profile.password.isEmpty) {
     return const BuiltinServerStartFailure.detail(
       'The saved server password is missing.',
+      problem: BuiltinStartProblem.passwordMissing,
     );
   }
   try {
@@ -154,6 +210,7 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
     if (!written.ok) {
       return const BuiltinServerStartFailure.detail(
         'The server password could not be saved.',
+        problem: BuiltinStartProblem.passwordNotSaved,
       );
     }
     if (!wanted()) return cancelled;
@@ -197,6 +254,9 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
     }
     return cancelled;
   } catch (_) {
+    // A native refusal after the start was withdrawn is the withdrawal
+    // (the app left the screen), not the phone saying no.
+    if (!wanted()) return cancelled;
     return const BuiltinServerStartFailure.detail(
       'The phone server could not start.',
     );
@@ -324,6 +384,7 @@ class BuiltinServerStarter extends ChangeNotifier {
     if (_starting) {
       return const BuiltinServerStartFailure.detail(
         'The phone server is already starting.',
+        problem: BuiltinStartProblem.busy,
       );
     }
     _starting = true;

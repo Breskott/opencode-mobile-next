@@ -58,7 +58,7 @@ void main() {
         onTermux: () => opened = true,
       ),
     );
-    expect(find.text('Nothing is listening on this device'), findsOneWidget);
+    expect(find.text('Nothing answered on this phone'), findsOneWidget);
     // What to check is under Details, below the actions (standard §3).
     await tester.ensureVisible(find.byKey(const ValueKey('kit-state-details')));
     await tester.tap(find.byKey(const ValueKey('kit-state-details')));

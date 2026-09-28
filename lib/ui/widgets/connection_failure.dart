@@ -31,7 +31,7 @@ class ConnectionFailure {
     this.tailnet = false,
   });
 
-  /// Short headline, e.g. "Nothing is listening on this phone".
+  /// Short headline, e.g. "Nothing answered on this phone".
   final String title;
 
   /// One or two sentences that say what the failure means.

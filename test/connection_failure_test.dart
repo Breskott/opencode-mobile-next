@@ -20,7 +20,7 @@ void main() {
 
   test('loopback offers retry without assuming Termux hosts the endpoint', () {
     final f = d('Health check failed: connection refused');
-    expect(f.title, 'Nothing is listening on this device');
+    expect(f.title, 'Nothing answered on this phone');
     expect(f.primary, ConnectionFailureAction.retry);
     expect(f.checks.join(' '), contains('Termux'));
     expect(f.checks.join(' '), contains('adb reverse'));
@@ -36,7 +36,7 @@ void main() {
     'a bare "Health check failed" on loopback still gets the loopback advice',
     () {
       final f = d('Health check failed');
-      expect(f.title, 'Nothing is listening on this device');
+      expect(f.title, 'Nothing answered on this phone');
     },
   );
 
@@ -96,7 +96,7 @@ void main() {
     final f = d('Health check failed', codex: true);
     expect(f.title, 'Could not connect');
     expect(f.checks.join(' '), contains('agent server'));
-    expect(f.checks.join(' '), isNot(contains('Nothing is listening')));
+    expect(f.checks.join(' '), isNot(contains('Nothing answered')));
   });
 
   test('certificate problems name the certificate', () {

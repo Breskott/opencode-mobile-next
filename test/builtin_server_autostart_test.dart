@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -59,8 +61,16 @@ class _FakeLinux extends BuiltinLinux {
   int generation = 0;
   bool wanted = true;
 
+  /// Holds every status read until completed: the launch is still deciding.
+  Completer<void>? statusGate;
+
   @override
-  Future<BuiltinLinuxStatus> status() async => BuiltinLinuxStatus(
+  Future<BuiltinLinuxStatus> status() async {
+    await statusGate?.future;
+    return _status();
+  }
+
+  BuiltinLinuxStatus _status() => BuiltinLinuxStatus(
     installed: true,
     phase: BuiltinLinuxPhase.ready,
     serverRunning: serverRunning,
@@ -105,6 +115,7 @@ class _FakeLinux extends BuiltinLinux {
 void main() {
   late _RefusedConnection connection;
   late _FakeLinux linux;
+  late _OneProfileStore store;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -114,7 +125,7 @@ void main() {
       baseUrl: BuiltinLinux.serverUrl,
       username: BuiltinLinux.serverUsername,
     )..password = 'secret';
-    final store = _OneProfileStore(
+    store = _OneProfileStore(
       prefs: await SharedPreferences.getInstance(),
       profile: profile,
     );
@@ -211,22 +222,33 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('a failed automatic start falls back to the card, once', (
-    tester,
-  ) async {
+  testWidgets('a start that fails is tried once more, then the card says '
+      'why in plain words (QA B1)', (tester) async {
     linux.serverDies = true;
     await mount(tester);
     await settle(tester);
-
-    expect(linux.starts, 1);
+    // The healing restart failed first; the launch start was the one more
+    // try, right away.
+    await tester.pump(const Duration(seconds: 3));
+    await settle(tester);
+    expect(linux.starts, 2);
     expect(connection.connectCalls, 0);
     expect(find.text('OpenCode inside the app did not start'), findsOneWidget);
+    expect(
+      find.text(
+        'OpenCode closed by itself while it was starting. Open setup to see '
+        'its log, or start it again.',
+      ),
+      findsOneWidget,
+    );
     expect(
       find.byKey(const ValueKey('saved-server-open-in-app-setup')),
       findsOneWidget,
     );
+    // Bounded: no third start on its own inside the healing back-off.
+    await tester.pump(const Duration(seconds: 5));
     await settle(tester);
-    expect(linux.starts, 1);
+    expect(linux.starts, 2);
 
     await unmount(tester);
   });
@@ -248,6 +270,8 @@ void main() {
     });
     linux.serverDies = true;
     await mount(tester);
+    await settle(tester);
+    await tester.pump(const Duration(seconds: 3));
     await settle(tester);
     await tester.tap(
       find.byKey(const ValueKey('saved-server-open-in-app-setup')),
@@ -279,6 +303,37 @@ void main() {
     await settle(tester);
     expect(connection.log, ['start', 'connect']);
 
+    await unmount(tester);
+  });
+
+  testWidgets('every cold launch starts a stopped in-app server, also past '
+      'the crash-restart budget (QA B1)', (tester) async {
+    // Android ended the app with the server each time; the person opens it
+    // again. The fourth launch used to open on "stopped" and wait for a tap.
+    for (var launch = 1; launch <= 4; launch++) {
+      linux.serverRunning = false;
+      connection = _RefusedConnection(store);
+      await mount(tester);
+      await settle(tester);
+      expect(linux.starts, launch, reason: 'launch $launch');
+      expect(connection.connectCalls, 1, reason: 'launch $launch');
+      await unmount(tester);
+    }
+  });
+
+  testWidgets('no stopped or failure page flashes while the launch start is '
+      'still deciding (QA B7)', (tester) async {
+    linux.statusGate = Completer<void>();
+    // A refused connect from before the start had its turn.
+    connection.lastError = 'Health check failed: connection refused';
+    await mount(tester);
+    await settle(tester);
+    expect(find.byKey(const ValueKey('saved-server-failed')), findsNothing);
+    expect(find.text('OpenCode inside the app is stopped'), findsNothing);
+
+    linux.statusGate!.complete();
+    await settle(tester);
+    expect(linux.starts, 1);
     await unmount(tester);
   });
 }

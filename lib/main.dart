@@ -1970,6 +1970,9 @@ class _RootState extends ConsumerState<_Root> {
     _started = true;
     _attempts += 1;
     if (looksLikeInAppServer(profile)) {
+      // Until the launch start has had its turn, nothing here is a verdict:
+      // no "stopped" page flashes before "Starting…" (QA B7).
+      _autoStartPending = true;
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => unawaited(_autoStartThenConnect(profile)),
       );
@@ -1978,11 +1981,19 @@ class _RootState extends ConsumerState<_Root> {
     WidgetsBinding.instance.addPostFrameCallback((_) => conn.connect(profile));
   }
 
-  /// Launch joins the same foreground recovery owner as resume and polling.
+  /// True from the in-app server's launch until its start (and one retry)
+  /// had its turn.
+  bool _autoStartPending = false;
+
+  /// Launch joins the same foreground recovery owner as resume and polling,
+  /// then starts a stopped server the person did not stop themselves
+  /// ([PhoneServerHealing.startForLaunch]) and connects.
   Future<void> _autoStartThenConnect(ServerProfile profile) async {
-    final healing = ref.read(phoneServerHealingProvider);
-    await healing.check(profile);
-    if (mounted) await healing.connectIfNeeded(profile);
+    try {
+      await ref.read(phoneServerHealingProvider).startForLaunch(profile);
+    } finally {
+      if (mounted) setState(() => _autoStartPending = false);
+    }
   }
 
   Future<void> _startInAppServer() async {
@@ -2027,7 +2038,12 @@ class _RootState extends ConsumerState<_Root> {
         ? cached
         : null;
     final opening = lastKnown != null;
-    final error = startFailure != null
+    // While the launch start is pending, an early refused connect or a
+    // first failed try is not the answer yet: the page keeps connecting.
+    final pending = _autoStartPending && looksLikeInAppServer(profile);
+    final error = pending
+        ? null
+        : startFailure != null
         ? l10n.builtinServerStartFailed(startFailure.reason(l10n))
         : conn.lastError;
     final card = SavedServerConnectionCard(
@@ -2043,12 +2059,16 @@ class _RootState extends ConsumerState<_Root> {
       // The controller's one eight-second clock, shared with every status
       // line; `since` is set once an attempt actually began (P4.4).
       notAnswering:
+          !pending &&
           status.phase == ConnectionStatusPhase.notAnswering &&
           status.since != null,
       inAppServer: inApp,
       startingInAppServer: inApp && _builtin.starting,
-      inAppStartFailed: startFailure != null,
-      onOpenInAppSetup: startFailure != null
+      inAppStartFailed: !pending && startFailure != null,
+      // Why it did not start, in plain words (QA B1); the technical line
+      // stays under Details.
+      inAppStartFailedBody: pending ? null : startFailure?.explanation(l10n),
+      onOpenInAppSetup: !pending && startFailure != null
           ? () => openPhoneSetupStart(context)
           : null,
       supportsTermux:

@@ -3551,7 +3551,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'For a self-signed certificate, install it on this device first.';
 
   @override
-  String get e7ConnectionFailure24 => 'Nothing is listening on this device';
+  String get e7ConnectionFailure24 => 'Nothing answered on this phone';
 
   @override
   String get e7ConnectionFailure26 =>
@@ -12175,6 +12175,27 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get inAppServerStartFailedBody =>
       'Open its setup to see the server log, or try starting it again.';
+
+  @override
+  String get inAppServerStartExitedBody =>
+      'OpenCode closed by itself while it was starting. Open setup to see its log, or start it again.';
+
+  @override
+  String inAppServerStartTimedOutBody(int seconds) {
+    return 'OpenCode did not answer within $seconds seconds. The phone may be busy or short on memory; close other apps, then start it again.';
+  }
+
+  @override
+  String get inAppServerStartInterruptedBody =>
+      'The start stopped because the app left the screen. Start it again to continue.';
+
+  @override
+  String get inAppServerStartPasswordBody =>
+      'The app could not set up OpenCode\'s sign-in on this phone. Start it again; if this repeats, open setup.';
+
+  @override
+  String get inAppServerStartRefusedBody =>
+      'The phone did not let the app start OpenCode just now. Start it again; if this repeats, restart the phone.';
 
   @override
   String get inAppServerStarting => 'Starting OpenCode inside the app…';
@@ -21514,7 +21535,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectionFailureLoopbackBody =>
-      'This address means the server runs on this phone, or is reached through a tunnel that ends here. Neither answered.';
+      'The app looked for a server running on this phone and got no answer. Start that server, or reconnect the tunnel that brings one here, then try again.';
 
   @override
   String get connectionFailureTimedOutBody =>
