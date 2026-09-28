@@ -1480,6 +1480,76 @@ void main() {
   );
 
   test(
+    'OC1 keeps API keys available and refuses browser auth without a legacy method',
+    () async {
+      await HttpOverrides.runZoned(() async {
+        final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+        final requests = <String>[];
+        server.listen((request) async {
+          requests.add(request.uri.path);
+          request.response.headers.contentType = ContentType.json;
+          final response = switch (request.uri.path) {
+            '/api/integration' => {
+              'location': {
+                'directory': '/root',
+                'project': {'id': 'project-1', 'directory': '/root'},
+              },
+              'data': [
+                for (final id in ['anthropic', 'google'])
+                  {
+                    'id': id,
+                    'name': id,
+                    'methods': [
+                      {'type': 'key', 'label': 'API key'},
+                      {'type': 'oauth', 'id': 'browser', 'label': 'Browser'},
+                    ],
+                    'connections': <Object>[],
+                  },
+              ],
+            },
+            '/provider/auth' => <String, Object>{},
+            '/provider' => {
+              'all': <Object>[],
+              'default': <String, String>{},
+              // A stored OAuth credential is not a callable browser method.
+              'connected': ['anthropic', 'google'],
+            },
+            _ => null,
+          };
+          if (response == null) {
+            request.response.statusCode = HttpStatus.notFound;
+          } else {
+            request.response.write(jsonEncode(response));
+          }
+          await request.response.close();
+        });
+
+        final api = OpenCodeApi(
+          baseUrl: 'http://${server.address.host}:${server.port}',
+        );
+        try {
+          final repository = SdkProductRepository(api.sdkClient);
+          final integrations = await repository.listIntegrations();
+          expect(integrations, hasLength(2));
+          for (final integration in integrations) {
+            expect(integration.methods.single.type, 'key');
+            // This is credential presence, not an inference readiness claim.
+            expect(integration.connectionCount, 1);
+            await expectLater(
+              repository.startIntegrationOAuth(integration.id, '0'),
+              throwsA(isA<ProductException>()),
+            );
+          }
+          expect(requests.where((path) => path.contains('/oauth/')), isEmpty);
+        } finally {
+          api.sdkClient.dio.close(force: true);
+          await server.close(force: true);
+        }
+      }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
+    },
+  );
+
+  test(
     'provider disconnect preserves visible v2 connection when legacy removal fails',
     () async {
       await HttpOverrides.runZoned(() async {
