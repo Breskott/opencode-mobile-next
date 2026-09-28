@@ -33,6 +33,7 @@ import '../widgets/product_states.dart'
 import '../widgets/team_host_form.dart';
 import '../widgets/local_agent_server_entry.dart';
 import '../widgets/phone_server_card.dart';
+import '../widgets/queued_prompt_move_sheet.dart';
 import '../widgets/relative_time.dart';
 import '../widgets/termux_running_server_entry.dart';
 import '../widgets/safety_confirms.dart';
@@ -687,6 +688,46 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     }
   }
 
+  /// Prompts queued for [p] while it cannot send them: every server but
+  /// the connected one. An isolated view never reads other servers.
+  int _waitingFor(ServerProfile p, ConnectionController connection) {
+    if (connection.isIsolated) return 0;
+    if (connection.api != null && connection.profile?.id == p.id) return 0;
+    return connection.queuedPromptCountForProfile(p.id);
+  }
+
+  /// The connected server [p]'s waiting prompts can move to, by name, or
+  /// null when there is none (slice-queue-move).
+  String? _moveDestinationName(
+    ServerProfile p,
+    ConnectionController connection,
+    AppLocalizations copy,
+  ) {
+    final destination = connection.queuedPromptMoveDestination;
+    if (destination == null || destination.id == p.id) return null;
+    return serverDisplayName(
+      destination,
+      copy,
+      among: connection.store.profiles,
+    );
+  }
+
+  /// Moves prompts waiting for [p] into a conversation on the connected
+  /// server; the sheet asks which, and says what happened.
+  Future<void> _moveQueued(ServerProfile p) async {
+    setState(() {
+      _listFailure = null;
+      _listFailureDetails = null;
+    });
+    await showQueuedPromptMoveSheet(
+      context,
+      connection: ref.read(connProvider),
+      source: p,
+      onProblem: (message, {details}) =>
+          _showFailure(message, details: details),
+    );
+  }
+
   Future<void> _externalAgents() async {
     final bootstrap = ref.read(bootstrapProvider);
     final store = ExternalAgentStore(
@@ -934,6 +975,13 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                                       accountConnection
                                           .capabilities
                                           .agentAccount,
+                                  queued: _waitingFor(p, accountConnection),
+                                  moveDestination: _moveDestinationName(
+                                    p,
+                                    accountConnection,
+                                    copy,
+                                  ),
+                                  onMoveQueued: () => _moveQueued(p),
                                   onConnect: () => _connect(p),
                                   onEdit: () => _edit(existing: p),
                                   onRemove: () => _delete(p),
@@ -1100,6 +1148,9 @@ class _ServerRow extends StatelessWidget {
     required this.working,
     required this.busy,
     required this.showAccount,
+    required this.queued,
+    required this.moveDestination,
+    required this.onMoveQueued,
     required this.onConnect,
     required this.onEdit,
     required this.onRemove,
@@ -1117,6 +1168,13 @@ class _ServerRow extends StatelessWidget {
   final int? working;
   final bool busy;
   final bool showAccount;
+
+  /// Prompts queued for this server, waiting until it can be reached.
+  final int queued;
+
+  /// The connected server they can move to, by name; null: none.
+  final String? moveDestination;
+  final VoidCallback onMoveQueued;
   final VoidCallback onConnect;
   final VoidCallback onEdit;
   final VoidCallback onRemove;
@@ -1168,6 +1226,11 @@ class _ServerRow extends StatelessWidget {
           // LOOK-5 interim: a credential to re-enter is said in words, in
           // the strong label weight, never in the danger colour.
           if (reentry != null) TextSpan(text: '$reentry · ', style: wordStyle),
+          if (queued > 0)
+            TextSpan(
+              text: '${copy.serverRowQueuedWaiting(queued)} · ',
+              style: wordStyle,
+            ),
           if (kind != null) TextSpan(text: '$kind · '),
           TextSpan(text: _shortAddress(p.baseUrl)),
         ],
@@ -1182,6 +1245,12 @@ class _ServerRow extends StatelessWidget {
         if (showAccount)
           KitMenuItem(label: copy.agentAccountTitle, onSelected: onAccount),
         KitMenuItem(label: copy.e7SetupConnect, onSelected: onConnect),
+        if (queued > 0 && moveDestination != null)
+          KitMenuItem(
+            key: ValueKey('server-move-queued-${p.id}'),
+            label: copy.serverRowMoveQueued(queued, moveDestination!),
+            onSelected: onMoveQueued,
+          ),
         KitMenuItem(label: copy.e7SetupEdit, onSelected: onEdit),
         // Destructive: last, confirmed by the sheet it opens.
         KitMenuItem(
