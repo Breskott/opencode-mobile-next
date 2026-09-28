@@ -8640,27 +8640,6 @@
   "@e7ModelUiListSeparator": {
     "description": "Voice/model presentation: e7ModelUiListSeparator"
   },
-  "e7ModelUiUnusableProviders": "{count, plural, one{Signed in to {providers}, but this server could not load that sign-in even after a reload, so its models cannot answer. Sign in another way under Providers, or pick another model.} other{Signed in to {providers}, but this server could not load those sign-ins even after a reload, so their models cannot answer. Sign in another way under Providers, or pick another model.}}",
-  "@e7ModelUiUnusableProviders": {
-    "description": "Model picker: signed-in providers the server still could not load after a provider reload",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "providers": {
-        "type": "String"
-      }
-    }
-  },
-  "e7ModelUiProviderReloadWaits": "{count, plural, one{The reload waits for 1 running reply to finish, because reloading would stop it.} other{The reload waits for {count} running replies to finish, because reloading would stop them.}}",
-  "@e7ModelUiProviderReloadWaits": {
-    "description": "Model picker: a provider reload is held back while replies run on the server",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "e7ModelUiUnloadedProviders": "{count, plural, one{Signed in to {providers}, but the server has not loaded it yet, so its models cannot answer.} other{Signed in to {providers}, but the server has not loaded them yet, so their models cannot answer.}}",
   "@e7ModelUiUnloadedProviders": {
     "description": "Voice/model presentation: e7ModelUiUnloadedProviders",
@@ -15464,9 +15443,9 @@
   "@teamBoardProjectTooltip": {
     "description": "Board: the project switcher under the title"
   },
-  "appExitForceStopped": "Android closed OpenCode Mobile {time}",
+  "appExitForceStopped": "OpenCode Mobile was closed {time}",
   "@appExitForceStopped": {
-    "description": "After a force stop: first half of the one-time notice; time is like 'at 00:06' or 'on Sep 25 at 20:19'",
+    "description": "After a force stop (from Settings, a Recents swipe on some phones, or a battery manager: not always Android itself): first half of the one-time notice; time is like 'at 12:06 AM' or 'on Sep 25 at 8:19 PM'",
     "placeholders": {
       "time": {
         "type": "String"
@@ -15530,6 +15509,24 @@
   "appExitServerAndTeamStoppedManual": "{what}. Your phone's OpenCode and the AI Team stopped with it. Start them again when you're ready.",
   "@appExitServerAndTeamStoppedManual": {
     "description": "The notice when the phone's OpenCode and the AI Team were running and automatic restart is off, so nothing is restarting them",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "appExitServerBack": "{what}. Your phone's OpenCode stopped with it and is running again.",
+  "@appExitServerBack": {
+    "description": "The notice once the phone's OpenCode is connected again after the exit; what is one of the appExit first halves",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "appExitServerBackTeam": "{what}. Your phone's OpenCode and the AI Team stopped with it; OpenCode is running again.",
+  "@appExitServerBackTeam": {
+    "description": "The notice once the phone's OpenCode is connected again after the exit, when the AI Team had stopped with it too",
     "placeholders": {
       "what": {
         "type": "String"
@@ -29071,6 +29068,27 @@
   "demoNoCommands": "The demo has no commands — send the sample prompt to see a change reviewed.",
   "@demoNoCommands": {
     "description": "One line in the demo chat's suggestion area when the person types / : the demo has no slash commands."
+  },
+  "e7ModelUiUnusableProviders": "{count, plural, one{Signed in to {providers}, but this server could not load that sign-in even after a reload, so its models cannot answer. Sign in another way under Providers, or pick another model.} other{Signed in to {providers}, but this server could not load those sign-ins even after a reload, so their models cannot answer. Sign in another way under Providers, or pick another model.}}",
+  "@e7ModelUiUnusableProviders": {
+    "description": "Model picker: signed-in providers the server still could not load after a provider reload",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "providers": {
+        "type": "String"
+      }
+    }
+  },
+  "e7ModelUiProviderReloadWaits": "{count, plural, one{The reload waits for 1 running reply to finish, because reloading would stop it.} other{The reload waits for {count} running replies to finish, because reloading would stop them.}}",
+  "@e7ModelUiProviderReloadWaits": {
+    "description": "Model picker: a provider reload is held back while replies run on the server",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "freeModelNotice": "Using OpenCode's free model — it's slower. Sign in to your provider to use your own.",
   "@freeModelNotice": {

@@ -63,7 +63,14 @@ class AppConnectionStatusScope extends ConsumerWidget {
                         ).restart?.call();
                       },
               ),
-              appExitKitStatus(context, recovery, actionContext: actionContext),
+              appExitKitStatus(
+                context,
+                recovery,
+                actionContext: actionContext,
+                serverBack:
+                    controller.isConnected &&
+                    looksLikeInAppServer(controller.profile),
+              ),
               thermalKitStatus(context, guard),
             ],
             child: child,

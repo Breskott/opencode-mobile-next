@@ -105,3 +105,15 @@ class TermuxMigrationSnapshot {
   final int? availableBytes;
   final String? destinationProfileId;
 }
+
+/// A durable successful copy receipt; not evidence of current server health.
+class TermuxMigrationCompletedJob {
+  const TermuxMigrationCompletedJob({
+    required this.jobId,
+    required this.destinationProfileId,
+  });
+  final String jobId;
+  final String destinationProfileId;
+}
+
+enum TermuxMigrationDiscardResult { discarded, nothingSaved, alreadyCompleted }

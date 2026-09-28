@@ -8,19 +8,16 @@ import '../app_theme.dart';
 import '../kit/kit.dart';
 import '../screens/keep_running_screen.dart';
 
-/// "at 00:06" today, "on Sep 25 at 20:19" before today.
+/// "at 12:06 AM" today, "on Sep 25 at 8:19 PM" before today, in the
+/// person's 12/24-hour clock ([KitTime], F15).
 String appExitTimeText(
   BuildContext context,
   AppLocalizations l10n,
   DateTime at, {
   DateTime? now,
 }) {
-  final material = MaterialLocalizations.of(context);
   final local = at.toLocal();
-  final time = material.formatTimeOfDay(
-    TimeOfDay.fromDateTime(local),
-    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
-  );
+  final time = KitTime.clock(context, local);
   final today = (now ?? DateTime.now()).toLocal();
   final sameDay =
       local.year == today.year &&
@@ -28,20 +25,35 @@ String appExitTimeText(
       local.day == today.day;
   return sameDay
       ? l10n.appExitAtTime(time)
-      : l10n.appExitOnDay(material.formatShortMonthDay(local), time);
+      : l10n.appExitOnDay(
+          MaterialLocalizations.of(context).formatShortMonthDay(local),
+          time,
+        );
 }
 
 /// The notice's one sentence: what ended the app, what stopped with it and
 /// whether it is coming back. It says "starting again" only when the
 /// automation policy lets this launch restart it ([AppExitNotice.
-/// recoveryAllowed]); otherwise the person starts it.
-String appExitMessage(AppLocalizations l10n, AppExitNotice notice, String at) {
+/// recoveryAllowed]); otherwise the person starts it. Once the phone's
+/// OpenCode is connected again ([serverBack]) it says so, so the notice
+/// never says "starting again" beside a pill that says Connected (F10).
+String appExitMessage(
+  AppLocalizations l10n,
+  AppExitNotice notice,
+  String at, {
+  bool serverBack = false,
+}) {
   final what = switch (notice.kind) {
     AppExitKind.lowMemory => l10n.appExitLowMemory(at),
     AppExitKind.crash => l10n.appExitCrashed(at),
     AppExitKind.killed => l10n.appExitKilled(at),
     _ => l10n.appExitForceStopped(at),
   };
+  if (serverBack) {
+    return notice.teamStopped
+        ? l10n.appExitServerBackTeam(what)
+        : l10n.appExitServerBack(what);
+  }
   if (!notice.recoveryAllowed) {
     return notice.teamStopped
         ? l10n.appExitServerAndTeamStoppedManual(what)
@@ -104,14 +116,21 @@ class AppExitNoticeLine extends ConsumerWidget {
 }
 
 /// App-wide condition: the same notice survives route and tab changes.
+///
+/// [serverBack] is true once the app is connected to the phone's OpenCode
+/// again. The words then say it is running again; a notice with nothing
+/// left to offer (a crash has no Keep it running) resolves by itself then,
+/// so it does not sit on every tab after the server is back (F10).
 KitStatus? appExitKitStatus(
   BuildContext context,
   AppExitRecovery recovery, {
   DateTime? now,
   BuildContext? Function()? actionContext,
+  bool serverBack = false,
 }) {
   final notice = recovery.notice;
   if (notice == null) return null;
+  if (serverBack && !notice.offersKeepAlive) return null;
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   return KitStatus(
     kind: KitStatusKind.appStopped,
@@ -123,6 +142,7 @@ KitStatus? appExitKitStatus(
       l10n,
       notice,
       appExitTimeText(context, l10n, notice.at, now: now),
+      serverBack: serverBack,
     ),
     action: notice.offersKeepAlive
         ? KitAction(

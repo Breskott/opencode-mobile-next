@@ -7,7 +7,6 @@ import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart' show DateFormat;
 
 import '../../l10n/app_localizations.dart';
 import '../../l10n/app_localizations_en.dart';
@@ -16,6 +15,7 @@ import 'kit_layout.dart';
 import 'kit_motion.dart';
 import 'kit_row_parts.dart' show KitChevron;
 import 'kit_text.dart';
+import 'kit_time.dart';
 import 'kit_tokens.dart';
 
 /// One named share of a [KitProgressRow.segments] stacked bar.
@@ -408,9 +408,8 @@ class KitProgressRow extends StatelessWidget {
     ];
   }
 
-  String _formatAsOf(BuildContext context, DateTime at) => DateFormat.Hm(
-    Localizations.localeOf(context).toLanguageTag(),
-  ).format(at.toLocal());
+  String _formatAsOf(BuildContext context, DateTime at) =>
+      KitTime.clock(context, at);
 
   /// The one merged semantics node (KitProgressRow.md "Accessibility"):
   /// "{title}, {percent} percent, {valueLabel}[, near limit][, as of

@@ -16,6 +16,7 @@ import 'termux_migration.dart';
 export '../builtin/migration/termux_migration_controller.dart'
     show TermuxMigrationController;
 export 'termux_migration.dart';
+export '../builtin/migration/migration_space.dart' show TermuxMigrationSpace;
 
 /// UI composition entry point; no screen imports a bridge or filesystem API.
 /// Create once above routes, explicitly check/start, cancel on foreground loss,

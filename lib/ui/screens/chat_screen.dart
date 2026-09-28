@@ -31,6 +31,8 @@ import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/offline_queue.dart';
 import '../../state/connection.dart';
+import '../../state/free_model_notice.dart'
+    show FreeModelNoteDismissals, freeModelNoteDue;
 import '../../state/session_tail_cache.dart' show SessionTailPreview;
 import '../../state/profiles.dart' show ServerBackend, ServerProfile;
 import '../../state/conversation_nudges.dart';
@@ -4642,6 +4644,37 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
+  /// Hidden at once on Dismiss, before the save lands.
+  bool _freeModelNoteDismissed = false;
+
+  /// The free-model note's Dismiss: hidden now, and kept dismissed for this
+  /// conversation on this server.
+  void _dismissFreeModelNote() {
+    setState(() => _freeModelNoteDismissed = true);
+    final profileId = _conn.profile?.id;
+    if (profileId == null) return;
+    unawaited(
+      FreeModelNoteDismissals.dismiss(
+        _conn.store.prefs,
+        profileId,
+        widget.sessionID,
+      ),
+    );
+  }
+
+  /// The free-model note's way out: the provider sign-ins of this server.
+  Future<void> _signInToProvider() async {
+    if (_conn.isIsolated) return;
+    await Navigator.of(context).push(
+      KitPageRoute<void>(
+        builder: (_) => IntegrationsScreen(
+          controller: _conn,
+          mode: IntegrationsMode.providers,
+        ),
+      ),
+    );
+  }
+
   /// The providers/integrations screen, reached from a provider-auth error
   /// card; the same destination the `/integrations` command opens.
   Future<void> _openProviders() async {
@@ -7986,6 +8019,24 @@ class _ChatScreenState extends State<ChatScreen>
               ),
             if (!_conn.isIsolated && shareUrl != null)
               _sharedStatus(context, url: shareUrl, onStop: _stopSharing),
+            // Last, so anything else this chat says outranks it: replies
+            // here come from OpenCode's free model because no provider is
+            // signed in. A quiet line in the page's status slot, over the
+            // transcript's top, so the reply at the bottom never moves;
+            // dismissed once per conversation.
+            if (!_freeModelNoteDismissed &&
+                freeModelNoteDue(_conn, widget.sessionID))
+              _ChatStatus(
+                id: 'free-model',
+                icon: AppIconography.speed,
+                message: _chatL10n(context).freeModelNotice,
+                action: KitAction(
+                  key: const ValueKey('chat-free-model-sign-in'),
+                  label: _chatL10n(context).freeModelSignIn,
+                  onPressed: () => unawaited(_signInToProvider()),
+                ),
+                onDismiss: _dismissFreeModelNote,
+              ),
           ],
         ]),
         header: [

@@ -2124,6 +2124,8 @@ class _SessionRow extends StatelessWidget {
             context,
             pinned ? AppIconography.pin : AppIconography.chat,
           );
+    // "as of" in the person's own clock (KitTime, F15).
+    String moment(DateTime at) => KitTime.moment(context, at, now: now);
     // The blocker outranks "Working": a run waiting on an answer is not
     // making progress.
     final status = needsAttention
@@ -2134,14 +2136,14 @@ class _SessionRow extends StatelessWidget {
         ? (rowStatus != null &&
                   !rowStatus.isFresh &&
                   phase == WorkRowPhase.working
-              ? rowStatus.line(l10n, now: now)
+              ? rowStatus.line(l10n, now: now, moment: moment)
               : l10n.activityLastSeenRunning)
         : busy
         ? (rowStatus?.facts.phase == WorkRowPhase.working
-              ? rowStatus!.line(l10n, now: now)
+              ? rowStatus!.line(l10n, now: now, moment: moment)
               : l10n.globalSessionsWorking)
         : failed
-        ? rowStatus!.line(l10n, now: now)
+        ? rowStatus!.line(l10n, now: now, moment: moment)
         : isUnreviewed
         ? l10n.workUnreviewed
         : null;

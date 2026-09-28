@@ -14244,18 +14244,6 @@ abstract class AppLocalizations {
   /// **', '**
   String get e7ModelUiListSeparator;
 
-  /// Model picker: signed-in providers the server still could not load after a provider reload
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{Signed in to {providers}, but this server could not load that sign-in even after a reload, so its models cannot answer. Sign in another way under Providers, or pick another model.} other{Signed in to {providers}, but this server could not load those sign-ins even after a reload, so their models cannot answer. Sign in another way under Providers, or pick another model.}}'**
-  String e7ModelUiUnusableProviders(int count, String providers);
-
-  /// Model picker: a provider reload is held back while replies run on the server
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{The reload waits for 1 running reply to finish, because reloading would stop it.} other{The reload waits for {count} running replies to finish, because reloading would stop them.}}'**
-  String e7ModelUiProviderReloadWaits(int count);
-
   /// Voice/model presentation: e7ModelUiUnloadedProviders
   ///
   /// In en, this message translates to:
@@ -22716,10 +22704,10 @@ abstract class AppLocalizations {
   /// **'Choose project'**
   String get teamBoardProjectTooltip;
 
-  /// After a force stop: first half of the one-time notice; time is like 'at 00:06' or 'on Sep 25 at 20:19'
+  /// After a force stop (from Settings, a Recents swipe on some phones, or a battery manager: not always Android itself): first half of the one-time notice; time is like 'at 12:06 AM' or 'on Sep 25 at 8:19 PM'
   ///
   /// In en, this message translates to:
-  /// **'Android closed OpenCode Mobile {time}'**
+  /// **'OpenCode Mobile was closed {time}'**
   String appExitForceStopped(String time);
 
   /// After a low-memory kill: first half of the notice
@@ -22763,6 +22751,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{what}. Your phone\'s OpenCode and the AI Team stopped with it. Start them again when you\'re ready.'**
   String appExitServerAndTeamStoppedManual(String what);
+
+  /// The notice once the phone's OpenCode is connected again after the exit; what is one of the appExit first halves
+  ///
+  /// In en, this message translates to:
+  /// **'{what}. Your phone\'s OpenCode stopped with it and is running again.'**
+  String appExitServerBack(String what);
+
+  /// The notice once the phone's OpenCode is connected again after the exit, when the AI Team had stopped with it too
+  ///
+  /// In en, this message translates to:
+  /// **'{what}. Your phone\'s OpenCode and the AI Team stopped with it; OpenCode is running again.'**
+  String appExitServerBackTeam(String what);
 
   /// Time of the exit today, e.g. 'at 00:06'
   ///
@@ -38005,6 +38005,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The demo has no commands — send the sample prompt to see a change reviewed.'**
   String get demoNoCommands;
+
+  /// Model picker: signed-in providers the server still could not load after a provider reload
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Signed in to {providers}, but this server could not load that sign-in even after a reload, so its models cannot answer. Sign in another way under Providers, or pick another model.} other{Signed in to {providers}, but this server could not load those sign-ins even after a reload, so their models cannot answer. Sign in another way under Providers, or pick another model.}}'**
+  String e7ModelUiUnusableProviders(int count, String providers);
+
+  /// Model picker: a provider reload is held back while replies run on the server
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{The reload waits for 1 running reply to finish, because reloading would stop it.} other{The reload waits for {count} running replies to finish, because reloading would stop them.}}'**
+  String e7ModelUiProviderReloadWaits(int count);
 
   /// Shown when the connected server has no provider signed in and answers with OpenCode's free default model (shared, rate-limited, slower).
   ///
