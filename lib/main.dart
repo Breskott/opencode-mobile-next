@@ -50,6 +50,7 @@ import 'ui/navigation/chat_route.dart';
 import 'ui/screens/settings_screen.dart';
 import 'ui/widgets/product_states.dart' show productErrorText;
 import 'ui/widgets/saved_server_connection_card.dart';
+import 'ui/widgets/last_known_sessions.dart';
 import 'ui/widgets/app_connection_status.dart';
 import 'ui/widgets/phone_server_card.dart' show serverDisplayName;
 import 'ui/screens/guide_screen.dart';
@@ -1939,74 +1940,95 @@ class _RootState extends ConsumerState<_Root> {
     final inApp = _builtin.recognises(profile);
     final startFailure = _builtin.failureFor(profile);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    // Cached opening shell (docs/qa/codex-speed-2026-09-28 item 1): the
+    // titles this server listed last time, read-only under the honest
+    // connection state. Nothing here marks the server connected, fills the
+    // live session map or enables a live action.
+    final cached = conn.cachedSessionInventory;
+    final lastKnown = cached != null && cached.sessions.isNotEmpty
+        ? cached
+        : null;
+    final opening = lastKnown != null;
+    final error = startFailure != null
+        ? l10n.builtinServerStartFailed(startFailure.reason(l10n))
+        : conn.lastError;
+    final card = SavedServerConnectionCard(
+      size: opening ? KitStateSize.inline : KitStateSize.page,
+      profileName: serverDisplayName(profile, l10n, among: conn.store.profiles),
+      usesConnectionToken: conn.usesConnectionToken,
+      requiresTokenReentry: profile.requiresCodexTokenReentry,
+      baseUrl: profile.baseUrl,
+      // The raw failure: the card diagnoses it into words and keeps
+      // the text itself under Details only.
+      error: error,
+      attempts: _attempts,
+      inAppServer: inApp,
+      startingInAppServer: inApp && _builtin.starting,
+      inAppStartFailed: startFailure != null,
+      onOpenInAppSetup: startFailure != null
+          ? () => openPhoneSetupStart(context)
+          : null,
+      supportsTermux:
+          !inApp &&
+          !conn.usesConnectionToken &&
+          platformCapabilities.supportsTermux,
+      onChangeServer: () =>
+          navigator.pushNamedAndRemoveUntil('/servers', (_) => false),
+      onUpdateToken: () => navigator.pushNamedAndRemoveUntil(
+        '/servers',
+        (_) => false,
+        arguments: 'edit-active',
+      ),
+      onUpdatePassword: () => navigator.pushNamedAndRemoveUntil(
+        '/servers',
+        (_) => false,
+        arguments: 'edit-active',
+      ),
+      onOpenTermuxSetup:
+          !inApp &&
+              !conn.usesConnectionToken &&
+              platformCapabilities.supportsTermux
+          // The phone's own Termux server goes to This phone (Start is
+          // there); any other server on this phone goes to phone setup.
+          ? () => TermuxBridge.managesServerUrl(profile.baseUrl)
+                ? openThisPhone(context, kind: PhoneHostKind.termux)
+                : openPhoneSetupStart(context)
+          : null,
+      // The app's own phone server: when nothing answers, it is stopped
+      // (a phone restart, Android closing Termux, the app closed for
+      // OpenCode inside the app), and one tap starts it.
+      onStartPhoneServer: inApp
+          ? _startInAppServer
+          : !conn.usesConnectionToken &&
+                platformCapabilities.supportsTermux &&
+                TermuxBridge.managesServerUrl(profile.baseUrl)
+          ? _startPhoneServer
+          : null,
+      startingPhoneServer: inApp ? _builtin.starting : _startingPhoneServer,
+      onRetry: () {
+        _builtin.clearFailure();
+        _started = false;
+        _connectSaved();
+      },
+    );
     // A KitScreen, so the app's line (a share waiting for this server)
     // shows above the card (map page root-connecting).
     return _Ground(
       child: KitScreen(
-        body: SavedServerConnectionCard(
-          profileName: serverDisplayName(
-            profile,
-            l10n,
-            among: conn.store.profiles,
-          ),
-          usesConnectionToken: conn.usesConnectionToken,
-          requiresTokenReentry: profile.requiresCodexTokenReentry,
-          baseUrl: profile.baseUrl,
-          // The raw failure: the card diagnoses it into words and keeps
-          // the text itself under Details only.
-          error: startFailure != null
-              ? l10n.builtinServerStartFailed(startFailure.reason(l10n))
-              : conn.lastError,
-          attempts: _attempts,
-          inAppServer: inApp,
-          startingInAppServer: inApp && _builtin.starting,
-          inAppStartFailed: startFailure != null,
-          onOpenInAppSetup: startFailure != null
-              ? () => openPhoneSetupStart(context)
-              : null,
-          supportsTermux:
-              !inApp &&
-              !conn.usesConnectionToken &&
-              platformCapabilities.supportsTermux,
-          onChangeServer: () =>
-              navigator.pushNamedAndRemoveUntil('/servers', (_) => false),
-          onUpdateToken: () => navigator.pushNamedAndRemoveUntil(
-            '/servers',
-            (_) => false,
-            arguments: 'edit-active',
-          ),
-          onUpdatePassword: () => navigator.pushNamedAndRemoveUntil(
-            '/servers',
-            (_) => false,
-            arguments: 'edit-active',
-          ),
-          onOpenTermuxSetup:
-              !inApp &&
-                  !conn.usesConnectionToken &&
-                  platformCapabilities.supportsTermux
-              // The phone's own Termux server goes to This phone (Start is
-              // there); any other server on this phone goes to phone setup.
-              ? () => TermuxBridge.managesServerUrl(profile.baseUrl)
-                    ? openThisPhone(context, kind: PhoneHostKind.termux)
-                    : openPhoneSetupStart(context)
-              : null,
-          // The app's own phone server: when nothing answers, it is stopped
-          // (a phone restart, Android closing Termux, the app closed for
-          // OpenCode inside the app), and one tap starts it.
-          onStartPhoneServer: inApp
-              ? _startInAppServer
-              : !conn.usesConnectionToken &&
-                    platformCapabilities.supportsTermux &&
-                    TermuxBridge.managesServerUrl(profile.baseUrl)
-              ? _startPhoneServer
-              : null,
-          startingPhoneServer: inApp ? _builtin.starting : _startingPhoneServer,
-          onRetry: () {
-            _builtin.clearFailure();
-            _started = false;
-            _connectSaved();
-          },
-        ),
+        width: opening ? KitScreenWidth.list : KitScreenWidth.full,
+        body: lastKnown != null
+            ? ListView(
+                key: const ValueKey('opening-shell'),
+                children: [
+                  card,
+                  LastKnownSessions(
+                    preview: lastKnown,
+                    refreshing:
+                        error == null && !profile.requiresCodexTokenReentry,
+                  ),
+                ],
+              )
+            : card,
       ),
     );
   }

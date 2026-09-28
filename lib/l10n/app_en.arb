@@ -26868,5 +26868,31 @@
   "teamNowNotStartingLine": "The team isn't starting a worker",
   "@teamNowNotStartingLine": {
     "description": "Team page Now line (slice-P5.1): a task waits past the team's checks and no worker has started; one sentence about the team, never the task (its row says which and how long). The action wakes a worker or explains why."
+  },
+  "kitLastKnownRefreshing": "{updated} · Refreshing",
+  "@kitLastKnownRefreshing": {
+    "description": "KitLastKnown (slice-speed-ui): the label over remembered rows while a fresh read is under way; updated is how old the rows are (\"Updated 5m ago\").",
+    "placeholders": {
+      "updated": {
+        "type": "String"
+      }
+    }
+  },
+  "kitLastKnownHint": "Saved from last time. They open once the live list loads.",
+  "@kitLastKnownHint": {
+    "description": "KitLastKnown (slice-speed-ui): screen-reader hint on a group of remembered, read-only rows shown while the live list loads."
+  },
+  "lastKnownUpdatedJustNow": "Updated just now",
+  "@lastKnownUpdatedJustNow": {
+    "description": "Opening shell and Work (slice-speed-ui): remembered conversation titles were read less than a minute ago."
+  },
+  "lastKnownUpdatedAgo": "Updated {ago}",
+  "@lastKnownUpdatedAgo": {
+    "description": "Opening shell and Work (slice-speed-ui): how old the remembered conversation titles are; ago is a short relative age (\"5m ago\", \"3h ago\", or a date).",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
   }
 }

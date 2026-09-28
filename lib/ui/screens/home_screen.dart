@@ -167,8 +167,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           unawaited(_explainProjectUnavailable());
           return true;
         }
-        _selectTab(_projectTab);
-        (tool == ProjectTool.files ? _openFiles : _findInFiles).value++;
+        _signalProject(tool == ProjectTool.files ? _openFiles : _findInFiles);
         return true;
       // Always the Terminal page, even on a server that keeps no terminals:
       // the page says why (the terminal capability) and offers this phone's
@@ -245,6 +244,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     } finally {
       _firstRunCreating = false;
     }
+  }
+
+  /// Selects Project and signals it. Destinations are built on their first
+  /// visit, so a hub not showing yet hears the signal after the frame that
+  /// builds it.
+  void _signalProject(ValueNotifier<int> signal) {
+    if (_tab == _projectTab) {
+      signal.value++;
+      return;
+    }
+    _selectTab(_projectTab);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) signal.value++;
+    });
   }
 
   void _selectTab(int next) {
@@ -424,9 +437,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               : null,
         ),
       ],
+      // Each destination is built on its first visit (Work from the
+      // start, where Back returns): no hidden tab builds or reads at
+      // startup (docs/qa/codex-perf-2026-09-28/startup.md).
       body: KitTabSwitcher(
         index: activeTab,
         reduceMotion: KitGlass.reduceEffects(context),
+        lazy: true,
+        preload: const {_workTab},
         children: tabs,
       ),
     );

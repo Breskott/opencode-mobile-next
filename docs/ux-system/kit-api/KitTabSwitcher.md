@@ -97,6 +97,7 @@ class KitTabSwitcher extends StatefulWidget {
 ```
 
 - **The body keeps its contract** (unchanged): every destination keeps its state; the chosen one takes touches, focus and semantics from the first frame; the one being left is picture only; tickers stop off screen. Only the scale is removed: the fade-through stays (`fadeOutShare`, `KitMotion.standard`).
+- **Lazy first visit** (slice-speed-ui, 2026-09-28): `lazy: true` builds a destination the first time it is chosen, plus the indexes in `preload` from the start, and keeps each one from then on (same state retention as before). Default `false` keeps the eager contract. The shell uses it with `preload: {Work}`, so Inbox, Project and Settings do no build and no reads (Settings' health check) until opened. A host that signals a destination (a `ValueListenable` it listens to) signals after the frame that first builds it.
 - **Kit copy** (ARB, `kit` prefix, en and ar): `kitTabLabel` "{label}, {count}" (a tab's semantics with a count). The needs-you words are KitNeedsYou's; the tab words are the host's.
 
 ## States

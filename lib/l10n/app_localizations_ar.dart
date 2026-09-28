@@ -22605,4 +22605,21 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamNowNotStartingLine => 'The team isn\'t starting a worker';
+
+  @override
+  String kitLastKnownRefreshing(String updated) {
+    return '$updated · Refreshing';
+  }
+
+  @override
+  String get kitLastKnownHint =>
+      'Saved from last time. They open once the live list loads.';
+
+  @override
+  String get lastKnownUpdatedJustNow => 'Updated just now';
+
+  @override
+  String lastKnownUpdatedAgo(String ago) {
+    return 'Updated $ago';
+  }
 }

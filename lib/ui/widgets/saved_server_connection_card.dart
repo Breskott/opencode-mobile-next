@@ -55,7 +55,12 @@ class SavedServerConnectionCard extends StatelessWidget {
     this.startingInAppServer = false,
     this.inAppStartFailed = false,
     this.onOpenInAppSetup,
+    this.size = KitStateSize.page,
   });
+
+  /// A whole page, or [KitStateSize.inline] above the last-known list of the
+  /// opening shell (the same states and actions, at list size).
+  final KitStateSize size;
 
   final String profileName;
   final String baseUrl;
@@ -128,6 +133,7 @@ class SavedServerConnectionCard extends StatelessWidget {
   }
 
   Widget _connectingState(AppLocalizations l10n) => KitStateView(
+    size: size,
     key: const ValueKey('saved-server-connecting'),
     icon: AppIconography.terminal,
     tone: AppStatusTone.progress,
@@ -147,6 +153,7 @@ class SavedServerConnectionCard extends StatelessWidget {
   );
 
   Widget _startingState(AppLocalizations l10n) => KitStateView(
+    size: size,
     key: const ValueKey('saved-server-starting'),
     icon: AppIconography.play,
     tone: AppStatusTone.progress,
@@ -179,6 +186,7 @@ class SavedServerConnectionCard extends StatelessWidget {
       onPressed: onRetry,
     );
     return KitStateView(
+      size: size,
       key: const ValueKey('saved-server-not-answering'),
       icon: AppIconography.cloudOff,
       tone: AppStatusTone.attention,
@@ -319,6 +327,7 @@ class SavedServerConnectionCard extends StatelessWidget {
     final tailscale =
         failure.tailnet && KitCapabilities.canEnable(_tailscaleCapability);
     return KitStateView(
+      size: size,
       key: const ValueKey('saved-server-failed'),
       icon: stopped ? AppIconography.stopCircle : AppIconography.cloudOff,
       tone: stopped ? AppStatusTone.attention : AppStatusTone.failure,

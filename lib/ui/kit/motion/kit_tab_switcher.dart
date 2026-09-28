@@ -361,6 +361,10 @@ class _KitTabView extends StatelessWidget {
 /// [reduceMotion] or the system's "remove animations" the chosen destination
 /// shows in the next frame.
 ///
+/// With [lazy], a destination is built the first time it is chosen (or
+/// from the start when it is in [preload]) and kept from then on, so an
+/// unseen destination costs nothing at startup: no build, no reads.
+///
 /// [KitTabSwitcher.new] is the body alone (the shell's destinations, whose
 /// strip is KitNav); [KitTabSwitcher.tabs] puts a [KitTabStrip] over it.
 class KitTabSwitcher extends StatefulWidget {
@@ -369,6 +373,8 @@ class KitTabSwitcher extends StatefulWidget {
     required this.index,
     required this.children,
     this.reduceMotion = false,
+    this.lazy = false,
+    this.preload = const {},
   }) : _tabs = null,
        _onSelected = null,
        _semanticsLabel = null,
@@ -384,6 +390,8 @@ class KitTabSwitcher extends StatefulWidget {
     required ValueChanged<int> onSelected,
     required this.children,
     this.reduceMotion = false,
+    this.lazy = false,
+    this.preload = const {},
     String? semanticsLabel,
     Key? stripKey,
   }) : _tabs = tabs,
@@ -399,6 +407,14 @@ class KitTabSwitcher extends StatefulWidget {
   final int index;
   final List<Widget> children;
   final bool reduceMotion;
+
+  /// Build each destination on its first visit instead of all at once;
+  /// a visited destination keeps its state as before.
+  final bool lazy;
+
+  /// With [lazy]: the destinations built from the start anyway (the home
+  /// destination others return to), besides the selected one.
+  final Set<int> preload;
 
   final List<KitTab>? _tabs;
   final ValueChanged<int>? _onSelected;
@@ -426,6 +442,17 @@ class _KitTabSwitcherState extends State<KitTabSwitcher>
   late List<double> _starts = _target(widget.index);
   late int _targetIndex = widget.index;
 
+  /// With [KitTabSwitcher.lazy]: the destinations built so far.
+  final Set<int> _visited = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _visited
+      ..add(widget.index)
+      ..addAll(widget.preload);
+  }
+
   List<double> _target(int index) => [
     for (var i = 0; i < widget.children.length; i++) i == index ? 1 : 0,
   ];
@@ -451,6 +478,13 @@ class _KitTabSwitcherState extends State<KitTabSwitcher>
   @override
   void didUpdateWidget(KitTabSwitcher oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _visited
+      ..add(widget.index)
+      ..addAll(widget.preload);
+    // Turning lazy on never drops what is already built.
+    if (!oldWidget.lazy) {
+      _visited.addAll([for (var i = 0; i < oldWidget.children.length; i++) i]);
+    }
     final reduced = widget.reduceMotion || KitMotion.reduced(context);
     if (reduced || oldWidget.children.length != widget.children.length) {
       _starts = _target(widget.index);
@@ -501,6 +535,10 @@ class _KitTabSwitcherState extends State<KitTabSwitcher>
 
   Widget _destination(int i, double opacity) {
     final selected = i == widget.index;
+    if (widget.lazy && !_visited.contains(i)) {
+      // Not chosen yet: nothing is built until it is.
+      return const Offstage(child: SizedBox.shrink());
+    }
     return Offstage(
       offstage: !selected && opacity == 0,
       child: TickerMode(

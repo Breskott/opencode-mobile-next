@@ -35577,6 +35577,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The team isn\'t starting a worker'**
   String get teamNowNotStartingLine;
+
+  /// KitLastKnown (slice-speed-ui): the label over remembered rows while a fresh read is under way; updated is how old the rows are ("Updated 5m ago").
+  ///
+  /// In en, this message translates to:
+  /// **'{updated} · Refreshing'**
+  String kitLastKnownRefreshing(String updated);
+
+  /// KitLastKnown (slice-speed-ui): screen-reader hint on a group of remembered, read-only rows shown while the live list loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved from last time. They open once the live list loads.'**
+  String get kitLastKnownHint;
+
+  /// Opening shell and Work (slice-speed-ui): remembered conversation titles were read less than a minute ago.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated just now'**
+  String get lastKnownUpdatedJustNow;
+
+  /// Opening shell and Work (slice-speed-ui): how old the remembered conversation titles are; ago is a short relative age ("5m ago", "3h ago", or a date).
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {ago}'**
+  String lastKnownUpdatedAgo(String ago);
 }
 
 class _AppLocalizationsDelegate

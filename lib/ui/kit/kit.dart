@@ -17,6 +17,7 @@
 /// | [KitStateView] | §3 every not-normal state, page or inline |
 /// | [KitLoadingBar], [KitSkeletonRows], [KitProgress] | §4 progress |
 /// | [KitSkeletonTranscript] | §4 a conversation loading |
+/// | [KitLastKnown], [KitLastKnownRow] | §4 what a list held last time, read-only while the live list loads |
 /// | [KitStatusLine] | §5 one status line |
 /// | [KitAskLine] | §2, §5 a one-time question with its two answers |
 /// | [KitRequestCard] | §2, §3 a request the person answers (permission, question) |
@@ -119,6 +120,7 @@ export 'kit_sliver_row_group.dart';
 export 'kit_screen.dart';
 export 'kit_sheet.dart';
 export 'kit_skeleton_transcript.dart';
+export 'kit_last_known.dart';
 export 'kit_state_view.dart';
 export 'kit_status_line.dart';
 export 'kit_status_mark.dart';
