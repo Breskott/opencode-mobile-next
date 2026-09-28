@@ -17672,10 +17672,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get integrationsManageAccountsUnavailable =>
-      'This server can\'t list saved accounts from the app.';
-
-  @override
   String integrationsServerSignIn(String name) {
     return 'Sign in to $name on the server';
   }
@@ -24329,4 +24325,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String pickerProviderNotLoaded(String name) {
     return '$name is saved, but the server has not loaded it yet.';
   }
+
+  @override
+  String get integrationsSignedInNotLoaded =>
+      'Signed in, not loaded by this server yet';
+
+  @override
+  String get integrationsSignedInUnusable =>
+      'Signed in, but this server can\'t use it';
 }
