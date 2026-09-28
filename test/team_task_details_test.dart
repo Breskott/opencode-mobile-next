@@ -892,7 +892,7 @@ void main() {
       expect(
         find.descendant(
           of: fold,
-          matching: find.text('What the host reported'),
+          matching: find.text('What the server reported'),
         ),
         findsOneWidget,
       );

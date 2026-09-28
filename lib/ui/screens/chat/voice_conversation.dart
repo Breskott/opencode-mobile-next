@@ -380,7 +380,8 @@ extension _ChatVoiceConversation on _ChatScreenState {
 
   /// The voice conversation's controls, in place of the attention slot:
   /// what the mode is doing now, "Speak replies", the reply's state in
-  /// words, Listen as the one primary, and the ways out.
+  /// words, Listen as the one primary (secondary while a request waits on
+  /// the person), and the ways out.
   Widget _voiceConversationControls() {
     final l10n = _chatL10n(context);
     final tokens = KitTokens.of(context);
@@ -411,6 +412,18 @@ extension _ChatVoiceConversation on _ChatScreenState {
     final canSend = _conversationCanSend;
     final paused = !canSend && !waiting && !speaking;
     final listenReady = !_voiceOpening && !_sending && canSend;
+    final requestWaiting =
+        _conn.permissionsForSession(widget.sessionID).isNotEmpty ||
+        _conn.questionForSession(widget.sessionID) != null ||
+        (_conn.capabilities.forms &&
+            _conn.formForSession(widget.sessionID) != null);
+    final listen = KitAction(
+      key: const Key('voice-listen'),
+      icon: AppIconography.mic,
+      label: l10n.voiceConversationListen,
+      onPressed: listenReady ? _openVoice : null,
+      disabledReason: listenReady ? null : _conversationPauseCopy,
+    );
     return Padding(
       padding: EdgeInsetsDirectional.fromSTEB(
         tokens.space3,
@@ -480,13 +493,10 @@ extension _ChatVoiceConversation on _ChatScreenState {
                 ],
                 SizedBox(height: tokens.space3),
                 KitActionBlock(
-                  primary: KitAction(
-                    key: const Key('voice-listen'),
-                    icon: AppIconography.mic,
-                    label: l10n.voiceConversationListen,
-                    onPressed: listenReady ? _openVoice : null,
-                    disabledReason: listenReady ? null : _conversationPauseCopy,
-                  ),
+                  // One primary per screen: while a request waits on the
+                  // person its answer is the primary, and Listen steps down.
+                  primary: requestWaiting ? null : listen,
+                  secondary: requestWaiting ? listen : null,
                   tertiary: [
                     if (speaking || waiting)
                       KitAction(

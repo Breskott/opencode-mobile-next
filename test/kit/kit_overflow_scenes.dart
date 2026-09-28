@@ -1076,7 +1076,7 @@ final kitOverflowScenes = <KitOverflowScene>[
   // chat/kit_transcript_excerpt.dart (slice-chat-speed-fixes): a chat's
   // saved end while its history loads.
   KitOverflowScene(
-    const ['KitTranscriptExcerpt', 'KitExcerptMessage'],
+    const ['KitTranscriptExcerpt'],
     'default',
     build: (_, _) => const SizedBox(
       height: 360,

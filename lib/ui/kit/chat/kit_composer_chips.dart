@@ -536,9 +536,15 @@ class _ModelChipState extends State<_ModelChip> {
         final EdgeInsetsDirectional padding;
         if (narrow) {
           padding = EdgeInsetsDirectional.symmetric(horizontal: tokens.space1);
+          // The icons grow with the text size; where the pair no longer
+          // fits the 48 dp target, the model glyph stands alone (the chip
+          // still opens the same choice, and says so to a screen reader).
+          final pairFits =
+              !constraints.hasBoundedWidth ||
+              2 * glyphSize + 2 * tokens.space1 <= constraints.maxWidth;
           content = Row(
             mainAxisSize: MainAxisSize.min,
-            children: [glyph, chevron],
+            children: [glyph, if (pairFits) chevron],
           );
         } else {
           padding = EdgeInsetsDirectional.symmetric(horizontal: tokens.space3);

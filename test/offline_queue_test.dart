@@ -806,6 +806,40 @@ void main() {
     );
   });
 
+  // slice-queue-move hook (slice-chat-speed-fixes): connected to a server
+  // that keeps a queue, the chat says how many drafts wait for another
+  // server and offers to move them here, naming this server.
+  testWidgets('drafts waiting for another server can be moved here', (
+    tester,
+  ) async {
+    final api = _FakeApi();
+    final controller = await _controller(api, secondProfile: true);
+    addTearDown(controller.dispose);
+    await controller.queuePrompt(
+      _entry(
+        'other',
+        profileID: 'profile-2',
+        sessionID: 'session-9',
+        text: 'other server',
+      ),
+    );
+    await _pumpChat(tester, controller);
+
+    expect(
+      find.textContaining('1 draft waiting for other servers.'),
+      findsOneWidget,
+    );
+    final move = find.byKey(
+      const ValueKey('chat-status-move-queued-profile-2'),
+    );
+    expect(move, findsOneWidget);
+    expect(find.text('Move 1 waiting prompt to Test server'), findsOneWidget);
+    await tester.tap(move);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byKey(const ValueKey('queued-move-sheet')), findsOneWidget);
+  });
+
   testWidgets('sending while disconnected queues a visible draft', (
     tester,
   ) async {

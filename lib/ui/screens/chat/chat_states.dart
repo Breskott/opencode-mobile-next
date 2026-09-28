@@ -354,6 +354,55 @@ _ChatStatus _sharedStatus(
   );
 }
 
+/// The drafts that wait (the connection-status unification left this
+/// unsaid): offline, the drafts this server's next reconnect sends, those
+/// whose send was never confirmed, and those waiting for other servers; on
+/// a connected server that keeps a queue, the ones waiting for other
+/// servers with the way to move them here ([onMove], one action per source
+/// server). Null when nothing waits.
+_ChatStatus? _queuedDraftsStatus(
+  BuildContext context,
+  ConnectionController conn, {
+  required void Function(ServerProfile source) onMove,
+}) {
+  if (conn.isIsolated) return null;
+  final l10n = _chatL10n(context);
+  final review = conn.queuedPromptReviewCount;
+  final mine = conn.queuedPromptCount - review;
+  final others = conn.queuedPromptCountForOtherProfiles;
+  final offline = !conn.isConnected;
+  final destination = conn.queuedPromptMoveDestination;
+  final parts = <String>[
+    if (offline && mine > 0) l10n.chatUiDraftsQueued(mine),
+    if (offline && review > 0) l10n.queuedBannerReview(review),
+    if (others > 0 && (offline || destination != null))
+      l10n.chatUiOtherDraftsWaiting(others),
+  ];
+  if (parts.isEmpty) return null;
+  final profiles = conn.store.profiles;
+  final moves = [
+    if (destination != null)
+      for (final source in profiles)
+        if (source.id != conn.profile?.id &&
+            conn.queuedPromptCountForProfile(source.id) > 0)
+          KitAction(
+            key: ValueKey('chat-status-move-queued-${source.id}'),
+            label: l10n.serverRowMoveQueued(
+              conn.queuedPromptCountForProfile(source.id),
+              serverDisplayName(destination, l10n, among: profiles),
+            ),
+            onPressed: () => onMove(source),
+          ),
+  ];
+  return _ChatStatus(
+    id: 'queued-drafts',
+    icon: AppIconography.queueAdd,
+    message: parts.join(' '),
+    action: moves.firstOrNull,
+    more: moves.skip(1).toList(),
+  );
+}
+
 /// Local chat actions join the shared slot below app-wide conditions.
 KitStatus? _chatStatus(Iterable<_ChatStatus?> statuses) {
   for (final status in statuses) {

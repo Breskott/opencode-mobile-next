@@ -1354,6 +1354,8 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
   /// Opens [session]: beside the list from expanded, else as a page.
   void _openSession(Session session) {
+    // Speed contract item 2: the chat joins this history read (one call).
+    unawaited(widget.controller.prefetchSessionTail(session.id));
     if (KitScreen.showsDetail(context)) {
       setState(() => _selectedSessionID = session.id);
       return;

@@ -31,7 +31,7 @@ import '../../platform/platform_capabilities.dart';
 import '../../state/offline_queue.dart';
 import '../../state/connection.dart';
 import '../../state/session_tail_cache.dart' show SessionTailPreview;
-import '../../state/profiles.dart' show ServerBackend;
+import '../../state/profiles.dart' show ServerBackend, ServerProfile;
 import '../../state/conversation_nudges.dart';
 import '../../state/nudges.dart';
 import '../../state/review_handoff.dart';
@@ -68,6 +68,8 @@ import '../widgets/model_shortcuts.dart';
 import '../widgets/product_states.dart';
 import '../widgets/prompt_history_navigation.dart';
 import '../widgets/last_known_sessions.dart' show LastKnownSessions;
+import '../widgets/queued_prompt_move_sheet.dart'
+    show showQueuedPromptMoveSheet;
 import '../widgets/transcript_highlight.dart';
 import '../widgets/question_options.dart';
 import '../widgets/session_title.dart';
@@ -237,6 +239,12 @@ class ChatScreen extends StatefulWidget {
   final bool showAppBar;
   final Widget? emptyState;
 
+  /// The page embedding this chat without its bar (the demo) has the
+  /// keyboard up. That page's frame takes the keyboard's inset, so the chat
+  /// cannot see it: the host says so, and the chat's own header action
+  /// gives its room to the conversation and what waits on the person.
+  final bool hostKeyboardUp;
+
   /// Overrides the app-wide review handoff store; tests inject their own so
   /// staged references do not leak between cases.
   final ReviewHandoffStore? handoffStore;
@@ -266,6 +274,7 @@ class ChatScreen extends StatefulWidget {
     this.focusComposer = false,
     this.showAppBar = true,
     this.emptyState,
+    this.hostKeyboardUp = false,
     this.handoffStore,
     this.watch,
     this.landOnRequestID,
@@ -7040,6 +7049,23 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  /// Whether the request slot over the composer has something in it.
+  bool _attentionPending(List<PermissionRequest> pendingPermissions) =>
+      pendingPermissions.isNotEmpty ||
+      _conn.questionForSession(widget.sessionID) != null ||
+      _retryState != null ||
+      (!_conn.isIsolated && _conn.autoApprovalFor(widget.sessionID).automatic);
+
+  /// The height the composer leaves free over itself while a request waits,
+  /// so a tall composer (large text, keyboard up) never squeezes the
+  /// request to nothing: its Details and answers stay one scroll away.
+  double _aboveComposerFloor(
+    BoxConstraints bodyConstraints,
+    List<PermissionRequest> pendingPermissions,
+  ) => bodyConstraints.hasBoundedHeight && _attentionPending(pendingPermissions)
+      ? bodyConstraints.maxHeight * .3
+      : 0;
+
   /// What sits over the composer, most urgent first: find, then what needs
   /// the person, then what the draft is waiting on. Solid parts on the
   /// ground; only the composer below them is glass.
@@ -7096,15 +7122,13 @@ class _ChatScreenState extends State<ChatScreen>
                   _conn.dismissSessionNoteReceipt(widget.sessionID),
             ),
           ),
-        // On short keyboard layouts the request shares the remaining height
-        // with the rest, after the composer is measured. Keep its actions
-        // reachable by scrolling instead of pushing Send off screen.
-        if (short &&
-            (pendingPermissions.isNotEmpty ||
-                _conn.questionForSession(widget.sessionID) != null ||
-                _retryState != null ||
-                (!_conn.isIsolated &&
-                    _conn.autoApprovalFor(widget.sessionID).automatic)))
+        // The request shares the height left over the composer with the
+        // rest (a tip, waiting drafts): it takes what is left and scrolls,
+        // its actions reachable, instead of overflowing or pushing Send off
+        // screen. The composer keeps a share free for it
+        // ([_aboveComposerFloor]).
+        if (bodyConstraints.hasBoundedHeight &&
+            _attentionPending(pendingPermissions))
           Flexible(
             child: ListView(
               shrinkWrap: true,
@@ -7557,6 +7581,18 @@ class _ChatScreenState extends State<ChatScreen>
                         sessionID: widget.sessionID,
                       ),
               ),
+            _queuedDraftsStatus(
+              context,
+              _conn,
+              onMove: (source) => unawaited(
+                showQueuedPromptMoveSheet(
+                  context,
+                  connection: _conn,
+                  source: source,
+                  onProblem: (message, {details}) => _showComposerNote(message),
+                ),
+              ),
+            ),
             if (!_conn.isIsolated &&
                 _conn.supportsStagedRevert &&
                 session?.reverted == true)
@@ -7582,8 +7618,14 @@ class _ChatScreenState extends State<ChatScreen>
         ]),
         header: [
           // The demo has no bar of its own here; its one extra action sits
-          // under the host's bar.
-          if (!widget.showAppBar && _conn.isIsolated && _messages.isNotEmpty)
+          // under the host's bar. While the keyboard is up the room goes to
+          // the conversation and what waits on the person; the action is
+          // back when the keyboard is down.
+          if (!widget.showAppBar &&
+              _conn.isIsolated &&
+              _messages.isNotEmpty &&
+              !keyboardUp &&
+              !widget.hostKeyboardUp)
             Align(
               alignment: AlignmentDirectional.centerEnd,
               child: KitButton.tertiary(
@@ -7690,6 +7732,10 @@ class _ChatScreenState extends State<ChatScreen>
                   // the glass composer, the only glass on the page.
                   return KitComposer.layer(
                     body: conversation,
+                    aboveMinHeight: _aboveComposerFloor(
+                      bodyConstraints,
+                      pendingPermissions,
+                    ),
                     above: _aboveComposer(
                       bodyConstraints: bodyConstraints,
                       compactComposer: compactComposer,
