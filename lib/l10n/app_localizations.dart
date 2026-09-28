@@ -296,10 +296,10 @@ abstract class AppLocalizations {
   /// **'Refresh status'**
   String get servicesRefresh;
 
-  /// No description provided for @isolatedTaskScopeChanged.
+  /// Start in a separate copy: the server or project changed before Start, so the sheet can't be used
   ///
   /// In en, this message translates to:
-  /// **'The server or project changed. Close this sheet and reopen the task from the intended project.'**
+  /// **'The server or project changed while this was open. Close it and start again from the project you want.'**
   String get isolatedTaskScopeChanged;
 
   /// Application title shown in the task switcher / window title
@@ -3179,13 +3179,13 @@ abstract class AppLocalizations {
   /// No description provided for @draftLeaveTitle.
   ///
   /// In en, this message translates to:
-  /// **'Draft could not be saved'**
+  /// **'Your draft isn\'t saved'**
   String get draftLeaveTitle;
 
   /// No description provided for @draftLeaveMessage.
   ///
   /// In en, this message translates to:
-  /// **'Keep editing to copy your text or retry saving. Leaving now may lose your unsaved changes.'**
+  /// **'Copy your text to keep it, or try saving again. If you leave without saving, your latest changes may be lost.'**
   String get draftLeaveMessage;
 
   /// No description provided for @draftLeaveAction.
@@ -4549,149 +4549,119 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 draft with an unconfirmed send to review.} other{{count} drafts with an unconfirmed send to review.}}'**
   String queuedBannerReview(int count);
 
-  /// Title of the fresh-worktree task sheet
+  /// Title of the sheet that starts a conversation in a separate copy (a git worktree) of the project
   ///
   /// In en, this message translates to:
-  /// **'New task in a fresh worktree'**
+  /// **'Start in a separate copy'**
   String get isolatedTaskTitle;
 
-  /// Explanation shown before the user starts a fresh-worktree task
+  /// Start in a separate copy: one line under the title saying what a separate copy is for
   ///
   /// In en, this message translates to:
-  /// **'OpenCode creates a new Git worktree and branch for {project} and runs the project\'s setup. The worktree stays listed under Manage project until you remove it there.'**
-  String isolatedTaskIntro(String project);
+  /// **'Works on its own branch, so it can\'t clash with your other conversations.'**
+  String get isolatedTaskIntro;
 
-  /// Label of the optional worktree name field
+  /// Start in a separate copy: the optional name of the worktree, inside Options
   ///
   /// In en, this message translates to:
-  /// **'Worktree name (optional)'**
+  /// **'Name of the copy (optional)'**
   String get isolatedTaskNameLabel;
 
-  /// Helper text under the optional worktree name field
+  /// Start in a separate copy: helper under the optional name field
   ///
   /// In en, this message translates to:
-  /// **'Leave empty to let OpenCode choose a name.'**
+  /// **'Leave it empty and a name is chosen for you.'**
   String get isolatedTaskNameHelper;
 
-  /// Primary button that creates the worktree and waits for it
+  /// Start in a separate copy: primary button that makes the copy, runs its setup and opens the conversation
   ///
   /// In en, this message translates to:
-  /// **'Create and start'**
+  /// **'Start'**
   String get isolatedTaskStart;
 
-  /// Status while the create request is in flight
+  /// Start in a separate copy: status while the create request is in flight
   ///
   /// In en, this message translates to:
-  /// **'Creating the worktree…'**
+  /// **'Making the copy…'**
   String get isolatedTaskCreating;
 
-  /// Caution under the creating status: cancelling does not imply server rollback
+  /// Start in a separate copy: under the making status; stopping does not undo a create the server may already run. Project › Worktrees is where copies are listed
   ///
   /// In en, this message translates to:
-  /// **'Stopping now cannot undo a create the server may already be running.'**
+  /// **'If you stop waiting, the copy may still be made. You\'ll find it under Project › Worktrees.'**
   String get isolatedTaskCreatingHint;
 
-  /// Status after the server returned the worktree, before its readiness event
+  /// Start in a separate copy: status while the project setup runs in the new copy
   ///
   /// In en, this message translates to:
-  /// **'{name} was created. OpenCode is preparing it…'**
+  /// **'Setting up {name}…'**
   String isolatedTaskPreparing(String name);
 
-  /// Status once the worktree reported ready and the session is being opened
+  /// Start in a separate copy: status once setup finished and the conversation is being opened
   ///
   /// In en, this message translates to:
-  /// **'{name} is ready. Opening a blank conversation…'**
+  /// **'{name} is ready. Opening the conversation…'**
   String isolatedTaskReady(String name);
 
-  /// Status when the worktree is ready but the last open attempt failed and nothing is in flight
+  /// Start in a separate copy: the copy is ready but the last open attempt failed; nothing is in flight
   ///
   /// In en, this message translates to:
-  /// **'{name} is ready.'**
+  /// **'{name} is ready, but the conversation didn\'t open.'**
   String isolatedTaskReadyIdle(String name);
 
-  /// Status when no readiness event arrived within the wait
+  /// Start in a separate copy: no setup result arrived within the wait
   ///
   /// In en, this message translates to:
-  /// **'{name} was created, but its setup status is not confirmed.'**
+  /// **'{name} is made, but its setup hasn\'t reported back.'**
   String isolatedTaskUnconfirmed(String name);
 
-  /// Explanation under the unconfirmed status
+  /// Start in a separate copy: explanation under the unconfirmed status
   ///
   /// In en, this message translates to:
-  /// **'You can keep waiting or open it now. Setup may still be running.'**
+  /// **'Setup may still be running. Keep waiting, or start in it now.'**
   String get isolatedTaskUnconfirmedHint;
 
-  /// Status when the server reported worktree.failed
+  /// Start in a separate copy: the copy was made but its project setup failed
   ///
   /// In en, this message translates to:
-  /// **'OpenCode could not prepare the worktree.'**
-  String get isolatedTaskFailed;
+  /// **'Setup failed in {name}'**
+  String isolatedTaskFailed(String name);
 
-  /// Status when the create request itself failed
+  /// Start in a separate copy: the create request itself failed
   ///
   /// In en, this message translates to:
-  /// **'The worktree could not be created.'**
+  /// **'Couldn\'t make the copy'**
   String get isolatedTaskCreateFailed;
 
-  /// Note under a failed preparation: the created worktree is kept
-  ///
-  /// In en, this message translates to:
-  /// **'{name} stays listed under Manage project. Nothing was deleted.'**
-  String isolatedTaskFailedKept(String name);
-
-  /// Status after the user stopped waiting for readiness
+  /// Start in a separate copy: status after the person stopped waiting
   ///
   /// In en, this message translates to:
   /// **'Stopped waiting.'**
   String get isolatedTaskCancelled;
 
-  /// Note after stopping when the server had already returned the worktree
+  /// Start in a separate copy: status while switching to the copy and creating the conversation
   ///
   /// In en, this message translates to:
-  /// **'{name} was created and stays listed under Manage project.'**
-  String isolatedTaskCancelledKept(String name);
-
-  /// Note after stopping before the create request answered
-  ///
-  /// In en, this message translates to:
-  /// **'If OpenCode created the worktree, it appears under Manage project.'**
-  String get isolatedTaskCancelledUnknown;
-
-  /// Status while switching scope and creating the session
-  ///
-  /// In en, this message translates to:
-  /// **'Opening a blank conversation in {name}…'**
+  /// **'Opening the conversation in {name}…'**
   String isolatedTaskOpening(String name);
 
-  /// Status once the blank session exists in the worktree
+  /// Start in a separate copy: status once the conversation exists in the copy
   ///
   /// In en, this message translates to:
-  /// **'Conversation ready in {name}. Nothing has been sent.'**
+  /// **'The conversation in {name} is ready.'**
   String isolatedTaskOpened(String name);
 
-  /// Branch line under the worktree status
-  ///
-  /// In en, this message translates to:
-  /// **'Branch {branch}'**
-  String isolatedTaskBranch(String branch);
-
-  /// Button that stops waiting for readiness without deleting anything
+  /// Start in a separate copy: stops waiting without deleting anything
   ///
   /// In en, this message translates to:
   /// **'Stop waiting'**
   String get isolatedTaskStopWaiting;
 
-  /// Button that waits another period for the readiness event
+  /// Start in a separate copy: waits another period for the setup result
   ///
   /// In en, this message translates to:
   /// **'Keep waiting'**
   String get isolatedTaskKeepWaiting;
-
-  /// Button that opens a session in a worktree whose setup is unconfirmed
-  ///
-  /// In en, this message translates to:
-  /// **'Open anyway'**
-  String get isolatedTaskOpenAnyway;
 
   /// Button that retries opening the session after an open error
   ///
@@ -16278,12 +16248,6 @@ abstract class AppLocalizations {
   /// **'The host did not accept this answer.'**
   String get teamUiGateAnswerRejectedNoMessage;
 
-  /// Accessibility label of the unconfirmed chip
-  ///
-  /// In en, this message translates to:
-  /// **'Unconfirmed, open to retry'**
-  String get teamUiGateAnswerChipUnconfirmedSemantics;
-
   /// Two-step sheet title before a destructive confirmation is approved
   ///
   /// In en, this message translates to:
@@ -16523,30 +16487,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send to the {planner}'**
   String teamUiStartRunSend(String planner);
-
-  /// Shown instead of the form when the host lists the planner as suspended or stopped; nothing is sent
-  ///
-  /// In en, this message translates to:
-  /// **'The planner (Mayor) is off on this host'**
-  String get teamUiStartRunPlannerOffTitle;
-
-  /// Body under the planner-off title
-  ///
-  /// In en, this message translates to:
-  /// **'Wake it on the host or switch it to the full profile, then come back.'**
-  String get teamUiStartRunPlannerOffBody;
-
-  /// Shown when the host lists no planner agent at all
-  ///
-  /// In en, this message translates to:
-  /// **'No planner on this host'**
-  String get teamUiStartRunPlannerMissingTitle;
-
-  /// Body under the planner-missing title
-  ///
-  /// In en, this message translates to:
-  /// **'The Gas Town pack with its Mayor is not running here. The host guide shows how to enable it.'**
-  String get teamUiStartRunPlannerMissingBody;
 
   /// Button opening the host guide sheet from the planner-off states
   ///
@@ -21315,7 +21255,7 @@ abstract class AppLocalizations {
   /// First of the four stages of an AI Team task
   ///
   /// In en, this message translates to:
-  /// **'Waiting'**
+  /// **'Planned'**
   String get teamUiRunStageWaiting;
 
   /// Second of the four stages of an AI Team task
@@ -21327,13 +21267,13 @@ abstract class AppLocalizations {
   /// Third of the four stages of an AI Team task: handed to the reviewer, who merges
   ///
   /// In en, this message translates to:
-  /// **'Reviewing'**
+  /// **'In review'**
   String get teamUiRunStageReviewing;
 
   /// Last of the four stages of an AI Team task: merged
   ///
   /// In en, this message translates to:
-  /// **'Done'**
+  /// **'Merged'**
   String get teamUiRunStageDone;
 
   /// Screen-reader label of the four-stage line on an AI Team task
@@ -26304,31 +26244,31 @@ abstract class AppLocalizations {
   /// **'Enter an http or https address without a user name or password.'**
   String get servicesUrlInvalid;
 
-  /// New task in a fresh worktree: the label of the project path in Details
+  /// Start in a separate copy: the label of the project path in Details
   ///
   /// In en, this message translates to:
   /// **'Project folder'**
   String get isolatedTaskProjectFolder;
 
-  /// New task in a fresh worktree: progress stage 1 of 3
+  /// Start in a separate copy: progress stage 1 of 3
   ///
   /// In en, this message translates to:
-  /// **'Creating the worktree'**
+  /// **'Making the copy'**
   String get isolatedTaskStageCreate;
 
-  /// New task in a fresh worktree: progress stage 2 of 3
+  /// Start in a separate copy: progress stage 2 of 3
   ///
   /// In en, this message translates to:
   /// **'Running the project setup'**
   String get isolatedTaskStagePrepare;
 
-  /// New task in a fresh worktree: progress stage 3 of 3
+  /// Start in a separate copy: progress stage 3 of 3 with no task typed
   ///
   /// In en, this message translates to:
-  /// **'Opening a conversation'**
+  /// **'Opening the conversation'**
   String get isolatedTaskStageOpen;
 
-  /// New task in a fresh worktree: how long creating and setting up a worktree usually takes
+  /// Start in a separate copy: how long making and setting up a copy usually takes
   ///
   /// In en, this message translates to:
   /// **'Usually 1–3 minutes'**
@@ -36477,6 +36417,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Timeout in seconds'**
   String get mcpSetupTimeoutSeconds;
+
+  /// Start in a separate copy: the task field, sent to the new conversation once the copy is ready
+  ///
+  /// In en, this message translates to:
+  /// **'What should it work on?'**
+  String get isolatedTaskPromptLabel;
+
+  /// Start in a separate copy: helper under the task field
+  ///
+  /// In en, this message translates to:
+  /// **'Sent once the copy is ready. Leave it empty to write it in the conversation.'**
+  String get isolatedTaskPromptHelper;
+
+  /// Start in a separate copy: the fold holding the optional name of the copy
+  ///
+  /// In en, this message translates to:
+  /// **'Options'**
+  String get isolatedTaskOptions;
+
+  /// Start in a separate copy: under the setup status; stopping never deletes the copy
+  ///
+  /// In en, this message translates to:
+  /// **'If you stop waiting, the copy stays. You\'ll find it under Project › Worktrees.'**
+  String get isolatedTaskPreparingHint;
+
+  /// Start in a separate copy: body under a failed setup; the setup's own output is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'The copy is made, but its setup didn\'t finish. Start in it anyway, or remove it.'**
+  String get isolatedTaskFailedBody;
+
+  /// Start in a separate copy: status while the typed task is sent to the new conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Sending your task to {name}…'**
+  String isolatedTaskSending(String name);
+
+  /// Start in a separate copy: the conversation opened but the typed task was not sent
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send your task'**
+  String get isolatedTaskSendFailed;
+
+  /// Start in a separate copy: the unsent task was kept as the conversation's draft
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s waiting in the conversation\'s message box, ready to send.'**
+  String get isolatedTaskSendFailedBody;
+
+  /// Start in a separate copy: the unsent task could not be kept as a draft either; it is shown under Details to copy
+  ///
+  /// In en, this message translates to:
+  /// **'Copy your task below and send it in the conversation.'**
+  String get isolatedTaskSendFailedLost;
+
+  /// Start in a separate copy: opens the new conversation after its task could not be sent
+  ///
+  /// In en, this message translates to:
+  /// **'Open the conversation'**
+  String get isolatedTaskOpenConversation;
+
+  /// Start in a separate copy: opens the conversation in a copy whose setup failed or has not reported
+  ///
+  /// In en, this message translates to:
+  /// **'Start anyway'**
+  String get isolatedTaskStartAnyway;
+
+  /// Start in a separate copy: deletes the copy (worktree) whose setup failed
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the copy'**
+  String get isolatedTaskRemove;
+
+  /// Start in a separate copy: confirmation title before deleting the copy
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String isolatedTaskRemoveTitle(String name);
+
+  /// Start in a separate copy: confirmation body before deleting the copy
+  ///
+  /// In en, this message translates to:
+  /// **'Its folder and branch are deleted. Your project itself is not touched.'**
+  String get isolatedTaskRemoveBody;
+
+  /// Start in a separate copy: notice on the form after the failed copy was removed
+  ///
+  /// In en, this message translates to:
+  /// **'Removed {name}. You can start again.'**
+  String isolatedTaskRemoved(String name);
+
+  /// Start in a separate copy: note above the setup's own output, under Details
+  ///
+  /// In en, this message translates to:
+  /// **'What the setup reported'**
+  String get isolatedTaskSetupOutput;
+
+  /// Start in a separate copy: the label of the copy's folder in Details
+  ///
+  /// In en, this message translates to:
+  /// **'Folder of the copy'**
+  String get isolatedTaskCopyFolder;
+
+  /// Start in a separate copy: the label of the copy's branch in Details
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get isolatedTaskBranchLabel;
+
+  /// Start in a separate copy: progress stage 3 of 3 with a task typed
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the conversation and sending your task'**
+  String get isolatedTaskStageSend;
+
+  /// Title of the Give-a-task sheet when the team has no planner awake and no direct path to a worker
+  ///
+  /// In en, this message translates to:
+  /// **'Team can\'t take tasks'**
+  String get teamStartRunBlockedTitle;
+
+  /// Reason line: the team's planner agent is suspended or stopped on its host
+  ///
+  /// In en, this message translates to:
+  /// **'The planner is switched off'**
+  String get teamStartRunPlannerOff;
+
+  /// Body when the planner is off and the app can wake it
+  ///
+  /// In en, this message translates to:
+  /// **'The planner turns each task into steps for the team. Wake it to give the team your task.'**
+  String get teamStartRunPlannerOffWakeBody;
+
+  /// Body when the planner is off and the app cannot wake it
+  ///
+  /// In en, this message translates to:
+  /// **'The planner turns each task into steps for the team, and this app can\'t switch it on. Switch it on where the team runs, then try again.'**
+  String get teamStartRunPlannerOffHostBody;
+
+  /// Reason line: the host lists no planner agent
+  ///
+  /// In en, this message translates to:
+  /// **'This team has no planner'**
+  String get teamStartRunNoPlanner;
+
+  /// Body when the host lists no planner
+  ///
+  /// In en, this message translates to:
+  /// **'A planner turns each task into steps for the team. Add one where the team runs, then try again.'**
+  String get teamStartRunNoPlannerBody;
+
+  /// Reason line: the team gives tasks straight to a project's worker but has no project
+  ///
+  /// In en, this message translates to:
+  /// **'This team has no project yet'**
+  String get teamStartRunNoProject;
+
+  /// Body when the team has no project
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks go straight to a project\'s worker. Add a project to the team, then try again.'**
+  String get teamStartRunNoProjectBody;
+
+  /// Primary: wake the team's planner agent so it can take a task
+  ///
+  /// In en, this message translates to:
+  /// **'Wake the planner'**
+  String get teamStartRunWake;
+
+  /// Notice after the host took the wake, until the planner is listed awake
+  ///
+  /// In en, this message translates to:
+  /// **'Waking the planner. The task form opens as soon as it\'s awake.'**
+  String get teamStartRunWakeAsked;
+
+  /// Notice after Check again when nothing changed
+  ///
+  /// In en, this message translates to:
+  /// **'The planner is still switched off.'**
+  String get teamStartRunStillOff;
+
+  /// Notice after Check again when the team still has no project
+  ///
+  /// In en, this message translates to:
+  /// **'The team still has no project.'**
+  String get teamStartRunStillNoProject;
+
+  /// Title of the notice when the host refused to wake the planner
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t wake the planner'**
+  String get teamStartRunWakeRefused;
+
+  /// Next step under a refused wake
+  ///
+  /// In en, this message translates to:
+  /// **'Try again, or switch it on where the team runs.'**
+  String get teamStartRunWakeRefusedNext;
 }
 
 class _AppLocalizationsDelegate
