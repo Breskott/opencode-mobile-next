@@ -14244,6 +14244,18 @@ abstract class AppLocalizations {
   /// **', '**
   String get e7ModelUiListSeparator;
 
+  /// Model picker: signed-in providers the server still could not load after a provider reload
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Signed in to {providers}, but this server could not load that sign-in even after a reload, so its models cannot answer. Sign in another way under Providers, or pick another model.} other{Signed in to {providers}, but this server could not load those sign-ins even after a reload, so their models cannot answer. Sign in another way under Providers, or pick another model.}}'**
+  String e7ModelUiUnusableProviders(int count, String providers);
+
+  /// Model picker: a provider reload is held back while replies run on the server
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{The reload waits for 1 running reply to finish, because reloading would stop it.} other{The reload waits for {count} running replies to finish, because reloading would stop them.}}'**
+  String e7ModelUiProviderReloadWaits(int count);
+
   /// Voice/model presentation: e7ModelUiUnloadedProviders
   ///
   /// In en, this message translates to:

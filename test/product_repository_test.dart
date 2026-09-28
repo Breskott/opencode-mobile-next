@@ -1202,6 +1202,8 @@ void main() {
           request.response.headers.contentType = ContentType.json;
           if (request.uri.path.startsWith('/api/integration/')) {
             request.response.statusCode = HttpStatus.noContent;
+          } else if (request.uri.path == '/session/status') {
+            request.response.write('{}');
           } else {
             request.response.write('true');
           }
@@ -1224,12 +1226,16 @@ void main() {
           expect(requests.map((request) => request.method), [
             'POST',
             'PUT',
+            'GET',
+            'GET',
             'POST',
             'POST',
           ]);
           expect(requests.map((request) => request.uri.path), [
             '/api/integration/zai-coding-plan/connect/key',
             '/auth/zai-coding-plan',
+            '/session/status',
+            '/session/status',
             '/instance/dispose',
             '/instance/dispose',
           ]);
@@ -1245,11 +1251,18 @@ void main() {
             'location[directory]': '/root',
             'location[workspace]': 'phone',
           });
+          // Running replies are counted in both locations the refresh
+          // disposes, before anything is disposed.
           expect(requests[2].uri.queryParameters, {
             'directory': '/root',
             'workspace': 'phone',
           });
           expect(requests[3].uri.queryParameters, isEmpty);
+          expect(requests[4].uri.queryParameters, {
+            'directory': '/root',
+            'workspace': 'phone',
+          });
+          expect(requests[5].uri.queryParameters, isEmpty);
         } finally {
           await server.close(force: true);
         }
@@ -1268,6 +1281,8 @@ void main() {
           request.response.headers.contentType = ContentType.json;
           if (request.uri.path.startsWith('/api/credential/')) {
             request.response.statusCode = HttpStatus.noContent;
+          } else if (request.uri.path == '/session/status') {
+            request.response.write('{}');
           } else {
             request.response.write('true');
           }
@@ -1300,12 +1315,16 @@ void main() {
           expect(requests.map((request) => request.method), [
             'DELETE',
             'DELETE',
+            'GET',
+            'GET',
             'POST',
             'POST',
           ]);
           expect(requests.map((request) => request.uri.path), [
             '/auth/zai-coding-plan',
             '/api/credential/credential%2Fphone%20key',
+            '/session/status',
+            '/session/status',
             '/instance/dispose',
             '/instance/dispose',
           ]);
@@ -1313,11 +1332,18 @@ void main() {
             'location[directory]': '/root',
             'location[workspace]': 'phone',
           });
+          // Running replies are counted in both locations the refresh
+          // disposes, before anything is disposed.
           expect(requests[2].uri.queryParameters, {
             'directory': '/root',
             'workspace': 'phone',
           });
           expect(requests[3].uri.queryParameters, isEmpty);
+          expect(requests[4].uri.queryParameters, {
+            'directory': '/root',
+            'workspace': 'phone',
+          });
+          expect(requests[5].uri.queryParameters, isEmpty);
         } finally {
           await server.close(force: true);
         }
@@ -1520,6 +1546,8 @@ void main() {
           if (request.uri.path.startsWith('/api/credential/')) {
             request.response.statusCode = HttpStatus.internalServerError;
             request.response.write(jsonEncode({'message': 'database busy'}));
+          } else if (request.uri.path == '/session/status') {
+            request.response.write('{}');
           } else {
             request.response.write('true');
           }
@@ -1560,6 +1588,8 @@ void main() {
           expect(requests.map((request) => request.uri.path), [
             '/auth/cloud',
             '/api/credential/credential-1',
+            '/session/status',
+            '/session/status',
             '/instance/dispose',
             '/instance/dispose',
           ]);

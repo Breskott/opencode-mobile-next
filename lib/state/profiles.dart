@@ -1252,6 +1252,50 @@ class ProfileStore {
     }
   }
 
+  String _providerRuntimeUnloadableKey(
+    String profileId, {
+    String? directory,
+    String? workspace,
+  }) {
+    final location = Uri.encodeComponent(
+      '${directory ?? '<default>'}\n${workspace ?? '<default>'}',
+    );
+    return 'oc.providerRuntimeUnloadable.$profileId.$location';
+  }
+
+  /// Providers that stayed unloaded after a provider runtime refresh at this
+  /// location, as a sorted comma-joined id list. A later start that finds the
+  /// same set unloaded knows another refresh cannot load them.
+  String? providerRuntimeUnloadable(
+    String profileId, {
+    String? directory,
+    String? workspace,
+  }) => prefs.getString(
+    _providerRuntimeUnloadableKey(
+      profileId,
+      directory: directory,
+      workspace: workspace,
+    ),
+  );
+
+  Future<void> setProviderRuntimeUnloadable(
+    String profileId,
+    String? providers, {
+    String? directory,
+    String? workspace,
+  }) async {
+    final key = _providerRuntimeUnloadableKey(
+      profileId,
+      directory: directory,
+      workspace: workspace,
+    );
+    if (providers == null || providers.isEmpty) {
+      await prefs.remove(key);
+    } else {
+      await prefs.setString(key, providers);
+    }
+  }
+
   // ----- per-profile model/agent selection -----
 
   ModelLibrary modelLibraryFor(String profileId) {

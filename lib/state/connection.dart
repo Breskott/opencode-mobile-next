@@ -1063,9 +1063,23 @@ class ConnectionController extends ChangeNotifier {
   /// instance, so a sign-in that lands after startup leaves the provider in
   /// this limbo: `/provider` lists it with the full models.dev catalog while
   /// every prompt fails with "Model not found". [_loadCatalog] heals this
-  /// once per connection by disposing the instance; anything still listed
-  /// here after that needs a manual [reloadProviderRuntime].
+  /// by disposing the instance, only while no reply is running (a dispose
+  /// aborts them) and once per distinct set: a set that stayed unloaded after
+  /// a refresh is remembered per location, so later starts do not dispose
+  /// again. Anything still listed needs a manual [reloadProviderRuntime].
   Set<String> unloadedProviderIDs = const {};
+
+  /// True when a provider runtime refresh already ran for exactly
+  /// [unloadedProviderIDs] and they stayed unloaded: the server holds sign-ins
+  /// it cannot use (an OAuth sign-in with no plugin to load it), not a
+  /// runtime that is merely behind.
+  bool unloadedProvidersUnusable = false;
+
+  /// Replies running on the server that hold the provider reload back.
+  /// Nonzero while a reload waits for them; it runs once they finish.
+  int providerReloadWaitingOn = 0;
+  bool _providerHealDeferred = false;
+  bool _runtimeJustRefreshed = false;
   String? _runtimeHealKey;
   int _runtimeHealGeneration = -1;
 
@@ -2720,15 +2734,44 @@ class ConnectionController extends ChangeNotifier {
       var unloaded = comparesRuntime
           ? unloadedProviders(nextProviders, configuredProviders)
           : const <String>{};
+      final healProfileID = _connectedProfile?.id;
+      final healDirectory = directory;
+      final healWorkspace = workspace;
+      String? triedUnloadable = healProfileID == null
+          ? null
+          : store.providerRuntimeUnloadable(
+              healProfileID,
+              directory: healDirectory,
+              workspace: healWorkspace,
+            );
+      if (_runtimeJustRefreshed) {
+        // The manual reload just rebuilt the runtime: whatever is still
+        // unloaded now is what this server cannot load.
+        _runtimeJustRefreshed = false;
+        _runtimeHealGeneration = generation;
+        _runtimeHealKey = _providerSetKey(unloaded);
+        triedUnloadable = _providerSetKey(unloaded);
+        if (healProfileID != null) {
+          await store.setProviderRuntimeUnloadable(
+            healProfileID,
+            triedUnloadable,
+            directory: healDirectory,
+            workspace: healWorkspace,
+          );
+        }
+      }
       if (unloaded.isNotEmpty && currentRepository != null) {
         // A credential the runtime has not picked up yet (OAuth finished in
         // the TUI, or after this app's own sign-in raced the server). Dispose
         // the instance so OpenCode rebuilds its provider state, then re-read.
         // Heal once per distinct set of providers per connection so a server
-        // that cannot load a provider does not loop.
-        final healKey = (unloaded.toList()..sort()).join(',');
-        if (_runtimeHealGeneration != generation ||
-            _runtimeHealKey != healKey) {
+        // that cannot load a provider does not loop, and never again for a
+        // set a refresh already failed to load: on a cold start that dispose
+        // would only abort replies still running on the server.
+        final healKey = _providerSetKey(unloaded);
+        if (healKey != triedUnloadable &&
+            (_runtimeHealGeneration != generation ||
+                _runtimeHealKey != healKey)) {
           _runtimeHealGeneration = generation;
           _runtimeHealKey = healKey;
           try {
@@ -2747,10 +2790,31 @@ class ConnectionController extends ChangeNotifier {
             nextProviders = healed[0] as ProvidersResponse;
             configuredProviders = healed[1] as ProvidersResponse?;
             unloaded = unloadedProviders(nextProviders, configuredProviders);
+            providerReloadWaitingOn = 0;
+            triedUnloadable = unloaded.isEmpty
+                ? null
+                : _providerSetKey(unloaded);
+            if (healProfileID != null) {
+              await store.setProviderRuntimeUnloadable(
+                healProfileID,
+                triedUnloadable,
+                directory: healDirectory,
+                workspace: healWorkspace,
+              );
+            }
+          } on ProviderRuntimeBusyException catch (busy) {
+            // Replies are running: a dispose would abort them. Wait until
+            // the server goes idle, then try again.
+            _runtimeHealKey = null;
+            _providerHealDeferred = true;
+            providerReloadWaitingOn = busy.runningReplies;
           } catch (_) {
             // Leave the providers flagged; the picker offers a manual reload.
           }
         }
+      } else if (unloaded.isEmpty) {
+        providerReloadWaitingOn = 0;
+        _providerHealDeferred = false;
       }
       final hasConnectedIntegration = integrations.any(
         (integration) => integration.connectionCount > 0,
@@ -2962,6 +3026,8 @@ class ConnectionController extends ChangeNotifier {
         return;
       }
       unloadedProviderIDs = unloaded;
+      unloadedProvidersUnusable =
+          unloaded.isNotEmpty && triedUnloadable == _providerSetKey(unloaded);
       catalogDetailed =
           detailedCatalog?.models.isNotEmpty == true ||
           nextProviders.providers.any(
@@ -3734,6 +3800,7 @@ class ConnectionController extends ChangeNotifier {
               retryStates.remove(sid);
               _settleSessionAttention(sid, CodingAlertKind.complete);
               unawaited(_refreshOneSession(sid));
+              _resumeDeferredProviderHeal();
               break;
             case 'busy':
               busySessions.add(sid);
@@ -3764,6 +3831,7 @@ class ConnectionController extends ChangeNotifier {
           busySessions.remove(sid);
           retryStates.remove(sid);
           _settleSessionAttention(sid, CodingAlertKind.error);
+          _resumeDeferredProviderHeal();
         }
         final err = props['error'];
         if (err is Map<String, dynamic>) {
@@ -3789,6 +3857,7 @@ class ConnectionController extends ChangeNotifier {
           retryStates.remove(sid);
           _settleSessionAttention(sid, CodingAlertKind.complete);
           unawaited(_refreshOneSession(sid));
+          _resumeDeferredProviderHeal();
           notifyListeners();
         }
         break;
@@ -9412,6 +9481,7 @@ class ConnectionController extends ChangeNotifier {
     final savedCatalog = catalog;
     final savedCatalogDetailed = catalogDetailed;
     final savedUnloaded = unloadedProviderIDs;
+    final savedUnusable = unloadedProvidersUnusable;
     _clearLocationData();
     _modelLibrary = savedLibrary;
     sessionModels = savedSessionModels;
@@ -9420,6 +9490,7 @@ class ConnectionController extends ChangeNotifier {
     catalog = savedCatalog;
     catalogDetailed = savedCatalogDetailed;
     unloadedProviderIDs = savedUnloaded;
+    unloadedProvidersUnusable = savedUnusable;
     status = StreamStatus.connecting;
     notifyListeners();
     enablePollingFallback();
@@ -10159,6 +10230,9 @@ class ConnectionController extends ChangeNotifier {
   ///
   /// The manual counterpart of the one-shot heal in [_loadCatalog], for the
   /// picker's "Reload providers" action when a provider stays unloaded.
+  ///
+  /// Never stops a running reply: while any runs, the reload waits and
+  /// [providerReloadWaitingOn] says for how many; it runs once they finish.
   Future<void> reloadProviderRuntime() async {
     final currentApi = api;
     final currentRepository = repository;
@@ -10167,11 +10241,30 @@ class ConnectionController extends ChangeNotifier {
         currentApi.capabilities.providerRuntimeRefresh) {
       try {
         await currentRepository.refreshProviderRuntime();
+        providerReloadWaitingOn = 0;
+        _providerHealDeferred = false;
+        _runtimeJustRefreshed = true;
+      } on ProviderRuntimeBusyException catch (busy) {
+        _providerHealDeferred = true;
+        _runtimeHealKey = null;
+        providerReloadWaitingOn = busy.runningReplies;
+        notifyListeners();
+        return;
       } catch (_) {
         // The reload below still reports whether the provider came up.
       }
     }
     await _loadCatalog();
+  }
+
+  static String _providerSetKey(Set<String> providers) =>
+      (providers.toList()..sort()).join(',');
+
+  /// Runs the provider reload that waited for replies, once none runs.
+  void _resumeDeferredProviderHeal() {
+    if (!_providerHealDeferred || busySessions.isNotEmpty) return;
+    _providerHealDeferred = false;
+    unawaited(_loadCatalog());
   }
 
   /// Providers `/provider` lists as connected that `/config/providers` (the
@@ -10412,6 +10505,10 @@ class ConnectionController extends ChangeNotifier {
     agents = [];
     catalog = null;
     unloadedProviderIDs = const {};
+    unloadedProvidersUnusable = false;
+    providerReloadWaitingOn = 0;
+    _providerHealDeferred = false;
+    _runtimeJustRefreshed = false;
     catalogDetailed = false;
     sessionsLoading = false;
     sessionsError = null;

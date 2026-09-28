@@ -2004,7 +2004,12 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     // §7 row 25: v2 hot-reloads its provider config, so the explicit runtime
     // refresh is skipped rather than failing a connect that already worked.
     if (widget.controller.capabilities.providerRuntimeRefresh) {
-      await repository.refreshProviderRuntime();
+      try {
+        await repository.refreshProviderRuntime();
+      } on ProviderRuntimeBusyException {
+        // Replies are running and a refresh would stop them; the model
+        // picker loads the new provider once they finish.
+      }
     }
     if (!mounted || pending.source != _mcpSource) return;
     await Future.wait([_load(), widget.controller.refreshCatalog()]);
