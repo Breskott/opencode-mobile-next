@@ -37,7 +37,12 @@ Widget _app(Widget child, {KitEffects effects = KitEffects.defaults}) =>
 /// The drawn shape of the glass [of] (its clip), in its box's coordinates.
 RRect _drawn(WidgetTester tester, Finder of) {
   final clip = tester.widget<ClipRRect>(
-    find.descendant(of: of, matching: find.byType(ClipRRect)).first,
+    find
+        .descendant(
+          of: of,
+          matching: find.byWidgetPredicate((w) => w is ClipRRect),
+        )
+        .first,
   );
   final box = tester.getSize(of);
   return clip.clipper!.getClip(box);
@@ -190,6 +195,82 @@ void main() {
       expect(mid.height, lessThan(box.height + 2));
       await tester.pumpAndSettle();
       expect(_drawn(tester, finder).outerRect, box);
+    });
+
+    // The composer grows a row (a delivery choice, a confirm) at its top
+    // edge: the row is laid out at once while the glass is still drawn at
+    // the old size. The row must answer the very first tap.
+    Widget growing({
+      required bool grown,
+      required VoidCallback onTap,
+      KitEffects effects = KitEffects.defaults,
+    }) => _app(
+      Align(
+        alignment: Alignment.bottomCenter,
+        child: SizedBox(
+          width: 320,
+          child: KitGlass(
+            flow: true,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (grown)
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onTap,
+                    child: const SizedBox(
+                      height: 40,
+                      width: double.infinity,
+                      child: Text('Send now'),
+                    ),
+                  ),
+                const SizedBox(height: 48, child: Text('Draft')),
+              ],
+            ),
+          ),
+        ),
+      ),
+      effects: effects,
+    );
+
+    testWidgets('a control that just appeared at the edge takes the first '
+        'tap while the glass is still flowing', (tester) async {
+      var taps = 0;
+      void tap() => taps++;
+      await tester.pumpWidget(growing(grown: false, onTap: tap));
+      await tester.pumpWidget(growing(grown: true, onTap: tap));
+      // First frame of the flow: the drawn glass is still the old 48 dp on
+      // the bottom edge, so the new row is outside it...
+      final drawn = _drawn(tester, finder).outerRect;
+      final row = tester.getRect(find.text('Send now'));
+      final glass = tester.getTopLeft(finder);
+      expect(drawn.height, closeTo(48, .5));
+      expect(drawn.shift(glass).contains(row.center), isFalse);
+      expect(SchedulerBinding.instance.transientCallbackCount, greaterThan(0));
+      // ...and still takes the tap.
+      await tester.tap(find.text('Send now'));
+      expect(taps, 1);
+      // The visual keeps flowing to the box and settles exactly on it.
+      await tester.pumpAndSettle();
+      expect(_drawn(tester, finder).outerRect, _box(tester, finder));
+      await tester.tap(find.text('Send now'));
+      expect(taps, 2);
+    });
+
+    testWidgets('reduced motion: the new control and the glass are there '
+        'in one pump', (tester) async {
+      var taps = 0;
+      void tap() => taps++;
+      await tester.pumpWidget(
+        growing(grown: false, onTap: tap, effects: _still),
+      );
+      await tester.pumpWidget(
+        growing(grown: true, onTap: tap, effects: _still),
+      );
+      expect(_drawn(tester, finder).outerRect, _box(tester, finder));
+      expect(SchedulerBinding.instance.transientCallbackCount, 0);
+      await tester.tap(find.text('Send now'));
+      expect(taps, 1);
     });
 
     testWidgets('reduced motion: the glass takes the new size at once', (

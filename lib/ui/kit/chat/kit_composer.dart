@@ -472,6 +472,7 @@ class _KitComposerState extends State<KitComposer> {
             borderRadius: BorderRadius.circular(radius),
             dim: true,
             shadow: true,
+            flow: true,
             child: Padding(
               padding: EdgeInsets.all(tokens.space1),
               child: KitSwap(

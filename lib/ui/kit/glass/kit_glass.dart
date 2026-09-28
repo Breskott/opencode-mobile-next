@@ -166,7 +166,9 @@ class KitGlass extends StatefulWidget {
   /// The glass follows a change of its box's size from the old size,
   /// growing from its bottom edge ([KitMotion.glassFlow]), instead of
   /// jumping: a composer growing a line as the person types. The content
-  /// takes its new size at once and the glass reveals it as it flows.
+  /// takes its new size at once and the glass reveals it as it flows; taps
+  /// land on the content where it now is from the first frame (only the
+  /// paint is clipped to the flowing shape, never hit testing).
   final bool flow;
 
   /// Neutral ink stays readable even when contrasting content crosses behind
@@ -386,7 +388,7 @@ class _KitGlassState extends State<KitGlass> with TickerProviderStateMixin {
         borderRadius: borderRadius,
         boxShadow: solid ? const [] : paint.shadows,
       ),
-      child: ClipRRect(
+      child: _GlassClip(
         borderRadius: borderRadius,
         clipper: _GlassClipper(_geometry, borderRadius),
         child: glass,
@@ -648,6 +650,44 @@ class _GlassClipper extends CustomClipper<RRect> {
   @override
   bool shouldReclip(_GlassClipper old) =>
       old.geometry != geometry || old.radius != radius;
+}
+
+/// Clips the glass's paint to its drawn shape, but takes taps anywhere in
+/// its layout box: the content already has its final size and place, so a
+/// control that just appeared in glass still flowing (or swelling) towards
+/// it answers the first tap, not only once the shape has caught up.
+class _GlassClip extends ClipRRect {
+  const _GlassClip({
+    required BorderRadius super.borderRadius,
+    required CustomClipper<RRect> super.clipper,
+    super.child,
+  });
+
+  @override
+  RenderClipRRect createRenderObject(BuildContext context) => _RenderGlassClip(
+    borderRadius: borderRadius,
+    clipper: clipper,
+    textDirection: Directionality.maybeOf(context),
+  );
+}
+
+class _RenderGlassClip extends RenderClipRRect {
+  _RenderGlassClip({
+    required super.borderRadius,
+    required super.clipper,
+    super.textDirection,
+  });
+
+  /// [RenderBox.hitTest]: the layout box, never the drawn (moving) shape.
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (!size.contains(position)) return false;
+    if (hitTestChildren(result, position: position) || hitTestSelf(position)) {
+      result.add(BoxHitTestEntry(this, position));
+      return true;
+    }
+    return false;
+  }
 }
 
 /// Reports its size after every layout, for [KitGlass.flow].

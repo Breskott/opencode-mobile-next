@@ -57,7 +57,7 @@ void main() {
       expect(
         find.ancestor(
           of: find.byType(BackdropFilter),
-          matching: find.byType(ClipRRect),
+          matching: find.byWidgetPredicate((w) => w is ClipRRect),
         ),
         findsOneWidget,
       );
@@ -187,7 +187,7 @@ void main() {
       final clip = tester.widget<ClipRRect>(
         find.descendant(
           of: find.byType(KitGlass),
-          matching: find.byType(ClipRRect),
+          matching: find.byWidgetPredicate((w) => w is ClipRRect),
         ),
       );
       final tokens = theme.extension<KitTokens>()!;
@@ -317,7 +317,7 @@ void main() {
         expect(
           find.ancestor(
             of: find.byType(LiquidGlassFilter),
-            matching: find.byType(ClipRRect),
+            matching: find.byWidgetPredicate((w) => w is ClipRRect),
           ),
           findsOneWidget,
         );
