@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
+import 'package:opencode_mobile/ui/theme_packs.dart';
 
 import 'fixtures.dart';
 
@@ -183,39 +184,50 @@ void main() {
   final liquid = ui.ImageFilter.isShaderFilterSupported;
   final look = liquid ? 'liquid' : 'frosted';
 
-  for (final light in [true, false]) {
-    for (final MapEntry(key: state, value: then) in _states.entries) {
-      final name = '$look-$state-${light ? 'light' : 'dark'}';
-      testWidgets(name, (tester) async {
-        tester.view
-          ..physicalSize = _size * captureDevicePixelRatio
-          ..devicePixelRatio = captureDevicePixelRatio;
-        addTearDown(tester.view.reset);
-        if (liquid) {
-          KitGlassShader.program.value = await tester.runAsync(
-            () => ui.FragmentProgram.fromAsset(KitGlassShader.asset),
-          );
-        } else {
-          KitGlassShader.debugSupportedOverride = false;
-        }
-        final boundary = GlobalKey();
-        await tester.pumpWidget(
-          RepaintBoundary(
-            key: boundary,
-            child: MaterialApp(
-              debugShowCheckedModeBanner: false,
-              theme: light ? AppTheme.light() : AppTheme.dark(),
-              home: KitEffectsScope(
-                effects: KitEffects.defaults,
-                child: _Shell(pinned: state == 'rest'),
+  // Graphite (the default) and one other theme pack, which keeps its own
+  // accent in its fields.
+  for (final pack in [null, ThemePackId.catppuccin]) {
+    for (final light in [true, false]) {
+      for (final MapEntry(key: state, value: then) in _states.entries) {
+        final name =
+            '$look-$state-${light ? 'light' : 'dark'}'
+            '${pack == null ? '' : '-${pack.name}'}';
+        testWidgets(name, (tester) async {
+          tester.view
+            ..physicalSize = _size * captureDevicePixelRatio
+            ..devicePixelRatio = captureDevicePixelRatio;
+          addTearDown(tester.view.reset);
+          if (liquid) {
+            KitGlassShader.program.value = await tester.runAsync(
+              () => ui.FragmentProgram.fromAsset(KitGlassShader.asset),
+            );
+          } else {
+            KitGlassShader.debugSupportedOverride = false;
+          }
+          final boundary = GlobalKey();
+          await tester.pumpWidget(
+            RepaintBoundary(
+              key: boundary,
+              child: MaterialApp(
+                debugShowCheckedModeBanner: false,
+                theme: switch ((pack, light)) {
+                  (null, true) => AppTheme.light(),
+                  (null, false) => AppTheme.dark(),
+                  (final id?, true) => AppTheme.light(themePack(id)),
+                  (final id?, false) => AppTheme.dark(themePack(id)),
+                },
+                home: KitEffectsScope(
+                  effects: KitEffects.defaults,
+                  child: _Shell(pinned: state == 'rest'),
+                ),
               ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
-        await then(tester);
-        await writePng('$_out/$name.png', await capturePng(tester, boundary));
-      });
+          );
+          await tester.pumpAndSettle();
+          await then(tester);
+          await writePng('$_out/$name.png', await capturePng(tester, boundary));
+        });
+      }
     }
   }
 }
