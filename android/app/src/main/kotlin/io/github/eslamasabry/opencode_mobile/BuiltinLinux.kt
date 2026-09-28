@@ -2,6 +2,7 @@ package io.github.eslamasabry.opencode_mobile
 
 import android.content.Context
 import android.os.Build
+import android.os.SystemClock
 import android.system.Os
 import android.system.OsConstants
 import android.system.ErrnoException
@@ -246,7 +247,10 @@ class BuiltinLinux(private val context: Context) {
      * program a script leaves running in the background dies with that
      * script's proot (`--kill-on-exit`).
      */
-    private class Service(val process: Process, val port: Int?, val notice: String?)
+    private class Service(val process: Process, val port: Int?, val notice: String?) {
+        /** When this run began, on the clock that keeps counting in deep sleep. */
+        val startedAt: Long = SystemClock.elapsedRealtime()
+    }
 
     private val services = LinkedHashMap<String, Service>()
 
@@ -352,6 +356,15 @@ class BuiltinLinux(private val context: Context) {
     val serverRunning: Boolean get() = serviceRunning(SERVER)
 
     val port: Int? get() = servicePort(SERVER)
+
+    /**
+     * How long the tracked OpenCode process has run, or null when none runs.
+     * The app tells a server that is still booting from one that stopped
+     * answering (stale) by this age, never by guessing from the outside.
+     */
+    val serverUptimeMs: Long?
+        @Synchronized get() = services[SERVER]?.takeIf { it.process.isAlive }
+            ?.let { SystemClock.elapsedRealtime() - it.startedAt }
 
     @Synchronized
     fun serviceRunning(name: String): Boolean = services[name]?.process?.isAlive == true

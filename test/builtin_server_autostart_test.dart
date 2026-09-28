@@ -39,11 +39,15 @@ class _RefusedConnection extends ConnectionController {
   int connectCalls = 0;
   final log = <String>[];
 
+  /// Runs as a connect begins (a server that dies right after it answered).
+  void Function()? beforeConnect;
+
   @override
   Future<void> connect(
     ServerProfile profile, {
     bool redetectOnFailure = true,
   }) async {
+    beforeConnect?.call();
     connectCalls++;
     log.add('connect');
     lastError = 'Health check failed: connection refused';
@@ -57,6 +61,10 @@ class _FakeLinux extends BuiltinLinux {
   final List<String> events;
   bool serverRunning = false;
   bool serverDies = false;
+
+  /// The running process holds the port but rejects our password (it was
+  /// started with another one): only a fresh start answers again.
+  bool rejectsPassword = false;
   int starts = 0;
   int generation = 0;
   bool wanted = true;
@@ -109,6 +117,7 @@ class _FakeLinux extends BuiltinLinux {
     starts++;
     events.add('start');
     serverRunning = !serverDies;
+    rejectsPassword = false;
   }
 }
 
@@ -132,9 +141,11 @@ void main() {
     connection = _RefusedConnection(store);
     linux = _FakeLinux(connection.log);
     serverProbe = ({required baseUrl, username, password}) async =>
-        linux.serverRunning
-        ? const ServerProbeResult.success('1.18.29')
-        : const ServerProbeResult.failure('refused');
+        !linux.serverRunning
+        ? const ServerProbeResult.failure('refused')
+        : linux.rejectsPassword
+        ? const ServerProbeResult.failure('rejected', needsPassword: true)
+        : const ServerProbeResult.success('1.18.29');
   });
 
   tearDown(() => serverProbe = probeServerConnection);
@@ -179,7 +190,12 @@ void main() {
       'connects; Start and connect on the card starts it again', (
     tester,
   ) async {
+    // It answered the start, then stopped before the connect.
+    connection.beforeConnect = () => linux.serverRunning = false;
     await mount(tester);
+    await settle(tester);
+    // The next status read (the healing owner's 5 s poll) sees it stopped.
+    await tester.pump(const Duration(seconds: 6));
     await settle(tester);
 
     expect(connection.log, ['start', 'connect']);
@@ -191,6 +207,7 @@ void main() {
     expect(linux.starts, 1);
     expect(connection.connectCalls, 1);
 
+    connection.beforeConnect = null;
     await tester.tap(find.byKey(const ValueKey('saved-server-start-phone')));
     await settle(tester);
     expect(connection.log, ['start', 'connect', 'start', 'connect']);
@@ -334,6 +351,41 @@ void main() {
     linux.statusGate!.complete();
     await settle(tester);
     expect(linux.starts, 1);
+    await unmount(tester);
+  });
+
+  testWidgets('a running in-app server whose first connect failed is not '
+      'called stopped, and is connected again while it answers (QA-03)', (
+    tester,
+  ) async {
+    // After a relaunch on a busy phone: the server runs and answers its
+    // health check, but the first connect timed out.
+    linux.serverRunning = true;
+    await mount(tester);
+    await settle(tester);
+    expect(connection.connectCalls, 1);
+    expect(find.text('OpenCode inside the app is stopped'), findsNothing);
+    expect(find.text("OpenCode on this phone isn't answering"), findsWidgets);
+
+    // The healing owner's foreground health poll reconnects after a
+    // short back-off instead of leaving the page for good.
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    await settle(tester);
+    expect(connection.connectCalls, greaterThanOrEqualTo(2));
+    expect(linux.starts, 0, reason: 'a server that answers is not restarted');
+    await unmount(tester);
+  });
+
+  testWidgets('a running server that rejects our password is replaced at '
+      'launch, by the app\'s own start (QA-03)', (tester) async {
+    linux.serverRunning = true;
+    linux.rejectsPassword = true;
+    await mount(tester);
+    await settle(tester);
+    expect(linux.starts, 1);
+    expect(connection.log, ['start', 'connect']);
     await unmount(tester);
   });
 }

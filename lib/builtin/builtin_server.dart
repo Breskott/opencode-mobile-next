@@ -327,6 +327,24 @@ class BuiltinServerStarter extends ChangeNotifier {
     _notify();
   }
 
+  /// [observeInstalled] plus whether the app's own OpenCode process runs.
+  void observeStatus(BuiltinLinuxStatus status) {
+    if (_installed == status.installed && _running == status.serverRunning) {
+      return;
+    }
+    _installed = status.installed;
+    _running = status.serverRunning;
+    _notify();
+  }
+
+  bool? _running;
+
+  /// Synchronous: the last status read said the in-app OpenCode process
+  /// runs. A page uses it to say "isn't answering" rather than "stopped"
+  /// when a connect failed while the process is alive.
+  bool runningFor(ServerProfile? profile) =>
+      _running == true && recognises(profile);
+
   /// A later authenticated probe completed the same automatic start after its
   /// initial timeout. Clear only that profile's failure and publish readiness
   /// once, so consumers reconnect without retaining a stale failure card.
@@ -410,6 +428,7 @@ class BuiltinServerStarter extends ChangeNotifier {
     _starting = false;
     if (failure == null) {
       _installed = true;
+      _running = true;
       _readyCount++;
       if (!automatic) {
         _manualReadyCount++;
@@ -428,6 +447,7 @@ class BuiltinServerStarter extends ChangeNotifier {
     } else {
       _failure = failure;
       _failedProfileID = profile.id;
+      if (failure.problem == BuiltinStartProblem.exited) _running = false;
     }
     _notify();
     return failure;

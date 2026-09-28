@@ -1,0 +1,162 @@
+CONNECTED after 25.179314462 s; force-stopped
+09-28 16:29:32.406  2121  2121 I flutter : OCTRACE mark app.main at=0.0ms
+09-28 16:29:32.571  2121  2121 I flutter : OCTRACE mark app.first_frame at=181ms
+09-28 16:29:33.794  2121  2121 I flutter : OCTRACE 1219ms app.bootstrap
+09-28 16:29:34.156  2121  2121 I flutter : OCTRACE mark app.shell_frame at=1766ms
+09-28 16:29:34.172  2121  2121 I flutter : OCTRACE 33ms route /
+09-28 16:29:34.273  2121  2121 I flutter : OCTRACE mark app.lastExit at=1883ms kind=none server=true team=false
+09-28 16:29:34.405  2121  2121 I flutter : OCTRACE 200ms linux.cancelServerRecovery
+09-28 16:29:34.553  2121  2121 I flutter : OCTRACE 132ms linux.status
+09-28 16:29:35.542  2121  2121 I flutter : OCTRACE 831ms linux.run label=write-password
+09-28 16:29:35.663  2121  2121 I flutter : OCTRACE 82ms linux.restartServer
+09-28 16:29:35.684  2121  2121 I flutter : OCTRACE 5.0ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:29:37.746  2121  2121 I flutter : OCTRACE 3.1ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:29:39.803  2121  2121 I flutter : OCTRACE 9.7ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:29:39.995  2121  2121 I flutter : OCTRACE 74ms linux.status
+09-28 16:29:42.090  2121  2121 I flutter : OCTRACE 26ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:29:44.176  2121  2121 I flutter : OCTRACE 4.4ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:29:46.285  2121  2121 I flutter : OCTRACE 37ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:29:48.342  2121  2121 I flutter : OCTRACE 15ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:29:50.466  2121  2121 I flutter : OCTRACE 6.1ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:29:52.492  2121  2121 I flutter : OCTRACE 0.8ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:29:54.659  2121  2121 I flutter : OCTRACE 0.2ms linux.confirmServerRecovery
+09-28 16:29:54.739  2121  2121 I flutter : OCTRACE 37ms connect.health parent=connect
+09-28 16:29:54.792  2121  2121 I flutter : OCTRACE 53ms http probe GET /api/health status=200 bytes=16
+09-28 16:29:55.393  2121  2121 I flutter : OCTRACE 641ms http oc1 GET /project/current status=200 bytes=134 parent=connect.saved_location
+09-28 16:29:55.404  2121  2121 I flutter : OCTRACE 654ms connect.saved_location parent=connect
+09-28 16:29:55.484  2121  2121 I flutter : OCTRACE 67ms http oc1 GET /event status=200 parent=location.select
+09-28 16:29:55.491  2121  2121 I flutter : OCTRACE 74ms http oc1 GET /global/event status=200 parent=location.select
+09-28 16:29:55.495  2121  2121 I flutter : OCTRACE 57ms http oc1 GET /session/status status=200 bytes=2 parent=sessions.refresh
+09-28 16:29:55.506  2121  2121 I flutter : OCTRACE mark events.connected at=23116ms parent=location.select
+09-28 16:29:55.513  2121  2121 I flutter : OCTRACE mark app.first_connected at=23123ms parent=location.select
+09-28 16:29:55.519  2121  2121 I flutter : OCTRACE 104ms events.first api=oc1 attempt=0 parent=location.select
+09-28 16:29:55.524  2121  2121 I flutter : OCTRACE 109ms events.first.global api=oc1 attempt=0 parent=location.select
+09-28 16:29:55.548  2121  2121 I flutter : OCTRACE 110ms http oc1 GET /session status=200 bytes=462 parent=sessions.refresh
+09-28 16:29:55.555  2121  2121 I flutter : OCTRACE 116ms http oc1 GET /permission status=200 bytes=2 parent=permissions.refresh
+09-28 16:29:55.566  2121  2121 I flutter : OCTRACE 131ms sessions.refresh parent=location.select
+09-28 16:29:55.576  2121  2121 I flutter : OCTRACE 138ms http oc1 GET /question status=200 bytes=2 parent=questions.refresh
+09-28 16:29:55.582  2121  2121 I flutter : OCTRACE 77ms http oc1 GET /project status=200 bytes=136
+09-28 16:29:55.624  2121  2121 I flutter : OCTRACE 134ms http oc1 GET /experimental/session status=200 bytes=503
+09-28 16:29:55.648  2121  2121 I flutter : OCTRACE 100ms http oc1 GET /permission status=200 bytes=2 parent=permissions.refresh
+09-28 16:29:55.655  2121  2121 I flutter : OCTRACE 107ms http oc1 GET /question status=200 bytes=2 parent=questions.refresh
+09-28 16:29:55.717  2121  2121 I flutter : OCTRACE 87ms http oc1 GET /session/status status=200 bytes=2
+CONNECTED after 9.797270789 s; force-stopped
+09-28 16:29:58.601  3213  3213 I flutter : OCTRACE mark app.main at=0.0ms
+09-28 16:29:58.613  3213  3213 I flutter : OCTRACE mark app.first_frame at=12ms
+09-28 16:29:59.078  3213  3213 I flutter : OCTRACE 463ms app.bootstrap
+09-28 16:29:59.593  3213  3213 I flutter : OCTRACE mark app.shell_frame at=992ms
+09-28 16:29:59.645  3213  3213 I flutter : OCTRACE 63ms route /
+09-28 16:29:59.744  3213  3213 I flutter : OCTRACE mark app.lastExit at=1143ms kind=forceStop reason=10 subReason=21 importance=100 at=2026-09-28T16:29:55.855 server=true team=false
+09-28 16:29:59.962  3213  3213 I flutter : OCTRACE 260ms linux.cancelServerRecovery
+09-28 16:30:00.112  3213  3213 I flutter : OCTRACE 80ms linux.status
+09-28 16:30:00.220  3213  3213 I flutter : OCTRACE 0.3ms linux.cancelServerRecovery
+09-28 16:30:00.258  3213  3213 I flutter : OCTRACE 8.1ms linux.cancelServerRecovery
+09-28 16:30:00.419  3213  3213 I flutter : OCTRACE 170ms linux.run label=write-password
+09-28 16:30:00.452  3213  3213 I flutter : OCTRACE 25ms linux.startServer
+09-28 16:30:00.459  3213  3213 I flutter : OCTRACE 1.8ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:30:02.493  3213  3213 I flutter : OCTRACE 3.3ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:30:04.545  3213  3213 I flutter : OCTRACE 4.0ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:30:06.719  3213  3213 I flutter : OCTRACE 37ms connect.health parent=connect
+09-28 16:30:07.480  3213  3213 I flutter : OCTRACE 736ms http oc1 GET /project/current status=200 bytes=134 parent=connect.saved_location
+09-28 16:30:07.504  3213  3213 I flutter : OCTRACE 769ms connect.saved_location parent=connect
+09-28 16:30:07.575  3213  3213 I flutter : OCTRACE mark events.connected at=8974ms parent=location.select
+09-28 16:30:07.581  3213  3213 I flutter : OCTRACE mark app.first_connected at=8980ms parent=location.select
+09-28 16:30:07.587  3213  3213 I flutter : OCTRACE 68ms events.first api=oc1 attempt=0 parent=location.select
+09-28 16:30:07.603  3213  3213 I flutter : OCTRACE 81ms http oc1 GET /global/event status=200 parent=location.select
+09-28 16:30:07.609  3213  3213 I flutter : OCTRACE 84ms http oc1 GET /session/status status=200 bytes=2 parent=sessions.refresh
+09-28 16:30:07.614  3213  3213 I flutter : OCTRACE 95ms events.first.global api=oc1 attempt=0 parent=location.select
+09-28 16:30:07.625  3213  3213 I flutter : OCTRACE 100ms http oc1 GET /session status=200 bytes=462 parent=sessions.refresh
+09-28 16:30:07.630  3213  3213 I flutter : OCTRACE 107ms sessions.refresh parent=location.select
+09-28 16:30:07.639  3213  3213 I flutter : OCTRACE 114ms http oc1 GET /permission status=200 bytes=2 parent=permissions.refresh
+09-28 16:30:07.657  3213  3213 I flutter : OCTRACE 132ms http oc1 GET /question status=200 bytes=2 parent=questions.refresh
+09-28 16:30:07.671  3213  3213 I flutter : OCTRACE 128ms http oc1 GET /project status=200 bytes=136
+09-28 16:30:07.680  3213  3213 I flutter : OCTRACE 71ms http oc1 GET /question status=200 bytes=2 parent=questions.refresh
+09-28 16:30:07.708  3213  3213 I flutter : OCTRACE 100ms http oc1 GET /permission status=200 bytes=2 parent=permissions.refresh
+09-28 16:30:07.727  3213  3213 I flutter : OCTRACE 50ms http oc1 GET /experimental/workspace status=200 bytes=2
+CONNECTED after 9.286310459 s; force-stopped
+09-28 16:30:10.560  3429  3429 I flutter : OCTRACE mark app.main at=0.0ms
+09-28 16:30:10.572  3429  3429 I flutter : OCTRACE mark app.first_frame at=12ms
+09-28 16:30:11.062  3429  3429 I flutter : OCTRACE 489ms app.bootstrap
+09-28 16:30:11.249  3429  3429 I flutter : OCTRACE mark app.shell_frame at=689ms
+09-28 16:30:11.332  3429  3429 I flutter : OCTRACE 96ms route /
+09-28 16:30:11.561  3429  3429 I flutter : OCTRACE mark app.lastExit at=1001ms kind=forceStop reason=10 subReason=21 importance=100 at=2026-09-28T16:30:07.798 server=true team=false
+09-28 16:30:11.938  3429  3429 I flutter : OCTRACE 480ms linux.cancelServerRecovery
+09-28 16:30:12.191  3429  3429 I flutter : OCTRACE 150ms linux.run label=write-password
+09-28 16:30:12.233  3429  3429 I flutter : OCTRACE 28ms linux.restartServer
+09-28 16:30:12.257  3429  3429 I flutter : OCTRACE 1.6ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:30:14.286  3429  3429 I flutter : OCTRACE 1.7ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:30:16.343  3429  3429 I flutter : OCTRACE 1.1ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:30:18.424  3429  3429 I flutter : OCTRACE 0.3ms linux.confirmServerRecovery
+09-28 16:30:18.558  3429  3429 I flutter : OCTRACE 40ms connect.health parent=connect
+09-28 16:30:18.624  3429  3429 I flutter : OCTRACE 52ms http probe GET /global/health status=200 bytes=36
+09-28 16:30:18.991  3429  3429 I flutter : OCTRACE 428ms http oc1 GET /project/current status=200 bytes=134 parent=connect.saved_location
+09-28 16:30:19.003  3429  3429 I flutter : OCTRACE 440ms connect.saved_location parent=connect
+09-28 16:30:19.077  3429  3429 I flutter : OCTRACE mark events.connected at=8517ms parent=location.select
+09-28 16:30:19.082  3429  3429 I flutter : OCTRACE mark app.first_connected at=8522ms parent=location.select
+09-28 16:30:19.089  3429  3429 I flutter : OCTRACE 70ms events.first api=oc1 attempt=0 parent=location.select
+09-28 16:30:19.096  3429  3429 I flutter : OCTRACE 76ms http oc1 GET /global/event status=200 parent=location.select
+09-28 16:30:19.103  3429  3429 I flutter : OCTRACE 84ms events.first.global api=oc1 attempt=0 parent=location.select
+09-28 16:30:19.115  3429  3429 I flutter : OCTRACE 91ms http oc1 GET /session/status status=200 bytes=2 parent=sessions.refresh
+09-28 16:30:19.133  3429  3429 I flutter : OCTRACE 109ms http oc1 GET /session status=200 bytes=462 parent=sessions.refresh
+09-28 16:30:19.139  3429  3429 I flutter : OCTRACE 116ms sessions.refresh parent=location.select
+09-28 16:30:19.147  3429  3429 I flutter : OCTRACE 123ms http oc1 GET /permission status=200 bytes=2 parent=permissions.refresh
+09-28 16:30:19.163  3429  3429 I flutter : OCTRACE 139ms http oc1 GET /question status=200 bytes=2 parent=questions.refresh
+09-28 16:30:19.173  3429  3429 I flutter : OCTRACE 123ms http oc1 GET /project status=200 bytes=136
+09-28 16:30:19.181  3429  3429 I flutter : OCTRACE 71ms http oc1 GET /question status=200 bytes=2 parent=questions.refresh
+09-28 16:30:19.206  3429  3429 I flutter : OCTRACE 96ms http oc1 GET /permission status=200 bytes=2 parent=permissions.refresh
+CONNECTED after 9.660962437 s; force-stopped
+09-28 16:30:22.059  3630  3630 I flutter : OCTRACE mark app.main at=0.0ms
+09-28 16:30:22.071  3630  3630 I flutter : OCTRACE mark app.first_frame at=12ms
+09-28 16:30:22.512  3630  3630 I flutter : OCTRACE 440ms app.bootstrap
+09-28 16:30:23.028  3630  3630 I flutter : OCTRACE mark app.shell_frame at=969ms
+09-28 16:30:23.098  3630  3630 I flutter : OCTRACE 90ms route /
+09-28 16:30:23.144  3630  3630 I flutter : OCTRACE mark app.lastExit at=1086ms kind=forceStop reason=10 subReason=21 importance=100 at=2026-09-28T16:30:19.282 server=true team=false
+09-28 16:30:23.259  3630  3630 I flutter : OCTRACE 149ms linux.cancelServerRecovery
+09-28 16:30:23.391  3630  3630 I flutter : OCTRACE 101ms linux.status
+09-28 16:30:23.491  3630  3630 I flutter : OCTRACE 0.2ms linux.cancelServerRecovery
+09-28 16:30:23.623  3630  3630 I flutter : OCTRACE 2.7ms linux.cancelServerRecovery
+09-28 16:30:23.773  3630  3630 I flutter : OCTRACE 153ms linux.run label=write-password
+09-28 16:30:23.876  3630  3630 I flutter : OCTRACE 84ms linux.startServer
+09-28 16:30:23.896  3630  3630 I flutter : OCTRACE 2.2ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:30:25.925  3630  3630 I flutter : OCTRACE 11ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:30:27.959  3630  3630 I flutter : OCTRACE 3.3ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:30:30.078  3630  3630 I flutter : OCTRACE 56ms http probe GET /api/health status=200 bytes=16
+09-28 16:30:30.169  3630  3630 I flutter : OCTRACE 50ms http oc1 GET /global/health status=200 bytes=36 parent=connect.health
+09-28 16:30:30.174  3630  3630 I flutter : OCTRACE 56ms connect.health parent=connect
+09-28 16:30:30.771  3630  3630 I flutter : OCTRACE 583ms http oc1 GET /project/current status=200 bytes=134 parent=connect.saved_location
+09-28 16:30:30.793  3630  3630 I flutter : OCTRACE 606ms connect.saved_location parent=connect
+09-28 16:30:30.870  3630  3630 I flutter : OCTRACE 64ms http oc1 GET /event status=200 parent=location.select
+09-28 16:30:30.879  3630  3630 I flutter : OCTRACE mark events.connected at=8820ms parent=location.select
+09-28 16:30:30.887  3630  3630 I flutter : OCTRACE mark app.first_connected at=8828ms parent=location.select
+09-28 16:30:30.892  3630  3630 I flutter : OCTRACE 88ms events.first api=oc1 attempt=0 parent=location.select
+09-28 16:30:30.898  3630  3630 I flutter : OCTRACE 92ms http oc1 GET /global/event status=200 parent=location.select
+09-28 16:30:30.906  3630  3630 I flutter : OCTRACE 97ms http oc1 GET /session/status status=200 bytes=2 parent=sessions.refresh
+09-28 16:30:30.914  3630  3630 I flutter : OCTRACE 110ms events.first.global api=oc1 attempt=0 parent=location.select
+09-28 16:30:30.921  3630  3630 I flutter : OCTRACE 113ms http oc1 GET /session status=200 bytes=462 parent=sessions.refresh
+09-28 16:30:30.929  3630  3630 I flutter : OCTRACE 123ms sessions.refresh parent=location.select
+09-28 16:30:30.937  3630  3630 I flutter : OCTRACE 128ms http oc1 GET /permission status=200 bytes=2 parent=permissions.refresh
+09-28 16:30:30.942  3630  3630 I flutter : OCTRACE 133ms http oc1 GET /question status=200 bytes=2 parent=questions.refresh
+09-28 16:30:30.949  3630  3630 I flutter : OCTRACE 109ms http oc1 GET /project status=200 bytes=136
+09-28 16:30:30.977  3630  3630 I flutter : OCTRACE 55ms http oc1 GET /question status=200 bytes=2 parent=questions.refresh
+CONNECTED after 9.113837043 s; force-stopped
+09-28 16:30:33.848  3836  3836 I flutter : OCTRACE mark app.main at=0.0ms
+09-28 16:30:33.859  3836  3836 I flutter : OCTRACE mark app.first_frame at=11ms
+09-28 16:30:34.328  3836  3836 I flutter : OCTRACE 468ms app.bootstrap
+09-28 16:30:34.486  3836  3836 I flutter : OCTRACE mark app.shell_frame at=638ms
+09-28 16:30:34.494  3836  3836 I flutter : OCTRACE 12ms route /
+09-28 16:30:34.581  3836  3836 I flutter : OCTRACE mark app.lastExit at=733ms kind=forceStop reason=10 subReason=21 importance=100 at=2026-09-28T16:30:31.094 server=true team=false
+09-28 16:30:34.719  3836  3836 I flutter : OCTRACE 210ms linux.cancelServerRecovery
+09-28 16:30:35.335  3836  3836 I flutter : OCTRACE 233ms linux.run label=write-password
+09-28 16:30:35.406  3836  3836 I flutter : OCTRACE 32ms linux.restartServer
+09-28 16:30:35.419  3836  3836 I flutter : OCTRACE 5.9ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:30:37.442  3836  3836 I flutter : OCTRACE 4.1ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:30:39.521  3836  3836 I flutter : OCTRACE 14ms http probe GET /api/health cause=connectionError outcome=error
+09-28 16:30:41.670  3836  3836 I flutter : OCTRACE 0.4ms linux.confirmServerRecovery
+09-28 16:30:41.767  3836  3836 I flutter : OCTRACE 42ms connect.health parent=connect
+09-28 16:30:42.232  3836  3836 I flutter : OCTRACE 439ms http oc1 GET /project/current status=200 bytes=134 parent=connect.saved_location
+09-28 16:30:42.242  3836  3836 I flutter : OCTRACE 469ms connect.saved_location parent=connect
+09-28 16:30:42.318  3836  3836 I flutter : OCTRACE mark events.connected at=8471ms parent=location.select
+09-28 16:30:42.325  3836  3836 I flutter : OCTRACE mark app.first_connected at=8478ms parent=location.select
+09-28 16:30:42.332  3836  3836 I flutter : OCTRACE 69ms events.first api=oc1 attempt=0 parent=location.select
+09-28 16:30:42.338  3836  3836 I flutter : OCTRACE 74ms events.first.global api=oc1 attempt=0 parent=location.select
+09-28 16:30:42.366  3836  3836 I flutter : OCTRACE 97ms http oc1 GET /session status=200 bytes=462 parent=sessions.refresh

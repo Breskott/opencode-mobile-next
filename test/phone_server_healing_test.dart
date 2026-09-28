@@ -51,7 +51,18 @@ class _Connection extends ConnectionController {
   Future<void> connect(
     ServerProfile profile, {
     bool redetectOnFailure = true,
-  }) async => connections.add(profile.id);
+  }) async {
+    connections.add(profile.id);
+    // A busy server right after boot: the connect times out once.
+    if (refuseConnects > 0) {
+      refuseConnects--;
+      lastError = 'Cannot reach the server: receive timeout';
+    } else {
+      lastError = null;
+    }
+  }
+
+  int refuseConnects = 0;
 
   @override
   Future<bool> recordServerAct({
@@ -77,6 +88,15 @@ class _Linux extends BuiltinLinux {
   int restarts = 0;
   int starts = 0;
 
+  /// The tracked process's age as native code reports it.
+  Duration? uptime;
+
+  /// The running process rejects our password.
+  bool rejects = false;
+
+  /// A fresh start answers (false: it runs but stays silent).
+  bool answersAfterStart = true;
+
   @override
   Future<BuiltinLinuxStatus> status() async => BuiltinLinuxStatus(
     installed: true,
@@ -84,6 +104,7 @@ class _Linux extends BuiltinLinux {
     serverRunning: running,
     serverRestartWanted: wanted,
     serverRecoveryGeneration: generation,
+    serverUptime: running ? uptime : null,
   );
 
   @override
@@ -110,6 +131,9 @@ class _Linux extends BuiltinLinux {
     starts++;
     wanted = true;
     running = !dies;
+    healthy = answersAfterStart;
+    rejects = false;
+    uptime = Duration.zero;
   }
 
   @override
@@ -155,10 +179,14 @@ void main() {
       readyTimeout: Duration.zero,
       pollInterval: Duration.zero,
     );
-    serverProbe = ({required baseUrl, username, password}) async =>
-        linux.running && linux.healthy
-        ? const ServerProbeResult.success('1')
-        : const ServerProbeResult.failure('Unavailable');
+    serverProbe = ({required baseUrl, username, password}) async {
+      if (linux.running && linux.rejects) {
+        return const ServerProbeResult.failure('Rejected', needsPassword: true);
+      }
+      return linux.running && linux.healthy
+          ? const ServerProbeResult.success('1')
+          : const ServerProbeResult.failure('Unavailable');
+    };
   });
 
   tearDown(() {
@@ -415,7 +443,7 @@ void main() {
 
     test('a timeout is not tried again on its own', () async {
       await exhaust();
-      linux.healthy = false;
+      linux.answersAfterStart = false;
       final owner = bind()..setForeground(true);
       await owner.startForLaunch(phone);
       expect(linux.starts, 1);
@@ -428,5 +456,114 @@ void main() {
       await owner.startForLaunch(phone);
       expect(linux.restarts + linux.starts, 2);
     });
+  });
+
+  group('a running server that does not answer (QA-03)', () {
+    setUp(() {
+      PhoneServerHealing.launchPollInterval = Duration.zero;
+      PhoneServerHealing.reconnectBackoff = Duration.zero;
+    });
+    tearDown(() {
+      PhoneServerHealing.launchPollInterval = const Duration(seconds: 2);
+      PhoneServerHealing.reconnectBackoff = const Duration(seconds: 10);
+      PhoneServerHealing.staleAfter = const Duration(seconds: 90);
+    });
+
+    test('one that rejects our password is replaced at launch', () async {
+      linux
+        ..running = true
+        ..rejects = true
+        ..uptime = const Duration(seconds: 5);
+      final owner = bind()..setForeground(true);
+      await owner.startForLaunch(phone);
+      expect(linux.starts, 1);
+      expect(connection.connections, [phone.id]);
+    });
+
+    test(
+      'one older than the stale age that stays silent is replaced',
+      () async {
+        linux
+          ..running = true
+          ..healthy = false
+          ..uptime = const Duration(minutes: 5);
+        final owner = bind()..setForeground(true);
+        await owner.startForLaunch(phone);
+        expect(linux.starts, 1);
+        expect(connection.connections, [phone.id]);
+      },
+    );
+
+    test(
+      'a young one that is still booting is waited for, not killed',
+      () async {
+        PhoneServerHealing.staleAfter = const Duration(minutes: 10);
+        linux
+          ..running = true
+          ..healthy = false
+          ..uptime = const Duration(seconds: 3);
+        final owner = bind()..setForeground(true);
+        var polls = 0;
+        serverProbe = ({required baseUrl, username, password}) async {
+          // It starts answering on the third question.
+          if (++polls >= 3) linux.healthy = true;
+          return linux.healthy
+              ? const ServerProbeResult.success('1')
+              : const ServerProbeResult.failure('Unavailable');
+        };
+        await owner.startForLaunch(phone);
+        expect(linux.starts + linux.restarts, 0);
+        expect(connection.connections, [phone.id]);
+      },
+    );
+
+    test(
+      'a young one that never answers is replaced once it is stale',
+      () async {
+        PhoneServerHealing.staleAfter = const Duration(milliseconds: 30);
+        linux
+          ..running = true
+          ..healthy = false
+          ..uptime = Duration.zero;
+        final owner = bind()..setForeground(true);
+        await owner.startForLaunch(phone);
+        expect(linux.starts, 1);
+      },
+    );
+
+    test('a healthy server whose connect failed is connected again by the '
+        'health poll, once per back-off', () async {
+      PhoneServerHealing.reconnectBackoff = const Duration(milliseconds: 200);
+      linux.running = true;
+      connection.refuseConnects = 1;
+      final owner = bind()..setForeground(true);
+      await owner.startForLaunch(phone);
+      await owner.check(phone);
+      expect(connection.connections, [phone.id]);
+      expect(linux.starts + linux.restarts, 0);
+
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      await owner.check(phone);
+      expect(connection.connections, [phone.id, phone.id]);
+      // Connected now: the next health poll does not connect again.
+      await owner.check(phone);
+      expect(connection.connections, [phone.id, phone.id]);
+    });
+
+    test(
+      'the back-off holds automatic reconnects; Try again does not wait',
+      () async {
+        PhoneServerHealing.reconnectBackoff = const Duration(hours: 1);
+        linux.running = true;
+        connection.refuseConnects = 5;
+        final owner = bind()..setForeground(true);
+        await owner.startForLaunch(phone);
+        await owner.check(phone);
+        await owner.connectIfNeeded(phone);
+        expect(connection.connections, hasLength(1));
+        await owner.startForLaunch(phone, retry: true);
+        expect(connection.connections, hasLength(2));
+      },
+    );
   });
 }
