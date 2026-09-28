@@ -93,7 +93,7 @@ void main() {
     expect(
       find.ancestor(
         of: find.byType(BackdropFilter),
-        matching: find.byType(ClipRRect),
+        matching: find.byWidgetPredicate((w) => w is ClipRRect),
       ),
       findsOneWidget,
     );

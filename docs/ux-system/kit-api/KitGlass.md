@@ -100,6 +100,7 @@ None — a surface around its child; it holds no data. Looks (`KitGlassLook`), u
 ## Motion rules
 
 - Only the drawn shape moves: `GlassGeometry` (press, flow) and the pair's own layout of where each piece is painted. The clip, the fill and shadow (`_GlassDecoration`, a `BoxDecoration` painted along the drawn shape), the rim and the shader read it and **repaint**; nothing rebuilds, the content is never scaled (MOT-2: no scale transition; G21 bans `Transform.scale`), and no list relays out (MOT-5). The lens is laid out alone (`CustomSingleChildLayout`, a relayout boundary).
+- Taps follow the layout, never the drawn shape (`slice-glass-flow`, 2026-09-28): the clip (`_GlassClip`, a `ClipRRect` whose render object hit-tests its layout box) clips **paint** to the moving shape, but hit testing uses the box the content was just laid out in. A control that appears at the edge of glass still flowing towards it (the composer's delivery choice, a confirm row) takes the first tap, before the shape catches up. At rest the drawn shape and the box are the same, so nothing changes there; a pressed swell draws past the box but still takes taps only inside it.
 - Springs come only from `KitMotion` (MOT-1). The lens's springs are stepped on one ticker so a dragging finger moves their targets every frame without restarting them.
 - Reduced motion (`KitMotion.reduced`: the system's remove animations or Animations: Off): every state is instant — no swell, no flow, the pair joins and parts at once, the lens jumps and follows a drag directly without lifting; no ticker runs (MOT-7).
 - Glass off and the accessibility settings: solid glass never moves (no press, no flow); the pair still joins, as one solid outline with its hairline.
@@ -122,9 +123,9 @@ None — a surface around its child; it holds no data. Looks (`KitGlassLook`), u
 - A drag is an extra for touch; every destination keeps its own tap, focus and semantics (the drag detector is excluded from semantics). The joined search keeps its label and its place in reading order; a screen reader is told where it moved.
 - Screen reader, high contrast and remove animations make glass solid and still (LOOK-29).
 
-## Call-site change (chat lane, not made here)
+## Call-site change (made in `slice-glass-flow`)
 
-The composer is `lib/ui/kit/chat/kit_composer.dart` (chat lane P3.6). To have it flow as the sample shows, its one `KitGlass` gains `flow: true`:
+The composer is `lib/ui/kit/chat/kit_composer.dart` (chat lane P3.6). It first gained `flow: true` in the chat lane and was reverted there because flow clipped hit testing to the growing shape (a delivery choice or /unshare confirm that just appeared missed taps). With hit testing on the layout box, the one `KitGlass` has `flow: true` again:
 
 ```dart
 child: KitGlass(
@@ -140,7 +141,7 @@ Nothing else changes: the composer's layout and `KitBottomInset` height still up
 
 ## Tests
 
-- `test/kit/kit_glass_test.dart` (behaviour): press swell and spring back, reduced motion and glass off still; flow from the old size on the bottom edge; the pair joining, tappable where it now is, instant when reduced, solid outline when off; the shell joining on scroll and parting at the top and on a new tab; the lens stretching and settling, the drag lift and select on the dock and the rail, reduced-motion drag; a finger lifted after the glass (or the pair) left the screen is ignored; the frame budget.
+- `test/kit/kit_glass_test.dart` (behaviour): press swell and spring back, reduced motion and glass off still; flow from the old size on the bottom edge; a control that just appeared at the edge takes the first tap while the glass still flows, and under reduced motion the control and the glass are there in one pump; the pair joining, tappable where it now is, instant when reduced, solid outline when off; the shell joining on scroll and parting at the top and on a new tab; the lens stretching and settling, the drag lift and select on the dock and the rail, reduced-motion drag; a finger lifted after the glass (or the pair) left the screen is ignored; the frame budget.
 - `test/kit_glass_test.dart` (looks, unchanged), `test/glass_surface_test.dart` (contrast on every theme pack, unchanged), `test/kit/kit_nav_test.dart`, `test/kit/kit_top_bar_test.dart` (the shell's controls are one dim pair).
 
 ## Galleries
