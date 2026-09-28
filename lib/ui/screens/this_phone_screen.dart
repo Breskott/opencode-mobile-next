@@ -28,6 +28,7 @@ import '../widgets/phone_server_card.dart';
 import '../widgets/phone_server_consents.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/team_phone_onboarding.dart' show teamPhoneRuntime;
+import '../widgets/termux_migration_entry.dart';
 import '../widgets/termux_phone_tools.dart';
 import 'keep_running_screen.dart';
 import 'local_agent_screen.dart';
@@ -869,9 +870,14 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
               .firstOrNull;
     Widget icon(IconData data) => KitRow.icon(context, data);
 
+    final migrateFrom = inApp ? null : _host.profile;
     return KitRowGroup(
       key: const ValueKey('this-phone-list'),
       children: [
+        // A Termux user's way to the in-app server leads the list: it is
+        // the one change this page cannot do in place (owner, 2026-09-28).
+        if (offersTermuxMigration(migrateFrom))
+          TermuxMigrationRow(profile: migrateFrom!),
         if (hasEngine && !halfSwitched && upToDate)
           KitRow(
             key: const ValueKey('this-phone-up-to-date'),

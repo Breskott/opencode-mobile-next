@@ -34,6 +34,7 @@ import '../widgets/team_host_form.dart';
 import '../widgets/local_agent_server_entry.dart';
 import '../widgets/phone_server_card.dart';
 import '../widgets/queued_prompt_move_sheet.dart';
+import '../widgets/termux_migration_entry.dart';
 import '../widgets/termux_running_server_entry.dart';
 import '../widgets/safety_confirms.dart';
 import '../../state/local_server_controls.dart';
@@ -311,7 +312,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     ConnectionController connection, {
     bool dividerAbove = false,
   }) {
-    return TermuxRunningServerEntry(
+    final entry = TermuxRunningServerEntry(
       dividerAbove: dividerAbove,
       profiles: profiles,
       busy: _busy,
@@ -342,6 +343,15 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         existing: existing,
         openCode2: server.flavor == ServerFlavor.v2,
       ),
+    );
+    // Under the Termux server's row, once: the move to the in-app server.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        entry,
+        TermuxMigrationOffer(profiles: profiles, store: connection.store),
+      ],
     );
   }
 

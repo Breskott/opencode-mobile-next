@@ -28121,5 +28121,448 @@
   "chatWatchBackToWorker": "Back to the worker",
   "@chatWatchBackToWorker": {
     "description": "Ended worker session: returns to the worker's page it was opened from"
+  },
+  "migrationTitle": "Move from Termux",
+  "@migrationTitle": {
+    "description": "Moving from Termux to the in-app server: the page title and the This phone row that opens it (its detail says where things go)."
+  },
+  "migrationChecking": "Checking Termux and phone storage…",
+  "@migrationChecking": {
+    "description": "Moving from Termux to the in-app server: the wait while Termux and the phone are checked."
+  },
+  "migrationReviewIntro": "Your projects are copied into OpenCode inside this app. Nothing in Termux is changed or removed.",
+  "@migrationReviewIntro": {
+    "description": "Moving from Termux to the in-app server: the review's opening line."
+  },
+  "migrationGroupMoves": "Copied and ready to use",
+  "@migrationGroupMoves": {
+    "description": "Moving from Termux to the in-app server: label of the group of items that become active files (projects)."
+  },
+  "migrationGroupExports": "Saved privately, not turned on",
+  "@migrationGroupExports": {
+    "description": "Moving from Termux to the in-app server: label of the group of items kept only as private copies."
+  },
+  "migrationGroupNotMoved": "Not moved",
+  "@migrationGroupNotMoved": {
+    "description": "Moving from Termux to the in-app server: label of what the move leaves behind."
+  },
+  "migrationItemProjects": "Projects",
+  "@migrationItemProjects": {
+    "description": "Moving from Termux to the in-app server: item: the project folders in Termux's Ubuntu."
+  },
+  "migrationItemConfig": "MCP and agent settings",
+  "@migrationItemConfig": {
+    "description": "Moving from Termux to the in-app server: item: OpenCode's global config, including MCP servers."
+  },
+  "migrationItemSessions": "Conversation history (backup copy)",
+  "@migrationItemSessions": {
+    "description": "Moving from Termux to the in-app server: item: OpenCode's raw data folder with past conversations; kept only as a backup copy."
+  },
+  "migrationItemGitConfig": "Git settings",
+  "@migrationItemGitConfig": {
+    "description": "Moving from Termux to the in-app server: item: the global Git configuration."
+  },
+  "migrationItemShellFiles": "Shell settings",
+  "@migrationItemShellFiles": {
+    "description": "Moving from Termux to the in-app server: item: the shell start files (.bashrc, .zshrc and the login one)."
+  },
+  "migrationItemAiTeam": "AI Team",
+  "@migrationItemAiTeam": {
+    "description": "Moving from Termux to the in-app server: item: the AI Team's saved state."
+  },
+  "migrationItemProjectsWhat": "Into a new folder on the in-app server. Nothing there is overwritten.",
+  "@migrationItemProjectsWhat": {
+    "description": "Moving from Termux to the in-app server: what copying the projects does."
+  },
+  "migrationItemConfigWhat": "To review before using: commands and paths may only work in Termux.",
+  "@migrationItemConfigWhat": {
+    "description": "Moving from Termux to the in-app server: what the settings copy is."
+  },
+  "migrationItemSessionsWhat": "May contain your sign-ins, and the app doesn't open it. Termux keeps your usable history.",
+  "@migrationItemSessionsWhat": {
+    "description": "Moving from Termux to the in-app server: what the conversation history copy is."
+  },
+  "migrationItemGitConfigWhat": "Your Git name, email and options, to review.",
+  "@migrationItemGitConfigWhat": {
+    "description": "Moving from Termux to the in-app server: what the Git settings copy is."
+  },
+  "migrationItemShellFilesWhat": "Keeps .bashrc, .zshrc and your other shell start files; they never run.",
+  "@migrationItemShellFilesWhat": {
+    "description": "Moving from Termux to the in-app server: what the shell settings copy is."
+  },
+  "migrationItemAiTeamWhat": "The team's saved state. Setup installs its tools again.",
+  "@migrationItemAiTeamWhat": {
+    "description": "Moving from Termux to the in-app server: what the AI Team copy is."
+  },
+  "migrationItemSize": "{size} · {count, plural, =1{1 file} other{{count} files}}",
+  "@migrationItemSize": {
+    "description": "Moving from Termux to the in-app server: an item's measured size and file count, e.g. '1.2 GB · 3,400 files'.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "migrationSizeUnknown": "Size unknown",
+  "@migrationSizeUnknown": {
+    "description": "Moving from Termux to the in-app server: an item Termux could not measure (its size is unknown, never zero)."
+  },
+  "migrationExportsNote": "Private copies stay on this phone inside the in-app Linux. Nothing in them runs or turns on by itself.",
+  "@migrationExportsNote": {
+    "description": "Moving from Termux to the in-app server: note under the private copies group."
+  },
+  "migrationNotMovedSignIn": "Sign-ins to AI providers: sign in again after the move",
+  "@migrationNotMovedSignIn": {
+    "description": "Moving from Termux to the in-app server: not moved: provider sign-ins, when their names are unknown."
+  },
+  "migrationNotMovedSignInNamed": "Sign-ins to {names}: sign in again after the move",
+  "@migrationNotMovedSignInNamed": {
+    "description": "Moving from Termux to the in-app server: not moved: provider sign-ins, named, e.g. 'Anthropic and OpenAI'.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "migrationNotMovedKeys": "SSH keys and saved Git passwords",
+  "@migrationNotMovedKeys": {
+    "description": "Moving from Termux to the in-app server: not moved: SSH keys and Git credentials."
+  },
+  "migrationNotMovedTools": "Installed tools and caches: setup installs them again",
+  "@migrationNotMovedTools": {
+    "description": "Moving from Termux to the in-app server: not moved: toolchains and caches."
+  },
+  "migrationTermuxKept": "Termux stays as it is, and its server keeps working until you remove it",
+  "@migrationTermuxKept": {
+    "description": "Moving from Termux to the in-app server: what is kept: everything in Termux."
+  },
+  "migrationSpaceNeeded": "Needs about {size} of free space while copying.",
+  "@migrationSpaceNeeded": {
+    "description": "Moving from Termux to the in-app server: the space the selected items need while they are copied (a conservative estimate).",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "migrationKeepOpen": "Keep the app open while copying. Android stops it when you leave the app, and it picks up from here when you resume.",
+  "@migrationKeepOpen": {
+    "description": "Moving from Termux to the in-app server: why the app must stay open."
+  },
+  "migrationStart": "Copy to the in-app server",
+  "@migrationStart": {
+    "description": "Moving from Termux to the in-app server: the review's primary action."
+  },
+  "migrationChooseOne": "Choose at least one item to copy.",
+  "@migrationChooseOne": {
+    "description": "Moving from Termux to the in-app server: why the primary is off when nothing is selected."
+  },
+  "migrationPacking": "Preparing your files in Termux…",
+  "@migrationPacking": {
+    "description": "Moving from Termux to the in-app server: stage: Termux packs the item."
+  },
+  "migrationCopying": "Copying files to this app…",
+  "@migrationCopying": {
+    "description": "Moving from Termux to the in-app server: stage: the item is copied into the app."
+  },
+  "migrationUnpacking": "Importing your files…",
+  "@migrationUnpacking": {
+    "description": "Moving from Termux to the in-app server: stage: the copy is imported."
+  },
+  "migrationVerifying": "Checking the copied files…",
+  "@migrationVerifying": {
+    "description": "Moving from Termux to the in-app server: stage: the copy is verified."
+  },
+  "migrationSwitching": "Connecting to the in-app server…",
+  "@migrationSwitching": {
+    "description": "Moving from Termux to the in-app server: stage: the app connects to the in-app server."
+  },
+  "migrationStepConnect": "Connect to the in-app server",
+  "@migrationStepConnect": {
+    "description": "Moving from Termux to the in-app server: the last step of the copy."
+  },
+  "migrationStop": "Stop copying",
+  "@migrationStop": {
+    "description": "Moving from Termux to the in-app server: stops the running copy (asks first)."
+  },
+  "migrationStopTitle": "Stop copying?",
+  "@migrationStopTitle": {
+    "description": "Moving from Termux to the in-app server: the stop question's title."
+  },
+  "migrationStopBody": "You can resume later from This phone.",
+  "@migrationStopBody": {
+    "description": "Moving from Termux to the in-app server: the stop question's body."
+  },
+  "migrationStopKept": "What was copied so far is kept",
+  "@migrationStopKept": {
+    "description": "Moving from Termux to the in-app server: stop question: what is kept."
+  },
+  "migrationKeepGoing": "Keep copying",
+  "@migrationKeepGoing": {
+    "description": "Moving from Termux to the in-app server: stop question: keep the copy running."
+  },
+  "migrationCancelled": "Copy stopped. You can resume later.",
+  "@migrationCancelled": {
+    "description": "Moving from Termux to the in-app server: the stopped state's title."
+  },
+  "migrationCancelledBody": "What was copied is kept, and Termux isn't changed.",
+  "@migrationCancelledBody": {
+    "description": "Moving from Termux to the in-app server: the stopped state's body after Stop."
+  },
+  "migrationStoppedLeaving": "It stopped because the app left the screen: Android doesn't let it run in the background. What was copied is kept.",
+  "@migrationStoppedLeaving": {
+    "description": "Moving from Termux to the in-app server: the stopped state's body when leaving the app stopped it."
+  },
+  "migrationResume": "Resume copying",
+  "@migrationResume": {
+    "description": "Moving from Termux to the in-app server: resumes the saved copy."
+  },
+  "migrationNeedsSpace": "More free space is needed before copying.",
+  "@migrationNeedsSpace": {
+    "description": "Moving from Termux to the in-app server: the low-space state's title."
+  },
+  "migrationNeedsSpaceBody": "Needs about {needed}, and {free} is free. Free up space on this phone, or copy fewer items.",
+  "@migrationNeedsSpaceBody": {
+    "description": "Moving from Termux to the in-app server: the low-space state's body.",
+    "placeholders": {
+      "needed": {
+        "type": "String"
+      },
+      "free": {
+        "type": "String"
+      }
+    }
+  },
+  "migrationNeedsSpaceBodyUnknown": "Needs about {needed}, and the free space couldn't be read. Free up space on this phone, or copy fewer items.",
+  "@migrationNeedsSpaceBodyUnknown": {
+    "description": "Moving from Termux to the in-app server: the low-space state's body when free space could not be read.",
+    "placeholders": {
+      "needed": {
+        "type": "String"
+      }
+    }
+  },
+  "migrationChooseFewer": "Choose fewer items",
+  "@migrationChooseFewer": {
+    "description": "Moving from Termux to the in-app server: low space: back to the review."
+  },
+  "migrationNeedsBuiltin": "Set up the in-app server first.",
+  "@migrationNeedsBuiltin": {
+    "description": "Moving from Termux to the in-app server: the state when OpenCode inside the app is not installed."
+  },
+  "migrationNeedsBuiltinBody": "Your projects move into OpenCode inside this app, so it needs setting up. Setup installs Linux and {runtime}, then this continues here.",
+  "@migrationNeedsBuiltinBody": {
+    "description": "Moving from Termux to the in-app server: why setup comes first; runtime is 'OpenCode 1' or 'OpenCode 2'.",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "migrationSetUpBuiltin": "Set up the in-app server",
+  "@migrationSetUpBuiltin": {
+    "description": "Moving from Termux to the in-app server: starts the in-app server's setup."
+  },
+  "migrationSetupFailed": "Setup couldn't start. Try again, or set it up from This phone.",
+  "@migrationSetupFailed": {
+    "description": "Moving from Termux to the in-app server: setup could not be started."
+  },
+  "migrationTermuxNotAnswering": "Termux isn't answering",
+  "@migrationTermuxNotAnswering": {
+    "description": "Moving from Termux to the in-app server: title when Termux cannot be reached."
+  },
+  "migrationTermuxUnavailable": "Open Termux, then try again.",
+  "@migrationTermuxUnavailable": {
+    "description": "Moving from Termux to the in-app server: way forward when Termux cannot be reached."
+  },
+  "migrationOpenTermux": "Open Termux",
+  "@migrationOpenTermux": {
+    "description": "Moving from Termux to the in-app server: opens the Termux app."
+  },
+  "migrationFailedTitle": "The move stopped",
+  "@migrationFailedTitle": {
+    "description": "Moving from Termux to the in-app server: the failed state's title; the body says why in plain words."
+  },
+  "migrationSourceChanged": "Files changed during copying. Try again when Termux is idle.",
+  "@migrationSourceChanged": {
+    "description": "Moving from Termux to the in-app server: failure: files changed in Termux while copying."
+  },
+  "migrationSourceBusy": "Termux is finishing the previous step. Try again shortly.",
+  "@migrationSourceBusy": {
+    "description": "Moving from Termux to the in-app server: failure: Termux is still busy with the last step."
+  },
+  "migrationUnsupportedFiles": "This item contains files that cannot be copied safely.",
+  "@migrationUnsupportedFiles": {
+    "description": "Moving from Termux to the in-app server: failure: links, sockets or external Git worktrees."
+  },
+  "migrationUnsupportedFilesFix": "Links, sockets and Git worktrees can't be copied. Remove them in Termux and try again, or copy that project by hand.",
+  "@migrationUnsupportedFilesFix": {
+    "description": "Moving from Termux to the in-app server: way forward for files that cannot be copied."
+  },
+  "migrationTooLarge": "This item exceeds the migration size or file limit.",
+  "@migrationTooLarge": {
+    "description": "Moving from Termux to the in-app server: failure: an item is too big."
+  },
+  "migrationTooLargeFix": "Each item can hold up to 512 MB and 20,000 files. Delete build folders such as node_modules in Termux, then try again.",
+  "@migrationTooLargeFix": {
+    "description": "Moving from Termux to the in-app server: way forward for an item that is too big."
+  },
+  "migrationVerificationFailed": "The copy could not be verified. Your Termux files are unchanged.",
+  "@migrationVerificationFailed": {
+    "description": "Moving from Termux to the in-app server: failure: the copied archive did not match."
+  },
+  "migrationDestinationChanged": "Imported files changed. They will not be overwritten.",
+  "@migrationDestinationChanged": {
+    "description": "Moving from Termux to the in-app server: failure: moved files were changed afterwards."
+  },
+  "migrationDestinationChangedFix": "The files on the in-app server stay as you left them.",
+  "@migrationDestinationChangedFix": {
+    "description": "Moving from Termux to the in-app server: what happens to changed files."
+  },
+  "migrationStorageFailed": "The copy could not be saved. Check phone storage and try again.",
+  "@migrationStorageFailed": {
+    "description": "Moving from Termux to the in-app server: failure: writing the copy failed."
+  },
+  "migrationTimedOut": "This step took too long. Keep the app open and resume.",
+  "@migrationTimedOut": {
+    "description": "Moving from Termux to the in-app server: failure: a step ran out of time."
+  },
+  "migrationSelectionChanged": "Use the saved migration selection to resume.",
+  "@migrationSelectionChanged": {
+    "description": "Moving from Termux to the in-app server: failure: the selection does not match the saved one."
+  },
+  "migrationConnectionFailed": "Files are copied, but the in-app server could not connect.",
+  "@migrationConnectionFailed": {
+    "description": "Moving from Termux to the in-app server: failure: the files are in, the connection failed."
+  },
+  "migrationFailureCode": "Reason",
+  "@migrationFailureCode": {
+    "description": "Moving from Termux to the in-app server: Details label: the fixed reason code."
+  },
+  "migrationFailureItem": "Item",
+  "@migrationFailureItem": {
+    "description": "Moving from Termux to the in-app server: Details label: the item being copied when it stopped."
+  },
+  "migrationOpenThisPhone": "Open This phone",
+  "@migrationOpenThisPhone": {
+    "description": "Moving from Termux to the in-app server: opens This phone for the in-app server."
+  },
+  "migrationDoneTitle": "Moved from Termux",
+  "@migrationDoneTitle": {
+    "description": "Moving from Termux to the in-app server: the finished state's title."
+  },
+  "migrationDone": "Files copied. Your Termux server is still available.",
+  "@migrationDone": {
+    "description": "Moving from Termux to the in-app server: the finished state's body."
+  },
+  "migrationSignInAgain": "Sign in to your AI providers again",
+  "@migrationSignInAgain": {
+    "description": "Moving from Termux to the in-app server: next step: provider sign-in on the in-app server."
+  },
+  "migrationSignInAgainNamed": "{names} were signed in on Termux. Sign-ins never move.",
+  "@migrationSignInAgainNamed": {
+    "description": "Moving from Termux to the in-app server: next step detail with the provider names.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "migrationSignInAgainAny": "Sign-ins never move from Termux.",
+  "@migrationSignInAgainAny": {
+    "description": "Moving from Termux to the in-app server: next step detail when provider names are unknown."
+  },
+  "migrationProjectsWhere": "Your projects",
+  "@migrationProjectsWhere": {
+    "description": "Moving from Termux to the in-app server: next step: where the projects are."
+  },
+  "migrationProjectsWhereBody": "In the folder {folder} on the in-app server",
+  "@migrationProjectsWhereBody": {
+    "description": "Moving from Termux to the in-app server: where the projects are, e.g. 'termux-0123abcd'.",
+    "placeholders": {
+      "folder": {
+        "type": "String"
+      }
+    }
+  },
+  "migrationExportsWhere": "Private copies",
+  "@migrationExportsWhere": {
+    "description": "Moving from Termux to the in-app server: next step: where the private copies are."
+  },
+  "migrationExportsWhereBody": "{items}: saved inside the in-app Linux, not turned on",
+  "@migrationExportsWhereBody": {
+    "description": "Moving from Termux to the in-app server: which private copies were saved.",
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "migrationRemoveTermux": "Remove the Termux server when you're ready",
+  "@migrationRemoveTermux": {
+    "description": "Moving from Termux to the in-app server: next step: removing Termux is the person's choice."
+  },
+  "migrationRemoveTermuxBody": "Nothing is removed for you. Until then it keeps working, and you can switch back to it on Servers.",
+  "@migrationRemoveTermuxBody": {
+    "description": "Moving from Termux to the in-app server: why and how Termux stays."
+  },
+  "migrationOpenBuiltin": "Open the in-app server",
+  "@migrationOpenBuiltin": {
+    "description": "Moving from Termux to the in-app server: the finished state's primary: goes to the in-app server's home."
+  },
+  "migrationDetailProjects": "Projects folder",
+  "@migrationDetailProjects": {
+    "description": "Moving from Termux to the in-app server: Details label: the projects' folder inside the in-app Linux."
+  },
+  "migrationDetailExports": "Private copies folder",
+  "@migrationDetailExports": {
+    "description": "Moving from Termux to the in-app server: Details label: the private copies' folder inside the in-app Linux."
+  },
+  "migrationUnfinishedTitle": "The move didn't finish",
+  "@migrationUnfinishedTitle": {
+    "description": "Moving from Termux to the in-app server: shown after the app was closed during a copy."
+  },
+  "migrationUnfinishedBody": "Resume to carry on where it stopped. What was already copied is kept, and Termux isn't changed.",
+  "@migrationUnfinishedBody": {
+    "description": "Moving from Termux to the in-app server: the unfinished copy's body."
+  },
+  "migrationUnavailableTitle": "The move can't start",
+  "@migrationUnavailableTitle": {
+    "description": "Moving from Termux to the in-app server: the app could not prepare its private storage."
+  },
+  "migrationUnavailableBody": "The app couldn't prepare its private storage for the copy. Try again, and if it keeps happening, restart the app.",
+  "@migrationUnavailableBody": {
+    "description": "Moving from Termux to the in-app server: way forward when the migration cannot be prepared."
+  },
+  "migrationRowBody": "Copy your projects into the in-app server. Termux stays as it is.",
+  "@migrationRowBody": {
+    "description": "Moving from Termux to the in-app server: This phone row: what moving does."
+  },
+  "migrationRowResume": "Resume moving to the in-app server",
+  "@migrationRowResume": {
+    "description": "Moving from Termux to the in-app server: This phone row: a copy that did not finish."
+  },
+  "migrationRowResumeBody": "Stopped before it finished. What was copied is kept.",
+  "@migrationRowResumeBody": {
+    "description": "Moving from Termux to the in-app server: This phone row: the unfinished copy's detail."
+  },
+  "migrationRowRunning": "Moving to the in-app server",
+  "@migrationRowRunning": {
+    "description": "Moving from Termux to the in-app server: This phone row: a copy is running."
+  },
+  "migrationRowDoneBody": "Remove the Termux server when you're ready.",
+  "@migrationRowDoneBody": {
+    "description": "Moving from Termux to the in-app server: This phone row: after the move."
+  },
+  "migrationOffer": "Move your Termux projects into this app? Termux stays as it is.",
+  "@migrationOffer": {
+    "description": "Moving from Termux to the in-app server: one-time offer under the Termux server row on Servers."
+  },
+  "migrationOfferAction": "Review what moves",
+  "@migrationOfferAction": {
+    "description": "Moving from Termux to the in-app server: the offer's action: opens the review; nothing starts yet."
   }
 }
