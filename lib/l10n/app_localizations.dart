@@ -5815,11 +5815,11 @@ abstract class AppLocalizations {
   /// **'Stops this phone’s server and running tasks. Conversations, provider settings and credentials stay separate; project files and configuration are shared. You can switch back.'**
   String get setupSwitchConfirmDetail;
 
-  /// No description provided for @setupSwitchConfirm.
+  /// This phone › Switch runtime sheet: the confirm button, naming the target runtime.
   ///
   /// In en, this message translates to:
-  /// **'Switch version'**
-  String get setupSwitchConfirm;
+  /// **'Switch to {runtime}'**
+  String setupSwitchConfirm(String runtime);
 
   /// No description provided for @setupSwitchPending.
   ///
@@ -37307,13 +37307,13 @@ abstract class AppLocalizations {
   /// Moving from Termux to the in-app server: next step detail with the provider names.
   ///
   /// In en, this message translates to:
-  /// **'{names} were signed in on Termux. Sign-ins never move.'**
+  /// **'{names} were signed in on Termux. Sign-ins never move: until you sign in here, replies use OpenCode\'s free model, which is slower.'**
   String migrationSignInAgainNamed(String names);
 
   /// Moving from Termux to the in-app server: next step detail when provider names are unknown.
   ///
   /// In en, this message translates to:
-  /// **'Sign-ins never move from Termux.'**
+  /// **'Sign-ins never move from Termux. Until you sign in here, replies use OpenCode\'s free model, which is slower.'**
   String get migrationSignInAgainAny;
 
   /// Moving from Termux to the in-app server: next step: where the projects are.
@@ -38005,6 +38005,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The demo has no commands — send the sample prompt to see a change reviewed.'**
   String get demoNoCommands;
+
+  /// Model picker: signed-in providers the server still could not load after a provider reload
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Signed in to {providers}, but this server could not load that sign-in even after a reload, so its models cannot answer. Sign in another way under Providers, or pick another model.} other{Signed in to {providers}, but this server could not load those sign-ins even after a reload, so their models cannot answer. Sign in another way under Providers, or pick another model.}}'**
+  String e7ModelUiUnusableProviders(int count, String providers);
+
+  /// Model picker: a provider reload is held back while replies run on the server
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{The reload waits for 1 running reply to finish, because reloading would stop it.} other{The reload waits for {count} running replies to finish, because reloading would stop them.}}'**
+  String e7ModelUiProviderReloadWaits(int count);
+
+  /// Shown when the connected server has no provider signed in and answers with OpenCode's free default model (shared, rate-limited, slower).
+  ///
+  /// In en, this message translates to:
+  /// **'Using OpenCode\'s free model — it\'s slower. Sign in to your provider to use your own.'**
+  String get freeModelNotice;
+
+  /// Action under the free-model notice: opens the server's provider sign-in list.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to a provider'**
+  String get freeModelSignIn;
+
+  /// This phone: row title for how fast the last reply on this phone's server came.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply speed'**
+  String get replySpeedTitle;
+
+  /// This phone › Reply speed: the last reply's wait for its first words and its whole length.
+  ///
+  /// In en, this message translates to:
+  /// **'Last reply: first words after {first}, finished after {total}'**
+  String replySpeedLast(String first, String total);
+
+  /// This phone › Reply speed: the last reply ended (stopped or failed) before any output.
+  ///
+  /// In en, this message translates to:
+  /// **'Last reply: ended after {total} before any words came'**
+  String replySpeedNoWords(String total);
+
+  /// A duration in seconds with one decimal, e.g. 4.1 s.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} s'**
+  String replySpeedSeconds(String seconds);
+
+  /// This phone › Details (technical): how proot runs the server.
+  ///
+  /// In en, this message translates to:
+  /// **'Linux speed mode'**
+  String get perfDetailLinuxMode;
+
+  /// Details value: proot's seccomp acceleration is active.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast: proot with seccomp'**
+  String get perfLinuxModeFast;
+
+  /// Details value: proot runs without seccomp acceleration (every system call stops).
+  ///
+  /// In en, this message translates to:
+  /// **'Slow: proot without seccomp'**
+  String get perfLinuxModeSlow;
+
+  /// Details value: the mode cannot be read (no server running, or the phone does not say).
+  ///
+  /// In en, this message translates to:
+  /// **'Not known while OpenCode is stopped'**
+  String get perfLinuxModeUnknown;
+
+  /// This phone › Details (technical): whether the app holds a wake lock for a running reply.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone kept awake'**
+  String get perfDetailAwake;
+
+  /// Details value: the wake lock is held now.
+  ///
+  /// In en, this message translates to:
+  /// **'Now, while a reply runs'**
+  String get perfAwakeNow;
+
+  /// Details value: the wake lock is not held now; it is held only while replies run.
+  ///
+  /// In en, this message translates to:
+  /// **'Only while a reply runs'**
+  String get perfAwakeWhenWorking;
+
+  /// This phone › Details (technical): wait for the last reply's first output.
+  ///
+  /// In en, this message translates to:
+  /// **'First words, last reply'**
+  String get perfDetailFirstWords;
+
+  /// Details value: first-output wait measured in the app and by the server's own clock.
+  ///
+  /// In en, this message translates to:
+  /// **'{app} in the app · {server} on the server'**
+  String perfFirstWordsSplit(String app, String server);
+
+  /// This phone › Details (technical): provider/model id of the last reply.
+  ///
+  /// In en, this message translates to:
+  /// **'Model, last reply'**
+  String get perfDetailModel;
+
+  /// Manage-space page: the warning at the top when there are no projects to export (so it offers no export).
+  ///
+  /// In en, this message translates to:
+  /// **'Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone.'**
+  String get manageSpaceIntroNothingToExport;
 }
 
 class _AppLocalizationsDelegate

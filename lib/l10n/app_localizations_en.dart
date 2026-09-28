@@ -3433,7 +3433,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Stops this phone’s server and running tasks. Conversations, provider settings and credentials stay separate; project files and configuration are shared. You can switch back.';
 
   @override
-  String get setupSwitchConfirm => 'Switch version';
+  String setupSwitchConfirm(String runtime) {
+    return 'Switch to $runtime';
+  }
 
   @override
   String get setupSwitchPending =>
@@ -23676,11 +23678,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String migrationSignInAgainNamed(String names) {
-    return '$names were signed in on Termux. Sign-ins never move.';
+    return '$names were signed in on Termux. Sign-ins never move: until you sign in here, replies use OpenCode\'s free model, which is slower.';
   }
 
   @override
-  String get migrationSignInAgainAny => 'Sign-ins never move from Termux.';
+  String get migrationSignInAgainAny =>
+      'Sign-ins never move from Termux. Until you sign in here, replies use OpenCode\'s free model, which is slower.';
 
   @override
   String get migrationProjectsWhere => 'Your projects';
@@ -24137,4 +24140,91 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get demoNoCommands =>
       'The demo has no commands — send the sample prompt to see a change reviewed.';
+
+  @override
+  String e7ModelUiUnusableProviders(int count, String providers) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Signed in to $providers, but this server could not load those sign-ins even after a reload, so their models cannot answer. Sign in another way under Providers, or pick another model.',
+      one:
+          'Signed in to $providers, but this server could not load that sign-in even after a reload, so its models cannot answer. Sign in another way under Providers, or pick another model.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String e7ModelUiProviderReloadWaits(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'The reload waits for $count running replies to finish, because reloading would stop them.',
+      one:
+          'The reload waits for 1 running reply to finish, because reloading would stop it.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get freeModelNotice =>
+      'Using OpenCode\'s free model — it\'s slower. Sign in to your provider to use your own.';
+
+  @override
+  String get freeModelSignIn => 'Sign in to a provider';
+
+  @override
+  String get replySpeedTitle => 'Reply speed';
+
+  @override
+  String replySpeedLast(String first, String total) {
+    return 'Last reply: first words after $first, finished after $total';
+  }
+
+  @override
+  String replySpeedNoWords(String total) {
+    return 'Last reply: ended after $total before any words came';
+  }
+
+  @override
+  String replySpeedSeconds(String seconds) {
+    return '$seconds s';
+  }
+
+  @override
+  String get perfDetailLinuxMode => 'Linux speed mode';
+
+  @override
+  String get perfLinuxModeFast => 'Fast: proot with seccomp';
+
+  @override
+  String get perfLinuxModeSlow => 'Slow: proot without seccomp';
+
+  @override
+  String get perfLinuxModeUnknown => 'Not known while OpenCode is stopped';
+
+  @override
+  String get perfDetailAwake => 'Phone kept awake';
+
+  @override
+  String get perfAwakeNow => 'Now, while a reply runs';
+
+  @override
+  String get perfAwakeWhenWorking => 'Only while a reply runs';
+
+  @override
+  String get perfDetailFirstWords => 'First words, last reply';
+
+  @override
+  String perfFirstWordsSplit(String app, String server) {
+    return '$app in the app · $server on the server';
+  }
+
+  @override
+  String get perfDetailModel => 'Model, last reply';
+
+  @override
+  String get manageSpaceIntroNothingToExport =>
+      'Clearing deletes everything OpenCode Mobile keeps on this phone, and it cannot be undone.';
 }
