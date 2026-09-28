@@ -131,6 +131,11 @@ class MemoryMigrationJournal implements TermuxMigrationJournal {
   final records = <String, Map<String, dynamic>>{};
 
   @override
+  Future<void> remove(String sourceProfileId) async {
+    records.remove(sourceProfileId);
+  }
+
+  @override
   Future<Map<String, dynamic>?> read(String sourceProfileId) async {
     final value = records[sourceProfileId];
     return value == null
