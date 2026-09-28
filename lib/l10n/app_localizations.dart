@@ -6514,12 +6514,6 @@ abstract class AppLocalizations {
   /// Localized shared connection or glossary interface
   ///
   /// In en, this message translates to:
-  /// **'Change server'**
-  String get e7BannerChangeServer;
-
-  /// Localized shared connection or glossary interface
-  ///
-  /// In en, this message translates to:
   /// **'Server password changed — reconnect.\n{note}'**
   String e7BannerReconnectPasswordNote(String note);
 
