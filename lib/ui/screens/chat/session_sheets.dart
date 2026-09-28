@@ -3,7 +3,7 @@ part of '../chat_screen.dart';
 /// The agent's plan has one home: the transcript, where each `todowrite`
 /// call is a Tasks step whose opened body is the checklist (a mark, the
 /// task's words and its state per row). There is no second copy of it in a
-/// sheet. The conversation menu's Tasks entry lands on that checklist: it
+/// sheet. The command sheet's Tasks (/plan) lands on that checklist: it
 /// scrolls to the reply holding the latest plan and opens its work line and
 /// its Tasks step in place.
 extension _ChatPlan on _ChatScreenState {

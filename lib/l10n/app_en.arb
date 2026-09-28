@@ -255,7 +255,6 @@
   "historyServerTotalsNote": "Rows marked reported by server cover the conversation. Message counts and other estimates cover loaded history.",
   "sessionsDetailsUnavailable": "Conversation details could not be loaded. Try again.",
   "sessionsReload": "Refresh recent conversations",
-  "revertReviewTitle": "Review staged revert",
   "revertReviewChanged": "This conversation or its staged revert changed. Review the latest state before continuing.",
   "revertReviewLatest": "Review latest state",
   "revertBusy": "Wait for the current conversation action to finish.",
@@ -910,7 +909,6 @@
       }
     }
   },
-  "transcriptFindTitle": "Find in conversation",
   "transcriptFindHint": "Search conversation",
   "transcriptFindClose": "Close search",
   "transcriptFindPrevious": "Previous match",
@@ -932,7 +930,6 @@
   "transcriptFindTool": "Tool data",
   "transcriptFindFile": "File name",
   "transcriptFindAll": "Search all history",
-  "skillMenu": "Use a skill",
   "skillUse": "Add to conversation",
   "skillActivationHelp": "Adds these skill instructions to this conversation. Your unsent draft stays in the composer.",
   "skillRunNow": "Run agent now",
@@ -4216,17 +4213,9 @@
   "@e7WorkspaceShareSession": {
     "description": "Workspace and activity: Share session"
   },
-  "e7WorkspaceRename": "Rename",
-  "@e7WorkspaceRename": {
-    "description": "Workspace and activity: Rename"
-  },
   "e7WorkspaceCompacting": "Compacting…",
   "@e7WorkspaceCompacting": {
     "description": "Workspace and activity: Compacting…"
-  },
-  "e7WorkspaceShare": "Share",
-  "@e7WorkspaceShare": {
-    "description": "Workspace and activity: Share"
   },
   "e7WorkspaceStopSharing": "Stop sharing",
   "@e7WorkspaceStopSharing": {
@@ -4593,10 +4582,6 @@
   "@chatUiChanges": {
     "description": "Chat journey: Changes"
   },
-  "chatUiChooseAPromptAndContinueItIn": "Choose a prompt and continue it in a new conversation",
-  "@chatUiChooseAPromptAndContinueItIn": {
-    "description": "Chat journey: Choose a prompt and continue it in a new session"
-  },
   "chatUiChooseAPromptToRestoreItIn": "Choose a prompt to restore it in a new conversation.",
   "@chatUiChooseAPromptToRestoreItIn": {
     "description": "Chat journey: Choose a prompt to restore it in a new session."
@@ -4668,10 +4653,6 @@
   "chatUiContextCompacted": "Context compacted",
   "@chatUiContextCompacted": {
     "description": "Chat journey: Context compacted"
-  },
-  "chatUiContextUsage": "Context usage",
-  "@chatUiContextUsage": {
-    "description": "Chat journey: Context usage"
   },
   "chatUiCopiedPasteItIntoTheComposer": "Copied. Paste it into the composer",
   "@chatUiCopiedPasteItIntoTheComposer": {
@@ -4949,10 +4930,6 @@
   "@chatUiNoAnswer": {
     "description": "Chat journey: No answer"
   },
-  "chatUiNoMatchingCommands": "No matching commands",
-  "@chatUiNoMatchingCommands": {
-    "description": "Chat journey: No matching commands"
-  },
   "chatUiNoMatchingMessages": "No matching messages",
   "@chatUiNoMatchingMessages": {
     "description": "Chat journey: No matching messages"
@@ -5109,10 +5086,6 @@
   "@chatUiRenameSession": {
     "description": "Chat journey: Rename session"
   },
-  "chatUiRestoreMessages": "Restore messages",
-  "@chatUiRestoreMessages": {
-    "description": "Chat journey: Restore messages"
-  },
   "chatUiRestoreRevertedPrompt": "Restore reverted prompt",
   "@chatUiRestoreRevertedPrompt": {
     "description": "Chat journey: Restore reverted prompt"
@@ -5124,10 +5097,6 @@
   "chatUiRetryLastPrompt": "Retry last prompt",
   "@chatUiRetryLastPrompt": {
     "description": "Chat journey: Retry last prompt"
-  },
-  "chatUiRetryServerCommands": "Try again",
-  "@chatUiRetryServerCommands": {
-    "description": "Chat journey: Retry server commands"
   },
   "chatUiRevertLastPrompt": "Undo last prompt",
   "@chatUiRevertLastPrompt": {
@@ -5205,10 +5174,6 @@
   "@chatUiServerCommands": {
     "description": "Chat journey: Server commands"
   },
-  "chatUiServerCommandsCouldNotBeRefreshed": "Server commands could not be refreshed",
-  "@chatUiServerCommandsCouldNotBeRefreshed": {
-    "description": "Chat journey: Server commands could not be refreshed"
-  },
   "chatUiServerMessage": "Server message",
   "@chatUiServerMessage": {
     "description": "Chat journey: Server message"
@@ -5224,10 +5189,6 @@
   "chatUiSessionContext": "Conversation context",
   "@chatUiSessionContext": {
     "description": "Chat journey: Session context"
-  },
-  "chatUiSessionMenu": "Conversation menu",
-  "@chatUiSessionMenu": {
-    "description": "Chat journey: Session menu"
   },
   "chatUiSessionSharedCopyTheVisibleLinkManually": "Conversation shared. Copy the visible link manually.",
   "@chatUiSessionSharedCopyTheVisibleLinkManually": {
@@ -5885,22 +5846,6 @@
         "type": "Object"
       }
     }
-  },
-  "chatUiConversation": "Conversation",
-  "@chatUiConversation": {
-    "description": "Chat journey: Conversation"
-  },
-  "chatUiDisplayAndContext": "Display and context",
-  "@chatUiDisplayAndContext": {
-    "description": "Chat journey: Display and context"
-  },
-  "chatUiSessionActions": "Conversation actions",
-  "@chatUiSessionActions": {
-    "description": "Chat journey: Session actions"
-  },
-  "chatUiResults": "Results",
-  "@chatUiResults": {
-    "description": "Chat journey: Results"
   },
   "chatUiMainSession": "Main conversation",
   "@chatUiMainSession": {
@@ -6849,10 +6794,6 @@
   "e7LibraryCouldNotConfirmAuthenticationReturnToThe": "Could not confirm authentication. Return to the original source and try again.",
   "@e7LibraryCouldNotConfirmAuthenticationReturnToThe": {
     "description": "Library and project tools UI: Could not confirm authentication. Return to the original source and try again."
-  },
-  "e7LibrarySearchServerCommands": "Search server commands",
-  "@e7LibrarySearchServerCommands": {
-    "description": "Library and project tools UI: Search server commands"
   },
   "e7LibraryNoServerCommandsFound": "No server commands found",
   "@e7LibraryNoServerCommandsFound": {
@@ -22986,19 +22927,7 @@
   "@toolsDetailTypeAny": {
     "description": "Tool details sheet: parameter type the schema does not name"
   },
-  "commandsScreenLoading": "Loading commands",
-  "@commandsScreenLoading": {
-    "description": "Server commands page: the loading bar label while the command list loads."
-  },
-  "commandsScreenLoadFailed": "Couldn’t load commands",
-  "@commandsScreenLoadFailed": {
-    "description": "Server commands page: title of the state shown when the first load of the commands failed."
-  },
-  "commandsScreenWhat": "commands",
-  "@commandsScreenWhat": {
-    "description": "Server commands page: what the search looked through, used in \"Nothing in commands matches …\"."
-  },
-  "commandsScreenRunsWith": "runs with {agent}",
+  "commandsScreenRunsWith": "Runs with {agent}",
   "@commandsScreenRunsWith": {
     "description": "Server commands page: supporting line part naming the agent a command runs with, after its description.",
     "placeholders": {
@@ -23010,15 +22939,6 @@
   "commandsScreenMenuLabel": "Command actions",
   "@commandsScreenMenuLabel": {
     "description": "Server commands page: name of a command row menu."
-  },
-  "commandsScreenRun": "Run {command}…",
-  "@commandsScreenRun": {
-    "description": "Server commands page: row menu item that asks where to run the command (the command is written /name).",
-    "placeholders": {
-      "command": {
-        "type": "String"
-      }
-    }
   },
   "commandsScreenCopy": "Copy {command}",
   "@commandsScreenCopy": {
@@ -23286,10 +23206,6 @@
   "commandLauncherSubtitle": "Run an action in this conversation, or a command from this server",
   "@commandLauncherSubtitle": {
     "description": "Commands and agents sheet: the subtitle under the title while the commands list shows."
-  },
-  "commandLauncherAgentCommandsUnavailable": "This agent can't list its own commands here yet. These are the app's actions.",
-  "@commandLauncherAgentCommandsUnavailable": {
-    "description": "Commands and agents sheet: shown when the session's agent (Codex, Claude Code) cannot list its own slash commands, so only the app's actions appear."
   },
   "teamChatRefusedTitle": "Task not taken",
   "@teamChatRefusedTitle": {
@@ -24272,10 +24188,6 @@
   "newConversationCloudDetail": "A cloud machine for this project",
   "@newConversationCloudDetail": {
     "description": "New conversation chooser: what a cloud machine row is"
-  },
-  "chatUiExportThisConversation": "Export this conversation",
-  "@chatUiExportThisConversation": {
-    "description": "Conversation menu row: save this conversation as a file (JSON where the server exports, Markdown otherwise)"
   },
   "chatDraftCopy": "Copy draft",
   "@chatDraftCopy": {
@@ -27637,5 +27549,148 @@
   "phoneServerCardErrorDetail": "Error",
   "@phoneServerCardErrorDetail": {
     "description": "This phone: the label of the technical error text under Details, when moving its waiting prompts could not be fully undone"
+  },
+  "sessionMenuGoTo": "Go to",
+  "@sessionMenuGoTo": {
+    "description": "Conversation menu (chat title and Work row): heading of the places to open"
+  },
+  "sessionMenuDo": "Do",
+  "@sessionMenuDo": {
+    "description": "Conversation menu: heading of the acts on the conversation"
+  },
+  "sessionMenuFind": "Find",
+  "@sessionMenuFind": {
+    "description": "Conversation menu › Go to: open the find bar in the conversation"
+  },
+  "sessionMenuSubagents": "Subagents",
+  "@sessionMenuSubagents": {
+    "description": "Conversation menu › Go to: the subagents this conversation started and their results"
+  },
+  "sessionMenuDetails": "Details",
+  "@sessionMenuDetails": {
+    "description": "Conversation menu › Go to: the conversation's details page (context usage, folder, link)"
+  },
+  "sessionMenuShareHint": "Anyone with the link can read it",
+  "@sessionMenuShareHint": {
+    "description": "Conversation menu › Share conversation: what happens"
+  },
+  "sessionMenuStopSharingHint": "The public link stops working",
+  "@sessionMenuStopSharingHint": {
+    "description": "Conversation menu › Stop sharing: what happens"
+  },
+  "sessionMenuCompactHint": "Summarizes it so the agent has room again",
+  "@sessionMenuCompactHint": {
+    "description": "Conversation menu › Compact context: what happens"
+  },
+  "sessionMenuForkHint": "Opens a copy you can take another way",
+  "@sessionMenuForkHint": {
+    "description": "Conversation menu › Fork conversation: what happens; the copy opens at once"
+  },
+  "sessionMenuContinueComputerHint": "Shows the command that resumes it there",
+  "@sessionMenuContinueComputerHint": {
+    "description": "Conversation menu › Continue on computer: what happens"
+  },
+  "sessionMenuContinuePhoneHint": "Shows a code the app on that phone opens",
+  "@sessionMenuContinuePhoneHint": {
+    "description": "Conversation menu › Open on another phone: what happens"
+  },
+  "sessionMenuNeedsPrompt": "Available after the first prompt",
+  "@sessionMenuNeedsPrompt": {
+    "description": "Conversation menu: why Compact or Fork is dimmed in a conversation with no prompt yet"
+  },
+  "commandSheetServerGroup": "Commands from {server}",
+  "@commandSheetServerGroup": {
+    "description": "Command sheet: heading of the commands the connected server lists; server is its saved name",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "commandSheetAgentMissingTitle": "{agent} commands unavailable",
+  "@commandSheetAgentMissingTitle": {
+    "description": "Command sheet: title of the note on a server whose agent does not share its commands (Claude Code, Codex)",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "commandSheetAgentMissingWhy": "{agent} doesn't share its own commands with the app yet, so the app can't list them, run them, or run ! shell commands. The app's own actions still work.",
+  "@commandSheetAgentMissingWhy": {
+    "description": "Command sheet: why the agent's commands are missing, naming the missing operations; never offered as working",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "commandSheetAgentCommandNotSent": "{command} wasn't sent: {agent} doesn't share its commands with the app yet. Remove the / to send it as a message.",
+  "@commandSheetAgentCommandNotSent": {
+    "description": "Composer note: a typed /command on a server whose agent does not share its commands; nothing was sent",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      },
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "commandSheetShellNotSent": "{command} wasn't sent: shell commands can't run on {agent} from the app. Remove the ! to send it as a message.",
+  "@commandSheetShellNotSent": {
+    "description": "Composer note: a typed !command on a server with no shell for the conversation; nothing was sent",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      },
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "commandSheetShellDescription": "Or start a message with ! to run it from the composer",
+  "@commandSheetShellDescription": {
+    "description": "Command sheet › Run shell command: what it does and the composer shortcut"
+  },
+  "commandSheetRetryDescription": "Sends your last prompt again",
+  "@commandSheetRetryDescription": {
+    "description": "Command sheet › Retry last prompt: what happens"
+  },
+  "commandSheetNoteDescription": "A note the agent keeps in mind for this conversation",
+  "@commandSheetNoteDescription": {
+    "description": "Command sheet › Note for the agent: what it is"
+  },
+  "commandSheetApprovalsDescription": "What this conversation may do without asking",
+  "@commandSheetApprovalsDescription": {
+    "description": "Command sheet › Approvals: what it opens"
+  },
+  "commandSheetReloadDescription": "Reads this conversation from the server again",
+  "@commandSheetReloadDescription": {
+    "description": "Command sheet › Reload messages: what happens"
+  },
+  "commandSheetLibrarySubtitle": "Pick a command, then the conversation it runs in",
+  "@commandSheetLibrarySubtitle": {
+    "description": "Command sheet opened from Settings › Tools › Commands: what happens when a command is picked"
+  },
+  "commandSheetAgentFallback": "This agent",
+  "@commandSheetAgentFallback": {
+    "description": "Command sheet: the agent's name when the server does not say which agent it runs"
+  },
+  "commandSheetPlanDescription": "Opens the agent's latest plan in the conversation",
+  "@commandSheetPlanDescription": {
+    "description": "Command sheet › Tasks (/plan): what happens; the plan opens in place in the transcript"
+  },
+  "chatUiSessionMenu": "Conversation menu",
+  "@chatUiSessionMenu": {
+    "description": "Chat title bar: the conversation menu's button tooltip and the menu's name (Go to / Do)"
+  },
+  "commandsScreenLoadFailed": "Couldn’t load commands",
+  "@commandsScreenLoadFailed": {
+    "description": "Command sheet: title of the notice when the server's command list could not be read at all (no list yet)"
+  },
+  "commandSheetSubtitleAppOnly": "Run one of the app's actions in this conversation",
+  "@commandSheetSubtitleAppOnly": {
+    "description": "Command sheet subtitle on a server whose agent does not share its commands: only the app's actions are listed"
   }
 }

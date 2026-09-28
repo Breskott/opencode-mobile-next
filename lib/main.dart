@@ -1705,6 +1705,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
                   focusComposer: chat.focusComposer,
                   landOnRequestID: chat.landOnRequestID,
                   landOnFailure: chat.landOnFailure,
+                  menuAction: chat.menuAction,
                 );
                 return KitPageRoute<void>(builder: (_) => page);
               }

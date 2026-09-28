@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../kit/kit.dart';
 import '../screens/chat_screen.dart' show ChatScreen;
+import '../widgets/session_menu.dart' show SessionMenuAction;
 import 'chat_route.dart';
 
 /// The chat page for [sessionID], landing on one request card
@@ -19,6 +20,7 @@ Widget chatLandingPage({
   bool landOnFailure = false,
   bool discardIfUntouched = false,
   bool focusComposer = false,
+  SessionMenuAction? menuAction,
 }) {
   final chat = ChatScreen(
     sessionID: sessionID,
@@ -26,6 +28,7 @@ Widget chatLandingPage({
     focusComposer: focusComposer,
     landOnRequestID: landOnRequestID,
     landOnFailure: landOnFailure,
+    menuAction: menuAction,
   );
   return landOnRequestID == null
       ? chat

@@ -859,6 +859,16 @@ class ServerCapabilities {
   final bool sessionImportExport;
   final bool sessionNotes;
   final bool serverCatalog;
+
+  /// The server lists its own slash commands for a conversation and runs
+  /// one there ([CatalogGateway.listCommands], [PromptGateway.slashCommand]).
+  /// True on OpenCode 1 and 2. False on Claude Code through Paseo (daemon
+  /// 0.8.0 has no callable command list the app can use) and on Codex (its
+  /// app-server exposes native compact/review/shell calls, but no command
+  /// catalogue): the command sheet names what is missing instead of
+  /// offering commands that would be sent as plain text
+  /// (docs/qa/slice-P10.1-2-2026-09-28/README.md).
+  final bool slashCommands;
   final bool profileAttentionPolling;
 
   final bool managedWorkspaces;
@@ -949,6 +959,7 @@ class ServerCapabilities {
     this.sessionImportExport = true,
     this.sessionNotes = true,
     this.serverCatalog = true,
+    this.slashCommands = true,
     this.profileAttentionPolling = true,
 
     this.managedWorkspaces = true,

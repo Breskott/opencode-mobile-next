@@ -149,8 +149,6 @@ Future<void> _pumpSharedChat(
   await tester.pumpAndSettle();
   await tester.tap(find.byTooltip('Conversation menu'));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Conversation actions'));
-  await tester.pumpAndSettle();
   await tester.ensureVisible(find.text('Share conversation'));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Share conversation'));
@@ -535,8 +533,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Conversation actions'));
-    await tester.pumpAndSettle();
     // Sharing sits under Actions in the merged menu; scroll it into view on
     // the short test surface before tapping.
     await tester.ensureVisible(find.text('Share conversation'));
@@ -593,8 +589,6 @@ void main() {
     Future<void> chooseFromMenu() async {
       await tester.tap(find.byTooltip('Conversation menu'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Conversation actions'));
-      await tester.pumpAndSettle();
       // The banner behind the sheet carries the same label; the sheet row is
       // the later one in the tree.
       await tester.ensureVisible(find.text('Stop sharing').last);
@@ -633,7 +627,9 @@ void main() {
         '/unshare',
       );
       await tester.pump();
-      await tester.tap(find.byKey(const Key('inline-command-unshare')));
+      // Typed: the conversation menu is Stop sharing's listed home, the
+      // slash word still runs (slice-P10.2).
+      await tester.tap(find.byKey(const Key('chat-send-button')));
       await tester.pumpAndSettle();
     }
 

@@ -224,6 +224,8 @@ void main() {
     // A row's actions are its long-press menu (KIT-28): no per-row ⋮.
     await tester.longPress(find.text('old'));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Pin on this device'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Pin on this device'));
     await tester.pumpAndSettle();
     expect(c.isSessionPinned('old'), isTrue);
@@ -237,6 +239,8 @@ void main() {
     await tester.longPress(find.text('old'));
     await tester.pumpAndSettle();
     expect(find.text('Unpin'), findsOneWidget);
+    await tester.ensureVisible(find.text('Unpin'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Unpin'));
     await tester.pumpAndSettle();
     expect(c.isSessionPinned('old'), isFalse);

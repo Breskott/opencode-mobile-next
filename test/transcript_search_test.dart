@@ -334,14 +334,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Find in conversation'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-find')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('transcript-find-input')), findsOneWidget);
     await tester.tap(find.byTooltip('Close search'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Timeline'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('timeline-search')),

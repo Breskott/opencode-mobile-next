@@ -145,6 +145,14 @@ Future<void> _openMenu(WidgetTester tester, String title) async {
   await _frames(tester, 4);
 }
 
+/// The row menu holds the conversation menu too (slice-P10.2), so an entry
+/// may sit below the fold of a short test window: scroll to it, then tap.
+Future<void> _tapMenu(WidgetTester tester, String label) async {
+  await tester.ensureVisible(find.text(label));
+  await _frames(tester, 2);
+  await tester.tap(find.text(label));
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -244,7 +252,7 @@ void main() {
       await _pump(tester, controller);
 
       await _openMenu(tester, 'Fix the checkout test');
-      await tester.tap(find.text('Delete'));
+      await _tapMenu(tester, 'Delete');
       await _frames(tester, 6);
       expect(find.text('Delete conversation?'), findsOneWidget);
       expect(find.text('Its shared link stops working.'), findsOneWidget);
@@ -290,7 +298,7 @@ void main() {
       await _pump(tester, controller);
 
       await _openMenu(tester, 'Fix the checkout test');
-      await tester.tap(find.text('Share'));
+      await _tapMenu(tester, 'Share conversation');
       await _frames(tester, 6);
       expect(find.text('Share this conversation?'), findsOneWidget);
       expect(
@@ -314,7 +322,7 @@ void main() {
       await _pump(tester, controller);
 
       await _openMenu(tester, 'Fix the checkout test');
-      await tester.tap(find.text('Rename'));
+      await _tapMenu(tester, 'Rename conversation');
       await _frames(tester, 6);
       expect(find.text('Rename conversation'), findsOneWidget);
       await tester.enterText(find.byType(EditableText), 'Checkout fix');

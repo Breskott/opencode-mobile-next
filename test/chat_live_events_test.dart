@@ -15,10 +15,8 @@ import 'package:opencode_mobile/ui/kit/kit.dart'
         KitMarkdown,
         KitMessage,
         KitMotion,
-        KitRow,
         KitSkeletonTranscript,
         KitStateView,
-        KitSwitchRow,
         KitTurn,
         KitZoom,
         KitUndo;
@@ -670,6 +668,24 @@ Future<void> _useComposerTool(WidgetTester tester, String tool) async {
   await tester.pumpAndSettle();
 }
 
+/// Runs one of the command sheet's app commands by its slash word
+/// (slice-P10.1: the display toggles, retry and the plan moved here from
+/// the conversation menu).
+Future<void> _runSheetCommand(WidgetTester tester, String slash) async {
+  await _useComposerTool(tester, 'commands');
+  await tester.enterText(
+    find.byKey(const Key('command-launcher-search')),
+    slash,
+  );
+  await tester.pump();
+  final row = find.byKey(Key('command-mobile-$slash'));
+  await tester.ensureVisible(row);
+  await tester.pumpAndSettle();
+  await tester.tap(row);
+  await tester.pumpAndSettle();
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -705,7 +721,7 @@ void main() {
       expect(find.byKey(const Key('running-work-indicator')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('session-actions-button')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('session-menu-results')));
+      await tester.tap(find.byKey(const ValueKey('session-menu-subagents')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('work-agent-child')), findsOneWidget);
       await tester.tap(find.byKey(const Key('work-agent-child')));
@@ -755,7 +771,7 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('session-actions-button')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('session-menu-results')));
+    await tester.tap(find.byKey(const ValueKey('session-menu-subagents')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('work-agent-child')));
     await tester.pumpAndSettle();
@@ -2838,18 +2854,8 @@ void main() {
     await tester.pump(KitUndo.window);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Display and context'));
-    await tester.pumpAndSettle();
-    expect(
-      tester
-          .widget<KitSwitchRow>(find.byKey(const Key('session-view-thinking')))
-          .value,
-      isTrue,
-    );
-    await tester.tap(find.byKey(const Key('session-view-timestamps')));
-    await tester.pumpAndSettle();
+    // The timestamps toggle is a command in the sheet (slice-P10.1).
+    await _runSheetCommand(tester, 'timestamps');
 
     expect(controller.transcriptTimestampsVisible, isTrue);
     expect(
@@ -2866,18 +2872,14 @@ void main() {
       find.byKey(const Key('message-meta-assistant-display')),
       findsOneWidget,
     );
-    await _dismissSheetIfOpen(tester);
-
-    await tester.tap(find.byTooltip('Conversation menu'));
+    await tester.pump(KitUndo.window);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Display and context'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('session-view-thinking')));
-    await tester.pumpAndSettle();
-    await _dismissSheetIfOpen(tester);
+    await _runSheetCommand(tester, 'thinking');
 
     expect(controller.transcriptReasoningExpanded, isFalse);
     expect(find.text(reasoning), findsNothing);
+    await tester.pump(KitUndo.window);
+    await tester.pumpAndSettle();
   });
 
   testWidgets('the transcript-wide reasoning toggle replaces per-part choices '
@@ -2944,13 +2946,9 @@ void main() {
     );
 
     Future<void> flipGlobal() async {
-      await tester.tap(find.byTooltip('Conversation menu'));
+      await _runSheetCommand(tester, 'thinking');
+      await tester.pump(KitUndo.window);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Display and context'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('session-view-thinking')));
-      await tester.pumpAndSettle();
-      await _dismissSheetIfOpen(tester);
     }
 
     // The transcript-wide default wins while it is being set...
@@ -2989,14 +2987,11 @@ void main() {
       ];
 
     await _pumpChat(tester, api);
-    await _useComposerTool(tester, 'commands');
     await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const Key('command-launcher-search')),
-      'diff',
-    );
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('command-mobile-diff')));
+    // Changes live in the conversation menu's Go to (slice-P10.2).
+    await tester.tap(find.byTooltip('Conversation menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('session-menu-changes')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('review-workspace')), findsOneWidget);
@@ -3026,14 +3021,10 @@ void main() {
 
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
-    await _useComposerTool(tester, 'commands');
+    // Details (the conversation's context page) is the menu's Go to.
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const Key('command-launcher-search')),
-      'context',
-    );
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('command-mobile-context')));
+    await tester.tap(find.byKey(const ValueKey('session-menu-details')));
     await tester.pumpAndSettle();
 
     expect(find.byType(SessionContextScreen), findsOneWidget);
@@ -3220,12 +3211,8 @@ void main() {
     // The plan's step shows closed until asked for.
     expect(find.text('Verify production release'), findsNothing);
 
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    // The step in the transcript and the menu's entry share one name; the
-    // menu's is the one on top.
-    await tester.tap(find.byKey(const ValueKey('session-menu-todos')));
-    await tester.pumpAndSettle();
+    // The plan is a command in the sheet now (slice-P10.1).
+    await _runSheetCommand(tester, 'plan');
 
     // No sheet: the transcript's own checklist, opened in place.
     expect(find.byKey(const Key('timeline-sheet')), findsNothing);
@@ -3785,22 +3772,49 @@ void main() {
 
     await _pumpChat(tester, api, repository: repository);
     await tester.pumpAndSettle();
-    await _useComposerTool(tester, 'commands');
-    await tester.pumpAndSettle();
+    // "/fork" forks the whole conversation and lands in the copy, like the
+    // menu's Fork (slice-P10.2: fork lands in one place).
     await tester.enterText(
-      find.byKey(const Key('command-launcher-search')),
-      'fork',
+      find.byKey(const Key('chat-composer-field')),
+      '/fork',
     );
     await tester.pump();
-    await tester.tap(find.byKey(const Key('command-mobile-fork')));
+    await tester.tap(find.byKey(const Key('chat-send-button')));
     await tester.pumpAndSettle();
-
-    expect(find.text('Fork from prompt'), findsOneWidget);
+    expect(repository.forkCalls, 1);
+    expect(repository.forkMessageID, isNull);
     expect(
-      find.byKey(const Key('timeline-row-assistant-fork-command')),
-      findsNothing,
+      tester.widget<ChatScreen>(find.byType(ChatScreen)).sessionID,
+      'forked-session',
     );
-    await tester.tap(find.byKey(const Key('timeline-row-user-fork-command')));
+    expect(find.text('Fork from prompt'), findsNothing);
+  });
+
+  testWidgets('a prompt picked in the timeline forks from that point', (
+    tester,
+  ) async {
+    final api = _FakeOpenCodeApi()
+      ..messagesHandler = (_) async => [
+        _message('user-fork-command', 'user', [
+          Part(
+            id: 'fork-command-text',
+            messageID: 'user-fork-command',
+            type: 'text',
+            text: 'Try another implementation',
+          ),
+        ]),
+      ];
+    final repository = _FakeProductRepository(const []);
+    await _pumpChat(tester, api, repository: repository);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Conversation menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
+    await tester.pumpAndSettle();
+    final fork = find.byKey(const ValueKey('timeline-fork-user-fork-command'));
+    await tester.ensureVisible(fork);
+    await tester.pumpAndSettle();
+    await tester.tap(fork);
     await tester.pumpAndSettle();
 
     expect(repository.forkMessageID, 'user-fork-command');
@@ -3846,17 +3860,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    // The sheet scrolls at 320dp with 2x text; every group stays reachable.
-    await tester.ensureVisible(find.text('Display and context'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Display and context'));
-    await tester.pumpAndSettle();
-    final timestamps = find.byKey(const Key('session-view-timestamps'));
-    await tester.ensureVisible(timestamps);
-    await tester.pumpAndSettle();
-    await tester.tap(timestamps);
+    // Typed, the command runs as the sheet's row would.
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      '/timestamps',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('chat-send-button')));
     await tester.pumpAndSettle();
     expect(controller.transcriptTimestampsVisible, isTrue);
     expect(tester.takeException(), isNull);
@@ -4922,12 +4932,7 @@ void main() {
     final controller = await _pumpChat(tester, api);
     controller.selectedVariant = 'fast';
 
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Conversation actions'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Retry last prompt'));
-    await tester.pumpAndSettle();
+    await _runSheetCommand(tester, 'retry');
 
     expect(api.prompts.single.text, 'Review this');
     expect(api.prompts.single.variant, 'fast');
@@ -4945,12 +4950,7 @@ void main() {
       }),
     );
     await _pumpEvent(tester);
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Conversation actions'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Retry last prompt'));
-    await tester.pumpAndSettle();
+    await _runSheetCommand(tester, 'retry');
 
     expect(api.prompts.last.text, isEmpty);
     expect(api.prompts.last.attachments.single.toJson(), {
@@ -5291,19 +5291,12 @@ void main() {
         }
         // Routine usage is still reachable, with the exact value, through
         // the same Context usage destination used for warnings.
+        // The conversation menu's Details (slice-P10.2).
         await tester.tap(find.byKey(const ValueKey('session-actions-button')));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Display and context'));
-        await tester.tap(find.text('Display and context'));
-        await tester.pumpAndSettle();
-        final contextRow = find.ancestor(
-          of: find.text('Context usage'),
-          matching: find.byType(KitRow),
-        );
-        await tester.ensureVisible(contextRow);
-        await tester.pumpAndSettle();
-        expect(contextRow.hitTestable(), findsOneWidget);
-        await tester.tap(contextRow);
+        final details = find.byKey(const ValueKey('session-menu-details'));
+        expect(details.hitTestable(), findsOneWidget);
+        await tester.tap(details);
         await tester.pumpAndSettle();
         expect(find.byType(SessionContextScreen), findsOneWidget);
         expect(
@@ -5377,38 +5370,16 @@ void main() {
 
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    // The sheet scrolls at 320dp with 2x text; the groups stay reachable.
-    await tester.ensureVisible(find.text('Display and context'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Display and context'));
-    await tester.pumpAndSettle();
-    expect(find.text('Timeline'), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('session-view-timestamps')),
-      findsOneWidget,
-    );
-    expect(tester.takeException(), isNull);
-    await _dismissSheetIfOpen(tester);
-
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.text('Conversation actions'),
-      180,
-      scrollable: find
-          .descendant(
-            of: find.byKey(const Key('session-menu-sheet')),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Conversation actions'));
-    await tester.pumpAndSettle();
-    expect(find.text('Retry last prompt'), findsOneWidget);
-    await tester.ensureVisible(find.text('Refresh messages'));
-    await tester.pumpAndSettle();
-    expect(find.text('Refresh messages'), findsOneWidget);
+    // The menu scrolls at 320dp with 2x text; every entry stays reachable.
+    for (final key in [
+      'session-menu-find',
+      'session-menu-details',
+      'session-menu-rename',
+    ]) {
+      await tester.ensureVisible(find.byKey(ValueKey(key)));
+      await tester.pumpAndSettle();
+      expect(find.byKey(ValueKey(key)).hitTestable(), findsOneWidget);
+    }
     expect(tester.takeException(), isNull);
   });
 }

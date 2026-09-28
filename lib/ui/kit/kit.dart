@@ -40,7 +40,7 @@
 /// | [KitIcon], [KitIconSize], [KitBrandMark] | kit v2 §9 the one way to draw a glyph at a designed size, and the open-portal mark |
 /// | [KitChip], [KitChipKind], [KitChipWrap] | kit v2 §4-§5 a small rounded label, always with a word, and its wrapping row |
 /// | [KitSegmented], [KitSegment] | kit v2 §1.6 one choice among 2–4 short, always-visible options |
-/// | [KitMenuItem], [showKitMenu], [KitMenuPanel] | kit v2 the one popup menu: groups, checks, disabled reasons, destructive last |
+/// | [KitMenuItem], [KitMenuGroup], [showKitMenu], [KitMenuPanel] | kit v2 the one popup menu: groups (a named group gets a heading), checks, disabled reasons, destructive last |
 /// | [KitTerm], [showKitTerm] | K2 §1.20 a term that explains itself |
 /// | [KitUndo], [showKitUndo] | K2 §1.17, §4.1 the one Undo bar |
 /// | [KitBottomInset], [KitClearance] | K2 §2.12 how much of the bottom is covered by something pinned or floating |

@@ -968,12 +968,6 @@ abstract class AppLocalizations {
   /// **'Refresh recent conversations'**
   String get sessionsReload;
 
-  /// No description provided for @revertReviewTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Review staged revert'**
-  String get revertReviewTitle;
-
   /// No description provided for @revertReviewChanged.
   ///
   /// In en, this message translates to:
@@ -2924,12 +2918,6 @@ abstract class AppLocalizations {
   /// **'The server or project changed. Close and reopen Saved prompts.'**
   String get promptStashScopeChanged;
 
-  /// No description provided for @transcriptFindTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Find in conversation'**
-  String get transcriptFindTitle;
-
   /// No description provided for @transcriptFindHint.
   ///
   /// In en, this message translates to:
@@ -2995,12 +2983,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search all history'**
   String get transcriptFindAll;
-
-  /// No description provided for @skillMenu.
-  ///
-  /// In en, this message translates to:
-  /// **'Use a skill'**
-  String get skillMenu;
 
   /// No description provided for @skillUse.
   ///
@@ -8852,23 +8834,11 @@ abstract class AppLocalizations {
   /// **'Share conversation'**
   String get e7WorkspaceShareSession;
 
-  /// Workspace and activity: Rename
-  ///
-  /// In en, this message translates to:
-  /// **'Rename'**
-  String get e7WorkspaceRename;
-
   /// Workspace and activity: Compacting…
   ///
   /// In en, this message translates to:
   /// **'Compacting…'**
   String get e7WorkspaceCompacting;
-
-  /// Workspace and activity: Share
-  ///
-  /// In en, this message translates to:
-  /// **'Share'**
-  String get e7WorkspaceShare;
 
   /// Workspace and activity: Stop sharing
   ///
@@ -9308,12 +9278,6 @@ abstract class AppLocalizations {
   /// **'Changes'**
   String get chatUiChanges;
 
-  /// Chat journey: Choose a prompt and continue it in a new session
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a prompt and continue it in a new conversation'**
-  String get chatUiChooseAPromptAndContinueItIn;
-
   /// Chat journey: Choose a prompt to restore it in a new session.
   ///
   /// In en, this message translates to:
@@ -9421,12 +9385,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Context compacted'**
   String get chatUiContextCompacted;
-
-  /// Chat journey: Context usage
-  ///
-  /// In en, this message translates to:
-  /// **'Context usage'**
-  String get chatUiContextUsage;
 
   /// Chat journey: Copied. Paste it into the composer
   ///
@@ -9842,12 +9800,6 @@ abstract class AppLocalizations {
   /// **'No answer'**
   String get chatUiNoAnswer;
 
-  /// Chat journey: No matching commands
-  ///
-  /// In en, this message translates to:
-  /// **'No matching commands'**
-  String get chatUiNoMatchingCommands;
-
   /// Chat journey: No matching messages
   ///
   /// In en, this message translates to:
@@ -10082,12 +10034,6 @@ abstract class AppLocalizations {
   /// **'Rename conversation'**
   String get chatUiRenameSession;
 
-  /// Chat journey: Restore messages
-  ///
-  /// In en, this message translates to:
-  /// **'Restore messages'**
-  String get chatUiRestoreMessages;
-
   /// Chat journey: Restore reverted prompt
   ///
   /// In en, this message translates to:
@@ -10105,12 +10051,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry last prompt'**
   String get chatUiRetryLastPrompt;
-
-  /// Chat journey: Retry server commands
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get chatUiRetryServerCommands;
 
   /// Conversation menu and /undo command: opens the one "Undo from this prompt?" sheet for the newest prompt.
   ///
@@ -10226,12 +10166,6 @@ abstract class AppLocalizations {
   /// **'Server commands'**
   String get chatUiServerCommands;
 
-  /// Chat journey: Server commands could not be refreshed
-  ///
-  /// In en, this message translates to:
-  /// **'Server commands could not be refreshed'**
-  String get chatUiServerCommandsCouldNotBeRefreshed;
-
   /// Chat journey: Server message
   ///
   /// In en, this message translates to:
@@ -10255,12 +10189,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Conversation context'**
   String get chatUiSessionContext;
-
-  /// Chat journey: Session menu
-  ///
-  /// In en, this message translates to:
-  /// **'Conversation menu'**
-  String get chatUiSessionMenu;
 
   /// Chat journey: Session shared. Copy the visible link manually.
   ///
@@ -10867,30 +10795,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose: {option}'**
   String chatUiChooseOption(Object option);
-
-  /// Chat journey: Conversation
-  ///
-  /// In en, this message translates to:
-  /// **'Conversation'**
-  String get chatUiConversation;
-
-  /// Chat journey: Display and context
-  ///
-  /// In en, this message translates to:
-  /// **'Display and context'**
-  String get chatUiDisplayAndContext;
-
-  /// Chat journey: Session actions
-  ///
-  /// In en, this message translates to:
-  /// **'Conversation actions'**
-  String get chatUiSessionActions;
-
-  /// Chat journey: Results
-  ///
-  /// In en, this message translates to:
-  /// **'Results'**
-  String get chatUiResults;
 
   /// Chat journey: Main session
   ///
@@ -12078,12 +11982,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not confirm authentication. Return to the original source and try again.'**
   String get e7LibraryCouldNotConfirmAuthenticationReturnToThe;
-
-  /// Library and project tools UI: Search server commands
-  ///
-  /// In en, this message translates to:
-  /// **'Search server commands'**
-  String get e7LibrarySearchServerCommands;
 
   /// Library and project tools UI: No server commands found
   ///
@@ -31234,28 +31132,10 @@ abstract class AppLocalizations {
   /// **'any value'**
   String get toolsDetailTypeAny;
 
-  /// Server commands page: the loading bar label while the command list loads.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading commands'**
-  String get commandsScreenLoading;
-
-  /// Server commands page: title of the state shown when the first load of the commands failed.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn’t load commands'**
-  String get commandsScreenLoadFailed;
-
-  /// Server commands page: what the search looked through, used in "Nothing in commands matches …".
-  ///
-  /// In en, this message translates to:
-  /// **'commands'**
-  String get commandsScreenWhat;
-
   /// Server commands page: supporting line part naming the agent a command runs with, after its description.
   ///
   /// In en, this message translates to:
-  /// **'runs with {agent}'**
+  /// **'Runs with {agent}'**
   String commandsScreenRunsWith(String agent);
 
   /// Server commands page: name of a command row menu.
@@ -31263,12 +31143,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Command actions'**
   String get commandsScreenMenuLabel;
-
-  /// Server commands page: row menu item that asks where to run the command (the command is written /name).
-  ///
-  /// In en, this message translates to:
-  /// **'Run {command}…'**
-  String commandsScreenRun(String command);
 
   /// Server commands page: row menu item that copies the command as /name.
   ///
@@ -31587,12 +31461,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Run an action in this conversation, or a command from this server'**
   String get commandLauncherSubtitle;
-
-  /// Commands and agents sheet: shown when the session's agent (Codex, Claude Code) cannot list its own slash commands, so only the app's actions appear.
-  ///
-  /// In en, this message translates to:
-  /// **'This agent can\'t list its own commands here yet. These are the app\'s actions.'**
-  String get commandLauncherAgentCommandsUnavailable;
 
   /// Team conversation: title of the notice shown when the team refused a task that was just given to it.
   ///
@@ -32649,12 +32517,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A cloud machine for this project'**
   String get newConversationCloudDetail;
-
-  /// Conversation menu row: save this conversation as a file (JSON where the server exports, Markdown otherwise)
-  ///
-  /// In en, this message translates to:
-  /// **'Export this conversation'**
-  String get chatUiExportThisConversation;
 
   /// Chat, draft not saved: copies the unsaved draft text
   ///
@@ -36381,6 +36243,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error'**
   String get phoneServerCardErrorDetail;
+
+  /// Conversation menu (chat title and Work row): heading of the places to open
+  ///
+  /// In en, this message translates to:
+  /// **'Go to'**
+  String get sessionMenuGoTo;
+
+  /// Conversation menu: heading of the acts on the conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Do'**
+  String get sessionMenuDo;
+
+  /// Conversation menu › Go to: open the find bar in the conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Find'**
+  String get sessionMenuFind;
+
+  /// Conversation menu › Go to: the subagents this conversation started and their results
+  ///
+  /// In en, this message translates to:
+  /// **'Subagents'**
+  String get sessionMenuSubagents;
+
+  /// Conversation menu › Go to: the conversation's details page (context usage, folder, link)
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get sessionMenuDetails;
+
+  /// Conversation menu › Share conversation: what happens
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone with the link can read it'**
+  String get sessionMenuShareHint;
+
+  /// Conversation menu › Stop sharing: what happens
+  ///
+  /// In en, this message translates to:
+  /// **'The public link stops working'**
+  String get sessionMenuStopSharingHint;
+
+  /// Conversation menu › Compact context: what happens
+  ///
+  /// In en, this message translates to:
+  /// **'Summarizes it so the agent has room again'**
+  String get sessionMenuCompactHint;
+
+  /// Conversation menu › Fork conversation: what happens; the copy opens at once
+  ///
+  /// In en, this message translates to:
+  /// **'Opens a copy you can take another way'**
+  String get sessionMenuForkHint;
+
+  /// Conversation menu › Continue on computer: what happens
+  ///
+  /// In en, this message translates to:
+  /// **'Shows the command that resumes it there'**
+  String get sessionMenuContinueComputerHint;
+
+  /// Conversation menu › Open on another phone: what happens
+  ///
+  /// In en, this message translates to:
+  /// **'Shows a code the app on that phone opens'**
+  String get sessionMenuContinuePhoneHint;
+
+  /// Conversation menu: why Compact or Fork is dimmed in a conversation with no prompt yet
+  ///
+  /// In en, this message translates to:
+  /// **'Available after the first prompt'**
+  String get sessionMenuNeedsPrompt;
+
+  /// Command sheet: heading of the commands the connected server lists; server is its saved name
+  ///
+  /// In en, this message translates to:
+  /// **'Commands from {server}'**
+  String commandSheetServerGroup(String server);
+
+  /// Command sheet: title of the note on a server whose agent does not share its commands (Claude Code, Codex)
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} commands unavailable'**
+  String commandSheetAgentMissingTitle(String agent);
+
+  /// Command sheet: why the agent's commands are missing, naming the missing operations; never offered as working
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} doesn\'t share its own commands with the app yet, so the app can\'t list them, run them, or run ! shell commands. The app\'s own actions still work.'**
+  String commandSheetAgentMissingWhy(String agent);
+
+  /// Composer note: a typed /command on a server whose agent does not share its commands; nothing was sent
+  ///
+  /// In en, this message translates to:
+  /// **'{command} wasn\'t sent: {agent} doesn\'t share its commands with the app yet. Remove the / to send it as a message.'**
+  String commandSheetAgentCommandNotSent(String command, String agent);
+
+  /// Composer note: a typed !command on a server with no shell for the conversation; nothing was sent
+  ///
+  /// In en, this message translates to:
+  /// **'{command} wasn\'t sent: shell commands can\'t run on {agent} from the app. Remove the ! to send it as a message.'**
+  String commandSheetShellNotSent(String command, String agent);
+
+  /// Command sheet › Run shell command: what it does and the composer shortcut
+  ///
+  /// In en, this message translates to:
+  /// **'Or start a message with ! to run it from the composer'**
+  String get commandSheetShellDescription;
+
+  /// Command sheet › Retry last prompt: what happens
+  ///
+  /// In en, this message translates to:
+  /// **'Sends your last prompt again'**
+  String get commandSheetRetryDescription;
+
+  /// Command sheet › Note for the agent: what it is
+  ///
+  /// In en, this message translates to:
+  /// **'A note the agent keeps in mind for this conversation'**
+  String get commandSheetNoteDescription;
+
+  /// Command sheet › Approvals: what it opens
+  ///
+  /// In en, this message translates to:
+  /// **'What this conversation may do without asking'**
+  String get commandSheetApprovalsDescription;
+
+  /// Command sheet › Reload messages: what happens
+  ///
+  /// In en, this message translates to:
+  /// **'Reads this conversation from the server again'**
+  String get commandSheetReloadDescription;
+
+  /// Command sheet opened from Settings › Tools › Commands: what happens when a command is picked
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a command, then the conversation it runs in'**
+  String get commandSheetLibrarySubtitle;
+
+  /// Command sheet: the agent's name when the server does not say which agent it runs
+  ///
+  /// In en, this message translates to:
+  /// **'This agent'**
+  String get commandSheetAgentFallback;
+
+  /// Command sheet › Tasks (/plan): what happens; the plan opens in place in the transcript
+  ///
+  /// In en, this message translates to:
+  /// **'Opens the agent\'s latest plan in the conversation'**
+  String get commandSheetPlanDescription;
+
+  /// Chat title bar: the conversation menu's button tooltip and the menu's name (Go to / Do)
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation menu'**
+  String get chatUiSessionMenu;
+
+  /// Command sheet: title of the notice when the server's command list could not be read at all (no list yet)
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t load commands'**
+  String get commandsScreenLoadFailed;
+
+  /// Command sheet subtitle on a server whose agent does not share its commands: only the app's actions are listed
+  ///
+  /// In en, this message translates to:
+  /// **'Run one of the app\'s actions in this conversation'**
+  String get commandSheetSubtitleAppOnly;
 }
 
 class _AppLocalizationsDelegate

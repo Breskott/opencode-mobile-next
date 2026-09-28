@@ -416,8 +416,8 @@ void main() {
       await tester.pumpAndSettle();
       await openSessionMenu(tester);
 
-      expect(find.text('Rename'), findsOneWidget);
-      expect(find.text('Share'), findsOneWidget);
+      expect(find.text('Rename conversation'), findsOneWidget);
+      expect(find.text('Share conversation'), findsOneWidget);
       expect(find.text('Archive'), findsOneWidget);
       expect(find.text('Delete'), findsOneWidget);
     });
@@ -438,10 +438,10 @@ void main() {
       await tester.pumpAndSettle();
       await openSessionMenu(tester);
 
-      expect(find.text('Share'), findsNothing);
+      expect(find.text('Share conversation'), findsNothing);
       expect(find.text('Archive'), findsNothing);
       // Menus list possible actions only — no disabled rows, no explainers.
-      expect(find.text('Rename'), findsOneWidget);
+      expect(find.text('Rename conversation'), findsOneWidget);
       expect(find.text('Delete'), findsOneWidget);
     });
   });

@@ -507,9 +507,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionsReload => 'Refresh recent conversations';
 
   @override
-  String get revertReviewTitle => 'Review staged revert';
-
-  @override
   String get revertReviewChanged =>
       'This conversation or its staged revert changed. Review the latest state before continuing.';
 
@@ -1712,9 +1709,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'The server or project changed. Close and reopen Saved prompts.';
 
   @override
-  String get transcriptFindTitle => 'Find in conversation';
-
-  @override
   String get transcriptFindHint => 'Search conversation';
 
   @override
@@ -1755,9 +1749,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get transcriptFindAll => 'Search all history';
-
-  @override
-  String get skillMenu => 'Use a skill';
 
   @override
   String get skillUse => 'Add to conversation';
@@ -5271,13 +5262,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7WorkspaceShareSession => 'Share conversation';
 
   @override
-  String get e7WorkspaceRename => 'Rename';
-
-  @override
   String get e7WorkspaceCompacting => 'Compacting…';
-
-  @override
-  String get e7WorkspaceShare => 'Share';
 
   @override
   String get e7WorkspaceStopSharing => 'Stop sharing';
@@ -5573,10 +5558,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiChanges => 'Changes';
 
   @override
-  String get chatUiChooseAPromptAndContinueItIn =>
-      'Choose a prompt and continue it in a new conversation';
-
-  @override
   String get chatUiChooseAPromptToRestoreItIn =>
       'Choose a prompt to restore it in a new conversation.';
 
@@ -5635,9 +5616,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiContextCompacted => 'Context compacted';
-
-  @override
-  String get chatUiContextUsage => 'Context usage';
 
   @override
   String get chatUiCopiedPasteItIntoTheComposer =>
@@ -5867,9 +5845,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiNoAnswer => 'No answer';
 
   @override
-  String get chatUiNoMatchingCommands => 'No matching commands';
-
-  @override
   String get chatUiNoMatchingMessages => 'No matching messages';
 
   @override
@@ -6000,9 +5975,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiRenameSession => 'Rename conversation';
 
   @override
-  String get chatUiRestoreMessages => 'Restore messages';
-
-  @override
   String get chatUiRestoreRevertedPrompt => 'Restore reverted prompt';
 
   @override
@@ -6011,9 +5983,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiRetryLastPrompt => 'Retry last prompt';
-
-  @override
-  String get chatUiRetryServerCommands => 'Try again';
 
   @override
   String get chatUiRevertLastPrompt => 'Undo last prompt';
@@ -6080,10 +6049,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiServerCommands => 'Server commands';
 
   @override
-  String get chatUiServerCommandsCouldNotBeRefreshed =>
-      'Server commands could not be refreshed';
-
-  @override
   String get chatUiServerMessage => 'Server message';
 
   @override
@@ -6094,9 +6059,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiSessionContext => 'Conversation context';
-
-  @override
-  String get chatUiSessionMenu => 'Conversation menu';
 
   @override
   String get chatUiSessionSharedCopyTheVisibleLinkManually =>
@@ -6596,18 +6558,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String chatUiChooseOption(Object option) {
     return 'Choose: $option';
   }
-
-  @override
-  String get chatUiConversation => 'Conversation';
-
-  @override
-  String get chatUiDisplayAndContext => 'Display and context';
-
-  @override
-  String get chatUiSessionActions => 'Conversation actions';
-
-  @override
-  String get chatUiResults => 'Results';
 
   @override
   String get chatUiMainSession => 'Main conversation';
@@ -7299,9 +7249,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get e7LibraryCouldNotConfirmAuthenticationReturnToThe =>
       'Could not confirm authentication. Return to the original source and try again.';
-
-  @override
-  String get e7LibrarySearchServerCommands => 'Search server commands';
 
   @override
   String get e7LibraryNoServerCommandsFound => 'No server commands found';
@@ -19595,26 +19542,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toolsDetailTypeAny => 'any value';
 
   @override
-  String get commandsScreenLoading => 'Loading commands';
-
-  @override
-  String get commandsScreenLoadFailed => 'Couldn’t load commands';
-
-  @override
-  String get commandsScreenWhat => 'commands';
-
-  @override
   String commandsScreenRunsWith(String agent) {
-    return 'runs with $agent';
+    return 'Runs with $agent';
   }
 
   @override
   String get commandsScreenMenuLabel => 'Command actions';
-
-  @override
-  String commandsScreenRun(String command) {
-    return 'Run $command…';
-  }
 
   @override
   String commandsScreenCopy(String command) {
@@ -19805,10 +19738,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get commandLauncherSubtitle =>
       'Run an action in this conversation, or a command from this server';
-
-  @override
-  String get commandLauncherAgentCommandsUnavailable =>
-      'This agent can\'t list its own commands here yet. These are the app\'s actions.';
 
   @override
   String get teamChatRefusedTitle => 'Task not taken';
@@ -20511,9 +20440,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get newConversationCloudDetail => 'A cloud machine for this project';
-
-  @override
-  String get chatUiExportThisConversation => 'Export this conversation';
 
   @override
   String get chatDraftCopy => 'Copy draft';
@@ -23051,4 +22977,108 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneServerCardErrorDetail => 'Error';
+
+  @override
+  String get sessionMenuGoTo => 'Go to';
+
+  @override
+  String get sessionMenuDo => 'Do';
+
+  @override
+  String get sessionMenuFind => 'Find';
+
+  @override
+  String get sessionMenuSubagents => 'Subagents';
+
+  @override
+  String get sessionMenuDetails => 'Details';
+
+  @override
+  String get sessionMenuShareHint => 'Anyone with the link can read it';
+
+  @override
+  String get sessionMenuStopSharingHint => 'The public link stops working';
+
+  @override
+  String get sessionMenuCompactHint =>
+      'Summarizes it so the agent has room again';
+
+  @override
+  String get sessionMenuForkHint => 'Opens a copy you can take another way';
+
+  @override
+  String get sessionMenuContinueComputerHint =>
+      'Shows the command that resumes it there';
+
+  @override
+  String get sessionMenuContinuePhoneHint =>
+      'Shows a code the app on that phone opens';
+
+  @override
+  String get sessionMenuNeedsPrompt => 'Available after the first prompt';
+
+  @override
+  String commandSheetServerGroup(String server) {
+    return 'Commands from $server';
+  }
+
+  @override
+  String commandSheetAgentMissingTitle(String agent) {
+    return '$agent commands unavailable';
+  }
+
+  @override
+  String commandSheetAgentMissingWhy(String agent) {
+    return '$agent doesn\'t share its own commands with the app yet, so the app can\'t list them, run them, or run ! shell commands. The app\'s own actions still work.';
+  }
+
+  @override
+  String commandSheetAgentCommandNotSent(String command, String agent) {
+    return '$command wasn\'t sent: $agent doesn\'t share its commands with the app yet. Remove the / to send it as a message.';
+  }
+
+  @override
+  String commandSheetShellNotSent(String command, String agent) {
+    return '$command wasn\'t sent: shell commands can\'t run on $agent from the app. Remove the ! to send it as a message.';
+  }
+
+  @override
+  String get commandSheetShellDescription =>
+      'Or start a message with ! to run it from the composer';
+
+  @override
+  String get commandSheetRetryDescription => 'Sends your last prompt again';
+
+  @override
+  String get commandSheetNoteDescription =>
+      'A note the agent keeps in mind for this conversation';
+
+  @override
+  String get commandSheetApprovalsDescription =>
+      'What this conversation may do without asking';
+
+  @override
+  String get commandSheetReloadDescription =>
+      'Reads this conversation from the server again';
+
+  @override
+  String get commandSheetLibrarySubtitle =>
+      'Pick a command, then the conversation it runs in';
+
+  @override
+  String get commandSheetAgentFallback => 'This agent';
+
+  @override
+  String get commandSheetPlanDescription =>
+      'Opens the agent\'s latest plan in the conversation';
+
+  @override
+  String get chatUiSessionMenu => 'Conversation menu';
+
+  @override
+  String get commandsScreenLoadFailed => 'Couldn’t load commands';
+
+  @override
+  String get commandSheetSubtitleAppOnly =>
+      'Run one of the app\'s actions in this conversation';
 }

@@ -450,7 +450,10 @@ class _ChatComposer extends StatelessWidget {
       final matches =
           commands
               .where(
-                (command) => command.enabled && command.matchesQuery(slash),
+                (command) =>
+                    command.enabled &&
+                    command.listed &&
+                    command.matchesQuery(slash),
               )
               .toList()
             ..sort((a, b) {

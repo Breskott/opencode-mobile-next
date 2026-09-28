@@ -112,25 +112,8 @@ void main() {
     addTearDown(conn.dispose);
     await pumpChat3(tester, conn);
 
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Conversation actions'));
-    await tester.pumpAndSettle();
-    // The session menu is a lazy list: rows below the fold are built as it
-    // scrolls.
-    await tester.scrollUntilVisible(
-      find.text('Run shell command'),
-      100,
-      scrollable: find
-          .descendant(
-            of: find.byKey(const Key('session-menu-sheet')),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Run shell command'));
-    await tester.pumpAndSettle();
+    // Run shell command is a command in the sheet (slice-P10.1).
+    await _runCommand(tester, 'shell');
 
     expect(find.byKey(const ValueKey('run-shell-dialog')), findsOneWidget);
     // Says what happens, and why Run waits.
@@ -169,7 +152,11 @@ void main() {
     addTearDown(conn.dispose);
     await pumpChat3(tester, conn);
 
-    await _runCommand(tester, 'rename');
+    // Rename is the conversation menu's (slice-P10.2).
+    await tester.tap(find.byTooltip('Conversation menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('session-menu-rename')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('rename-session-dialog')), findsOneWidget);
     await tester.enterText(
       find.byKey(const ValueKey('rename-session-title')),

@@ -151,17 +151,15 @@ void main() {
       ];
       await _pump(tester, CommandsScreen(controller: controller));
 
-      expect(find.text('Server commands'), findsOneWidget);
-      expect(find.textContaining('/review'), findsOneWidget);
-      expect(
-        find.textContaining('Review the working tree · runs with'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('No description'), findsOneWidget);
-      // Two commands: no search yet (it earns its place past eight).
-      expect(find.byKey(const ValueKey('commands-search')), findsNothing);
+      // The command sheet (slice-P10.1): plain words first, the slash word
+      // as the typing hint, who runs it under.
+      expect(find.text('Server commands'), findsWidgets);
+      expect(find.text('Review the working tree'), findsOneWidget);
+      expect(find.text('/review'), findsOneWidget);
+      expect(find.text('Runs with plan'), findsOneWidget);
+      expect(find.text('/ship'), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('command-review')));
+      await tester.tap(find.byKey(const ValueKey('command-server-review')));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('command-submit')), findsOneWidget);
     });
@@ -176,14 +174,17 @@ void main() {
       ];
       await _pump(tester, CommandsScreen(controller: controller));
 
-      final search = find.byKey(const ValueKey('commands-search'));
+      final search = find.byKey(const Key('command-launcher-search'));
       expect(search, findsOneWidget);
       await tester.enterText(search, 'zzz');
       await tester.pumpAndSettle(const Duration(seconds: 1));
-      expect(find.byKey(const ValueKey('commands-no-match')), findsOneWidget);
+      expect(
+        find.byKey(const Key('command-launcher-no-match')),
+        findsOneWidget,
+      );
       await tester.tap(find.text('Clear search'));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('command-cmd0')), findsOneWidget);
+      expect(find.byKey(const Key('command-server-cmd0')), findsOneWidget);
     });
 
     testWidgets('empty says where commands come from', (tester) async {
@@ -211,7 +212,7 @@ void main() {
       await tester.tap(find.text('Try again'));
       await tester.pumpAndSettle();
       expect(find.text('Couldn’t load commands'), findsNothing);
-      expect(find.byKey(const ValueKey('command-review')), findsOneWidget);
+      expect(find.byKey(const Key('command-server-review')), findsOneWidget);
     });
   });
 

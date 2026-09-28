@@ -199,15 +199,25 @@ Future<void> _undoFromPrompt(WidgetTester tester, String prompt) async {
   await tester.pumpAndSettle();
 }
 
-/// Door 2: the conversation menu's "Undo last prompt".
+/// Door 2: the command sheet's "Undo last prompt" (/undo, slice-P10.1).
 Future<void> _undoFromMenu(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('session-actions-button')));
+  await tester.tap(find.byKey(const Key('composer-tools-button')));
   await tester.pumpAndSettle();
-  await tester.ensureVisible(find.text('Conversation actions'));
-  await tester.tap(find.text('Conversation actions'));
+  final commands = find.byKey(const Key('composer-tool-commands'));
+  await tester.ensureVisible(commands);
   await tester.pumpAndSettle();
-  await tester.ensureVisible(find.text('Undo last prompt'));
-  await tester.tap(find.text('Undo last prompt'));
+  await tester.tap(commands);
+  await tester.pumpAndSettle();
+  await tester.pumpAndSettle();
+  await tester.enterText(
+    find.byKey(const Key('command-launcher-search')),
+    'undo',
+  );
+  await tester.pump();
+  final undo = find.byKey(const Key('command-mobile-undo'));
+  await tester.ensureVisible(undo);
+  await tester.pumpAndSettle();
+  await tester.tap(undo);
   await tester.pumpAndSettle();
 }
 
