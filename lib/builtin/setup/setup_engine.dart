@@ -1357,7 +1357,7 @@ SetupProgress progressFromRecord(
                 titles[record.current] ?? record.current ?? 'OpenCode',
               )
         : null,
-    logTail: record.logTail,
+    logTail: setupLogForPeople(record.logTail),
     firstSetup: SetupJobParams.isFirstSetup(record.params),
     adding: SetupJobParams.addingIds(record.params),
   );
@@ -1424,8 +1424,16 @@ final _checksum = RegExp(
     );
     return (component: text, job: text);
   }
+  // The OpenCode install names its own reason on its last line.
+  for (final (marker, text) in [
+    (OpenCodeInstallFailure.noProgram, l10n.phoneSetupErrorOpenCodeNoProgram),
+    (OpenCodeInstallFailure.wontRun, l10n.phoneSetupErrorOpenCodeWontRun),
+    (OpenCodeInstallFailure.noStart, l10n.phoneSetupErrorOpenCodeNoStart),
+  ]) {
+    if (reason.startsWith(marker)) return (component: text, job: text);
+  }
   // Only the end of the log: an old warning further up is not the reason.
-  final lines = logTail.trimRight().split('\n');
+  final lines = setupLogForPeople(logTail).trimRight().split('\n');
   final recent = [
     ...lines.skip(lines.length > 15 ? lines.length - 15 : 0),
     reason,

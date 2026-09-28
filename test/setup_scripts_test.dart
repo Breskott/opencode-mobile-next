@@ -10,6 +10,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/builtin/setup/components.dart';
+import 'package:opencode_mobile/builtin/setup/setup_contract.dart';
 import 'package:opencode_mobile/builtin/setup/setup_scripts.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 
@@ -355,9 +356,12 @@ esac
         '${bin.path}/opencode2',
       ]);
       Future<ProcessResult> check(Map<String, String> params) {
+        // The Termux host's check; the in-app one wants the pinned native
+        // program (test/opencode_native_install_test.dart).
         final component = setupComponents(
           lookupAppLocalizations(const Locale('en')),
           params: {'opencode': params},
+          host: SetupHostKind.termux,
         ).firstWhere((c) => c.id == SetupComponentIds.openCode);
         return Process.run(
           'dash',

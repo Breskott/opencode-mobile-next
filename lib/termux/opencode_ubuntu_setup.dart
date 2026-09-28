@@ -69,10 +69,13 @@ install_opencode() {
   # Make the compatible Ubuntu binary a required package. Optional dependency
   # failures must not silently leave postinstall trying a musl-only fallback.
   # Keep upstream postinstall intact and visible so runtime errors are actionable.
+  # npm 11 only runs install scripts it was told to allow: exactly the main
+  # package's postinstall, nothing else (older npm ignores the flag).
   if npm install -g \
     ${prefix_args[@]+"${prefix_args[@]}"} \
     --include=optional \
     --foreground-scripts \
+    --allow-scripts="$main_package" \
     --cache "$npm_cache" \
     --fetch-retries=5 \
     --fetch-retry-mintimeout=10000 \

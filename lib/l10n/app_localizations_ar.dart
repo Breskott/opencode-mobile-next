@@ -12099,6 +12099,18 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get phoneSetupErrorOpenCodeNoProgram =>
+      'OpenCode was downloaded, but its program was not in the download. Continue to fetch it again.';
+
+  @override
+  String get phoneSetupErrorOpenCodeWontRun =>
+      'OpenCode was downloaded, but its program does not run on this phone. Details show what it said.';
+
+  @override
+  String get phoneSetupErrorOpenCodeNoStart =>
+      'OpenCode was installed, but it did not start. Continue to try again; Details show what it said.';
+
+  @override
   String phoneSetupErrorNoSpace(String name) {
     return 'لا توجد مساحة كافية لتثبيت $name';
   }

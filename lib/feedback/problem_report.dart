@@ -237,9 +237,13 @@ class ProblemReport {
     }
     var errors = 0;
     var timings = 0;
+    // A failed job's report ends with that job's own lines and the errors
+    // around it: timings (OCTRACE) would bury its reason under status
+    // polls, so they stay in the device log and on the diagnostics page.
+    final withTimings = error?.log == null;
     for (final event in events) {
       if (event.kind == ProblemEventKind.timing) {
-        if (timings++ >= maxTimings) continue;
+        if (!withTimings || timings++ >= maxTimings) continue;
       } else if (errors++ >= maxErrors) {
         continue;
       }

@@ -3932,17 +3932,21 @@ printf "%s" "$2" > "$1/.oc-node-version"
 
 # npm_install <package spec>: into the app's own prefix, re-runnable. The
 # cache is temporary: npm's persistent cache would keep hundreds of MB.
+# npm 11 runs only the install scripts it is told to allow: exactly this
+# package's own, by name ("@scope/pkg@1.2.3" -> "@scope/pkg").
 npm_install() {
-  local spec="$1" output="$CLAUDE_DIR/npm-last.log" code=0
+  local spec="$1" output="$CLAUDE_DIR/npm-last.log" code=0 name="$1"
+  case "$spec" in ?*@*) name="${spec%@*}" ;; esac
   in_ubuntu env NODE_OPTIONS=--dns-result-order=ipv4first bash -c '
 set -u
 cache=$(mktemp -d /tmp/oc-claude-npm.XXXXXX)
 npm install -g --no-fund --no-audit --prefix "$1" --cache "$cache" \
+  --allow-scripts="$3" \
   --fetch-retries=5 --fetch-retry-mintimeout=10000 --fetch-timeout=300000 "$2"
 code=$?
 rm -rf -- "$cache"
 exit "$code"
-' oc-npm "$AGENTS_DIR" "$spec" > "$output" 2>&1 || code=$?
+' oc-npm "$AGENTS_DIR" "$spec" "$name" > "$output" 2>&1 || code=$?
   cat "$output"
   if [ "$code" -ne 0 ]; then
     # A native module that had to compile and could not. No toolchain is

@@ -12801,6 +12801,18 @@
       }
     }
   },
+  "phoneSetupErrorOpenCodeNoProgram": "OpenCode was downloaded, but its program was not in the download. Continue to fetch it again.",
+  "@phoneSetupErrorOpenCodeNoProgram": {
+    "description": "Setup error when the pinned OpenCode archive did not contain the opencode program"
+  },
+  "phoneSetupErrorOpenCodeWontRun": "OpenCode was downloaded, but its program does not run on this phone. Details show what it said.",
+  "@phoneSetupErrorOpenCodeWontRun": {
+    "description": "Setup error when the downloaded OpenCode program failed to print its version"
+  },
+  "phoneSetupErrorOpenCodeNoStart": "OpenCode was installed, but it did not start. Continue to try again; Details show what it said.",
+  "@phoneSetupErrorOpenCodeNoStart": {
+    "description": "Setup error when the new OpenCode program did not answer during its short start check"
+  },
   "phoneSetupErrorNoSpace": "Not enough free space to install {name}",
   "@phoneSetupErrorNoSpace": {
     "description": "Setup error when the phone ran out of storage",

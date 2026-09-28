@@ -19764,6 +19764,24 @@ abstract class AppLocalizations {
   /// **'The download of {name} was damaged. Continue to fetch it again.'**
   String phoneSetupErrorChecksum(String name);
 
+  /// Setup error when the pinned OpenCode archive did not contain the opencode program
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode was downloaded, but its program was not in the download. Continue to fetch it again.'**
+  String get phoneSetupErrorOpenCodeNoProgram;
+
+  /// Setup error when the downloaded OpenCode program failed to print its version
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode was downloaded, but its program does not run on this phone. Details show what it said.'**
+  String get phoneSetupErrorOpenCodeWontRun;
+
+  /// Setup error when the new OpenCode program did not answer during its short start check
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode was installed, but it did not start. Continue to try again; Details show what it said.'**
+  String get phoneSetupErrorOpenCodeNoStart;
+
   /// Setup error when the phone ran out of storage
   ///
   /// In en, this message translates to:

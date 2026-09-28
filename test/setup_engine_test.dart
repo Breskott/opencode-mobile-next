@@ -216,9 +216,12 @@ void main() {
       expect(spec(linux, 'essentials')['version'], '2.43.0');
       expect(spec(linux, 'node')['script'], startsWith(setupPrelude));
       expect(spec(linux, 'node')['script'], contains('oc_download'));
+      // The pinned native program, not npm (slice-builtin-opencode-pin).
       expect(
         spec(linux, 'opencode')['script'],
-        contains('--foreground-scripts'),
+        withSetupPrelude(
+          SetupScripts.openCodeNativeInstall(TermuxRuntime.openCode1),
+        ),
       );
       expect(spec(linux, 'start')['step'], isTrue);
       expect(spec(linux, 'start')['data'], {
@@ -290,14 +293,14 @@ void main() {
       });
       expect(
         spec(linux, 'opencode')['script'],
-        contains("export OC_RUNTIME='opencode2'"),
+        contains(OpenCodePins.v2Arm64.sha256),
       );
       expect(
         spec(linux, 'start')['data'],
         containsPair('runtime', 'opencode2'),
       );
       // The check asked about OpenCode 2, not 1.
-      expect(linux.runs.single, contains('opencode2 --version'));
+      expect(linux.runs.single, contains('oc_bin=\$(command -v opencode2)'));
 
       linux.job!['state'] = 'failed';
       await engine.run(
@@ -368,6 +371,62 @@ void main() {
       expect(engine.progress.value.firstSetup, isFalse);
       await engine.restore();
       expect(engine.progress.value.firstSetup, isFalse);
+    });
+
+    test('Continue after a failed OpenCode install (build 2062: npm\'s '
+        'wrapper in place, the start failed) replaces only OpenCode', () async {
+      linux.job = {
+        'jobId': 'old',
+        'state': 'failed',
+        'current': 'start',
+        'order': ['linux', 'essentials', 'python', 'node', 'opencode', 'start'],
+        'components': {
+          for (final id in [
+            'linux',
+            'essentials',
+            'python',
+            'node',
+            'opencode',
+          ])
+            id: {'state': 'done'},
+          'start': {'state': 'failed', 'error': 'OpenCode did not answer'},
+        },
+        'params': SetupJobParams.firstSetup,
+      };
+      // Everything below OpenCode is in place; the npm wrapper still prints
+      // the pinned version but is not the pinned program, so its check fails.
+      linux.checks = {
+        'linux': (true, '24.04.5'),
+        'essentials': (true, '2.43.0'),
+        'python': (true, '3.12.3'),
+        'node': (true, '24.21.0'),
+      };
+      await engine.resume();
+
+      final started = (linux.started.single['components']! as List)
+          .cast<Map<String, Object?>>();
+      expect(
+        [for (final c in started) c['id']],
+        ['linux', 'essentials', 'python', 'node', 'opencode', 'start'],
+      );
+      for (final id in ['linux', 'essentials', 'python', 'node']) {
+        expect(spec(linux, id)['skipped'], isTrue, reason: id);
+      }
+      expect(spec(linux, 'opencode')['skipped'], isNot(isTrue));
+      expect(
+        spec(linux, 'opencode')['script'],
+        contains(OpenCodePins.v1Arm64.sha256),
+      );
+      expect(spec(linux, 'start')['data'], {
+        'runtime': 'opencode1',
+        'openCodeChanged': 'true',
+      });
+      // The check that failed is the native one, not a version print.
+      expect(
+        linux.runs.single,
+        contains('readlink -f'),
+        reason: 'a wrapper that prints the right version is not enough',
+      );
     });
 
     test('a finished job does not lend its params to the next run', () async {
@@ -862,6 +921,50 @@ void main() {
         'Could not download Node.js: no internet connection',
       );
       expect(progress.logTail, contains('Could not resolve host'));
+    });
+
+    test('OCTRACE timing lines never reach the job log people see; the log '
+        'ends with the real error', () {
+      final record = SetupJobRecord.parse(
+        jsonEncode({
+          'jobId': 'j',
+          'state': 'failed',
+          'current': 'opencode',
+          'error': OpenCodeInstallFailure.noStart,
+          'logTail': [
+            '==> Checking that OpenCode starts',
+            '[oc] What OpenCode said:',
+            '  Error: Failed to start server',
+            OpenCodeInstallFailure.noStart,
+            '[2026-09-28 10:00:00 UTC] timing · OCTRACE',
+            'OCTRACE 2.9ms linux.setupStatus',
+          ].join('\n'),
+          'order': ['opencode'],
+          'components': {
+            'opencode': {
+              'state': 'failed',
+              'error': OpenCodeInstallFailure.noStart,
+            },
+          },
+        }),
+      )!;
+      final progress = progressFromRecord(
+        record,
+        setupComponents(en).where((c) => c.id == 'opencode').toList(),
+        en,
+        now: DateTime.now(),
+      );
+      expect(progress.logTail, isNot(contains('OCTRACE')));
+      expect(
+        progress.logTail.trimRight().split('\n').last,
+        OpenCodeInstallFailure.noStart,
+      );
+      expect(progress.error, en.phoneSetupErrorOpenCodeNoStart);
+      expect(
+        progress.components.single.error,
+        en.phoneSetupErrorOpenCodeNoStart,
+      );
+      expect(progress.error, isNot(contains('[oc]')));
     });
   });
 
