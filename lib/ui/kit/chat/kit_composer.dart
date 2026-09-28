@@ -475,17 +475,24 @@ class _KitComposerState extends State<KitComposer> {
           key: widget.composerKey,
           container: true,
           explicitChildNodes: true,
-          child: KitGlass(
-            borderRadius: BorderRadius.circular(radius),
-            dim: true,
-            shadow: true,
-            flow: true,
-            child: Padding(
-              padding: EdgeInsets.all(tokens.space1),
-              child: KitSwap(
-                pace: KitPace.standard,
-                alignment: AlignmentDirectional.bottomCenter,
-                child: content,
+          // The whole pill counts as inside the field for "tap outside":
+          // a mouse or stylus press on Send would otherwise drop the
+          // focus first, the keyboard would hide, the page would slide
+          // down under the pointer and the release would land on nothing
+          // (the first Send press only hid the keyboard).
+          child: TextFieldTapRegion(
+            child: KitGlass(
+              borderRadius: BorderRadius.circular(radius),
+              dim: true,
+              shadow: true,
+              flow: true,
+              child: Padding(
+                padding: EdgeInsets.all(tokens.space1),
+                child: KitSwap(
+                  pace: KitPace.standard,
+                  alignment: AlignmentDirectional.bottomCenter,
+                  child: content,
+                ),
               ),
             ),
           ),
