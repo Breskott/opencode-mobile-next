@@ -12,7 +12,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/domain/connection_status.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
@@ -44,6 +44,15 @@ class _Controller extends ConnectionController {
   int queued = 0;
   int drafts = 0;
 
+  /// The controller-owned connection truth the status line presents
+  /// (3d64653c); an isolated controller's own is always hidden, so the
+  /// connection-line shots set the phase they show.
+  ConnectionStatusSnapshot? shownStatus;
+
+  @override
+  ConnectionStatusSnapshot get connectionStatus =>
+      shownStatus ?? super.connectionStatus;
+
   @override
   int queuedPromptCountForProfile(String profileID) => queued;
 
@@ -55,6 +64,13 @@ Future<_Controller> _controller() async {
   SharedPreferences.setMockInitialValues({});
   return _Controller(_Store(prefs: await SharedPreferences.getInstance()));
 }
+
+/// The server stopped answering: what the connection line exists to say.
+const _notAnswering = ConnectionStatusSnapshot(
+  phase: ConnectionStatusPhase.notAnswering,
+  profileId: 'studio',
+  serverName: 'Studio box',
+);
 
 const _phone = Size(412, 915);
 const _wide = Size(1280, 800);
@@ -74,6 +90,7 @@ Future<void> _shot(
   Size size = _phone,
   Widget body = const SizedBox.expand(),
   FutureOr<void> Function(BuildContext context)? open,
+  String? shows,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -110,6 +127,8 @@ Future<void> _shot(
     if (open != null) unawaited(Future.sync(() => open(context)));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    // What the shot is about must be on screen, not an empty page.
+    if (shows != null) expect(find.text(shows), findsOneWidget);
     await expectLater(
       find.byKey(boundary),
       matchesGoldenFile('goldens/${_name(shot, size, light)}.png'),
@@ -175,13 +194,14 @@ void main() {
     for (final size in [_phone, _wide]) {
       testWidgets('connection line lost ($theme, $size)', (tester) async {
         final controller = await _controller()
-          ..status = StreamStatus.disconnected;
+          ..shownStatus = _notAnswering;
         addTearDown(controller.dispose);
         await _shot(
           tester,
           'shell_embedded_connection_status_banner_lost',
           light: light,
           size: size,
+          shows: "Studio box isn't answering",
           body: Column(
             children: [ConnectionStatusBanner(controller: controller)],
           ),
@@ -191,12 +211,13 @@ void main() {
 
     testWidgets('connection line, phone server ($theme)', (tester) async {
       final controller = await _controller()
-        ..status = StreamStatus.disconnected;
+        ..shownStatus = _notAnswering;
       addTearDown(controller.dispose);
       await _shot(
         tester,
         'shell_embedded_connection_status_banner_phone_stopped',
         light: light,
+        shows: "OpenCode on this phone isn't answering",
         body: Column(
           children: [
             ConnectionStatusBanner(

@@ -7,6 +7,8 @@
 // Regenerate deliberately:
 //   flutter test --update-goldens test/revamp/slice_p6_6a_defaults_golden_test.dart
 // and look at every changed image before committing it.
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -102,7 +104,13 @@ Future<void> _reviewShot(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   debugDefaultTargetPlatformOverride = TargetPlatform.android;
-  SharedPreferences.setMockInitialValues({});
+  // The profile row is saved, as the app's ProfileStore keeps it: the
+  // defaults store only speaks for a server that still exists.
+  SharedPreferences.setMockInitialValues({
+    'oc.profiles': jsonEncode([
+      {'id': 'laptop'},
+    ]),
+  });
   ReviewWorkspace.clearCache();
   resetDefaultNoticesForTest();
   final boundary = GlobalKey();
@@ -131,6 +139,8 @@ Future<void> _reviewShot(
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    // The shot is about the notice: it must be on screen.
+    expect(find.textContaining('it is the view with changes'), findsOneWidget);
     await expectLater(
       find.byKey(boundary),
       matchesGoldenFile('goldens/${_name('review_scope', size, light)}.png'),
@@ -167,7 +177,13 @@ Future<void> _workShot(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   debugDefaultTargetPlatformOverride = TargetPlatform.android;
-  SharedPreferences.setMockInitialValues({});
+  // The profile row is saved, as the app's ProfileStore keeps it: the
+  // defaults store only speaks for a server that still exists.
+  SharedPreferences.setMockInitialValues({
+    'oc.profiles': jsonEncode([
+      {'id': 'phone'},
+    ]),
+  });
   resetDefaultNoticesForTest();
   final prefs = await SharedPreferences.getInstance();
   final store = SeededProfileStore(
@@ -213,6 +229,11 @@ Future<void> _workShot(
     }
     await tester.pump(const Duration(seconds: 1));
     expect(tester.takeException(), isNull);
+    // The shot is about the notice: it must be on screen.
+    expect(
+      find.textContaining('the only project on this server'),
+      findsOneWidget,
+    );
     await expectLater(
       find.byKey(boundary),
       matchesGoldenFile('goldens/${_name('work_project', size, light)}.png'),
