@@ -583,8 +583,10 @@ class _Lines extends StatelessWidget {
   }
 }
 
-/// Review changes: the changed files with their +/− counts (no full
-/// diff on the phone) and the run's work items, each opening its sheet.
+/// Review changes: the changed files with their +/− counts and the run's
+/// work items, each opening its sheet. There is no diff to open here yet:
+/// the merge readiness carries each file's path and counts only, no patch
+/// (slice-P3.7a; once it does, a file opens showKitDiff like everywhere else).
 class _Changes extends StatelessWidget {
   const _Changes({
     required this.controller,
@@ -660,7 +662,7 @@ class _Changes extends StatelessWidget {
           SizedBox(height: tokens.sectionGap),
           KitRowGroup(
             label: l10n.teamUiMergeChangesWork,
-            margin: EdgeInsets.zero,
+            margin: EdgeInsetsDirectional.zero,
             children: [
               for (final item in work)
                 KitRow(

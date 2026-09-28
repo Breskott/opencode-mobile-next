@@ -20,7 +20,6 @@ import '../kit/kit_breadcrumb.dart';
 import '../kit/kit_buttons.dart' show KitAction;
 import '../kit/kit_copy.dart';
 import '../kit/kit_divider.dart';
-import '../kit/kit_icon_button.dart';
 import '../kit/kit_menu.dart';
 import '../kit/kit_notice.dart';
 import '../kit/kit_page_route.dart';
@@ -29,7 +28,6 @@ import '../kit/kit_row_parts.dart' show KitChevron;
 import '../kit/kit_screen.dart';
 import '../kit/kit_scrollbar.dart' show KitScrollArea;
 import '../kit/kit_search_field.dart';
-import '../kit/kit_sheet.dart';
 import '../kit/kit_state_view.dart';
 import '../kit/kit_status_line.dart';
 import '../kit/kit_tokens.dart';
@@ -968,59 +966,6 @@ class _FilesScreenState extends State<FilesScreen> {
     );
   }
 
-  /// UX-102: the completion path. One tap from Files to the changed set,
-  /// grouped by status, with per-file review and add-to-prompt.
-  Future<void> _openChanges() async {
-    final changes = _fileStatuses.values.toList()
-      ..sort((a, b) => a.path.compareTo(b.path));
-    if (changes.isEmpty) return;
-    final l10n = readerL10n(context);
-    final added = changes.fold<int>(0, (sum, file) => sum + file.additions);
-    final removed = changes.fold<int>(0, (sum, file) => sum + file.deletions);
-    final navigator = Navigator.of(context);
-    final choice = await showKitSheet<_ChangeChoice>(
-      context,
-      title: l10n.readerUiChanges,
-      subtitle: l10n.readerUiChangeSummary(changes.length, added, removed),
-      icon: AppIconography.review,
-      sheetKey: const ValueKey('files-changes-sheet'),
-      primary: KitAction(
-        key: const ValueKey('review-all-changes'),
-        label: l10n.readerUiReviewAll,
-        onPressed: () =>
-            navigator.pop(const _ChangeChoice(_ChangeAction.reviewAll)),
-      ),
-      body: (_) =>
-          _ChangesList(changes: changes, canStage: widget.handoff != null),
-    );
-    if (!mounted || choice == null) return;
-    switch (choice.action) {
-      case _ChangeAction.reviewAll:
-        await _reviewChanges();
-      case _ChangeAction.review:
-        await _reviewFileChange(
-          FileNode(
-            name: choice.path.split('/').last,
-            path: choice.path,
-            isDir: false,
-          ),
-        );
-      case _ChangeAction.stage:
-        final change = _fileStatuses[choice.path];
-        _stageReference(
-          ReviewReference(
-            id: widget.handoff!.nextID('changed-file'),
-            kind: ReviewReferenceKind.changedFile,
-            path: choice.path,
-            scope: ReviewReferenceScope.workingTree,
-            added: change?.additions,
-            removed: change?.deletions,
-            status: change?.status,
-          ),
-        );
-    }
-  }
-
   /// Shared by every Files add-to-prompt affordance: a staged reference is
   /// done with Undo; a duplicate or a full tray is said in place.
   void _stageReference(ReviewReference reference) {
@@ -1327,16 +1272,25 @@ class _FilesScreenState extends State<FilesScreen> {
 
   /// UX-102: after a run the question is "what changed?", so the changed
   /// set is one tap away as the list's first row: the same inset and
-  /// hairline as the file rows under it, not a card of its own.
-  Widget? _changesRow(AppLocalizations l10n) => _fileStatuses.isEmpty
-      ? null
-      : KitRow(
-          key: const ValueKey('files-changes-card'),
-          leading: KitRow.icon(context, AppIconography.review),
-          title: l10n.readerUiChangedCount(_fileStatuses.length),
-          trailing: const KitChevron(),
-          onTap: () => unawaited(_openChanges()),
-        );
+  /// hairline as the file rows under it, not a card of its own. It opens
+  /// the diff itself (Review, KitDiffView with its one "Change 1 of N"
+  /// navigator and file list); no list of the same files in between.
+  Widget? _changesRow(AppLocalizations l10n) {
+    if (_fileStatuses.isEmpty) return null;
+    var added = 0, removed = 0;
+    for (final change in _fileStatuses.values) {
+      added += change.additions;
+      removed += change.deletions;
+    }
+    return KitRow(
+      key: const ValueKey('files-changes-card'),
+      leading: KitRow.icon(context, AppIconography.review),
+      title: l10n.readerUiChangedCount(_fileStatuses.length),
+      supporting: TextSpan(text: KitBidi.ltr('+$added −$removed')),
+      trailing: const KitChevron(),
+      onTap: () => unawaited(_reviewChanges()),
+    );
+  }
 
   Widget _fileList(AppLocalizations l10n) {
     if (_loading && _entries == null) {
@@ -1792,81 +1746,6 @@ String _fileStatusLabel(BuildContext context, String status) =>
       'modified' => readerL10n(context).readerUiModified,
       _ => readerL10n(context).readerUiChanged,
     };
-
-enum _ChangeAction { reviewAll, review, stage }
-
-class _ChangeChoice {
-  const _ChangeChoice(this.action, [this.path = '']);
-
-  final _ChangeAction action;
-  final String path;
-}
-
-// revamp: merge-into:review-workspace (slice-P3.7a)
-/// The changed set as one list ordered by path, in the kit's sheet (Review
-/// all is its primary). Each row's second line starts with its state word
-/// ("Modified · lib/cart · +1 −1"), so the list is never split by status.
-/// Tapping a row opens Review at that file; the add action stages the file
-/// as a prompt reference instead of opening anything.
-class _ChangesList extends StatelessWidget {
-  const _ChangesList({required this.changes, required this.canStage});
-
-  final List<VersionControlFile> changes;
-  final bool canStage;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
-    final l10n = readerL10n(context);
-    final ordered = [...changes]..sort((a, b) => a.path.compareTo(b.path));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(height: tokens.space3),
-        KitRowGroup(
-          margin: EdgeInsetsDirectional.zero,
-          leadingIcons: false,
-          children: [
-            for (final change in ordered)
-              KitRow(
-                key: ValueKey('changed-file-${change.path}'),
-                title: change.path.split('/').last,
-                supporting: TextSpan(text: _changeLine(context, change)),
-                trailing: canStage
-                    ? KitIconButton(
-                        key: ValueKey('stage-change-${change.path}'),
-                        icon: AppIconography.link,
-                        size: 20,
-                        tooltip: l10n.readerUiAddPath(change.path),
-                        onPressed: () => KitSheet.close(
-                          context,
-                          _ChangeChoice(_ChangeAction.stage, change.path),
-                        ),
-                      )
-                    : const KitChevron(),
-                onTap: () => KitSheet.close(
-                  context,
-                  _ChangeChoice(_ChangeAction.review, change.path),
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  /// "Modified · lib/cart · +1 −1": the state word first, then the folder
-  /// (left out for a file at the root), then the line counts.
-  static String _changeLine(BuildContext context, VersionControlFile change) {
-    final slash = change.path.lastIndexOf('/');
-    final folder = slash > 0 ? change.path.substring(0, slash) : '';
-    return [
-      _fileStatusLabel(context, change.status),
-      if (folder.isNotEmpty) KitBidi.ltr(folder),
-      KitBidi.ltr('+${change.additions} −${change.deletions}'),
-    ].join(' · ');
-  }
-}
 
 AppLocalizations readerL10n(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));

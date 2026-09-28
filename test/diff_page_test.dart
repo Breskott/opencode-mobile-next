@@ -8,11 +8,12 @@ import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/ui/kit/kit_top_bar.dart';
-import 'package:opencode_mobile/ui/widgets/diff_view.dart';
+import 'package:opencode_mobile/ui/screens/review_workspace.dart';
 
-// DiffView is a forwarding wrapper over KitDiffView (kit-KitDiffView,
-// KIT-43): these tests prove the wrapper's frame, keys ('diff-…'), FileDiff
-// conversion and copy still work; the renderer's own contract is
+// DiffPage (screens/review_workspace.dart, which replaced
+// widgets/diff_view.dart in slice-P3.7a) is the read-only diff page over
+// KitDiffView: these tests prove its frame, keys ('diff-…'), FileDiff
+// conversion and copy; the renderer's own contract is
 // test/kit/kit_diff_view_test.dart.
 
 Future<void> _pump(WidgetTester tester, List<FileDiff> diffs) async {
@@ -20,7 +21,7 @@ Future<void> _pump(WidgetTester tester, List<FileDiff> diffs) async {
     MaterialApp(
       home: RepaintBoundary(
         key: const Key('review-capture'),
-        child: DiffView(diffs: diffs),
+        child: DiffPage(diffs: diffs),
       ),
     ),
   );
@@ -174,7 +175,7 @@ void main() {
           ).copyWith(textScaler: TextScaler.linear(2.5)),
           child: child!,
         ),
-        home: DiffView(
+        home: DiffPage(
           diffs: [FileDiff(file: file, before: 'old', after: longLine)],
         ),
       ),
@@ -212,7 +213,7 @@ void main() {
         home: Builder(
           builder: (context) => Scaffold(
             body: TextButton(
-              onPressed: () => DiffView.open(context, [
+              onPressed: () => DiffPage.open(context, [
                 FileDiff(file: 'a.dart', before: 'old', after: 'new'),
               ]),
               child: const Text('Review changes'),
@@ -232,7 +233,7 @@ void main() {
     await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
     expect(find.text('Review changes'), findsOneWidget);
-    expect(find.byType(DiffView), findsNothing);
+    expect(find.byType(DiffPage), findsNothing);
   });
 
   testWidgets('allowCopy: false offers no copy', (tester) async {
@@ -243,7 +244,7 @@ void main() {
     await _pump(tester, []);
     await tester.pumpWidget(
       MaterialApp(
-        home: DiffView.single(
+        home: DiffPage.single(
           FileDiff(file: 'a.dart', before: 'old', after: 'new'),
           allowCopy: false,
         ),
@@ -295,7 +296,7 @@ void main() {
           ),
           home: RepaintBoundary(
             key: const Key('review-capture'),
-            child: DiffView(
+            child: DiffPage(
               diffs: [
                 FileDiff(
                   file: 'lib/ui/welcome_message.dart',

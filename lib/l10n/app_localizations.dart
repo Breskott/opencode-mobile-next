@@ -8357,12 +8357,6 @@ abstract class AppLocalizations {
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Review all changes'**
-  String get readerUiReviewAll;
-
-  /// Reader, Files and review user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Files'**
   String get readerUiFiles;
 
@@ -8491,18 +8485,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, one{{count} changed file} other{{count} changed files}}'**
   String readerUiChangedCount(int count);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{{count} file} other{{count} files}} · +{added} −{removed}'**
-  String readerUiChangeSummary(int count, int added, int removed);
-
-  /// Reader display, status or accessible label. Technical placeholders remain original.
-  ///
-  /// In en, this message translates to:
-  /// **'Add {path} to the prompt'**
-  String readerUiAddPath(String path);
 
   /// Reader display, status or accessible label. Technical placeholders remain original.
   ///

@@ -20,10 +20,10 @@ import '../kit/kit_state_view.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 import '../kit/kit_top_bar.dart';
-import '../widgets/diff_view.dart';
 import '../widgets/product_states.dart'
     show productErrorDetails, productErrorText;
 import '../widgets/request_routes.dart';
+import 'review_workspace.dart' show DiffPage;
 
 AppLocalizations _strings(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -708,7 +708,7 @@ class _StagedRevertScreenState extends State<StagedRevertScreen> {
       ),
       trailing: const KitChevron(),
       onTap: () =>
-          unawaited(pushKitPage<void>(context, (_) => DiffView.single(file))),
+          unawaited(pushKitPage<void>(context, (_) => DiffPage.single(file))),
     );
   }
 }

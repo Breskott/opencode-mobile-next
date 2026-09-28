@@ -264,12 +264,9 @@ const _verbatimOwnContent = <String, (int, String)>{
     'copies the selected lines of the person\'s own diff (SEC-13)',
   ),
   'lib/ui/screens/review_workspace.dart': (
-    2,
-    'Copy patch and Copy file copy the person\'s own diff and file (SEC-13)',
-  ),
-  'lib/ui/widgets/diff_view.dart': (
-    2,
-    'Copy file and Copy patch copy the person\'s own file and diff (SEC-13)',
+    1,
+    'Copy patch or Copy file (Review and the read-only diff page) copies the '
+        'person\'s own diff or file (SEC-13)',
   ),
   'lib/ui/widgets/file_preview.dart': (
     1,

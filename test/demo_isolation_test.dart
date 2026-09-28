@@ -12,7 +12,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/demo_screen.dart';
-import 'package:opencode_mobile/ui/widgets/diff_view.dart';
+import 'package:opencode_mobile/ui/screens/review_workspace.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _channels = [
@@ -269,9 +269,9 @@ void main() {
           expect(gateway.hasPendingTimer, isFalse);
           await tester.tap(find.text('Review changes'));
           await _pump(tester);
-          expect(find.byType(DiffView), findsOneWidget);
+          expect(find.byType(DiffPage), findsOneWidget);
           expect(
-            tester.widget<DiffView>(find.byType(DiffView)).allowCopy,
+            tester.widget<DiffPage>(find.byType(DiffPage)).allowCopy,
             isFalse,
           );
           expect(
