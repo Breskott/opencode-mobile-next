@@ -349,7 +349,10 @@ void main() {
             .widget<Text>(_key('team-work-task-line-oc-xru'))
             .textSpan!
             .toPlainText(),
-        startsWith('${_en.teamTaskMark} · ${_en.teamUiCardRunStateWaiting}'),
+        // The recorded convoy has waited for a worker for days, on an
+        // unpinned clock: its row says Stalled, the task's own P3.5
+        // evidence (slice-P5.5), as its conversation does.
+        startsWith('${_en.teamTaskMark} · ${_en.workStalled}'),
       );
       // No separate card and no door row: the team's page is reached from
       // Settings (owner rule R4).

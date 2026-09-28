@@ -450,6 +450,10 @@ class OrchestrationController extends ChangeNotifier {
     return at == null || _now().difference(at) > staleAfter;
   }
 
+  /// The controller's clock (host time; tests pin it), for lines that age
+  /// against the team's own evidence, e.g. a task row's stall.
+  DateTime now() => _now();
+
   /// What needs the person: pending interactions (choice, confirmation,
   /// free text and unrecognised kinds), open gate beads and failed runs.
   /// Review-ready items are informational and not counted.
