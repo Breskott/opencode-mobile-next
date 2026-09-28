@@ -33,6 +33,8 @@ const _excluded = <String, String>{
   'root-connecting': 'shown automatically while a saved server connects',
   'bootstrap-gate': 'startup failure screen; nothing is connected yet',
   'servers-welcome': 'first run only, before any server exists',
+  'manage-space':
+      'opened by Android Settings › Storage, not from inside the app',
   'termux-migration':
       'offered only to a Termux user, from This phone and the Termux server row',
   // Need a conversation: the conversation menu and its command launcher are

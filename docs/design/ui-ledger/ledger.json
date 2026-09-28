@@ -1,5 +1,5 @@
 {
- "generatedFrom": "072f27f8d2fffc96c5b422b714bd0ccc475e2f8f",
+ "generatedFrom": "be5c17242086e056ba479670c674254b86b4415d",
  "pages": [
   {
    "id": "system",
@@ -715,23 +715,6 @@
    ],
    "elements": [
     {
-     "id": "root-connecting-primary-token",
-     "type": "button",
-     "label": "Update token",
-     "key": "saved-server-update-token",
-     "file": "lib/main.dart",
-     "line": 402,
-     "action": "navigate",
-     "target": "servers",
-     "targetWidget": "/servers",
-     "effect": "onUpdateToken -> navigator.pushNamedAndRemoveUntil('/servers', (_) => false, arguments: 'edit-active') (main.dart:1404).",
-     "gates": [
-      "failure.primary == ConnectionFailureAction.updateToken && onUpdateToken != null"
-     ],
-     "destructive": false,
-     "widgetFile": "lib/ui/widgets/saved_server_connection_card.dart"
-    },
-    {
      "id": "root-connecting-primary-change",
      "type": "button",
      "label": "Change server",
@@ -880,6 +863,22 @@
      "effect": "onUpdatePassword -> navigator.pushNamedAndRemoveUntil('/servers', (_) => false, arguments: 'edit-active') which opens the active profile editor (main.dart:1409).",
      "gates": [
       "failure.primary == ConnectionFailureAction.updatePassword && onUpdatePassword != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "root-connecting-primary-token",
+     "type": "button",
+     "label": "Update token",
+     "key": "saved-server-update-token",
+     "file": "lib/ui/widgets/saved_server_connection_card.dart",
+     "line": 402,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "onUpdateToken -> navigator.pushNamedAndRemoveUntil('/servers', (_) => false, arguments: 'edit-active') (main.dart:1404).",
+     "gates": [
+      "failure.primary == ConnectionFailureAction.updateToken && onUpdateToken != null"
      ],
      "destructive": false
     }
@@ -22490,6 +22489,25 @@
     "not opened while the person chose Claude Code in setup: the block then stays inline on On this phone and installs by itself"
    ],
    "elements": []
+  },
+  {
+   "id": "manage-space",
+   "title": "Clear this app's storage",
+   "kind": "screen",
+   "area": "termux",
+   "file": "lib/ui/screens/manage_space_screen.dart",
+   "widget": "ManageSpaceScreen",
+   "presentedBy": [
+    "Android Settings › Apps › Storage › Manage space (manageSpaceActivity)"
+   ],
+   "line": 1,
+   "purpose": "Android's Clear storage button opens this first: what clearing deletes (in-app server, projects with sizes, conversations, saved servers) and keeps, Export projects first, clear the cache only, or a confirmed Delete everything (slice-clear-storage-guard, 2026-09-28).",
+   "reachedFrom": [],
+   "gates": [
+    "Android only; opened by the system, not from inside the app"
+   ],
+   "elements": [],
+   "key": "manage-space"
   },
   {
    "id": "phone-setup-customize-sheet",
