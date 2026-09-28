@@ -19,9 +19,49 @@ import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
 import '../../state/team_conversation.dart' show teamSessionState;
 import '../app_theme.dart';
+import '../kit/kit_needs_you.dart';
+import '../kit/kit_row.dart';
 import '../kit/kit_task_mark.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
 import 'relative_time.dart';
 import 'team_now.dart';
+
+/// How a team state leads its row (docs/design/visual-language-2026-09-26.md,
+/// LOOK-4, LOOK-24): amber means "needs you" and nothing else, so a state
+/// that waits on the person is the kit's one needs-you mark
+/// ([KitNeedsYou.mark]), and every other state is its glyph in its tone. A
+/// held-up, stale or degraded state is neutral, never amber; red is kept
+/// for a failure.
+@immutable
+final class TeamMark {
+  /// A state that does not wait on the person: [icon] in [tone].
+  const TeamMark(this.icon, AppStatusTone this.tone) : needsYou = false;
+
+  /// A state that waits on the person. [icon] is the kind's own glyph, for a
+  /// place that names the kind (a request card's header); a row shows the
+  /// needs-you mark instead.
+  const TeamMark.needsYou(this.icon) : tone = null, needsYou = true;
+
+  final IconData icon;
+
+  /// The glyph's tone; null for [needsYou], whose colour is the kit's.
+  final AppStatusTone? tone;
+
+  final bool needsYou;
+
+  /// The row's leading slot: [KitNeedsYou.mark], or [icon] in its tile
+  /// tinted by [tone].
+  Widget leading(BuildContext context) {
+    final tone = this.tone;
+    if (needsYou || tone == null) return KitNeedsYou.mark();
+    return KitRow.icon(
+      context,
+      icon,
+      color: KitTokens.toneColor(KitTokens.of(context).roles, tone),
+    );
+  }
+}
 
 // ---------------------------------------------------------------------------
 // The person's words: host phrase, task line, stages, roles
@@ -640,12 +680,14 @@ DateTime? teamRunHandoffAt(
   return latest;
 }
 
-/// Glyph and tone per run state: status is never colour-only (§11).
+/// Glyph and tone per run state: status is never colour-only (§11). A
+/// held-up run is neutral: amber means "needs you" only, and the person is
+/// asked through the run's gates, which carry the needs-you mark.
 (IconData, AppStatusTone) teamRunGlyph(RunState state) => switch (state) {
   RunState.planning => (AppIconography.clock, AppStatusTone.neutral),
   RunState.working => (AppIconography.play, AppStatusTone.progress),
   RunState.waiting => (AppIconography.waiting, AppStatusTone.neutral),
-  RunState.blocked => (AppIconography.blocked, AppStatusTone.attention),
+  RunState.blocked => (AppIconography.blocked, AppStatusTone.neutral),
   RunState.failed => (AppIconography.error, AppStatusTone.failure),
   RunState.completed => (AppIconography.check, AppStatusTone.ok),
   RunState.cancelled => (AppIconography.close, AppStatusTone.neutral),
@@ -668,19 +710,48 @@ String teamWorkStateWord(AppLocalizations l10n, WorkState state) =>
       WorkState.unknown => l10n.teamUiWorkStateUnknown,
     };
 
-/// Glyph and tone per work state: status is never colour-only (§11).
-(IconData, AppStatusTone) teamWorkGlyph(WorkState state) => switch (state) {
-  WorkState.queued => (AppIconography.radioEmpty, AppStatusTone.neutral),
-  WorkState.ready => (AppIconography.playCircle, AppStatusTone.neutral),
-  WorkState.working => (AppIconography.play, AppStatusTone.progress),
-  WorkState.waiting => (AppIconography.waiting, AppStatusTone.neutral),
-  WorkState.blocked => (AppIconography.blocked, AppStatusTone.attention),
-  WorkState.needsInput => (AppIconography.question, AppStatusTone.attention),
-  WorkState.review => (AppIconography.review, AppStatusTone.progress),
-  WorkState.failed => (AppIconography.error, AppStatusTone.failure),
-  WorkState.completed => (AppIconography.check, AppStatusTone.ok),
-  WorkState.cancelled => (AppIconography.close, AppStatusTone.neutral),
-  WorkState.unknown => (AppIconography.question, AppStatusTone.neutral),
+/// The mark per work state: status is never colour-only (§11). Only an
+/// item that waits on the person takes the needs-you mark; a blocked one
+/// is held up by other work, not by the person, so it is neutral.
+TeamMark teamWorkMark(WorkState state) => switch (state) {
+  WorkState.queued => const TeamMark(
+    AppIconography.radioEmpty,
+    AppStatusTone.neutral,
+  ),
+  WorkState.ready => const TeamMark(
+    AppIconography.playCircle,
+    AppStatusTone.neutral,
+  ),
+  WorkState.working => const TeamMark(
+    AppIconography.play,
+    AppStatusTone.progress,
+  ),
+  WorkState.waiting => const TeamMark(
+    AppIconography.waiting,
+    AppStatusTone.neutral,
+  ),
+  WorkState.blocked => const TeamMark(
+    AppIconography.blocked,
+    AppStatusTone.neutral,
+  ),
+  WorkState.needsInput => const TeamMark.needsYou(AppIconography.question),
+  WorkState.review => const TeamMark(
+    AppIconography.review,
+    AppStatusTone.progress,
+  ),
+  WorkState.failed => const TeamMark(
+    AppIconography.error,
+    AppStatusTone.failure,
+  ),
+  WorkState.completed => const TeamMark(AppIconography.check, AppStatusTone.ok),
+  WorkState.cancelled => const TeamMark(
+    AppIconography.close,
+    AppStatusTone.neutral,
+  ),
+  WorkState.unknown => const TeamMark(
+    AppIconography.question,
+    AppStatusTone.neutral,
+  ),
 };
 
 /// The Work tab's group order (02-ux §4.2): what needs the person first,
@@ -762,18 +833,25 @@ String teamGateKindWord(AppLocalizations l10n, GateKind kind) => switch (kind) {
   GateKind.unknown => l10n.teamUiHomeGateKindUnknown,
 };
 
-/// Glyph and tone per gate kind: a failed run is the only red one.
-(IconData, AppStatusTone) teamGateGlyph(GateKind kind) => switch (kind) {
-  GateKind.choice => (AppIconography.question, AppStatusTone.attention),
-  GateKind.confirmation => (
-    AppIconography.checkCircle,
-    AppStatusTone.attention,
+/// The mark per gate kind. Every question, confirmation, text answer and
+/// gate the person closes takes the kit's one needs-you mark in a row; the
+/// kind's own glyph stays for a place that names the kind (the request
+/// card's header). A failed run keeps the failure glyph, a review that is
+/// ready is neutral.
+TeamMark teamGateMark(GateKind kind) => switch (kind) {
+  GateKind.choice => const TeamMark.needsYou(AppIconography.question),
+  GateKind.confirmation => const TeamMark.needsYou(AppIconography.checkCircle),
+  GateKind.freeText => const TeamMark.needsYou(AppIconography.editNote),
+  GateKind.gateBead => const TeamMark.needsYou(AppIconography.blocked),
+  GateKind.runFailed => const TeamMark(
+    AppIconography.error,
+    AppStatusTone.failure,
   ),
-  GateKind.freeText => (AppIconography.editNote, AppStatusTone.attention),
-  GateKind.gateBead => (AppIconography.blocked, AppStatusTone.attention),
-  GateKind.runFailed => (AppIconography.error, AppStatusTone.failure),
-  GateKind.reviewReady => (AppIconography.review, AppStatusTone.neutral),
-  GateKind.unknown => (AppIconography.warning, AppStatusTone.attention),
+  GateKind.reviewReady => const TeamMark(
+    AppIconography.review,
+    AppStatusTone.neutral,
+  ),
+  GateKind.unknown => const TeamMark.needsYou(AppIconography.warning),
 };
 
 /// The run a gate belongs to: named directly, else through its work item,
@@ -1015,21 +1093,19 @@ String teamFailureAction(
 // Agents (02-ux §5.1)
 // ---------------------------------------------------------------------------
 
-/// Context use from which the number takes the attention tone.
-const teamContextAttentionPercent = 75;
+/// Context use from which the number reads in the primary text tone.
+const teamContextHighPercent = 75;
 
-/// Context use from which the number takes the failure tone and the agent
-/// detail says "Recycling soon" (the host's recycle policy threshold).
+/// Context use from which the agent detail says "Recycling soon" (the
+/// host's recycle policy threshold).
 const teamContextRecyclePercent = 90;
 
-/// Tone of a context-use number: neutral, attention from
-/// [teamContextAttentionPercent], failure from [teamContextRecyclePercent].
-AppStatusTone teamContextTone(int percent) =>
-    percent >= teamContextRecyclePercent
-    ? AppStatusTone.failure
-    : percent >= teamContextAttentionPercent
-    ? AppStatusTone.attention
-    : AppStatusTone.neutral;
+/// Tone of a context-use number: secondary text while it is fine, primary
+/// text from [teamContextHighPercent]. Never amber (that means "needs you")
+/// and never red: a full context is the host's to recycle, not a failure.
+KitTextTone teamContextTone(int percent) => percent >= teamContextHighPercent
+    ? KitTextTone.primary
+    : KitTextTone.secondary;
 
 /// Sort of §5.1: needs-you first, then working, idle, stopped; a crashed
 /// agent sits with the exceptions, right after the ones waiting.
@@ -1060,15 +1136,35 @@ String teamAgentStateWord(AppLocalizations l10n, AgentState state) =>
       AgentState.unknown => l10n.teamUiHomeAgentStateUnknown,
     };
 
-/// Glyph and tone per agent state: status is never colour-only (§11).
-(IconData, AppStatusTone) teamAgentGlyph(AgentState state) => switch (state) {
-  AgentState.working => (AppIconography.play, AppStatusTone.progress),
-  AgentState.idle => (AppIconography.statusDot, AppStatusTone.neutral),
-  AgentState.waiting => (AppIconography.question, AppStatusTone.attention),
-  AgentState.blocked => (AppIconography.blocked, AppStatusTone.attention),
-  AgentState.stopped => (AppIconography.stopCircle, AppStatusTone.neutral),
-  AgentState.crashed => (AppIconography.error, AppStatusTone.failure),
-  AgentState.unknown => (AppIconography.question, AppStatusTone.neutral),
+/// The mark per agent state: status is never colour-only (§11). An agent
+/// that waits on the person takes the needs-you mark; a blocked one is
+/// held up elsewhere and stays neutral.
+TeamMark teamAgentMark(AgentState state) => switch (state) {
+  AgentState.working => const TeamMark(
+    AppIconography.play,
+    AppStatusTone.progress,
+  ),
+  AgentState.idle => const TeamMark(
+    AppIconography.statusDot,
+    AppStatusTone.neutral,
+  ),
+  AgentState.waiting => const TeamMark.needsYou(AppIconography.question),
+  AgentState.blocked => const TeamMark(
+    AppIconography.blocked,
+    AppStatusTone.neutral,
+  ),
+  AgentState.stopped => const TeamMark(
+    AppIconography.stopCircle,
+    AppStatusTone.neutral,
+  ),
+  AgentState.crashed => const TeamMark(
+    AppIconography.error,
+    AppStatusTone.failure,
+  ),
+  AgentState.unknown => const TeamMark(
+    AppIconography.question,
+    AppStatusTone.neutral,
+  ),
 };
 
 /// "12m", "3h 14m", "2d": an elapsed span in the run's short form.

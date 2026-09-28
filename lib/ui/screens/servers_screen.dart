@@ -3103,7 +3103,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     key: const ValueKey('server-editor-team-learn'),
                     onPressed: _submitting
                         ? null
-                        : () => showTeamHostGuideSheet(context),
+                        : () => showTeamHostGuideSheet(
+                            context,
+                            enterAddress: _addTeamHost,
+                          ),
                     label: copy.teamUiLearnHow,
                   ),
                   KitButton.tertiary(

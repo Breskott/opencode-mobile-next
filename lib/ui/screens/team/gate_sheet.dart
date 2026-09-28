@@ -131,7 +131,7 @@ Future<void> showGateSheet(
         ? l10n.teamUiGateRunStoppedTitle(stopped)
         : gate.title,
     subtitle: kicker,
-    icon: gate == null ? AppIconography.question : teamGateGlyph(gate.kind).$1,
+    icon: gate == null ? AppIconography.question : teamGateMark(gate.kind).icon,
     sheetKey: const ValueKey('team-gate-sheet'),
     body: (sheetContext) => GateSheet(
       controller: controller,
@@ -942,7 +942,7 @@ class _BodyState extends State<_Body> {
           for (final item in items)
             KitRow(
               key: ValueKey('team-gate-$prefix-${item.id}'),
-              leading: KitRow.icon(context, teamWorkGlyph(item.state).$1),
+              leading: KitRow.icon(context, teamWorkMark(item.state).icon),
               title: item.title,
               titleMaxLines: 2,
               supporting: TextSpan(

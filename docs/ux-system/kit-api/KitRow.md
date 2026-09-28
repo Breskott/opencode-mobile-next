@@ -78,6 +78,7 @@ class KitRow extends StatelessWidget {
     this.server,               // String?: another server's name ("laptop")
     this.disabledReason,       // String?: why it cannot run now; shown as the supporting line
     this.selected = false,     // the row shown in the detail pane (twoPane)
+    this.action,               // KitAction?: the row's own one action ("Turn on"); takes the trailing slot (slice-team-g17)
   }) : capability = null,
        enable = null;
   // build() asserts: onLongPress == null || menu.isEmpty ("long-press opens
@@ -229,6 +230,7 @@ class KitRowGroup extends StatelessWidget {
 | selected | a `surface3` fill; `selected` semantics; the supporting line starts with the state word when the caller gives one (STATE-9) |
 | disabled | title and leading in `text3`; reason line in `text2` |
 | unavailable | as disabled, plus the trailing `enable` tertiary, or none; the reason wraps in full (never cut), and from 1.3× text `enable` sits under it (A11Y-8) |
+| with action | an enabled row whose own one action (a team found on the server: "Turn on") sits where `enable` does: a trailing tertiary at 1.0×, under the supporting line from 1.3× text (A11Y-8); a tap elsewhere on the row still runs `onTap`. It takes the trailing slot (asserted), so the row shows no chevron |
 | destructive | title (and a tinted leading glyph, by the caller's `KitRow.icon(color:)`) in `danger`; last in its group |
 | with server | the supporting line begins "{server} · ", with the server name in `text2` |
 | swipe revealing | see KitSwipeAction.md |

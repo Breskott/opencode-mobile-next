@@ -22,6 +22,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/app_theme.dart' show AppStatusTone;
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
@@ -494,6 +495,8 @@ void main() {
         '${_en.teamUiHostPhrasePhone} · ${_en.teamHomeHostCooling}',
       );
       final line = tester.widget<KitStatusLine>(_key('team-home-heat'));
+      // Nothing here waits on the person: neutral, never amber (LOOK-4).
+      expect(line.tone, AppStatusTone.neutral);
       expect(line.message, contains('so the team paused'));
       expect(line.message, contains('It carries on by itself'));
       expect(_key('team-home-now-paused'), findsNothing);

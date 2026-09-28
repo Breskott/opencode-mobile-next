@@ -71,7 +71,7 @@ Widget? teamScreenState(
           ? KitStateView(
               key: ValueKey('$keyPrefix-not-answering'),
               icon: AppIconography.cloudOff,
-              tone: AppStatusTone.attention,
+              tone: AppStatusTone.neutral,
               title: l10n.teamUiStateNotAnsweringTitle,
               // What to check, where the team runs (P3.4): the phone's
               // team is still starting; a computer must be on and online.
@@ -103,7 +103,9 @@ String teamNotAnsweringBody(
 };
 
 /// The icon, tone and one-line title of an error kind; the body is
-/// [teamErrorCopy].
+/// [teamErrorCopy]. A host that does not answer or refuses plain http is a
+/// degraded state, so it is neutral: amber means "needs you" only
+/// (docs/design/visual-language-2026-09-26.md, LOOK-4).
 (IconData, AppStatusTone, String) teamErrorState(
   AppLocalizations l10n,
   OrchestrationErrorKind? kind,
@@ -120,14 +122,14 @@ String teamNotAnsweringBody(
   ),
   OrchestrationErrorKind.plainHttpRefused => (
     AppIconography.secureNetwork,
-    AppStatusTone.attention,
+    AppStatusTone.neutral,
     l10n.teamUiStatePlainHttpTitle,
   ),
   OrchestrationErrorKind.unreachable ||
   OrchestrationErrorKind.readFailed ||
   null => (
     AppIconography.cloudOff,
-    AppStatusTone.attention,
+    AppStatusTone.neutral,
     l10n.teamUiStateUnreachableTitle,
   ),
 };
@@ -157,7 +159,7 @@ KitStatus? teamStatusLine(
       id: '$keyPrefix:stale',
       key: ValueKey('$keyPrefix-stale'),
       icon: AppIconography.cloudOff,
-      tone: AppStatusTone.attention,
+      tone: AppStatusTone.neutral,
       message: l10n.teamUiCardStale(
         at == null ? '' : teamClockLabel(context, at),
       ),
@@ -171,7 +173,7 @@ KitStatus? teamStatusLine(
       id: '$keyPrefix:refresh-failed',
       key: ValueKey('$keyPrefix-refresh-failed'),
       icon: AppIconography.warning,
-      tone: AppStatusTone.attention,
+      tone: AppStatusTone.neutral,
       message: l10n.teamUiCardRefreshFailed(teamClockLabel(context, at)),
       action: action,
     );

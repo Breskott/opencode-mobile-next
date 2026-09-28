@@ -23,6 +23,12 @@
 // pushed with KitPageRoute (KIT-7): MaterialPageRoute and PageRouteBuilder
 // count there and in the Flutter UI code elsewhere under lib/.
 //
+// G17 (colour from ThemeRoles; amber only for "needs you") is absolute too
+// since slice-team-g17: its rows sit in `_rules` with `absolute: true`, so
+// the baseline keeps an empty "G17" section and any hit fails with the
+// row's fix (`_g17AttentionFix` names the needs-you mark and the neutral
+// tone).
+//
 // The `_rules` gates below (G2, G7, ...) keep a committed per-file
 // baseline for their ratchet rows that only shrinks (modelled on
 // test/design_standard_test.dart). A ratchet row fails when a file/pattern
@@ -402,6 +408,27 @@ const _kitOnlyGates = ['G1', 'G15', 'G16'];
 //   KIT_RATCHET_WRITE=1 KIT_RATCHET_GATES=G17,G21 flutter test test/kit_ratchet_test.dart
 // A regeneration that raises or adds an entry needs `ratchet-tighten: <gate>
 // <pattern>` in the commit body (STANDARDS.md KIT-44).
+
+/// G17's advice for a raw colour (LOOK-1).
+const _g17RoleFix =
+    'use a ThemeRoles role (ThemeRoles.of(context) or '
+    'KitTokens.of(context).roles); a colour no role names is a new role in '
+    'ThemeRoles and every pack, never a literal on the screen';
+
+/// G17's advice for an attention role outside the kit (LOOK-4, LOOK-24;
+/// docs/design/visual-language-2026-09-26.md §1: amber means "needs you"
+/// and nothing else; red only for acts that destroy or stop something).
+const _g17AttentionFix =
+    'amber means "needs you" only, and only kit parts draw it. For a state '
+    'that waits on the person use the needs-you mark: KitNeedsYou.mark() in '
+    'a row\'s leading slot (KitTaskMark(state: KitTaskState.needsYou) is the '
+    'same mark), KitNeedsYou.span/badge/row, KitTaskFlagKind.needsYou on a '
+    'task card, or KitRequestCard for the question itself. For a held-up, '
+    'stale, slow, paused or degraded state (not answering, blocked, heat, '
+    'refused) use AppStatusTone.neutral, with a warning or blocked glyph if '
+    'it needs one; a failure is AppStatusTone.failure (drawn text1, never '
+    'red, LOOK-5). Never pass AppStatusTone.attention or read '
+    'roles.attention* outside lib/ui/kit/';
 
 const _kitDir = 'lib/ui/kit/';
 
@@ -1005,7 +1032,9 @@ final List<_Rule> _rules = [
       },
     ),
 
-  // G17 — colour comes from ThemeRoles.
+  // G17 — colour comes from ThemeRoles. Absolute since slice-team-g17 (the
+  // last 19 "attention roles" hits, all in the team page, reached zero):
+  // no baseline, no per-file allowance; any hit fails with the row's fix.
   for (final (name, counter, scope, ids, fix)
       in <(String, _Counter, _In, List<String>, String)>[
         (
@@ -1013,49 +1042,50 @@ final List<_Rule> _rules = [
           _re(r'\bColor\(0x'),
           _In.anywhere,
           ['LOOK-1'],
-          'use a ThemeRoles role',
+          _g17RoleFix,
         ),
         (
           'Color.fromARGB(/fromRGBO(',
           _re(r'\bColor\.from(?:ARGB|RGBO)\('),
           _In.anywhere,
           ['LOOK-1'],
-          'use a ThemeRoles role',
+          _g17RoleFix,
         ),
         (
           'Colors.*',
           _re(r'\bColors\.(?!transparent\b)\w+'),
           _In.anywhere,
           ['LOOK-1'],
-          'use a ThemeRoles role',
+          _g17RoleFix,
         ),
         (
           '.colorScheme',
           _re(r'\.colorScheme\b'),
           _In.outsideKit,
           ['LOOK-2'],
-          'read ThemeRoles.of(context)',
+          'read ThemeRoles.of(context) (or KitTokens.of(context).roles)',
         ),
         (
           '.textTheme',
           _re(r'\.textTheme\b'),
           _In.outsideKit,
           ['LOOK-2'],
-          'name a KitText role',
+          'name a KitText role (KitText(role:, tone:) or KitText.styleOf)',
         ),
         (
           '.accent',
           _re(r'\.accent\b'),
           _In.outsideKit,
           ['LOOK-6'],
-          'let the kit part draw the accent',
+          'let the kit part draw the accent (KitButton.primary, '
+              'KitText tone accent, KitTokens.toneColor for a progress tone)',
         ),
         (
           'hairline.withValues(',
           _re(r'\bhairline\S*\.withValues\('),
           _In.anywhere,
           ['LOOK-3'],
-          'hairline is already translucent',
+          'use the hairline role as it is: it is already translucent',
         ),
         (
           'attention roles',
@@ -1064,7 +1094,7 @@ final List<_Rule> _rules = [
           ),
           _In.outsideKit,
           ['LOOK-4', 'LOOK-24'],
-          'use KitNeedsYou or KitRequestCard',
+          _g17AttentionFix,
         ),
       ])
     _Rule(
@@ -1073,6 +1103,7 @@ final List<_Rule> _rules = [
       counter,
       ids: ids,
       fix: fix,
+      absolute: true,
       roots: _uiRoots,
       scope: scope,
       skipThemeFiles: true,
@@ -1981,6 +2012,37 @@ final isPage = route is MaterialPageRoute;
       }
       // Nothing the allowlist permits has a "use instead".
       expect(_kitOnlyFix.keys.toSet().intersection(_g16Allowlist), isEmpty);
+    });
+
+    test('G17 is absolute: every colour row fails on any hit, with a fix '
+        'that names what to use', () {
+      final rows = _rules.where((r) => r.gate == 'G17').toList();
+      expect(rows, isNotEmpty);
+      for (final rule in rows) {
+        expect(rule.absolute, isTrue, reason: rule.name);
+        expect(
+          _absoluteAt(rule, 'lib/ui/screens/team/team_home_screen.dart'),
+          isTrue,
+          reason: rule.name,
+        );
+      }
+      // The committed baseline holds no G17 counts to regenerate.
+      expect(baseline['G17'] ?? const {}, isEmpty);
+      final attention = rows.singleWhere((r) => r.name == 'attention roles');
+      expect(attention.count('tone: AppStatusTone.attention,', 'x'), 1);
+      for (final part in [
+        'KitNeedsYou.mark()',
+        'KitTaskFlagKind.needsYou',
+        'KitRequestCard',
+        'AppStatusTone.neutral',
+        'AppStatusTone.failure',
+      ]) {
+        expect(attention.fix, contains(part), reason: part);
+      }
+      expect(
+        rows.singleWhere((r) => r.name == 'Color(0x').fix,
+        contains('ThemeRoles'),
+      );
     });
 
     test('Scrollbar has no home outside the kit any more (KIT-6)', () {

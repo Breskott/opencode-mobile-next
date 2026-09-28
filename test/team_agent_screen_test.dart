@@ -659,7 +659,7 @@ void main() {
     testWidgets('the context number changes tone at 75% and 90%', (
       tester,
     ) async {
-      expect(teamContextAttentionPercent, 75);
+      expect(teamContextHighPercent, 75);
       expect(teamContextRecyclePercent, 90);
       Future<void> at(int percent) async {
         final (controller, _) = await boot(

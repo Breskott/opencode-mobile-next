@@ -1,18 +1,26 @@
-// team-host-guide-sheet (slice-close-security): each step is a sentence and
-// a copyable command in the kit code block; the front is downloaded from the
-// pinned commit and checked before it runs; the sheet ends by opening the
-// published guide through openExternalLink, never by naming a repo file.
+// team-host-guide-sheet (slice-close-security, slice-team-g17): each step is
+// a sentence and a copyable command in the kit code block; the front is
+// downloaded from the pinned commit and checked before it runs; the published
+// guide opens through openExternalLink, never by naming a repo file; and the
+// sheet's primary is its next step, "Enter the address", where the host
+// offers the address form. The form's hint names the port the guide starts
+// the front on.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/kit/kit_code_block.dart';
 import 'package:opencode_mobile/ui/setup_commands.dart';
 import 'package:opencode_mobile/ui/widgets/team_host_form.dart';
 
-Future<void> _open(WidgetTester tester) async {
+Future<void> _open(
+  WidgetTester tester, {
+  Future<void> Function()? enterAddress,
+}) async {
   await tester.binding.setSurfaceSize(const Size(420, 2000));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
@@ -20,7 +28,9 @@ Future<void> _open(WidgetTester tester) async {
       home: Builder(
         builder: (context) => Scaffold(
           body: TextButton(
-            onPressed: () => unawaited(showTeamHostGuideSheet(context)),
+            onPressed: () => unawaited(
+              showTeamHostGuideSheet(context, enterAddress: enterAddress),
+            ),
             child: const Text('open'),
           ),
         ),
@@ -100,5 +110,49 @@ void main() {
     // openExternalLink asks first and names the destination host.
     expect(find.byKey(const ValueKey('external-link-confirm')), findsOneWidget);
     expect(find.textContaining('github.com'), findsWidgets);
+  });
+
+  testWidgets('Enter the address closes the guide, then runs the next step', (
+    tester,
+  ) async {
+    var entered = 0;
+    await _open(tester, enterAddress: () async => entered++);
+    final next = find.byKey(const ValueKey('team-host-guide-enter-address'));
+    expect(
+      find.descendant(of: next, matching: find.text('Enter the address')),
+      findsOneWidget,
+    );
+    await tester.tap(next);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('team-host-guide')), findsNothing);
+    expect(entered, 1);
+  });
+
+  testWidgets('where the team is already added the guide has no primary', (
+    tester,
+  ) async {
+    await _open(tester);
+    expect(
+      find.byKey(const ValueKey('team-host-guide-enter-address')),
+      findsNothing,
+    );
+    // Dismissing it runs nothing and leaves the page as it was.
+    await tester.tapAt(const Offset(200, 10));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('team-host-guide')), findsNothing);
+  });
+
+  test('the address hint names the port the guide starts the front on', () {
+    final front = File('tool/host/cp_front/front.py').readAsStringSync();
+    final port = RegExp(
+      r'^DEFAULT_PORT = (\d+)$',
+      multiLine: true,
+    ).firstMatch(front)!.group(1);
+    expect(port, '$teamHostFrontPort');
+    expect(HostScripts.teamFront, contains('--port $teamHostFrontPort'));
+    final hint = lookupAppLocalizations(
+      const Locale('en'),
+    ).teamUiAddAddressHint;
+    expect(hint, endsWith(':$teamHostFrontPort'));
   });
 }

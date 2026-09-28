@@ -504,6 +504,29 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
+    testWidgets('the host guide ends in its next step: Enter the address '
+        'closes it and opens the address form (team-host-guide-sheet)', (
+      tester,
+    ) async {
+      _mockChannels();
+      final controller = await _boot(_computer());
+      await pumpIntro(tester, controller);
+      await reveal(tester, _key('team-intro-set-up'));
+      await tester.tap(_key('team-intro-set-up'));
+      await _settle(tester);
+      expect(_key('team-host-guide'), findsOneWidget);
+      final next = _key('team-host-guide-enter-address');
+      expect(
+        find.descendant(of: next, matching: find.text('Enter the address')),
+        findsOneWidget,
+      );
+      await tester.tap(next);
+      await _settle(tester);
+      expect(_key('team-host-guide'), findsNothing);
+      expect(find.byType(TeamHostForm), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
     testWidgets('OpenCode inside the app: Set it up is Add tools › AI Team '
         'on the in-app host', (tester) async {
       debugPlatformCapabilities = const PlatformCapabilities.android();

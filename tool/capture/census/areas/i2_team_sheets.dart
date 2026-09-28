@@ -474,14 +474,10 @@ final i2TeamSheetsArea = CensusArea(
     CensusShot('team-conversation', state: 'planning', (kit) async {
       await _planning(kit, MutationReceiptStatus.accepted);
     }, note: 'The task\'s conversation after Send to planner.'),
-    CensusShot('team-conversation', state: 'planning-31-min', (
-      kit,
-    ) async {
+    CensusShot('team-conversation', state: 'planning-31-min', (kit) async {
       await _planning(kit, MutationReceiptStatus.accepted, late: true);
     }, note: 'The task\'s conversation, 31 minutes later.'),
-    CensusShot('team-conversation', state: 'planning-unconfirmed', (
-      kit,
-    ) async {
+    CensusShot('team-conversation', state: 'planning-unconfirmed', (kit) async {
       await _planning(kit, MutationReceiptStatus.pending);
     }, note: 'The task\'s conversation; the host did not confirm.'),
     CensusShot('team-home', state: 'planning-refused', (kit) async {
@@ -640,8 +636,8 @@ final i2TeamSheetsArea = CensusArea(
     }),
     CensusShot('embedded-team-discovery-card', (kit) async {
       await _plugins(kit, probe: (url, {city}) async => _found());
-      kit.expectVisible(find.byKey(const ValueKey('team-discovery-card')));
-    }, note: 'Host: Settings › Plugins; a Gas City host answered next to it.'),
+      kit.expectVisible(find.byKey(const ValueKey('plugins-ai-team-turn-on')));
+    }, note: 'Folded into the Plugins AI Team row: "Found on …" + Turn on.'),
     CensusShot('team-host-details-sheet', (kit) async {
       await _home(kit);
       await kit.tapKey('team-home-info');

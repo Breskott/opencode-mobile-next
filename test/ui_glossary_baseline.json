@@ -239,8 +239,7 @@
       "en version \"{version}\"": 1
     },
     "teamUiAddAddressHint": {
-      "ar port \":8372\"": 1,
-      "en port \":8372\"": 1
+      "en port \":8373\"": 1
     },
     "teamUiAddCityLabel": {
       "en engine word \"City\"": 1
@@ -337,18 +336,6 @@
     "teamUiTermWork": {
       "ar engine word \"bead\"": 1,
       "en engine word \"bead\"": 1
-    },
-    "teamUiVerdictFound": {
-      "ar engine word \"city\"": 1,
-      "ar version \"{version}\"": 1,
-      "en engine word \"city\"": 2,
-      "en version \"{version}\"": 1
-    },
-    "teamUiVerdictFoundControls": {
-      "ar engine word \"city\"": 1,
-      "ar version \"{version}\"": 1,
-      "en engine word \"city\"": 2,
-      "en version \"{version}\"": 1
     },
     "teamUiWorkTerm": {
       "ar engine word \"bead\"": 1,
@@ -966,9 +953,6 @@
     },
     "teamUiControlStopConfirmBody": {
       "noun sentence session": 1
-    },
-    "teamUiDiscoveryTitle": {
-      "title over four words": 1
     },
     "teamUiHomeNeedsYouFallbackTitle": {
       "title over four words": 1

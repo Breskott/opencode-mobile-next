@@ -1052,7 +1052,8 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
   }
 
   /// The heat guard's line: paused (or stopped) since when, and that the
-  /// team carries on by itself once the phone has cooled.
+  /// team carries on by itself once the phone has cooled. Neutral: nothing
+  /// here waits on the person (LOOK-4).
   KitStatus _heatStatus(
     BuildContext context,
     AppLocalizations l10n,
@@ -1066,7 +1067,7 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
       icon: hold.serviceStopped
           ? AppIconography.stopCircle
           : AppIconography.pause,
-      tone: AppStatusTone.attention,
+      tone: AppStatusTone.neutral,
       message: hold.serviceStopped
           ? l10n.teamHomeHeatStoppedLine(at)
           : l10n.teamHomeHeatPausedLine(at),

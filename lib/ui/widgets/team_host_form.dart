@@ -135,16 +135,6 @@ String? teamVerdictCopy(AppLocalizations l10n, ProbeVerdict verdict) =>
       ProbeUnreachable() => l10n.teamUiVerdictUnreachable,
     };
 
-/// The verdict chip for a found host: version, city and whether the phone
-/// can answer.
-String teamFoundCopy(AppLocalizations l10n, ProbeFound found) {
-  final version = found.version ?? l10n.teamUiVersionUnknown;
-  final city = found.city ?? '';
-  return found.readOnly
-      ? l10n.teamUiVerdictFound(version, city)
-      : l10n.teamUiVerdictFoundControls(version, city);
-}
-
 /// Opens the manual-add sheet. Returns the config to save once the probe
 /// found a host (or the person chose to save an address that did not
 /// answer), null when the person left without one.
@@ -256,6 +246,10 @@ class _TeamHostFormState extends State<TeamHostForm> {
   late final TextEditingController _city = TextEditingController(
     text: widget.initialCity,
   );
+
+  /// The address field, focused again when the person comes back from the
+  /// host guide through "Enter the address".
+  final FocusNode _urlFocus = FocusNode();
   late final OrchestrationHostKind _kind =
       teamHostKindChoices.contains(widget.initialHostKind)
       ? widget.initialHostKind!
@@ -290,6 +284,7 @@ class _TeamHostFormState extends State<TeamHostForm> {
     }
     _url.dispose();
     _city.dispose();
+    _urlFocus.dispose();
     super.dispose();
   }
 
@@ -425,6 +420,7 @@ class _TeamHostFormState extends State<TeamHostForm> {
           label: l10n.teamUiAddAddressLabel,
           hint: l10n.teamUiAddAddressHint,
           controller: _url,
+          focusNode: _urlFocus,
           kind: KitFieldKind.url,
           onChanged: (_) => _cancelTest(),
           autofocus: widget.initialUrl.isEmpty,
@@ -454,7 +450,13 @@ class _TeamHostFormState extends State<TeamHostForm> {
                 KitAction(
                   key: const ValueKey('team-host-verdict-how'),
                   label: l10n.teamHostFormHowAction,
-                  onPressed: () => showTeamHostGuideSheet(context),
+                  // The guide's "Enter the address" comes back here.
+                  onPressed: () => showTeamHostGuideSheet(
+                    context,
+                    enterAddress: () async {
+                      if (mounted) _urlFocus.requestFocus();
+                    },
+                  ),
                 ),
             ],
           ),
@@ -477,17 +479,24 @@ class _TeamHostFormState extends State<TeamHostForm> {
   }
 }
 
-// revamp: redesign (slice-P3.4, slice-close-security)
+// revamp: redesign (slice-P3.4, slice-close-security, slice-team-g17)
 /// The four host steps of docs/ai-team-host.md, as a sheet; the app has no
 /// bundled markdown viewer for repository docs. Each step is one sentence
 /// and its exact command in the kit's code block, with Copy; the front is
 /// downloaded from a pinned commit and checked against its SHA-256 before
-/// it runs ([HostScripts]). The sheet ends by opening the published guide
-/// in the browser, never by naming a file in the repository.
-// Map `team-host-guide-sheet` also asks for "Enter the address" as the
-// sheet's primary; its hosts differ (one is the address form itself), so
-// that waits for a slice that owns them.
-Future<void> showTeamHostGuideSheet(BuildContext context) {
+/// it runs ([HostScripts]). "Open the full guide" opens the published guide
+/// in the browser, never a file in the repository.
+///
+/// The next step is the team's address (map `team-host-guide-sheet`): with
+/// [enterAddress], the sheet's primary is "Enter the address", which closes
+/// the guide and then runs [enterAddress] — the address form, or, from the
+/// form itself, back to its field. Without it (a team that is already
+/// added, where the guide only explains the host side) the sheet has no
+/// primary.
+Future<void> showTeamHostGuideSheet(
+  BuildContext context, {
+  Future<void> Function()? enterAddress,
+}) async {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   final steps = [
     (l10n.teamUiHostGuideStep1, HostScripts.teamCheckTools),
@@ -495,11 +504,25 @@ Future<void> showTeamHostGuideSheet(BuildContext context) {
     (l10n.teamUiHostGuideStep3, HostScripts.teamStart),
     (l10n.teamUiHostGuideStep4, HostScripts.teamFront),
   ];
-  return showKitSheet<void>(
+  BuildContext? sheetBody;
+  final chosen = await showKitSheet<bool>(
     context,
     sheetKey: const ValueKey('team-host-guide'),
     title: l10n.teamUiHostGuideTitle,
+    primary: enterAddress == null
+        ? null
+        : KitAction(
+            key: const ValueKey('team-host-guide-enter-address'),
+            label: l10n.teamUiHostGuideEnterAddress,
+            onPressed: () {
+              final inside = sheetBody;
+              if (inside != null && inside.mounted) {
+                KitSheet.close(inside, true);
+              }
+            },
+          ),
     body: (sheetContext) {
+      sheetBody = sheetContext;
       final tokens = KitTokens.of(sheetContext);
       return Column(
         mainAxisSize: MainAxisSize.min,
@@ -563,6 +586,9 @@ Future<void> showTeamHostGuideSheet(BuildContext context) {
       );
     },
   );
+  if (chosen == true && enterAddress != null && context.mounted) {
+    await enterAddress();
+  }
 }
 
 /// "1." … for the guide steps; digits stay Western in every locale, as the

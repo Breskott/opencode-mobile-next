@@ -243,6 +243,44 @@ void main() {
       );
     });
 
+    testWidgets("3: an enabled row's own action is a trailing tertiary at "
+        '1.0 text and moves under the text from 1.3x; the row still opens', (
+      tester,
+    ) async {
+      var opened = 0;
+      var acted = 0;
+      Widget row() => KitRow(
+        title: 'AI Team',
+        supporting: const TextSpan(text: 'Found on Laptop'),
+        onTap: () => opened++,
+        action: KitAction(
+          key: const ValueKey('turn-on'),
+          label: 'Turn on',
+          onPressed: () => acted++,
+        ),
+      );
+      await _pump(tester, row());
+      final text = find.text('Found on Laptop');
+      final button = find.byKey(const ValueKey('turn-on'));
+      expect(
+        tester.getTopLeft(button).dx,
+        greaterThanOrEqualTo(tester.getTopRight(text).dx),
+      );
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      expect((acted, opened), (1, 0));
+      await tester.tap(find.text('AI Team'));
+      await tester.pumpAndSettle();
+      expect((acted, opened), (1, 1));
+
+      await _pump(tester, row(), textScale: 2);
+      expect(
+        tester.getTopLeft(button).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(text).dy),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('3: unavailable without enable has no button and no action', (
       tester,
     ) async {

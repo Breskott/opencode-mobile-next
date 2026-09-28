@@ -42,10 +42,10 @@ class WorkGraphNode {
   /// Contract problem (this unit's QA record): KitWorkGraph.md asks for
   /// "the blocked glyph" and for the host to map each state once through
   /// `teamWork*` (ARCH-8), but [KitTaskState] has no blocked (or queued,
-  /// ready, review) value and `teamWorkGlyph` returns an icon and tone, not
-  /// a [KitTaskState]. Until the coordinator decides (a `KitTaskState`
-  /// value, or a `teamWorkMark` beside `teamWorkGlyph` in
-  /// `widgets/team_vocabulary.dart`, owned by another unit), this is the
+  /// ready, review) value and `teamWorkMark` returns a glyph and tone (or
+  /// the needs-you mark), not a [KitTaskState]. Until the coordinator
+  /// decides (a `KitTaskState` value, or a `KitTaskState` mapping beside
+  /// `teamWorkMark` in `widgets/team_vocabulary.dart`), this is the
   /// only copy of the mapping, and KitWorkGraph shows a stuck item's word
   /// visibly on its layers chip and rows line so it never reads as waiting.
   KitTaskState get _mark => switch (state) {

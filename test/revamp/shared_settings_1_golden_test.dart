@@ -23,7 +23,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/theme_packs.dart';
 import 'package:opencode_mobile/ui/widgets/appearance_picker.dart';
 import 'package:opencode_mobile/ui/widgets/language_picker.dart';
-import 'package:opencode_mobile/ui/widgets/team_discovery_card.dart';
+import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../tool/capture/fixtures.dart' show captureTheme, loadCaptureFonts;
@@ -185,22 +185,20 @@ void main() {
         );
       });
 
-      testWidgets('team discovery offer $mode ${size.width.toInt()}', (
+      // The discovery offer is the Plugins AI Team row itself ("Found on
+      // Workstation" + Turn on); the separate card is gone.
+      testWidgets('team found on the server $mode ${size.width.toInt()}', (
         tester,
       ) async {
         final (controller, _) = await bootWorkstation();
         addTearDown(controller.dispose);
         await _shot(
           tester,
-          'settings_team_discovery_card_offer',
+          'settings_team_found_row',
           light: light,
           size: size,
-          home: (_) => ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TeamDiscoveryCard(controller: controller, probe: teamProbe),
-            ],
-          ),
+          home: (_) =>
+              PluginsSettingsScreen(controller: controller, probe: teamProbe),
         );
       });
     }

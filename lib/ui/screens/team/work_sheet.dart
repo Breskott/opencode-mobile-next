@@ -30,7 +30,7 @@ import '../../../orchestration/adapters/gascity/gascity_mappers.dart'
     show WorkItemGasCity;
 import '../../../state/orchestration.dart';
 import '../../app_iconography.dart';
-import '../../app_theme.dart' show AppStatusTone, AppTheme;
+import '../../app_theme.dart' show AppStatusTone;
 import '../../kit/chat/kit_markdown.dart';
 import '../../kit/kit_buttons.dart';
 import '../../kit/kit_code_block.dart';
@@ -366,14 +366,7 @@ class _Body extends StatelessWidget {
             key: ValueKey('team-work-$prefix-$id'),
             leading: other == null
                 ? KitRow.icon(context, AppIconography.cloudOff)
-                : KitRow.icon(
-                    context,
-                    teamWorkGlyph(other.state).$1,
-                    color: AppTheme.statusColor(
-                      Theme.of(context),
-                      teamWorkGlyph(other.state).$2,
-                    ),
-                  ),
+                : teamWorkMark(other.state).leading(context),
             title: other?.title ?? id,
             titleMaxLines: 2,
             supporting: TextSpan(

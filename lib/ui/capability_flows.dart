@@ -34,6 +34,7 @@ import 'screens/usage_hub_screen.dart';
 import 'widgets/pickers.dart';
 import 'widgets/product_states.dart';
 import 'widgets/team_host_form.dart';
+import 'widgets/team_switch.dart' show editTeamAddress;
 
 /// Registers a handler for every enable flow [platform] can run. A flow
 /// the platform cannot run (setting up OpenCode on this phone, on a
@@ -75,8 +76,12 @@ Map<String, KitEnableFlowHandler> capabilityFlowHandlers(
     // The team page: its intro and turn-on while the team is off (P3.4).
     KitEnableFlows.teamTurnOn: (context, _) =>
         openTeamPage(context, controller),
-    KitEnableFlows.teamHostGuide: (context, _) =>
-        showTeamHostGuideSheet(context),
+    KitEnableFlows.teamHostGuide: (context, _) => showTeamHostGuideSheet(
+      context,
+      enterAddress: () async {
+        if (context.mounted) await editTeamAddress(context, controller);
+      },
+    ),
     KitEnableFlows.mcpAdd: (context, _) => pushKitPage<void>(
       context,
       (_) => IntegrationsScreen(
