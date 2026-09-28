@@ -352,6 +352,26 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           SizedBox(height: tokens.sectionGap),
           KitRowGroup(
             children: [
+              // AI setup, review only (owner decision 2026-09-28): the
+              // server's settings, tool servers and suggestions. Only a
+              // server that can share its configuration gets the row; the
+              // page itself explains any later loss of that ability.
+              if (profile != null && controller.capabilities.setupConfigRead)
+                KitRow(
+                  key: const Key('ai-setup-entry'),
+                  leading: KitRow.icon(context, AppIconography.sparkle),
+                  title: copy.aiSetupTitle,
+                  supporting: TextSpan(text: copy.aiSetupEntryDetail),
+                  supportingMaxLines: 2,
+                  trailing: const _RowMark(AppIconography.chevronRight),
+                  onTap: () => pushKitPage<void>(
+                    context,
+                    (_) => AiSetupScreen(
+                      controller: controller,
+                      serverName: serverName,
+                    ),
+                  ),
+                ),
               if (!managedLocally)
                 KitRow(
                   key: const Key('host-management-entry'),

@@ -2,7 +2,10 @@
 
 Status: **inspection, review, guided planning, audit ownership and a conditional
 transaction coordinator implemented; production Apply/Undo/MCP mutations and
-actual AI sessions remain unavailable**. No UI entry point is wired. Tests with
+actual AI sessions remain unavailable**. One review-only UI is wired (owner
+decision 2026-09-28, slice-aisetup-review): server settings → **AI setup**, composed
+by `lib/state/setup_session.dart`; it reads and shows, and never proposes, applies
+or undoes (see `docs/qa/slice-aisetup-review-2026-09-28/`). Tests with
 an atomic fake verify the coordinator; they do not establish a deployed server
 transaction capability.
 
