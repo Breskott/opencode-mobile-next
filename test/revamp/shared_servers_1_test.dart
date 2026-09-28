@@ -194,6 +194,11 @@ void main() {
       await open(tester, status: StreamStatus.reconnecting);
       expect(_rich('Reconnecting'), findsOneWidget);
       expect(_rich('Connected'), findsNothing);
+      // The one shared grace period (3d64653c): once it runs out the line
+      // says Offline, as the shell's server pill does.
+      await tester.pump(const Duration(seconds: 8));
+      expect(_rich('Reconnecting'), findsNothing);
+      expect(_rich('Offline'), findsOneWidget);
     });
   });
 

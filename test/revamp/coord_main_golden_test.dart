@@ -167,9 +167,8 @@ void main() {
       },
     );
 
-    testWidgets('share waiting: connection has priority ${size.width}', (
-      tester,
-    ) async {
+    testWidgets('share waiting: the line is the share, the card the '
+        'connection ${size.width}', (tester) async {
       final messenger = tester.binding.defaultBinaryMessenger;
       const secure = MethodChannel(
         'plugins.it_nomads.com/flutter_secure_storage',
@@ -229,11 +228,22 @@ void main() {
         await tester.pump();
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
+        // The card is this server's connection state (with its own Try
+        // again), so the page leaves the shared connection line out and
+        // says it once; the app's line carries the waiting share instead.
         expect(
           find.byKey(const ValueKey('connection-status-banner')),
-          findsOneWidget,
+          findsNothing,
         );
         expect(find.byType(KitStatusLine), findsOneWidget);
+        expect(
+          find.text(
+            'Connect to a server and the shared text opens in a new '
+            'conversation.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Laptop'), findsNothing);
         expect(share.pending.value, isNotNull);
         await expectLater(
           find.byKey(boundary),

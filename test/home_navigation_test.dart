@@ -15,7 +15,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
-import 'package:opencode_mobile/ui/kit/kit_motion.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/kit/kit_nav.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
@@ -190,14 +190,16 @@ Finder _dockGlass() => find.descendant(
 Finder _inboxDestination() =>
     find.byKey(const ValueKey('home-shell-tab-inbox'));
 
-Duration _navigationDuration(WidgetTester tester) => tester
-    .widget<AnimatedPositionedDirectional>(
-      find.descendant(
-        of: find.byType(KitNavBar),
-        matching: find.byType(AnimatedPositionedDirectional),
-      ),
-    )
-    .duration;
+/// The dock's selection lens. Since kit-fluid-glass (71cb03cd) it rides
+/// KitMotion springs on one ticker instead of an AnimatedPositioned.
+Rect _dockLens(WidgetTester tester) => tester.getRect(
+  find.descendant(
+    of: find.byType(KitNavBar),
+    matching: find.byWidgetPredicate(
+      (widget) => widget.runtimeType.toString() == '_KitNavLens',
+    ),
+  ),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -443,10 +445,26 @@ void main() {
     final controller = await _controller();
     addTearDown(controller.dispose);
     await _pumpShell(tester, controller, disableAnimations: true);
-    expect(_navigationDuration(tester), Duration.zero);
+    final before = _dockLens(tester);
     await tester.tap(find.byIcon(AppIconography.settings));
     await tester.pump();
     expect(_selectedDestination(tester), 'Settings');
+    // One pump: the lens is already on Settings and Settings is fully shown
+    // (no fade). Settings builds on first visit (lazy tabs, 5253e12c), so
+    // its own loading bar may still run; the switch itself does not.
+    final after = _dockLens(tester);
+    expect(after.left, greaterThan(before.left));
+    expect(
+      find.ancestor(
+        of: find.byType(SettingsScreen),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is Opacity && widget.opacity < 1,
+        ),
+      ),
+      findsNothing,
+    );
+    await tester.pumpAndSettle();
+    expect(_dockLens(tester), after);
     expect(tester.takeException(), isNull);
   });
 
@@ -461,7 +479,7 @@ void main() {
     final controller = await _controller();
     addTearDown(controller.dispose);
     await _pumpShell(tester, controller);
-    expect(_navigationDuration(tester), KitMotion.standard);
+    final lensAtRest = _dockLens(tester);
 
     double opacityOf(Type screen) => tester
         .widget<Opacity>(
@@ -474,12 +492,17 @@ void main() {
     await tester.tap(find.byIcon(AppIconography.activity));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 40));
+    // The dock lens is on its way to Inbox, not there yet.
+    final lensMoving = _dockLens(tester);
     expect(opacityOf(ActivityScreen), 0);
     expect(opacityOf(WorkspaceScreen), inExclusiveRange(0, 1));
     await tester.pump(const Duration(milliseconds: 100));
     expect(opacityOf(ActivityScreen), inExclusiveRange(0, 1));
     await tester.pumpAndSettle();
     expect(opacityOf(ActivityScreen), 1);
+    final lensOnInbox = _dockLens(tester);
+    expect(lensOnInbox.center.dx, greaterThan(lensAtRest.center.dx));
+    expect(lensMoving, isNot(lensOnInbox));
     // The status dot is still while connected: nothing runs at rest.
     expect(tester.binding.transientCallbackCount, 0);
   });

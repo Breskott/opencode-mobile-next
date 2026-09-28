@@ -241,29 +241,23 @@ void main() {
       findsNothing,
     );
 
+    // The shell's glass server pill (f4b7a51f, kit shell rebuild): the name
+    // and the status word on the pill, one button whose label reads both and
+    // says what a tap does. The dock names the tab, so the pill is not a
+    // page header any more.
     final button = find.byKey(const ValueKey('server-switcher-button'));
     expect(
-      find.descendant(
-        of: button,
-        matching: find.byKey(const ValueKey('server-profile-title')),
-      ),
+      find.descendant(of: button, matching: find.textContaining('Work server')),
       findsOneWidget,
     );
     expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
     expect(
       tester.getSemantics(button),
-      matchesSemantics(
-        label: 'Server Connected\nServer: Work server\nWork',
-        hint: 'Switch server',
-        isButton: true,
-        // It is still the app bar's title.
-        isHeader: true,
-        namesRoute: true,
-        tooltip: 'Connected',
-        hasTapAction: true,
-        hasFocusAction: true,
-        isFocusable: true,
-      ),
+      isSemantics(isButton: true, hasTapAction: true),
+    );
+    expect(
+      tester.getSemantics(button).label,
+      allOf(contains('Work server'), contains('Connected, Switch server')),
     );
 
     await openSwitcher(tester);
@@ -343,13 +337,18 @@ void main() {
         tester,
         profiles: [fresh('desk', 'Old desk name')],
       );
-      final title = find.byKey(const ValueKey('server-profile-title'));
-      expect(tester.widget<Text>(title).data, 'Old desk name');
+      // The name on the shell's server pill (f4b7a51f).
+      Finder pill(String name) => find.descendant(
+        of: find.byKey(const ValueKey('server-switcher-button')),
+        matching: find.textContaining(name),
+      );
+      expect(pill('Old desk name'), findsOneWidget);
 
       final saved = connection.store.profiles.single..name = 'Desk';
       await connection.store.upsert(saved);
       await tester.pump();
-      expect(tester.widget<Text>(title).data, 'Desk');
+      expect(pill('Desk'), findsOneWidget);
+      expect(pill('Old desk name'), findsNothing);
     });
 
     testWidgets('replaced by an edited copy, as the editor does', (
@@ -396,6 +395,18 @@ void main() {
     await tester.pump();
     expect(word('Reconnecting'), findsOneWidget);
     expect(word('Connected'), findsNothing);
+    // The one shared grace period (3d64653c): once it runs out the sheet
+    // says what the shell's pill says, never "Reconnecting" forever.
+    await tester.pump(const Duration(seconds: 8));
+    expect(word('Reconnecting'), findsNothing);
+    expect(word('Offline'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('server-switcher-button')),
+        matching: find.textContaining('Offline'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('tapping a saved server runs the Servers connect flow', (
@@ -452,7 +463,14 @@ void main() {
     expect(find.byKey(const ValueKey('server-url-field')), findsOneWidget);
     expect(
       tester
-          .widget<TextField>(find.byKey(const ValueKey('server-url-field')))
+          .widget<TextField>(
+            // A kit TextFormField since 71417a2f; the inner TextField holds
+            // the controller.
+            find.descendant(
+              of: find.byKey(const ValueKey('server-url-field')),
+              matching: find.byType(TextField),
+            ),
+          )
           .controller!
           .text,
       isNot(contains('example.test')),

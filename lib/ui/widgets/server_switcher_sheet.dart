@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../api/sse.dart';
 import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
+import '../../domain/connection_status.dart' show ConnectionStatusPhase;
 import '../../domain/profile_monitor.dart' show ProfileAttentionSnapshot;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
@@ -263,7 +263,7 @@ class ServerSwitcherSheet extends StatelessWidget {
       if (showCurrent)
         _CurrentServerRow(
           profile: current,
-          status: controller.status,
+          status: controller.connectionStatus.phase,
           onDisconnect: () => unawaited(leave()),
         ),
       for (final profile in others)
@@ -317,7 +317,10 @@ class _CurrentServerRow extends StatelessWidget {
   });
 
   final ServerProfile profile;
-  final StreamStatus status;
+
+  /// The shared connection status (one grace period app-wide), so the
+  /// word here always matches the shell's server pill.
+  final ConnectionStatusPhase status;
   final VoidCallback onDisconnect;
 
   @override
@@ -332,7 +335,7 @@ class _CurrentServerRow extends StatelessWidget {
         title: profile.name,
         // The name identifies the server; the address is technical and
         // lives in its editor, so it is not cut off here.
-        supporting: status == StreamStatus.connected
+        supporting: status == ConnectionStatusPhase.connected
             ? _withoutSeparator(kitCurrentSpan(context, word))
             : TextSpan(
                 text: word,
@@ -427,12 +430,13 @@ TextSpan _withoutSeparator(TextSpan span) => TextSpan(
   style: span.style,
 );
 
-String _statusLabel(AppLocalizations l10n, StreamStatus status) =>
+/// The same words as the shell's server pill for the same phase.
+String _statusLabel(AppLocalizations l10n, ConnectionStatusPhase status) =>
     switch (status) {
-      StreamStatus.connected => l10n.e7WorkspaceConnected,
-      StreamStatus.connecting => l10n.e7WorkspaceConnecting,
-      StreamStatus.reconnecting => l10n.mcpReconnecting,
-      StreamStatus.disconnected => l10n.e7WorkspaceOffline,
+      ConnectionStatusPhase.connected => l10n.e7WorkspaceConnected,
+      ConnectionStatusPhase.connecting => l10n.e7WorkspaceConnecting,
+      ConnectionStatusPhase.reconnecting => l10n.mcpReconnecting,
+      _ => l10n.e7WorkspaceOffline,
     };
 
 AppLocalizations _l10n(BuildContext context) =>

@@ -176,8 +176,12 @@ void main() {
     expect(find.textContaining('Connect to a server'), findsOneWidget);
     expect(share.pending.value, 'paste me later');
     expect(find.byType(ChatScreen), findsNothing);
-    // Let the snackbar's own timer run out before the tree is torn down.
-    await tester.pump(const Duration(seconds: 5));
+    // Let the snackbar's own timer and the controller's connection wait
+    // (eight seconds, owned by the controller since 3d64653c) run out
+    // before the tree is torn down; the share still waits after both.
+    await tester.pump(const Duration(seconds: 9));
+    expect(share.pending.value, 'paste me later');
+    expect(find.byType(ChatScreen), findsNothing);
   });
 
   testWidgets(

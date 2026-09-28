@@ -2,7 +2,10 @@
 // MOT-7): under the system's "remove animations" AND under Settings ›
 // Appearance › Animations: Off (KitEffects.motion), a part settles after
 // one pump() with no ticker running, both when it first shows and after it
-// changes state, and every drawing shows its finished frame.
+// changes state, and every drawing shows its finished frame. The one frame
+// kind of frame callback not counted as motion is a LayoutBuilder deferring
+// a one-shot rebuild to the next frame (kitStillLeftovers); a ticker it
+// starts still fails, and so does any ticker running after the one pump().
 //
 // A kit part added after G8x registers its own samples from its own test
 // file (test/kit/kit_<snake>_test.dart, NAME-1):
@@ -237,24 +240,94 @@ String kitMotionKey(String part, String sample, KitStill still) =>
 /// every baseline key names a real sample of that very part.
 final kitMotionSamples = <String, Set<String>>{};
 
+/// Whether every frame callback still scheduled is a [LayoutBuilder]
+/// deferring a rebuild, and none is a ticker. The framework defers a
+/// rebuild inside a LayoutBuilder that is asked for after a frame (a focus
+/// change the focus manager applies in the microtask after the frame, or a
+/// scrollbar's first scroll metrics) to the next frame through
+/// `scheduleFrameCallback` (layout_builder.dart `_scheduleRebuild`); the
+/// same rebuild outside a LayoutBuilder only schedules a frame, which
+/// `transientCallbackCount` never counted. It is a one-shot rebuild, not
+/// motion, so MOT-7 ("no running ticker") does not see it. Read from the
+/// registration stacks the scheduler keeps in debug builds (tests always
+/// are): each callback's frame right after `scheduleFrameCallback` must be
+/// `_LayoutBuilderElement._scheduleRebuild`.
+bool _onlyDeferredLayoutRebuilds(WidgetTester tester) {
+  final count = tester.binding.transientCallbackCount;
+  if (count == 0) return false;
+  // The scheduler reports the stacks through FlutterError.onError rather
+  // than throwing; catch that one report instead of recording an error.
+  FlutterErrorDetails? details;
+  final previous = FlutterError.onError;
+  FlutterError.onError = (reported) => details = reported;
+  try {
+    tester.binding.debugAssertNoTransientCallbacks('G8x');
+  } finally {
+    FlutterError.onError = previous;
+  }
+  final report = details?.toString();
+  if (report == null) return false;
+  final callbacks = report.split('── callback ').skip(1).toList();
+  if (callbacks.length != count) return false;
+  return callbacks.every((stack) {
+    final lines = stack.split('\n');
+    final at = lines.indexWhere(
+      (line) => line.contains('SchedulerBinding.scheduleFrameCallback'),
+    );
+    return at >= 0 &&
+        at + 1 < lines.length &&
+        lines[at + 1].contains('_LayoutBuilderElement._scheduleRebuild');
+  });
+}
+
+/// How many deferred LayoutBuilder rebuilds may follow one another after
+/// one pump(). A focus change is one (the field shows its focus); a field
+/// that selects its text once focused adds a second (the selection). More
+/// than this is a part rebuilding itself frame after frame, which fails.
+const kitStillDeferredRebuilds = 3;
+
+/// What one pump() left running, as problems (empty: settled). Frame
+/// callbacks left only by [LayoutBuilder] deferred rebuilds (see
+/// [_onlyDeferredLayoutRebuilds]) are let run, one frame at a time in which
+/// no time passes, so nothing can advance, up to [kitStillDeferredRebuilds]
+/// frames; whatever they start (a ticker) is still running afterwards and
+/// fails. A ticker still running after one pump() is never excused, alone
+/// or next to a deferred rebuild.
+Future<List<String>> kitStillLeftovers(WidgetTester tester) async {
+  for (var frame = 0; ; frame++) {
+    if (!tester.hasRunningAnimations) return const [];
+    final count = tester.binding.transientCallbackCount;
+    if (!_onlyDeferredLayoutRebuilds(tester)) {
+      return [
+        '$count frame callback(s) still scheduled'
+            '${frame == 0 ? '' : ' after $frame deferred LayoutBuilder rebuild(s)'}'
+            ': a ticker or animation is running after one pump()',
+      ];
+    }
+    if (frame == kitStillDeferredRebuilds) {
+      return [
+        'LayoutBuilder rebuilds are still deferred after '
+            '$kitStillDeferredRebuilds frames: the part rebuilds itself '
+            'every frame',
+      ];
+    }
+    await tester.pump(Duration.zero);
+  }
+}
+
 /// Checks what one pump() left: [problems] (text not shown, text not gone)
-/// plus a running ticker. A sample not in the baseline must have none. A
-/// baselined sample must still have one: when it has none it has been
-/// fixed, and the test fails until its entry is removed (the ratchet only
-/// shrinks, never keeps a stale entry).
-void _expectStill(
+/// plus a running ticker ([kitStillLeftovers]). A sample not in the
+/// baseline must have none. A baselined sample must still have one: when it
+/// has none it has been fixed, and the test fails until its entry is
+/// removed (the ratchet only shrinks, never keeps a stale entry).
+Future<void> _expectStill(
   WidgetTester tester,
   KitStill still,
   String label,
   String key, [
   List<String> problems = const [],
-]) {
-  final all = [
-    ...problems,
-    if (tester.hasRunningAnimations)
-      '${tester.binding.transientCallbackCount} frame callback(s) still '
-          'scheduled: a ticker or animation is running after one pump()',
-  ];
+]) async {
+  final all = [...problems, ...await kitStillLeftovers(tester)];
   final baseline = readKitMotionBaseline();
   if (baseline.contains(key)) {
     if (all.isEmpty) {
@@ -355,7 +428,7 @@ Future<void> expectKitPartStill(
   await tester.pump();
   expect(tester.takeException(), isNull, reason: '$label threw');
   _expectPartShown(tester, part, label);
-  _expectStill(tester, still, label, baselineKey);
+  await _expectStill(tester, still, label, baselineKey);
   // Unmount so a part's own timers end with the test.
   await tester.pumpWidget(const SizedBox());
 }
@@ -383,7 +456,7 @@ Future<void> expectKitModalStill(
     greaterThan(0),
     reason: '$label pushed no route after one pump()',
   );
-  _expectStill(tester, still, label, baselineKey, [?_unseen(open.shows)]);
+  await _expectStill(tester, still, label, baselineKey, [?_unseen(open.shows)]);
   await tester.pumpWidget(const SizedBox());
 }
 
@@ -406,7 +479,7 @@ Future<void> expectKitChangeStill(
   await tester.pump();
   expect(tester.takeException(), isNull, reason: '$label threw');
   _expectPartShown(tester, part, label);
-  _expectStill(tester, still, label, baselineKey, [
+  await _expectStill(tester, still, label, baselineKey, [
     if (change.shows case final shows?) ?_unseen(shows),
     if (change.hides case final hides?
         when find.text(hides).evaluate().isNotEmpty)

@@ -903,12 +903,15 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(tester.hasRunningAnimations, isFalse);
+    // Shown after one pump; nothing moving (the gate's G8x reading: the
+    // code block's scrollbar takes its first metrics in a deferred
+    // LayoutBuilder rebuild, which is no ticker).
     expect(find.text('Allow once'), findsOneWidget);
+    expect(await kitStillLeftovers(tester), isEmpty);
     await tester.tap(find.byKey(_switchKey));
     await tester.pump();
-    expect(tester.hasRunningAnimations, isFalse);
     expect(find.text('In this conversation, on laptop'), findsOneWidget);
+    expect(await kitStillLeftovers(tester), isEmpty);
     showKitConfirm(
       tester.element(find.text('Allow once')),
       title: 'Stop here?',
@@ -916,7 +919,7 @@ void main() {
       confirmLabel: 'Stop',
     );
     await tester.pump();
-    expect(tester.hasRunningAnimations, isFalse);
     expect(find.text('Stop here?'), findsOneWidget);
+    expect(await kitStillLeftovers(tester), isEmpty);
   });
 }

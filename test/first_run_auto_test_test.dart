@@ -128,7 +128,17 @@ void main() {
     // belongs to the explicit button and to Save.
     expect(find.byKey(const ValueKey('server-probe-verdict')), findsNothing);
     expect(
-      tester.widget<TextField>(find.byKey(_url)).decoration?.errorText,
+      // The kit field is a TextFormField since 71417a2f; its error is the
+      // inner TextField's decoration.
+      tester
+          .widget<TextField>(
+            find.descendant(
+              of: find.byKey(_url),
+              matching: find.byType(TextField),
+            ),
+          )
+          .decoration
+          ?.errorText,
       isNull,
     );
   });
@@ -198,7 +208,15 @@ void main() {
     // The person is still in the address field; an automatic verdict must
     // not take the keyboard somewhere else.
     expect(
-      tester.widget<TextField>(find.byKey(_url)).focusNode!.hasFocus,
+      tester
+          .widget<EditableText>(
+            find.descendant(
+              of: find.byKey(_url),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .focusNode
+          .hasFocus,
       isTrue,
     );
 
@@ -318,10 +336,20 @@ void main() {
     await openServerManualAddress(tester);
 
     await tester.enterText(find.byKey(_url), 'https://box.example');
+    // Add server is stepped since P3.9 (3d251f37): the top bar steps back to
+    // "what runs there" first, which leaves the connect step and its queued
+    // test behind; Close then leaves the editor.
+    await tester.tap(find.byKey(const ValueKey('server-editor-back')));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 3));
+    expect(probed, isEmpty);
     await tester.tap(find.byKey(const ValueKey('server-editor-close')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Discard'));
-    await tester.pumpAndSettle();
+    if (find.text('Discard').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Discard'));
+      await tester.pumpAndSettle();
+    }
+    expect(find.byKey(const ValueKey('server-profile-editor')), findsNothing);
     await tester.pump(const Duration(seconds: 3));
     expect(probed, isEmpty);
   });
