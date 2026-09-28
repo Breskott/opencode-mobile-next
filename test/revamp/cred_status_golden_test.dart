@@ -8,6 +8,8 @@
 // and look at every changed image before committing it.
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,69 +47,76 @@ void main() {
     required bool light,
     bool details = false,
   }) async {
-    tester.view.physicalSize = size;
-    tester.view.devicePixelRatio = 1;
-    tester.platformDispatcher.platformBrightnessTestValue = light
-        ? Brightness.light
-        : Brightness.dark;
-    addTearDown(tester.view.reset);
-    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-    final messenger = tester.binding.defaultBinaryMessenger;
-    messenger.setMockMethodCallHandler(_secureStorage, (call) async {
-      if (call.method == 'read') {
-        throw PlatformException(code: 'Exception', message: 'bad tag');
+    debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
+    try {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.platformBrightnessTestValue = light
+          ? Brightness.light
+          : Brightness.dark;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(_secureStorage, (call) async {
+        if (call.method == 'read') {
+          throw PlatformException(code: 'Exception', message: 'bad tag');
+        }
+        return null;
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(_secureStorage, null),
+      );
+      const thermal = EventChannel('oc/thermal/events');
+      messenger.setMockStreamHandler(
+        thermal,
+        MockStreamHandler.inline(onListen: (_, _) {}),
+      );
+      addTearDown(() => messenger.setMockStreamHandler(thermal, null));
+      final servers = [
+        ServerProfile(
+          id: 'server-1',
+          name: 'Workstation',
+          baseUrl: 'https://server.example:4096',
+          username: 'opencode',
+        ),
+        ServerProfile(
+          id: 'server-2',
+          name: 'Laptop',
+          baseUrl: 'https://laptop.example:4096',
+        ),
+      ];
+      SharedPreferences.setMockInitialValues({
+        'oc.profiles': jsonEncode([for (final s in servers) s.toJson()]),
+        'oc.activeProfile': 'server-1',
+      });
+      final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+      await tester.runAsync(store.load);
+      final connection = _IdleConnection(store);
+      addTearDown(connection.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            bootstrapProvider.overrideWithValue(AppBootstrap(store)),
+            connProvider.overrideWithValue(connection),
+          ],
+          child: const OcApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      if (details) {
+        await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Details').last);
+        await tester.pumpAndSettle();
       }
-      return null;
-    });
-    addTearDown(() => messenger.setMockMethodCallHandler(_secureStorage, null));
-    const thermal = EventChannel('oc/thermal/events');
-    messenger.setMockStreamHandler(
-      thermal,
-      MockStreamHandler.inline(onListen: (_, _) {}),
-    );
-    addTearDown(() => messenger.setMockStreamHandler(thermal, null));
-    final servers = [
-      ServerProfile(
-        id: 'server-1',
-        name: 'Workstation',
-        baseUrl: 'https://server.example:4096',
-        username: 'opencode',
-      ),
-      ServerProfile(
-        id: 'server-2',
-        name: 'Laptop',
-        baseUrl: 'https://laptop.example:4096',
-      ),
-    ];
-    SharedPreferences.setMockInitialValues({
-      'oc.profiles': jsonEncode([for (final s in servers) s.toJson()]),
-      'oc.activeProfile': 'server-1',
-    });
-    final store = ProfileStore(prefs: await SharedPreferences.getInstance());
-    await tester.runAsync(store.load);
-    final connection = _IdleConnection(store);
-    addTearDown(connection.dispose);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          bootstrapProvider.overrideWithValue(AppBootstrap(store)),
-          connProvider.overrideWithValue(connection),
-        ],
-        child: const OcApp(),
-      ),
-    );
-    await tester.pumpAndSettle();
-    if (details) {
-      await tester.tap(find.byKey(const ValueKey('kit-status-more')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Details').last);
-      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(OcApp),
+        matchesGoldenFile('goldens/cred_status_$name.png'),
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
     }
-    await expectLater(
-      find.byType(OcApp),
-      matchesGoldenFile('goldens/cred_status_$name.png'),
-    );
-    await tester.pumpWidget(const SizedBox.shrink());
   }
 
   for (final light in [false, true]) {

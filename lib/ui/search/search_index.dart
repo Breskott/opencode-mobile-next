@@ -822,8 +822,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       // "Add MCP server" is a button on this screen, so its title leads here.
       keywords:
           '${l10n.settingsHubSearchMcpAliases} ${l10n.mcpAdd} '
-          '${l10n.e7LibraryMCPAndIntegrations}',
-      pages: const ['integrations', 'mcp-setup'],
+          '${l10n.e7LibraryMCPAndIntegrations} ${l10n.mcpCatalogTitle}',
+      pages: const ['integrations', 'mcp-setup', 'mcp-catalog'],
       gate: _catalog,
       serverGate: _catalog,
       open: _screen(
@@ -988,7 +988,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       title: l10n.aiSetupTitle,
       parent: l10n.settingsHubThisServer,
       keywords: l10n.aiSetupEntryDetail,
-      pages: const ['server-settings'],
+      pages: const ['server-settings', 'ai-setup'],
       gate: (scope) =>
           scope.controller.profile != null &&
           scope.capabilities.setupConfigRead,
@@ -1081,7 +1081,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       keywords:
           '${l10n.discoverNotifyServersAliases} '
           '${l10n.monitorBackgroundChecks} ${l10n.discoverMonitorAliases}',
-      pages: const ['notifications-settings', 'profile-monitor'],
+      pages: const ['notifications-settings'],
       target: const SettingsSearchTarget(
         pageId: 'notifications-settings',
         sectionId: 'servers',

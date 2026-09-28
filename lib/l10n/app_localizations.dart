@@ -36841,6 +36841,594 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to the worker'**
   String get chatWatchBackToWorker;
+
+  /// Moving from Termux to the in-app server: the page title and the This phone row that opens it (its detail says where things go).
+  ///
+  /// In en, this message translates to:
+  /// **'Move from Termux'**
+  String get migrationTitle;
+
+  /// Moving from Termux to the in-app server: the wait while Termux and the phone are checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking Termux and phone storage…'**
+  String get migrationChecking;
+
+  /// Moving from Termux to the in-app server: the review's opening line.
+  ///
+  /// In en, this message translates to:
+  /// **'Your projects are copied into OpenCode inside this app. Nothing in Termux is changed or removed.'**
+  String get migrationReviewIntro;
+
+  /// Moving from Termux to the in-app server: label of the group of items that become active files (projects).
+  ///
+  /// In en, this message translates to:
+  /// **'Copied and ready to use'**
+  String get migrationGroupMoves;
+
+  /// Moving from Termux to the in-app server: label of the group of items kept only as private copies.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved privately, not turned on'**
+  String get migrationGroupExports;
+
+  /// Moving from Termux to the in-app server: label of what the move leaves behind.
+  ///
+  /// In en, this message translates to:
+  /// **'Not moved'**
+  String get migrationGroupNotMoved;
+
+  /// Moving from Termux to the in-app server: item: the project folders in Termux's Ubuntu.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get migrationItemProjects;
+
+  /// Moving from Termux to the in-app server: item: OpenCode's global config, including MCP servers.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP and agent settings'**
+  String get migrationItemConfig;
+
+  /// Moving from Termux to the in-app server: item: OpenCode's raw data folder with past conversations; kept only as a backup copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation history (backup copy)'**
+  String get migrationItemSessions;
+
+  /// Moving from Termux to the in-app server: item: the global Git configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Git settings'**
+  String get migrationItemGitConfig;
+
+  /// Moving from Termux to the in-app server: item: the shell start files (.bashrc, .zshrc and the login one).
+  ///
+  /// In en, this message translates to:
+  /// **'Shell settings'**
+  String get migrationItemShellFiles;
+
+  /// Moving from Termux to the in-app server: item: the AI Team's saved state.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team'**
+  String get migrationItemAiTeam;
+
+  /// Moving from Termux to the in-app server: what copying the projects does.
+  ///
+  /// In en, this message translates to:
+  /// **'Into a new folder on the in-app server. Nothing there is overwritten.'**
+  String get migrationItemProjectsWhat;
+
+  /// Moving from Termux to the in-app server: what the settings copy is.
+  ///
+  /// In en, this message translates to:
+  /// **'To review before using: commands and paths may only work in Termux.'**
+  String get migrationItemConfigWhat;
+
+  /// Moving from Termux to the in-app server: what the conversation history copy is.
+  ///
+  /// In en, this message translates to:
+  /// **'May contain your sign-ins, and the app doesn\'t open it. Termux keeps your usable history.'**
+  String get migrationItemSessionsWhat;
+
+  /// Moving from Termux to the in-app server: what the Git settings copy is.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Git name, email and options, to review.'**
+  String get migrationItemGitConfigWhat;
+
+  /// Moving from Termux to the in-app server: what the shell settings copy is.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps .bashrc, .zshrc and your other shell start files; they never run.'**
+  String get migrationItemShellFilesWhat;
+
+  /// Moving from Termux to the in-app server: what the AI Team copy is.
+  ///
+  /// In en, this message translates to:
+  /// **'The team\'s saved state. Setup installs its tools again.'**
+  String get migrationItemAiTeamWhat;
+
+  /// Moving from Termux to the in-app server: an item's measured size and file count, e.g. '1.2 GB · 3,400 files'.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} · {count, plural, =1{1 file} other{{count} files}}'**
+  String migrationItemSize(String size, int count);
+
+  /// Moving from Termux to the in-app server: an item Termux could not measure (its size is unknown, never zero).
+  ///
+  /// In en, this message translates to:
+  /// **'Size unknown'**
+  String get migrationSizeUnknown;
+
+  /// Moving from Termux to the in-app server: note under the private copies group.
+  ///
+  /// In en, this message translates to:
+  /// **'Private copies stay on this phone inside the in-app Linux. Nothing in them runs or turns on by itself.'**
+  String get migrationExportsNote;
+
+  /// Moving from Termux to the in-app server: not moved: provider sign-ins, when their names are unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-ins to AI providers: sign in again after the move'**
+  String get migrationNotMovedSignIn;
+
+  /// Moving from Termux to the in-app server: not moved: provider sign-ins, named, e.g. 'Anthropic and OpenAI'.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-ins to {names}: sign in again after the move'**
+  String migrationNotMovedSignInNamed(String names);
+
+  /// Moving from Termux to the in-app server: not moved: SSH keys and Git credentials.
+  ///
+  /// In en, this message translates to:
+  /// **'SSH keys and saved Git passwords'**
+  String get migrationNotMovedKeys;
+
+  /// Moving from Termux to the in-app server: not moved: toolchains and caches.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed tools and caches: setup installs them again'**
+  String get migrationNotMovedTools;
+
+  /// Moving from Termux to the in-app server: what is kept: everything in Termux.
+  ///
+  /// In en, this message translates to:
+  /// **'Termux stays as it is, and its server keeps working until you remove it'**
+  String get migrationTermuxKept;
+
+  /// Moving from Termux to the in-app server: the space the selected items need while they are copied (a conservative estimate).
+  ///
+  /// In en, this message translates to:
+  /// **'Needs about {size} of free space while copying.'**
+  String migrationSpaceNeeded(String size);
+
+  /// Moving from Termux to the in-app server: why the app must stay open.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the app open while copying. Android stops it when you leave the app, and it picks up from here when you resume.'**
+  String get migrationKeepOpen;
+
+  /// Moving from Termux to the in-app server: the review's primary action.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to the in-app server'**
+  String get migrationStart;
+
+  /// Moving from Termux to the in-app server: why the primary is off when nothing is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one item to copy.'**
+  String get migrationChooseOne;
+
+  /// Moving from Termux to the in-app server: stage: Termux packs the item.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing your files in Termux…'**
+  String get migrationPacking;
+
+  /// Moving from Termux to the in-app server: stage: the item is copied into the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Copying files to this app…'**
+  String get migrationCopying;
+
+  /// Moving from Termux to the in-app server: stage: the copy is imported.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing your files…'**
+  String get migrationUnpacking;
+
+  /// Moving from Termux to the in-app server: stage: the copy is verified.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the copied files…'**
+  String get migrationVerifying;
+
+  /// Moving from Termux to the in-app server: stage: the app connects to the in-app server.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to the in-app server…'**
+  String get migrationSwitching;
+
+  /// Moving from Termux to the in-app server: the last step of the copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to the in-app server'**
+  String get migrationStepConnect;
+
+  /// Moving from Termux to the in-app server: stops the running copy (asks first).
+  ///
+  /// In en, this message translates to:
+  /// **'Stop copying'**
+  String get migrationStop;
+
+  /// Moving from Termux to the in-app server: the stop question's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop copying?'**
+  String get migrationStopTitle;
+
+  /// Moving from Termux to the in-app server: the stop question's body.
+  ///
+  /// In en, this message translates to:
+  /// **'You can resume later from This phone.'**
+  String get migrationStopBody;
+
+  /// Moving from Termux to the in-app server: stop question: what is kept.
+  ///
+  /// In en, this message translates to:
+  /// **'What was copied so far is kept'**
+  String get migrationStopKept;
+
+  /// Moving from Termux to the in-app server: stop question: keep the copy running.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep copying'**
+  String get migrationKeepGoing;
+
+  /// Moving from Termux to the in-app server: the stopped state's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy stopped. You can resume later.'**
+  String get migrationCancelled;
+
+  /// Moving from Termux to the in-app server: the stopped state's body after Stop.
+  ///
+  /// In en, this message translates to:
+  /// **'What was copied is kept, and Termux isn\'t changed.'**
+  String get migrationCancelledBody;
+
+  /// Moving from Termux to the in-app server: the stopped state's body when leaving the app stopped it.
+  ///
+  /// In en, this message translates to:
+  /// **'It stopped because the app left the screen: Android doesn\'t let it run in the background. What was copied is kept.'**
+  String get migrationStoppedLeaving;
+
+  /// Moving from Termux to the in-app server: resumes the saved copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume copying'**
+  String get migrationResume;
+
+  /// Moving from Termux to the in-app server: the low-space state's title.
+  ///
+  /// In en, this message translates to:
+  /// **'More free space is needed before copying.'**
+  String get migrationNeedsSpace;
+
+  /// Moving from Termux to the in-app server: the low-space state's body.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs about {needed}, and {free} is free. Free up space on this phone, or copy fewer items.'**
+  String migrationNeedsSpaceBody(String needed, String free);
+
+  /// Moving from Termux to the in-app server: the low-space state's body when free space could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs about {needed}, and the free space couldn\'t be read. Free up space on this phone, or copy fewer items.'**
+  String migrationNeedsSpaceBodyUnknown(String needed);
+
+  /// Moving from Termux to the in-app server: low space: back to the review.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose fewer items'**
+  String get migrationChooseFewer;
+
+  /// Moving from Termux to the in-app server: the state when OpenCode inside the app is not installed.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up the in-app server first.'**
+  String get migrationNeedsBuiltin;
+
+  /// Moving from Termux to the in-app server: why setup comes first; runtime is 'OpenCode 1' or 'OpenCode 2'.
+  ///
+  /// In en, this message translates to:
+  /// **'Your projects move into OpenCode inside this app, so it needs setting up. Setup installs Linux and {runtime}, then this continues here.'**
+  String migrationNeedsBuiltinBody(String runtime);
+
+  /// Moving from Termux to the in-app server: starts the in-app server's setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up the in-app server'**
+  String get migrationSetUpBuiltin;
+
+  /// Moving from Termux to the in-app server: setup could not be started.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup couldn\'t start. Try again, or set it up from This phone.'**
+  String get migrationSetupFailed;
+
+  /// Moving from Termux to the in-app server: title when Termux cannot be reached.
+  ///
+  /// In en, this message translates to:
+  /// **'Termux isn\'t answering'**
+  String get migrationTermuxNotAnswering;
+
+  /// Moving from Termux to the in-app server: way forward when Termux cannot be reached.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Termux, then try again.'**
+  String get migrationTermuxUnavailable;
+
+  /// Moving from Termux to the in-app server: opens the Termux app.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Termux'**
+  String get migrationOpenTermux;
+
+  /// Moving from Termux to the in-app server: the failed state's title; the body says why in plain words.
+  ///
+  /// In en, this message translates to:
+  /// **'The move stopped'**
+  String get migrationFailedTitle;
+
+  /// Moving from Termux to the in-app server: failure: files changed in Termux while copying.
+  ///
+  /// In en, this message translates to:
+  /// **'Files changed during copying. Try again when Termux is idle.'**
+  String get migrationSourceChanged;
+
+  /// Moving from Termux to the in-app server: failure: Termux is still busy with the last step.
+  ///
+  /// In en, this message translates to:
+  /// **'Termux is finishing the previous step. Try again shortly.'**
+  String get migrationSourceBusy;
+
+  /// Moving from Termux to the in-app server: failure: links, sockets or external Git worktrees.
+  ///
+  /// In en, this message translates to:
+  /// **'This item contains files that cannot be copied safely.'**
+  String get migrationUnsupportedFiles;
+
+  /// Moving from Termux to the in-app server: way forward for files that cannot be copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Links, sockets and Git worktrees can\'t be copied. Remove them in Termux and try again, or copy that project by hand.'**
+  String get migrationUnsupportedFilesFix;
+
+  /// Moving from Termux to the in-app server: failure: an item is too big.
+  ///
+  /// In en, this message translates to:
+  /// **'This item exceeds the migration size or file limit.'**
+  String get migrationTooLarge;
+
+  /// Moving from Termux to the in-app server: way forward for an item that is too big.
+  ///
+  /// In en, this message translates to:
+  /// **'Each item can hold up to 512 MB and 20,000 files. Delete build folders such as node_modules in Termux, then try again.'**
+  String get migrationTooLargeFix;
+
+  /// Moving from Termux to the in-app server: failure: the copied archive did not match.
+  ///
+  /// In en, this message translates to:
+  /// **'The copy could not be verified. Your Termux files are unchanged.'**
+  String get migrationVerificationFailed;
+
+  /// Moving from Termux to the in-app server: failure: moved files were changed afterwards.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported files changed. They will not be overwritten.'**
+  String get migrationDestinationChanged;
+
+  /// Moving from Termux to the in-app server: what happens to changed files.
+  ///
+  /// In en, this message translates to:
+  /// **'The files on the in-app server stay as you left them.'**
+  String get migrationDestinationChangedFix;
+
+  /// Moving from Termux to the in-app server: failure: writing the copy failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The copy could not be saved. Check phone storage and try again.'**
+  String get migrationStorageFailed;
+
+  /// Moving from Termux to the in-app server: failure: a step ran out of time.
+  ///
+  /// In en, this message translates to:
+  /// **'This step took too long. Keep the app open and resume.'**
+  String get migrationTimedOut;
+
+  /// Moving from Termux to the in-app server: failure: the selection does not match the saved one.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the saved migration selection to resume.'**
+  String get migrationSelectionChanged;
+
+  /// Moving from Termux to the in-app server: failure: the files are in, the connection failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Files are copied, but the in-app server could not connect.'**
+  String get migrationConnectionFailed;
+
+  /// Moving from Termux to the in-app server: Details label: the fixed reason code.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get migrationFailureCode;
+
+  /// Moving from Termux to the in-app server: Details label: the item being copied when it stopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get migrationFailureItem;
+
+  /// Moving from Termux to the in-app server: opens This phone for the in-app server.
+  ///
+  /// In en, this message translates to:
+  /// **'Open This phone'**
+  String get migrationOpenThisPhone;
+
+  /// Moving from Termux to the in-app server: the finished state's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved from Termux'**
+  String get migrationDoneTitle;
+
+  /// Moving from Termux to the in-app server: the finished state's body.
+  ///
+  /// In en, this message translates to:
+  /// **'Files copied. Your Termux server is still available.'**
+  String get migrationDone;
+
+  /// Moving from Termux to the in-app server: next step: provider sign-in on the in-app server.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to your AI providers again'**
+  String get migrationSignInAgain;
+
+  /// Moving from Termux to the in-app server: next step detail with the provider names.
+  ///
+  /// In en, this message translates to:
+  /// **'{names} were signed in on Termux. Sign-ins never move.'**
+  String migrationSignInAgainNamed(String names);
+
+  /// Moving from Termux to the in-app server: next step detail when provider names are unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-ins never move from Termux.'**
+  String get migrationSignInAgainAny;
+
+  /// Moving from Termux to the in-app server: next step: where the projects are.
+  ///
+  /// In en, this message translates to:
+  /// **'Your projects'**
+  String get migrationProjectsWhere;
+
+  /// Moving from Termux to the in-app server: where the projects are, e.g. 'termux-0123abcd'.
+  ///
+  /// In en, this message translates to:
+  /// **'In the folder {folder} on the in-app server'**
+  String migrationProjectsWhereBody(String folder);
+
+  /// Moving from Termux to the in-app server: next step: where the private copies are.
+  ///
+  /// In en, this message translates to:
+  /// **'Private copies'**
+  String get migrationExportsWhere;
+
+  /// Moving from Termux to the in-app server: which private copies were saved.
+  ///
+  /// In en, this message translates to:
+  /// **'{items}: saved inside the in-app Linux, not turned on'**
+  String migrationExportsWhereBody(String items);
+
+  /// Moving from Termux to the in-app server: next step: removing Termux is the person's choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the Termux server when you\'re ready'**
+  String get migrationRemoveTermux;
+
+  /// Moving from Termux to the in-app server: why and how Termux stays.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is removed for you. Until then it keeps working, and you can switch back to it on Servers.'**
+  String get migrationRemoveTermuxBody;
+
+  /// Moving from Termux to the in-app server: the finished state's primary: goes to the in-app server's home.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the in-app server'**
+  String get migrationOpenBuiltin;
+
+  /// Moving from Termux to the in-app server: Details label: the projects' folder inside the in-app Linux.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects folder'**
+  String get migrationDetailProjects;
+
+  /// Moving from Termux to the in-app server: Details label: the private copies' folder inside the in-app Linux.
+  ///
+  /// In en, this message translates to:
+  /// **'Private copies folder'**
+  String get migrationDetailExports;
+
+  /// Moving from Termux to the in-app server: shown after the app was closed during a copy.
+  ///
+  /// In en, this message translates to:
+  /// **'The move didn\'t finish'**
+  String get migrationUnfinishedTitle;
+
+  /// Moving from Termux to the in-app server: the unfinished copy's body.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume to carry on where it stopped. What was already copied is kept, and Termux isn\'t changed.'**
+  String get migrationUnfinishedBody;
+
+  /// Moving from Termux to the in-app server: the app could not prepare its private storage.
+  ///
+  /// In en, this message translates to:
+  /// **'The move can\'t start'**
+  String get migrationUnavailableTitle;
+
+  /// Moving from Termux to the in-app server: way forward when the migration cannot be prepared.
+  ///
+  /// In en, this message translates to:
+  /// **'The app couldn\'t prepare its private storage for the copy. Try again, and if it keeps happening, restart the app.'**
+  String get migrationUnavailableBody;
+
+  /// Moving from Termux to the in-app server: This phone row: what moving does.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy your projects into the in-app server. Termux stays as it is.'**
+  String get migrationRowBody;
+
+  /// Moving from Termux to the in-app server: This phone row: a copy that did not finish.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume moving to the in-app server'**
+  String get migrationRowResume;
+
+  /// Moving from Termux to the in-app server: This phone row: the unfinished copy's detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped before it finished. What was copied is kept.'**
+  String get migrationRowResumeBody;
+
+  /// Moving from Termux to the in-app server: This phone row: a copy is running.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving to the in-app server'**
+  String get migrationRowRunning;
+
+  /// Moving from Termux to the in-app server: This phone row: after the move.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the Termux server when you\'re ready.'**
+  String get migrationRowDoneBody;
+
+  /// Moving from Termux to the in-app server: one-time offer under the Termux server row on Servers.
+  ///
+  /// In en, this message translates to:
+  /// **'Move your Termux projects into this app? Termux stays as it is.'**
+  String get migrationOffer;
+
+  /// Moving from Termux to the in-app server: the offer's action: opens the review; nothing starts yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Review what moves'**
+  String get migrationOfferAction;
 }
 
 class _AppLocalizationsDelegate

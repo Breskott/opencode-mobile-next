@@ -33,6 +33,8 @@ const _excluded = <String, String>{
   'root-connecting': 'shown automatically while a saved server connects',
   'bootstrap-gate': 'startup failure screen; nothing is connected yet',
   'servers-welcome': 'first run only, before any server exists',
+  'termux-migration':
+      'offered only to a Termux user, from This phone and the Termux server row',
   // Need a conversation: the conversation menu and its command launcher are
   // their search (phase 4 adds them to this index through the registry).
   'chat': 'a conversation; opened from Work, Inbox or All conversations',

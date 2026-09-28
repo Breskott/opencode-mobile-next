@@ -1,5 +1,5 @@
 {
- "generatedFrom": "bb9261ad7b1cbc74bd1968cff13bc0b1164aeb02",
+ "generatedFrom": "072f27f8d2fffc96c5b422b714bd0ccc475e2f8f",
  "pages": [
   {
    "id": "system",
@@ -23081,6 +23081,37 @@
    ]
   },
   {
+   "id": "termux-migration",
+   "title": "Move from Termux",
+   "kind": "screen",
+   "area": "termux",
+   "file": "lib/ui/screens/termux_migration_screen.dart",
+   "widget": "TermuxMigrationScreen",
+   "presentedBy": [
+    "openTermuxMigration",
+    "termux-migration"
+   ],
+   "line": 168,
+   "purpose": "Move a Termux user's projects (and, opt-in, private exports of settings, history, Git/shell settings and AI Team state) to the in-app Ubuntu server: review with sizes and what does not move, copy with real stages, stop/resume, verify, switch, then next steps (sign in again, where things went, remove the Termux server when ready). Backend docs/qa/codex-termux-migration-2026-09-28; UI slice-migration-ui (2026-09-28).",
+   "reachedFrom": [
+    {
+     "page": "termux-setup-installed",
+     "element": null,
+     "note": "opener id 'termux-setup-installed-move-from-termux' not found; page-level edge"
+    },
+    {
+     "page": "servers",
+     "element": null,
+     "note": "opener id 'servers-termux-migration-offer' not found; page-level edge"
+    }
+   ],
+   "gates": [
+    "Termux profile present; the in-app server is set up first through setup v2 when missing"
+   ],
+   "elements": [],
+   "key": "termux-migration"
+  },
+  {
    "id": "termux-processes",
    "title": "Running now",
    "kind": "screen",
@@ -38926,6 +38957,16 @@
     "element": null,
     "to": "embedded-phone-server-card",
     "via": "embedded"
+   },
+   {
+    "from": "termux-setup-installed",
+    "element": null,
+    "to": "termux-migration"
+   },
+   {
+    "from": "servers",
+    "element": null,
+    "to": "termux-migration"
    },
    {
     "from": "activity",
