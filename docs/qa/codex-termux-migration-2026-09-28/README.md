@@ -1,6 +1,8 @@
 # Termux → built-in Ubuntu backend — 2026-09-28
 
-**Implemented backend; UI handoff pending.** Feasible for managed Ubuntu projects
+**Implemented backend; five-gap contract update below (2026-09-29).** The
+[initial UI slice](../slice-migration-ui-2026-09-28/README.md) is merged; wiring
+the new APIs remains with Claude. Feasible for managed Ubuntu projects
 and confidential exports. A complete session/credential/AI Team runtime restore
 is not established and is not offered. No owner-phone access, native changes,
 UI edits, source deletion, or automatic sign-in occurred.
@@ -104,24 +106,28 @@ final migration = await TermuxMigrationService.create(
   builtinProfileName: l10n.phoneSetupProfileName, // existing localized key
 );
 // Keep one owner above routes. Render migration.snapshot via Listenable.
-await migration.check();
+await migration.check(selected: {TermuxMigrationItem.projects});
 await migration.start(
   sourceProfileId: termuxProfile.id,
   selected: {TermuxMigrationItem.projects}, // explicit reviewed selection
 );
 // After restart: savedSelection(id) gives prior selection; null means no job.
 await migration.resume(termuxProfile.id);
-// Cancel immediately; await the outstanding start/resume future before Resume.
+// Cancel requests a stop; settlement is a separate observable event.
 await migration.cancel();
+await migration.whenSettled;
 // Dispose only after cancellation/current operation settles.
 migration.dispose();
 ```
 
 `busy` stays true until
-in-flight work settles, even when snapshot phase already reads `cancelled`.
+in-flight work and its stop command settle, even when snapshot phase already
+reads `cancelled`. The final transition to `busy == false` notifies listeners.
 No simultaneous second migration is admitted. Saved selection is immutable;
 a different selection for that source returns `invalidSelection`. Completed
-retries verify receipts locally without contacting Termux or reconnecting.
+`start`/`resume` retries verify receipts locally without contacting Termux or
+reconnecting. Use the read-only `completedJob(id)` query to render a historical
+completion; that query does not reverify files users may have edited.
 This v1 flow is a one-time migration, not ongoing two-way synchronization.
 
 Entry points:
@@ -160,6 +166,101 @@ sheet/page; disable duplicate start/resume and profile removal while busy; await
 cancellation before navigation disposal. No raw exception, archive path or
 bridge output belongs in a Details fold. Use kit components and normal localized
 semantics/progress announcements. Only fixed codes and measured counts reach UI.
+
+## Five-gap backend follow-up — 2026-09-29
+
+Finish line: the existing transfer backend owns discard, durable completion,
+review capacity, stop settlement and safe offline provider labels. Non-goal:
+UI edits, device execution, source cleanup, credential activation or queue moves.
+Base: `bcf45eb7` on `codex/arm64`, including the merged Claude UI slice. Existing
+journal/receipt/transport contracts support all five changes; no new native or
+source transfer protocol is needed. This closes gaps 1–5 in the UI slice's
+“Contract gaps” section; its separate queued-prompt offer remains outside this job.
+
+Import remains `domain/termux_migration_service.dart`; it also exports
+`TermuxMigrationSpace`. Exact additions to `TermuxMigrationController`:
+
+```dart
+Future<TermuxMigrationDiscardResult> discardSavedCopy(String sourceProfileId);
+Future<TermuxMigrationCompletedJob?> completedJob(String sourceProfileId);
+Future<void> check({Set<TermuxMigrationItem> selected = const {}});
+TermuxMigrationSpace reviewSpace(Set<TermuxMigrationItem> selected);
+Future<void> get whenSettled;
+Future<List<String>> providerNames(String sourceProfileId);
+```
+
+| API | Result and guarantees | Claude UI hook |
+| --- | --- | --- |
+| `discardSavedCopy(id)` | `discarded`, `nothingSaved` (repeat-safe), or `alreadyCompleted` (preserved). Rejects active work with fixed `sourceBusy`; other failures use fixed `storage`. Removes app transfer cache first, then its scoped journal. Failure leaves metadata retryable. Never removes committed projects/exports, receipts, profiles or any Termux file. A later start gets a fresh job/folder. | Add “Start over” / “Discard saved copy” to failed or stopped copy. Stop and await settlement first. On success clear the owner's in-memory selection/request/source view, then check for a new selection, or leave the flow. |
+| `completedJob(id)` | Null when absent/unfinished; otherwise immutable `TermuxMigrationCompletedJob(jobId: String, destinationProfileId: String)`. Reads validated schema/job/destination metadata only. Malformed completed metadata throws fixed `storage`. No phase mutation, Termux request, server selection, receipt revalidation or imported-file read. Remains true after user edits or destination-profile removal; it is history, not server health. | Replace `TermuxMigrationOwner.completedJob`'s separate preference read on This phone, server-row offer and page reopen. Read before considering Resume. Keep an async loading/unknown state; a read error is not “unfinished”. Cache only in memory if needed. |
+| `check(selected: ...)` + `reviewSpace(selected)` | A successful `ready` snapshot includes `requiredBytes` for that selection and effective `availableBytes`. The default empty selection needs zero; it does not authorize start. `reviewSpace` recalculates locally using the last successful inventory/readings. Returns `requiredBytes`, `availableBytes`, `appAvailableBytes`, `sourceAvailableBytes` (all `int?`) and `sufficient` (`bool?`). Invalid/refused selection throws its fixed code; no successful inventory throws `invalidSelection`. Effective free is the smaller sandbox reading. Unknown app capacity stays null, and start fails closed. | Remove the screen's duplicate reserve formula. Initial review calls `check(selected: ...)`; checkbox changes use `reviewSpace`. Show needed and free with localized byte formatting. Refresh explicitly via check; start still performs a fresh preflight. After setup v2 returns, check again. |
+| `whenSettled` + `busy` notification | Captures settlement of the currently admitted check/start/resume/discard, including the bounded stop command. Completes immediately when idle. Resume owns admission before its first journal read, so an immediate stop cannot miss it. `cancel()` still waits only for the stop command; cancelled phase can precede settlement. All terminal paths notify after setting busy false; future completes even after disposal. | Show “Stopping…” while cancelled and busy; enable Resume/Discard only after settlement. Keep the foreground owner until `await cancel(); await whenSettled;` and its own bookkeeping future finish. Do not dispose ownership or start another operation from the cancelled phase alone. |
+| `providerNames(id)` | Sorted, unique **fixed labels** from an already imported, receipt-verified config export. Works offline and after restart, including a partial job whose config committed. Missing/unselected/changed/unsafe/unreadable config returns an empty list, meaning **unknown**, not no providers. No source command, auth-file/database read, credential activation or provider preference cache. | Replace the owner's persisted provider-name cache for the done/reopened view. Also usable for an existing exported copy during review. Before the first config export, offline names remain unknown; do not silently select/config-copy solely to populate the list. Keep generic sign-in copy when unknown. |
+
+Offline discovery examines only four fixed JSON/JSONC files: `.config/opencode/`
+`opencode.json` or `opencode.jsonc`, plus the corresponding files beneath
+`.oc-opencode2/config/opencode/`. Reads are capped at 1 MiB per file, 64 provider
+entries and 64 nesting levels. Root/descendant symlinks are rejected; trusted
+platform aliases above the receipt-verified root are allowed. Recognized IDs
+from top-level `provider`, `model` and `small_model` map to static labels;
+custom IDs, arbitrary display names, model names, options and credential values
+never leave the parser. No config is executed or activated. External includes
+and unrecognized providers are intentionally not inferred.
+
+**Copy correction for the UI:** `migrationSignInAgainNamed` currently says the
+names “were signed in on Termux”. Exported configuration cannot prove that. Use
+“{names} appear in your Termux settings. Sign in here to use them.” Authentication
+remains unverified, including for known labels and local providers. Do not infer
+that any particular free model will answer from this API.
+
+Suggested UI copy additions (Claude owns localization/kit wiring):
+
+| Key | Plain words |
+| --- | --- |
+| `migrationDiscard` | Discard saved copy |
+| `migrationDiscardTitle` | Discard this saved copy? |
+| `migrationDiscardBody` | Temporary copy files will be removed. Files already imported and everything in Termux will stay. |
+| `migrationStartOver` | Start over |
+| `migrationReviewSpace` | Needs about {needed} · {free} free |
+| `migrationReviewSpaceUnknown` | Needs about {needed} · Free space unknown |
+| `migrationStopping` | Stopping… |
+| `migrationSignInConfigured` | {names} appear in your Termux settings. Sign in here to use them. |
+
+Owner integration order for abandon/reselect:
+
+```dart
+await migration.cancel();
+await migration.whenSettled;
+// Await TermuxMigrationOwner's admitted future too, including its bookkeeping.
+final result = await migration.discardSavedCopy(sourceId);
+// alreadyCompleted: show completedJob(sourceId), never offer a destructive reset.
+// discarded/nothingSaved: clear owner's cached request/selection; explicit review.
+```
+
+Do not issue discard directly from a button while the owner still has an admitted
+operation. Hold the owner's operation guard through discard and its bookkeeping.
+The backend also serializes mutations across controller instances. A cancelled
+snapshot after discard has no job ID and no failure; it is not a resumable job.
+`savedSelection(id) == null` is authoritative for that distinction.
+
+The sole authoritative durable job key remains `oc.termuxMigration.<id>`; offer
+dismissal remains `oc.termuxMigrationOffer.<id>`. No new keys/schema migration.
+Claude should retire writes/reads of `oc.termuxMigrationDone.<id>` and
+`oc.termuxMigrationProviders.<id>` in `lib/state/termux_migration_owner.dart`.
+Those old scoped keys can be removed after switching to the backend queries;
+do not manufacture a backend receipt from an old UI done flag. Existing deletion
+sweeps cover both the backend and legacy keys. Discard preserves offer dismissal,
+so abandoning a copy does not unexpectedly re-show a dismissed one-time offer.
+
+UI touchpoints: `TermuxMigrationOwner` for forwarding APIs, ownership and retiring
+its caches; `termux_migration_entry.dart` for async historical completion;
+`termux_migration_screen.dart` for review capacity, discard, settling and names.
+Setup v2 still uses its existing install-then-check path. No UI/owner/localization
+file was edited by this backend follow-up.
+
+Verification for this follow-up is recorded below separately from the original
+backend's evidence. No owner phone, emulator, ADB, install, signing or push was
+used. These APIs are implemented; the new UI actions/copy remain to be wired.
 
 ## States and copy keys to add
 
@@ -207,7 +308,46 @@ Review must explain that config/MCP/shell/AI Team exports are inactive, session
 exports may contain provider credentials and are not verified backups, sign-in
 is required again, and Termux remains intact. Do not label this “move everything”.
 
-## Verification and emulator replay
+## Follow-up verification — 2026-09-29
+
+Backend/test commit: `3333f2ed`. Final affected backend tests plus all five
+requested gates: **132 passed, 19 seconds** (40 migration checks and 92 gate
+checks). Earlier in this follow-up, the merged UI regression also passed:
+**29 tests**, within a 68-test focused run. The subsequent provider-path alias
+fix was covered by the final provider/archive rerun; UI files stayed unchanged.
+Whole-project `flutter analyze --no-pub`: **no issues, 14.7 seconds** after fixing
+three brace-style findings from the initial analyzer run. No ignores or baselines
+were added/changed. All heavy commands used the shared machine lock.
+
+Pinned toolchain and final commands:
+
+```bash
+migration_flutter=/home/eslam/.shorebird/bin/cache/flutter/91f8bd75076e9c740aa13cf67eb9ec1a093f68f5/bin/flutter
+
+tool/qa/machine_lock.sh test -- "$migration_flutter" test --no-pub --concurrency=1 \
+  test/termux_migration_controller_test.dart \
+  test/termux_migration_archive_test.dart \
+  test/termux_migration_provider_names_test.dart \
+  test/termux_migration_space_test.dart \
+  test/kit_ratchet_test.dart test/redaction_test.dart test/ui_glossary_test.dart \
+  test/no_raw_error_text_test.dart test/architecture_boundaries_test.dart \
+  --reporter expanded
+
+tool/qa/machine_lock.sh analyze -- "$migration_flutter" analyze --no-pub
+```
+
+Formatting: pinned `dart format --language-version=3.10 --output=none
+--set-exit-if-changed` on all 11 changed Dart files: **0 changes**. `git diff
+--check` and README local-link checks passed. Behavior coverage includes failed
+packing → discard → restart, cleanup failure retaining the journal, preserved
+committed files/completed records, offline completion after restart and edited
+projects, identical review/start budgets and unknown space, delayed copy plus
+stop-command settlement, immediate cancellation during resume's first journal
+read, scoped journal deletion, verified offline config names, malformed/large
+JSONC, fixed-label redaction and symlink/alias boundaries. No full repository
+suite or device proof is claimed; the emulator recipe below remains unexecuted.
+
+## Original verification and emulator replay
 
 Backend/test commit: `aeb3ef67`. Final shared-lock test command covered all four
 migration files plus `kit_ratchet`, `redaction`, `ui_glossary`,
