@@ -1,4 +1,8 @@
 // The model picker keeps its search results in view above the keyboard.
+//
+// Regenerate deliberately, and look at every changed image before committing it:
+//   flutter test --update-goldens --dart-define=CAPTURE_EVIDENCE=true \
+//     test/picker_search_keyboard_test.dart --plain-name "evidence"
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -201,41 +205,46 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('evidence', (tester) async {
-    if (!_evidence) return;
-    await loadCaptureFonts();
-    tester.view.physicalSize = const Size(412, 915);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final catalog = CatalogSnapshot(
-      providers: const [
-        CatalogProvider(id: 'opencode', name: 'OpenCode Zen', enabled: true),
-      ],
-      models: [
-        for (final n in ['Big Pickle', 'Pickle Mini', 'Other', 'Another'])
-          _model('opencode', n.toLowerCase().replaceAll(' ', '-'), n),
-      ],
-      agents: const [],
-    );
-    final controller = await _controller(_Repository(), catalog);
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(
-      RepaintBoundary(key: const Key('shot'), child: _app(controller)),
-    );
-    await tester.tap(find.text('Choose model'));
-    await tester.pumpAndSettle();
-    tester.view.viewInsets = const FakeViewPadding(bottom: 320);
-    addTearDown(tester.view.resetViewInsets);
-    await tester.pumpAndSettle();
-    final field = find.byKey(const Key('model-picker-search'));
-    await tester.tap(field);
-    await tester.enterText(field, 'pickle');
-    await tester.pumpAndSettle();
-    await expectLater(
-      find.byKey(const Key('shot')),
-      matchesGoldenFile(
-        '../docs/qa/slice-chat-input-bugs-2026-09-29/picker-search-$_shot.png',
-      ),
-    );
-  });
+  testWidgets(
+    'evidence',
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+    (tester) async {
+      // ARCH-11
+      if (!_evidence) return;
+      await loadCaptureFonts();
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final catalog = CatalogSnapshot(
+        providers: const [
+          CatalogProvider(id: 'opencode', name: 'OpenCode Zen', enabled: true),
+        ],
+        models: [
+          for (final n in ['Big Pickle', 'Pickle Mini', 'Other', 'Another'])
+            _model('opencode', n.toLowerCase().replaceAll(' ', '-'), n),
+        ],
+        agents: const [],
+      );
+      final controller = await _controller(_Repository(), catalog);
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        RepaintBoundary(key: const Key('shot'), child: _app(controller)),
+      );
+      await tester.tap(find.text('Choose model'));
+      await tester.pumpAndSettle();
+      tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpAndSettle();
+      final field = find.byKey(const Key('model-picker-search'));
+      await tester.tap(field);
+      await tester.enterText(field, 'pickle');
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byKey(const Key('shot')),
+        matchesGoldenFile(
+          '../docs/qa/slice-chat-input-bugs-2026-09-29/picker-search-$_shot.png',
+        ),
+      );
+    },
+  );
 }

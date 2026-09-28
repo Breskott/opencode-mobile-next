@@ -416,40 +416,45 @@ void main() {
     expect(find.text('Providers'), findsWidgets);
   });
 
-  testWidgets('evidence', (tester) async {
-    if (!_evidence) return;
-    await loadCaptureFonts();
-    final repository = _Repository()
-      ..integrations = [
-        anthropic,
-        const IntegrationInfo(
-          id: 'google',
-          name: 'Google',
-          methods: [_keyMethod],
-          connectionCount: 0,
-        ),
-      ];
-    for (final (name, size, mode) in [
-      ('phone_dark', const Size(412, 915), ThemeMode.dark),
-      ('wide_light', const Size(1280, 800), ThemeMode.light),
-    ]) {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1;
-      final controller = await _controller(repository, _freeOnly());
-      await tester.pumpWidget(
-        RepaintBoundary(
-          key: const Key('shot'),
-          child: _app(controller, mode: mode),
-        ),
-      );
-      await tester.tap(find.text('Choose model'));
-      await tester.pumpAndSettle();
-      await expectLater(
-        find.byKey(const Key('shot')),
-        matchesGoldenFile('goldens/picker_signin_$name.png'),
-      );
-      controller.dispose();
-    }
-    addTearDown(tester.view.reset);
-  });
+  testWidgets(
+    'evidence',
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+    (tester) async {
+      // ARCH-11
+      if (!_evidence) return;
+      await loadCaptureFonts();
+      final repository = _Repository()
+        ..integrations = [
+          anthropic,
+          const IntegrationInfo(
+            id: 'google',
+            name: 'Google',
+            methods: [_keyMethod],
+            connectionCount: 0,
+          ),
+        ];
+      for (final (name, size, mode) in [
+        ('phone_dark', const Size(412, 915), ThemeMode.dark),
+        ('wide_light', const Size(1280, 800), ThemeMode.light),
+      ]) {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        final controller = await _controller(repository, _freeOnly());
+        await tester.pumpWidget(
+          RepaintBoundary(
+            key: const Key('shot'),
+            child: _app(controller, mode: mode),
+          ),
+        );
+        await tester.tap(find.text('Choose model'));
+        await tester.pumpAndSettle();
+        await expectLater(
+          find.byKey(const Key('shot')),
+          matchesGoldenFile('goldens/picker_signin_$name.png'),
+        );
+        controller.dispose();
+      }
+      addTearDown(tester.view.reset);
+    },
+  );
 }
