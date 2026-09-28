@@ -1,0 +1,63 @@
+{
+  "scope": "Off-phone emulator shell/root proot regression, NOT app-UID or ARM64 runtime proof",
+  "ubuntu": "24.04.5",
+  "node": "24.21.0",
+  "npm": "11.19.0",
+  "detection": {
+    "platform": "linux",
+    "arch": "x64",
+    "glibcVersionRuntime": "2.39",
+    "glibcVersionCompiler": "2.28",
+    "npmDetectedLibc": "glibc",
+    "lddHasGnuMarker": true,
+    "lddHasMuslMarker": false,
+    "ownMapsReadable": true,
+    "simulatedCpuChecks": {
+      "x64-glibc": "accepted",
+      "x64-musl": "EBADPLATFORM",
+      "arm64-glibc": "accepted",
+      "arm64-musl": "EBADPLATFORM"
+    }
+  },
+  "npmConfig": {
+    "omit": [],
+    "include": [],
+    "ignoreScripts": false,
+    "allowScripts": ""
+  },
+  "x64": {
+    "version": "2.1.283 (Claude Code)",
+    "sha256": "1859583ce32920595c61ef868bee52e1b1594f7486db209935e01f1e5e804ae2",
+    "bytes": 241556664,
+    "freshInstallExit": 0,
+    "executable": "/opt/oc-claude/claude",
+    "symlink": "/usr/local/bin/claude",
+    "finalScriptCachedRepeatExit": 0
+  },
+  "arm64Static": {
+    "url": "https://downloads.claude.ai/claude-code-releases/2.1.283/linux-arm64/claude",
+    "sha256": "346d294f0103d6fc0de11ac953579b5c62dfa90698a4cfc486b6f927c615e697",
+    "bytes": 240902136,
+    "elfClass": "ELF64",
+    "machine": "AArch64",
+    "executed": false
+  },
+  "phoneTouched": false,
+  "gate": "NO-GO remains; ARM64 runtime retry pending owner awake confirmation",
+  "validation": {
+    "focusedTestsPassed": 3,
+    "shellSyntaxPassed": true,
+    "dartFormattingPassed": true,
+    "fullProductSuiteRun": false,
+    "scopedAnalyzer": "No issues found; 3.9 seconds"
+  },
+  "sourceSha256": {
+    "lib/builtin/setup/claude_scripts.dart": "fab8be6406eba81bf268260d591f7fd3d7fbfa96b7f4b8490f66d1fcace35ecf",
+    "tool/qa/p16a_claude_install.dart": "72a98312fec182845e39e13f2c4e8b009fde19b6f00460b7ff7133dc7ffd1c9b"
+  },
+  "cleanup": {
+    "isolatedEmulatorGuestRemoved": true,
+    "ownedEmulatorExited": true,
+    "hostScratchRemoved": true
+  }
+}
