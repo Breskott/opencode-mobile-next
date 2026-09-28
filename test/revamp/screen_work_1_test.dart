@@ -63,17 +63,14 @@ Future<_Controller> _controller({
   _Repository? repository,
   String? directory = workCurrent,
   bool savedLocation = true,
+  String name = 'Laptop',
 }) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final store = SeededProfileStore(
     prefs: prefs,
     seeded: [
-      ServerProfile(
-        id: 'phone',
-        name: 'Laptop',
-        baseUrl: 'http://127.0.0.1:4096',
-      ),
+      ServerProfile(id: 'phone', name: name, baseUrl: 'http://127.0.0.1:4096'),
     ],
   );
   if (savedLocation) await store.setLocation('phone', directory: workCurrent);
@@ -366,6 +363,29 @@ void main() {
       find.descendant(of: sheet, matching: find.textContaining(workCurrent)),
       findsOneWidget,
     );
+    await _dispose(tester, controller);
+  });
+
+  testWidgets('the chooser names the server as the pill and Servers do, '
+      'not by the name setup saved it under', (tester) async {
+    final controller = await _controller(
+      repository: _Repository(),
+      directory: null,
+      savedLocation: false,
+      name: 'This device (Termux)',
+    );
+    await _pump(tester, controller);
+    expect(find.byKey(const ValueKey('workspace-folder-chooser')), findsOne);
+    // The name sits in bidi isolation marks inside the sentence.
+    final chooser = find.byKey(const ValueKey('workspace-folder-chooser'));
+    expect(
+      find.descendant(
+        of: chooser,
+        matching: find.textContaining('This phone · Termux'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('This device (Termux)'), findsNothing);
     await _dispose(tester, controller);
   });
 
