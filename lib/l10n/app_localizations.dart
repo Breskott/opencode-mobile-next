@@ -10730,12 +10730,6 @@ abstract class AppLocalizations {
   /// **'Local command'**
   String get e7LibraryLocalCommand;
 
-  /// Library and project tools UI: Timeout in milliseconds
-  ///
-  /// In en, this message translates to:
-  /// **'Timeout in milliseconds'**
-  String get e7LibraryTimeoutInMilliseconds;
-
   /// Library and project tools UI: Optional
   ///
   /// In en, this message translates to:
@@ -10765,12 +10759,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a valid HTTP or HTTPS URL without credentials'**
   String get e7LibraryEnterAValidHTTPOrHTTPSURL;
-
-  /// Library and project tools UI: Optional. Enter one KEY=VALUE pair per line.
-  ///
-  /// In en, this message translates to:
-  /// **'Optional. Enter one KEY=VALUE pair per line.'**
-  String get e7LibraryOptionalEnterOneKEYVALUEPairPer;
 
   /// Library and project tools UI: Detect OAuth automatically
   ///
@@ -14652,12 +14640,6 @@ abstract class AppLocalizations {
   /// **'AI Team (optional)'**
   String get teamUiEditorTitle;
 
-  /// Closing line of the host guide sheet pointing at the repository guide
-  ///
-  /// In en, this message translates to:
-  /// **'The full guide with every command is docs/ai-team-host.md in the app\'s repository.'**
-  String get teamUiHostGuideDocs;
-
   /// Intro line of the host guide sheet
   ///
   /// In en, this message translates to:
@@ -14667,25 +14649,25 @@ abstract class AppLocalizations {
   /// Host guide step 1
   ///
   /// In en, this message translates to:
-  /// **'Install Gas City on the computer: gc, bd and dolt on your PATH.'**
+  /// **'Install Gas City\'s three tools, gc, bd and dolt, on your PATH; the full guide has each download with its checksum. Then check that all three are found:'**
   String get teamUiHostGuideStep1;
 
   /// Host guide step 2
   ///
   /// In en, this message translates to:
-  /// **'Create a city next to your project and add the project to it: gc init, then gc rig add.'**
+  /// **'Save the city file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:'**
   String get teamUiHostGuideStep2;
 
   /// Host guide step 3
   ///
   /// In en, this message translates to:
-  /// **'Start it with gc start and check that http://127.0.0.1:8372/v0/city/<name>/health answers.'**
+  /// **'Start the team and check that it answers:'**
   String get teamUiHostGuideStep3;
 
   /// Host guide step 4
   ///
   /// In en, this message translates to:
-  /// **'Expose port 8372 on the computer\'s Tailscale address, then add it here as http://100.x.x.x:8372 with the city name.'**
+  /// **'Download the front that lets this phone in over Tailscale, check it and start it, with your own Tailscale login after --allow. Then add it here: the computer\'s Tailscale address with the port in the command, and the team\'s name.'**
   String get teamUiHostGuideStep4;
 
   /// Title of the host guide sheet
@@ -30211,7 +30193,7 @@ abstract class AppLocalizations {
   /// screen-library-2: Add MCP server: what the Advanced fold holds for a local command.
   ///
   /// In en, this message translates to:
-  /// **'Working folder, environment and timeout'**
+  /// **'Working folder and timeout'**
   String get mcpSetupAdvancedLocal;
 
   /// screen-library-2: Add MCP server: why "This project" cannot be chosen.
@@ -36159,6 +36141,342 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The team’s reply'**
   String get teamDispatchHostWords;
+
+  /// Host guide sheet: opens docs/ai-team-host.md on GitHub in the browser
+  ///
+  /// In en, this message translates to:
+  /// **'Open the full guide'**
+  String get teamUiHostGuideOpen;
+
+  /// Run as a Linux service page: supporting line of the install command
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads the script from release {release} and checks its SHA-256 checksum first. If the file was changed, nothing runs.'**
+  String hostServiceInstallChecked(String release);
+
+  /// Run as a Linux service page: fold under the install command
+  ///
+  /// In en, this message translates to:
+  /// **'What this does'**
+  String get hostServiceWhatThisDoes;
+
+  /// Run as a Linux service page, What this does: where the script runs
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Linux with systemd, such as Ubuntu. It does not run on macOS or Windows.'**
+  String get hostServiceWhatLinux;
+
+  /// Run as a Linux service page, What this does: the OpenCode install
+  ///
+  /// In en, this message translates to:
+  /// **'Installs OpenCode with its official installer if it is not there yet.'**
+  String get hostServiceWhatInstall;
+
+  /// Run as a Linux service page, What this does: the systemd user service
+  ///
+  /// In en, this message translates to:
+  /// **'Adds a service for your account that keeps OpenCode running after reboots and closed terminals. It listens on that computer only.'**
+  String get hostServiceWhatService;
+
+  /// Run as a Linux service page, What this does: the server password
+  ///
+  /// In en, this message translates to:
+  /// **'Makes a password for the server and keeps it in a file only your account can read.'**
+  String get hostServiceWhatPassword;
+
+  /// Run as a Linux service page, What this does: label of the pinned commit hash
+  ///
+  /// In en, this message translates to:
+  /// **'Script version'**
+  String get hostServicePinnedCommit;
+
+  /// Run as a Linux service page, What this does: label of the script's SHA-256
+  ///
+  /// In en, this message translates to:
+  /// **'SHA-256 checksum'**
+  String get hostServiceChecksum;
+
+  /// MCP add sheet (P2.4): the choice that opens the MCP catalogue
+  ///
+  /// In en, this message translates to:
+  /// **'Browse the catalogue'**
+  String get mcpAddBrowseTitle;
+
+  /// MCP add sheet: what the catalogue choice offers
+  ///
+  /// In en, this message translates to:
+  /// **'Servers from the public MCP registry, turned on with a switch'**
+  String get mcpAddBrowseDetail;
+
+  /// MCP add sheet: why the catalogue choice is unavailable on this server
+  ///
+  /// In en, this message translates to:
+  /// **'No catalogue for this server: it doesn\'t accept new MCP servers from the app.'**
+  String get mcpAddBrowseNone;
+
+  /// MCP add sheet and catalogue: the choice that opens the manual MCP form
+  ///
+  /// In en, this message translates to:
+  /// **'Enter manually'**
+  String get mcpAddManualTitle;
+
+  /// MCP add sheet: what the manual choice is
+  ///
+  /// In en, this message translates to:
+  /// **'Type its address, or the command that starts it'**
+  String get mcpAddManualDetail;
+
+  /// MCP catalogue (P2.5): page title
+  ///
+  /// In en, this message translates to:
+  /// **'MCP catalogue'**
+  String get mcpCatalogTitle;
+
+  /// MCP catalogue: title before the person agrees to load the registry list
+  ///
+  /// In en, this message translates to:
+  /// **'Load the MCP registry?'**
+  String get mcpCatalogConsentTitle;
+
+  /// MCP catalogue: what loading the registry list sends
+  ///
+  /// In en, this message translates to:
+  /// **'The app asks registry.modelcontextprotocol.io for its list of MCP servers. It sends only what you search for, nothing about you or your servers.'**
+  String get mcpCatalogConsentBody;
+
+  /// MCP catalogue: button that agrees and loads the registry list
+  ///
+  /// In en, this message translates to:
+  /// **'Load the list'**
+  String get mcpCatalogConsentLoad;
+
+  /// MCP catalogue menu: forgets the consent and the saved registry list
+  ///
+  /// In en, this message translates to:
+  /// **'Stop using the registry'**
+  String get mcpCatalogForget;
+
+  /// MCP catalogue: forgetting the saved list failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t forget the saved registry list. Try again.'**
+  String get mcpCatalogForgetFailed;
+
+  /// MCP catalogue: search field label
+  ///
+  /// In en, this message translates to:
+  /// **'Search the registry'**
+  String get mcpCatalogSearch;
+
+  /// MCP catalogue: the server's MCP list could not be read
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read this server\'s MCP servers'**
+  String get mcpCatalogInventoryFailed;
+
+  /// MCP catalogue: why the list waits for the server's MCP list
+  ///
+  /// In en, this message translates to:
+  /// **'The switches need to know what is already on. Check the connection, then try again.'**
+  String get mcpCatalogInventoryFailedBody;
+
+  /// MCP catalogue: the registry list could not be loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the public MCP registry'**
+  String get mcpCatalogFailed;
+
+  /// MCP catalogue: a registry search failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t search the public MCP registry'**
+  String get mcpCatalogSearchFailed;
+
+  /// MCP catalogue: way forward when the registry is unreachable
+  ///
+  /// In en, this message translates to:
+  /// **'Check the phone\'s internet connection, then try again. You can still enter a server by hand.'**
+  String get mcpCatalogFailedBody;
+
+  /// MCP catalogue: the registry answered with an empty list
+  ///
+  /// In en, this message translates to:
+  /// **'The registry listed no servers'**
+  String get mcpCatalogEmpty;
+
+  /// MCP catalogue: a search found nothing
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in the registry matches “{query}”'**
+  String mcpCatalogNoMatch(String query);
+
+  /// MCP catalogue: way forward when nothing is listed
+  ///
+  /// In en, this message translates to:
+  /// **'Try other words, or enter the server by hand.'**
+  String get mcpCatalogEmptyBody;
+
+  /// MCP catalogue: a refresh failed; the saved list is shown
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh the list from the registry. These are the listings loaded earlier.'**
+  String get mcpCatalogStale;
+
+  /// MCP catalogue: note under the list about cost
+  ///
+  /// In en, this message translates to:
+  /// **'The registry lists no prices. A hosted server\'s owner may charge for it or ask for an account.'**
+  String get mcpCatalogPriceNote;
+
+  /// MCP catalogue: a row while its form is open
+  ///
+  /// In en, this message translates to:
+  /// **'Adding…'**
+  String get mcpCatalogAdding;
+
+  /// MCP catalogue: a row while it is being removed
+  ///
+  /// In en, this message translates to:
+  /// **'Removing…'**
+  String get mcpCatalogRemoving;
+
+  /// MCP catalogue: why an added server's switch cannot be turned off here
+  ///
+  /// In en, this message translates to:
+  /// **'On. This server keeps it in its configuration, and the app can\'t remove it.'**
+  String get mcpCatalogCannotRemove;
+
+  /// MCP catalogue: why a container listing cannot be turned on
+  ///
+  /// In en, this message translates to:
+  /// **'Runs in Docker. To add it anyway, use Enter manually.'**
+  String get mcpCatalogNeedsDocker;
+
+  /// MCP catalogue: why a listing cannot be turned on
+  ///
+  /// In en, this message translates to:
+  /// **'Lists nothing the app can start. To add it anyway, use Enter manually.'**
+  String get mcpCatalogNoEndpoint;
+
+  /// MCP catalogue row: where a hosted server runs
+  ///
+  /// In en, this message translates to:
+  /// **'Hosted by {host}'**
+  String mcpCatalogHostedBy(String host);
+
+  /// MCP catalogue row: an npm package needs Node where OpenCode runs
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Node on the server'**
+  String get mcpCatalogNeedsNode;
+
+  /// MCP catalogue row: an npm package needs Node on this phone's OpenCode
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Node on this phone'**
+  String get mcpCatalogNeedsNodePhone;
+
+  /// MCP catalogue row: a PyPI package needs uv
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Python with uv on the server'**
+  String get mcpCatalogNeedsPython;
+
+  /// MCP catalogue row: the listing requires a secret
+  ///
+  /// In en, this message translates to:
+  /// **'Needs an API key'**
+  String get mcpCatalogNeedsKey;
+
+  /// MCP catalogue row: the listing requires other settings or arguments
+  ///
+  /// In en, this message translates to:
+  /// **'Needs extra settings'**
+  String get mcpCatalogNeedsSettings;
+
+  /// MCP catalogue: sheet title when a Node server is turned on for this phone
+  ///
+  /// In en, this message translates to:
+  /// **'{title} runs with Node'**
+  String mcpCatalogNodeTitle(String title);
+
+  /// MCP catalogue Node sheet: opens This phone to add Node
+  ///
+  /// In en, this message translates to:
+  /// **'Add Node to this phone'**
+  String get mcpCatalogNodeAdd;
+
+  /// MCP catalogue Node sheet: what adding Node involves
+  ///
+  /// In en, this message translates to:
+  /// **'Opens This phone. Choose Add tools, then Node, and turn this on again once it\'s added.'**
+  String get mcpCatalogNodeAddDetail;
+
+  /// MCP catalogue Node sheet: continue to the form
+  ///
+  /// In en, this message translates to:
+  /// **'Node is already on this phone'**
+  String get mcpCatalogNodeHave;
+
+  /// MCP catalogue Node sheet: what continuing does
+  ///
+  /// In en, this message translates to:
+  /// **'Check the details and add it'**
+  String get mcpCatalogNodeHaveDetail;
+
+  /// MCP form opened from the catalogue: where the values came from
+  ///
+  /// In en, this message translates to:
+  /// **'Filled in from “{listing}” in the public MCP registry. Check it before you add it: {server} will run or connect to what is here.'**
+  String mcpSetupFromCatalog(String listing, String server);
+
+  /// MCP form: the server, when it has no name
+  ///
+  /// In en, this message translates to:
+  /// **'this server'**
+  String get mcpSetupThisServer;
+
+  /// MCP form: a header or variable the registry listing requires is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a value for {name}'**
+  String mcpSetupValueRequired(String name);
+
+  /// MCP form: why a prefilled header or variable name is fixed
+  ///
+  /// In en, this message translates to:
+  /// **'The registry listing needs this one'**
+  String get mcpSetupNameFromCatalog;
+
+  /// MCP form: environment variable name field
+  ///
+  /// In en, this message translates to:
+  /// **'Variable name'**
+  String get mcpVariableName;
+
+  /// MCP form: environment variable value field (secret)
+  ///
+  /// In en, this message translates to:
+  /// **'Variable value'**
+  String get mcpVariableValue;
+
+  /// MCP form: adds an environment variable row
+  ///
+  /// In en, this message translates to:
+  /// **'Add another variable'**
+  String get mcpAddVariable;
+
+  /// MCP form: removes an environment variable row
+  ///
+  /// In en, this message translates to:
+  /// **'Remove variable'**
+  String get mcpRemoveVariable;
+
+  /// MCP form: the optional timeout field, in seconds
+  ///
+  /// In en, this message translates to:
+  /// **'Timeout in seconds'**
+  String get mcpSetupTimeoutSeconds;
 }
 
 class _AppLocalizationsDelegate

@@ -6510,9 +6510,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LibraryLocalCommand => 'Local command';
 
   @override
-  String get e7LibraryTimeoutInMilliseconds => 'Timeout in milliseconds';
-
-  @override
   String get e7LibraryOptional => 'Optional';
 
   @override
@@ -6529,10 +6526,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get e7LibraryEnterAValidHTTPOrHTTPSURL =>
       'Enter a valid HTTP or HTTPS URL without credentials';
-
-  @override
-  String get e7LibraryOptionalEnterOneKEYVALUEPairPer =>
-      'Optional. Enter one KEY=VALUE pair per line.';
 
   @override
   String get e7LibraryDetectOAuthAutomatically => 'Detect OAuth automatically';
@@ -8893,28 +8886,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiEditorTitle => 'AI Team (optional)';
 
   @override
-  String get teamUiHostGuideDocs =>
-      'The full guide with every command is docs/ai-team-host.md in the app\'s repository.';
-
-  @override
   String get teamUiHostGuideIntro =>
       'Everything stays on your Tailscale network; nothing is published to the internet.';
 
   @override
   String get teamUiHostGuideStep1 =>
-      'Install Gas City on the computer: gc, bd and dolt on your PATH.';
+      'Install Gas City\'s three tools, gc, bd and dolt, on your PATH; the full guide has each download with its checksum. Then check that all three are found:';
 
   @override
   String get teamUiHostGuideStep2 =>
-      'Create a city next to your project and add the project to it: gc init, then gc rig add.';
+      'Save the city file from the full guide in a folder next to your project. Then set up the team and add your project, folder first:';
 
   @override
   String get teamUiHostGuideStep3 =>
-      'Start it with gc start and check that http://127.0.0.1:8372/v0/city/<name>/health answers.';
+      'Start the team and check that it answers:';
 
   @override
   String get teamUiHostGuideStep4 =>
-      'Expose port 8372 on the computer\'s Tailscale address, then add it here as http://100.x.x.x:8372 with the city name.';
+      'Download the front that lets this phone in over Tailscale, check it and start it, with your own Tailscale login after --allow. Then add it here: the computer\'s Tailscale address with the port in the command, and the team\'s name.';
 
   @override
   String get teamUiHostGuideTitle => 'Run an AI team on your computer';
@@ -18988,7 +18977,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mcpSetupAdvancedRemote => 'Sign-in detection and timeout';
 
   @override
-  String get mcpSetupAdvancedLocal => 'Working folder, environment and timeout';
+  String get mcpSetupAdvancedLocal => 'Working folder and timeout';
 
   @override
   String get mcpSetupNoProject => 'Open a project first';
@@ -22961,4 +22950,204 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamDispatchHostWords => 'The team’s reply';
+
+  @override
+  String get teamUiHostGuideOpen => 'Open the full guide';
+
+  @override
+  String hostServiceInstallChecked(String release) {
+    return 'Downloads the script from release $release and checks its SHA-256 checksum first. If the file was changed, nothing runs.';
+  }
+
+  @override
+  String get hostServiceWhatThisDoes => 'What this does';
+
+  @override
+  String get hostServiceWhatLinux =>
+      'Needs Linux with systemd, such as Ubuntu. It does not run on macOS or Windows.';
+
+  @override
+  String get hostServiceWhatInstall =>
+      'Installs OpenCode with its official installer if it is not there yet.';
+
+  @override
+  String get hostServiceWhatService =>
+      'Adds a service for your account that keeps OpenCode running after reboots and closed terminals. It listens on that computer only.';
+
+  @override
+  String get hostServiceWhatPassword =>
+      'Makes a password for the server and keeps it in a file only your account can read.';
+
+  @override
+  String get hostServicePinnedCommit => 'Script version';
+
+  @override
+  String get hostServiceChecksum => 'SHA-256 checksum';
+
+  @override
+  String get mcpAddBrowseTitle => 'Browse the catalogue';
+
+  @override
+  String get mcpAddBrowseDetail =>
+      'Servers from the public MCP registry, turned on with a switch';
+
+  @override
+  String get mcpAddBrowseNone =>
+      'No catalogue for this server: it doesn\'t accept new MCP servers from the app.';
+
+  @override
+  String get mcpAddManualTitle => 'Enter manually';
+
+  @override
+  String get mcpAddManualDetail =>
+      'Type its address, or the command that starts it';
+
+  @override
+  String get mcpCatalogTitle => 'MCP catalogue';
+
+  @override
+  String get mcpCatalogConsentTitle => 'Load the MCP registry?';
+
+  @override
+  String get mcpCatalogConsentBody =>
+      'The app asks registry.modelcontextprotocol.io for its list of MCP servers. It sends only what you search for, nothing about you or your servers.';
+
+  @override
+  String get mcpCatalogConsentLoad => 'Load the list';
+
+  @override
+  String get mcpCatalogForget => 'Stop using the registry';
+
+  @override
+  String get mcpCatalogForgetFailed =>
+      'Couldn\'t forget the saved registry list. Try again.';
+
+  @override
+  String get mcpCatalogSearch => 'Search the registry';
+
+  @override
+  String get mcpCatalogInventoryFailed =>
+      'Couldn\'t read this server\'s MCP servers';
+
+  @override
+  String get mcpCatalogInventoryFailedBody =>
+      'The switches need to know what is already on. Check the connection, then try again.';
+
+  @override
+  String get mcpCatalogFailed => 'Couldn\'t load the public MCP registry';
+
+  @override
+  String get mcpCatalogSearchFailed =>
+      'Couldn\'t search the public MCP registry';
+
+  @override
+  String get mcpCatalogFailedBody =>
+      'Check the phone\'s internet connection, then try again. You can still enter a server by hand.';
+
+  @override
+  String get mcpCatalogEmpty => 'The registry listed no servers';
+
+  @override
+  String mcpCatalogNoMatch(String query) {
+    return 'Nothing in the registry matches “$query”';
+  }
+
+  @override
+  String get mcpCatalogEmptyBody =>
+      'Try other words, or enter the server by hand.';
+
+  @override
+  String get mcpCatalogStale =>
+      'Couldn\'t refresh the list from the registry. These are the listings loaded earlier.';
+
+  @override
+  String get mcpCatalogPriceNote =>
+      'The registry lists no prices. A hosted server\'s owner may charge for it or ask for an account.';
+
+  @override
+  String get mcpCatalogAdding => 'Adding…';
+
+  @override
+  String get mcpCatalogRemoving => 'Removing…';
+
+  @override
+  String get mcpCatalogCannotRemove =>
+      'On. This server keeps it in its configuration, and the app can\'t remove it.';
+
+  @override
+  String get mcpCatalogNeedsDocker =>
+      'Runs in Docker. To add it anyway, use Enter manually.';
+
+  @override
+  String get mcpCatalogNoEndpoint =>
+      'Lists nothing the app can start. To add it anyway, use Enter manually.';
+
+  @override
+  String mcpCatalogHostedBy(String host) {
+    return 'Hosted by $host';
+  }
+
+  @override
+  String get mcpCatalogNeedsNode => 'Needs Node on the server';
+
+  @override
+  String get mcpCatalogNeedsNodePhone => 'Needs Node on this phone';
+
+  @override
+  String get mcpCatalogNeedsPython => 'Needs Python with uv on the server';
+
+  @override
+  String get mcpCatalogNeedsKey => 'Needs an API key';
+
+  @override
+  String get mcpCatalogNeedsSettings => 'Needs extra settings';
+
+  @override
+  String mcpCatalogNodeTitle(String title) {
+    return '$title runs with Node';
+  }
+
+  @override
+  String get mcpCatalogNodeAdd => 'Add Node to this phone';
+
+  @override
+  String get mcpCatalogNodeAddDetail =>
+      'Opens This phone. Choose Add tools, then Node, and turn this on again once it\'s added.';
+
+  @override
+  String get mcpCatalogNodeHave => 'Node is already on this phone';
+
+  @override
+  String get mcpCatalogNodeHaveDetail => 'Check the details and add it';
+
+  @override
+  String mcpSetupFromCatalog(String listing, String server) {
+    return 'Filled in from “$listing” in the public MCP registry. Check it before you add it: $server will run or connect to what is here.';
+  }
+
+  @override
+  String get mcpSetupThisServer => 'this server';
+
+  @override
+  String mcpSetupValueRequired(String name) {
+    return 'Enter a value for $name';
+  }
+
+  @override
+  String get mcpSetupNameFromCatalog => 'The registry listing needs this one';
+
+  @override
+  String get mcpVariableName => 'Variable name';
+
+  @override
+  String get mcpVariableValue => 'Variable value';
+
+  @override
+  String get mcpAddVariable => 'Add another variable';
+
+  @override
+  String get mcpRemoveVariable => 'Remove variable';
+
+  @override
+  String get mcpSetupTimeoutSeconds => 'Timeout in seconds';
 }
