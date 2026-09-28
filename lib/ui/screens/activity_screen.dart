@@ -17,6 +17,7 @@ import '../app_iconography.dart';
 import '../kit/kit.dart';
 import '../kit/scenes/states_scenes.dart';
 import '../permission_presentation.dart';
+import '../widgets/attention_feed_rows.dart';
 import '../widgets/completion_digest.dart';
 import '../widgets/product_states.dart' show productErrorText;
 import '../widgets/relative_time.dart';
@@ -862,6 +863,24 @@ class _ActivityScreenState extends State<ActivityScreen> {
           controller: controller,
         ),
     ];
+    // What every saved server waits on, from the one attention feed
+    // (slice-P4.2b): another server's requests, gates and failures, and a
+    // failure here, each naming its server. Check-in reminders are not
+    // requests; they stay the monitor's own rows.
+    final feed = controller.attentionFeed;
+    final now = (widget.now ?? DateTime.now)();
+    final feedRows = [
+      for (final item in inboxFeedItems(controller, feed))
+        AttentionFeedRow(
+          key: ValueKey(('attention-row', item.identity)),
+          controller: controller,
+          item: item,
+          now: now,
+          onOpenConversation: _openChat,
+        ),
+    ];
+    // Other servers this list cannot speak for, and the way forward.
+    final coverageRows = inboxCoverageRows(context, controller, feed, now: now);
     final monitor = ProfileMonitorInbox.rowsFor(controller);
     final runningRows = [
       for (final session in running)
@@ -903,18 +922,20 @@ class _ActivityScreenState extends State<ActivityScreen> {
           );
     // The one list (owner rule R1, 2026-09-27): no headed state sections.
     // Most urgent first: what waits on the person here, the server's own
-    // forms, what other saved servers wait on, running work (and check-ins
-    // due on it), then what finished, newest first. Each row's mark and its
+    // forms, what every saved server waits on or failed at (the feed),
+    // running work (and check-ins due on it), what finished, newest first,
+    // then the servers this list cannot speak for. Each row's mark and its
     // word ("Needs you", "Working", "Finished") carry the meaning. A row
     // that arrives while the Inbox is open unfolds in, one answered (here or
     // on another device) folds away where it was (design standard §10).
     final rows = [
       ...attentionRows,
       ...globalFormRows,
-      ...monitor.requests,
+      ...feedRows,
       ...runningRows,
       ...monitor.checkIns,
       ...finishedRows,
+      ...coverageRows,
     ];
     Widget oneList(List<Widget> rows) => _Section(
       child: KitRowGroup(
@@ -949,7 +970,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
         ],
       );
     } else if (empty) {
-      final quiet = [...monitor.checkIns, ...finishedRows];
+      final quiet = [...monitor.checkIns, ...finishedRows, ...coverageRows];
       list = ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsetsDirectional.only(
