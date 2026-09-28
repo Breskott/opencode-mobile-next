@@ -22797,4 +22797,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get aiSetupAllSources => 'All sources';
+
+  @override
+  String get integrationsPageLoadFailed => 'Could not load this page';
 }
