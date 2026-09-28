@@ -122,7 +122,8 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(KitConfirmSheet),
-          matching: find.text('auth.openai.com'),
+          // The host is named in the sheet's sentence (06102116).
+          matching: find.textContaining('auth.openai.com'),
         ),
         findsOneWidget,
       );
@@ -191,9 +192,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // The saved server's row menu.
-      await tester.tap(
-        find.byKey(const ValueKey('server-menu-account-fixture')),
+      // The saved server's row menu opens on long-press (KitRow, 71417a2f).
+      await tester.longPress(
+        find.byKey(const ValueKey('server-row-account-fixture')),
       );
       await tester.pumpAndSettle();
       await _tap(tester, 'Codex account');
@@ -373,8 +374,9 @@ void main() {
           expect(find.text('Ready to sign in'), findsNothing);
         }
         if (state == 'usage') {
-          expect(find.text('5-hour window'), findsOneWidget);
-          expect(find.text('7-day window'), findsOneWidget);
+          // Each window's row names its bucket and span (82eb38cc).
+          expect(find.text('Codex · 5-hour window'), findsOneWidget);
+          expect(find.text('Codex · 7-day window'), findsOneWidget);
         }
         final out = Platform.environment['CODEX_ACCOUNT_CAPTURE_DIR'];
         if (out != null) {

@@ -22,6 +22,7 @@ import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 
 import '../../tool/capture/fixtures.dart';
+import 'server_editor.dart';
 import 'setup_capture_preferences.dart';
 
 /// The scenes, in the order the QA record lists them.
@@ -303,13 +304,10 @@ Future<Future<void> Function()> mountSettingsScene(
           'and the phone is on the same network.',
           suggestsMissingServer: true,
         );
-    // The address waits under "Enter the address instead"; Save & connect
+    // Add server first asks what runs there (P3.9, 3d251f37); the address
+    // then waits under "Enter the address instead", and Save & connect
     // checks it and explains the failure (ledger row 15).
-    final manual = find.byKey(const ValueKey('server-manual-address'));
-    if (manual.evaluate().isNotEmpty) {
-      await tester.tap(manual);
-      await tester.pumpAndSettle();
-    }
+    await openServerManualAddress(tester);
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
       'https://build.example.net',

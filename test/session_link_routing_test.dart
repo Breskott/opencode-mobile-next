@@ -490,7 +490,12 @@ void main() {
 
     expect(find.byType(ChatScreen), findsNothing);
     expect(find.byType(ServersScreen), findsOneWidget);
-    expect(_appNotice, findsOneWidget);
+    // The connection line outranks the link's notice in the one status
+    // slot (P4.4, 3d64653c), and says why with its way forward.
+    expect(
+      find.byKey(const ValueKey('connection-status-banner')),
+      findsOneWidget,
+    );
     expect(intent.pending.value, isNull);
     expect(apis, isEmpty);
     await _drainNotices(tester);

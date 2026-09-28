@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -150,6 +151,20 @@ Widget _serversApp(
   child: const MaterialApp(home: ServersScreen()),
 );
 
+/// Removing a server first waits for the home-screen widget, launcher
+/// shortcut and tile writes; their channels have no handler in a widget test
+/// and would never answer, so they answer here.
+void _answerDeviceSurfaces(WidgetTester tester) {
+  final messenger = tester.binding.defaultBinaryMessenger;
+  for (final channel in const [
+    MethodChannel('oc/background'),
+    MethodChannel('oc/shortcut'),
+  ]) {
+    messenger.setMockMethodCallHandler(channel, (_) async => null);
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -260,6 +275,7 @@ void main() {
   ) async {
     final (store, connection) = await _memoryState(failRemove: true);
     addTearDown(connection.dispose);
+    _answerDeviceSurfaces(tester);
     await tester.pumpWidget(_serversApp(store, connection));
 
     // Long-press opens the row actions; removal still needs confirmation.

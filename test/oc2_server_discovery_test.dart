@@ -11,7 +11,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
-import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_screen.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_job_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 
 import 'support/fake_setup_engine.dart';
@@ -268,7 +268,8 @@ void main() {
         addTearDown(conn.dispose);
         await tester.pumpWidget(_app(store, conn));
         await tester.pumpAndSettle();
-        await tester.tap(find.byType(KitRowMenu).first);
+        // A saved server's menu opens on long-press of its row (71417a2f).
+        await tester.longPress(find.byKey(const ValueKey('server-row-server')));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Edit'));
         await tester.pumpAndSettle();
@@ -283,9 +284,11 @@ void main() {
         final saved = store.saved.single;
         expect(saved.flavor, changed ? ServerFlavor.v1 : ServerFlavor.v2);
         expect(saved.serverVersion, changed ? isNull : '0.0.0-beta');
+        // The row says what the server is, never where: its address moved
+        // to the menu's Details.
         expect(
           _supporting(tester, 'server'),
-          startsWith(changed ? 'OpenCode · ' : 'OpenCode 2 · '),
+          changed ? 'OpenCode' : 'OpenCode 2',
         );
       },
     );
@@ -311,6 +314,9 @@ void main() {
     await tester.pumpWidget(_app(store, conn, scale: 2));
     await tester.pumpAndSettle();
     PhoneSetup.engine = FakeSetupEngine();
+    // Termux is phone setup's second host with its own engine (P1.2); a
+    // channel engine would wait on a platform that is not there.
+    PhoneSetup.termux = FakeSetupEngine();
     // Phone setup v2: Add server's "On this phone" opens phone setup, and
     // Termux (where OpenCode 1 or 2 is chosen) is one of its Other ways.
     await tester.tap(find.byKey(const ValueKey('servers-add')));
@@ -333,8 +339,9 @@ void main() {
     await tester.tap(termux);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    // Termux is a host of phone setup (P1.3): its progress, not a wizard.
-    expect(find.byType(PhoneSetupTermuxScreen), findsOneWidget);
+    // Termux is a host of phone setup: installing is the v2 job with Termux
+    // as its host (P1.2, 935945d6), its progress, not a wizard.
+    expect(find.byType(PhoneSetupTermuxJobScreen), findsOneWidget);
     expect(store.saved.single.flavor, ServerFlavor.v1);
     expect(tester.takeException(), isNull);
   });
