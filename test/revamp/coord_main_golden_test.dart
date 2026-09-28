@@ -230,10 +230,15 @@ void main() {
         await tester.pump(const Duration(milliseconds: 600));
         // The card is this server's connection state (with its own Try
         // again), so the page leaves the shared connection line out and
-        // says it once; the app's line carries the waiting share instead.
+        // says it once (KitScreen.bodySays, P4.4); the app's line carries
+        // the waiting share instead.
         expect(
           find.byKey(const ValueKey('connection-status-banner')),
           findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('kit-status-app:share-waiting')),
+          findsOneWidget,
         );
         expect(find.byType(KitStatusLine), findsOneWidget);
         expect(

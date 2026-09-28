@@ -370,7 +370,7 @@ class _TeamAgentsScreenState extends State<TeamAgentsScreen> {
       key: const ValueKey('team-agents'),
       topBar: KitTopBar(title: l10n.teamUiRunTabAgents, subtitle: subtitle),
       width: KitScreenWidth.list,
-      header: [?line],
+      status: line,
       loading: teamScreenLoading(controller) || _refreshing,
       loadingLabel: l10n.teamUiCardLoading,
       body: _body(context),

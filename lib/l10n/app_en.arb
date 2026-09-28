@@ -2307,10 +2307,6 @@
   "@e7BannerDetails": {
     "description": "Localized shared connection or glossary interface"
   },
-  "e7BannerChangeServer": "Change server",
-  "@e7BannerChangeServer": {
-    "description": "Localized shared connection or glossary interface"
-  },
   "e7BannerReconnectPasswordNote": "Server password changed — reconnect.\n{note}",
   "@e7BannerReconnectPasswordNote": {
     "description": "Localized shared connection or glossary interface",

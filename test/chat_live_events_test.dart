@@ -1788,7 +1788,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.textContaining('Endpoint is unavailable'), findsOneWidget);
-    expect(find.text('Change server'), findsOneWidget);
+    expect(find.text('Switch server'), findsOneWidget);
   });
 
   testWidgets('rehydrate never flashes a skeleton over existing messages', (

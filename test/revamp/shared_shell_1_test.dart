@@ -235,7 +235,7 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('kit-status-more')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Change server'));
+      await tester.tap(find.text('Switch server'));
       await tester.pumpAndSettle();
       expect(pushed, ['/servers']);
       expect(find.text('servers-route'), findsOneWidget);

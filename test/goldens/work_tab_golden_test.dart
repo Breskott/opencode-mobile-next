@@ -76,23 +76,28 @@ Future<void> _golden(
   }
 }
 
-Widget _card({String? error, bool starting = false, VoidCallback? onStart}) =>
-    Scaffold(
-      body: SafeArea(
-        child: SavedServerConnectionCard(
-          profileName: 'This device (Termux)',
-          baseUrl: 'http://127.0.0.1:4096',
-          error: error,
-          attempts: 1,
-          supportsTermux: true,
-          onChangeServer: () {},
-          onRetry: () {},
-          onOpenTermuxSetup: () {},
-          onStartPhoneServer: onStart,
-          startingPhoneServer: starting,
-        ),
-      ),
-    );
+Widget _card({
+  String? error,
+  bool starting = false,
+  bool notAnswering = false,
+  VoidCallback? onStart,
+}) => Scaffold(
+  body: SafeArea(
+    child: SavedServerConnectionCard(
+      profileName: 'This device (Termux)',
+      baseUrl: 'http://127.0.0.1:4096',
+      error: error,
+      attempts: 1,
+      supportsTermux: true,
+      onChangeServer: () {},
+      onRetry: () {},
+      onOpenTermuxSetup: () {},
+      onStartPhoneServer: onStart,
+      startingPhoneServer: starting,
+      notAnswering: notAnswering,
+    ),
+  ),
+);
 
 /// Long enough for a state's drawing to finish drawing itself in
 /// (KitMotion.entrance), so the golden shows the finished frame.
@@ -126,11 +131,9 @@ void main() {
         'connection_not_answering',
         light: light,
         controller: await workController(status: StreamStatus.connecting),
-        home: _card(onStart: () {}),
-        before: () async {
-          await tester.pump(const Duration(seconds: 9));
-          await tester.pump(_drawn);
-        },
+        // The controller's 8 s wait ran out (the card keeps no clock).
+        home: _card(onStart: () {}, notAnswering: true),
+        before: () => tester.pump(_drawn),
       );
     });
 

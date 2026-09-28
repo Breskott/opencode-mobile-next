@@ -65,9 +65,19 @@ class KitStatusScope extends InheritedWidget {
 ///
 /// States: none drawn / one condition (KitStatusLine's own states).
 class KitStatusLineSlot extends StatefulWidget {
-  const KitStatusLineSlot({super.key, this.status, this.slotKey, this.child});
+  const KitStatusLineSlot({
+    super.key,
+    this.status,
+    this.slotKey,
+    this.omit = const {},
+    this.child,
+  });
 
   final KitStatus? status;
+
+  /// App-wide condition kinds this slot does not draw, because the page
+  /// under it already is that condition (`KitScreen.bodySays`).
+  final Set<KitStatusKind> omit;
   final Key? slotKey;
 
   /// What sits below the line, inside this slot's reach (null: the line
@@ -119,7 +129,8 @@ class _KitStatusLineSlotState extends State<KitStatusLineSlot> {
         valueListenable: conditions,
         builder: (context, appWide, _) {
           final shown = KitStatus.highest([
-            ...appWide,
+            for (final condition in appWide)
+              if (!widget.omit.contains(condition.kind)) condition,
             widget.status,
             for (final contribution in _contributions)
               if (contribution.active) contribution.widget.status,

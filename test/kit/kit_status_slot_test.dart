@@ -62,6 +62,36 @@ void main() {
     },
   );
 
+  // slice-P4.4: a page that is itself a condition (root-connecting's card
+  // is the connection) omits it; the next condition down shows instead.
+  testWidgets('omit drops app-wide conditions the page already says', (
+    tester,
+  ) async {
+    const share = KitStatus(
+      kind: KitStatusKind.work,
+      icon: AppIconography.info,
+      message: 'Share waits',
+    );
+    Widget host(Set<KitStatusKind> omit) => MaterialApp(
+      theme: AppTheme.dark(),
+      home: Scaffold(
+        body: KitStatusScope(
+          conditions: ValueNotifier(const [_offline, share]),
+          child: KitScreen(bodySays: omit, body: const SizedBox()),
+        ),
+      ),
+    );
+    await tester.pumpWidget(host(const {}));
+    await tester.pumpAndSettle();
+    expect(find.text('Connection lost'), findsOneWidget);
+    expect(find.text('Share waits'), findsNothing);
+    await tester.pumpWidget(host(const {KitStatusKind.connection}));
+    await tester.pumpAndSettle();
+    expect(find.text('Connection lost'), findsNothing);
+    expect(find.text('Share waits'), findsOneWidget);
+    expect(find.byType(KitStatusLine), findsOneWidget);
+  });
+
   kitMotionStillTests(
     'KitStatusLineSlot',
     builds: {

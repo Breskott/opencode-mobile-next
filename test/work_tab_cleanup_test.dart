@@ -594,25 +594,27 @@ void main() {
       var restarts = 0;
       var retries = 0;
       var changes = 0;
-      await tester.pumpWidget(
-        _app(
-          Scaffold(
-            body: SavedServerConnectionCard(
-              profileName: 'This device (Termux)',
-              baseUrl: 'http://127.0.0.1:4096',
-              error: null,
-              attempts: 1,
-              supportsTermux: true,
-              onChangeServer: () => changes++,
-              onRetry: () => retries++,
-              onStartPhoneServer: () => restarts++,
-            ),
+      Widget card({required bool notAnswering}) => _app(
+        Scaffold(
+          body: SavedServerConnectionCard(
+            profileName: 'This device (Termux)',
+            baseUrl: 'http://127.0.0.1:4096',
+            error: null,
+            attempts: 1,
+            supportsTermux: true,
+            notAnswering: notAnswering,
+            onChangeServer: () => changes++,
+            onRetry: () => retries++,
+            onStartPhoneServer: () => restarts++,
           ),
         ),
       );
-      await tester.pump(const Duration(seconds: 7));
+      // slice-P4.4: the 8 s are the controller's (connectionStatus), shared
+      // with every status line; the card itself never escalates.
+      await tester.pumpWidget(card(notAnswering: false));
+      await tester.pump(const Duration(seconds: 9));
       expect(find.text("OpenCode on this phone isn't answering"), findsNothing);
-      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpWidget(card(notAnswering: true));
       await tester.pump(const Duration(milliseconds: 300));
       expect(
         find.text("OpenCode on this phone isn't answering"),

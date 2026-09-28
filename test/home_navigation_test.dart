@@ -984,7 +984,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.textContaining('Endpoint is unavailable'), findsOneWidget);
-    expect(find.text('Change server'), findsOneWidget);
+    expect(find.text('Switch server'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
     // Stop the controller-owned fallback poll before widget-test invariants.
@@ -1078,7 +1078,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Change server'), findsOneWidget);
+    expect(find.text('Switch server'), findsOneWidget);
   });
 
   testWidgets(

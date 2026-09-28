@@ -134,8 +134,11 @@ String teamNotAnsweringBody(
 
 /// The one status line of a working AI Team screen (§5): data from before
 /// the host stopped answering, or a refresh that failed. Null when the data
-/// is current. Keys: `<prefix>-stale`, `<prefix>-refresh-failed`.
-Widget? teamStatusLine(
+/// is current. It goes into the screen's status slot (`KitScreen.status`),
+/// never into its header, so a connection or app line and this one never
+/// show at once: the slot draws the most urgent (P4.4). Keys:
+/// `<prefix>-stale`, `<prefix>-refresh-failed`.
+KitStatus? teamStatusLine(
   BuildContext context, {
   required OrchestrationController controller,
   required String keyPrefix,
@@ -149,7 +152,9 @@ Widget? teamStatusLine(
     onPressed: onRetry,
   );
   if (controller.isStale) {
-    return KitStatusLine(
+    return KitStatus(
+      kind: KitStatusKind.work,
+      id: '$keyPrefix:stale',
       key: ValueKey('$keyPrefix-stale'),
       icon: AppIconography.cloudOff,
       tone: AppStatusTone.attention,
@@ -161,7 +166,9 @@ Widget? teamStatusLine(
   }
   if (controller.lastError?.kind == OrchestrationErrorKind.readFailed &&
       at != null) {
-    return KitStatusLine(
+    return KitStatus(
+      kind: KitStatusKind.work,
+      id: '$keyPrefix:refresh-failed',
       key: ValueKey('$keyPrefix-refresh-failed'),
       icon: AppIconography.warning,
       tone: AppStatusTone.attention,

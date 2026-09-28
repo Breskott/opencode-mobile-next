@@ -548,78 +548,106 @@ class _KitComposerState extends State<KitComposer> {
       KitSwap(child: _trailingControl(context, l10n)),
     ];
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (note != null)
-          Padding(
-            padding: EdgeInsetsDirectional.only(
-              start: tokens.space3,
-              end: tokens.space3,
-              top: tokens.space2,
-            ),
-            child: KitText(
-              note,
-              role: KitTextRole.secondary,
-              tone: KitTextTone.secondary,
-            ),
-          ),
-        if (_deliveryShown)
-          Padding(
-            padding: EdgeInsetsDirectional.only(
-              start: tokens.space2,
-              end: tokens.space2,
-              top: tokens.space2,
-            ),
-            child: KitSegmented<KitComposerDelivery>(
-              key: widget.deliveryKey,
-              semanticsLabel: l10n.kitComposerDeliveryLabel,
-              selected: widget.delivery,
-              onChanged: widget.onDeliveryChanged,
-              segments: [
-                KitSegment(
-                  value: KitComposerDelivery.afterThisReply,
-                  label: l10n.kitComposerSendAfterShort,
-                ),
-                KitSegment(
-                  value: KitComposerDelivery.addToThisTurn,
-                  label: l10n.kitComposerAddToTurnShort,
-                ),
-              ],
-            ),
-          ),
-        if (!readOnly && _suggestionsShown)
-          Padding(
-            padding: EdgeInsetsDirectional.only(
-              start: tokens.space2,
-              end: tokens.space2,
-              top: tokens.space2,
-            ),
-            child: widget.suggestions!,
-          ),
-        if (!readOnly && widget.attachments != null)
-          Padding(
-            padding: EdgeInsetsDirectional.only(
-              start: tokens.space2,
-              end: tokens.space2,
-              top: tokens.space2,
-            ),
-            child: widget.attachments!,
-          ),
+    // What sits above the field: the note, the delivery choice, the
+    // suggestions and the attachments. When they do not fit (large text on
+    // a small window, where the delivery choice stacks as radio rows) they
+    // scroll and give their room up to the field and the send row, which
+    // always stay; nothing is truncated (KIT-24).
+    final accessories = <Widget>[
+      if (note != null)
         Padding(
-          // Keyed so a note, suggestions or attachments appearing above it
-          // never re-create the field (focus and the keyboard stay).
-          key: const ValueKey<String>('kit-composer-field-slot'),
           padding: EdgeInsetsDirectional.only(
             start: tokens.space3,
             end: tokens.space3,
             top: tokens.space2,
           ),
-          child: field,
+          child: KitText(
+            note,
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
+          ),
         ),
-        Row(children: bottomRow),
-      ],
+      if (_deliveryShown)
+        Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: tokens.space2,
+            end: tokens.space2,
+            top: tokens.space2,
+          ),
+          child: KitSegmented<KitComposerDelivery>(
+            key: widget.deliveryKey,
+            semanticsLabel: l10n.kitComposerDeliveryLabel,
+            selected: widget.delivery,
+            onChanged: widget.onDeliveryChanged,
+            segments: [
+              KitSegment(
+                value: KitComposerDelivery.afterThisReply,
+                label: l10n.kitComposerSendAfterShort,
+              ),
+              KitSegment(
+                value: KitComposerDelivery.addToThisTurn,
+                label: l10n.kitComposerAddToTurnShort,
+              ),
+            ],
+          ),
+        ),
+      if (!readOnly && _suggestionsShown)
+        Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: tokens.space2,
+            end: tokens.space2,
+            top: tokens.space2,
+          ),
+          child: widget.suggestions!,
+        ),
+      if (!readOnly && widget.attachments != null)
+        Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: tokens.space2,
+            end: tokens.space2,
+            top: tokens.space2,
+          ),
+          child: widget.attachments!,
+        ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final above = accessories.isEmpty
+            ? null
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: accessories,
+              );
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (above != null)
+              constraints.hasBoundedHeight
+                  ? Flexible(
+                      child: SingleChildScrollView(
+                        key: const ValueKey<String>('kit-composer-accessories'),
+                        child: above,
+                      ),
+                    )
+                  : above,
+            Padding(
+              // Keyed so a note, suggestions or attachments appearing above it
+              // never re-create the field (focus and the keyboard stay).
+              key: const ValueKey<String>('kit-composer-field-slot'),
+              padding: EdgeInsetsDirectional.only(
+                start: tokens.space3,
+                end: tokens.space3,
+                top: tokens.space2,
+              ),
+              child: field,
+            ),
+            Row(children: bottomRow),
+          ],
+        );
+      },
     );
   }
 

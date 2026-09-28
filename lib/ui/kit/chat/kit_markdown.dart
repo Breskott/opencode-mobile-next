@@ -485,14 +485,23 @@ class _KitMarkdownState extends State<KitMarkdown> {
     if (widget.data.trim().isEmpty) return const SizedBox.shrink();
     final blocks = _blocksFor(context);
     final gap = KitTokens.of(context).space3;
-    final content = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < blocks.length; i++) ...[
-          if (i > 0) SizedBox(height: gap),
-          blocks[i],
+    // Its own semantics boundary, each block still its own node for a
+    // screen reader. Without it a long streamed reply's blocks are
+    // recompiled with everything around them (the turn, its footer) on
+    // every frame, which made one 5,000-paragraph reply cost seconds a
+    // frame (test/perf_chat_test.dart; docs/qa/slice-P4.4-2026-09-28).
+    final content = Semantics(
+      container: true,
+      explicitChildNodes: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < blocks.length; i++) ...[
+            if (i > 0) SizedBox(height: gap),
+            blocks[i],
+          ],
         ],
-      ],
+      ),
     );
     final scoped = _KitMdScope(
       role: widget.role,

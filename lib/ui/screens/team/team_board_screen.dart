@@ -370,7 +370,9 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
                     onRetry: _refreshing ? null : _refresh,
                   ) ??
                   (_edits.readOnly
-                      ? KitStatusLine(
+                      ? KitStatus(
+                          kind: KitStatusKind.info,
+                          id: 'team-board:read-only',
                           key: const ValueKey('team-board-read-only'),
                           icon: AppIconography.locked,
                           tone: AppStatusTone.neutral,
@@ -402,8 +404,8 @@ class _TeamBoardScreenState extends State<TeamBoardScreen> {
                 ),
             ],
           ),
+          status: line,
           header: [
-            ?line,
             KitReveal(
               child: failure == null
                   ? null

@@ -236,21 +236,22 @@ class _TeamWatchLiveScreenState extends State<TeamWatchLiveScreen> {
             ),
         ],
       ),
-      header: [
-        // The one status line (design standard §5): who, live, connecting,
-        // unavailable or ended.
-        KitStatusLine(
-          key: const ValueKey('chat-watching-banner'),
-          icon: tail.ended
-              ? AppIconography.cloudOff
-              : !tail.available
-              ? AppIconography.warning
-              : AppIconography.agent,
-          tone: tone,
-          message: status,
-          action: action,
-        ),
-      ],
+      // The one status line (design standard §5): who, live, connecting,
+      // unavailable or ended. In the window's one slot, so a connection or
+      // app line outranks it instead of stacking above it (P4.4).
+      status: KitStatus(
+        kind: KitStatusKind.work,
+        id: 'chat:watching-live',
+        key: const ValueKey('chat-watching-banner'),
+        icon: tail.ended
+            ? AppIconography.cloudOff
+            : !tail.available
+            ? AppIconography.warning
+            : AppIconography.agent,
+        tone: tone,
+        message: status,
+        action: action,
+      ),
       body: _watchLayer(
         watch: watch,
         body: KitJumpPillLayer(

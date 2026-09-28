@@ -1386,7 +1386,6 @@
   "e7BannerLost": "فُقد الاتصال",
   "e7BannerRetrying": "جارٍ إعادة المحاولة",
   "e7BannerDetails": "التفاصيل",
-  "e7BannerChangeServer": "تغيير الخادم",
   "e7BannerReconnectPasswordNote": "تغيّرت كلمة مرور الخادم — أعد الاتصال.\n{note}",
   "e7BannerReconnectingServer": "جارٍ إعادة الاتصال بـ {server}…",
   "e7BannerReconnectingServerSemantic": "جارٍ إعادة الاتصال بـ {server}",

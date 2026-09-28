@@ -73,6 +73,7 @@ class KitScreen extends StatelessWidget {
     this.topBar,
     this.search,
     this.status,
+    this.bodySays = const {},
     this.jump,
     this.width = KitScreenWidth.full,
     this.bottomKey,
@@ -96,6 +97,7 @@ class KitScreen extends StatelessWidget {
     this.topBar,
     this.search,
     this.status,
+    this.bodySays = const {},
     this.loading = false,
     this.loadingLabel = '',
     this.bottom,
@@ -123,6 +125,7 @@ class KitScreen extends StatelessWidget {
     this.topBar,
     this.search,
     this.status,
+    this.bodySays = const {},
     this.loading = false,
     this.loadingLabel = '',
     this.bottom,
@@ -170,6 +173,12 @@ class KitScreen extends StatelessWidget {
 
   /// This screen's condition, into the one slot (an object, never words).
   final KitStatus? status;
+
+  /// Kinds of app-wide condition this screen's [body] already says as the
+  /// page itself (root-connecting's card *is* the connection condition):
+  /// the slot does not repeat them, so nothing is said twice. Applies only
+  /// to the slot this screen owns; under an outer slot it has no effect.
+  final Set<KitStatusKind> bodySays;
 
   /// Floats over [body], above [bottom].
   final KitJumpPill? jump;
@@ -252,7 +261,7 @@ class KitScreen extends StatelessWidget {
     );
     final slotted = KitStatusLineSlot.existsAbove(context)
         ? KitStatusContribution(status: status, child: content)
-        : KitStatusLineSlot(status: status, child: content);
+        : KitStatusLineSlot(status: status, omit: bodySays, child: content);
     final topBar = this.topBar;
     final isPage = topBar != null || page;
     final Widget framed;
