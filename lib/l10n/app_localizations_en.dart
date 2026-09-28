@@ -2858,7 +2858,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tailscaleAddressError =>
-      'Enter an HTTPS origin with a valid port (1–65535). Remove paths, credentials, query text and fragments. Use the full address from Serve; do not replace https with http.';
+      'That address won\'t work here. Copy the https:// address Tailscale Serve shows on your computer and paste it as it is, with nothing added after it.';
 
   @override
   String get tailscaleReviewDetail =>
@@ -7004,11 +7004,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String e7LibraryServerEnvironment2(String detail1) {
-    return 'Server environment: $detail1';
-  }
-
-  @override
   String get e7LibraryNoConnectionMethodsAvailable =>
       'No connection methods available';
 
@@ -7849,11 +7844,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupRequireHttps =>
-      'HTTPS is required outside this device. Basic credentials must never be sent over HTTP.';
+      'A password is only sent to another computer over https://. Use the computer\'s https:// address, pair with a code, or connect with Tailscale.';
 
   @override
   String get e7SetupLocalHttp =>
-      'HTTP is allowed only for localhost, 127.0.0.1, or [::1]. Use HTTPS for LAN and remote servers.';
+      'An http:// address only works for a server on this phone. For another computer, pair with a code, use its https:// address, or connect with Tailscale.';
 
   @override
   String get e7SetupRefused =>
@@ -23790,4 +23785,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get inAppServerStartRefusedBody =>
       'The phone did not let the app start OpenCode just now. Start it again; if this repeats, restart the phone.';
+
+  @override
+  String get integrationsConnectWithKey => 'Add an API key';
+
+  @override
+  String get integrationsConnectOnServer => 'Set up on the server';
+
+  @override
+  String integrationsProviderDetails(String name) {
+    return '$name details';
+  }
+
+  @override
+  String get integrationsEnvironmentVariable => 'Server environment variable';
+
+  @override
+  String integrationsEnvironmentNote(String name) {
+    return 'To connect $name without the app, set this where the server runs, then restart the server.';
+  }
 }

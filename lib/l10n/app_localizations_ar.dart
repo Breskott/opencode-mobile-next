@@ -7100,11 +7100,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String e7LibraryServerEnvironment2(String detail1) {
-    return 'بيئة الخادم: $detail1';
-  }
-
-  @override
   String get e7LibraryNoConnectionMethodsAvailable => 'لا توجد طرق اتصال متاحة';
 
   @override
@@ -23917,4 +23912,23 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get inAppServerStartRefusedBody =>
       'The phone did not let the app start OpenCode just now. Start it again; if this repeats, restart the phone.';
+
+  @override
+  String get integrationsConnectWithKey => 'Add an API key';
+
+  @override
+  String get integrationsConnectOnServer => 'Set up on the server';
+
+  @override
+  String integrationsProviderDetails(String name) {
+    return '$name details';
+  }
+
+  @override
+  String get integrationsEnvironmentVariable => 'Server environment variable';
+
+  @override
+  String integrationsEnvironmentNote(String name) {
+    return 'To connect $name without the app, set this where the server runs, then restart the server.';
+  }
 }
