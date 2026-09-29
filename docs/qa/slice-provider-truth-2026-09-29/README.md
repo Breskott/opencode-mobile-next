@@ -29,15 +29,27 @@ Tests: `test/revamp/slice_provider_truth_test.dart` (3; fails on the base:
 the strings/params do not exist) plus `screen_library_3_test.dart` (21 pass),
 `kit_ratchet_test.dart` pass, whole-project `flutter analyze` clean.
 
-## 2. Manage space button (NOT proven yet)
+## 2. Manage space (proven on emulator-5554, Pixel_6 API 34, build 2065)
 
-Static findings from the release APK (build 2064 and the source manifest):
-`<application android:manageSpaceActivity=".ManageSpaceActivity">` is present,
-the activity is `exported=true`, no permission, default launchMode, namespace
-equals applicationId (no suffix on stable), not debuggable or test-only. The
-manifest is therefore correct; the cause needs the Settings app on a device.
+Finding: there is no bug. On stock Android 14+ the Settings Storage page has
+no button labelled "Manage space": the button labelled "Clear storage" IS the
+manage-space entry when the app declares `android:manageSpaceActivity`.
+Evidence:
+- A manifest-only test app declaring `manageSpaceActivity` (no code) shows the
+  same "Clear storage / Clear cache" pair, so the label is the platform's.
+- Tapping "Clear storage" on our app opens `.ManageSpaceActivity`
+  (`topResumedActivity` = `io.github.eslamasabry.opencode_mobile/.ManageSpaceActivity`):
+  `manage-space-opened-from-storage.png` (our page: Export projects first,
+  cache-only, Delete everything, sizes). `android-storage-page.png` is the
+  Android page it was opened from.
+- Manifest checked earlier: attribute present on `<application>`, activity
+  exported, no permission, package name resolves (`cmd package resolve-activity`
+  finds it). No manifest change was needed, so none was made. The journey
+  J9 finding "Manage space not reachable" was a misreading of the label.
+- Not tested: OEM Settings (Nubia). If one ignores the attribute the in-app
+  path This phone > Export projects remains.
 
-Blocked: the shared emulator lock `/home/eslam/Storage/tmp/oc-emulator.lock` is
-held by an orphaned `sleep 14400` (pid 2483579, its `flock` parent is gone and
-no emulator runs), so no emulator session could start. Device proof and any
-manifest fix remain to do.
+Notes: the manage-space page rendered in a light theme while the system was in
+night mode (the page runs its own engine and follows the app's own theme
+setting, not the system); not changed here. Emulator session held the shared
+lock only for this proof and was killed by exact PID.
