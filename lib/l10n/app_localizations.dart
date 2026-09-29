@@ -40020,6 +40020,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Findings addressed'**
   String get teamProjectTaskFindingsAddressed;
+
+  /// No description provided for @teamProjectMergeConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked task branches will merge into dev, followed by combined checks. Main stays unchanged.'**
+  String get teamProjectMergeConfirmBody;
 }
 
 class _AppLocalizationsDelegate

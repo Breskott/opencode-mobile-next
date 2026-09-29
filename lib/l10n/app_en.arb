@@ -30063,5 +30063,6 @@
   "teamProjectTaskApprovedPlan": "Approved plan",
   "teamProjectTaskCriteria": "Acceptance criteria",
   "teamProjectTaskOpenFindings": "Open findings",
-  "teamProjectTaskFindingsAddressed": "Findings addressed"
+  "teamProjectTaskFindingsAddressed": "Findings addressed",
+  "teamProjectMergeConfirmBody": "Checked task branches will merge into dev, followed by combined checks. Main stays unchanged."
 }

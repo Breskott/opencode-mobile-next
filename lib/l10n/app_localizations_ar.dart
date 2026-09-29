@@ -25431,4 +25431,8 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamProjectTaskFindingsAddressed => 'Findings addressed';
+
+  @override
+  String get teamProjectMergeConfirmBody =>
+      'Checked task branches will merge into dev, followed by combined checks. Main stays unchanged.';
 }
