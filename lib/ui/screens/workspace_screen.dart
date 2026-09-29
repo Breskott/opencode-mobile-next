@@ -6,6 +6,7 @@ import '../../api/product_repository.dart';
 import '../../api/sse.dart';
 import '../../domain/return_brief.dart';
 import '../../domain/workspace_paths.dart';
+import '../../state/team_glance.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
@@ -1528,7 +1529,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   /// urgent tasks. The header opens the team page; a task opens its
   /// conversation.
   Widget _teamStrip(OrchestrationController team, AppLocalizations l10n) {
-    final glance = teamGlanceOf(team);
+    final glance = teamGlanceFromSnapshot(team.snapshot);
     final open = teamOpenTasks(team);
     final title = glance.isIdle
         ? l10n.teamStripIdle

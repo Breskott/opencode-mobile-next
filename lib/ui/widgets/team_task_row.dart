@@ -9,7 +9,6 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../domain/orchestration_gateway.dart';
-import '../../domain/team_glance.dart';
 import '../../domain/work_row_status.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
@@ -34,12 +33,6 @@ List<OrchestrationRun> teamOpenTasks(OrchestrationController team) {
         run,
   ]..sort((a, b) => teamCompareRuns(a, b, gated));
 }
-
-/// The team at a glance, from the state the controller already holds.
-TeamGlance teamGlanceOf(OrchestrationController team) => TeamGlance.fromTasks(
-  open: teamOpenTasks(team),
-  gated: teamGatedRuns(team.snapshot),
-);
 
 class TeamTaskRow extends StatelessWidget {
   const TeamTaskRow({

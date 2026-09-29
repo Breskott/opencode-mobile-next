@@ -108,3 +108,41 @@ class TeamGlance {
   @override
   int get hashCode => Object.hash(working, needsYou, Object.hashAll(top));
 }
+
+/// The runs a surface shows by default: the host's own upkeep
+/// ([OrchestrationRun.isUpkeep]) left out unless [includeUpkeep].
+List<OrchestrationRun> teamVisibleRuns(
+  Iterable<OrchestrationRun> runs, {
+  bool includeUpkeep = false,
+}) => [
+  for (final run in runs)
+    if (includeUpkeep || !run.isUpkeep) run,
+];
+
+/// Order of runs everywhere: what needs the person, then active, then
+/// waiting; completed runs come last (and collapse on the card).
+int teamRunRank(OrchestrationRun run, Set<String> gated) {
+  if (gated.contains(run.id) || run.state == RunState.failed) return 0;
+  return switch (run.state) {
+    RunState.working => 1,
+    RunState.planning => 2,
+    RunState.blocked => 3,
+    RunState.waiting => 4,
+    RunState.unknown => 5,
+    RunState.cancelled => 6,
+    RunState.failed => 0,
+    RunState.completed => 7,
+  };
+}
+
+/// [teamRunRank] first, then the most recently updated run first.
+int teamCompareRuns(OrchestrationRun a, OrchestrationRun b, Set<String> gated) {
+  final rank = teamRunRank(a, gated).compareTo(teamRunRank(b, gated));
+  if (rank != 0) return rank;
+  final at = a.updatedAt ?? a.startedAt;
+  final bt = b.updatedAt ?? b.startedAt;
+  if (at == null && bt == null) return 0;
+  if (at == null) return 1;
+  if (bt == null) return -1;
+  return bt.compareTo(at);
+}

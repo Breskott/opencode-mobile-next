@@ -57,7 +57,7 @@ import 'model_library.dart';
 import 'offline_queue.dart';
 import 'orchestration.dart';
 import '../domain/team_glance.dart';
-import '../ui/widgets/team_task_row.dart' show teamGlanceOf;
+import 'team_glance.dart';
 import 'orchestration_store.dart';
 import 'elsewhere_attention.dart';
 import 'profiles.dart';
@@ -1431,9 +1431,15 @@ class ConnectionController extends ChangeNotifier {
   /// person is the existing alert's job.
   String? _teamProgressKey;
   String? _teamProgressLine;
+  DateTime? _teamProgressPostedAt;
+
+  /// Re-post an unchanged line this often, well inside the native
+  /// 20-minute self-timeout, so a long step keeps its line. Rides on the
+  /// team's periodic refresh; no timer of its own.
+  static const _teamProgressRepost = Duration(minutes: 10);
 
   void _syncTeamProgress(OrchestrationController team) {
-    final glance = teamGlanceOf(team);
+    final glance = teamGlanceFromSnapshot(team.snapshot);
     final working = glance.top.where((task) => !task.needsYou).toList();
     if (glance.working == 0 || !_canShowCodingAlert) {
       _clearTeamProgress();
@@ -1454,13 +1460,21 @@ class ConnectionController extends ChangeNotifier {
     final key = 'team:${team.profileId}:progress';
     final sessionID = one?.id ?? working.firstOrNull?.id ?? '';
     final signature = '$sessionID|$line';
-    if (signature == _teamProgressLine && key == _teamProgressKey) return;
+    final now = DateTime.now();
+    final postedAt = _teamProgressPostedAt;
+    if (signature == _teamProgressLine &&
+        key == _teamProgressKey &&
+        postedAt != null &&
+        now.difference(postedAt) < _teamProgressRepost) {
+      return;
+    }
     if (sessionID.isEmpty) {
       _clearTeamProgress();
       return;
     }
     _teamProgressLine = signature;
     _teamProgressKey = key;
+    _teamProgressPostedAt = now;
     unawaited(
       backgroundLive
           .showCodingAlert(
@@ -1484,6 +1498,7 @@ class ConnectionController extends ChangeNotifier {
     if (key == null) return;
     _teamProgressKey = null;
     _teamProgressLine = null;
+    _teamProgressPostedAt = null;
     unawaited(backgroundLive.dismissCodingAlert(key));
   }
 
