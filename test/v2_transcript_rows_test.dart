@@ -308,7 +308,7 @@ void main() {
         find.byKey(const ValueKey('compaction-completed-msg_9')),
         findsOneWidget,
       );
-      expect(find.textContaining('Context compacted'), findsOneWidget);
+      expect(find.textContaining('Earlier messages were summarized'), findsOneWidget);
       expect(find.byIcon(AppIconography.collapse), findsOneWidget);
 
       await tester.tap(

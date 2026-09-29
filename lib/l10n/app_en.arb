@@ -4458,6 +4458,18 @@
   "@chatUiCompactContext": {
     "description": "Chat journey: Compact context"
   },
+  "chatUiCompactConfirmTitle": "Compact this conversation?",
+  "@chatUiCompactConfirmTitle": {
+    "description": "Confirm sheet title before compacting the conversation"
+  },
+  "chatUiCompactConfirmBody": "Compact replaces earlier messages with a short summary to save space. It can't be undone.",
+  "@chatUiCompactConfirmBody": {
+    "description": "Confirm sheet: one line on what Compact does"
+  },
+  "chatUiCompactConfirmAction": "Compact",
+  "@chatUiCompactConfirmAction": {
+    "description": "Confirm sheet button that starts compacting"
+  },
   "chatUiCompactSession": "Compact conversation",
   "@chatUiCompactSession": {
     "description": "Chat journey: Compact session"
@@ -4490,7 +4502,7 @@
   "@chatUiContextAdded": {
     "description": "Chat journey: Context added"
   },
-  "chatUiContextCompacted": "Context compacted",
+  "chatUiContextCompacted": "Earlier messages were summarized to save space",
   "@chatUiContextCompacted": {
     "description": "Chat journey: Context compacted"
   },
@@ -22803,6 +22815,10 @@
         "type": "int"
       }
     }
+  },
+  "composerFieldLabel": "Message to the agent",
+  "@composerFieldLabel": {
+    "description": "Screen-reader label of the chat message box (the hint is separate)."
   },
   "composerBusyReason": "Getting your prompt ready…",
   "@composerBusyReason": {

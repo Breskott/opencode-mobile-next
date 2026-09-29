@@ -5451,6 +5451,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiCompactContext => 'اختصار السياق';
 
   @override
+  String get chatUiCompactConfirmTitle => 'Compact this conversation?';
+
+  @override
+  String get chatUiCompactConfirmBody =>
+      'Compact replaces earlier messages with a short summary to save space. It can\'t be undone.';
+
+  @override
+  String get chatUiCompactConfirmAction => 'Compact';
+
+  @override
   String get chatUiCompactSession => 'اختصار المحادثة';
 
   @override
@@ -5476,7 +5486,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiContextAdded => 'أُضيف السياق';
 
   @override
-  String get chatUiContextCompacted => 'اختُصر السياق';
+  String get chatUiContextCompacted => 'لُخّصت الرسائل السابقة لتوفير المساحة';
 
   @override
   String get chatUiCopiedPasteItIntoTheComposer =>
@@ -19514,6 +19524,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String mobileTasksShowAll(int count) {
     return 'Show all $count tasks';
   }
+
+  @override
+  String get composerFieldLabel => 'رسالة إلى الوكيل';
 
   @override
   String get composerBusyReason => 'Getting your prompt ready…';

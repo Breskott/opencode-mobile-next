@@ -130,8 +130,8 @@ class KitComposerVoice {
 
 /// The composer (VL §5; docs/ux-system/kit-api/KitComposer.md): a surface2
 /// glass pill (KitGlass, dimmed) holding attach, the field, the model chip,
-/// voice, and send or stop. Send is an accent circle; Stop is a text1
-/// circle with a ground square.
+/// voice, and send or stop. Send is an accent circle; Stop is a danger
+/// circle with an on-danger square.
 ///
 /// States: idle empty, idle with text, sending, busy empty, busy with text
 /// (stop + send, delivery choice), busy with text that cannot send yet,
@@ -784,13 +784,15 @@ class _Circle extends StatelessWidget {
     final roles = tokens.roles;
     final stop = kind == _CircleKind.stop;
     final disabled = kind == _CircleKind.sendDisabled;
+    // Stop is the destructive variant: the same red as a destructive kit
+    // button, so ending a run reads as ending something.
     final fill = stop
-        ? roles.text1
+        ? roles.dangerFill
         : disabled
         ? roles.surface3
         : roles.accent;
     final ink = stop
-        ? roles.ground
+        ? roles.onDangerFill
         : disabled
         ? roles.text3
         : roles.onAccent;

@@ -639,25 +639,34 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
     return width;
   }
 
-  Widget _wrapToggle(BuildContext context, AppLocalizations l10n) =>
-      _WrapToggle(
-        key: const ValueKey('kit-code-wrap'),
-        on: _effectiveWrap(context),
-        label: l10n.kitWrapLines,
-        onPressed: () => _toggleWrap(context),
-      );
+  Widget _wrapToggle(BuildContext context, AppLocalizations l10n) => _target(
+    _WrapToggle(
+      key: const ValueKey('kit-code-wrap'),
+      on: _effectiveWrap(context),
+      label: l10n.kitWrapLines,
+      onPressed: () => _toggleWrap(context),
+    ),
+  );
 
-  Widget _copyIcon(AppLocalizations l10n) => KitIconButton.copy(
-    key: widget.copyKey ?? const ValueKey('kit-code-copy'),
-    text: () {
-      // A new tap replaces an earlier refusal's words.
-      if (_copyFailed != null) setState(() => _copyFailed = null);
-      return widget.copyText ?? widget.text;
-    },
-    tooltip: _copyLabel(l10n),
-    onCopyFailed: (value) {
-      if (mounted) setState(() => _copyFailed = value);
-    },
+  /// Copy and Wrap are at least 48 x 48 dp at any text size.
+  Widget _target(Widget child) => ConstrainedBox(
+    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+    child: child,
+  );
+
+  Widget _copyIcon(AppLocalizations l10n) => _target(
+    KitIconButton.copy(
+      key: widget.copyKey ?? const ValueKey('kit-code-copy'),
+      text: () {
+        // A new tap replaces an earlier refusal's words.
+        if (_copyFailed != null) setState(() => _copyFailed = null);
+        return widget.copyText ?? widget.text;
+      },
+      tooltip: _copyLabel(l10n),
+      onCopyFailed: (value) {
+        if (mounted) setState(() => _copyFailed = value);
+      },
+    ),
   );
 
   // ---------------------------------------------------------------------
@@ -1332,6 +1341,37 @@ class _CodeScrollerState extends State<_CodeScroller> {
       _controller.hasClients &&
       _controller.position.maxScrollExtent - _controller.offset > .5;
 
+  bool get _showStartFade => _controller.hasClients && _controller.offset > .5;
+
+  /// More lines than fit: the scrollbar stays visible on touch too, so a
+  /// clipped line always shows there is more to scroll to.
+  bool get _overflowing =>
+      _controller.hasClients && _controller.position.maxScrollExtent > .5;
+
+  Widget _edge(BuildContext context, {required bool end}) {
+    final direction = Directionality.of(context);
+    final from = AlignmentDirectional.centerStart.resolve(direction);
+    final to = AlignmentDirectional.centerEnd.resolve(direction);
+    return PositionedDirectional(
+      end: end ? 0 : null,
+      start: end ? null : 0,
+      top: 0,
+      bottom: 0,
+      child: IgnorePointer(
+        child: Container(
+          width: widget.fadeWidth,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: end ? from : to,
+              end: end ? to : from,
+              colors: [widget.fadeColor.withValues(alpha: 0), widget.fadeColor],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final finePointer = KitLayout.finePointer(context);
@@ -1349,7 +1389,7 @@ class _CodeScrollerState extends State<_CodeScroller> {
           children: [
             Scrollbar(
               controller: _controller,
-              thumbVisibility: finePointer,
+              thumbVisibility: finePointer || _overflowing,
               notificationPredicate: (n) => true,
               child: SingleChildScrollView(
                 controller: _controller,
@@ -1357,31 +1397,8 @@ class _CodeScrollerState extends State<_CodeScroller> {
                 child: widget.child,
               ),
             ),
-            if (_showFade)
-              PositionedDirectional(
-                end: 0,
-                top: 0,
-                bottom: 0,
-                child: IgnorePointer(
-                  child: Container(
-                    width: widget.fadeWidth,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: AlignmentDirectional.centerStart.resolve(
-                          Directionality.of(context),
-                        ),
-                        end: AlignmentDirectional.centerEnd.resolve(
-                          Directionality.of(context),
-                        ),
-                        colors: [
-                          widget.fadeColor.withValues(alpha: 0),
-                          widget.fadeColor,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            if (_showStartFade) _edge(context, end: false),
+            if (_showFade) _edge(context, end: true),
           ],
         ),
       ),

@@ -1141,6 +1141,10 @@ class _MessageView extends StatelessWidget {
   /// [_AssistantErrorRow]). On the prompt, [unanswered] marks it "Not
   /// answered".
   final VoidCallback? onResendPrompt;
+
+  /// The newest reply was cut off by a lost connection: sends the prompt
+  /// again. Null hides the action.
+  final VoidCallback? onSendInterruptedAgain;
   final String? suggestedModel;
   final VoidCallback? onUseSuggestedModel;
   final bool unanswered;
@@ -1169,6 +1173,7 @@ class _MessageView extends StatelessWidget {
     this.onContinue,
     this.onChooseModel,
     this.onResendPrompt,
+    this.onSendInterruptedAgain,
     this.suggestedModel,
     this.onUseSuggestedModel,
     this.unanswered = false,
@@ -1401,6 +1406,35 @@ class _MessageView extends StatelessWidget {
             index >= 0 &&
             _endsTurn(messages, index));
 
+    // The conversation is still working on this turn: it has no footer yet,
+    // even when its newest step is already written.
+    final latest = _inLatestTurn(messages, index);
+    final busy =
+        chat != null &&
+        latest &&
+        chat._conn.busySessions.contains(chat.widget.sessionID);
+    // The connection was lost mid-reply (or the server went quiet for good):
+    // the turn stops "working" and says so. A refetch on reconnect brings
+    // the finished reply back and this line goes with it.
+    final connectionLost =
+        streaming &&
+        endsTurn &&
+        latest &&
+        chat != null &&
+        !chat._conn.isIsolated &&
+        !chat._conn.isConnected;
+    final interrupted =
+        connectionLost ||
+        (streaming &&
+            endsTurn &&
+            chat != null &&
+            !chat._conn.isIsolated &&
+            !busy &&
+            createdAt != null &&
+            DateTime.now().millisecondsSinceEpoch - createdAt >
+                KitMotion.escalateAfter.inMilliseconds);
+    final working = streaming && !interrupted;
+
     final runs = _groupAssistantParts(visibleParts);
     final blocks = <Widget>[
       for (final stretch in _stretches(runs))
@@ -1413,10 +1447,10 @@ class _MessageView extends StatelessWidget {
             expansionStore: expansionStore,
             waitingForYou: waiting,
             stopped: stopped,
-            buildRun: (run) => _stepWidgets(run, runs, streaming, chat),
+            buildRun: (run) => _stepWidgets(run, runs, working, chat),
           )
         else
-          _runWidget(stretch.single, runs, streaming, chat),
+          _runWidget(stretch.single, runs, working, chat),
       if (raw != null && !stopped)
         _AssistantErrorRow(
           info: m.info,
@@ -1438,22 +1472,6 @@ class _MessageView extends StatelessWidget {
         ),
     ];
 
-    // The conversation is still working on this turn: it has no footer yet,
-    // even when its newest step is already written.
-    final latest = _inLatestTurn(messages, index);
-    final busy =
-        chat != null &&
-        latest &&
-        chat._conn.busySessions.contains(chat.widget.sessionID);
-    final interrupted =
-        streaming &&
-        endsTurn &&
-        chat != null &&
-        !chat._conn.isIsolated &&
-        !busy &&
-        createdAt != null &&
-        DateTime.now().millisecondsSinceEpoch - createdAt >
-            KitMotion.escalateAfter.inMilliseconds;
     final phase = stopped
         ? KitTurnPhase.stopped
         : raw != null && !errorRecovered
@@ -1484,6 +1502,13 @@ class _MessageView extends StatelessWidget {
           : DateTime.fromMillisecondsSinceEpoch(createdAt),
       blocks: blocks,
       footer: footer,
+      interruptedAction: connectionLost && onSendInterruptedAgain != null
+          ? KitAction(
+              key: const Key('interrupted-send-again'),
+              label: strings.chatUiSendPromptAgain,
+              onPressed: onSendInterruptedAgain,
+            )
+          : null,
       latest: latest,
       highlighted: highlighted,
       footerKey: ValueKey('message-meta-${m.info.id}'),

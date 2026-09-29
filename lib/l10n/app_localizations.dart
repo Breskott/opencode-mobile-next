@@ -9020,6 +9020,24 @@ abstract class AppLocalizations {
   /// **'Compact context'**
   String get chatUiCompactContext;
 
+  /// Confirm sheet title before compacting the conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Compact this conversation?'**
+  String get chatUiCompactConfirmTitle;
+
+  /// Confirm sheet: one line on what Compact does
+  ///
+  /// In en, this message translates to:
+  /// **'Compact replaces earlier messages with a short summary to save space. It can\'t be undone.'**
+  String get chatUiCompactConfirmBody;
+
+  /// Confirm sheet button that starts compacting
+  ///
+  /// In en, this message translates to:
+  /// **'Compact'**
+  String get chatUiCompactConfirmAction;
+
   /// Chat journey: Compact session
   ///
   /// In en, this message translates to:
@@ -9071,7 +9089,7 @@ abstract class AppLocalizations {
   /// Chat journey: Context compacted
   ///
   /// In en, this message translates to:
-  /// **'Context compacted'**
+  /// **'Earlier messages were summarized to save space'**
   String get chatUiContextCompacted;
 
   /// Chat journey: Copied. Paste it into the composer
@@ -30825,6 +30843,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show all {count} tasks'**
   String mobileTasksShowAll(int count);
+
+  /// Screen-reader label of the chat message box (the hint is separate).
+  ///
+  /// In en, this message translates to:
+  /// **'Message to the agent'**
+  String get composerFieldLabel;
 
   /// Composer: the field waits while a saved prompt or photo is being put in the draft.
   ///

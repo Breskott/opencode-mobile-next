@@ -4632,14 +4632,26 @@ class _ChatScreenState extends State<ChatScreen>
       );
       return;
     }
+    final strings = _chatL10n(context);
     try {
-      final repository = await _requireActionRepository();
-      await repository.compactSession(
-        widget.sessionID,
-        providerID: model?.providerID ?? '',
-        modelID: model?.modelID ?? '',
+      // Asked first; the sheet shows progress while the request runs and
+      // keeps the question open with Try again if it fails.
+      final confirmed = await showKitConfirm(
+        context,
+        icon: AppIconography.collapse,
+        title: strings.chatUiCompactConfirmTitle,
+        body: strings.chatUiCompactConfirmBody,
+        confirmLabel: strings.chatUiCompactConfirmAction,
+        action: () async {
+          final repository = await _requireActionRepository();
+          await repository.compactSession(
+            widget.sessionID,
+            providerID: model?.providerID ?? '',
+            modelID: model?.modelID ?? '',
+          );
+        },
       );
-      if (!mounted) return;
+      if (!confirmed || !mounted) return;
       _showComposerNote(_chatL10n(context).chatUiCompactionStarted);
     } catch (error) {
       if (mounted) _showActionError(error);
@@ -7430,6 +7442,7 @@ class _ChatScreenState extends State<ChatScreen>
       onResendPrompt: endsUnanswered && _unansweredWords != null
           ? () => unawaited(_resendUnanswered())
           : null,
+      onSendInterruptedAgain: offline ? null : () => unawaited(_retryLast()),
       suggestedModel: suggestion == null ? null : _modelName(suggestion),
       onUseSuggestedModel: suggestion == null || _unansweredWords == null
           ? null

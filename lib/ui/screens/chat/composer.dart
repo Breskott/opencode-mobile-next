@@ -291,6 +291,7 @@ class _ChatComposer extends StatelessWidget {
             onContentInserted: isolated || !promptAttachmentsSupported
                 ? null
                 : onContentInserted,
+            fieldLabel: l10n.composerFieldLabel,
             composerKey: const Key('chat-composer-surface'),
             fieldKey: const Key('chat-composer-field'),
             sendKey: const Key('chat-send-button'),
