@@ -14513,25 +14513,9 @@
   },
   "effectsSection": "Effects",
   "@effectsSection": {
-    "description": "Settings › Appearance: section label over glass, animations, celebrations and vibration."
+    "description": "Settings › Appearance: section label over the motion choice."
   },
-  "effectsGlass": "Glass effects",
-  "@effectsGlass": {
-    "description": "Settings › Appearance › Effects: switch for the see-through glass on the dock and the message box."
-  },
-  "effectsGlassOn": "The dock and message box float as glass over what scrolls beneath",
-  "@effectsGlassOn": {
-    "description": "Glass effects row, supporting line when the phone draws glass."
-  },
-  "effectsGlassFrosted": "Uses a frosted surface on this phone",
-  "@effectsGlassFrosted": {
-    "description": "Glass effects row, supporting line when the phone cannot draw liquid glass and falls back to a frosted blur."
-  },
-  "effectsGlassSystem": "Solid while high contrast, a screen reader or Remove animations is on",
-  "@effectsGlassSystem": {
-    "description": "Glass effects row, supporting line when a system accessibility setting makes glass solid."
-  },
-  "effectsAnimations": "Animations",
+  "effectsAnimations": "Motion",
   "@effectsAnimations": {
     "description": "Settings › Appearance › Effects: how much the app moves."
   },
@@ -14539,7 +14523,7 @@
   "@effectsMotionFull": {
     "description": "Animations choice: everything moves."
   },
-  "effectsMotionFullHint": "Drawings move and waiting screens breathe",
+  "effectsMotionFullHint": "Drawings move, waiting screens breathe and finished moments celebrate",
   "@effectsMotionFullHint": {
     "description": "Animations: one line explaining Full."
   },
@@ -14547,7 +14531,7 @@
   "@effectsMotionCalm": {
     "description": "Animations choice: drawings appear, nothing loops."
   },
-  "effectsMotionCalmHint": "Drawings appear, nothing keeps moving",
+  "effectsMotionCalmHint": "Drawings appear, nothing keeps moving and nothing celebrates",
   "@effectsMotionCalmHint": {
     "description": "Animations: one line explaining Calm."
   },
@@ -14562,22 +14546,6 @@
   "effectsMotionSystemOff": "Your phone’s Remove animations is on, so nothing moves whatever you choose here",
   "@effectsMotionSystemOff": {
     "description": "Animations: note when the system setting overrides the choice."
-  },
-  "effectsCelebrations": "Celebrations",
-  "@effectsCelebrations": {
-    "description": "Settings › Appearance › Effects: switch for the short finished moments."
-  },
-  "effectsCelebrationsHint": "A short moment when setup finishes or a task is merged",
-  "@effectsCelebrationsHint": {
-    "description": "Celebrations row, supporting line."
-  },
-  "effectsVibration": "Vibration",
-  "@effectsVibration": {
-    "description": "Settings › Appearance › Effects: switch for haptic feedback."
-  },
-  "effectsVibrationHint": "A light tick when you send, a soft one when something finishes",
-  "@effectsVibrationHint": {
-    "description": "Vibration row, supporting line."
   },
   "effectsSaveFailed": "Could not save this choice on this device. Try again.",
   "@effectsSaveFailed": {

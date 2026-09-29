@@ -19,37 +19,29 @@ void main() {
     for (final arabic in [false, true]) {
       final index = SettingsSearchIndex(rows(arabic: arabic));
       for (final example in {
-        'vibration': ('appearance-settings', 'effects-vibration'),
-        'اهتزاز': ('appearance-settings', 'effects-vibration'),
+        'animations': ('appearance-settings', 'effects-motion'),
+        'حركة': ('appearance-settings', 'effects-motion'),
         'heat': ('keep-running', 'keep-running-thermal'),
         'حَرَارَة': ('keep-running', 'keep-running-thermal'),
         'crash': ('termux-setup-installed', 'managed-recovery-option'),
         'إعادة تشغيل': ('termux-setup-installed', 'managed-recovery-option'),
         'battery': ('keep-running', 'keep-running-battery'),
         'البطارية': ('keep-running', 'keep-running-battery'),
-        'glass': ('appearance-settings', 'effects-glass'),
         'reduced motion': ('appearance-settings', 'effects-motion'),
-        'احتفالات': ('appearance-settings', 'effects-celebrations'),
+        'احتفالات': ('appearance-settings', 'effects-motion'),
         'keep alive': ('keep-running', 'keep-running-battery'),
       }.entries) {
         final target = index.search(example.key).first.target;
         expect((target.pageId, target.rowId), example.value);
       }
-      expect(index.search('vibration').first.target.sectionId, 'effects');
+      expect(index.search('animations').first.target.sectionId, 'effects');
     }
   });
 
   test('typos, adjacent swaps, prefixes and mixed-language words work', () {
     final index = SettingsSearchIndex(rows());
-    for (final query in [
-      'vibraton',
-      'vibbration',
-      'vibrarion',
-      'vibartion',
-      ' VIBRA! ',
-      'effects اهتزاز',
-    ]) {
-      expect(index.search(query).first.target.rowId, 'effects-vibration');
+    for (final query in ['animations', ' ANIMA! ', 'effects حركة']) {
+      expect(index.search(query).first.target.rowId, 'effects-motion');
     }
     expect(index.search('batery').first.target.rowId, 'keep-running-battery');
     expect(index.search('crsah').first.target.rowId, 'managed-recovery-option');
@@ -57,7 +49,7 @@ void main() {
       '',
       '   ',
       '!!!',
-      'vibration banana',
+      'animations banana',
       'zz',
       'vxxratxxn',
       List.filled(10000, 'x').join(),
@@ -71,7 +63,7 @@ void main() {
     expect(index.search('heat'), isEmpty);
     expect(index.search('battery'), isEmpty);
     expect(index.search('crash').single.target.pageId, 'app-diagnostics');
-    expect(index.search('vibration').single.target.rowId, 'effects-vibration');
+    expect(index.search('animations').single.target.rowId, 'effects-motion');
     final withoutGuard = SettingsSearchIndex(
       settingsSearchRows(
         AppLocalizationsEn(),

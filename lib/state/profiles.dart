@@ -702,10 +702,8 @@ class ProfileStore {
   static const _appearanceKey = 'oc.appearance';
   static const _themePackKey = 'oc.themePack';
   // App-wide (no profile id segment, so the deletion sweep never matches).
-  static const _effectsGlassKey = 'oc.effectsGlass';
   static const _effectsMotionKey = 'oc.effectsMotion';
   static const _effectsCelebrationsKey = 'oc.effectsCelebrations';
-  static const _effectsHapticsKey = 'oc.effectsHaptics';
   static const _providerRuntimeRefreshVersion = 'v1';
 
   final SharedPreferences prefs;
@@ -1456,42 +1454,50 @@ class ProfileStore {
         'Could not save the appearance preference',
       );
 
-  /// Settings › Appearance › Effects: glass, animations, celebrations and
-  /// vibration. Anything never chosen is on ([KitEffects.defaults]).
+  /// Settings › Appearance › Motion: one choice. Full plays animations and
+  /// celebrations, Calm is reduced with no celebrations, Off is none. Glass
+  /// and vibration are fixed parts of the design ([KitEffects.defaults]).
+  /// Older installs stored animations and celebrations separately; those
+  /// keys are read here and folded into the one choice (Full with
+  /// celebrations switched off reads as Calm). Unknown values read as Full.
   KitEffects get effects {
-    final motion = prefs.getString(_effectsMotionKey);
+    final stored = prefs.getString(_effectsMotionKey);
+    var level = KitMotionLevel.values.firstWhere(
+      (level) => level.name == stored,
+      orElse: () => KitMotionLevel.full,
+    );
+    bool? celebrations;
+    try {
+      celebrations = prefs.getBool(_effectsCelebrationsKey);
+    } catch (_) {
+      celebrations = null;
+    }
+    if (level == KitMotionLevel.full && celebrations == false) {
+      level = KitMotionLevel.calm;
+    }
     return KitEffects(
-      glass: prefs.getBool(_effectsGlassKey) ?? true,
-      motion: KitMotionLevel.values.firstWhere(
-        (level) => level.name == motion,
-        orElse: () => KitMotionLevel.full,
-      ),
-      celebrations: prefs.getBool(_effectsCelebrationsKey) ?? true,
-      haptics: prefs.getBool(_effectsHapticsKey) ?? true,
+      motion: level,
+      celebrations: level == KitMotionLevel.full,
     );
   }
 
   Future<void> setEffects(KitEffects effects) async {
     const error = 'Could not save the effects preference';
-    final saved = effects;
     final before = this.effects;
-    if (saved.motion != before.motion) {
-      await _saveDisplayPreference(_effectsMotionKey, saved.motion.name, error);
+    if (effects.motion != before.motion) {
+      await _saveDisplayPreference(
+        _effectsMotionKey,
+        effects.motion.name,
+        error,
+      );
     }
-    for (final (key, value, old) in [
-      (_effectsGlassKey, saved.glass, before.glass),
-      (_effectsCelebrationsKey, saved.celebrations, before.celebrations),
-      (_effectsHapticsKey, saved.haptics, before.haptics),
-    ]) {
-      if (value == old) continue;
+    // The old separate celebrations key would otherwise turn a saved Full
+    // into Calm on the next start.
+    if (effects.motion == KitMotionLevel.full &&
+        prefs.containsKey(_effectsCelebrationsKey)) {
       try {
-        if (!await prefs.setBool(key, value)) throw StateError(error);
-      } catch (_) {
-        try {
-          await prefs.reload();
-        } catch (_) {}
-        rethrow;
-      }
+        await prefs.remove(_effectsCelebrationsKey);
+      } catch (_) {}
     }
   }
 

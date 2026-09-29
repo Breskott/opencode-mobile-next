@@ -26,24 +26,9 @@ List<SettingsSearchDocument> settingsSearchRows(
 
   return [
     effect(
-      'vibration',
-      l10n.effectsVibration,
-      'vibration vibrate haptic haptics feedback اهتزاز لمسي لمسات',
-    ),
-    effect(
-      'glass',
-      l10n.effectsGlass,
-      'glass blur transparency frosted زجاج ضبابية شفافية',
-    ),
-    effect(
       'motion',
       l10n.effectsAnimations,
-      'animations animation motion movement reduce reduced calm حركة تحريك رسوم تقليل هادئ',
-    ),
-    effect(
-      'celebrations',
-      l10n.effectsCelebrations,
-      'celebrations celebration confetti احتفال احتفالات',
+      'animations animation motion movement reduce reduced calm celebrations celebration confetti حركة تحريك رسوم تقليل هادئ احتفال احتفالات',
     ),
     if (supportsBackgroundService) ...[
       SettingsSearchDocument(

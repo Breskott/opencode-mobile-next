@@ -1154,10 +1154,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       ),
     ),
     // Settings › Appearance › Effects, one result per row.
-    row('inside-appearance-vibration', AppIconography.touch),
-    row('inside-appearance-glass', AppIconography.layers),
     row('inside-appearance-motion', AppIconography.playCircle),
-    row('inside-appearance-celebrations', AppIconography.sparkle),
     // Keep running's rows: the battery exemption, and the heat pause only
     // where the guard runs (the page hides its switch otherwise).
     row(

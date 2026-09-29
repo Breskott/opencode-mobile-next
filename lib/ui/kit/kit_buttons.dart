@@ -97,7 +97,7 @@ enum KitButtonRole { primary, secondary, tertiary }
 
 /// The only buttons a migrated screen uses (visual language §5): primary
 /// (accent filled, `onAccent` words), secondary (`surface3`) and tertiary
-/// (words in `accent`; `danger` when destructive, `text3` when disabled, so
+/// (neutral `text1` words; `danger` when destructive, `text3` when disabled, so
 /// an enabled inline action never looks disabled), all at least 48 dp tall, 50 dp at full width, with
 /// 14 dp corners. A destructive primary is the one `dangerFill` button,
 /// used only inside a confirmation.
@@ -394,7 +394,7 @@ class KitButton extends StatelessWidget {
       KitButtonRole.primary =>
         destructive ? roles.onDangerFill : roles.onAccent,
       KitButtonRole.secondary => destructive ? roles.danger : roles.text1,
-      KitButtonRole.tertiary => destructive ? roles.danger : roles.accent,
+      KitButtonRole.tertiary => destructive ? roles.danger : roles.text1,
     }.withValues(alpha: 0.16);
     final showPressed = press.shown && onPressed != null && !working;
     ButtonStyle pressable(ButtonStyle style) => style.copyWith(
@@ -470,9 +470,10 @@ class KitButton extends StatelessWidget {
             minimumSize: minimum,
             shape: shape,
             padding: EdgeInsets.symmetric(horizontal: tokens.space2),
-            // Enabled words are the accent, so an inline action never reads
-            // as disabled beside muted text; disabled stays text3 (R5).
-            foregroundColor: destructive ? roles.danger : roles.accent,
+            // Green is the one accent for the primary action only: a
+            // tertiary (cancel, dismiss, inline) action is neutral text1,
+            // which still reads apart from disabled text3 (R5).
+            foregroundColor: destructive ? roles.danger : roles.text1,
             disabledForegroundColor: roles.text3,
           ),
         );

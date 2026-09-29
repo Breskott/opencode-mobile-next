@@ -271,8 +271,9 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
   }
 }
 
-/// Settings › Appearance › Effects (design standard §10): what moves, what
-/// is glass, what celebrates and what vibrates. A choice shows at once and
+/// Settings › Appearance › Motion (design standard §10): how much the app
+/// moves and whether finished moments celebrate, as one choice. Glass and
+/// vibration are fixed parts of the design. A choice shows at once and
 /// is saved; a refused save puts it back and says so. The system's
 /// accessibility settings always win, and the rows say when they do.
 class _EffectsSection extends StatefulWidget {
@@ -313,17 +314,6 @@ class _EffectsSectionState extends State<_EffectsSection> {
               final systemStill =
                   KitMotion.reduced(context) &&
                   effects.motion != KitMotionLevel.off;
-              // The system settings under which the kit keeps glass solid:
-              // high contrast, a screen reader, remove animations.
-              final systemSolid =
-                  MediaQuery.highContrastOf(context) ||
-                  MediaQuery.accessibleNavigationOf(context) ||
-                  systemStill;
-              final glassSupporting = systemSolid
-                  ? copy.effectsGlassSystem
-                  : KitGlassShader.supported
-                  ? copy.effectsGlassOn
-                  : copy.effectsGlassFrosted;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -373,18 +363,6 @@ class _EffectsSectionState extends State<_EffectsSection> {
                     label: copy.effectsSection,
                     children: [
                       _EffectsPreview(effects: effects),
-                      KitArrival(
-                        id: 'effects-glass',
-                        child: KitSwitchRow(
-                          key: const ValueKey('effects-glass'),
-                          leading: KitRow.icon(context, AppIconography.layers),
-                          title: copy.effectsGlass,
-                          supporting: glassSupporting,
-                          value: effects.glass,
-                          onChanged: (value) =>
-                              _choose(effects.copyWith(glass: value)),
-                        ),
-                      ),
                       KitArrival(
                         id: 'effects-motion',
                         child: KitRow(
@@ -436,8 +414,13 @@ class _EffectsSectionState extends State<_EffectsSection> {
                                         label: label,
                                       ),
                                   ],
-                                  onChanged: (level) =>
-                                      _choose(effects.copyWith(motion: level)),
+                                  onChanged: (level) => _choose(
+                                    effects.copyWith(
+                                      motion: level,
+                                      celebrations:
+                                          level == KitMotionLevel.full,
+                                    ),
+                                  ),
                                 ),
                                 if (systemStill)
                                   Padding(
@@ -452,30 +435,6 @@ class _EffectsSectionState extends State<_EffectsSection> {
                               ],
                             ),
                           ),
-                        ),
-                      ),
-                      KitArrival(
-                        id: 'effects-celebrations',
-                        child: KitSwitchRow(
-                          key: const ValueKey('effects-celebrations'),
-                          leading: KitRow.icon(context, AppIconography.sparkle),
-                          title: copy.effectsCelebrations,
-                          supporting: copy.effectsCelebrationsHint,
-                          value: effects.celebrations,
-                          onChanged: (value) =>
-                              _choose(effects.copyWith(celebrations: value)),
-                        ),
-                      ),
-                      KitArrival(
-                        id: 'effects-vibration',
-                        child: KitSwitchRow(
-                          key: const ValueKey('effects-vibration'),
-                          leading: KitRow.icon(context, AppIconography.touch),
-                          title: copy.effectsVibration,
-                          supporting: copy.effectsVibrationHint,
-                          value: effects.haptics,
-                          onChanged: (value) =>
-                              _choose(effects.copyWith(haptics: value)),
                         ),
                       ),
                     ],
