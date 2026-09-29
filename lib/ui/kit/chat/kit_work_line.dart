@@ -430,26 +430,17 @@ class _KitWorkLineState extends State<KitWorkLine>
         children[i],
       ],
     ];
-    Widget body = DecoratedBox(
-      decoration: BoxDecoration(
-        border: BorderDirectional(
-          start: BorderSide(
-            color: tokens.roles.hairline,
-            width: KitTokens.hairlineWidth(context),
-          ),
-        ),
+    // The steps sit on the transcript's one gutter: no stroke, no start
+    // indent (a second inset would cost the words their width).
+    Widget body = Padding(
+      padding: EdgeInsetsDirectional.only(
+        top: tokens.space1,
+        bottom: tokens.space1,
       ),
-      child: Padding(
-        padding: EdgeInsetsDirectional.only(
-          start: tokens.space3,
-          top: tokens.space1,
-          bottom: tokens.space1,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: spaced,
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: spaced,
       ),
     );
     // The steps appear at once and fade in (paint only, no size change;

@@ -15,6 +15,7 @@ import 'package:opencode_mobile/ui/kit/chat/kit_message.dart';
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/kit/kit_divider.dart';
 import 'package:opencode_mobile/ui/kit/kit_icon_button.dart';
+import 'package:opencode_mobile/ui/kit/kit_layout.dart';
 import 'package:opencode_mobile/ui/kit/kit_menu.dart';
 import 'package:opencode_mobile/ui/kit/kit_status_mark.dart';
 import 'package:opencode_mobile/ui/kit/kit_tappable.dart';
@@ -144,45 +145,51 @@ void main() {
 
   group('1. prompt bubble', () {
     for (final direction in TextDirection.values) {
-      testWidgets('sits at the end edge, surface2, 20/20/6/20, at most 85 % '
-          '(${direction.name})', (tester) async {
-        await _pump(
-          tester,
-          _prompt(
-            text:
-                'Fix the flaky checkout test. It fails about one run in five '
-                'on CI and I would like to know why before the release.',
-          ),
-          direction: direction,
-        );
-        final rect = tester.getRect(find.byKey(_bubbleKey));
-        if (direction == TextDirection.ltr) {
-          expect(rect.right, 416);
-        } else {
-          expect(rect.left, 16);
-        }
-        expect(rect.width, lessThanOrEqualTo(400 * .85));
+      testWidgets(
+        'sits at the end edge, surface2, 20/20/6/20, at most full width minus 48 '
+        '(${direction.name})',
+        (tester) async {
+          await _pump(
+            tester,
+            _prompt(
+              text:
+                  'Fix the flaky checkout test. It fails about one run in five '
+                  'on CI and I would like to know why before the release.',
+            ),
+            direction: direction,
+          );
+          final rect = tester.getRect(find.byKey(_bubbleKey));
+          if (direction == TextDirection.ltr) {
+            expect(rect.right, 416);
+          } else {
+            expect(rect.left, 16);
+          }
+          expect(
+            rect.width,
+            lessThanOrEqualTo(400 - KitLayout.bubbleStartInset),
+          );
 
-        final box = tester.renderObject<RenderDecoratedBox>(
-          find.byKey(_bubbleKey),
-        );
-        final decoration = box.decoration as BoxDecoration;
-        expect(decoration.color, _roles(tester).surface2);
-        expect(decoration.border, isNull);
-        expect(decoration.boxShadow, isNull);
-        final radius = decoration.borderRadius!.resolve(direction);
-        const tail = Radius.circular(6);
-        const round = Radius.circular(20);
-        if (direction == TextDirection.ltr) {
-          expect(radius.bottomRight, tail);
-          expect(radius.bottomLeft, round);
-        } else {
-          expect(radius.bottomLeft, tail);
-          expect(radius.bottomRight, round);
-        }
-        expect(radius.topLeft, round);
-        expect(radius.topRight, round);
-      });
+          final box = tester.renderObject<RenderDecoratedBox>(
+            find.byKey(_bubbleKey),
+          );
+          final decoration = box.decoration as BoxDecoration;
+          expect(decoration.color, _roles(tester).surface2);
+          expect(decoration.border, isNull);
+          expect(decoration.boxShadow, isNull);
+          final radius = decoration.borderRadius!.resolve(direction);
+          const tail = Radius.circular(6);
+          const round = Radius.circular(20);
+          if (direction == TextDirection.ltr) {
+            expect(radius.bottomRight, tail);
+            expect(radius.bottomLeft, round);
+          } else {
+            expect(radius.bottomLeft, tail);
+            expect(radius.bottomRight, round);
+          }
+          expect(radius.topLeft, round);
+          expect(radius.topRight, round);
+        },
+      );
     }
 
     testWidgets('a short prompt hugs its words', (tester) async {
