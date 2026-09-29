@@ -119,6 +119,7 @@ class _TeamProjectsScreenState extends State<TeamProjectsScreen> {
                 ),
               KitProjectRow(
                 title: p.name,
+                detail: p.budgetWarning ? l.teamProjectBudgetNear : null,
                 status: c.errorCode == 'unavailable'
                     ? l.teamProjectTaskStale
                     : _progress(l, p),
@@ -419,6 +420,7 @@ class TeamProjectOverview extends StatelessWidget {
                 supporting: TextSpan(text: _age(context, e.at)),
               ),
             KitSectionLabel.inline(l.teamProjectCost),
+            if (p.budgetWarning) KitNotice(message: l.teamProjectBudgetNear),
             KitText(
               l.teamProjectSpend(
                 p.usageReported
@@ -468,6 +470,13 @@ class TeamProjectOverview extends StatelessWidget {
                     : TeamProjectAction.pauseProject,
               ),
             ),
+            if (p.simulated && p.status == 'plan')
+              KitButton(
+                role: KitButtonRole.tertiary,
+                label: l.teamProjectDemoPlanFailure,
+                onPressed: () =>
+                    _command(c, p, TeamProjectAction.simulatePlanFailure),
+              ),
             if (p.simulated)
               KitButton(
                 role: KitButtonRole.tertiary,
@@ -1070,7 +1079,7 @@ class TeamProjectServers extends StatelessWidget {
                     final latest = controller.snapshot!.projects.firstWhere(
                       (value) => value.id == p.id,
                     );
-                    await _command(
+                    final result = await _command(
                       controller,
                       latest,
                       TeamProjectAction.moveTask,
@@ -1078,6 +1087,26 @@ class TeamProjectServers extends StatelessWidget {
                       serverId: target,
                       text: note,
                     );
+                    if (result.code == 'branchUnavailable' && context.mounted) {
+                      final restart = await showKitConfirm(
+                        context,
+                        title: l.teamProjectRestartElsewhere,
+                        body: l.teamProjectRestartElsewhereBody,
+                        confirmLabel: l.teamProjectRestartElsewhere,
+                        cancelLabel: l.teamProjectWaitForServer,
+                      );
+                      if (restart) {
+                        await _command(
+                          controller,
+                          latest,
+                          TeamProjectAction.moveTask,
+                          targetId: t.id,
+                          serverId: target,
+                          text: note,
+                          confirmed: true,
+                        );
+                      }
+                    }
                   },
                 ),
             ],
