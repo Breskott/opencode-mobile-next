@@ -449,8 +449,9 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
     final before = p;
     switch (c.action) {
       case TeamProjectAction.simulatePlanFailure:
-        if (p.planApproved || p.specVersions.isEmpty)
+        if (p.planApproved || p.specVersions.isEmpty) {
           return _fail('planSimulationUnavailable');
+        }
         p = p.copyWith(status: 'planFailed');
       case TeamProjectAction.usePlanAsTask:
         if (p.status != 'planFailed') return _fail('planFallbackUnavailable');
@@ -507,8 +508,9 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
       case TeamProjectAction.simulateConflict:
         if (!p.mergeQueue.any(
           (m) => m.id == c.targetId && m.status != 'merged',
-        ))
+        )) {
           return _fail('queueItemNotFound');
+        }
         p = p.copyWith(
           mergeQueue: p.mergeQueue
               .map(
@@ -747,11 +749,13 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
             .where((m) => m.id == c.targetId && m.status == 'conflict')
             .firstOrNull;
         if (item == null) return _fail('conflictNotFound');
-        if (!const ['agent', 'manual', 'recheck'].contains(c.text))
+        if (!const ['agent', 'manual', 'recheck'].contains(c.text)) {
           return _fail('resolutionStrategyRequired');
+        }
         if (c.text == 'agent') {
-          if (p.tasks.any((t) => t.id == 'resolve-${item.id}'))
+          if (p.tasks.any((t) => t.id == 'resolve-${item.id}')) {
             return _fail('resolutionAlreadyStarted');
+          }
           final source = p.tasks.firstWhere((t) => t.id == item.taskId);
           p = p.copyWith(
             tasks: [
@@ -792,8 +796,9 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
                 .toList(),
           );
         } else {
-          if (item.reason != 'Waiting for your conflict resolution')
+          if (item.reason != 'Waiting for your conflict resolution') {
             return _fail('manualResolutionNotStarted');
+          }
           p = p.copyWith(
             mergeQueue: p.mergeQueue
                 .map(
@@ -1010,12 +1015,13 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
         'Budget reached. Raise the budget or pause the project.',
       );
     }
-    if (p.status == 'planFailed')
+    if (p.status == 'planFailed') {
       add(
         '${p.id}-plan-format',
         'planFormat',
         'The planner returned notes instead of a structured plan',
       );
+    }
     if (p.status == 'plan') {
       add('${p.id}-plan', 'plan', 'Review and approve the plan');
     }
@@ -1374,13 +1380,14 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
             (b.daily != null && p.spentToday >= b.daily! * 0.8));
     final day = _at.substring(0, 10);
     final key = 'budget80-$day';
-    if (near && !p.timeline.any((e) => e.kind == key))
+    if (near && !p.timeline.any((e) => e.kind == key)) {
       p = _log(
         p,
         key,
         '80% of the project budget has been used',
         actor: 'fixture',
       );
+    }
     return p.copyWith(budgetWarning: near);
   }
 
@@ -1630,8 +1637,9 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
   }
 
   TeamProject _merge(TeamProject p, TeamProjectCommand c) {
-    if (p.settings.reviewLevel == 'everyStep' && !c.confirmed)
+    if (p.settings.reviewLevel == 'everyStep' && !c.confirmed) {
       return _fail('confirmationRequired');
+    }
     final queue = [...p.mergeQueue];
     final repos = [...p.repos];
     final tasks = [...p.tasks];
@@ -1663,11 +1671,12 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
       final ti = tasks.indexWhere((t) => t.id == item.taskId);
       tasks[ti] = t.copyWith(status: 'merged', changedAt: _at);
       final resolution = tasks.indexWhere((t) => t.id == 'resolve-${item.id}');
-      if (resolution >= 0)
+      if (resolution >= 0) {
         tasks[resolution] = tasks[resolution].copyWith(
           status: 'merged',
           changedAt: _at,
         );
+      }
       receipts.add(
         TeamProjectReceipt(
           id: '${c.requestId}-$i',
@@ -1704,8 +1713,9 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
       (phase) =>
           (phase.risky || p.settings.reviewLevel == 'everyStep') &&
           !phase.accepted,
-    ))
+    )) {
       return _fail('phaseReviewRequired');
+    }
     if (repo.devCommit == repo.mainCommit ||
         p.tasks
             .where((t) => t.repoId == repo.id)
