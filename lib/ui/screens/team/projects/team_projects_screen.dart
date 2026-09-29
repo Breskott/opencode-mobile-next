@@ -630,6 +630,7 @@ Future<void> _answer(
       if (r.taskId.isNotEmpty) _openTask(context, c, p.id, r.taskId);
       return;
   }
+  if (!context.mounted) return;
   await showKitInputDialog(
     context,
     title: r.title,
