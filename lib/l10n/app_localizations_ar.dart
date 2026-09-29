@@ -12988,7 +12988,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiAgentRoleWorker => 'عامل';
 
   @override
-  String get teamUiAgentRoleReviewer => 'مراجع (يدمج)';
+  String get teamUiAgentRoleReviewer => 'مراجع';
 
   @override
   String get teamUiAgentRolePlanner => 'مخطِّط';
@@ -24664,4 +24664,45 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatCollapseAllSteps => 'طي كل الخطوات';
+
+  @override
+  String chatWatchTeamInstructions(int count, String time) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تعليمات من الفريق · $countString كلمة · $time',
+      one: 'تعليمات من الفريق · كلمة واحدة · $time',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatWatchEmptyStartingTitle => 'جارٍ البدء';
+
+  @override
+  String get chatWatchEmptyStartingBody => 'تظهر خطواته هنا أثناء عمله.';
+
+  @override
+  String chatWatchEmptyWorkingOn(String task) {
+    return 'يعمل على «$task». تظهر خطواته هنا أثناء عمله.';
+  }
+
+  @override
+  String chatWatchEmptyReviewing(String task) {
+    return 'يراجع تغييرات «$task». تظهر خطواته هنا أثناء عمله.';
+  }
+
+  @override
+  String get chatWatchEmptyIdleTitle => 'في الانتظار';
+
+  @override
+  String get chatWatchEmptyIdleBody =>
+      'ينتظر مهمته التالية. راسله بالأسفل ليطلب شيئًا.';
+
+  @override
+  String get teamUiAgentLabelSessionTitle => 'عنوان الجلسة';
 }

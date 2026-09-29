@@ -12886,7 +12886,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiAgentRoleWorker => 'Worker';
 
   @override
-  String get teamUiAgentRoleReviewer => 'Reviewer (merges)';
+  String get teamUiAgentRoleReviewer => 'Reviewer';
 
   @override
   String get teamUiAgentRolePlanner => 'Planner';
@@ -24543,4 +24543,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatCollapseAllSteps => 'Collapse all steps';
+
+  @override
+  String chatWatchTeamInstructions(int count, String time) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Instructions from the team · $countString words · $time',
+      one: 'Instructions from the team · 1 word · $time',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatWatchEmptyStartingTitle => 'Starting';
+
+  @override
+  String get chatWatchEmptyStartingBody => 'Its steps appear here as it works.';
+
+  @override
+  String chatWatchEmptyWorkingOn(String task) {
+    return 'Working on “$task”. Its steps appear here as it works.';
+  }
+
+  @override
+  String chatWatchEmptyReviewing(String task) {
+    return 'Reviewing the changes of “$task”. Its steps appear here as it works.';
+  }
+
+  @override
+  String get chatWatchEmptyIdleTitle => 'Waiting';
+
+  @override
+  String get chatWatchEmptyIdleBody =>
+      'It is waiting for its next task. Message it below to ask for something.';
+
+  @override
+  String get teamUiAgentLabelSessionTitle => 'Session title';
 }
