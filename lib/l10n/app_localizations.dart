@@ -40026,6 +40026,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Checked task branches will merge into dev, followed by combined checks. Main stays unchanged.'**
   String get teamProjectMergeConfirmBody;
+
+  /// No description provided for @teamProjectEditorDraftClearFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes were saved, but the local draft could not be cleared. Close this sheet and review the project before trying again.'**
+  String get teamProjectEditorDraftClearFailed;
 }
 
 class _AppLocalizationsDelegate

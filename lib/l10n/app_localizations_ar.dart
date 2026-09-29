@@ -25435,4 +25435,8 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamProjectMergeConfirmBody =>
       'Checked task branches will merge into dev, followed by combined checks. Main stays unchanged.';
+
+  @override
+  String get teamProjectEditorDraftClearFailed =>
+      'Changes were saved, but the local draft could not be cleared. Close this sheet and review the project before trying again.';
 }
