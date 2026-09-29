@@ -1165,7 +1165,7 @@
       "purpose": "The phone Termux team's own controls (P3.4: a kit sheet from the AI Team page's menu, reachable in every state of the page): phone supervisor status, Start/Stop, keep-running tips, Remove.",
       "reachedFrom": [
         {
-          "page": "team-home",
+          "page": "team-settings",
           "element": "team-home-phone-controls"
         }
       ],
@@ -1421,7 +1421,7 @@
           "line": 1540
         },
         {
-          "page": "team-home",
+          "page": "team-settings",
           "element": "team-home-change-address"
         },
         {
@@ -1550,7 +1550,7 @@
       "purpose": "Destructive confirmation before turning the AI Team plugin off for a server.",
       "reachedFrom": [
         {
-          "page": "team-home",
+          "page": "team-settings",
           "element": "team-home-turn-off"
         }
       ],
