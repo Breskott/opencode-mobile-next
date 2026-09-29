@@ -1827,6 +1827,8 @@ ChatWatch _teamWatch(
   final sent = ValueNotifier<int>(0);
   // The roles load once per server; the page reads them again when they land.
   final rolesLoaded = ValueNotifier<int>(0);
+  // The watched session's own title, for the agent's page.
+  final sessionTitle = ValueNotifier<String?>(null);
   if (team != null && !_watchRoles.containsKey(team.profileId)) {
     unawaited(
       loadTeamRoles(team.profileId)
@@ -1856,6 +1858,26 @@ ChatWatch _teamWatch(
         if (item.sessionId == session) return item;
       }
     }
+    // The reviewer (refinery) works on a task's merge request: the task of
+    // its project that waits in review.
+    if (teamAgentRole(now) == TeamAgentRole.reviewer) {
+      final name = now.name;
+      final rig = name.contains('/') ? name.split('/').first : null;
+      WorkItem? inReview;
+      for (final item in work) {
+        if (item.state != WorkState.review) continue;
+        if (rig != null && item.projectId != null && item.projectId != rig) {
+          continue;
+        }
+        final at = item.updatedAt;
+        final best = inReview?.updatedAt;
+        if (inReview == null ||
+            (at != null && (best == null || at.isAfter(best)))) {
+          inReview = item;
+        }
+      }
+      return inReview;
+    }
     return null;
   }
 
@@ -1882,9 +1904,34 @@ ChatWatch _teamWatch(
     banner: () => _teamWatchBanner(l10n, current(), who()),
     hint: l10n.teamWatchComposerHint(who()),
     hintOf: () => l10n.teamWatchComposerHint(who()),
+    // The task it is on; without one, who it is (never the session's own
+    // "New conversation").
     title: () {
       final text = task()?.title.trim();
-      return text == null || text.isEmpty ? null : text;
+      return text == null || text.isEmpty ? who() : text;
+    },
+    sessionTitle: sessionTitle,
+    empty: () {
+      final now = current();
+      final text = task()?.title.trim();
+      final named = text == null || text.isEmpty ? null : text;
+      final idle =
+          now != null &&
+          (teamSessionState(now) == AgentState.idle ||
+              teamSessionState(now) == AgentState.stopped);
+      if (idle) {
+        return (l10n.chatWatchEmptyIdleTitle, l10n.chatWatchEmptyIdleBody);
+      }
+      final reviewer =
+          now != null && teamAgentRole(now) == TeamAgentRole.reviewer;
+      return (
+        l10n.chatWatchEmptyStartingTitle,
+        named == null
+            ? l10n.chatWatchEmptyStartingBody
+            : reviewer
+            ? l10n.chatWatchEmptyReviewing(named)
+            : l10n.chatWatchEmptyWorkingOn(named),
+      );
     },
     readOnlyReason: l10n.teamChatComposerCannot,
     onSend: !canMessage
@@ -1917,7 +1964,11 @@ ChatWatch _teamWatch(
         : (context) => unawaited(
             pushKitPage<void>(
               context,
-              (_) => AgentScreen(controller: team, agentId: agentId),
+              (_) => AgentScreen(
+                controller: team,
+                agentId: agentId,
+                sessionTitle: sessionTitle.value,
+              ),
             ),
           ),
   );

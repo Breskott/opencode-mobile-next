@@ -7273,6 +7273,17 @@ class _ChatScreenState extends State<ChatScreen>
   /// more than one could be meant, and the few actions, most urgent first.
   /// On a phone the first shows and the rest wait in the overflow; on a PC
   /// they carry their words (§8.2).
+  String _topBarTitle(Session? session, AppLocalizations l10n) {
+    final own = presentedSessionTitle(
+      session,
+      fallback: l10n.commandDestination,
+    );
+    final watch = widget.watch;
+    if (watch == null) return own;
+    watch.sessionTitle?.value = own;
+    return watch.title?.call() ?? own;
+  }
+
   KitTopBar _chatTopBar({
     required Session? session,
     required String? serverName,
@@ -7283,9 +7294,7 @@ class _ChatScreenState extends State<ChatScreen>
     return KitTopBar(
       titleKey: const Key('chat-title'),
       // Watching a team worker: the task it is on, not its internal title.
-      title:
-          widget.watch?.title?.call() ??
-          presentedSessionTitle(session, fallback: l10n.commandDestination),
+      title: _topBarTitle(session, l10n),
       // Which server (and so which agent) this conversation is with, when
       // there is more than one to be with.
       subtitle: serverName,
@@ -8197,7 +8206,7 @@ class _ChatScreenState extends State<ChatScreen>
                             child:
                                 widget.emptyState ??
                                 (watch != null
-                                    ? const _WatchingEmpty()
+                                    ? _WatchingEmpty(words: watch.empty?.call())
                                     : null) ??
                                 _ChatStartArea(
                                   header:

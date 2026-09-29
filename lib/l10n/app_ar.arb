@@ -4444,7 +4444,7 @@
   "teamUiHomeNeedsYouFallbackTitle": "لدى الفريق سؤال",
   "teamUiHomeNeedsYouAnnouncement": "يحتاجك: {question}",
   "teamUiAgentRoleWorker": "عامل",
-  "teamUiAgentRoleReviewer": "مراجع (يدمج)",
+  "teamUiAgentRoleReviewer": "مراجع",
   "teamUiAgentRolePlanner": "مخطِّط",
   "teamUiAgentRoleSupervisor": "مشرف",
   "teamUiAgentRoleHelper": "مساعد",
@@ -4837,5 +4837,13 @@
   "teamSettingsOpenTooltip": "إعدادات الفريق",
   "teamSettingsTurnOff": "إيقاف فريق الذكاء الاصطناعي",
   "teamChatWorkerNumbered": "{role} {n}",
-  "chatCollapseAllSteps": "طي كل الخطوات"
+  "chatCollapseAllSteps": "طي كل الخطوات",
+  "chatWatchTeamInstructions": "{count, plural, =1{تعليمات من الفريق · كلمة واحدة · {time}} other{تعليمات من الفريق · {count} كلمة · {time}}}",
+  "chatWatchEmptyStartingTitle": "جارٍ البدء",
+  "chatWatchEmptyStartingBody": "تظهر خطواته هنا أثناء عمله.",
+  "chatWatchEmptyWorkingOn": "يعمل على «{task}». تظهر خطواته هنا أثناء عمله.",
+  "chatWatchEmptyReviewing": "يراجع تغييرات «{task}». تظهر خطواته هنا أثناء عمله.",
+  "chatWatchEmptyIdleTitle": "في الانتظار",
+  "chatWatchEmptyIdleBody": "ينتظر مهمته التالية. راسله بالأسفل ليطلب شيئًا.",
+  "teamUiAgentLabelSessionTitle": "عنوان الجلسة"
 }
