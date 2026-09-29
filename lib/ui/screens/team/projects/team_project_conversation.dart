@@ -29,6 +29,27 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
   final _focus = FocusNode();
   final _expanded = <String>{};
   final _selected = <String>{};
+  final _drafts = <(String, String), String>{};
+
+  @override
+  void didUpdateWidget(covariant TeamProjectConversation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final switchedController = oldWidget.controller != widget.controller;
+    if (!switchedController &&
+        oldWidget.projectId == widget.projectId &&
+        oldWidget.taskId == widget.taskId)
+      return;
+    if (switchedController) {
+      _drafts.clear();
+    } else {
+      _drafts[(oldWidget.projectId, oldWidget.taskId)] = _message.text;
+    }
+    _message.text = _drafts[(widget.projectId, widget.taskId)] ?? '';
+    _selected.clear();
+    _expanded.clear();
+    _focus.unfocus();
+  }
+
   AppLocalizations get l => AppLocalizations.of(context)!;
   TeamProjectController get c => widget.controller;
 
@@ -182,9 +203,16 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
 
   Future<void> _send(TeamProject p) async {
     final text = _message.text;
+    final sentTask = (widget.projectId, widget.taskId);
+    final sentController = c;
     if (text.trim().isEmpty || c.busy) return;
     final result = await _run(p, TeamProjectAction.messageTask, text: text);
-    if (mounted && result.accepted && _message.text == text) _message.clear();
+    if (!mounted || !result.accepted || c != sentController) return;
+    if (sentTask == (widget.projectId, widget.taskId)) {
+      if (_message.text == text) _message.clear();
+    } else if (_drafts[sentTask] == text) {
+      _drafts.remove(sentTask);
+    }
   }
 
   Widget _fold(String id, String title, List<Widget> children) => KitExpandRow(
@@ -473,16 +501,21 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (p.status == 'planned')
-              KitButton.primary(
-                label: l.teamProjectTaskApprovePlan,
-                onPressed: c.busy
-                    ? null
-                    : () => _run(p, TeamProjectAction.approvePlan),
+              KitButton.fromAction(
+                _action(
+                  l.teamProjectTaskApprovePlan,
+                  () => _run(p, TeamProjectAction.approvePlan),
+                ),
+                role: widget.embedded
+                    ? KitButtonRole.tertiary
+                    : KitButtonRole.primary,
               )
             else if (repo != null && repo.devCommit != repo.mainCommit)
-              KitButton.primary(
-                label: l.teamProjectTaskPromote,
-                onPressed: c.busy ? null : () => _promote(p, repo),
+              KitButton.fromAction(
+                _action(l.teamProjectTaskPromote, () => _promote(p, repo)),
+                role: widget.embedded
+                    ? KitButtonRole.tertiary
+                    : KitButtonRole.primary,
               ),
             KitComposer(
               controller: _message,
