@@ -271,6 +271,39 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
     );
   }
 
+  bool _canPromote(TeamProject project, TeamRepo? repo) {
+    if (repo == null ||
+        !project.planApproved ||
+        repo.devCommit == repo.mainCommit) {
+      return false;
+    }
+    final tasks = project.tasks
+        .where((task) => task.repoId == repo.id)
+        .toList();
+    final merges = project.mergeQueue
+        .where((item) => item.repoId == repo.id)
+        .toList();
+    if (tasks.isEmpty ||
+        tasks.any(
+          (task) =>
+              task.status != 'merged' ||
+              task.findings.any((finding) => finding.status == 'open'),
+        )) {
+      return false;
+    }
+    if (merges.isEmpty ||
+        merges.any((item) => item.status != 'merged' || !item.checksPassed)) {
+      return false;
+    }
+    final phases = tasks.map((task) => task.phaseId).toSet();
+    return !project.phases.any(
+      (phase) =>
+          phases.contains(phase.id) &&
+          (phase.risky || project.settings.reviewLevel == 'everyStep') &&
+          !phase.accepted,
+    );
+  }
+
   Future<void> _promote(TeamProject p, TeamRepo repo) async {
     final yes = await showKitConfirm(
       context,
@@ -375,276 +408,310 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
         loading: c.loading,
         body: ListView(
           padding: KitScreen.padding(context),
-          children: [
-            if (widget.embedded) KitText(t.title, role: KitTextRole.title),
-            if (unavailable)
-              KitMessage.notice(
-                text: '${l.teamProjectTaskStale} · ${_age(p.updatedAt)}',
-              ),
-            if (c.errorCode != null)
-              KitStateView.error(
-                title: l.teamProjectTaskSaveFailed,
-                size: KitStateSize.inline,
-                secondary: _action(l.teamProjectRefreshTask, c.load),
-              ),
-            if (_expanded.isNotEmpty)
-              KitButton.tertiary(
-                label: l.teamProjectTaskCollapse,
-                onPressed: () => setState(_expanded.clear),
-              ),
-            if (t.messages.isEmpty)
-              KitMessage.notice(text: l.teamProjectTaskEmpty),
-            for (final m in t.messages)
-              if (m.actor == 'person')
-                KitMessage.prompt(
-                  bubbleWidth: KitBubbleWidth.compact,
-                  body: KitMarkdown(m.text, selectable: false),
-                  time: DateTime.tryParse(m.at),
-                )
-              else if (m.actor == 'team')
-                KitMessage.thought(
-                  heading: l.teamProjectTaskInstructions,
-                  body: KitMarkdown(m.text, role: KitTextRole.secondary),
-                  expanded: _expanded.contains(m.id),
-                  onExpansionChanged: (v) => setState(() {
-                    if (v) {
-                      _expanded.add(m.id);
-                    } else {
-                      _expanded.remove(m.id);
-                    }
-                  }),
-                )
-              else
-                KitMessage.reply(body: KitMarkdown(m.text)),
-            KitPlanCard(
-              title: l.teamProjectTaskPlan,
-              status: (p.status == 'plan' || p.status == 'planned')
-                  ? l.teamProjectTaskReview
-                  : l.teamProjectTaskApprovedPlan,
-              state: (p.status == 'plan' || p.status == 'planned')
-                  ? KitTeamState.needsYou
-                  : KitTeamState.done,
-              summary: p.specDraft.goal,
-              items: [
-                for (final criterion in t.criteria)
-                  KitTeamItem(title: criterion),
-              ],
-            ),
-            if (phase != null)
-              KitPhaseCard(
-                title: phase.title,
-                status: phase.accepted
-                    ? l.teamProjectTaskAccepted
-                    : t.status == 'failed'
-                    ? l.teamProjectTaskFailed
-                    : l.teamProjectTaskCriteria,
-                state: t.status == 'failed'
-                    ? KitTeamState.failed
-                    : p.requests.any(
-                        (r) => r.phaseId == phase.id && !r.answered,
-                      )
-                    ? KitTeamState.needsYou
-                    : KitTeamState.done,
-                items: [KitTeamItem(title: t.title)],
-                actions: [
-                  if (!phase.accepted)
-                    _action(
-                      l.teamProjectTaskAcceptPhase,
-                      () => _run(
-                        p,
-                        TeamProjectAction.acceptPhase,
-                        target: phase.id,
+          children:
+              <Widget>[
+                    if (widget.embedded)
+                      KitText(t.title, role: KitTextRole.title),
+                    if (unavailable)
+                      KitMessage.notice(
+                        text:
+                            '${l.teamProjectTaskStale} · ${_age(p.updatedAt)}',
                       ),
-                    ),
-                ],
-              ),
-            for (final request in requests)
-              KitPhaseCard(
-                title: request.title,
-                status: _age(request.createdAt),
-                state: KitTeamState.needsYou,
-                actions: _requestActions(p, t, request),
-              ),
-            if (events.isNotEmpty)
-              _fold('work', l.teamProjectTaskWork, [
-                for (final event
-                    in (running
-                        ? events.reversed.take(3).toList().reversed
-                        : events))
-                  KitText('${event.text} · ${_age(event.at)}'),
-              ]),
-            if (t.criterionResults.isNotEmpty)
-              KitPhaseCard(
-                title: l.teamProjectTaskCriteria,
-                status: l.teamProjectTaskVerificationResults,
-                state: KitTeamState.done,
-                items: [
-                  for (final result in t.criterionResults)
-                    KitTeamItem(
-                      title: result.criterion,
-                      detail: switch (result.status) {
-                        'met' => l.teamProjectTaskCriterionMet,
-                        'unmet' => l.teamProjectTaskCriterionUnmet,
-                        _ => l.teamProjectTaskCriterionNotApplicable,
-                      },
-                      state: result.status == 'unmet'
-                          ? KitTeamState.failed
+                    if (c.errorCode != null)
+                      KitStateView.error(
+                        title: l.teamProjectTaskSaveFailed,
+                        size: KitStateSize.inline,
+                        secondary: _action(l.teamProjectRefreshTask, c.load),
+                      ),
+                    if (_expanded.isNotEmpty)
+                      KitButton.tertiary(
+                        label: l.teamProjectTaskCollapse,
+                        onPressed: () => setState(_expanded.clear),
+                      ),
+                    if (t.messages.isEmpty && t.status == 'queued')
+                      KitMessage.notice(text: l.teamProjectTaskEmpty),
+                    for (final m in t.messages)
+                      if (m.actor == 'person')
+                        KitMessage.prompt(
+                          bubbleWidth: KitBubbleWidth.compact,
+                          body: KitMarkdown(m.text, selectable: false),
+                          time: DateTime.tryParse(m.at),
+                        )
+                      else if (m.actor == 'team')
+                        KitMessage.thought(
+                          heading: l.teamProjectTaskInstructions,
+                          body: KitMarkdown(
+                            m.text,
+                            role: KitTextRole.secondary,
+                          ),
+                          expanded: _expanded.contains(m.id),
+                          onExpansionChanged: (v) => setState(() {
+                            if (v) {
+                              _expanded.add(m.id);
+                            } else {
+                              _expanded.remove(m.id);
+                            }
+                          }),
+                        )
+                      else
+                        KitMessage.reply(body: KitMarkdown(m.text)),
+                    KitPlanCard(
+                      title: l.teamProjectTaskPlan,
+                      status: (p.status == 'plan' || p.status == 'planned')
+                          ? l.teamProjectTaskReview
+                          : l.teamProjectTaskApprovedPlan,
+                      state: (p.status == 'plan' || p.status == 'planned')
+                          ? KitTeamState.needsYou
                           : KitTeamState.done,
+                      summary: p.specDraft.goal,
+                      items: [
+                        for (final criterion in t.criteria)
+                          KitTeamItem(
+                            title: criterion,
+                            state: KitTeamState.empty,
+                          ),
+                      ],
                     ),
-                ],
-              ),
-            if (t.findings.isNotEmpty)
-              KitFindingsCard(
-                title: l.teamProjectTaskFindings,
-                status: t.findings.any((f) => f.status == 'open')
-                    ? l.teamProjectTaskOpenFindings
-                    : l.teamProjectTaskFindingsAddressed,
-                state:
-                    t.findings.any((f) => f.status == 'open') &&
-                        t.status == 'review'
-                    ? KitTeamState.needsYou
-                    : KitTeamState.done,
-                findings: [
-                  for (final f in t.findings)
-                    KitTeamFinding(
-                      id: f.id,
-                      title: f.text,
-                      detail: f.criterion,
-                      location: f.location,
-                      severity: switch (f.severity) {
-                        'critical' => KitFindingSeverity.critical,
-                        'minor' => KitFindingSeverity.minor,
-                        _ => KitFindingSeverity.major,
-                      },
-                      severityLabel: switch (f.severity) {
-                        'critical' => l.teamProjectTaskCritical,
-                        'minor' => l.teamProjectTaskMinor,
-                        _ => l.teamProjectTaskMajor,
-                      },
-                      selected: selected.contains(f.id),
-                      onChanged: f.status == 'open'
-                          ? (v) => setState(() {
-                              if (v) {
-                                _selected.add(f.id);
-                              } else {
-                                _selected.remove(f.id);
-                              }
-                            })
-                          : null,
-                    ),
-                ],
-                actions: [
-                  if (selected.isNotEmpty)
-                    _action(
-                      l.teamProjectTaskFix,
-                      () => _run(
-                        p,
-                        TeamProjectAction.fixFindings,
-                        findingIds: selected.toList(),
+                    if (phase != null)
+                      KitPhaseCard(
+                        title: phase.title,
+                        status: phase.accepted
+                            ? l.teamProjectTaskAccepted
+                            : t.status == 'failed'
+                            ? l.teamProjectTaskFailed
+                            : l.teamProjectTaskCriteria,
+                        state: t.status == 'failed'
+                            ? KitTeamState.failed
+                            : p.requests.any(
+                                (r) => r.phaseId == phase.id && !r.answered,
+                              )
+                            ? KitTeamState.needsYou
+                            : KitTeamState.done,
+                        items: [
+                          KitTeamItem(
+                            title: t.title,
+                            state: const ['done', 'merged'].contains(t.status)
+                                ? KitTeamState.done
+                                : KitTeamState.empty,
+                          ),
+                        ],
+                        actions: [
+                          if (!phase.accepted)
+                            _action(
+                              l.teamProjectTaskAcceptPhase,
+                              () => _run(
+                                p,
+                                TeamProjectAction.acceptPhase,
+                                target: phase.id,
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                  _action(
-                    l.teamProjectTaskRecheck,
-                    () => _run(p, TeamProjectAction.recheckTask),
-                  ),
-                  if (selected.length == 1)
-                    _action(l.teamProjectTaskIgnore, () => _ignore(p)),
-                ],
-              ),
-            if (queue.isNotEmpty)
-              KitMergeQueue(
-                title: l.teamProjectTaskMerge,
-                status: _status(queue.first.status),
-                state: _state(queue.first.status),
-                items: [
-                  for (final q in queue)
-                    KitTeamItem(
-                      title: t.title,
-                      detail: q.reason,
-                      meta: _status(q.status),
-                    ),
-                ],
-                actions: [
-                  _action(l.teamProjectTaskMergeRun, () => _merge(p, repo)),
-                  if (p.simulated)
-                    _action(
-                      l.teamProjectTaskDemoConflict,
-                      () => _run(
-                        p,
-                        TeamProjectAction.simulateConflict,
-                        target: queue.first.id,
+                    for (final request in requests)
+                      KitPhaseCard(
+                        title: request.title,
+                        status: _age(request.createdAt),
+                        state: KitTeamState.needsYou,
+                        actions: _requestActions(p, t, request),
                       ),
-                    ),
-                  if (p.simulated && repo != null)
-                    _action(
-                      l.teamProjectTaskDemoCommit,
-                      () => _run(
-                        p,
-                        TeamProjectAction.simulateManualCommit,
-                        target: repo.id,
+                    if (events.isNotEmpty)
+                      _fold('work', l.teamProjectTaskWork, [
+                        for (final event
+                            in (running
+                                ? events.reversed.take(3).toList().reversed
+                                : events))
+                          KitText('${event.text} · ${_age(event.at)}'),
+                      ]),
+                    if (t.criterionResults.isNotEmpty)
+                      KitPhaseCard(
+                        title: l.teamProjectTaskCriteria,
+                        status: l.teamProjectTaskVerificationResults,
+                        state: KitTeamState.done,
+                        items: [
+                          for (final result in t.criterionResults)
+                            KitTeamItem(
+                              title: result.criterion,
+                              detail: switch (result.status) {
+                                'met' => l.teamProjectTaskCriterionMet,
+                                'unmet' => l.teamProjectTaskCriterionUnmet,
+                                _ => l.teamProjectTaskCriterionNotApplicable,
+                              },
+                              state: result.status == 'unmet'
+                                  ? KitTeamState.failed
+                                  : KitTeamState.done,
+                            ),
+                        ],
                       ),
+                    if (t.findings.isNotEmpty)
+                      KitFindingsCard(
+                        title: l.teamProjectTaskFindings,
+                        status: t.findings.any((f) => f.status == 'open')
+                            ? l.teamProjectTaskOpenFindings
+                            : l.teamProjectTaskFindingsAddressed,
+                        state:
+                            t.findings.any((f) => f.status == 'open') &&
+                                t.status == 'review'
+                            ? KitTeamState.needsYou
+                            : KitTeamState.done,
+                        findings: [
+                          for (final f in t.findings)
+                            KitTeamFinding(
+                              id: f.id,
+                              title: f.text,
+                              detail: f.criterion,
+                              location: f.location,
+                              severity: switch (f.severity) {
+                                'critical' => KitFindingSeverity.critical,
+                                'minor' => KitFindingSeverity.minor,
+                                _ => KitFindingSeverity.major,
+                              },
+                              severityLabel: switch (f.severity) {
+                                'critical' => l.teamProjectTaskCritical,
+                                'minor' => l.teamProjectTaskMinor,
+                                _ => l.teamProjectTaskMajor,
+                              },
+                              selected: selected.contains(f.id),
+                              onChanged: f.status == 'open'
+                                  ? (v) => setState(() {
+                                      if (v) {
+                                        _selected.add(f.id);
+                                      } else {
+                                        _selected.remove(f.id);
+                                      }
+                                    })
+                                  : null,
+                            ),
+                        ],
+                        actions: [
+                          if (selected.isNotEmpty)
+                            _action(
+                              l.teamProjectTaskFix,
+                              () => _run(
+                                p,
+                                TeamProjectAction.fixFindings,
+                                findingIds: selected.toList(),
+                              ),
+                            ),
+                          _action(
+                            l.teamProjectTaskRecheck,
+                            () => _run(p, TeamProjectAction.recheckTask),
+                          ),
+                          if (selected.length == 1)
+                            _action(l.teamProjectTaskIgnore, () => _ignore(p)),
+                        ],
+                      ),
+                    if (queue.isNotEmpty)
+                      KitMergeQueue(
+                        title: l.teamProjectTaskMerge,
+                        status: _status(queue.first.status),
+                        state: _state(queue.first.status),
+                        items: [
+                          for (final q in queue)
+                            KitTeamItem(
+                              title: t.title,
+                              detail: q.reason,
+                              meta: _status(q.status),
+                            ),
+                        ],
+                        actions: [
+                          _action(
+                            l.teamProjectTaskMergeRun,
+                            () => _merge(p, repo),
+                          ),
+                          if (p.simulated)
+                            _action(
+                              l.teamProjectTaskDemoConflict,
+                              () => _run(
+                                p,
+                                TeamProjectAction.simulateConflict,
+                                target: queue.first.id,
+                              ),
+                            ),
+                          if (p.simulated && repo != null)
+                            _action(
+                              l.teamProjectTaskDemoCommit,
+                              () => _run(
+                                p,
+                                TeamProjectAction.simulateManualCommit,
+                                target: repo.id,
+                              ),
+                            ),
+                        ],
+                      ),
+                    if (_canPromote(p, repo))
+                      KitPromoteCard(
+                        title: l.teamProjectTaskPromote,
+                        status: l.teamProjectTaskPromotion,
+                        state: KitTeamState.needsYou,
+                        summary:
+                            '${repo!.name}: ${repo.mainCommit} → ${repo.devCommit}',
+                      ),
+                    for (final receipt in p.receipts.where(
+                      (r) =>
+                          r.repoId == t.repoId &&
+                          const ['promote', 'promotion'].contains(r.kind),
+                    ))
+                      KitPhaseCard(
+                        title: l.teamProjectTaskReceipt,
+                        status: _age(receipt.at),
+                        state: KitTeamState.done,
+                        summary: '${receipt.before} → ${receipt.after}',
+                      ),
+                    KitActionBlock(
+                      tertiary: [
+                        if (t.diff.isNotEmpty)
+                          _action(
+                            l.teamProjectTaskDiff,
+                            () => showKitDiff(
+                              context,
+                              title: t.title,
+                              files: [KitDiffFile.fromPatch(t.title, t.diff)],
+                            ),
+                          ),
+                        if (running)
+                          _action(
+                            l.teamProjectTaskPause,
+                            () => _run(p, TeamProjectAction.pauseTask),
+                          ),
+                        if (t.status == 'paused')
+                          _action(
+                            l.teamProjectTaskResume,
+                            () => _run(p, TeamProjectAction.resumeTask),
+                          ),
+                        if (t.status == 'failed' || t.status == 'stopped')
+                          _action(
+                            l.teamProjectTaskRestart,
+                            () => _run(p, TeamProjectAction.restartTask),
+                          ),
+                        if (t.status == 'done')
+                          _action(
+                            l.teamProjectTaskVerify,
+                            () => _run(p, TeamProjectAction.verifyTask),
+                          ),
+                        if (running ||
+                            t.status == 'paused' ||
+                            requests.isNotEmpty)
+                          _action(
+                            l.teamProjectTaskStop,
+                            () => _stop(p),
+                            destructive: true,
+                          ),
+                      ],
                     ),
-                ],
-              ),
-            if (repo != null && repo.devCommit != repo.mainCommit)
-              KitPromoteCard(
-                title: l.teamProjectTaskPromote,
-                status: l.teamProjectTaskPromotion,
-                state: KitTeamState.needsYou,
-                summary: '${repo.name}: ${repo.mainCommit} → ${repo.devCommit}',
-              ),
-            for (final receipt in p.receipts.where(
-              (r) =>
-                  r.repoId == t.repoId &&
-                  const ['promote', 'promotion'].contains(r.kind),
-            ))
-              KitPhaseCard(
-                title: l.teamProjectTaskReceipt,
-                status: _age(receipt.at),
-                state: KitTeamState.done,
-                summary: '${receipt.before} → ${receipt.after}',
-              ),
-            KitActionBlock(
-              tertiary: [
-                if (t.diff.isNotEmpty)
-                  _action(
-                    l.teamProjectTaskDiff,
-                    () => showKitDiff(
-                      context,
-                      title: t.title,
-                      files: [KitDiffFile.fromPatch(t.title, t.diff)],
-                    ),
-                  ),
-                if (running)
-                  _action(
-                    l.teamProjectTaskPause,
-                    () => _run(p, TeamProjectAction.pauseTask),
-                  ),
-                if (t.status == 'paused')
-                  _action(
-                    l.teamProjectTaskResume,
-                    () => _run(p, TeamProjectAction.resumeTask),
-                  ),
-                if (t.status == 'failed' || t.status == 'stopped')
-                  _action(
-                    l.teamProjectTaskRestart,
-                    () => _run(p, TeamProjectAction.restartTask),
-                  ),
-                if (t.status == 'done')
-                  _action(
-                    l.teamProjectTaskVerify,
-                    () => _run(p, TeamProjectAction.verifyTask),
-                  ),
-                if (running || t.status == 'paused' || requests.isNotEmpty)
-                  _action(
-                    l.teamProjectTaskStop,
-                    () => _stop(p),
-                    destructive: true,
-                  ),
-              ],
-            ),
-            if (t.branch.isNotEmpty) KitDetailsFold(text: t.branch),
-          ],
+                    if (t.branch.isNotEmpty) KitDetailsFold(text: t.branch),
+                  ]
+                  .expand(
+                    (child) => <Widget>[
+                      child,
+                      if (child is KitPlanCard ||
+                          child is KitPhaseCard ||
+                          child is KitFindingsCard ||
+                          child is KitMergeQueue ||
+                          child is KitPromoteCard)
+                        SizedBox(height: KitTokens.of(context).space3),
+                    ],
+                  )
+                  .toList(),
         ),
         bottom: Column(
           mainAxisSize: MainAxisSize.min,
@@ -659,9 +726,9 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                     ? KitButtonRole.tertiary
                     : KitButtonRole.primary,
               )
-            else if (repo != null && repo.devCommit != repo.mainCommit)
+            else if (_canPromote(p, repo))
               KitButton.fromAction(
-                _action(l.teamProjectTaskPromote, () => _promote(p, repo)),
+                _action(l.teamProjectTaskPromote, () => _promote(p, repo!)),
                 role: widget.embedded
                     ? KitButtonRole.tertiary
                     : KitButtonRole.primary,

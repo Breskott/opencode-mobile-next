@@ -7,7 +7,8 @@ import 'package:opencode_mobile/ui/screens/team/projects/team_project_conversati
 import 'kit/kit_harness.dart';
 
 class _Gateway implements OrchestrationProjectGateway {
-  _Gateway({this.requests = const []});
+  _Gateway({this.requests = const [], this.promotionReady = false});
+  final bool promotionReady;
   final List<TeamRequest> requests;
   final commands = <TeamProjectCommand>[];
   bool rejectMessage = false;
@@ -20,6 +21,18 @@ class _Gateway implements OrchestrationProjectGateway {
         revision: 7,
         status: 'running',
         requests: requests,
+        planApproved: promotionReady,
+        mergeQueue: promotionReady
+            ? const [
+                TeamMergeItem(
+                  id: 'merge',
+                  taskId: 'task',
+                  repoId: 'repo',
+                  status: 'merged',
+                  checksPassed: true,
+                ),
+              ]
+            : const [],
         repos: [
           TeamRepo(
             id: 'repo',
@@ -32,12 +45,14 @@ class _Gateway implements OrchestrationProjectGateway {
           TeamTask(
             id: 'task',
             title: 'Keep drafts after restart',
-            status: 'review',
+            status: promotionReady ? 'merged' : 'review',
             repoId: 'repo',
-            findings: [
-              TeamFinding(id: 'f1', text: 'First finding'),
-              TeamFinding(id: 'f2', text: 'Second finding'),
-            ],
+            findings: promotionReady
+                ? const []
+                : [
+                    TeamFinding(id: 'f1', text: 'First finding'),
+                    TeamFinding(id: 'f2', text: 'Second finding'),
+                  ],
           ),
         ],
       ),
@@ -144,7 +159,7 @@ void main() {
   testWidgets('promotion needs confirmation and pins both reviewed commits', (
     tester,
   ) async {
-    final gateway = await _open(tester);
+    final gateway = await _open(tester, source: _Gateway(promotionReady: true));
     await tester.tap(
       find.widgetWithText(KitButton, 'Promote dev to main').last,
     );
