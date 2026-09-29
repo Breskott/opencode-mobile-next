@@ -9,10 +9,15 @@
 /// bodies) and the UI slice (which only calls them). Do not rename.
 library;
 
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../orchestration/models/run.dart';
 import 'orchestration.dart';
+import 'team_model.dart';
 
 /// Ids of the roles every team starts with. Their display names and
 /// one-line purposes are UI copy (l10n, keyed by id); their [TeamRole
@@ -83,8 +88,149 @@ class TeamRole {
     'builtIn': builtIn,
   };
 
-  static TeamRole? fromJson(Object? json) =>
-      throw UnimplementedError('state slice');
+  /// Null for anything that is not a well-formed role (corrupt storage).
+  static TeamRole? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final id = json['id'];
+    if (id is! String || id.isEmpty) return null;
+    String text(String key) {
+      final v = json[key];
+      return v is String ? v : '';
+    }
+
+    final model = json['model'];
+    return TeamRole(
+      id: id,
+      name: text('name'),
+      purpose: text('purpose'),
+      instructions: text('instructions'),
+      model: model is String && isValidTeamModel(model) ? model : null,
+      builtIn: TeamRoleIds.builtIn.contains(id),
+    );
+  }
+}
+
+/// The roles every team starts with, as they shipped. Names and purposes
+/// are empty: the UI shows the l10n text for the id until a rename.
+abstract final class TeamRoles {
+  static const _followRepo =
+      "Follow the repository's own AGENTS.md / CLAUDE.md and existing "
+      'conventions.';
+
+  static const _instructions = <String, String>{
+    TeamRoleIds.general: '',
+    TeamRoleIds.product:
+        'You are acting as the product owner for this task.\n'
+        '- Clarify the goal and who it is for; note open questions instead '
+        'of guessing.\n'
+        '- Write a short spec with clear acceptance criteria as a file in '
+        'the repository (for example under docs/).\n'
+        '- Do not write application code unless the change is trivial.\n'
+        '- $_followRepo',
+    TeamRoleIds.frontend:
+        'You are acting as the frontend engineer for this task.\n'
+        '- Build the user interface: layout, states (loading, empty, '
+        'error), and accessibility (labels, contrast, touch targets).\n'
+        "- Reuse the project's existing design system and components "
+        'rather than making new ones.\n'
+        "- Run the project's lint and tests for the code you touch before "
+        'finishing.\n'
+        '- $_followRepo',
+    TeamRoleIds.backend:
+        'You are acting as the backend engineer for this task.\n'
+        '- Work on APIs, data models, storage and error handling; make '
+        'failures explicit and recoverable.\n'
+        '- Validate input, and never log or expose secrets or personal '
+        'data.\n'
+        '- Add or update tests for the behavior you change and run them.\n'
+        '- $_followRepo',
+    TeamRoleIds.tester:
+        'You are acting as the tester for this task.\n'
+        '- Write and run tests that check the behavior described; cover '
+        'the normal path and the likely failures.\n'
+        '- Report each failure with steps to reproduce, what you expected '
+        'and what happened.\n'
+        '- Change only test code unless the task explicitly asks you to '
+        'fix the product code.\n'
+        '- $_followRepo',
+  };
+
+  /// The built-in roles as shipped, in [TeamRoleIds.builtIn] order.
+  static List<TeamRole> get defaults => [
+    for (final id in TeamRoleIds.builtIn)
+      TeamRole(
+        id: id,
+        name: '',
+        purpose: '',
+        instructions: _instructions[id]!,
+        builtIn: true,
+      ),
+  ];
+
+  static TeamRole defaultFor(String id) =>
+      defaults.firstWhere((r) => r.id == id);
+
+  /// Words that point at a built-in role (lowercase, matched as whole
+  /// words or word prefixes).
+  static const vocabulary = <String, List<String>>{
+    TeamRoleIds.product: [
+      'spec',
+      'requirements',
+      'requirement',
+      'scope',
+      'user story',
+      'stories',
+      'acceptance',
+      'roadmap',
+      'plan',
+      'prd',
+      'prioritize',
+    ],
+    TeamRoleIds.frontend: [
+      'ui',
+      'screen',
+      'button',
+      'layout',
+      'design',
+      'css',
+      'style',
+      'theme',
+      'page',
+      'widget',
+      'animation',
+      'accessibility',
+      'responsive',
+      'icon',
+      'dark mode',
+    ],
+    TeamRoleIds.backend: [
+      'api',
+      'endpoint',
+      'database',
+      'server',
+      'sql',
+      'migration',
+      'auth',
+      'token',
+      'cache',
+      'queue',
+      'schema',
+      'storage',
+      'security',
+    ],
+    TeamRoleIds.tester: [
+      'test',
+      'tests',
+      'testing',
+      'bug',
+      'repro',
+      'regression',
+      'coverage',
+      'flaky',
+      'verify',
+      'qa',
+    ],
+  };
 }
 
 /// The roles of one profile's team and which role each task was given.
@@ -94,7 +240,10 @@ class TeamRole {
 ///   only once edited; missing built-ins come from [TeamRoles.defaults]).
 /// - `oc.teamTaskRoles.<profileId>`: JSON map work/run id -> role id.
 class TeamRolesController extends ChangeNotifier {
-  TeamRolesController(this.prefs, this.profileId);
+  TeamRolesController(this.prefs, this.profileId) {
+    _roles = _readRoles();
+    _taskRoles = _readTaskRoles();
+  }
 
   final SharedPreferences prefs;
   final String profileId;
@@ -102,11 +251,83 @@ class TeamRolesController extends ChangeNotifier {
   static String rolesKey(String profileId) => 'oc.teamRoles.$profileId';
   static String taskRolesKey(String profileId) => 'oc.teamTaskRoles.$profileId';
 
+  /// Stored roles: edited built-ins and the person's own, in stored order.
+  late List<TeamRole> _roles;
+  late Map<String, String> _taskRoles;
+
+  List<TeamRole> _readRoles() {
+    try {
+      final raw = prefs.getString(rolesKey(profileId));
+      if (raw == null) return [];
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return [];
+      final seen = <String>{};
+      return [
+        for (final item in decoded)
+          if (TeamRole.fromJson(item) case final role? when seen.add(role.id))
+            role,
+      ];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Map<String, String> _readTaskRoles() {
+    try {
+      final raw = prefs.getString(taskRolesKey(profileId));
+      if (raw == null) return {};
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return {};
+      return {
+        for (final e in decoded.entries)
+          if (e.key is String && e.value is String)
+            e.key as String: e.value as String,
+      };
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> _saveRoles() async {
+    notifyListeners();
+    try {
+      await prefs.setString(
+        rolesKey(profileId),
+        jsonEncode([for (final r in _roles) r.toJson()]),
+      );
+    } catch (_) {
+      // Kept in memory for this session; the next save tries again.
+    }
+  }
+
   /// Built-ins first in [TeamRoleIds.builtIn] order, then the person's own
   /// in creation order.
-  List<TeamRole> get roles => throw UnimplementedError('state slice');
+  List<TeamRole> get roles {
+    final stored = {for (final r in _roles) r.id: r};
+    return [
+      for (final d in TeamRoles.defaults) stored[d.id] ?? d,
+      for (final r in _roles)
+        if (!r.builtIn) r,
+    ];
+  }
 
-  TeamRole? byId(String id) => throw UnimplementedError('state slice');
+  TeamRole? byId(String id) {
+    for (final r in roles) {
+      if (r.id == id) return r;
+    }
+    return null;
+  }
+
+  static final _random = Random.secure();
+
+  String _newId() {
+    while (true) {
+      final id =
+          'custom-${_random.nextInt(1 << 32).toRadixString(36)}'
+          '${_random.nextInt(1 << 32).toRadixString(36)}';
+      if (_roles.every((r) => r.id != id)) return id;
+    }
+  }
 
   /// Adds a role of the person's own; returns it with its new id.
   Future<TeamRole> add({
@@ -114,39 +335,160 @@ class TeamRolesController extends ChangeNotifier {
     required String purpose,
     required String instructions,
     String? model,
-  }) => throw UnimplementedError('state slice');
+  }) async {
+    final role = TeamRole(
+      id: _newId(),
+      name: name.trim(),
+      purpose: purpose.trim(),
+      instructions: instructions.trim(),
+      model: model != null && isValidTeamModel(model) ? model : null,
+    );
+    _roles = [..._roles, role];
+    await _saveRoles();
+    return role;
+  }
 
   /// Saves an edited role (built-in or own).
-  Future<void> update(TeamRole role) => throw UnimplementedError('state slice');
+  Future<void> update(TeamRole role) async {
+    if (byId(role.id) == null) return;
+    final saved = TeamRole(
+      id: role.id,
+      name: role.name.trim(),
+      purpose: role.purpose.trim(),
+      instructions: role.instructions.trim(),
+      model: role.model != null && isValidTeamModel(role.model!)
+          ? role.model
+          : null,
+      builtIn: TeamRoleIds.builtIn.contains(role.id),
+    );
+    final index = _roles.indexWhere((r) => r.id == role.id);
+    _roles = [..._roles];
+    if (index < 0) {
+      _roles.add(saved);
+    } else {
+      _roles[index] = saved;
+    }
+    await _saveRoles();
+  }
 
   /// Removes one of the person's own roles; built-ins cannot be removed.
   /// Tasks that had it keep showing its last name.
-  Future<void> remove(String roleId) => throw UnimplementedError('state slice');
+  Future<void> remove(String roleId) async {
+    if (TeamRoleIds.builtIn.contains(roleId)) return;
+    if (_roles.every((r) => r.id != roleId)) return;
+    _roles = [
+      for (final r in _roles)
+        if (r.id != roleId) r,
+    ];
+    await _saveRoles();
+  }
 
   /// Puts a built-in role back to how it shipped.
-  Future<void> reset(String roleId) => throw UnimplementedError('state slice');
+  Future<void> reset(String roleId) async {
+    if (!TeamRoleIds.builtIn.contains(roleId)) return;
+    if (_roles.every((r) => r.id != roleId)) return;
+    _roles = [
+      for (final r in _roles)
+        if (r.id != roleId) r,
+    ];
+    await _saveRoles();
+  }
+
+  static final _wordSplit = RegExp(r'[^a-z0-9]+');
+
+  static Set<String> _words(String text) => {
+    for (final w in text.toLowerCase().split(_wordSplit))
+      if (w.length >= 3) w,
+  };
 
   /// The role the app suggests for a task, from its words (no network, no
   /// model call): matched against each role's name and purpose plus a
   /// small built-in vocabulary per built-in role. [TeamRoleIds.general]
   /// when nothing stands out.
-  String suggest(String taskText) => throw UnimplementedError('state slice');
+  ///
+  /// Scoring: one point per vocabulary term found in the text (a term
+  /// matches as a whole word, or as a phrase for multi-word terms) and one
+  /// per word of a role's name or purpose found in the text. The highest
+  /// score wins; a tie or no score is general.
+  String suggest(String taskText) {
+    final text = ' ${taskText.toLowerCase().replaceAll(_wordSplit, ' ')} ';
+    final words = _words(taskText);
+    var best = TeamRoleIds.general;
+    var bestScore = 0;
+    var tied = false;
+    for (final role in roles) {
+      if (role.id == TeamRoleIds.general) continue;
+      var score = 0;
+      for (final term in TeamRoles.vocabulary[role.id] ?? const <String>[]) {
+        if (text.contains(' $term ')) score++;
+      }
+      for (final w in _words('${role.name} ${role.purpose}')) {
+        if (words.contains(w)) score++;
+      }
+      if (score == 0) continue;
+      if (score > bestScore) {
+        best = role.id;
+        bestScore = score;
+        tied = false;
+      } else if (score == bestScore) {
+        tied = true;
+      }
+    }
+    return tied ? TeamRoleIds.general : best;
+  }
 
   /// The role a task was given, or null (tasks from before roles, or
   /// given elsewhere).
-  String? roleOfTask(String workOrRunId) =>
-      throw UnimplementedError('state slice');
+  String? roleOfTask(String workOrRunId) => _taskRoles[workOrRunId];
+
+  /// The role of a run: a run is linked to its work items by
+  /// `WorkItem.runId`, and roles are remembered under the work id, so the
+  /// first of [team]'s work items of [run] with a remembered role answers.
+  /// A role remembered under the run id itself wins.
+  String? roleOfRun(OrchestrationRun run, OrchestrationController team) {
+    final direct = _taskRoles[run.id];
+    if (direct != null) return direct;
+    for (final item in team.snapshot.work) {
+      if (item.runId == run.id) {
+        final role = _taskRoles[item.id];
+        if (role != null) return role;
+      }
+    }
+    return null;
+  }
 
   /// Remembers [roleId] for [workOrRunId].
-  Future<void> rememberTaskRole(String workOrRunId, String roleId) =>
-      throw UnimplementedError('state slice');
+  Future<void> rememberTaskRole(String workOrRunId, String roleId) async {
+    if (workOrRunId.isEmpty) return;
+    _taskRoles = {..._taskRoles, workOrRunId: roleId};
+    notifyListeners();
+    try {
+      await prefs.setString(taskRolesKey(profileId), jsonEncode(_taskRoles));
+    } catch (_) {
+      // Session-only if the store refuses.
+    }
+  }
+}
+
+final _controllers = <String, TeamRolesController>{};
+
+/// One [TeamRolesController] per profile (and per preferences instance).
+TeamRolesController teamRolesFor(SharedPreferences prefs, String profileId) {
+  final cached = _controllers[profileId];
+  if (cached != null && identical(cached.prefs, prefs)) return cached;
+  return _controllers[profileId] = TeamRolesController(prefs, profileId);
 }
 
 /// The description the worker receives: the role's instructions, then the
 /// person's own description. Plain text; returns [description] unchanged
 /// for a role without instructions.
-String describeTaskForRole(TeamRole role, String? description) =>
-    throw UnimplementedError('state slice');
+String describeTaskForRole(TeamRole role, String? description) {
+  final instructions = role.instructions.trim();
+  if (instructions.isEmpty) return description ?? '';
+  final name = role.name.trim().isEmpty ? role.id : role.name.trim();
+  final task = (description ?? '').trim();
+  return 'Role: $name\n$instructions\n\n---\n\n$task';
+}
 
 /// Gives a task to the team as [role]: applies the role's model (or the
 /// team's model when the role has none) through [applyModel] before the
@@ -166,4 +508,26 @@ Future<({MutationRecord created, MutationRecord? assigned})> giveTaskAsRole({
   String? teamModel,
   Future<void> Function(String? model)? applyModel,
   ValueChanged<MutationRecord>? onCreated,
-}) => throw UnimplementedError('state slice');
+}) async {
+  if (applyModel != null) {
+    try {
+      await applyModel(role.model ?? teamModel);
+    } catch (e) {
+      // The task still goes; the worker keeps the model it had.
+      debugPrint('team role model not applied: ${e.runtimeType}');
+    }
+  }
+  final result = await team.giveTask(
+    title: title,
+    description: describeTaskForRole(role, description),
+    projectId: projectId,
+    agentId: agentId,
+    onCreated: onCreated,
+  );
+  final receipt = result.created.receipt;
+  final workId = receipt?.createdId;
+  if (receipt != null && receipt.isAccepted && workId != null) {
+    await roles.rememberTaskRole(workId, role.id);
+  }
+  return result;
+}
