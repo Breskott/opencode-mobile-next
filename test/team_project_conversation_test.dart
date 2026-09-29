@@ -7,16 +7,19 @@ import 'package:opencode_mobile/ui/screens/team/projects/team_project_conversati
 import 'kit/kit_harness.dart';
 
 class _Gateway implements OrchestrationProjectGateway {
+  _Gateway({this.requests = const []});
+  final List<TeamRequest> requests;
   final commands = <TeamProjectCommand>[];
   bool rejectMessage = false;
   @override
-  Future<TeamWorkspace> teamWorkspace() async => const TeamWorkspace(
+  Future<TeamWorkspace> teamWorkspace() async => TeamWorkspace(
     projects: [
       TeamProject(
         id: 'p',
         name: 'Project',
         revision: 7,
         status: 'running',
+        requests: requests,
         repos: [
           TeamRepo(
             id: 'repo',
@@ -58,8 +61,8 @@ class _Gateway implements OrchestrationProjectGateway {
   Future<void> deleteLocalData() async {}
 }
 
-Future<_Gateway> _open(WidgetTester tester) async {
-  final gateway = _Gateway();
+Future<_Gateway> _open(WidgetTester tester, {_Gateway? source}) async {
+  final gateway = source ?? _Gateway();
   final controller = TeamProjectController(gateway);
   await controller.load();
   addTearDown(controller.dispose);
@@ -78,6 +81,31 @@ Future<_Gateway> _open(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('failed requests offer restart rather than a question answer', (
+    tester,
+  ) async {
+    final gateway = await _open(
+      tester,
+      source: _Gateway(
+        requests: const [
+          TeamRequest(
+            id: 'recover',
+            kind: 'failed',
+            taskId: 'task',
+            title: 'Build stopped',
+          ),
+        ],
+      ),
+    );
+    expect(find.text('Send answer'), findsNothing);
+    final action = find.text('Start task again');
+    await tester.ensureVisible(action);
+    await tester.tap(action);
+    await tester.pump();
+    expect(gateway.commands.single.action, TeamProjectAction.restartTask);
+    expect(gateway.commands.single.targetId, 'task');
+  });
+
   testWidgets('failed message keeps the complete composer draft', (
     tester,
   ) async {

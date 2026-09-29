@@ -46,5 +46,15 @@
   "teamProjectTaskCriteria": "Acceptance criteria",
   "teamProjectTaskOpenFindings": "Open findings",
   "teamProjectTaskFindingsAddressed": "Findings addressed",
-  "teamProjectMergeConfirmBody": "Checked task branches will merge into dev, followed by combined checks. Main stays unchanged."
+  "teamProjectMergeConfirmBody": "Checked task branches will merge into dev, followed by combined checks. Main stays unchanged.",
+  "teamProjectTaskReviewFindings": "Select open findings",
+  "teamProjectTaskResolveAgent": "Resolve with agent",
+  "teamProjectTaskResolveManually": "I’ll resolve",
+  "teamProjectTaskRecheckResolution": "Re-check resolution",
+  "teamProjectTaskVerificationResults": "Verification results",
+  "teamProjectTaskCriterionMet": "Met",
+  "teamProjectTaskCriterionUnmet": "Unmet",
+  "teamProjectTaskCriterionNotApplicable": "Not applicable",
+  "teamProjectTaskDemoConflict": "Demo: create a conflict",
+  "teamProjectTaskDemoCommit": "Demo: add a manual commit"
 }

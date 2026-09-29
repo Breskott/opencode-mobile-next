@@ -172,6 +172,85 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
     );
   }
 
+  List<KitAction> _requestActions(
+    TeamProject p,
+    TeamTask task,
+    TeamRequest request,
+  ) {
+    switch (request.kind) {
+      case 'question':
+      case 'permission':
+        return [_action(l.teamProjectTaskAnswer, () => _answer(p, request))];
+      case 'interrupted':
+        return [
+          _action(
+            l.teamProjectTaskResume,
+            () => _run(p, TeamProjectAction.resumeTask),
+          ),
+        ];
+      case 'stalled':
+      case 'failed':
+        return [
+          _action(
+            l.teamProjectTaskRestart,
+            () => _run(p, TeamProjectAction.restartTask),
+          ),
+        ];
+      case 'findings':
+        return [
+          _action(
+            l.teamProjectTaskReviewFindings,
+            () => setState(() {
+              _selected.addAll(
+                task.findings.where((f) => f.status == 'open').map((f) => f.id),
+              );
+            }),
+          ),
+        ];
+      case 'conflict':
+        final item = p.mergeQueue
+            .where(
+              (m) =>
+                  m.taskId == task.id &&
+                  const ['conflict', 'manual'].contains(m.status),
+            )
+            .firstOrNull;
+        if (item == null) return [];
+        return [
+          _action(
+            l.teamProjectTaskResolveAgent,
+            () => _run(
+              p,
+              TeamProjectAction.resolveConflict,
+              target: item.id,
+              text: 'agent',
+            ),
+          ),
+          _action(
+            l.teamProjectTaskResolveManually,
+            () => _run(
+              p,
+              TeamProjectAction.resolveConflict,
+              target: item.id,
+              text: 'manual',
+            ),
+          ),
+          if (item.reason == 'Waiting for your conflict resolution')
+            _action(
+              l.teamProjectTaskRecheckResolution,
+              () => _run(
+                p,
+                TeamProjectAction.resolveConflict,
+                target: item.id,
+                text: 'recheck',
+              ),
+            ),
+        ];
+      default:
+        return [];
+    }
+  }
+
   Future<void> _merge(TeamProject p, TeamRepo? repo) async {
     if (repo == null) return;
     final requiresConfirmation = p.settings.reviewLevel == 'everyStep';
@@ -291,7 +370,6 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                 subtitle: [
                   if (role != null) role.name,
                   if (server != null) server.name,
-                  if (t.branch.isNotEmpty) t.branch,
                 ].join(' · '),
               ),
         loading: c.loading,
@@ -307,7 +385,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
               KitStateView.error(
                 title: l.teamProjectTaskSaveFailed,
                 size: KitStateSize.inline,
-                retry: _action(l.teamProjectRefreshTask, c.load),
+                secondary: _action(l.teamProjectRefreshTask, c.load),
               ),
             if (_expanded.isNotEmpty)
               KitButton.tertiary(
@@ -340,10 +418,10 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                 KitMessage.reply(body: KitMarkdown(m.text)),
             KitPlanCard(
               title: l.teamProjectTaskPlan,
-              status: p.status == 'planned'
+              status: (p.status == 'plan' || p.status == 'planned')
                   ? l.teamProjectTaskReview
                   : l.teamProjectTaskApprovedPlan,
-              state: p.status == 'planned'
+              state: (p.status == 'plan' || p.status == 'planned')
                   ? KitTeamState.needsYou
                   : KitTeamState.done,
               summary: p.specDraft.goal,
@@ -385,9 +463,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                 title: request.title,
                 status: _age(request.createdAt),
                 state: KitTeamState.needsYou,
-                actions: [
-                  _action(l.teamProjectTaskAnswer, () => _answer(p, request)),
-                ],
+                actions: _requestActions(p, t, request),
               ),
             if (events.isNotEmpty)
               _fold('work', l.teamProjectTaskWork, [
@@ -397,6 +473,26 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                         : events))
                   KitText('${event.text} · ${_age(event.at)}'),
               ]),
+            if (t.criterionResults.isNotEmpty)
+              KitPhaseCard(
+                title: l.teamProjectTaskCriteria,
+                status: l.teamProjectTaskVerificationResults,
+                state: KitTeamState.done,
+                items: [
+                  for (final result in t.criterionResults)
+                    KitTeamItem(
+                      title: result.criterion,
+                      detail: switch (result.status) {
+                        'met' => l.teamProjectTaskCriterionMet,
+                        'unmet' => l.teamProjectTaskCriterionUnmet,
+                        _ => l.teamProjectTaskCriterionNotApplicable,
+                      },
+                      state: result.status == 'unmet'
+                          ? KitTeamState.failed
+                          : KitTeamState.done,
+                    ),
+                ],
+              ),
             if (t.findings.isNotEmpty)
               KitFindingsCard(
                 title: l.teamProjectTaskFindings,
@@ -470,6 +566,24 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                 ],
                 actions: [
                   _action(l.teamProjectTaskMergeRun, () => _merge(p, repo)),
+                  if (p.simulated)
+                    _action(
+                      l.teamProjectTaskDemoConflict,
+                      () => _run(
+                        p,
+                        TeamProjectAction.simulateConflict,
+                        target: queue.first.id,
+                      ),
+                    ),
+                  if (p.simulated && repo != null)
+                    _action(
+                      l.teamProjectTaskDemoCommit,
+                      () => _run(
+                        p,
+                        TeamProjectAction.simulateManualCommit,
+                        target: repo.id,
+                      ),
+                    ),
                 ],
               ),
             if (repo != null && repo.devCommit != repo.mainCommit)
@@ -480,7 +594,9 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                 summary: '${repo.name}: ${repo.mainCommit} → ${repo.devCommit}',
               ),
             for (final receipt in p.receipts.where(
-              (r) => r.repoId == t.repoId && r.kind == 'promote',
+              (r) =>
+                  r.repoId == t.repoId &&
+                  const ['promote', 'promotion'].contains(r.kind),
             ))
               KitPhaseCard(
                 title: l.teamProjectTaskReceipt,
@@ -527,12 +643,13 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                   ),
               ],
             ),
+            if (t.branch.isNotEmpty) KitDetailsFold(text: t.branch),
           ],
         ),
         bottom: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (p.status == 'planned')
+            if ((p.status == 'plan' || p.status == 'planned'))
               KitButton.fromAction(
                 _action(
                   l.teamProjectTaskApprovePlan,
