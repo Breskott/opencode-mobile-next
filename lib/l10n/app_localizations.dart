@@ -8744,10 +8744,16 @@ abstract class AppLocalizations {
   /// **'Just now'**
   String get e7WorkspaceJustNow;
 
+  /// Relative time: between 24 and 48 hours ago
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get e7WorkspaceYesterday;
+
   /// Workspace and activity: {count}m ago
   ///
   /// In en, this message translates to:
-  /// **'{count}m ago'**
+  /// **'{count} min ago'**
   String e7WorkspaceMinutesAgo(int count);
 
   /// Workspace and activity: {count}h ago
@@ -22535,30 +22541,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancelled'**
   String get teamBoardFlagCancelled;
-
-  /// Board: a card changed less than a minute ago
-  ///
-  /// In en, this message translates to:
-  /// **'just now'**
-  String get teamBoardAgeJustNow;
-
-  /// Board: minutes since a card last changed
-  ///
-  /// In en, this message translates to:
-  /// **'{count} min ago'**
-  String teamBoardAgeMinutes(int count);
-
-  /// Board: hours since a card last changed
-  ///
-  /// In en, this message translates to:
-  /// **'{count} h ago'**
-  String teamBoardAgeHours(int count);
-
-  /// Board: days since a card last changed
-  ///
-  /// In en, this message translates to:
-  /// **'{count} d ago'**
-  String teamBoardAgeDays(int count);
 
   /// Board: a card's overflow button
   ///
@@ -38240,12 +38222,6 @@ abstract class AppLocalizations {
   /// **'Its models are not in this list yet'**
   String get pickerAddKeyNotConnectedHint;
 
-  /// Model picker: supporting line for a provider that is connected but not loaded.
-  ///
-  /// In en, this message translates to:
-  /// **'Signed in, but the server has not loaded it. A key can load it.'**
-  String get pickerAddKeyNotLoadedHint;
-
   /// Model picker: row that opens the sign-in of one provider whose methods are not a key.
   ///
   /// In en, this message translates to:
@@ -38275,12 +38251,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} is saved, but the server has not loaded it yet.'**
   String pickerProviderNotLoaded(String name);
-
-  /// Providers list: word for a provider the server holds a sign-in for but has not loaded, so its models cannot be used yet. Replaces 'Connected'.
-  ///
-  /// In en, this message translates to:
-  /// **'Signed in, not loaded by this server yet'**
-  String get integrationsSignedInNotLoaded;
 
   /// Providers list: word for a provider whose saved sign-in stayed unloaded after a reload (a subscription sign-in the server has no loader for). Replaces 'Connected'; its fix is an API key.
   ///

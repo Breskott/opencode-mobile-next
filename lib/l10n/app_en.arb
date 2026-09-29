@@ -4254,7 +4254,11 @@
   "@e7WorkspaceJustNow": {
     "description": "Workspace and activity: Just now"
   },
-  "e7WorkspaceMinutesAgo": "{count}m ago",
+  "e7WorkspaceYesterday": "Yesterday",
+  "@e7WorkspaceYesterday": {
+    "description": "Relative time: between 24 and 48 hours ago"
+  },
+  "e7WorkspaceMinutesAgo": "{count} min ago",
   "@e7WorkspaceMinutesAgo": {
     "description": "Workspace and activity: {count}m ago",
     "placeholders": {
@@ -15300,37 +15304,6 @@
   "teamBoardFlagCancelled": "Cancelled",
   "@teamBoardFlagCancelled": {
     "description": "Board: a cancelled task in Done"
-  },
-  "teamBoardAgeJustNow": "just now",
-  "@teamBoardAgeJustNow": {
-    "description": "Board: a card changed less than a minute ago"
-  },
-  "teamBoardAgeMinutes": "{count} min ago",
-  "@teamBoardAgeMinutes": {
-    "description": "Board: minutes since a card last changed",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teamBoardAgeHours": "{count} h ago",
-  "@teamBoardAgeHours": {
-    "description": "Board: hours since a card last changed",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teamBoardAgeDays": "{count} d ago",
-  "@teamBoardAgeDays": {
-    "description": "Board: days since a card last changed",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
   },
   "teamBoardMoveMenuTooltip": "Move or change",
   "@teamBoardMoveMenuTooltip": {
@@ -29321,10 +29294,6 @@
   "@pickerAddKeyNotConnectedHint": {
     "description": "Model picker: supporting line for a provider that is not connected."
   },
-  "pickerAddKeyNotLoadedHint": "Signed in, but the server has not loaded it. A key can load it.",
-  "@pickerAddKeyNotLoadedHint": {
-    "description": "Model picker: supporting line for a provider that is connected but not loaded."
-  },
   "pickerSignInTo": "Sign in to {name}",
   "@pickerSignInTo": {
     "description": "Model picker: row that opens the sign-in of one provider whose methods are not a key.",
@@ -29359,10 +29328,6 @@
         "type": "String"
       }
     }
-  },
-  "integrationsSignedInNotLoaded": "Signed in, not loaded by this server yet",
-  "@integrationsSignedInNotLoaded": {
-    "description": "Providers list: word for a provider the server holds a sign-in for but has not loaded, so its models cannot be used yet. Replaces 'Connected'."
   },
   "integrationsSignedInUnusable": "Signed in, but this server can't use it",
   "@integrationsSignedInUnusable": {

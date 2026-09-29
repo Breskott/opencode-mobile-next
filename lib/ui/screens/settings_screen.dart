@@ -6,6 +6,7 @@ import '../../api/models.dart';
 import '../../api/product_repository.dart';
 import '../../api/provider_presentation.dart';
 import '../../background/live_background.dart';
+import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../builtin/setup/phone_setup.dart';
 import '../../builtin/setup/setup_contract.dart' show SetupProgress;
 import '../../diagnostics/report_problem_startup.dart';

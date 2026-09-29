@@ -142,7 +142,7 @@ void main() {
     expect(_skeleton, findsNothing);
     expect(find.text('Reconcile the ledger'), findsOneWidget);
     expect(find.text('Quarterly report draft'), findsOneWidget);
-    expect(find.text('Updated 7m ago · Refreshing'), findsOneWidget);
+    expect(find.text('Updated 7 min ago · Refreshing'), findsOneWidget);
     // One loading bar still says the live list is on its way.
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
     // Nothing on them acts: no live row, and a tap opens nothing.
@@ -196,7 +196,7 @@ void main() {
       ..sessionsError = 'HTTP 502 upstream';
     await _pumpWork(tester, controller);
     expect(find.text('Reconcile the ledger'), findsOneWidget);
-    expect(find.text('Updated 7m ago'), findsOneWidget);
+    expect(find.text('Updated 7 min ago'), findsOneWidget);
     expect(find.textContaining('Refreshing'), findsNothing);
     expect(find.textContaining('HTTP 502'), findsNothing);
     await _dispose(tester, controller);

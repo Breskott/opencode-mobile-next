@@ -2642,7 +2642,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
           _savedProfile?.id ??
           widget.existing?.id ??
           DateTime.now().microsecondsSinceEpoch.toString(),
-      name: _name.text.trim().isEmpty ? uri.host : _name.text.trim(),
+      name: _name.text.trim().isEmpty
+          ? plainServerName(uri.host)
+          : _name.text.trim(),
       baseUrl: normalizedUrl,
       username: _user.text.trim(),
       password: _password,
@@ -2679,7 +2681,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
           _savedProfile?.id ??
           widget.existing?.id ??
           DateTime.now().microsecondsSinceEpoch.toString(),
-      name: _name.text.trim().isEmpty ? uri.host : _name.text.trim(),
+      name: _name.text.trim().isEmpty
+          ? plainServerName(uri.host)
+          : _name.text.trim(),
       baseUrl: url,
       backend: _backend,
       codexDirectory: _codexDirectory.text.trim(),

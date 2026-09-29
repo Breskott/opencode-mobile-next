@@ -295,7 +295,7 @@ void main() {
     await _reveal(tester, _key('picker-connect-cloud'));
     expect(find.text('Add an API key for Cloud'), findsOneWidget);
     expect(
-      find.textContaining('the server has not loaded it', findRichText: true),
+      find.textContaining("this server can't use it", findRichText: true),
       findsWidgets,
     );
   });

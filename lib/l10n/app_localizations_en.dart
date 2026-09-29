@@ -5235,8 +5235,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7WorkspaceJustNow => 'Just now';
 
   @override
+  String get e7WorkspaceYesterday => 'Yesterday';
+
+  @override
   String e7WorkspaceMinutesAgo(int count) {
-    return '${count}m ago';
+    return '$count min ago';
   }
 
   @override
@@ -13759,24 +13762,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamBoardFlagCancelled => 'Cancelled';
-
-  @override
-  String get teamBoardAgeJustNow => 'just now';
-
-  @override
-  String teamBoardAgeMinutes(int count) {
-    return '$count min ago';
-  }
-
-  @override
-  String teamBoardAgeHours(int count) {
-    return '$count h ago';
-  }
-
-  @override
-  String teamBoardAgeDays(int count) {
-    return '$count d ago';
-  }
 
   @override
   String get teamBoardMoveMenuTooltip => 'Move or change';
@@ -24311,10 +24296,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Its models are not in this list yet';
 
   @override
-  String get pickerAddKeyNotLoadedHint =>
-      'Signed in, but the server has not loaded it. A key can load it.';
-
-  @override
   String pickerSignInTo(String name) {
     return 'Sign in to $name';
   }
@@ -24335,10 +24316,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String pickerProviderNotLoaded(String name) {
     return '$name is saved, but the server has not loaded it yet.';
   }
-
-  @override
-  String get integrationsSignedInNotLoaded =>
-      'Signed in, not loaded by this server yet';
 
   @override
   String get integrationsSignedInUnusable =>

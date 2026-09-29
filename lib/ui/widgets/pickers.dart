@@ -773,7 +773,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView>
         text: !key
             ? _strings.pickerSignInHint
             : unloaded
-            ? _strings.pickerAddKeyNotLoadedHint
+            ? _strings.integrationsSignedInUnusable
             : _strings.pickerAddKeyNotConnectedHint,
       ),
       supportingMaxLines: 2,

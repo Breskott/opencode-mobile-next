@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../api/models.dart' show Todo;
 import '../l10n/app_localizations.dart';
 import 'orchestration_gateway.dart' show WorkItem, WorkState;
+import 'relative_age.dart';
 import 'run_result.dart';
 
 /// Shared vocabulary for a row, its header and notification copy.
@@ -199,10 +200,6 @@ class WorkRowStatus {
     return age.isNegative ? Duration.zero : age;
   }
 
-  static String _relative(AppLocalizations l10n, Duration age) {
-    if (age.inMinutes < 1) return l10n.teamBoardAgeJustNow;
-    if (age.inHours < 1) return l10n.teamBoardAgeMinutes(age.inMinutes);
-    if (age.inDays < 1) return l10n.teamBoardAgeHours(age.inHours);
-    return l10n.teamBoardAgeDays(age.inDays);
-  }
+  static String _relative(AppLocalizations l10n, Duration age) =>
+      relativeAgeLabel(age, l10n: l10n);
 }

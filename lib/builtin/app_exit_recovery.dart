@@ -11,6 +11,7 @@ import '../state/automation_policy.dart';
 import '../state/profiles.dart';
 import 'builtin_linux.dart';
 import 'builtin_server.dart';
+import 'deliberate_stop.dart';
 import 'team/builtin_team.dart';
 
 final appLifecycleBridgeProvider = Provider<AppLifecycleBridge>(
@@ -104,9 +105,15 @@ class AppExitRecovery extends ChangeNotifier {
     _ran = true;
     final report = await bridge.launchReport();
     _report = report;
-    final serverWas = report.previousServices.contains(
-      BuiltinLinux.serverServiceName,
-    );
+    final stoppedOnPurpose = [
+      for (final profile in store.profiles)
+        if (looksLikeInAppServer(profile) &&
+            DeliberateServerStop.isMarked(store.prefs, profile.id))
+          profile,
+    ].isNotEmpty;
+    final serverWas =
+        !stoppedOnPurpose &&
+        report.previousServices.contains(BuiltinLinux.serverServiceName);
     final teamWas = report.previousServices.contains(BuiltinTeam.serviceName);
     final wasRunning = serverWas || teamWas;
     final exit = report.exit;

@@ -84,7 +84,7 @@ String serverDisplayName(
   // ("This phone · Termux"), not by the name setup saved it under; the
   // app's own server is plain "This phone".
   if (isManagedPhoneProfile(profile)) return l10n.phoneServerTermuxTitle;
-  if (!looksLikeInAppServer(profile)) return profile.name;
+  if (!looksLikeInAppServer(profile)) return plainServerName(profile.name);
   return phoneServerDisplayName(profile, l10n, among: among);
 }
 
