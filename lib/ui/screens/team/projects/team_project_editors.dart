@@ -1,0 +1,880 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+
+import '../../../../l10n/app_localizations.dart';
+import '../../../../state/team_project_controller.dart';
+import '../../../kit/kit.dart';
+
+Future<void> openTeamNewProject(
+  BuildContext context,
+  TeamProjectController controller, {
+  bool quick = false,
+}) => _open(context, controller, quick ? _Kind.quick : _Kind.create);
+Future<void> openTeamSpecEditor(
+  BuildContext context,
+  TeamProjectController controller,
+  String projectId,
+) => _open(context, controller, _Kind.spec, projectId);
+Future<void> openTeamPlanEditor(
+  BuildContext context,
+  TeamProjectController controller,
+  String projectId,
+) => _open(context, controller, _Kind.plan, projectId);
+Future<void> openTeamProjectSettings(
+  BuildContext context,
+  TeamProjectController controller,
+  String projectId,
+) => _open(context, controller, _Kind.settings, projectId);
+Future<void> openTeamRoles(
+  BuildContext context,
+  TeamProjectController controller,
+) => _open(context, controller, _Kind.roles);
+
+enum _Kind { create, quick, spec, plan, settings, roles }
+
+Future<void> _open(
+  BuildContext context,
+  TeamProjectController controller,
+  _Kind kind, [
+  String projectId = '',
+]) async {
+  await showKitFramedSheet<void>(
+    context,
+    builder: (_) =>
+        _Editor(controller: controller, kind: kind, projectId: projectId),
+  );
+}
+
+class _Editor extends StatefulWidget {
+  const _Editor({
+    required this.controller,
+    required this.kind,
+    required this.projectId,
+  });
+  final TeamProjectController controller;
+  final _Kind kind;
+  final String projectId;
+  @override
+  State<_Editor> createState() => _EditorState();
+}
+
+class _EditorState extends State<_Editor> {
+  final Map<String, TextEditingController> _fields = {};
+  final Map<String, KitDraft> _fieldDrafts = {};
+  late final TextEditingController _draftText;
+  late final KitDraft _draft;
+  Future<void> _draftTail = Future.value();
+  bool _restoring = true;
+  bool _complete = false;
+  int? _reviewedRevision;
+  late TeamProjectSettings _settings;
+  late List<TeamRepo> _repos;
+  late List<TeamMilestone> _milestones;
+  late List<TeamTask> _tasks;
+  late List<TeamPhase> _phases;
+  String? _serverId;
+  String? _roleId;
+  String? _budgetChoice;
+  String? _error;
+  bool _working = false;
+  bool _planFirst = true;
+  bool _history = false;
+  bool _chargingTouched = false;
+  TeamProjectRole? _role;
+  int _id = 0;
+  TeamProjectController get _controller => widget.controller;
+  TeamProject? get _project => _controller.snapshot?.projects
+      .where((p) => p.id == widget.projectId)
+      .firstOrNull;
+  AppLocalizations get _l => AppLocalizations.of(context);
+  bool get _creating =>
+      widget.kind == _Kind.create || widget.kind == _Kind.quick;
+  String _newId() => 'edit-${DateTime.now().microsecondsSinceEpoch}-${_id++}';
+
+  @override
+  void initState() {
+    super.initState();
+    final p = _project;
+    _reviewedRevision = p?.revision;
+    _settings = p?.settings ?? const TeamProjectSettings();
+    _repos = [...?p?.repos];
+    _milestones = [...?p?.specDraft.milestones];
+    _tasks = [...?p?.tasks];
+    _phases = [...?p?.phases];
+    if (_settings.budget.chosen)
+      _budgetChoice = _settings.budget.unlimited ? 'unlimited' : 'limited';
+    _text('name', p?.name ?? '');
+    _text('goal', p?.specDraft.goal ?? '');
+    _text('constraints', p?.specDraft.constraints ?? '');
+    _text('decisions', p?.specDraft.decisions ?? '');
+    _text('outOfScope', p?.specDraft.outOfScope ?? '');
+    _text('lanes', '${_settings.maxLanes}');
+    _text('daily', _settings.budget.daily?.toString() ?? '');
+    _text('total', _settings.budget.total?.toString() ?? '');
+    _text('tokens', _settings.budget.taskTokens?.toString() ?? '');
+    _text('rounds', '${_settings.maxFixRounds}');
+    _draftText = TextEditingController();
+    _draft = KitDraft(
+      target: 'team-editor.${widget.kind.name}.${widget.projectId}',
+      profileId: _controller.profileId,
+      controller: _draftText,
+    );
+    unawaited(_restore());
+  }
+
+  TextEditingController _text(String key, [String initial = '']) =>
+      _fields.putIfAbsent(key, () => TextEditingController(text: initial));
+  String _value(String key) => _text(key).text.trim();
+  @override
+  void dispose() {
+    for (final c in _fields.values) {
+      c.dispose();
+    }
+    _draftText.dispose();
+    super.dispose();
+  }
+
+  void _change(VoidCallback action) {
+    setState(action);
+    if (!_restoring && !_complete) _persist();
+  }
+
+  void _persist() {
+    final payload = jsonEncode({
+      'fields': {for (final e in _fields.entries) e.key: e.value.text},
+      'settings': _settings.toJson(),
+      'repos': _repos.map((r) => r.toJson()).toList(),
+      'milestones': _milestones.map((m) => m.toJson()).toList(),
+      'tasks': _tasks.map((t) => t.toJson()).toList(),
+      'phases': _phases.map((p) => p.toJson()).toList(),
+      'server': _serverId,
+      'roleId': _roleId,
+      'budget': _budgetChoice,
+      'planFirst': _planFirst,
+      'chargingTouched': _chargingTouched,
+      'role': _role?.toJson(),
+      'reviewedRevision': _reviewedRevision,
+    });
+    // Capture each edit before queuing it, so dismissal cannot dispose a
+    // controller before its final durable write reads the value.
+    _draftTail = _draftTail
+        .then((_) async {
+          final text = TextEditingController(text: payload);
+          try {
+            await KitDraft(
+              target: _draft.target,
+              profileId: _draft.profileId,
+              controller: text,
+            ).save();
+          } finally {
+            text.dispose();
+          }
+        })
+        .catchError((Object _) {
+          if (mounted && !_complete)
+            setState(() => _error = _l.teamProjectEditorDraftFailed);
+        });
+  }
+
+  Future<void> _restore() async {
+    try {
+      await _draft.restore();
+      if (!mounted) return;
+      if (_draftText.text.isNotEmpty) {
+        final data = jsonDecode(_draftText.text) as Map<String, dynamic>;
+        setState(() {
+          for (final e in (data['fields'] as Map<String, dynamic>).entries) {
+            _text(e.key).text = e.value as String;
+          }
+          _settings = TeamProjectSettings.fromJson(
+            Map<String, dynamic>.from(data['settings'] as Map),
+          );
+          _repos = [
+            for (final r in data['repos'] as List)
+              TeamRepo.fromJson(Map<String, dynamic>.from(r as Map)),
+          ];
+          _milestones = [
+            for (final m in data['milestones'] as List)
+              TeamMilestone.fromJson(Map<String, dynamic>.from(m as Map)),
+          ];
+          _tasks = [
+            for (final t in data['tasks'] as List)
+              TeamTask.fromJson(Map<String, dynamic>.from(t as Map)),
+          ];
+          _phases = [
+            for (final p in data['phases'] as List)
+              TeamPhase.fromJson(Map<String, dynamic>.from(p as Map)),
+          ];
+          _serverId = data['server'] as String?;
+          _roleId = data['roleId'] as String?;
+          _budgetChoice = data['budget'] as String?;
+          _planFirst = data['planFirst'] as bool? ?? true;
+          _chargingTouched = data['chargingTouched'] as bool? ?? false;
+          if (data['role'] != null)
+            _role = TeamProjectRole.fromJson(
+              Map<String, dynamic>.from(data['role'] as Map),
+            );
+          _reviewedRevision =
+              data['reviewedRevision'] as int? ?? _reviewedRevision;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _error = _l.teamProjectEditorDraftFailed);
+    }
+    if (mounted) setState(() => _restoring = false);
+  }
+
+  Widget _field(
+    String key,
+    String label, {
+    String initial = '',
+    bool multiline = false,
+    bool number = false,
+    bool decimal = false,
+  }) => KitField(
+    key: ValueKey(key),
+    label: label,
+    controller: _text(key, initial),
+    draft: _fieldDrafts.putIfAbsent(
+      key,
+      () => KitDraft(
+        target: '${_draft.target}.$key',
+        profileId: _controller.profileId,
+        controller: _text(key, initial),
+      ),
+    ),
+    kind: multiline
+        ? KitFieldKind.multiline
+        : number
+        ? KitFieldKind.number
+        : KitFieldKind.text,
+    decimal: decimal,
+    onChanged: (_) => _change(() {}),
+  );
+  Widget _choice(
+    String label,
+    Map<String, String> options,
+    String? selected,
+    ValueChanged<String> onChanged,
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      KitSectionLabel(label),
+      KitChoiceList<String>.single(
+        semanticsLabel: label,
+        choices: [
+          for (final e in options.entries)
+            KitChoice(value: e.key, title: e.value),
+        ],
+        selected: selected,
+        onSelected: onChanged,
+      ),
+    ],
+  );
+  Widget _button(
+    String label,
+    VoidCallback action, {
+    bool destructive = false,
+  }) => KitButton.tertiary(
+    label: label,
+    onPressed: _working ? null : action,
+    destructive: destructive,
+  );
+
+  TeamProjectSettings _editedSettings() => _settings.copyWith(
+    maxLanes: _settings.mode == 'single'
+        ? 1
+        : int.tryParse(_value('lanes')) ?? 0,
+    maxFixRounds: int.tryParse(_value('rounds')) ?? 0,
+    budget: TeamBudget(
+      chosen: _budgetChoice != null,
+      unlimited: _budgetChoice == 'unlimited',
+      daily: _budgetChoice == 'unlimited'
+          ? null
+          : double.tryParse(_value('daily')),
+      total: _budgetChoice == 'unlimited'
+          ? null
+          : double.tryParse(_value('total')),
+      taskTokens: int.tryParse(_value('tokens')),
+    ),
+  );
+  String? _settingsError() {
+    final s = _editedSettings();
+    if (s.mode.isEmpty) return _l.teamProjectEditorChooseMode;
+    if (s.maxLanes < 1 || s.maxLanes > 32)
+      return _l.teamProjectEditorPositiveLanes;
+    if (!s.budget.chosen) return _l.teamProjectEditorChooseBudget;
+    if (!s.budget.unlimited &&
+        ((s.budget.daily ?? 0) <= 0 || (s.budget.total ?? 0) <= 0))
+      return _l.teamProjectEditorPositiveBudget;
+    if (s.maxFixRounds < 0 || s.maxFixRounds > 3)
+      return _l.teamProjectEditorFixRoundsRange;
+    if (_value('tokens').isNotEmpty && (s.budget.taskTokens ?? 0) <= 0)
+      return _l.teamProjectEditorPositiveTokens;
+    return null;
+  }
+
+  void _updateCharging() {
+    if (_chargingTouched) return;
+    final phone =
+        _controller.snapshot?.servers.any(
+          (s) =>
+              s.phone &&
+              (_serverId == s.id || _repos.any((r) => r.serverId == s.id)),
+        ) ??
+        false;
+    _settings = _settings.copyWith(
+      chargingOnly:
+          phone && _settings.mode == 'parallel' && DateTime.now().hour >= 23,
+    );
+  }
+
+  Future<bool> _send(
+    TeamProjectAction action, {
+    TeamSpec? spec,
+    List<TeamTask>? tasks,
+    List<TeamPhase>? phases,
+    TeamProjectRole? role,
+    bool close = true,
+  }) async {
+    if (_working) return false;
+    _change(() {
+      _working = true;
+      _error = null;
+    });
+    final result = await _controller.execute(
+      TeamProjectCommand(
+        requestId: _controller.newRequestId(),
+        action: action,
+        projectId: widget.projectId,
+        expectedRevision: _reviewedRevision,
+        name: _value('name'),
+        text: _value('goal'),
+        settings: _editedSettings(),
+        spec: spec,
+        tasks: tasks,
+        phases: phases,
+        repos: _repos,
+        roleId: _roleId ?? '',
+        serverId: _serverId ?? '',
+        role: role,
+        confirmed: !_planFirst,
+      ),
+    );
+    if (result.accepted) _reviewedRevision = result.revision;
+    if (!mounted) return result.accepted;
+    _change(() {
+      _working = false;
+      _error = result.accepted
+          ? null
+          : result.code == 'staleRevision'
+          ? _l.teamProjectEditorChangedElsewhere
+          : _l.teamProjectEditorSaveFailed;
+    });
+    if (result.accepted && close) {
+      _complete = true;
+      await _draftTail;
+      await _draft.clear();
+      for (final draft in _fieldDrafts.values) {
+        await draft.clear();
+      }
+      if (mounted) Navigator.of(context).pop();
+    }
+    return result.accepted;
+  }
+
+  Future<void> _reload() async {
+    final approved = await showKitConfirm(
+      context,
+      title: _l.teamProjectEditorReload,
+      body: _l.teamProjectEditorDiscardDraft,
+      confirmLabel: _l.teamProjectEditorReload,
+    );
+    if (!approved || !mounted) return;
+    _complete = true;
+    await _draftTail;
+    await _draft.clear();
+    for (final draft in _fieldDrafts.values) {
+      await draft.clear();
+    }
+    if (!mounted) return;
+    final navigator = Navigator.of(context);
+    final controller = _controller;
+    final kind = widget.kind;
+    final id = widget.projectId;
+    navigator.pop();
+    unawaited(_open(navigator.context, controller, kind, id));
+  }
+
+  Future<void> _save() async {
+    if (_creating || widget.kind == _Kind.settings) {
+      final error = _settingsError();
+      if (error != null) {
+        _change(() => _error = error);
+        return;
+      }
+    }
+    if (_creating) {
+      if (_value('goal').isEmpty || _value('name').isEmpty || _repos.isEmpty) {
+        _change(() => _error = _l.teamProjectEditorRequired);
+        return;
+      }
+      if (widget.kind == _Kind.quick &&
+          (_roleId == null || _serverId == null)) {
+        _change(() => _error = _l.teamProjectEditorChooseRoleServer);
+        return;
+      }
+      await _send(
+        widget.kind == _Kind.quick
+            ? TeamProjectAction.createQuickTask
+            : TeamProjectAction.createProject,
+        spec: TeamSpec(goal: _value('goal')),
+      );
+    } else if (widget.kind == _Kind.spec) {
+      await _saveSpec(approve: true);
+    } else if (widget.kind == _Kind.plan) {
+      final edited = [
+        for (final t in _tasks)
+          t.copyWith(
+            title: _value('task-${t.id}'),
+            criteria: _lines(_value('criteria-${t.id}')),
+          ),
+      ];
+      await _send(
+        TeamProjectAction.approvePlan,
+        tasks: edited,
+        phases: _phases,
+      );
+    } else if (widget.kind == _Kind.settings) {
+      await _send(TeamProjectAction.updateSettings);
+    } else if (_role != null) {
+      if (_value('roleName').isEmpty) {
+        _change(() => _error = _l.teamProjectEditorRoleRequired);
+        return;
+      }
+      final saved = await _send(
+        TeamProjectAction.saveRole,
+        role: _role!.copyWith(
+          name: _value('roleName'),
+          instructions: _value('roleInstructions'),
+          model: _value('roleModel'),
+          fallbackModel: _value('roleFallback'),
+        ),
+        close: false,
+      );
+      if (saved && mounted) _change(() => _role = null);
+    }
+  }
+
+  List<String> _lines(String value) => value
+      .split('\n')
+      .map((v) => v.trim())
+      .where((v) => v.isNotEmpty)
+      .toList();
+  Future<void> _saveSpec({required bool approve}) async {
+    final spec = TeamSpec(
+      version: (_project?.specVersions.lastOrNull?.version ?? 0) + 1,
+      goal: _value('goal'),
+      constraints: _value('constraints'),
+      decisions: _value('decisions'),
+      outOfScope: _value('outOfScope'),
+      milestones: [
+        for (final m in _milestones)
+          m.copyWith(
+            title: _value('milestone-${m.id}'),
+            criteria: _lines(_value('milestoneCriteria-${m.id}')),
+          ),
+      ],
+    );
+    if (spec.goal.isEmpty ||
+        (approve &&
+            (spec.milestones.isEmpty ||
+                spec.milestones.any(
+                  (m) => m.title.isEmpty || m.criteria.isEmpty,
+                )))) {
+      _change(() => _error = _l.teamProjectEditorSpecRequired);
+      return;
+    }
+    if (await _send(
+          TeamProjectAction.saveSpecDraft,
+          spec: spec,
+          close: !approve,
+        ) &&
+        approve &&
+        mounted)
+      await _send(TeamProjectAction.approveSpec, spec: spec);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = switch (widget.kind) {
+      _Kind.create => _l.teamProjectEditorNewProject,
+      _Kind.quick => _l.teamProjectEditorQuickTask,
+      _Kind.spec => _l.teamProjectEditorSpec,
+      _Kind.plan => _l.teamProjectEditorPlan,
+      _Kind.settings => _l.teamProjectEditorSettings,
+      _Kind.roles => _l.teamProjectEditorRoles,
+    };
+    return KitSheet(
+      title: title,
+      handle: false,
+      fill: true,
+      loading: _working || _restoring,
+      onClose: () => Navigator.of(context).pop(),
+      primary: widget.kind == _Kind.roles && _role == null
+          ? null
+          : KitAction(
+              label: switch (widget.kind) {
+                _Kind.create => _l.teamProjectEditorStartPlanning,
+                _Kind.quick =>
+                  _planFirst
+                      ? _l.teamProjectEditorStartPlanning
+                      : _l.teamProjectEditorStartTask,
+                _Kind.spec => _l.teamProjectEditorApproveSpec,
+                _Kind.plan => _l.teamProjectEditorApprovePlan,
+                _ => _l.teamProjectEditorSave,
+              },
+              onPressed: _working || _restoring ? null : _save,
+              working: _working,
+            ),
+      secondary: widget.kind == _Kind.spec
+          ? KitAction(
+              label: _l.teamProjectEditorSaveDraft,
+              onPressed: _working || _restoring
+                  ? null
+                  : () => _saveSpec(approve: false),
+            )
+          : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_error != null) KitNotice(message: _error!),
+          if (_project != null && _project!.revision != _reviewedRevision)
+            _button(_l.teamProjectEditorReload, _reload),
+          if (_restoring)
+            const KitSkeletonRows()
+          else ...[
+            if (_creating) ..._creation(),
+            if (_creating || widget.kind == _Kind.settings)
+              ..._settingsFields(),
+            if (widget.kind == _Kind.spec) ..._specFields(),
+            if (widget.kind == _Kind.plan) ..._planFields(),
+            if (widget.kind == _Kind.roles) ..._roleFields(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _creation() => [
+    _field('name', _l.teamProjectEditorName),
+    _field('goal', _l.teamProjectEditorGoal, multiline: true),
+    KitSectionLabel(_l.teamProjectEditorRepos),
+    for (final r in _repos)
+      KitRow(
+        title: r.name,
+        supporting: _controller.snapshot?.servers
+            .where((s) => s.id == r.serverId)
+            .firstOrNull
+            ?.name,
+        action: KitAction(
+          label: _l.teamProjectEditorRemove,
+          onPressed: () => _change(() => _repos.remove(r)),
+        ),
+      ),
+    _field('repoName', _l.teamProjectEditorRepoName),
+    _field('repoPath', _l.teamProjectEditorRepoPath),
+    _choice(
+      _l.teamProjectEditorServer,
+      {
+        for (final s in _controller.snapshot?.servers ?? <TeamServer>[])
+          s.id: s.name,
+      },
+      _serverId,
+      (v) => _change(() {
+        _serverId = v;
+        _updateCharging();
+      }),
+    ),
+    _button(_l.teamProjectEditorAddRepo, () {
+      if (_serverId == null ||
+          _value('repoPath').isEmpty ||
+          _value('repoName').isEmpty) {
+        _change(() => _error = _l.teamProjectEditorRepoRequired);
+        return;
+      }
+      _change(() {
+        _repos.add(
+          TeamRepo(
+            id: _newId(),
+            name: _value('repoName'),
+            path: _value('repoPath'),
+            serverId: _serverId!,
+          ),
+        );
+        _text('repoName').clear();
+        _text('repoPath').clear();
+        _error = null;
+        _updateCharging();
+      });
+    }),
+    if (widget.kind == _Kind.quick) ...[
+      _choice(
+        _l.teamProjectEditorRole,
+        {
+          for (final r in _controller.snapshot?.roles ?? <TeamProjectRole>[])
+            r.id: r.name,
+        },
+        _roleId,
+        (v) => _change(() => _roleId = v),
+      ),
+      KitSwitchRow(
+        title: _l.teamProjectEditorPlanFirst,
+        value: _planFirst,
+        onChanged: (v) => _change(() => _planFirst = v),
+      ),
+    ],
+  ];
+  List<Widget> _settingsFields() => [
+    _choice(
+      _l.teamProjectEditorMode,
+      {
+        'single': _l.teamProjectEditorSingle,
+        'parallel': _l.teamProjectEditorParallel,
+      },
+      _settings.mode.isEmpty ? null : _settings.mode,
+      (v) => _change(() {
+        _settings = _settings.copyWith(mode: v);
+        _updateCharging();
+      }),
+    ),
+    if (_settings.mode == 'parallel')
+      _field('lanes', _l.teamProjectEditorMaxLanes, number: true),
+    KitNotice(message: _l.teamProjectEditorCostUnknown),
+    KitSwitchRow(
+      title: _l.teamProjectEditorCharging,
+      value: _settings.chargingOnly,
+      onChanged: (v) => _change(() {
+        _chargingTouched = true;
+        _settings = _settings.copyWith(chargingOnly: v);
+      }),
+    ),
+    _choice(
+      _l.teamProjectEditorReview,
+      {
+        'milestones': _l.teamProjectEditorMilestonesRisk,
+        'every_step': _l.teamProjectEditorEveryStep,
+      },
+      _settings.reviewLevel,
+      (v) => _change(() => _settings = _settings.copyWith(reviewLevel: v)),
+    ),
+    _choice(
+      _l.teamProjectEditorBudget,
+      {
+        'limited': _l.teamProjectEditorSetLimits,
+        'unlimited': _l.teamProjectEditorNoLimit,
+      },
+      _budgetChoice,
+      (v) => _change(() => _budgetChoice = v),
+    ),
+    if (_budgetChoice == 'limited') ...[
+      _field(
+        'daily',
+        _l.teamProjectEditorDailyBudget,
+        number: true,
+        decimal: true,
+      ),
+      _field(
+        'total',
+        _l.teamProjectEditorTotalBudget,
+        number: true,
+        decimal: true,
+      ),
+    ],
+    _field('tokens', _l.teamProjectEditorTaskTokens, number: true),
+    KitSwitchRow(
+      title: _l.teamProjectEditorAutoFix,
+      value: _settings.autoFix,
+      onChanged: (v) =>
+          _change(() => _settings = _settings.copyWith(autoFix: v)),
+    ),
+    if (_settings.autoFix)
+      _field('rounds', _l.teamProjectEditorMaxRounds, number: true),
+  ];
+  List<Widget> _specFields() => [
+    _field('goal', _l.teamProjectEditorGoal, multiline: true),
+    _field('constraints', _l.teamProjectEditorConstraints, multiline: true),
+    _field('decisions', _l.teamProjectEditorDecisions, multiline: true),
+    _field('outOfScope', _l.teamProjectEditorOutOfScope, multiline: true),
+    KitSectionLabel(_l.teamProjectEditorMilestones),
+    for (final m in _milestones) ...[
+      _field(
+        'milestone-${m.id}',
+        _l.teamProjectEditorMilestoneTitle,
+        initial: m.title,
+      ),
+      _field(
+        'milestoneCriteria-${m.id}',
+        _l.teamProjectEditorCriteria,
+        initial: m.criteria.join('\n'),
+        multiline: true,
+      ),
+      Wrap(
+        children: [
+          if (_milestones.indexOf(m) > 0)
+            _button(
+              _l.teamProjectEditorMoveUp,
+              () => _change(() {
+                final i = _milestones.indexOf(m);
+                _milestones.removeAt(i);
+                _milestones.insert(i - 1, m);
+              }),
+            ),
+          if (_milestones.indexOf(m) < _milestones.length - 1)
+            _button(
+              _l.teamProjectEditorMoveDown,
+              () => _change(() {
+                final i = _milestones.indexOf(m);
+                _milestones.removeAt(i);
+                _milestones.insert(i + 1, m);
+              }),
+            ),
+          _button(
+            _l.teamProjectEditorRemove,
+            () => _change(() => _milestones.remove(m)),
+          ),
+        ],
+      ),
+    ],
+    _button(
+      _l.teamProjectEditorAddMilestone,
+      () => _change(() => _milestones.add(TeamMilestone(id: _newId()))),
+    ),
+    _button(
+      _l.teamProjectEditorHistory,
+      () => _change(() => _history = !_history),
+    ),
+    if (_history)
+      for (final s in _project?.specVersions.reversed ?? <TeamSpec>[]) ...[
+        KitSectionLabel('${_l.teamProjectEditorVersion} ${s.version}'),
+        KitText(s.goal),
+        KitText(s.constraints),
+        KitText(s.decisions),
+        KitText(s.outOfScope),
+        for (final m in s.milestones)
+          KitRow(
+            title: m.title,
+            supporting: m.criteria.join('\n'),
+            supportingMaxLines: 10,
+          ),
+      ],
+  ];
+  List<Widget> _planFields() => [
+    KitNotice(message: _l.teamProjectEditorPlanHelp),
+    for (final phase in _phases) ...[
+      KitSectionLabel(phase.title),
+      KitSwitchRow(
+        title: _l.teamProjectEditorRisky,
+        value: phase.risky,
+        onChanged: (v) => _change(() {
+          _phases[_phases.indexOf(phase)] = phase.copyWith(risky: v);
+        }),
+      ),
+      for (final t in _tasks.where((t) => t.phaseId == phase.id)) ...[
+        _field('task-${t.id}', _l.teamProjectEditorTaskTitle, initial: t.title),
+        _field(
+          'criteria-${t.id}',
+          _l.teamProjectEditorCriteria,
+          initial: t.criteria.join('\n'),
+          multiline: true,
+        ),
+        _choice(
+          _l.teamProjectEditorRole,
+          {
+            for (final r in _controller.snapshot?.roles ?? <TeamProjectRole>[])
+              r.id: r.name,
+          },
+          t.roleId,
+          (v) =>
+              _change(() => _tasks[_tasks.indexOf(t)] = t.copyWith(roleId: v)),
+        ),
+        _choice(
+          _l.teamProjectEditorRepo,
+          {for (final r in _repos) r.id: r.name},
+          t.repoId,
+          (v) => _change(() {
+            final r = _repos.firstWhere((r) => r.id == v);
+            _tasks[_tasks.indexOf(t)] = t.copyWith(
+              repoId: r.id,
+              serverId: r.serverId,
+            );
+          }),
+        ),
+        KitChoiceList<String>.multi(
+          semanticsLabel: _l.teamProjectEditorDependencies,
+          choices: [
+            for (final other in _tasks.where((o) => o.id != t.id))
+              KitChoice(value: other.id, title: other.title),
+          ],
+          selected: t.dependsOn.toSet(),
+          onChanged: (v) => _change(
+            () => _tasks[_tasks.indexOf(t)] = t.copyWith(dependsOn: v.toList()),
+          ),
+        ),
+        _button(
+          _l.teamProjectEditorRemoveTask,
+          () => _change(() {
+            _tasks.removeWhere((other) => other.id == t.id);
+            _tasks = [
+              for (final other in _tasks)
+                other.copyWith(
+                  dependsOn: other.dependsOn.where((id) => id != t.id).toList(),
+                ),
+            ];
+          }),
+        ),
+      ],
+    ],
+  ];
+  void _editRole(TeamProjectRole role) => _change(() {
+    _role = role;
+    _text('roleName').text = role.name;
+    _text('roleInstructions').text = role.instructions;
+    _text('roleModel').text = role.model;
+    _text('roleFallback').text = role.fallbackModel;
+  });
+  List<Widget> _roleFields() => [
+    if (_role == null) ...[
+      for (final role in _controller.snapshot?.roles ?? <TeamProjectRole>[])
+        KitRow(
+          title: role.name,
+          supporting: role.readOnly
+              ? _l.teamProjectEditorRemoteModel
+              : role.model,
+          onTap: () => _editRole(role),
+        ),
+      _button(
+        _l.teamProjectEditorAddRole,
+        () => _editRole(TeamProjectRole(id: _newId())),
+      ),
+    ] else ...[
+      _field('roleName', _l.teamProjectEditorRoleName),
+      _field(
+        'roleInstructions',
+        _l.teamProjectEditorInstructions,
+        multiline: true,
+      ),
+      if (!_role!.readOnly) ...[
+        _field('roleModel', _l.teamProjectEditorModel),
+        _field('roleFallback', _l.teamProjectEditorFallback),
+      ] else
+        KitNotice(message: _l.teamProjectEditorRemoteModel),
+      for (final p in _controller.snapshot?.projects ?? <TeamProject>[])
+        for (final t in p.tasks.where((t) => t.roleId == _role!.id))
+          KitRow(title: t.title, supporting: p.name),
+      _button(_l.teamProjectEditorAllRoles, () => _change(() => _role = null)),
+    ],
+  ];
+}
