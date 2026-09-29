@@ -3162,7 +3162,6 @@
   "teamUiTermTeam": "فريق · city",
   "teamUiTermWork": "عمل · bead",
   "teamUiTermsHeading": "المصطلحات",
-  "teamUiTurnOff": "إيقاف",
   "teamUiTurnOffBody": "يزيل بطاقته وعناصر الانتباه وبيانات الفريق المخزّنة مؤقتًا من هذا الهاتف. لا يتغير شيء على المضيف.",
   "teamUiTurnOffTitle": "هل تريد إيقاف فريق الذكاء الاصطناعي لخادم {server}؟",
   "teamUiVerdictCityNotRunning": "مضيف الفريق قيد البدء. حاول مجددًا بعد قليل.",
@@ -4835,5 +4834,8 @@
   "teamStripNeedsYou": "{count} يحتاج إليك",
   "teamProgressOne": "فريق الذكاء الاصطناعي: {title}",
   "teamProgressStep": "فريق الذكاء الاصطناعي: {title} · الخطوة {done} من {total}",
-  "teamProgressMany": "فريق الذكاء الاصطناعي: {count} مهام قيد العمل"
+  "teamProgressMany": "فريق الذكاء الاصطناعي: {count} مهام قيد العمل",
+  "teamSettingsTitle": "إعدادات الفريق",
+  "teamSettingsOpenTooltip": "إعدادات الفريق",
+  "teamSettingsTurnOff": "إيقاف فريق الذكاء الاصطناعي"
 }

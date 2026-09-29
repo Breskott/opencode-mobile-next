@@ -107,11 +107,11 @@ void main() {
   testWidgets('Needs you comes first: the question heads the home, above '
       'every task, without a tap', (tester) async {
     await _pump(tester, _home);
-    final question = find.text(_question);
+    final question = find.textContaining(_question, findRichText: true);
     expect(question, findsOneWidget);
     // The question is also its task's row (team-home-one-list, Sept 27).
     expect(_key('team-home-run-oc-xru'), findsNothing);
-    expect(_key('team-home-gate-req-schema-1-task'), findsOneWidget);
+    expect(_key('team-home-run-$teamSceneRunId'), findsOneWidget);
     expect(find.textContaining('Offline-first sessions'), findsOneWidget);
     expect(
       _top(tester, question),
@@ -170,14 +170,7 @@ void main() {
   ) async {
     await _pump(tester, _home);
     // Under the team's Now line and the tasks.
-    await tester.scrollUntilVisible(
-      _key('team-home-agents-row'),
-      200,
-      scrollable: find.descendant(
-        of: _key('team-home-runs'),
-        matching: find.byType(Scrollable),
-      ),
-    );
+    await tester.tap(_key('team-home-settings'));
     await tester.pumpAndSettle();
     await tester.tap(_key('team-home-agents-row'));
     await tester.pumpAndSettle();

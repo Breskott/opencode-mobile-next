@@ -23,6 +23,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/team_settings_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_vocabulary.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -158,7 +159,18 @@ Future<void> _pump(WidgetTester tester, Widget page) async {
   }
 }
 
-String _agentsRow(WidgetTester tester) => tester
+/// The agents row lives in Team settings: opens it once, then reads.
+Future<String> _agentsRow(WidgetTester tester) async {
+  if (_key('team-home-agents-row').evaluate().isEmpty) {
+    await tester.tap(_key('team-home-settings'));
+    for (var i = 0; i < 15; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
+  return _agentsRowTitle(tester);
+}
+
+String _agentsRowTitle(WidgetTester tester) => tester
     .widget<KitRow>(
       find.descendant(
         of: _key('team-home-agents-row'),
@@ -261,7 +273,7 @@ void main() {
       await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
       // Every agent the list shows is counted (they agree); one works.
       expect(
-        _agentsRow(tester),
+        await _agentsRow(tester),
         '${_en.teamUiHomeAgentsRowCount(3)} · '
         '${_en.teamUiHomeAgentsRowWorking(1)}',
       );
@@ -279,7 +291,7 @@ void main() {
       );
       await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
       expect(
-        _agentsRow(tester),
+        await _agentsRow(tester),
         '${_en.teamUiHomeAgentsRowCount(2)} · '
         '${_en.teamUiHomeAgentsRowWorking(1)} · '
         '${_en.teamHomeAgentsRowCrashed(1)}',
@@ -330,7 +342,7 @@ void main() {
       await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
       expect(_subtitle(tester), isNot(contains(_en.teamUiHostPhrasePaused)));
       expect(
-        _agentsRow(tester),
+        await _agentsRow(tester),
         '${_en.teamUiHomeAgentsRowCount(2)} · ${_en.teamNowAgentsAsleep}',
       );
       await tester.pumpWidget(const SizedBox.shrink());
@@ -356,7 +368,10 @@ void main() {
       tester,
     ) async {
       final team = await _team(usage: _usage());
-      await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
+      await _pump(
+        tester,
+        TeamSettingsScreen(controller: team, now: () => _clock),
+      );
       expect(
         find.text(_en.teamHomeSpentToday(r'$0.42 est. · 12.4k tokens')),
         findsOneWidget,
@@ -367,7 +382,10 @@ void main() {
 
     testWidgets('missing history says the figure is a floor', (tester) async {
       final team = await _team(usage: _usage(partial: true));
-      await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
+      await _pump(
+        tester,
+        TeamSettingsScreen(controller: team, now: () => _clock),
+      );
       expect(
         scope(tester),
         '${_en.teamHomeSpentHint} ${_en.teamHomeSpentHistoryMissing}',
@@ -381,7 +399,10 @@ void main() {
       final team = await _team(
         usage: _usage(partial: true, unpriced: 2, recording: false),
       );
-      await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
+      await _pump(
+        tester,
+        TeamSettingsScreen(controller: team, now: () => _clock),
+      );
       expect(
         scope(tester),
         '${_en.teamHomeSpentHint} ${_en.teamHomeSpentPartial} '
@@ -401,7 +422,10 @@ void main() {
           ),
         ),
       );
-      await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
+      await _pump(
+        tester,
+        TeamSettingsScreen(controller: team, now: () => _clock),
+      );
       expect(_key('team-home-spent'), findsNothing);
       expect(find.textContaining(r'$0'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -516,7 +540,7 @@ void main() {
       await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
       expect(_subtitle(tester), isNot(contains(_en.teamUiHostPhrasePaused)));
       expect(
-        _agentsRow(tester),
+        await _agentsRow(tester),
         '${_en.teamUiHomeAgentsRowCount(5)} · ${_en.teamNowAgentsAsleep} · '
         '${_en.teamHomeAgentsRowKeptOff(4)}',
       );
@@ -537,7 +561,7 @@ void main() {
       final team = await _team(agents: agents);
       await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
       expect(
-        _agentsRow(tester),
+        await _agentsRow(tester),
         '${_en.teamUiHomeAgentsRowCount(6)} · '
         '${_en.teamUiHomeAgentsRowWorking(1)} · '
         '${_en.teamHomeAgentsRowPaused(2)}',
@@ -578,7 +602,10 @@ void main() {
           ),
         ),
       );
-      await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
+      await _pump(
+        tester,
+        TeamSettingsScreen(controller: team, now: () => _clock),
+      );
       expect(_key('team-home-spent'), findsNothing);
       expect(find.textContaining(r'$0.00'), findsNothing);
       expect(find.textContaining('0 tokens'), findsNothing);
@@ -607,7 +634,10 @@ void main() {
           ),
         ],
       );
-      await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
+      await _pump(
+        tester,
+        TeamSettingsScreen(controller: team, now: () => _clock),
+      );
       expect(find.byType(KitSwitchRow), findsNothing);
       expect(_key('team-home-upkeep-row'), findsOneWidget);
       final line = tester

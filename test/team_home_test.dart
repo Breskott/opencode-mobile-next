@@ -494,6 +494,8 @@ void main() {
       expect(find.textContaining('convoy'), findsNothing);
       expect(find.text('Planning'), findsNothing);
       // Five live agents; the dog slots and the core helper are not agents.
+      await tester.tap(find.byKey(const ValueKey('team-home-settings')));
+      await tester.pumpAndSettle();
       expect(find.textContaining('5 agents'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('team-home-upkeep-row')),
@@ -721,36 +723,27 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a gated task with its one question: the question block is '
-        'its row, shown once', (tester) async {
-      OrchestrationRun? opened;
+    testWidgets('a gated task with its one question: the question is its '
+        'row, shown once', (tester) async {
       final (controller, _) = await boot(configure: blockedShape);
-      await pumpHome(tester, controller, onOpenRun: (run) => opened = run);
+      await pumpHome(tester, controller);
       final gate = controller.snapshot.gates.single;
-      final block = find.byKey(ValueKey('team-home-gate-${gate.id}'));
-      expect(block, findsOneWidget);
-      // No heading over the block, and the task is not listed again.
+      // One row: the task, its question inline and its step count; no
+      // separate block and no second copy of the task.
+      expect(runRow('oc-xru'), findsOneWidget);
+      expect(find.byKey(ValueKey('team-home-gate-${gate.id}')), findsNothing);
       expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
-      expect(runRow('oc-xru'), findsNothing);
-      // The block names the task and carries its step count, each once.
-      // The task leads the card's caption (slice-P4.1c: the one request
-      // card), which isolates it for bidi.
-      final task = find.textContaining(
-        'Add subtract function to calc.py',
-        findRichText: true,
-      );
-      expect(find.descendant(of: block, matching: task), findsOneWidget);
-      expect(task, findsOneWidget);
       expect(
-        find.descendant(
-          of: block,
-          matching: find.textContaining('1 of 2 steps done'),
-        ),
+        find.textContaining('Add subtract function to calc.py'),
         findsOneWidget,
       );
-      // It still opens the task's conversation.
-      await tester.tap(find.byKey(ValueKey('team-home-gate-${gate.id}-task')));
-      expect(opened?.id, 'oc-xru');
+      final line = lineOf(tester, 'oc-xru');
+      expect(line, startsWith('Needs you · '));
+      expect(line, contains(gate.title));
+      // It opens the question (the Gate sheet).
+      await tester.tap(runRow('oc-xru'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('team-gate-sheet')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -860,22 +853,15 @@ void main() {
 
   // Technical details open from the page's "how it runs" row (P3.4).
   Future<void> openDetails(WidgetTester tester) async {
-    final row = find.byKey(const ValueKey('team-home-host-row'));
-    await tester.scrollUntilVisible(
-      row,
-      200,
-      scrollable: find
-          .descendant(
-            of: find.byKey(const ValueKey('team-home-runs')),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    await tester.tap(row);
+    await tester.tap(find.byKey(const ValueKey('team-home-settings')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('team-home-host-row')));
     await tester.pumpAndSettle();
   }
 
   Future<void> openAgents(WidgetTester tester) async {
+    await tester.tap(find.byKey(const ValueKey('team-home-settings')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('team-home-agents-row')));
     await tester.pumpAndSettle();
   }
@@ -1083,8 +1069,8 @@ void main() {
   });
 
   group('needs you', () {
-    testWidgets('one question comes first, in full, and More opens the '
-        'read-only sheet', (tester) async {
+    testWidgets('one question is its task row, and it opens the read-only '
+        'sheet', (tester) async {
       // Without `controlRespond` the sheet stays Sprint A read-only; the
       // actions are TEAM-203's and tested in team_gate_answer_test.
       final (controller, _) = await boot(
@@ -1094,27 +1080,9 @@ void main() {
         },
       );
       await pumpHome(tester, controller);
-      final gate = controller.snapshot.gates.single;
-      final block = find.byKey(ValueKey('team-home-gate-${gate.id}'));
-      expect(block, findsOneWidget);
-      // The block is the answer surface: no heading over it, and its task
-      // (the fixture's only one) is not listed again under Tasks.
       expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
-      expect(runRow('oc-xru'), findsNothing);
-      // Watch-only here: no choices to pick on the home.
-      expect(
-        find.descendant(
-          of: block,
-          matching: find.textContaining('The phone can only watch'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(ValueKey('team-home-gate-${gate.id}-send')),
-        findsNothing,
-      );
-
-      await tester.tap(find.byKey(ValueKey('team-home-gate-${gate.id}-more')));
+      expect(runRow('oc-xru'), findsOneWidget);
+      await tester.tap(runRow('oc-xru'));
       await tester.pumpAndSettle();
       final sheet = find.byKey(const ValueKey('team-gate-sheet'));
       expect(sheet, findsOneWidget);
@@ -1151,9 +1119,7 @@ void main() {
         hostMode: OrchestrationHostMode.phone,
       );
       await pumpHome(tester, controller);
-      await tester.tap(
-        find.byKey(const ValueKey('team-home-gate-req-fixture-choice-1-more')),
-      );
+      await tester.tap(runRow('oc-xru'));
       await tester.pumpAndSettle();
       expect(
         find.descendant(
@@ -1420,6 +1386,8 @@ void main() {
 
       // Upkeep is one line in words in the team's own panel (owner, build
       // 2055): no switch, no rows of engine names, duplicates collapsed.
+      await tester.tap(find.byKey(const ValueKey('team-home-settings')));
+      await tester.pumpAndSettle();
       final line = find.byKey(const ValueKey('team-home-upkeep-line'));
       expect(line, findsOneWidget);
       expect(find.byType(SwitchListTile), findsNothing);
@@ -1549,8 +1517,7 @@ void main() {
       // The one-list redesign removed both section headings in every locale.
       expect(find.text('يحتاجك'), findsNothing);
       expect(find.text('المهام'), findsNothing);
-      final gate = controller.snapshot.gates.single;
-      expect(find.byKey(ValueKey('team-home-gate-${gate.id}')), findsOneWidget);
+      expect(runRow('oc-xru'), findsOneWidget);
       expect(hostPhrase(tester), startsWith('على '));
       for (final word in ['convoy', 'Gas City', '1.4.1', 'bright-lights']) {
         expect(find.textContaining(word), findsNothing, reason: word);

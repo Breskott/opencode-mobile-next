@@ -25,6 +25,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart' show AppStatusTone;
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/team_settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_page.dart';
 import 'package:opencode_mobile/ui/screens/team/team_states.dart';
@@ -215,7 +216,7 @@ Future<void> _settle(WidgetTester tester) async {
 
 /// Picks [item] from the team page's top bar menu.
 Future<void> _menu(WidgetTester tester, String item) async {
-  await tester.tap(_key('team-home-more'));
+  await tester.tap(_key('team-home-settings'));
   await _settle(tester);
   await tester.tap(_key(item));
   await _settle(tester);
@@ -224,7 +225,16 @@ Future<void> _menu(WidgetTester tester, String item) async {
 String _subtitle(WidgetTester tester) =>
     tester.widget<KitTopBar>(find.byType(KitTopBar)).subtitle!;
 
-String _agentsRow(WidgetTester tester) => tester
+/// The agents row lives in Team settings: opens it once, then reads.
+Future<String> _agentsRow(WidgetTester tester) async {
+  if (_key('team-home-agents-row').evaluate().isEmpty) {
+    await tester.tap(_key('team-home-settings'));
+    await _settle(tester);
+  }
+  return _agentsRowTitle(tester);
+}
+
+String _agentsRowTitle(WidgetTester tester) => tester
     .widget<KitRow>(
       find.descendant(
         of: _key('team-home-agents-row'),
@@ -305,10 +315,9 @@ void main() {
       await _settle(tester);
       expect(find.byType(TeamHomeScreen), findsOneWidget);
       // No Change address for a team the app runs itself; here there is.
-      await tester.tap(_key('team-home-more'));
+      await tester.tap(_key('team-home-settings'));
       await _settle(tester);
       expect(_key('team-home-change-address'), findsOneWidget);
-      expect(_key('team-home-refresh'), findsOneWidget);
       await tester.tap(_key('team-home-turn-off'));
       await _settle(tester);
       expect(_key('team-turn-off-sheet'), findsOneWidget);
@@ -366,7 +375,7 @@ void main() {
       );
       await _settle(tester);
       expect(find.byType(TeamHomeScreen), findsOneWidget);
-      await tester.tap(_key('team-home-more'));
+      await tester.tap(_key('team-home-settings'));
       await _settle(tester);
       // Its address is the app's own: nothing to change.
       expect(_key('team-home-change-address'), findsNothing);
@@ -481,7 +490,7 @@ void main() {
       expect(_key('team-home-heat'), findsNothing);
       expect(_key('team-home-now-paused'), findsOneWidget);
       expect(_key('team-home-now-wake'), findsOneWidget);
-      expect(_agentsRow(tester), contains(_en.teamNowAgentsPaused));
+      expect(await _agentsRow(tester), contains(_en.teamNowAgentsPaused));
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
@@ -502,8 +511,8 @@ void main() {
       expect(_key('team-home-now-paused'), findsNothing);
       expect(_key('team-home-now-wake'), findsNothing);
       expect(find.text(_en.teamUiControlResume), findsNothing);
-      expect(_agentsRow(tester), contains(_en.teamHomeAgentsCooling));
-      expect(_agentsRow(tester), isNot(contains(' · paused')));
+      expect(await _agentsRow(tester), contains(_en.teamHomeAgentsCooling));
+      expect(await _agentsRow(tester), isNot(contains(' · paused')));
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
@@ -562,7 +571,7 @@ void main() {
     Future<void> pump(WidgetTester tester, OrchestrationController team) async {
       _phone(tester);
       await tester.pumpWidget(
-        _app(TeamHomeScreen(controller: team, now: () => _clock)),
+        _app(TeamSettingsScreen(controller: team, now: () => _clock)),
       );
       await _settle(tester);
     }
@@ -612,6 +621,8 @@ void main() {
       await _settle(tester);
       expect(_key('team-home-info'), findsNothing);
       expect(find.text(_en.teamUiDisclaimerPhone), findsOneWidget);
+      await tester.tap(_key('team-home-settings'));
+      await _settle(tester);
       await tester.tap(_key('team-home-host-row'));
       await _settle(tester);
       expect(_key('team-home-host-sheet'), findsOneWidget);

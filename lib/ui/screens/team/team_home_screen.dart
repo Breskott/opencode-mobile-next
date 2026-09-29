@@ -68,7 +68,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:intl/intl.dart' show DateFormat;
 
-import '../../../builtin/team/builtin_team.dart' show BuiltinTeam;
 import '../../../builtin/thermal_guard.dart';
 import '../../../builtin/thermal_guard_teams.dart'
     show thermalGuardSlotProvider;
@@ -76,7 +75,6 @@ import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/orchestration.dart';
-import '../../../state/team_conversation.dart' show teamSessionState;
 import '../../../state/team_dispatch.dart';
 import '../../../state/team_overview.dart';
 import '../../../termux/team_runtime.dart';
@@ -87,17 +85,10 @@ import '../../widgets/relative_time.dart';
 import '../../widgets/team_now.dart';
 import '../../widgets/team_now_line_view.dart'
     show TeamNowActivity, teamNowActivityLine, teamWorkerStartUsual;
-import '../../widgets/team_discovery_card.dart'
-    show teamHostDisclaimer, teamHostKindFor;
-import '../../widgets/team_host_form.dart'
-    show TeamHostProbe, showTeamTurnOffSheet;
+import '../../widgets/team_host_form.dart' show TeamHostProbe;
 import '../../widgets/team_phone_onboarding.dart' show TeamPhoneKilledNotice;
-import '../../widgets/team_phone_section.dart' show TeamPhoneSection;
 import '../../widgets/team_receipt.dart';
-import '../../widgets/team_switch.dart';
-import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_vocabulary.dart';
-import '../settings/plugins_screen.dart' show teamPhoneProfile;
 import '../team_conversation/team_conversation.dart' show TeamConversation;
 import 'gate_sheet.dart';
 import 'start_run_sheet.dart';
@@ -106,6 +97,7 @@ import '../../../state/team_planning.dart'
 import 'team_board_screen.dart';
 import 'team_agents_screen.dart';
 import 'team_needs_you.dart';
+import 'team_settings_screen.dart';
 import 'team_states.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -192,10 +184,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
   /// states.
   final _killedKey = GlobalKey();
 
-  /// Turn off could not stop the team on this phone.
-  bool _offFailed = false;
-  bool _switching = false;
-
   ConnectionController? _scopeConnection;
   ValueListenable<ThermalGuard?>? _scopeHeat;
 
@@ -263,19 +251,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     return _merged!;
   }
 
-  /// The connection's profile when it is this team's, else null.
-  ConnectionController? get _owner {
-    final connection = _connection;
-    final profile = connection?.profile;
-    if (connection == null ||
-        profile == null ||
-        profile.id != widget.controller.profileId ||
-        profile.orchestration == null) {
-      return null;
-    }
-    return connection;
-  }
-
   /// The heat guard's hold on this team, when it matches this profile, its
   /// phone host and city ([teamOverview]).
   ThermalTeamHold? _heatHold() {
@@ -297,63 +272,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
-  Future<void> _changeAddress() async {
-    final connection = _owner;
-    if (connection == null || _switching) return;
-    setState(() => _switching = true);
-    try {
-      final saved = await editTeamAddress(
-        context,
-        connection,
-        probe: widget.probe,
-      );
-      if (saved) _teamChanged();
-    } finally {
-      if (mounted) setState(() => _switching = false);
-    }
-  }
-
-  Future<void> _turnOff() async {
-    final connection = _owner;
-    final profile = connection?.profile;
-    if (connection == null || profile == null || _switching) return;
-    final confirmed = await showTeamTurnOffSheet(context, profile.name);
-    if (!confirmed || !mounted) return;
-    setState(() {
-      _switching = true;
-      _offFailed = false;
-    });
-    try {
-      final outcome = await turnOffTeam(connection, profile);
-      if (outcome == TeamOffOutcome.failed) {
-        if (mounted) setState(() => _offFailed = true);
-        return;
-      }
-      _teamChanged();
-    } finally {
-      if (mounted) setState(() => _switching = false);
-    }
-  }
-
-  /// The phone's Termux team's own controls: keep it running, stop it,
-  /// remove it (the section the old AI Team sheet carried).
-  Future<void> _openPhoneControls() {
-    final connection = _owner!;
-    final l10n = _copy(context);
-    return showKitSheet<void>(
-      context,
-      title: l10n.teamUiPhoneSectionTitle,
-      icon: AppIconography.phone,
-      sheetKey: const ValueKey('team-home-phone-sheet'),
-      body: (sheetContext) => TeamPhoneSection(
-        connection: connection,
-        profile: connection.profile!,
-        runtime: widget.teamRuntime,
-        onRemoved: () => Navigator.of(sheetContext).pop(),
-      ),
-    );
-  }
-
   void _toggleSearch() => setState(() {
     _searchOpen = !_searchOpen;
     if (!_searchOpen) {
@@ -369,14 +287,18 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     unawaited(TeamConversation.open(context, widget.controller, runId: run.id));
   }
 
-  void _openAgents() {
-    Navigator.of(context).push(
-      KitPageRoute<void>(
-        builder: (_) => TeamAgentsScreen(
-          controller: widget.controller,
-          onOpenAgent: widget.onOpenAgent,
-          now: widget.now,
-        ),
+  void _openSettings() {
+    unawaited(
+      openTeamSettings(
+        context,
+        controller: widget.controller,
+        connection: _connection,
+        thermalGuard: _heat,
+        probe: widget.probe,
+        teamRuntime: widget.teamRuntime,
+        now: widget.now,
+        onOpenAgent: widget.onOpenAgent,
+        onTeamChanged: _teamChanged,
       ),
     );
   }
@@ -417,8 +339,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             controller.phase == OrchestrationPhase.ready &&
             controller.snapshot.hasData;
         final hold = _heatHold();
-        final owner = _owner;
-        final builtin = BuiltinTeam.isBuiltinConfig(controller.config);
         // The one primary action (design standard §2): pinned below the
         // list, never over it, only where this phone can give a task.
         final canStart = controller.capabilities.controlMessage && ready;
@@ -457,6 +377,14 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
                   onPressed: () =>
                       openTeamBoard(context, controller, now: widget.now),
                 ),
+              // Setup and configuration: agents, how it runs, spend, turning
+              // it off (Team settings), never on the work page.
+              KitAction(
+                key: const ValueKey('team-home-settings'),
+                label: l10n.teamSettingsOpenTooltip,
+                icon: AppIconography.settings,
+                onPressed: _openSettings,
+              ),
             ],
             menu: [
               KitMenuItem(
@@ -466,33 +394,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
                 enabled: !_refreshing,
                 onSelected: () => unawaited(_refresh()),
               ),
-              // The team-plugin-sheet's switches, on the team's own page.
-              if (owner != null && !builtin)
-                KitMenuItem(
-                  key: const ValueKey('team-home-change-address'),
-                  label: l10n.teamHomeChangeAddress,
-                  icon: AppIconography.edit,
-                  enabled: !_switching,
-                  onSelected: () => unawaited(_changeAddress()),
-                ),
-              // The phone's Termux team's own controls, whatever state the
-              // page is in (a stopped team is exactly when they are needed).
-              if (owner != null && teamPhoneProfile(owner.profile))
-                KitMenuItem(
-                  key: const ValueKey('team-home-phone-controls'),
-                  label: l10n.teamHomePhoneControls,
-                  icon: AppIconography.phone,
-                  onSelected: () => unawaited(_openPhoneControls()),
-                ),
-              if (owner != null)
-                KitMenuItem(
-                  key: const ValueKey('team-home-turn-off'),
-                  label: l10n.teamUiTurnOff,
-                  icon: AppIconography.unlink,
-                  destructive: true,
-                  enabled: !_switching,
-                  onSelected: () => unawaited(_turnOff()),
-                ),
             ],
             menuKey: const ValueKey('team-home-more'),
           ),
@@ -502,22 +403,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           // Android stopped the phone's Termux team: said here, with
           // Start the team again (map: team-phone-onboarding-killed).
           status: line,
-          header: [
-            if (_offFailed)
-              Padding(
-                padding: EdgeInsetsDirectional.symmetric(
-                  horizontal: KitTokens.of(context).gutter,
-                  vertical: KitTokens.of(context).space2,
-                ),
-                child: KitNotice(
-                  key: const ValueKey('team-home-turn-off-failed'),
-                  tone: AppStatusTone.failure,
-                  icon: AppIconography.error,
-                  message: l10n.teamHomeTurnOffFailed,
-                  onDismiss: () => setState(() => _offFailed = false),
-                ),
-              ),
-          ],
           // Stopped by Android: nothing loads until it starts again, and
           // the line above says so.
           loading: !_killed && (teamScreenLoading(controller) || _refreshing),
@@ -747,32 +632,22 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     final snapshot = controller.snapshot;
     final gated = teamGatedRuns(snapshot);
     final gates = teamOpenGates(controller);
-    // The host's upkeep (patrols, chores) is hidden by default and never
-    // counted; the switch under the list reveals it.
+    // The host's upkeep (patrols, chores) is never counted or listed here.
     final runs = teamVisibleRuns(snapshot.runs);
-    final upkeep = teamUpkeepRuns(snapshot.runs)
-      ..sort((a, b) => teamCompareRuns(a, b, gated));
     final ordered = [...runs]..sort((a, b) => teamCompareRuns(a, b, gated));
-    // One question in place names its task and stands for its row.
-    final carded = gates.length == 1
-        ? teamGateRun(snapshot, gates.single)
-        : null;
-    // Several questions: each task's row becomes its most urgent question;
-    // a question whose task is not listed (or a second one on the same
-    // task) is a row of its own at the top of the list.
+    // Every question is its task's row (owner rule 2026-09-27, one list):
+    // "Needs you · <question> · 2 min ago", opening the Gate sheet; a
+    // question whose task is not listed (or a second one on the same task)
+    // is a row of its own at the top of the list. Nothing shows twice.
     final gateOfRun = <String, OrchestrationGate>{};
     final looseGates = <OrchestrationGate>[];
-    if (gates.length > 1) {
-      final listedIds = {for (final run in runs) run.id};
-      for (final gate in gates) {
-        final id = teamGateRun(snapshot, gate)?.id;
-        if (id != null &&
-            listedIds.contains(id) &&
-            !gateOfRun.containsKey(id)) {
-          gateOfRun[id] = gate;
-        } else {
-          looseGates.add(gate);
-        }
+    final listedIds = {for (final run in runs) run.id};
+    for (final gate in gates) {
+      final id = teamGateRun(snapshot, gate)?.id;
+      if (id != null && listedIds.contains(id) && !gateOfRun.containsKey(id)) {
+        gateOfRun[id] = gate;
+      } else {
+        looseGates.add(gate);
       }
     }
     final query = (_searchOpen ? _query : '').trim().toLowerCase();
@@ -782,10 +657,7 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
       for (final run in ordered)
         if (!filtering || _matches(run, query, gated)) run,
     ];
-    final listed = [
-      for (final run in visible)
-        if (run.id != carded?.id) run,
-    ];
+    final listed = visible;
     final loose =
         !filtering ||
             (_filter != TeamRunFilter.active &&
@@ -805,29 +677,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
         ? done
         : done.take(teamHomeDoneShown).toList();
     final hiddenDone = done.length - doneShown.length;
-    // Is the team working? From each agent's session first (ledger row
-    // 21): the host's stopped session is never counted as working.
-    final live = teamLiveAgents(snapshot.agents);
-    final working = live
-        .where((a) => teamSessionState(a) == AgentState.working)
-        .length;
-    final crashed = live
-        .where((a) => teamSessionState(a) == AgentState.crashed)
-        .length;
-    // The row counts every agent the agents list shows (they agree): the
-    // ones the person paused and the ones the app keeps off on its phone
-    // team are counted apart, never as the team's pause.
-    final keptOff = snapshot.agents
-        .where((a) => teamAgentKeptOff(controller.config, a))
-        .length;
-    final pausedAgents = snapshot.agents
-        .where(
-          (a) =>
-              !teamAgentIsLive(a) &&
-              teamAgentPaused(a) &&
-              !teamAgentKeptOff(controller.config, a),
-        )
-        .length;
     final rest = teamRest(snapshot.agents, config: controller.config);
 
     Widget row(OrchestrationRun run) {
@@ -931,36 +780,9 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
 
     final children = <Widget>[
       ?killed,
-      // 1. What needs the person, first, and only when something does: the
-      // answer surface itself, no section heading over it.
-      if (gates.length == 1) ...[
-        SizedBox(height: tokens.space3),
-        // The card's ring sits outside its border: inset by the gutter less
-        // the ring, its edge lines up with the rows below.
-        Padding(
-          padding: EdgeInsetsDirectional.symmetric(
-            horizontal: tokens.gutter - KitTokens.needsYouRingWidth,
-          ),
-          child: TeamNeedsYouCard(
-            keyPrefix: 'team-home-gate-${gates.single.id}',
-            controller: controller,
-            gate: gates.single,
-            title: carded?.title ?? l10n.teamUiHomeNeedsYouFallbackTitle,
-            detail: carded == null || _isFinished(carded)
-                ? null
-                : teamTaskSteps(
-                    l10n,
-                    TeamRunProgress.of(carded, snapshot.work),
-                  ),
-            onOpenTask: carded == null ? null : () => _openRun(carded),
-            onOpen: () => _openGate(gates.single),
-          ),
-        ),
-        gap,
-      ] else
-        SizedBox(height: tokens.space3),
-      // 2. The tasks: one panel, most urgent first, what finished last.
-      if (runs.isEmpty && planning.isEmpty)
+      SizedBox(height: tokens.space3),
+      // The tasks: one panel, most urgent first, what finished last.
+      if (runs.isEmpty && planning.isEmpty && loose.isEmpty)
         KitStateView(
           key: const ValueKey('team-home-runs-empty'),
           size: KitStateSize.inline,
@@ -980,7 +802,7 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
         )
       // A task still being planned is a row of its own: the list is not
       // empty, so no "No tasks match" over it.
-      else if (visible.isEmpty && planned.isEmpty)
+      else if (visible.isEmpty && planned.isEmpty && loose.isEmpty)
         KitStateView(
           key: const ValueKey('team-home-runs-empty-filtered'),
           size: KitStateSize.inline,
@@ -989,7 +811,7 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           title: l10n.teamUiHomeRunsEmptyFiltered,
           body: l10n.teamUiHomeRunsEmptyHint,
         ),
-      if (visible.isEmpty && planned.isEmpty) gap,
+      if (visible.isEmpty && planned.isEmpty && loose.isEmpty) gap,
       if (listed.isNotEmpty || loose.isNotEmpty || planned.isNotEmpty) ...[
         KitRowGroup(
           key: const ValueKey('team-home-tasks'),
@@ -1021,57 +843,6 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
         ),
         gap,
       ],
-      // 3. The team itself: who is on it, how it runs, what it spent. The
-      // board opens from the top bar only (one entry point).
-      KitRowGroup(
-        key: const ValueKey('team-home-team'),
-        children: [
-          _AgentsRow(
-            key: const ValueKey('team-home-agents-row'),
-            total: snapshot.agents.length,
-            rest: rest,
-            cooling: hold != null,
-            working: working,
-            crashed: crashed,
-            paused: pausedAgents,
-            keptOff: keptOff,
-            onTap: _openAgents,
-          ),
-          // How fast it runs where it runs (the place is the top bar's);
-          // the address, version and access are behind it.
-          KitRow(
-            key: const ValueKey('team-home-host-row'),
-            leading: KitRow.icon(context, AppIconography.speed),
-            title: l10n.teamUiTechnicalDetails,
-            supporting: TextSpan(
-              text: teamHostDisclaimer(
-                l10n,
-                teamHostKindFor(
-                  controller.config,
-                  controller.host?.hostMode ?? controller.config.hostMode,
-                ),
-              ),
-            ),
-            supportingKey: const ValueKey('team-home-host-speed'),
-            supportingMaxLines: 2,
-            trailing: const KitChevron(),
-            onTap: () => showTeamHostDetailsSheet(context, controller),
-          ),
-          ?_spentRow(context, l10n, controller),
-          // The host's own upkeep, said once in words ("Patrol ×4 ·
-          // planning"): part of how the team runs, not tasks of the
-          // person's, so no switch and no rows of engine names.
-          if (upkeep.isNotEmpty)
-            KitRow(
-              key: const ValueKey('team-home-upkeep-row'),
-              leading: KitRow.icon(context, AppIconography.retry),
-              title: l10n.teamHomeUpkeepTitle,
-              supporting: TextSpan(text: teamUpkeepLine(l10n, upkeep)),
-              supportingKey: const ValueKey('team-home-upkeep-line'),
-              supportingMaxLines: 3,
-            ),
-        ],
-      ),
     ];
 
     return KeyedSubtree(
@@ -1296,123 +1067,5 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
       TeamDispatchPhase.invalidInput ||
       TeamDispatchPhase.createRefused => null,
     };
-  }
-
-  /// What the whole team spent today, as the host estimates it; null when
-  /// the host reports nothing (unknown is never "\$0").
-  Widget? _spentRow(
-    BuildContext context,
-    AppLocalizations l10n,
-    OrchestrationController controller,
-  ) {
-    if (!controller.capabilities.usage) return null;
-    final evidence = controller.snapshot.usage?.evidence;
-    final today = evidence != null && evidence.available
-        ? evidence.today
-        : null;
-    if (today == null) return null;
-    final cost = today.costUsdEstimate;
-    final input = today.inputTokens, output = today.outputTokens;
-    final tokens = input == null && output == null
-        ? null
-        : (input ?? 0) + (output ?? 0);
-    // Nothing counted (every figure zero or missing) is not a spend of
-    // "\$0.00 · 0 tokens": a worker can run for hours before the host
-    // counts its use, so the row stays away (unknown is never zero).
-    if ((cost ?? 0) == 0 && (tokens ?? 0) == 0) return null;
-    final figures = [
-      if (cost != null) l10n.teamUiUsageCostEstimated(teamCurrencyLabel(cost)),
-      if (tokens != null) l10n.teamUiUsageTokens(teamCompactCount(tokens)),
-    ];
-    // What the figure covers (the whole team's day where it runs, never a
-    // task's cost: the host has no per-task figure, docs/qa/codex-p52),
-    // then why it may be low: use with no price, history missing, or the
-    // host not counting new use. Each is its own sentence.
-    final lines = [
-      l10n.teamHomeSpentHint,
-      if ((today.unpriced ?? 0) > 0)
-        l10n.teamHomeSpentPartial
-      else if (evidence!.partial)
-        l10n.teamHomeSpentHistoryMissing,
-      if (!evidence!.recording) l10n.teamHomeSpentNotRecording,
-    ];
-    return KitRow(
-      key: const ValueKey('team-home-spent'),
-      leading: KitRow.icon(context, AppIconography.usage),
-      title: l10n.teamHomeSpentToday(figures.join(teamUsageSeparator)),
-      titleKey: const ValueKey('team-home-spent-figure'),
-      supporting: TextSpan(text: lines.join(' ')),
-      supportingKey: const ValueKey('team-home-spent-scope'),
-      supportingMaxLines: 5,
-    );
-  }
-}
-
-/// "6 agents · 1 working · 4 kept off on this phone", opening the agents
-/// list: it counts every agent the list shows, so the two agree.
-class _AgentsRow extends StatelessWidget {
-  const _AgentsRow({
-    super.key,
-    required this.total,
-    required this.rest,
-    required this.working,
-    required this.onTap,
-    this.crashed = 0,
-    this.paused = 0,
-    this.keptOff = 0,
-    this.cooling = false,
-  });
-
-  /// Every agent the host lists, asleep, paused and kept-off ones included.
-  final int total;
-  final TeamRest rest;
-  final int working;
-
-  /// Live agents whose session ended in an error: said on the row, since a
-  /// team with a crashed worker is not simply "working".
-  final int crashed;
-
-  /// Agents the person (or the host) switched off on purpose.
-  final int paused;
-
-  /// Agents the app keeps off on its own phone team to save the phone.
-  final int keptOff;
-
-  /// The heat guard holds the team: its agents rest to cool the phone,
-  /// not because the person paused them.
-  final bool cooling;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final count = l10n.teamUiHomeAgentsRowCount(total);
-    final kept = keptOff > 0 ? l10n.teamHomeAgentsRowKeptOff(keptOff) : null;
-    // Asleep agents are the team too: "3 agents · asleep until there is
-    // work", not "No agents".
-    final title = switch (cooling ? null : rest) {
-      null => [count, l10n.teamHomeAgentsCooling],
-      TeamRest.asleep => [count, l10n.teamNowAgentsAsleep, ?kept],
-      TeamRest.paused => [count, l10n.teamNowAgentsPaused, ?kept],
-      TeamRest.awake => [
-        count,
-        if (working > 0) l10n.teamUiHomeAgentsRowWorking(working),
-        if (crashed > 0) l10n.teamHomeAgentsRowCrashed(crashed),
-        if (paused > 0) l10n.teamHomeAgentsRowPaused(paused),
-        ?kept,
-      ],
-    }.join(teamUsageSeparator);
-    return Semantics(
-      button: true,
-      hint: l10n.teamUiHomeAgentsRowHint,
-      child: KitRow(
-        leading: KitRow.icon(context, AppIconography.agent),
-        title: title,
-        // "6 agents · 1 working · 4 kept off on this phone" is whole.
-        titleMaxLines: 2,
-        trailing: const KitChevron(),
-        onTap: onTap,
-      ),
-    );
   }
 }

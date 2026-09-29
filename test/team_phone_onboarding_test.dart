@@ -990,7 +990,7 @@ void main() {
     // The one AI Team page; the phone team's own controls are in its menu,
     // in every state of the page.
     Future<void> openSheet(WidgetTester tester) async {
-      await tester.tap(find.byKey(const ValueKey('team-home-more')));
+      await tester.tap(find.byKey(const ValueKey('team-home-settings')));
       await settle(tester);
       await tester.tap(find.byKey(const ValueKey('team-home-phone-controls')));
       await settle(tester);
@@ -1290,7 +1290,7 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(tester.takeException(), isNull);
         // The team page's menu opens the phone team's own controls.
-        await tester.tap(find.byKey(const ValueKey('team-home-more')));
+        await tester.tap(find.byKey(const ValueKey('team-home-settings')));
         await settle(tester);
         await tester.tap(
           find.byKey(const ValueKey('team-home-phone-controls')),
