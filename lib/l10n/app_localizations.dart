@@ -8681,7 +8681,7 @@ abstract class AppLocalizations {
   /// Workspace and activity: Active session directory · {directory}
   ///
   /// In en, this message translates to:
-  /// **'Active conversation’s project · {directory}'**
+  /// **'A conversation is running in this folder · {directory}'**
   String e7WorkspaceActiveDirectory(String directory);
 
   /// Workspace and activity: {count, plural, one {1 open on this server} other {{count} open on this server}}
@@ -9071,7 +9071,7 @@ abstract class AppLocalizations {
   /// Chat journey: Context compacted
   ///
   /// In en, this message translates to:
-  /// **'Context compacted'**
+  /// **'Earlier messages were summarized to save space'**
   String get chatUiContextCompacted;
 
   /// Chat journey: Copied. Paste it into the composer
@@ -38251,6 +38251,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Turn it back on'**
   String get effectsGlassCrashOn;
+
+  /// Confirm sheet title before compacting the conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Compact this conversation?'**
+  String get chatUiCompactConfirmTitle;
+
+  /// Confirm sheet: one line on what Compact does
+  ///
+  /// In en, this message translates to:
+  /// **'Compact replaces earlier messages with a short summary to save space. It can\'t be undone.'**
+  String get chatUiCompactConfirmBody;
+
+  /// Confirm sheet button that starts compacting
+  ///
+  /// In en, this message translates to:
+  /// **'Compact'**
+  String get chatUiCompactConfirmAction;
+
+  /// KitTurn: end line of an unfinished turn while the connection is coming back
+  ///
+  /// In en, this message translates to:
+  /// **'Connection lost. Reconnecting to get the rest of this reply.'**
+  String get kitTurnReconnecting;
+
+  /// Screen-reader label of the chat message box (the hint is separate).
+  ///
+  /// In en, this message translates to:
+  /// **'Message to the agent'**
+  String get composerFieldLabel;
 }
 
 class _AppLocalizationsDelegate
