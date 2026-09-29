@@ -130,6 +130,7 @@ class KitTurn extends StatelessWidget {
     this.latest = false,
     this.highlighted = false,
     this.interruptedAction,
+    this.reconnecting = false,
     this.segment = KitTurnSegment.whole,
     this.turnKey,
     this.footerKey,
@@ -162,6 +163,10 @@ class KitTurn extends StatelessWidget {
   /// "Send again" under the interrupted line; drawn only for
   /// [KitTurnPhase.interrupted].
   final KitAction? interruptedAction;
+
+  /// With [KitTurnPhase.interrupted]: the connection is coming back, so the
+  /// reply may still finish; the line says so and offers nothing to resend.
+  final bool reconnecting;
 
   /// Which part of the turn this widget draws ([KitTurnSegment]). Only
   /// [KitTurnSegment.whole] and [KitTurnSegment.last] draw the phase line
@@ -385,7 +390,11 @@ class _TurnFrameState extends State<_TurnFrame> {
       KitTurnPhase.interrupted => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          line(l10n.kitTurnInterrupted),
+          line(
+            turn.reconnecting
+                ? l10n.kitTurnReconnecting
+                : l10n.kitTurnInterrupted,
+          ),
           if (turn.interruptedAction case final action?)
             Align(
               alignment: AlignmentDirectional.topStart,

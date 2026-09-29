@@ -19218,6 +19218,10 @@
   "@kitTurnInterrupted": {
     "description": "KitTurn: the end line of a turn cut off by server or connection loss"
   },
+  "kitTurnReconnecting": "Connection lost. Reconnecting to get the rest of this reply.",
+  "@kitTurnReconnecting": {
+    "description": "KitTurn: end line of an unfinished turn while the connection is coming back"
+  },
   "kitTurnCopy": "Copy reply",
   "@kitTurnCopy": {
     "description": "KitTurn: the footer button and menu item that copy the whole reply of a turn"

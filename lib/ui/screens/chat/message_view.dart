@@ -1423,6 +1423,8 @@ class _MessageView extends StatelessWidget {
         chat != null &&
         !chat._conn.isIsolated &&
         !chat._conn.isConnected;
+    // Still trying to get back: the reply may yet finish, so no resend.
+    final reconnecting = connectionLost && chat._conn.connectionLoading;
     final interrupted =
         connectionLost ||
         (streaming &&
@@ -1502,7 +1504,9 @@ class _MessageView extends StatelessWidget {
           : DateTime.fromMillisecondsSinceEpoch(createdAt),
       blocks: blocks,
       footer: footer,
-      interruptedAction: connectionLost && onSendInterruptedAgain != null
+      reconnecting: reconnecting,
+      interruptedAction:
+          connectionLost && !reconnecting && onSendInterruptedAgain != null
           ? KitAction(
               key: const Key('interrupted-send-again'),
               label: strings.chatUiSendPromptAgain,

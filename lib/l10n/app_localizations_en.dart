@@ -16813,6 +16813,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The connection dropped before this reply finished.';
 
   @override
+  String get kitTurnReconnecting =>
+      'Connection lost. Reconnecting to get the rest of this reply.';
+
+  @override
   String get kitTurnCopy => 'Copy reply';
 
   @override

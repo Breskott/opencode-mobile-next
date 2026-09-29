@@ -26860,6 +26860,12 @@ abstract class AppLocalizations {
   /// **'The connection dropped before this reply finished.'**
   String get kitTurnInterrupted;
 
+  /// KitTurn: end line of an unfinished turn while the connection is coming back
+  ///
+  /// In en, this message translates to:
+  /// **'Connection lost. Reconnecting to get the rest of this reply.'**
+  String get kitTurnReconnecting;
+
   /// KitTurn: the footer button and menu item that copy the whole reply of a turn
   ///
   /// In en, this message translates to:
