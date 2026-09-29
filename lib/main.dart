@@ -16,8 +16,10 @@ import 'builtin/builtin_server.dart';
 import 'builtin/phone_server_healing.dart';
 import 'builtin/reply_watch.dart';
 import 'builtin/setup/phone_setup.dart';
+import 'builtin/setup/setup_engine.dart' show ChannelSetupEngine;
 import 'builtin/setup/setup_finish.dart';
 import 'builtin/setup/termux_setup_finish.dart';
+import 'builtin/team/builtin_team.dart' show BuiltinTeam;
 import 'builtin/thermal_guard.dart' show ThermalNoticeKind;
 import 'builtin/thermal_guard_teams.dart';
 import 'desktop/window_icon.dart';
@@ -1876,6 +1878,11 @@ class _RootState extends ConsumerState<_Root> {
             starter: _builtin,
             diagnostics: _controller.diagnostics,
             recover: ref.read(phoneServerHealingProvider).check,
+            // The team that ran comes back too: healing restarts OpenCode
+            // only (an app update ends both).
+            reviveTeam: (_) => BuiltinTeam(linux: _builtin.linux).ensureRunning(
+              notice: ChannelSetupEngine.deviceStrings().aiteamComponentNotice,
+            ),
           ),
     );
   }

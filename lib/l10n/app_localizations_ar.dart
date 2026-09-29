@@ -9120,6 +9120,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiStateUnreachableTitle => 'تعذّر الوصول إلى مضيف الفريق';
 
   @override
+  String get teamUiStatePhoneStoppedTitle => 'AI Team stopped';
+
+  @override
+  String get teamUiStatePhoneStoppedBody =>
+      'AI Team on this phone isn’t running. Start it to continue your tasks.';
+
+  @override
+  String get teamUiStartOnPhone => 'Start AI Team on this phone';
+
+  @override
   String get teamUiStateNotGasCityTitle =>
       'لا يوجد فريق ذكاء اصطناعي على هذا الخادم';
 

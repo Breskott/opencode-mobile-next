@@ -9168,6 +9168,18 @@
   "@teamUiStateUnreachableTitle": {
     "description": "AI Team screens, whole-screen error title: the team host did not answer (the body says where AI Team works)"
   },
+  "teamUiStatePhoneStoppedTitle": "AI Team stopped",
+  "@teamUiStatePhoneStoppedTitle": {
+    "description": "AI Team screens, whole-screen state title: the AI Team inside this app does not answer (it stopped, for example after an app update)"
+  },
+  "teamUiStatePhoneStoppedBody": "AI Team on this phone isn’t running. Start it to continue your tasks.",
+  "@teamUiStatePhoneStoppedBody": {
+    "description": "AI Team screens, body under teamUiStatePhoneStoppedTitle: what is wrong and the way forward"
+  },
+  "teamUiStartOnPhone": "Start AI Team on this phone",
+  "@teamUiStartOnPhone": {
+    "description": "AI Team screens, primary action when the AI Team inside this app stopped: starts it and shows its progress"
+  },
   "teamUiStateNotGasCityTitle": "No AI team on this server",
   "@teamUiStateNotGasCityTitle": {
     "description": "AI Team screens, whole-screen state title: the server runs no AI team yet"
