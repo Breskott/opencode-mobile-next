@@ -45,6 +45,14 @@ void main() {
     },
   );
 
+  testWidgets('inline label uses the host gutter once', (tester) async {
+    await tester.pumpWidget(_app(const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      child: KitSectionLabel.inline('Milestones'),
+    )));
+    expect(tester.getTopLeft(find.text('Milestones')).dx, 16);
+  });
+
   testWidgets('names its section as a heading, in sentence case', (
     tester,
   ) async {
