@@ -256,3 +256,11 @@ These go in `test/goldens/kit/kit_chip_golden_test.dart`. The scene is a `KitChi
 ## Open questions
 
 None. `chipHeight` and the `KitShape` enum are pre-wave (`_new-tokens.md`). If they are missing when the unit starts, it records the gap and uses a `StadiumBorder` and `minTarget - 2 * space2` (32) for the height.
+
+## AI Team severity (2026-09-29)
+
+All constructors accept `tone: KitChipTone.neutral` by default. `attention`
+uses the attention text role for a worded Major finding; `danger` uses danger
+for Critical. Minor remains neutral. Text and optional icon carry the tone;
+the existing neutral pill fill and 48 dp target remain. Severity is always
+written in the label so color is never the only signal.
