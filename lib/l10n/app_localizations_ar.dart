@@ -13842,24 +13842,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamBoardFlagCancelled => 'ملغاة';
 
   @override
-  String get teamBoardAgeJustNow => 'الآن';
-
-  @override
-  String teamBoardAgeMinutes(int count) {
-    return 'قبل $count د';
-  }
-
-  @override
-  String teamBoardAgeHours(int count) {
-    return 'قبل $count س';
-  }
-
-  @override
-  String teamBoardAgeDays(int count) {
-    return 'قبل $count ي';
-  }
-
-  @override
   String get teamBoardMoveMenuTooltip => 'نقل أو تغيير';
 
   @override
@@ -24412,10 +24394,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'Its models are not in this list yet';
 
   @override
-  String get pickerAddKeyNotLoadedHint =>
-      'Signed in, but the server has not loaded it. A key can load it.';
-
-  @override
   String pickerSignInTo(String name) {
     return 'Sign in to $name';
   }
@@ -24436,10 +24414,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String pickerProviderNotLoaded(String name) {
     return '$name is saved, but the server has not loaded it yet.';
   }
-
-  @override
-  String get integrationsSignedInNotLoaded =>
-      'Signed in, not loaded by this server yet';
 
   @override
   String get integrationsSignedInUnusable =>
@@ -24468,4 +24442,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get composerFieldLabel => 'رسالة إلى الوكيل';
+
+  @override
+  String get e7WorkspaceYesterday => 'أمس';
 }
