@@ -29,3 +29,8 @@ Follow-up candidate (coordinator runs integration checks):
 Mandatory fixture recovery follow-up:
 - Added explicit malformed-plan fallback, conflicting/manual dev changes, checked agent/manual conflict resolution, criterion results, 80% budget notices and confirmed start-over placement. Original branch work and human dev commit receipts remain recorded; main remains untouched until confirmed reviewed promotion.
 - Added focused tests for these scenarios and closed-gateway late reads. Coordinator owns final analyzer/test execution for the combined candidate; initial 11-test result is historical only.
+
+
+## Integrated verification, September 30
+
+The coordinator's final recovery checkpoint passed all 20 fixture tests and 3 controller/draft tests. Complete-source analyzer is clean. Lifecycle integration adds immediate-stop, late factory, concurrent deletion, read-only monitor and profile-scoped cleanup coverage. See [the integration record](../aiteam-phase-a-2026-09-29/README.md) for the frozen full-manifest run and its separate baseline failures. Earlier 11-test evidence above remains historical. No actual server, filesystem merge or background engine was exercised.
