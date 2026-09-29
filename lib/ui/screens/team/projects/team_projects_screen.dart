@@ -119,8 +119,12 @@ class _TeamProjectsScreenState extends State<TeamProjectsScreen> {
                 ),
               KitProjectRow(
                 title: p.name,
-                status: _progress(l, p),
-                state: _state(p.status),
+                status: c.errorCode == 'unavailable'
+                    ? l.teamProjectTaskStale
+                    : _progress(l, p),
+                state: c.errorCode == 'unavailable'
+                    ? KitTeamState.stale
+                    : _state(p.status),
                 meta: _age(context, p.updatedAt),
                 onPressed: () => KitScreen.openDetail<void>(
                   context,
@@ -229,7 +233,9 @@ class TeamProjectOverview extends StatelessWidget {
             ? null
             : KitTopBar(
                 title: p.name,
-                subtitle: _progress(l, p),
+                subtitle: c.errorCode == 'unavailable'
+                    ? l.teamProjectTaskStale
+                    : _progress(l, p),
                 actions: [
                   KitAction(
                     label: l.teamProjectSpec,
@@ -343,10 +349,14 @@ class TeamProjectOverview extends StatelessWidget {
               if (p.tasks.any((t) => t.serverId == server.id))
                 KitServerLane(
                   title: server.name,
-                  status: server.online
+                  status: c.errorCode == 'unavailable'
+                      ? l.teamProjectTaskStale
+                      : server.online
                       ? l.teamProjectOnline
                       : l.teamProjectOffline,
-                  state: server.online
+                  state: c.errorCode == 'unavailable'
+                      ? KitTeamState.stale
+                      : server.online
                       ? KitTeamState.running
                       : KitTeamState.stale,
                   items: [
@@ -356,8 +366,10 @@ class TeamProjectOverview extends StatelessWidget {
                       KitTeamItem(
                         title: t.title,
                         detail:
-                            '${_role(context, c, t.roleId)} · ${_word(l, t.status)}',
-                        state: _state(t.status),
+                            '${_role(context, c, t.roleId)} · ${c.errorCode == 'unavailable' ? l.teamProjectTaskStale : _word(l, t.status)}',
+                        state: c.errorCode == 'unavailable'
+                            ? KitTeamState.stale
+                            : _state(t.status),
                         onPressed: () => task(t),
                       ),
                   ],
@@ -918,8 +930,16 @@ class TeamProjectServers extends StatelessWidget {
             for (final s in controller.snapshot!.servers) ...[
               KitServerLane(
                 title: s.name,
-                status: s.online ? l.teamProjectOnline : l.teamProjectOffline,
-                state: s.online ? KitTeamState.done : KitTeamState.stale,
+                status: controller.errorCode == 'unavailable'
+                    ? l.teamProjectTaskStale
+                    : s.online
+                    ? l.teamProjectOnline
+                    : l.teamProjectOffline,
+                state: controller.errorCode == 'unavailable'
+                    ? KitTeamState.stale
+                    : s.online
+                    ? KitTeamState.done
+                    : KitTeamState.stale,
                 summary: l.teamProjectLaneCount(
                   p.tasks
                       .where((t) => t.serverId == s.id && t.status == 'running')
@@ -930,7 +950,9 @@ class TeamProjectServers extends StatelessWidget {
                   for (final t in p.tasks.where((t) => t.serverId == s.id))
                     KitTeamItem(
                       title: t.title,
-                      detail: _word(l, t.status),
+                      detail: controller.errorCode == 'unavailable'
+                          ? l.teamProjectTaskStale
+                          : _word(l, t.status),
                       onPressed: () =>
                           _openTask(context, controller, p.id, t.id),
                     ),
