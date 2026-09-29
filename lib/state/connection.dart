@@ -3285,6 +3285,19 @@ class ConnectionController extends ChangeNotifier {
     void handleEvent(EventEnvelope event) {
       if (!_isCurrentGlobalStream(generation, currentApi, stream)) return;
       elsewhereAttention.handle(event);
+      // OpenCode 1's `/event` only carries its own folder's events. While it
+      // is down, this server-wide stream still carries them: pass them on so
+      // a running reply keeps moving instead of waiting for the 5 s list
+      // poll and the refresh at the end. Never while it is up, or every
+      // streamed word would arrive twice.
+      if (currentApi is OpenCodeApi &&
+          status != StreamStatus.connected &&
+          event.directory != null &&
+          directory != null &&
+          sameDirectoryPath(event.directory, directory)) {
+        _onEvent(event);
+        return;
+      }
       if (event.type == 'installation.update-available' ||
           event.type == 'installation.updated' ||
           event.type == 'worktree.ready' ||

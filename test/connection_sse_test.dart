@@ -713,6 +713,127 @@ void main() {
     api.close();
   });
 
+  testWidgets('a stream that goes silent after a heartbeat is replaced', (
+    tester,
+  ) async {
+    // OpenCode 1 writes a heartbeat every 10 s. A connection that stops
+    // writing without closing used to read as live forever, and the chat
+    // showed a running reply only once it had finished.
+    final bodies = <StreamController<Uint8List>>[];
+    final api = _StreamApi((_) {
+      final body = StreamController<Uint8List>();
+      bodies.add(body);
+      return body.stream;
+    });
+    final statuses = <StreamStatus>[];
+    final stream = EventStream(
+      api: api,
+      onEvent: (_) {},
+      onStatus: statuses.add,
+    );
+
+    stream.start();
+    await tester.pump();
+    expect(statuses.last, StreamStatus.connected);
+    // Silence before any heartbeat proves nothing: older servers send none.
+    await tester.pump(const Duration(seconds: 40));
+    expect(api.calls, 1);
+
+    bodies.single.add(
+      Uint8List.fromList(
+        utf8.encode(
+          'data: ${jsonEncode({'type': 'server.heartbeat', 'properties': {}})}'
+          '\n\n',
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 30));
+    expect(api.calls, 1, reason: 'still inside the silence limit');
+
+    await tester.pump(const Duration(seconds: 5, milliseconds: 100));
+    expect(statuses.last, StreamStatus.reconnecting);
+    await tester.pump(const Duration(seconds: 2));
+    expect(api.calls, 2);
+    expect(statuses.last, StreamStatus.connected);
+
+    // A cancel settles on a later frame under the test clock.
+    unawaited(stream.dispose());
+    for (final body in bodies) {
+      unawaited(body.close());
+    }
+    // Let the retired connection's backoff-reset timer run out.
+    await tester.pump(const Duration(seconds: 31));
+    api.close();
+  });
+
+  testWidgets('while the folder stream is down, the server-wide stream '
+      'carries that folder’s events live', (tester) async {
+    final apis = <_ControlledApi>[];
+    final scopedStreams = <_FakeEventStream>[];
+    final globalStreams = <_FakeEventStream>[];
+    final controller = ConnectionController(
+      await _store(),
+      apiFactory: (profile) {
+        final api = _ControlledApi('${profile.id}-${apis.length}');
+        apis.add(api);
+        return api;
+      },
+      repositoryFactory: _repositoryFactory,
+      eventStreamFactory: _streamFactory(scopedStreams),
+      globalEventStreamFactory: _streamFactory(globalStreams),
+    );
+    final connect = controller.connect(_profile('server'));
+    await tester.pump();
+    apis.single.healthResult.complete(Health(healthy: true, version: '1'));
+    await connect;
+    unawaited(controller.selectLocation(directory: '/work/app'));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump();
+    }
+    apis.last.healthResult.complete(Health(healthy: true, version: '1'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump();
+    }
+    expect(controller.directory, '/work/app');
+
+    final seen = <EventEnvelope>[];
+    final subscription = controller.events.listen(seen.add);
+    EventEnvelope part(String directory, String text) => EventEnvelope(
+      type: 'message.part.updated',
+      directory: directory,
+      properties: {
+        'sessionID': 'ses_1',
+        'part': {
+          'id': 'prt_1',
+          'messageID': 'msg_1',
+          'sessionID': 'ses_1',
+          'type': 'text',
+          'text': text,
+        },
+      },
+    );
+
+    // The folder stream has not connected: this folder's words arrive
+    // through the server-wide stream; another folder's never do.
+    expect(controller.status, isNot(StreamStatus.connected));
+    globalStreams.last.emit(part('/work/app/', 'live'));
+    globalStreams.last.emit(part('/work/other', 'elsewhere'));
+    await tester.pump();
+    expect(seen.map((event) => event.properties['part']['text']), ['live']);
+
+    // Once the folder stream is up it is the only source, so nothing
+    // arrives twice. (Set directly: the reconnect refreshes that a status
+    // change starts are not what this test is about.)
+    controller.status = StreamStatus.connected;
+    globalStreams.last.emit(part('/work/app', 'twice'));
+    await tester.pump();
+    expect(seen, hasLength(1));
+
+    unawaited(subscription.cancel());
+    controller.dispose();
+  });
+
   testWidgets('immediate HTTP 200 closes retain exponential retry backoff', (
     tester,
   ) async {
