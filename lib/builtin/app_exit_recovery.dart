@@ -56,7 +56,9 @@ class AppExitNotice {
 /// it, and holds the one-time notice.
 ///
 /// The start itself is [BuiltinServerStarter]'s, the one path every screen
-/// uses; the team follows it there ([BuiltinServerStarter.start]). When the
+/// uses. Its automatic (healing) restart leaves the team alone, so the team
+/// that ran comes back here, once per process ([runOnce]'s `reviveTeam`,
+/// BuiltinTeam.ensureRunning). When the
 /// app opens on the in-app server the shell already starts it (main.dart's
 /// `_autoStartThenConnect`), so this starts it only when another server is
 /// selected.
@@ -94,6 +96,7 @@ class AppExitRecovery extends ChangeNotifier {
     AppDiagnosticsController? diagnostics,
     Future<ReportProblemStartup?>? problemReport,
     Future<void> Function(ServerProfile profile)? recover,
+    Future<void> Function(ServerProfile profile)? reviveTeam,
     Future<bool> Function({
       required String profileId,
       required String eventId,
@@ -174,6 +177,37 @@ class AppExitRecovery extends ChangeNotifier {
       onRestart: onRestart,
       recover: recover,
     );
+    if (teamWas && reviveTeam != null) {
+      await _reviveTeam(store: store, reviveTeam: reviveTeam);
+    }
+  }
+
+  /// Brings back the in-app AI Team that ran when the process ended (an
+  /// app update, or Android ending the app), on the same terms as the
+  /// phone's OpenCode: the profile still has the team on, and the restart
+  /// policy allows it. A team the person turned off stays off: its profile
+  /// lost the team's config, and [reviveTeam] (BuiltinTeam.ensureRunning)
+  /// also reads the durable turned-off mark. A Stop the person gave is
+  /// already left out: it cleared the services Android recorded.
+  Future<void> _reviveTeam({
+    required ProfileStore store,
+    required Future<void> Function(ServerProfile profile) reviveTeam,
+  }) async {
+    final profile = _inAppProfile(store, team: true);
+    final wanted =
+        profile != null &&
+        BuiltinTeam.isBuiltinConfig(profile.orchestration) &&
+        AutomationPolicyController.forProfile(
+          store.prefs,
+          profile.id,
+        ).value.allows(AutomationBehavior.restartPhoneServer);
+    PerfTrace.mark('app.recover.team', attrs: {'started': wanted});
+    if (!wanted) return;
+    try {
+      await reviveTeam(profile);
+    } catch (_) {
+      // The team page says it stopped and offers to start it.
+    }
   }
 
   Future<void> _restart({

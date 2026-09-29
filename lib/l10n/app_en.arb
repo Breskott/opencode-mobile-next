@@ -29619,5 +29619,17 @@
   "teamRolesSearchAliases": "roles personas agents team frontend backend tester product designer instructions",
   "@teamRolesSearchAliases": {
     "description": "Search words for the AI Team's Agents page (roles)."
+  },
+  "teamUiStatePhoneStoppedTitle": "AI Team stopped",
+  "@teamUiStatePhoneStoppedTitle": {
+    "description": "AI Team screens, whole-screen state title: the AI Team inside this app does not answer (it stopped, for example after an app update)"
+  },
+  "teamUiStatePhoneStoppedBody": "AI Team on this phone isn’t running. Start it to continue your tasks.",
+  "@teamUiStatePhoneStoppedBody": {
+    "description": "AI Team screens, body under teamUiStatePhoneStoppedTitle: what is wrong and the way forward"
+  },
+  "teamUiStartOnPhone": "Start AI Team on this phone",
+  "@teamUiStartOnPhone": {
+    "description": "AI Team screens, primary action when the AI Team inside this app stopped: starts it and shows its progress"
   }
 }

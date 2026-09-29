@@ -5,15 +5,28 @@
 /// [KitStateView] pages under the screen's one [KitLoadingBar].
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../../builtin/team/builtin_team.dart'
+    show BuiltinTeam, BuiltinTeamException, BuiltinTeamStage;
+import '../../../builtin/team/builtin_team_job.dart';
 import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../kit/scenes/team_scenes.dart';
+import '../../widgets/builtin_team_section.dart'
+    show
+        builtinTeamFailureText,
+        builtinTeamProjectName,
+        builtinTeamStageText,
+        sharedBuiltinTeam;
 import '../../widgets/grace_timer.dart';
+import '../../widgets/product_states.dart'
+    show productErrorDetails, productErrorText;
 import '../../widgets/team_vocabulary.dart';
 
 /// Whether [controller] has nothing to show because it failed: the probe
@@ -48,6 +61,19 @@ Widget? teamScreenState(
   );
   if (teamScreenFailed(controller)) {
     final error = controller.lastError;
+    // The team inside this app does not answer: it stopped (an app update
+    // or Android ending the app takes it down). Offer the start that fixes
+    // it, not a Tailscale hint for a computer that is not involved.
+    if (BuiltinTeam.isBuiltinConfig(controller.config) &&
+        (error == null || error.kind == OrchestrationErrorKind.unreachable)) {
+      return _phoneTeamStopped(
+        l10n,
+        controller: controller,
+        keyPrefix: keyPrefix,
+        retry: retry,
+        details: error?.message.trim(),
+      );
+    }
     final (icon, tone, title) = teamErrorState(l10n, error?.kind);
     final details = error?.message.trim();
     // The host is starting: the team wakes up while the person waits.
@@ -87,6 +113,83 @@ Widget? teamScreenState(
     );
   }
   return null;
+}
+
+/// The in-app team does not answer: "Start AI Team on this phone", and its
+/// stages while it starts (the app's one team job, so This phone shows the
+/// same start). Once it answers, the screen reads the team again.
+Widget _phoneTeamStopped(
+  AppLocalizations l10n, {
+  required OrchestrationController controller,
+  required String keyPrefix,
+  required KitAction retry,
+  required String? details,
+}) {
+  final job = BuiltinTeamJob.shared;
+  Future<void> start() async {
+    if (job.running) return;
+    final team = sharedBuiltinTeam;
+    final notice = l10n.aiteamComponentNotice;
+    await job.run(
+      stages: const [BuiltinTeamStage.starting, BuiltinTeamStage.waiting],
+      work: (onStage) => team.start(notice: notice, onStage: onStage),
+    );
+    if (job.error == null) await controller.retry();
+  }
+
+  return ListenableBuilder(
+    listenable: job,
+    builder: (context, _) {
+      if (job.running) {
+        return KitStateView(
+          key: ValueKey('$keyPrefix-team-starting'),
+          icon: AppIconography.waiting,
+          tone: AppStatusTone.progress,
+          illustration: const TeamWakingScene(),
+          illustrationAmbient: true,
+          title: builtinTeamStageText(
+            l10n,
+            job.stage ?? BuiltinTeamStage.starting,
+            builtinTeamProjectName(job.project ?? ''),
+          ),
+          progress: const KitProgress.waiting(),
+        );
+      }
+      final failure = job.error;
+      final failureDetail = switch (failure) {
+        null => null,
+        final BuiltinTeamException error => error.detail.trim(),
+        final Object error => productErrorDetails(error),
+      };
+      final shownDetails = failureDetail ?? details;
+      return KitStateView(
+        key: ValueKey('$keyPrefix-error'),
+        icon: AppIconography.cloudOff,
+        tone: AppStatusTone.neutral,
+        title: l10n.teamUiStatePhoneStoppedTitle,
+        body: switch (failure) {
+          null => l10n.teamUiStatePhoneStoppedBody,
+          final BuiltinTeamException error => builtinTeamFailureText(
+            l10n,
+            error,
+          ),
+          final Object error => l10n.aiteamComponentFailed(
+            productErrorText(error, l10n: l10n),
+          ),
+        },
+        primary: KitAction(
+          key: ValueKey('$keyPrefix-start-team'),
+          label: l10n.teamUiStartOnPhone,
+          icon: AppIconography.play,
+          onPressed: () => unawaited(start()),
+        ),
+        secondary: retry,
+        details: shownDetails == null || shownDetails.isEmpty
+            ? null
+            : shownDetails,
+      );
+    },
+  );
 }
 
 /// The not-answering page's one sentence: what the app does and what to
