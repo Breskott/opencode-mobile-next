@@ -27,7 +27,7 @@ Approved before-direction images: [projects](../aiteam-mockups-2026-09-29/1-proj
 
 After capture harness: `test/goldens/team/team_projects_golden_test.dart` renders the actual legacy Team home plus the new overview, new-project sheet, plan, findings and promotion conversation at 412×915 and 1280×800 in both themes. Additional 2× text frames cover 360×800, 412×915 and 1280×800. All render as Android.
 
-The corrected capture checkpoint passed **27/27 gallery tests**, including tap target, label, contrast and pane-aware reading-order checks. All 27 frames were inspected in a contact sheet, with full-size inspection of phone plan/findings/new/promotion, the three-pane overview, and 360/1280-wide 2× text. The review found and corrected premature promotion, false completed marks, missing card spacing, enabled incomplete creation, and excessively wide standalone transcripts. A final acceptance-readiness correction (`57bac06d`) hides phase/milestone approval until merged work is ready; the coordinator records its final rerender and full-suite revision separately.
+The corrected capture checkpoint passed **27/27 gallery tests**, including tap target, label, contrast and pane-aware reading-order checks. All 27 frames were inspected in a contact sheet, with full-size inspection of phone plan/findings/new/promotion, the three-pane overview, and 360/1280-wide 2× text. The review found and corrected premature promotion, false completed marks, missing card spacing, enabled incomplete creation, and excessively wide standalone transcripts. The final acceptance-readiness correction (`57bac06d`) hides phase/milestone approval until merged work is ready. Its rerender and affected tests passed **34/34** (`gallery-final-2.log`); the updated overview, plan and findings frames were inspected again at full size. Visual signoff covers all 27 final images, with no observed overflow or premature approval actions. The integration source is frozen at `0c4bbd12` for the coordinator's full serial suite.
 
 Selected captured artifacts (owned by the integration candidate):
 
@@ -50,7 +50,7 @@ Layout: `KitScreen.padding` supplies the one 16 dp phone gutter. `KitSectionLabe
 - Integrated focused checkpoint: **74 tests passed**, including project fixture/controller/integration, editor, conversation, overview and existing targeted coverage. Evidence: coordinator log `focused-ui-2.log`.
 - Integrated analyzer checkpoint: **No issues found** (`analyze-final.log`).
 - Corrected Android gallery checkpoint: **27 tests passed** (`gallery-final.log`), run with `--update-goldens` through the shared machine lock.
-- The final phase/milestone readiness change has focused assertions and is submitted for the coordinator's unchanged-candidate verification. Repository-wide gates and the complete serial suite remain coordinator-owned; this document does not claim completion of that gate.
+- Final phase/milestone readiness assertions and all regenerated gallery scenes: **34 tests passed** (`gallery-final-2.log`); final analyzer remained clean. Repository-wide gates and the complete 973-file serial suite remain coordinator-owned and were running on frozen source `0c4bbd12` when this evidence was recorded; this document does not claim completion of that gate.
 
 ## Accessibility and device follow-up
 
