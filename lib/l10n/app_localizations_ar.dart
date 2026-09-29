@@ -25419,4 +25419,16 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamProjectEditorChangeRequired =>
       'Add a goal and describe the change you want.';
+
+  @override
+  String get teamProjectTaskApprovedPlan => 'Approved plan';
+
+  @override
+  String get teamProjectTaskCriteria => 'Acceptance criteria';
+
+  @override
+  String get teamProjectTaskOpenFindings => 'Open findings';
+
+  @override
+  String get teamProjectTaskFindingsAddressed => 'Findings addressed';
 }

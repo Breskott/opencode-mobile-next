@@ -39996,6 +39996,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add a goal and describe the change you want.'**
   String get teamProjectEditorChangeRequired;
+
+  /// No description provided for @teamProjectTaskApprovedPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved plan'**
+  String get teamProjectTaskApprovedPlan;
+
+  /// No description provided for @teamProjectTaskCriteria.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceptance criteria'**
+  String get teamProjectTaskCriteria;
+
+  /// No description provided for @teamProjectTaskOpenFindings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open findings'**
+  String get teamProjectTaskOpenFindings;
+
+  /// No description provided for @teamProjectTaskFindingsAddressed.
+  ///
+  /// In en, this message translates to:
+  /// **'Findings addressed'**
+  String get teamProjectTaskFindingsAddressed;
 }
 
 class _AppLocalizationsDelegate
