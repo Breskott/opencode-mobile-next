@@ -5167,7 +5167,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7WorkspaceActiveDirectory(String directory) {
-    return 'Active conversation’s project · $directory';
+    return 'A conversation is running in this folder · $directory';
   }
 
   @override
@@ -5429,7 +5429,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiContextAdded => 'Context added';
 
   @override
-  String get chatUiContextCompacted => 'Context compacted';
+  String get chatUiContextCompacted =>
+      'Earlier messages were summarized to save space';
 
   @override
   String get chatUiCopiedPasteItIntoTheComposer =>
@@ -24323,4 +24324,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get effectsGlassCrashOn => 'Turn it back on';
+
+  @override
+  String get chatUiCompactConfirmTitle => 'Compact this conversation?';
+
+  @override
+  String get chatUiCompactConfirmBody =>
+      'Compact replaces earlier messages with a short summary to save space. It can\'t be undone.';
+
+  @override
+  String get chatUiCompactConfirmAction => 'Compact';
+
+  @override
+  String get kitTurnReconnecting =>
+      'Connection lost. Reconnecting to get the rest of this reply.';
+
+  @override
+  String get composerFieldLabel => 'Message to the agent';
 }

@@ -627,7 +627,9 @@ class _KitRequestCardState extends State<KitRequestCard> {
           constraints: const BoxConstraints(maxWidth: KitLayout.readingWidth),
           child: Padding(
             padding: EdgeInsetsDirectional.symmetric(
-              horizontal: tokens.space2,
+              // The card's border sits on the page gutter (the ring adds
+              // its own width around it), like every other block.
+              horizontal: tokens.gutter - KitTokens.needsYouRingWidth,
               vertical: tokens.space1,
             ),
             child: content,
