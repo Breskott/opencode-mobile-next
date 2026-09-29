@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -136,13 +137,15 @@ void main() {
         await tester.pumpAndSettle();
         final context = tester.element(find.byType(SettingsScreen));
         final scope = SearchScope.of(context, controller);
-        await searchEntries(
-              lookupAppLocalizations(const Locale('en')),
-              scope,
-              'termux',
-            )
-            .firstWhere((entry) => entry.id == 'settings-on-this-phone')
-            .open(context, scope);
+        unawaited(
+          searchEntries(
+                lookupAppLocalizations(const Locale('en')),
+                scope,
+                'termux',
+              )
+              .firstWhere((entry) => entry.id == 'settings-on-this-phone')
+              .open(context, scope),
+        );
         await tester.pumpAndSettle();
         // The phone setup screen; Termux is one of its other ways.
         expect(find.byType(PhoneSetupStartScreen), findsOneWidget);
@@ -221,7 +224,7 @@ void main() {
         await tester.pageBack();
         await tester.pumpAndSettle();
         await tester.pump(const Duration(seconds: 11));
-        expect(find.text('On this phone'), findsOneWidget);
+        expect(find.byType(SettingsScreen), findsOneWidget);
       },
     );
   }

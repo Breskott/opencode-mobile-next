@@ -106,18 +106,18 @@ class _DemoScreenState extends State<DemoScreen> {
         exit: KitTopBarExit.none,
         actions: [
           KitAction(
+            key: const Key('demo-leave'),
+            label: l10n.demoScreenLeave,
+            icon: AppIconography.close,
+            onPressed: _exit,
+          ),
+          KitAction(
             key: const Key('demo-team-projects'),
             label: l10n.teamProjectTryDemo,
             icon: AppIconography.agent,
             onPressed: () => unawaited(
               pushKitPage<void>(context, (_) => const TeamProjectDemoScreen()),
             ),
-          ),
-          KitAction(
-            key: const Key('demo-leave'),
-            label: l10n.demoScreenLeave,
-            icon: AppIconography.close,
-            onPressed: _exit,
           ),
         ],
       ),

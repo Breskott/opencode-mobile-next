@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -129,11 +130,13 @@ void main() {
       // The header's command launcher reads the same index.
       final context = tester.element(find.byType(SettingsScreen));
       final scope = SearchScope.of(context, controller);
-      await searchEntries(
-        _en,
-        scope,
-        query,
-      ).firstWhere((entry) => entry.id == id).open(context, scope);
+      unawaited(
+        searchEntries(
+          _en,
+          scope,
+          query,
+        ).firstWhere((entry) => entry.id == id).open(context, scope),
+      );
       // Bounded: a destination may keep a progress indicator spinning.
       for (var i = 0; i < 6; i++) {
         await tester.pump(const Duration(milliseconds: 100));

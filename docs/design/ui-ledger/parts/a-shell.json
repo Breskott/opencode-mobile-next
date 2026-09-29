@@ -2487,12 +2487,12 @@
           "id": "demo-team-projects",
           "type": "button",
           "label": "Try AI Team demo",
-          "key": null,
-          "line": 1,
+          "key": "demo-team-projects",
+          "line": 115,
           "action": "navigate",
           "target": "team-project-demo",
           "targetWidget": null,
-          "effect": "Opens isolated simulator without server setup.",
+          "effect": "Opens isolated simulator without server setup; kept after Leave demo so compact headers preserve the direct exit.",
           "gates": [],
           "destructive": false
         }

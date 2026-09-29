@@ -5499,9 +5499,9 @@ Reached from: `servers`, `servers-welcome`
 
 | Label | Type | Action -> target | Effect | Gates | Line |
 |---|---|---|---|---|---|
-| Try AI Team demo | button | navigate -> `team-project-demo` | Opens isolated simulator without server setup. |  | 1 |
 | Reset demo ! | icon-button | other | _reset(): closes the gateway, recreates DemoGateway/DemoProfileStore/ConnectionController.isolated, bumps _generation to remount ChatScreen, disposes the old controller and clears its prefs. |  | 107 |
 | Exit demo | icon-button | dismiss | _exit(): _gateway.close() then Navigator.pop(). |  | 112 |
+| Try AI Team demo | button | navigate -> `team-project-demo` | Opens isolated simulator without server setup; kept after Leave demo so compact headers preserve the direct exit. |  | 115 |
 | Set up your own server | button | dismiss | _exit(): closes the gateway and pops back to the servers screen. | _gateway.hasFinished && MediaQuery.viewInsetsOf(context).bottom == 0 | 130 |
 | [embedded ChatScreen] | card | other -> `chat` | Embeds ChatScreen(sessionID: DemoGateway.sessionID, showAppBar: false, emptyState: _DemoTaskIntroduction, initialText: DemoCopy.prompt, handoffStore) under a ProviderScope overriding connProvider/bootstrapProvider; all chat elements apply. |  | 147 |
 

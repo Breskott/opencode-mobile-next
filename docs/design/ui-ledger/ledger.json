@@ -1,5 +1,5 @@
 {
- "generatedFrom": "855c73b71dbea81630fb253feccd81849cbd9392",
+ "generatedFrom": "b7403d8ee522d4bd926b7564a9847e2af5d20344",
  "pages": [
   {
    "id": "system",
@@ -35359,20 +35359,6 @@
    "gates": [],
    "elements": [
     {
-     "id": "demo-team-projects",
-     "type": "button",
-     "label": "Try AI Team demo",
-     "key": null,
-     "file": "lib/ui/screens/demo_screen.dart",
-     "line": 1,
-     "action": "navigate",
-     "target": "team-project-demo",
-     "targetWidget": null,
-     "effect": "Opens isolated simulator without server setup.",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "demo-reset",
      "type": "icon-button",
      "label": "Reset demo",
@@ -35397,6 +35383,20 @@
      "target": null,
      "targetWidget": null,
      "effect": "_exit(): _gateway.close() then Navigator.pop().",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "demo-team-projects",
+     "type": "button",
+     "label": "Try AI Team demo",
+     "key": "demo-team-projects",
+     "file": "lib/ui/screens/demo_screen.dart",
+     "line": 115,
+     "action": "navigate",
+     "target": "team-project-demo",
+     "targetWidget": null,
+     "effect": "Opens isolated simulator without server setup; kept after Leave demo so compact headers preserve the direct exit.",
      "gates": [],
      "destructive": false
     },
