@@ -120,7 +120,16 @@ String? teamHostCondition(
   OrchestrationController controller, {
   bool working = false,
   bool startingWorker = false,
+  bool teamStarting = false,
 }) {
+  // The team on this phone is coming up (its own steps are on the page):
+  // it is starting, not silent.
+  if (teamStarting &&
+      (controller.isStale ||
+          controller.phase == OrchestrationPhase.failed ||
+          controller.lastError?.kind == OrchestrationErrorKind.readFailed)) {
+    return l10n.teamUiHostPhraseStarting;
+  }
   if (teamHostBusyStarting(controller, startingWorker: startingWorker)) {
     return l10n.teamUiHostPhraseBusyStartingWorker;
   }
@@ -158,6 +167,7 @@ String teamHostPhrase(
   OrchestrationController controller, {
   bool working = false,
   bool startingWorker = false,
+  bool teamStarting = false,
 }) {
   final place = teamHostPlace(l10n, controller);
   final condition = teamHostCondition(
@@ -165,6 +175,7 @@ String teamHostPhrase(
     controller,
     working: working,
     startingWorker: startingWorker,
+    teamStarting: teamStarting,
   );
   return condition == null ? place : '$place$teamUsageSeparator$condition';
 }

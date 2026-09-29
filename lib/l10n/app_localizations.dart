@@ -38570,6 +38570,48 @@ abstract class AppLocalizations {
   /// **'AI Team on this phone isn’t running. Start it to continue your tasks.'**
   String get teamUiStatePhoneStoppedBody;
 
+  /// AI Team start steps (in-app team): the native service is being started; done when its process is alive
+  ///
+  /// In en, this message translates to:
+  /// **'Starting the team’s service'**
+  String get teamStartStepService;
+
+  /// AI Team start steps: waiting for the team’s supervisor to answer its health check
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the team to answer'**
+  String get teamStartStepAnswering;
+
+  /// AI Team start steps: the team and its task store are being opened; done when the team reports healthy
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the task store'**
+  String get teamStartStepStore;
+
+  /// AI Team start steps: waiting until the team lists its agents
+  ///
+  /// In en, this message translates to:
+  /// **'Getting the agents ready'**
+  String get teamStartStepAgents;
+
+  /// AI Team start steps: supporting line on a step that runs longer than usual; it keeps going
+  ///
+  /// In en, this message translates to:
+  /// **'Taking longer than usual, the phone is busy'**
+  String get teamStartSlow;
+
+  /// AI Team start failure: button that starts the team on this phone again
+  ///
+  /// In en, this message translates to:
+  /// **'Start again'**
+  String get teamStartAgain;
+
+  /// AI Team header condition while the team on this phone is starting up
+  ///
+  /// In en, this message translates to:
+  /// **'Starting'**
+  String get teamUiHostPhraseStarting;
+
   /// AI Team screens, primary action when the AI Team inside this app stopped: starts it and shows its progress
   ///
   /// In en, this message translates to:

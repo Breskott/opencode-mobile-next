@@ -24518,6 +24518,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'AI Team on this phone isn’t running. Start it to continue your tasks.';
 
   @override
+  String get teamStartStepService => 'Starting the team’s service';
+
+  @override
+  String get teamStartStepAnswering => 'Waiting for the team to answer';
+
+  @override
+  String get teamStartStepStore => 'Opening the task store';
+
+  @override
+  String get teamStartStepAgents => 'Getting the agents ready';
+
+  @override
+  String get teamStartSlow => 'Taking longer than usual, the phone is busy';
+
+  @override
+  String get teamStartAgain => 'Start again';
+
+  @override
+  String get teamUiHostPhraseStarting => 'Starting';
+
+  @override
   String get teamUiStartOnPhone => 'Start AI Team on this phone';
 
   @override

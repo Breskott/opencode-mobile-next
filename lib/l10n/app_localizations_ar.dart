@@ -24639,6 +24639,27 @@ class AppLocalizationsAr extends AppLocalizations {
       'AI Team on this phone isn’t running. Start it to continue your tasks.';
 
   @override
+  String get teamStartStepService => 'تشغيل خدمة الفريق';
+
+  @override
+  String get teamStartStepAnswering => 'انتظار رد الفريق';
+
+  @override
+  String get teamStartStepStore => 'فتح مخزن المهام';
+
+  @override
+  String get teamStartStepAgents => 'تجهيز الوكلاء';
+
+  @override
+  String get teamStartSlow => 'يستغرق وقتًا أطول من المعتاد، الهاتف مشغول';
+
+  @override
+  String get teamStartAgain => 'ابدأ من جديد';
+
+  @override
+  String get teamUiHostPhraseStarting => 'قيد البدء';
+
+  @override
   String get teamUiStartOnPhone => 'Start AI Team on this phone';
 
   @override

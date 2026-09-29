@@ -1882,6 +1882,7 @@ class _RootState extends ConsumerState<_Root> {
             // only (an app update ends both).
             reviveTeam: (_) => BuiltinTeam(linux: _builtin.linux).ensureRunning(
               notice: ChannelSetupEngine.deviceStrings().aiteamComponentNotice,
+              observe: true,
             ),
           ),
     );

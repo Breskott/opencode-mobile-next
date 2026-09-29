@@ -68,6 +68,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:intl/intl.dart' show DateFormat;
 
+import '../../../builtin/team/builtin_team.dart'
+    show BuiltinTeam, BuiltinTeamStartProgress;
 import '../../../builtin/thermal_guard.dart';
 import '../../../builtin/thermal_guard_teams.dart'
     show thermalGuardSlotProvider;
@@ -239,6 +241,7 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
       heat,
       heat?.value,
       _connection,
+      BuiltinTeamStartProgress.shared,
     ];
     var same = _merged != null && parts.length == _watched.length;
     for (var i = 0; same && i < parts.length; i++) {
@@ -506,7 +509,13 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           ? l10n.teamHomeHostStoppedForHeat
           : l10n.teamHomeHostCooling;
     } else {
-      return teamHostPhrase(l10n, controller);
+      return teamHostPhrase(
+        l10n,
+        controller,
+        teamStarting:
+            BuiltinTeam.isBuiltinConfig(controller.config) &&
+            BuiltinTeamStartProgress.shared.running,
+      );
     }
     return [teamHostPlace(l10n, controller), held].join(teamUsageSeparator);
   }

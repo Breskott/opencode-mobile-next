@@ -29628,6 +29628,34 @@
   "@teamUiStatePhoneStoppedBody": {
     "description": "AI Team screens, body under teamUiStatePhoneStoppedTitle: what is wrong and the way forward"
   },
+  "teamStartStepService": "Starting the team’s service",
+  "@teamStartStepService": {
+    "description": "AI Team start steps (in-app team): the native service is being started; done when its process is alive"
+  },
+  "teamStartStepAnswering": "Waiting for the team to answer",
+  "@teamStartStepAnswering": {
+    "description": "AI Team start steps: waiting for the team’s supervisor to answer its health check"
+  },
+  "teamStartStepStore": "Opening the task store",
+  "@teamStartStepStore": {
+    "description": "AI Team start steps: the team and its task store are being opened; done when the team reports healthy"
+  },
+  "teamStartStepAgents": "Getting the agents ready",
+  "@teamStartStepAgents": {
+    "description": "AI Team start steps: waiting until the team lists its agents"
+  },
+  "teamStartSlow": "Taking longer than usual, the phone is busy",
+  "@teamStartSlow": {
+    "description": "AI Team start steps: supporting line on a step that runs longer than usual; it keeps going"
+  },
+  "teamStartAgain": "Start again",
+  "@teamStartAgain": {
+    "description": "AI Team start failure: button that starts the team on this phone again"
+  },
+  "teamUiHostPhraseStarting": "Starting",
+  "@teamUiHostPhraseStarting": {
+    "description": "AI Team header condition while the team on this phone is starting up"
+  },
   "teamUiStartOnPhone": "Start AI Team on this phone",
   "@teamUiStartOnPhone": {
     "description": "AI Team screens, primary action when the AI Team inside this app stopped: starts it and shows its progress"
