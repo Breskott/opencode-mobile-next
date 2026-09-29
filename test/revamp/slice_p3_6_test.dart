@@ -24,7 +24,6 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart' show KitDraft;
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_page.dart';
 import 'package:opencode_mobile/voice/controller.dart';
 import 'package:opencode_mobile/voice/model_manager.dart';
@@ -93,7 +92,7 @@ void main() {
   }
 
   group('a worker is its conversation', () {
-    testWidgets('an agents-list row opens the worker\'s conversation in '
+    testWidgets('a worker\'s conversation opens in '
         'watching mode; its own page is the conversation\'s one action, whose '
         'Open conversation comes back without a loop', (tester) async {
       phoneViewport(tester);
@@ -102,15 +101,29 @@ void main() {
         api: TeamChatApi(_transcript()),
         repository: TeamChatRepository(_store()),
       );
+      final furiosa = team.snapshot.agents.firstWhere(
+        (agent) => agent.id == 'my-app/gastown.furiosa',
+      );
+      // The agents page shows roles; a live worker's conversation opens
+      // through the same door its role page uses.
       await tester.pumpWidget(
         teamChatApp(
           connection,
-          TeamAgentsScreen(controller: team, now: () => teamClock),
+          Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                key: const ValueKey('open-worker'),
+                onPressed: () =>
+                    openTeamAgentConversation(context, furiosa, team: team),
+                child: const Text('open'),
+              ),
+            ),
+          ),
         ),
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(_key('team-home-agent-my-app/gastown.furiosa'));
+      await tester.tap(_key('open-worker'));
       await tester.pumpAndSettle();
 
       // The chat page on furiosa's session, watching, never the agent page.

@@ -92,6 +92,10 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
   final _sentHere = <String>{};
   bool _sending = false;
 
+  /// The team's roles, once loaded: the task's worker is named by the role
+  /// the task was given to ("Frontend took the task").
+  TeamRolesController? _roles;
+
   OrchestrationController get _team => widget.team;
   DateTime Function() get _clock => widget.now ?? DateTime.now;
 
@@ -107,10 +111,38 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
     _team.watchCycles();
     _team.addListener(_bind);
     _bind();
+    unawaited(_loadRoles());
     // Elapsed times ("waited 3 min") move without a new answer.
     _tick = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) setState(() {});
     });
+  }
+
+  Future<void> _loadRoles() async {
+    try {
+      final roles = await loadTeamRoles(_team.profileId);
+      if (mounted) setState(() => _roles = roles);
+    } catch (_) {
+      // Without roles the worker keeps its plain name.
+    }
+  }
+
+  /// The role name of this task's worker, or null when it is unknown.
+  String? _roleName(
+    AppLocalizations l10n,
+    OrchestrationRun? run,
+    List<WorkItem> work,
+  ) {
+    final roles = _roles;
+    if (roles == null) return null;
+    String? id;
+    if (run != null) {
+      id = roles.roleOfRun(run, _team);
+    } else if (widget.pending?.workId case final workId?) {
+      id = roles.roleOfTask(workId);
+    }
+    final role = id == null ? null : roles.byId(id);
+    return role == null ? null : teamRoleName(l10n, role);
   }
 
   @override
@@ -795,7 +827,13 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
                   pendingRecord: pendingRecord,
                   now: now,
                 ),
-                composer: _composer(context, recipient, agents),
+                composer: _composer(
+                  context,
+                  recipient,
+                  agents,
+                  run: run,
+                  work: work,
+                ),
               ),
       );
     },
@@ -832,14 +870,18 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
     }
     final prompt = [
       title,
-      ?(run == null ? widget.pending?.details : _runDetails(run, work)),
+      ?_withoutRolePreamble(
+        run == null ? widget.pending?.details : _runDetails(run, work),
+      ),
     ].where((t) => t.trim().isNotEmpty).join('\n\n');
     final phase = _phase(run, gates, pendingRecord);
+    final roleName = _roleName(l10n, run, work);
     final leadRows = _TeamLeadReply.rowsFor(
       context,
       lines: lines,
       pending: run == null ? widget.pending : null,
       taskTitle: title,
+      roleName: roleName,
     );
     final sent = [
       for (final record in _team.mutations)
@@ -911,7 +953,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
               for (final agent in agents)
                 KitToolRow.agent(
                   rowKey: ValueKey('team-conversation-agent-${agent.id}'),
-                  title: _teamAgentTitle(l10n, agent, agents),
+                  title: _teamAgentTitle(l10n, agent, agents, roleName),
                   status: _teamAgentToolStatus(agent),
                   liveMark: false,
                   task: [
@@ -1007,9 +1049,12 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
   KitComposer _composer(
     BuildContext context,
     OrchestrationAgent? to,
-    List<OrchestrationAgent> agents,
-  ) {
+    List<OrchestrationAgent> agents, {
+    OrchestrationRun? run,
+    List<WorkItem> work = const [],
+  }) {
     final l10n = _chatL10n(context);
+    final roleName = _roleName(l10n, run, work);
     final canMessage = _team.capabilities.controlMessage;
     final readOnly = !canMessage
         ? l10n.teamChatComposerCannot
@@ -1027,7 +1072,9 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
       readOnlyReason: readOnly,
       note: to == null
           ? null
-          : l10n.teamChatComposerGoesTo(_teamAgentTitle(l10n, to, agents)),
+          : l10n.teamChatComposerGoesTo(
+              _teamAgentTitle(l10n, to, agents, roleName),
+            ),
       sending: _sending,
       canSendWhileBusy: true,
       onSend: () {
@@ -1088,6 +1135,7 @@ class _TeamLeadReply extends StatefulWidget {
     required List<TeamLeadLine> lines,
     required TeamPendingTask? pending,
     String? taskTitle,
+    String? roleName,
   }) {
     final l10n = _chatL10n(context);
     String at(DateTime? time, {bool seconds = false}) {
@@ -1104,7 +1152,7 @@ class _TeamLeadReply extends StatefulWidget {
       for (final line in lines)
         // The moment a worker began the task is said to the second: it is
         // the pickup the person waited for.
-        '${teamLeadSentence(l10n, line, taskTitle: taskTitle)}'
+        '${teamLeadSentence(l10n, line, taskTitle: taskTitle, roleName: roleName)}'
             '${at(line.at, seconds: line.event == TeamLeadEvent.claimed)}',
     ];
   }
@@ -1165,16 +1213,22 @@ String teamLeadSentence(
   AppLocalizations l10n,
   TeamLeadLine line, {
   String? taskTitle,
+  String? roleName,
 }) {
   final title = line.workTitle ?? '';
+  final role = roleName == null || roleName.isEmpty ? null : roleName;
   if (_sameTaskText(line.workTitle, taskTitle)) {
     switch (line.event) {
       case TeamLeadEvent.routed:
         return l10n.teamChatLeadRoutedIt;
       case TeamLeadEvent.workerStarting:
-        return l10n.teamChatLeadStartingIt;
+        return role == null
+            ? l10n.teamChatLeadStartingIt
+            : l10n.teamChatLeadStartingItRole(role);
       case TeamLeadEvent.claimed:
-        return l10n.teamChatLeadClaimedWorkerIt;
+        return role == null
+            ? l10n.teamChatLeadClaimedWorkerIt
+            : l10n.teamChatLeadClaimedItRole(role);
       case TeamLeadEvent.pushed:
         return l10n.teamChatLeadPushedIt;
       case TeamLeadEvent.handedToReview:
@@ -1192,8 +1246,14 @@ String teamLeadSentence(
   return switch (line.event) {
     TeamLeadEvent.planned => l10n.teamChatLeadPlanned(line.count ?? 0),
     TeamLeadEvent.routed => l10n.teamChatLeadRouted(title),
-    TeamLeadEvent.workerStarting => l10n.teamChatLeadStarting(title),
-    TeamLeadEvent.claimed => l10n.teamChatLeadClaimedWorker(title),
+    TeamLeadEvent.workerStarting =>
+      role == null
+          ? l10n.teamChatLeadStarting(title)
+          : l10n.teamChatLeadStartingRole(role, title),
+    TeamLeadEvent.claimed =>
+      role == null
+          ? l10n.teamChatLeadClaimedWorker(title)
+          : l10n.teamChatLeadClaimedRole(role, title),
     TeamLeadEvent.pushed => l10n.teamChatLeadPushed(title),
     TeamLeadEvent.handedToReview => l10n.teamChatLeadReview(title),
     TeamLeadEvent.merged => l10n.teamChatLeadMerged(title),
@@ -1451,9 +1511,13 @@ String _teamAgentTitle(
   AppLocalizations l10n,
   OrchestrationAgent agent, [
   List<OrchestrationAgent> among = const [],
+  // The role the task was given to names its workers ("Frontend").
+  String? roleName,
 ]) {
   final role = teamAgentRole(agent);
-  final word = teamAgentRoleWord(l10n, role);
+  final word = role == TeamAgentRole.worker && roleName != null
+      ? roleName
+      : teamAgentRoleWord(l10n, role);
   final same = [
     for (final other in among)
       if (teamAgentRole(other) == role) other.id,
@@ -2046,4 +2110,14 @@ Part _agentStepPart(AgentStep step, String id) {
       output: step.output.isEmpty ? null : step.output,
     ),
   );
+}
+
+/// The task's own words: a task given as a role travels as "Role: …",
+/// the role's instructions, a rule and then the person's words
+/// ([describeTaskForRole]); the conversation shows only the person's words.
+String? _withoutRolePreamble(String? details) {
+  if (details == null || !details.startsWith('Role: ')) return details;
+  const rule = '\n\n---\n\n';
+  final at = details.indexOf(rule);
+  return at < 0 ? details : details.substring(at + rule.length);
 }

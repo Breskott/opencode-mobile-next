@@ -39,6 +39,7 @@ import '../screens/settings_screen.dart';
 import '../screens/servers_screen.dart' show ServersRouteRequest;
 import '../screens/tailscale_setup_screen.dart';
 import '../screens/tools_hub_screen.dart';
+import '../screens/team/team_agents_screen.dart';
 import '../screens/team/team_page.dart';
 import '../screens/termux_processes_screen.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
@@ -1562,6 +1563,26 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
         (scope) =>
             GlobalSessionsScreen(controller: scope.controller, archived: true),
       ),
+    ),
+    SearchEntry(
+      id: 'ai-team-agents',
+      kind: SearchEntryKind.destination,
+      icon: AppIconography.agent,
+      title: l10n.teamRolesTitle,
+      // Settings › AI Team › Agents: the team's roles.
+      parent: l10n.librarySettingsTitle,
+      keywords: l10n.teamRolesSearchAliases,
+      pages: const ['team-agents'],
+      gate: (scope) => scope.hasTeam,
+      open: (context, scope) {
+        final team = scope.controller.orchestration;
+        if (team == null) return openTeamPage(context, scope.controller);
+        return pushKitPage<void>(
+          context,
+          (_) =>
+              TeamAgentsScreen(controller: team, connection: scope.controller),
+        );
+      },
     ),
     SearchEntry(
       id: 'ai-team',

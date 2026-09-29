@@ -42,16 +42,20 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../builtin/team/builtin_team.dart' show BuiltinTeam;
 import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/automation_policy.dart';
 import '../../../state/orchestration.dart';
 import '../../../state/team_dispatch.dart';
+import '../../../state/team_model.dart' show TeamModelStore;
 import '../../../state/team_planning.dart';
+import '../../../state/team_roles.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../widgets/team_host_form.dart';
 import '../../widgets/team_now.dart' show teamAgentKeptOff;
+import '../../widgets/team_role_copy.dart';
 import 'policy_block.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -89,6 +93,7 @@ Future<StartRunResult?> showStartRunSheet(
   OrchestrationController controller, {
   bool offerBacklog = false,
   String? projectId,
+  String? roleId,
 }) async {
   final l10n = _copy(context);
   if (teamStartBlocked(controller)) {
@@ -114,6 +119,7 @@ Future<StartRunResult?> showStartRunSheet(
       controller: controller,
       offerBacklog: offerBacklog,
       projectId: projectId,
+      roleId: roleId,
     ),
   );
 }
@@ -168,6 +174,7 @@ class StartRunSheet extends StatefulWidget {
     required this.controller,
     this.offerBacklog = false,
     this.projectId,
+    this.roleId,
   });
 
   final OrchestrationController controller;
@@ -177,6 +184,10 @@ class StartRunSheet extends StatefulWidget {
 
   /// The project chosen at first.
   final String? projectId;
+
+  /// The role chosen at first (a role page's Give a task); without one the
+  /// role is suggested from the person's words.
+  final String? roleId;
 
   @override
   State<StartRunSheet> createState() => _StartRunSheetState();
@@ -188,6 +199,12 @@ class _StartRunSheetState extends State<StartRunSheet> {
   final _details = TextEditingController();
   late String? _projectId = widget.projectId;
   late String? _directProjectId = widget.projectId;
+
+  /// The team's roles once loaded; the direct task's "Who" row needs them.
+  TeamRolesController? _roles;
+
+  /// The role the person picked; null follows the suggestion.
+  late String? _pickedRoleId = widget.roleId;
 
   /// Keep in backlog was refused: the host's words ('' when it gave none;
   /// never shown as copy — the notice says it in plain words).
@@ -237,6 +254,58 @@ class _StartRunSheetState extends State<StartRunSheet> {
     super.initState();
     _objective.addListener(_changed);
     _task.addListener(_changed);
+    _details.addListener(_changed);
+    unawaited(_loadRoles());
+  }
+
+  Future<void> _loadRoles() async {
+    try {
+      final roles = await loadTeamRoles(widget.controller.profileId);
+      if (mounted) setState(() => _roles = roles);
+    } catch (_) {
+      // Without roles the task goes as written.
+    }
+  }
+
+  /// The role this task goes as: the person's pick, else the one the app
+  /// suggests from the typed words. Null until the roles are loaded.
+  TeamRole? get _role {
+    final roles = _roles;
+    if (roles == null) return null;
+    final picked = _pickedRoleId == null ? null : roles.byId(_pickedRoleId!);
+    if (picked != null) return picked;
+    return roles.byId(roles.suggest('${_task.text} ${_details.text}')) ??
+        roles.byId(TeamRoleIds.general);
+  }
+
+  Future<void> _pickRole() async {
+    final roles = _roles;
+    if (roles == null || _sending) return;
+    final l10n = _copy(context);
+    final current = _role?.id;
+    final id = await showKitSheet<String>(
+      context,
+      title: l10n.teamStartRunWhoTitle,
+      icon: AppIconography.agent,
+      sheetKey: const ValueKey('team-start-run-who-sheet'),
+      body: (sheetContext) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final role in roles.roles)
+            KitRow(
+              key: ValueKey('team-start-run-who-${role.id}'),
+              title: teamRoleName(l10n, role),
+              supporting: teamRolePurpose(l10n, role).isEmpty
+                  ? null
+                  : TextSpan(text: teamRolePurpose(l10n, role)),
+              supportingMaxLines: 2,
+              selected: role.id == current,
+              onTap: () => Navigator.of(sheetContext).pop(role.id),
+            ),
+        ],
+      ),
+    );
+    if (id != null && mounted) setState(() => _pickedRoleId = id);
   }
 
   @override
@@ -244,6 +313,7 @@ class _StartRunSheetState extends State<StartRunSheet> {
     _attempt?.removeListener(_changed);
     _objective.dispose();
     _task.dispose();
+    _details.removeListener(_changed);
     _details.dispose();
     super.dispose();
   }
@@ -427,11 +497,23 @@ class _StartRunSheetState extends State<StartRunSheet> {
     });
     try {
       final details = _details.text.trim();
+      final roles = _roles;
+      final config = widget.controller.config;
       await attempt.submit(
         title: title,
         description: details.isEmpty ? null : details,
         projectId: projectId,
         agentId: teamWorkerPoolId(projectId),
+        role: _role,
+        roles: roles,
+        teamModel: roles == null
+            ? null
+            : TeamModelStore(roles.prefs).read(widget.controller.profileId),
+        // Only the phone's own team has a model to apply; a team on a
+        // computer runs the model its host decides.
+        applyModel: BuiltinTeam.isBuiltinConfig(config)
+            ? BuiltinTeam().applyModel
+            : null,
       );
       if (!mounted) return;
       switch (attempt.phase) {
@@ -709,6 +791,31 @@ class _StartRunSheetState extends State<StartRunSheet> {
           draft: _detailsDraft,
           fieldKey: const ValueKey('team-start-run-direct-details'),
         ),
+        if (_role case final role?) ...[
+          SizedBox(height: tokens.space4),
+          _label(tokens, l10n.teamStartRunWho),
+          KitRowGroup(
+            children: [
+              KitRow(
+                key: const ValueKey('team-start-run-who'),
+                leading: KitRow.icon(context, AppIconography.agent),
+                title: teamRoleName(l10n, role),
+                supporting: TextSpan(
+                  text: [
+                    if (_pickedRoleId == null)
+                      l10n.teamStartRunWhoSuggested
+                    else
+                      teamRolePurpose(l10n, role),
+                    l10n.teamStartRunWhoChange,
+                  ].where((part) => part.isNotEmpty).join(' · '),
+                ),
+                supportingMaxLines: 2,
+                trailing: const KitChevron(),
+                onTap: _sending ? null : () => unawaited(_pickRole()),
+              ),
+            ],
+          ),
+        ],
         if (_directStage(l10n) case final stage?) ...[
           SizedBox(height: tokens.space3),
           stage,

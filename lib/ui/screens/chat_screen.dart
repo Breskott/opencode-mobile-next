@@ -90,6 +90,7 @@ import '../../domain/team_agent_sessions.dart';
 import '../../state/orchestration.dart';
 import '../../state/team_dispatch.dart';
 import '../../state/team_conversation.dart';
+import '../../state/team_roles.dart';
 import '../../state/team_worker_start.dart';
 import '../../state/team_planning.dart'
     show
@@ -101,6 +102,7 @@ import '../widgets/team_controls.dart' show teamControlReceipt;
 import '../widgets/team_now.dart' show teamCheckInterval, teamUnstickAction;
 import '../widgets/team_now_line_view.dart';
 import '../widgets/team_receipt.dart' show teamReceiptLine;
+import '../widgets/team_role_copy.dart';
 import '../widgets/team_vocabulary.dart';
 import 'team/agent_screen.dart' show AgentScreen;
 import 'team/gate_sheet.dart' show showGateSheet;

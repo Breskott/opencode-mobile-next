@@ -164,20 +164,4 @@ void main() {
     expect(_key('team-home-run-oc-xru'), findsNothing);
     expect(tester.takeException(), isNull);
   });
-
-  testWidgets('the agents list names agents by role, not by engine name', (
-    tester,
-  ) async {
-    await _pump(tester, _home);
-    // Under the team's Now line and the tasks.
-    await tester.tap(_key('team-home-settings'));
-    await tester.pumpAndSettle();
-    await tester.tap(_key('team-home-agents-row'));
-    await tester.pumpAndSettle();
-    expect(find.text('fox · Worker'), findsOneWidget);
-    expect(find.text('wolf · Worker'), findsOneWidget);
-    expect(find.text('Planner'), findsOneWidget);
-    expect(_engineWordsIn(find.byType(MaterialApp)), isEmpty);
-    expect(tester.takeException(), isNull);
-  });
 }

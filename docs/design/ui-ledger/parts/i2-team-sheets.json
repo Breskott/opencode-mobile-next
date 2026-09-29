@@ -826,6 +826,21 @@
           "destructive": false
         },
         {
+          "id": "start-run-sheet-who",
+          "type": "list-tile",
+          "label": "<suggested role> · Suggested from your words · Change",
+          "key": "team-start-run-who",
+          "line": 1,
+          "action": "open-sheet",
+          "target": "start-run-sheet",
+          "effect": "Direct task only: the role the task goes as, suggested from the typed words (TeamRolesController.suggest, updates as the person types); opens a picker of the team's roles. Send dispatches through TeamDispatchController.submit(role, roles, teamModel, applyModel).",
+          "gates": [
+            "direct task form",
+            "roles loaded"
+          ],
+          "destructive": false
+        },
+        {
           "id": "start-run-sheet-send",
           "type": "button",
           "label": "Send to planner",

@@ -1,65 +1,44 @@
-/// The AI Team's agents list (docs/design/aiteam-redesign-2026-09-24.md):
-/// what the home's one "3 agents · 1 working" row opens. The agents are
-/// status, not a control centre (map team-agents, owner Fix).
+/// The AI Team's Agents page: the team's **roles** (Product, Frontend,
+/// Backend, Tester, General and the person's own), one list ordered by
+/// urgency: a role working now first ("Working on “Sync engine” · 4 min"),
+/// then the rest ("Uses Claude Sonnet · 3 tasks"). Live Gas City workers
+/// (generated names like "furiosa") are not rows of their own: a live
+/// worker shows as the role its current task was given to, or as "Worker"
+/// when that is unknown, and its generated name waits under Details on the
+/// role page. Nothing is shown twice.
 ///
-/// One list ordered by urgency (owner rule 2026-09-27, no state sections):
-/// the ones waiting for the person, then a crashed one, then the ones at
-/// work, idle, and last the ones asleep or paused on the host, each group
-/// newest activity first. Every row carries one kind of mark
-/// ([KitTaskMark]) and its state in words ("Asleep · wakes when there is
-/// work"), and is named "furiosa · Worker" when the host gives the agent a
-/// name of its own, so two workers are told apart.
+/// A row opens the role page ([RoleScreen]); the pinned "New role" opens
+/// it in create mode. The standing helpers below ([teamAgentStanding],
+/// [teamAgentTitles], ...) stay for the pages that still name an agent.
 ///
-/// Two agents never share a title: a repeated role is told apart by its
-/// project, then by what it looks after ("Supervisor · whole team"), then
-/// by number ([teamAgentTitles]). The agents the app keeps off on its own
-/// phone team say so ("Off on this phone") and are never offered a Wake.
-///
-/// Paused agents (switched off on the host) are woken together by one
-/// "Wake the paused agents" row above the list when the host lets the
-/// phone control agents, one at a time, stopping at the first the host
-/// does not confirm; the row carries the receipt, and when the team does
-/// not answer it says so in words with Check again. A row opens the
-/// agent's conversation in watching mode (slice-P3.6); its own page
-/// (the agent screen: state, controls, technical details) is that
-/// conversation's top-bar action.
-///
-/// The top bar says where the team runs and when the list was last
-/// checked ("On pop-os · checked 4 min ago"), so old data never passes as
-/// live (STATE-20 freshness).
-///
-/// Kit only (KIT-1): [KitScreen] with [KitTopBar], the shared states and
-/// status line of `team_states.dart`, rows on one [KitRowGroup], pull to
-/// refresh through [KitRefresh].
+/// Kit only (KIT-1): [KitScreen] with [KitTopBar], the shared status line
+/// of `team_states.dart`, rows on one [KitRowGroup], pull to refresh
+/// through [KitRefresh], and a pinned [KitActionBlock].
 library;
 
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
+import '../../../builtin/team/builtin_team.dart' show BuiltinTeam;
 import '../../../domain/orchestration_gateway.dart';
+import '../../../domain/server_gateway.dart' show CatalogModel;
 import '../../../l10n/app_localizations.dart';
+import '../../../state/connection.dart';
 import '../../../state/orchestration.dart';
 import '../../../state/profiles.dart' show OrchestrationConfig;
 import '../../../state/team_conversation.dart' show teamSessionState;
+import '../../../state/team_model.dart' show teamModelSpec;
+import '../../../state/team_roles.dart';
 import '../../app_iconography.dart';
-import '../../kit/kit_buttons.dart';
-import '../../kit/kit_receipt.dart';
-import '../../kit/kit_row.dart';
-import '../../kit/kit_screen.dart';
-import '../../kit/kit_since.dart';
-import '../../kit/kit_state_view.dart';
-import '../../kit/kit_task_mark.dart';
-import '../../kit/kit_tokens.dart';
-import '../../kit/kit_top_bar.dart';
-import '../../kit/motion/kit_refresh.dart';
-import '../../kit/scenes/team_scenes.dart';
-import '../../widgets/relative_time.dart';
+import '../../kit/kit.dart';
 import '../../widgets/team_now.dart'
     show teamAgentKeptOff, teamAgentKind, teamAgentPaused;
+import '../../widgets/team_role_copy.dart';
 import '../../widgets/team_vocabulary.dart';
 import '../team_conversation/team_conversation.dart'
     show openTeamAgentConversation;
+import 'role_screen.dart';
 import 'team_states.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -207,18 +186,57 @@ Map<String, String> teamAgentTitles(
   return titles;
 }
 
+/// The name a role's model is shown by: the catalog's name where the phone
+/// lists it, else the saved `provider/model`.
+String teamRoleModelName(ConnectionController? connection, String spec) {
+  for (final model in connection?.catalog?.models ?? const <CatalogModel>[]) {
+    if (teamModelSpec(model.providerID, model.id) == spec) return model.name;
+  }
+  return spec;
+}
+
+/// Opens a role's page over the current one; [roleId] null is a new role.
+Future<void> openTeamRole(
+  BuildContext context, {
+  required OrchestrationController controller,
+  required TeamRolesController roles,
+  String? roleId,
+  ConnectionController? connection,
+  ValueChanged<OrchestrationAgent>? onOpenAgent,
+  DateTime Function()? now,
+}) => Navigator.of(context).push(
+  KitPageRoute<void>(
+    builder: (_) => RoleScreen(
+      controller: controller,
+      roles: roles,
+      roleId: roleId,
+      connection: connection,
+      onOpenAgent: onOpenAgent,
+      now: now,
+    ),
+  ),
+);
+
 class TeamAgentsScreen extends StatefulWidget {
   const TeamAgentsScreen({
     super.key,
     required this.controller,
+    this.roles,
+    this.connection,
     this.onOpenAgent,
     this.now,
   });
 
   final OrchestrationController controller;
 
-  /// Opens an agent; its conversation ([openTeamAgentConversation]) when
-  /// null.
+  /// The team's roles; loaded for the team's profile when null.
+  final TeamRolesController? roles;
+
+  /// The connection whose catalog names the models; optional.
+  final ConnectionController? connection;
+
+  /// Opens a live worker; its conversation ([openTeamAgentConversation])
+  /// when null.
   final ValueChanged<OrchestrationAgent>? onOpenAgent;
 
   /// Clock for relative ages; tests pin it.
@@ -228,26 +246,43 @@ class TeamAgentsScreen extends StatefulWidget {
   State<TeamAgentsScreen> createState() => _TeamAgentsScreenState();
 }
 
+/// One line of the list: a role, or a live worker whose role is unknown.
+class _Entry {
+  const _Entry({this.role, this.worker, this.task, this.since});
+
+  final TeamRole? role;
+
+  /// The live worker working now (the role's, or the unknown one).
+  final OrchestrationAgent? worker;
+  final String? task;
+  final DateTime? since;
+
+  bool get working => worker != null;
+}
+
 class _TeamAgentsScreenState extends State<TeamAgentsScreen> {
   bool _refreshing = false;
+  TeamRolesController? _roles;
 
-  /// "Wake the paused agents" is sending.
-  bool _waking = false;
+  @override
+  void initState() {
+    super.initState();
+    _roles = widget.roles;
+    if (_roles == null) unawaited(_loadRoles());
+  }
 
-  /// The agents the last Wake was sent for, in order; their receipts are
-  /// the controller's latest records for them (a sent wake the host never
-  /// confirms turns "Not confirmed yet" there). Cleared by Check again.
-  List<String> _woken = const [];
-
-  List<MutationRecord> get _wokenRecords => [
-    for (final id in _woken)
-      ?widget.controller.latestMutation(
-        kind: MutationKind.controlAgent,
-        targetId: id,
-      ),
-  ];
+  Future<void> _loadRoles() async {
+    try {
+      final roles = await loadTeamRoles(widget.controller.profileId);
+      if (mounted) setState(() => _roles = roles);
+    } catch (_) {
+      // No roles yet: the page keeps its loading bar.
+    }
+  }
 
   DateTime get _now => (widget.now ?? DateTime.now)();
+
+  bool get _remote => !BuiltinTeam.isBuiltinConfig(widget.controller.config);
 
   Future<void> _refresh() async {
     if (_refreshing) return;
@@ -264,61 +299,7 @@ class _TeamAgentsScreenState extends State<TeamAgentsScreen> {
     }
   }
 
-  /// Wakes [agents] one at a time and stops at the first the host does
-  /// not accept: a team that did not answer one wake is not sent more
-  /// (starting agents is what can keep a phone's team busy).
-  Future<void> _wake(List<OrchestrationAgent> agents) async {
-    if (_waking || agents.isEmpty) return;
-    setState(() {
-      _waking = true;
-      _woken = const [];
-    });
-    final sent = <String>[];
-    try {
-      for (final agent in agents) {
-        sent.add(agent.id);
-        if (mounted) setState(() => _woken = List.unmodifiable(sent));
-        final record = await widget.controller.controlAgent(
-          agent.id,
-          AgentControlAction.resume,
-        );
-        if (!mounted) return;
-        final accepted =
-            record.status == MutationStatus.confirmed ||
-            (record.status == MutationStatus.sent &&
-                (record.receipt?.isAccepted ?? false));
-        if (!accepted) break;
-      }
-    } finally {
-      if (mounted) setState(() => _waking = false);
-    }
-  }
-
-  /// After a wake the team did not confirm: read the team again.
-  Future<void> _checkAgain() async {
-    await _refresh();
-    if (mounted) setState(() => _woken = const []);
-  }
-
-  /// The wake's receipt: sending while it runs, then the worst answer
-  /// (refused, then not confirmed); null once every answer was accepted.
-  KitReceiptState? get _wakeState {
-    if (_waking) return KitReceiptState.sending;
-    final records = _wokenRecords;
-    if (records.any((r) => r.status == MutationStatus.rejected)) {
-      return KitReceiptState.refused;
-    }
-    if (records.any((r) => r.status == MutationStatus.unconfirmed)) {
-      return KitReceiptState.notConfirmed;
-    }
-    // Sent and accepted, waiting for the host's echo.
-    if (records.any((r) => r.status == MutationStatus.sent)) {
-      return KitReceiptState.sent;
-    }
-    return null;
-  }
-
-  void _openAgent(OrchestrationAgent agent) {
+  void _openWorker(OrchestrationAgent agent) {
     final open = widget.onOpenAgent;
     if (open != null) return open(agent);
     unawaited(
@@ -326,9 +307,76 @@ class _TeamAgentsScreenState extends State<TeamAgentsScreen> {
     );
   }
 
+  void _openRole(String? id) {
+    final roles = _roles;
+    if (roles == null) return;
+    unawaited(
+      openTeamRole(
+        context,
+        controller: widget.controller,
+        roles: roles,
+        roleId: id,
+        connection: widget.connection,
+        onOpenAgent: widget.onOpenAgent,
+        now: widget.now,
+      ),
+    );
+  }
+
+  /// The list, most urgent first: a role with a live worker on a task now
+  /// (a worker whose role is unknown is "Worker"), then every other role in
+  /// the team's order.
+  List<_Entry> _entries(TeamRolesController roles) {
+    final controller = widget.controller;
+    final snapshot = controller.snapshot;
+    final workById = {for (final item in snapshot.work) item.id: item};
+    final runById = {for (final run in snapshot.runs) run.id: run};
+    final working = <String, _Entry>{};
+    final unknown = <_Entry>[];
+    final agents = [...snapshot.agents]
+      ..sort((a, b) {
+        final at = a.lastActivity, bt = b.lastActivity;
+        if (at == null || bt == null) {
+          return at == null ? (bt == null ? 0 : 1) : -1;
+        }
+        return bt.compareTo(at);
+      });
+    for (final agent in agents) {
+      if (!teamAgentIsLive(agent) ||
+          teamSessionState(agent) != AgentState.working ||
+          agent.currentWorkId == null) {
+        continue;
+      }
+      final item = workById[agent.currentWorkId];
+      final run = item?.runId == null ? null : runById[item!.runId];
+      final task = (run?.title ?? item?.title)?.trim();
+      final since = agent.sessionStartedAt ?? agent.lastActivity;
+      final id = teamRoleIdOfWorker(roles, controller, agent);
+      final role = id == null ? null : roles.byId(id);
+      if (role == null) {
+        unknown.add(_Entry(worker: agent, task: task, since: since));
+      } else {
+        working.putIfAbsent(
+          role.id,
+          () => _Entry(role: role, worker: agent, task: task, since: since),
+        );
+      }
+    }
+    return [
+      ...unknown,
+      for (final role in roles.roles) ?working[role.id],
+      for (final role in roles.roles)
+        if (!working.containsKey(role.id)) _Entry(role: role),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: widget.controller,
+    listenable: Listenable.merge([
+      widget.controller,
+      ?_roles,
+      ?widget.connection,
+    ]),
     builder: (context, _) {
       final controller = widget.controller;
       // Rebuilds once the check is 8 s old and then every minute, so the
@@ -355,8 +403,6 @@ class _TeamAgentsScreenState extends State<TeamAgentsScreen> {
             onRetry: _refreshing ? null : _refresh,
           )
         : null;
-    // The age on the screen's own clock, like every other age here; the
-    // KitSince above only decides when to rebuild.
     final checkedAt = controller.lastRefreshedAt;
     final age = checkedAt == null ? null : _now.difference(checkedAt);
     final subtitle = [
@@ -366,44 +412,29 @@ class _TeamAgentsScreenState extends State<TeamAgentsScreen> {
           KitSince.ageLabel(context, age.isNegative ? Duration.zero : age),
         ),
     ].join(teamUsageSeparator);
+    final roles = _roles;
     return KitScreen(
       key: const ValueKey('team-agents'),
-      topBar: KitTopBar(title: l10n.teamUiRunTabAgents, subtitle: subtitle),
+      topBar: KitTopBar(title: l10n.teamRolesTitle, subtitle: subtitle),
       width: KitScreenWidth.list,
       status: line,
-      loading: teamScreenLoading(controller) || _refreshing,
+      loading: roles == null || _refreshing,
       loadingLabel: l10n.teamUiCardLoading,
-      body: _body(context),
+      body: roles == null ? const SizedBox.shrink() : _body(context, roles),
+      bottom: KitActionBlock(
+        primary: KitAction(
+          key: const ValueKey('team-roles-new'),
+          label: l10n.teamRolesNew,
+          icon: AppIconography.add,
+          onPressed: roles == null ? null : () => _openRole(null),
+        ),
+      ),
     );
   }
 
-  Widget _body(BuildContext context) {
-    final l10n = _copy(context);
+  Widget _body(BuildContext context, TeamRolesController roles) {
     final tokens = KitTokens.of(context);
-    final controller = widget.controller;
-    if (teamScreenState(
-          context,
-          controller: controller,
-          keyPrefix: 'team-agents',
-          onRetry: _refreshing ? null : _refresh,
-        )
-        case final state?) {
-      return state;
-    }
-    final snapshot = controller.snapshot;
-    final workById = {for (final item in snapshot.work) item.id: item};
-    final config = controller.config;
-    final agents = [...snapshot.agents]
-      ..sort((a, b) => teamCompareAgentsByUrgency(a, b, config: config));
-    final titles = teamAgentTitles(l10n, agents);
-    final paused = [
-      for (final agent in agents)
-        if (teamAgentStanding(agent, config: config) ==
-            TeamAgentStanding.paused)
-          agent,
-    ];
-    final wakeState = _wakeState;
-    final canWake = controller.capabilities.controlAgent;
+    final entries = _entries(roles);
     return KitRefresh(
       key: const ValueKey('team-agents-pull'),
       onRefresh: _refresh,
@@ -415,178 +446,77 @@ class _TeamAgentsScreenState extends State<TeamAgentsScreen> {
           bottom: KitScreen.endPadding(context),
         ),
         children: [
-          if (agents.isEmpty)
-            KitStateView(
-              key: const ValueKey('team-home-agents-empty'),
-              size: KitStateSize.inline,
-              liveRegion: false,
-              icon: AppIconography.agent,
-              // Nobody at work: one agent dozing.
-              illustration: const TeamRestScene(),
-              title: l10n.teamUiHomeAgentsEmpty,
-              body: l10n.teamUiHomeAgentsEmptyHint,
-            )
-          else ...[
-            // One action for every paused agent, above the list (owner,
-            // build 2055: a Wake button in each row was noise).
-            if (canWake && (paused.isNotEmpty || wakeState != null)) ...[
-              KitRowGroup(
-                children: [
-                  KitRow(
-                    key: const ValueKey('team-agents-wake-paused'),
-                    leading: KitRow.icon(context, AppIconography.play),
-                    title: l10n.teamAgentsWakePaused(paused.length),
-                    titleMaxLines: 2,
-                    supporting: TextSpan(
-                      text: switch (wakeState) {
-                        KitReceiptState.notConfirmed =>
-                          l10n.teamAgentsWakeUnconfirmed,
-                        KitReceiptState.refused => l10n.teamAgentsWakeRefused,
-                        _ => l10n.teamAgentsWakePausedHint,
-                      },
-                    ),
-                    supportingKey: const ValueKey('team-agents-wake-line'),
-                    supportingMaxLines: 4,
-                    enabled: !_waking,
-                    onTap: _waking || paused.isEmpty
-                        ? null
-                        : () => _wake(paused),
-                    below: wakeState == null
-                        ? null
-                        : Padding(
-                            padding: EdgeInsetsDirectional.only(
-                              top: tokens.space2,
-                            ),
-                            child: Wrap(
-                              spacing: tokens.space2,
-                              runSpacing: tokens.space2,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                KitReceipt(
-                                  key: const ValueKey(
-                                    'team-agents-wake-receipt',
-                                  ),
-                                  state: wakeState,
-                                  sendingLabel: l10n.teamAgentsWaking,
-                                ),
-                                if (wakeState == KitReceiptState.notConfirmed ||
-                                    wakeState == KitReceiptState.refused)
-                                  KitButton.secondary(
-                                    key: const ValueKey(
-                                      'team-agents-wake-check',
-                                    ),
-                                    label: l10n.teamAgentsWakeCheckAgain,
-                                    icon: AppIconography.retry,
-                                    expand: false,
-                                    working: _refreshing,
-                                    onPressed: _refreshing ? null : _checkAgain,
-                                  ),
-                              ],
-                            ),
-                          ),
-                  ),
-                ],
-              ),
-              SizedBox(height: tokens.sectionGap),
+          KitRowGroup(
+            children: [
+              for (final entry in entries) _row(context, roles, entry),
             ],
-            KitRowGroup(
-              children: [
-                for (final agent in agents)
-                  _AgentRow(
-                    agent: agent,
-                    title: titles[agent.id]!,
-                    standing: teamAgentStanding(agent, config: config),
-                    work: workById[agent.currentWorkId],
-                    now: _now,
-                    onTap: () => _openAgent(agent),
-                  ),
-              ],
-            ),
-          ],
+          ),
         ],
       ),
     );
   }
-}
 
-/// One agent: its mark, its title (never another agent's), and "Working ·
-/// Sync engine · 1m ago" (or "Asleep · wakes when there is work").
-class _AgentRow extends StatelessWidget {
-  const _AgentRow({
-    required this.agent,
-    required this.title,
-    required this.standing,
-    required this.work,
-    required this.now,
-    required this.onTap,
-  });
-
-  final OrchestrationAgent agent;
-  final String title;
-  final TeamAgentStanding standing;
-  final WorkItem? work;
-  final DateTime now;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _row(BuildContext context, TeamRolesController roles, _Entry entry) {
     final l10n = _copy(context);
-    final word = switch (standing) {
-      TeamAgentStanding.asleep => l10n.teamAgentsAsleep,
-      TeamAgentStanding.paused => l10n.teamAgentsPaused,
-      TeamAgentStanding.keptOff => l10n.teamAgentsKeptOff,
-      _ => teamAgentStateWord(l10n, teamSessionState(agent)),
-    };
-    final mark = switch (standing) {
-      TeamAgentStanding.needsYou => const KitTaskMark(
-        state: KitTaskState.needsYou,
-      ),
-      TeamAgentStanding.crashed => KitTaskMark(
-        state: KitTaskState.failed,
-        label: word,
-      ),
-      TeamAgentStanding.working => KitTaskMark(
-        state: KitTaskState.working,
-        label: word,
-      ),
-      TeamAgentStanding.idle || TeamAgentStanding.unknown => KitTaskMark(
-        state: KitTaskState.waiting,
-        label: word,
-      ),
-      TeamAgentStanding.asleep || TeamAgentStanding.keptOff => KitTaskMark(
-        state: KitTaskState.stopped,
-        label: word,
-      ),
-      TeamAgentStanding.paused => KitTaskMark(
-        state: KitTaskState.waiting,
-        paused: true,
-        label: word,
-      ),
-    };
-    final activity = agent.lastActivity == null
-        ? null
-        : relativeTimeLabel(
-            agent.lastActivity!.millisecondsSinceEpoch,
-            now: now,
-            l10n: l10n,
-          );
-    final line = switch (standing) {
-      TeamAgentStanding.asleep => [word, l10n.teamAgentsAsleepHint],
-      TeamAgentStanding.paused => [word, l10n.teamAgentsPausedHint],
-      TeamAgentStanding.keptOff => [word, l10n.teamAgentsKeptOffHint],
-      _ => [word, ?work?.title, ?activity],
-    }.join(teamUsageSeparator);
+    final role = entry.role;
+    final title = role == null
+        ? l10n.teamUiAgentRoleWorker
+        : teamRoleName(l10n, role);
+    final String line;
+    if (entry.working) {
+      final since = entry.since;
+      final age = since == null ? null : _now.difference(since);
+      final task = entry.task;
+      line = [
+        if (task != null && task.isNotEmpty)
+          l10n
+              .teamRoleWorkingOn(
+                task,
+                age == null
+                    ? ''
+                    : KitSince.ageLabel(
+                        context,
+                        age.isNegative ? Duration.zero : age,
+                      ),
+              )
+              .replaceFirst(RegExp(r' · $'), '')
+        else
+          teamAgentStateWord(l10n, AgentState.working),
+      ].join(teamUsageSeparator);
+    } else {
+      final model = _remote
+          ? l10n.teamRoleUsesComputerModel
+          : role!.model == null
+          ? l10n.teamRoleUsesTeamModel
+          : l10n.teamRoleUses(
+              teamRoleModelName(widget.connection, role.model!),
+            );
+      line = [
+        model,
+        l10n.teamRoleTaskCount(
+          teamRunsOfRole(roles, widget.controller, role!.id).length,
+        ),
+      ].join(teamUsageSeparator);
+    }
     return KitRow(
-      key: ValueKey('team-home-agent-${agent.id}'),
-      leading: mark,
+      key: ValueKey(
+        role == null
+            ? 'team-role-worker-${entry.worker!.id}'
+            : 'team-role-${role.id}',
+      ),
+      leading: entry.working
+          ? KitTaskMark(
+              state: KitTaskState.working,
+              label: teamAgentStateWord(l10n, AgentState.working),
+            )
+          : KitRow.icon(context, AppIconography.agent),
       title: title,
-      titleKey: ValueKey('team-home-agent-title-${agent.id}'),
       supporting: TextSpan(text: line),
-      supportingKey: ValueKey('team-home-agent-state-${agent.id}'),
-      // The step's title is the person's own words: two lines before it
-      // ends, so the age is not cut off.
       supportingMaxLines: 2,
-      onTap: onTap,
+      trailing: const KitChevron(),
+      onTap: role == null
+          ? () => _openWorker(entry.worker!)
+          : () => _openRole(role.id),
     );
   }
 }

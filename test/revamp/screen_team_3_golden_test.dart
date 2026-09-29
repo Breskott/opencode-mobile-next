@@ -1,6 +1,4 @@
-// screen-team-3 goldens: the AI Team's agents list (one list by urgency,
-// one mark style, "furiosa · Worker", Wake on a paused agent, "checked …"
-// in the top bar) and the Work sheet in the kit sheet frame (rows for what
+// screen-team-3 goldens: the Work sheet in the kit sheet frame (rows for what
 // it depends on and what waits on it, output and validation, Technical
 // details folded last), at 412x915 and 1280x800, light and dark, with the
 // app's real fonts and the screen-team-3 fixture.
@@ -23,16 +21,12 @@ const _phone = Size(412, 915);
 const _wide = Size(1280, 800);
 
 enum _Shot {
-  agents('team_agents_list', _phone),
-  agentsWide('team_agents_list', _wide),
   workSheet('team_work_sheet', _phone),
   workSheetWide('team_work_sheet', _wide);
 
   const _Shot(this.state, this.size);
   final String state;
   final Size size;
-
-  bool get sheet => this == workSheet || this == workSheetWide;
 
   String name(bool light) {
     final sized = size == _phone
@@ -77,7 +71,7 @@ void main() {
           );
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 500));
-          if (shot.sheet) {
+          {
             final context = tester.element(
               find.byKey(const ValueKey('team-agents')),
             );

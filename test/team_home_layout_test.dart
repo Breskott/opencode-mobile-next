@@ -473,29 +473,12 @@ void main() {
         await tester.pumpAndSettle();
         expect(sheet, findsNothing);
 
-        // Agents: one list ordered by urgency, including the asleep dog
-        // at its end (screen-team-3).
+        // Agents: the roles page opens and fits (roles-ui).
         final agentsRow = find.byKey(const ValueKey('team-home-agents-row'));
         await tester.ensureVisible(agentsRow);
         await tester.tap(agentsRow);
         await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        for (final id in ['wolf', 'fox']) {
-          await revealIn(
-            tester,
-            'team-home-agents',
-            find.byKey(ValueKey('team-home-agent-$id')),
-          );
-        }
-        expect(
-          find.byKey(const ValueKey('team-home-suspended-group')),
-          findsNothing,
-        );
-        await revealIn(
-          tester,
-          'team-home-agents',
-          find.byKey(const ValueKey('team-home-agent-dog-1')),
-        );
+        expect(find.byKey(const ValueKey('team-agents')), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
@@ -553,10 +536,7 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('team-home-agents-row')));
         await tester.pumpAndSettle();
-        expect(
-          find.byKey(const ValueKey('team-home-agents-empty')),
-          findsOneWidget,
-        );
+        expect(find.byKey(const ValueKey('team-agents')), findsOneWidget);
         expect(tester.takeException(), isNull);
         // Back to the home, so the next scene starts on it.
         tester.state<NavigatorState>(find.byType(Navigator)).pop();

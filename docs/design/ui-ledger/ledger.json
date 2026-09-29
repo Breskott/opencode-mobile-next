@@ -1,5 +1,5 @@
 {
- "generatedFrom": "7a216277b3f3e670d306bc35f99a5a2b73f71dc4",
+ "generatedFrom": "efe0a151db6082b969804796f4dde82381f91a33",
  "pages": [
   {
    "id": "system",
@@ -6419,7 +6419,8 @@
     },
     {
      "page": "team-agents",
-     "element": "team-agents-row"
+     "element": null,
+     "note": "opener id 'team-agents-row' not found; page-level edge"
     },
     {
      "page": "team-conversation",
@@ -7062,7 +7063,11 @@
     },
     {
      "page": "team-agents",
-     "element": "team-agents-row"
+     "element": "team-agents-worker-row"
+    },
+    {
+     "page": "team-role",
+     "element": "team-role-live-open"
     },
     {
      "page": "team-agent",
@@ -25300,6 +25305,14 @@
     {
      "page": "new-conversation-sheet",
      "element": "new-conversation-team"
+    },
+    {
+     "page": "team-role",
+     "element": "team-role-live-task"
+    },
+    {
+     "page": "team-role",
+     "element": "team-role-task"
     }
    ],
    "gates": [],
@@ -26598,6 +26611,170 @@
    ]
   },
   {
+   "id": "team-role",
+   "title": "<role name> | New role",
+   "kind": "screen",
+   "area": "team",
+   "file": "lib/ui/screens/team/role_screen.dart",
+   "widget": "RoleScreen",
+   "presentedBy": [],
+   "line": 1,
+   "purpose": "One role of the AI Team: name, what it is for, instructions and model, plus (edit mode) the live worker wearing it, the tasks it was given and Give a task. Create mode (roleId null) starts from a short template with three example chips. Saving is explicit (pinned Save / Create role); Reset (built-in) and Delete (own) ask first, naming the role. The worker's generated name sits under Details.",
+   "reachedFrom": [
+    {
+     "page": "team-agents",
+     "element": "team-agents-role-row"
+    },
+    {
+     "page": "team-agents",
+     "element": "team-agents-new-role"
+    }
+   ],
+   "gates": [
+    "ConnectionController.orchestration != null; same AI Team availability gate as team-home"
+   ],
+   "elements": [
+    {
+     "id": "team-role-example",
+     "type": "chip",
+     "label": "Docs writer / Security reviewer / Designer",
+     "key": "team-role-example-<docs|security|designer>",
+     "file": "lib/ui/screens/team/role_screen.dart",
+     "line": 1,
+     "action": "other",
+     "target": null,
+     "effect": "Fills the name, purpose and instructions fields (create mode only).",
+     "gates": [
+      "create mode"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-role-model",
+     "type": "list-tile",
+     "label": "Model · <model or Team's model>",
+     "key": "team-role-model",
+     "file": "lib/ui/screens/team/role_screen.dart",
+     "line": 1,
+     "action": "other",
+     "target": null,
+     "effect": "showTeamModelSheet: pick a model or the team's model; not editable on a team on a computer (The computer's model).",
+     "gates": [
+      "not a team on a computer",
+      "a connection for the catalog"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-role-live-task",
+     "type": "list-tile",
+     "label": "Working on <task>",
+     "key": "team-role-live-task",
+     "file": "lib/ui/screens/team/role_screen.dart",
+     "line": 1,
+     "action": "navigate",
+     "target": "team-conversation",
+     "targetWidget": "TeamConversation",
+     "effect": "TeamConversation.open for the task the live worker of this role is on.",
+     "gates": [
+      "a live worker wears this role"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-role-live-open",
+     "type": "list-tile",
+     "label": "Open its conversation",
+     "key": "team-role-live-open",
+     "file": "lib/ui/screens/team/role_screen.dart",
+     "line": 1,
+     "action": "navigate",
+     "target": "chat",
+     "targetWidget": "openTeamAgentConversation",
+     "effect": "openTeamAgentConversation for the live worker of this role.",
+     "gates": [
+      "a live worker wears this role"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-role-task",
+     "type": "list-tile",
+     "label": "<task title>",
+     "key": "team-role-task-<run.id>",
+     "file": "lib/ui/screens/team/role_screen.dart",
+     "line": 1,
+     "action": "navigate",
+     "target": "team-conversation",
+     "targetWidget": "TeamConversation",
+     "effect": "TeamConversation.open for a recent task given to this role.",
+     "gates": [
+      "edit mode"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-role-save",
+     "type": "button",
+     "label": "Save / Create role",
+     "key": "team-role-save",
+     "file": "lib/ui/screens/team/role_screen.dart",
+     "line": 1,
+     "action": "submit",
+     "target": null,
+     "effect": "TeamRolesController.update (edit) or add (create), then closes. Enabled once something changed; a missing name is said under the field.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-role-give-task",
+     "type": "button",
+     "label": "Give <role> a task",
+     "key": "team-role-give-task",
+     "file": "lib/ui/screens/team/role_screen.dart",
+     "line": 1,
+     "action": "open-sheet",
+     "target": "start-run-sheet",
+     "targetWidget": "TeamConversation.start",
+     "effect": "Saves pending edits, then TeamConversation.start(roleId): the start-task sheet with this role chosen.",
+     "gates": [
+      "edit mode"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-role-reset",
+     "type": "button",
+     "label": "Reset <role>",
+     "key": "team-role-reset",
+     "file": "lib/ui/screens/team/role_screen.dart",
+     "line": 1,
+     "action": "mutate",
+     "target": null,
+     "effect": "showKitConfirm naming the role, then TeamRolesController.reset (the built-in goes back to how it shipped).",
+     "gates": [
+      "built-in role"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-role-delete",
+     "type": "button",
+     "label": "Delete <role>",
+     "key": "team-role-delete",
+     "file": "lib/ui/screens/team/role_screen.dart",
+     "line": 1,
+     "action": "mutate",
+     "target": null,
+     "effect": "showKitConfirm naming the role, then TeamRolesController.remove; tasks it did keep its name.",
+     "gates": [
+      "the person's own role"
+     ],
+     "destructive": true
+    }
+   ]
+  },
+  {
    "id": "start-run-sheet",
    "title": "Start a run",
    "kind": "sheet",
@@ -26619,12 +26796,36 @@
      "element": "team-home-start-run"
     },
     {
+     "page": "team-role",
+     "element": "team-role-give-task"
+    },
+    {
      "page": "team-board",
      "element": "team-board-empty-add"
+    },
+    {
+     "page": "start-run-sheet",
+     "element": "start-run-sheet-who"
     }
    ],
    "gates": [],
    "elements": [
+    {
+     "id": "start-run-sheet-who",
+     "type": "list-tile",
+     "label": "<suggested role> · Suggested from your words · Change",
+     "key": "team-start-run-who",
+     "file": "lib/ui/screens/team/start_run_sheet.dart",
+     "line": 1,
+     "action": "open-sheet",
+     "target": "start-run-sheet",
+     "effect": "Direct task only: the role the task goes as, suggested from the typed words (TeamRolesController.suggest, updates as the person types); opens a picker of the team's roles. Send dispatches through TeamDispatchController.submit(role, roles, teamModel, applyModel).",
+     "gates": [
+      "direct task form",
+      "roles loaded"
+     ],
+     "destructive": false
+    },
     {
      "id": "start-run-sheet-objective",
      "type": "text-field",
@@ -26863,8 +27064,8 @@
    "file": "lib/ui/screens/team/team_agents_screen.dart",
    "widget": "TeamAgentsScreen",
    "presentedBy": [],
-   "line": 26,
-   "purpose": "What the home's '{live} agents · {working} working' row opens: the agents that are on, named by role, then the ones switched off on the host under one collapsed 'Suspended on the host' group. A row opens the agent's conversation in watching mode (slice-P3.6); the agent's own page is that conversation's top-bar action (About <name>).",
+   "line": 1,
+   "purpose": "The team's roles (Product, Frontend, Backend, Tester, General and the person's own), one list by urgency: a role a live worker is working for now first (\"Working on <task> · 4 min\"), then the rest (\"Uses <model> · 3 tasks\"). Live workers are not rows of their own: a worker shows as the role its task was given to, or as Worker when that is unknown. A row opens the role page; the pinned New role opens it in create mode.",
    "reachedFrom": [
     {
      "page": "team-settings",
@@ -26876,33 +27077,47 @@
    ],
    "elements": [
     {
-     "id": "team-agents-suspended-group",
+     "id": "team-agents-role-row",
      "type": "list-tile",
-     "label": "Suspended on the host ({count})",
-     "key": "team-home-suspended-group",
+     "label": "<role> · Working on <task> · <age> / Uses <model> · <n> tasks",
+     "key": "team-role-<role.id>",
      "file": "lib/ui/screens/team/team_agents_screen.dart",
-     "line": 234,
-     "action": "other",
-     "target": null,
-     "effect": "_GroupRow.onTap -> setState(_suspendedExpanded = !_suspendedExpanded) (team_agents_screen.dart:170).",
+     "line": 1,
+     "action": "navigate",
+     "target": "team-role",
+     "targetWidget": "RoleScreen",
+     "effect": "Opens the role page (openTeamRole): edit, model, recent tasks, Give a task.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-agents-worker-row",
+     "type": "list-tile",
+     "label": "Worker · Working on <task> · <age>",
+     "key": "team-role-worker-<agent.id>",
+     "file": "lib/ui/screens/team/team_agents_screen.dart",
+     "line": 1,
+     "action": "navigate",
+     "target": "chat",
+     "targetWidget": "openTeamAgentConversation",
+     "effect": "A live worker whose task's role is unknown: openTeamAgentConversation (its conversation in watching mode).",
      "gates": [
-      "off.isNotEmpty (teamOffAgents(snapshot.agents))"
+      "a live worker on a task without a remembered role"
      ],
      "destructive": false
     },
     {
-     "id": "team-agents-wake-paused",
-     "type": "list-tile",
-     "label": "Wake the {count} paused agents",
-     "key": "team-agents-wake-paused",
+     "id": "team-agents-new-role",
+     "type": "button",
+     "label": "New role",
+     "key": "team-roles-new",
      "file": "lib/ui/screens/team/team_agents_screen.dart",
-     "line": 441,
-     "action": "mutate",
-     "target": null,
-     "effect": "slice-P5.2: one action for every paused agent (never the ones the app keeps off on its phone team): controller.controlAgent(id, resume) one at a time, stopping at the first the host does not accept; its KitReceipt below, and when not confirmed or refused a plain line with Check again (refresh).",
-     "gates": [
-      "controller.capabilities.controlAgent && (paused agents or a wake outcome)"
-     ],
+     "line": 1,
+     "action": "navigate",
+     "target": "team-role",
+     "targetWidget": "RoleScreen",
+     "effect": "Opens the role page in create mode (starter template and example chips).",
+     "gates": [],
      "destructive": false
     },
     {
@@ -26933,20 +27148,6 @@
      "gates": [
       "controller.isStale, or controller.lastError?.kind == OrchestrationErrorKind.readFailed && lastRefreshedAt != null"
      ],
-     "destructive": false
-    },
-    {
-     "id": "team-agents-row",
-     "type": "list-tile",
-     "label": "<agent name> · <role> · <provider / model> · <state word>",
-     "key": "team-home-agent-<agent.id>",
-     "file": "lib/ui/widgets/team_agent_row.dart",
-     "line": 113,
-     "action": "navigate",
-     "target": "chat",
-     "targetWidget": "openTeamAgentConversation",
-     "effect": "_openAgent(agent): widget.onOpenAgent when given, else openTeamAgentConversation(context, agent, team: controller): ChatScreen in watching mode, or TeamWatchLiveScreen (chat-watching-live) when the session cannot be read.",
-     "gates": [],
      "destructive": false
     }
    ]
@@ -27546,14 +27747,14 @@
     {
      "id": "team-home-runs-agents-row",
      "type": "list-tile",
-     "label": "{n} agents · {state}",
+     "label": "Agents · {n} roles",
      "key": "team-home-agents-row",
      "file": "lib/ui/screens/team/team_settings_screen.dart",
      "line": 296,
      "action": "navigate",
      "target": "team-agents",
      "targetWidget": "TeamAgentsScreen",
-     "effect": "The agents list; says \"resting while the phone cools\" while the heat guard holds the team.",
+     "effect": "The Agents page (the team's roles). The row's supporting line: Who does the work, and how each one works.",
      "gates": [],
      "destructive": false
     },
@@ -37194,8 +37395,38 @@
    },
    {
     "from": "team-agents",
-    "element": "team-agents-row",
+    "element": "team-agents-role-row",
+    "to": "team-role"
+   },
+   {
+    "from": "team-agents",
+    "element": "team-agents-worker-row",
     "to": "chat"
+   },
+   {
+    "from": "team-agents",
+    "element": "team-agents-new-role",
+    "to": "team-role"
+   },
+   {
+    "from": "team-role",
+    "element": "team-role-live-task",
+    "to": "team-conversation"
+   },
+   {
+    "from": "team-role",
+    "element": "team-role-live-open",
+    "to": "chat"
+   },
+   {
+    "from": "team-role",
+    "element": "team-role-task",
+    "to": "team-conversation"
+   },
+   {
+    "from": "team-role",
+    "element": "team-role-give-task",
+    "to": "start-run-sheet"
    },
    {
     "from": "team-agent",
@@ -37391,6 +37622,11 @@
     "from": "embedded-work-graph",
     "element": "embedded-work-graph-node",
     "to": "work-sheet"
+   },
+   {
+    "from": "start-run-sheet",
+    "element": "start-run-sheet-who",
+    "to": "start-run-sheet"
    },
    {
     "from": "start-run-sheet",
@@ -37851,12 +38087,6 @@
     "secondary": true
    },
    {
-    "from": "team-agents",
-    "element": "team-agents-row",
-    "to": "chat-watching-live",
-    "secondary": true
-   },
-   {
     "from": "team-conversation",
     "element": "team-conversation-family-agent",
     "to": "chat-watching-live",
@@ -38279,6 +38509,11 @@
     "from": "chat",
     "element": null,
     "to": "chat-share-confirm-sheet"
+   },
+   {
+    "from": "team-agents",
+    "element": null,
+    "to": "chat-watching-live"
    },
    {
     "from": "chat",

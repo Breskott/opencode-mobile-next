@@ -284,9 +284,7 @@ void main() {
   }
 
   group('asleep is not paused', () {
-    testWidgets('agents asleep: no "Paused", and the row says they wake', (
-      tester,
-    ) async {
+    testWidgets('agents asleep: no "Paused"', (tester) async {
       final (controller, _) = await boot(
         runs: [_task(waited: const Duration(seconds: 30))],
         agents: [_worker(), _reviewer()],
@@ -294,12 +292,6 @@ void main() {
       await pumpHome(tester, controller);
       expect(find.text(_en.teamUiHostPhrasePhone), findsOneWidget);
       expect(find.textContaining(_en.teamUiHostPhrasePaused), findsNothing);
-      expect(
-        find.text(
-          '${_en.teamUiHomeAgentsRowCount(2)} · ${_en.teamNowAgentsAsleep}',
-        ),
-        findsOneWidget,
-      );
       await done(tester);
     });
 

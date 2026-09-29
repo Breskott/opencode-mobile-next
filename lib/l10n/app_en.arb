@@ -9282,14 +9282,6 @@
   "@teamUiHomeAgentStateWorking": {
     "description": "AI Team home fleet row agent state"
   },
-  "teamUiHomeAgentsEmpty": "No agents on this host.",
-  "@teamUiHomeAgentsEmpty": {
-    "description": "AI Team home Agents segment empty title"
-  },
-  "teamUiHomeAgentsEmptyHint": "Agents appear here once the host starts them.",
-  "@teamUiHomeAgentsEmptyHint": {
-    "description": "AI Team home Agents segment empty hint"
-  },
   "teamUiHomeFilterActive": "Active",
   "@teamUiHomeFilterActive": {
     "description": "AI Team home Runs filter chip: planning and working runs"
@@ -9504,10 +9496,6 @@
   "teamUiRunMissingTitle": "This task is no longer on the host",
   "@teamUiRunMissingTitle": {
     "description": "Run detail state when the run id is not in the host’s list"
-  },
-  "teamUiRunTabAgents": "Agents",
-  "@teamUiRunTabAgents": {
-    "description": "Run detail tab"
   },
   "teamUiRunTermBatch": "Task · convoy",
   "@teamUiRunTermBatch": {
@@ -14056,24 +14044,6 @@
       }
     }
   },
-  "teamUiHomeAgentsRowCount": "{count, plural, =0{No agents} =1{1 agent} other{{count} agents}}",
-  "@teamUiHomeAgentsRowCount": {
-    "description": "The AI Team home row that opens the agents list: how many agents are on",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teamUiHomeAgentsRowWorking": "{count} working",
-  "@teamUiHomeAgentsRowWorking": {
-    "description": "Added after \" · \" to the agents row: how many agents are working now",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "teamUiHomeSearchClose": "Close search",
   "@teamUiHomeSearchClose": {
     "description": "Top bar button that hides the task search on the AI Team home"
@@ -14094,10 +14064,6 @@
         "type": "String"
       }
     }
-  },
-  "teamUiHomeAgentsRowHint": "Open the agents list",
-  "@teamUiHomeAgentsRowHint": {
-    "description": "Screen-reader hint of the agents row on the AI Team home"
   },
   "teamUiAgentRoleWorker": "Worker",
   "@teamUiAgentRoleWorker": {
@@ -14677,14 +14643,6 @@
   "teamDiscoverComputerChoiceBody": "Use Gas City on a computer instead",
   "@teamDiscoverComputerChoiceBody": {
     "description": "Plugins, OpenCode inside the app: the line under 'A team on a computer'"
-  },
-  "teamNowAgentsAsleep": "asleep until there is work",
-  "@teamNowAgentsAsleep": {
-    "description": "AI Team home: the agents row when every agent is asleep (on-demand agents, not paused), after '3 agents · '"
-  },
-  "teamNowAgentsPaused": "paused",
-  "@teamNowAgentsPaused": {
-    "description": "AI Team home: the agents row when the agents are paused on purpose, after '3 agents · '"
   },
   "teamNowChecksEveryMinute": "the team checks every minute",
   "@teamNowChecksEveryMinute": {
@@ -20047,22 +20005,6 @@
       }
     }
   },
-  "teamAgentsAsleep": "Asleep",
-  "@teamAgentsAsleep": {
-    "description": "AI Team agents list: state word of an agent stopped on the host that wakes by itself when there is work."
-  },
-  "teamAgentsAsleepHint": "wakes when there is work",
-  "@teamAgentsAsleepHint": {
-    "description": "AI Team agents list: after 'Asleep', says the agent needs nothing from the person."
-  },
-  "teamAgentsPaused": "Paused",
-  "@teamAgentsPaused": {
-    "description": "AI Team agents list: state word of an agent switched off on the host on purpose (suspended)."
-  },
-  "teamAgentsPausedHint": "switched off until someone wakes it",
-  "@teamAgentsPausedHint": {
-    "description": "AI Team agents list: after 'Paused', says nothing will start this agent by itself."
-  },
   "teamWorkSheetMissingTitle": "Work item gone",
   "@teamWorkSheetMissingTitle": {
     "description": "AI Team work sheet title when the item the person opened is no longer listed by the host."
@@ -24568,10 +24510,6 @@
       }
     }
   },
-  "teamHomeAgentsCooling": "resting while the phone cools",
-  "@teamHomeAgentsCooling": {
-    "description": "AI Team page agents row, after the count: the heat guard paused the agents."
-  },
   "teamHomePhoneControls": "Keep it running, stop it or remove it",
   "@teamHomePhoneControls": {
     "description": "AI Team page row on the phone's Termux team: opens its own controls (keep running tips, stop, remove from this phone)."
@@ -25571,33 +25509,6 @@
   "@teamRunCostUnreported": {
     "description": "A task's Details: the host reports no cost for a single task, only the whole team's day."
   },
-  "teamHomeAgentsRowCrashed": "{count} crashed",
-  "@teamHomeAgentsRowCrashed": {
-    "description": "AI Team page agents row: how many live agents' sessions ended in an error.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teamHomeAgentsRowPaused": "{count} paused",
-  "@teamHomeAgentsRowPaused": {
-    "description": "AI Team page agents row: agents switched off on purpose.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teamHomeAgentsRowKeptOff": "{count} kept off on this phone",
-  "@teamHomeAgentsRowKeptOff": {
-    "description": "AI Team page agents row: agents the app keeps off on its own phone team to save the phone.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "teamHomeUpkeepTitle": "Team upkeep",
   "@teamHomeUpkeepTitle": {
     "description": "AI Team page: the row saying what the host's own upkeep runs are doing."
@@ -25636,43 +25547,6 @@
   "teamAgentLooksAfterWorkers": "workers",
   "@teamAgentLooksAfterWorkers": {
     "description": "Agents list: tells two supervisors apart; this one watches the workers."
-  },
-  "teamAgentsKeptOff": "Off on this phone",
-  "@teamAgentsKeptOff": {
-    "description": "Agents list: an agent the app keeps off on its own phone team."
-  },
-  "teamAgentsKeptOffHint": "kept off so the phone can run the team",
-  "@teamAgentsKeptOffHint": {
-    "description": "Agents list: why an agent is off on the phone's own team."
-  },
-  "teamAgentsWakePaused": "{count, plural, =0{Wake the paused agents} =1{Wake the paused agent} other{Wake the {count} paused agents}}",
-  "@teamAgentsWakePaused": {
-    "description": "Agents list: one action that wakes every paused agent.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teamAgentsWakePausedHint": "They start again one at a time and pick up waiting work.",
-  "@teamAgentsWakePausedHint": {
-    "description": "Agents list: what waking the paused agents does."
-  },
-  "teamAgentsWakeUnconfirmed": "The team didn’t answer in time. Starting agents can keep it busy for a minute or two, so no more were woken. Check again in a minute.",
-  "@teamAgentsWakeUnconfirmed": {
-    "description": "Agents list: a wake the host did not confirm."
-  },
-  "teamAgentsWakeRefused": "The team didn’t wake them. Open an agent to see how it stands, or try again later.",
-  "@teamAgentsWakeRefused": {
-    "description": "Agents list: the host refused a wake."
-  },
-  "teamAgentsWaking": "Waking…",
-  "@teamAgentsWaking": {
-    "description": "Agents list: the wake is being sent."
-  },
-  "teamAgentsWakeCheckAgain": "Refresh",
-  "@teamAgentsWakeCheckAgain": {
-    "description": "Agents list: reads the team again after a wake it did not confirm."
   },
   "servicesStopConfirm": "Stop service",
   "@servicesStopConfirm": {
@@ -29392,5 +29266,358 @@
         "type": "int"
       }
     }
+  },
+  "teamRoleNameGeneral": "General",
+  "@teamRoleNameGeneral": {
+    "description": "AI Team built-in role name"
+  },
+  "teamRoleNameProduct": "Product",
+  "@teamRoleNameProduct": {
+    "description": "AI Team built-in role name"
+  },
+  "teamRoleNameFrontend": "Frontend",
+  "@teamRoleNameFrontend": {
+    "description": "AI Team built-in role name"
+  },
+  "teamRoleNameBackend": "Backend",
+  "@teamRoleNameBackend": {
+    "description": "AI Team built-in role name"
+  },
+  "teamRoleNameTester": "Tester",
+  "@teamRoleNameTester": {
+    "description": "AI Team built-in role name"
+  },
+  "teamRolePurposeGeneral": "Any task, done the plain way",
+  "@teamRolePurposeGeneral": {
+    "description": "AI Team built-in role: what it is for"
+  },
+  "teamRolePurposeProduct": "Turns an idea into clear requirements and a plan",
+  "@teamRolePurposeProduct": {
+    "description": "AI Team built-in role: what it is for"
+  },
+  "teamRolePurposeFrontend": "Screens, layout and how it feels to use",
+  "@teamRolePurposeFrontend": {
+    "description": "AI Team built-in role: what it is for"
+  },
+  "teamRolePurposeBackend": "Servers, data and the code behind the screens",
+  "@teamRolePurposeBackend": {
+    "description": "AI Team built-in role: what it is for"
+  },
+  "teamRolePurposeTester": "Finds what breaks and shows that it works",
+  "@teamRolePurposeTester": {
+    "description": "AI Team built-in role: what it is for"
+  },
+  "teamRolesTitle": "Agents",
+  "@teamRolesTitle": {
+    "description": "Agents page title (the team's roles)"
+  },
+  "teamRolesNew": "New role",
+  "@teamRolesNew": {
+    "description": "Agents page: pinned button that starts a new role"
+  },
+  "teamRolesEmpty": "No roles yet",
+  "@teamRolesEmpty": {
+    "description": "Agents page: no roles at all (should not happen)"
+  },
+  "teamRoleWorkingOn": "Working on “{task}” · {age}",
+  "@teamRoleWorkingOn": {
+    "description": "Agents page row: the role is working on a task, for how long",
+    "placeholders": {
+      "task": {
+        "type": "String"
+      },
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+  "teamRoleUses": "Uses {model}",
+  "@teamRoleUses": {
+    "description": "Agents page row: the model this role runs with",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "teamRoleUsesTeamModel": "Uses the team's model",
+  "@teamRoleUsesTeamModel": {
+    "description": "Agents page row: the role has no model of its own"
+  },
+  "teamRoleUsesComputerModel": "Uses the computer's model",
+  "@teamRoleUsesComputerModel": {
+    "description": "Agents page row: a team on a computer decides the model"
+  },
+  "teamRoleTaskCount": "{count, plural, =0{No tasks yet} =1{1 task} other{{count} tasks}}",
+  "@teamRoleTaskCount": {
+    "description": "Agents page row: how many tasks were given to this role",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamSettingsAgentsRow": "{count, plural, =1{Agents · 1 role} other{Agents · {count} roles}}",
+  "@teamSettingsAgentsRow": {
+    "description": "Team settings row that opens the Agents page",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamSettingsAgentsHint": "Who does the work, and how each one works",
+  "@teamSettingsAgentsHint": {
+    "description": "Team settings: supporting line of the Agents row"
+  },
+  "teamRoleNewTitle": "New role",
+  "@teamRoleNewTitle": {
+    "description": "Role page title while creating a role"
+  },
+  "teamRoleFieldName": "Name",
+  "@teamRoleFieldName": {
+    "description": "Role page: name field"
+  },
+  "teamRoleFieldPurpose": "What it's for",
+  "@teamRoleFieldPurpose": {
+    "description": "Role page: one-line purpose field"
+  },
+  "teamRoleFieldPurposeHint": "One line, for example: writes the guides",
+  "@teamRoleFieldPurposeHint": {
+    "description": "Role page: hint of the purpose field"
+  },
+  "teamRoleFieldInstructions": "Instructions",
+  "@teamRoleFieldInstructions": {
+    "description": "Role page: instructions field"
+  },
+  "teamRoleFieldInstructionsHint": "How this role should work, in your own words",
+  "@teamRoleFieldInstructionsHint": {
+    "description": "Role page: hint of the instructions field"
+  },
+  "teamRoleNameRequired": "Give the role a name",
+  "@teamRoleNameRequired": {
+    "description": "Role page: the name is empty"
+  },
+  "teamRoleModelRow": "Model",
+  "@teamRoleModelRow": {
+    "description": "Role page: model row title"
+  },
+  "teamRoleTeamModel": "Team's model",
+  "@teamRoleTeamModel": {
+    "description": "Role page: the role uses the team default model"
+  },
+  "teamRoleComputerModel": "The computer's model",
+  "@teamRoleComputerModel": {
+    "description": "Role page: the host decides the model, not editable"
+  },
+  "teamRoleModelSheetDefault": "Team's model",
+  "@teamRoleModelSheetDefault": {
+    "description": "Model sheet for a role: the default choice title"
+  },
+  "teamRoleModelSheetDefaultHint": "Uses whatever model the whole team uses",
+  "@teamRoleModelSheetDefaultHint": {
+    "description": "Model sheet for a role: the default choice hint"
+  },
+  "teamRoleWorkingNow": "Working on “{task}”",
+  "@teamRoleWorkingNow": {
+    "description": "Role page: the live worker of this role and its task",
+    "placeholders": {
+      "task": {
+        "type": "String"
+      }
+    }
+  },
+  "teamRoleOpenConversation": "Open its conversation",
+  "@teamRoleOpenConversation": {
+    "description": "Role page: opens the live worker's session"
+  },
+  "teamRoleRecentTasks": "Recent tasks",
+  "@teamRoleRecentTasks": {
+    "description": "Role page: section of tasks given to this role"
+  },
+  "teamRoleNoTasks": "Nothing given to {role} yet",
+  "@teamRoleNoTasks": {
+    "description": "Role page: no tasks yet",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "teamRoleGiveTask": "Give {role} a task",
+  "@teamRoleGiveTask": {
+    "description": "Role page: opens the start-task sheet with this role chosen",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "teamRoleSave": "Save",
+  "@teamRoleSave": {
+    "description": "Role page: saves the edits"
+  },
+  "teamRoleCreate": "Create role",
+  "@teamRoleCreate": {
+    "description": "Role page in create mode: saves the new role"
+  },
+  "teamRoleReset": "Reset {role}",
+  "@teamRoleReset": {
+    "description": "Role page: put a built-in role back to how it shipped",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "teamRoleResetTitle": "Reset {role}?",
+  "@teamRoleResetTitle": {
+    "description": "Confirm title",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "teamRoleResetBody": "Its name, purpose, instructions and model go back to how they shipped.",
+  "@teamRoleResetBody": {
+    "description": "Confirm body for resetting a built-in role"
+  },
+  "teamRoleDelete": "Delete {role}",
+  "@teamRoleDelete": {
+    "description": "Role page: delete one of the person's own roles",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "teamRoleDeleteTitle": "Delete {role}?",
+  "@teamRoleDeleteTitle": {
+    "description": "Confirm title",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "teamRoleDeleteBody": "{role} is removed from this team. Tasks it already did keep its name.",
+  "@teamRoleDeleteBody": {
+    "description": "Confirm body for deleting a role",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "teamRoleWorkerName": "Worker name",
+  "@teamRoleWorkerName": {
+    "description": "Role page Details: the generated name the host gave the live worker"
+  },
+  "teamRoleExamplesLabel": "Start from an example",
+  "@teamRoleExamplesLabel": {
+    "description": "New role page: label over the example chips"
+  },
+  "teamRoleExampleDocs": "Docs writer",
+  "@teamRoleExampleDocs": {
+    "description": "New role example chip"
+  },
+  "teamRoleExampleDocsPurpose": "Writes and updates the guides",
+  "@teamRoleExampleDocsPurpose": {
+    "description": "New role example: purpose"
+  },
+  "teamRoleExampleDocsInstructions": "You write and update documentation. Keep it short, accurate and in plain words. Check every command and path you mention before writing it down.",
+  "@teamRoleExampleDocsInstructions": {
+    "description": "New role example: instructions sent to the model"
+  },
+  "teamRoleExampleSecurity": "Security reviewer",
+  "@teamRoleExampleSecurity": {
+    "description": "New role example chip"
+  },
+  "teamRoleExampleSecurityPurpose": "Looks for ways the code could be abused",
+  "@teamRoleExampleSecurityPurpose": {
+    "description": "New role example: purpose"
+  },
+  "teamRoleExampleSecurityInstructions": "You review code for security problems: secrets in code or logs, unchecked input, unsafe links, and missing permission checks. Report what you find with the file and line, and fix only what the task asks for.",
+  "@teamRoleExampleSecurityInstructions": {
+    "description": "New role example: instructions sent to the model"
+  },
+  "teamRoleExampleDesigner": "Designer",
+  "@teamRoleExampleDesigner": {
+    "description": "New role example chip"
+  },
+  "teamRoleExampleDesignerPurpose": "Makes it clear, consistent and pleasant",
+  "@teamRoleExampleDesignerPurpose": {
+    "description": "New role example: purpose"
+  },
+  "teamRoleExampleDesignerInstructions": "You improve how the product looks and reads. Reuse the parts and words already in the app, keep one design language, and check small screens and large text.",
+  "@teamRoleExampleDesignerInstructions": {
+    "description": "New role example: instructions sent to the model"
+  },
+  "teamRoleStarterInstructions": "You are the ___ on this team.\nFocus on: ___\nAlways: ___\nNever: ___",
+  "@teamRoleStarterInstructions": {
+    "description": "New role starter template for the instructions"
+  },
+  "teamStartRunWho": "Who",
+  "@teamStartRunWho": {
+    "description": "Start-task sheet: label of the role row"
+  },
+  "teamStartRunWhoSuggested": "Suggested from your words",
+  "@teamStartRunWhoSuggested": {
+    "description": "Start-task sheet: the role was picked by the app from the typed words"
+  },
+  "teamStartRunWhoChange": "Change",
+  "@teamStartRunWhoChange": {
+    "description": "Start-task sheet: opens the role picker"
+  },
+  "teamStartRunWhoTitle": "Who should take this?",
+  "@teamStartRunWhoTitle": {
+    "description": "Start-task sheet: role picker title"
+  },
+  "teamChatLeadStartingRole": "{role} started on “{title}”",
+  "@teamChatLeadStartingRole": {
+    "description": "Team conversation lead line with the role name",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadClaimedRole": "{role} took “{title}”",
+  "@teamChatLeadClaimedRole": {
+    "description": "Team conversation lead line with the role name",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadStartingItRole": "{role} started",
+  "@teamChatLeadStartingItRole": {
+    "description": "Team conversation lead line (task said above) with the role name",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "teamChatLeadClaimedItRole": "{role} took the task",
+  "@teamChatLeadClaimedItRole": {
+    "description": "Team conversation lead line (task said above) with the role name",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "teamRolesSearchAliases": "roles personas agents team frontend backend tester product designer instructions",
+  "@teamRolesSearchAliases": {
+    "description": "Search words for the AI Team's Agents page (roles)."
   }
 }

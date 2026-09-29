@@ -2,7 +2,7 @@
 /// work page (crit team-page 2026-09-29). Opened from the team page's top
 /// bar and from Settings › AI Team while the team is on.
 ///
-/// One list: the **agents** row (opening [TeamAgentsScreen]), what the team
+/// One list: the **agents** row ("Agents · 5 roles", opening [TeamAgentsScreen]), what the team
 /// **spent today** when the host reports it, the host's upkeep in words, the
 /// phone's own team controls and Change address where they apply, the
 /// **Details** row (how fast it runs; the address, version and engine, where
@@ -26,9 +26,8 @@ import '../../../domain/server_gateway.dart' show CatalogModel;
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/orchestration.dart';
-import '../../../state/team_conversation.dart' show teamSessionState;
 import '../../../state/team_model.dart';
-import '../../../state/team_overview.dart';
+import '../../../state/team_roles.dart';
 import '../../../termux/team_runtime.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
@@ -36,7 +35,6 @@ import '../../widgets/team_discovery_card.dart'
     show teamHostDisclaimer, teamHostKindFor;
 import '../../widgets/team_host_form.dart'
     show TeamHostProbe, showTeamTurnOffSheet;
-import '../../widgets/team_now.dart';
 import '../../widgets/team_phone_section.dart' show TeamPhoneSection;
 import '../../widgets/team_switch.dart';
 import '../../widgets/team_technical_details.dart';
@@ -117,6 +115,7 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
   bool _modelFailed = false;
   bool _switching = false;
   TeamModelStore? _models;
+  TeamRolesController? _roles;
   String? _model;
   ValueListenable<ThermalGuard?>? _scopeHeat;
 
@@ -131,12 +130,15 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
 
   Future<void> _loadModel() async {
     try {
-      final store = TeamModelStore(await SharedPreferences.getInstance());
+      final prefs = await SharedPreferences.getInstance();
+      final store = TeamModelStore(prefs);
       final model = store.read(widget.controller.profileId);
+      final roles = teamRolesFor(prefs, widget.controller.profileId);
       if (!mounted) return;
       setState(() {
         _models = store;
         _model = model;
+        _roles = roles;
       });
     } catch (_) {
       // No stored choice reads as the phone's default.
@@ -201,20 +203,6 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
       return null;
     }
     return connection;
-  }
-
-  bool get _cooling {
-    final hold = _heat?.value?.holds[widget.controller.profileId];
-    if (hold == null) return false;
-    final controller = widget.controller;
-    return teamOverview(
-          profileId: controller.profileId,
-          host: controller.host,
-          agents: null,
-          isStale: true,
-          heatHold: hold,
-        ).heatHold !=
-        null;
   }
 
   void _changed() {
@@ -282,6 +270,8 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
       KitPageRoute<void>(
         builder: (_) => TeamAgentsScreen(
           controller: widget.controller,
+          roles: _roles,
+          connection: widget.connection,
           onOpenAgent: widget.onOpenAgent,
           now: widget.now,
         ),
@@ -295,30 +285,16 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
     final tokens = KitTokens.of(context);
     final controller = widget.controller;
     return ListenableBuilder(
-      listenable: Listenable.merge([controller, widget.connection, _heat]),
+      listenable: Listenable.merge([
+        controller,
+        widget.connection,
+        _heat,
+        _roles,
+      ]),
       builder: (context, _) {
         final owner = _owner;
         final builtin = BuiltinTeam.isBuiltinConfig(controller.config);
         final snapshot = controller.snapshot;
-        final live = teamLiveAgents(snapshot.agents);
-        final working = live
-            .where((a) => teamSessionState(a) == AgentState.working)
-            .length;
-        final crashed = live
-            .where((a) => teamSessionState(a) == AgentState.crashed)
-            .length;
-        final keptOff = snapshot.agents
-            .where((a) => teamAgentKeptOff(controller.config, a))
-            .length;
-        final pausedAgents = snapshot.agents
-            .where(
-              (a) =>
-                  !teamAgentIsLive(a) &&
-                  teamAgentPaused(a) &&
-                  !teamAgentKeptOff(controller.config, a),
-            )
-            .length;
-        final rest = teamRest(snapshot.agents, config: controller.config);
         final upkeep = teamUpkeepRuns(snapshot.runs);
         final spent = _spentRow(context, l10n, controller);
         return KitScreen(
@@ -367,15 +343,15 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
               KitRowGroup(
                 key: const ValueKey('team-home-team'),
                 children: [
-                  _AgentsRow(
+                  KitRow(
                     key: const ValueKey('team-home-agents-row'),
-                    total: snapshot.agents.length,
-                    rest: rest,
-                    cooling: _cooling,
-                    working: working,
-                    crashed: crashed,
-                    paused: pausedAgents,
-                    keptOff: keptOff,
+                    leading: KitRow.icon(context, AppIconography.agent),
+                    title: l10n.teamSettingsAgentsRow(
+                      _roles?.roles.length ?? TeamRoleIds.builtIn.length,
+                    ),
+                    supporting: TextSpan(text: l10n.teamSettingsAgentsHint),
+                    supportingMaxLines: 2,
+                    trailing: const KitChevron(),
                     onTap: _openAgents,
                   ),
                   ?spent,
@@ -499,61 +475,6 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
       supporting: TextSpan(text: lines.join(' ')),
       supportingKey: const ValueKey('team-home-spent-scope'),
       supportingMaxLines: 5,
-    );
-  }
-}
-
-/// "6 agents · 1 working · 4 kept off on this phone", opening the agents
-/// list: it counts every agent the list shows, so the two agree.
-class _AgentsRow extends StatelessWidget {
-  const _AgentsRow({
-    super.key,
-    required this.total,
-    required this.rest,
-    required this.working,
-    required this.onTap,
-    this.crashed = 0,
-    this.paused = 0,
-    this.keptOff = 0,
-    this.cooling = false,
-  });
-
-  final int total;
-  final TeamRest rest;
-  final int working;
-  final int crashed;
-  final int paused;
-  final int keptOff;
-  final bool cooling;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final count = l10n.teamUiHomeAgentsRowCount(total);
-    final kept = keptOff > 0 ? l10n.teamHomeAgentsRowKeptOff(keptOff) : null;
-    final title = switch (cooling ? null : rest) {
-      null => [count, l10n.teamHomeAgentsCooling],
-      TeamRest.asleep => [count, l10n.teamNowAgentsAsleep, ?kept],
-      TeamRest.paused => [count, l10n.teamNowAgentsPaused, ?kept],
-      TeamRest.awake => [
-        count,
-        if (working > 0) l10n.teamUiHomeAgentsRowWorking(working),
-        if (crashed > 0) l10n.teamHomeAgentsRowCrashed(crashed),
-        if (paused > 0) l10n.teamHomeAgentsRowPaused(paused),
-        ?kept,
-      ],
-    }.join(teamUsageSeparator);
-    return Semantics(
-      button: true,
-      hint: l10n.teamUiHomeAgentsRowHint,
-      child: KitRow(
-        leading: KitRow.icon(context, AppIconography.agent),
-        title: title,
-        titleMaxLines: 2,
-        trailing: const KitChevron(),
-        onTap: onTap,
-      ),
     );
   }
 }

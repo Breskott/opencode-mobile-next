@@ -65,7 +65,7 @@ const _excluded = <String, String>{
   'chat-watching-live':
       'one AI Team agent whose conversation the server cannot read; '
       'opened from that agent',
-  'team-agents': "needs the AI Team; opened from the home's agents row",
+  'team-role': 'one role of the AI Team; opened from Agents',
   'team-board':
       "needs the AI Team; opened from the home's board icon or "
       "'View board' row",

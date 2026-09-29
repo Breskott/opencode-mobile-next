@@ -225,24 +225,6 @@ Future<void> _menu(WidgetTester tester, String item) async {
 String _subtitle(WidgetTester tester) =>
     tester.widget<KitTopBar>(find.byType(KitTopBar)).subtitle!;
 
-/// The agents row lives in Team settings: opens it once, then reads.
-Future<String> _agentsRow(WidgetTester tester) async {
-  if (_key('team-home-agents-row').evaluate().isEmpty) {
-    await tester.tap(_key('team-home-settings'));
-    await _settle(tester);
-  }
-  return _agentsRowTitle(tester);
-}
-
-String _agentsRowTitle(WidgetTester tester) => tester
-    .widget<KitRow>(
-      find.descendant(
-        of: _key('team-home-agents-row'),
-        matching: find.byType(KitRow),
-      ),
-    )
-    .title;
-
 OrchestrationAgent _agent(String id, {bool suspended = false}) =>
     OrchestrationAgent(
       id: id,
@@ -490,7 +472,6 @@ void main() {
       expect(_key('team-home-heat'), findsNothing);
       expect(_key('team-home-now-paused'), findsOneWidget);
       expect(_key('team-home-now-wake'), findsOneWidget);
-      expect(await _agentsRow(tester), contains(_en.teamNowAgentsPaused));
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
@@ -511,8 +492,6 @@ void main() {
       expect(_key('team-home-now-paused'), findsNothing);
       expect(_key('team-home-now-wake'), findsNothing);
       expect(find.text(_en.teamUiControlResume), findsNothing);
-      expect(await _agentsRow(tester), contains(_en.teamHomeAgentsCooling));
-      expect(await _agentsRow(tester), isNot(contains(' · paused')));
       await tester.pumpWidget(const SizedBox.shrink());
     });
 

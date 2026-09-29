@@ -22,11 +22,14 @@ Future<TeamModelChoice?> showTeamModelSheet(
   BuildContext context, {
   required ConnectionController connection,
   required String? current,
+  String? title,
+  String? defaultTitle,
+  String? defaultHint,
 }) {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   return showKitSheet<TeamModelChoice>(
     context,
-    title: l10n.teamModelSheetTitle,
+    title: title ?? l10n.teamModelSheetTitle,
     subtitle: l10n.teamModelSheetNote,
     icon: AppIconography.model,
     height: KitSheetHeight.full,
@@ -46,8 +49,10 @@ Future<TeamModelChoice?> showTeamModelSheet(
           children: [
             KitRow(
               key: const ValueKey('team-model-default'),
-              title: l10n.teamModelDefault,
-              supporting: TextSpan(text: l10n.teamModelDefaultHint),
+              title: defaultTitle ?? l10n.teamModelDefault,
+              supporting: TextSpan(
+                text: defaultHint ?? l10n.teamModelDefaultHint,
+              ),
               selected: current == null,
               onTap: () =>
                   Navigator.of(sheetContext).pop(const TeamModelChoice(null)),
