@@ -1087,7 +1087,9 @@ class TeamProjectServers extends StatelessWidget {
                       serverId: target,
                       text: note,
                     );
-                    if (result.code == 'branchUnavailable' && context.mounted) {
+                    if ((result.code == 'branchUnavailable' ||
+                            result.code == 'sharedRemoteRequired') &&
+                        context.mounted) {
                       final restart = await showKitConfirm(
                         context,
                         title: l.teamProjectRestartElsewhere,
