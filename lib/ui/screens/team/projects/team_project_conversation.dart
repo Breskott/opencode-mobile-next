@@ -317,8 +317,12 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                 KitMessage.reply(body: KitMarkdown(m.text)),
             KitPlanCard(
               title: l.teamProjectTaskPlan,
-              status: _status(p.status),
-              state: _state(p.status),
+              status: p.status == 'planned'
+                  ? l.teamProjectTaskReview
+                  : l.teamProjectTaskApprovedPlan,
+              state: p.status == 'planned'
+                  ? KitTeamState.needsYou
+                  : KitTeamState.done,
               summary: p.specDraft.goal,
               items: [
                 for (final criterion in t.criteria)
@@ -330,15 +334,17 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                 title: phase.title,
                 status: phase.accepted
                     ? l.teamProjectTaskAccepted
-                    : _status(t.status),
-                state: phase.accepted ? KitTeamState.done : _state(t.status),
-                items: [
-                  KitTeamItem(
-                    title: t.title,
-                    detail: t.reason,
-                    meta: _age(t.changedAt),
-                  ),
-                ],
+                    : t.status == 'failed'
+                    ? l.teamProjectTaskFailed
+                    : l.teamProjectTaskCriteria,
+                state: t.status == 'failed'
+                    ? KitTeamState.failed
+                    : p.requests.any(
+                        (r) => r.phaseId == phase.id && !r.answered,
+                      )
+                    ? KitTeamState.needsYou
+                    : KitTeamState.done,
+                items: [KitTeamItem(title: t.title)],
                 actions: [
                   if (!phase.accepted)
                     _action(
@@ -371,8 +377,14 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
             if (t.findings.isNotEmpty)
               KitFindingsCard(
                 title: l.teamProjectTaskFindings,
-                status: _status(t.status),
-                state: _state(t.status),
+                status: t.findings.any((f) => f.status == 'open')
+                    ? l.teamProjectTaskOpenFindings
+                    : l.teamProjectTaskFindingsAddressed,
+                state:
+                    t.findings.any((f) => f.status == 'open') &&
+                        t.status == 'review'
+                    ? KitTeamState.needsYou
+                    : KitTeamState.done,
                 findings: [
                   for (final f in t.findings)
                     KitTeamFinding(
