@@ -13607,11 +13607,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String teamChatLeadClaimed(String name, String title) {
-    return 'تولّى $name «$title»';
-  }
-
-  @override
   String teamChatLeadClaimedWorker(String title) {
     return 'تولّى عامل «$title»';
   }
@@ -13681,7 +13676,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String teamChatComposerGoesTo(String name) {
-    return 'تصل إلى $name عبر فريق الذكاء';
+    return 'رسالتك تصل إلى $name';
   }
 
   @override
@@ -21848,15 +21843,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamChatLeadRoutedIt => 'Sent it to the workers';
 
   @override
-  String get teamChatLeadStartingIt => 'Started a worker on it';
+  String get teamChatLeadStartingIt => 'Worker started';
 
   @override
-  String teamChatLeadClaimedIt(String name) {
-    return '$name began the task';
-  }
-
-  @override
-  String get teamChatLeadClaimedWorkerIt => 'The worker began the task';
+  String get teamChatLeadClaimedWorkerIt => 'Worker took the task';
 
   @override
   String get teamChatLeadPushedIt => 'Its changes are on a branch';
@@ -24481,4 +24471,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamSettingsTurnOff => 'إيقاف فريق الذكاء الاصطناعي';
+
+  @override
+  String teamChatWorkerNumbered(String role, int n) {
+    return '$role $n';
+  }
 }

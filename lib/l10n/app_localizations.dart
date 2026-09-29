@@ -22131,19 +22131,13 @@ abstract class AppLocalizations {
   /// Team conversation, lead line: a worker session started for a step
   ///
   /// In en, this message translates to:
-  /// **'Started a worker on “{title}”'**
+  /// **'Worker started on “{title}”'**
   String teamChatLeadStarting(String title);
-
-  /// Team conversation, lead line: a named worker claimed a step
-  ///
-  /// In en, this message translates to:
-  /// **'{name} began “{title}”'**
-  String teamChatLeadClaimed(String name, String title);
 
   /// Team conversation, lead line: a worker claimed a step (no name reported)
   ///
   /// In en, this message translates to:
-  /// **'A worker began “{title}”'**
+  /// **'Worker took “{title}”'**
   String teamChatLeadClaimedWorker(String title);
 
   /// Team conversation, lead line: a step's change was pushed to a branch
@@ -22227,7 +22221,7 @@ abstract class AppLocalizations {
   /// Team conversation, under the composer: who the message reaches (name · role)
   ///
   /// In en, this message translates to:
-  /// **'Goes to {name} through the AI Team'**
+  /// **'Your message goes to {name}'**
   String teamChatComposerGoesTo(String name);
 
   /// Team conversation, where the composer is: no worker and no planner to message
@@ -34279,19 +34273,13 @@ abstract class AppLocalizations {
   /// Team conversation, the lead's line: a worker is starting on the task named in the prompt above (refers back, never repeats the task's text)
   ///
   /// In en, this message translates to:
-  /// **'Started a worker on it'**
+  /// **'Worker started'**
   String get teamChatLeadStartingIt;
-
-  /// Team conversation, the lead's line: the named worker took the task named in the prompt above
-  ///
-  /// In en, this message translates to:
-  /// **'{name} began the task'**
-  String teamChatLeadClaimedIt(String name);
 
   /// Team conversation, the lead's line: an unnamed worker took the task named in the prompt above
   ///
   /// In en, this message translates to:
-  /// **'The worker began the task'**
+  /// **'Worker took the task'**
   String get teamChatLeadClaimedWorkerIt;
 
   /// Team conversation, the lead's line: the changes for the task named in the prompt above are on a branch
@@ -38311,6 +38299,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Turn off the AI Team'**
   String get teamSettingsTurnOff;
+
+  /// Team conversation: a worker's plain name when the task has several of the same role (Worker 2)
+  ///
+  /// In en, this message translates to:
+  /// **'{role} {n}'**
+  String teamChatWorkerNumbered(String role, int n);
 }
 
 class _AppLocalizationsDelegate
