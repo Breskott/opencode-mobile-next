@@ -29619,5 +29619,9 @@
   "teamRolesSearchAliases": "roles personas agents team frontend backend tester product designer instructions",
   "@teamRolesSearchAliases": {
     "description": "Search words for the AI Team's Agents page (roles)."
+  },
+  "chatCollapseAllSteps": "Collapse all steps",
+  "@chatCollapseAllSteps": {
+    "description": "Top bar action on the watching chat page: folds every open step and fold in the transcript; also its tooltip and spoken name"
   }
 }

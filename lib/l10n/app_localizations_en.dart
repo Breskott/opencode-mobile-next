@@ -24509,4 +24509,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamRolesSearchAliases =>
       'roles personas agents team frontend backend tester product designer instructions';
+
+  @override
+  String get chatCollapseAllSteps => 'Collapse all steps';
 }

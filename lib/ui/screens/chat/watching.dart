@@ -28,6 +28,8 @@ class ChatWatch {
   const ChatWatch({
     required this.banner,
     required this.hint,
+    this.hintOf,
+    this.title,
     this.readOnlyReason,
     this.onSend,
     this.draftId,
@@ -43,6 +45,14 @@ class ChatWatch {
 
   /// The composer's hint and accessible name: "Message furiosa…".
   final String hint;
+
+  /// The hint read again when [changes] notifies (the role names load late);
+  /// [hint] when null.
+  final String Function()? hintOf;
+
+  /// The top bar's title: the task the worker is on, not the worker's
+  /// internal session title; null (or a null result) keeps the session's.
+  final String? Function()? title;
 
   /// Why nothing can be typed, shown in the composer when [onSend] is null:
   /// "This team can't be messaged from here."
@@ -287,8 +297,8 @@ class _WatchComposerState extends State<_WatchComposer> {
       sendKey: const ValueKey('chat-watching-message-send'),
       controller: _text,
       focusNode: _focus,
-      hint: watch.hint,
-      fieldLabel: watch.hint,
+      hint: watch.hintOf?.call() ?? watch.hint,
+      fieldLabel: watch.hintOf?.call() ?? watch.hint,
       readOnlyReason: canSend ? null : watch.readOnlyReason,
       sending: _sending,
       canSendWhileBusy: true,

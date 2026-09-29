@@ -38557,6 +38557,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'roles personas agents team frontend backend tester product designer instructions'**
   String get teamRolesSearchAliases;
+
+  /// Top bar action on the watching chat page: folds every open step and fold in the transcript; also its tooltip and spoken name
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse all steps'**
+  String get chatCollapseAllSteps;
 }
 
 class _AppLocalizationsDelegate

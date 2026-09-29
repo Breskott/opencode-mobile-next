@@ -24630,4 +24630,7 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamRolesSearchAliases =>
       'roles personas agents team frontend backend tester product designer instructions';
+
+  @override
+  String get chatCollapseAllSteps => 'طي كل الخطوات';
 }

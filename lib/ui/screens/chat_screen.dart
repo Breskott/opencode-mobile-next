@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -415,7 +416,15 @@ class _ChatScreenState extends State<ChatScreen>
 
   /// Session-scoped expansion state for tool cards, tool groups, and
   /// reasoning blocks, so list recycling does not collapse them.
-  final Map<String, bool> _transcriptExpansion = {};
+  late final _ExpansionStore _transcriptExpansion = _ExpansionStore(
+    onOpenChanged: () {
+      // Rebuild the top bar's "Collapse all steps" when the first step opens
+      // or the last one closes (never during a build).
+      scheduleMicrotask(() {
+        if (mounted) _setChatState(() {});
+      });
+    },
+  );
 
   /// A context under the composer layer (set as the conversation builds):
   /// the clearance an Undo bar reads there includes the composer.
@@ -4092,6 +4101,11 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  /// Folds every step, reasoning line and work fold that is open.
+  void _collapseAllSteps() {
+    setState(_transcriptExpansion.collapseAll);
+  }
+
   Future<bool?> _setReasoningDisplay(bool expanded) async {
     if (!mounted) return null;
     // The transcript-wide choice is the new default for every reasoning
@@ -7268,7 +7282,10 @@ class _ChatScreenState extends State<ChatScreen>
     final l10n = _chatL10n(context);
     return KitTopBar(
       titleKey: const Key('chat-title'),
-      title: presentedSessionTitle(session, fallback: l10n.commandDestination),
+      // Watching a team worker: the task it is on, not its internal title.
+      title:
+          widget.watch?.title?.call() ??
+          presentedSessionTitle(session, fallback: l10n.commandDestination),
       // Which server (and so which agent) this conversation is with, when
       // there is more than one to be with.
       subtitle: serverName,
@@ -7294,6 +7311,14 @@ class _ChatScreenState extends State<ChatScreen>
             icon: AppIconography.review,
             label: l10n.demoReviewChanges,
             onPressed: _showDiff,
+          ),
+        // Watching: one tap folds every open step and fold on the page.
+        if (_watching && _transcriptExpansion.anyOpen)
+          KitAction(
+            key: const Key('chat-collapse-all'),
+            icon: AppIconography.unfoldLess,
+            label: l10n.chatCollapseAllSteps,
+            onPressed: _collapseAllSteps,
           ),
         // Watching: the worker's own page (its state and controls).
         if (widget.watch case final watch?) ?_watchDetailsAction(watch),
@@ -8337,5 +8362,59 @@ class _ChatScreenState extends State<ChatScreen>
     _historyChanges.dispose();
     _backgroundSupportState.dispose();
     super.dispose();
+  }
+}
+
+/// The transcript's per-block open/closed choices (`work:`, `tool:`,
+/// `reasoning:` keys). Tells the page when the first block opens or the last
+/// one closes so the top bar can offer "Collapse all steps".
+class _ExpansionStore extends MapBase<String, bool> {
+  _ExpansionStore({required this.onOpenChanged});
+
+  final VoidCallback onOpenChanged;
+  final Map<String, bool> _values = {};
+  bool _anyOpen = false;
+
+  bool get anyOpen => _anyOpen;
+
+  void _sync() {
+    final now = _values.containsValue(true);
+    if (now == _anyOpen) return;
+    _anyOpen = now;
+    onOpenChanged();
+  }
+
+  /// Closes every open block, keeping the choice so a default-open block
+  /// stays closed too.
+  void collapseAll() {
+    for (final key in _values.keys.toList()) {
+      _values[key] = false;
+    }
+    _sync();
+  }
+
+  @override
+  bool? operator [](Object? key) => _values[key];
+
+  @override
+  void operator []=(String key, bool value) {
+    _values[key] = value;
+    _sync();
+  }
+
+  @override
+  void clear() {
+    _values.clear();
+    _sync();
+  }
+
+  @override
+  Iterable<String> get keys => _values.keys;
+
+  @override
+  bool? remove(Object? key) {
+    final removed = _values.remove(key);
+    _sync();
+    return removed;
   }
 }

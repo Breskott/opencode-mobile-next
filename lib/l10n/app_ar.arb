@@ -4829,5 +4829,6 @@
   "teamSettingsTitle": "إعدادات الفريق",
   "teamSettingsOpenTooltip": "إعدادات الفريق",
   "teamSettingsTurnOff": "إيقاف فريق الذكاء الاصطناعي",
-  "teamChatWorkerNumbered": "{role} {n}"
+  "teamChatWorkerNumbered": "{role} {n}",
+  "chatCollapseAllSteps": "طي كل الخطوات"
 }

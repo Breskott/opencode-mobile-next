@@ -1819,20 +1819,73 @@ ChatWatch _teamWatch(
   OrchestrationAgent? current() =>
       (team == null ? null : _teamAgentById(team, agentId)) ?? agent;
   final first = current();
-  final name = first == null ? null : teamAgentShortName(first);
   final role = first == null ? null : teamAgentRole(first);
   final canMessage = team != null && team.capabilities.controlMessage;
   // Receipts of what was sent from this page, not an older message's.
   final sentHere = <String>{};
   // Says a message was just sent, before the team's own next word.
   final sent = ValueNotifier<int>(0);
+  // The roles load once per server; the page reads them again when they land.
+  final rolesLoaded = ValueNotifier<int>(0);
+  if (team != null && !_watchRoles.containsKey(team.profileId)) {
+    unawaited(
+      loadTeamRoles(team.profileId)
+          .then((roles) {
+            _watchRoles[team.profileId] = roles;
+            rolesLoaded.value++;
+          })
+          .catchError((_) {
+            // Without roles the worker is "Worker".
+          }),
+    );
+  }
+  // The work item the agent is on, as the team lists it now.
+  WorkItem? task() {
+    final now = current();
+    if (team == null || now == null) return null;
+    final work = team.snapshot.work;
+    final id = now.currentWorkId;
+    if (id != null) {
+      for (final item in work) {
+        if (item.id == id) return item;
+      }
+    }
+    final session = now.sessionId;
+    if (session != null && session.isNotEmpty) {
+      for (final item in work) {
+        if (item.sessionId == session) return item;
+      }
+    }
+    return null;
+  }
+
+  // The role the person gave the task ("Frontend"), else the agent's kind
+  // ("Worker"): the generated name lives on the agent's own page.
+  String who() {
+    final now = current();
+    final roles = team == null ? null : _watchRoles[team.profileId];
+    final item = task();
+    if (roles != null && item != null) {
+      final id =
+          roles.roleOfTask(item.id) ??
+          (item.runId == null ? null : roles.roleOfTask(item.runId!));
+      final known = id == null ? null : roles.byId(id);
+      if (known != null) return teamRoleName(l10n, known);
+    }
+    return teamAgentRoleWord(
+      l10n,
+      now == null ? (role ?? TeamAgentRole.worker) : teamAgentRole(now),
+    );
+  }
+
   return ChatWatch(
-    banner: () => _teamWatchBanner(l10n, current()),
-    hint: name != null
-        ? l10n.teamWatchComposerHint(name)
-        : role == TeamAgentRole.worker
-        ? l10n.teamWatchComposerHintWorker
-        : l10n.teamWatchComposerHintAgent,
+    banner: () => _teamWatchBanner(l10n, current(), who()),
+    hint: l10n.teamWatchComposerHint(who()),
+    hintOf: () => l10n.teamWatchComposerHint(who()),
+    title: () {
+      final text = task()?.title.trim();
+      return text == null || text.isEmpty ? null : text;
+    },
     readOnlyReason: l10n.teamChatComposerCannot,
     onSend: !canMessage
         ? null
@@ -1855,12 +1908,10 @@ ChatWatch _teamWatch(
               onRetry: () => team.retryMutation(record.key),
             );
           },
-    changes: team == null ? null : Listenable.merge([team, sent]),
+    changes: team == null ? null : Listenable.merge([team, sent, rolesLoaded]),
     detailsLabel: !details || team == null || first == null
         ? null
-        : name != null
-        ? l10n.teamWatchAbout(name)
-        : l10n.teamWatchAboutRole(teamAgentRoleWord(l10n, role!)),
+        : l10n.teamWatchAboutRole(who()),
     onDetails: !details || team == null || first == null
         ? null
         : (context) => unawaited(
@@ -1872,19 +1923,23 @@ ChatWatch _teamWatch(
   );
 }
 
-/// "Watching furiosa · Worker · Working": who, and its state as its
-/// session tells it ([teamSessionState], never the agents list alone).
+/// Roles already loaded, by server profile, so a rebuilt page names the
+/// worker at once.
+final _watchRoles = <String, TeamRolesController>{};
+
+/// "Watching the Frontend · Working": who ([who]: the task's role, else the
+/// agent's kind), and its state as its session tells it ([teamSessionState],
+/// never the agents list alone).
 (String, AppStatusTone) _teamWatchBanner(
   AppLocalizations l10n,
   OrchestrationAgent? agent,
+  String who,
 ) {
   if (agent == null) {
     return (l10n.teamUiAgentOutputLive, AppStatusTone.progress);
   }
   final state = teamSessionState(agent);
   final word = teamAgentStateWord(l10n, state);
-  final role = teamAgentRoleWord(l10n, teamAgentRole(agent));
-  final name = teamAgentShortName(agent);
   final tone = switch (state) {
     AgentState.working => AppStatusTone.progress,
     AgentState.crashed => AppStatusTone.failure,
@@ -1896,12 +1951,7 @@ ChatWatch _teamWatch(
     AgentState.stopped ||
     AgentState.unknown => AppStatusTone.neutral,
   };
-  return (
-    name == null
-        ? l10n.teamWatchBannerRole(role, word)
-        : l10n.teamWatchBanner(name, role, word),
-    tone,
-  );
+  return (l10n.teamWatchBannerRole(who, word), tone);
 }
 
 /// The newest of the team's records among [keys].
