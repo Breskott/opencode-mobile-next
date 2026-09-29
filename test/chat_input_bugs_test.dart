@@ -106,4 +106,44 @@ void main() {
       expect(sends, 1);
     });
   }
+
+  testWidgets('a touch tap on Send still sends when the keyboard collapses '
+      'between press and release', (t) async {
+    var sends = 0;
+    final c = TextEditingController(text: 'hi');
+    final f = FocusNode();
+    addTearDown(c.dispose);
+    addTearDown(f.dispose);
+    Widget host(double keyboard) => MediaQuery(
+      data: MediaQueryData(
+        size: const Size(412, 915),
+        viewInsets: EdgeInsets.only(bottom: keyboard),
+      ),
+      child: _app(
+        KitComposer(
+          controller: c,
+          focusNode: f,
+          hint: 'Ask',
+          onSend: () => sends++,
+          onVoice: () {},
+          sendKey: const Key('s'),
+          voiceButtonKey: const Key('v'),
+        ),
+      ),
+    );
+    await t.pumpWidget(host(300));
+    f.requestFocus();
+    await t.pump();
+    final g = await t.startGesture(
+      t.getCenter(find.byKey(const Key('s'))),
+      kind: PointerDeviceKind.touch,
+    );
+    await t.pump();
+    // The keyboard slides away and the composer moves under the finger.
+    await t.pumpWidget(host(0));
+    await t.pump(const Duration(milliseconds: 300));
+    await g.up();
+    await t.pump();
+    expect(sends, 1);
+  });
 }
