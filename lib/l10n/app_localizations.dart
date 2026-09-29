@@ -38114,6 +38114,12 @@ abstract class AppLocalizations {
   /// **'Waiting for the model\'s first word'**
   String get kitTurnLiveFirstWordSlow;
 
+  /// KitTurn live line: the reply is on this phone's own server, 20 s or more have passed with no first word, and the in-app AI Team has working tasks
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team is also working on this phone, so replies may be slower'**
+  String get kitTurnLiveFirstWordSlowTeam;
+
   /// KitTurn live line: the reply's words are coming in
   ///
   /// In en, this message translates to:

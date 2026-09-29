@@ -29196,6 +29196,10 @@
   "@kitTurnLiveFirstWordSlow": {
     "description": "KitTurn live line: the server has the prompt, 20 s or more have passed and the model has not written anything yet"
   },
+  "kitTurnLiveFirstWordSlowTeam": "AI Team is also working on this phone, so replies may be slower",
+  "@kitTurnLiveFirstWordSlowTeam": {
+    "description": "KitTurn live line: the reply is on this phone's own server, 20 s or more have passed with no first word, and the in-app AI Team has working tasks"
+  },
   "kitTurnLiveWriting": "Writing",
   "@kitTurnLiveWriting": {
     "description": "KitTurn live line: the reply's words are coming in"

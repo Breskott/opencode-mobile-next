@@ -203,8 +203,31 @@ case "$oc_model" in
   */*) export OPENCODE_CONFIG_CONTENT="{\"model\":\"$oc_model\"}" ;;
 esac
 export OPENCODE_DISABLE_MODELS_FETCH=1
+# Lowest CPU (and idle I/O) priority: the person's own chat server, at normal
+# priority, always wins. ionice is used only where the kernel takes it.
+if command -v nice >/dev/null 2>&1; then
+  if command -v ionice >/dev/null 2>&1 && ionice -c 3 true 2>/dev/null; then
+    exec nice -n 19 ionice -c 3 /usr/local/bin/opencode "$@"
+  fi
+  exec nice -n 19 /usr/local/bin/opencode "$@"
+fi
 exec /usr/local/bin/opencode "$@"
 ''';
+
+  /// `exec`s [command] at the lowest CPU priority (and idle I/O priority
+  /// where `ionice` works), for the team's supervisor: everything it starts
+  /// (store, agents) inherits it, so the person's chat server (a separate
+  /// service at normal priority) wins the phone's CPU. Falls back to plain
+  /// `exec` when `nice` is missing.
+  static String lowPriorityExec(String command) =>
+      'if command -v nice >/dev/null 2>&1; then\n'
+      '  if command -v ionice >/dev/null 2>&1 && '
+      'ionice -c 3 true 2>/dev/null; then\n'
+      '    exec nice -n 19 ionice -c 3 $command\n'
+      '  fi\n'
+      '  exec nice -n 19 $command\n'
+      'fi\n'
+      'exec $command\n';
 
   /// Writes [agentWrapperScript] over the installed one when AI Team is
   /// installed; part of every team start, so a phone installed by an older
