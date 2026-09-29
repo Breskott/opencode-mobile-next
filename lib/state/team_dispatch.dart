@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../domain/orchestration_gateway.dart';
 import 'orchestration.dart';
+import 'team_roles.dart';
 
 /// Where one direct task attempt stands (P6.3,
 /// docs/design/team-immediate-dispatch-contract.md). Each stage claims only
@@ -198,6 +199,13 @@ class TeamDispatchController extends ChangeNotifier {
     String? description,
     required String projectId,
     required String agentId,
+    // Optional role: when both [role] and [roles] are given the task goes
+    // through [giveTaskAsRole] (instructions in the description, role model
+    // applied first).
+    TeamRole? role,
+    TeamRolesController? roles,
+    String? teamModel,
+    Future<void> Function(String? model)? applyModel,
   }) {
     if (_disposed) return Future<void>.value();
     final existing = _submission;
@@ -223,19 +231,34 @@ class TeamDispatchController extends ChangeNotifier {
     notifyListeners();
     unawaited(() async {
       try {
-        final result = await _source.giveTask(
-          title: title,
-          description: description,
-          projectId: projectId,
-          agentId: agentId,
-          // The host answered the create: say so now, before the
-          // assignment is sent (not inferred from elapsed time).
-          onCreated: (record) {
-            if (_disposed) return;
-            _created = record;
-            notifyListeners();
-          },
-        );
+        // The host answered the create: say so now, before the
+        // assignment is sent (not inferred from elapsed time).
+        void onCreated(MutationRecord record) {
+          if (_disposed) return;
+          _created = record;
+          notifyListeners();
+        }
+
+        final result = role != null && roles != null
+            ? await giveTaskAsRole(
+                team: _source,
+                roles: roles,
+                role: role,
+                title: title,
+                description: description,
+                projectId: projectId,
+                agentId: agentId,
+                teamModel: teamModel,
+                applyModel: applyModel,
+                onCreated: onCreated,
+              )
+            : await _source.giveTask(
+                title: title,
+                description: description,
+                projectId: projectId,
+                agentId: agentId,
+                onCreated: onCreated,
+              );
         if (!_disposed) {
           _created = result.created;
           _assigned = result.assigned;
