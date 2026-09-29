@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import '../domain/orchestration_gateway.dart';
 import 'team_conversation.dart';
 import 'team_planning.dart';
+import 'team_worker_start.dart';
 
 /// Localise these values; never display enum names as copy.
 enum TeamNowActivity {
@@ -42,6 +43,9 @@ enum TeamNowReason {
   noPlanReported,
   noWorkerReported,
   workerStarting,
+  workerPreparing,
+  workerRunning,
+  workerTaskDelivered,
   workInProgress,
   reviewPending,
   answerNeeded,
@@ -66,6 +70,8 @@ class TeamNowInput {
     required this.reason,
     this.since,
     this.typicalUpperBound,
+    this.workerStage,
+    this.lastWorkerStart,
     this.canCancel = false,
     this.canDismiss = false,
   });
@@ -83,8 +89,42 @@ class TeamNowInput {
   /// Optional evidence-backed usual upper bound, NOT a countdown or promise.
   /// Null means unknown. Do not supply a target or a stall timeout as an estimate.
   final Duration? typicalUpperBound;
+
+  /// A starting worker: the stage its session reports, null when the host
+  /// names none the app can read.
+  final TeamWorkerStage? workerStage;
+
+  /// How long this phone's last worker start took (measured), null when
+  /// none was measured yet. Said as "took 42 s last time", never as a
+  /// promise.
+  final Duration? lastWorkerStart;
   final bool canCancel;
   final bool canDismiss;
+
+  /// The same facts with the worker's start stage and last measured start.
+  TeamNowInput withWorkerStart({
+    TeamWorkerStage? stage,
+    Duration? lastStart,
+    Duration? typicalUpperBound,
+  }) => TeamNowInput(
+    activityKey: activityKey,
+    activity: activity,
+    next: next,
+    reason: activity == TeamNowActivity.startingWorker
+        ? switch (stage ?? workerStage) {
+            TeamWorkerStage.preparing => TeamNowReason.workerPreparing,
+            TeamWorkerStage.running => TeamNowReason.workerRunning,
+            TeamWorkerStage.taskDelivered => TeamNowReason.workerTaskDelivered,
+            null => reason,
+          }
+        : reason,
+    since: since,
+    typicalUpperBound: typicalUpperBound ?? this.typicalUpperBound,
+    workerStage: stage ?? workerStage,
+    lastWorkerStart: lastStart ?? lastWorkerStart,
+    canCancel: canCancel,
+    canDismiss: canDismiss,
+  );
 
   /// Uses the existing conversation selection so the status has one source.
   /// [now] (host clock) lets a step quiet for `teamNoProgressAfter` read as
@@ -176,7 +216,7 @@ class TeamNowInput {
       since: fact.since,
       canCancel: canCancel,
       typicalUpperBound: typicalUpperBound,
-    );
+    ).withWorkerStart(stage: fact.workerStage);
   }
 
   /// Only unresolved requests; a matched run must use [TeamNowInput.forRun].
@@ -225,6 +265,9 @@ class TeamNowLineState {
   TeamNowNext get next => input.next;
   DateTime? get since => input.since;
   TeamNowReason? get reason => input.reason;
+  TeamWorkerStage? get workerStage => input.workerStage;
+  Duration? get lastWorkerStart =>
+      activity == TeamNowActivity.startingWorker ? input.lastWorkerStart : null;
   Duration? get typicalUpperBound =>
       _terminal(activity) || _urgent(activity) ? null : input.typicalUpperBound;
 

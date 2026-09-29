@@ -84,6 +84,31 @@ String? teamComputerName(OrchestrationController controller) {
   return name;
 }
 
+/// How long after its last good read a team that is starting a worker may
+/// answer late before it is called "Not answering". Starting OpenCode under
+/// proot saturates the phone, so the app's own reads (30 s) and its live
+/// stream (90 s) time out while the team is fine.
+const teamStartReadGrace = Duration(minutes: 5);
+
+/// True while a worker is starting and the only trouble is lateness: the
+/// team was read within [teamStartReadGrace] and its stream or a read has
+/// merely timed out. A team that failed its probe (not reachable) or has
+/// not been read for longer is not busy, it is not answering.
+bool teamHostBusyStarting(
+  OrchestrationController controller, {
+  required bool startingWorker,
+}) {
+  if (!startingWorker || controller.phase != OrchestrationPhase.ready) {
+    return false;
+  }
+  final late =
+      controller.isStale ||
+      controller.lastError?.kind == OrchestrationErrorKind.readFailed;
+  if (!late) return false;
+  final at = controller.lastRefreshedAt;
+  return at != null && controller.now().difference(at) <= teamStartReadGrace;
+}
+
 /// "Paused" when the agents were switched off on purpose (suspended) and
 /// none is live, "Not answering" when the shown data is old or the host
 /// could not be reached; null otherwise. Agents that are only asleep (they
@@ -94,7 +119,11 @@ String? teamHostCondition(
   AppLocalizations l10n,
   OrchestrationController controller, {
   bool working = false,
+  bool startingWorker = false,
 }) {
+  if (teamHostBusyStarting(controller, startingWorker: startingWorker)) {
+    return l10n.teamUiHostPhraseBusyStartingWorker;
+  }
   if (controller.isStale ||
       (controller.phase == OrchestrationPhase.ready &&
           controller.lastError?.kind == OrchestrationErrorKind.readFailed)) {
@@ -128,9 +157,15 @@ String teamHostPhrase(
   AppLocalizations l10n,
   OrchestrationController controller, {
   bool working = false,
+  bool startingWorker = false,
 }) {
   final place = teamHostPlace(l10n, controller);
-  final condition = teamHostCondition(l10n, controller, working: working);
+  final condition = teamHostCondition(
+    l10n,
+    controller,
+    working: working,
+    startingWorker: startingWorker,
+  );
   return condition == null ? place : '$place$teamUsageSeparator$condition';
 }
 

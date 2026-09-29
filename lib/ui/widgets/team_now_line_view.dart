@@ -31,10 +31,19 @@ export '../../state/team_now_line.dart'
         TeamNowNext,
         TeamNowReason;
 
-/// How long a worker's start usually takes: the host's documented "usually
-/// 1–5 min" for an agent starting (`DispatchHint.usualWait`). An
-/// expectation for the Now line, never a deadline or a measured figure.
+/// How long a wait for a worker usually takes: the host's documented
+/// "usually 1–5 min" (`DispatchHint.usualWait`), said only before a worker
+/// has been sent. A starting worker is timed by this phone's last measured
+/// start instead. An expectation, never a deadline or a measured figure.
 const teamWorkerStartUsual = Duration(minutes: 5);
+
+/// "42 s" or "1 min 20 s": a measured span down to the second.
+String teamShortDuration(AppLocalizations l10n, Duration span) {
+  final seconds = span.inSeconds < 1 ? 1 : span.inSeconds;
+  return seconds < 60
+      ? l10n.chatUiDurationSeconds(seconds)
+      : l10n.chatUiDurationMinutesSeconds(seconds ~/ 60, seconds % 60);
+}
 
 /// What the person sees for [activity], with the time since it began
 /// when known: "Starting a worker · 1 min". Also a task row's supporting
@@ -84,6 +93,9 @@ String teamNowReasonSentence(
   TeamNowReason.noPlanReported => l10n.teamNowReasonNoPlanReported,
   TeamNowReason.noWorkerReported => l10n.teamNowReasonNoWorkerReported,
   TeamNowReason.workerStarting => l10n.teamNowReasonWorkerStarting,
+  TeamNowReason.workerPreparing => l10n.teamNowReasonWorkerPreparing,
+  TeamNowReason.workerRunning => l10n.teamNowReasonWorkerRunning,
+  TeamNowReason.workerTaskDelivered => l10n.teamNowReasonWorkerTaskDelivered,
   TeamNowReason.workInProgress => l10n.teamNowReasonWorkInProgress,
   TeamNowReason.reviewPending => l10n.teamNowReasonReviewPending,
   TeamNowReason.answerNeeded => l10n.teamNowReasonAnswerNeeded,
@@ -141,6 +153,15 @@ String? _nextLine(
     TeamNowNext.none => null,
   };
   if (step == null) return null;
+  // A worker's start is timed by the last one measured on this phone, said
+  // as a fact ("took 42 s last time"); with none measured, nothing is said.
+  final last = state.lastWorkerStart;
+  if (last != null && state.next == TeamNowNext.work) {
+    return [
+      step,
+      l10n.teamNowLastStart(teamShortDuration(l10n, last)),
+    ].join(' · ');
+  }
   final usual = state.typicalUpperBound;
   // The usual time is an expectation, never a deadline: once it has
   // passed it is no longer said (the reason says it takes longer).

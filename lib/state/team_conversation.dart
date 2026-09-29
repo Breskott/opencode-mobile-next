@@ -13,6 +13,7 @@ import 'package:flutter/foundation.dart';
 
 import '../domain/orchestration_gateway.dart';
 import '../orchestration/dispatch.dart' show isRefineryName;
+import 'team_worker_start.dart';
 
 /// What one lead line says happened.
 enum TeamLeadEvent {
@@ -259,6 +260,7 @@ class TeamNow {
     this.gateTitle,
     this.quietSince,
     this.agentId,
+    this.workerStage,
   });
 
   final TeamNowKind kind;
@@ -277,6 +279,9 @@ class TeamNow {
 
   /// A stalled task: the id of the agent on its step, when one is.
   final String? agentId;
+
+  /// A starting worker: where its session stands, when the host says.
+  final TeamWorkerStage? workerStage;
 
   @override
   String toString() => 'TeamNow($kind, $agentName, $workTitle, $since)';
@@ -399,6 +404,7 @@ TeamNow teamNow({
           since: agent.sessionStartedAt,
           agentName: name,
           workTitle: item.title,
+          workerStage: teamWorkerStage(agent),
         );
       }
       return TeamNow(
@@ -412,6 +418,7 @@ TeamNow teamNow({
         since: reached[DispatchStep.agentStarting] ?? agent?.sessionStartedAt,
         agentName: name,
         workTitle: item.title,
+        workerStage: teamWorkerStage(agent),
       );
     case DispatchStep.working || DispatchStep.pushed:
       return TeamNow(

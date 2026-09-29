@@ -14941,7 +14941,7 @@
       }
     }
   },
-  "teamChatLeadClaimed": "{name} took “{title}”",
+  "teamChatLeadClaimed": "{name} began “{title}”",
   "@teamChatLeadClaimed": {
     "description": "Team conversation, lead line: a named worker claimed a step",
     "placeholders": {
@@ -14953,7 +14953,7 @@
       }
     }
   },
-  "teamChatLeadClaimedWorker": "A worker took “{title}”",
+  "teamChatLeadClaimedWorker": "A worker began “{title}”",
   "@teamChatLeadClaimedWorker": {
     "description": "Team conversation, lead line: a worker claimed a step (no name reported)",
     "placeholders": {
@@ -25946,7 +25946,7 @@
   "@teamChatLeadStartingIt": {
     "description": "Team conversation, the lead's line: a worker is starting on the task named in the prompt above (refers back, never repeats the task's text)"
   },
-  "teamChatLeadClaimedIt": "{name} took it",
+  "teamChatLeadClaimedIt": "{name} began the task",
   "@teamChatLeadClaimedIt": {
     "description": "Team conversation, the lead's line: the named worker took the task named in the prompt above",
     "placeholders": {
@@ -25955,7 +25955,7 @@
       }
     }
   },
-  "teamChatLeadClaimedWorkerIt": "A worker took it",
+  "teamChatLeadClaimedWorkerIt": "The worker began the task",
   "@teamChatLeadClaimedWorkerIt": {
     "description": "Team conversation, the lead's line: an unnamed worker took the task named in the prompt above"
   },
@@ -26218,6 +26218,32 @@
   "@teamNowReasonWorkerStarting": {
     "description": "Team Now line reason while a worker starts."
   },
+  "teamNowReasonWorkerPreparing": "The worker is being set up: its workspace is made and its program is starting.",
+  "@teamNowReasonWorkerPreparing": {
+    "description": "Team Now line reason while the worker's session is being created or its program is starting."
+  },
+  "teamNowReasonWorkerRunning": "The worker's program is running. The team has not reported the task reaching it yet.",
+  "@teamNowReasonWorkerRunning": {
+    "description": "Team Now line reason while the worker's program runs but the task has not been reported delivered."
+  },
+  "teamNowReasonWorkerTaskDelivered": "The task has reached the worker. It is reading it before it begins.",
+  "@teamNowReasonWorkerTaskDelivered": {
+    "description": "Team Now line reason once the team reports the task delivered to the running worker."
+  },
+  "teamNowLastStart": "took {duration} last time",
+  "@teamNowLastStart": {
+    "description": "Team Now line: how long this phone's last worker start took, measured; never a promise.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "42s"
+      }
+    }
+  },
+  "teamUiHostPhraseBusyStartingWorker": "Busy starting a worker",
+  "@teamUiHostPhraseBusyStartingWorker": {
+    "description": "AI Team header condition while the phone is busy starting a worker and answers slowly."
+  },
   "teamNowReasonWorkInProgress": "The task is being worked on.",
   "@teamNowReasonWorkInProgress": {
     "description": "Team Now line reason while a worker works."
@@ -26266,7 +26292,7 @@
   "@teamNowWhyWaitingForWorker": {
     "description": "Team Now line Why fold while waiting for a worker."
   },
-  "teamNowWhyStartingWorker": "A new worker needs time to start and read the task before it begins. That usually takes 1–5 minutes.",
+  "teamNowWhyStartingWorker": "A new worker makes its own copy of the project and starts its program before it reads the task. That is the slow part on a phone, and the stage above is what the team reports.",
   "@teamNowWhyStartingWorker": {
     "description": "Team Now line Why fold while a worker starts."
   },
