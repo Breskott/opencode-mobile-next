@@ -10,7 +10,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../builtin/team/builtin_team.dart'
-    show BuiltinTeam, BuiltinTeamException, BuiltinTeamStage;
+    show
+        BuiltinTeam,
+        BuiltinTeamException,
+        BuiltinTeamStage,
+        BuiltinTeamStartProgress,
+        BuiltinTeamStartStep;
 import '../../../builtin/team/builtin_team_job.dart';
 import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
@@ -19,11 +24,7 @@ import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../kit/scenes/team_scenes.dart';
 import '../../widgets/builtin_team_section.dart'
-    show
-        builtinTeamFailureText,
-        builtinTeamProjectName,
-        builtinTeamStageText,
-        sharedBuiltinTeam;
+    show builtinTeamElapsedText, builtinTeamFailureText, sharedBuiltinTeam;
 import '../../widgets/grace_timer.dart';
 import '../../widgets/product_states.dart'
     show productErrorDetails, productErrorText;
@@ -91,7 +92,7 @@ Widget? teamScreenState(
     );
   }
   if (teamScreenLoading(controller)) {
-    return GraceTimer(
+    final waiting = GraceTimer(
       waiting: true,
       builder: (context, overdue) => overdue
           ? KitStateView(
@@ -111,8 +112,137 @@ Widget? teamScreenState(
               title: l10n.teamUiCardLoading,
             ),
     );
+    if (!BuiltinTeam.isBuiltinConfig(controller.config)) return waiting;
+    // The team on this phone is coming up after an app restart: its steps,
+    // not a bare "connecting".
+    return _StartWatch(
+      controller: controller,
+      child: ListenableBuilder(
+        listenable: BuiltinTeamStartProgress.shared,
+        builder: (context, _) => BuiltinTeamStartProgress.shared.running
+            ? _startingPage(l10n, keyPrefix)
+            : waiting,
+      ),
+    );
   }
   return null;
+}
+
+/// The steps of the in-app team coming up, one row each: done with how long
+/// it took, the current one with its time so far (or that it is taking
+/// longer than usual), the rest waiting, and a failed one marked. Every mark
+/// comes from [progress]'s polled signals, never from a timer.
+List<KitStep> teamStartSteps(
+  AppLocalizations l10n,
+  BuiltinTeamStartProgress progress, {
+  bool active = true,
+}) {
+  String title(BuiltinTeamStartStep step) => switch (step) {
+    BuiltinTeamStartStep.service => l10n.teamStartStepService,
+    BuiltinTeamStartStep.answering => l10n.teamStartStepAnswering,
+    BuiltinTeamStartStep.store => l10n.teamStartStepStore,
+    BuiltinTeamStartStep.agents => l10n.teamStartStepAgents,
+  };
+  return [
+    for (final step in BuiltinTeamStartStep.values)
+      () {
+        final took = active ? progress.took(step) : null;
+        final elapsed = active ? progress.elapsed(step) : null;
+        final failed = progress.failedStep == step && progress.error != null;
+        final KitMarkState state;
+        String? supporting;
+        if (failed) {
+          state = KitMarkState.failed;
+        } else if (took != null) {
+          state = KitMarkState.done;
+          supporting = l10n.aiteamComponentStageTook(
+            builtinTeamElapsedText(took),
+          );
+        } else if (elapsed != null) {
+          state = KitMarkState.working;
+          supporting = progress.isSlow(step)
+              ? '${l10n.teamStartSlow} · ${builtinTeamElapsedText(elapsed)}'
+              : l10n.aiteamComponentStageSoFar(builtinTeamElapsedText(elapsed));
+        } else {
+          state = KitMarkState.waiting;
+        }
+        return KitStep(
+          key: ValueKey('team-start-step-${step.name}'),
+          title: title(step),
+          state: state,
+          supporting: supporting,
+        );
+      }(),
+  ];
+}
+
+KitChecklist _startChecklist(
+  AppLocalizations l10n,
+  BuiltinTeamStartProgress progress, {
+  bool active = true,
+}) => KitChecklist(
+  checklistKey: const ValueKey('team-start-steps'),
+  steps: teamStartSteps(l10n, progress, active: active),
+);
+
+/// The page while the in-app team comes up: the illustration, the steps and
+/// one bar that is the count of finished steps.
+Widget _startingPage(
+  AppLocalizations l10n,
+  String keyPrefix, {
+  bool active = true,
+}) {
+  final progress = BuiltinTeamStartProgress.shared;
+  return KitStateView(
+    key: ValueKey('$keyPrefix-team-starting'),
+    icon: AppIconography.waiting,
+    tone: AppStatusTone.progress,
+    illustration: const TeamWakingScene(),
+    illustrationAmbient: true,
+    title: l10n.aiteamComponentStageStarting,
+    progress: KitProgress.known(active ? progress.fraction : 0),
+    content: _startChecklist(l10n, progress, active: active),
+  );
+}
+
+/// Reads the team again once an automatic start finishes: the explicit
+/// start reads it itself. Draws nothing of its own.
+class _StartWatch extends StatefulWidget {
+  const _StartWatch({required this.controller, required this.child});
+
+  final OrchestrationController controller;
+  final Widget child;
+
+  @override
+  State<_StartWatch> createState() => _StartWatchState();
+}
+
+class _StartWatchState extends State<_StartWatch> {
+  bool _wasRunning = BuiltinTeamStartProgress.shared.running;
+
+  @override
+  void initState() {
+    super.initState();
+    BuiltinTeamStartProgress.shared.addListener(_changed);
+  }
+
+  @override
+  void dispose() {
+    BuiltinTeamStartProgress.shared.removeListener(_changed);
+    super.dispose();
+  }
+
+  void _changed() {
+    final progress = BuiltinTeamStartProgress.shared;
+    final finished = _wasRunning && !progress.running && progress.error == null;
+    _wasRunning = progress.running;
+    if (finished && !BuiltinTeamJob.shared.running) {
+      unawaited(widget.controller.retry());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// The in-app team does not answer: "Start AI Team on this phone", and its
@@ -137,58 +267,55 @@ Widget _phoneTeamStopped(
     if (job.error == null) await controller.retry();
   }
 
-  return ListenableBuilder(
-    listenable: job,
-    builder: (context, _) {
-      if (job.running) {
+  final progress = BuiltinTeamStartProgress.shared;
+  return _StartWatch(
+    controller: controller,
+    child: ListenableBuilder(
+      listenable: Listenable.merge([job, progress]),
+      builder: (context, _) {
+        if (job.running || progress.running) {
+          return _startingPage(l10n, keyPrefix, active: progress.running);
+        }
+        final failure = job.error ?? progress.error;
+        final failureDetail = switch (failure) {
+          null => null,
+          final BuiltinTeamException error => error.detail.trim(),
+          final Object error => productErrorDetails(error),
+        };
+        final shownDetails = failureDetail ?? details;
         return KitStateView(
-          key: ValueKey('$keyPrefix-team-starting'),
-          icon: AppIconography.waiting,
-          tone: AppStatusTone.progress,
-          illustration: const TeamWakingScene(),
-          illustrationAmbient: true,
-          title: builtinTeamStageText(
-            l10n,
-            job.stage ?? BuiltinTeamStage.starting,
-            builtinTeamProjectName(job.project ?? ''),
+          key: ValueKey('$keyPrefix-error'),
+          icon: AppIconography.cloudOff,
+          tone: AppStatusTone.neutral,
+          title: l10n.teamUiStatePhoneStoppedTitle,
+          body: switch (failure) {
+            null => l10n.teamUiStatePhoneStoppedBody,
+            final BuiltinTeamException error => builtinTeamFailureText(
+              l10n,
+              error,
+            ),
+            final Object error => l10n.aiteamComponentFailed(
+              productErrorText(error, l10n: l10n),
+            ),
+          },
+          content: progress.failedStep == null
+              ? null
+              : _startChecklist(l10n, progress),
+          primary: KitAction(
+            key: ValueKey('$keyPrefix-start-team'),
+            label: failure == null
+                ? l10n.teamUiStartOnPhone
+                : l10n.teamStartAgain,
+            icon: AppIconography.play,
+            onPressed: () => unawaited(start()),
           ),
-          progress: const KitProgress.waiting(),
+          secondary: retry,
+          details: shownDetails == null || shownDetails.isEmpty
+              ? null
+              : shownDetails,
         );
-      }
-      final failure = job.error;
-      final failureDetail = switch (failure) {
-        null => null,
-        final BuiltinTeamException error => error.detail.trim(),
-        final Object error => productErrorDetails(error),
-      };
-      final shownDetails = failureDetail ?? details;
-      return KitStateView(
-        key: ValueKey('$keyPrefix-error'),
-        icon: AppIconography.cloudOff,
-        tone: AppStatusTone.neutral,
-        title: l10n.teamUiStatePhoneStoppedTitle,
-        body: switch (failure) {
-          null => l10n.teamUiStatePhoneStoppedBody,
-          final BuiltinTeamException error => builtinTeamFailureText(
-            l10n,
-            error,
-          ),
-          final Object error => l10n.aiteamComponentFailed(
-            productErrorText(error, l10n: l10n),
-          ),
-        },
-        primary: KitAction(
-          key: ValueKey('$keyPrefix-start-team'),
-          label: l10n.teamUiStartOnPhone,
-          icon: AppIconography.play,
-          onPressed: () => unawaited(start()),
-        ),
-        secondary: retry,
-        details: shownDetails == null || shownDetails.isEmpty
-            ? null
-            : shownDetails,
-      );
-    },
+      },
+    ),
   );
 }
 

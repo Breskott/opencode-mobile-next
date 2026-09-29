@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show ValueListenable, VoidCallback;
+
 import '../../domain/team_directories.dart' show aiTeamHome;
 import '../../state/team_model.dart' show isValidTeamModel;
 import '../../state/profiles.dart'
@@ -13,6 +15,8 @@ import '../../state/profiles.dart'
 import '../../ui/kit/kit_redact.dart';
 import '../builtin_linux.dart';
 import '../setup/aiteam_scripts.dart';
+import 'builtin_team_start_progress.dart';
+export 'builtin_team_start_progress.dart';
 
 /// AI Team inside the app: a Gas City team for the projects of the in-app
 /// OpenCode, with no Termux.
@@ -40,12 +44,25 @@ class BuiltinTeam {
     BuiltinLinux? linux,
     Future<String?> Function(Uri url)? httpGet,
     this.pollInterval = const Duration(seconds: 1),
+    this.agentsWait = const Duration(seconds: 45),
+    BuiltinTeamStartProgress? progress,
   }) : _linux = linux ?? BuiltinLinux(),
-       _get = httpGet ?? _loopbackGet;
+       _get = httpGet ?? _loopbackGet,
+       _progress = progress ?? BuiltinTeamStartProgress.shared;
 
   final BuiltinLinux _linux;
   final Future<String?> Function(Uri url) _get;
   final Duration pollInterval;
+
+  /// How long the last start step waits for the agents to be listed before
+  /// it lets go (an empty list is not a failure).
+  final Duration agentsWait;
+  final BuiltinTeamStartProgress _progress;
+
+  /// Where the team is in coming up, for the AI Team page: the same steps
+  /// for the automatic start after an app restart and the explicit one.
+  ValueListenable<BuiltinTeamStartProgress> get startProgress =>
+      _StartProgressListenable(_progress);
 
   static const serviceName = 'aiteam';
 
@@ -776,49 +793,107 @@ exit 0
     void Function(BuiltinTeamStage stage)? onStage,
     required Duration healthTimeout,
   }) async {
-    await _manageScript('enable', enableScript);
-    onStage?.call(BuiltinTeamStage.starting);
-    final linux = await _linux.status();
-    if (!linux.serviceRunning(serviceName) || !await supervisorAnswers()) {
-      await _linux.startService(
-        serviceName,
-        serviceScript,
-        port: port,
-        notice: notice,
+    final gen = _progress.begin();
+    try {
+      await _manageScript('enable', enableScript);
+      onStage?.call(BuiltinTeamStage.starting);
+      _progress.enter(gen, BuiltinTeamStartStep.service);
+      final linux = await _linux.status();
+      if (!linux.serviceRunning(serviceName) || !await supervisorAnswers()) {
+        await _linux.startService(
+          serviceName,
+          serviceScript,
+          port: port,
+          notice: notice,
+        );
+      }
+      _progress.enter(gen, BuiltinTeamStartStep.answering);
+      await _waitFor(
+        BuiltinTeamStage.starting,
+        supervisorAnswers,
+        const Duration(seconds: 90),
+        gen: gen,
       );
+      _progress.enter(gen, BuiltinTeamStartStep.store);
+      await _script(
+        BuiltinTeamStage.starting,
+        registerScript,
+        const Duration(minutes: 2),
+      );
+      onStage?.call(BuiltinTeamStage.waiting);
+      await _waitFor(
+        BuiltinTeamStage.waiting,
+        cityAnswers,
+        healthTimeout,
+        gen: gen,
+      );
+      _progress.enter(gen, BuiltinTeamStartStep.agents);
+      await _waitAgents(gen, agentsWait);
+      _progress.finish(gen);
+    } catch (error) {
+      _progress.fail(gen, error);
+      rethrow;
     }
-    await _waitFor(
-      BuiltinTeamStage.starting,
-      supervisorAnswers,
-      const Duration(seconds: 90),
-    );
-    await _script(
-      BuiltinTeamStage.starting,
-      registerScript,
-      const Duration(minutes: 2),
-    );
-    onStage?.call(BuiltinTeamStage.waiting);
-    await _waitFor(BuiltinTeamStage.waiting, cityAnswers, healthTimeout);
   }
 
   /// Starts the supervisor when it is not running, without waiting: for the
   /// app coming back after Android stopped it. The team answers a little
-  /// later, and the Team card shows it as reconnecting meanwhile.
-  Future<void> ensureRunning({required String notice}) => _exclusive(() async {
+  /// later, and the Team card shows it as reconnecting meanwhile. With
+  /// [observe] the coming-up is also watched, in the background and bounded,
+  /// and reported through [startProgress] like an explicit [start].
+  Future<void> ensureRunning({required String notice, bool observe = false}) =>
+      _exclusive(() async {
+        try {
+          final linux = await _linux.status();
+          if (!linux.installed) return;
+          final already = linux.serviceRunning(serviceName);
+          if (already && !observe) return;
+          if (await isTurnedOff()) return;
+          final gen = observe ? _progress.begin() : null;
+          if (gen != null) _progress.enter(gen, BuiltinTeamStartStep.service);
+          if (!already) {
+            try {
+              await _linux.startService(
+                serviceName,
+                serviceScript,
+                port: port,
+                notice: notice,
+              );
+            } catch (error) {
+              if (gen != null) _progress.fail(gen, error);
+              rethrow;
+            }
+          }
+          if (gen != null) unawaited(_observe(gen));
+        } on BuiltinLinuxException {
+          // The next open of the team says what is wrong.
+        }
+      });
+
+  /// Watches a coming-up someone else started: supervisor, city, agents.
+  Future<void> _observe(int gen) async {
     try {
-      final linux = await _linux.status();
-      if (!linux.installed || linux.serviceRunning(serviceName)) return;
-      if (await isTurnedOff()) return;
-      await _linux.startService(
-        serviceName,
-        serviceScript,
-        port: port,
-        notice: notice,
+      _progress.enter(gen, BuiltinTeamStartStep.answering);
+      await _waitFor(
+        BuiltinTeamStage.starting,
+        supervisorAnswers,
+        const Duration(minutes: 3),
+        gen: gen,
       );
-    } on BuiltinLinuxException {
-      // The next open of the team says what is wrong.
+      _progress.enter(gen, BuiltinTeamStartStep.store);
+      await _waitFor(
+        BuiltinTeamStage.waiting,
+        cityAnswers,
+        const Duration(minutes: 6),
+        gen: gen,
+      );
+      _progress.enter(gen, BuiltinTeamStartStep.agents);
+      await _waitAgents(gen, agentsWait);
+      _progress.finish(gen);
+    } catch (error) {
+      _progress.fail(gen, error);
     }
-  });
+  }
 
   /// Temporarily stops the service. Recovery may restart it; use [turnOff]
   /// for a durable user choice.
@@ -933,13 +1008,54 @@ exit 0
     }
   }
 
+  /// Whether the team's agents are listed: the status names an agent count
+  /// above zero. A status without an agent count says nothing to wait for.
+  Future<bool> agentsListed() async {
+    final body = await _get(Uri.parse('$url/v0/city/$city/status'));
+    if (body == null) return false;
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is! Map) return false;
+      final agents = decoded['agents'];
+      if (agents is! Map) return true;
+      final total = agents['total'];
+      return total is num && total > 0;
+    } on FormatException {
+      return false;
+    }
+  }
+
+  /// The last step: waits for the agents to be listed, up to [timeout]. A
+  /// list that stays empty is let go, not a failure; a stopped service is.
+  Future<void> _waitAgents(int gen, Duration timeout) async {
+    final deadline = DateTime.now().add(timeout);
+    while (!await agentsListed()) {
+      if (!_progress.isCurrent(gen)) return;
+      if (!(await _linux.status()).serviceRunning(serviceName)) {
+        throw BuiltinTeamException(
+          BuiltinTeamStage.waiting,
+          await _logTail(),
+          exited: true,
+        );
+      }
+      if (DateTime.now().isAfter(deadline)) return;
+      _progress.tick(gen);
+      await Future<void>.delayed(pollInterval);
+    }
+  }
+
   Future<void> _waitFor(
     BuiltinTeamStage stage,
     Future<bool> Function() ok,
-    Duration timeout,
-  ) async {
+    Duration timeout, {
+    int? gen,
+  }) async {
     final deadline = DateTime.now().add(timeout);
     while (!await ok()) {
+      if (gen != null) {
+        if (!_progress.isCurrent(gen)) return;
+        _progress.tick(gen);
+      }
       final running = (await _linux.status()).serviceRunning(serviceName);
       if (!running) {
         throw BuiltinTeamException(stage, await _logTail(), exited: true);
@@ -1010,6 +1126,24 @@ exit 0
 }
 
 /// Where [BuiltinTeam.turnOn] is.
+/// A [ValueListenable] view of the progress, so a page can listen with
+/// `ValueListenableBuilder`.
+class _StartProgressListenable
+    implements ValueListenable<BuiltinTeamStartProgress> {
+  const _StartProgressListenable(this._progress);
+  final BuiltinTeamStartProgress _progress;
+
+  @override
+  BuiltinTeamStartProgress get value => _progress;
+
+  @override
+  void addListener(VoidCallback listener) => _progress.addListener(listener);
+
+  @override
+  void removeListener(VoidCallback listener) =>
+      _progress.removeListener(listener);
+}
+
 enum BuiltinTeamStage { preparing, addingProject, starting, waiting }
 
 /// What [BuiltinTeam.status] found.
