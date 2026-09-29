@@ -51,6 +51,7 @@ Future<void> leaveTeamProjectDemo(ConnectionController connection) async {
       config?.url != teamProjectDemoConfig.url) {
     return;
   }
+  final owner = connection.orchestration;
   profile.orchestration = null;
   try {
     await connection.store.upsert(profile);
@@ -58,6 +59,8 @@ Future<void> leaveTeamProjectDemo(ConnectionController connection) async {
     profile.orchestration = config;
     rethrow;
   }
-  await connection.orchestration?.stop();
+  if (owner?.profileId == profile.id) {
+    await owner?.stop();
+  }
   connection.syncOrchestration();
 }

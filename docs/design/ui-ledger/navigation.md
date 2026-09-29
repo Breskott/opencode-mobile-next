@@ -1641,18 +1641,18 @@ graph LR
 | `team-merge-changes-sheet` | sheet | 3 / 5 | `embedded-team-merge-section` / embedded-team-merge-section-review | team-merge-changes-sheet-work-row -> `work-sheet` |
 | `team-project-demo` | screen | 3 / 2 | `demo` / demo-team-projects | team-project-demo-projects -> `team-projects` |
 | `team-project-conversation` | screen | 2 / 4 | `team-project-overview` / team-project-overview-task<br>`team-project-board` / team-project-board-task | _none_ |
-| `team-project-defaults` | sheet | 2 / 4 | `team-projects` / team-projects-defaults | _none_ |
 | `team-project-new` | sheet | 2 / 4 | `team-projects` / team-projects-new | _none_ |
-| `team-project-plan` | sheet | 2 / 4 | `team-project-overview` / team-project-overview-plan | _none_ |
 | `team-project-quick` | sheet | 2 / 4 | `team-projects` / team-projects-quick | _none_ |
-| `team-project-roles` | sheet | 2 / 4 | `team-projects` / team-projects-roles | _none_ |
-| `team-project-settings` | sheet | 2 / 4 | `team-project-overview` / team-project-overview-settings | _none_ |
 | `team-project-spec` | sheet | 2 / 4 | `team-project-overview` / team-project-overview-spec | _none_ |
-| `team-project-board` | screen | 2 / 4 | `team-project-overview` / team-project-overview-board | team-project-board-task -> `team-project-conversation` |
-| `team-project-overview` | screen | 1 / 3 | `team-projects` / team-projects-open<br>`activity` / activity-project-decision | team-project-overview-spec -> `team-project-spec`<br>team-project-overview-plan -> `team-project-plan`<br>team-project-overview-board -> `team-project-board`<br>team-project-overview-timeline -> `team-project-timeline`<br>team-project-overview-servers -> `team-project-servers`<br>team-project-overview-settings -> `team-project-settings`<br>team-project-overview-task -> `team-project-conversation` |
-| `team-project-servers` | screen | 2 / 4 | `team-project-overview` / team-project-overview-servers | _none_ |
-| `team-project-timeline` | screen | 2 / 4 | `team-project-overview` / team-project-overview-timeline | _none_ |
+| `team-project-plan` | sheet | 2 / 4 | `team-project-overview` / team-project-overview-plan | _none_ |
+| `team-project-settings` | sheet | 2 / 4 | `team-project-overview` / team-project-overview-settings | _none_ |
+| `team-project-roles` | sheet | 2 / 4 | `team-projects` / team-projects-roles | _none_ |
+| `team-project-defaults` | sheet | 2 / 4 | `team-projects` / team-projects-defaults | _none_ |
 | `team-projects` | screen | 1 / 3 | `team-project-demo` / team-project-demo-projects<br>`workspace` / workspace-project-strip<br>`team-intro` / team-intro-project-demo | team-projects-new -> `team-project-new`<br>team-projects-quick -> `team-project-quick`<br>team-projects-roles -> `team-project-roles`<br>team-projects-open -> `team-project-overview`<br>team-projects-defaults -> `team-project-defaults` |
+| `team-project-overview` | screen | 1 / 3 | `team-projects` / team-projects-open<br>`activity` / activity-project-decision | team-project-overview-spec -> `team-project-spec`<br>team-project-overview-plan -> `team-project-plan`<br>team-project-overview-board -> `team-project-board`<br>team-project-overview-timeline -> `team-project-timeline`<br>team-project-overview-servers -> `team-project-servers`<br>team-project-overview-settings -> `team-project-settings`<br>team-project-overview-task -> `team-project-conversation` |
+| `team-project-timeline` | screen | 2 / 4 | `team-project-overview` / team-project-overview-timeline | _none_ |
+| `team-project-servers` | screen | 2 / 4 | `team-project-overview` / team-project-overview-servers | _none_ |
+| `team-project-board` | screen | 2 / 4 | `team-project-overview` / team-project-overview-board | team-project-board-task -> `team-project-conversation` |
 | `team-role` | screen | 3 / 5 | `team-agents` / team-agents-role-row<br>`team-agents` / team-agents-new-role | team-role-live-task -> `team-conversation`<br>team-role-live-open -> `chat`<br>team-role-task -> `team-conversation`<br>team-role-give-task -> `start-run-sheet` |
 | `start-run-sheet` | sheet | 2 / 4 | `team-board` / team-board-add<br>`team-home` / team-home-start-run<br>`team-role` / team-role-give-task<br>`team-board` / team-board-empty-add<br>`start-run-sheet` / start-run-sheet-who | start-run-sheet-who -> `start-run-sheet`<br>start-run-sheet-host-guide -> `team-host-guide-sheet` |
 | `embedded-team-planning-card` | overlay | 1 / 3 | `team-home` / team-home-planning-card<br>`team-home` / (embedded) | embedded-team-planning-card-output -> `chat`<br>embedded-team-planning-card-output -> `chat-watching-live` |

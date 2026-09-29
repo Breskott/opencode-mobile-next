@@ -425,7 +425,12 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       title: document.title,
       parent: document.parent,
       keywords: document.aliases,
-      pages: [document.target.pageId],
+      // Keep the legacy row target while indexing its current containing page.
+      pages: [
+        document.target.pageId == 'keep-running'
+            ? 'notifications-settings'
+            : document.target.pageId,
+      ],
       target: document.target,
       gate: gate,
       open: _arrive(document.target),
@@ -555,7 +560,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       group: SettingsGroup.agent,
       icon: AppIconography.agent,
       title: l10n.teamUiHomeTitle,
-      keywords: '${l10n.discoverTeamAliases} ${l10n.teamSettingsTitle}',
+      keywords:
+          '${l10n.discoverTeamAliases} ${l10n.teamSettingsTitle} ${l10n.teamUiPluginsTitle}',
       pages: const ['team-intro', 'team-settings'],
       gate: (scope) => scope.controller.profile != null,
       // Setup only: Team settings while on, the turn-on flow while off.
@@ -678,7 +684,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       icon: AppIconography.batteryCharging,
       title: l10n.keepRunningTitle,
       keywords: l10n.keepRunningRowSubtitle,
-      pages: const ['keep-running'],
+      pages: const ['notifications-settings'],
       target: const SettingsSearchTarget(
         pageId: 'notifications-settings',
         sectionId: 'keep-running',

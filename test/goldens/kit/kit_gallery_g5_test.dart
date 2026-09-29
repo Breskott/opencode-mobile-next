@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/ui/kit/kit_screen.dart';
 
 import 'kit_gallery.dart';
 
@@ -176,6 +177,78 @@ void main() {
       }
     });
   }
+
+  for (final reversePanes in [false, true]) {
+    testWidgets(
+      'readingOrder: independent columns ${reversePanes ? "reject reversed panes" : "restart at top"}',
+      (tester) async {
+        Widget pane(String id, double order) => Expanded(
+          child: Semantics(
+            container: true,
+            identifier: '${KitScreen.paneSemanticsPrefix}$id',
+            sortKey: OrdinalSortKey(order),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('$id top', style: const TextStyle(color: Colors.black)),
+                const SizedBox(height: 80),
+                Text('$id bottom', style: const TextStyle(color: Colors.black)),
+              ],
+            ),
+          ),
+        );
+        final message = await _g5(
+          tester,
+          Row(
+            children: [
+              pane('list', reversePanes ? 2 : 1),
+              pane('detail', reversePanes ? 1 : 2),
+            ],
+          ),
+        );
+        if (reversePanes) {
+          expect(message, contains('adaptive panes go back'));
+        } else {
+          expect(message, isNull);
+        }
+      },
+    );
+  }
+
+  testWidgets('readingOrder: reversed rows inside a pane still fail', (
+    tester,
+  ) async {
+    final message = await _g5(
+      tester,
+      Semantics(
+        container: true,
+        identifier: '${KitScreen.paneSemanticsPrefix}detail',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Semantics(
+              container: true,
+              sortKey: const OrdinalSortKey(2),
+              child: const Text(
+                'Top row',
+                style: TextStyle(color: Colors.black),
+              ),
+            ),
+            const SizedBox(height: 80),
+            Semantics(
+              container: true,
+              sortKey: const OrdinalSortKey(1),
+              child: const Text(
+                'Bottom row',
+                style: TextStyle(color: Colors.black),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    expect(message, contains('goes back up'));
+  });
 
   group('baseline', () {
     test('the committed baseline is within the ceiling', () {

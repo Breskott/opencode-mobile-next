@@ -48,9 +48,14 @@ void main() {
       expect(projects.snapshot!.simulated, isTrue);
       expect(owner.snapshot.gates, isNotEmpty);
       final seeded = projects.snapshot!.projects.first;
-      await projects.execute(TeamProjectCommand(
-        requestId: projects.newRequestId(), action: TeamProjectAction.advance,
-        projectId: seeded.id, expectedRevision: seeded.revision));
+      await projects.execute(
+        TeamProjectCommand(
+          requestId: projects.newRequestId(),
+          action: TeamProjectAction.advance,
+          projectId: seeded.id,
+          expectedRevision: seeded.revision,
+        ),
+      );
       final project = projects.snapshot!.projects.firstWhere(
         (p) => p.requests.any((r) => !r.answered && r.kind == 'question'),
       );
@@ -117,6 +122,29 @@ void main() {
     await first;
     await removal;
     expect(prefs.containsKey('oc.teamWorkspace.drain-demo'), isFalse);
+    owner.dispose();
+  });
+
+  test('stop during initial loading never starts a late simulator', () async {
+    var builds = 0;
+    final owner = OrchestrationController(
+      profile: ServerProfile(
+        id: 'early-stop',
+        name: 'Early stop',
+        baseUrl: 'http://127.0.0.1',
+      ),
+      config: teamProjectDemoConfig,
+      store: OrchestrationStore(prefs),
+      gatewayFactory: (_, _) {
+        builds++;
+        return const NullOrchestrationGateway();
+      },
+    );
+    final starting = owner.start();
+    await owner.stop();
+    await starting;
+    expect(builds, 0);
+    expect(owner.phase, OrchestrationPhase.stopped);
     owner.dispose();
   });
 

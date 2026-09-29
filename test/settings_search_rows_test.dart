@@ -2,6 +2,7 @@
 // person uses it. Rows inside pages are found by their own words (animations,
 // heat, crash, battery), with one typo, in either language; the retired
 // aliases lead nowhere; and a row result opens its page arrived at the row.
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -248,7 +249,7 @@ void main() {
         scope,
         query,
       ).firstWhere((entry) => entry.id == id);
-      await entry.open(context, scope);
+      unawaited(entry.open(context, scope));
     }
 
     void phone(WidgetTester tester) {
