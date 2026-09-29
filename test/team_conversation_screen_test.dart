@@ -158,7 +158,7 @@ void main() {
     );
     // furiosa: the session runs, whatever /agents said.
     final agentLine = _key('team-conversation-agent-my-app/gastown.furiosa');
-    expect(_words(tester, agentLine), contains('furiosa · Worker · Running'));
+    expect(_words(tester, agentLine), contains('Worker · Running'));
     // The one Now line (slice-P5.1): what happens, for how long, what
     // comes next and how long that usually takes; the worker's name is its
     // own line's, not said again.
@@ -171,24 +171,17 @@ void main() {
       // No start measured on this phone yet: no time is promised.
       'Next: the worker begins the task',
     );
-    // The agent strip: the lead and furiosa, furiosa marked working.
-    expect(find.byType(KitAgentStrip), findsOneWidget);
-    expect(_key('team-conversation-family-lead'), findsOneWidget);
-    final chip = _key('team-conversation-family-my-app/gastown.furiosa');
-    expect(chip, findsOneWidget);
-    expect(
-      find.descendant(of: chip, matching: find.textContaining('furiosa')),
-      findsOneWidget,
-    );
+    // One live status: the Now line. No chip row, no second spinner, and
+    // no generated agent name in the page's copy.
+    expect(find.byType(KitAgentStrip), findsNothing);
+    expect(_key('team-conversation-family-lead'), findsNothing);
+    expect(find.textContaining('furiosa'), findsNothing);
     // The steps, with their marks, open under the one work line (two steps).
     expect(_key('team-conversation-steps-fold'), findsOneWidget);
     expect(_key('team-conversation-step-ma-1'), findsOneWidget);
     expect(_key('team-conversation-step-ma-2'), findsOneWidget);
     // Who the message goes to, before typing.
-    expect(
-      find.text('Goes to furiosa · Worker through the AI Team'),
-      findsOneWidget,
-    );
+    expect(find.text('Your message goes to Worker'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -371,7 +364,7 @@ void main() {
     );
     expect(
       _words(tester, _key('team-conversation-agent-my-app/gastown.furiosa')),
-      contains('furiosa · Worker'),
+      contains('Worker'),
     );
   });
 
@@ -479,7 +472,7 @@ void main() {
         findsNothing,
       );
       // One line: who, what it works on, its state and time.
-      expect(_words(tester, line), contains('furiosa · Worker · Running'));
+      expect(_words(tester, line), contains('Worker · Running'));
       expect(
         find.descendant(
           of: line,
@@ -503,7 +496,7 @@ void main() {
               .getRect(
                 find.descendant(
                   of: line,
-                  matching: find.textContaining('furiosa · Worker'),
+                  matching: find.textContaining('Worker'),
                 ),
               )
               .bottom,

@@ -103,6 +103,7 @@ class KitToolRow extends StatefulWidget {
        ),
        task = null,
        startedAt = null,
+       liveMark = true,
        _agent = false;
 
   /// A sub-agent the turn started, or an AI Team worker or reviewer. One
@@ -117,6 +118,7 @@ class KitToolRow extends StatefulWidget {
     this.onOpen,
     this.openLabel,
     this.rowKey,
+    this.liveMark = true,
   }) : kind = KitToolKind.agent,
        detail = null,
        path = null,
@@ -174,6 +176,11 @@ class KitToolRow extends StatefulWidget {
 
   /// `.agent` while running: "for 3 min", ticking by the minute (KitSince).
   final DateTime? startedAt;
+
+  /// `.agent`: false when the page already shows one live status elsewhere
+  /// (the Now line): a running or waiting row then draws no spinner; a
+  /// failed or stopped mark still shows.
+  final bool liveMark;
 
   /// `.agent`: opens its conversation. Null: not tappable (no session).
   /// A step: opens its details elsewhere (an AI Team step's Work sheet);
@@ -543,7 +550,13 @@ class _KitToolRowState extends State<KitToolRow>
       final lineText = elapsed == null
           ? '${row.title}$separator$word'
           : '${row.title}$separator$word $elapsed';
-      final mark = _stepMark(row.status);
+      final mark =
+          !row.liveMark &&
+              (row.status == KitToolStatus.running ||
+                  row.status == KitToolStatus.background ||
+                  row.status == KitToolStatus.pending)
+          ? null
+          : _stepMark(row.status);
       final line = ConstrainedBox(
         constraints: BoxConstraints(minHeight: tokens.minTarget),
         child: Align(

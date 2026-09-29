@@ -284,7 +284,7 @@ void main() {
       expect(
         find.descendant(
           of: lead,
-          matching: find.textContaining('Started a worker on it'),
+          matching: find.textContaining('Worker started'),
         ),
         findsOneWidget,
       );
@@ -322,14 +322,16 @@ void main() {
   });
 
   group('nothing covers the transcript', () {
-    _test('the agent strip ends above the transcript', (tester) async {
+    _test('no chip row sits between the Now line and the prompt', (
+      tester,
+    ) async {
       await pump(tester);
-      final strip = tester.getRect(_key('team-conversation-family'));
+      expect(_key('team-conversation-family'), findsNothing);
+      final now = tester.getRect(_key('team-conversation-now'));
       final list = tester.getRect(_key('team-conversation-list'));
-      expect(strip.bottom, lessThanOrEqualTo(list.top));
-      // The first line of the transcript starts below the strip too.
+      expect(now.bottom, lessThanOrEqualTo(list.top));
       final prompt = tester.getRect(_key('team-conversation-prompt'));
-      expect(prompt.top, greaterThan(strip.bottom));
+      expect(prompt.top, greaterThanOrEqualTo(list.top));
     });
 
     _test('the composer band is solid to the bottom edge', (tester) async {

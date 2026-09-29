@@ -525,22 +525,22 @@ void main() {
           now: () => clock,
         );
 
-    testWidgets('the task names only the agents on it', (tester) async {
+    testWidgets('the task lists only the agents on it', (tester) async {
       final (controller, _) = await boot(configure: runShape);
       await size(tester, const Size(800, 1600));
       await tester.pumpWidget(app(conversation(controller)));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(key('team-conversation-family'), findsOneWidget);
-      expect(key('team-conversation-family-fox'), findsOneWidget);
-      expect(key('team-conversation-family-wolf'), findsOneWidget);
+      expect(key('team-conversation-family'), findsNothing);
+      expect(key('team-conversation-agent-fox'), findsOneWidget);
+      expect(key('team-conversation-agent-wolf'), findsOneWidget);
       // Bear works w9, which is not on this task; owl has no work.
-      expect(key('team-conversation-family-bear'), findsNothing);
-      expect(key('team-conversation-family-owl'), findsNothing);
+      expect(key('team-conversation-agent-bear'), findsNothing);
+      expect(key('team-conversation-agent-owl'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a task without agents shows no agent strip', (tester) async {
+    testWidgets('a task without agents shows no worker row', (tester) async {
       final (controller, _) = await boot(
         configure: (g) => runShape(g, agents: const []),
       );
@@ -550,6 +550,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(key('team-conversation'), findsOneWidget);
       expect(key('team-conversation-family'), findsNothing);
+      expect(key('team-conversation-agent-fox'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });
