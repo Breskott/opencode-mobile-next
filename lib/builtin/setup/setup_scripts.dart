@@ -67,6 +67,21 @@ oc_download() {
     rm -f "$oc_file"
   fi
   oc_fetch
+  # A phone's network drops for a moment (switching Wi-Fi/mobile, a VPN
+  # coming up): curl's own --retry skips "could not connect" (7), DNS (6),
+  # timeouts (28), TLS (35) and a cut connection (56). Try those again,
+  # resuming what already arrived.
+  oc_try=1
+  while [ "$oc_try" -le 4 ]; do
+    case $oc_rc in
+      6|7|28|35|56) ;;
+      *) break ;;
+    esac
+    echo "[oc] The connection dropped; trying again ($oc_try of 4)"
+    sleep $((oc_try * 5))
+    oc_fetch
+    oc_try=$((oc_try + 1))
+  done
   # 33: the server cannot resume; 36: the partial file does not fit it.
   if [ "$oc_rc" = 33 ] || [ "$oc_rc" = 36 ]; then
     echo "[oc] The download could not be resumed; starting it again"
