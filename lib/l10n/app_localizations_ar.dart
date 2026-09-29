@@ -9057,9 +9057,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiTermsHeading => 'المصطلحات';
 
   @override
-  String get teamUiTurnOff => 'إيقاف';
-
-  @override
   String get teamUiTurnOffBody =>
       'يزيل بطاقته وعناصر الانتباه وبيانات الفريق المخزّنة مؤقتًا من هذا الهاتف. لا يتغير شيء على المضيف.';
 
@@ -24424,4 +24421,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String teamProgressMany(int count) {
     return 'فريق الذكاء الاصطناعي: $count مهام قيد العمل';
   }
+
+  @override
+  String get teamSettingsTitle => 'إعدادات الفريق';
+
+  @override
+  String get teamSettingsOpenTooltip => 'إعدادات الفريق';
+
+  @override
+  String get teamSettingsTurnOff => 'إيقاف فريق الذكاء الاصطناعي';
 }
