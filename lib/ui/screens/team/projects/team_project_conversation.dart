@@ -274,6 +274,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
               ),
         loading: c.loading,
         body: ListView(
+          padding: KitScreen.padding(context),
           children: [
             if (widget.embedded) KitText(t.title, role: KitTextRole.title),
             if (unavailable)
