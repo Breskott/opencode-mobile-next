@@ -15,15 +15,19 @@ import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../../builtin/team/builtin_team.dart' show BuiltinTeam;
 import '../../../builtin/thermal_guard.dart';
 import '../../../builtin/thermal_guard_teams.dart'
     show thermalGuardSlotProvider;
 import '../../../domain/orchestration_gateway.dart';
+import '../../../domain/server_gateway.dart' show CatalogModel;
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/orchestration.dart';
 import '../../../state/team_conversation.dart' show teamSessionState;
+import '../../../state/team_model.dart';
 import '../../../state/team_overview.dart';
 import '../../../termux/team_runtime.dart';
 import '../../app_theme.dart';
@@ -39,6 +43,7 @@ import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_vocabulary.dart';
 import '../settings/plugins_screen.dart' show teamPhoneProfile;
 import 'team_agents_screen.dart';
+import 'team_model_sheet.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -109,11 +114,67 @@ class TeamSettingsScreen extends StatefulWidget {
 
 class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
   bool _offFailed = false;
+  bool _modelFailed = false;
   bool _switching = false;
+  TeamModelStore? _models;
+  String? _model;
   ValueListenable<ThermalGuard?>? _scopeHeat;
 
   ValueListenable<ThermalGuard?>? get _heat =>
       widget.thermalGuard ?? _scopeHeat;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadModel());
+  }
+
+  Future<void> _loadModel() async {
+    try {
+      final store = TeamModelStore(await SharedPreferences.getInstance());
+      final model = store.read(widget.controller.profileId);
+      if (!mounted) return;
+      setState(() {
+        _models = store;
+        _model = model;
+      });
+    } catch (_) {
+      // No stored choice reads as the phone's default.
+    }
+  }
+
+  /// The chosen model as a person reads it: the catalog's name when the
+  /// phone lists it, else the choice as it was saved.
+  String _modelName(AppLocalizations l10n, ConnectionController? owner) {
+    final spec = _model;
+    if (spec == null) return l10n.teamModelDefault;
+    for (final model in owner?.catalog?.models ?? const <CatalogModel>[]) {
+      if (teamModelSpec(model.providerID, model.id) == spec) return model.name;
+    }
+    return spec;
+  }
+
+  Future<void> _pickModel(ConnectionController owner) async {
+    unawaited(owner.refreshCatalog());
+    final choice = await showTeamModelSheet(
+      context,
+      connection: owner,
+      current: _model,
+    );
+    final store = _models;
+    if (choice == null || store == null || !mounted || choice.spec == _model) {
+      return;
+    }
+    setState(() => _modelFailed = false);
+    try {
+      await BuiltinTeam().applyModel(choice.spec);
+      final kept = await store.write(widget.controller.profileId, choice.spec);
+      if (!kept) throw StateError('model choice not kept');
+      if (mounted) setState(() => _model = choice.spec);
+    } catch (_) {
+      if (mounted) setState(() => _modelFailed = true);
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -289,6 +350,20 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
                 )
               else
                 SizedBox(height: tokens.space3),
+              if (_modelFailed)
+                Padding(
+                  padding: EdgeInsetsDirectional.symmetric(
+                    horizontal: tokens.gutter,
+                    vertical: tokens.space2,
+                  ),
+                  child: KitNotice(
+                    key: const ValueKey('team-settings-model-failed'),
+                    tone: AppStatusTone.failure,
+                    icon: AppIconography.error,
+                    message: l10n.teamModelFailed,
+                    onDismiss: () => setState(() => _modelFailed = false),
+                  ),
+                ),
               KitRowGroup(
                 key: const ValueKey('team-home-team'),
                 children: [
@@ -304,6 +379,16 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
                     onTap: _openAgents,
                   ),
                   ?spent,
+                  if (owner != null && builtin)
+                    KitRow(
+                      key: const ValueKey('team-settings-model-row'),
+                      leading: KitRow.icon(context, AppIconography.model),
+                      title: l10n.teamModelRowTitle(_modelName(l10n, owner)),
+                      supporting: TextSpan(text: l10n.teamModelChange),
+                      supportingMaxLines: 2,
+                      trailing: const KitChevron(),
+                      onTap: () => unawaited(_pickModel(owner)),
+                    ),
                   if (upkeep.isNotEmpty)
                     KitRow(
                       key: const ValueKey('team-home-upkeep-row'),

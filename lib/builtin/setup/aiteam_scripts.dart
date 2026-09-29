@@ -166,6 +166,12 @@ abstract final class AiTeamScripts {
   /// - The model list: the phone's server keeps the shared cache fresh, so
   ///   an agent reads it and does not fetch it again at start and hourly.
   ///
+  /// - The team's model: the app writes `provider/model` to
+  ///   `~/aiteam/model` (Team settings › Model); each start reads it and
+  ///   gives OpenCode an inline config (`OPENCODE_CONFIG_CONTENT`) with that
+  ///   `model`, so the next worker starts on it. No file: OpenCode's own
+  ///   default. A value that is not a plain `provider/model` is ignored.
+  ///
   /// Costs no process of its own: `sed` and `ln` run once, before `exec`.
   static const agentWrapperScript = r'''#!/bin/sh
 case "$PWD" in */.gc/worktrees/*) in_worktree=1 ;; *) in_worktree= ;; esac
@@ -191,6 +197,11 @@ if [ -d "$PWD/.opencode" ] && [ ! -e "$PWD/.opencode/node_modules" ] &&
     ) || rm -f "$PWD/.opencode/package.json" "$PWD/.opencode/package-lock.json"
   fi
 fi
+oc_model=$(head -n 1 "$HOME/aiteam/model" 2>/dev/null || true)
+case "$oc_model" in
+  ''|*[!A-Za-z0-9._:@+/-]*) ;;
+  */*) export OPENCODE_CONFIG_CONTENT="{\"model\":\"$oc_model\"}" ;;
+esac
 export OPENCODE_DISABLE_MODELS_FETCH=1
 exec /usr/local/bin/opencode "$@"
 ''';

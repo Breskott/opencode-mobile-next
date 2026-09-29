@@ -34612,6 +34612,54 @@ abstract class AppLocalizations {
   /// **'The worker has started but hasn\'t begun the task.'**
   String get teamNowReasonWorkerStarting;
 
+  /// Team settings row: the model the team's agents use.
+  ///
+  /// In en, this message translates to:
+  /// **'Workers use {model}'**
+  String teamModelRowTitle(String model);
+
+  /// Team model choice: use whatever model the phone's OpenCode is set to.
+  ///
+  /// In en, this message translates to:
+  /// **'Same as this phone\'s OpenCode'**
+  String get teamModelDefault;
+
+  /// Under the default model choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses the model this phone\'s OpenCode is set to.'**
+  String get teamModelDefaultHint;
+
+  /// Under the team model row: what tapping does and when it applies.
+  ///
+  /// In en, this message translates to:
+  /// **'Change. Takes effect the next time a worker starts.'**
+  String get teamModelChange;
+
+  /// Title of the sheet that picks the team's model.
+  ///
+  /// In en, this message translates to:
+  /// **'Model for the team\'s workers'**
+  String get teamModelSheetTitle;
+
+  /// Subtitle of the team model sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Only models this phone\'s OpenCode can use. A worker that is already running keeps its model.'**
+  String get teamModelSheetNote;
+
+  /// Team model sheet when the phone's model list is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone\'s models have not loaded yet. Close this and try again in a moment.'**
+  String get teamModelNoneLoaded;
+
+  /// Notice when saving the team's model on the phone failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the model. The team keeps the one it had.'**
+  String get teamModelFailed;
+
   /// Team Now line reason while the worker's session is being created or its program is starting.
   ///
   /// In en, this message translates to:
