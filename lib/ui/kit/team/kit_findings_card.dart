@@ -49,6 +49,8 @@ class KitFindingsCard extends StatelessWidget {
                   height: t.minTarget,
                   child: Checkbox(
                     value: finding.selected,
+                    activeColor: t.roles.text1,
+                    checkColor: t.roles.surface1,
                     onChanged:
                         state == KitTeamState.stale ||
                             state == KitTeamState.loading ||

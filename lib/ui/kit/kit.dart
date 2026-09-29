@@ -1,6 +1,8 @@
 /// The design kit (docs/design/design-standard.md): the few parts every
 /// migrated screen is built from, each used the same way everywhere.
 ///
+/// | Part | Standard |
+/// |---|---|
 /// | [KitDigest] | AI Team controlled presentation surface |
 /// | [KitFindingsCard] | AI Team controlled presentation surface |
 /// | [KitMergeQueue] | AI Team controlled presentation surface |
@@ -12,8 +14,6 @@
 /// | [KitServerLane] | AI Team controlled presentation surface |
 /// | [KitSpecBlock] | AI Team controlled presentation surface |
 /// | [KitTimelineDay] | AI Team controlled presentation surface |
-/// | Part | Standard |
-/// |---|---|
 /// | [KitScreen] | §1 screen: header, one loading bar, body, pinned bottom |
 /// | [KitLayout], [KitWindow] | kit v2 §8.1 window classes: every part adapts to phone, tablet and PC |
 /// | [KitSheet], [showKitSheet], [showKitFramedSheet], [KitSheetHeight], [KitDraft] | kit v2 §1.1 the one sheet frame, a body that draws its own frame, its draft and unsaved-input guard |

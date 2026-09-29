@@ -32,7 +32,7 @@ class KitSpecBlock extends StatelessWidget {
     }
     final t = KitTokens.of(context);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         KitText(label, role: KitTextRole.label),
         SizedBox(height: t.space2),

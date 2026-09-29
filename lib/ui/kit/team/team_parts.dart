@@ -116,15 +116,36 @@ Widget teamCard(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     mainAxisSize: MainAxisSize.min,
     children: [
-      KitText(
-        title,
-        role: KitTextRole.headline,
-        tone: teamTone(state) == KitTextTone.secondary
-            ? KitTextTone.primary
-            : teamTone(state),
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (state == KitTeamState.failed || attention) ...[
+            ExcludeSemantics(
+              child: Icon(
+                teamIcon(state),
+                color: attention ? t.roles.attention : t.roles.danger,
+                size: t.smallIconSize,
+              ),
+            ),
+            SizedBox(width: t.space2),
+          ],
+          Expanded(
+            child: KitText(
+              title,
+              role: KitTextRole.headline,
+              tone: attention ? KitTextTone.attention : KitTextTone.primary,
+            ),
+          ),
+        ],
       ),
       SizedBox(height: t.space1),
-      KitText(status, role: KitTextRole.secondary, tone: teamTone(state)),
+      KitText(
+        status,
+        role: state == KitTeamState.failed
+            ? KitTextRole.rowTitle
+            : KitTextRole.secondary,
+        tone: teamTone(state),
+      ),
       if (summary != null) ...[
         SizedBox(height: t.space2),
         KitText(summary, role: KitTextRole.body),
