@@ -25439,4 +25439,74 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamProjectEditorDraftClearFailed =>
       'Changes were saved, but the local draft could not be cleared. Close this sheet and review the project before trying again.';
+
+  @override
+  String get teamProjectRestartElsewhere => 'Start over elsewhere';
+
+  @override
+  String get teamProjectRestartElsewhereBody =>
+      'Start a new attempt on this server. The previous branch stays on its original server.';
+
+  @override
+  String get teamProjectWaitForServer => 'Wait for the original server';
+
+  @override
+  String get teamProjectBudgetNear =>
+      'Approaching your budget. New work pauses at your chosen limit.';
+
+  @override
+  String get teamProjectDemoPlanFailure => 'Demo: unreadable plan';
+
+  @override
+  String get teamProjectTaskReviewFindings => 'Select open findings';
+
+  @override
+  String get teamProjectTaskResolveAgent => 'Resolve with agent';
+
+  @override
+  String get teamProjectTaskResolveManually => 'I’ll resolve';
+
+  @override
+  String get teamProjectTaskRecheckResolution => 'Re-check resolution';
+
+  @override
+  String get teamProjectTaskVerificationResults => 'Verification results';
+
+  @override
+  String get teamProjectTaskCriterionMet => 'Met';
+
+  @override
+  String get teamProjectTaskCriterionUnmet => 'Unmet';
+
+  @override
+  String get teamProjectTaskCriterionNotApplicable => 'Not applicable';
+
+  @override
+  String get teamProjectTaskDemoConflict => 'Demo: create a conflict';
+
+  @override
+  String get teamProjectTaskDemoCommit => 'Demo: add a manual commit';
+
+  @override
+  String get teamProjectEditorNoOptions =>
+      'No options are available yet. Return to AI Team to add a server or role.';
+
+  @override
+  String get teamProjectEditorUnknownDate => 'Date unavailable';
+
+  @override
+  String get teamProjectEditorYou => 'You';
+
+  @override
+  String get teamProjectEditorApprovedBy => 'Approved by';
+
+  @override
+  String get teamProjectEditorPlanFailed =>
+      'The planner did not return a usable plan. Keep the goal as one task, or ask for a new plan.';
+
+  @override
+  String get teamProjectEditorUseAsTask => 'Use as one task';
+
+  @override
+  String get teamProjectEditorAskAgain => 'Ask again';
 }

@@ -40032,6 +40032,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Changes were saved, but the local draft could not be cleared. Close this sheet and review the project before trying again.'**
   String get teamProjectEditorDraftClearFailed;
+
+  /// No description provided for @teamProjectRestartElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Start over elsewhere'**
+  String get teamProjectRestartElsewhere;
+
+  /// No description provided for @teamProjectRestartElsewhereBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new attempt on this server. The previous branch stays on its original server.'**
+  String get teamProjectRestartElsewhereBody;
+
+  /// No description provided for @teamProjectWaitForServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the original server'**
+  String get teamProjectWaitForServer;
+
+  /// No description provided for @teamProjectBudgetNear.
+  ///
+  /// In en, this message translates to:
+  /// **'Approaching your budget. New work pauses at your chosen limit.'**
+  String get teamProjectBudgetNear;
+
+  /// No description provided for @teamProjectDemoPlanFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo: unreadable plan'**
+  String get teamProjectDemoPlanFailure;
+
+  /// No description provided for @teamProjectTaskReviewFindings.
+  ///
+  /// In en, this message translates to:
+  /// **'Select open findings'**
+  String get teamProjectTaskReviewFindings;
+
+  /// No description provided for @teamProjectTaskResolveAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolve with agent'**
+  String get teamProjectTaskResolveAgent;
+
+  /// No description provided for @teamProjectTaskResolveManually.
+  ///
+  /// In en, this message translates to:
+  /// **'I’ll resolve'**
+  String get teamProjectTaskResolveManually;
+
+  /// No description provided for @teamProjectTaskRecheckResolution.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-check resolution'**
+  String get teamProjectTaskRecheckResolution;
+
+  /// No description provided for @teamProjectTaskVerificationResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification results'**
+  String get teamProjectTaskVerificationResults;
+
+  /// No description provided for @teamProjectTaskCriterionMet.
+  ///
+  /// In en, this message translates to:
+  /// **'Met'**
+  String get teamProjectTaskCriterionMet;
+
+  /// No description provided for @teamProjectTaskCriterionUnmet.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmet'**
+  String get teamProjectTaskCriterionUnmet;
+
+  /// No description provided for @teamProjectTaskCriterionNotApplicable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not applicable'**
+  String get teamProjectTaskCriterionNotApplicable;
+
+  /// No description provided for @teamProjectTaskDemoConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo: create a conflict'**
+  String get teamProjectTaskDemoConflict;
+
+  /// No description provided for @teamProjectTaskDemoCommit.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo: add a manual commit'**
+  String get teamProjectTaskDemoCommit;
+
+  /// No description provided for @teamProjectEditorNoOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'No options are available yet. Return to AI Team to add a server or role.'**
+  String get teamProjectEditorNoOptions;
+
+  /// No description provided for @teamProjectEditorUnknownDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date unavailable'**
+  String get teamProjectEditorUnknownDate;
+
+  /// No description provided for @teamProjectEditorYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get teamProjectEditorYou;
+
+  /// No description provided for @teamProjectEditorApprovedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved by'**
+  String get teamProjectEditorApprovedBy;
+
+  /// No description provided for @teamProjectEditorPlanFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The planner did not return a usable plan. Keep the goal as one task, or ask for a new plan.'**
+  String get teamProjectEditorPlanFailed;
+
+  /// No description provided for @teamProjectEditorUseAsTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Use as one task'**
+  String get teamProjectEditorUseAsTask;
+
+  /// No description provided for @teamProjectEditorAskAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask again'**
+  String get teamProjectEditorAskAgain;
 }
 
 class _AppLocalizationsDelegate
