@@ -19,3 +19,8 @@ Tests edited: settings_hub, search_index, settings_search_rows, phone_termux_dis
 
 ## Device check
 Settings > This app shows one "Notifications and background" row; open it and scroll: sections in the order above, nothing twice. App-closed notice "Keep it running" opens it at the Keep running section. Header launcher: type "keep running", "always allowed", "plugins", "quiet hours", "battery".
+
+## Follow-up (coordinator decisions)
+- Server plugin inventory is now the "Plugins on this server" section of Settings > This server (`server-plugins`, shown when the server has a plugin inventory); search entry `settings-server-plugins` carries the old plugin aliases. Its top-bar refresh is gone (Retry stays on failure).
+- Deleted `PluginsSettingsScreen`, `KeepRunningScreen`, `AutomationSettingsScreen`. Now `KeepRunningSection` and `AutomationSettingsSection` (sections of the merged page). Tests/scenes moved onto the section, the merged page or `TeamPage`; tests of removed UI deleted. Golden PNGs for removed cases were deleted; keep-running, consent and AI Team golden images need regenerating.
+- Left behind: `plugins_screen.dart` (helpers only), `BuiltinTeamSection`/`TeamDiscovery` widgets (no host in lib now), `ServerPluginsActions`, `test/revamp/shared_settings_harness.dart`, unused plugins-page l10n strings.

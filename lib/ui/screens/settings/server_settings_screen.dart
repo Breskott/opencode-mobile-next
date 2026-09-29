@@ -426,6 +426,18 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               ),
             ),
           ],
+          // The server's own plugins: only where it reports an inventory.
+          if (profile != null &&
+              widget.controller.capabilities.pluginInventory) ...[
+            SizedBox(height: tokens.sectionGap),
+            KeyedSubtree(
+              key: const ValueKey('server-plugins'),
+              child: KitArrival(
+                id: 'settings-server-plugins',
+                child: ServerPluginsSection(controller: widget.controller),
+              ),
+            ),
+          ],
           // Destructive and last, one section gap below the rest; it names
           // the server and says what stops and what stays where.
           if (profile != null) ...[

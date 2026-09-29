@@ -22,7 +22,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/in_flow_consent.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/repeated_permission_consent.dart';
-import 'package:opencode_mobile/ui/screens/automation_settings_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/widgets/always_allow_invitation.dart';
 import 'package:opencode_mobile/ui/widgets/phone_server_consents.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -180,7 +180,13 @@ void main() {
         tester,
         'p67_consent_answers',
         light: light,
-        home: (c) => AutomationSettingsScreen(controller: c),
+        home: (c) => NotificationsSettingsScreen(controller: c),
+        then: (c, context) async {
+          await tester.ensureVisible(
+            find.byKey(const ValueKey('automation-answers')),
+          );
+          await tester.pumpAndSettle();
+        },
       );
     });
   }
@@ -191,7 +197,13 @@ void main() {
       'p67_consent_answers',
       light: false,
       size: _wide,
-      home: (c) => AutomationSettingsScreen(controller: c),
+      home: (c) => NotificationsSettingsScreen(controller: c),
+      then: (c, context) async {
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('automation-answers')),
+        );
+        await tester.pumpAndSettle();
+      },
     );
   });
 
@@ -201,7 +213,7 @@ void main() {
       'p67_first_start_battery',
       light: true,
       answers: false,
-      home: (c) => AutomationSettingsScreen(controller: c),
+      home: (c) => NotificationsSettingsScreen(controller: c),
       then: (c, context) async {
         askConsent(context, InFlowConsentKind.batteryExemption).ignore();
         await tester.pumpAndSettle();
@@ -216,7 +228,7 @@ void main() {
       light: false,
       answers: false,
       size: _wide,
-      home: (c) => AutomationSettingsScreen(controller: c),
+      home: (c) => NotificationsSettingsScreen(controller: c),
       then: (c, context) async {
         askConsent(context, InFlowConsentKind.batteryExemption).ignore();
         await tester.pumpAndSettle();

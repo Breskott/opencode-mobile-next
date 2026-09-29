@@ -18,12 +18,10 @@ import 'package:opencode_mobile/builtin/thermal_guard.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/thermal.dart';
-import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_agent_row.dart';
 import 'package:opencode_mobile/ui/widgets/team_host_form.dart';
@@ -336,7 +334,7 @@ Future<void> _golden(
   await tester.pump(const Duration(seconds: 1));
 }
 
-enum _Scene { home, heat, notAnswering, agents, plugins, guide }
+enum _Scene { home, heat, notAnswering, agents, guide }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -449,46 +447,6 @@ void main() {
                 ),
               ),
             );
-          case _Scene.plugins:
-            final profiles = ProfileStore(prefs: prefs);
-            final profile = ServerProfile(
-              id: 'workstation',
-              name: 'Laptop',
-              baseUrl: 'http://100.100.1.2:4096',
-            );
-            await profiles.upsert(profile);
-            await profiles.setActiveId(profile.id);
-            final connection = ConnectionController(profiles);
-            connection.adoptConnectedProfileForTesting(profile);
-            connection.syncOrchestration();
-            try {
-              await _golden(
-                tester,
-                name,
-                size: size,
-                light: light,
-                body: PluginsSettingsScreen(
-                  controller: connection,
-                  probe: (url, {city}) async => ProbeFound(
-                    host: OrchestrationHostIdentity(
-                      provider: 'gascity',
-                      url: url,
-                      hostMode: OrchestrationHostMode.computer,
-                      version: '1.4.1',
-                      city: 'bright-lights',
-                    ),
-                    version: '1.4.1',
-                    city: 'bright-lights',
-                    front: url.endsWith(':8373'),
-                    identityAllowed: true,
-                    capabilities: OrchestrationCapabilities.gascityFront,
-                  ),
-                  now: () => _clock,
-                ),
-              );
-            } finally {
-              connection.dispose();
-            }
           case _Scene.guide:
             await _golden(
               tester,

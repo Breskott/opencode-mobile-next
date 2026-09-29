@@ -17,7 +17,6 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/about_screen.dart';
 import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
-import 'package:opencode_mobile/ui/screens/automation_settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 
@@ -260,10 +259,9 @@ Future<Future<void> Function()> mountSettingsScene(
     SettingsScene.diagnostics || SettingsScene.diagnosticsEmpty =>
       AppDiagnosticsScreen(controller: controller),
     SettingsScene.about => const AboutScreen(),
-    // What runs by itself with a team, as a team's server shows it.
-    SettingsScene.automation => AutomationSettingsScreen(
+    // What runs by itself is the last section of the merged page.
+    SettingsScene.automation => NotificationsSettingsScreen(
       controller: controller,
-      teamAvailable: true,
     ),
     SettingsScene.servers ||
     SettingsScene.addServer ||

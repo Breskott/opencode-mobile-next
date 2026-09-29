@@ -304,7 +304,7 @@
      "key": "this-phone-keep-running",
      "line": 662,
      "action": "navigate",
-     "target": "keep-running",
+     "target": "notifications-settings",
      "targetWidget": "openKeepRunningScreen",
      "effect": "openKeepRunningScreen(context).",
      "gates": [

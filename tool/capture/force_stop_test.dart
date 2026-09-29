@@ -168,7 +168,9 @@ void main() {
       try {
         await tester.pumpWidget(
           captureApp(
-            home: const KeepRunningScreen(),
+            home: const Scaffold(
+              body: SingleChildScrollView(child: KeepRunningSection()),
+            ),
             boundaryKey: boundary,
             controller: controller,
           ),

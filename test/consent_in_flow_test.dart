@@ -25,7 +25,7 @@ import 'package:opencode_mobile/state/repeated_permission_consent.dart';
 import 'package:opencode_mobile/platform/app_exit.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
-import 'package:opencode_mobile/ui/screens/automation_settings_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/widgets/always_allow_invitation.dart';
 import 'package:opencode_mobile/ui/widgets/phone_server_consents.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -165,7 +165,11 @@ Future<void> _askPhone(WidgetTester tester, ConnectionController c) async {
 }
 
 Future<void> _openSettings(WidgetTester tester, ConnectionController c) async {
-  await tester.pumpWidget(_app(AutomationSettingsScreen(controller: c)));
+  // Tall enough that the merged page's last section is built without scrolling.
+  tester.view.physicalSize = const Size(800, 6000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(_app(NotificationsSettingsScreen(controller: c)));
   await tester.pumpAndSettle();
 }
 

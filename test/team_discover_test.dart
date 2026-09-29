@@ -28,7 +28,6 @@ import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/team_runtime.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:opencode_mobile/ui/screens/new_conversation_sheet.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
@@ -719,8 +718,9 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('tapping it while on opens the team page, never Plugins '
-        '(P0.5)', (tester) async {
+    testWidgets('tapping it while on opens the team page (P0.5)', (
+      tester,
+    ) async {
       _mockChannels();
       final profile = _computer()
         ..orchestration = OrchestrationConfig(
@@ -737,7 +737,6 @@ void main() {
       await tester.tap(_key('settings-ai-team'));
       await _settle(tester);
       expect(find.byType(TeamHomeScreen), findsOneWidget);
-      expect(find.byType(PluginsSettingsScreen), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });
@@ -767,19 +766,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        _app(PluginsSettingsScreen(controller: controller)),
-      );
-      await _settle(tester);
-      // The phone's card is the AI Team; no second "AI Team · Off" row.
-      expect(find.byType(BuiltinTeamSection), findsOneWidget);
-      expect(_key('plugins-ai-team-row'), findsNothing);
-      expect(find.text(_en.teamUiRowOff), findsNothing);
-      // A computer's team is a secondary choice under it.
-      expect(_key('plugins-team-other'), findsOneWidget);
-      expect(find.text(_en.teamDiscoverComputerChoiceTitle), findsOneWidget);
-
-      // Settings says the same: turning on, never Off.
+      // Settings says turning on, never Off.
       await tester.pumpWidget(_app(SettingsScreen(controller: controller)));
       await _settle(tester);
       await tester.ensureVisible(_key('settings-ai-team'));
@@ -812,13 +799,6 @@ void main() {
       final controller = await _boot(
         _inApp()..orchestration = BuiltinTeam.config(),
       );
-      await tester.pumpWidget(
-        _app(PluginsSettingsScreen(controller: controller)),
-      );
-      await _settle(tester);
-      expect(_key('plugins-ai-team-row'), findsNothing);
-      // One row to the team's own page (P3.4: no AI Team sheet).
-      expect(find.text(_en.pluginsTeamOpenPage), findsOneWidget);
       await tester.pumpWidget(_app(SettingsScreen(controller: controller)));
       await _settle(tester);
       await tester.ensureVisible(_key('settings-ai-team'));

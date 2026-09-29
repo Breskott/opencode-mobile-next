@@ -397,7 +397,7 @@
           "key": "settings-category-plugins",
           "line": 84,
           "action": "navigate",
-          "target": "plugins-settings",
+          "target": "team-intro",
           "targetWidget": null,
           "effect": "Opens PluginsSettingsScreen.",
           "gates": [
@@ -1244,109 +1244,6 @@
       ]
     },
     {
-      "id": "plugins-settings",
-      "title": "Plugins",
-      "kind": "screen",
-      "file": "lib/ui/screens/settings/plugins_screen.dart",
-      "widget": "PluginsSettingsScreen",
-      "presentedBy": [],
-      "line": 51,
-      "purpose": "The one Plugins screen. Section \"In this app\": AI Team · Gas City (discovery card, optional on-phone re-offer card, the AI Team row). Section \"On the server\" (ServerPluginsSection, only with capabilities.pluginInventory): server plugin inventory and personal plugin -> slash-command links.",
-      "reachedFrom": [
-        {
-          "page": "settings",
-          "element": "settings-ai-team"
-        }
-      ],
-      "gates": [
-        "profile != null || capabilities.pluginInventory (hub row gate, settings_screen.dart:517)"
-      ],
-      "elements": [
-        {
-          "id": "plugins-team-other",
-          "type": "list-tile",
-          "label": "A team on a computer | See the team’s tasks",
-          "key": "plugins-team-other",
-          "line": 194,
-          "action": "navigate",
-          "target": "team-home",
-          "targetWidget": "TeamPage / editTeamAddress",
-          "effect": "OpenCode inside the app, where the phone's card (BuiltinTeamSection) is the AI Team: while it is off, the secondary choice to connect a computer's Gas City opens the address form (team-host-sheet) straight away; once the phone's team is on, it opens the one AI Team page (openTeamPage, P3.4). Replaces the 'In this app › AI Team' row there, so the page has one AI Team in one state.",
-          "gates": [
-            "BuiltinTeamSection.appliesTo(profile) && (profile.orchestration == null || BuiltinTeam.isBuiltinConfig(profile.orchestration))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "plugins-settings-ai-team-row",
-          "type": "list-tile",
-          "label": "AI Team",
-          "key": "plugins-ai-team-row",
-          "line": 236,
-          "action": "navigate",
-          "target": "team-home",
-          "targetWidget": "TeamPage",
-          "effect": "openTeamPage(): the one AI Team page, on or off (P3.4; the AI Team sheet, team-plugin-sheet, is gone). Subtitle (key plugins-ai-team-subtitle) from teamStateLine per orchestration state ('Turning on…' while this phone installs it).",
-          "gates": [
-            "profile != null (else text \"Connect to a server to use plugins.\", key plugins-no-server)",
-            "absent on OpenCode inside the app unless a computer's team is connected there (plugins-team-other instead)"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "plugins-refresh",
-          "type": "icon-button",
-          "label": "Refresh plugins",
-          "key": null,
-          "line": 197,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_load() -> (controller.repository as PluginGateway).listPlugins() and reloads mappings from PluginCommandMappings.load(scope). Disabled while _loading.",
-          "gates": [
-            "section \"On the server\": capabilities.pluginInventory",
-            "_connected && _supported"
-          ],
-          "destructive": false,
-          "file": "lib/ui/screens/settings/server_plugins_section.dart"
-        },
-        {
-          "id": "plugins-retry",
-          "type": "button",
-          "label": "Try again",
-          "key": null,
-          "line": 226,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_load() again after a failed listPlugins().",
-          "gates": [
-            "section \"On the server\": capabilities.pluginInventory",
-            "_failed",
-            "_supported && _connected"
-          ],
-          "destructive": false,
-          "file": "lib/ui/screens/settings/server_plugins_section.dart"
-        }
-      ],
-      "embeds": [
-        {
-          "widget": "TeamDiscoveryCard",
-          "file": "lib/ui/widgets/team_discovery_card.dart",
-          "line": 122,
-          "gates": []
-        },
-        {
-          "widget": "ServerPluginsSection",
-          "file": "lib/ui/screens/settings/server_plugins_section.dart",
-          "line": 195,
-          "gates": [
-            "controller.capabilities.pluginInventory"
-          ]
-        }
-      ]
-    },
-    {
       "id": "about",
       "title": "About",
       "kind": "screen",
@@ -1761,72 +1658,6 @@
       ]
     },
     {
-      "id": "automation-settings",
-      "title": "What runs by itself",
-      "kind": "screen",
-      "file": "lib/ui/screens/automation_settings_screen.dart",
-      "widget": "AutomationSettingsScreen",
-      "presentedBy": [],
-      "line": 70,
-      "purpose": "Settings › What runs by itself (P6.1): what the app and the agent do on the current server without asking. The AI Team's supervision level (stored in the per-server AutomationPolicy, oc.automation.<profileId>; new team tasks start at it) and doors to Always allowed actions and background watching (Notifications).",
-      "reachedFrom": [
-        {
-          "page": "notifications-settings",
-          "element": "notifications-settings-automation"
-        }
-      ],
-      "gates": [
-        "one server (controller.profile); each section present only where the server supports it"
-      ],
-      "elements": [
-        {
-          "id": "automation-supervision",
-          "type": "list-tile",
-          "label": "High / Balanced / Autonomous",
-          "key": "automation-supervision-<level>",
-          "line": 250,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "AutomationPolicyController.setSupervision(level); a refused write shows automation-save-failed.",
-          "gates": [
-            "AI Team set up for this server"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "automation-saved-permissions",
-          "type": "list-tile",
-          "label": "Always allowed actions",
-          "key": "automation-saved-permissions",
-          "line": 210,
-          "action": "navigate",
-          "target": "saved-permissions",
-          "targetWidget": "SavedPermissionsScreen",
-          "effect": "Pushes SavedPermissionsScreen(controller).",
-          "gates": [
-            "capabilities.savedPermissionList"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "automation-watch",
-          "type": "list-tile",
-          "label": "Watch this server in the background",
-          "key": "automation-watch",
-          "line": 290,
-          "action": "navigate",
-          "target": "notifications-settings",
-          "targetWidget": "NotificationsSettingsScreen",
-          "effect": "Pushes NotificationsSettingsScreen(initialSection: 'servers'); the value says whether the monitor watches this server.",
-          "gates": [
-            "profile monitor supports and can read this server"
-          ],
-          "destructive": false
-        }
-      ]
-    },
-    {
       "id": "saved-permissions",
       "title": "Always allowed actions",
       "kind": "screen",
@@ -1835,12 +1666,7 @@
       "presentedBy": [],
       "line": 16,
       "purpose": "Lists the durable \"always allow\" grants for the current project and lets the user revoke them.",
-      "reachedFrom": [
-        {
-          "page": "automation-settings",
-          "element": "automation-saved-permissions"
-        }
-      ],
+      "reachedFrom": [],
       "gates": [],
       "elements": [
         {
@@ -2504,47 +2330,6 @@
         "controller.isConnected (hub row and search entry gate)"
       ],
       "elements": []
-    },
-    {
-      "id": "keep-running",
-      "title": "Keep running in the background",
-      "kind": "screen",
-      "file": "lib/ui/screens/keep_running_screen.dart",
-      "widget": "KeepRunningScreen",
-      "presentedBy": [
-        "openKeepRunningScreen"
-      ],
-      "line": 60,
-      "purpose": "Settings › Keep running in the background: what to allow on this phone so Android leaves the app (and the built-in OpenCode/AI Team inside it) running; never opens by itself.",
-      "reachedFrom": [
-        {
-          "page": "notifications-settings",
-          "element": "notifications-settings-keep-running"
-        },
-        {
-          "page": "home-shell",
-          "element": "home-shell-app-exit-keep-running"
-        }
-      ],
-      "gates": [
-        "platform: android only (supportsBackgroundService)"
-      ],
-      "elements": [
-        {
-          "id": "keep-running-open-setting",
-          "type": "list-tile",
-          "label": "<step title>",
-          "key": "keep-running-<step>",
-          "line": 218,
-          "action": "external-link",
-          "target": null,
-          "effect": "KitRow onTap -> _open(setting): ref.read(appLifecycleBridgeProvider).openKeepAliveSetting(setting), opening the phone's own battery/autostart/lock/background-restriction settings screen for this step; no onTap once allowed or when the step has no direct setting.",
-          "gates": [
-            "setting != null && !allowed"
-          ],
-          "destructive": false
-        }
-      ]
     }
   ],
   "notPages": [
@@ -2563,6 +2348,22 @@
     {
       "file": "lib/ui/screens/usage_refresh_slot.dart",
       "reason": "UsageRefreshSlot is a ChangeNotifier holding refresh callbacks for the Usage page, with no visual surface or gestures."
+    },
+    {
+      "file": "lib/ui/screens/automation_settings_screen.dart",
+      "reason": "Helpers and sections of merged pages; the standalone page was retired (Notifications and background; Settings > This server)."
+    },
+    {
+      "file": "lib/ui/screens/keep_running_screen.dart",
+      "reason": "Helpers and sections of merged pages; the standalone page was retired (Notifications and background; Settings > This server)."
+    },
+    {
+      "file": "lib/ui/screens/settings/plugins_screen.dart",
+      "reason": "Helpers and sections of merged pages; the standalone page was retired (Notifications and background; Settings > This server)."
+    },
+    {
+      "file": "lib/ui/screens/settings/server_plugins_section.dart",
+      "reason": "ServerPluginsSection is the 'Plugins on this server' section of the This server page (server-settings); its elements keep their plugins-* ids on that page's host."
     }
   ],
   "notes": [

@@ -7,13 +7,12 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/domain/plugin_inventory.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
-import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_probe.dart';
 import 'package:opencode_mobile/ui/screens/about_screen.dart';
 import 'package:opencode_mobile/ui/screens/guide_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/saved_permissions_screen.dart';
 import 'package:opencode_mobile/ui/screens/server_capabilities_screen.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings/server_plugins_section.dart';
 import 'package:opencode_mobile/ui/screens/usage_hub_screen.dart';
 import 'package:opencode_mobile/ui/screens/web_sources_screen.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
@@ -206,9 +205,10 @@ Future<CaptureController> _pluginsController(CensusKit kit) async {
     repository: _PluginRepository(),
   );
   await kit.pumpApp(
-    PluginsSettingsScreen(
-      controller: controller,
-      probe: (url, {city}) async => const ProbeUnreachable(error: 'capture'),
+    Scaffold(
+      body: SingleChildScrollView(
+        child: ServerPluginsSection(controller: controller),
+      ),
     ),
     controller: controller,
   );
@@ -240,21 +240,16 @@ final j1SettingsMoreArea = CensusArea(
   'j1-settings-more',
   shots: [
     // ---- Settings hub ----------------------------------------------------
-    CensusShot(
-      'settings',
-      state: 'pushed',
-      (kit) async {
-        final done = await mountSettingsScene(
-          kit.tester,
-          SettingsScene.hub,
-          light: false,
-          boundary: kit.boundaryKey,
-        );
-        kit.onDispose(done);
-        kit.expectText('This server');
-      },
-      note: 'Pushed via Ctrl/Cmd+, or a search result, with its own app bar.',
-    ),
+    CensusShot('settings', state: 'pushed', (kit) async {
+      final done = await mountSettingsScene(
+        kit.tester,
+        SettingsScene.hub,
+        light: false,
+        boundary: kit.boundaryKey,
+      );
+      kit.onDispose(done);
+      kit.expectText('This server');
+    }, note: 'Pushed via Ctrl/Cmd+, or a search result, with its own app bar.'),
     CensusShot(
       'settings',
       state: 'in-shell',
@@ -400,12 +395,7 @@ final j1SettingsMoreArea = CensusArea(
     // ---- Plugins -----------------------------------------------------------
     CensusShot('plugins-settings', state: 'loaded', (kit) async {
       await _pluginsController(kit);
-      kit.expectVisible(find.byKey(const ValueKey('plugins-ai-team-row')));
-    }),
-    CensusShot('team-plugin-sheet', (kit) async {
-      await _pluginsController(kit);
-      await kit.tapKey('plugins-ai-team-row');
-      kit.expectVisible(find.byKey(const ValueKey('team-sheet-add-manually')));
+      kit.expectVisible(find.byKey(const ValueKey('plugins-section-server')));
     }),
 
     // ---- About -------------------------------------------------------------
@@ -413,18 +403,14 @@ final j1SettingsMoreArea = CensusArea(
       await _pumpAbout(kit);
       kit.expectTextContaining('Open source');
     }, note: 'top of the screen: build identity, then Open source'),
-    CensusShot(
-      'about-open-source-tab',
-      (kit) async {
-        await _pumpAbout(kit);
-        await kit.tester.drag(
-          find.byKey(const ValueKey('about-page')),
-          const Offset(0, -600),
-        );
-        await kit.settle();
-      },
-      note: "About's Open source section (no tabs since slice-P3.10)",
-    ),
+    CensusShot('about-open-source-tab', (kit) async {
+      await _pumpAbout(kit);
+      await kit.tester.drag(
+        find.byKey(const ValueKey('about-page')),
+        const Offset(0, -600),
+      );
+      await kit.settle();
+    }, note: "About's Open source section (no tabs since slice-P3.10)"),
 
     // ---- Guide, diagnostics, misc -------------------------------------------
     CensusShot('guide', (kit) async {

@@ -14,14 +14,6 @@
         {
           "page": "settings",
           "element": "settings-ai-team"
-        },
-        {
-          "page": "plugins-settings",
-          "element": "plugins-settings-ai-team-row"
-        },
-        {
-          "page": "plugins-settings",
-          "element": "plugins-team-other"
         }
       ],
       "gates": [
@@ -901,10 +893,6 @@
         {
           "page": "settings",
           "element": "settings-ai-team"
-        },
-        {
-          "page": "plugins-settings",
-          "element": "plugins-settings-ai-team-row"
         }
       ],
       "gates": [
@@ -919,7 +907,7 @@
           "key": "team-intro-set-up",
           "line": 223,
           "action": "navigate",
-          "target": "plugins-settings",
+          "target": "team-intro",
           "targetWidget": "PluginsSettingsScreen",
           "effect": "The one primary. OpenCode inside the app: pushReplacement(PluginsSettingsScreen), where BuiltinTeamSection adds, turns on and starts the team. Termux: reopens the phone offer (PhoneOffer.open) and pushReplacement(ThisPhoneScreen(kind: termux)), whose Add tools sheet holds the AI Team block. A computer without Gas City found: showTeamHostGuideSheet, then looks again when it closes.",
           "gates": [

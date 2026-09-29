@@ -829,19 +829,15 @@ void main() {
       expect((await bridge.current()).status, ThermalStatus.unknown);
       expect((await bridge.current()).status, ThermalStatus.unknown);
       expect(await bridge.current(), ThermalReading.unknown);
-      expect(
-        ThermalStatus.values.map((s) => s.name).skip(1),
-        [
-          'none',
-          'light',
-          'moderate',
-          'severe',
-          'critical',
-          'emergency',
-          'shutdown',
-        ],
-        reason: 'ThermalMonitor.statusName answers these words',
-      );
+      expect(ThermalStatus.values.map((s) => s.name).skip(1), [
+        'none',
+        'light',
+        'moderate',
+        'severe',
+        'critical',
+        'emergency',
+        'shutdown',
+      ], reason: 'ThermalMonitor.statusName answers these words');
     });
 
     test('events arrive as readings; a missing channel is safe', () async {
@@ -951,7 +947,14 @@ void main() {
         ..physicalSize = const Size(412, 915)
         ..devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      await tester.pumpWidget(app(guard, const KeepRunningScreen()));
+      await tester.pumpWidget(
+        app(
+          guard,
+          const Scaffold(
+            body: SingleChildScrollView(child: KeepRunningSection()),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text(en.thermalGuardSetting),

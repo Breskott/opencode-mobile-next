@@ -248,12 +248,6 @@ const _migratedClasses = <String, Map<String, List<String>>>{
     // revamp chat-1, 2026-09-27); its label left with the class.
     '_AssistantErrorRow': ['chat_model_error'],
   },
-  // Settings › Plugins: the page and its AI Team row. The AI Team sheet in
-  // the same file (TeamPluginSheet) belongs to the AI Team redesign.
-  'lib/ui/screens/settings/plugins_screen.dart': {
-    'PluginsSettingsScreen': ['plugins_server'],
-    '_PluginsSettingsScreenState': ['plugins_server'],
-  },
 };
 
 /// file -> (pattern, reason) of raw parts a migrated screen gave up. They
@@ -345,8 +339,6 @@ const _grandfathered = <String>{
   'lib/ui/screens/settings/default_shell_row.dart',
   'lib/ui/screens/settings/notifications_settings_screen.dart',
   'lib/ui/screens/settings/personal_settings_screens.dart',
-  'lib/ui/screens/settings/plugins_screen.dart#PluginsSettingsScreen',
-  'lib/ui/screens/settings/plugins_screen.dart#_PluginsSettingsScreenState',
   'lib/ui/screens/settings/server_plugins_section.dart',
   'lib/ui/screens/settings/server_settings_screen.dart',
   'lib/ui/screens/settings_screen.dart',

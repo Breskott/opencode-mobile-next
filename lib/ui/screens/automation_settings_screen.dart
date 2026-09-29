@@ -9,17 +9,13 @@ import '../../state/automation_policy.dart';
 import '../../state/consent_owners.dart';
 import '../../state/connection.dart';
 import '../../state/in_flow_consent.dart';
-import '../../state/profiles.dart';
 import '../../state/team_planning.dart' show TeamSupervision;
 import '../app_theme.dart';
 import '../kit/kit.dart';
 import '../../state/first_reply_notify_offer.dart'
     show turnOnNeedsYouNotifications;
-import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/phone_server_consents.dart';
-import 'keep_running_screen.dart' show openKeepRunningScreen;
 import 'saved_permissions_screen.dart';
-import 'settings_screen.dart' show NotificationsSettingsScreen;
 import 'team/start_run_sheet.dart' show teamSupervisionCopy;
 
 /// What the "What runs by itself" page can show for the current server.
@@ -70,18 +66,15 @@ class AutomationSettingsSections {
   }
 }
 
-/// Settings › What runs by itself (`automation-settings`, P6.1): what the
-/// app and the agent do on the current server without asking first, and
-/// the place to turn each of it off.
+/// What runs by itself (P6.1): what the app and the agent do on the current
+/// server without asking first, and the place to turn each of it off. The
+/// last section of the "Notifications and background" page.
 ///
-/// One page per server, built from kit parts: an intro line naming the
-/// server, the AI Team's supervision as a [KitChoiceList] (stored in this
-/// server's [AutomationPolicy], `oc.automation.<profileId>`; new team tasks
-/// start at it), and one [KitRowGroup] of doors to where the rest already
-/// lives: Always allowed actions (the server's saved rules) and watching
-/// this server in the background (Notifications, whose switch the monitor
-/// reads). A door shows the state it leads to, so nothing is set in two
-/// places. A choice is said as chosen only once storage took it.
+/// Built from kit parts: the AI Team's supervision as a [KitChoiceList]
+/// (stored in this server's [AutomationPolicy], `oc.automation.<profileId>`;
+/// new team tasks start at it) and the door to Always allowed actions (the
+/// server's saved rules). Watching a server is a switch on the same page. A
+/// choice is said as chosen only once storage took it.
 ///
 /// **Your answers** (P6.7) lists what the app asked once on this server, in
 /// flow ([ConsentOwners]): keeping the phone server alive (battery, the
@@ -90,23 +83,17 @@ class AutomationSettingsSections {
 /// still owing an answer first, then the declined (each saying what that
 /// means), then the allowed (opening where the system setting lives).
 /// Allowing here asks the same question as in flow and runs the same step.
-class AutomationSettingsScreen extends StatefulWidget {
-  const AutomationSettingsScreen({
+class AutomationSettingsSection extends StatefulWidget {
+  const AutomationSettingsSection({
     super.key,
     required this.controller,
     this.teamAvailable,
-    this.embedded = false,
     this.onShowSection,
   });
 
   final ConnectionController controller;
 
-  /// Draw only the content, as the last section of the merged "Notifications
-  /// and background" page (no intro, no door to watching: its switch is on
-  /// that same page).
-  final bool embedded;
-
-  /// Embedded: scrolls the host page to the section an allowed answer is
+  /// Scrolls the host page to the section an allowed answer is
   /// changed in (`what`, `keep-running`).
   final ValueChanged<String>? onShowSection;
 
@@ -115,11 +102,11 @@ class AutomationSettingsScreen extends StatefulWidget {
   final bool? teamAvailable;
 
   @override
-  State<AutomationSettingsScreen> createState() =>
-      _AutomationSettingsScreenState();
+  State<AutomationSettingsSection> createState() =>
+      _AutomationSettingsSectionState();
 }
 
-class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
+class _AutomationSettingsSectionState extends State<AutomationSettingsSection> {
   AutomationPolicyController? _policy;
   String? _profileId;
   bool _saving = false;
@@ -140,7 +127,7 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
   }
 
   @override
-  void didUpdateWidget(covariant AutomationSettingsScreen oldWidget) {
+  void didUpdateWidget(covariant AutomationSettingsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (identical(oldWidget.controller, widget.controller)) return;
     oldWidget.controller.removeListener(_connectionChanged);
@@ -242,21 +229,10 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
 
   /// An allowed answer is changed where the system keeps it: the phone's
   /// own settings (Keep running) or Notifications.
-  Future<void> _openConsentHome(InFlowConsentKind kind) async {
-    final show = widget.onShowSection;
-    if (widget.embedded && show != null) {
-      show(
-        kind == InFlowConsentKind.needsYouNotifications
-            ? 'what'
-            : 'keep-running',
-      );
-      return;
-    }
-    if (kind == InFlowConsentKind.needsYouNotifications) {
-      await _open(NotificationsSettingsScreen(controller: widget.controller));
-    } else {
-      await openKeepRunningScreen(context);
-    }
+  void _openConsentHome(InFlowConsentKind kind) async {
+    widget.onShowSection?.call(
+      kind == InFlowConsentKind.needsYouNotifications ? 'what' : 'keep-running',
+    );
   }
 
   Future<void> _offerAgain() async {
@@ -330,34 +306,14 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
       team: widget.teamAvailable,
     );
 
-    final embedded = widget.embedded;
     final answers = _answerRows(l10n);
     final Widget body;
     if (profile == null ||
         policy == null ||
         (!sections.any && answers.isEmpty && !_consentUnreadable)) {
-      if (embedded) return const SizedBox.shrink();
-      body = KitStateView(
-        key: const ValueKey('automation-empty'),
-        icon: AppIconography.sync,
-        title: l10n.automationEmptyTitle,
-        body: l10n.automationEmptyBody,
-      );
+      return const SizedBox.shrink();
     } else {
-      final name = serverDisplayName(
-        profile,
-        l10n,
-        among: controller.store.profiles,
-      );
       final children = <Widget>[
-        if (!embedded) ...[
-          KitText(
-            l10n.automationIntro(name),
-            key: const ValueKey('automation-intro'),
-            role: KitTextRole.secondary,
-          ),
-          SizedBox(height: tokens.sectionGap),
-        ],
         if (_saveFailed) ...[
           KitNotice(
             key: const ValueKey('automation-save-failed'),
@@ -389,7 +345,7 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
           _supervision(l10n, tokens, policy.value.supervision),
           SizedBox(height: tokens.sectionGap),
         ],
-        if (sections.savedRules || (sections.watch && !embedded))
+        if (sections.savedRules)
           KitRowGroup(
             key: const ValueKey('automation-elsewhere'),
             label: l10n.automationWithoutAskingLabel,
@@ -406,38 +362,19 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
                   onTap: () =>
                       _open(SavedPermissionsScreen(controller: controller)),
                 ),
-              if (sections.watch && !embedded) _watchRow(l10n, profile),
             ],
           ),
       ];
-      body = embedded
-          ? Padding(
-              padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
-              child: Column(
-                key: const ValueKey('automation-settings-list'),
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: children,
-              ),
-            )
-          : ListView(
-              key: const ValueKey('automation-settings-list'),
-              padding: EdgeInsetsDirectional.only(
-                start: tokens.gutter,
-                end: tokens.gutter,
-                top: tokens.space2,
-                bottom: KitScreen.endPadding(context),
-              ),
-              children: children,
-            );
+      body = Padding(
+        padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
+        child: Column(
+          key: const ValueKey('automation-settings-list'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
+        ),
+      );
     }
-    if (embedded) return body;
-    return KitScreen(
-      topBar: KitTopBar(title: l10n.automationTitle),
-      width: KitScreenWidth.reading,
-      loading: _saving,
-      loadingLabel: l10n.automationSaving,
-      body: body,
-    );
+    return body;
   }
 
   /// The team's level: where new team tasks start. The start sheet still
@@ -551,9 +488,13 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
         }),
         onTap: !enabled && !allowed
             ? null
-            : () => unawaited(
-                allowed ? _openConsentHome(kind) : _allowConsent(kind),
-              ),
+            : () {
+                if (allowed) {
+                  _openConsentHome(kind);
+                } else {
+                  unawaited(_allowConsent(kind));
+                }
+              },
       );
     }
 
@@ -579,28 +520,5 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
       for (final answer in rows)
         if (answer.choice == InFlowConsentChoice.accepted) row(answer),
     ];
-  }
-
-  /// A door, not a second switch: the monitor reads the switch on
-  /// Notifications, so this row says how it is set and opens it there.
-  Widget _watchRow(AppLocalizations l10n, ServerProfile profile) {
-    final controller = widget.controller;
-    final watched = controller.profileMonitor.rulesFor(profile.id).enabled;
-    return KitRow(
-      key: const ValueKey('automation-watch'),
-      leading: KitRow.icon(context, AppIconography.notificationImportant),
-      title: l10n.automationWatchTitle,
-      supporting: TextSpan(text: l10n.automationWatchDetail),
-      supportingMaxLines: 2,
-      trailing: KitRowValue(
-        watched ? l10n.automationValueOn : l10n.automationValueOff,
-      ),
-      onTap: () => _open(
-        NotificationsSettingsScreen(
-          controller: controller,
-          initialSection: 'servers',
-        ),
-      ),
-    );
   }
 }

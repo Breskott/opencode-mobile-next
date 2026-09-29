@@ -197,16 +197,14 @@ void main() {
         });
       }
 
-      testWidgets('AI Team page, off (from the Plugins row)', (tester) async {
+      testWidgets('AI Team page, off', (tester) async {
         final c = await library3Server();
         addTearDown(c.dispose);
         await _shot(
           tester,
           'settings_team_page_off',
           light: light,
-          home: library3Plugins(c),
-          act: () =>
-              tester.tap(find.byKey(const ValueKey('plugins-ai-team-row'))),
+          home: library3TeamPage(c),
         );
       });
     });

@@ -17,7 +17,8 @@ import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_probe.dar
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/pending_auth.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings/server_plugins_section.dart';
+import 'package:opencode_mobile/ui/screens/team/team_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Library3Repository
@@ -328,10 +329,17 @@ Future<Library3Controller> library3Server({
   return controller;
 }
 
-/// The Plugins page with a probe that never finds a team and never touches
+/// The server's plugin inventory ("Plugins on this server"), hosted as a
+/// section of a scrolling page the way "This server" hosts it.
+Widget library3Plugins(ConnectionController controller) => Scaffold(
+  body: SingleChildScrollView(
+    child: ServerPluginsSection(controller: controller),
+  ),
+);
+
+/// The AI Team page with a probe that never finds a team and never touches
 /// the network.
-Widget library3Plugins(ConnectionController controller) =>
-    PluginsSettingsScreen(
-      controller: controller,
-      probe: (url, {city}) async => const ProbeUnreachable(error: 'no answer'),
-    );
+Widget library3TeamPage(ConnectionController controller) => TeamPage(
+  connection: controller,
+  probe: (url, {city}) async => const ProbeUnreachable(error: 'no answer'),
+);

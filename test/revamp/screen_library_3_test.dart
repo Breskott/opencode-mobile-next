@@ -527,27 +527,22 @@ void main() {
   });
 
   group('plugins', () {
-    testWidgets('the page is built from the kit: top bar, the AI Team row '
-        'in "In this app", and the server section', (tester) async {
+    testWidgets('the server section is built from the kit', (tester) async {
       final c = await library3Server();
       addTearDown(c.dispose);
       await tester.pumpWidget(_app(library3Plugins(c)));
       await tester.pumpAndSettle();
-      expect(find.text('Plugins'), findsWidgets);
-      expect(find.byKey(const ValueKey('plugins-section-app')), findsOne);
-      expect(find.byKey(const ValueKey('plugins-ai-team-row')), findsOne);
+      expect(find.byKey(const ValueKey('plugins-section-server')), findsOne);
       expect(find.byType(AppBar), findsNothing);
     });
 
-    testWidgets('the AI Team row opens the one team page, off, which says '
-        '"Off" once (P3.4: no AI Team sheet)', (tester) async {
+    testWidgets('the AI Team page, off, says "Off" once (P3.4)', (
+      tester,
+    ) async {
       final c = await library3Server();
       addTearDown(c.dispose);
-      await tester.pumpWidget(_app(library3Plugins(c)));
+      await tester.pumpWidget(_app(library3TeamPage(c)));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('team-plugin-sheet')), findsNothing);
       expect(find.byKey(const ValueKey('team-intro')), findsOne);
       expect(find.text('Off'), findsOneWidget);
       expect(find.byKey(const ValueKey('team-intro-address')), findsOne);

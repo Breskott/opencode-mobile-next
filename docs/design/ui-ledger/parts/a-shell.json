@@ -476,7 +476,7 @@
           "file": "lib/ui/widgets/app_exit_notice.dart",
           "line": 76,
           "action": "navigate",
-          "target": "keep-running",
+          "target": "notifications-settings",
           "targetWidget": "openKeepRunningScreen",
           "effect": "AppExitNoticeLine (app_exit_notice.dart): KitAction onPressed -> openKeepRunningScreen(context); offered only when notice.offersKeepAlive, after Android ended the app while the built-in server ran (AppExitRecovery).",
           "gates": [

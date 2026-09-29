@@ -73,6 +73,18 @@ Widget _app(Widget home) => MaterialApp(
   home: home,
 );
 
+Widget _section(
+  ConnectionController controller, {
+  required bool teamAvailable,
+}) => Scaffold(
+  body: SingleChildScrollView(
+    child: AutomationSettingsSection(
+      controller: controller,
+      teamAvailable: teamAvailable,
+    ),
+  ),
+);
+
 Finder _key(String key) => find.byKey(ValueKey(key));
 
 void main() {
@@ -102,19 +114,12 @@ void main() {
   ) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
-    await tester.pumpWidget(
-      _app(
-        AutomationSettingsScreen(controller: controller, teamAvailable: true),
-      ),
-    );
+    await tester.pumpWidget(_app(_section(controller, teamAvailable: true)));
     await tester.pumpAndSettle();
 
-    expect(find.text(_en.automationTitle), findsOneWidget);
-    expect(find.text(_en.automationIntro('Workstation')), findsOneWidget);
     expect(find.text(_en.automationTeamLabel), findsOneWidget);
     // The rest lives where it already works; the page opens it there.
     expect(_key('automation-saved-permissions'), findsOneWidget);
-    expect(_key('automation-watch'), findsOneWidget);
     expect(
       AutomationPolicyController.forProfile(
         controller.store.prefs,
@@ -130,11 +135,7 @@ void main() {
   ) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
-    await tester.pumpWidget(
-      _app(
-        AutomationSettingsScreen(controller: controller, teamAvailable: true),
-      ),
-    );
+    await tester.pumpWidget(_app(_section(controller, teamAvailable: true)));
     await tester.pumpAndSettle();
 
     await tester.tap(_key('automation-supervision-autonomous'));
@@ -168,11 +169,7 @@ void main() {
   ) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
-    await tester.pumpWidget(
-      _app(
-        AutomationSettingsScreen(controller: controller, teamAvailable: true),
-      ),
-    );
+    await tester.pumpWidget(_app(_section(controller, teamAvailable: true)));
     await tester.pumpAndSettle();
     _storage.refuse = true;
 
@@ -193,43 +190,11 @@ void main() {
   testWidgets('without a team there is no level to choose', (tester) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
-    await tester.pumpWidget(
-      _app(
-        AutomationSettingsScreen(controller: controller, teamAvailable: false),
-      ),
-    );
+    await tester.pumpWidget(_app(_section(controller, teamAvailable: false)));
     await tester.pumpAndSettle();
 
     expect(_key('automation-team'), findsNothing);
     expect(_key('automation-saved-permissions'), findsOneWidget);
-  });
-
-  testWidgets('the watch row says how Notifications has it and opens there', (
-    tester,
-  ) async {
-    final controller = await _controller();
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(
-      _app(
-        AutomationSettingsScreen(controller: controller, teamAvailable: false),
-      ),
-    );
-    await tester.pumpAndSettle();
-    final watched = controller.profileMonitor.rulesFor('profile-1').enabled;
-    expect(
-      find.descendant(
-        of: _key('automation-watch'),
-        matching: find.text(
-          watched ? _en.automationValueOn : _en.automationValueOff,
-        ),
-      ),
-      findsOneWidget,
-    );
-
-    await tester.tap(_key('automation-watch'));
-    await tester.pumpAndSettle();
-    expect(find.byType(NotificationsSettingsScreen), findsOneWidget);
-    expect(_key('monitor-enabled-profile-1'), findsOneWidget);
   });
 
   testWidgets(
@@ -242,6 +207,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // The watching switch is on this same page, not a door.
+      expect(_key('monitor-enabled-profile-1'), findsOneWidget);
+      expect(_key('automation-watch'), findsNothing);
       // No hub row of its own: What runs by itself is the page's last section.
       expect(_key('settings-automation'), findsNothing);
       expect(_key('saved-permissions-entry'), findsNothing);
