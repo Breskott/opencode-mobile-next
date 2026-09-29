@@ -497,7 +497,13 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                           ),
                         ],
                         actions: [
-                          if (!phase.accepted)
+                          if (!phase.accepted &&
+                              p.tasks
+                                  .where((task) => task.phaseId == phase.id)
+                                  .isNotEmpty &&
+                              p.tasks
+                                  .where((task) => task.phaseId == phase.id)
+                                  .every((task) => task.status == 'merged'))
                             _action(
                               l.teamProjectTaskAcceptPhase,
                               () => _run(

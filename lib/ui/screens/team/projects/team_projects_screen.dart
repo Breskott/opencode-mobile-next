@@ -329,7 +329,10 @@ class TeamProjectOverview extends StatelessWidget {
                       ),
                       if (!m.accepted &&
                           tasks.isNotEmpty &&
-                          complete == tasks.length)
+                          tasks.every((task) => task.status == 'merged') &&
+                          p.phases
+                              .where((phase) => phase.milestoneId == m.id)
+                              .every((phase) => phase.accepted))
                         KitButton(
                           role: KitButtonRole.tertiary,
                           label: l.teamProjectAccept,

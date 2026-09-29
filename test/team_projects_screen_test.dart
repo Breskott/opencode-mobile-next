@@ -132,6 +132,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(KitComposer), findsOneWidget);
+    expect(find.text('Accept phase'), findsNothing);
+    expect(find.text('Accept milestone'), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
     c.dispose();
