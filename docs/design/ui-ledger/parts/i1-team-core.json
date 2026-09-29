@@ -9,16 +9,15 @@
       "widget": "TeamHomeScreen",
       "presentedBy": [],
       "line": 110,
-      "purpose": "The one AI Team page while the team is on (P3.4, TeamPage): where it runs in the subtitle (the person's pause, a pause for heat and Android's stop said apart), one Now line (the heat guard's line instead while it holds the team), what needs the person, the tasks in one list by urgency, then the team itself: agents, how it runs (speed, opening Technical details) and what it spent today. Its menu holds Refresh, Change address, the phone team's controls and Turn off (the AI Team sheet's switches); Give the team a task is pinned below.",
+      "purpose": "The one AI Team page while the team is on (P3.4, TeamPage), the work only: where it runs in the subtitle, one status line (the heat guard's line instead while it holds the team), then ONE task list by urgency: a task that needs the person shows its question inline and opens the Gate sheet, working tasks show their steps, done ones come last. Its top bar holds the board, Team settings and a menu with Refresh; Give the team a task is pinned below. Setup lives in team-settings.",
       "reachedFrom": [
         {
           "page": "settings",
-          "element": "settings-ai-team"
+          "element": "settings-search"
         }
       ],
       "gates": [
-        "TeamPage shows it while ConnectionController.orchestration is the connected profile's team (profile.orchestration != null); off, the same page is team-intro",
-        "opened on its own (the team conversation's team page) it goes back to the first route after Change address or Turn off, since that team is gone"
+        "TeamPage shows it while ConnectionController.orchestration is the connected profile's team (profile.orchestration != null); off, the same page is team-intro"
       ],
       "elements": [
         {
@@ -113,61 +112,18 @@
           "destructive": false
         },
         {
-          "id": "team-home-change-address",
-          "type": "menu-item",
-          "label": "Change address",
-          "key": "team-home-change-address",
-          "line": 468,
-          "action": "open-sheet",
-          "target": "team-host-sheet",
-          "targetWidget": "editTeamAddress",
-          "effect": "Top bar menu: the address form prefilled with the saved address; a saved change replaces this team (saveTeamHost).",
+          "id": "team-home-settings",
+          "type": "icon-button",
+          "label": "Team settings",
+          "key": "team-home-settings",
+          "line": 383,
+          "action": "navigate",
+          "target": "team-settings",
+          "targetWidget": null,
+          "effect": "Opens Team settings (agents, spend, how it runs, Turn off).",
           "gates": [
-            "the connected profile owns this team and it is not the team inside the app (BuiltinTeam.isBuiltinConfig)"
+            "ready (controller.phase == OrchestrationPhase.ready && snapshot.hasData)"
           ],
-          "destructive": false
-        },
-        {
-          "id": "team-home-phone-controls",
-          "type": "menu-item",
-          "label": "Keep it running, stop it or remove it",
-          "key": "team-home-phone-controls",
-          "line": 478,
-          "action": "open-sheet",
-          "target": null,
-          "targetWidget": "TeamPhoneSection",
-          "effect": "Top bar menu: a kit sheet holding the phone Termux team's own controls (embedded-team-phone-section), in every state of the page.",
-          "gates": [
-            "teamPhoneProfile(connection.profile)"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-home-turn-off",
-          "type": "menu-item",
-          "label": "Turn off",
-          "key": "team-home-turn-off",
-          "line": 485,
-          "action": "open-sheet",
-          "target": "team-turn-off-sheet",
-          "targetWidget": "showTeamTurnOffSheet",
-          "effect": "Top bar menu: asks first; turnOffTeam stops the team inside the app (BuiltinTeam.turnOff) when it is that one, drops the cache and the config; TeamPage then shows the off state (team-intro) on the same page. A failed stop keeps it on and says so (team-home-turn-off-failed).",
-          "gates": [
-            "the connected profile owns this team"
-          ],
-          "destructive": true
-        },
-        {
-          "id": "team-home-host-row",
-          "type": "list-tile",
-          "label": "Technical details · <how fast it runs there>",
-          "key": "team-home-host-row",
-          "line": 950,
-          "action": "open-sheet",
-          "target": "team-host-details-sheet",
-          "targetWidget": "showTeamHostDetailsSheet",
-          "effect": "How it runs where it runs (teamHostDisclaimer), opening the host's Technical details (address, version, access, terms).",
-          "gates": [],
           "destructive": false
         },
         {
@@ -251,33 +207,6 @@
           "destructive": false
         },
         {
-          "id": "team-home-upkeep-row",
-          "type": "list-tile",
-          "label": "Team upkeep · {kind} ×{count} · {state}",
-          "key": "team-home-upkeep-row",
-          "line": 1003,
-          "action": "other",
-          "target": null,
-          "effect": "Informational row in the team panel (slice-P5.2): the host's own upkeep runs in words, duplicates collapsed (teamUpkeepLine). Replaces the 'Show team upkeep' switch and its rows of engine names.",
-          "gates": [
-            "upkeep.isNotEmpty (teamUpkeepRuns(snapshot.runs))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "team-home-runs-agents-row",
-          "type": "list-tile",
-          "label": "{n} agents · {state}",
-          "key": "team-home-agents-row",
-          "line": 939,
-          "action": "navigate",
-          "target": "team-agents",
-          "targetWidget": "TeamAgentsScreen",
-          "effect": "The agents list; says \"resting while the phone cools\" while the heat guard holds the team.",
-          "gates": [],
-          "destructive": false
-        },
-        {
           "id": "team-home-needs-you-gate-row",
           "type": "list-tile",
           "label": "<gate title> · <kind word> · <run/work link> · <age>",
@@ -317,6 +246,117 @@
           "target": null,
           "targetWidget": null,
           "effect": "Shows the finished tasks past the first three, in the same list.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-settings",
+      "title": "Team settings",
+      "kind": "screen",
+      "file": "lib/ui/screens/team/team_settings_screen.dart",
+      "widget": "TeamSettingsScreen",
+      "presentedBy": [],
+      "line": 72,
+      "purpose": "How the AI Team is set up, off the work page: agents, what it spent today, the host's upkeep in words, the phone team's controls, Change address, Details (speed; the address and engine, where Gas City is named) and Turn off the AI Team.",
+      "reachedFrom": [
+        {
+          "page": "team-home",
+          "element": "team-home-settings"
+        },
+        {
+          "page": "settings",
+          "element": "settings-ai-team"
+        }
+      ],
+      "gates": [
+        "only while the team is on; off, Settings › AI Team opens team-intro",
+        "Change address needs a team found at an address; phone controls only on the phone's Termux team"
+      ],
+      "elements": [
+        {
+          "id": "team-home-change-address",
+          "type": "list-tile",
+          "label": "Change address",
+          "key": "team-home-change-address",
+          "line": 337,
+          "action": "open-sheet",
+          "target": "team-host-sheet",
+          "targetWidget": "editTeamAddress",
+          "effect": "Top bar menu: the address form prefilled with the saved address; a saved change replaces this team (saveTeamHost).",
+          "gates": [
+            "the connected profile owns this team and it is not the team inside the app (BuiltinTeam.isBuiltinConfig)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-home-phone-controls",
+          "type": "list-tile",
+          "label": "Keep it running, stop it or remove it",
+          "key": "team-home-phone-controls",
+          "line": 328,
+          "action": "open-sheet",
+          "target": null,
+          "targetWidget": "TeamPhoneSection",
+          "effect": "Top bar menu: a kit sheet holding the phone Termux team's own controls (embedded-team-phone-section), in every state of the page.",
+          "gates": [
+            "teamPhoneProfile(connection.profile)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-home-turn-off",
+          "type": "list-tile",
+          "label": "Turn off",
+          "key": "team-home-turn-off",
+          "line": 367,
+          "action": "open-sheet",
+          "target": "team-turn-off-sheet",
+          "targetWidget": "showTeamTurnOffSheet",
+          "effect": "Top bar menu: asks first; turnOffTeam stops the team inside the app (BuiltinTeam.turnOff) when it is that one, drops the cache and the config; TeamPage then shows the off state (team-intro) on the same page. A failed stop keeps it on and says so (team-home-turn-off-failed).",
+          "gates": [
+            "the connected profile owns this team"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "team-home-host-row",
+          "type": "list-tile",
+          "label": "Technical details · <how fast it runs there>",
+          "key": "team-home-host-row",
+          "line": 344,
+          "action": "open-sheet",
+          "target": "team-host-details-sheet",
+          "targetWidget": "showTeamHostDetailsSheet",
+          "effect": "How it runs where it runs (teamHostDisclaimer), opening the host's Technical details (address, version, access, terms).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-home-upkeep-row",
+          "type": "list-tile",
+          "label": "Team upkeep · {kind} ×{count} · {state}",
+          "key": "team-home-upkeep-row",
+          "line": 309,
+          "action": "other",
+          "target": null,
+          "effect": "Informational row in the team panel (slice-P5.2): the host's own upkeep runs in words, duplicates collapsed (teamUpkeepLine). Replaces the 'Show team upkeep' switch and its rows of engine names.",
+          "gates": [
+            "upkeep.isNotEmpty (teamUpkeepRuns(snapshot.runs))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-home-runs-agents-row",
+          "type": "list-tile",
+          "label": "{n} agents · {state}",
+          "key": "team-home-agents-row",
+          "line": 296,
+          "action": "navigate",
+          "target": "team-agents",
+          "targetWidget": "TeamAgentsScreen",
+          "effect": "The agents list; says \"resting while the phone cools\" while the heat guard holds the team.",
           "gates": [],
           "destructive": false
         }
@@ -401,7 +441,7 @@
       "purpose": "What the home's '{live} agents · {working} working' row opens: the agents that are on, named by role, then the ones switched off on the host under one collapsed 'Suspended on the host' group. A row opens the agent's conversation in watching mode (slice-P3.6); the agent's own page is that conversation's top-bar action (About <name>).",
       "reachedFrom": [
         {
-          "page": "team-home",
+          "page": "team-settings",
           "element": "team-home-runs-agents-row"
         }
       ],
