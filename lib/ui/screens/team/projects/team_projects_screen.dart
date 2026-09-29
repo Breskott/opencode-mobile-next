@@ -313,6 +313,11 @@ class TeamProjectOverview extends StatelessWidget {
                     children: [
                       KitMilestoneRow(
                         title: m.title,
+                        state: m.accepted
+                            ? KitTeamState.done
+                            : tasks.any((t) => t.status == 'running')
+                            ? KitTeamState.running
+                            : KitTeamState.empty,
                         status: m.accepted
                             ? l.teamProjectDone
                             : _progress(l, p.copyWith(tasks: tasks)),
@@ -698,7 +703,8 @@ KitTeamState _state(String value) => switch (value) {
   'stalled' => KitTeamState.stalled,
   'findings' || 'review' => KitTeamState.needsYou,
   'offline' => KitTeamState.stale,
-  _ => KitTeamState.done,
+  'done' || 'merged' || 'passed' => KitTeamState.done,
+  _ => KitTeamState.empty,
 };
 String _word(AppLocalizations l, String value) => switch (value) {
   'running' => l.teamProjectWorking,

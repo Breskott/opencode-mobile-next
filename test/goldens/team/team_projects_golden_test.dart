@@ -1,6 +1,7 @@
 // Regenerate deliberately, and look at every changed image before committing it.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/state/team_project_controller.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team/projects/team_projects_screen.dart';
@@ -79,7 +80,11 @@ class _GalleryGateway implements OrchestrationProjectGateway {
 }
 
 void main() {
-  setUpAll(loadKitGalleryFonts);
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+    await SharedPreferences.getInstance();
+    await loadKitGalleryFonts();
+  });
   for (final size in [const Size(412, 915), const Size(1280, 800)]) {
     for (final light in [false, true]) {
       for (final scene in [
@@ -98,7 +103,11 @@ void main() {
           final original = c.snapshot!.projects.first;
           final task = original.tasks.first.copyWith(
             repoId: 'site',
-            status: scene == 'findings' ? 'findings' : 'done',
+            status: scene == 'findings'
+                ? 'findings'
+                : scene == 'promote'
+                ? 'merged'
+                : 'queued',
             messages: const [],
             findings: scene == 'findings'
                 ? const [
@@ -127,6 +136,22 @@ void main() {
             projects: [
               original.copyWith(
                 status: scene == 'plan' ? 'plan' : 'running',
+                planApproved: scene != 'plan',
+                phases: [
+                  for (final phase in original.phases)
+                    phase.copyWith(accepted: scene == 'promote'),
+                ],
+                mergeQueue: scene == 'promote'
+                    ? const [
+                        TeamMergeItem(
+                          id: 'merge',
+                          taskId: 't',
+                          repoId: 'site',
+                          status: 'merged',
+                          checksPassed: true,
+                        ),
+                      ]
+                    : const [],
                 repos: const [
                   TeamRepo(
                     id: 'site',
