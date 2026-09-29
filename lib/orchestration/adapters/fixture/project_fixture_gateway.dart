@@ -903,7 +903,11 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
     p = _log(
       p,
       c.action.name,
-      c.text.isEmpty ? _actionText(c.action) : c.text,
+      c.action == TeamProjectAction.moveTask && c.confirmed
+          ? 'Started over on another server with a new branch and context'
+          : c.text.isEmpty
+          ? _actionText(c.action)
+          : c.text,
       actor: c.action == TeamProjectAction.advance ? 'fixture' : 'person',
     );
     p = p.copyWith(revision: before.revision + 1, updatedAt: _at);
@@ -1180,11 +1184,34 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
           return _fail('serverNotFound');
         }
         final repo = p.repos.firstWhere((r) => r.id == t.repoId);
-        if ((t.status == 'running' || t.steps > 0) && !repo.sharedRemote) {
-          return _fail('sharedRemoteRequired');
-        }
         if (c.roleId.isNotEmpty && !w.roles.any((r) => r.id == c.roleId)) {
           return _fail('roleNotFound');
+        }
+        if ((t.status == 'running' || t.steps > 0) && !repo.sharedRemote) {
+          if (!c.confirmed) return _fail('sharedRemoteRequired');
+          return t.copyWith(
+            serverId: c.serverId,
+            roleId: c.roleId.isEmpty ? t.roleId : c.roleId,
+            status: 'queued',
+            steps: 0,
+            tokens: 0,
+            fixRounds: 0,
+            findings: [],
+            criterionResults: [],
+            diff: '',
+            branch: '${t.branch}-restart-${p.revision + 1}',
+            changedAt: _at,
+            reason: 'Started over on the selected server',
+            messages: [
+              TeamMessage(
+                id: c.requestId,
+                actor: 'team',
+                text:
+                    'Explicitly started over elsewhere. Previous work remains on ${t.branch}. Begin again from the task criteria.',
+                at: _at,
+              ),
+            ],
+          );
         }
         return t.copyWith(
           serverId: c.serverId,
@@ -1216,7 +1243,9 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
                 ),
               ]
             : t.findings;
-        final open = findings.any((f) => f.status == 'open');
+        final open = findings.any(
+          (f) => f.status == 'open' && f.severity != 'notApplicable',
+        );
         return t.copyWith(
           findings: findings,
           criterionResults: t.criteria
@@ -1225,7 +1254,10 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
                   criterion: criterion,
                   status:
                       findings.any(
-                        (f) => f.criterion == criterion && f.status == 'open',
+                        (f) =>
+                            f.criterion == criterion &&
+                            f.status == 'open' &&
+                            f.severity != 'notApplicable',
                       )
                       ? 'unmet'
                       : findings.any(
@@ -1243,7 +1275,9 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
           changedAt: _at,
         );
       case TeamProjectAction.fixFindings:
-        if (!t.findings.any((f) => f.status == 'open')) {
+        if (!t.findings.any(
+          (f) => f.status == 'open' && f.severity != 'notApplicable',
+        )) {
           return _fail('noOpenFindings');
         }
         return t.copyWith(
@@ -1609,7 +1643,10 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
         continue;
       }
       final t = tasks.firstWhere((t) => t.id == item.taskId);
-      if (t.status != 'done' || t.findings.any((f) => f.status == 'open')) {
+      if (t.status != 'done' ||
+          t.findings.any(
+            (f) => f.status == 'open' && f.severity != 'notApplicable',
+          )) {
         continue;
       }
       if (t.dependsOn.any(

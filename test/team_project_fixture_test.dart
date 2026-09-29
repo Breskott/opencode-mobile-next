@@ -204,6 +204,173 @@ void main() {
       expect(result.code, 'sharedRemoteRequired');
     },
   );
+  test('malformed plan can retry or become one reviewed task', () async {
+    await create();
+    await command(
+      TeamProjectAction.answerRequest,
+      targetId: 'project-1-question',
+      text: 'A usable result',
+    );
+    await command(TeamProjectAction.approveSpec);
+    expect(
+      (await command(TeamProjectAction.simulatePlanFailure)).accepted,
+      isTrue,
+    );
+    expect(
+      (await project()).requests.any((r) => r.kind == 'planFormat'),
+      isTrue,
+    );
+    expect((await command(TeamProjectAction.retryPlan)).accepted, isTrue);
+    expect((await project()).status, 'plan');
+    await command(TeamProjectAction.simulatePlanFailure);
+    await command(TeamProjectAction.usePlanAsTask);
+    expect((await project()).tasks, hasLength(1));
+    expect((await project()).planApproved, isFalse);
+  });
+  test(
+    'manual commits survive while conflicts stop only their queue item',
+    () async {
+      await start();
+      final p = await project();
+      final a = p.tasks.first.copyWith(status: 'done');
+      final b = a.copyWith(id: 'other', repoId: 'other');
+      await restoreProject(
+        p.copyWith(
+          repos: [
+            ...p.repos,
+            const TeamRepo(id: 'other', name: 'Other', serverId: 'computer'),
+          ],
+          tasks: [a, b],
+          mergeQueue: [
+            TeamMergeItem(id: 'merge-a', taskId: a.id, repoId: 'app'),
+            TeamMergeItem(id: 'merge-b', taskId: b.id, repoId: 'other'),
+          ],
+        ),
+      );
+      await command(
+        TeamProjectAction.simulateManualCommit,
+        targetId: 'app',
+        text: 'fixture-human-commit',
+        confirmed: true,
+      );
+      expect((await project()).repos.first.devCommit, 'fixture-human-commit');
+      await command(TeamProjectAction.processMergeQueue, targetId: 'other');
+      var current = await project();
+      expect(current.mergeQueue.first.status, 'conflict');
+      expect(current.mergeQueue.last.status, 'merged');
+      expect(current.repos.first.mainCommit, 'fixture-base');
+      await command(
+        TeamProjectAction.resolveConflict,
+        targetId: 'merge-a',
+        text: 'manual',
+      );
+      expect((await project()).mergeQueue.first.status, 'conflict');
+      await command(
+        TeamProjectAction.resolveConflict,
+        targetId: 'merge-a',
+        text: 'recheck',
+      );
+      await command(TeamProjectAction.processMergeQueue, targetId: 'app');
+      current = await project();
+      expect(
+        current.receipts
+            .where((r) => r.kind == 'merge' && r.repoId == 'app')
+            .single
+            .before,
+        'fixture-human-commit',
+      );
+    },
+  );
+  test(
+    'agent conflict resolution is a checked task on the original branch',
+    () async {
+      await start();
+      final p = await project();
+      final task = p.tasks.first.copyWith(status: 'done');
+      await restoreProject(
+        p.copyWith(
+          tasks: [task],
+          mergeQueue: [
+            TeamMergeItem(id: 'merge', taskId: task.id, repoId: 'app'),
+          ],
+        ),
+      );
+      await command(TeamProjectAction.simulateConflict, targetId: 'merge');
+      await command(
+        TeamProjectAction.resolveConflict,
+        targetId: 'merge',
+        text: 'agent',
+      );
+      var resolution = (await project()).tasks.last;
+      expect(resolution.branch, task.branch);
+      for (var i = 0; i < 4; i++) {
+        await gateway.advance();
+      }
+      await command(TeamProjectAction.verifyTask, targetId: resolution.id);
+      await command(TeamProjectAction.fixFindings, targetId: resolution.id);
+      await command(TeamProjectAction.recheckTask, targetId: resolution.id);
+      expect((await project()).mergeQueue.single.status, 'queued');
+      await command(TeamProjectAction.processMergeQueue, targetId: 'app');
+      expect(
+        (await project()).tasks.every((t) => t.status == 'merged'),
+        isTrue,
+      );
+    },
+  );
+  test('budget warning is reported once per day before the cap', () async {
+    await start();
+    final p = await project();
+    await restoreProject(
+      p.copyWith(
+        spent: 0.8,
+        spentToday: 0.8,
+        spendDay: '2026-09-29',
+        settings: p.settings.copyWith(
+          budget: const TeamBudget(chosen: true, total: 1),
+        ),
+      ),
+    );
+    await gateway.advance();
+    await gateway.advance();
+    final current = await project();
+    expect(current.budgetWarning, isTrue);
+    expect(
+      current.timeline.where((e) => e.kind.startsWith('budget80-')),
+      hasLength(1),
+    );
+  });
+  test(
+    'confirmed placement starts over instead of inventing a handoff',
+    () async {
+      await start();
+      await gateway.advance();
+      await gateway.advance();
+      final p = await project();
+      final task = p.tasks.first;
+      final result = await gateway.executeProject(
+        TeamProjectCommand(
+          requestId: 'start-over',
+          action: TeamProjectAction.moveTask,
+          projectId: p.id,
+          expectedRevision: p.revision,
+          targetId: task.id,
+          serverId: 'phone',
+          confirmed: true,
+        ),
+      );
+      expect(result.accepted, isTrue);
+      final moved = (await project()).tasks.first;
+      expect(moved.steps, 0);
+      expect(moved.branch, isNot(task.branch));
+      expect(moved.messages.single.text, contains('started over'));
+      expect(moved.serverId, 'phone');
+    },
+  );
+  test('late reads after close cannot seed deleted profile storage', () async {
+    await gateway.close();
+    expect((await gateway.teamWorkspace()).projects, isEmpty);
+    expect(store.value, isNull);
+  });
   test('explicit mode and budget are required before creating work', () async {
     final r = await gateway.executeProject(
       const TeamProjectCommand(
@@ -233,8 +400,18 @@ void main() {
         isTrue,
       );
       expect((await project()).tasks.first.status, 'findings');
+      expect(
+        (await project()).tasks.first.criterionResults.first.status,
+        'unmet',
+      );
       await command(TeamProjectAction.fixFindings, targetId: task.id);
       await command(TeamProjectAction.recheckTask, targetId: task.id);
+      expect(
+        (await project()).tasks.first.criterionResults.every(
+          (r) => r.status == 'met',
+        ),
+        isTrue,
+      );
       await command(TeamProjectAction.processMergeQueue);
       var p = await project();
       expect(p.tasks.first.status, 'merged');

@@ -25,3 +25,7 @@ Follow-up candidate (coordinator runs integration checks):
 - Review policy now gates every-step merges on confirmation, protects promotion behind risky-phase review, auto-accepts safe phases, and creates milestone review requests. Dependent phases wait for required review.
 - Editor draft APIs serialize/redact whole-form JSON or plain text, reject writes after dispose/drain, and use the deletable `oc.teamEditorDrafts.<profileId>` shared map.
 - Added controller draft tests and fixture tests for minor-only automatic checks, phase review, every-step merge confirmation, terminal work and started-task placement. Earlier 11-test result predates this follow-up; do not claim these added checks passed until coordinator runs them.
+
+Mandatory fixture recovery follow-up:
+- Added explicit malformed-plan fallback, conflicting/manual dev changes, checked agent/manual conflict resolution, criterion results, 80% budget notices and confirmed start-over placement. Original branch work and human dev commit receipts remain recorded; main remains untouched until confirmed reviewed promotion.
+- Added focused tests for these scenarios and closed-gateway late reads. Coordinator owns final analyzer/test execution for the combined candidate; initial 11-test result is historical only.
