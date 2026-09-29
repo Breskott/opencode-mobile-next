@@ -69,14 +69,10 @@ Future<void> openKeepRunningScreen(BuildContext context) {
   ),
 };
 
-/// Settings › Keep running in the background: what to allow on this phone
-/// so Android leaves the app (and the OpenCode and AI Team inside it)
-/// running. Reached from the Settings row and from the notice after Android
-/// closed the app; it never opens by itself.
-///
-/// It is no longer a page of its own: [embedded] draws its content as one
-/// section of the merged "Notifications and background" page. The standalone
-/// form remains for the widget's own tests.
+/// Keep running in the background: what to allow on this phone so Android
+/// leaves the app (and the OpenCode and AI Team inside it) running. A
+/// section of the "Notifications and background" page, reached from the
+/// notice after Android closed the app; it never opens by itself.
 ///
 /// Built from kit parts only (screen-system-1): one list of steps ordered
 /// by what is left to do (a step already allowed moves to the end with its
@@ -84,17 +80,14 @@ Future<void> openKeepRunningScreen(BuildContext context) {
 /// the limits Android keeps even then (the daily background budget on
 /// Android 15 and newer). A settings screen the phone lacks is said in
 /// place, not in a snackbar.
-class KeepRunningScreen extends ConsumerStatefulWidget {
-  const KeepRunningScreen({super.key, this.embedded = false});
-
-  /// Draw only the content, as a section of another page's scroll view.
-  final bool embedded;
+class KeepRunningSection extends ConsumerStatefulWidget {
+  const KeepRunningSection({super.key});
 
   @override
-  ConsumerState<KeepRunningScreen> createState() => _KeepRunningScreenState();
+  ConsumerState<KeepRunningSection> createState() => _KeepRunningSectionState();
 }
 
-class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
+class _KeepRunningSectionState extends ConsumerState<KeepRunningSection>
     with WidgetsBindingObserver {
   KeepAliveInfo? _info;
   bool _openFailed = false;
@@ -135,14 +128,12 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final tokens = KitTokens.of(context);
     final info = _info;
-    if (widget.embedded && info == null) return const SizedBox.shrink();
-    final maker = info == null
-        ? PhoneMaker.other
-        : PhoneMaker.of(info.manufacturer, info.brand);
-    final makerName = (info?.manufacturer.trim().isNotEmpty ?? false)
-        ? info!.manufacturer.trim()
+    if (info == null) return const SizedBox.shrink();
+    final maker = PhoneMaker.of(info.manufacturer, info.brand);
+    final makerName = info.manufacturer.trim().isNotEmpty
+        ? info.manufacturer.trim()
         : l10n.keepRunningThisPhone;
-    final batteryAllowed = info?.batteryOptimizationIgnored ?? false;
+    final batteryAllowed = info.batteryOptimizationIgnored;
     // On stock Android, App info › Battery › Unrestricted is the same switch
     // as the battery exemption, so once it is allowed nothing is left that
     // the app cannot check. Other makers add their own screens, which the
@@ -166,7 +157,6 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
       padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
       child: child,
     );
-    final embedded = widget.embedded;
     final intro = rails(
       KitText(
         l10n.keepRunningIntro(KitBidi.auto(makerName)),
@@ -178,7 +168,6 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (!embedded) intro,
         if (allSet) ...[
           SizedBox(height: tokens.space3),
           rails(
@@ -203,15 +192,15 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
             ),
           ),
         ],
-        if (!embedded) SizedBox(height: tokens.space4),
         KitRowGroup(
-          label: embedded ? l10n.keepRunningTitle : null,
+          label: l10n.keepRunningTitle,
           children: [
             for (final step in ordered)
               _stepRow(context, l10n, step, maker, done(step)),
           ],
         ),
-        if (embedded) ...[SizedBox(height: tokens.space3), intro],
+        SizedBox(height: tokens.space3),
+        intro,
         if (_openFailed) ...[
           SizedBox(height: tokens.space3),
           rails(
@@ -235,23 +224,7 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
         rails(KitText(l10n.keepRunningFootnote, role: KitTextRole.secondary)),
       ],
     );
-    if (embedded) return content;
-    return KitScreen(
-      topBar: KitTopBar(title: l10n.keepRunningTitle),
-      width: KitScreenWidth.reading,
-      loading: info == null,
-      loadingLabel: l10n.keepRunningTitle,
-      body: info == null
-          ? const SizedBox.shrink()
-          : ListView(
-              key: const ValueKey('keep-running-list'),
-              padding: EdgeInsetsDirectional.only(
-                top: tokens.space4,
-                bottom: KitScreen.endPadding(context),
-              ),
-              children: [content],
-            ),
-    );
+    return content;
   }
 
   Widget _stepRow(

@@ -1,8 +1,7 @@
 // Finding the AI Team while it is off (docs/qa/team-discover-2026-09-25),
 // at 412x915, dark and light, with the app's real fonts: the Work tab on
 // the owner's Termux phone with the entry, the same tab once it is folded, and the intro for OpenCode
-// inside the app (this phone) and for a computer, Settings' AI Team row, and
-// Settings › Plugins on OpenCode inside the app (one AI Team, the phone's).
+// inside the app (this phone) and for a computer, and Settings' AI Team row.
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/team_discover_golden_test.dart
@@ -13,9 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/ui/kit/kit_motion.dart';
-import 'package:opencode_mobile/builtin/team/builtin_team.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
 import 'package:opencode_mobile/termux/team_runtime.dart';
@@ -38,13 +35,6 @@ class _Runtime extends TermuxTeamRuntime {
 
   @override
   Future<bool> get supportsAiTeam async => true;
-}
-
-/// The in-app team, installed and not yet on for the project.
-class _BuiltinTeam extends BuiltinTeam {
-  @override
-  Future<BuiltinTeamState> status() async =>
-      const BuiltinTeamState(installed: true);
 }
 
 void _mockSecureStorage(WidgetTester tester) {
@@ -153,22 +143,6 @@ void main() {
           controller: controller,
           initialGroup: SettingsGroup.server,
         ),
-      );
-    });
-
-    testWidgets('plugins · OpenCode inside the app · $mode', (tester) async {
-      debugPlatformCapabilities = const PlatformCapabilities.android();
-      debugBuiltinTeam = _BuiltinTeam();
-      final controller = await workController(
-        name: 'This phone',
-        baseUrl: 'http://127.0.0.1:4097',
-      );
-      await _golden(
-        tester,
-        'team_discover_plugins_phone',
-        light: light,
-        controller: controller,
-        home: PluginsSettingsScreen(controller: controller),
       );
     });
 

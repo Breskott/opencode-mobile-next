@@ -42,7 +42,6 @@ graph LR
   gate_sheet["gate-sheet"]:::ext
   global_shortcuts(["global-shortcuts"])
   home_shell["home-shell"]
-  keep_running["keep-running"]:::ext
   model_picker_sheet["model-picker-sheet"]:::ext
   notifications_settings["notifications-settings"]:::ext
   permission_sheet["permission-sheet"]:::ext
@@ -80,7 +79,7 @@ graph LR
   home_shell --> server_switcher_sheet
   home_shell --> servers
   home_shell --> connection_status_details_sheet
-  home_shell --> keep_running
+  home_shell --> notifications_settings
   server_switcher_sheet --> servers
   server_switcher_sheet --> profile_editor
   server_switcher_sheet --> settings_disconnect_sheet
@@ -791,10 +790,10 @@ graph LR
   embedded_termux_attention_line(["embedded-termux-attention-line"])
   embedded_termux_running_server_entry(["embedded-termux-running-server-entry"])
   home_shell["home-shell"]:::ext
-  keep_running["keep-running"]:::ext
   local_agent_page["local-agent-page"]
   local_agent_project_sheet(["local-agent-project-sheet"])
   mcp_catalog_node_sheet["mcp-catalog-node-sheet"]:::ext
+  notifications_settings["notifications-settings"]:::ext
   phone_setup_customize_sheet(["phone-setup-customize-sheet"])
   phone_setup_progress["phone-setup-progress"]
   phone_setup_progress_stop_sheet(["phone-setup-progress-stop-sheet"])
@@ -849,7 +848,7 @@ graph LR
   termux_setup_installed --> this_phone_add_tools_sheet
   termux_setup_installed --> termux_storage
   termux_setup_installed --> termux_processes
-  termux_setup_installed --> keep_running
+  termux_setup_installed --> notifications_settings
   termux_setup_installed --> terminal
   termux_setup_installed --> remove_from_phone_sheet
   termux_setup_switch_runtime_sheet --> phone_setup_progress
@@ -924,7 +923,6 @@ graph LR
   embedded_markdown_text["embedded-markdown-text"]:::ext
   embedded_product_states["embedded-product-states"]:::ext
   embedded_setup_terminal["embedded-setup-terminal"]:::ext
-  embedded_team_discovery_card(["embedded-team-discovery-card"])
   embedded_team_merge_section(["embedded-team-merge-section"])
   embedded_team_now_line(["embedded-team-now-line"])
   embedded_team_phone_section(["embedded-team-phone-section"])
@@ -935,7 +933,6 @@ graph LR
   gate_sheet(["gate-sheet"])
   gate_sheet_confirm_sheet(["gate-sheet-confirm-sheet"])
   new_conversation_sheet["new-conversation-sheet"]:::ext
-  plugins_settings["plugins-settings"]:::ext
   profile_editor["profile-editor"]:::ext
   settings["settings"]:::ext
   start_run_sheet(["start-run-sheet"])
@@ -969,6 +966,7 @@ graph LR
   team_turn_off_sheet(["team-turn-off-sheet"])
   termux_setup_installed["termux-setup-installed"]:::ext
   this_phone_add_tools_sheet["this-phone-add-tools-sheet"]:::ext
+  tools_hub["tools-hub"]:::ext
   work_sheet(["work-sheet"])
   workspace["workspace"]:::ext
   activity --> gate_sheet
@@ -997,7 +995,7 @@ graph LR
   team_agent --> team_agent_stop_confirm_sheet
   team_agent --> team_agent_restart_confirm_sheet
   embedded_team_receipt_chip --> gate_sheet
-  team_intro --> plugins_settings
+  team_intro --> team_intro
   team_intro --> team_host_sheet
   team_intro --> team_host_guide_sheet
   team_intro --> termux_setup_installed
@@ -1035,14 +1033,13 @@ graph LR
   embedded_team_phone_section --> team_phone_remove_sheet
   team_host_sheet --> team_host_guide_sheet
   settings --> team_intro
-  plugins_settings --> team_home
+  tools_hub --> team_intro
   team_agent --> chat_watching_live
   team_agents --> chat_watching_live
   team_conversation --> chat_watching_live
   gate_sheet --> chat_watching_live
   embedded_team_planning_card --> chat_watching_live
   settings --> team_home
-  plugins_settings --> team_intro
   team_phone_onboarding_offer --> team_phone_onboarding_steps
   team_agent -.-> embedded_product_states
   team_home -.-> embedded_product_states
@@ -1057,7 +1054,6 @@ graph LR
   this_phone_add_tools_sheet -.-> team_phone_onboarding_success
   this_phone_add_tools_sheet -.-> team_phone_onboarding_failed
   this_phone_add_tools_sheet -.-> team_phone_onboarding_killed
-  plugins_settings --> embedded_team_discovery_card
   team_agent -.-> embedded_team_technical_value
   classDef ext stroke-dasharray: 4 3,opacity:0.7
 ```
@@ -1072,7 +1068,6 @@ graph LR
   app_diagnostics["app-diagnostics"]
   app_diagnostics_clear_sheet(["app-diagnostics-clear-sheet"])
   appearance_settings["appearance-settings"]
-  automation_settings["automation-settings"]
   capabilities["capabilities"]:::ext
   chat["chat"]:::ext
   coding_settings_shell_sheet(["coding-settings-shell-sheet"])
@@ -1087,7 +1082,6 @@ graph LR
   embedded_message_view["embedded-message-view"]:::ext
   embedded_product_states["embedded-product-states"]:::ext
   embedded_prompt_error_banner["embedded-prompt-error-banner"]:::ext
-  embedded_team_discovery_card["embedded-team-discovery-card"]:::ext
   embedded_termux_running_server_entry["embedded-termux-running-server-entry"]:::ext
   external_agents["external-agents"]:::ext
   global_shortcuts["global-shortcuts"]:::ext
@@ -1098,7 +1092,6 @@ graph LR
   integrations_disconnect_provider_sheet(["integrations-disconnect-provider-sheet"])
   integrations_forget_pending_auth_sheet(["integrations-forget-pending-auth-sheet"])
   integrations_remove_mcp_sheet(["integrations-remove-mcp-sheet"])
-  keep_running["keep-running"]
   language_sheet(["language-sheet"])
   mcp_add_sheet(["mcp-add-sheet"])
   mcp_catalog["mcp-catalog"]
@@ -1107,7 +1100,6 @@ graph LR
   mcp_setup["mcp-setup"]
   model_picker_sheet(["model-picker-sheet"])
   notifications_settings["notifications-settings"]
-  plugins_settings["plugins-settings"]
   privacy_settings["privacy-settings"]
   privacy_settings_clear_drafts_sheet(["privacy-settings-clear-drafts-sheet"])
   privacy_settings_clear_queued_sheet(["privacy-settings-clear-queued-sheet"])
@@ -1141,7 +1133,7 @@ graph LR
   web_sources["web-sources"]
   workspace["workspace"]:::ext
   home_shell --> settings
-  home_shell --> keep_running
+  home_shell --> notifications_settings
   server_switcher_sheet --> settings_disconnect_sheet
   activity --> notifications_settings
   global_shortcuts --> settings
@@ -1168,9 +1160,8 @@ graph LR
   servers --> about
   servers_welcome --> about
   provider_quota --> notifications_settings
-  termux_setup_installed --> keep_running
+  termux_setup_installed --> notifications_settings
   embedded_termux_running_server_entry --> settings_disconnect_sheet
-  team_intro --> plugins_settings
   team_conversation --> app_diagnostics
   settings --> server_settings
   settings --> servers
@@ -1190,7 +1181,7 @@ graph LR
   settings --> about
   tools_hub --> integrations
   tools_hub --> capabilities
-  tools_hub --> plugins_settings
+  tools_hub --> team_intro
   tools_hub --> external_agents
   tools_hub --> server_capabilities
   settings_disconnect_sheet --> servers
@@ -1200,11 +1191,8 @@ graph LR
   appearance_settings --> theme_pack_preview_sheet
   privacy_settings --> privacy_settings_clear_queued_sheet
   privacy_settings --> privacy_settings_clear_drafts_sheet
-  plugins_settings --> team_home
   about --> voice_notices
   app_diagnostics --> app_diagnostics_clear_sheet
-  automation_settings --> saved_permissions
-  automation_settings --> notifications_settings
   commands --> chat
   skills --> skill_activation_sheet
   tools --> model_picker_sheet
@@ -1223,10 +1211,6 @@ graph LR
   mcp_catalog_node_sheet --> termux_setup_installed
   mcp_catalog_node_sheet --> mcp_setup
   settings --> team_home
-  plugins_settings --> team_intro
-  settings --> plugins_settings
-  notifications_settings --> automation_settings
-  notifications_settings --> keep_running
   integrations --> command_auth_sheet
   integrations_connect_method_sheet --> command_auth_sheet
   mcp_catalog --> mcp_catalog_node_sheet
@@ -1242,7 +1226,6 @@ graph LR
   about -.-> embedded_markdown_text
   skill_activation_sheet -.-> embedded_file_preview_body
   skills -.-> embedded_file_preview_body
-  plugins_settings --> embedded_team_discovery_card
   settings --> settings_disconnect_sheet
   about --> about_open_source_tab
   settings --> app_diagnostics
@@ -1375,7 +1358,7 @@ graph LR
 | `activity` | screen | 0 / 2 | `home-shell` / home-shell-tab-activity<br>`system` / system-entry-launch-activity<br>`system` / system-entry-team-link-gate<br>`system` / system-entry-alert-question | activity-background-hint -> `notifications-settings`<br>activity-team-gate-row -> `gate-sheet`<br>activity-team-agent-blocked-row -> `team-agent`<br>activity-permission-row -> `permission-sheet`<br>activity-question-row -> `question-sheet`<br>activity-form-row -> `form-sheet`<br>activity-running-row -> `chat`<br>activity-digest-open-conversation -> `chat`<br>activity-digest-review -> `permission-sheet`<br>activity-digest-run-results -> `run-result`<br>activity-auto-row -> `chat`<br>activity-digest-review -> `question-sheet`<br>(embedded) -> `embedded-product-states`<br>(embedded) -> `embedded-question-options`<br>(embedded) -> `embedded-completion-digest-card`<br>-> `embedded-profile-monitor-inbox`<br>(embedded) -> `embedded-profile-monitor-inbox`<br>(embedded) -> `embedded-team-receipt-chip` |
 | `question-sheet` | sheet | 1 / 3 | `activity` / activity-question-row<br>`activity` / activity-digest-review<br>`profile-monitor-switch-server-dialog`<br>`system` / system-activityscreen-initialquestionsessionid-from-a-question-noti-to-question-sheet<br>`chat` / chat-question-card-more<br>`embedded-question-attention-card` / embedded-question-attention-card-answer<br>`embedded-question-attention-card` / embedded-question-attention-card-more | question-sheet-dismiss -> `confirm-sheet` |
 | `capabilities` | screen | 1 / 3 | `settings`<br>`command-launcher-sheet` / chat-command-tools<br>`tools-hub` / tools-hub-commands-tools | capabilities-tab-commands -> `commands`<br>capabilities-tab-tools -> `tools`<br>capabilities-tab-skills -> `skills`<br>capabilities-tab-references -> `references` |
-| `home-shell` | screen | 0 / 1 | `global-shortcuts` / global-shortcuts-destinations<br>`command-palette-dialog` / command-palette-dialog-cmd-workspace<br>`command-palette-dialog` / command-palette-dialog-cmd-files<br>`command-palette-dialog` / command-palette-dialog-cmd-activity<br>`command-palette-dialog` / command-palette-dialog-cmd-more<br>`system` / system-route-root-returns-homescreen-when-conn-hasconnectedserver-m-to-home-shell<br>`system` / system-session-handoff-link-ai-team-link-for-a-non-active-saved-ser-to-home-shell<br>`command-launcher-sheet` / chat-command-workspaces<br>`servers` / servers-profile-row<br>`servers` / servers-profile-menu-connect<br>`termux-setup-installed` / termux-setup-installed-connect<br>`phone-setup-start` / phone-setup-start-primary-open<br>`phone-setup-progress` / phone-setup-progress-termux-done-home<br>`phone-setup-ready` / phone-setup-ready-close | home-shell-tab-workspace -> `workspace`<br>home-shell-tab-files -> `project-hub`<br>home-shell-tab-activity -> `activity`<br>home-shell-tab-more -> `settings`<br>home-shell-shortcut-terminal -> `terminal`<br>home-shell-server-switcher -> `server-switcher-sheet`<br>home-shell-banner-update-token -> `servers`<br>home-shell-banner-update-password -> `servers`<br>home-shell-banner-details -> `connection-status-details-sheet`<br>home-shell-app-exit-keep-running -> `keep-running`<br>home-shell-tab-workspace -> `workspace-folder-chooser`<br>-> `model-picker-sheet` |
+| `home-shell` | screen | 0 / 1 | `global-shortcuts` / global-shortcuts-destinations<br>`command-palette-dialog` / command-palette-dialog-cmd-workspace<br>`command-palette-dialog` / command-palette-dialog-cmd-files<br>`command-palette-dialog` / command-palette-dialog-cmd-activity<br>`command-palette-dialog` / command-palette-dialog-cmd-more<br>`system` / system-route-root-returns-homescreen-when-conn-hasconnectedserver-m-to-home-shell<br>`system` / system-session-handoff-link-ai-team-link-for-a-non-active-saved-ser-to-home-shell<br>`command-launcher-sheet` / chat-command-workspaces<br>`servers` / servers-profile-row<br>`servers` / servers-profile-menu-connect<br>`termux-setup-installed` / termux-setup-installed-connect<br>`phone-setup-start` / phone-setup-start-primary-open<br>`phone-setup-progress` / phone-setup-progress-termux-done-home<br>`phone-setup-ready` / phone-setup-ready-close | home-shell-tab-workspace -> `workspace`<br>home-shell-tab-files -> `project-hub`<br>home-shell-tab-activity -> `activity`<br>home-shell-tab-more -> `settings`<br>home-shell-shortcut-terminal -> `terminal`<br>home-shell-server-switcher -> `server-switcher-sheet`<br>home-shell-banner-update-token -> `servers`<br>home-shell-banner-update-password -> `servers`<br>home-shell-banner-details -> `connection-status-details-sheet`<br>home-shell-app-exit-keep-running -> `notifications-settings`<br>home-shell-tab-workspace -> `workspace-folder-chooser`<br>-> `model-picker-sheet` |
 | `embedded-connection-status-banner` | overlay | 1 / 2 | `chat` / chat-connection-status-banner<br>`chat` / (embedded) | embedded-connection-status-banner-update-token -> `servers`<br>embedded-connection-status-banner-update-password -> `servers`<br>embedded-connection-status-banner-details -> `connection-status-details-sheet` |
 | `connection-status-details-sheet` | sheet | 1 / 2 | `home-shell` / home-shell-banner-details<br>`embedded-connection-status-banner` / embedded-connection-status-banner-details | connection-status-details-sheet-change-server -> `servers` |
 | `server-switcher-sheet` | sheet | 1 / 2 | `home-shell` / home-shell-server-switcher | server-switcher-sheet-profile -> `servers`<br>server-switcher-sheet-add -> `profile-editor`<br>server-switcher-sheet-manage -> `servers`<br>server-switcher-sheet-disconnect -> `settings-disconnect-sheet`<br>server-switcher-sheet-phone-connect -> `servers`<br>server-switcher-sheet-phone-disconnect -> `settings-disconnect-sheet`<br>server-switcher-sheet-phone-manage -> `termux-setup-installed`<br>server-switcher-sheet-phone-forget -> `servers`<br>(embedded) -> `embedded-termux-running-server-entry`<br>(embedded) -> `embedded-local-agent-server-entry`<br>(embedded) -> `embedded-phone-server-card` |
@@ -1571,7 +1554,7 @@ graph LR
 | `termux-processes-details-sheet` | sheet | 2 / 3 | `termux-processes` / termux-processes-row | termux-processes-details-sheet-server-controls -> `termux-setup-installed`<br>termux-processes-details-sheet-stop -> `termux-processes-stop-one-sheet` |
 | `termux-storage` | screen | 2 / 2 | `termux-setup-installed` / termux-setup-installed-storage-row | termux-storage-open-running -> `termux-processes`<br>termux-storage-category-clean -> `termux-storage-clean-sheet` |
 | `termux-storage-clean-sheet` | sheet | 3 / 3 | `termux-storage` / termux-storage-category-clean | _none_ |
-| `termux-setup-installed` | screen | 1 / 1 | `root-connecting` / root-connecting-termux-secondary<br>`server-switcher-sheet` / server-switcher-sheet-phone-manage<br>`servers` / servers-termux-setup<br>`server-settings` / server-settings-updates-managed<br>`termux-processes` / termux-processes-row-protected<br>`termux-processes-details-sheet` / termux-processes-details-sheet-server-controls<br>`embedded-termux-running-server-entry` / embedded-termux-running-server-entry-menu-manage<br>`embedded-local-agent-server-entry` / embedded-local-agent-server-entry-menu-manage<br>`embedded-phone-server-card` / embedded-phone-server-card-manage<br>`team-intro` / team-intro-set-up-termux<br>`embedded-team-phone-section` / embedded-team-phone-section-open-setup<br>`settings` / settings-on-this-phone<br>`mcp-catalog-node-sheet` / mcp-catalog-node-sheet-add-node | termux-setup-installed-set-up -> `phone-setup-start`<br>termux-setup-installed-set-up-termux -> `phone-setup-progress`<br>termux-setup-installed-progress -> `phone-setup-progress`<br>termux-setup-installed-switch-retry -> `phone-setup-progress`<br>termux-setup-installed-switch-return -> `phone-setup-progress`<br>termux-setup-installed-connect -> `home-shell`<br>termux-setup-installed-update -> `phone-setup-progress`<br>termux-setup-installed-switch -> `termux-setup-switch-runtime-sheet`<br>termux-setup-installed-add-tools -> `phone-setup-customize-sheet`<br>termux-setup-installed-add-tools-termux -> `this-phone-add-tools-sheet`<br>termux-setup-installed-storage-row -> `termux-storage`<br>termux-setup-installed-processes-row -> `termux-processes`<br>termux-setup-installed-keep-running -> `keep-running`<br>termux-setup-installed-terminal -> `terminal`<br>termux-setup-installed-remove -> `remove-from-phone-sheet`<br>-> `termux-migration` |
+| `termux-setup-installed` | screen | 1 / 1 | `root-connecting` / root-connecting-termux-secondary<br>`server-switcher-sheet` / server-switcher-sheet-phone-manage<br>`servers` / servers-termux-setup<br>`server-settings` / server-settings-updates-managed<br>`termux-processes` / termux-processes-row-protected<br>`termux-processes-details-sheet` / termux-processes-details-sheet-server-controls<br>`embedded-termux-running-server-entry` / embedded-termux-running-server-entry-menu-manage<br>`embedded-local-agent-server-entry` / embedded-local-agent-server-entry-menu-manage<br>`embedded-phone-server-card` / embedded-phone-server-card-manage<br>`team-intro` / team-intro-set-up-termux<br>`embedded-team-phone-section` / embedded-team-phone-section-open-setup<br>`settings` / settings-on-this-phone<br>`mcp-catalog-node-sheet` / mcp-catalog-node-sheet-add-node | termux-setup-installed-set-up -> `phone-setup-start`<br>termux-setup-installed-set-up-termux -> `phone-setup-progress`<br>termux-setup-installed-progress -> `phone-setup-progress`<br>termux-setup-installed-switch-retry -> `phone-setup-progress`<br>termux-setup-installed-switch-return -> `phone-setup-progress`<br>termux-setup-installed-connect -> `home-shell`<br>termux-setup-installed-update -> `phone-setup-progress`<br>termux-setup-installed-switch -> `termux-setup-switch-runtime-sheet`<br>termux-setup-installed-add-tools -> `phone-setup-customize-sheet`<br>termux-setup-installed-add-tools-termux -> `this-phone-add-tools-sheet`<br>termux-setup-installed-storage-row -> `termux-storage`<br>termux-setup-installed-processes-row -> `termux-processes`<br>termux-setup-installed-keep-running -> `notifications-settings`<br>termux-setup-installed-terminal -> `terminal`<br>termux-setup-installed-remove -> `remove-from-phone-sheet`<br>-> `termux-migration` |
 | `termux-setup-switch-runtime-sheet` | sheet | 2 / 2 | `termux-setup-installed` / termux-setup-installed-switch | termux-setup-switch-runtime-sheet-confirm -> `phone-setup-progress` |
 | `this-phone-add-tools-sheet` | sheet | 2 / 2 | `termux-setup-installed` / termux-setup-installed-add-tools-termux | this-phone-add-tools-sheet-claude -> `local-agent-page`<br>(embedded) -> `team-phone-onboarding-offer`<br>(embedded) -> `team-phone-onboarding-steps`<br>(embedded) -> `team-phone-onboarding-success`<br>(embedded) -> `team-phone-onboarding-failed`<br>(embedded) -> `team-phone-onboarding-killed` |
 | `embedded-local-agent-onboarding-block` | overlay | 3 / 3 | `local-agent-page` / (embedded) | embedded-local-agent-onboarding-block-open-setup -> `phone-setup-progress`<br>embedded-local-agent-onboarding-block-menu-remove -> `remove-local-agents-confirm-sheet`<br>embedded-local-agent-onboarding-block-connect -> `local-agent-project-sheet`<br>(embedded) -> `embedded-setup-terminal` |
@@ -1607,14 +1590,14 @@ graph LR
 | `team-task-details` | sheet | 2 / 4 | `team-conversation` / team-conversation-menu-details | team-task-details-step -> `work-sheet`<br>team-task-details-agent -> `team-agent` |
 | `team-agents` | screen | 2 / 4 | `team-home` / team-home-runs-agents-row | team-agents-row -> `chat`<br>team-agents-row -> `chat-watching-live` |
 | `team-board` | screen | 2 / 4 | `team-home` / team-home-board | team-board-add -> `start-run-sheet`<br>team-board-empty-add -> `start-run-sheet`<br>team-board-card -> `team-conversation`<br>team-board-card-moves -> `team-board-move-sheet`<br>team-board-card-long-press -> `team-board-move-sheet` |
-| `team-home` | screen | 1 / 3 | `settings` / settings-ai-team<br>`plugins-settings` / plugins-settings-ai-team-row<br>`plugins-settings` / plugins-team-other<br>`workspace` / workspace-team-card<br>`workspace` / workspace-team-door<br>`team-conversation` / team-conversation-team-page | team-home-start-run -> `start-run-sheet`<br>team-home-planning-card -> `embedded-team-planning-card`<br>team-home-board -> `team-board`<br>team-home-change-address -> `team-host-sheet`<br>team-home-phone-controls -> `embedded-team-phone-section`<br>team-home-turn-off -> `team-turn-off-sheet`<br>team-home-host-row -> `team-host-details-sheet`<br>team-home-runs-row -> `team-conversation`<br>team-home-runs-agents-row -> `team-agents`<br>team-home-needs-you-gate-row -> `gate-sheet`<br>team-home-needs-you-gate-receipt-chip -> `gate-sheet`<br>(embedded) -> `embedded-product-states`<br>(embedded) -> `embedded-team-planning-card`<br>(embedded) -> `embedded-team-phone-section` |
-| `team-intro` | screen | 1 / 3 | `settings` / settings-ai-team<br>`plugins-settings` / plugins-settings-ai-team-row | team-intro-set-up -> `plugins-settings`<br>team-intro-address -> `team-host-sheet`<br>team-intro-on-computer -> `team-host-guide-sheet`<br>team-intro-set-up-termux -> `termux-setup-installed` |
+| `team-home` | screen | 1 / 3 | `settings` / settings-ai-team<br>`workspace` / workspace-team-card<br>`workspace` / workspace-team-door<br>`team-conversation` / team-conversation-team-page | team-home-start-run -> `start-run-sheet`<br>team-home-planning-card -> `embedded-team-planning-card`<br>team-home-board -> `team-board`<br>team-home-change-address -> `team-host-sheet`<br>team-home-phone-controls -> `embedded-team-phone-section`<br>team-home-turn-off -> `team-turn-off-sheet`<br>team-home-host-row -> `team-host-details-sheet`<br>team-home-runs-row -> `team-conversation`<br>team-home-runs-agents-row -> `team-agents`<br>team-home-needs-you-gate-row -> `gate-sheet`<br>team-home-needs-you-gate-receipt-chip -> `gate-sheet`<br>(embedded) -> `embedded-product-states`<br>(embedded) -> `embedded-team-planning-card`<br>(embedded) -> `embedded-team-phone-section` |
+| `team-intro` | screen | 1 / 3 | `settings` / settings-ai-team<br>`team-intro` / team-intro-set-up<br>`tools-hub` / tools-hub-plugins | team-intro-set-up -> `team-intro`<br>team-intro-address -> `team-host-sheet`<br>team-intro-on-computer -> `team-host-guide-sheet`<br>team-intro-set-up-termux -> `termux-setup-installed` |
 | `embedded-work-graph` | overlay | unreachable | _none_ | embedded-work-graph-node -> `work-sheet` |
 | `work-sheet` | sheet | 2 / 4 | `gate-sheet` / gate-sheet-work-chip<br>`team-merge-changes-sheet` / team-merge-changes-sheet-work-row<br>`work-sheet` / work-sheet-dependency-chip<br>`embedded-work-graph` / embedded-work-graph-node<br>`team-task-details` / team-task-details-step<br>`team-conversation` / team-conversation-step<br>`work-sheet` / work-sheet-blocking-chip | work-sheet-dependency-chip -> `work-sheet`<br>work-sheet-blocking-chip -> `work-sheet`<br>(embedded) -> `embedded-markdown-text`<br>(embedded) -> `embedded-team-now-line` |
 | `team-board-move-sheet` | sheet | 3 / 5 | `team-board` / team-board-card-moves<br>`team-board` / team-board-card-long-press | team-board-move-priority -> `team-board-priority-sheet`<br>team-board-move-open -> `team-conversation`<br>team-board-move-cancel -> `team-board-cancel-confirm-sheet` |
 | `team-board-priority-sheet` | sheet | 4 / 6 | `team-board-move-sheet` / team-board-move-priority | _none_ |
 | `team-board-cancel-confirm-sheet` | sheet | 4 / 6 | `team-board-move-sheet` / team-board-move-cancel | _none_ |
-| `embedded-team-discovery-card` | overlay | 1 / 3 | `plugins-settings`<br>`plugins-settings` / (embedded) | _none_ |
+| `embedded-team-discovery-card` | overlay | unreachable | _none_ | _none_ |
 | `team-host-sheet` | sheet | 2 / 2 | `team-home` / team-home-change-address<br>`team-intro` / team-intro-address<br>`profile-editor` / profile-editor-team-add | team-host-sheet-verdict-how -> `team-host-guide-sheet` |
 | `team-host-guide-sheet` | sheet | 2 / 2 | `gate-sheet` / gate-sheet-how<br>`start-run-sheet` / start-run-sheet-host-guide<br>`team-host-sheet` / team-host-sheet-verdict-how<br>`profile-editor` / profile-editor-team-learn<br>`team-intro` / team-intro-on-computer | _none_ |
 | `team-turn-off-sheet` | sheet | 2 / 4 | `team-home` / team-home-turn-off | _none_ |
@@ -1640,8 +1623,6 @@ graph LR
 | `about-open-source-tab` | tab | 2 / 2 | `about` | _none_ |
 | `app-diagnostics` | screen | 1 / 3 | `settings`<br>`chat`<br>`command-palette-dialog` / command-palette-dialog-cmd-diagnostics<br>`system` / system-named-route-debug-via-desktop-command-diagnostics-lib-main-d-to-app-diagnostics<br>`command-launcher-sheet` / chat-command-debug<br>`team-conversation` / team-conversation-no-progress-report | app-diagnostics-clear -> `app-diagnostics-clear-sheet` |
 | `app-diagnostics-clear-sheet` | sheet | 2 / 4 | `app-diagnostics` / app-diagnostics-clear | _none_ |
-| `automation-settings` | screen | 2 / 4 | `notifications-settings` / notifications-settings-automation | automation-saved-permissions -> `saved-permissions`<br>automation-watch -> `notifications-settings` |
-| `keep-running` | screen | 1 / 2 | `notifications-settings` / notifications-settings-keep-running<br>`home-shell` / home-shell-app-exit-keep-running<br>`termux-setup-installed` / termux-setup-installed-keep-running | _none_ |
 | `command-auth-sheet` | sheet | 2 / 4 | `integrations` / integrations-provider-connect<br>`integrations` / integrations-provider-server-signin<br>`integrations-connect-method-sheet` / integrations-connect-method-sheet-method | _none_ |
 | `commands` | screen | 2 / 4 | `capabilities` / capabilities-tab-commands | commands-row -> `run-command-dialog`<br>commands-row-open-chat -> `chat`<br>(embedded) -> `embedded-product-states` |
 | `credential-management-sheet` | sheet | 2 / 4 | `integrations` / integrations-provider-manage-accounts | credential-management-sheet-rename -> `credential-management-sheet-rename-dialog`<br>credential-management-sheet-remove -> `credential-management-sheet-remove-sheet` |
@@ -1665,20 +1646,19 @@ graph LR
 | `mcp-catalog-node-sheet` | sheet | 4 / 6 | `mcp-catalog` / mcp-catalog-switch | mcp-catalog-node-sheet-add-node -> `termux-setup-installed`<br>mcp-catalog-node-sheet-continue -> `mcp-setup` |
 | `mcp-catalog-remove-sheet` | sheet | 4 / 6 | `mcp-catalog` / mcp-catalog-switch | _none_ |
 | `mcp-setup` | screen | 2 / 4 | `integrations` / integrations-resources-empty-add<br>`mcp-add-sheet` / mcp-add-sheet-manual<br>`mcp-catalog` / mcp-catalog-switch<br>`mcp-catalog` / mcp-catalog-manual<br>`mcp-catalog-node-sheet` / mcp-catalog-node-sheet-continue | _none_ |
-| `saved-permissions` | screen | 3 / 5 | `automation-settings` / automation-saved-permissions | saved-permissions-revoke -> `saved-permissions-revoke-dialog`<br>(embedded) -> `embedded-product-states` |
-| `saved-permissions-revoke-dialog` | dialog | 4 / 6 | `saved-permissions` / saved-permissions-revoke | _none_ |
+| `saved-permissions` | screen | unreachable | _none_ | saved-permissions-revoke -> `saved-permissions-revoke-dialog`<br>(embedded) -> `embedded-product-states` |
+| `saved-permissions-revoke-dialog` | dialog | unreachable | `saved-permissions` / saved-permissions-revoke | _none_ |
 | `server-capabilities` | screen | 1 / 3 | `settings` / settings-server-capabilities<br>`settings` / settings-unavailable-why<br>`tools-hub` / tools-hub-unavailable-why | _none_ |
 | `coding-settings-shell-sheet` | sheet | 1 / 3 | `settings` / settings-default-shell | _none_ |
-| `notifications-settings` | screen | 1 / 3 | `settings` / settings-category-background<br>`activity` / activity-background-hint<br>`workspace` / workspace-section-menu-background<br>`provider-quota` / provider-quota-monitor-notification-settings<br>`automation-settings` / automation-watch | notifications-settings-quiet-start -> `notifications-settings-quiet-time-dialog`<br>notifications-settings-quiet-end -> `notifications-settings-quiet-time-dialog`<br>notifications-settings-automation -> `automation-settings`<br>notifications-settings-keep-running -> `keep-running` |
-| `notifications-settings-quiet-time-dialog` | dialog | 2 / 4 | `notifications-settings` / notifications-settings-quiet-start<br>`notifications-settings` / notifications-settings-quiet-end | _none_ |
+| `notifications-settings` | screen | 1 / 2 | `settings` / settings-category-background<br>`activity` / activity-background-hint<br>`workspace` / workspace-section-menu-background<br>`provider-quota` / provider-quota-monitor-notification-settings<br>`home-shell` / home-shell-app-exit-keep-running<br>`termux-setup-installed` / termux-setup-installed-keep-running | notifications-settings-quiet-start -> `notifications-settings-quiet-time-dialog`<br>notifications-settings-quiet-end -> `notifications-settings-quiet-time-dialog` |
+| `notifications-settings-quiet-time-dialog` | dialog | 2 / 3 | `notifications-settings` / notifications-settings-quiet-start<br>`notifications-settings` / notifications-settings-quiet-end | _none_ |
 | `appearance-settings` | screen | 1 / 3 | `settings` / settings-category-appearance<br>`command-launcher-sheet` / chat-command-themes | appearance-settings-language -> `language-sheet`<br>appearance-settings-theme-pack -> `theme-pack-preview-sheet`<br>-> `voice-notices` |
 | `privacy-settings` | screen | 1 / 3 | `settings` / settings-category-privacy | privacy-settings-clear-queued -> `privacy-settings-clear-queued-sheet`<br>privacy-settings-clear-drafts -> `privacy-settings-clear-drafts-sheet` |
 | `privacy-settings-clear-drafts-sheet` | sheet | 2 / 4 | `privacy-settings` / privacy-settings-clear-drafts | _none_ |
 | `privacy-settings-clear-queued-sheet` | sheet | 2 / 4 | `privacy-settings` / privacy-settings-clear-queued | _none_ |
-| `plugins-settings` | screen | 1 / 3 | `settings` / settings-ai-team<br>`team-intro` / team-intro-set-up<br>`tools-hub` / tools-hub-plugins | plugins-team-other -> `team-home`<br>plugins-settings-ai-team-row -> `team-home`<br>plugins-settings-ai-team-row -> `team-intro`<br>-> `embedded-team-discovery-card`<br>(embedded) -> `embedded-team-discovery-card` |
-| `settings` | tab | 0 / 2 | `home-shell` / home-shell-tab-more<br>`global-shortcuts` / global-shortcuts-settings<br>`command-palette-dialog` / command-palette-dialog-cmd-settings<br>`system` / system-desktop-command-settings-shortcut-mod-4-go-3-lib-main-dart-1-to-settings<br>`system` / system-desktop-shortcut-mod-opensettings-pushes-settingsscreen-lib--to-settings | settings-category-server -> `server-settings`<br>settings-saved-servers -> `servers`<br>settings-on-this-phone -> `termux-setup-installed`<br>settings-model-and-mode -> `model-picker-sheet`<br>settings-providers -> `integrations`<br>settings-tools -> `tools-hub`<br>settings-ai-team -> `team-intro`<br>settings-default-shell -> `coding-settings-shell-sheet`<br>settings-voice -> `voice-model-setup-sheet`<br>settings-category-background -> `notifications-settings`<br>settings-category-appearance -> `appearance-settings`<br>settings-category-privacy -> `privacy-settings`<br>settings-category-usage -> `usage-hub`<br>settings-setup-guide -> `guide`<br>settings-server-capabilities -> `server-capabilities`<br>settings-about-notices -> `about`<br>settings-unavailable-why -> `server-capabilities`<br>settings-ai-team -> `team-home`<br>settings-ai-team -> `plugins-settings`<br>-> `shortcuts-help-dialog`<br>(embedded) -> `embedded-product-states`<br>-> `capabilities`<br>-> `settings-disconnect-sheet`<br>-> `app-diagnostics`<br>-> `session-import` |
+| `settings` | tab | 0 / 2 | `home-shell` / home-shell-tab-more<br>`global-shortcuts` / global-shortcuts-settings<br>`command-palette-dialog` / command-palette-dialog-cmd-settings<br>`system` / system-desktop-command-settings-shortcut-mod-4-go-3-lib-main-dart-1-to-settings<br>`system` / system-desktop-shortcut-mod-opensettings-pushes-settingsscreen-lib--to-settings | settings-category-server -> `server-settings`<br>settings-saved-servers -> `servers`<br>settings-on-this-phone -> `termux-setup-installed`<br>settings-model-and-mode -> `model-picker-sheet`<br>settings-providers -> `integrations`<br>settings-tools -> `tools-hub`<br>settings-ai-team -> `team-intro`<br>settings-default-shell -> `coding-settings-shell-sheet`<br>settings-voice -> `voice-model-setup-sheet`<br>settings-category-background -> `notifications-settings`<br>settings-category-appearance -> `appearance-settings`<br>settings-category-privacy -> `privacy-settings`<br>settings-category-usage -> `usage-hub`<br>settings-setup-guide -> `guide`<br>settings-server-capabilities -> `server-capabilities`<br>settings-about-notices -> `about`<br>settings-unavailable-why -> `server-capabilities`<br>settings-ai-team -> `team-home`<br>-> `shortcuts-help-dialog`<br>(embedded) -> `embedded-product-states`<br>-> `capabilities`<br>-> `settings-disconnect-sheet`<br>-> `app-diagnostics`<br>-> `session-import` |
 | `settings-disconnect-sheet` | sheet | 1 / 1 | `settings`<br>`server-switcher-sheet` / server-switcher-sheet-disconnect<br>`server-switcher-sheet` / server-switcher-sheet-phone-disconnect<br>`embedded-termux-running-server-entry` / embedded-termux-running-server-entry-menu-disconnect | settings-disconnect-sheet-confirm -> `servers` |
-| `tools-hub` | screen | 1 / 3 | `settings` / settings-tools | tools-hub-mcp -> `integrations`<br>tools-hub-commands-tools -> `capabilities`<br>tools-hub-plugins -> `plugins-settings`<br>tools-hub-external-agents -> `external-agents`<br>tools-hub-unavailable-why -> `server-capabilities` |
+| `tools-hub` | screen | 1 / 3 | `settings` / settings-tools | tools-hub-mcp -> `integrations`<br>tools-hub-commands-tools -> `capabilities`<br>tools-hub-plugins -> `team-intro`<br>tools-hub-external-agents -> `external-agents`<br>tools-hub-unavailable-why -> `server-capabilities` |
 | `tools` | screen | 2 / 3 | `chat`<br>`capabilities` / capabilities-tab-tools | tools-choose-model-empty -> `model-picker-sheet`<br>tools-model-summary -> `model-picker-sheet`<br>tools-header-change -> `model-picker-sheet`<br>tools-callable-row -> `tools-detail-sheet`<br>(embedded) -> `embedded-product-states` |
 | `tools-detail-sheet` | sheet | 3 / 4 | `tools` / tools-callable-row | _none_ |
 | `usage-hub` | screen | 1 / 3 | `settings` / settings-category-usage<br>`system` / system-entry-alert-quota | usage-hub-tab-spent -> `usage`<br>usage-hub-tab-remaining -> `provider-quota` |

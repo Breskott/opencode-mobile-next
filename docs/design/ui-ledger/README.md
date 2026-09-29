@@ -156,6 +156,10 @@ Files with no surface of their own and no interactive element (also in
 - `lib/ui/screens/usage_refresh_slot.dart`: a nonvisual ChangeNotifier holding Usage refresh callbacks.
 - `lib/ui/screens/library/pending_auth_recovery.dart`: `_authSourceFor` is a nonvisual equality identity for authentication actions; the sign-in confirmation lives in `integrations_screen.dart`.
 - `lib/ui/screens/library_screen.dart`: no surface since UX phase 2 (the More tab merged into the Settings hub); it only hosts the library part files and `defaultModelLabel()`.
+- `lib/ui/screens/automation_settings_screen.dart`: `AutomationSettingsSection` is the last section of the Notifications and background page (`notifications-settings`); its elements are recorded there.
+- `lib/ui/screens/settings/plugins_screen.dart`: AI Team row helpers (`teamPhoneProfile`, `teamRowSubtitle`, `teamErrorReason`) that outlived the retired Plugins page; no surface.
+- `lib/ui/screens/settings/server_plugins_section.dart`: `ServerPluginsSection` is the 'Plugins on this server' section of the This server page (`server-settings`).
+- `lib/ui/screens/keep_running_screen.dart`: `KeepRunningSection` is the Keep running section of the Notifications and background page (`notifications-settings`); `openKeepRunningScreen` opens that page at it.
 - `lib/ui/screens/team/team_page.dart`: `TeamPage` / `openTeamPage`, the one AI Team route (P3.4): it shows `team-home` while the server's team is on and `team-intro` while it is off, following the connection; no surface of its own.
 - `lib/ui/screens/team/policy_block.dart`: `TeamPolicyBlock` / `TeamBoundariesRow` are read-only rendering blocks embedded in the run overview and the start-run sheet; no taps.
 - `lib/ui/screens/phone_setup/phone_setup_hero.dart`: `PhoneSetupHero` lays out setup start and ready (the drawing at the top, then the state's slots); its actions are the host screens' and are recorded on their pages.

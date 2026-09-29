@@ -272,21 +272,5 @@ void main() {
       );
       await done();
     });
-
-    testWidgets('the AI Team row reads "AI Team · Off"', (tester) async {
-      final done = await mount(tester, PhoneServerScene.plugins);
-      final row = find.byKey(const ValueKey('plugins-ai-team-row'));
-      expect(
-        find.descendant(of: row, matching: find.text('AI Team')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: row, matching: find.text('Off')),
-        findsOneWidget,
-      );
-      expect(find.textContaining('Gas City'), findsNothing);
-      expect(find.textContaining('Add manually'), findsNothing);
-      await done();
-    });
   });
 }

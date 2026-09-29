@@ -1,9 +1,8 @@
-// TEAM-106: Settings › Plugins — the AI Team row per state, the manual-add
-// form and its verdicts (tailnet rule, no network), a team found on the
-// server (the row's own Turn on, no separate card) and the dismissal memory,
-// and the turn-off sheet's copy and effects. Since P3.4 the row
-// opens the one AI Team page, where the address and Turn off live (the AI
-// Team sheet is gone).
+// TEAM-106: the AI Team page — the manual-add form and its verdicts (tailnet
+// rule, no network), a team found on the server (the intro's Turn on) and the
+// dismissal memory, and the turn-off sheet's copy and effects. The page is
+// pumped directly: Settings opens it from its own AI Team row (the Plugins
+// page and its row are gone).
 
 import 'dart:async';
 import 'dart:io';
@@ -19,7 +18,9 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart'
+    show teamRowSubtitle;
+import 'package:opencode_mobile/ui/screens/team/team_page.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_discovery_card.dart';
@@ -218,8 +219,8 @@ void main() {
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: PluginsSettingsScreen(
-            controller: controller,
+          home: TeamPage(
+            connection: controller,
             probe: probe.call,
             now: () => DateTime.utc(2026, 9, 11, 12),
           ),
@@ -230,13 +231,6 @@ void main() {
     for (var i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 50));
     }
-  }
-
-  String subtitle(WidgetTester tester) {
-    final text = tester.widget<Text>(
-      find.byKey(const ValueKey('plugins-ai-team-subtitle')),
-    );
-    return text.data ?? text.textSpan!.toPlainText();
   }
 
   Set<String> dataKeys() => {
@@ -262,28 +256,7 @@ void main() {
     return text.data ?? text.textSpan!.toPlainText();
   }
 
-  group('row subtitles', () {
-    testWidgets('off while discovery runs, and after it ("Off")', (
-      tester,
-    ) async {
-      probe.gate = Completer<void>();
-      final controller = await boot(profile());
-      await pump(tester, controller);
-      expect(subtitle(tester), l10n.teamUiRowOff);
-      probe.gate!.complete();
-      await settle(tester);
-      expect(subtitle(tester), l10n.teamUiRowOff);
-      // The front port first (controls), then the bare supervisor.
-      expect(probe.calls, [
-        ('http://100.100.1.2:8373', null),
-        ('http://100.100.1.2:8372', null),
-      ]);
-      expect(
-        find.byKey(const ValueKey('plugins-ai-team-turn-on')),
-        findsNothing,
-      );
-    });
-
+  group('team discovery and row subtitles', () {
     testWidgets('discovery prefers a front on 8373 (TEAM-202)', (tester) async {
       probe.verdicts['http://100.100.1.2:8373'] = ProbeFound(
         host: const OrchestrationHostIdentity(
@@ -306,7 +279,7 @@ void main() {
       await settle(tester);
       // Found on the front: the supervisor port is never asked.
       expect(probe.calls, [('http://100.100.1.2:8373', null)]);
-      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-turn-on')));
+      await tester.tap(find.byKey(const ValueKey('team-intro-turn-on')));
       await settle(tester);
       final config = controller.profile!.orchestration;
       expect(config?.url, 'http://100.100.1.2:8373');
@@ -322,51 +295,6 @@ void main() {
       await pump(tester, controller);
       await settle(tester);
       expect(probe.calls, isEmpty);
-      expect(subtitle(tester), l10n.teamUiRowOff);
-    });
-
-    testWidgets('found on the server host', (tester) async {
-      probe.verdicts['http://100.100.1.2:8372'] = _found();
-      final controller = await boot(profile());
-      await pump(tester, controller);
-      await settle(tester);
-      expect(subtitle(tester), l10n.pluginsTeamRowFound('Workstation'));
-      // One presence: the row carries Turn on; there is no separate card.
-      expect(find.byKey(const ValueKey('team-discovery-card')), findsNothing);
-      expect(
-        find.byKey(const ValueKey('plugins-ai-team-turn-on')),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('on and healthy with a front', (tester) async {
-      final controller = await boot(profile(config: fixtureConfig()));
-      await pump(tester, controller);
-      await settle(tester);
-      expect(controller.orchestration?.phase, OrchestrationPhase.ready);
-      // The fixture answers controls, so the phone is not read-only.
-      expect(subtitle(tester), l10n.teamUiRowOn('Workstation'));
-      expect(probe.calls, isEmpty);
-    });
-
-    testWidgets('not available with the reason', (tester) async {
-      // Plain http to a public host is refused before any request: no
-      // network in this test.
-      final controller = await boot(
-        profile(
-          config: const OrchestrationConfig(
-            provider: OrchestrationProvider.gascity,
-            url: 'http://public.example:8372',
-          ),
-        ),
-      );
-      await pump(tester, controller);
-      await settle(tester);
-      expect(controller.orchestration?.phase, OrchestrationPhase.failed);
-      expect(
-        subtitle(tester),
-        l10n.teamUiRowNotAvailableReason(l10n.teamUiReasonPlainHttp),
-      );
     });
 
     test('read-only and unreachable states', () async {
@@ -430,8 +358,6 @@ void main() {
   group('manual add', () {
     // The row opens the team page, off: its address action is the form.
     Future<void> openForm(WidgetTester tester) async {
-      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
-      await tester.pumpAndSettle();
       expect(find.byType(TeamIntroScreen), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('team-intro-address')));
       await tester.pumpAndSettle();
@@ -616,8 +542,6 @@ void main() {
           );
           await pump(tester, controller);
           await settle(tester);
-          await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
-          await tester.pumpAndSettle();
           // The team page's menu: Change address.
           await menu(tester, 'team-home-change-address');
           expect(find.byKey(const ValueKey('team-host-form')), findsOneWidget);
@@ -666,8 +590,6 @@ void main() {
         // The fixture reports the config's own mode, so the chosen kind
         // stands (a phone config is a phone gateway).
         expect(controller.orchestration?.phase, OrchestrationPhase.ready);
-        await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
-        await tester.pumpAndSettle();
         await tester.scrollUntilVisible(
           find.byKey(const ValueKey('team-home-host-row')),
           200,
@@ -692,64 +614,10 @@ void main() {
       final controller = await boot(profile());
       await pump(tester, controller);
       await settle(tester);
-      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
-      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('team-intro-turn-on')));
       await settle(tester);
       expect(controller.profile!.orchestration?.url, 'http://100.100.1.2:8372');
       expect(find.byType(TeamHomeScreen), findsOneWidget);
-    });
-  });
-
-  group('found on the server: the row turns it on', () {
-    testWidgets('a dismissed server is not asked again and shows no Turn on', (
-      tester,
-    ) async {
-      probe.verdicts['http://100.100.1.2:8372'] = _found();
-      final controller = await boot(profile());
-      await controller.orchestrationStore.dismissDiscovery(_profileId);
-      await pump(tester, controller);
-      await settle(tester);
-      expect(probe.calls, isEmpty);
-      expect(subtitle(tester), l10n.teamUiRowOff);
-      expect(
-        find.byKey(const ValueKey('plugins-ai-team-turn-on')),
-        findsNothing,
-      );
-      // The dismissal lives under the profile's sweep prefix.
-      expect(
-        OrchestrationStore.discoveryDismissedKey(_profileId),
-        startsWith(OrchestrationStore.prefix(_profileId)),
-      );
-    });
-
-    testWidgets('Turn on saves the found host', (tester) async {
-      probe.verdicts['http://100.100.1.2:8372'] = _found();
-      final controller = await boot(profile());
-      await pump(tester, controller);
-      await settle(tester);
-      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-turn-on')));
-      await settle(tester);
-      final config = controller.profile!.orchestration;
-      expect(config?.url, 'http://100.100.1.2:8372');
-      expect(config?.city, 'bright-lights');
-      expect(
-        find.byKey(const ValueKey('plugins-ai-team-turn-on')),
-        findsNothing,
-      );
-      expect(controller.orchestration, isNotNull);
-    });
-
-    testWidgets('absent while the plugin is on', (tester) async {
-      probe.verdicts['http://100.100.1.2:8372'] = _found();
-      final controller = await boot(profile(config: fixtureConfig()));
-      await pump(tester, controller);
-      await settle(tester);
-      expect(
-        find.byKey(const ValueKey('plugins-ai-team-turn-on')),
-        findsNothing,
-      );
-      expect(probe.calls, isEmpty);
     });
   });
 
@@ -771,8 +639,6 @@ void main() {
       expect(sibling.phase, OrchestrationPhase.ready);
       expect(dataKeys(), isNotEmpty);
 
-      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
-      await tester.pumpAndSettle();
       expect(find.byType(TeamHomeScreen), findsOneWidget);
       await menu(tester, 'team-home-turn-off');
       expect(find.byKey(const ValueKey('team-turn-off-sheet')), findsOneWidget);
@@ -800,9 +666,6 @@ void main() {
       // The same page, off: it says what the team does and sets it up.
       expect(find.byType(TeamHomeScreen), findsNothing);
       expect(find.byType(TeamIntroScreen), findsOneWidget);
-      await tester.pageBack();
-      await tester.pumpAndSettle();
-      expect(subtitle(tester), l10n.teamUiRowOff);
     });
 
     testWidgets('keep leaves everything in place', (tester) async {
@@ -811,8 +674,6 @@ void main() {
       final controller = await boot(p);
       await pump(tester, controller);
       await settle(tester);
-      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
-      await tester.pumpAndSettle();
       await menu(tester, 'team-home-turn-off');
       await tester.tap(find.text(l10n.teamUiKeep));
       await tester.pumpAndSettle();

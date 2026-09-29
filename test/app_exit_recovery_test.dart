@@ -775,7 +775,9 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: KeepRunningScreen(),
+            home: Scaffold(
+              body: SingleChildScrollView(child: KeepRunningSection()),
+            ),
           ),
         ),
       );
@@ -854,7 +856,9 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: KeepRunningScreen(),
+            home: Scaffold(
+              body: SingleChildScrollView(child: KeepRunningSection()),
+            ),
           ),
         ),
       );

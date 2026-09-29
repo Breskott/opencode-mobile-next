@@ -556,9 +556,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       // still lead here.
       keywords:
           '${l10n.discoverTeamAliases} ${l10n.settingsHubSearchPluginsAliases}',
-      // 'plugins-settings' is the retired Plugins page: this row is where it
-      // led, so the ledger's coverage of that page lands here.
-      pages: const ['team-intro', 'plugins-settings'],
+      pages: const ['team-intro'],
       gate: (scope) => scope.controller.profile != null,
       open: (context, scope) => openTeamPage(context, scope.controller),
     ),
@@ -861,6 +859,27 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       serverGate: _catalog,
       open: _screen(
         (scope) => CapabilitiesScreen(controller: scope.controller),
+      ),
+    ),
+    // The server's own plugins: a section of Settings > This server (the
+    // Plugins page it used to sit on is gone).
+    SearchEntry(
+      id: 'settings-server-plugins',
+      kind: SearchEntryKind.insideSettings,
+      parent: l10n.settingsHubThisServer,
+      icon: AppIconography.extensions,
+      title: l10n.pluginsSectionOnServer,
+      keywords:
+          '${l10n.settingsHubSearchPluginsAliases} ${l10n.teamUiPluginsTitle}',
+      pages: const ['server-settings'],
+      gate: (scope) =>
+          scope.controller.profile != null &&
+          scope.capabilities.pluginInventory,
+      open: _screen(
+        (scope) => KitArrivalScope(
+          rowId: 'settings-server-plugins',
+          child: ServerSettingsScreen(controller: scope.controller),
+        ),
       ),
     ),
     SearchEntry(

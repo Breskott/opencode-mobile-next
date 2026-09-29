@@ -7,7 +7,7 @@
 // already goes straight on; an unfinished job never opens the ready page;
 // the ready page's stages, failure and retry, project choice and "Give the
 // team a first task"; the team page's "Android stopped the team" line;
-// Settings › Plugins › AI Team › On this phone; the failure copy; and the
+// the AI Team page › On this phone; the failure copy; and the
 // layout at 320 dp / 2.5x in LTR English and RTL Arabic.
 
 import 'dart:async';
@@ -29,7 +29,7 @@ import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/termux/team_runtime.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/team_page.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/widgets/builtin_team_section.dart'
     show debugBuiltinTeam;
@@ -964,7 +964,7 @@ void main() {
     });
   });
 
-  group('Settings › Plugins › AI Team › On this phone', () {
+  group('AI Team page › On this phone', () {
     Future<(ConnectionController, _MemoryStore)> pumpPlugins(
       WidgetTester tester, {
       ServerProfile? profile,
@@ -975,7 +975,7 @@ void main() {
       final (controller, store) = await connect(profile ?? _phoneProfile());
       await tester.pumpWidget(
         app(
-          PluginsSettingsScreen(controller: controller, teamRuntime: runtime),
+          TeamPage(connection: controller, runtime: runtime),
           controller: controller,
           store: store,
           textScale: textScale,
@@ -987,13 +987,9 @@ void main() {
       return (controller, store);
     }
 
-    // The row opens the one AI Team page (P3.4); the phone team's own
-    // controls are in its menu, in every state of the page.
+    // The one AI Team page; the phone team's own controls are in its menu,
+    // in every state of the page.
     Future<void> openSheet(WidgetTester tester) async {
-      await tapRevealed(
-        tester,
-        find.byKey(const ValueKey('plugins-ai-team-row')),
-      );
       await tester.tap(find.byKey(const ValueKey('team-home-more')));
       await settle(tester);
       await tester.tap(find.byKey(const ValueKey('team-home-phone-controls')));
@@ -1211,10 +1207,6 @@ void main() {
       tester,
     ) async {
       final (controller, _) = await pumpPlugins(tester);
-      await tapRevealed(
-        tester,
-        find.byKey(const ValueKey('plugins-ai-team-row')),
-      );
       expect(find.byKey(const ValueKey('team-intro')), findsOneWidget);
       await tapRevealed(
         tester,
@@ -1286,7 +1278,7 @@ void main() {
         );
         await tester.pumpWidget(
           app(
-            PluginsSettingsScreen(controller: controller, teamRuntime: runtime),
+            TeamPage(connection: controller, runtime: runtime),
             controller: controller,
             store: store,
             textScale: 2.5,
@@ -1296,10 +1288,6 @@ void main() {
         );
         await settle(tester);
         expect(tester.takeException(), isNull);
-        await tapRevealed(
-          tester,
-          find.byKey(const ValueKey('plugins-ai-team-row')),
-        );
         expect(tester.takeException(), isNull);
         // The team page's menu opens the phone team's own controls.
         await tester.tap(find.byKey(const ValueKey('team-home-more')));

@@ -15,13 +15,12 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/domain/plugin_inventory.dart';
-import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_probe.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/termux_running_server.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings/server_plugins_section.dart';
 import 'package:opencode_mobile/state/phone_host.dart';
 import 'package:opencode_mobile/ui/screens/this_phone_screen.dart';
 import 'package:opencode_mobile/ui/widgets/server_switcher_sheet.dart';
@@ -41,8 +40,8 @@ enum PhoneServerScene {
   /// The same page with OpenCode installed and stopped.
   phoneStopped,
 
-  /// Settings › Plugins: the AI Team row (off) and the server's plugins,
-  /// seven built in and one the person added.
+  /// Settings › This server › Plugins on this server: seven built in and
+  /// one the person added.
   plugins,
 }
 
@@ -298,9 +297,12 @@ Future<Future<void> Function()> mountPhoneServerScene(
     PhoneServerScene.servers => const ServersScreen(),
     PhoneServerScene.phoneRunning || PhoneServerScene.phoneStopped =>
       const ThisPhoneScreen(kind: PhoneHostKind.termux),
-    PhoneServerScene.plugins => PluginsSettingsScreen(
-      controller: controller,
-      probe: (url, {city}) async => const ProbeUnreachable(error: 'no answer'),
+    // The server's plugin inventory as a section of a scrolling page, the
+    // way "This server" hosts it.
+    PhoneServerScene.plugins => Scaffold(
+      body: SingleChildScrollView(
+        child: ServerPluginsSection(controller: controller),
+      ),
     ),
   };
   await tester.pumpWidget(

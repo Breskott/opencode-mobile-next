@@ -55,7 +55,13 @@ void main() {
     ) async {
       _phone(tester);
       mockKeepAlive(maker: 'Google', battery: true);
-      await tester.pumpWidget(_app(const KeepRunningScreen()));
+      await tester.pumpWidget(
+        _app(
+          const Scaffold(
+            body: SingleChildScrollView(child: KeepRunningSection()),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('keep-running-done')), findsOneWidget);
@@ -73,7 +79,13 @@ void main() {
     ) async {
       _phone(tester);
       mockKeepAlive(maker: 'Xiaomi', battery: true);
-      await tester.pumpWidget(_app(const KeepRunningScreen()));
+      await tester.pumpWidget(
+        _app(
+          const Scaffold(
+            body: SingleChildScrollView(child: KeepRunningSection()),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // The maker's own screens cannot be checked: never "You're set".
@@ -93,7 +105,13 @@ void main() {
     ) async {
       _phone(tester);
       final opened = mockKeepAlive(maker: 'Xiaomi', opens: false);
-      await tester.pumpWidget(_app(const KeepRunningScreen()));
+      await tester.pumpWidget(
+        _app(
+          const Scaffold(
+            body: SingleChildScrollView(child: KeepRunningSection()),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const ValueKey('keep-running-autostart')));

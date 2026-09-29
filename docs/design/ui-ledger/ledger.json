@@ -1,5 +1,5 @@
 {
- "generatedFrom": "34f0bf938592e450777b3588fd62b1eed247434f",
+ "generatedFrom": "dc37e955540e55aec49a9cf5f800efebeb754587",
  "pages": [
   {
    "id": "system",
@@ -2187,7 +2187,7 @@
      "file": "lib/ui/widgets/app_exit_notice.dart",
      "line": 76,
      "action": "navigate",
-     "target": "keep-running",
+     "target": "notifications-settings",
      "targetWidget": "openKeepRunningScreen",
      "effect": "AppExitNoticeLine (app_exit_notice.dart): KitAction onPressed -> openKeepRunningScreen(context); offered only when notice.offersKeepAlive, after Android ended the app while the built-in server ran (AppExitRecovery).",
      "gates": [
@@ -23919,7 +23919,7 @@
      "file": "lib/ui/screens/this_phone_screen.dart",
      "line": 662,
      "action": "navigate",
-     "target": "keep-running",
+     "target": "notifications-settings",
      "targetWidget": "openKeepRunningScreen",
      "effect": "openKeepRunningScreen(context).",
      "gates": [
@@ -27144,14 +27144,6 @@
      "element": "settings-ai-team"
     },
     {
-     "page": "plugins-settings",
-     "element": "plugins-settings-ai-team-row"
-    },
-    {
-     "page": "plugins-settings",
-     "element": "plugins-team-other"
-    },
-    {
      "page": "workspace",
      "element": "workspace-team-card"
     },
@@ -27506,8 +27498,12 @@
      "element": "settings-ai-team"
     },
     {
-     "page": "plugins-settings",
-     "element": "plugins-settings-ai-team-row"
+     "page": "team-intro",
+     "element": "team-intro-set-up"
+    },
+    {
+     "page": "tools-hub",
+     "element": "tools-hub-plugins"
     }
    ],
    "gates": [
@@ -27523,7 +27519,7 @@
      "file": "lib/ui/screens/team/team_intro_screen.dart",
      "line": 223,
      "action": "navigate",
-     "target": "plugins-settings",
+     "target": "team-intro",
      "targetWidget": "PluginsSettingsScreen",
      "effect": "The one primary. OpenCode inside the app: pushReplacement(PluginsSettingsScreen), where BuiltinTeamSection adds, turns on and starts the team. Termux: reopens the phone offer (PhoneOffer.open) and pushReplacement(ThisPhoneScreen(kind: termux)), whose Add tools sheet holds the AI Team block. A computer without Gas City found: showTeamHostGuideSheet, then looks again when it closes.",
      "gates": [
@@ -27985,27 +27981,14 @@
    "presentedBy": [],
    "line": 137,
    "purpose": "Offer card shown when the automatic probe found a Gas City host next to the connected server.",
-   "reachedFrom": [
-    {
-     "page": "plugins-settings",
-     "element": null,
-     "evidence": "lib/ui/screens/settings/plugins_screen.dart:122"
-    },
-    {
-     "page": "plugins-settings",
-     "element": null,
-     "via": "embedded"
-    }
-   ],
+   "reachedFrom": [],
    "gates": [
     "_discovery.result != null && profile != null && profile.orchestration == null"
    ],
    "embeddedIn": [
     "PluginsSettingsScreen"
    ],
-   "hostPages": [
-    "plugins-settings"
-   ],
+   "hostPages": [],
    "elements": [
     {
      "id": "embedded-team-discovery-card-not-now",
@@ -29296,123 +29279,6 @@
      "effect": "Returns true; _clear calls controller.diagnostics.clear().",
      "gates": [],
      "destructive": true
-    }
-   ]
-  },
-  {
-   "id": "automation-settings",
-   "title": "What runs by itself",
-   "kind": "screen",
-   "area": "settings",
-   "file": "lib/ui/screens/automation_settings_screen.dart",
-   "widget": "AutomationSettingsScreen",
-   "presentedBy": [],
-   "line": 70,
-   "purpose": "Settings › What runs by itself (P6.1): what the app and the agent do on the current server without asking. The AI Team's supervision level (stored in the per-server AutomationPolicy, oc.automation.<profileId>; new team tasks start at it) and doors to Always allowed actions and background watching (Notifications).",
-   "reachedFrom": [
-    {
-     "page": "notifications-settings",
-     "element": "notifications-settings-automation"
-    }
-   ],
-   "gates": [
-    "one server (controller.profile); each section present only where the server supports it"
-   ],
-   "elements": [
-    {
-     "id": "automation-saved-permissions",
-     "type": "list-tile",
-     "label": "Always allowed actions",
-     "key": "automation-saved-permissions",
-     "file": "lib/ui/screens/automation_settings_screen.dart",
-     "line": 210,
-     "action": "navigate",
-     "target": "saved-permissions",
-     "targetWidget": "SavedPermissionsScreen",
-     "effect": "Pushes SavedPermissionsScreen(controller).",
-     "gates": [
-      "capabilities.savedPermissionList"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "automation-supervision",
-     "type": "list-tile",
-     "label": "High / Balanced / Autonomous",
-     "key": "automation-supervision-<level>",
-     "file": "lib/ui/screens/automation_settings_screen.dart",
-     "line": 250,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "AutomationPolicyController.setSupervision(level); a refused write shows automation-save-failed.",
-     "gates": [
-      "AI Team set up for this server"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "automation-watch",
-     "type": "list-tile",
-     "label": "Watch this server in the background",
-     "key": "automation-watch",
-     "file": "lib/ui/screens/automation_settings_screen.dart",
-     "line": 290,
-     "action": "navigate",
-     "target": "notifications-settings",
-     "targetWidget": "NotificationsSettingsScreen",
-     "effect": "Pushes NotificationsSettingsScreen(initialSection: 'servers'); the value says whether the monitor watches this server.",
-     "gates": [
-      "profile monitor supports and can read this server"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "keep-running",
-   "title": "Keep running in the background",
-   "kind": "screen",
-   "area": "settings",
-   "file": "lib/ui/screens/keep_running_screen.dart",
-   "widget": "KeepRunningScreen",
-   "presentedBy": [
-    "openKeepRunningScreen"
-   ],
-   "line": 60,
-   "purpose": "Settings › Keep running in the background: what to allow on this phone so Android leaves the app (and the built-in OpenCode/AI Team inside it) running; never opens by itself.",
-   "reachedFrom": [
-    {
-     "page": "notifications-settings",
-     "element": "notifications-settings-keep-running"
-    },
-    {
-     "page": "home-shell",
-     "element": "home-shell-app-exit-keep-running"
-    },
-    {
-     "page": "termux-setup-installed",
-     "element": "termux-setup-installed-keep-running"
-    }
-   ],
-   "gates": [
-    "platform: android only (supportsBackgroundService)"
-   ],
-   "elements": [
-    {
-     "id": "keep-running-open-setting",
-     "type": "list-tile",
-     "label": "<step title>",
-     "key": "keep-running-<step>",
-     "file": "lib/ui/screens/keep_running_screen.dart",
-     "line": 218,
-     "action": "external-link",
-     "target": null,
-     "effect": "KitRow onTap -> _open(setting): ref.read(appLifecycleBridgeProvider).openKeepAliveSetting(setting), opening the phone's own battery/autostart/lock/background-restriction settings screen for this step; no onTap once allowed or when the step has no direct setting.",
-     "gates": [
-      "setting != null && !allowed"
-     ],
-     "destructive": false
     }
    ]
   },
@@ -31753,12 +31619,7 @@
    "presentedBy": [],
    "line": 16,
    "purpose": "Lists the durable \"always allow\" grants for the current project and lets the user revoke them.",
-   "reachedFrom": [
-    {
-     "page": "automation-settings",
-     "element": "automation-saved-permissions"
-    }
-   ],
+   "reachedFrom": [],
    "gates": [],
    "elements": [
     {
@@ -31979,8 +31840,12 @@
      "element": "provider-quota-monitor-notification-settings"
     },
     {
-     "page": "automation-settings",
-     "element": "automation-watch"
+     "page": "home-shell",
+     "element": "home-shell-app-exit-keep-running"
+    },
+    {
+     "page": "termux-setup-installed",
+     "element": "termux-setup-installed-keep-running"
     }
    ],
    "gates": [],
@@ -32549,120 +32414,6 @@
    ]
   },
   {
-   "id": "plugins-settings",
-   "title": "Plugins",
-   "kind": "screen",
-   "area": "settings",
-   "file": "lib/ui/screens/settings/plugins_screen.dart",
-   "widget": "PluginsSettingsScreen",
-   "presentedBy": [],
-   "line": 51,
-   "purpose": "The one Plugins screen. Section \"In this app\": AI Team · Gas City (discovery card, optional on-phone re-offer card, the AI Team row). Section \"On the server\" (ServerPluginsSection, only with capabilities.pluginInventory): server plugin inventory and personal plugin -> slash-command links.",
-   "reachedFrom": [
-    {
-     "page": "settings",
-     "element": "settings-ai-team"
-    },
-    {
-     "page": "team-intro",
-     "element": "team-intro-set-up"
-    },
-    {
-     "page": "tools-hub",
-     "element": "tools-hub-plugins"
-    }
-   ],
-   "gates": [
-    "profile != null || capabilities.pluginInventory (hub row gate, settings_screen.dart:517)"
-   ],
-   "elements": [
-    {
-     "id": "plugins-team-other",
-     "type": "list-tile",
-     "label": "A team on a computer | See the team’s tasks",
-     "key": "plugins-team-other",
-     "file": "lib/ui/screens/settings/plugins_screen.dart",
-     "line": 194,
-     "action": "navigate",
-     "target": "team-home",
-     "targetWidget": "TeamPage / editTeamAddress",
-     "effect": "OpenCode inside the app, where the phone's card (BuiltinTeamSection) is the AI Team: while it is off, the secondary choice to connect a computer's Gas City opens the address form (team-host-sheet) straight away; once the phone's team is on, it opens the one AI Team page (openTeamPage, P3.4). Replaces the 'In this app › AI Team' row there, so the page has one AI Team in one state.",
-     "gates": [
-      "BuiltinTeamSection.appliesTo(profile) && (profile.orchestration == null || BuiltinTeam.isBuiltinConfig(profile.orchestration))"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "plugins-settings-ai-team-row",
-     "type": "list-tile",
-     "label": "AI Team",
-     "key": "plugins-ai-team-row",
-     "file": "lib/ui/screens/settings/plugins_screen.dart",
-     "line": 236,
-     "action": "navigate",
-     "target": "team-home",
-     "targetWidget": "TeamPage",
-     "effect": "openTeamPage(): the one AI Team page, on or off (P3.4; the AI Team sheet, team-plugin-sheet, is gone). Subtitle (key plugins-ai-team-subtitle) from teamStateLine per orchestration state ('Turning on…' while this phone installs it).",
-     "gates": [
-      "profile != null (else text \"Connect to a server to use plugins.\", key plugins-no-server)",
-      "absent on OpenCode inside the app unless a computer's team is connected there (plugins-team-other instead)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "plugins-refresh",
-     "type": "icon-button",
-     "label": "Refresh plugins",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 197,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_load() -> (controller.repository as PluginGateway).listPlugins() and reloads mappings from PluginCommandMappings.load(scope). Disabled while _loading.",
-     "gates": [
-      "section \"On the server\": capabilities.pluginInventory",
-      "_connected && _supported"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "plugins-retry",
-     "type": "button",
-     "label": "Try again",
-     "key": null,
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 226,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_load() again after a failed listPlugins().",
-     "gates": [
-      "section \"On the server\": capabilities.pluginInventory",
-      "_failed",
-      "_supported && _connected"
-     ],
-     "destructive": false
-    }
-   ],
-   "embeds": [
-    {
-     "widget": "TeamDiscoveryCard",
-     "file": "lib/ui/widgets/team_discovery_card.dart",
-     "line": 122,
-     "gates": []
-    },
-    {
-     "widget": "ServerPluginsSection",
-     "file": "lib/ui/screens/settings/server_plugins_section.dart",
-     "line": 195,
-     "gates": [
-      "controller.capabilities.pluginInventory"
-     ]
-    }
-   ]
-  },
-  {
    "id": "settings",
    "title": "Settings",
    "kind": "tab",
@@ -33151,7 +32902,7 @@
      "file": "lib/ui/screens/tools_hub_screen.dart",
      "line": 84,
      "action": "navigate",
-     "target": "plugins-settings",
+     "target": "team-intro",
      "targetWidget": null,
      "effect": "Opens PluginsSettingsScreen.",
      "gates": [
@@ -35147,7 +34898,7 @@
    {
     "from": "home-shell",
     "element": "home-shell-app-exit-keep-running",
-    "to": "keep-running"
+    "to": "notifications-settings"
    },
    {
     "from": "server-switcher-sheet",
@@ -37092,7 +36843,7 @@
    {
     "from": "termux-setup-installed",
     "element": "termux-setup-installed-keep-running",
-    "to": "keep-running"
+    "to": "notifications-settings"
    },
    {
     "from": "termux-setup-installed",
@@ -37417,7 +37168,7 @@
    {
     "from": "team-intro",
     "element": "team-intro-set-up",
-    "to": "plugins-settings"
+    "to": "team-intro"
    },
    {
     "from": "team-intro",
@@ -37742,7 +37493,7 @@
    {
     "from": "tools-hub",
     "element": "tools-hub-plugins",
-    "to": "plugins-settings"
+    "to": "team-intro"
    },
    {
     "from": "tools-hub",
@@ -37800,16 +37551,6 @@
     "to": "privacy-settings-clear-drafts-sheet"
    },
    {
-    "from": "plugins-settings",
-    "element": "plugins-team-other",
-    "to": "team-home"
-   },
-   {
-    "from": "plugins-settings",
-    "element": "plugins-settings-ai-team-row",
-    "to": "team-home"
-   },
-   {
     "from": "about",
     "element": "about-keyboard-shortcuts",
     "to": "shortcuts-help-dialog"
@@ -37828,16 +37569,6 @@
     "from": "app-diagnostics",
     "element": "app-diagnostics-clear",
     "to": "app-diagnostics-clear-sheet"
-   },
-   {
-    "from": "automation-settings",
-    "element": "automation-saved-permissions",
-    "to": "saved-permissions"
-   },
-   {
-    "from": "automation-settings",
-    "element": "automation-watch",
-    "to": "notifications-settings"
    },
    {
     "from": "saved-permissions",
@@ -38152,12 +37883,6 @@
     "secondary": true
    },
    {
-    "from": "plugins-settings",
-    "element": "plugins-settings-ai-team-row",
-    "to": "team-intro",
-    "secondary": true
-   },
-   {
     "from": "workspace",
     "element": "workspace-new-session",
     "to": "team-conversation",
@@ -38167,24 +37892,6 @@
     "from": "team-phone-onboarding-offer",
     "element": "team-phone-onboarding-offer-set-up",
     "to": "team-phone-onboarding-steps",
-    "secondary": true
-   },
-   {
-    "from": "settings",
-    "element": "settings-ai-team",
-    "to": "plugins-settings",
-    "secondary": true
-   },
-   {
-    "from": "notifications-settings",
-    "element": "notifications-settings-automation",
-    "to": "automation-settings",
-    "secondary": true
-   },
-   {
-    "from": "notifications-settings",
-    "element": "notifications-settings-keep-running",
-    "to": "keep-running",
     "secondary": true
    },
    {
@@ -39005,17 +38712,6 @@
     "via": "embedded"
    },
    {
-    "from": "plugins-settings",
-    "element": null,
-    "to": "embedded-team-discovery-card"
-   },
-   {
-    "from": "plugins-settings",
-    "element": null,
-    "to": "embedded-team-discovery-card",
-    "via": "embedded"
-   },
-   {
     "from": "team-agent",
     "element": null,
     "to": "embedded-team-technical-value",
@@ -39135,6 +38831,11 @@
    "part": "a-shell"
   },
   {
+   "file": "lib/ui/screens/automation_settings_screen.dart",
+   "reason": "Helpers and sections of merged pages; the standalone page was retired (Notifications and background; Settings > This server).",
+   "part": "j1-settings-more"
+  },
+  {
    "file": "lib/ui/screens/chat/chat_states.dart",
    "reason": "part of chat_screen.dart (design standard §9 step 5): the chat page's own loading/error states and its one status line, not a surface of their own; shown inline on the chat page.",
    "part": "b1-chat-screen"
@@ -39153,6 +38854,11 @@
    "file": "lib/ui/screens/chat/watching.dart",
    "reason": "part of chat_screen.dart (design standard §9 step 5): how the chat page shows a conversation someone else drives (an AI Team worker's own OpenCode session) — the same 'chat' page and route, not a surface of its own. Its status banner and empty state are read-only; its composer (chat-watching-composer), send, receipt and the About <name> action are recorded on the chat page. _openWatchedChild (a child session delegated to, watched the same way) is wired from chat_screen.dart.",
    "part": "b1-chat-screen"
+  },
+  {
+   "file": "lib/ui/screens/keep_running_screen.dart",
+   "reason": "Helpers and sections of merged pages; the standalone page was retired (Notifications and background; Settings > This server).",
+   "part": "j1-settings-more"
   },
   {
    "file": "lib/ui/screens/library/pending_auth_recovery.dart",
@@ -39193,6 +38899,16 @@
    "file": "lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart",
    "reason": "PhoneSetupWelcomeEntry is the first-run welcome's own status line about a phone setup job that already exists (running / stopped part way / done but nothing saved); embedded in servers-welcome (lib/ui/screens/servers_screen.dart:710), not a surface of its own. Its action button opens phone-setup-progress or resumes/reopens the job.",
    "part": "h-termux"
+  },
+  {
+   "file": "lib/ui/screens/settings/plugins_screen.dart",
+   "reason": "Helpers and sections of merged pages; the standalone page was retired (Notifications and background; Settings > This server).",
+   "part": "j1-settings-more"
+  },
+  {
+   "file": "lib/ui/screens/settings/server_plugins_section.dart",
+   "reason": "ServerPluginsSection is the 'Plugins on this server' section of the This server page (server-settings); its elements keep their plugins-* ids on that page's host.",
+   "part": "j1-settings-more"
   },
   {
    "file": "lib/ui/screens/team/policy_block.dart",

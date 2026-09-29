@@ -252,7 +252,9 @@ void main() {
         tester,
         'system_keep_running',
         light: light,
-        home: const KeepRunningScreen(),
+        home: const Scaffold(
+          body: SingleChildScrollView(child: KeepRunningSection()),
+        ),
       );
     });
 
@@ -262,7 +264,9 @@ void main() {
         tester,
         'system_keep_running_set',
         light: light,
-        home: const KeepRunningScreen(),
+        home: const Scaffold(
+          body: SingleChildScrollView(child: KeepRunningSection()),
+        ),
       );
     });
 
@@ -354,7 +358,9 @@ void main() {
       'system_keep_running',
       light: true,
       size: _wide,
-      home: const KeepRunningScreen(),
+      home: const Scaffold(
+        body: SingleChildScrollView(child: KeepRunningSection()),
+      ),
     );
   });
 }

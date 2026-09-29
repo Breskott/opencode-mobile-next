@@ -11545,7 +11545,7 @@
   "@pluginsSectionInApp": {
     "description": "Plugins screen section header: plugins that ship with this app (AI Team)."
   },
-  "pluginsSectionOnServer": "On the server",
+  "pluginsSectionOnServer": "Plugins on this server",
   "@pluginsSectionOnServer": {
     "description": "Plugins screen section header: the connected server's plugin inventory."
   },
@@ -24471,15 +24471,6 @@
   "@automationSearchAliases": {
     "description": "Settings search: extra words that find What runs by itself."
   },
-  "automationIntro": "What the app and the agent do on {server} without asking you first.",
-  "@automationIntro": {
-    "description": "What runs by itself: intro line. {server} is the server's shown name.",
-    "placeholders": {
-      "server": {
-        "type": "String"
-      }
-    }
-  },
   "automationSaveFailed": "This choice wasn't saved on this phone. The level above is still the one in use; try again.",
   "@automationSaveFailed": {
     "description": "What runs by itself: storage refused the chosen level."
@@ -24487,14 +24478,6 @@
   "automationSaving": "Saving…",
   "@automationSaving": {
     "description": "What runs by itself: a choice is being saved."
-  },
-  "automationEmptyTitle": "Nothing runs by itself",
-  "@automationEmptyTitle": {
-    "description": "What runs by itself: this server has no team, no saved rules and can't be watched."
-  },
-  "automationEmptyBody": "This server has no AI Team, doesn't keep always allowed actions and can't be watched in the background.",
-  "@automationEmptyBody": {
-    "description": "What runs by itself: why the page is empty."
   },
   "automationTeamLabel": "How much the AI Team decides alone",
   "@automationTeamLabel": {
@@ -24511,22 +24494,6 @@
   "automationSavedRulesDetail": "What the agent may run here without asking you.",
   "@automationSavedRulesDetail": {
     "description": "What runs by itself: the Always allowed actions row's line."
-  },
-  "automationWatchTitle": "Watch in the background",
-  "@automationWatchTitle": {
-    "description": "What runs by itself: row that opens Notifications at the watched servers."
-  },
-  "automationWatchDetail": "Checks for requests while the app is closed. Set in Notifications.",
-  "@automationWatchDetail": {
-    "description": "What runs by itself: the watch row's line."
-  },
-  "automationValueOn": "On",
-  "@automationValueOn": {
-    "description": "What runs by itself: a door row's state value."
-  },
-  "automationValueOff": "Off",
-  "@automationValueOff": {
-    "description": "What runs by itself: a door row's state value."
   },
   "phoneSetupStartTermuxProgressHeadline": "Setup in Termux is {percent}% done",
   "@phoneSetupStartTermuxProgressHeadline": {

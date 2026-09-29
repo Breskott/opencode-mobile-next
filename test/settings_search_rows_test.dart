@@ -315,7 +315,7 @@ void main() {
 
         // Keep running is a section of Notifications and background now.
         expect(find.byType(NotificationsSettingsScreen), findsOneWidget);
-        expect(find.byType(KeepRunningScreen), findsOneWidget);
+        expect(find.byType(KeepRunningSection), findsOneWidget);
         expect(_key('keep-running-battery'), findsOneWidget);
         expect(_wash(tester, 'keep-running-battery'), 1);
         expect(_wash(tester, 'keep-running-autostart'), isNull);

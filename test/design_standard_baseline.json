@@ -95,12 +95,6 @@
     "lib/ui/screens/settings/default_shell_row.dart": {},
     "lib/ui/screens/settings/notifications_settings_screen.dart": {},
     "lib/ui/screens/settings/personal_settings_screens.dart": {},
-    "lib/ui/screens/settings/plugins_screen.dart#PluginsSettingsScreen": {},
-    "lib/ui/screens/settings/plugins_screen.dart#_PluginsSettingsScreenState": {
-      "G1 showModalBottomSheet(": 1,
-      "G17 .textTheme.": 1,
-      "G21 EdgeInsets(<n>)": 4
-    },
     "lib/ui/screens/settings/server_plugins_section.dart": {
       "G1 AlertDialog(": 1,
       "G1 SnackBar(": 1,

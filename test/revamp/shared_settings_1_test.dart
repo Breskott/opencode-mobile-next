@@ -1,6 +1,5 @@
 // shared-settings-1 (wave 2a): the Language sheet's honest Arabic offer, the
-// theme preview sheet's "In use now" line and Undo after Apply, and the AI
-// team discovery offer's stacked actions and failed turn-on.
+// theme preview sheet's "In use now" line and Undo after Apply.
 import 'dart:convert';
 import 'dart:io';
 
@@ -14,11 +13,9 @@ import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 import 'package:opencode_mobile/ui/widgets/appearance_picker.dart';
 import 'package:opencode_mobile/ui/widgets/language_picker.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n_coverage_test.dart' show scan;
-import 'shared_settings_harness.dart';
 
 final _l10n = lookupAppLocalizations(const Locale('en'));
 
@@ -34,12 +31,6 @@ Widget _app(Widget home) => MaterialApp(
   ),
   home: Scaffold(body: home),
 );
-
-Future<void> _settle(WidgetTester tester) async {
-  for (var i = 0; i < 20; i++) {
-    await tester.pump(const Duration(milliseconds: 50));
-  }
-}
 
 Map<String, Object?> _arb(String path) =>
     jsonDecode(File(path).readAsStringSync()) as Map<String, Object?>;
@@ -184,69 +175,6 @@ void main() {
       expect(controller.themePack.value, ThemePackId.opencode);
       expect(controller.store.themePack, ThemePackId.opencode);
       KitUndo.commitPending();
-    });
-  });
-
-  // Review board, embedded-team-discovery-card: the offer is folded into
-  // the Plugins AI Team row ("Found on Workstation" + Turn on), so the team
-  // has one presence on the page.
-  group('team found on the server', () {
-    Future<(ConnectionController, FlakyProfileStore)> pump(
-      WidgetTester tester, {
-      Size size = const Size(412, 915),
-    }) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      final booted = await bootWorkstation();
-      addTearDown(booted.$1.dispose);
-      await tester.pumpWidget(
-        _app(PluginsSettingsScreen(controller: booted.$1, probe: teamProbe)),
-      );
-      await _settle(tester);
-      return booted;
-    }
-
-    String rowLine(WidgetTester tester) {
-      final text = tester.widget<Text>(
-        find.byKey(const ValueKey('plugins-ai-team-subtitle')),
-      );
-      return text.data ?? text.textSpan!.toPlainText();
-    }
-
-    testWidgets('one row says where it was found and carries Turn on, with '
-        'no separate card', (tester) async {
-      await pump(tester);
-      expect(find.byKey(const ValueKey('team-discovery-card')), findsNothing);
-      expect(rowLine(tester), _l10n.pluginsTeamRowFound('Workstation'));
-      final row = find.byKey(const ValueKey('plugins-ai-team-row'));
-      final turnOn = find.byKey(const ValueKey('plugins-ai-team-turn-on'));
-      expect(find.descendant(of: row, matching: turnOn), findsOneWidget);
-      expect(
-        find.descendant(of: turnOn, matching: find.text('Turn on')),
-        findsOneWidget,
-      );
-      // Engine words (Gas City, its version, the city) stay on the page.
-      expect(find.textContaining('Gas City'), findsNothing);
-      expect(find.textContaining('bright-lights'), findsNothing);
-    });
-
-    testWidgets('a failed turn-on says so on the row, keeps Turn on and can '
-        'retry', (tester) async {
-      final (controller, store) = await pump(tester);
-      store.fail = true;
-      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-turn-on')));
-      await _settle(tester);
-      expect(rowLine(tester), _l10n.teamDiscoveryCardTurnOnFailed);
-      expect(controller.profile!.orchestration, isNull);
-      store.fail = false;
-      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-turn-on')));
-      await _settle(tester);
-      expect(controller.profile!.orchestration?.city, 'bright-lights');
-      expect(
-        find.byKey(const ValueKey('plugins-ai-team-turn-on')),
-        findsNothing,
-      );
     });
   });
 }

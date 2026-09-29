@@ -1,6 +1,5 @@
-// TEAM-106 layout: Settings › Plugins (discovery card + row), the AI Team
-// sheet, the manual-add form with a verdict, the host guide sheet and the
-// server editor's AI Team section at 320dp × 2.5x, LTR and RTL, with no
+// TEAM-106 layout: the AI Team page (on and off), the manual-add form with a
+// verdict, the host guide sheet and the server editor's AI Team section at 320dp × 2.5x, LTR and RTL, with no
 // overflow. Set TEAM_PLUGINS_CAPTURE=true to write PNGs under
 // docs/qa/ai-team/.
 
@@ -19,7 +18,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/team_page.dart';
 import 'package:opencode_mobile/ui/widgets/team_host_form.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -168,7 +167,7 @@ void main() {
   }
 
   for (final rtl in [false, true]) {
-    for (final page in ['discovery', 'team', 'form', 'guide', 'editor']) {
+    for (final page in ['team', 'form', 'guide', 'editor']) {
       testWidgets('plugins $page at 320dp 2.5x ${rtl ? 'RTL' : 'LTR'}', (
         tester,
       ) async {
@@ -242,10 +241,7 @@ void main() {
                   ),
                   home: page == 'editor'
                       ? const ServersScreen()
-                      : PluginsSettingsScreen(
-                          controller: controller,
-                          probe: _foundProbe,
-                        ),
+                      : TeamPage(connection: controller, probe: _foundProbe),
                 ),
               ),
             ),
@@ -253,30 +249,10 @@ void main() {
           await settle(tester);
           expect(tester.takeException(), isNull);
           switch (page) {
-            case 'discovery':
-              // The offer is the row's own Turn on (no separate card).
-              expect(
-                find.byKey(const ValueKey('team-discovery-card')),
-                findsNothing,
-              );
-              final row = find.byKey(const ValueKey('plugins-ai-team-row'));
-              await reveal(tester, row);
-              await tester.pumpAndSettle();
-              expect(row.hitTestable(), findsOneWidget);
-              expect(
-                find
-                    .byKey(const ValueKey('plugins-ai-team-turn-on'))
-                    .hitTestable(),
-                findsOneWidget,
-              );
             case 'team':
-              // The row opens the one AI Team page (P3.4); its switches
-              // are in the top bar's menu, reachable at large text.
+              // The one AI Team page; its switches are in the top bar's
+              // menu, reachable at large text.
               expect(controller.orchestration?.phase, OrchestrationPhase.ready);
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('plugins-ai-team-row')),
-              );
               expect(find.byKey(const ValueKey('team-home')), findsOneWidget);
               await tapVisible(
                 tester,
@@ -289,11 +265,6 @@ void main() {
             case 'form':
               // The team page, off (its drawing moves, so frames are
               // pumped rather than settled): Enter its address.
-              final row = find.byKey(const ValueKey('plugins-ai-team-row'));
-              await reveal(tester, row);
-              await settle(tester);
-              await tester.tap(row);
-              await settle(tester);
               final address = find.byKey(const ValueKey('team-intro-address'));
               expect(address.hitTestable(), findsOneWidget);
               await tester.tap(address);
@@ -339,16 +310,8 @@ void main() {
               await settle(tester);
               expect(find.text(l10n.teamUiTailnetRequired), findsOneWidget);
             case 'guide':
-              await reveal(
-                tester,
-                find.byKey(const ValueKey('plugins-ai-team-row')),
-              );
               unawaited(
-                showTeamHostGuideSheet(
-                  tester.element(
-                    find.byKey(const ValueKey('plugins-ai-team-row')),
-                  ),
-                ),
+                showTeamHostGuideSheet(tester.element(find.byType(TeamPage))),
               );
               await tester.pumpAndSettle();
               expect(

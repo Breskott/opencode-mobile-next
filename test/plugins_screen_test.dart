@@ -12,10 +12,8 @@ import 'package:opencode_mobile/domain/server_gateway.dart'
     show StreamStatus, CommandInfo;
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
-import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_probe.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/kit/kit_top_bar.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings/server_plugins_section.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _Api extends OpenCodeApi {
@@ -91,12 +89,12 @@ Widget _app(ConnectionController controller, {double textScale = 1}) =>
         ).copyWith(textScaler: TextScaler.linear(textScale)),
         child: child!,
       ),
-      // The real Plugins screen, so the section is exercised where it lives.
-      // The probe never finds an AI Team host and never touches the network.
-      home: PluginsSettingsScreen(
-        controller: controller,
-        probe: (url, {city}) async =>
-            const ProbeUnreachable(error: 'no answer'),
+      // The server's plugin inventory, hosted the way "This server" hosts it:
+      // a section inside a scrolling page.
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: ServerPluginsSection(controller: controller),
+        ),
       ),
     );
 
@@ -147,32 +145,14 @@ void main() {
     expect(find.byKey(const ValueKey('plugin-details-sheet')), findsNothing);
   });
 
-  testWidgets('one Plugins screen: "In this app" above "On the server"', (
+  testWidgets('the server section carries its own label and plugin group', (
     tester,
   ) async {
     final repository = _Repository()..plugins = [_plugin];
     await tester.pumpWidget(_app(await _controller(repository)));
     await tester.pumpAndSettle();
 
-    // The kit's top bar (screen-library-3, TEST-19: KitTopBar replaced the
-    // Material AppBar).
-    expect(find.byType(KitTopBar), findsOneWidget);
-    expect(
-      find.descendant(
-        of: find.byType(KitTopBar),
-        matching: find.text('Plugins'),
-      ),
-      findsOneWidget,
-    );
-    final app = find.text('In this app');
-    final server = find.text('On the server');
-    expect(app, findsOneWidget);
-    expect(server, findsOneWidget);
-    expect(tester.getTopLeft(app).dy, lessThan(tester.getTopLeft(server).dy));
-    final team = find.byKey(const ValueKey('plugins-ai-team-row'));
-    expect(tester.getTopLeft(team).dy, lessThan(tester.getTopLeft(server).dy));
-    // The server's plugins are carded in the section's own row group,
-    // like "In this app", and its actions are the page's top bar's.
+    expect(find.text('Plugins on this server'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('plugins-section-server-group')),
@@ -181,7 +161,6 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Loaded by the server for this project.'), findsNothing);
-    expect(find.byTooltip('Refresh plugins'), findsOneWidget);
   });
 
   testWidgets('unsupported servers make no plugin request', (tester) async {
@@ -190,16 +169,8 @@ void main() {
       _app(await _controller(repository, supported: false)),
     );
     await tester.pumpAndSettle();
-    // Hide, don't disable: without an inventory the "On the server" section
-    // is absent, while "In this app" stays.
-    expect(find.byKey(const ValueKey('plugins-section-server')), findsNothing);
-    expect(find.text('On the server'), findsNothing);
-    expect(
-      find.text('This server does not support plugin inspection.'),
-      findsNothing,
-    );
-    expect(find.byKey(const ValueKey('plugins-section-app')), findsOneWidget);
-    expect(find.byKey(const ValueKey('plugins-ai-team-row')), findsOneWidget);
+    // The host hides the section without an inventory; the section itself
+    // never asks the server for one either.
     expect(repository.calls, 0);
   });
 

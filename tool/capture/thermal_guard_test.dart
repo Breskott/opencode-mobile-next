@@ -175,7 +175,9 @@ void main() {
               ),
               appLifecycleBridgeProvider.overrideWithValue(_Pixel()),
             ],
-            child: const KeepRunningScreen(),
+            child: const Scaffold(
+              body: SingleChildScrollView(child: KeepRunningSection()),
+            ),
           ),
           boundaryKey: boundary,
           controller: controller,

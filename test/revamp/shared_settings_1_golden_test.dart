@@ -1,7 +1,7 @@
 // Golden renders of shared-settings-1's pages (wave 2a), rebuilt from kit
 // parts: the Language sheet (Arabic "Partly translated (N %)"), the theme
 // preview sheet (another theme with Apply, the theme in use, Material You
-// unavailable) and the AI team discovery offer. Phone 412x915 and one wide
+// unavailable). Phone 412x915 and one wide
 // window (1280x800), dark and light (owner decision 2026-09-27: no Arabic),
 // with the app's real fonts at DPR 1 and reduced motion (a still frame).
 //
@@ -23,11 +23,9 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/theme_packs.dart';
 import 'package:opencode_mobile/ui/widgets/appearance_picker.dart';
 import 'package:opencode_mobile/ui/widgets/language_picker.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../tool/capture/fixtures.dart' show captureTheme, loadCaptureFonts;
-import 'shared_settings_harness.dart';
 
 const _phone = Size(412, 915);
 const _arabicFallback = 'Noto Sans Arabic';
@@ -182,23 +180,6 @@ void main() {
             ),
           ),
           open: () => tester.tap(find.text('Open')),
-        );
-      });
-
-      // The discovery offer is the Plugins AI Team row itself ("Found on
-      // Workstation" + Turn on); the separate card is gone.
-      testWidgets('team found on the server $mode ${size.width.toInt()}', (
-        tester,
-      ) async {
-        final (controller, _) = await bootWorkstation();
-        addTearDown(controller.dispose);
-        await _shot(
-          tester,
-          'settings_team_found_row',
-          light: light,
-          size: size,
-          home: (_) =>
-              PluginsSettingsScreen(controller: controller, probe: teamProbe),
         );
       });
     }

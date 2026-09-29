@@ -17769,7 +17769,7 @@ abstract class AppLocalizations {
   /// Plugins screen section header: the connected server's plugin inventory.
   ///
   /// In en, this message translates to:
-  /// **'On the server'**
+  /// **'Plugins on this server'**
   String get pluginsSectionOnServer;
 
   /// Notifications screen section header: which events send a notification.
@@ -32608,12 +32608,6 @@ abstract class AppLocalizations {
   /// **'automation automatic supervision auto approve approvals always allow permissions background watch monitor team level'**
   String get automationSearchAliases;
 
-  /// What runs by itself: intro line. {server} is the server's shown name.
-  ///
-  /// In en, this message translates to:
-  /// **'What the app and the agent do on {server} without asking you first.'**
-  String automationIntro(String server);
-
   /// What runs by itself: storage refused the chosen level.
   ///
   /// In en, this message translates to:
@@ -32625,18 +32619,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saving…'**
   String get automationSaving;
-
-  /// What runs by itself: this server has no team, no saved rules and can't be watched.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing runs by itself'**
-  String get automationEmptyTitle;
-
-  /// What runs by itself: why the page is empty.
-  ///
-  /// In en, this message translates to:
-  /// **'This server has no AI Team, doesn\'t keep always allowed actions and can\'t be watched in the background.'**
-  String get automationEmptyBody;
 
   /// What runs by itself: label over the supervision levels.
   ///
@@ -32661,30 +32643,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'What the agent may run here without asking you.'**
   String get automationSavedRulesDetail;
-
-  /// What runs by itself: row that opens Notifications at the watched servers.
-  ///
-  /// In en, this message translates to:
-  /// **'Watch in the background'**
-  String get automationWatchTitle;
-
-  /// What runs by itself: the watch row's line.
-  ///
-  /// In en, this message translates to:
-  /// **'Checks for requests while the app is closed. Set in Notifications.'**
-  String get automationWatchDetail;
-
-  /// What runs by itself: a door row's state value.
-  ///
-  /// In en, this message translates to:
-  /// **'On'**
-  String get automationValueOn;
-
-  /// What runs by itself: a door row's state value.
-  ///
-  /// In en, this message translates to:
-  /// **'Off'**
-  String get automationValueOff;
 
   /// Phone setup start screen: headline while a setup job in Termux is running or stopped part way. {percent} is a whole number.
   ///

@@ -565,16 +565,15 @@ class _NotificationsSettingsScreenState
                 SizedBox(height: tokens.sectionGap),
                 KeyedSubtree(
                   key: _sectionKey('keep-running'),
-                  child: const KeepRunningScreen(embedded: true),
+                  child: const KeepRunningSection(),
                 ),
               ],
               // What the app and the agent do without asking first.
               SizedBox(height: tokens.sectionGap),
               KeyedSubtree(
                 key: _sectionKey('automation'),
-                child: AutomationSettingsScreen(
+                child: AutomationSettingsSection(
                   controller: controller,
-                  embedded: true,
                   onShowSection: _showSection,
                 ),
               ),
