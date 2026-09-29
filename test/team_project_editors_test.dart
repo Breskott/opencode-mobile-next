@@ -58,22 +58,19 @@ void main() {
     unawaited(openTeamNewProject(context, controller));
     await tester.pumpAndSettle();
 
-    await _tap(tester, 'Start planning');
-    expect(find.text('Choose Single lane or Parallel agents.'), findsOneWidget);
-    expect(gateway.commands, isEmpty);
+    void expectBlocked(String reason) {
+      final primary = tester.widget<KitSheet>(find.byType(KitSheet)).primary!;
+      expect(primary.onPressed, isNull);
+      expect(primary.disabledReason, reason);
+      expect(find.text(reason), findsOneWidget);
+      expect(gateway.commands, isEmpty);
+    }
 
+    expectBlocked('Choose Single lane or Parallel agents.');
     await _tap(tester, 'Single lane');
-    await _tap(tester, 'Start planning');
-    expect(find.text('Set a budget or choose No limit.'), findsOneWidget);
-    expect(gateway.commands, isEmpty);
-
+    expectBlocked('Set a budget or choose No limit.');
     await _tap(tester, 'No limit');
-    await _tap(tester, 'Start planning');
-    expect(
-      find.text('Add a project name, goal and at least one repo.'),
-      findsOneWidget,
-    );
-    expect(gateway.commands, isEmpty);
+    expectBlocked('Add a project name, goal and at least one repo.');
     for (final entry in {
       'name': 'Reader',
       'goal': 'Read saved articles offline',
@@ -91,6 +88,10 @@ void main() {
     }
     await _tap(tester, 'Home PC');
     await _tap(tester, 'Add repo');
+    expect(
+      tester.widget<KitSheet>(find.byType(KitSheet)).primary!.onPressed,
+      isNotNull,
+    );
     await _tap(tester, 'Start planning');
     expect(gateway.commands, hasLength(1));
     expect(gateway.commands.single.spec!.goal, 'Read saved articles offline');

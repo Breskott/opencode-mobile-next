@@ -369,6 +369,18 @@ class _EditorState extends State<_Editor> {
     return null;
   }
 
+  String? _creationError() {
+    final settingsError = _settingsError();
+    if (settingsError != null) return settingsError;
+    if (_value('goal').isEmpty || _value('name').isEmpty || _repos.isEmpty) {
+      return _l.teamProjectEditorRequired;
+    }
+    if (widget.kind == _Kind.quick && (_roleId == null || _serverId == null)) {
+      return _l.teamProjectEditorChooseRoleServer;
+    }
+    return null;
+  }
+
   void _updateCharging() {
     if (_chargingTouched) return;
     final phone =
@@ -645,6 +657,7 @@ class _EditorState extends State<_Editor> {
       _Kind.roles => _l.teamProjectEditorRoles,
       _Kind.defaults => _l.teamProjectEditorDefaults,
     };
+    final creationError = _creating ? _creationError() : null;
     return KitSheet(
       title: title,
       handle: false,
@@ -669,7 +682,11 @@ class _EditorState extends State<_Editor> {
                       : _l.teamProjectEditorApplyPlan,
                 _ => _l.teamProjectEditorSave,
               },
-              onPressed: _working || _restoring || _complete ? null : _save,
+              onPressed:
+                  _working || _restoring || _complete || creationError != null
+                  ? null
+                  : _save,
+              disabledReason: creationError,
               working: _working,
             ),
       secondary: widget.kind == _Kind.spec
