@@ -13501,17 +13501,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String teamChatLeadStarting(String title) {
-    return 'Started a worker on “$title”';
-  }
-
-  @override
-  String teamChatLeadClaimed(String name, String title) {
-    return '$name began “$title”';
+    return 'Worker started on “$title”';
   }
 
   @override
   String teamChatLeadClaimedWorker(String title) {
-    return 'A worker began “$title”';
+    return 'Worker took “$title”';
   }
 
   @override
@@ -13575,7 +13570,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String teamChatComposerGoesTo(String name) {
-    return 'Goes to $name through the AI Team';
+    return 'Your message goes to $name';
   }
 
   @override
@@ -21724,15 +21719,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamChatLeadRoutedIt => 'Sent it to the workers';
 
   @override
-  String get teamChatLeadStartingIt => 'Started a worker on it';
+  String get teamChatLeadStartingIt => 'Worker started';
 
   @override
-  String teamChatLeadClaimedIt(String name) {
-    return '$name began the task';
-  }
-
-  @override
-  String get teamChatLeadClaimedWorkerIt => 'The worker began the task';
+  String get teamChatLeadClaimedWorkerIt => 'Worker took the task';
 
   @override
   String get teamChatLeadPushedIt => 'Its changes are on a branch';
@@ -24326,4 +24316,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamSettingsTurnOff => 'Turn off the AI Team';
+
+  @override
+  String teamChatWorkerNumbered(String role, int n) {
+    return '$role $n';
+  }
 }

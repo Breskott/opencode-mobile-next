@@ -340,6 +340,13 @@ class _TeamNowLineViewState extends State<TeamNowLineView> {
         state.explain &&
         reason != null &&
         activity != TeamNowActivity.needsYou;
+    // A reason that only restates the title ("Working on your task" /
+    // "The task is being worked on.") is not said twice; the Why fold still
+    // explains the stage.
+    final restates =
+        reason == TeamNowReason.workInProgress ||
+        (activity == TeamNowActivity.reviewing &&
+            reason == TeamNowReason.reviewPending);
     final why = explain ? _whyText(l10n, activity, reason) : null;
     final foldable = explain && (why != null || offered.isNotEmpty);
     final open = foldable && _open;
@@ -357,7 +364,9 @@ class _TeamNowLineViewState extends State<TeamNowLineView> {
               teamNowActivityLine(l10n, activity, elapsed: elapsed),
           next: _nextLine(l10n, state, elapsed: elapsed),
           nextKey: ValueKey('$prefix-now-next'),
-          supporting: explain ? teamNowReasonSentence(l10n, reason) : null,
+          supporting: explain && !restates
+              ? teamNowReasonSentence(l10n, reason)
+              : null,
           supportingKey: ValueKey('$prefix-now-reason'),
           action: foldable
               ? KitAction(

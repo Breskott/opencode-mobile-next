@@ -14932,7 +14932,7 @@
       }
     }
   },
-  "teamChatLeadStarting": "Started a worker on “{title}”",
+  "teamChatLeadStarting": "Worker started on “{title}”",
   "@teamChatLeadStarting": {
     "description": "Team conversation, lead line: a worker session started for a step",
     "placeholders": {
@@ -14941,19 +14941,7 @@
       }
     }
   },
-  "teamChatLeadClaimed": "{name} began “{title}”",
-  "@teamChatLeadClaimed": {
-    "description": "Team conversation, lead line: a named worker claimed a step",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "title": {
-        "type": "String"
-      }
-    }
-  },
-  "teamChatLeadClaimedWorker": "A worker began “{title}”",
+  "teamChatLeadClaimedWorker": "Worker took “{title}”",
   "@teamChatLeadClaimedWorker": {
     "description": "Team conversation, lead line: a worker claimed a step (no name reported)",
     "placeholders": {
@@ -15052,7 +15040,7 @@
   "@teamChatComposerHint": {
     "description": "Team conversation composer hint"
   },
-  "teamChatComposerGoesTo": "Goes to {name} through the AI Team",
+  "teamChatComposerGoesTo": "Your message goes to {name}",
   "@teamChatComposerGoesTo": {
     "description": "Team conversation, under the composer: who the message reaches (name · role)",
     "placeholders": {
@@ -25942,20 +25930,11 @@
   "@teamChatLeadRoutedIt": {
     "description": "Team conversation, the lead's line: the task (said once in the person's prompt above) was sent to the workers; \"it\" refers back to the prompt so the task's text is not repeated"
   },
-  "teamChatLeadStartingIt": "Started a worker on it",
+  "teamChatLeadStartingIt": "Worker started",
   "@teamChatLeadStartingIt": {
     "description": "Team conversation, the lead's line: a worker is starting on the task named in the prompt above (refers back, never repeats the task's text)"
   },
-  "teamChatLeadClaimedIt": "{name} began the task",
-  "@teamChatLeadClaimedIt": {
-    "description": "Team conversation, the lead's line: the named worker took the task named in the prompt above",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "teamChatLeadClaimedWorkerIt": "The worker began the task",
+  "teamChatLeadClaimedWorkerIt": "Worker took the task",
   "@teamChatLeadClaimedWorkerIt": {
     "description": "Team conversation, the lead's line: an unnamed worker took the task named in the prompt above"
   },
@@ -29363,5 +29342,13 @@
   "teamSettingsTurnOff": "Turn off the AI Team",
   "@teamSettingsTurnOff": {
     "description": "Team settings: turn the AI Team off"
+  },
+  "teamChatWorkerNumbered": "{role} {n}",
+  "@teamChatWorkerNumbered": {
+    "description": "Team conversation: a worker's plain name when the task has several of the same role (Worker 2)",
+    "placeholders": {
+      "role": {"type": "String"},
+      "n": {"type": "int"}
+    }
   }
 }

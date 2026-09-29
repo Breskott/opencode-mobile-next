@@ -769,43 +769,6 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
               // line says since when and offers its ways out.
               quiet: _noProgress(now, _clock()),
             ),
-          // The strip is the header's last row, with room under it and the
-          // header's edge, so the transcript never reads as running under
-          // its chips (owner report, build 2055).
-          if (run != null && agents.isNotEmpty) ...[
-            Padding(
-              key: const ValueKey('team-conversation-family-band'),
-              padding: EdgeInsetsDirectional.only(
-                top: KitTokens.of(context).space1,
-                bottom: KitTokens.of(context).space2,
-              ),
-              child: KitAgentStrip(
-                stripKey: const ValueKey('team-conversation-family'),
-                agents: [
-                  KitAgent(
-                    id: 'lead',
-                    key: const ValueKey('team-conversation-family-lead'),
-                    name: l10n.teamChatLeadName,
-                    state: _teamLeadState(run, gates),
-                  ),
-                  for (final agent in agents)
-                    KitAgent(
-                      id: agent.id,
-                      key: ValueKey('team-conversation-family-${agent.id}'),
-                      name:
-                          teamAgentShortName(agent) ??
-                          teamAgentRoleWord(l10n, teamAgentRole(agent)),
-                      role: teamAgentShortName(agent) == null
-                          ? null
-                          : teamAgentRoleWord(l10n, teamAgentRole(agent)),
-                      state: _teamAgentState(agent),
-                      onOpen: () => unawaited(_openAgent(agent)),
-                    ),
-                ],
-              ),
-            ),
-            const KitDivider(),
-          ],
         ],
         body: gone
             ? KitStateView(
@@ -832,7 +795,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
                   pendingRecord: pendingRecord,
                   now: now,
                 ),
-                composer: _composer(context, recipient),
+                composer: _composer(context, recipient, agents),
               ),
       );
     },
@@ -948,20 +911,15 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
               for (final agent in agents)
                 KitToolRow.agent(
                   rowKey: ValueKey('team-conversation-agent-${agent.id}'),
-                  title: _teamAgentTitle(l10n, agent),
+                  title: _teamAgentTitle(l10n, agent, agents),
                   status: _teamAgentToolStatus(agent),
+                  liveMark: false,
                   task: [
                     for (final item in work)
                       if (item.id == agent.currentWorkId &&
                           !_sameTaskText(item.title, title))
                         item.title,
                   ].firstOrNull,
-                  startedAt:
-                      teamSessionState(agent) == AgentState.working &&
-                          agent.sessionStartedAt != null &&
-                          !agent.sessionStartedAt!.isAfter(clock)
-                      ? agent.sessionStartedAt
-                      : null,
                   openLabel: l10n.teamOpenConversation,
                   onOpen: () => unawaited(_openAgent(agent)),
                 ),
@@ -973,7 +931,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
                   since: now!.quietSince!,
                   runId: run?.id,
                   agentName: stalledAgent == null
-                      ? now.agentName
+                      ? null
                       : _teamAgentName(l10n, stalledAgent),
                   onControl: _control,
                   today: clock,
@@ -1046,7 +1004,11 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
   /// "Message the team…": the words go through the team's own message
   /// control to the worker on the task (or the planner), never typed into a
   /// worker's OpenCode session. The note says who gets them before typing.
-  KitComposer _composer(BuildContext context, OrchestrationAgent? to) {
+  KitComposer _composer(
+    BuildContext context,
+    OrchestrationAgent? to,
+    List<OrchestrationAgent> agents,
+  ) {
     final l10n = _chatL10n(context);
     final canMessage = _team.capabilities.controlMessage;
     final readOnly = !canMessage
@@ -1065,7 +1027,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
       readOnlyReason: readOnly,
       note: to == null
           ? null
-          : l10n.teamChatComposerGoesTo(_teamAgentTitle(l10n, to)),
+          : l10n.teamChatComposerGoesTo(_teamAgentTitle(l10n, to, agents)),
       sending: _sending,
       canSendWhileBusy: true,
       onSend: () {
@@ -1170,13 +1132,6 @@ class _TeamLeadReplyState extends State<_TeamLeadReply> {
       key: const ValueKey('team-conversation-lead'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Who speaks: the team's lead, whose lines the app writes.
-        KitText(
-          l10n.teamChatLeadName,
-          role: KitTextRole.label,
-          tone: KitTextTone.secondary,
-        ),
-        SizedBox(height: tokens.space2),
         if (fold) ...[
           KitMessage.notice(
             noticeKey: const ValueKey('team-conversation-lead-earlier'),
@@ -1212,7 +1167,6 @@ String teamLeadSentence(
   String? taskTitle,
 }) {
   final title = line.workTitle ?? '';
-  final name = line.agentName;
   if (_sameTaskText(line.workTitle, taskTitle)) {
     switch (line.event) {
       case TeamLeadEvent.routed:
@@ -1220,9 +1174,7 @@ String teamLeadSentence(
       case TeamLeadEvent.workerStarting:
         return l10n.teamChatLeadStartingIt;
       case TeamLeadEvent.claimed:
-        return name == null
-            ? l10n.teamChatLeadClaimedWorkerIt
-            : l10n.teamChatLeadClaimedIt(name);
+        return l10n.teamChatLeadClaimedWorkerIt;
       case TeamLeadEvent.pushed:
         return l10n.teamChatLeadPushedIt;
       case TeamLeadEvent.handedToReview:
@@ -1241,10 +1193,7 @@ String teamLeadSentence(
     TeamLeadEvent.planned => l10n.teamChatLeadPlanned(line.count ?? 0),
     TeamLeadEvent.routed => l10n.teamChatLeadRouted(title),
     TeamLeadEvent.workerStarting => l10n.teamChatLeadStarting(title),
-    TeamLeadEvent.claimed =>
-      name == null
-          ? l10n.teamChatLeadClaimedWorker(title)
-          : l10n.teamChatLeadClaimed(name, title),
+    TeamLeadEvent.claimed => l10n.teamChatLeadClaimedWorker(title),
     TeamLeadEvent.pushed => l10n.teamChatLeadPushed(title),
     TeamLeadEvent.handedToReview => l10n.teamChatLeadReview(title),
     TeamLeadEvent.merged => l10n.teamChatLeadMerged(title),
@@ -1361,9 +1310,9 @@ bool _sameTaskText(String? a, String? b) {
   return short.length >= 24 && long.startsWith(short);
 }
 
-/// "furiosa": the agent's short name, else its role word.
+/// "Worker": the agent's role word; its generated name stays on its own page.
 String _teamAgentName(AppLocalizations l10n, OrchestrationAgent agent) =>
-    teamAgentShortName(agent) ?? teamAgentRoleWord(l10n, teamAgentRole(agent));
+    teamAgentRoleWord(l10n, teamAgentRole(agent));
 
 /// Under a task with no progress for [quiet]: what happened, since when,
 /// and the ways forward — nudge or restart its worker (where the host
@@ -1484,19 +1433,6 @@ class _TeamNoProgress extends StatelessWidget {
   }
 }
 
-/// An agent's state from its session (the truth about whether it runs, not
-/// the host's agent list), as the agent strip's mark.
-KitTaskState _teamAgentState(OrchestrationAgent agent) =>
-    switch (teamSessionState(agent)) {
-      AgentState.working => KitTaskState.working,
-      AgentState.crashed => KitTaskState.failed,
-      AgentState.stopped => KitTaskState.done,
-      AgentState.idle ||
-      AgentState.waiting ||
-      AgentState.blocked ||
-      AgentState.unknown => KitTaskState.waiting,
-    };
-
 /// The same state as a sub-agent line's status word.
 KitToolStatus _teamAgentToolStatus(OrchestrationAgent agent) =>
     switch (teamSessionState(agent)) {
@@ -1509,24 +1445,23 @@ KitToolStatus _teamAgentToolStatus(OrchestrationAgent agent) =>
       AgentState.unknown => KitToolStatus.pending,
     };
 
-/// The lead's mark: the task's own state; it needs the person while a gate
-/// of this task waits.
-KitTaskState _teamLeadState(
-  OrchestrationRun run,
-  List<OrchestrationGate> gates,
-) => switch (run.state) {
-  RunState.completed => KitTaskState.done,
-  RunState.failed => KitTaskState.failed,
-  RunState.cancelled => KitTaskState.stopped,
-  _ when gates.isNotEmpty => KitTaskState.needsYou,
-  _ => KitTaskState.working,
-};
-
-/// "furiosa · Worker": the agent's own name, then its role in plain words.
-String _teamAgentTitle(AppLocalizations l10n, OrchestrationAgent agent) {
-  final role = teamAgentRoleWord(l10n, teamAgentRole(agent));
-  final name = teamAgentShortName(agent);
-  return name == null ? role : '$name · $role';
+/// "Worker", or "Worker 2" when [among] holds several of the same role. The
+/// generated name (Gas City's) is shown only on the worker's own page.
+String _teamAgentTitle(
+  AppLocalizations l10n,
+  OrchestrationAgent agent, [
+  List<OrchestrationAgent> among = const [],
+]) {
+  final role = teamAgentRole(agent);
+  final word = teamAgentRoleWord(l10n, role);
+  final same = [
+    for (final other in among)
+      if (teamAgentRole(other) == role) other.id,
+  ];
+  final index = same.indexOf(agent.id);
+  return same.length > 1 && index >= 0
+      ? l10n.teamChatWorkerNumbered(word, index + 1)
+      : word;
 }
 
 /// The task's steps, folded under the turn's one work line: "{n} steps ·
