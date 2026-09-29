@@ -85,8 +85,6 @@ class _Gateway extends FixtureOrchestrationGateway {
   }
 }
 
-late _Gateway _lastGateway;
-
 Future<OrchestrationController> _team({
   List<OrchestrationAgent>? agents,
   OrchestrationUsage? usage,
@@ -114,11 +112,8 @@ Future<OrchestrationController> _team({
     ),
     config: config,
     store: OrchestrationStore(prefs),
-    gatewayFactory: (_, _) => _lastGateway = _Gateway(
-      agentList: agents,
-      usageFigure: usage,
-      extraRuns: runs,
-    ),
+    gatewayFactory: (_, _) =>
+        _Gateway(agentList: agents, usageFigure: usage, extraRuns: runs),
     // The team inside the app would be probed over the network: answer
     // here that it is there.
     probe: builtin
@@ -158,26 +153,6 @@ Future<void> _pump(WidgetTester tester, Widget page) async {
     await tester.pump(const Duration(milliseconds: 100));
   }
 }
-
-/// The agents row lives in Team settings: opens it once, then reads.
-Future<String> _agentsRow(WidgetTester tester) async {
-  if (_key('team-home-agents-row').evaluate().isEmpty) {
-    await tester.tap(_key('team-home-settings'));
-    for (var i = 0; i < 15; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-  }
-  return _agentsRowTitle(tester);
-}
-
-String _agentsRowTitle(WidgetTester tester) => tester
-    .widget<KitRow>(
-      find.descendant(
-        of: _key('team-home-agents-row'),
-        matching: find.byType(KitRow),
-      ),
-    )
-    .title;
 
 String _subtitle(WidgetTester tester) =>
     tester.widget<KitTopBar>(find.byType(KitTopBar)).subtitle!;
@@ -258,81 +233,10 @@ void main() {
         TeamAgentStanding.paused,
       );
     });
-
-    testWidgets('the team page counts only running sessions as working', (
-      tester,
-    ) async {
-      final team = await _team(
-        agents: [
-          _worker('fox', sessionRunning: true),
-          // The list says working; the host says its session stopped.
-          _worker('furiosa', sessionState: 'stopped', sessionRunning: false),
-          _worker('nux', state: AgentState.idle, sessionState: 'asleep'),
-        ],
-      );
-      await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
-      // Every agent the list shows is counted (they agree); one works.
-      expect(
-        await _agentsRow(tester),
-        '${_en.teamUiHomeAgentsRowCount(3)} · '
-        '${_en.teamUiHomeAgentsRowWorking(1)}',
-      );
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-
-    testWidgets('a session that ended in an error is said on the row', (
-      tester,
-    ) async {
-      final team = await _team(
-        agents: [
-          _worker('fox', sessionRunning: true),
-          _worker('ace', sessionState: 'crashed'),
-        ],
-      );
-      await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
-      expect(
-        await _agentsRow(tester),
-        '${_en.teamUiHomeAgentsRowCount(2)} · '
-        '${_en.teamUiHomeAgentsRowWorking(1)} · '
-        '${_en.teamHomeAgentsRowCrashed(1)}',
-      );
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-
-    testWidgets('what each worker is doing: the session word and its step', (
-      tester,
-    ) async {
-      final team = await _team(
-        agents: [
-          _worker('furiosa', sessionState: 'stopped', sessionRunning: false),
-          _worker('fox', state: AgentState.idle, sessionRunning: true),
-        ],
-      );
-      await _pump(
-        tester,
-        TeamAgentsScreen(controller: team, now: () => _clock),
-      );
-      String line(String id) => tester
-          .widget<KitRow>(_key('team-home-agent-$id'))
-          .supporting!
-          .toPlainText();
-      // Stopped by the host: asleep, never "Working".
-      expect(line('furiosa'), startsWith(_en.teamAgentsAsleep));
-      expect(line('furiosa'), isNot(contains(_en.teamUiHomeAgentStateWorking)));
-      // Idle on the list but its session runs: working, listed first.
-      expect(line('fox'), startsWith(_en.teamUiHomeAgentStateWorking));
-      expect(
-        tester.getTopLeft(_key('team-home-agent-fox')).dy,
-        lessThan(tester.getTopLeft(_key('team-home-agent-furiosa')).dy),
-      );
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
   });
 
   group('an idle team is never "Paused" (row 20)', () {
-    testWidgets('asleep agents: asleep, and the subtitle says no pause', (
-      tester,
-    ) async {
+    testWidgets('asleep agents: the subtitle says no pause', (tester) async {
       final team = await _team(
         agents: [
           _worker('fox', state: AgentState.stopped, sessionState: 'asleep'),
@@ -341,10 +245,6 @@ void main() {
       );
       await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
       expect(_subtitle(tester), isNot(contains(_en.teamUiHostPhrasePaused)));
-      expect(
-        await _agentsRow(tester),
-        '${_en.teamUiHomeAgentsRowCount(2)} · ${_en.teamNowAgentsAsleep}',
-      );
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
@@ -476,111 +376,6 @@ void main() {
       );
       // An agent whose title is its own keeps it bare.
       expect(titles['gastown.mayor'], _en.teamUiAgentRolePlanner);
-    });
-
-    testWidgets('2. one Wake for the paused agents, no button per row', (
-      tester,
-    ) async {
-      final team = await _team(
-        agents: [
-          _worker('fox', state: AgentState.stopped, suspended: true),
-          _worker('nux', state: AgentState.stopped, suspended: true),
-          _worker('ace', sessionRunning: true),
-        ],
-      );
-      await _pump(
-        tester,
-        TeamAgentsScreen(controller: team, now: () => _clock),
-      );
-      expect(find.byType(KitButton), findsNothing);
-      expect(_key('team-agents-wake-paused'), findsOneWidget);
-      expect(find.text(_en.teamAgentsWakePaused(2)), findsOneWidget);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-
-    testWidgets('3. a wake the team does not confirm stops, says so in words '
-        'and offers Check again', (tester) async {
-      final team = await _team(
-        agents: [
-          _worker('fox', state: AgentState.stopped, suspended: true),
-          _worker('nux', state: AgentState.stopped, suspended: true),
-        ],
-      );
-      await _pump(
-        tester,
-        TeamAgentsScreen(controller: team, now: () => _clock),
-      );
-      await tester.tap(_key('team-agents-wake-paused'));
-      for (var i = 0; i < 10; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-      // One wake only: the team that did not answer is not sent more.
-      expect(_lastGateway.woken, hasLength(1));
-      expect(find.text(_en.teamAgentsWakeUnconfirmed), findsOneWidget);
-      expect(find.textContaining('receive timeout'), findsNothing);
-      expect(_key('team-agents-wake-check'), findsOneWidget);
-      await tester.tap(_key('team-agents-wake-check'));
-      for (var i = 0; i < 10; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-      expect(find.text(_en.teamAgentsWakeUnconfirmed), findsNothing);
-      expect(find.text(_en.teamAgentsWakePausedHint), findsOneWidget);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-
-    testWidgets('3. the phone team: the agents the app keeps off are never '
-        'offered a Wake, and the team is asleep, not Paused', (tester) async {
-      final team = await _team(agents: leanTeam(), builtin: true);
-      await _pump(
-        tester,
-        TeamAgentsScreen(controller: team, now: () => _clock),
-      );
-      expect(_key('team-agents-wake-paused'), findsNothing);
-      expect(find.textContaining(_en.teamAgentsKeptOff), findsNWidgets(4));
-      await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
-      expect(_subtitle(tester), isNot(contains(_en.teamUiHostPhrasePaused)));
-      expect(
-        await _agentsRow(tester),
-        '${_en.teamUiHomeAgentsRowCount(5)} · ${_en.teamNowAgentsAsleep} · '
-        '${_en.teamHomeAgentsRowKeptOff(4)}',
-      );
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-
-    testWidgets('4. the team page counts what the agents list shows', (
-      tester,
-    ) async {
-      final agents = [
-        _worker('ace', sessionRunning: true),
-        _worker('fox', state: AgentState.idle),
-        _worker('nux', state: AgentState.stopped),
-        _worker('max', state: AgentState.stopped, suspended: true),
-        _worker('bee', state: AgentState.stopped, suspended: true),
-        _worker('kit', state: AgentState.stopped),
-      ];
-      final team = await _team(agents: agents);
-      await _pump(tester, TeamHomeScreen(controller: team, now: () => _clock));
-      expect(
-        await _agentsRow(tester),
-        '${_en.teamUiHomeAgentsRowCount(6)} · '
-        '${_en.teamUiHomeAgentsRowWorking(1)} · '
-        '${_en.teamHomeAgentsRowPaused(2)}',
-      );
-      await _pump(
-        tester,
-        TeamAgentsScreen(controller: team, now: () => _clock),
-      );
-      expect(
-        find.byWidgetPredicate(
-          (w) =>
-              w.key is ValueKey<String> &&
-              (w.key! as ValueKey<String>).value.startsWith(
-                'team-home-agent-title-',
-              ),
-        ),
-        findsNWidgets(6),
-      );
-      await tester.pumpWidget(const SizedBox.shrink());
     });
 
     testWidgets('5. nothing counted is not "\$0.00 · 0 tokens"', (

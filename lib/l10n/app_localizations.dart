@@ -15072,18 +15072,6 @@ abstract class AppLocalizations {
   /// **'Working'**
   String get teamUiHomeAgentStateWorking;
 
-  /// AI Team home Agents segment empty title
-  ///
-  /// In en, this message translates to:
-  /// **'No agents on this host.'**
-  String get teamUiHomeAgentsEmpty;
-
-  /// AI Team home Agents segment empty hint
-  ///
-  /// In en, this message translates to:
-  /// **'Agents appear here once the host starts them.'**
-  String get teamUiHomeAgentsEmptyHint;
-
   /// AI Team home Runs filter chip: planning and working runs
   ///
   /// In en, this message translates to:
@@ -15329,12 +15317,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This task is no longer on the host'**
   String get teamUiRunMissingTitle;
-
-  /// Run detail tab
-  ///
-  /// In en, this message translates to:
-  /// **'Agents'**
-  String get teamUiRunTabAgents;
 
   /// Run detail app bar term for a batch run; convoy is the Gas City term
   ///
@@ -21096,18 +21078,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{Show 1 more} other{Show {count} more}}'**
   String teamUiHomeDoneMore(int count);
 
-  /// The AI Team home row that opens the agents list: how many agents are on
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0{No agents} =1{1 agent} other{{count} agents}}'**
-  String teamUiHomeAgentsRowCount(int count);
-
-  /// Added after " · " to the agents row: how many agents are working now
-  ///
-  /// In en, this message translates to:
-  /// **'{count} working'**
-  String teamUiHomeAgentsRowWorking(int count);
-
   /// Top bar button that hides the task search on the AI Team home
   ///
   /// In en, this message translates to:
@@ -21131,12 +21101,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Needs you: {question}'**
   String teamUiHomeNeedsYouAnnouncement(String question);
-
-  /// Screen-reader hint of the agents row on the AI Team home
-  ///
-  /// In en, this message translates to:
-  /// **'Open the agents list'**
-  String get teamUiHomeAgentsRowHint;
 
   /// An AI Team agent that does the steps of tasks
   ///
@@ -21863,18 +21827,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use Gas City on a computer instead'**
   String get teamDiscoverComputerChoiceBody;
-
-  /// AI Team home: the agents row when every agent is asleep (on-demand agents, not paused), after '3 agents · '
-  ///
-  /// In en, this message translates to:
-  /// **'asleep until there is work'**
-  String get teamNowAgentsAsleep;
-
-  /// AI Team home: the agents row when the agents are paused on purpose, after '3 agents · '
-  ///
-  /// In en, this message translates to:
-  /// **'paused'**
-  String get teamNowAgentsPaused;
 
   /// AI Team: how often the team looks for work to start, when it is every minute
   ///
@@ -27820,30 +27772,6 @@ abstract class AppLocalizations {
   /// **'checked {age} ago'**
   String teamAgentsChecked(String age);
 
-  /// AI Team agents list: state word of an agent stopped on the host that wakes by itself when there is work.
-  ///
-  /// In en, this message translates to:
-  /// **'Asleep'**
-  String get teamAgentsAsleep;
-
-  /// AI Team agents list: after 'Asleep', says the agent needs nothing from the person.
-  ///
-  /// In en, this message translates to:
-  /// **'wakes when there is work'**
-  String get teamAgentsAsleepHint;
-
-  /// AI Team agents list: state word of an agent switched off on the host on purpose (suspended).
-  ///
-  /// In en, this message translates to:
-  /// **'Paused'**
-  String get teamAgentsPaused;
-
-  /// AI Team agents list: after 'Paused', says nothing will start this agent by itself.
-  ///
-  /// In en, this message translates to:
-  /// **'switched off until someone wakes it'**
-  String get teamAgentsPausedHint;
-
   /// AI Team work sheet title when the item the person opened is no longer listed by the host.
   ///
   /// In en, this message translates to:
@@ -32728,12 +32656,6 @@ abstract class AppLocalizations {
   /// **'The phone got very hot at {time}, so the team stopped. Its work is kept, and it starts again once the phone has cooled.'**
   String teamHomeHeatStoppedLine(String time);
 
-  /// AI Team page agents row, after the count: the heat guard paused the agents.
-  ///
-  /// In en, this message translates to:
-  /// **'resting while the phone cools'**
-  String get teamHomeAgentsCooling;
-
   /// AI Team page row on the phone's Termux team: opens its own controls (keep running tips, stop, remove from this phone).
   ///
   /// In en, this message translates to:
@@ -33910,24 +33832,6 @@ abstract class AppLocalizations {
   /// **'Not reported for one task. The AI Team page shows today’s estimate for the whole team.'**
   String get teamRunCostUnreported;
 
-  /// AI Team page agents row: how many live agents' sessions ended in an error.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} crashed'**
-  String teamHomeAgentsRowCrashed(int count);
-
-  /// AI Team page agents row: agents switched off on purpose.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} paused'**
-  String teamHomeAgentsRowPaused(int count);
-
-  /// AI Team page agents row: agents the app keeps off on its own phone team to save the phone.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} kept off on this phone'**
-  String teamHomeAgentsRowKeptOff(int count);
-
   /// AI Team page: the row saying what the host's own upkeep runs are doing.
   ///
   /// In en, this message translates to:
@@ -33969,54 +33873,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'workers'**
   String get teamAgentLooksAfterWorkers;
-
-  /// Agents list: an agent the app keeps off on its own phone team.
-  ///
-  /// In en, this message translates to:
-  /// **'Off on this phone'**
-  String get teamAgentsKeptOff;
-
-  /// Agents list: why an agent is off on the phone's own team.
-  ///
-  /// In en, this message translates to:
-  /// **'kept off so the phone can run the team'**
-  String get teamAgentsKeptOffHint;
-
-  /// Agents list: one action that wakes every paused agent.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0{Wake the paused agents} =1{Wake the paused agent} other{Wake the {count} paused agents}}'**
-  String teamAgentsWakePaused(int count);
-
-  /// Agents list: what waking the paused agents does.
-  ///
-  /// In en, this message translates to:
-  /// **'They start again one at a time and pick up waiting work.'**
-  String get teamAgentsWakePausedHint;
-
-  /// Agents list: a wake the host did not confirm.
-  ///
-  /// In en, this message translates to:
-  /// **'The team didn’t answer in time. Starting agents can keep it busy for a minute or two, so no more were woken. Check again in a minute.'**
-  String get teamAgentsWakeUnconfirmed;
-
-  /// Agents list: the host refused a wake.
-  ///
-  /// In en, this message translates to:
-  /// **'The team didn’t wake them. Open an agent to see how it stands, or try again later.'**
-  String get teamAgentsWakeRefused;
-
-  /// Agents list: the wake is being sent.
-  ///
-  /// In en, this message translates to:
-  /// **'Waking…'**
-  String get teamAgentsWaking;
-
-  /// Agents list: reads the team again after a wake it did not confirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh'**
-  String get teamAgentsWakeCheckAgain;
 
   /// Development services: confirm button of the Stop {name}? sheet.
   ///
@@ -38305,6 +38161,402 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{role} {n}'**
   String teamChatWorkerNumbered(String role, int n);
+
+  /// AI Team built-in role name
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get teamRoleNameGeneral;
+
+  /// AI Team built-in role name
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get teamRoleNameProduct;
+
+  /// AI Team built-in role name
+  ///
+  /// In en, this message translates to:
+  /// **'Frontend'**
+  String get teamRoleNameFrontend;
+
+  /// AI Team built-in role name
+  ///
+  /// In en, this message translates to:
+  /// **'Backend'**
+  String get teamRoleNameBackend;
+
+  /// AI Team built-in role name
+  ///
+  /// In en, this message translates to:
+  /// **'Tester'**
+  String get teamRoleNameTester;
+
+  /// AI Team built-in role: what it is for
+  ///
+  /// In en, this message translates to:
+  /// **'Any task, done the plain way'**
+  String get teamRolePurposeGeneral;
+
+  /// AI Team built-in role: what it is for
+  ///
+  /// In en, this message translates to:
+  /// **'Turns an idea into clear requirements and a plan'**
+  String get teamRolePurposeProduct;
+
+  /// AI Team built-in role: what it is for
+  ///
+  /// In en, this message translates to:
+  /// **'Screens, layout and how it feels to use'**
+  String get teamRolePurposeFrontend;
+
+  /// AI Team built-in role: what it is for
+  ///
+  /// In en, this message translates to:
+  /// **'Servers, data and the code behind the screens'**
+  String get teamRolePurposeBackend;
+
+  /// AI Team built-in role: what it is for
+  ///
+  /// In en, this message translates to:
+  /// **'Finds what breaks and shows that it works'**
+  String get teamRolePurposeTester;
+
+  /// Agents page title (the team's roles)
+  ///
+  /// In en, this message translates to:
+  /// **'Agents'**
+  String get teamRolesTitle;
+
+  /// Agents page: pinned button that starts a new role
+  ///
+  /// In en, this message translates to:
+  /// **'New role'**
+  String get teamRolesNew;
+
+  /// Agents page: no roles at all (should not happen)
+  ///
+  /// In en, this message translates to:
+  /// **'No roles yet'**
+  String get teamRolesEmpty;
+
+  /// Agents page row: the role is working on a task, for how long
+  ///
+  /// In en, this message translates to:
+  /// **'Working on “{task}” · {age}'**
+  String teamRoleWorkingOn(String task, String age);
+
+  /// Agents page row: the model this role runs with
+  ///
+  /// In en, this message translates to:
+  /// **'Uses {model}'**
+  String teamRoleUses(String model);
+
+  /// Agents page row: the role has no model of its own
+  ///
+  /// In en, this message translates to:
+  /// **'Uses the team\'s model'**
+  String get teamRoleUsesTeamModel;
+
+  /// Agents page row: a team on a computer decides the model
+  ///
+  /// In en, this message translates to:
+  /// **'Uses the computer\'s model'**
+  String get teamRoleUsesComputerModel;
+
+  /// Agents page row: how many tasks were given to this role
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No tasks yet} =1{1 task} other{{count} tasks}}'**
+  String teamRoleTaskCount(int count);
+
+  /// Team settings row that opens the Agents page
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Agents · 1 role} other{Agents · {count} roles}}'**
+  String teamSettingsAgentsRow(int count);
+
+  /// Team settings: supporting line of the Agents row
+  ///
+  /// In en, this message translates to:
+  /// **'Who does the work, and how each one works'**
+  String get teamSettingsAgentsHint;
+
+  /// Role page title while creating a role
+  ///
+  /// In en, this message translates to:
+  /// **'New role'**
+  String get teamRoleNewTitle;
+
+  /// Role page: name field
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get teamRoleFieldName;
+
+  /// Role page: one-line purpose field
+  ///
+  /// In en, this message translates to:
+  /// **'What it\'s for'**
+  String get teamRoleFieldPurpose;
+
+  /// Role page: hint of the purpose field
+  ///
+  /// In en, this message translates to:
+  /// **'One line, for example: writes the guides'**
+  String get teamRoleFieldPurposeHint;
+
+  /// Role page: instructions field
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get teamRoleFieldInstructions;
+
+  /// Role page: hint of the instructions field
+  ///
+  /// In en, this message translates to:
+  /// **'How this role should work, in your own words'**
+  String get teamRoleFieldInstructionsHint;
+
+  /// Role page: the name is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Give the role a name'**
+  String get teamRoleNameRequired;
+
+  /// Role page: model row title
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get teamRoleModelRow;
+
+  /// Role page: the role uses the team default model
+  ///
+  /// In en, this message translates to:
+  /// **'Team\'s model'**
+  String get teamRoleTeamModel;
+
+  /// Role page: the host decides the model, not editable
+  ///
+  /// In en, this message translates to:
+  /// **'The computer\'s model'**
+  String get teamRoleComputerModel;
+
+  /// Model sheet for a role: the default choice title
+  ///
+  /// In en, this message translates to:
+  /// **'Team\'s model'**
+  String get teamRoleModelSheetDefault;
+
+  /// Model sheet for a role: the default choice hint
+  ///
+  /// In en, this message translates to:
+  /// **'Uses whatever model the whole team uses'**
+  String get teamRoleModelSheetDefaultHint;
+
+  /// Role page: the live worker of this role and its task
+  ///
+  /// In en, this message translates to:
+  /// **'Working on “{task}”'**
+  String teamRoleWorkingNow(String task);
+
+  /// Role page: opens the live worker's session
+  ///
+  /// In en, this message translates to:
+  /// **'Open its conversation'**
+  String get teamRoleOpenConversation;
+
+  /// Role page: section of tasks given to this role
+  ///
+  /// In en, this message translates to:
+  /// **'Recent tasks'**
+  String get teamRoleRecentTasks;
+
+  /// Role page: no tasks yet
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing given to {role} yet'**
+  String teamRoleNoTasks(String role);
+
+  /// Role page: opens the start-task sheet with this role chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Give {role} a task'**
+  String teamRoleGiveTask(String role);
+
+  /// Role page: saves the edits
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get teamRoleSave;
+
+  /// Role page in create mode: saves the new role
+  ///
+  /// In en, this message translates to:
+  /// **'Create role'**
+  String get teamRoleCreate;
+
+  /// Role page: put a built-in role back to how it shipped
+  ///
+  /// In en, this message translates to:
+  /// **'Reset {role}'**
+  String teamRoleReset(String role);
+
+  /// Confirm title
+  ///
+  /// In en, this message translates to:
+  /// **'Reset {role}?'**
+  String teamRoleResetTitle(String role);
+
+  /// Confirm body for resetting a built-in role
+  ///
+  /// In en, this message translates to:
+  /// **'Its name, purpose, instructions and model go back to how they shipped.'**
+  String get teamRoleResetBody;
+
+  /// Role page: delete one of the person's own roles
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {role}'**
+  String teamRoleDelete(String role);
+
+  /// Confirm title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {role}?'**
+  String teamRoleDeleteTitle(String role);
+
+  /// Confirm body for deleting a role
+  ///
+  /// In en, this message translates to:
+  /// **'{role} is removed from this team. Tasks it already did keep its name.'**
+  String teamRoleDeleteBody(String role);
+
+  /// Role page Details: the generated name the host gave the live worker
+  ///
+  /// In en, this message translates to:
+  /// **'Worker name'**
+  String get teamRoleWorkerName;
+
+  /// New role page: label over the example chips
+  ///
+  /// In en, this message translates to:
+  /// **'Start from an example'**
+  String get teamRoleExamplesLabel;
+
+  /// New role example chip
+  ///
+  /// In en, this message translates to:
+  /// **'Docs writer'**
+  String get teamRoleExampleDocs;
+
+  /// New role example: purpose
+  ///
+  /// In en, this message translates to:
+  /// **'Writes and updates the guides'**
+  String get teamRoleExampleDocsPurpose;
+
+  /// New role example: instructions sent to the model
+  ///
+  /// In en, this message translates to:
+  /// **'You write and update documentation. Keep it short, accurate and in plain words. Check every command and path you mention before writing it down.'**
+  String get teamRoleExampleDocsInstructions;
+
+  /// New role example chip
+  ///
+  /// In en, this message translates to:
+  /// **'Security reviewer'**
+  String get teamRoleExampleSecurity;
+
+  /// New role example: purpose
+  ///
+  /// In en, this message translates to:
+  /// **'Looks for ways the code could be abused'**
+  String get teamRoleExampleSecurityPurpose;
+
+  /// New role example: instructions sent to the model
+  ///
+  /// In en, this message translates to:
+  /// **'You review code for security problems: secrets in code or logs, unchecked input, unsafe links, and missing permission checks. Report what you find with the file and line, and fix only what the task asks for.'**
+  String get teamRoleExampleSecurityInstructions;
+
+  /// New role example chip
+  ///
+  /// In en, this message translates to:
+  /// **'Designer'**
+  String get teamRoleExampleDesigner;
+
+  /// New role example: purpose
+  ///
+  /// In en, this message translates to:
+  /// **'Makes it clear, consistent and pleasant'**
+  String get teamRoleExampleDesignerPurpose;
+
+  /// New role example: instructions sent to the model
+  ///
+  /// In en, this message translates to:
+  /// **'You improve how the product looks and reads. Reuse the parts and words already in the app, keep one design language, and check small screens and large text.'**
+  String get teamRoleExampleDesignerInstructions;
+
+  /// New role starter template for the instructions
+  ///
+  /// In en, this message translates to:
+  /// **'You are the ___ on this team.\nFocus on: ___\nAlways: ___\nNever: ___'**
+  String get teamRoleStarterInstructions;
+
+  /// Start-task sheet: label of the role row
+  ///
+  /// In en, this message translates to:
+  /// **'Who'**
+  String get teamStartRunWho;
+
+  /// Start-task sheet: the role was picked by the app from the typed words
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested from your words'**
+  String get teamStartRunWhoSuggested;
+
+  /// Start-task sheet: opens the role picker
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get teamStartRunWhoChange;
+
+  /// Start-task sheet: role picker title
+  ///
+  /// In en, this message translates to:
+  /// **'Who should take this?'**
+  String get teamStartRunWhoTitle;
+
+  /// Team conversation lead line with the role name
+  ///
+  /// In en, this message translates to:
+  /// **'{role} started on “{title}”'**
+  String teamChatLeadStartingRole(String role, String title);
+
+  /// Team conversation lead line with the role name
+  ///
+  /// In en, this message translates to:
+  /// **'{role} took “{title}”'**
+  String teamChatLeadClaimedRole(String role, String title);
+
+  /// Team conversation lead line (task said above) with the role name
+  ///
+  /// In en, this message translates to:
+  /// **'{role} started'**
+  String teamChatLeadStartingItRole(String role);
+
+  /// Team conversation lead line (task said above) with the role name
+  ///
+  /// In en, this message translates to:
+  /// **'{role} took the task'**
+  String teamChatLeadClaimedItRole(String role);
+
+  /// Search words for the AI Team's Agents page (roles).
+  ///
+  /// In en, this message translates to:
+  /// **'roles personas agents team frontend backend tester product designer instructions'**
+  String get teamRolesSearchAliases;
 }
 
 class _AppLocalizationsDelegate

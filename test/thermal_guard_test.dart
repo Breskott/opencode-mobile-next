@@ -829,15 +829,19 @@ void main() {
       expect((await bridge.current()).status, ThermalStatus.unknown);
       expect((await bridge.current()).status, ThermalStatus.unknown);
       expect(await bridge.current(), ThermalReading.unknown);
-      expect(ThermalStatus.values.map((s) => s.name).skip(1), [
-        'none',
-        'light',
-        'moderate',
-        'severe',
-        'critical',
-        'emergency',
-        'shutdown',
-      ], reason: 'ThermalMonitor.statusName answers these words');
+      expect(
+        ThermalStatus.values.map((s) => s.name).skip(1),
+        [
+          'none',
+          'light',
+          'moderate',
+          'severe',
+          'critical',
+          'emergency',
+          'shutdown',
+        ],
+        reason: 'ThermalMonitor.statusName answers these words',
+      );
     });
 
     test('events arrive as readings; a missing channel is safe', () async {

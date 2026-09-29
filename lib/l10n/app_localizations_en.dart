@@ -9113,13 +9113,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiHomeAgentStateWorking => 'Working';
 
   @override
-  String get teamUiHomeAgentsEmpty => 'No agents on this host.';
-
-  @override
-  String get teamUiHomeAgentsEmptyHint =>
-      'Agents appear here once the host starts them.';
-
-  @override
   String get teamUiHomeFilterActive => 'Active';
 
   @override
@@ -9269,9 +9262,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiRunMissingTitle => 'This task is no longer on the host';
-
-  @override
-  String get teamUiRunTabAgents => 'Agents';
 
   @override
   String get teamUiRunTermBatch => 'Task · convoy';
@@ -12879,23 +12869,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String teamUiHomeAgentsRowCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count agents',
-      one: '1 agent',
-      zero: 'No agents',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String teamUiHomeAgentsRowWorking(int count) {
-    return '$count working';
-  }
-
-  @override
   String get teamUiHomeSearchClose => 'Close search';
 
   @override
@@ -12908,9 +12881,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String teamUiHomeNeedsYouAnnouncement(String question) {
     return 'Needs you: $question';
   }
-
-  @override
-  String get teamUiHomeAgentsRowHint => 'Open the agents list';
 
   @override
   String get teamUiAgentRoleWorker => 'Worker';
@@ -13329,12 +13299,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamDiscoverComputerChoiceBody =>
       'Use Gas City on a computer instead';
-
-  @override
-  String get teamNowAgentsAsleep => 'asleep until there is work';
-
-  @override
-  String get teamNowAgentsPaused => 'paused';
 
   @override
   String get teamNowChecksEveryMinute => 'the team checks every minute';
@@ -17399,18 +17363,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamAgentsAsleep => 'Asleep';
-
-  @override
-  String get teamAgentsAsleepHint => 'wakes when there is work';
-
-  @override
-  String get teamAgentsPaused => 'Paused';
-
-  @override
-  String get teamAgentsPausedHint => 'switched off until someone wakes it';
-
-  @override
   String get teamWorkSheetMissingTitle => 'Work item gone';
 
   @override
@@ -20695,9 +20647,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamHomeAgentsCooling => 'resting while the phone cools';
-
-  @override
   String get teamHomePhoneControls => 'Keep it running, stop it or remove it';
 
   @override
@@ -21474,21 +21423,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Not reported for one task. The AI Team page shows today’s estimate for the whole team.';
 
   @override
-  String teamHomeAgentsRowCrashed(int count) {
-    return '$count crashed';
-  }
-
-  @override
-  String teamHomeAgentsRowPaused(int count) {
-    return '$count paused';
-  }
-
-  @override
-  String teamHomeAgentsRowKeptOff(int count) {
-    return '$count kept off on this phone';
-  }
-
-  @override
   String get teamHomeUpkeepTitle => 'Team upkeep';
 
   @override
@@ -21516,42 +21450,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamAgentLooksAfterWorkers => 'workers';
-
-  @override
-  String get teamAgentsKeptOff => 'Off on this phone';
-
-  @override
-  String get teamAgentsKeptOffHint => 'kept off so the phone can run the team';
-
-  @override
-  String teamAgentsWakePaused(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Wake the $count paused agents',
-      one: 'Wake the paused agent',
-      zero: 'Wake the paused agents',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get teamAgentsWakePausedHint =>
-      'They start again one at a time and pick up waiting work.';
-
-  @override
-  String get teamAgentsWakeUnconfirmed =>
-      'The team didn’t answer in time. Starting agents can keep it busy for a minute or two, so no more were woken. Check again in a minute.';
-
-  @override
-  String get teamAgentsWakeRefused =>
-      'The team didn’t wake them. Open an agent to see how it stands, or try again later.';
-
-  @override
-  String get teamAgentsWaking => 'Waking…';
-
-  @override
-  String get teamAgentsWakeCheckAgain => 'Refresh';
 
   @override
   String get servicesStopConfirm => 'Stop service';
@@ -24352,4 +24250,263 @@ class AppLocalizationsEn extends AppLocalizations {
   String teamChatWorkerNumbered(String role, int n) {
     return '$role $n';
   }
+
+  @override
+  String get teamRoleNameGeneral => 'General';
+
+  @override
+  String get teamRoleNameProduct => 'Product';
+
+  @override
+  String get teamRoleNameFrontend => 'Frontend';
+
+  @override
+  String get teamRoleNameBackend => 'Backend';
+
+  @override
+  String get teamRoleNameTester => 'Tester';
+
+  @override
+  String get teamRolePurposeGeneral => 'Any task, done the plain way';
+
+  @override
+  String get teamRolePurposeProduct =>
+      'Turns an idea into clear requirements and a plan';
+
+  @override
+  String get teamRolePurposeFrontend =>
+      'Screens, layout and how it feels to use';
+
+  @override
+  String get teamRolePurposeBackend =>
+      'Servers, data and the code behind the screens';
+
+  @override
+  String get teamRolePurposeTester =>
+      'Finds what breaks and shows that it works';
+
+  @override
+  String get teamRolesTitle => 'Agents';
+
+  @override
+  String get teamRolesNew => 'New role';
+
+  @override
+  String get teamRolesEmpty => 'No roles yet';
+
+  @override
+  String teamRoleWorkingOn(String task, String age) {
+    return 'Working on “$task” · $age';
+  }
+
+  @override
+  String teamRoleUses(String model) {
+    return 'Uses $model';
+  }
+
+  @override
+  String get teamRoleUsesTeamModel => 'Uses the team\'s model';
+
+  @override
+  String get teamRoleUsesComputerModel => 'Uses the computer\'s model';
+
+  @override
+  String teamRoleTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tasks',
+      one: '1 task',
+      zero: 'No tasks yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamSettingsAgentsRow(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Agents · $count roles',
+      one: 'Agents · 1 role',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamSettingsAgentsHint =>
+      'Who does the work, and how each one works';
+
+  @override
+  String get teamRoleNewTitle => 'New role';
+
+  @override
+  String get teamRoleFieldName => 'Name';
+
+  @override
+  String get teamRoleFieldPurpose => 'What it\'s for';
+
+  @override
+  String get teamRoleFieldPurposeHint =>
+      'One line, for example: writes the guides';
+
+  @override
+  String get teamRoleFieldInstructions => 'Instructions';
+
+  @override
+  String get teamRoleFieldInstructionsHint =>
+      'How this role should work, in your own words';
+
+  @override
+  String get teamRoleNameRequired => 'Give the role a name';
+
+  @override
+  String get teamRoleModelRow => 'Model';
+
+  @override
+  String get teamRoleTeamModel => 'Team\'s model';
+
+  @override
+  String get teamRoleComputerModel => 'The computer\'s model';
+
+  @override
+  String get teamRoleModelSheetDefault => 'Team\'s model';
+
+  @override
+  String get teamRoleModelSheetDefaultHint =>
+      'Uses whatever model the whole team uses';
+
+  @override
+  String teamRoleWorkingNow(String task) {
+    return 'Working on “$task”';
+  }
+
+  @override
+  String get teamRoleOpenConversation => 'Open its conversation';
+
+  @override
+  String get teamRoleRecentTasks => 'Recent tasks';
+
+  @override
+  String teamRoleNoTasks(String role) {
+    return 'Nothing given to $role yet';
+  }
+
+  @override
+  String teamRoleGiveTask(String role) {
+    return 'Give $role a task';
+  }
+
+  @override
+  String get teamRoleSave => 'Save';
+
+  @override
+  String get teamRoleCreate => 'Create role';
+
+  @override
+  String teamRoleReset(String role) {
+    return 'Reset $role';
+  }
+
+  @override
+  String teamRoleResetTitle(String role) {
+    return 'Reset $role?';
+  }
+
+  @override
+  String get teamRoleResetBody =>
+      'Its name, purpose, instructions and model go back to how they shipped.';
+
+  @override
+  String teamRoleDelete(String role) {
+    return 'Delete $role';
+  }
+
+  @override
+  String teamRoleDeleteTitle(String role) {
+    return 'Delete $role?';
+  }
+
+  @override
+  String teamRoleDeleteBody(String role) {
+    return '$role is removed from this team. Tasks it already did keep its name.';
+  }
+
+  @override
+  String get teamRoleWorkerName => 'Worker name';
+
+  @override
+  String get teamRoleExamplesLabel => 'Start from an example';
+
+  @override
+  String get teamRoleExampleDocs => 'Docs writer';
+
+  @override
+  String get teamRoleExampleDocsPurpose => 'Writes and updates the guides';
+
+  @override
+  String get teamRoleExampleDocsInstructions =>
+      'You write and update documentation. Keep it short, accurate and in plain words. Check every command and path you mention before writing it down.';
+
+  @override
+  String get teamRoleExampleSecurity => 'Security reviewer';
+
+  @override
+  String get teamRoleExampleSecurityPurpose =>
+      'Looks for ways the code could be abused';
+
+  @override
+  String get teamRoleExampleSecurityInstructions =>
+      'You review code for security problems: secrets in code or logs, unchecked input, unsafe links, and missing permission checks. Report what you find with the file and line, and fix only what the task asks for.';
+
+  @override
+  String get teamRoleExampleDesigner => 'Designer';
+
+  @override
+  String get teamRoleExampleDesignerPurpose =>
+      'Makes it clear, consistent and pleasant';
+
+  @override
+  String get teamRoleExampleDesignerInstructions =>
+      'You improve how the product looks and reads. Reuse the parts and words already in the app, keep one design language, and check small screens and large text.';
+
+  @override
+  String get teamRoleStarterInstructions =>
+      'You are the ___ on this team.\nFocus on: ___\nAlways: ___\nNever: ___';
+
+  @override
+  String get teamStartRunWho => 'Who';
+
+  @override
+  String get teamStartRunWhoSuggested => 'Suggested from your words';
+
+  @override
+  String get teamStartRunWhoChange => 'Change';
+
+  @override
+  String get teamStartRunWhoTitle => 'Who should take this?';
+
+  @override
+  String teamChatLeadStartingRole(String role, String title) {
+    return '$role started on “$title”';
+  }
+
+  @override
+  String teamChatLeadClaimedRole(String role, String title) {
+    return '$role took “$title”';
+  }
+
+  @override
+  String teamChatLeadStartingItRole(String role) {
+    return '$role started';
+  }
+
+  @override
+  String teamChatLeadClaimedItRole(String role) {
+    return '$role took the task';
+  }
+
+  @override
+  String get teamRolesSearchAliases =>
+      'roles personas agents team frontend backend tester product designer instructions';
 }

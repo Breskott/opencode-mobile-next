@@ -29,7 +29,6 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
     show TeamAgentTranscript, TeamConversationScreen, TeamWatchLiveScreen;
 import 'package:opencode_mobile/ui/widgets/team_vocabulary.dart';
@@ -368,9 +367,6 @@ void main() {
 
   Finder key(String value) => find.byKey(ValueKey(value));
 
-  double top(WidgetTester tester, Finder finder) =>
-      tester.getTopLeft(finder).dy;
-
   // The list's own scrollable (the chat's parts inside it scroll wide
   // output sideways in scrollables of their own).
   ScrollPosition outputPosition(WidgetTester tester) => tester
@@ -385,137 +381,6 @@ void main() {
       .position;
 
   group('fleet', () {
-    testWidgets('six status words with glyphs, sorted per §5.1', (
-      tester,
-    ) async {
-      final (controller, _) = await boot(
-        configure: (g) => g
-          ..workOverride = const []
-          ..gatesOverride = const []
-          ..agentsOverride = const [
-            OrchestrationAgent(
-              id: 'a-stopped',
-              name: 'a-stopped',
-              state: AgentState.stopped,
-            ),
-            OrchestrationAgent(
-              id: 'b-idle',
-              name: 'b-idle',
-              state: AgentState.idle,
-            ),
-            OrchestrationAgent(
-              id: 'c-working',
-              name: 'c-working',
-              state: AgentState.working,
-            ),
-            OrchestrationAgent(
-              id: 'd-crashed',
-              name: 'd-crashed',
-              state: AgentState.crashed,
-            ),
-            OrchestrationAgent(
-              id: 'e-blocked',
-              name: 'e-blocked',
-              state: AgentState.blocked,
-            ),
-            OrchestrationAgent(
-              id: 'f-waiting',
-              name: 'f-waiting',
-              state: AgentState.waiting,
-            ),
-          ],
-      );
-      await size(tester, const Size(800, 2000));
-      await tester.pumpWidget(
-        app(TeamHomeScreen(controller: controller, now: () => clock)),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-home-settings'));
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-home-agents-row'));
-      await tester.pumpAndSettle();
-      // One list, no state sections: the stopped one is a row like the
-      // rest, last ("Asleep · wakes when there is work").
-      // Needs-you first (blocked and waiting share the rank, by name),
-      // the crashed exception, then working, idle, asleep.
-      final expected = {
-        'e-blocked': 'Blocked',
-        'f-waiting': 'Waiting for you',
-        'd-crashed': 'Crashed',
-        'c-working': 'Working',
-        'b-idle': 'Idle',
-        'a-stopped': 'Asleep',
-      };
-      for (final MapEntry(key: id, value: word) in expected.entries) {
-        final row = key('team-home-agent-$id');
-        // The state leads the row's line (its mark is drawn, not an icon).
-        expect(
-          find.descendant(of: row, matching: find.textContaining(word)),
-          findsOneWidget,
-          reason: '$id says $word',
-        );
-      }
-      final order = expected.keys.toList();
-      for (var i = 1; i < order.length; i++) {
-        expect(
-          top(tester, key('team-home-agent-${order[i - 1]}')),
-          lessThan(top(tester, key('team-home-agent-${order[i]}'))),
-          reason: '${order[i - 1]} above ${order[i]}',
-        );
-      }
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('the line is the state, the current work and when', (
-      tester,
-    ) async {
-      final (controller, _) = await boot(configure: runShape);
-      await size(tester, const Size(800, 2000));
-      await tester.pumpWidget(
-        app(TeamHomeScreen(controller: controller, now: () => clock)),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-home-settings'));
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-home-agents-row'));
-      await tester.pumpAndSettle();
-      final row = key('team-home-agent-fox');
-      // Named by role; the pool, provider, model and context use are
-      // engine details, left to the agent's own page.
-      expect(
-        find.descendant(of: row, matching: find.textContaining('Worker')),
-        findsOne,
-      );
-      expect(
-        find.descendant(
-          of: row,
-          matching: find.text('Working · Sync engine · 12 min ago'),
-        ),
-        findsOneWidget,
-      );
-      for (final engine in ['gastown.polecat', 'opencode /', 'ctx ']) {
-        expect(
-          find.descendant(of: row, matching: find.textContaining(engine)),
-          findsNothing,
-          reason: engine,
-        );
-      }
-
-      // The row opens the agent's conversation (watching); with no
-      // OpenCode server to read it from, the team's live output of it.
-      await tester.tap(row);
-      await tester.pumpAndSettle();
-      expect(key('chat-watching-live'), findsOneWidget);
-      expect(key('chat-watching-live-note'), findsOneWidget);
-      expect(key('team-agent'), findsNothing);
-      // Its own page (state, controls, details) is the top bar's action.
-      await tester.tap(key('chat-watching-details'));
-      await tester.pumpAndSettle();
-      expect(key('team-agent'), findsOneWidget);
-      expect(key('team-agent-title'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
     // P3.5: the run page's Agents tab is retired; the task's conversation
     // names the agents on it (its strip and worker lines).
     Widget conversation(OrchestrationController controller) =>

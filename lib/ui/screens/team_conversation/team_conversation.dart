@@ -102,12 +102,14 @@ abstract final class TeamConversation {
   /// [offerBacklog] (the board) adds Keep in backlog to the sheet: the
   /// task is made and waits, given to no one, so no conversation opens and
   /// [onKeptInBacklog] hears of it. [projectId] is the project chosen at
-  /// first.
+  /// first. [roleId] is the role the task is given to at first (its page's
+  /// Give a task).
   static Future<MutationRecord?> start(
     BuildContext context,
     OrchestrationController team, {
     bool offerBacklog = false,
     String? projectId,
+    String? roleId,
     ValueChanged<MutationRecord>? onKeptInBacklog,
   }) async {
     final result = await showStartRunSheet(
@@ -115,6 +117,7 @@ abstract final class TeamConversation {
       team,
       offerBacklog: offerBacklog,
       projectId: projectId,
+      roleId: roleId,
     );
     final record = result?.record;
     if (result != null && result.backlog) {

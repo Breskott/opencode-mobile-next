@@ -4,20 +4,16 @@
 // celebrated once (remembered, and swept with the profile), a nudge on
 // "Needs you" that plays once and never loops, and reduced motion showing
 // the finished drawings.
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
-import 'package:opencode_mobile/orchestration/adapters/fixture/fixture_gateway.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/kit/scenes/team_scenes.dart';
-import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
     show TeamConversationScreen;
@@ -56,24 +52,6 @@ Future<void> _settle(WidgetTester tester) async {
 }
 
 Finder _key(String key) => find.byKey(ValueKey(key));
-
-/// The recorded fixture with no agents at all.
-class _NoAgents extends FixtureOrchestrationGateway {
-  _NoAgents({required super.fixturePath});
-
-  @override
-  Future<List<OrchestrationAgent>> agents() async => const [];
-}
-
-String _fixturePath() {
-  var dir = Directory.current;
-  for (var i = 0; i < 5; i++) {
-    final candidate = Directory('${dir.path}/tool/qa/gascity_fixture');
-    if (candidate.existsSync()) return candidate.path;
-    dir = dir.parent;
-  }
-  throw StateError('tool/qa/gascity_fixture not found');
-}
 
 void main() {
   late OrchestrationController controller;
@@ -302,35 +280,5 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(_drawings(tester, _key('team-home-error')), isNotEmpty);
     expect(tester.hasRunningAnimations, isFalse);
-  });
-
-  testWidgets('no agents: one agent dozing', (tester) async {
-    SharedPreferences.setMockInitialValues({});
-    final prefs = await SharedPreferences.getInstance();
-    final config = OrchestrationConfig(
-      provider: OrchestrationProvider.fixture,
-      url: 'http://pop-os:7000',
-      city: 'bright-lights',
-      enabledAt: DateTime.utc(2026, 9, 10),
-    );
-    controller = OrchestrationController(
-      profile: ServerProfile(
-        id: 'motion',
-        name: 'Development PC',
-        baseUrl: 'https://server.example',
-        orchestration: config,
-      ),
-      config: config,
-      store: OrchestrationStore(prefs),
-      gatewayFactory: (_, _) => _NoAgents(fixturePath: _fixturePath()),
-      now: () => teamSceneClock,
-    );
-    addTearDown(controller.dispose);
-    await controller.start();
-    await tester.pumpWidget(_app(TeamAgentsScreen(controller: controller)));
-    await _settle(tester);
-    final drawings = _drawings(tester, _key('team-home-agents-empty'));
-    expect(drawings.single.$1, isA<TeamRestScene>());
-    expect(drawings.single.$2, isFalse);
   });
 }
