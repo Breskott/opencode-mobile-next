@@ -443,7 +443,8 @@ per lane, and loss of work after an OS pause.
 | 4 | Work integrates into `dev`. `main` is protected; only a confirmed **Promote dev → main**, per milestone or on request, reaches it (R-60 to R-64) |
 | 5 | The person sets the budgets. There is no preset spend. The app asks at creation, and "No limit" is allowed and shown plainly (R-80) |
 
-| # | Open question | Recommended default |
+| 6 | "Only while charging" is **on** by default for Parallel on the phone at night (after 23:00), off otherwise; switchable per project (owner chose B, 2026-09-29) |
+
+| # | Open question | Status |
 |---|---|---|
-| A | The preselected execution mode on the New project sheet (the person can always change it)? | **Single lane** on the phone, **Parallel · 3** on a computer. The cost line shows both |
-| B | "Only while charging" for Parallel on the phone: on by default? | **On** for Parallel at night (after 23:00), off otherwise. It can be switched per project |
+| A | Preselected execution mode on the New project sheet | Not approved by the owner; until decided, the sheet preselects nothing and asks (Single lane / Parallel), with the cost line for each |
