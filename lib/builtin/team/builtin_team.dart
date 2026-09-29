@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../../domain/team_directories.dart' show aiTeamHome;
+import '../../state/team_model.dart' show isValidTeamModel;
 import '../../state/profiles.dart'
     show
         OrchestrationConfig,
@@ -732,6 +733,31 @@ exit 0
       _preparing = null;
     }
   });
+
+  /// The model the team's agents start on, one `provider/model` line the
+  /// agents' `opencode` wrapper reads at each start
+  /// (AiTeamScripts.agentWrapperScript). Absent: OpenCode's own default.
+  static const modelFile = '$home/model';
+
+  /// Writes (or, for null, removes) [modelFile] and refreshes the wrapper
+  /// that reads it. Takes effect for the next agent start; a running agent
+  /// keeps the model it started with.
+  static String modelScript(String? model) {
+    if (model != null && !isValidTeamModel(model)) {
+      throw ArgumentError.value(model, 'model', 'not a provider/model');
+    }
+    final write = model == null
+        ? 'rm -f $modelFile\n'
+        : "printf '%s\\n' '$model' > $modelFile\n";
+    return 'set -eu\n'
+        'mkdir -p $home\n'
+        '$write'
+        '${AiTeamScripts.refreshAgentWrapperScript}';
+  }
+
+  /// Sets the model the team's agents use from their next start.
+  Future<void> applyModel(String? model) =>
+      _exclusive(() => _manageScript('model', modelScript(model)));
 
   /// Starts the supervisor unless it runs, registers the team and waits for
   /// it to answer. A supervisor that runs but does not answer is restarted

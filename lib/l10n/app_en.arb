@@ -26218,6 +26218,44 @@
   "@teamNowReasonWorkerStarting": {
     "description": "Team Now line reason while a worker starts."
   },
+  "teamModelRowTitle": "Workers use {model}",
+  "@teamModelRowTitle": {
+    "description": "Team settings row: the model the team's agents use.",
+    "placeholders": {
+      "model": {
+        "type": "String",
+        "example": "Claude Sonnet 4"
+      }
+    }
+  },
+  "teamModelDefault": "Same as this phone's OpenCode",
+  "@teamModelDefault": {
+    "description": "Team model choice: use whatever model the phone's OpenCode is set to."
+  },
+  "teamModelDefaultHint": "Uses the model this phone's OpenCode is set to.",
+  "@teamModelDefaultHint": {
+    "description": "Under the default model choice."
+  },
+  "teamModelChange": "Change. Takes effect the next time a worker starts.",
+  "@teamModelChange": {
+    "description": "Under the team model row: what tapping does and when it applies."
+  },
+  "teamModelSheetTitle": "Model for the team's workers",
+  "@teamModelSheetTitle": {
+    "description": "Title of the sheet that picks the team's model."
+  },
+  "teamModelSheetNote": "Only models this phone's OpenCode can use. A worker that is already running keeps its model.",
+  "@teamModelSheetNote": {
+    "description": "Subtitle of the team model sheet."
+  },
+  "teamModelNoneLoaded": "This phone's models have not loaded yet. Close this and try again in a moment.",
+  "@teamModelNoneLoaded": {
+    "description": "Team model sheet when the phone's model list is empty."
+  },
+  "teamModelFailed": "Could not change the model. The team keeps the one it had.",
+  "@teamModelFailed": {
+    "description": "Notice when saving the team's model on the phone failed."
+  },
   "teamNowReasonWorkerPreparing": "The worker is being set up: its workspace is made and its program is starting.",
   "@teamNowReasonWorkerPreparing": {
     "description": "Team Now line reason while the worker's session is being created or its program is starting."

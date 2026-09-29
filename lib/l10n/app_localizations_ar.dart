@@ -22053,6 +22053,37 @@ class AppLocalizationsAr extends AppLocalizations {
       'The worker has started but hasn\'t begun the task.';
 
   @override
+  String teamModelRowTitle(String model) {
+    return 'Workers use $model';
+  }
+
+  @override
+  String get teamModelDefault => 'Same as this phone\'s OpenCode';
+
+  @override
+  String get teamModelDefaultHint =>
+      'Uses the model this phone\'s OpenCode is set to.';
+
+  @override
+  String get teamModelChange =>
+      'Change. Takes effect the next time a worker starts.';
+
+  @override
+  String get teamModelSheetTitle => 'Model for the team\'s workers';
+
+  @override
+  String get teamModelSheetNote =>
+      'Only models this phone\'s OpenCode can use. A worker that is already running keeps its model.';
+
+  @override
+  String get teamModelNoneLoaded =>
+      'This phone\'s models have not loaded yet. Close this and try again in a moment.';
+
+  @override
+  String get teamModelFailed =>
+      'Could not change the model. The team keeps the one it had.';
+
+  @override
   String get teamNowReasonWorkerPreparing =>
       'The worker is being set up: its workspace is made and its program is starting.';
 
