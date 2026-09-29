@@ -35,7 +35,6 @@ import '../screens/saved_permissions_screen.dart';
 import '../screens/server_capabilities_screen.dart';
 import '../screens/session_import_screen.dart';
 import '../screens/settings/ai_setup_screen.dart';
-import '../screens/settings/plugins_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/servers_screen.dart' show ServersRouteRequest;
 import '../screens/tailscale_setup_screen.dart';
@@ -298,7 +297,12 @@ SearchOpen _arrive(SettingsSearchTarget target) => (context, scope) {
       controller: scope.controller,
       initialSection: AppearanceSection.values.asNameMap()[target.sectionId],
     ),
-    'keep-running' => const KeepRunningScreen(),
+    // Keep running and What runs by itself are sections of the one
+    // Notifications and background page.
+    'keep-running' => NotificationsSettingsScreen(
+      controller: scope.controller,
+      initialSection: 'keep-running',
+    ),
     // Termux's server is the one with a crash restart; the row is there
     // only while a saved server is managed by it, rechecked by the page.
     'termux-setup-installed' => const ThisPhoneScreen(
@@ -337,9 +341,6 @@ bool _phoneSetUp(SearchScope scope) => scope.controller.store.profiles.any(
 
 bool _account(SearchScope scope) =>
     scope.controller.isConnected && scope.capabilities.agentAccount;
-
-bool _plugins(SearchScope scope) =>
-    scope.controller.profile != null || scope.capabilities.pluginInventory;
 
 /// Opens the Settings hub arrived at one of its own rows (a switch or the
 /// shell choice, which act in place): the group is chosen on a wide window
@@ -551,8 +552,13 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       group: SettingsGroup.agent,
       icon: AppIconography.agent,
       title: l10n.teamUiHomeTitle,
-      keywords: l10n.discoverTeamAliases,
-      pages: const ['team-intro'],
+      // Plugins was a page of its own that held only this row; its words
+      // still lead here.
+      keywords:
+          '${l10n.discoverTeamAliases} ${l10n.settingsHubSearchPluginsAliases}',
+      // 'plugins-settings' is the retired Plugins page: this row is where it
+      // led, so the ledger's coverage of that page lands here.
+      pages: const ['team-intro', 'plugins-settings'],
       gate: (scope) => scope.controller.profile != null,
       open: (context, scope) => openTeamPage(context, scope.controller),
     ),
@@ -560,30 +566,36 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     // the shell it runs commands in, and voice.
     // What runs by itself (P6.1): the team's level and the doors to the
     // rules and the watching that let things happen without asking.
+    // What runs by itself (P6.1): the last section of Notifications and
+    // background; still found by its own words.
     SearchEntry(
       id: 'settings-automation',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.conversations,
+      kind: SearchEntryKind.insideSettings,
+      parent: notifications,
       icon: AppIconography.sync,
       title: l10n.automationTitle,
       keywords: l10n.automationSearchAliases,
       pages: const ['automation-settings'],
+      target: const SettingsSearchTarget(
+        pageId: 'notifications-settings',
+        sectionId: 'automation',
+      ),
       gate: (scope) => AutomationSettingsSections.of(
         scope.controller,
         team: scope.hasTeam,
       ).any,
       open: _screen(
-        (scope) => AutomationSettingsScreen(
+        (scope) => NotificationsSettingsScreen(
           controller: scope.controller,
-          teamAvailable: scope.hasTeam,
+          initialSection: 'automation',
         ),
       ),
     ),
-    // Inside What runs by itself; still found by its own words.
+    // Inside Notifications and background; still found by its own words.
     SearchEntry(
       id: 'saved-permissions-entry',
       kind: SearchEntryKind.insideSettings,
-      parent: l10n.automationTitle,
+      parent: notifications,
       icon: AppIconography.permissions,
       title: l10n.e7SettingsUi74,
       keywords: l10n.settingsHubSearchPermissionsAliases,
@@ -662,12 +674,16 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     ),
     SearchEntry(
       id: 'settings-keep-running',
-      kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.thisApp,
+      kind: SearchEntryKind.insideSettings,
+      parent: notifications,
       icon: AppIconography.batteryCharging,
       title: l10n.keepRunningTitle,
       keywords: l10n.keepRunningRowSubtitle,
       pages: const ['keep-running'],
+      target: const SettingsSearchTarget(
+        pageId: 'notifications-settings',
+        sectionId: 'keep-running',
+      ),
       // What to allow so Android leaves the app (and the OpenCode inside
       // it) running: Android only.
       gate: (scope) => scope.platform.supportsBackgroundService,
@@ -812,7 +828,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
         (scope) => AgentAccountScreen(connection: scope.controller),
       ),
     ),
-    // Tools' rows (plugins-settings and external-agents moved inside it).
+    // Tools' rows (external-agents moved inside it).
     SearchEntry(
       id: 'settings-mcp',
       kind: SearchEntryKind.insideSettings,
@@ -845,21 +861,6 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       serverGate: _catalog,
       open: _screen(
         (scope) => CapabilitiesScreen(controller: scope.controller),
-      ),
-    ),
-    SearchEntry(
-      id: 'settings-category-plugins',
-      kind: SearchEntryKind.insideSettings,
-      parent: l10n.settingsHubToolsRow,
-      icon: AppIconography.extensions,
-      title: l10n.teamUiPluginsTitle,
-      keywords: l10n.settingsHubSearchPluginsAliases,
-      pages: const ['plugins-settings'],
-      // One Plugins screen: "In this app" needs a saved server, "On the
-      // server" needs the plugin inventory. Either is enough for the row.
-      gate: _plugins,
-      open: _screen(
-        (scope) => PluginsSettingsScreen(controller: scope.controller),
       ),
     ),
     SearchEntry(

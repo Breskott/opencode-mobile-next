@@ -10,8 +10,9 @@ import 'server_capabilities_screen.dart';
 
 /// Settings › Tools (target-ia §1.3 row 7): everything the agent can use
 /// besides the model, one row each: MCP servers, the server's commands,
-/// skills, tools and references, plugins, and external agents. It replaces
-/// the hub's separate MCP, Commands, Plugins and External agents rows.
+/// skills, tools and references, and external agents. It replaces the hub's
+/// separate MCP, Commands and External agents rows. The AI Team, once the
+/// Plugins page, is its own Settings row.
 ///
 /// Each row is its search entry, so search and this page cannot disagree.
 /// A row the connected server cannot serve is absent, and one muted line
@@ -28,7 +29,6 @@ class ToolsHubScreen extends StatefulWidget {
   static const rows = [
     'settings-mcp',
     'settings-commands-tools',
-    'settings-category-plugins',
     'settings-external-agents',
   ];
 
@@ -54,7 +54,6 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
     final subtitles = {
       'settings-mcp': l10n.toolsHubMcpSubtitle,
       'settings-commands-tools': l10n.toolsHubCatalogSubtitle,
-      'settings-category-plugins': l10n.toolsHubPluginsSubtitle,
       'settings-external-agents': l10n.toolsHubExternalAgentsSubtitle,
     };
     final hidden = controller.profile == null

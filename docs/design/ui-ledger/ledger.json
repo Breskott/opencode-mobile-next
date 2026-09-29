@@ -1,5 +1,5 @@
 {
- "generatedFrom": "be5c17242086e056ba479670c674254b86b4415d",
+ "generatedFrom": "8b34df862e196e572d8211dc9655f062c56a29df",
  "pages": [
   {
    "id": "system",
@@ -7176,6 +7176,48 @@
      "destructive": false
     },
     {
+     "id": "chat-first-reply-notify-decline",
+     "type": "button",
+     "label": "Not now",
+     "key": "first-reply-notify-decline",
+     "file": "lib/ui/screens/chat_screen.dart",
+     "line": 169,
+     "action": "dismiss",
+     "target": null,
+     "effect": "_decline(): FirstRun.answerNotifyAsk(); the card is never shown again. Settings → Notifications remains the home.",
+     "gates": [
+      "FirstRun.notifyAskPending (set when first run lands in its first conversation)",
+      "this conversation holds a completed assistant reply and is not busy",
+      "platformCapabilities.supportsNotifications && supportsBackgroundService",
+      "!controller.isIsolated",
+      "!controller.keepLiveInBackground",
+      "hidden while the composer is compact (keyboard up / short window)"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/first_reply_notify_card.dart"
+    },
+    {
+     "id": "chat-first-reply-notify-accept",
+     "type": "button",
+     "label": "Notify me (card: Get told when it's done?)",
+     "key": "first-reply-notify-accept",
+     "file": "lib/ui/screens/chat_screen.dart",
+     "line": 177,
+     "action": "toggle-setting",
+     "target": null,
+     "effect": "_accept(): controller.setKeepLiveInBackground(true) (the native 'enable' call that raises POST_NOTIFICATIONS and starts the service), re-enables finished-run and request notifications if they were off, then FirstRun.answerNotifyAsk(); a refusal shows backgroundLive.lastError in a snackbar and still counts as an answer.",
+     "gates": [
+      "FirstRun.notifyAskPending (set when first run lands in its first conversation)",
+      "this conversation holds a completed assistant reply and is not busy",
+      "platformCapabilities.supportsNotifications && supportsBackgroundService",
+      "!controller.isIsolated",
+      "!controller.keepLiveInBackground",
+      "hidden while the composer is compact (keyboard up / short window)"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/first_reply_notify_card.dart"
+    },
+    {
      "id": "chat-prompt-history-keys",
      "type": "gesture",
      "label": "Arrow Up / Arrow Down in composer",
@@ -8589,46 +8631,6 @@
      ],
      "destructive": false,
      "hostWiring": true
-    },
-    {
-     "id": "chat-first-reply-notify-decline",
-     "type": "button",
-     "label": "Not now",
-     "key": "first-reply-notify-decline",
-     "file": "lib/ui/widgets/first_reply_notify_card.dart",
-     "line": 169,
-     "action": "dismiss",
-     "target": null,
-     "effect": "_decline(): FirstRun.answerNotifyAsk(); the card is never shown again. Settings → Notifications remains the home.",
-     "gates": [
-      "FirstRun.notifyAskPending (set when first run lands in its first conversation)",
-      "this conversation holds a completed assistant reply and is not busy",
-      "platformCapabilities.supportsNotifications && supportsBackgroundService",
-      "!controller.isIsolated",
-      "!controller.keepLiveInBackground",
-      "hidden while the composer is compact (keyboard up / short window)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "chat-first-reply-notify-accept",
-     "type": "button",
-     "label": "Notify me (card: Get told when it's done?)",
-     "key": "first-reply-notify-accept",
-     "file": "lib/ui/widgets/first_reply_notify_card.dart",
-     "line": 177,
-     "action": "toggle-setting",
-     "target": null,
-     "effect": "_accept(): controller.setKeepLiveInBackground(true) (the native 'enable' call that raises POST_NOTIFICATIONS and starts the service), re-enables finished-run and request notifications if they were off, then FirstRun.answerNotifyAsk(); a refusal shows backgroundLive.lastError in a snackbar and still counts as an answer.",
-     "gates": [
-      "FirstRun.notifyAskPending (set when first run lands in its first conversation)",
-      "this conversation holds a completed assistant reply and is not busy",
-      "platformCapabilities.supportsNotifications && supportsBackgroundService",
-      "!controller.isIsolated",
-      "!controller.keepLiveInBackground",
-      "hidden while the composer is compact (keyboard up / short window)"
-     ],
-     "destructive": false
     }
    ]
   },
@@ -29309,8 +29311,8 @@
    "purpose": "Settings › What runs by itself (P6.1): what the app and the agent do on the current server without asking. The AI Team's supervision level (stored in the per-server AutomationPolicy, oc.automation.<profileId>; new team tasks start at it) and doors to Always allowed actions and background watching (Notifications).",
    "reachedFrom": [
     {
-     "page": "settings",
-     "element": "settings-automation"
+     "page": "notifications-settings",
+     "element": "notifications-settings-automation"
     }
    ],
    "gates": [
@@ -29381,8 +29383,8 @@
    "purpose": "Settings › Keep running in the background: what to allow on this phone so Android leaves the app (and the built-in OpenCode/AI Team inside it) running; never opens by itself.",
    "reachedFrom": [
     {
-     "page": "settings",
-     "element": "settings-keep-running"
+     "page": "notifications-settings",
+     "element": "notifications-settings-keep-running"
     },
     {
      "page": "home-shell",
@@ -31958,7 +31960,7 @@
    "widget": "NotificationsSettingsScreen",
    "presentedBy": [],
    "line": 10,
-   "purpose": "The one Notifications screen: what notifies me, the single quiet-hours pair, the background connection, and which saved servers are monitored, with the single Wi-Fi-only rule. Sections and rows are absent when the device cannot do them.",
+   "purpose": "Notifications and background: one list, in order: what notifies, quiet hours, saved-server monitoring, the background connection, Keep running (what to allow on this phone) and What runs by itself. Keep running and What runs by itself used to be pages of their own.",
    "reachedFrom": [
     {
      "page": "settings",
@@ -31997,6 +31999,34 @@
      "gates": [
       "platformCapabilities.supportsNotifications"
      ],
+     "destructive": false
+    },
+    {
+     "id": "notifications-settings-keep-running",
+     "type": "card",
+     "label": "Keep running in the background",
+     "key": "notifications-section-keep-running",
+     "file": "lib/ui/screens/settings/notifications_settings_screen.dart",
+     "line": 110,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Section of this page (was the Keep running page): the phone-specific steps that keep Android from closing the app, the heat pause and the daily limit. Reached by the app-closed notice's Keep running action, which scrolls here.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "notifications-settings-automation",
+     "type": "card",
+     "label": "What runs by itself",
+     "key": "notifications-section-automation",
+     "file": "lib/ui/screens/settings/notifications_settings_screen.dart",
+     "line": 110,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Last section of this page (was the What runs by itself page): the answers asked in flow, the AI Team's supervision level and the door to Always allowed actions.",
+     "gates": [],
      "destructive": false
     },
     {
@@ -32531,8 +32561,7 @@
    "reachedFrom": [
     {
      "page": "settings",
-     "element": null,
-     "note": "opener id 'settings-category-plugins' not found; page-level edge"
+     "element": "settings-ai-team"
     },
     {
      "page": "team-intro",
@@ -32796,22 +32825,6 @@
      "widgetFile": "lib/ui/screens/settings/default_shell_row.dart"
     },
     {
-     "id": "settings-automation",
-     "type": "list-tile",
-     "label": "What runs by itself",
-     "key": "settings-automation",
-     "file": "lib/ui/screens/settings_screen.dart",
-     "line": 326,
-     "action": "navigate",
-     "target": "automation-settings",
-     "targetWidget": "AutomationSettingsScreen",
-     "effect": "Pushes AutomationSettingsScreen(controller) via the search index entry; the value names the AI Team's level when there is a team.",
-     "gates": [
-      "absent when the server has no team, no saved-permission list and cannot be watched (AutomationSettingsSections.any)"
-     ],
-     "destructive": false
-    },
-    {
      "id": "settings-voice",
      "type": "list-tile",
      "label": "Voice",
@@ -32968,23 +32981,6 @@
      "destructive": false
     },
     {
-     "id": "settings-keep-running",
-     "type": "list-tile",
-     "label": "Keep running in the background",
-     "key": "settings-keep-running",
-     "file": "lib/ui/screens/settings_screen.dart",
-     "line": 400,
-     "action": "navigate",
-     "target": "keep-running",
-     "targetWidget": "openKeepRunningScreen",
-     "effect": "row('settings-keep-running') -> _openEntry(entries['settings-keep-running'], scope): SearchEntry.open calls openKeepRunningScreen(context).",
-     "gates": [
-      "row hidden when it does not match the search query (_HubRow.matches(_query))",
-      "platform: android only (scope.platform.supportsBackgroundService)"
-     ],
-     "destructive": false
-    },
-    {
      "id": "settings-about-notices",
      "type": "list-tile",
      "label": "About",
@@ -33027,52 +33023,6 @@
      "effect": "The group's muted line '{count} settings aren't available on this server': opens Available on this server.",
      "gates": [
       "a hub row of the group is hidden by the connected server"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "settings-search-field",
-     "type": "text-field",
-     "label": "Find settings, tools, and help",
-     "key": "library-search",
-     "file": "lib/ui/screens/settings_screen.dart",
-     "line": 511,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Filters the hub through searchEntries(l10n, scope, query): hub rows that match stay in their groups, and matching index entries that are not hub rows are listed under 'Inside settings' and 'Go to'.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "settings-search-clear",
-     "type": "icon-button",
-     "label": "Clear search",
-     "key": null,
-     "file": "lib/ui/screens/settings_screen.dart",
-     "line": 521,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Clears the search field and _query.",
-     "gates": [
-      "_query.isNotEmpty"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "settings-search-result",
-     "type": "list-tile",
-     "label": "<result title> (In <parent screen>)",
-     "key": "search-result-<entry id>",
-     "file": "lib/ui/screens/settings_screen.dart",
-     "line": 578,
-     "action": "navigate",
-     "target": null,
-     "effect": "_openEntry(entry, scope) runs the search index entry's open callback: an 'Inside settings' result pushes its screen scrolled to that section (NotificationsSettingsScreen / AppearanceSettingsScreen / UsageHubScreen initialSection, CapabilitiesScreen initialTab, TermuxProcessesScreen, TermuxStorageScreen, ProfileMonitorScreen, ConnectionHelpScreen); a 'Go to' result selects a shell tab through AppShortcutSignals (SelectDestinationIntent / OpenProjectToolIntent), or pushes the Project tool (openProjectTool), GlobalSessionsScreen or TeamHomeScreen.",
-     "gates": [
-      "shown only while the search field has text",
-      "each entry's own gate in lib/ui/search/search_index.dart; tab results need the shell's AppShortcutScope"
      ],
      "destructive": false
     }
@@ -37731,11 +37681,6 @@
    },
    {
     "from": "settings",
-    "element": "settings-automation",
-    "to": "automation-settings"
-   },
-   {
-    "from": "settings",
     "element": "settings-default-shell",
     "to": "coding-settings-shell-sheet"
    },
@@ -37748,11 +37693,6 @@
     "from": "settings",
     "element": "settings-category-background",
     "to": "notifications-settings"
-   },
-   {
-    "from": "settings",
-    "element": "settings-keep-running",
-    "to": "keep-running"
    },
    {
     "from": "settings",
@@ -38227,6 +38167,24 @@
     "from": "team-phone-onboarding-offer",
     "element": "team-phone-onboarding-offer-set-up",
     "to": "team-phone-onboarding-steps",
+    "secondary": true
+   },
+   {
+    "from": "settings",
+    "element": "settings-ai-team",
+    "to": "plugins-settings",
+    "secondary": true
+   },
+   {
+    "from": "notifications-settings",
+    "element": "notifications-settings-automation",
+    "to": "automation-settings",
+    "secondary": true
+   },
+   {
+    "from": "notifications-settings",
+    "element": "notifications-settings-keep-running",
+    "to": "keep-running",
     "secondary": true
    },
    {
@@ -39067,11 +39025,6 @@
     "from": "settings",
     "element": null,
     "to": "settings-disconnect-sheet"
-   },
-   {
-    "from": "settings",
-    "element": null,
-    "to": "plugins-settings"
    },
    {
     "from": "about",

@@ -740,23 +740,11 @@ abstract class AppLocalizations {
   /// **'Subagents are continuing in the background.'**
   String get backgroundWorkPromoted;
 
-  /// No description provided for @librarySearchHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Find settings, tools, and help'**
-  String get librarySearchHint;
-
   /// No description provided for @libraryNoModel.
   ///
   /// In en, this message translates to:
   /// **'No model selected'**
   String get libraryNoModel;
-
-  /// Number of matching destinations in More
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0 {No matching tools for “{query}”.} one {1 result for “{query}”.} other {{count} results for “{query}”.}}'**
-  String librarySearchResults(int count, String query);
 
   /// No description provided for @chatAttachmentUnsupported.
   ///
@@ -17577,7 +17565,7 @@ abstract class AppLocalizations {
   /// Settings hub group header.
   ///
   /// In en, this message translates to:
-  /// **'Notifications'**
+  /// **'Notifications and background'**
   String get settingsHubGroupNotifications;
 
   /// Settings hub group header and title of the combined usage screen.
@@ -17697,7 +17685,7 @@ abstract class AppLocalizations {
   /// Search aliases for the Notifications row; preserve English terms.
   ///
   /// In en, this message translates to:
-  /// **'notifications alerts quiet hours background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds'**
+  /// **'notifications and background keep running what runs by itself automation always allowed actions alerts quiet hours background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds'**
   String get settingsHubSearchNotificationsAliases;
 
   /// Search aliases for the Appearance row; preserve English terms.
@@ -17927,12 +17915,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Go to'**
   String get discoverSearchGoTo;
-
-  /// Header above search results that sit inside a second-level settings screen.
-  ///
-  /// In en, this message translates to:
-  /// **'Inside settings'**
-  String get discoverSearchInsideSettings;
 
   /// Second line of a search result: the screen that holds it.
   ///
@@ -26310,12 +26292,6 @@ abstract class AppLocalizations {
   /// **'Choose a group of settings'**
   String get settingsHubDetailEmpty;
 
-  /// Settings on a wide window: the detail pane while a search is showing results in the list pane.
-  ///
-  /// In en, this message translates to:
-  /// **'Search results are in the list'**
-  String get settingsHubDetailSearching;
-
   /// Notifications: title of the time picker that sets the start of quiet hours.
   ///
   /// In en, this message translates to:
@@ -33063,12 +33039,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Slash commands, skills, the model\'s tools and references'**
   String get toolsHubCatalogSubtitle;
-
-  /// Tools page: the Plugins row's line.
-  ///
-  /// In en, this message translates to:
-  /// **'Add-ons on the server and in this app'**
-  String get toolsHubPluginsSubtitle;
 
   /// Tools page: the External agents row's line.
   ///

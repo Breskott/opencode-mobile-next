@@ -13,10 +13,12 @@ import 'package:opencode_mobile/diagnostics/app_diagnostics.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/app_exit.dart';
 import 'package:opencode_mobile/platform/keep_alive_advice.dart';
+import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/automation_policy.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/keep_running_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/widgets/app_exit_notice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -518,10 +520,17 @@ void main() {
         active: null,
         starter: starter,
       );
+      final connection = ConnectionController(
+        _Store(prefs: prefs, all: const []),
+      );
+      addTearDown(connection.dispose);
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [appExitRecoveryProvider.overrideWithValue(recovery)],
+          overrides: [
+            appExitRecoveryProvider.overrideWithValue(recovery),
+            connProvider.overrideWithValue(connection),
+          ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -682,7 +691,8 @@ void main() {
       );
       await tester.tap(find.text('Keep it running'));
       await tester.pumpAndSettle();
-      expect(find.byType(KeepRunningScreen), findsOneWidget);
+      // Keep running is a section of Notifications and background.
+      expect(find.byType(NotificationsSettingsScreen), findsOneWidget);
     });
 
     testWidgets('an exit on an earlier day names the day', (tester) async {

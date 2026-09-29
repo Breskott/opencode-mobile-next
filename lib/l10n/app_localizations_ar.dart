@@ -365,25 +365,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'يواصل الوكلاء الفرعيون العمل في الخلفية.';
 
   @override
-  String get librarySearchHint => 'البحث عن الإعدادات والأدوات والمساعدة';
-
-  @override
   String get libraryNoModel => 'لم يُحدّد نموذج';
-
-  @override
-  String librarySearchResults(int count, String query) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count نتيجة لـ «$query».',
-      many: '$count نتيجة لـ «$query».',
-      few: '$count نتائج لـ «$query».',
-      two: 'نتيجتان لـ «$query».',
-      one: 'نتيجة واحدة لـ «$query».',
-      zero: 'لا توجد أدوات مطابقة لـ «$query».',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get chatAttachmentUnsupported =>
@@ -10752,7 +10734,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا شيء ينتظرها، لكن ما كانت تنفذه يضيع. تتلقى إيقافًا لطيفًا، ثم إيقافًا قسريًا بعد 5 ثوانٍ.';
 
   @override
-  String get settingsHubGroupNotifications => 'الإشعارات';
+  String get settingsHubGroupNotifications => 'الإشعارات والخلفية';
 
   @override
   String get settingsHubGroupUsage => 'الاستخدام';
@@ -10960,9 +10942,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get discoverSearchGoTo => 'انتقل إلى';
-
-  @override
-  String get discoverSearchInsideSettings => 'داخل الإعدادات';
 
   @override
   String discoverSearchIn(String parent) {
@@ -16580,9 +16559,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsHubDetailEmpty => 'Choose a group of settings';
 
   @override
-  String get settingsHubDetailSearching => 'Search results are in the list';
-
-  @override
   String get notifyQuietStartPicker => 'Set when quiet hours start';
 
   @override
@@ -21062,9 +21038,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get toolsHubCatalogSubtitle =>
       'Slash commands, skills, the model\'s tools and references';
-
-  @override
-  String get toolsHubPluginsSubtitle => 'Add-ons on the server and in this app';
 
   @override
   String get toolsHubExternalAgentsSubtitle =>

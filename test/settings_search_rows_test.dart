@@ -233,11 +233,22 @@ void main() {
       ),
     );
 
-    Future<void> search(WidgetTester tester, String query) async {
-      await tester.enterText(find.byKey(const Key('library-search')), query);
-      // The field reports once typing settles.
-      await tester.pump(KitMotion.typingSettle);
-      await tester.pump();
+    /// Opens the result [id] of [query] the way the command launcher does:
+    /// Settings has no search field of its own.
+    Future<void> openResult(
+      WidgetTester tester,
+      ConnectionController controller,
+      String query,
+      String id,
+    ) async {
+      final context = tester.element(find.byType(SettingsScreen));
+      final scope = SearchScope.of(context, controller);
+      final entry = searchEntries(
+        _en,
+        scope,
+        query,
+      ).firstWhere((entry) => entry.id == id);
+      await entry.open(context, scope);
     }
 
     void phone(WidgetTester tester) {
@@ -257,17 +268,18 @@ void main() {
       await tester.pumpWidget(app(controller));
       await tester.pumpAndSettle();
 
-      await search(tester, 'vibraton');
-      final result = _key('search-result-inside-appearance-vibration');
-      expect(result, findsOneWidget);
-      expect(
-        find.descendant(
-          of: result,
-          matching: find.textContaining(_en.effectsSection),
-        ),
-        findsOneWidget,
+      final result = searchEntries(
+        _en,
+        _scope(controller),
+        'vibraton',
+      ).firstWhere((entry) => entry.id == 'inside-appearance-vibration');
+      expect(result.parent, contains(_en.effectsSection));
+      await openResult(
+        tester,
+        controller,
+        'vibraton',
+        'inside-appearance-vibration',
       );
-      await tester.tap(result);
       await tester.pumpAndSettle();
 
       expect(find.byType(AppearanceSettingsScreen), findsOneWidget);
@@ -283,28 +295,35 @@ void main() {
       expect(_wash(tester, 'effects-vibration'), 0);
     });
 
-    testWidgets('battery opens Keep running at the battery step', (
-      tester,
-    ) async {
-      phone(tester);
-      mockKeepAlive(maker: 'Xiaomi');
-      addTearDown(clearKeepAliveMock);
-      // One saved server: no background monitor timers.
-      final controller = await _controller(termux: false);
-      addTearDown(controller.dispose);
-      await tester.pumpWidget(app(controller));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'battery opens Notifications and background at the battery step',
+      (tester) async {
+        phone(tester);
+        mockKeepAlive(maker: 'Xiaomi');
+        addTearDown(clearKeepAliveMock);
+        // One saved server: no background monitor timers.
+        final controller = await _controller(termux: false);
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(app(controller));
+        await tester.pumpAndSettle();
 
-      await search(tester, 'battery');
-      await tester.tap(_key('search-result-inside-keep-running-battery'));
-      await tester.pumpAndSettle();
+        await openResult(
+          tester,
+          controller,
+          'battery',
+          'inside-keep-running-battery',
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byType(KeepRunningScreen), findsOneWidget);
-      expect(_key('keep-running-battery'), findsOneWidget);
-      expect(_wash(tester, 'keep-running-battery'), 1);
-      expect(_wash(tester, 'keep-running-autostart'), isNull);
-      await tester.pump(KitArrival.hold);
-      await tester.pumpAndSettle();
-    });
+        // Keep running is a section of Notifications and background now.
+        expect(find.byType(NotificationsSettingsScreen), findsOneWidget);
+        expect(find.byType(KeepRunningScreen), findsOneWidget);
+        expect(_key('keep-running-battery'), findsOneWidget);
+        expect(_wash(tester, 'keep-running-battery'), 1);
+        expect(_wash(tester, 'keep-running-autostart'), isNull);
+        await tester.pump(KitArrival.hold);
+        await tester.pumpAndSettle();
+      },
+    );
   });
 }

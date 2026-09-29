@@ -18,7 +18,6 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/desktop/shortcuts.dart';
-import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings/ai_setup_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
@@ -559,6 +558,27 @@ void main() {
   });
 
   group('Settings search', () {
+    // Settings has no search field of its own: the header's command launcher
+    // reads this same index, so what it finds is what these tests read.
+    List<SearchEntry> found(ConnectionController controller, String query) =>
+        searchEntries(_en, SearchScope(controller: controller), query);
+
+    Future<void> openResult(
+      WidgetTester tester,
+      ConnectionController controller,
+      String query,
+      String id,
+    ) async {
+      final context = tester.element(find.byType(SettingsScreen));
+      final scope = SearchScope.of(context, controller);
+      final entry = searchEntries(
+        _en,
+        scope,
+        query,
+      ).firstWhere((entry) => entry.id == id);
+      await entry.open(context, scope);
+    }
+
     testWidgets(
       'finds a setting inside a screen and opens it at that section',
       (tester) async {
@@ -570,23 +590,20 @@ void main() {
         await tester.pumpWidget(_app(controller));
         await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byKey(const Key('library-search')),
-          'quiet hours',
-        );
-        // The field reports once typing settles.
-        await tester.pump(KitMotion.typingSettle);
         // The door and the thing itself.
-        expect(_key('settings-category-background'), findsOneWidget);
-        final result = _key('search-result-inside-notifications-quiet');
-        expect(result, findsOneWidget);
-        expect(
-          find.descendant(of: result, matching: find.text('In Notifications')),
-          findsOneWidget,
+        final results = found(controller, 'quiet hours');
+        expect(_ids(results), contains('settings-category-background'));
+        final result = results.firstWhere(
+          (entry) => entry.id == 'inside-notifications-quiet',
         );
-        expect(_key('search-results-inside'), findsOneWidget);
+        expect(result.parent, _en.settingsHubGroupNotifications);
 
-        await tester.tap(result);
+        await openResult(
+          tester,
+          controller,
+          'quiet hours',
+          'inside-notifications-quiet',
+        );
         await tester.pumpAndSettle();
         expect(_key('notifications-settings'), findsOneWidget);
         // On a 500 dp tall phone Quiet hours starts below the fold; the result
@@ -619,18 +636,16 @@ void main() {
       await tester.pumpWidget(_app(controller));
       await tester.pumpAndSettle();
       for (final entry in {
-        'language': 'search-result-inside-appearance-language',
-        'theme': 'search-result-inside-appearance-theme',
+        'language': 'inside-appearance-language',
+        'theme': 'inside-appearance-theme',
       }.entries) {
-        await tester.enterText(
-          find.byKey(const Key('library-search')),
-          entry.key,
+        expect(
+          _ids(found(controller, entry.key)),
+          contains(entry.value),
+          reason: entry.key,
         );
-        // The field reports once typing settles.
-        await tester.pump(KitMotion.typingSettle);
-        expect(_key(entry.value), findsOneWidget, reason: entry.key);
       }
-      await tester.tap(_key('search-result-inside-appearance-theme'));
+      await openResult(tester, controller, 'theme', 'inside-appearance-theme');
       await tester.pumpAndSettle();
       expect(find.byType(AppearanceSettingsScreen), findsOneWidget);
       expect(_key('theme-pack-${'opencode'}'), findsWidgets);
@@ -639,18 +654,44 @@ void main() {
     testWidgets('budget and always allowed are found', (tester) async {
       final controller = await _controller();
       addTearDown(controller.dispose);
-      await tester.pumpWidget(_app(controller));
-      await tester.pumpAndSettle();
-      final search = find.byKey(const Key('library-search'));
-      await tester.enterText(search, 'budget');
-      await tester.pump(KitMotion.typingSettle);
-      expect(_key('search-result-inside-usage-budgets'), findsOneWidget);
-      expect(_key('settings-category-usage'), findsOneWidget);
-      await tester.enterText(search, 'always allowed');
-      await tester.pump(KitMotion.typingSettle);
-      // Inside What runs by itself (P6.1), still found by its own name.
-      expect(_key('search-result-saved-permissions-entry'), findsOneWidget);
+      expect(
+        _ids(found(controller, 'budget')),
+        containsAll(['inside-usage-budgets', 'settings-category-usage']),
+      );
+      // Inside Notifications and background, still found by its own name.
+      final always = found(controller, 'always allowed');
+      expect(_ids(always), contains('saved-permissions-entry'));
+      expect(
+        always.firstWhere((e) => e.id == 'saved-permissions-entry').parent,
+        _en.settingsHubGroupNotifications,
+      );
     });
+
+    testWidgets(
+      'Keep running, What runs by itself and Plugins lead somewhere sensible',
+      (tester) async {
+        final controller = await _controller();
+        addTearDown(controller.dispose);
+        expect(
+          _ids(found(controller, 'keep running')),
+          contains('settings-keep-running'),
+        );
+        expect(
+          _ids(found(controller, _en.automationTitle)),
+          contains('settings-automation'),
+        );
+        // Plugins was a page holding only the AI Team row; its words lead
+        // to the AI Team.
+        expect(
+          _ids(found(controller, _en.teamUiPluginsTitle)),
+          contains('settings-ai-team'),
+        );
+        expect(
+          _ids(found(controller, _en.teamUiPluginsTitle)),
+          isNot(contains('settings-category-plugins')),
+        );
+      },
+    );
 
     testWidgets('a tab result asks the shell for that tab', (tester) async {
       final seen = <Intent>[];
@@ -658,26 +699,21 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller, shell: seen));
       await tester.pumpAndSettle();
-      final search = find.byKey(const Key('library-search'));
 
-      await tester.enterText(search, _en.shellTabInbox);
-      await tester.pump(KitMotion.typingSettle);
-      expect(_key('search-results-places'), findsOneWidget);
-      await tester.tap(_key('search-result-tab-inbox'));
+      await openResult(tester, controller, _en.shellTabInbox, 'tab-inbox');
       await tester.pump();
       expect(seen.single, isA<SelectDestinationIntent>());
       expect((seen.single as SelectDestinationIntent).index, 1);
 
       seen.clear();
-      await tester.enterText(search, _en.readerUiFiles);
-      await tester.pump(KitMotion.typingSettle);
-      await tester.tap(_key('search-result-project-files'));
+      await openResult(tester, controller, _en.readerUiFiles, 'project-files');
       await tester.pump();
       expect((seen.single as OpenProjectToolIntent).tool, ProjectTool.files);
       // The hub never offers a way to itself.
-      await tester.enterText(search, _en.librarySettingsTitle);
-      await tester.pump(KitMotion.typingSettle);
-      expect(_key('search-result-tab-settings'), findsNothing);
+      expect(
+        _ids(found(controller, _en.librarySettingsTitle)),
+        isNot(contains('tab-settings')),
+      );
     });
 
     testWidgets('without a shell the tabs are not offered; tools still are', (
@@ -685,89 +721,32 @@ void main() {
     ) async {
       final controller = await _controller();
       addTearDown(controller.dispose);
-      await tester.pumpWidget(_app(controller));
-      await tester.pumpAndSettle();
-      final search = find.byKey(const Key('library-search'));
-      await tester.enterText(search, _en.shellTabInbox);
-      await tester.pump(KitMotion.typingSettle);
-      expect(_key('search-result-tab-inbox'), findsNothing);
-      await tester.enterText(search, 'terminal');
-      await tester.pump(KitMotion.typingSettle);
-      expect(_key('search-result-project-terminal'), findsOneWidget);
+      final scope = SearchScope(controller: controller, hasShell: false);
+      expect(
+        _ids(searchEntries(_en, scope, _en.shellTabInbox)),
+        isNot(contains('tab-inbox')),
+      );
+      expect(
+        _ids(searchEntries(_en, scope, 'terminal')),
+        contains('project-terminal'),
+      );
     });
 
-    testWidgets('Codex: absent results stay absent in the hub', (tester) async {
+    testWidgets('Codex: absent results stay absent', (tester) async {
       final controller = await _controller(
         capabilities: codexServerCapabilities,
       );
       addTearDown(controller.dispose);
-      await tester.pumpWidget(_app(controller, shell: []));
-      await tester.pumpAndSettle();
-      final search = find.byKey(const Key('library-search'));
+      final scope = SearchScope(controller: controller, hasShell: true);
       for (final query in ['terminal', 'skills', 'worktrees', 'files']) {
-        await tester.enterText(search, query);
-        await tester.pump(KitMotion.typingSettle);
-        expect(_key('search-results-places'), findsNothing, reason: query);
+        final ids = _ids(searchEntries(_en, scope, query));
         expect(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget.key is ValueKey<String> &&
-                (widget.key! as ValueKey<String>).value.startsWith(
-                  'search-result-inside-capabilities',
-                ),
-          ),
-          findsNothing,
+          ids.where((id) => id.startsWith('inside-capabilities')),
+          isEmpty,
           reason: query,
         );
       }
     });
-
-    for (final locale in const [Locale('en'), Locale('ar')]) {
-      testWidgets('results fit 320 dp at 2.5x text in ${locale.languageCode}', (
-        tester,
-      ) async {
-        const phone = Size(320, 640);
-        tester.view.devicePixelRatio = 1;
-        tester.view.physicalSize = phone;
-        addTearDown(tester.view.reset);
-        final controller = await _controller();
-        addTearDown(controller.dispose);
-        await tester.pumpWidget(
-          MediaQuery(
-            data: const MediaQueryData(
-              size: phone,
-              textScaler: TextScaler.linear(AppTheme.maxTextScale),
-            ),
-            child: _app(controller, locale: locale, shell: []),
-          ),
-        );
-        await tester.pumpAndSettle();
-        // One letter matches nearly the whole index: every kind of result
-        // row is laid out.
-        await tester.enterText(find.byKey(const Key('library-search')), 'e');
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        final scrollable = find.byType(Scrollable).first;
-        for (final section in ['inside', 'places']) {
-          await tester.scrollUntilVisible(
-            _key('search-results-$section'),
-            300,
-            scrollable: scrollable,
-          );
-          expect(tester.takeException(), isNull, reason: section);
-        }
-        await tester.scrollUntilVisible(
-          find.byKey(const Key('library-search-summary')),
-          300,
-          scrollable: scrollable,
-        );
-        expect(tester.takeException(), isNull);
-        for (final tile in tester.widgetList<KitRow>(find.byType(KitRow))) {
-          final box = tester.renderObject<RenderBox>(find.byWidget(tile));
-          expect(box.size.width, lessThanOrEqualTo(phone.width));
-        }
-      });
-    }
   });
 
   group('desktop command palette', () {

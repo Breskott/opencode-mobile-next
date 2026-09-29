@@ -33,49 +33,6 @@
       "gates": [],
       "elements": [
         {
-          "id": "settings-search-field",
-          "type": "text-field",
-          "label": "Find settings, tools, and help",
-          "key": "library-search",
-          "line": 511,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Filters the hub through searchEntries(l10n, scope, query): hub rows that match stay in their groups, and matching index entries that are not hub rows are listed under 'Inside settings' and 'Go to'.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "settings-search-clear",
-          "type": "icon-button",
-          "label": "Clear search",
-          "key": null,
-          "line": 521,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Clears the search field and _query.",
-          "gates": [
-            "_query.isNotEmpty"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "settings-search-result",
-          "type": "list-tile",
-          "label": "<result title> (In <parent screen>)",
-          "key": "search-result-<entry id>",
-          "line": 578,
-          "action": "navigate",
-          "target": null,
-          "effect": "_openEntry(entry, scope) runs the search index entry's open callback: an 'Inside settings' result pushes its screen scrolled to that section (NotificationsSettingsScreen / AppearanceSettingsScreen / UsageHubScreen initialSection, CapabilitiesScreen initialTab, TermuxProcessesScreen, TermuxStorageScreen, ProfileMonitorScreen, ConnectionHelpScreen); a 'Go to' result selects a shell tab through AppShortcutSignals (SelectDestinationIntent / OpenProjectToolIntent), or pushes the Project tool (openProjectTool), GlobalSessionsScreen or TeamHomeScreen.",
-          "gates": [
-            "shown only while the search field has text",
-            "each entry's own gate in lib/ui/search/search_index.dart; tab results need the shell's AppShortcutScope"
-          ],
-          "destructive": false
-        },
-        {
           "id": "settings-category-server",
           "type": "list-tile",
           "label": "This server",
@@ -195,21 +152,6 @@
           "destructive": false
         },
         {
-          "id": "settings-automation",
-          "type": "list-tile",
-          "label": "What runs by itself",
-          "key": "settings-automation",
-          "line": 326,
-          "action": "navigate",
-          "target": "automation-settings",
-          "targetWidget": "AutomationSettingsScreen",
-          "effect": "Pushes AutomationSettingsScreen(controller) via the search index entry; the value names the AI Team's level when there is a team.",
-          "gates": [
-            "absent when the server has no team, no saved-permission list and cannot be watched (AutomationSettingsSections.any)"
-          ],
-          "destructive": false
-        },
-        {
           "id": "settings-show-reasoning",
           "type": "toggle",
           "label": "Show reasoning",
@@ -279,22 +221,6 @@
           "effect": "Pushes NotificationsSettingsScreen(controller) via _open. On Android the subtitle is \"Background: <_backgroundSummary>\"; elsewhere there is none.",
           "gates": [
             "row hidden when it does not match the search query (_HubRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "settings-keep-running",
-          "type": "list-tile",
-          "label": "Keep running in the background",
-          "key": "settings-keep-running",
-          "line": 400,
-          "action": "navigate",
-          "target": "keep-running",
-          "targetWidget": "openKeepRunningScreen",
-          "effect": "row('settings-keep-running') -> _openEntry(entries['settings-keep-running'], scope): SearchEntry.open calls openKeepRunningScreen(context).",
-          "gates": [
-            "row hidden when it does not match the search query (_HubRow.matches(_query))",
-            "platform: android only (scope.platform.supportsBackgroundService)"
           ],
           "destructive": false
         },
@@ -566,7 +492,7 @@
       "widget": "NotificationsSettingsScreen",
       "presentedBy": [],
       "line": 10,
-      "purpose": "The one Notifications screen: what notifies me, the single quiet-hours pair, the background connection, and which saved servers are monitored, with the single Wi-Fi-only rule. Sections and rows are absent when the device cannot do them.",
+      "purpose": "Notifications and background: one list, in order: what notifies, quiet hours, saved-server monitoring, the background connection, Keep running (what to allow on this phone) and What runs by itself. Keep running and What runs by itself used to be pages of their own.",
       "reachedFrom": [
         {
           "page": "settings",
@@ -800,6 +726,32 @@
           "gates": [
             "platformCapabilities.supportsBackgroundService"
           ],
+          "destructive": false
+        },
+        {
+          "id": "notifications-settings-keep-running",
+          "type": "card",
+          "label": "Keep running in the background",
+          "key": "notifications-section-keep-running",
+          "line": 110,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Section of this page (was the Keep running page): the phone-specific steps that keep Android from closing the app, the heat pause and the daily limit. Reached by the app-closed notice's Keep running action, which scrolls here.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "notifications-settings-automation",
+          "type": "card",
+          "label": "What runs by itself",
+          "key": "notifications-section-automation",
+          "line": 110,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Last section of this page (was the What runs by itself page): the answers asked in flow, the AI Team's supervision level and the door to Always allowed actions.",
+          "gates": [],
           "destructive": false
         }
       ]
@@ -1303,7 +1255,7 @@
       "reachedFrom": [
         {
           "page": "settings",
-          "element": "settings-category-plugins"
+          "element": "settings-ai-team"
         }
       ],
       "gates": [
@@ -1819,8 +1771,8 @@
       "purpose": "Settings › What runs by itself (P6.1): what the app and the agent do on the current server without asking. The AI Team's supervision level (stored in the per-server AutomationPolicy, oc.automation.<profileId>; new team tasks start at it) and doors to Always allowed actions and background watching (Notifications).",
       "reachedFrom": [
         {
-          "page": "settings",
-          "element": "settings-automation"
+          "page": "notifications-settings",
+          "element": "notifications-settings-automation"
         }
       ],
       "gates": [
@@ -2566,8 +2518,8 @@
       "purpose": "Settings › Keep running in the background: what to allow on this phone so Android leaves the app (and the built-in OpenCode/AI Team inside it) running; never opens by itself.",
       "reachedFrom": [
         {
-          "page": "settings",
-          "element": "settings-keep-running"
+          "page": "notifications-settings",
+          "element": "notifications-settings-keep-running"
         },
         {
           "page": "home-shell",

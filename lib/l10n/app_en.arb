@@ -179,20 +179,7 @@
   "backgroundWorkShortcut": "Continue this work while you use the conversation · Ctrl+B",
   "backgroundWorkNoop": "No foreground subagents to background.",
   "backgroundWorkPromoted": "Subagents are continuing in the background.",
-  "librarySearchHint": "Find settings, tools, and help",
   "libraryNoModel": "No model selected",
-  "librarySearchResults": "{count, plural, =0 {No matching tools for “{query}”.} one {1 result for “{query}”.} other {{count} results for “{query}”.}}",
-  "@librarySearchResults": {
-    "description": "Number of matching destinations in More",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "query": {
-        "type": "String"
-      }
-    }
-  },
   "chatAttachmentUnsupported": "Images, PDFs, text files, and Excel or Word files (.xlsx, .docx) can be attached.",
   "termuxRestartTitle": "Restart the local server?",
   "@termuxRestartTitle": {
@@ -11422,7 +11409,7 @@
   "@safetyStopOrphanBody": {
     "description": "Body of the confirmation shown before an orphaned helper process is stopped."
   },
-  "settingsHubGroupNotifications": "Notifications",
+  "settingsHubGroupNotifications": "Notifications and background",
   "@settingsHubGroupNotifications": {
     "description": "Settings hub group header."
   },
@@ -11502,7 +11489,7 @@
   "@settingsHubSearchVoiceAliases": {
     "description": "Search aliases for the Voice row; preserve English terms."
   },
-  "settingsHubSearchNotificationsAliases": "notifications alerts quiet hours background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds",
+  "settingsHubSearchNotificationsAliases": "notifications and background keep running what runs by itself automation always allowed actions alerts quiet hours background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds",
   "@settingsHubSearchNotificationsAliases": {
     "description": "Search aliases for the Notifications row; preserve English terms."
   },
@@ -11662,10 +11649,6 @@
   "discoverSearchGoTo": "Go to",
   "@discoverSearchGoTo": {
     "description": "Header above search results that are places in the app rather than settings rows."
-  },
-  "discoverSearchInsideSettings": "Inside settings",
-  "@discoverSearchInsideSettings": {
-    "description": "Header above search results that sit inside a second-level settings screen."
   },
   "discoverSearchIn": "In {parent}",
   "@discoverSearchIn": {
@@ -18777,10 +18760,6 @@
   "@settingsHubDetailEmpty": {
     "description": "Settings on a wide window: the detail pane before a group is chosen."
   },
-  "settingsHubDetailSearching": "Search results are in the list",
-  "@settingsHubDetailSearching": {
-    "description": "Settings on a wide window: the detail pane while a search is showing results in the list pane."
-  },
   "notifyQuietStartPicker": "Set when quiet hours start",
   "@notifyQuietStartPicker": {
     "description": "Notifications: title of the time picker that sets the start of quiet hours."
@@ -24874,10 +24853,6 @@
   "toolsHubCatalogSubtitle": "Slash commands, skills, the model's tools and references",
   "@toolsHubCatalogSubtitle": {
     "description": "Tools page: the commands and tools row's line."
-  },
-  "toolsHubPluginsSubtitle": "Add-ons on the server and in this app",
-  "@toolsHubPluginsSubtitle": {
-    "description": "Tools page: the Plugins row's line."
   },
   "toolsHubExternalAgentsSubtitle": "Agents on other services you can hand work to",
   "@toolsHubExternalAgentsSubtitle": {

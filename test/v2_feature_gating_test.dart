@@ -32,6 +32,7 @@ import 'package:opencode_mobile/ui/screens/capabilities_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
+import 'package:opencode_mobile/ui/search/search_index.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/tools_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
@@ -539,15 +540,18 @@ void main() {
       expect(find.byKey(const ValueKey('gated-shell-settings')), findsNothing);
       expect(find.text('Default shell'), findsNothing);
       // Not a dead search result either.
-      await tester.enterText(find.byKey(const Key('library-search')), 'shell');
-      await tester.pump(KitMotion.typingSettle);
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey('default-shell-settings-entry')),
-        findsNothing,
-      );
+      final shellHits = [
+        for (final entry in searchEntries(
+          lookupAppLocalizations(const Locale('en')),
+          SearchScope(controller: controller),
+          'shell',
+        ))
+          entry.id,
+      ];
+      expect(shellHits, isNot(contains('default-shell-settings-entry')));
       // "shell" is one of the words that find the explanation instead.
-      // It is a Help row now, so the hub lists it as a search result.
+      expect(shellHits, contains('settings-server-capabilities'));
+      // It is a Help row of the hub.
       final help = find.byKey(const ValueKey('settings-server-capabilities'));
       expect(help, findsOneWidget);
 
