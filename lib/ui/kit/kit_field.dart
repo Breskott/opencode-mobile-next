@@ -746,7 +746,9 @@ class _KitFieldState extends State<KitField> {
 
     final hintForSemantics = composer
         ? (widget.enabled ? null : widget.disabledReason)
-        : _semanticHint(context, error);
+        : _semanticHint(context, error) ?? widget.hint;
+    // The visible label is the field's accessible name (TalkBack reads it
+    // before the value), with the example, helper or error as its hint.
     editable = Semantics(
       label: widget.label,
       hint: hintForSemantics,

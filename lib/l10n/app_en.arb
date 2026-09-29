@@ -4162,7 +4162,7 @@
   "@e7WorkspaceNoProjectsSearch": {
     "description": "Workspace and activity: The server returned no projects. Search all sessions to find previous conversations."
   },
-  "e7WorkspaceActiveDirectory": "Active conversation’s project · {directory}",
+  "e7WorkspaceActiveDirectory": "A conversation is running in this folder · {directory}",
   "@e7WorkspaceActiveDirectory": {
     "description": "Workspace and activity: Active session directory · {directory}",
     "placeholders": {

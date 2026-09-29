@@ -1865,7 +1865,7 @@
   "e7WorkspaceContinueHereConfirm": "متابعة هذه المحادثة هنا؟",
   "e7WorkspaceCreateFailed": "تعذّر إنشاء محادثة: {error}",
   "e7WorkspaceNoProjectsSearch": "لم يُرجع الخادم أي مشاريع. ابحث في جميع المحادثات للعثور على أعمالك السابقة.",
-  "e7WorkspaceActiveDirectory": "مشروع المحادثة النشطة · {directory}",
+  "e7WorkspaceActiveDirectory": "محادثة تعمل في هذا المجلد · {directory}",
   "e7WorkspaceArchivedCount": "{count, plural, zero {لا توجد محادثات مؤرشفة} one {محادثة مؤرشفة واحدة} two {محادثتان مؤرشفتان} few {{count} محادثات مؤرشفة} many {{count} محادثة مؤرشفة} other {{count} محادثة مؤرشفة}}",
   "e7WorkspaceOpenProjectCount": "{count, plural, zero {لا توجد مشاريع مفتوحة على هذا الخادم} one {مشروع واحد مفتوح على هذا الخادم} two {مشروعان مفتوحان على هذا الخادم} few {{count} مشاريع مفتوحة على هذا الخادم} many {{count} مشروعًا مفتوحًا على هذا الخادم} other {{count} مشروع مفتوح على هذا الخادم}}",
   "e7WorkspaceArchivedToast": "أُرشفت «{title}»",

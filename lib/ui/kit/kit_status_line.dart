@@ -478,7 +478,16 @@ class KitStatusLine extends StatelessWidget {
           child: Padding(
             padding: EdgeInsetsDirectional.only(
               start: tokens.gutter,
-              end: tokens.space1,
+              // A lone text action's label ends on the 16 dp gutter (the
+              // button's own padding makes up the rest); More and Dismiss
+              // are icon targets and keep their tighter inset.
+              end:
+                  !stacked &&
+                      actionButton != null &&
+                      moreMenu == null &&
+                      dismissButton == null
+                  ? tokens.gutter - tokens.space2
+                  : tokens.space1,
             ),
             child: Row(
               crossAxisAlignment: stacked

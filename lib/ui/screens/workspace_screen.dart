@@ -892,7 +892,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         ),
       // Still context, not management: the conversation is running
       // somewhere other than the project root.
-      if (capabilities.projectManagement && _hasExternalSessionDirectory)
+      if (capabilities.projectManagement &&
+          _hasExternalSessionDirectory &&
+          controller.busySessions.isNotEmpty)
         KitRow(
           key: const ValueKey('active-session-directory'),
           leading: KitRow.icon(context, AppIconography.nested),
@@ -2372,14 +2374,21 @@ class _QuickAskPill extends StatelessWidget {
     final l10n = _l10n(context);
     // Two lines before an ellipsis: the primary action's name is never the
     // thing cut.
+    // Clear space above the dock and below the last row: a full step
+    // rather than the block's own one.
     return KeyedSubtree(
       key: const ValueKey('workspace-quick-ask'),
-      child: KitButton.primary(
-        key: const ValueKey('workspace-new'),
-        onPressed: onTap,
-        working: creating,
-        icon: AppIconography.add,
-        label: l10n.workspaceNewSession,
+      child: Padding(
+        padding: EdgeInsetsDirectional.symmetric(
+          vertical: KitTokens.of(context).space2,
+        ),
+        child: KitButton.primary(
+          key: const ValueKey('workspace-new'),
+          onPressed: onTap,
+          working: creating,
+          icon: AppIconography.add,
+          label: l10n.workspaceNewSession,
+        ),
       ),
     );
   }

@@ -29,7 +29,6 @@ import '../kit/kit_text.dart';
 import '../kit/kit_top_bar.dart';
 import '../kit/motion/kit_reveal.dart';
 import '../kit/motion/kit_tab_switcher.dart';
-import '../navigation/chat_route.dart';
 import '../widgets/phone_server_card.dart';
 import '../widgets/phone_server_restart.dart';
 import '../widgets/server_switcher_sheet.dart';
@@ -72,9 +71,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// How long "Press back again to exit" stays and a second back exits.
   static const _backExitWindow = Duration(seconds: 2);
 
-  /// How often first run looks again while a sheet is over the shell.
-  static const _firstRunRetryEvery = Duration(milliseconds: 300);
-
   late int _tab;
 
   /// True from a cold start until the first read of what is waiting settles
@@ -88,17 +84,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   final _findInFiles = ValueNotifier<int>(0);
   final _openFiles = ValueNotifier<int>(0);
   final _projectBack = ProjectHubBackController();
-
-  /// True from the first connect of a new device until its first
-  /// conversation opens (UX plan 5.6 steps 4-5). The shell stays on Work,
-  /// where the project chooser shows when one is needed, and opens a new
-  /// conversation the moment a project is usable.
-  bool _firstRunLanding = false;
-  bool _firstRunCreating = false;
-
-  /// Re-checks while a project sheet or screen is still on top of the shell:
-  /// a conversation pushed under it would be closed along with it.
-  Timer? _firstRunRetry;
 
   /// The person was on Project when the server stopped offering it (a switch
   /// to a server without project tools). The shell says why the tab went
@@ -120,10 +105,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (widget.initialTab == null &&
         !conn.isIsolated &&
         firstRun.landingPending) {
-      // First run ends in a conversation, not on a tab chosen by what is
-      // waiting: nothing can be waiting on a server connected seconds ago.
-      _firstRunLanding = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _continueFirstRun());
+      // First run ends on Work, where the project chooser shows when one is
+      // needed. Nothing can be waiting on a server connected seconds ago, so
+      // no tab is chosen by what is waiting, and no empty conversation opens.
+      unawaited(firstRun.markLanded());
     } else {
       unawaited(firstRun.markReturning());
       if (widget.initialTab == null) {
@@ -203,49 +188,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (!reading) _choosingColdStartTab = false;
   }
 
-  /// Step 4 then step 5: wait on Work while the person picks a project (the
-  /// chooser is already what Work shows then), and as soon as a project is
-  /// usable open a new conversation with the keyboard up. Back from it
-  /// returns here, to Work.
-  void _continueFirstRun() {
-    if (!mounted || !_firstRunLanding || _firstRunCreating) return;
-    final conn = ref.read(connProvider);
-    if (conn.api == null || conn.workspaceChoiceRequired) return;
-    if (!(ModalRoute.of(context)?.isCurrent ?? true)) {
-      _firstRunRetry ??= Timer.periodic(
-        _firstRunRetryEvery,
-        (_) => _continueFirstRun(),
-      );
-      return;
-    }
-    _firstRunRetry?.cancel();
-    _firstRunRetry = null;
-    _firstRunCreating = true;
-    unawaited(_openFirstConversation(conn));
-  }
-
-  Future<void> _openFirstConversation(ConnectionController conn) async {
-    final navigator = Navigator.of(context);
-    try {
-      final session = await conn.createSession();
-      await FirstRun(conn.store.prefs).markLanded();
-      if (!mounted) return;
-      _firstRunLanding = false;
-      await navigator.pushNamed(
-        '/chat/${session.id}',
-        arguments: const ChatRouteArguments.firstRun(),
-      );
-      if (mounted) unawaited(conn.refreshSessions());
-    } catch (_) {
-      // Work is a complete screen with its own New conversation button and
-      // its own error reporting; a failed shortcut is not worth a dialog.
-      // First run stays pending, so the next connect tries again.
-      _firstRunLanding = false;
-    } finally {
-      _firstRunCreating = false;
-    }
-  }
-
   /// Selects Project and signals it. Destinations are built on their first
   /// visit, so a hub not showing yet hears the signal after the frame that
   /// builds it.
@@ -261,12 +203,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   void _selectTab(int next) {
-    // Choosing a tab is the person taking over; first run stops steering.
-    if (_firstRunLanding && !_firstRunCreating && next != _workTab) {
-      _firstRunLanding = false;
-      _firstRunRetry?.cancel();
-      _firstRunRetry = null;
-    }
     _choosingColdStartTab = false;
     if (_projectWentAway) setState(() => _projectWentAway = false);
     if (_tab == next) return;
@@ -278,7 +214,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (!mounted) return;
     final conn = ref.read(connProvider);
     _chooseColdStartTab(conn);
-    _continueFirstRun();
     final next = _safeTab(_tab, conn.capabilities);
     final wentAway = _tab == _projectTab && next != _projectTab;
     setState(() {
@@ -301,7 +236,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     try {
       ref.read(connProvider).removeListener(_onConnChanged);
     } catch (_) {}
-    _firstRunRetry?.cancel();
     _backExitHint?.cancel();
     _findInFiles.dispose();
     _openFiles.dispose();

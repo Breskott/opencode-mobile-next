@@ -111,7 +111,7 @@
         {
           "id": "workspace-active-session-directory",
           "type": "list-tile",
-          "label": "<directory basename> / Active session directory · {directory}",
+          "label": "<directory basename> / A conversation is running in this folder · {directory}",
           "key": "active-session-directory",
           "line": 449,
           "action": "open-sheet",
@@ -119,7 +119,7 @@
           "targetWidget": "_openContextSheet",
           "effect": "_openContextSheet(folder: <this folder>): the project sheet with its Details fold open on the folder (the folder dialog merged here, slice-P3.11a).",
           "gates": [
-            "widget.controller.capabilities.projectManagement && _hasExternalSessionDirectory (selected directory is neither the project root nor a listed worktree)"
+            "widget.controller.capabilities.projectManagement && _hasExternalSessionDirectory && controller.busySessions.isNotEmpty, i.e. only while a conversation is running (selected directory is neither the project root nor a listed worktree)"
           ],
           "destructive": false
         },

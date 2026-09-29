@@ -5200,7 +5200,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String e7WorkspaceActiveDirectory(String directory) {
-    return 'مشروع المحادثة النشطة · $directory';
+    return 'محادثة تعمل في هذا المجلد · $directory';
   }
 
   @override

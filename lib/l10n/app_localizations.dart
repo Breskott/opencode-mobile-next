@@ -8681,7 +8681,7 @@ abstract class AppLocalizations {
   /// Workspace and activity: Active session directory · {directory}
   ///
   /// In en, this message translates to:
-  /// **'Active conversation’s project · {directory}'**
+  /// **'A conversation is running in this folder · {directory}'**
   String e7WorkspaceActiveDirectory(String directory);
 
   /// Workspace and activity: {count, plural, one {1 open on this server} other {{count} open on this server}}

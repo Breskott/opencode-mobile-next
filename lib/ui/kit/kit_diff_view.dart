@@ -1608,7 +1608,11 @@ class _KitDiffViewState extends State<KitDiffView> {
     final changes = _changes;
     final more = widget.fileActions?.call(file) ?? const <KitMenuItem>[];
     final tools = Padding(
-      padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.space1),
+      // The last icon target clears the edge by a full step.
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.space1,
+        end: tokens.space3,
+      ),
       child: Row(
         children: [
           if (changes.isNotEmpty) ...[

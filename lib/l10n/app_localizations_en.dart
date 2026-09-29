@@ -5167,7 +5167,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7WorkspaceActiveDirectory(String directory) {
-    return 'Active conversation’s project · $directory';
+    return 'A conversation is running in this folder · $directory';
   }
 
   @override
