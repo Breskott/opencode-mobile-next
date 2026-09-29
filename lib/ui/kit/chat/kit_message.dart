@@ -33,9 +33,11 @@ enum KitMessageKind { prompt, reply, thought, notice, marker }
 /// action drops under the words"). The same threshold as KitToolRow.
 const double _kWrapTextScale = 1.3;
 
-/// How wide a [KitMessage.prompt] bubble may grow. [auto] keeps short words
-/// in the compact end-aligned bubble and lets long ones (more than about six
-/// lines, code or a list) use the whole width.
+/// How wide a [KitMessage.prompt] bubble may grow. [auto] (the default)
+/// is one rule for every prompt: the bubble hugs its words and may grow to
+/// the whole width, so a short prompt stays small and a long one wraps at
+/// the page width, with no jump between two styles. [compact] caps it at
+/// [KitLayout.bubbleMaxShare]; [full] always fills the width.
 enum KitBubbleWidth { auto, compact, full }
 
 /// A transcript piece that is words (STANDARDS STATE-16, KIT-41): a prompt
@@ -280,24 +282,20 @@ class _Prompt extends StatelessWidget {
         final width = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : KitLayout.paneDetailMaxWidth;
-        // Long words (or code and lists) use the whole width: a narrow wrap
-        // wastes the page. The bubble keeps its surface and the time stays
-        // at the end edge.
-        final wide = switch (message.bubbleWidth) {
-          KitBubbleWidth.compact => false,
-          KitBubbleWidth.full => true,
-          KitBubbleWidth.auto => _isLong(message.body?.data ?? ''),
-        };
+        // One rule for every prompt (auto): the bubble hugs its words and
+        // may use the whole width, so short and long prompts look the same
+        // and a long one never wraps in a narrow column. The time stays at
+        // the end edge.
+        final stretch = message.bubbleWidth == KitBubbleWidth.full;
+        final maxWidth = message.bubbleWidth == KitBubbleWidth.compact
+            ? (width * KitLayout.bubbleMaxShare).floorToDouble()
+            : width;
         return Align(
           alignment: AlignmentDirectional.centerEnd,
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: wide
-                  ? width
-                  : (width * KitLayout.bubbleMaxShare).floorToDouble(),
-            ),
+            constraints: BoxConstraints(maxWidth: maxWidth),
             child: Column(
-              crossAxisAlignment: wide
+              crossAxisAlignment: stretch
                   ? CrossAxisAlignment.stretch
                   : CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
@@ -325,12 +323,6 @@ class _Prompt extends StatelessWidget {
       },
     );
   }
-
-  /// More than about six lines, or code or a list: read full width.
-  static bool _isLong(String text) =>
-      text.length > 360 ||
-      '\n'.allMatches(text).length >= 5 ||
-      text.contains('```');
 }
 
 class _Bubble extends StatefulWidget {
