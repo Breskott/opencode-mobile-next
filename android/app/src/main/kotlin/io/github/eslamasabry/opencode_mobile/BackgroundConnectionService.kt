@@ -407,17 +407,20 @@ class BackgroundConnectionService : Service() {
                 .setCategory(content.category)
                 .setVisibility(Notification.VISIBILITY_PRIVATE)
             if (kind == "team_progress") {
-                builder
-                    .setOngoing(true)
-                    .setShowWhen(false)
-                    .setTimeoutAfter(TEAM_PROGRESS_TIMEOUT_MS)
-                    .setPublicVersion(
-                        Notification.Builder(context, TEAM_PROGRESS_CHANNEL_ID)
-                            .setSmallIcon(R.mipmap.ic_launcher)
-                            .setContentTitle("AI Team")
-                            .setContentText("Working")
-                            .build()
-                    )
+                builder.setOngoing(true).setShowWhen(false)
+                // Timeout and a channel-bound public version need API 26;
+                // minSdk is 24, where the app's own clear is the only one.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    builder
+                        .setTimeoutAfter(TEAM_PROGRESS_TIMEOUT_MS)
+                        .setPublicVersion(
+                            Notification.Builder(context, TEAM_PROGRESS_CHANNEL_ID)
+                                .setSmallIcon(R.mipmap.ic_launcher)
+                                .setContentTitle("AI Team")
+                                .setContentText("Working")
+                                .build()
+                        )
+                }
             } else {
                 builder.setGroup(CODING_ALERT_GROUP)
             }

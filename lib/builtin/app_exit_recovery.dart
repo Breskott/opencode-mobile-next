@@ -114,7 +114,11 @@ class AppExitRecovery extends ChangeNotifier {
     final serverWas =
         !stoppedOnPurpose &&
         report.previousServices.contains(BuiltinLinux.serverServiceName);
-    final teamWas = report.previousServices.contains(BuiltinTeam.serviceName);
+    // The team runs on the phone's OpenCode: a server stopped on purpose
+    // leaves nothing to report or bring back, even if the team outlived it.
+    final teamWas =
+        !stoppedOnPurpose &&
+        report.previousServices.contains(BuiltinTeam.serviceName);
     final wasRunning = serverWas || teamWas;
     final exit = report.exit;
     PerfTrace.mark(
