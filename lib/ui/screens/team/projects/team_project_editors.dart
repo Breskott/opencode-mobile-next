@@ -32,7 +32,12 @@ Future<void> openTeamRoles(
   TeamProjectController controller,
 ) => _open(context, controller, _Kind.roles);
 
-enum _Kind { create, quick, spec, plan, settings, roles }
+Future<void> openTeamDefaults(
+  BuildContext context,
+  TeamProjectController controller,
+) => _open(context, controller, _Kind.defaults);
+
+enum _Kind { create, quick, spec, plan, settings, roles, defaults }
 
 Future<void> _open(
   BuildContext context,
@@ -98,7 +103,13 @@ class _EditorState extends State<_Editor> {
     super.initState();
     final p = _project;
     _reviewedRevision = p?.revision;
-    _settings = p?.settings ?? const TeamProjectSettings();
+    final defaults =
+        _controller.snapshot?.defaultSettings ?? const TeamProjectSettings();
+    _settings =
+        p?.settings ??
+        (_creating
+            ? defaults.copyWith(mode: '', budget: const TeamBudget())
+            : defaults);
     _repos = [...?p?.repos];
     _milestones = [...?p?.specDraft.milestones];
     _tasks = [...?p?.tasks];
@@ -110,6 +121,7 @@ class _EditorState extends State<_Editor> {
     _text('constraints', p?.specDraft.constraints ?? '');
     _text('decisions', p?.specDraft.decisions ?? '');
     _text('outOfScope', p?.specDraft.outOfScope ?? '');
+    _text('contextFiles', p?.specDraft.contextFiles.join('\n') ?? '');
     _text('lanes', '${_settings.maxLanes}');
     _text('daily', _settings.budget.daily?.toString() ?? '');
     _text('total', _settings.budget.total?.toString() ?? '');
@@ -337,6 +349,7 @@ class _EditorState extends State<_Editor> {
     List<TeamTask>? tasks,
     List<TeamPhase>? phases,
     TeamProjectRole? role,
+    String? text,
     bool close = true,
   }) async {
     if (_working) return false;
@@ -351,7 +364,7 @@ class _EditorState extends State<_Editor> {
         projectId: widget.projectId,
         expectedRevision: _reviewedRevision,
         name: _value('name'),
-        text: _value('goal'),
+        text: text ?? _value('goal'),
         settings: _editedSettings(),
         spec: spec,
         tasks: tasks,
@@ -364,6 +377,16 @@ class _EditorState extends State<_Editor> {
       ),
     );
     if (result.accepted) _reviewedRevision = result.revision;
+    // A completed command consumes its draft even if the person dismissed
+    // the sheet while the write was in flight.
+    if (result.accepted && close) {
+      _complete = true;
+      await _draftTail;
+      await _draft.clear();
+      for (final draft in _fieldDrafts.values) {
+        await draft.clear();
+      }
+    }
     if (!mounted) return result.accepted;
     _change(() {
       _working = false;
@@ -373,15 +396,7 @@ class _EditorState extends State<_Editor> {
           ? _l.teamProjectEditorChangedElsewhere
           : _l.teamProjectEditorSaveFailed;
     });
-    if (result.accepted && close) {
-      _complete = true;
-      await _draftTail;
-      await _draft.clear();
-      for (final draft in _fieldDrafts.values) {
-        await draft.clear();
-      }
-      if (mounted) Navigator.of(context).pop();
-    }
+    if (result.accepted && close) Navigator.of(context).pop();
     return result.accepted;
   }
 
@@ -409,7 +424,9 @@ class _EditorState extends State<_Editor> {
   }
 
   Future<void> _save() async {
-    if (_creating || widget.kind == _Kind.settings) {
+    if (_creating ||
+        widget.kind == _Kind.settings ||
+        widget.kind == _Kind.defaults) {
       final error = _settingsError();
       if (error != null) {
         _change(() => _error = error);
@@ -430,7 +447,10 @@ class _EditorState extends State<_Editor> {
         widget.kind == _Kind.quick
             ? TeamProjectAction.createQuickTask
             : TeamProjectAction.createProject,
-        spec: TeamSpec(goal: _value('goal')),
+        spec: TeamSpec(
+          goal: _value('goal'),
+          contextFiles: _lines(_value('contextFiles')),
+        ),
       );
     } else if (widget.kind == _Kind.spec) {
       await _saveSpec(approve: true);
@@ -443,12 +463,18 @@ class _EditorState extends State<_Editor> {
           ),
       ];
       await _send(
-        TeamProjectAction.approvePlan,
+        _project?.status == 'plan'
+            ? TeamProjectAction.approvePlan
+            : TeamProjectAction.replan,
         tasks: edited,
         phases: _phases,
       );
-    } else if (widget.kind == _Kind.settings) {
-      await _send(TeamProjectAction.updateSettings);
+    } else if (widget.kind == _Kind.settings || widget.kind == _Kind.defaults) {
+      await _send(
+        widget.kind == _Kind.defaults
+            ? TeamProjectAction.updateDefaults
+            : TeamProjectAction.updateSettings,
+      );
     } else if (_role != null) {
       if (_value('roleName').isEmpty) {
         _change(() => _error = _l.teamProjectEditorRoleRequired);
@@ -473,21 +499,23 @@ class _EditorState extends State<_Editor> {
       .map((v) => v.trim())
       .where((v) => v.isNotEmpty)
       .toList();
+  TeamSpec _currentSpec() => TeamSpec(
+    version: (_project?.specVersions.lastOrNull?.version ?? 0) + 1,
+    goal: _value('goal'),
+    constraints: _value('constraints'),
+    decisions: _value('decisions'),
+    outOfScope: _value('outOfScope'),
+    contextFiles: _lines(_value('contextFiles')),
+    milestones: [
+      for (final m in _milestones)
+        m.copyWith(
+          title: _value('milestone-${m.id}'),
+          criteria: _lines(_value('milestoneCriteria-${m.id}')),
+        ),
+    ],
+  );
   Future<void> _saveSpec({required bool approve}) async {
-    final spec = TeamSpec(
-      version: (_project?.specVersions.lastOrNull?.version ?? 0) + 1,
-      goal: _value('goal'),
-      constraints: _value('constraints'),
-      decisions: _value('decisions'),
-      outOfScope: _value('outOfScope'),
-      milestones: [
-        for (final m in _milestones)
-          m.copyWith(
-            title: _value('milestone-${m.id}'),
-            criteria: _lines(_value('milestoneCriteria-${m.id}')),
-          ),
-      ],
-    );
+    final spec = _currentSpec();
     if (spec.goal.isEmpty ||
         (approve &&
             (spec.milestones.isEmpty ||
@@ -507,6 +535,42 @@ class _EditorState extends State<_Editor> {
       await _send(TeamProjectAction.approveSpec, spec: spec);
   }
 
+  Future<void> _requestChange() async {
+    final text = _value('changeRequest');
+    if (text.isEmpty || _value('goal').isEmpty) {
+      _change(() => _error = _l.teamProjectEditorChangeRequired);
+      return;
+    }
+    if (!await _send(
+          TeamProjectAction.saveSpecDraft,
+          spec: _currentSpec(),
+          close: false,
+        ) ||
+        !mounted)
+      return;
+    if (!await _send(
+          TeamProjectAction.requestSpecChange,
+          text: text,
+          close: false,
+        ) ||
+        !mounted)
+      return;
+    final spec = _project!.specDraft;
+    _change(() {
+      _text('goal').text = spec.goal;
+      _text('constraints').text = spec.constraints;
+      _text('decisions').text = spec.decisions;
+      _text('outOfScope').text = spec.outOfScope;
+      _text('contextFiles').text = spec.contextFiles.join('\n');
+      _milestones = [...spec.milestones];
+      for (final m in _milestones) {
+        _text('milestone-${m.id}').text = m.title;
+        _text('milestoneCriteria-${m.id}').text = m.criteria.join('\n');
+      }
+      _text('changeRequest').clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = switch (widget.kind) {
@@ -516,6 +580,7 @@ class _EditorState extends State<_Editor> {
       _Kind.plan => _l.teamProjectEditorPlan,
       _Kind.settings => _l.teamProjectEditorSettings,
       _Kind.roles => _l.teamProjectEditorRoles,
+      _Kind.defaults => _l.teamProjectEditorDefaults,
     };
     return KitSheet(
       title: title,
@@ -533,7 +598,10 @@ class _EditorState extends State<_Editor> {
                       ? _l.teamProjectEditorStartPlanning
                       : _l.teamProjectEditorStartTask,
                 _Kind.spec => _l.teamProjectEditorApproveSpec,
-                _Kind.plan => _l.teamProjectEditorApprovePlan,
+                _Kind.plan =>
+                  _project?.status == 'plan'
+                      ? _l.teamProjectEditorApprovePlan
+                      : _l.teamProjectEditorApplyPlan,
                 _ => _l.teamProjectEditorSave,
               },
               onPressed: _working || _restoring ? null : _save,
@@ -557,7 +625,9 @@ class _EditorState extends State<_Editor> {
             const KitSkeletonRows()
           else ...[
             if (_creating) ..._creation(),
-            if (_creating || widget.kind == _Kind.settings)
+            if (_creating ||
+                widget.kind == _Kind.settings ||
+                widget.kind == _Kind.defaults)
               ..._settingsFields(),
             if (widget.kind == _Kind.spec) ..._specFields(),
             if (widget.kind == _Kind.plan) ..._planFields(),
@@ -571,6 +641,8 @@ class _EditorState extends State<_Editor> {
   List<Widget> _creation() => [
     _field('name', _l.teamProjectEditorName),
     _field('goal', _l.teamProjectEditorGoal, multiline: true),
+    _field('contextFiles', _l.teamProjectEditorContextFiles, multiline: true),
+    KitNotice(message: _l.teamProjectEditorContextFilesHelp),
     KitSectionLabel(_l.teamProjectEditorRepos),
     for (final r in _repos)
       KitRow(
@@ -661,6 +733,14 @@ class _EditorState extends State<_Editor> {
         _settings = _settings.copyWith(chargingOnly: v);
       }),
     ),
+    KitSwitchRow(
+      title: _l.teamProjectEditorScreenOff,
+      value: _settings.keepWorkingScreenOff,
+      onChanged: (v) => _change(
+        () => _settings = _settings.copyWith(keepWorkingScreenOff: v),
+      ),
+    ),
+    KitNotice(message: _l.teamProjectEditorScreenOffHelp),
     _choice(
       _l.teamProjectEditorReview,
       {
@@ -704,7 +784,12 @@ class _EditorState extends State<_Editor> {
       _field('rounds', _l.teamProjectEditorMaxRounds, number: true),
   ];
   List<Widget> _specFields() => [
+    KitNotice(message: _l.teamProjectEditorDraftApproval),
+    _field('changeRequest', _l.teamProjectEditorChangeRequest, multiline: true),
+    _button(_l.teamProjectEditorAskChange, _requestChange),
     _field('goal', _l.teamProjectEditorGoal, multiline: true),
+    _field('contextFiles', _l.teamProjectEditorContextFiles, multiline: true),
+    KitNotice(message: _l.teamProjectEditorContextFilesHelp),
     _field('constraints', _l.teamProjectEditorConstraints, multiline: true),
     _field('decisions', _l.teamProjectEditorDecisions, multiline: true),
     _field('outOfScope', _l.teamProjectEditorOutOfScope, multiline: true),

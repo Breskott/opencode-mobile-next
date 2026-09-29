@@ -74,6 +74,28 @@ void main() {
       findsOneWidget,
     );
     expect(gateway.commands, isEmpty);
+    for (final entry in {
+      'name': 'Reader',
+      'goal': 'Read saved articles offline',
+      'repoName': 'App',
+      'repoPath': '/projects/reader',
+    }.entries) {
+      final field = find.descendant(
+        of: find.byKey(ValueKey(entry.key)),
+        matching: find.byType(EditableText),
+      );
+      await tester.ensureVisible(field);
+      await tester.enterText(field, entry.value);
+      await tester.testTextInput.hide();
+      await tester.pumpAndSettle();
+    }
+    await _tap(tester, 'Home PC');
+    await _tap(tester, 'Add repo');
+    await _tap(tester, 'Start planning');
+    expect(gateway.commands, hasLength(1));
+    expect(gateway.commands.single.spec!.goal, 'Read saved articles offline');
+    expect(gateway.commands.single.settings!.mode, 'single');
+    expect(gateway.commands.single.settings!.budget.unlimited, isTrue);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
   });
