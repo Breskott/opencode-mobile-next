@@ -89,6 +89,9 @@ import '../kit/kit.dart';
 import '../../domain/orchestration_gateway.dart';
 import '../../domain/team_agent_sessions.dart';
 import '../../state/orchestration.dart';
+import '../../state/team_glance.dart';
+import '../../builtin/builtin_server.dart';
+import '../../builtin/team/builtin_team.dart';
 import '../../state/team_dispatch.dart';
 import '../../state/team_conversation.dart';
 import '../../state/team_roles.dart';
@@ -7578,10 +7581,22 @@ class _ChatScreenState extends State<ChatScreen>
         onStop: _sending ? null : () => unawaited(_abort()),
         stopping: _aborting,
         stopKey: const Key('chat-stop-button'),
+        teamAlsoWorking: _inAppTeamWorking(),
       ),
       // Under the reply that runs, above any prompt waiting behind it.
       index: queuedBehind ? queuedAfterIndex : _messages.length - 1,
     );
+  }
+
+  /// This reply runs on the phone's own OpenCode while the AI Team on this
+  /// phone has work going: the two share the phone, so a slow first word
+  /// says why.
+  bool _inAppTeamWorking() {
+    final profile = _conn.profile;
+    final team = _conn.orchestration;
+    if (!looksLikeInAppServer(profile) || team == null) return false;
+    if (!BuiltinTeam.isBuiltinConfig(profile?.orchestration)) return false;
+    return teamGlanceFromSnapshot(team.snapshot).working > 0;
   }
 
   /// A server notice row (compaction, a sub-agent, a shell step).
