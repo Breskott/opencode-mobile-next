@@ -39562,7 +39562,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectEditorPositiveLanes.
   ///
   /// In en, this message translates to:
-  /// **'Enter at least one lane.'**
+  /// **'Enter a lane limit from 1 to 32.'**
   String get teamProjectEditorPositiveLanes;
 
   /// No description provided for @teamProjectEditorChooseBudget.
@@ -39906,6 +39906,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Leave demo'**
   String get teamProjectOff;
+
+  /// No description provided for @teamProjectEditorFixRoundsRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a fix-round limit from 0 to 3.'**
+  String get teamProjectEditorFixRoundsRange;
+
+  /// No description provided for @teamProjectEditorPositiveTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a positive token limit or leave it empty.'**
+  String get teamProjectEditorPositiveTokens;
+
+  /// No description provided for @teamProjectEditorReload.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload latest project'**
+  String get teamProjectEditorReload;
+
+  /// No description provided for @teamProjectEditorDiscardDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'This replaces your unsaved edits with the latest project. Your saved project is kept.'**
+  String get teamProjectEditorDiscardDraft;
+
+  /// No description provided for @teamProjectEditorRoleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name for this role.'**
+  String get teamProjectEditorRoleRequired;
+
+  /// No description provided for @teamProjectEditorDefaults.
+  ///
+  /// In en, this message translates to:
+  /// **'New project defaults'**
+  String get teamProjectEditorDefaults;
+
+  /// No description provided for @teamProjectEditorApplyPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply updated plan'**
+  String get teamProjectEditorApplyPlan;
+
+  /// No description provided for @teamProjectEditorContextFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Context files (one path per line)'**
+  String get teamProjectEditorContextFiles;
+
+  /// No description provided for @teamProjectEditorContextFilesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'These references are kept with the spec. The demo does not read or upload files.'**
+  String get teamProjectEditorContextFilesHelp;
+
+  /// No description provided for @teamProjectEditorScreenOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep working with the screen off'**
+  String get teamProjectEditorScreenOff;
+
+  /// No description provided for @teamProjectEditorScreenOffHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'This preference is saved for the project. Background work remains subject to the host and system limits.'**
+  String get teamProjectEditorScreenOffHelp;
+
+  /// No description provided for @teamProjectEditorDraftApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft changes need your approval before they become the project spec.'**
+  String get teamProjectEditorDraftApproval;
+
+  /// No description provided for @teamProjectEditorChangeRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'What should the planner change?'**
+  String get teamProjectEditorChangeRequest;
+
+  /// No description provided for @teamProjectEditorAskChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask to change'**
+  String get teamProjectEditorAskChange;
+
+  /// No description provided for @teamProjectEditorChangeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a goal and describe the change you want.'**
+  String get teamProjectEditorChangeRequired;
 }
 
 class _AppLocalizationsDelegate

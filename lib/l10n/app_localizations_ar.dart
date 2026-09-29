@@ -25175,7 +25175,8 @@ class AppLocalizationsAr extends AppLocalizations {
       'Choose Single lane or Parallel agents.';
 
   @override
-  String get teamProjectEditorPositiveLanes => 'Enter at least one lane.';
+  String get teamProjectEditorPositiveLanes =>
+      'Enter a lane limit from 1 to 32.';
 
   @override
   String get teamProjectEditorChooseBudget =>
@@ -25364,4 +25365,58 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamProjectOff => 'Leave demo';
+
+  @override
+  String get teamProjectEditorFixRoundsRange =>
+      'Enter a fix-round limit from 0 to 3.';
+
+  @override
+  String get teamProjectEditorPositiveTokens =>
+      'Enter a positive token limit or leave it empty.';
+
+  @override
+  String get teamProjectEditorReload => 'Reload latest project';
+
+  @override
+  String get teamProjectEditorDiscardDraft =>
+      'This replaces your unsaved edits with the latest project. Your saved project is kept.';
+
+  @override
+  String get teamProjectEditorRoleRequired => 'Enter a name for this role.';
+
+  @override
+  String get teamProjectEditorDefaults => 'New project defaults';
+
+  @override
+  String get teamProjectEditorApplyPlan => 'Apply updated plan';
+
+  @override
+  String get teamProjectEditorContextFiles =>
+      'Context files (one path per line)';
+
+  @override
+  String get teamProjectEditorContextFilesHelp =>
+      'These references are kept with the spec. The demo does not read or upload files.';
+
+  @override
+  String get teamProjectEditorScreenOff => 'Keep working with the screen off';
+
+  @override
+  String get teamProjectEditorScreenOffHelp =>
+      'This preference is saved for the project. Background work remains subject to the host and system limits.';
+
+  @override
+  String get teamProjectEditorDraftApproval =>
+      'Draft changes need your approval before they become the project spec.';
+
+  @override
+  String get teamProjectEditorChangeRequest =>
+      'What should the planner change?';
+
+  @override
+  String get teamProjectEditorAskChange => 'Ask to change';
+
+  @override
+  String get teamProjectEditorChangeRequired =>
+      'Add a goal and describe the change you want.';
 }
