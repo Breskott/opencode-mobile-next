@@ -29,6 +29,7 @@ Widget teamRow(
   KitTeamState state = KitTeamState.done,
   String? detail,
   String? meta,
+  String? trailing,
   VoidCallback? onPressed,
   int? completed,
   int? total,
@@ -88,6 +89,26 @@ Widget teamRow(
             ],
           ),
         ),
+        if (trailing != null || onPressed != null) ...[
+          SizedBox(width: t.space2),
+          if (trailing != null)
+            Flexible(
+              child: KitText(
+                trailing,
+                role: KitTextRole.secondary,
+                tone: KitTextTone.secondary,
+                maxLines: 2,
+              ),
+            ),
+          if (onPressed != null)
+            ExcludeSemantics(
+              child: Icon(
+                Icons.chevron_right,
+                size: t.smallIconSize,
+                color: t.roles.text3,
+              ),
+            ),
+        ],
       ],
     ),
   );
@@ -107,6 +128,7 @@ Widget teamCard(
   KitAction? primary,
   List<KitAction> actions = const [],
   bool flat = false,
+  bool neutralStatus = false,
 }) {
   final t = KitTokens.of(context);
   final attention = state == KitTeamState.needsYou;
@@ -144,7 +166,7 @@ Widget teamCard(
         role: state == KitTeamState.failed
             ? KitTextRole.rowTitle
             : KitTextRole.secondary,
-        tone: teamTone(state),
+        tone: neutralStatus ? KitTextTone.secondary : teamTone(state),
       ),
       if (summary != null) ...[
         SizedBox(height: t.space2),
@@ -158,6 +180,7 @@ Widget teamCard(
           state: item.state,
           detail: item.detail,
           meta: item.meta,
+          trailing: item.trailing,
           onPressed: item.onPressed,
         ),
       ...content,

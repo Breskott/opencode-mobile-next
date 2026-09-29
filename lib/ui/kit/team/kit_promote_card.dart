@@ -33,6 +33,7 @@ class KitPromoteCard extends StatelessWidget {
     items: items,
     primary: primary,
     actions: actions,
+    neutralStatus: true,
     flat: false,
   );
 }

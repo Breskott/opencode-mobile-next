@@ -70,7 +70,7 @@ void main() {
     await _tap(tester, 'Single lane');
     expectBlocked('Set a budget or choose No limit.');
     await _tap(tester, 'No limit');
-    expectBlocked('Add a project name, goal and at least one repo.');
+    expectBlocked('Add a goal and at least one repo.');
     for (final entry in {
       'name': 'Reader',
       'goal': 'Read saved articles offline',

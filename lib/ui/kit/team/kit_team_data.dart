@@ -18,12 +18,17 @@ class KitTeamItem {
     required this.title,
     this.detail,
     this.meta,
+    this.trailing,
     this.state = KitTeamState.done,
     this.onPressed,
   });
   final String title;
   final String? detail;
   final String? meta;
+
+  /// A short value at the row's end ("See changes"); the chevron follows it
+  /// when the row opens something.
+  final String? trailing;
   final KitTeamState state;
   final VoidCallback? onPressed;
 }
@@ -50,4 +55,32 @@ class KitTeamFinding {
   final String? location;
   final bool selected;
   final ValueChanged<bool>? onChanged;
+}
+
+/// One task line of a plan: number, title, a one-line detail, and who does it.
+@immutable
+class KitPlanTask {
+  const KitPlanTask({
+    required this.number,
+    required this.title,
+    this.detail,
+    this.who,
+  });
+  final int number;
+  final String title;
+  final String? detail;
+  final String? who;
+}
+
+/// A named group of plan tasks; [flagged] carries the worded review point.
+@immutable
+class KitPlanPhase {
+  const KitPlanPhase({
+    required this.title,
+    required this.tasks,
+    this.flagLabel,
+  });
+  final String title;
+  final List<KitPlanTask> tasks;
+  final String? flagLabel;
 }

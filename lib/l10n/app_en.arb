@@ -29820,7 +29820,7 @@
     "description": "Composer top row: action that sends a failed message again"
   },
   "teamProjectHome": "AI Team",
-  "teamProjectDemo": "Demo · simulated project activity",
+  "teamProjectDemo": "Demo",
   "teamProjectNew": "New project",
   "teamProjectQuick": "Give a quick task",
   "teamProjectSettings": "Project settings",
@@ -29949,7 +29949,7 @@
   "teamProjectEditorSingle": "Single lane",
   "teamProjectEditorParallel": "Parallel agents",
   "teamProjectEditorMaxLanes": "Maximum lanes",
-  "teamProjectEditorCostUnknown": "Host cost measurements are not available in this demo. Memory, battery use, heat and chat slowdown depend on the host and lane count.",
+  "teamProjectEditorCostUnknown": "Each lane is one sub-session, and your chat stays first. Cost is not measured in this demo; memory, battery and chat speed depend on the host.",
   "teamProjectEditorCharging": "Only while charging",
   "teamProjectEditorReview": "Review level",
   "teamProjectEditorMilestonesRisk": "Milestones and risky points",
@@ -29991,7 +29991,7 @@
   "teamProjectEditorChooseBudget": "Set a budget or choose No limit.",
   "teamProjectEditorPositiveBudget": "Enter a positive per-day limit and total limit.",
   "teamProjectEditorSaveFailed": "Changes could not be saved. Your edits are still here; try saving again.",
-  "teamProjectEditorRequired": "Add a project name, goal and at least one repo.",
+  "teamProjectEditorRequired": "Add a goal and at least one repo.",
   "teamProjectEditorChooseRoleServer": "Choose a role and a server for this task.",
   "teamProjectEditorRepoRequired": "Choose a server and enter the repo name and folder.",
   "teamProjectEditorSpecRequired": "Add a goal and at least one milestone with a title and acceptance criteria.",
@@ -30052,8 +30052,8 @@
   "teamProjectEditorRoleRequired": "Enter a name for this role.",
   "teamProjectEditorDefaults": "New project defaults",
   "teamProjectEditorApplyPlan": "Apply updated plan",
-  "teamProjectEditorContextFiles": "Context files (one path per line)",
-  "teamProjectEditorContextFilesHelp": "These references are kept with the spec. The demo does not read or upload files.",
+  "teamProjectEditorContextFiles": "Files to read first",
+  "teamProjectEditorContextFilesHelp": "Optional. One path per line. The team reads these before it plans. The demo does not read or upload files.",
   "teamProjectEditorScreenOff": "Keep working with the screen off",
   "teamProjectEditorScreenOffHelp": "This preference is saved for the project. Background work remains subject to the host and system limits.",
   "teamProjectEditorDraftApproval": "Draft changes need your approval before they become the project spec.",
@@ -30087,5 +30087,472 @@
   "teamProjectEditorApprovedBy": "Approved by",
   "teamProjectEditorPlanFailed": "The planner did not return a usable plan. Keep the goal as one task, or ask for a new plan.",
   "teamProjectEditorUseAsTask": "Use as one task",
-  "teamProjectEditorAskAgain": "Ask again"
+  "teamProjectEditorAskAgain": "Ask again",
+  "teamProjectDemoChip": "Demo",
+  "teamProjectHeadlineMilestone": "Milestone {current} of {total} · {working} working",
+  "@teamProjectHeadlineMilestone": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "working": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectHeadlineDone": "All {total} milestones done",
+  "@teamProjectHeadlineDone": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectGoalStatus": "Spec v{version} · approved {age} · {milestones} milestones · {repos} repos",
+  "@teamProjectGoalStatus": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      },
+      "age": {
+        "type": "String"
+      },
+      "milestones": {
+        "type": "int"
+      },
+      "repos": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectGoalStatusDraft": "Spec v{version} · {milestones} milestones · {repos} repos",
+  "@teamProjectGoalStatusDraft": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      },
+      "milestones": {
+        "type": "int"
+      },
+      "repos": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectOpenSpec": "Open spec",
+  "teamProjectRequestWhere": "{role} on {server}",
+  "@teamProjectRequestWhere": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectRequestBlocks": "{role} waits; {count, plural, one{1 task after it waits too} other{{count} tasks after it wait too}}",
+  "@teamProjectRequestBlocks": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectMilestoneTasks": "{done} of {total} tasks",
+  "@teamProjectMilestoneTasks": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectMilestoneWaits": "Waits on {number}",
+  "@teamProjectMilestoneWaits": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectMilestoneNoTasks": "No tasks yet",
+  "teamProjectLanesTitle": "Lanes · {busy} of {total} busy",
+  "@teamProjectLanesTitle": {
+    "placeholders": {
+      "busy": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectLanesChange": "Change",
+  "teamProjectLaneRunning": "{server} · {elapsed}",
+  "@teamProjectLaneRunning": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectLaneWaiting": "{server} · waiting for a free lane",
+  "@teamProjectLaneWaiting": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectLaneTitle": "{role} · {task}",
+  "@teamProjectLaneTitle": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "task": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectLaneNoteParallel": "Parallel · {count, plural, one{1 lane} other{{count} lanes}}",
+  "@teamProjectLaneNoteParallel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectLaneNoteSingle": "Single lane",
+  "teamProjectLaneNoteDemo": "{note} · figures are simulated",
+  "@teamProjectLaneNoteDemo": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectElapsedSeconds": "{count} s",
+  "@teamProjectElapsedSeconds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectElapsedMinutes": "{count} min",
+  "@teamProjectElapsedMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectElapsedHours": "{hours} h {minutes} min",
+  "@teamProjectElapsedHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectCostToday": "{amount} today",
+  "@teamProjectCostToday": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectCostTodayOf": "{amount} of {limit} today",
+  "@teamProjectCostTodayOf": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectCostTotal": "{amount} total",
+  "@teamProjectCostTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectCostTotalOf": "{amount} of {limit} total",
+  "@teamProjectCostTotalOf": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectCostNoLimit": "No limit set",
+  "teamProjectCostNotReported": "Not reported yet",
+  "teamProjectBoardSummary": "{tasks, plural, one{1 task} other{{tasks} tasks}} across {milestones, plural, one{1 milestone} other{{milestones} milestones}}",
+  "@teamProjectBoardSummary": {
+    "placeholders": {
+      "tasks": {
+        "type": "int"
+      },
+      "milestones": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectBoardEmpty": "No tasks yet",
+  "teamProjectTimelineSummary": "{count, plural, one{1 event} other{{count} events}} · latest {age}",
+  "@teamProjectTimelineSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectTimelineEmpty": "Nothing has happened yet",
+  "teamProjectServersSummary": "{count, plural, one{1 server} other{{count} servers}}",
+  "@teamProjectServersSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectSettingsSummaryParallel": "Parallel · up to {count} lanes",
+  "@teamProjectSettingsSummaryParallel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectSettingsSummarySingle": "Single lane",
+  "teamProjectMenu": "Project menu",
+  "teamProjectTaskMenu": "Task menu",
+  "teamProjectDecisionBy": "{who} · {age}",
+  "@teamProjectDecisionBy": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      },
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectYou": "You",
+  "teamProjectPlanFor": "Plan for milestone {number} · waiting for you",
+  "@teamProjectPlanFor": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectPlanForProject": "Plan · waiting for you",
+  "teamProjectPlanSummary": "{phases, plural, one{1 phase} other{{phases} phases}} · {tasks, plural, one{1 task} other{{tasks} tasks}} · {repos, plural, one{1 repo} other{{repos} repos}}",
+  "@teamProjectPlanSummary": {
+    "placeholders": {
+      "phases": {
+        "type": "int"
+      },
+      "tasks": {
+        "type": "int"
+      },
+      "repos": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectPlanPhase": "Phase {number} · {title}",
+  "@teamProjectPlanPhase": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectPlanReviewPoint": "review point",
+  "teamProjectPlanRepo": "{name} repo",
+  "@teamProjectPlanRepo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectPlanAfter": "after {number}",
+  "@teamProjectPlanAfter": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectPlanCriteria": "{count, plural, one{1 criterion} other{{count} criteria}}",
+  "@teamProjectPlanCriteria": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectPlanWho": "{role} · {server}",
+  "@teamProjectPlanWho": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectPlanMore": "{count, plural, one{… 1 more task} other{… {count} more tasks}}",
+  "@teamProjectPlanMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectPlanEdit": "Edit plan",
+  "teamProjectPlanAsk": "Ask to change",
+  "teamProjectPromoteTitle": "Promote dev → main",
+  "teamProjectPromoteStatus": "{repo} repo · main is protected. Only you can promote.",
+  "@teamProjectPromoteStatus": {
+    "placeholders": {
+      "repo": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectPromoteMilestone": "Milestone {number} · {title}",
+  "@teamProjectPromoteMilestone": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectPromoteMerged": "{done} of {total} tasks merged",
+  "@teamProjectPromoteMerged": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectPromoteDays": "{count, plural, one{1 day} other{{count} days}}",
+  "@teamProjectPromoteDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectPromoteChecks": "Checks after merge",
+  "teamProjectPromoteChecksPassed": "Every check passed after the last merge",
+  "teamProjectPromoteReview": "Review",
+  "teamProjectPromoteAccepted": "You accepted milestone {number}",
+  "@teamProjectPromoteAccepted": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectPromoteNoReview": "No review was needed for this work",
+  "teamProjectPromoteChanges": "{commits, plural, one{1 commit} other{{commits} commits}}",
+  "@teamProjectPromoteChanges": {
+    "placeholders": {
+      "commits": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectPromoteFiles": "{files, plural, one{1 file} other{{files} files}}",
+  "@teamProjectPromoteFiles": {
+    "placeholders": {
+      "files": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectPromoteSeeChanges": "See changes",
+  "teamProjectPromoteNotYet": "Not yet",
+  "teamProjectFindingsTitle": "Checked by {role} · {summary}",
+  "@teamProjectFindingsTitle": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectEditorGoalLabel": "What should the team achieve?",
+  "teamProjectEditorWhereRuns": "Where it runs",
+  "teamProjectEditorMoreOptions": "Optional details",
+  "teamProjectEditorNameHelp": "Optional. Leave empty to use the start of the goal.",
+  "teamProjectEditorBudgetHelp": "The team pauses when the day reaches it. Leave a total to cap the whole project.",
+  "teamProjectFindingsCritical": "{count} critical",
+  "@teamProjectFindingsCritical": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectFindingsMajor": "{count} major",
+  "@teamProjectFindingsMajor": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectFindingsMinor": "{count} minor",
+  "@teamProjectFindingsMinor": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
