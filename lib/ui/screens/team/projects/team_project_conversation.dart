@@ -171,6 +171,26 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
     );
   }
 
+  Future<void> _merge(TeamProject p, TeamRepo? repo) async {
+    if (repo == null) return;
+    final requiresConfirmation = p.settings.reviewLevel == 'everyStep';
+    if (requiresConfirmation) {
+      final yes = await showKitConfirm(
+        context,
+        title: l.teamProjectTaskMergeRun,
+        body: l.teamProjectMergeConfirmBody,
+        confirmLabel: l.teamProjectTaskMergeRun,
+      );
+      if (!yes || !mounted) return;
+    }
+    await _run(
+      p,
+      TeamProjectAction.processMergeQueue,
+      target: repo.id,
+      confirmed: requiresConfirmation,
+    );
+  }
+
   Future<void> _promote(TeamProject p, TeamRepo repo) async {
     final yes = await showKitConfirm(
       context,
@@ -447,10 +467,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                     ),
                 ],
                 actions: [
-                  _action(
-                    l.teamProjectTaskMergeRun,
-                    () => _run(p, TeamProjectAction.processMergeQueue),
-                  ),
+                  _action(l.teamProjectTaskMergeRun, () => _merge(p, repo)),
                 ],
               ),
             if (repo != null && repo.devCommit != repo.mainCommit)
