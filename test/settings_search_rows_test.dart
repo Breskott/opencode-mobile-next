@@ -1,5 +1,5 @@
 // P9.4 "Search that finds any setting": the shared index upgrade as a
-// person uses it. Rows inside pages are found by their own words (vibration,
+// person uses it. Rows inside pages are found by their own words (animations,
 // heat, crash, battery), with one typo, in either language; the retired
 // aliases lead nowhere; and a row result opens its page arrived at the row.
 import 'dart:convert';
@@ -109,17 +109,15 @@ void main() {
   tearDown(() => debugPlatformCapabilities = null);
 
   group('the rows a person names', () {
-    test('vibration, heat, crash and battery lead to their rows', () async {
+    test('motion, heat, crash and battery lead to their rows', () async {
       final controller = await _controller();
       addTearDown(controller.dispose);
       for (final (query, id) in [
-        ('vibration', 'inside-appearance-vibration'),
         ('heat', 'inside-keep-running-thermal'),
         ('crash', 'inside-phone-crash-recovery'),
         ('battery', 'inside-keep-running-battery'),
-        ('glass', 'inside-appearance-glass'),
         ('animations', 'inside-appearance-motion'),
-        ('confetti', 'inside-appearance-celebrations'),
+        ('confetti', 'inside-appearance-motion'),
       ]) {
         expect(_ids(controller, query).first, id, reason: query);
       }
@@ -129,10 +127,12 @@ void main() {
         for (final entry in searchIndex(_en, _scope(controller)))
           entry.id: entry,
       };
-      final vibration = byId['inside-appearance-vibration']!;
-      expect(vibration.target?.pageId, 'appearance-settings');
-      expect(vibration.target?.rowId, 'effects-vibration');
-      expect(vibration.parent, contains(_en.effectsSection));
+      final motion = byId['inside-appearance-motion']!;
+      expect(motion.target?.pageId, 'appearance-settings');
+      expect(motion.target?.rowId, 'effects-motion');
+      expect(motion.parent, contains(_en.effectsSection));
+      expect(byId.containsKey('inside-appearance-vibration'), isFalse);
+      expect(byId.containsKey('inside-appearance-glass'), isFalse);
       expect(
         byId['inside-keep-running-thermal']!.target?.rowId,
         'keep-running-thermal',
@@ -146,16 +146,16 @@ void main() {
     test('one typo and a word begun still find the row', () async {
       final controller = await _controller();
       addTearDown(controller.dispose);
-      for (final query in ['vibraton', 'vibartion', 'VIBRA', 'batery']) {
+      for (final query in ['ANIMA', 'batery']) {
         expect(
           _ids(controller, query).first,
-          query.toLowerCase().startsWith('vib')
-              ? 'inside-appearance-vibration'
+          query.toLowerCase().startsWith('ani')
+              ? 'inside-appearance-motion'
               : 'inside-keep-running-battery',
           reason: query,
         );
       }
-      expect(_ids(controller, 'vibration banana'), isEmpty);
+      expect(_ids(controller, 'animations banana'), isEmpty);
       expect(_ids(controller, '  '), isEmpty);
     });
 
@@ -164,15 +164,15 @@ void main() {
       addTearDown(controller.dispose);
       final ar = lookupAppLocalizations(const Locale('ar'));
       // Arabic words while the app is in English, and back.
-      expect(_ids(controller, 'اهتزاز').first, 'inside-appearance-vibration');
+      expect(_ids(controller, 'حركة').first, 'inside-appearance-motion');
       expect(_ids(controller, 'حرارة').first, 'inside-keep-running-thermal');
       expect(
         _ids(controller, ar.settingsHubGroupNotifications),
         contains('settings-category-background'),
       );
       expect(
-        _ids(controller, 'vibration', l10n: ar).first,
-        'inside-appearance-vibration',
+        _ids(controller, 'animations', l10n: ar).first,
+        'inside-appearance-motion',
       );
       expect(
         _ids(controller, 'quiet hours', l10n: ar),
@@ -247,7 +247,7 @@ void main() {
       addTearDown(tester.view.reset);
     }
 
-    testWidgets('vibration opens Appearance at the Vibration row, once', (
+    testWidgets('animations opens Appearance at the Motion row, once', (
       tester,
     ) async {
       phone(tester);
@@ -257,8 +257,8 @@ void main() {
       await tester.pumpWidget(app(controller));
       await tester.pumpAndSettle();
 
-      await search(tester, 'vibraton');
-      final result = _key('search-result-inside-appearance-vibration');
+      await search(tester, 'animations');
+      final result = _key('search-result-inside-appearance-motion');
       expect(result, findsOneWidget);
       expect(
         find.descendant(
@@ -271,16 +271,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppearanceSettingsScreen), findsOneWidget);
-      final row = tester.getRect(_key('effects-vibration'));
+      final row = tester.getRect(_key('effects-motion'));
       expect(row.top, greaterThanOrEqualTo(0));
       expect(row.bottom, lessThanOrEqualTo(700));
-      expect(_wash(tester, 'effects-vibration'), 1);
-      // Only that row.
-      expect(_wash(tester, 'effects-glass'), isNull);
+      expect(_wash(tester, 'effects-motion'), 1);
 
       await tester.pump(KitArrival.hold);
       await tester.pumpAndSettle();
-      expect(_wash(tester, 'effects-vibration'), 0);
+      expect(_wash(tester, 'effects-motion'), 0);
     });
 
     testWidgets('battery opens Keep running at the battery step', (

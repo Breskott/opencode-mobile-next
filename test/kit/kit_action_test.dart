@@ -749,29 +749,30 @@ void main() {
     Color? wordsColour(WidgetTester tester, String label) =>
         DefaultTextStyle.of(tester.element(find.text(label))).style.color;
 
-    testWidgets('an enabled tertiary is accent, never the disabled text3', (
-      tester,
-    ) async {
-      final roles = ThemeRoles.resolve(AppTheme.dark());
-      await _pumpAt(
-        tester,
-        Column(
-          children: [
-            KitButton.tertiary(label: 'Edit name', onPressed: () {}),
-            const KitButton.tertiary(label: 'Rename', onPressed: null),
-            KitButton.tertiary(
-              label: 'Delete',
-              destructive: true,
-              onPressed: () {},
-            ),
-          ],
-        ),
-      );
-      expect(wordsColour(tester, 'Edit name'), roles.accent);
-      expect(wordsColour(tester, 'Rename'), roles.text3);
-      expect(wordsColour(tester, 'Edit name'), isNot(roles.text3));
-      expect(wordsColour(tester, 'Delete'), roles.danger);
-    });
+    testWidgets(
+      'an enabled tertiary is neutral text1, never the disabled text3',
+      (tester) async {
+        final roles = ThemeRoles.resolve(AppTheme.dark());
+        await _pumpAt(
+          tester,
+          Column(
+            children: [
+              KitButton.tertiary(label: 'Edit name', onPressed: () {}),
+              const KitButton.tertiary(label: 'Rename', onPressed: null),
+              KitButton.tertiary(
+                label: 'Delete',
+                destructive: true,
+                onPressed: () {},
+              ),
+            ],
+          ),
+        );
+        expect(wordsColour(tester, 'Edit name'), roles.text1);
+        expect(wordsColour(tester, 'Rename'), roles.text3);
+        expect(wordsColour(tester, 'Edit name'), isNot(roles.text3));
+        expect(wordsColour(tester, 'Delete'), roles.danger);
+      },
+    );
   });
 
   group('KitAction.copy keys and redaction', () {

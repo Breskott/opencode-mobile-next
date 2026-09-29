@@ -21636,40 +21636,16 @@ abstract class AppLocalizations {
   /// **'Display'**
   String get appearanceDisplaySection;
 
-  /// Settings › Appearance: section label over glass, animations, celebrations and vibration.
+  /// Settings › Appearance: section label over the motion choice.
   ///
   /// In en, this message translates to:
   /// **'Effects'**
   String get effectsSection;
 
-  /// Settings › Appearance › Effects: switch for the see-through glass on the dock and the message box.
-  ///
-  /// In en, this message translates to:
-  /// **'Glass effects'**
-  String get effectsGlass;
-
-  /// Glass effects row, supporting line when the phone draws glass.
-  ///
-  /// In en, this message translates to:
-  /// **'The dock and message box float as glass over what scrolls beneath'**
-  String get effectsGlassOn;
-
-  /// Glass effects row, supporting line when the phone cannot draw liquid glass and falls back to a frosted blur.
-  ///
-  /// In en, this message translates to:
-  /// **'Uses a frosted surface on this phone'**
-  String get effectsGlassFrosted;
-
-  /// Glass effects row, supporting line when a system accessibility setting makes glass solid.
-  ///
-  /// In en, this message translates to:
-  /// **'Solid while high contrast, a screen reader or Remove animations is on'**
-  String get effectsGlassSystem;
-
   /// Settings › Appearance › Effects: how much the app moves.
   ///
   /// In en, this message translates to:
-  /// **'Animations'**
+  /// **'Motion'**
   String get effectsAnimations;
 
   /// Animations choice: everything moves.
@@ -21681,7 +21657,7 @@ abstract class AppLocalizations {
   /// Animations: one line explaining Full.
   ///
   /// In en, this message translates to:
-  /// **'Drawings move and waiting screens breathe'**
+  /// **'Drawings move, waiting screens breathe and finished moments celebrate'**
   String get effectsMotionFullHint;
 
   /// Animations choice: drawings appear, nothing loops.
@@ -21693,7 +21669,7 @@ abstract class AppLocalizations {
   /// Animations: one line explaining Calm.
   ///
   /// In en, this message translates to:
-  /// **'Drawings appear, nothing keeps moving'**
+  /// **'Drawings appear, nothing keeps moving and nothing celebrates'**
   String get effectsMotionCalmHint;
 
   /// Animations choice: nothing moves.
@@ -21713,30 +21689,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your phone’s Remove animations is on, so nothing moves whatever you choose here'**
   String get effectsMotionSystemOff;
-
-  /// Settings › Appearance › Effects: switch for the short finished moments.
-  ///
-  /// In en, this message translates to:
-  /// **'Celebrations'**
-  String get effectsCelebrations;
-
-  /// Celebrations row, supporting line.
-  ///
-  /// In en, this message translates to:
-  /// **'A short moment when setup finishes or a task is merged'**
-  String get effectsCelebrationsHint;
-
-  /// Settings › Appearance › Effects: switch for haptic feedback.
-  ///
-  /// In en, this message translates to:
-  /// **'Vibration'**
-  String get effectsVibration;
-
-  /// Vibration row, supporting line.
-  ///
-  /// In en, this message translates to:
-  /// **'A light tick when you send, a soft one when something finishes'**
-  String get effectsVibrationHint;
 
   /// Effects: a choice could not be saved; it was put back.
   ///

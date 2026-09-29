@@ -1,9 +1,9 @@
-// Settings › Appearance › Effects (design standard §10): the four choices
-// persist app-wide, the app provides them above its navigator, and each one
-// changes what the app does — glass off is solid, Calm never loops, Off shows
-// finished frames, Vibration off never reaches the platform.
+// Settings › Appearance › Motion (design standard §10): the one choice
+// persists app-wide (older installs' separate animations and celebrations
+// keys fold into it), the app provides it above its navigator, and it changes
+// what the app does — Calm never loops and never celebrates, Off shows
+// finished frames. Glass and vibration are no longer choices.
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -67,27 +67,6 @@ Widget _page(ConnectionController controller, {bool reduce = false}) =>
       home: AppearanceSettingsScreen(controller: controller),
     );
 
-/// Records every haptic the app asks the platform for.
-List<String> _recordHaptics(WidgetTester tester) {
-  final calls = <String>[];
-  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-    SystemChannels.platform,
-    (call) async {
-      if (call.method == 'HapticFeedback.vibrate') {
-        calls.add('${call.arguments}');
-      }
-      return null;
-    },
-  );
-  addTearDown(
-    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      null,
-    ),
-  );
-  return calls;
-}
-
 Future<void> _show(WidgetTester tester, Finder finder) async {
   await tester.scrollUntilVisible(
     finder,
@@ -118,10 +97,8 @@ void main() {
     test('a choice survives a restart and is app-wide', () async {
       final (controller, store) = await _controller();
       const chosen = KitEffects(
-        glass: false,
         motion: KitMotionLevel.calm,
         celebrations: false,
-        haptics: false,
       );
       await controller.setEffects(chosen);
       controller.dispose();
@@ -133,23 +110,73 @@ void main() {
       addTearDown(restarted.dispose);
       expect(restarted.effects.value, chosen);
 
-      // Not scoped to a server: deleting one never resets them.
-      const keys = [
-        'oc.effectsGlass',
-        'oc.effectsMotion',
-        'oc.effectsCelebrations',
-        'oc.effectsHaptics',
-      ];
-      for (final key in keys) {
-        expect(store.prefs.containsKey(key), isTrue, reason: key);
-      }
+      // Not scoped to a server: deleting one never resets it.
       expect(
         store
             .profileScopedPreferenceKeys('3f2a9c1e-7d4b-4e21-9a0f-5c6d7e8f9a0b')
-            .intersection(keys.toSet()),
-        isEmpty,
+            .contains('oc.effectsMotion'),
+        isFalse,
       );
       expect(store.prefs.getString('oc.effectsMotion'), 'calm');
+    });
+
+    test('older installs map onto the one Motion choice', () async {
+      for (final (saved, expected, celebrates) in [
+        (<String, Object>{}, KitMotionLevel.full, true),
+        (
+          <String, Object>{'oc.effectsMotion': 'calm'},
+          KitMotionLevel.calm,
+          false,
+        ),
+        (
+          <String, Object>{'oc.effectsMotion': 'off'},
+          KitMotionLevel.off,
+          false,
+        ),
+        // Animations Full with Celebrations off reads as Calm.
+        (
+          <String, Object>{
+            'oc.effectsMotion': 'full',
+            'oc.effectsCelebrations': false,
+          },
+          KitMotionLevel.calm,
+          false,
+        ),
+        // Glass and Vibration were switched off: both are fixed now.
+        (
+          <String, Object>{
+            'oc.effectsGlass': false,
+            'oc.effectsHaptics': false,
+          },
+          KitMotionLevel.full,
+          true,
+        ),
+        // A value of the wrong type never crashes the read.
+        (
+          <String, Object>{'oc.effectsCelebrations': 'no'},
+          KitMotionLevel.full,
+          true,
+        ),
+      ]) {
+        final (controller, store) = await _controller(saved);
+        addTearDown(controller.dispose);
+        expect(store.effects.motion, expected, reason: '$saved');
+        expect(store.effects.celebrations, celebrates, reason: '$saved');
+        expect(store.effects.glass, isTrue, reason: '$saved');
+        expect(store.effects.haptics, isTrue, reason: '$saved');
+      }
+    });
+
+    test('choosing Full again clears the old celebrations switch', () async {
+      final (controller, store) = await _controller({
+        'oc.effectsMotion': 'full',
+        'oc.effectsCelebrations': false,
+      });
+      addTearDown(controller.dispose);
+      expect(store.effects.motion, KitMotionLevel.calm);
+      await controller.setEffects(KitEffects.defaults);
+      expect(store.effects.motion, KitMotionLevel.full);
+      expect(store.effects.celebrations, isTrue);
     });
 
     test('an unknown stored motion reads as Full', () async {
@@ -161,25 +188,24 @@ void main() {
     });
   });
 
-  group('the Effects section', () {
-    testWidgets('shows the four choices, with glass honest about the phone', (
-      tester,
-    ) async {
+  group('the Motion section', () {
+    testWidgets('has one Motion choice and no glass, celebration or vibration '
+        'switch', (tester) async {
       final (controller, _) = await _controller();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_page(controller));
       await tester.pumpAndSettle();
 
-      await _show(tester, find.text('Glass effects'));
-      // flutter_tester's renderer cannot run the shader: frosted, said so.
-      expect(find.text('Uses a frosted surface on this phone'), findsOneWidget);
-      await _show(tester, find.text('Animations'));
+      await _show(tester, find.text('Motion'));
       expect(
-        find.text('Drawings move and waiting screens breathe'),
+        find.text(
+          'Drawings move, waiting screens breathe and finished moments celebrate',
+        ),
         findsOneWidget,
       );
-      await _show(tester, find.text('Vibration'));
-      expect(find.text('Celebrations'), findsOneWidget);
+      expect(find.text('Glass effects'), findsNothing);
+      expect(find.text('Celebrations'), findsNothing);
+      expect(find.text('Vibration'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -208,40 +234,7 @@ void main() {
       expect(find.textContaining('Liquid glass was turned off'), findsNothing);
     });
 
-    testWidgets('glass off turns the glass solid and is saved', (tester) async {
-      final (controller, store) = await _controller();
-      addTearDown(controller.dispose);
-      await tester.pumpWidget(_page(controller));
-      await tester.pumpAndSettle();
-      final preview = find.byKey(const ValueKey('effects-preview-glass'));
-      await _show(tester, preview);
-      expect(
-        KitGlass.lookOf(
-          tester.element(find.byKey(const ValueKey('effects-preview-glass'))),
-        ),
-        KitGlassLook.frosted,
-      );
-      expect(
-        find.descendant(of: preview, matching: find.byType(BackdropFilter)),
-        findsOneWidget,
-      );
-
-      await _show(tester, find.text('Glass effects'));
-      await tester.tap(find.text('Glass effects'));
-      await tester.pumpAndSettle();
-
-      expect(controller.effects.value.glass, isFalse);
-      expect(store.prefs.getBool('oc.effectsGlass'), isFalse);
-      await _show(tester, preview);
-      expect(
-        find.descendant(of: preview, matching: find.byType(BackdropFilter)),
-        findsNothing,
-      );
-    });
-
-    testWidgets('Animations: Calm and Off are chosen and saved', (
-      tester,
-    ) async {
+    testWidgets('Motion: Calm and Off are chosen and saved', (tester) async {
       final (controller, store) = await _controller();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_page(controller));
@@ -252,8 +245,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.effects.value.motion, KitMotionLevel.calm);
       expect(store.prefs.getString('oc.effectsMotion'), 'calm');
+      expect(controller.effects.value.celebrations, isFalse);
       expect(
-        find.text('Drawings appear, nothing keeps moving'),
+        find.text(
+          'Drawings appear, nothing keeps moving and nothing celebrates',
+        ),
         findsOneWidget,
       );
 
@@ -263,26 +259,6 @@ void main() {
       expect(find.text('Everything shows at once'), findsOneWidget);
     });
 
-    testWidgets('Celebrations and Vibration switch off and are saved', (
-      tester,
-    ) async {
-      final (controller, store) = await _controller();
-      addTearDown(controller.dispose);
-      await tester.pumpWidget(_page(controller));
-      await tester.pumpAndSettle();
-
-      await _show(tester, find.text('Celebrations'));
-      await tester.tap(find.text('Celebrations'));
-      await tester.pumpAndSettle();
-      await _show(tester, find.text('Vibration'));
-      await tester.tap(find.text('Vibration'));
-      await tester.pumpAndSettle();
-      expect(controller.effects.value.celebrations, isFalse);
-      expect(controller.effects.value.haptics, isFalse);
-      expect(store.prefs.getBool('oc.effectsCelebrations'), isFalse);
-      expect(store.prefs.getBool('oc.effectsHaptics'), isFalse);
-    });
-
     testWidgets('the system Remove animations wins and the page says so', (
       tester,
     ) async {
@@ -290,15 +266,9 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_page(controller, reduce: true));
       await tester.pumpAndSettle();
-      await _show(tester, find.text('Animations'));
+      await _show(tester, find.text('Motion'));
       expect(
         find.textContaining('Remove animations is on, so nothing moves'),
-        findsOneWidget,
-      );
-      expect(
-        find.text(
-          'Solid while high contrast, a screen reader or Remove animations is on',
-        ),
         findsOneWidget,
       );
     });
@@ -311,10 +281,10 @@ void main() {
       store.refuseEffects = true;
       await tester.pumpWidget(_page(controller));
       await tester.pumpAndSettle();
-      await _show(tester, find.text('Glass effects'));
-      await tester.tap(find.text('Glass effects'));
+      await _show(tester, find.text('Calm'));
+      await tester.tap(find.text('Calm'));
       await tester.pumpAndSettle();
-      expect(controller.effects.value.glass, isTrue);
+      expect(controller.effects.value.motion, KitMotionLevel.full);
       expect(
         find.text('Could not save this choice on this device. Try again.'),
         findsOneWidget,
@@ -338,10 +308,7 @@ void main() {
       tester,
     ) async {
       KitMotion.loops = true;
-      final (controller, _) = await _controller({
-        'oc.effectsMotion': 'calm',
-        'oc.effectsHaptics': false,
-      });
+      final (controller, _) = await _controller({'oc.effectsMotion': 'calm'});
       addTearDown(controller.dispose);
       await tester.pumpWidget(app(controller));
       await tester.pump();
@@ -351,7 +318,7 @@ void main() {
       // Calm: drawings still draw in, nothing loops.
       expect(KitMotion.loopsIn(context), isFalse);
       expect(KitMotion.reduced(context), isFalse);
-      expect(KitHaptics.enabled, isFalse);
+      expect(KitHaptics.enabled, isTrue);
 
       await controller.setEffects(
         const KitEffects(motion: KitMotionLevel.full),
@@ -365,38 +332,6 @@ void main() {
       await tester.pump();
       // Off: every drawing shows its finished frame, pages change at once.
       expect(KitMotion.reduced(underNavigator(tester)), isTrue);
-    });
-
-    testWidgets('Vibration off never reaches the platform', (tester) async {
-      final calls = _recordHaptics(tester);
-      final (controller, _) = await _controller();
-      addTearDown(controller.dispose);
-      await tester.pumpWidget(app(controller));
-      await tester.pump();
-
-      KitHaptics.send();
-      KitHaptics.send(underNavigator(tester));
-      expect(calls, hasLength(2));
-
-      await controller.setEffects(const KitEffects(haptics: false));
-      await tester.pump();
-      KitHaptics.send();
-      KitHaptics.send(underNavigator(tester));
-      KitHaptics.done(underNavigator(tester));
-      expect(calls, hasLength(2));
-    });
-
-    testWidgets('glass off: glass anywhere in the app is solid', (
-      tester,
-    ) async {
-      final (controller, _) = await _controller({'oc.effectsGlass': false});
-      addTearDown(controller.dispose);
-      await tester.pumpWidget(app(controller));
-      await tester.pump();
-      expect(KitGlass.lookOf(underNavigator(tester)), KitGlassLook.solid);
-      await controller.setEffects(KitEffects.defaults);
-      await tester.pump();
-      expect(KitGlass.lookOf(underNavigator(tester)), KitGlassLook.frosted);
     });
   });
 }

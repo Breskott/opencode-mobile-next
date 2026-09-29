@@ -463,9 +463,9 @@ class _PageFrame extends StatelessWidget {
     final tokens = KitTokens.of(context);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final topBar = this.topBar;
-    final ambient = KitNav.hosts(context)
-        ? tokens.roles.ambient
-        : const <Color>[];
+    // One flat ground on every page, root tabs included (critique §4):
+    // the soft colour fields are no longer painted.
+    const ambient = <Color>[];
     return Material(
       color: tokens.roles.ground,
       child: _AmbientGround(
