@@ -130,6 +130,7 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
   };
   @override
   Future<TeamWorkspace> teamWorkspace() => _serial(() async {
+    if (_closed) return _state ?? const TeamWorkspace();
     await _load();
     return _state!;
   });
@@ -447,6 +448,79 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
     }
     final before = p;
     switch (c.action) {
+      case TeamProjectAction.simulatePlanFailure:
+        if (p.planApproved || p.specVersions.isEmpty)
+          return _fail('planSimulationUnavailable');
+        p = p.copyWith(status: 'planFailed');
+      case TeamProjectAction.usePlanAsTask:
+        if (p.status != 'planFailed') return _fail('planFallbackUnavailable');
+        final planned = _plan(p);
+        p = planned.copyWith(
+          status: 'plan',
+          quickTask: true,
+          tasks: [planned.tasks.first.copyWith(title: p.specDraft.goal)],
+        );
+      case TeamProjectAction.retryPlan:
+        if (p.status != 'planFailed') return _fail('planFallbackUnavailable');
+        p = _plan(p).copyWith(status: 'plan');
+      case TeamProjectAction.simulateManualCommit:
+        final repo = p.repos.where((r) => r.id == c.targetId).firstOrNull;
+        if (repo == null) return _fail('repoNotFound');
+        final commit = c.text.trim().isEmpty
+            ? 'fixture-person-${p.revision + 1}'
+            : c.text.trim();
+        p = p.copyWith(
+          repos: p.repos
+              .map((r) => r.id == repo.id ? r.copyWith(devCommit: commit) : r)
+              .toList(),
+          mergeQueue: p.mergeQueue
+              .map(
+                (m) =>
+                    m.repoId == repo.id && m.status != 'merged' && c.confirmed
+                    ? m.copyWith(
+                        status: 'conflict',
+                        reason: 'Changes on dev need a conflict resolution',
+                      )
+                    : m,
+              )
+              .toList(),
+          receipts: [
+            ...p.receipts,
+            TeamProjectReceipt(
+              id: c.requestId,
+              kind: 'manualCommit',
+              repoId: repo.id,
+              before: repo.devCommit,
+              after: commit,
+              at: _at,
+            ),
+          ],
+        );
+        p = _log(
+          p,
+          c.confirmed ? 'conflict' : 'rebase',
+          c.confirmed
+              ? 'Manual changes preserved; resolve the conflicting edits'
+              : 'Manual changes preserved; task branches rebased onto dev',
+          actor: 'fixture',
+        );
+      case TeamProjectAction.simulateConflict:
+        if (!p.mergeQueue.any(
+          (m) => m.id == c.targetId && m.status != 'merged',
+        ))
+          return _fail('queueItemNotFound');
+        p = p.copyWith(
+          mergeQueue: p.mergeQueue
+              .map(
+                (m) => m.id == c.targetId
+                    ? m.copyWith(
+                        status: 'conflict',
+                        reason: 'Simulated overlapping edits need a resolution',
+                      )
+                    : m,
+              )
+              .toList(),
+        );
       case TeamProjectAction.requestSpecChange:
         if (c.text.trim().isEmpty) return _fail('emptyMessage');
         p = p.copyWith(
@@ -638,7 +712,22 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
         p = p.copyWith(
           tasks: p.tasks.map((t) => t.id == task.id ? changed : t).toList(),
         );
+        if (changed.status == 'done' && changed.id.startsWith('resolve-')) {
+          p = p.copyWith(
+            mergeQueue: p.mergeQueue
+                .map(
+                  (m) => 'resolve-${m.id}' == changed.id
+                      ? m.copyWith(
+                          status: 'queued',
+                          reason: 'Resolution checked in the task branch',
+                        )
+                      : m,
+                )
+                .toList(),
+          );
+        }
         if (changed.status == 'done' &&
+            !changed.id.startsWith('resolve-') &&
             !p.mergeQueue.any((m) => m.taskId == task.id)) {
           p = p.copyWith(
             mergeQueue: [
@@ -654,30 +743,71 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
       case TeamProjectAction.processMergeQueue:
         p = _merge(p, c);
       case TeamProjectAction.resolveConflict:
-        if (!p.mergeQueue.any(
-          (m) => m.id == c.targetId && m.status == 'conflict',
-        )) {
-          return _fail('conflictNotFound');
+        final item = p.mergeQueue
+            .where((m) => m.id == c.targetId && m.status == 'conflict')
+            .firstOrNull;
+        if (item == null) return _fail('conflictNotFound');
+        if (!const ['agent', 'manual', 'recheck'].contains(c.text))
+          return _fail('resolutionStrategyRequired');
+        if (c.text == 'agent') {
+          if (p.tasks.any((t) => t.id == 'resolve-${item.id}'))
+            return _fail('resolutionAlreadyStarted');
+          final source = p.tasks.firstWhere((t) => t.id == item.taskId);
+          p = p.copyWith(
+            tasks: [
+              ...p.tasks,
+              TeamTask(
+                id: 'resolve-${item.id}',
+                title: 'Resolve conflicting changes',
+                phaseId: source.phaseId,
+                roleId: 'backend',
+                repoId: source.repoId,
+                serverId: source.serverId,
+                branch: source.branch,
+                criteria: [
+                  'Both sets of changes remain intact',
+                  'Repository checks pass',
+                ],
+                changedAt: _at,
+              ),
+            ],
+            mergeQueue: p.mergeQueue
+                .map(
+                  (m) => m.id == item.id
+                      ? m.copyWith(reason: 'Waiting for the resolution task')
+                      : m,
+                )
+                .toList(),
+          );
+        } else if (c.text == 'manual') {
+          p = p.copyWith(
+            mergeQueue: p.mergeQueue
+                .map(
+                  (m) => m.id == item.id
+                      ? m.copyWith(
+                          reason: 'Waiting for your conflict resolution',
+                        )
+                      : m,
+                )
+                .toList(),
+          );
+        } else {
+          if (item.reason != 'Waiting for your conflict resolution')
+            return _fail('manualResolutionNotStarted');
+          p = p.copyWith(
+            mergeQueue: p.mergeQueue
+                .map(
+                  (m) => m.id == item.id
+                      ? m.copyWith(
+                          status: 'queued',
+                          reason:
+                              'Simulated local checks passed after your resolution',
+                        )
+                      : m,
+                )
+                .toList(),
+          );
         }
-        p = p.copyWith(
-          mergeQueue: p.mergeQueue
-              .map(
-                (m) => m.id == c.targetId
-                    ? m.copyWith(
-                        status: 'queued',
-                        reason: 'Conflict resolved in simulated branch',
-                      )
-                    : m,
-              )
-              .toList(),
-          requests: p.requests
-              .map(
-                (r) => r.id == 'conflict-${c.targetId}'
-                    ? r.copyWith(answered: true)
-                    : r,
-              )
-              .toList(),
-        );
       case TeamProjectAction.promote:
         p = _promote(p, c);
       case TeamProjectAction.acknowledgeDigest:
@@ -749,7 +879,7 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
       case TeamProjectAction.deleteProject:
         return _fail('invalidAction');
     }
-    p = _syncRequests(p);
+    p = _syncRequests(_budgetNotice(p));
     if (c.action == TeamProjectAction.advance) {
       for (final task in p.tasks) {
         final old = before.tasks.where((t) => t.id == task.id).firstOrNull;
@@ -784,6 +914,13 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
   }
 
   String _actionText(TeamProjectAction action) => switch (action) {
+    TeamProjectAction.simulatePlanFailure =>
+      'Simulated an unstructured planner reply',
+    TeamProjectAction.usePlanAsTask => 'Planner notes converted into one task',
+    TeamProjectAction.retryPlan => 'A new structured plan was requested',
+    TeamProjectAction.simulateManualCommit =>
+      'Simulated a manual commit on dev',
+    TeamProjectAction.simulateConflict => 'Simulated conflicting changes',
     TeamProjectAction.saveSpecDraft => 'Spec draft saved',
     TeamProjectAction.approveSpec => 'Spec approved',
     TeamProjectAction.approvePlan => 'Plan approved',
@@ -869,6 +1006,12 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
         'Budget reached. Raise the budget or pause the project.',
       );
     }
+    if (p.status == 'planFailed')
+      add(
+        '${p.id}-plan-format',
+        'planFormat',
+        'The planner returned notes instead of a structured plan',
+      );
     if (p.status == 'plan') {
       add('${p.id}-plan', 'plan', 'Review and approve the plan');
     }
@@ -998,12 +1141,7 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
     TeamProject p,
     TeamWorkspace w,
   ) {
-    if (const ['merged'].contains(t.status) &&
-        !const [
-          TeamProjectAction.messageTask,
-          TeamProjectAction.verifyTask,
-          TeamProjectAction.recheckTask,
-        ].contains(c.action)) {
+    if (t.status == 'merged' && c.action != TeamProjectAction.messageTask) {
       return _fail('taskAlreadyDone');
     }
     switch (c.action) {
@@ -1081,6 +1219,25 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
         final open = findings.any((f) => f.status == 'open');
         return t.copyWith(
           findings: findings,
+          criterionResults: t.criteria
+              .map(
+                (criterion) => TeamCriterionResult(
+                  criterion: criterion,
+                  status:
+                      findings.any(
+                        (f) => f.criterion == criterion && f.status == 'open',
+                      )
+                      ? 'unmet'
+                      : findings.any(
+                          (f) =>
+                              f.criterion == criterion &&
+                              f.severity == 'notApplicable',
+                        )
+                      ? 'notApplicable'
+                      : 'met',
+                ),
+              )
+              .toList(),
           status: open ? 'findings' : 'done',
           reason: open ? 'Review the findings' : 'Checks passed',
           changedAt: _at,
@@ -1173,6 +1330,24 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
       phases: phases,
       tasks: p.quickTask ? tasks.take(1).toList() : tasks,
     );
+  }
+
+  TeamProject _budgetNotice(TeamProject p) {
+    final b = p.settings.budget;
+    final near =
+        !b.unlimited &&
+        ((b.total != null && p.spent >= b.total! * 0.8) ||
+            (b.daily != null && p.spentToday >= b.daily! * 0.8));
+    final day = _at.substring(0, 10);
+    final key = 'budget80-$day';
+    if (near && !p.timeline.any((e) => e.kind == key))
+      p = _log(
+        p,
+        key,
+        '80% of the project budget has been used',
+        actor: 'fixture',
+      );
+    return p.copyWith(budgetWarning: near);
   }
 
   TeamProject _advance(TeamProject p, TeamWorkspace w) {
@@ -1417,7 +1592,7 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
         );
       }
     }
-    return next;
+    return _budgetNotice(next);
   }
 
   TeamProject _merge(TeamProject p, TeamProjectCommand c) {
@@ -1450,6 +1625,12 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
       queue[i] = item.copyWith(status: 'merged', checksPassed: true);
       final ti = tasks.indexWhere((t) => t.id == item.taskId);
       tasks[ti] = t.copyWith(status: 'merged', changedAt: _at);
+      final resolution = tasks.indexWhere((t) => t.id == 'resolve-${item.id}');
+      if (resolution >= 0)
+        tasks[resolution] = tasks[resolution].copyWith(
+          status: 'merged',
+          changedAt: _at,
+        );
       receipts.add(
         TeamProjectReceipt(
           id: '${c.requestId}-$i',

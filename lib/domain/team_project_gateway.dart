@@ -2,6 +2,11 @@ import 'team_project.dart';
 export 'team_project.dart';
 
 enum TeamProjectAction {
+  simulatePlanFailure,
+  usePlanAsTask,
+  retryPlan,
+  simulateManualCommit,
+  simulateConflict,
   requestSpecChange,
   updateDefaults,
   createProject,

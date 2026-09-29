@@ -500,6 +500,7 @@ class TeamMessage {
 
 class TeamTask {
   const TeamTask({
+    this.criterionResults = const [],
     this.id = '',
     this.title = '',
     this.phaseId = '',
@@ -520,6 +521,7 @@ class TeamTask {
     this.messages = const [],
     this.diff = '',
   });
+  final List<TeamCriterionResult> criterionResults;
   final String id;
   final String title;
   final String phaseId;
@@ -540,6 +542,7 @@ class TeamTask {
   final List<TeamMessage> messages;
   final String diff;
   TeamTask copyWith({
+    List<TeamCriterionResult>? criterionResults,
     String? id,
     String? title,
     String? phaseId,
@@ -560,6 +563,7 @@ class TeamTask {
     List<TeamMessage>? messages,
     String? diff,
   }) => TeamTask(
+    criterionResults: criterionResults ?? this.criterionResults,
     id: id ?? this.id,
     title: title ?? this.title,
     phaseId: phaseId ?? this.phaseId,
@@ -581,6 +585,7 @@ class TeamTask {
     diff: diff ?? this.diff,
   );
   Map<String, Object?> toJson() => {
+    'criterionResults': criterionResults.map((v) => v.toJson()).toList(),
     'id': id,
     'title': title,
     'phaseId': phaseId,
@@ -602,6 +607,12 @@ class TeamTask {
     'diff': diff,
   };
   factory TeamTask.fromJson(Map<String, dynamic> j) => TeamTask(
+    criterionResults: List<TeamCriterionResult>.unmodifiable(
+      (j['criterionResults'] as List? ?? []).map(
+        (v) =>
+            TeamCriterionResult.fromJson(Map<String, dynamic>.from(v as Map)),
+      ),
+    ),
     id: j['id'] as String? ?? '',
     title: j['title'] as String? ?? '',
     phaseId: j['phaseId'] as String? ?? '',
@@ -850,6 +861,7 @@ class TeamTimelineEvent {
 
 class TeamProject {
   const TeamProject({
+    this.budgetWarning = false,
     this.id = '',
     this.name = '',
     this.status = 'spec',
@@ -874,6 +886,7 @@ class TeamProject {
     this.usageReported = false,
     this.simulated = true,
   });
+  final bool budgetWarning;
   final String id;
   final String name;
   final String status;
@@ -898,6 +911,7 @@ class TeamProject {
   final bool usageReported;
   final bool simulated;
   TeamProject copyWith({
+    bool? budgetWarning,
     String? id,
     String? name,
     String? status,
@@ -922,6 +936,7 @@ class TeamProject {
     bool? usageReported,
     bool? simulated,
   }) => TeamProject(
+    budgetWarning: budgetWarning ?? this.budgetWarning,
     id: id ?? this.id,
     name: name ?? this.name,
     status: status ?? this.status,
@@ -947,6 +962,7 @@ class TeamProject {
     simulated: simulated ?? this.simulated,
   );
   Map<String, Object?> toJson() => {
+    'budgetWarning': budgetWarning,
     'id': id,
     'name': name,
     'status': status,
@@ -972,6 +988,7 @@ class TeamProject {
     'simulated': simulated,
   };
   factory TeamProject.fromJson(Map<String, dynamic> j) => TeamProject(
+    budgetWarning: j['budgetWarning'] as bool? ?? false,
     id: j['id'] as String? ?? '',
     name: j['name'] as String? ?? '',
     status: j['status'] as String? ?? 'spec',
@@ -1102,4 +1119,19 @@ class TeamWorkspace {
     ),
     simulated: j['simulated'] as bool? ?? true,
   );
+}
+
+/// One reported read-only acceptance result. Absence means not checked.
+class TeamCriterionResult {
+  const TeamCriterionResult({required this.criterion, required this.status});
+  final String criterion;
+
+  /// met, unmet, or notApplicable; these are simulated in the fixture.
+  final String status;
+  Map<String, Object?> toJson() => {'criterion': criterion, 'status': status};
+  factory TeamCriterionResult.fromJson(Map<String, dynamic> j) =>
+      TeamCriterionResult(
+        criterion: j['criterion'] as String? ?? '',
+        status: j['status'] as String? ?? 'unmet',
+      );
 }
