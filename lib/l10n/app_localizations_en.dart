@@ -17429,6 +17429,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get teamIntroTurnOnPhone => 'Turn on AI Team on this phone';
+
+  @override
+  String get teamIntroInstalledTitle => 'Installed on this phone';
+
+  @override
+  String get teamIntroInstalledBody =>
+      'It is not turned on yet. Turning it on starts the team for your project; nothing more to download.';
+
+  @override
   String get teamIntroSetUpPhone => 'Set up AI Team on this phone';
 
   @override

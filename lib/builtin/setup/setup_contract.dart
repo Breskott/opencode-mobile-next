@@ -308,7 +308,21 @@ class SetupProgress {
       state == SetupState.failed ||
       state == SetupState.interrupted ||
       state == SetupState.cancelled;
+
+  /// The job has ended, one way or another: what it installed is on the
+  /// phone (or not) for good, so screens that show it read the phone again.
+  bool get ended => canContinue || state == SetupState.done;
+
+  /// Whether [next] is the moment a job ended (a first end of this job).
+  bool endedBefore(SetupProgress previous) =>
+      ended && (!previous.ended || previous.jobId != jobId);
 }
+
+/// Bumped whenever a setup job ends, however it ends: what it installed is
+/// on the phone for good, so the pages that list installed tools read it
+/// again (This phone, Settings > AI Team). A separate signal from the
+/// engine's progress, which only a watched engine keeps polling for.
+final ValueNotifier<int> setupToolsChanged = ValueNotifier<int>(0);
 
 /// Facts about a job rather than a component, kept in the job's params
 /// under [key] so setup.json carries them without a schema change: the

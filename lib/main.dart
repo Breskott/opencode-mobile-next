@@ -1892,12 +1892,15 @@ class _RootState extends ConsumerState<_Root> {
       );
     }
 
+    // Read now: these closures outlive this widget (the engine is app-wide),
+    // and a widget's ref throws once the widget is gone.
+    final store = ref.read(bootstrapProvider).store;
     PhoneSetup.attach(
       strings: strings,
       // Built when the step runs, so the shell reads the profile store only
       // when a setup job actually needs it.
       finisher: (request) => BuiltinSetupFinisher(
-        store: ref.read(bootstrapProvider).store,
+        store: store,
         starter: _builtin,
         strings: strings,
         isConnectedTo: (profile) =>
@@ -1914,7 +1917,7 @@ class _RootState extends ConsumerState<_Root> {
       ).call(request),
       // The Termux host ends the same way, through Termux's own manager.
       termuxFinisher: (request) => TermuxSetupFinisher(
-        store: ref.read(bootstrapProvider).store,
+        store: store,
         strings: strings,
         isConnectedTo: (profile) =>
             _controller.profile?.id == profile.id &&

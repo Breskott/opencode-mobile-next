@@ -216,7 +216,14 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     _host.addListener(_changed);
     _replies = ref.read(replyWatchProvider)..addListener(_changed);
     _removal = widget.removal ?? _makeRemoval();
+    setupToolsChanged.addListener(_onSetup);
     unawaited(_load());
+  }
+
+  /// A setup job ended (a failed Add tools still leaves its finished
+  /// tools): the page reads the phone again, as Settings > AI Team does.
+  void _onSetup() {
+    if (mounted) unawaited(_load());
   }
 
   /// One removal service for this page, on the host it shows: the app's
@@ -320,6 +327,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
 
   @override
   void dispose() {
+    setupToolsChanged.removeListener(_onSetup);
     _lifecycle.dispose();
     _host.removeListener(_changed);
     _replies.removeListener(_changed);

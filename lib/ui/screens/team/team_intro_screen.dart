@@ -34,7 +34,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../builtin/setup/aiteam_scripts.dart' show AiTeamPins;
+import '../../../builtin/setup/components.dart' show SetupComponentIds;
+import '../../../builtin/setup/phone_setup.dart';
 import '../../../builtin/setup/preflight.dart';
+import '../../../builtin/setup/setup_contract.dart' show setupToolsChanged;
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/profiles.dart';
@@ -47,7 +50,8 @@ import '../../widgets/team_discover.dart';
 import '../../widgets/team_discovery_card.dart' show TeamDiscovery;
 import '../../widgets/team_host_form.dart';
 import '../../widgets/team_switch.dart' show editTeamAddress;
-import '../../widgets/team_phone_onboarding.dart' show openTeamOnThisPhone;
+import '../../widgets/team_phone_onboarding.dart'
+    show openTeamOnThisPhone, teamPhoneHostOf;
 import '../phone_setup/phone_setup_selection.dart'
     show setupPreflightBody, setupPreflightHeadline, setupSizeText;
 
@@ -89,6 +93,11 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
   /// asked); [SetupPreflightResult.supported] when the team can run here.
   SetupPreflightResult? _preflight;
 
+  /// This phone: AI Team's programs are on the phone already (the same
+  /// check This phone and Add tools read), so the page offers Turn on, not
+  /// a download. Read again when a setup job ends.
+  bool _teamInstalled = false;
+
   /// A computer: the search for Gas City on the server's host.
   TeamDiscovery? _discovery;
   bool _busy = false;
@@ -102,14 +111,33 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
     switch (kind) {
       case TeamServerKind.inApp:
       case TeamServerKind.termux:
+        setupToolsChanged.addListener(_readInstalled);
+        unawaited(_readInstalled());
         unawaited(_checkPhone());
       case TeamServerKind.computer:
         _look();
     }
   }
 
+  Future<void> _readInstalled() async {
+    final profile = _profile;
+    if (profile == null) return;
+    var installed = false;
+    try {
+      installed = (await PhoneSetup.of(
+        teamPhoneHostOf(profile),
+      ).installedOptional()).contains(SetupComponentIds.aiTeam);
+    } catch (_) {
+      // Unknown: the page offers the set-up, which reads it again.
+    }
+    if (mounted && installed != _teamInstalled) {
+      setState(() => _teamInstalled = installed);
+    }
+  }
+
   @override
   void dispose() {
+    setupToolsChanged.removeListener(_readInstalled);
     _discovery
       ?..removeListener(_changed)
       ..dispose();
@@ -223,7 +251,9 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
         if (_preflight?.supported ?? false) {
           primary = KitAction(
             key: const ValueKey('team-intro-set-up'),
-            label: l10n.teamIntroSetUpPhone,
+            label: _teamInstalled
+                ? l10n.teamIntroTurnOnPhone
+                : l10n.teamIntroSetUpPhone,
             working: _busy,
             onPressed: _busy ? null : _setUpOnPhone,
           );
@@ -394,6 +424,34 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
                 ],
               ),
             ),
+          ];
+        }
+        if (_teamInstalled) {
+          // Nothing to download: said once, instead of the download line
+          // and its cost.
+          return [
+            group([
+              _fact(
+                context,
+                AppIconography.checkCircle,
+                l10n.teamIntroInstalledTitle,
+                l10n.teamIntroInstalledBody,
+              ),
+              _fact(
+                context,
+                AppIconography.batteryWarning,
+                l10n.teamDiscoverBatteryTitle,
+                kind == TeamServerKind.inApp
+                    ? l10n.teamDiscoverInAppBatteryBody
+                    : l10n.teamDiscoverTermuxBatteryBody,
+              ),
+              _fact(
+                context,
+                AppIconography.projects,
+                l10n.teamDiscoverProjectTitle,
+                l10n.teamDiscoverProjectBody,
+              ),
+            ]),
           ];
         }
         final download = l10n.teamDiscoverDownloadTitle(

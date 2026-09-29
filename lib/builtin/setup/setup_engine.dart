@@ -990,6 +990,15 @@ class _WatchedProgress extends ValueNotifier<SetupProgress> {
   bool get watched => _count > 0;
 
   @override
+  set value(SetupProgress next) {
+    final ended = next.endedBefore(value);
+    super.value = next;
+    // Not a listener (that would keep the engine polling): pages that show
+    // what is installed read the phone again when a job ends.
+    if (ended) setupToolsChanged.value++;
+  }
+
+  @override
   void addListener(VoidCallback listener) {
     super.addListener(listener);
     _count++;

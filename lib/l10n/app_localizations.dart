@@ -27856,6 +27856,24 @@ abstract class AppLocalizations {
   /// **'Open {agent}\'s page'**
   String gateSheetOpenAgent(String agent);
 
+  /// AI Team intro: primary on a phone server when AI Team is installed already but not turned on.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on AI Team on this phone'**
+  String get teamIntroTurnOnPhone;
+
+  /// AI Team intro, phone server: replaces the download line once the team's programs are installed.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed on this phone'**
+  String get teamIntroInstalledTitle;
+
+  /// AI Team intro, phone server: what the primary action does when AI Team is installed already.
+  ///
+  /// In en, this message translates to:
+  /// **'It is not turned on yet. Turning it on starts the team for your project; nothing more to download.'**
+  String get teamIntroInstalledBody;
+
   /// AI Team intro: primary on a phone server.
   ///
   /// In en, this message translates to:
