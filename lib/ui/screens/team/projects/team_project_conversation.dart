@@ -50,7 +50,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
     _focus.unfocus();
   }
 
-  AppLocalizations get l => AppLocalizations.of(context)!;
+  AppLocalizations get l => AppLocalizations.of(context);
   TeamProjectController get c => widget.controller;
 
   @override
@@ -298,7 +298,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                 KitMessage.prompt(
                   bubbleWidth: KitBubbleWidth.compact,
                   body: KitMarkdown(m.text, selectable: false),
-                  time: _age(m.at),
+                  time: DateTime.tryParse(m.at),
                 )
               else if (m.actor == 'team')
                 KitMessage.thought(
