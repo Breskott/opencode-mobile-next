@@ -552,10 +552,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       group: SettingsGroup.agent,
       icon: AppIconography.agent,
       title: l10n.teamUiHomeTitle,
-      // Plugins was a page of its own that held only this row; its words
-      // still lead here.
-      keywords:
-          '${l10n.discoverTeamAliases} ${l10n.settingsHubSearchPluginsAliases}',
+      keywords: l10n.discoverTeamAliases,
       pages: const ['team-intro'],
       gate: (scope) => scope.controller.profile != null,
       open: (context, scope) => openTeamPage(context, scope.controller),

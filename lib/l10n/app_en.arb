@@ -11669,7 +11669,7 @@
   "discoverWorktreesAliases": "worktrees branches isolated git branch",
   "discoverSearchFilesAliases": "search files find file name",
   "discoverAllConversationsAliases": "all conversations sessions chats history every project search",
-  "discoverTeamAliases": "ai team agents runs needs you orchestration plugin",
+  "discoverTeamAliases": "ai team agents runs needs you orchestration",
   "discoverNotifyServersTitle": "Notifications from saved servers",
   "@discoverNotifyServersTitle": {
     "description": "Search result title for the saved-server monitoring section of Notifications."
@@ -29270,5 +29270,64 @@
   "e7WorkspaceYesterday": "Yesterday",
   "@e7WorkspaceYesterday": {
     "description": "Relative time: between 24 and 48 hours ago"
+  },
+  "teamStripTitle": "AI Team",
+  "@teamStripTitle": {
+    "description": "Work: name of the AI Team strip"
+  },
+  "teamStripIdle": "AI Team · nothing running",
+  "@teamStripIdle": {
+    "description": "Work: AI Team strip when no task is working or waiting on the person"
+  },
+  "teamStripWorking": "{count} working",
+  "@teamStripWorking": {
+    "description": "Work: AI Team strip, how many tasks are working",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamStripNeedsYou": "{count} needs you",
+  "@teamStripNeedsYou": {
+    "description": "Work: AI Team strip, how many tasks wait on the person",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProgressOne": "AI Team: {title}",
+  "@teamProgressOne": {
+    "description": "Ongoing notification: the one working task",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProgressStep": "AI Team: {title} · step {done} of {total}",
+  "@teamProgressStep": {
+    "description": "Ongoing notification: the one working task and its step",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProgressMany": "AI Team: {count} tasks working",
+  "@teamProgressMany": {
+    "description": "Ongoing notification: several tasks working",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

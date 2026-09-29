@@ -81,6 +81,10 @@ class BackgroundConnectionService : Service() {
         private const val NOTIFICATION_ID = 4747
         private const val ACTION_CHANNEL_ID = "opencode_coding_action"
         private const val STATUS_CHANNEL_ID = "opencode_coding_status"
+        private const val TEAM_PROGRESS_CHANNEL_ID = "opencode_team_progress"
+        // An ongoing team-progress notification removes itself if the app
+        // stops refreshing it (nothing here assumes unbounded lifetime).
+        private const val TEAM_PROGRESS_TIMEOUT_MS = 20L * 60L * 1000L
         private const val CODING_ALERT_ID_BASE = 6000
         private const val CODING_ALERT_GROUP = "opencode_coding_alerts"
 
@@ -257,7 +261,9 @@ class BackgroundConnectionService : Service() {
             profileID: String = "",
             allowActions: Boolean = true,
             monitorToken: String = "",
-            subtext: String = ""
+            subtext: String = "",
+            title: String = "",
+            text: String = ""
         ): Boolean {
             if (sessionID.isBlank() || key.isBlank()) return false
             if (kind == "quota" && (sessionID != "quota" || profileID.isBlank() ||
@@ -347,6 +353,19 @@ class BackgroundConnectionService : Service() {
                     category = Notification.CATEGORY_STATUS,
                     priority = Notification.PRIORITY_DEFAULT
                 )
+                // AI Team progress: one ongoing, silent notification. The
+                // one place the app hands over its own line ("AI Team:
+                // <task> · step 3 of 5"); the lock screen shows fixed copy.
+                "team_progress" -> {
+                    if (text.isBlank()) return false
+                    CodingAlertContent(
+                        channelID = TEAM_PROGRESS_CHANNEL_ID,
+                        title = title.ifBlank { "AI Team" },
+                        text = text,
+                        category = Notification.CATEGORY_PROGRESS,
+                        priority = Notification.PRIORITY_LOW
+                    )
+                }
                 else -> return false
             }
 
@@ -383,11 +402,25 @@ class BackgroundConnectionService : Service() {
                 .setContentTitle(content.title)
                 .setContentText(content.text)
                 .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
+                .setAutoCancel(kind != "team_progress")
                 .setOnlyAlertOnce(kind != "quota")
                 .setCategory(content.category)
                 .setVisibility(Notification.VISIBILITY_PRIVATE)
-                .setGroup(CODING_ALERT_GROUP)
+            if (kind == "team_progress") {
+                builder
+                    .setOngoing(true)
+                    .setShowWhen(false)
+                    .setTimeoutAfter(TEAM_PROGRESS_TIMEOUT_MS)
+                    .setPublicVersion(
+                        Notification.Builder(context, TEAM_PROGRESS_CHANNEL_ID)
+                            .setSmallIcon(R.mipmap.ic_launcher)
+                            .setContentTitle("AI Team")
+                            .setContentText("Working")
+                            .build()
+                    )
+            } else {
+                builder.setGroup(CODING_ALERT_GROUP)
+            }
             if (subtext.isNotBlank()) builder.setSubText(subtext)
             for (action in if (allowActions) codingAlertActions(
                 context, kind, sessionID, key, quickReply, requestID, notificationID, profileID
@@ -502,7 +535,16 @@ class BackgroundConnectionService : Service() {
                 description = "Alerts when a background OpenCode session finishes"
                 lockscreenVisibility = Notification.VISIBILITY_PRIVATE
             }
-            manager.createNotificationChannels(listOf(action, status))
+            val teamProgress = NotificationChannel(
+                TEAM_PROGRESS_CHANNEL_ID,
+                "AI Team progress",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "A quiet line while the AI Team is working"
+                lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+                setShowBadge(false)
+            }
+            manager.createNotificationChannels(listOf(action, status, teamProgress))
         }
 
         private fun codingAlertNotificationID(key: String): Int =

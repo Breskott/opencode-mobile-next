@@ -6,12 +6,12 @@ import '../../api/product_repository.dart';
 import '../../api/sse.dart';
 import '../../domain/return_brief.dart';
 import '../../domain/workspace_paths.dart';
+import '../../state/team_glance.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/interaction_defaults.dart';
 import '../../state/nudges.dart';
-import '../../domain/orchestration_gateway.dart' show OrchestrationRun;
 import '../../state/orchestration.dart';
 import '../../state/attention_feed.dart' show AttentionKind;
 import '../../state/session_inventory_cache.dart' show SessionInventoryPreview;
@@ -35,7 +35,6 @@ import '../widgets/request_routes.dart';
 import '../widgets/older_sessions_pager.dart';
 import '../widgets/team_task_row.dart';
 import '../widgets/team_discover.dart' show teamPossibleOn;
-import '../widgets/team_vocabulary.dart' show teamGatedRuns;
 import 'team_conversation/team_conversation.dart';
 import 'team/team_page.dart';
 import '../widgets/termux_phone_tools.dart';
@@ -693,32 +692,11 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
             ack: acknowledged,
           );
     final archived = controller.archivedSessions();
-    // The team's open tasks are conversations too (docs/design/team-
-    // conversation-2026-09-26.md): what needs the person sorts with the
-    // needs-you rows, the rest with the running rows, each with the team's
-    // mark.
+    // The team is one strip at the top (docs/design/team-conversation-
+    // 2026-09-26.md): counts, and its most urgent tasks. Its tasks are not
+    // repeated in the list below.
     final team = controller.orchestration;
-    final teamTasks = team == null
-        ? const <OrchestrationRun>[]
-        : teamOpenTasks(team);
-    final teamGated = team == null
-        ? const <String>{}
-        : teamGatedRuns(team.snapshot);
-    final teamNeedsYou = [
-      for (final run in teamTasks)
-        if (teamGated.contains(run.id)) run,
-    ];
-    final teamRunning = [
-      for (final run in teamTasks)
-        if (!teamGated.contains(run.id)) run,
-    ];
-    Widget teamRow(OrchestrationRun run) => TeamTaskRow(
-      key: ValueKey('team-work-${run.id}'),
-      team: team!,
-      run: run,
-      connected: controller.isConnected,
-      onOpen: () => _openTeamTask(team, run.id),
-    );
+    final teamStrip = team == null ? null : _teamStrip(team, l10n);
     final capabilities = controller.capabilities;
     final pinNudge = controller.nudges.activeFor(NudgeRegistry.workScope);
     _queuePinNudge(
@@ -833,8 +811,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           archive: capabilities.sessionArchive ? _archiveSwipe(session) : null,
         );
 
-    // The top of the one list, most urgent first: needs you (the team's
-    // gated tasks too), running (the team's other open tasks too), pins.
+    // The top of the one list, most urgent first: needs you, running, pins.
     final head = <Widget>[
       for (final session in attention)
         KeyedSubtree(
@@ -845,13 +822,11 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
             blocker: blockers[session.id],
           ),
         ),
-      for (final run in teamNeedsYou) teamRow(run),
       for (final session in active)
         KeyedSubtree(
           key: ValueKey('work-running-${session.id}'),
           child: row(session, busy: true),
         ),
-      for (final run in teamRunning) teamRow(run),
       for (final session in pinned)
         KeyedSubtree(
           key: ValueKey('work-pinned-${session.id}'),
@@ -862,7 +837,12 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         ),
     ];
     // The empty state only when the whole list is empty.
-    final showEmpty = head.isEmpty && recent.isEmpty && !partial && !firstLoad;
+    final showEmpty =
+        head.isEmpty &&
+        recent.isEmpty &&
+        teamStrip == null &&
+        !partial &&
+        !firstLoad;
 
     final notice = _notice;
     // No project on this server yet: the empty state says so and holds
@@ -1074,6 +1054,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                       refreshing: false,
                     ),
                   ),
+              if (teamStrip != null) SliverToBoxAdapter(child: teamStrip),
               if (head.isNotEmpty)
                 SliverToBoxAdapter(child: KitAnimatedRows(children: head)),
               SliverList.builder(
@@ -1541,6 +1522,44 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     } else {
       await TeamConversation.start(context, team);
     }
+  }
+
+  /// The AI Team strip: "AI Team · 2 working · 1 needs you" (counts left out
+  /// at zero, "nothing running" when idle) over up to three of its most
+  /// urgent tasks. The header opens the team page; a task opens its
+  /// conversation.
+  Widget _teamStrip(OrchestrationController team, AppLocalizations l10n) {
+    final glance = teamGlanceFromSnapshot(team.snapshot);
+    final open = teamOpenTasks(team);
+    final title = glance.isIdle
+        ? l10n.teamStripIdle
+        : [
+            l10n.teamStripTitle,
+            if (glance.working > 0) l10n.teamStripWorking(glance.working),
+            if (glance.needsYou > 0) l10n.teamStripNeedsYou(glance.needsYou),
+          ].join(' · ');
+    return KitRowGroup(
+      key: const ValueKey('work-team-strip'),
+      leadingIcons: false,
+      gapBefore: 0,
+      children: [
+        KitRow(
+          key: const ValueKey('work-team-strip-header'),
+          title: title,
+          onTap: () => unawaited(openTeamPage(context, widget.controller)),
+        ),
+        for (final task in glance.top)
+          for (final run in open)
+            if (run.id == task.id)
+              TeamTaskRow(
+                key: ValueKey('team-work-${run.id}'),
+                team: team,
+                run: run,
+                connected: widget.controller.isConnected,
+                onOpen: () => _openTeamTask(team, run.id),
+              ),
+      ],
+    );
   }
 
   void _openTeamTask(OrchestrationController team, String runId) =>

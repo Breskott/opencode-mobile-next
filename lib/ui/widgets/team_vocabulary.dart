@@ -15,6 +15,9 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../domain/orchestration_gateway.dart';
+export '../../domain/team_glance.dart'
+    show teamCompareRuns, teamRunRank, teamVisibleRuns;
+export '../../state/team_glance.dart' show teamGatedRuns;
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
 import '../../state/team_conversation.dart' show teamSessionState;
@@ -390,16 +393,6 @@ class TeamRunProgress {
 // What the person sees (TEAM-115): the host's upkeep and empty slots hidden
 // ---------------------------------------------------------------------------
 
-/// The runs a surface shows by default: the host's own upkeep
-/// ([OrchestrationRun.isUpkeep]) left out unless [includeUpkeep].
-List<OrchestrationRun> teamVisibleRuns(
-  Iterable<OrchestrationRun> runs, {
-  bool includeUpkeep = false,
-}) => [
-  for (final run in runs)
-    if (includeUpkeep || !run.isUpkeep) run,
-];
-
 /// The host's upkeep runs (patrols, chores), for the "Show team upkeep"
 /// reveal.
 List<OrchestrationRun> teamUpkeepRuns(Iterable<OrchestrationRun> runs) => [
@@ -469,59 +462,6 @@ String teamHostNameOf(OrchestrationController controller) =>
     teamHostName(controller.config.url) ??
     controller.host?.provider ??
     controller.config.provider.name;
-
-/// Runs with something waiting on the person: a gate naming the run, a
-/// work item of the run, or an agent working one of its items.
-/// Review-ready is informational and never counts.
-Set<String> teamGatedRuns(OrchestrationSnapshot snapshot) {
-  final runByWork = <String, String>{
-    for (final item in snapshot.work)
-      if (item.runId != null) item.id: item.runId!,
-  };
-  final workByAgent = <String, String>{
-    for (final agent in snapshot.agents)
-      if (agent.currentWorkId case final work?) ...{
-        agent.id: work,
-        ?agent.sessionId: work,
-      },
-  };
-  String? runOf(OrchestrationGate gate) =>
-      gate.runId ??
-      runByWork[gate.workId] ??
-      runByWork[workByAgent[gate.agentId]];
-  return {
-    for (final gate in snapshot.gates)
-      if (gate.kind != GateKind.reviewReady) ?runOf(gate),
-  };
-}
-
-/// Order of runs everywhere: what needs the person, then active, then
-/// waiting; completed runs come last (and collapse on the card).
-int teamRunRank(OrchestrationRun run, Set<String> gated) {
-  if (gated.contains(run.id) || run.state == RunState.failed) return 0;
-  return switch (run.state) {
-    RunState.working => 1,
-    RunState.planning => 2,
-    RunState.blocked => 3,
-    RunState.waiting => 4,
-    RunState.unknown => 5,
-    RunState.cancelled => 6,
-    RunState.failed => 0,
-    RunState.completed => 7,
-  };
-}
-
-/// [teamRunRank] first, then the most recently updated run first.
-int teamCompareRuns(OrchestrationRun a, OrchestrationRun b, Set<String> gated) {
-  final rank = teamRunRank(a, gated).compareTo(teamRunRank(b, gated));
-  if (rank != 0) return rank;
-  final at = a.updatedAt ?? a.startedAt;
-  final bt = b.updatedAt ?? b.startedAt;
-  if (at == null && bt == null) return 0;
-  if (at == null) return 1;
-  if (bt == null) return -1;
-  return bt.compareTo(at);
-}
 
 /// HH:MM of [at] in the device's zone, for "Showing data from 09:41".
 String teamClockLabel(BuildContext context, DateTime at) =>

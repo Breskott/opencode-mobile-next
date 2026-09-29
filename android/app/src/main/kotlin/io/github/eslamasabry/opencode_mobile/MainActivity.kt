@@ -275,7 +275,9 @@ class MainActivity : FlutterActivity() {
                                     profileID = call.argument<String>("profileID").orEmpty(),
                                     allowActions = call.argument<Boolean>("allowActions") ?: true,
                                     monitorToken = call.argument<String>("monitorToken").orEmpty(),
-                                    subtext = call.argument<String>("subtext").orEmpty()
+                                    subtext = call.argument<String>("subtext").orEmpty(),
+                                    title = call.argument<String>("title").orEmpty(),
+                                    text = call.argument<String>("text").orEmpty()
                                 )
                             )
                         )

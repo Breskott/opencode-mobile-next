@@ -1361,7 +1361,9 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         // AI Team alerts (TEAM-203) carry a gate or run id and the saved
         // server's id, nothing else; they route like the team deep link.
         final link = TeamLink.tryCreate(
-          kind: target.kind == CodingAlertKind.teamCompleted
+          kind:
+              (target.kind == CodingAlertKind.teamCompleted ||
+                  target.kind == CodingAlertKind.teamProgress)
               ? TeamLinkKind.run
               : TeamLinkKind.gate,
           profileId: target.profileID.isEmpty

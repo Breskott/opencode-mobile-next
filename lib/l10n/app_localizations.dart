@@ -17985,7 +17985,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverTeamAliases.
   ///
   /// In en, this message translates to:
-  /// **'ai team agents runs needs you orchestration plugin'**
+  /// **'ai team agents runs needs you orchestration'**
   String get discoverTeamAliases;
 
   /// Search result title for the saved-server monitoring section of Notifications.
@@ -38179,6 +38179,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yesterday'**
   String get e7WorkspaceYesterday;
+
+  /// Work: name of the AI Team strip
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team'**
+  String get teamStripTitle;
+
+  /// Work: AI Team strip when no task is working or waiting on the person
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team · nothing running'**
+  String get teamStripIdle;
+
+  /// Work: AI Team strip, how many tasks are working
+  ///
+  /// In en, this message translates to:
+  /// **'{count} working'**
+  String teamStripWorking(int count);
+
+  /// Work: AI Team strip, how many tasks wait on the person
+  ///
+  /// In en, this message translates to:
+  /// **'{count} needs you'**
+  String teamStripNeedsYou(int count);
+
+  /// Ongoing notification: the one working task
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team: {title}'**
+  String teamProgressOne(String title);
+
+  /// Ongoing notification: the one working task and its step
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team: {title} · step {done} of {total}'**
+  String teamProgressStep(String title, int done, int total);
+
+  /// Ongoing notification: several tasks working
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team: {count} tasks working'**
+  String teamProgressMany(int count);
 }
 
 class _AppLocalizationsDelegate
