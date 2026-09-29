@@ -1,5 +1,5 @@
 {
- "generatedFrom": "f34699ffac5ffd966b4b8f56c0b78c36564f71fa",
+ "generatedFrom": "03531dee15530b966321f3b258dab2f73ad54083",
  "pages": [
   {
    "id": "system",
@@ -27536,7 +27536,7 @@
   },
   {
    "id": "team-projects",
-   "title": "AI Team projects",
+   "title": "AI Team",
    "kind": "screen",
    "area": "team",
    "file": "lib/ui/screens/team/projects/team_projects_screen.dart",
@@ -28784,6 +28784,22 @@
      "destructive": false
     }
    ]
+  },
+  {
+   "id": "team-model-sheet",
+   "title": "Choose team model",
+   "kind": "sheet",
+   "area": "team",
+   "file": "lib/ui/screens/team/team_model_sheet.dart",
+   "widget": "showTeamModelSheet",
+   "presentedBy": [],
+   "line": 20,
+   "purpose": "Chooses an available model or inherits the current server model.",
+   "reachedFrom": [],
+   "gates": [
+    "Available server model catalogue"
+   ],
+   "elements": []
   },
   {
    "id": "team-settings",

@@ -41,6 +41,8 @@ import '../screens/tailscale_setup_screen.dart';
 import '../screens/tools_hub_screen.dart';
 import '../screens/team/team_agents_screen.dart';
 import '../screens/team/team_page.dart';
+import '../screens/team/project_demo_screen.dart';
+import '../screens/team/projects/team_project_editors.dart';
 import '../screens/termux_processes_screen.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/termux_storage_screen.dart';
@@ -553,8 +555,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       group: SettingsGroup.agent,
       icon: AppIconography.agent,
       title: l10n.teamUiHomeTitle,
-      keywords: l10n.discoverTeamAliases,
-      pages: const ['team-intro'],
+      keywords: '${l10n.discoverTeamAliases} ${l10n.teamSettingsTitle}',
+      pages: const ['team-intro', 'team-settings'],
       gate: (scope) => scope.controller.profile != null,
       // Setup only: Team settings while on, the turn-on flow while off.
       open: (context, scope) => openTeamSetup(context, scope.controller),
@@ -572,7 +574,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       icon: AppIconography.sync,
       title: l10n.automationTitle,
       keywords: l10n.automationSearchAliases,
-      pages: const ['automation-settings'],
+      pages: const ['notifications-settings'],
       target: const SettingsSearchTarget(
         pageId: 'notifications-settings',
         sectionId: 'automation',
@@ -1577,12 +1579,28 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       open: (context, scope) {
         final team = scope.controller.orchestration;
         if (team == null) return openTeamPage(context, scope.controller);
+        final projects = team.projectController;
+        if (team.capabilities.projectLifecycle && projects != null) {
+          return openTeamRoles(context, projects);
+        }
         return pushKitPage<void>(
           context,
           (_) =>
               TeamAgentsScreen(controller: team, connection: scope.controller),
         );
       },
+    ),
+    SearchEntry(
+      id: 'ai-team-project-demo',
+      kind: SearchEntryKind.destination,
+      icon: AppIconography.agent,
+      title: l10n.teamProjectTryDemo,
+      keywords: l10n.teamProjectDemoDisclosure,
+      pages: const ['team-project-demo'],
+      open: _screen(
+        (scope) =>
+            TeamProjectDemoScreen(preferences: scope.controller.store.prefs),
+      ),
     ),
     SearchEntry(
       id: 'ai-team',
@@ -1592,7 +1610,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       // Settings › AI Team, no longer a Work section.
       parent: l10n.librarySettingsTitle,
       keywords: l10n.discoverTeamAliases,
-      pages: const ['team-home'],
+      pages: const ['team-home', 'team-projects'],
       // Not in the index at all while the server has no plugin config.
       gate: (scope) => scope.hasTeam,
       open: (context, scope) => openTeamPage(context, scope.controller),

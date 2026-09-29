@@ -1960,7 +1960,7 @@
     },
     {
       "id": "team-projects",
-      "title": "AI Team projects",
+      "title": "AI Team",
       "kind": "screen",
       "file": "lib/ui/screens/team/projects/team_projects_screen.dart",
       "widget": "TeamProjectsScreen",

@@ -2061,6 +2061,20 @@
           "destructive": false
         }
       ]
+    },
+    {
+      "id": "team-model-sheet",
+      "title": "Choose team model",
+      "kind": "sheet",
+      "file": "lib/ui/screens/team/team_model_sheet.dart",
+      "widget": "showTeamModelSheet",
+      "line": 20,
+      "purpose": "Chooses an available model or inherits the current server model.",
+      "reachedFrom": [],
+      "gates": [
+        "Available server model catalogue"
+      ],
+      "elements": []
     }
   ],
   "notPages": [
