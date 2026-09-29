@@ -16,9 +16,11 @@ class TeamProjectsScreen extends StatefulWidget {
     required this.controller,
     this.initialProjectId,
     this.initialTaskId,
+    this.onLeaveDemo,
   });
   final String? initialProjectId;
   final String? initialTaskId;
+  final VoidCallback? onLeaveDemo;
   final TeamProjectController controller;
   @override
   State<TeamProjectsScreen> createState() => _TeamProjectsScreenState();
@@ -82,6 +84,17 @@ class _TeamProjectsScreenState extends State<TeamProjectsScreen> {
           title: l.teamProjectHome,
           subtitle: l.teamProjectDemo,
           actions: [
+            KitAction(
+              label: l.teamProjectEditorDefaults,
+              icon: Icons.settings_outlined,
+              onPressed: () => openTeamDefaults(context, c),
+            ),
+            if (widget.onLeaveDemo != null)
+              KitAction(
+                label: l.teamProjectOff,
+                icon: Icons.logout,
+                onPressed: widget.onLeaveDemo,
+              ),
             KitAction(
               label: l.teamProjectRoles,
               icon: Icons.groups_outlined,
@@ -376,12 +389,7 @@ class TeamProjectOverview extends StatelessWidget {
                   actions: [
                     KitAction(
                       label: l.teamProjectMergeNext,
-                      onPressed: () => _command(
-                        c,
-                        p,
-                        TeamProjectAction.processMergeQueue,
-                        targetId: repo.id,
-                      ),
+                      onPressed: () => _merge(context, c, p, repo),
                     ),
                   ],
                 ),
@@ -507,6 +515,7 @@ Future<TeamCommandResult> _command(
   String targetId = '',
   String text = '',
   String serverId = '',
+  bool confirmed = false,
 }) => c.execute(
   TeamProjectCommand(
     requestId: c.newRequestId(),
@@ -516,8 +525,36 @@ Future<TeamCommandResult> _command(
     targetId: targetId,
     text: text,
     serverId: serverId,
+    confirmed: confirmed,
   ),
 );
+Future<void> _merge(
+  BuildContext context,
+  TeamProjectController c,
+  TeamProject p,
+  TeamRepo repo,
+) async {
+  final l = lookupAppLocalizations(Localizations.localeOf(context));
+  final reviewed = p;
+  var confirmed = false;
+  if (p.settings.reviewLevel == 'everyStep') {
+    confirmed = await showKitConfirm(
+      context,
+      title: l.teamProjectMergeNext,
+      body: l.teamProjectMergeConfirmBody,
+      confirmLabel: l.teamProjectMergeNext,
+    );
+    if (!confirmed) return;
+  }
+  await _command(
+    c,
+    reviewed,
+    TeamProjectAction.processMergeQueue,
+    targetId: repo.id,
+    confirmed: confirmed,
+  );
+}
+
 Future<void> _answer(
   BuildContext context,
   TeamProjectController c,

@@ -273,7 +273,7 @@ class _EditorState extends State<_Editor> {
   ) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      KitSectionLabel(label),
+      KitSectionLabel.inline(label),
       KitChoiceList<String>.single(
         semanticsLabel: label,
         choices: [
@@ -643,7 +643,7 @@ class _EditorState extends State<_Editor> {
     _field('goal', _l.teamProjectEditorGoal, multiline: true),
     _field('contextFiles', _l.teamProjectEditorContextFiles, multiline: true),
     KitNotice(message: _l.teamProjectEditorContextFilesHelp),
-    KitSectionLabel(_l.teamProjectEditorRepos),
+    KitSectionLabel.inline(_l.teamProjectEditorRepos),
     for (final r in _repos)
       KitRow(
         title: r.name,
@@ -793,7 +793,7 @@ class _EditorState extends State<_Editor> {
     _field('constraints', _l.teamProjectEditorConstraints, multiline: true),
     _field('decisions', _l.teamProjectEditorDecisions, multiline: true),
     _field('outOfScope', _l.teamProjectEditorOutOfScope, multiline: true),
-    KitSectionLabel(_l.teamProjectEditorMilestones),
+    KitSectionLabel.inline(_l.teamProjectEditorMilestones),
     for (final m in _milestones) ...[
       _field(
         'milestone-${m.id}',
@@ -843,7 +843,7 @@ class _EditorState extends State<_Editor> {
     ),
     if (_history)
       for (final s in _project?.specVersions.reversed ?? <TeamSpec>[]) ...[
-        KitSectionLabel('${_l.teamProjectEditorVersion} ${s.version}'),
+        KitSectionLabel.inline('${_l.teamProjectEditorVersion} ${s.version}'),
         KitText(s.goal),
         KitText(s.constraints),
         KitText(s.decisions),
@@ -859,7 +859,7 @@ class _EditorState extends State<_Editor> {
   List<Widget> _planFields() => [
     KitNotice(message: _l.teamProjectEditorPlanHelp),
     for (final phase in _phases) ...[
-      KitSectionLabel(phase.title),
+      KitSectionLabel.inline(phase.title),
       KitSwitchRow(
         title: _l.teamProjectEditorRisky,
         value: phase.risky,
