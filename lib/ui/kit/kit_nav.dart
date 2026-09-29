@@ -450,7 +450,10 @@ _LabelMetrics _labelMetrics(
     textScaler: scaler,
     maxLines: 1,
   )..layout();
-  final height = line.height.ceilToDouble();
+  // Large text: the dock grows a step so a label never touches its border
+  // (60 dp at 1.0 is unchanged).
+  final height =
+      line.height.ceilToDouble() + (scaler.scale(1) > 1.2 ? tokens.space2 : 0);
   line.dispose();
   return _LabelMetrics(maxScale: maxScale, labelHeight: height);
 }

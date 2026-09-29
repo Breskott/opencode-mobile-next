@@ -477,6 +477,7 @@ class KitNotice extends StatelessWidget {
                   SizedBox(height: tokens.space1),
                   KitText(note, role: KitTextRole.secondary),
                 ],
+                if (shown.isNotEmpty) SizedBox(height: tokens.space2),
                 if (shown.isNotEmpty)
                   KitInset(
                     child: Wrap(
