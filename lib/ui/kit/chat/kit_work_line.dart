@@ -141,6 +141,7 @@ class KitWorkLine extends StatefulWidget {
     this.onExpansionChanged,
     this.lineKey,
     this.stepsKey,
+    this.tail,
   });
 
   /// What the work did; the chip's summary words.
@@ -168,6 +169,12 @@ class KitWorkLine extends StatefulWidget {
 
   /// On the opened steps (today's `Key('work-group-steps')`).
   final Key? stepsKey;
+
+  /// While the work runs: how many of the newest steps stay in view when the
+  /// line is opened; older ones sit behind the "Show {count} earlier steps"
+  /// row. Null (or fewer than three steps beyond it) shows the steps up to
+  /// [stepCap].
+  final int? tail;
 
   /// Opened without asking when the work ended on a failure; otherwise
   /// folded. The host passes its stored choice as [expanded] when there is
@@ -390,7 +397,12 @@ class _KitWorkLineState extends State<KitWorkLine>
     AppLocalizations l10n,
   ) {
     final steps = widget.steps;
-    final hidden = _showAll || steps.length <= KitWorkLine.stepCap
+    final tail = widget.tail;
+    final hidden = _showAll
+        ? 0
+        : tail != null && steps.length >= tail + 3
+        ? steps.length - tail
+        : steps.length <= KitWorkLine.stepCap
         ? 0
         : steps.length - KitWorkLine.stepCap;
     final children = <Widget>[

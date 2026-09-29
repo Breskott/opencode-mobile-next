@@ -136,7 +136,7 @@ void main() {
         find.text('Claimed ma-1. Adding the toggle to Settings.'),
         findsOneWidget,
       );
-      expect(find.text('Watching furiosa · Worker · Working'), findsOneWidget);
+      expect(find.text('Watching the Worker · Working'), findsOneWidget);
       // Messaging it is the conversation's composer.
       expect(_key('chat-watching-message-field'), findsOneWidget);
 
@@ -183,8 +183,7 @@ void main() {
       // The agents list says stopped; its session runs.
       expect(
         find.text(
-          _en.teamWatchBanner(
-            'furiosa',
+          _en.teamWatchBannerRole(
             _en.teamUiAgentRoleWorker,
             _en.teamUiHomeAgentStateWorking,
           ),
@@ -200,8 +199,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.text(
-          _en.teamWatchBanner(
-            'furiosa',
+          _en.teamWatchBannerRole(
             _en.teamUiAgentRoleWorker,
             _en.teamUiHomeAgentStateStopped,
           ),

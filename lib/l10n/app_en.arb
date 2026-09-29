@@ -29631,5 +29631,9 @@
   "teamUiStartOnPhone": "Start AI Team on this phone",
   "@teamUiStartOnPhone": {
     "description": "AI Team screens, primary action when the AI Team inside this app stopped: starts it and shows its progress"
+  },
+  "chatCollapseAllSteps": "Collapse all steps",
+  "@chatCollapseAllSteps": {
+    "description": "Top bar action on the watching chat page: folds every open step and fold in the transcript; also its tooltip and spoken name"
   }
 }

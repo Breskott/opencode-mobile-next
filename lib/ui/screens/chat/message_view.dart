@@ -988,6 +988,9 @@ class _WorkGroupState extends State<_WorkGroup> {
             setState(() => widget.expansionStore[_storeKey] = open),
         lineKey: const Key('work-group-header'),
         stepsKey: const Key('work-group-steps'),
+        // A long running turn keeps its newest steps in view; the finished
+        // ones fold behind "Show N earlier steps".
+        tail: state == KitWorkState.running ? 3 : null,
         steps: [for (final run in widget.runs) ...widget.buildRun(run)],
       ),
     );

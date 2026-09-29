@@ -118,7 +118,7 @@ void main() {
         'ses_furiosa',
       );
       // Who, and its state as its session tells it.
-      expect(find.text('Watching furiosa · Worker · Working'), findsOneWidget);
+      expect(find.text('Watching the Worker · Working'), findsOneWidget);
       // Opened from its own page: no way back there but Back.
       expect(_key('chat-watching-details'), findsNothing);
       expect(
@@ -162,7 +162,7 @@ void main() {
     expect(_key('chat-watching-composer'), findsOneWidget);
     // One field, addressed to the worker.
     expect(find.byType(TextField), findsOneWidget);
-    expect(find.text('Message furiosa…'), findsWidgets);
+    expect(find.text('Message Worker…'), findsWidgets);
     // No conversation menu, no running-work switch; the worker's own page
     // is the one action.
     expect(_key('session-actions-button'), findsNothing);
