@@ -108,6 +108,7 @@ class KitTurnLive {
     this.onStop,
     this.stopping = false,
     this.stopKey,
+    this.teamAlsoWorking = false,
   });
 
   final KitTurnActivity activity;
@@ -124,6 +125,11 @@ class KitTurnLive {
   final bool stopping;
 
   final Key? stopKey;
+
+  /// The reply runs on this phone's own server while the in-app AI Team has
+  /// working tasks: a slow wait for the model's first word then says the
+  /// team shares the phone. False (default): the plain slow words.
+  final bool teamAlsoWorking;
 
   /// Under this the line says only what the turn is doing.
   static const showElapsedAfter = Duration(seconds: 5);
@@ -620,15 +626,20 @@ class _KitTurnLiveLine extends StatelessWidget {
   static String _words(
     AppLocalizations l10n,
     KitTurnActivity activity,
-    Duration elapsed,
-  ) {
+    Duration elapsed, {
+    bool teamAlsoWorking = false,
+  }) {
     final slow = elapsed >= KitTurnLive.slowAfter;
     return switch (activity) {
       KitTurnActivity.sending => l10n.kitTurnLiveSending,
       KitTurnActivity.waitingForServer =>
         slow ? l10n.kitTurnLiveServerQuiet : l10n.kitTurnLiveWaitingForServer,
       KitTurnActivity.waitingForModel =>
-        slow ? l10n.kitTurnLiveFirstWordSlow : l10n.kitTurnLiveThinking,
+        slow
+            ? (teamAlsoWorking
+                  ? l10n.kitTurnLiveFirstWordSlowTeam
+                  : l10n.kitTurnLiveFirstWordSlow)
+            : l10n.kitTurnLiveThinking,
       KitTurnActivity.thinking => l10n.kitTurnLiveThinking,
       KitTurnActivity.writing => l10n.kitTurnLiveWriting,
       KitTurnActivity.working => l10n.kitTurnLiveWorking,
@@ -645,7 +656,12 @@ class _KitTurnLiveLine extends StatelessWidget {
       since: live.since,
       ticks: KitSinceTicks.seconds,
       builder: (context, status) {
-        final words = _words(l10n, live.activity, status.elapsed);
+        final words = _words(
+          l10n,
+          live.activity,
+          status.elapsed,
+          teamAlsoWorking: live.teamAlsoWorking,
+        );
         final line = status.elapsed < KitTurnLive.showElapsedAfter
             ? l10n.kitTurnLiveNow(words)
             : l10n.kitTurnLiveFor(words, _elapsed(l10n, status.elapsed));

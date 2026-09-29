@@ -623,7 +623,7 @@ exit 0
       '$tuneScript'
       '$hooksScript'
       '${AiTeamScripts.refreshAgentWrapperScript}'
-      'exec gc supervisor run\n';
+      '${AiTeamScripts.lowPriorityExec('gc supervisor run')}';
 
   /// Registers the team with the running supervisor; a team registered
   /// already is fine. `gc register` records the team at once and then waits

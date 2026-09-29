@@ -24337,6 +24337,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get kitTurnLiveFirstWordSlow => 'Waiting for the model\'s first word';
 
   @override
+  String get kitTurnLiveFirstWordSlowTeam =>
+      'AI Team is also working on this phone, so replies may be slower';
+
+  @override
   String get kitTurnLiveWriting => 'Writing';
 
   @override
