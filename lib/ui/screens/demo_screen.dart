@@ -13,6 +13,7 @@ import '../app_iconography.dart';
 import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit.dart';
 import 'chat_screen.dart';
+import 'team/project_demo_screen.dart';
 
 /// "Try it offline" (map: demo): the production chat backed by a
 /// route-owned gateway and ephemeral stores, under one status line that says
@@ -104,6 +105,14 @@ class _DemoScreenState extends State<DemoScreen> {
         title: l10n.demoScreenTitle,
         exit: KitTopBarExit.none,
         actions: [
+          KitAction(
+            key: const Key('demo-team-projects'),
+            label: l10n.teamProjectTryDemo,
+            icon: AppIconography.agent,
+            onPressed: () => unawaited(
+              pushKitPage<void>(context, (_) => const TeamProjectDemoScreen()),
+            ),
+          ),
           KitAction(
             key: const Key('demo-leave'),
             label: l10n.demoScreenLeave,

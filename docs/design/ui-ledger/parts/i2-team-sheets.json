@@ -1732,6 +1732,335 @@
           "destructive": false
         }
       ]
+    },
+    {
+      "id": "team-project-new",
+      "title": "New project",
+      "kind": "sheet",
+      "file": "lib/ui/screens/team/projects/team_project_editors.dart",
+      "widget": "openTeamNewProject",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Persistent editor draft; validates explicit choices and submits revision-checked fixture commands. Failed saves preserve input.",
+      "reachedFrom": [
+        {
+          "page": "team-projects",
+          "element": "team-projects-new"
+        }
+      ],
+      "gates": [
+        "Project lifecycle capability; Phase A fixture is explicitly simulated"
+      ],
+      "elements": [
+        {
+          "id": "team-project-new-edit",
+          "type": "text-field",
+          "label": "Edit fields",
+          "key": null,
+          "line": 1,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Updates the local persistent editor draft.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-new-save",
+          "type": "button",
+          "label": "Save or approve",
+          "key": null,
+          "line": 1,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Validates fields and persists the selected command.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-project-quick",
+      "title": "Quick task",
+      "kind": "sheet",
+      "file": "lib/ui/screens/team/projects/team_project_editors.dart",
+      "widget": "openTeamNewProject",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Persistent editor draft; validates explicit choices and submits revision-checked fixture commands. Failed saves preserve input.",
+      "reachedFrom": [
+        {
+          "page": "team-projects",
+          "element": "team-projects-quick"
+        }
+      ],
+      "gates": [
+        "Project lifecycle capability; Phase A fixture is explicitly simulated"
+      ],
+      "elements": [
+        {
+          "id": "team-project-quick-edit",
+          "type": "text-field",
+          "label": "Edit fields",
+          "key": null,
+          "line": 1,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Updates the local persistent editor draft.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-quick-save",
+          "type": "button",
+          "label": "Save or approve",
+          "key": null,
+          "line": 1,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Validates fields and persists the selected command.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-project-roles",
+      "title": "Roles and agents",
+      "kind": "sheet",
+      "file": "lib/ui/screens/team/projects/team_project_editors.dart",
+      "widget": "openTeamRoles",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Persistent editor draft; validates explicit choices and submits revision-checked fixture commands. Failed saves preserve input.",
+      "reachedFrom": [
+        {
+          "page": "team-projects",
+          "element": "team-projects-roles"
+        }
+      ],
+      "gates": [
+        "Project lifecycle capability; Phase A fixture is explicitly simulated"
+      ],
+      "elements": [
+        {
+          "id": "team-project-roles-edit",
+          "type": "text-field",
+          "label": "Edit fields",
+          "key": null,
+          "line": 1,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Updates the local persistent editor draft.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-roles-save",
+          "type": "button",
+          "label": "Save or approve",
+          "key": null,
+          "line": 1,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Validates fields and persists the selected command.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-project-spec",
+      "title": "Living spec",
+      "kind": "sheet",
+      "file": "lib/ui/screens/team/projects/team_project_editors.dart",
+      "widget": "openTeamSpecEditor",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Persistent editor draft; validates explicit choices and submits revision-checked fixture commands. Failed saves preserve input.",
+      "reachedFrom": [
+        {
+          "page": "team-project-overview",
+          "element": "team-project-overview-spec"
+        }
+      ],
+      "gates": [
+        "Project lifecycle capability; Phase A fixture is explicitly simulated"
+      ],
+      "elements": [
+        {
+          "id": "team-project-spec-edit",
+          "type": "text-field",
+          "label": "Edit fields",
+          "key": null,
+          "line": 1,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Updates the local persistent editor draft.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-spec-save",
+          "type": "button",
+          "label": "Save or approve",
+          "key": null,
+          "line": 1,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Validates fields and persists the selected command.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-project-plan",
+      "title": "Edit plan",
+      "kind": "sheet",
+      "file": "lib/ui/screens/team/projects/team_project_editors.dart",
+      "widget": "openTeamPlanEditor",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Persistent editor draft; validates explicit choices and submits revision-checked fixture commands. Failed saves preserve input.",
+      "reachedFrom": [
+        {
+          "page": "team-project-overview",
+          "element": "team-project-overview-plan"
+        }
+      ],
+      "gates": [
+        "Project lifecycle capability; Phase A fixture is explicitly simulated"
+      ],
+      "elements": [
+        {
+          "id": "team-project-plan-edit",
+          "type": "text-field",
+          "label": "Edit fields",
+          "key": null,
+          "line": 1,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Updates the local persistent editor draft.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-plan-save",
+          "type": "button",
+          "label": "Save or approve",
+          "key": null,
+          "line": 1,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Validates fields and persists the selected command.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-project-settings",
+      "title": "Project settings",
+      "kind": "sheet",
+      "file": "lib/ui/screens/team/projects/team_project_editors.dart",
+      "widget": "openTeamProjectSettings",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Persistent editor draft; validates explicit choices and submits revision-checked fixture commands. Failed saves preserve input.",
+      "reachedFrom": [
+        {
+          "page": "team-project-overview",
+          "element": "team-project-overview-settings"
+        }
+      ],
+      "gates": [
+        "Project lifecycle capability; Phase A fixture is explicitly simulated"
+      ],
+      "elements": [
+        {
+          "id": "team-project-settings-edit",
+          "type": "text-field",
+          "label": "Edit fields",
+          "key": null,
+          "line": 1,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Updates the local persistent editor draft.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-settings-save",
+          "type": "button",
+          "label": "Save or approve",
+          "key": null,
+          "line": 1,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Validates fields and persists the selected command.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-project-defaults",
+      "title": "Team defaults",
+      "kind": "sheet",
+      "file": "lib/ui/screens/team/projects/team_project_editors.dart",
+      "widget": "openTeamDefaults",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Persistent editor draft; validates explicit choices and submits revision-checked fixture commands. Failed saves preserve input.",
+      "reachedFrom": [
+        {
+          "page": "team-projects",
+          "element": "team-projects-defaults"
+        }
+      ],
+      "gates": [
+        "Project lifecycle capability; Phase A fixture is explicitly simulated"
+      ],
+      "elements": [
+        {
+          "id": "team-project-defaults-edit",
+          "type": "text-field",
+          "label": "Edit fields",
+          "key": null,
+          "line": 1,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Updates the local persistent editor draft.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-defaults-save",
+          "type": "button",
+          "label": "Save or approve",
+          "key": null,
+          "line": 1,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Validates fields and persists the selected command.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
     }
   ],
   "notPages": [

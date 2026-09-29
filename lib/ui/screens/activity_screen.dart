@@ -32,6 +32,7 @@ import 'profile_monitor_screen.dart';
 import 'run_result_screen.dart';
 import 'team/agent_screen.dart';
 import 'team/gate_sheet.dart';
+import 'team/project_destination.dart';
 
 /// Inbox: the single cross-session control centre (audit §3, §8; target IA
 /// "Dock tab 2").
@@ -511,6 +512,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
       _initialGateScheduled = false;
       if (!mounted || _initialGateHandled) return;
       _initialGateHandled = true;
+      if (team.capabilities.projectLifecycle &&
+          team.projectController != null) {
+        unawaited(openTeamProjectDestination(context, team, requestId: gateId));
+        return;
+      }
       final now = (widget.now ?? DateTime.now)();
       showGateSheet(context, team, gateId, now: () => now);
     });
@@ -1455,7 +1461,17 @@ class ActivityGateTile extends StatelessWidget {
             l10n: l10n,
           );
     final record = teamGateMutation(team, gate);
-    void open() => showGateSheet(context, team, gate.id, now: () => now);
+    void open() {
+      if (team.capabilities.projectLifecycle &&
+          team.projectController != null) {
+        unawaited(
+          openTeamProjectDestination(context, team, requestId: gate.id),
+        );
+      } else {
+        showGateSheet(context, team, gate.id, now: () => now);
+      }
+    }
+
     return KitRow(
       leading: KitNeedsYou.mark(),
       title: gate.title,

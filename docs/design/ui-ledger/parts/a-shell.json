@@ -1143,6 +1143,20 @@
             "history.canUndo(id): only acts recorded with a real inverse, this process"
           ],
           "destructive": false
+        },
+        {
+          "id": "activity-project-decision",
+          "type": "list-tile",
+          "label": "Review project decision",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-overview",
+          "targetWidget": null,
+          "effect": "Routes fixture request to owning project; legacy engines keep the existing gate flow.",
+          "gates": [],
+          "destructive": false,
+          "file": "lib/ui/screens/team/project_destination.dart"
         }
       ]
     },
@@ -2466,6 +2480,19 @@
           "target": null,
           "targetWidget": "ChatScreen",
           "effect": "Embeds ChatScreen(sessionID: DemoGateway.sessionID, showAppBar: false, emptyState: _DemoTaskIntroduction, initialText: DemoCopy.prompt, handoffStore) under a ProviderScope overriding connProvider/bootstrapProvider; all chat elements apply.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "demo-team-projects",
+          "type": "button",
+          "label": "Try AI Team demo",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-demo",
+          "targetWidget": null,
+          "effect": "Opens isolated simulator without server setup.",
           "gates": [],
           "destructive": false
         }

@@ -26,6 +26,8 @@ import '../widgets/other_servers_panel.dart';
 import '../widgets/other_projects_panel.dart';
 import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../kit/kit.dart';
+import '../widgets/team_project_strip.dart';
+import 'team/projects/team_projects_screen.dart';
 import '../kit/scenes/states_scenes.dart';
 import '../widgets/product_states.dart' show productErrorText;
 import '../widgets/relative_time.dart';
@@ -1517,7 +1519,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   /// page, which sets it up for this kind of server while it is off.
   Future<void> _createTeamTask() async {
     final team = widget.controller.orchestration;
-    if (team == null) {
+    if (team == null || team.projectController != null) {
       await openTeamPage(context, widget.controller);
     } else {
       await TeamConversation.start(context, team);
@@ -1529,6 +1531,19 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   /// urgent tasks. The header opens the team page; a task opens its
   /// conversation.
   Widget _teamStrip(OrchestrationController team, AppLocalizations l10n) {
+    final projects = team.projectController;
+    if (team.capabilities.projectLifecycle && projects != null) {
+      return TeamProjectStrip(
+        controller: projects,
+        onOpen: (id) => unawaited(
+          pushKitPage<void>(
+            context,
+            (_) =>
+                TeamProjectsScreen(controller: projects, initialProjectId: id),
+          ),
+        ),
+      );
+    }
     final glance = teamGlanceFromSnapshot(team.snapshot);
     final open = teamOpenTasks(team);
     final title = glance.isIdle

@@ -1168,6 +1168,19 @@
           ],
           "destructive": false,
           "file": "lib/ui/screens/team/team_intro_screen.dart"
+        },
+        {
+          "id": "team-intro-project-demo",
+          "type": "button",
+          "label": "Try AI Team demo",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-projects",
+          "targetWidget": null,
+          "effect": "Enables explicit fixture only if no existing engine; otherwise opens isolated preview.",
+          "gates": [],
+          "destructive": false
         }
       ]
     },
@@ -1944,6 +1957,621 @@
         "WorkSheet"
       ],
       "hostNotes": "Hosts: lib/ui/screens/chat/team_conversation_view.dart:1258 (keyPrefix team-conversation) and lib/ui/screens/team/work_sheet.dart:392 (keyPrefix team-work-sheet)."
+    },
+    {
+      "id": "team-projects",
+      "title": "AI Team projects",
+      "kind": "screen",
+      "file": "lib/ui/screens/team/projects/team_projects_screen.dart",
+      "widget": "TeamProjectsScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Urgency ordered projects with pending decisions, adaptive project detail and task panes. Explicit simulated-data subtitle.",
+      "reachedFrom": [
+        {
+          "page": "team-project-demo",
+          "element": "team-project-demo-projects"
+        }
+      ],
+      "gates": [
+        "Project lifecycle capability; Phase A fixture is explicitly simulated"
+      ],
+      "elements": [
+        {
+          "id": "team-projects-new",
+          "type": "button",
+          "label": "New project",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-new",
+          "targetWidget": null,
+          "effect": "",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-projects-quick",
+          "type": "button",
+          "label": "Quick task",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-quick",
+          "targetWidget": null,
+          "effect": "",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-projects-roles",
+          "type": "button",
+          "label": "Roles and agents",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-roles",
+          "targetWidget": null,
+          "effect": "",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-projects-open",
+          "type": "button",
+          "label": "Open project",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-overview",
+          "targetWidget": null,
+          "effect": "",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-projects-answer",
+          "type": "button",
+          "label": "Answer decision",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Persists the answer through a revision checked project command.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-projects-defaults",
+          "type": "button",
+          "label": "Team defaults",
+          "key": null,
+          "line": 1,
+          "action": "open-sheet",
+          "target": "team-project-defaults",
+          "targetWidget": null,
+          "effect": "Edits stored defaults; new projects still require explicit mode and budget choices.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-projects-leave-demo",
+          "type": "button",
+          "label": "Leave demo",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Leaves the profile simulator and keeps projects for next time; unavailable in isolated preview.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-project-demo",
+      "title": "AI Team demo",
+      "kind": "screen",
+      "file": "lib/ui/screens/team/project_demo_screen.dart",
+      "widget": "TeamProjectDemoScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Isolated persistent simulator available without a saved server; retry retains local project data.",
+      "reachedFrom": [
+        {
+          "page": "demo",
+          "element": "demo-team-projects"
+        }
+      ],
+      "gates": [
+        "Project lifecycle capability; Phase A fixture is explicitly simulated"
+      ],
+      "elements": [
+        {
+          "id": "team-project-demo-projects",
+          "type": "button",
+          "label": "Project workspace",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-projects",
+          "targetWidget": null,
+          "effect": "",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-demo-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Loads the same isolated project workspace after closing the previous owner.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-project-overview",
+      "title": "Project overview",
+      "kind": "screen",
+      "file": "lib/ui/screens/team/projects/team_projects_screen.dart",
+      "widget": "TeamProjectOverview",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Living spec, milestones, decisions, lanes, usage, dev merge queue and digest; all writes use expected revisions.",
+      "reachedFrom": [
+        {
+          "page": "team-projects",
+          "element": "team-projects-open"
+        }
+      ],
+      "gates": [
+        "Project lifecycle capability; Phase A fixture is explicitly simulated"
+      ],
+      "elements": [
+        {
+          "id": "team-project-overview-spec",
+          "type": "button",
+          "label": "Spec",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-spec",
+          "targetWidget": null,
+          "effect": "",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-overview-plan",
+          "type": "button",
+          "label": "Plan",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-plan",
+          "targetWidget": null,
+          "effect": "",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-overview-board",
+          "type": "button",
+          "label": "Board",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-board",
+          "targetWidget": null,
+          "effect": "",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-overview-timeline",
+          "type": "button",
+          "label": "Timeline",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-timeline",
+          "targetWidget": null,
+          "effect": "",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-overview-servers",
+          "type": "button",
+          "label": "Servers",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-servers",
+          "targetWidget": null,
+          "effect": "",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-overview-settings",
+          "type": "button",
+          "label": "Settings",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-settings",
+          "targetWidget": null,
+          "effect": "",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-overview-task",
+          "type": "button",
+          "label": "Open task",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-conversation",
+          "targetWidget": null,
+          "effect": "",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-overview-digest",
+          "type": "button",
+          "label": "Mark read",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Persists last-seen digest time.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-overview-answer",
+          "type": "button",
+          "label": "Answer",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Resolves a pending question.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-overview-accept",
+          "type": "button",
+          "label": "Accept milestone",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Records explicit milestone acceptance.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-overview-merge",
+          "type": "button",
+          "label": "Process dev queue",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Processes selected repository dev queue with checks; never writes main.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-overview-pause",
+          "type": "button",
+          "label": "Pause or resume",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pauses or resumes eligible project work.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-overview-advance",
+          "type": "button",
+          "label": "Advance demo",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Advances simulated work only.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-overview-stop",
+          "type": "button",
+          "label": "Stop project",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Confirms cancellation before stopping eligible work.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-project-board",
+      "title": "Board and graph",
+      "kind": "screen",
+      "file": "lib/ui/screens/team/projects/team_projects_screen.dart",
+      "widget": "TeamProjectBoard",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Filters task board and dependency graph by milestone, repo and server.",
+      "reachedFrom": [
+        {
+          "page": "team-project-overview",
+          "element": "team-project-overview-board"
+        }
+      ],
+      "gates": [
+        "Project lifecycle capability; Phase A fixture is explicitly simulated"
+      ],
+      "elements": [
+        {
+          "id": "team-project-board-filter",
+          "type": "button",
+          "label": "Change view or filter",
+          "key": null,
+          "line": 1,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Changes local view selection.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-board-task",
+          "type": "button",
+          "label": "Open task",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-conversation",
+          "targetWidget": null,
+          "effect": "",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-project-timeline",
+      "title": "Timeline",
+      "kind": "screen",
+      "file": "lib/ui/screens/team/projects/team_projects_screen.dart",
+      "widget": "TeamProjectTimeline",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Groups persisted project events by day with decision and merge filters.",
+      "reachedFrom": [
+        {
+          "page": "team-project-overview",
+          "element": "team-project-overview-timeline"
+        }
+      ],
+      "gates": [
+        "Project lifecycle capability; Phase A fixture is explicitly simulated"
+      ],
+      "elements": [
+        {
+          "id": "team-project-timeline-filter",
+          "type": "button",
+          "label": "Change view or filter",
+          "key": null,
+          "line": 1,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Changes local view selection.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-project-servers",
+      "title": "Servers and placement",
+      "kind": "screen",
+      "file": "lib/ui/screens/team/projects/team_projects_screen.dart",
+      "widget": "TeamProjectServers",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Shows simulated server capacity and moves eligible work with branch availability guards.",
+      "reachedFrom": [
+        {
+          "page": "team-project-overview",
+          "element": "team-project-overview-servers"
+        }
+      ],
+      "gates": [
+        "Project lifecycle capability; Phase A fixture is explicitly simulated"
+      ],
+      "elements": [
+        {
+          "id": "team-project-servers-filter",
+          "type": "button",
+          "label": "Change view or filter",
+          "key": null,
+          "line": 1,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Changes local view selection.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-servers-move",
+          "type": "button",
+          "label": "Move task",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Requests destination placement with revision and shared-remote validation.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "team-project-conversation",
+      "title": "Task conversation",
+      "kind": "screen",
+      "file": "lib/ui/screens/team/projects/team_project_conversation.dart",
+      "widget": "TeamProjectConversation",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Editable plan and phase review, findings selection, fix/recheck, diffs, guarded promotion and task-scoped composer.",
+      "reachedFrom": [
+        {
+          "page": "team-project-overview",
+          "element": "team-project-overview-task"
+        }
+      ],
+      "gates": [
+        "Project lifecycle capability; Phase A fixture is explicitly simulated"
+      ],
+      "elements": [
+        {
+          "id": "team-project-conversation-send",
+          "type": "button",
+          "label": "Send message",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Persists a task message; separate drafts survive task switches.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-conversation-approve",
+          "type": "button",
+          "label": "Approve plan",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Approves only the reviewed plan revision.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-conversation-fix",
+          "type": "button",
+          "label": "Fix selected",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Requests fixes only for selected open findings.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-conversation-recheck",
+          "type": "button",
+          "label": "Re-check",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Runs simulated verification again.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-conversation-ignore",
+          "type": "button",
+          "label": "Ignore finding",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Requires a written reason for one selected finding.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-conversation-promote",
+          "type": "button",
+          "label": "Promote dev to main",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Requires confirmation bound to the displayed dev and main commits.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-conversation-pause",
+          "type": "button",
+          "label": "Pause or resume",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Changes eligible task state.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "team-project-conversation-stop",
+          "type": "button",
+          "label": "Stop task",
+          "key": null,
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Confirms before cancelling eligible task work.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
     }
   ],
   "notPages": [
