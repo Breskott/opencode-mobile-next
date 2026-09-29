@@ -3845,7 +3845,7 @@
   "discoverWorktreesAliases": "worktrees branches git أشجار العمل فروع معزولة",
   "discoverSearchFilesAliases": "search files find بحث في الملفات اعثر على ملف اسم",
   "discoverAllConversationsAliases": "all conversations sessions chats history كل المحادثات السجل كل المشاريع بحث",
-  "discoverTeamAliases": "ai team agents runs فريق الذكاء الاصطناعي وكلاء عمليات بانتظارك إضافة",
+  "discoverTeamAliases": "ai team agents runs فريق الذكاء الاصطناعي وكلاء عمليات بانتظارك",
   "discoverNotifyServersTitle": "إشعارات الخوادم المحفوظة",
   "discoverNotifyWhatAliases": "finished approvals questions check-in quota العمليات المنتهية موافقات أسئلة متابعة تنبيهات الحصص ما الذي ينبهني",
   "discoverNotifyQuietAliases": "quiet hours do not disturb mute ساعات الهدوء عدم الإزعاج ليل كتم جدول",
@@ -4828,5 +4828,12 @@
   "kitTermShow": "إظهار الشرح",
   "kitTermClose": "إغلاق الشرح",
   "composerFieldLabel": "رسالة إلى الوكيل",
-  "e7WorkspaceYesterday": "أمس"
+  "e7WorkspaceYesterday": "أمس",
+  "teamStripTitle": "فريق الذكاء الاصطناعي",
+  "teamStripIdle": "فريق الذكاء الاصطناعي · لا شيء قيد التشغيل",
+  "teamStripWorking": "{count} قيد العمل",
+  "teamStripNeedsYou": "{count} يحتاج إليك",
+  "teamProgressOne": "فريق الذكاء الاصطناعي: {title}",
+  "teamProgressStep": "فريق الذكاء الاصطناعي: {title} · الخطوة {done} من {total}",
+  "teamProgressMany": "فريق الذكاء الاصطناعي: {count} مهام قيد العمل"
 }

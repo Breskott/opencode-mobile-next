@@ -295,6 +295,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(connection.orchestration, isNull);
       expect(find.byKey(const ValueKey('team-card')), findsNothing);
+      expect(find.byKey(const ValueKey('work-team-strip')), findsNothing);
       expect(
         find.byWidgetPredicate(
           (widget) =>
@@ -316,9 +317,13 @@ void main() {
         app(WorkspaceScreen(controller: connection), scroll: false),
       );
       await tester.pumpAndSettle();
-      // docs/design/team-conversation-2026-09-26.md: the team's tasks are
-      // rows in the Work tab's one list; its page is reached from Settings
-      // (owner rule R4), so Work has no door row.
+      // The team is one strip at the top of Work (counts, then its most
+      // urgent tasks as rows); its header opens the team page.
+      expect(find.byKey(const ValueKey('work-team-strip')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('work-team-strip-header')),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey('team-card')), findsNothing);
       expect(find.byKey(const ValueKey('team-work-door')), findsNothing);
       expect(

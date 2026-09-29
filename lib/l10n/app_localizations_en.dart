@@ -10887,7 +10887,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discoverTeamAliases =>
-      'ai team agents runs needs you orchestration plugin';
+      'ai team agents runs needs you orchestration';
 
   @override
   String get discoverNotifyServersTitle => 'Notifications from saved servers';
@@ -24269,4 +24269,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7WorkspaceYesterday => 'Yesterday';
+
+  @override
+  String get teamStripTitle => 'AI Team';
+
+  @override
+  String get teamStripIdle => 'AI Team · nothing running';
+
+  @override
+  String teamStripWorking(int count) {
+    return '$count working';
+  }
+
+  @override
+  String teamStripNeedsYou(int count) {
+    return '$count needs you';
+  }
+
+  @override
+  String teamProgressOne(String title) {
+    return 'AI Team: $title';
+  }
+
+  @override
+  String teamProgressStep(String title, int done, int total) {
+    return 'AI Team: $title · step $done of $total';
+  }
+
+  @override
+  String teamProgressMany(int count) {
+    return 'AI Team: $count tasks working';
+  }
 }

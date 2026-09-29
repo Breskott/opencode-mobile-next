@@ -10990,7 +10990,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get discoverTeamAliases =>
-      'ai team agents runs فريق الذكاء الاصطناعي وكلاء عمليات بانتظارك إضافة';
+      'ai team agents runs فريق الذكاء الاصطناعي وكلاء عمليات بانتظارك';
 
   @override
   String get discoverNotifyServersTitle => 'إشعارات الخوادم المحفوظة';
@@ -24393,4 +24393,35 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7WorkspaceYesterday => 'أمس';
+
+  @override
+  String get teamStripTitle => 'فريق الذكاء الاصطناعي';
+
+  @override
+  String get teamStripIdle => 'فريق الذكاء الاصطناعي · لا شيء قيد التشغيل';
+
+  @override
+  String teamStripWorking(int count) {
+    return '$count قيد العمل';
+  }
+
+  @override
+  String teamStripNeedsYou(int count) {
+    return '$count يحتاج إليك';
+  }
+
+  @override
+  String teamProgressOne(String title) {
+    return 'فريق الذكاء الاصطناعي: $title';
+  }
+
+  @override
+  String teamProgressStep(String title, int done, int total) {
+    return 'فريق الذكاء الاصطناعي: $title · الخطوة $done من $total';
+  }
+
+  @override
+  String teamProgressMany(int count) {
+    return 'فريق الذكاء الاصطناعي: $count مهام قيد العمل';
+  }
 }

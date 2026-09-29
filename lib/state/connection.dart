@@ -56,6 +56,8 @@ import 'isolated_task_launch.dart';
 import 'model_library.dart';
 import 'offline_queue.dart';
 import 'orchestration.dart';
+import '../domain/team_glance.dart';
+import '../ui/widgets/team_task_row.dart' show teamGlanceOf;
 import 'orchestration_store.dart';
 import 'elsewhere_attention.dart';
 import 'profiles.dart';
@@ -1394,6 +1396,7 @@ class ConnectionController extends ChangeNotifier {
     final team = _orchestration;
     final tracker = _teamAlerts;
     if (team == null || tracker == null) return;
+    _syncTeamProgress(team);
     final diff = tracker.observe(team.snapshot);
     if (diff.isEmpty) return;
     for (final key in diff.settled) {
@@ -1421,7 +1424,71 @@ class ConnectionController extends ChangeNotifier {
     }
   }
 
+  /// The one ongoing, silent "AI Team: TASK · step 3 of 5" line while
+  /// tasks work, under the same toggle, quiet and background rules as every
+  /// other alert. Removed when nothing works; the native side also drops it
+  /// after twenty minutes without a refresh. Finishing or needing the
+  /// person is the existing alert's job.
+  String? _teamProgressKey;
+  String? _teamProgressLine;
+
+  void _syncTeamProgress(OrchestrationController team) {
+    final glance = teamGlanceOf(team);
+    final working = glance.top.where((task) => !task.needsYou).toList();
+    if (glance.working == 0 || !_canShowCodingAlert) {
+      _clearTeamProgress();
+      return;
+    }
+    final l10n = _shellStrings();
+    TeamGlanceTask? one;
+    if (glance.working == 1 && working.isNotEmpty) one = working.first;
+    final line = one == null
+        ? l10n.teamProgressMany(glance.working)
+        : one.stepsTotal > 0
+        ? l10n.teamProgressStep(
+            one.title,
+            (one.stepsDone + 1).clamp(1, one.stepsTotal),
+            one.stepsTotal,
+          )
+        : l10n.teamProgressOne(one.title);
+    final key = 'team:${team.profileId}:progress';
+    final sessionID = one?.id ?? working.firstOrNull?.id ?? '';
+    final signature = '$sessionID|$line';
+    if (signature == _teamProgressLine && key == _teamProgressKey) return;
+    if (sessionID.isEmpty) {
+      _clearTeamProgress();
+      return;
+    }
+    _teamProgressLine = signature;
+    _teamProgressKey = key;
+    unawaited(
+      backgroundLive
+          .showCodingAlert(
+            kind: CodingAlertKind.teamProgress,
+            profileID: team.profileId,
+            sessionID: sessionID,
+            key: key,
+            allowActions: false,
+            text: line,
+          )
+          .then((shown) {
+            if (!shown && _teamProgressLine == signature) {
+              _teamProgressLine = null;
+            }
+          }),
+    );
+  }
+
+  void _clearTeamProgress() {
+    final key = _teamProgressKey;
+    if (key == null) return;
+    _teamProgressKey = null;
+    _teamProgressLine = null;
+    unawaited(backgroundLive.dismissCodingAlert(key));
+  }
+
   void _dismissTeamAlerts() {
+    _clearTeamProgress();
     for (final key in _postedTeamAlerts.toList()) {
       unawaited(backgroundLive.dismissCodingAlert(key));
     }

@@ -38,7 +38,12 @@ enum CodingAlertKind {
 
   /// AI Team: a run completed. The session id is the run id; tapping
   /// opens the run.
-  teamCompleted('team_completed');
+  teamCompleted('team_completed'),
+
+  /// AI Team: the one ongoing, silent progress line while tasks work. The
+  /// session id is the run id a tap opens. Must match the
+  /// `"team_progress"` branch in BackgroundConnectionService.kt.
+  teamProgress('team_progress');
 
   const CodingAlertKind(this.wireValue);
 
@@ -46,7 +51,11 @@ enum CodingAlertKind {
 
   /// One of the four AI Team kinds, whose session id is a gate or run id.
   bool get isTeam => switch (this) {
-    teamDecision || teamRunFailed || teamReview || teamCompleted => true,
+    teamDecision ||
+    teamRunFailed ||
+    teamReview ||
+    teamCompleted ||
+    teamProgress => true,
     permission || question || complete || error || quota || checkIn => false,
   };
 
@@ -339,6 +348,8 @@ class BackgroundLiveController extends ChangeNotifier {
     String monitorToken = '',
     bool allowActions = true,
     String subtext = '',
+    String title = '',
+    String text = '',
   }) async {
     if (!platformCapabilities.supportsNotifications) return false;
     if (!enabled || !notificationGranted) return false;
@@ -353,6 +364,8 @@ class BackgroundLiveController extends ChangeNotifier {
         if (monitorToken.isNotEmpty) 'monitorToken': monitorToken,
         if (!allowActions) 'allowActions': false,
         if (subtext.isNotEmpty) 'subtext': subtext,
+        if (title.isNotEmpty) 'title': title,
+        if (text.isNotEmpty) 'text': text,
       });
       return result['shown'] == true;
     } on PlatformException {
