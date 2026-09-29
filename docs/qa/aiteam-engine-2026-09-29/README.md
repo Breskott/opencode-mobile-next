@@ -20,3 +20,8 @@ Tests cover lifecycle, explicit choices, stale/reused/idempotent requests, faile
 Images: not applicable to this domain/state slice. UI screenshots, integration gates/full suite and device checks belong to the coordinator's complete candidate. No engine/Android behavior is claimed verified.
 
 Open integration checks: phase/milestone review UX, every-step merge confirmation and fixture edge-case coverage must be audited with the finished screens. The fixture has no public operation, provider credential, process or real branch API.
+
+Follow-up candidate (coordinator runs integration checks):
+- Review policy now gates every-step merges on confirmation, protects promotion behind risky-phase review, auto-accepts safe phases, and creates milestone review requests. Dependent phases wait for required review.
+- Editor draft APIs serialize/redact whole-form JSON or plain text, reject writes after dispose/drain, and use the deletable `oc.teamEditorDrafts.<profileId>` shared map.
+- Added controller draft tests and fixture tests for minor-only automatic checks, phase review, every-step merge confirmation, terminal work and started-task placement. Earlier 11-test result predates this follow-up; do not claim these added checks passed until coordinator runs them.

@@ -99,6 +99,111 @@ void main() {
   tearDown(() async {
     await gateway.close();
   });
+  Future<void> restoreProject(TeamProject p) async {
+    final workspace = await gateway.teamWorkspace();
+    await gateway.close();
+    store.value = jsonEncode({
+      'schemaVersion': 1,
+      'workspace': workspace.copyWith(projects: [p]).toJson(),
+      'requests': {},
+    });
+    gateway = ProjectFixtureGateway(persistence: store, seedDemo: false);
+  }
+
+  test('automatic checks leave minor-only findings for the person', () async {
+    await start();
+    final p = await project();
+    await restoreProject(
+      p.copyWith(
+        tasks: [
+          p.tasks.first.copyWith(
+            status: 'findings',
+            findings: [
+              const TeamFinding(
+                id: 'minor',
+                severity: 'minor',
+                text: 'Optional polish',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    await gateway.advance();
+    final task = (await project()).tasks.first;
+    expect(task.status, 'findings');
+    expect(task.findings.first.status, 'open');
+    expect(task.fixRounds, 0);
+  });
+  test(
+    'every-step merge requires confirmation and risky phase review guards main',
+    () async {
+      await start();
+      final p = await project();
+      final task = p.tasks.first;
+      await restoreProject(
+        p.copyWith(
+          settings: p.settings.copyWith(reviewLevel: 'everyStep'),
+          tasks: [task.copyWith(status: 'done')],
+          mergeQueue: [
+            TeamMergeItem(id: 'merge', taskId: task.id, repoId: 'app'),
+          ],
+        ),
+      );
+      expect(
+        (await command(
+          TeamProjectAction.processMergeQueue,
+          targetId: 'app',
+        )).code,
+        'confirmationRequired',
+      );
+      expect(
+        (await command(
+          TeamProjectAction.processMergeQueue,
+          targetId: 'app',
+          confirmed: true,
+        )).accepted,
+        isTrue,
+      );
+      final merged = await project();
+      expect(
+        (await command(
+          TeamProjectAction.promote,
+          targetId: 'app',
+          confirmed: true,
+          expectedDevCommit: merged.repos.first.devCommit,
+          expectedMainCommit: merged.repos.first.mainCommit,
+        )).code,
+        'phaseReviewRequired',
+      );
+      expect(
+        (await command(TeamProjectAction.pauseTask, targetId: task.id)).code,
+        'taskAlreadyDone',
+      );
+    },
+  );
+  test(
+    'started interrupted work cannot move without a shared remote',
+    () async {
+      await start();
+      await gateway.advance();
+      await gateway.advance();
+      final p = await project();
+      await restoreProject(p);
+      final current = await project();
+      final result = await gateway.executeProject(
+        TeamProjectCommand(
+          requestId: 'move',
+          action: TeamProjectAction.moveTask,
+          projectId: current.id,
+          expectedRevision: current.revision,
+          targetId: current.tasks.first.id,
+          serverId: 'phone',
+        ),
+      );
+      expect(result.code, 'sharedRemoteRequired');
+    },
+  );
   test('explicit mode and budget are required before creating work', () async {
     final r = await gateway.executeProject(
       const TeamProjectCommand(
@@ -153,6 +258,7 @@ void main() {
         )).code,
         'confirmationRequired',
       );
+      await command(TeamProjectAction.acceptPhase, targetId: p.phases.first.id);
       expect(
         (await command(
           TeamProjectAction.promote,

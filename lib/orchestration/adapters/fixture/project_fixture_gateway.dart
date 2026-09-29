@@ -339,6 +339,9 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
       if (role == null || role.id.isEmpty || role.name.trim().isEmpty) {
         return _fail('invalidRole');
       }
+      if (role.id == 'checker' && !role.readOnly) {
+        return _fail('checkerMustBeReadOnly');
+      }
       return w.copyWith(
         revision: w.revision + 1,
         roles: [...w.roles.where((r) => r.id != role.id), role],
@@ -348,6 +351,7 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
       if (w.projects.any((p) => p.tasks.any((t) => t.roleId == c.targetId))) {
         return _fail('roleInUse');
       }
+
       return w.copyWith(
         revision: w.revision + 1,
         roles: w.roles.where((r) => r.id != c.targetId).toList(),
@@ -393,6 +397,7 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
           ),
         ],
       );
+      p = p.copyWith(specDraft: _plan(p).specDraft);
       if (c.action == TeamProjectAction.createQuickTask) {
         if (c.repos.length != 1) return _fail('quickTaskNeedsOneRepo');
         if (c.roleId.isNotEmpty && !w.roles.any((r) => r.id == c.roleId)) {
@@ -768,7 +773,7 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
     p = _log(
       p,
       c.action.name,
-      c.text.isEmpty ? c.action.name : c.text,
+      c.text.isEmpty ? _actionText(c.action) : c.text,
       actor: c.action == TeamProjectAction.advance ? 'fixture' : 'person',
     );
     p = p.copyWith(revision: before.revision + 1, updatedAt: _at);
@@ -778,7 +783,50 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
     );
   }
 
+  String _actionText(TeamProjectAction action) => switch (action) {
+    TeamProjectAction.saveSpecDraft => 'Spec draft saved',
+    TeamProjectAction.approveSpec => 'Spec approved',
+    TeamProjectAction.approvePlan => 'Plan approved',
+    TeamProjectAction.replan => 'Affected tasks replanned',
+    TeamProjectAction.answerRequest => 'Question answered',
+    TeamProjectAction.messageTask => 'Message sent to the task',
+    TeamProjectAction.pauseProject => 'Project paused',
+    TeamProjectAction.resumeProject => 'Project continued',
+    TeamProjectAction.stopProject => 'Project stopped',
+    TeamProjectAction.pauseTask => 'Task paused',
+    TeamProjectAction.resumeTask => 'Task continued from its branch',
+    TeamProjectAction.restartTask => 'Task restarted from its branch',
+    TeamProjectAction.stopTask => 'Task stopped',
+    TeamProjectAction.moveTask => 'Task handed over',
+    TeamProjectAction.verifyTask => 'Fresh acceptance check completed',
+    TeamProjectAction.fixFindings => 'Selected findings fixed',
+    TeamProjectAction.recheckTask => 'Earlier findings checked again',
+    TeamProjectAction.ignoreFinding => 'Findings ignored with a reason',
+    TeamProjectAction.updateSettings => 'Project settings updated',
+    TeamProjectAction.processMergeQueue => 'Local merge queue checked',
+    TeamProjectAction.resolveConflict => 'Simulated conflict resolved',
+    TeamProjectAction.promote => 'Development changes promoted to main',
+    TeamProjectAction.acknowledgeDigest => 'Activity digest read',
+    TeamProjectAction.acceptPhase => 'Phase review accepted',
+    TeamProjectAction.acceptMilestone => 'Milestone accepted',
+    TeamProjectAction.advance => 'Simulated work advanced',
+    TeamProjectAction.undoMerge => 'A reverting commit was added',
+    TeamProjectAction.requestSpecChange => 'Spec change proposed for review',
+    _ => 'Project updated',
+  };
+
   TeamProject _syncRequests(TeamProject p) {
+    p = p.copyWith(
+      phases: p.phases.map((phase) {
+        final tasks = p.tasks.where((t) => t.phaseId == phase.id);
+        return !phase.risky &&
+                p.settings.reviewLevel != 'everyStep' &&
+                tasks.isNotEmpty &&
+                tasks.every((t) => t.status == 'merged')
+            ? phase.copyWith(accepted: true)
+            : phase;
+      }).toList(),
+    );
     final persistent = p.requests
         .where(
           (r) =>
@@ -808,7 +856,8 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
       );
     }
 
-    if (p.status == 'spec') {
+    if (p.status == 'spec' ||
+        (p.specVersions.isNotEmpty && p.specDraft.approvedAt.isEmpty)) {
       add('${p.id}-spec', 'spec', 'Review and approve the living spec');
     }
     if (!persistent.any((r) => r.kind == 'budget') &&
@@ -850,6 +899,21 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
         );
       }
     }
+    for (final milestone in p.specDraft.milestones) {
+      final phases = p.phases.where(
+        (phase) => phase.milestoneId == milestone.id,
+      );
+      if (!milestone.accepted &&
+          phases.isNotEmpty &&
+          phases.every((phase) => phase.accepted)) {
+        add(
+          'milestone-${milestone.id}',
+          'milestone',
+          'Review ${milestone.title}',
+          phaseId: milestone.id,
+        );
+      }
+    }
     for (final item in p.mergeQueue.where((m) => m.status == 'conflict')) {
       add('conflict-${item.id}', 'conflict', item.reason, taskId: item.taskId);
     }
@@ -870,6 +934,9 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
         (b.total != null && (!b.total!.isFinite || b.total! <= 0)) ||
         (b.taskTokens != null && b.taskTokens! <= 0)) {
       _fail<void>('chooseBudget');
+    }
+    if (!const ['milestones', 'everyStep'].contains(s.reviewLevel)) {
+      _fail<void>('invalidReviewLevel');
     }
     if (s.maxFixRounds < 0 || s.maxFixRounds > 3) {
       _fail<void>('invalidFixRounds');
@@ -1066,7 +1133,9 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
         : p.specDraft.milestones;
     final phases = <TeamPhase>[];
     final tasks = <TeamTask>[];
+    var previousMilestoneTasks = <String>[];
     for (final m in milestones) {
+      final currentMilestoneTasks = <String>[];
       final phaseId = '${p.id}-${m.id}-build';
       phases.add(
         TeamPhase(
@@ -1079,11 +1148,13 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
       for (var i = 0; i < p.repos.length; i++) {
         final repo = p.repos[i];
         final taskId = '${p.id}-${m.id}-${repo.id}';
+        currentMilestoneTasks.add(taskId);
         tasks.add(
           TeamTask(
             id: taskId,
             title: 'Deliver ${m.title} in ${repo.name}',
             phaseId: phaseId,
+            dependsOn: previousMilestoneTasks,
             roleId: i.isEven ? 'frontend' : 'backend',
             repoId: repo.id,
             serverId: repo.serverId,
@@ -1095,6 +1166,7 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
           ),
         );
       }
+      previousMilestoneTasks = currentMilestoneTasks;
     }
     return p.copyWith(
       specDraft: p.specDraft.copyWith(milestones: milestones),
@@ -1256,6 +1328,21 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
       )) {
         continue;
       }
+      final dependencyPhases = p.phases.where(
+        (phase) =>
+            phase.id != t.phaseId &&
+            tasks.any(
+              (d) => t.dependsOn.contains(d.id) && d.phaseId == phase.id,
+            ),
+      );
+      if (dependencyPhases.any(
+        (phase) =>
+            (phase.risky || p.settings.reviewLevel == 'everyStep') &&
+            !phase.accepted,
+      )) {
+        tasks[i] = t.copyWith(reason: 'Waiting for the previous phase review');
+        continue;
+      }
       tasks[i] = t.copyWith(status: 'running', reason: '', changedAt: _at);
       running++;
     }
@@ -1334,6 +1421,8 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
   }
 
   TeamProject _merge(TeamProject p, TeamProjectCommand c) {
+    if (p.settings.reviewLevel == 'everyStep' && !c.confirmed)
+      return _fail('confirmationRequired');
     final queue = [...p.mergeQueue];
     final repos = [...p.repos];
     final tasks = [...p.tasks];
@@ -1389,6 +1478,16 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
         c.expectedMainCommit != repo.mainCommit) {
       return _fail('staleCommits');
     }
+    final phases = p.phases.where(
+      (phase) =>
+          p.tasks.any((t) => t.phaseId == phase.id && t.repoId == repo.id),
+    );
+    if (phases.any(
+      (phase) =>
+          (phase.risky || p.settings.reviewLevel == 'everyStep') &&
+          !phase.accepted,
+    ))
+      return _fail('phaseReviewRequired');
     if (repo.devCommit == repo.mainCommit ||
         p.tasks
             .where((t) => t.repoId == repo.id)

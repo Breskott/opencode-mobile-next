@@ -123,15 +123,17 @@ class TeamProjectController extends ChangeNotifier {
     final safe = _safeDraft(text);
     return _draftAction((prefs) async {
       final values = _drafts(prefs)..[target] = safe;
-      if (!await prefs.setString(_draftKey, jsonEncode(values)))
+      if (!await prefs.setString(_draftKey, jsonEncode(values))) {
         throw StateError('draftSaveFailed');
+      }
     });
   }
 
   Future<void> clearEditorDraft(String target) => _draftAction((prefs) async {
     final values = _drafts(prefs)..remove(target);
-    if (!await prefs.setString(_draftKey, jsonEncode(values)))
+    if (!await prefs.setString(_draftKey, jsonEncode(values))) {
       throw StateError('draftSaveFailed');
+    }
   });
 
   /// Called at profile stop before its deletion sweep; rejects future writes.
