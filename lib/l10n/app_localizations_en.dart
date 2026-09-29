@@ -13506,12 +13506,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String teamChatLeadClaimed(String name, String title) {
-    return '$name took “$title”';
+    return '$name began “$title”';
   }
 
   @override
   String teamChatLeadClaimedWorker(String title) {
-    return 'A worker took “$title”';
+    return 'A worker began “$title”';
   }
 
   @override
@@ -21728,11 +21728,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String teamChatLeadClaimedIt(String name) {
-    return '$name took it';
+    return '$name began the task';
   }
 
   @override
-  String get teamChatLeadClaimedWorkerIt => 'A worker took it';
+  String get teamChatLeadClaimedWorkerIt => 'The worker began the task';
 
   @override
   String get teamChatLeadPushedIt => 'Its changes are on a branch';
@@ -21929,6 +21929,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'The worker has started but hasn\'t begun the task.';
 
   @override
+  String get teamNowReasonWorkerPreparing =>
+      'The worker is being set up: its workspace is made and its program is starting.';
+
+  @override
+  String get teamNowReasonWorkerRunning =>
+      'The worker\'s program is running. The team has not reported the task reaching it yet.';
+
+  @override
+  String get teamNowReasonWorkerTaskDelivered =>
+      'The task has reached the worker. It is reading it before it begins.';
+
+  @override
+  String teamNowLastStart(String duration) {
+    return 'took $duration last time';
+  }
+
+  @override
+  String get teamUiHostPhraseBusyStartingWorker => 'Busy starting a worker';
+
+  @override
   String get teamNowReasonWorkInProgress => 'The task is being worked on.';
 
   @override
@@ -21976,7 +21996,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamNowWhyStartingWorker =>
-      'A new worker needs time to start and read the task before it begins. That usually takes 1–5 minutes.';
+      'A new worker makes its own copy of the project and starts its program before it reads the task. That is the slow part on a phone, and the stage above is what the team reports.';
 
   @override
   String get teamNowWhyWorking =>

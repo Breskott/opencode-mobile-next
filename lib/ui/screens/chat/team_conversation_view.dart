@@ -387,6 +387,22 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
     };
   }
 
+  /// The moment a worker begins the task, with the session's creation, is
+  /// one measured start: kept per profile as "took 42 s last time".
+  void _rememberWorkerStart(TeamNow now, List<OrchestrationAgent> agents) {
+    if (now.kind != TeamNowKind.working) return;
+    for (final agent in agents) {
+      final took = teamWorkerStartMeasured(
+        sessionStartedAt: agent.sessionStartedAt,
+        began: now.since,
+      );
+      if (took != null && teamSessionState(agent) == AgentState.working) {
+        unawaited(_team.workerStarts.record(_team.profileId, took));
+        return;
+      }
+    }
+  }
+
   /// The facts for the task's one Now line (slice-P5.1), or null when the
   /// line has nothing to add: a refused task says so in its turn, with Try
   /// again. [connected] is false once the team has not answered for 8 s.
@@ -399,26 +415,19 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
   }) {
     final profile = _team.profileId;
     final every = teamCheckInterval(_team);
-    // How long the next stage usually takes, only where the app knows it:
-    // a worker's start (the host's documented 1–5 min), and a wait for a
-    // worker on the team inside the app (its own check interval).
-    TeamNowInput timed(TeamNowInput input) {
-      final usual = switch (input.activity) {
-        TeamNowActivity.startingWorker => teamWorkerStartUsual,
-        TeamNowActivity.waitingForWorker => every,
-        _ => null,
-      };
-      if (usual == null) return input;
-      return TeamNowInput(
-        activityKey: input.activityKey,
-        activity: input.activity,
-        next: input.next,
-        reason: input.reason,
-        since: input.since,
-        typicalUpperBound: usual,
-        canCancel: input.canCancel,
-        canDismiss: input.canDismiss,
-      );
+    // How long the next stage takes, only where the app knows it: a
+    // worker's start is this phone's own last measured start (nothing when
+    // none was measured), and a wait for a worker on the team inside the
+    // app is its own check interval.
+    TeamNowInput timed(TeamNowInput input, {TeamWorkerStage? stage}) {
+      if (input.activity == TeamNowActivity.startingWorker) {
+        return input.withWorkerStart(
+          stage: stage,
+          lastStart: _team.workerStarts.read(_team.profileId),
+        );
+      }
+      if (input.activity != TeamNowActivity.waitingForWorker) return input;
+      return input.withWorkerStart(typicalUpperBound: every);
     }
 
     if (run != null) {
@@ -488,6 +497,11 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
             TeamNowActivity.startingWorker,
             TeamNowNext.work,
             TeamNowReason.workerStarting,
+          ),
+          stage: teamWorkerStage(
+            _team.snapshot.agents
+                .where((agent) => agent.currentWorkId == pending.workId)
+                .firstOrNull,
           ),
         );
       case TeamDispatchPhase.assignRefused:
@@ -634,6 +648,21 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
               gates: gates,
               now: _clock(),
             );
+      final attempt = TeamDispatchAttempts.of(_team).latest;
+      // A worker is starting: its step says so, a session is being made, or
+      // (a direct task) the team just observed its worker.
+      final starting =
+          now?.kind == TeamNowKind.starting ||
+          agents.any(
+            (agent) =>
+                teamWorkerStage(agent) == TeamWorkerStage.preparing &&
+                teamSessionState(agent) != AgentState.stopped,
+          ) ||
+          (run == null &&
+              attempt != null &&
+              attempt.workId == widget.pending?.workId &&
+              attempt.phase == TeamDispatchPhase.workerObserved);
+      if (now != null) _rememberWorkerStart(now, agents);
       final title = run?.title ?? widget.pending?.title ?? '';
       final recipient = _recipient(agents);
       final loading =
@@ -668,7 +697,12 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
           // Never "Paused" while this task's worker starts or works: the
           // task's own state and its agents' sessions say so.
           subtitle: l10n.teamChatSubtitle(
-            teamHostPhrase(l10n, _team, working: working),
+            teamHostPhrase(
+              l10n,
+              _team,
+              working: working,
+              startingWorker: starting,
+            ),
           ),
           needsYou: gates.length,
           actions: [
@@ -717,6 +751,7 @@ class _TeamConversationScreenState extends State<TeamConversationScreen> {
             _TeamNowLine(
               team: _team,
               clock: _clock,
+              startingWorker: starting,
               input: (connected) => _nowInput(
                 run: run,
                 work: work,
@@ -1093,13 +1128,22 @@ class _TeamLeadReply extends StatefulWidget {
     String? taskTitle,
   }) {
     final l10n = _chatL10n(context);
-    String at(DateTime? time) =>
-        time == null ? '' : ' · ${teamClockLabel(context, time)}';
+    String at(DateTime? time, {bool seconds = false}) {
+      if (time == null) return '';
+      final clock = teamClockLabel(context, time);
+      if (!seconds) return ' · $clock';
+      final second = time.toLocal().second.toString().padLeft(2, '0');
+      return ' · $clock:$second';
+    }
+
     return [
       if (pending case final task?)
         '${l10n.teamChatLeadSent}${at(task.sentAt)}',
       for (final line in lines)
-        '${teamLeadSentence(l10n, line, taskTitle: taskTitle)}${at(line.at)}',
+        // The moment a worker began the task is said to the second: it is
+        // the pickup the person waited for.
+        '${teamLeadSentence(l10n, line, taskTitle: taskTitle)}'
+            '${at(line.at, seconds: line.event == TeamLeadEvent.claimed)}',
     ];
   }
 
@@ -1223,6 +1267,7 @@ class _TeamNowLine extends StatelessWidget {
   const _TeamNowLine({
     required this.team,
     required this.clock,
+    required this.startingWorker,
     required this.input,
     required this.wayOut,
     required this.quiet,
@@ -1230,6 +1275,10 @@ class _TeamNowLine extends StatelessWidget {
 
   final OrchestrationController team;
   final DateTime Function() clock;
+
+  /// A worker is starting: a late answer is the phone being busy, not the
+  /// team being gone.
+  final bool startingWorker;
 
   /// The line's facts, given whether the team answers; null hides it.
   final TeamNowInput? Function(bool connected) input;
@@ -1244,8 +1293,16 @@ class _TeamNowLine extends StatelessWidget {
     final l10n = _chatL10n(context);
     final waiting =
         !team.snapshot.hasData ||
-        // Not answering only: a paused team answers, and says so itself.
-        teamHostCondition(l10n, team, working: true) != null;
+        // Not answering only: a paused team answers, and says so itself; a
+        // team busy starting a worker answers late and keeps its stage.
+        (!teamHostBusyStarting(team, startingWorker: startingWorker) &&
+            teamHostCondition(
+                  l10n,
+                  team,
+                  working: true,
+                  startingWorker: startingWorker,
+                ) !=
+                null);
     return GraceTimer(
       waiting: waiting,
       grace: KitMotion.escalateAfter,

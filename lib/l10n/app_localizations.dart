@@ -22137,13 +22137,13 @@ abstract class AppLocalizations {
   /// Team conversation, lead line: a named worker claimed a step
   ///
   /// In en, this message translates to:
-  /// **'{name} took “{title}”'**
+  /// **'{name} began “{title}”'**
   String teamChatLeadClaimed(String name, String title);
 
   /// Team conversation, lead line: a worker claimed a step (no name reported)
   ///
   /// In en, this message translates to:
-  /// **'A worker took “{title}”'**
+  /// **'A worker began “{title}”'**
   String teamChatLeadClaimedWorker(String title);
 
   /// Team conversation, lead line: a step's change was pushed to a branch
@@ -34285,13 +34285,13 @@ abstract class AppLocalizations {
   /// Team conversation, the lead's line: the named worker took the task named in the prompt above
   ///
   /// In en, this message translates to:
-  /// **'{name} took it'**
+  /// **'{name} began the task'**
   String teamChatLeadClaimedIt(String name);
 
   /// Team conversation, the lead's line: an unnamed worker took the task named in the prompt above
   ///
   /// In en, this message translates to:
-  /// **'A worker took it'**
+  /// **'The worker began the task'**
   String get teamChatLeadClaimedWorkerIt;
 
   /// Team conversation, the lead's line: the changes for the task named in the prompt above are on a branch
@@ -34612,6 +34612,36 @@ abstract class AppLocalizations {
   /// **'The worker has started but hasn\'t begun the task.'**
   String get teamNowReasonWorkerStarting;
 
+  /// Team Now line reason while the worker's session is being created or its program is starting.
+  ///
+  /// In en, this message translates to:
+  /// **'The worker is being set up: its workspace is made and its program is starting.'**
+  String get teamNowReasonWorkerPreparing;
+
+  /// Team Now line reason while the worker's program runs but the task has not been reported delivered.
+  ///
+  /// In en, this message translates to:
+  /// **'The worker\'s program is running. The team has not reported the task reaching it yet.'**
+  String get teamNowReasonWorkerRunning;
+
+  /// Team Now line reason once the team reports the task delivered to the running worker.
+  ///
+  /// In en, this message translates to:
+  /// **'The task has reached the worker. It is reading it before it begins.'**
+  String get teamNowReasonWorkerTaskDelivered;
+
+  /// Team Now line: how long this phone's last worker start took, measured; never a promise.
+  ///
+  /// In en, this message translates to:
+  /// **'took {duration} last time'**
+  String teamNowLastStart(String duration);
+
+  /// AI Team header condition while the phone is busy starting a worker and answers slowly.
+  ///
+  /// In en, this message translates to:
+  /// **'Busy starting a worker'**
+  String get teamUiHostPhraseBusyStartingWorker;
+
   /// Team Now line reason while a worker works.
   ///
   /// In en, this message translates to:
@@ -34687,7 +34717,7 @@ abstract class AppLocalizations {
   /// Team Now line Why fold while a worker starts.
   ///
   /// In en, this message translates to:
-  /// **'A new worker needs time to start and read the task before it begins. That usually takes 1–5 minutes.'**
+  /// **'A new worker makes its own copy of the project and starts its program before it reads the task. That is the slow part on a phone, and the stage above is what the team reports.'**
   String get teamNowWhyStartingWorker;
 
   /// Team Now line Why fold while working.

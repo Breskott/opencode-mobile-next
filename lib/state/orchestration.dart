@@ -60,6 +60,7 @@ import '../orchestration/dispatch.dart';
 import 'automation_policy.dart';
 import 'orchestration_store.dart';
 import 'profiles.dart';
+import 'team_worker_start.dart';
 
 export '../orchestration/adapters/gascity/gascity_probe.dart'
     show
@@ -402,6 +403,9 @@ class OrchestrationController extends ChangeNotifier {
   DateTime? _lastEventAt;
 
   String get profileId => profile.id;
+
+  /// The last worker start measured on this phone for this profile.
+  TeamWorkerStartStore get workerStarts => TeamWorkerStartStore(_store.prefs);
 
   /// This server's local automation choices (Settings › What runs by
   /// itself): the shared controller, never a second writer.

@@ -168,7 +168,8 @@ void main() {
     );
     expect(
       _words(tester, _key('team-conversation-now-next')),
-      'Next: the worker begins the task · usually within 5 min',
+      // No start measured on this phone yet: no time is promised.
+      'Next: the worker begins the task',
     );
     // The agent strip: the lead and furiosa, furiosa marked working.
     expect(find.byType(KitAgentStrip), findsOneWidget);
