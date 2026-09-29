@@ -396,6 +396,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
         t.findings.where((f) => f.status == 'open').map((f) => f.id).toSet(),
       );
       return KitScreen(
+        width: widget.embedded ? KitScreenWidth.full : KitScreenWidth.reading,
         topBar: widget.embedded
             ? null
             : KitTopBar(
