@@ -788,8 +788,8 @@ void main() {
   );
 
   testWidgets(
-    'the tools sheet closes Voice while a run is active; Attach stays '
-    'open for the queued send',
+    'the tools sheet keeps Voice and Attach open while a run is active: '
+    'both fill the send that waits for the reply',
     (tester) async {
       final controller = await _controller();
       addTearDown(controller.dispose);
@@ -817,11 +817,13 @@ void main() {
             .enabled,
         isTrue,
       );
+      // Dictation only fills the draft, so a run does not block it (the
+      // owner: Stop must never cost the person their voice).
       expect(
         tester
             .widget<KitRow>(find.byKey(const Key('composer-tool-voice')))
             .enabled,
-        isFalse,
+        isTrue,
       );
       // Commands stay available: they do not depend on the run finishing.
       expect(
@@ -833,10 +835,11 @@ void main() {
     },
   );
 
-  testWidgets('a busy run shows Stop in the pill instead of a transcript '
-      'row', (tester) async {
+  testWidgets('a busy run shows its live line with Stop reply on the turn; '
+      'the pill keeps its mic', (tester) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
+    (controller.api! as _FakeApi).transcript = [_sentPrompt()];
     await _pumpChat(
       tester,
       controller,
@@ -850,9 +853,17 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Stop in the trailing slot is the working signal: no ring, no glow
-    // (LOOK-20) and no transcript row.
+    // The running turn says what it is doing and carries Stop; the pill
+    // has no ring, no glow (LOOK-20) and no Stop of its own.
+    expect(find.text('Thinking…'), findsOneWidget);
     expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('chat-composer-surface')),
+        matching: find.byKey(const Key('chat-stop-button')),
+      ),
+      findsNothing,
+    );
     expect(find.byKey(const ValueKey('composer-activity')), findsNothing);
     expect(find.byKey(const ValueKey('typing-indicator')), findsNothing);
     expect(find.byKey(const Key('chat-composer-field')), findsOneWidget);
@@ -866,6 +877,7 @@ void main() {
   testWidgets('reduced motion settles while busy', (tester) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
+    (controller.api! as _FakeApi).transcript = [_sentPrompt()];
     controller.busySessions.add('session-1');
     await tester.binding.setSurfaceSize(const Size(360, 760));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -890,6 +902,18 @@ void main() {
     expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
   });
 }
+
+/// One sent prompt: the running turn's live line sits under it.
+MessageWithParts _sentPrompt() => MessageWithParts(
+  info: MessageInfo(
+    id: 'u1',
+    sessionID: 'session-1',
+    role: 'user',
+    // Just sent: the live line counts from here.
+    time: MsgTime(created: DateTime.now().millisecondsSinceEpoch),
+  ),
+  parts: [Part(id: 'u1-text', messageID: 'u1', type: 'text', text: 'Hi')],
+);
 
 /// The composer's field is a KitField (a TextFormField); its TextField
 /// holds the controller and focus node.

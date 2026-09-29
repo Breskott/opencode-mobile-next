@@ -38084,6 +38084,96 @@ abstract class AppLocalizations {
   /// **'Connection lost. Reconnecting to get the rest of this reply.'**
   String get kitTurnReconnecting;
 
+  /// KitTurn live line: the prompt is on its way to the server
+  ///
+  /// In en, this message translates to:
+  /// **'Sending'**
+  String get kitTurnLiveSending;
+
+  /// KitTurn live line: sent; the server has not said it started on the prompt yet
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the server'**
+  String get kitTurnLiveWaitingForServer;
+
+  /// KitTurn live line: sent 20 s or more ago and the server still has not said it started
+  ///
+  /// In en, this message translates to:
+  /// **'The server has not answered yet'**
+  String get kitTurnLiveServerQuiet;
+
+  /// KitTurn live line: the model is working and nothing has been written yet
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking'**
+  String get kitTurnLiveThinking;
+
+  /// KitTurn live line: the server has the prompt, 20 s or more have passed and the model has not written anything yet
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the model\'s first word'**
+  String get kitTurnLiveFirstWordSlow;
+
+  /// KitTurn live line: the reply's words are coming in
+  ///
+  /// In en, this message translates to:
+  /// **'Writing'**
+  String get kitTurnLiveWriting;
+
+  /// KitTurn live line: a step (a tool) is running; the step rows above say which
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get kitTurnLiveWorking;
+
+  /// KitTurn live line: a request in this reply waits for the person's answer
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for you'**
+  String get kitTurnLiveWaitingForYou;
+
+  /// KitTurn live line: red action that stops the running reply
+  ///
+  /// In en, this message translates to:
+  /// **'Stop reply'**
+  String get kitTurnLiveStop;
+
+  /// KitTurn live line: the Stop reply tap is on its way
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping…'**
+  String get kitTurnLiveStopping;
+
+  /// KitTurn live line in its first seconds: what the reply is doing, e.g. 'Thinking…'
+  ///
+  /// In en, this message translates to:
+  /// **'{status}…'**
+  String kitTurnLiveNow(String status);
+
+  /// KitTurn live line after a few seconds: what the reply is doing and for how long, e.g. 'Thinking · 12 s'
+  ///
+  /// In en, this message translates to:
+  /// **'{status} · {elapsed}'**
+  String kitTurnLiveFor(String status, String elapsed);
+
+  /// KitTurn live line: time since the prompt was sent, under a minute
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} s'**
+  String kitTurnLiveSeconds(int seconds);
+
+  /// KitTurn live line: time since the prompt was sent, a minute or more
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min {seconds} s'**
+  String kitTurnLiveMinutes(int minutes, int seconds);
+
+  /// Chat: notice on a prompt whose turn ended without any answer and without an error from the server
+  ///
+  /// In en, this message translates to:
+  /// **'No reply came back'**
+  String get chatNoReplyCameBack;
+
   /// Screen-reader label of the chat message box (the hint is separate).
   ///
   /// In en, this message translates to:

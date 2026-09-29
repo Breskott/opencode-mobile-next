@@ -337,6 +337,55 @@ void main() {
     });
   });
 
+  group('6b · the live line of a running turn', () {
+    testWidgets('says what it does, adds the time after 5 s, turns slow '
+        'after 20 s, and carries Stop reply', (tester) async {
+      var stops = 0;
+      await _pump(
+        tester,
+        KitTurn(
+          blocks: const [],
+          phase: KitTurnPhase.running,
+          live: KitTurnLive(
+            activity: KitTurnActivity.waitingForModel,
+            since: clock.now(),
+            onStop: () => stops++,
+          ),
+        ),
+      );
+      expect(find.text('Thinking…'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 12));
+      expect(find.text('Thinking · 12 s'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 13));
+      expect(find.text("Waiting for the model's first word · 25 s"), findsOne);
+      await tester.pump(const Duration(seconds: 40));
+      expect(
+        find.text("Waiting for the model's first word · 1 min 5 s"),
+        findsOne,
+      );
+      await tester.tap(find.text('Stop reply'));
+      expect(stops, 1);
+    });
+
+    testWidgets('on the prompt row too, and without Stop while the prompt '
+        'is on its way', (tester) async {
+      await _pump(
+        tester,
+        KitTurn(
+          segment: KitTurnSegment.first,
+          blocks: const [],
+          phase: KitTurnPhase.finished,
+          live: KitTurnLive(
+            activity: KitTurnActivity.sending,
+            since: clock.now(),
+          ),
+        ),
+      );
+      expect(find.text('Sending…'), findsOneWidget);
+      expect(find.text('Stop reply'), findsNothing);
+    });
+  });
+
   group('7 · stopped and interrupted', () {
     for (final (phase, words) in [
       (KitTurnPhase.stopped, 'You stopped this reply.'),

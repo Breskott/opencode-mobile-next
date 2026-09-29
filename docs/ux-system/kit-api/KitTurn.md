@@ -62,6 +62,7 @@ class KitTurn extends StatelessWidget {
     this.footer,          // drawn only when phase is finished, stopped, interrupted or failed
     this.latest = false,  // the newest turn: the footer shows its meta words
     this.highlighted = false, // the find-in-conversation current match
+    this.live,            // KitTurnLive: the running turn's live line with Stop reply (below)
     this.turnKey,
     this.footerKey,
     this.copyKey,         // today's ValueKey('message-copy-<id>')
@@ -87,6 +88,7 @@ class KitTurn extends StatelessWidget {
   - `stopped`: "You stopped this reply."
   - `interrupted`: "The connection dropped before this reply finished." (map's missing end marker).
   - `running`, `waitingForYou`, `finished`, `failed`: none (the work line, the request card and the error notice say it).
+- **Live line** (`live: KitTurnLive?`, owner decision 2026-09-29). While a turn runs the host passes `KitTurnLive(activity, since, onStop, stopping, stopKey)` to the row that ends what has come back so far — the prompt itself before anything has — and the turn draws it in place of the phase line on any segment: "{status}…" for the first 5 s, then "{status} · {n} s" / "{m} min {n} s" (KitSince ticking every second), then **Stop reply**, a red tertiary `KitButton` a screen reader reaches as its own button (the status words are its label; the seconds are not announced). `KitTurnActivity`: sending "Sending", waitingForServer "Waiting for the server" (after 20 s: "The server has not answered yet"), waitingForModel "Thinking" (after 20 s: "Waiting for the model's first word"), thinking "Thinking", writing "Writing", working "Working", waitingForYou "Waiting for you". No Stop while sending (`onStop` null). This is the one Stop of a running chat: the composer keeps its mic and Send (KitComposer with no `onStop` shows the mic while busy and empty), so speaking or typing during a reply queues the message.
 - **Footer.** Only for finished, stopped, interrupted and failed, and only when `footer` is non-null. One row after the last block: `meta` in `caption`/`text3` at the start (only when `latest`; older turns keep the row quiet, per the owner Fix), then `KitIconButton.copy(text: footer.copyText, tooltip: "Copy reply")` and a More `KitIconButton` ("More for this reply") that opens `showKitMenu(items: footer.menu)`; More is left out when `menu` is empty. The two buttons are 48 dp with 8 dp between them. There is never a second footer, and no step in `blocks` draws Copy or More.
 - **Long-press.** In every phase (running included, where no footer is drawn), long-press and right-click on the turn's replies open `footer.menu` plus a Copy item (`KitMenuItem.copy`), and the same items are the turn's semantic custom actions. A prompt's own long-press opens the prompt's menu (the inner part wins).
 - **Highlighted.** The turn sits on a `surface1` band with `panelCornerRadius`, inset by `space2`; no accent, no outline.

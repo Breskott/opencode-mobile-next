@@ -81,8 +81,8 @@ Future<ConnectionController> _pump(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('a busy session shows working on the composer, not as a '
-      'transcript row', (tester) async {
+  testWidgets('a busy session shows its live line and Stop reply under the '
+      'newest turn, not in the composer', (tester) async {
     final semantics = tester.ensureSemantics();
     await _pump(tester, [
       _message('u1', 'user', [_text('u1-t', 'First question')], created: 1),
@@ -91,20 +91,31 @@ void main() {
       _message('a2', 'assistant', [_text('a2-t', 'Second answer')], created: 4),
     ], busy: true);
 
-    // The transcript is only the messages: the newest turn is the last row
-    // and nothing sits under it.
+    // No separate indicator row: the newest turn itself ends with the live
+    // line, under its last words.
     expect(find.byKey(const ValueKey('typing-indicator')), findsNothing);
     expect(find.byKey(const ValueKey('message-a2')), findsOneWidget);
     final activity = find.byKey(const Key('chat-stop-button'));
     expect(activity, findsOneWidget);
-    final lastBubbleBottom = tester
-        .getBottomLeft(find.byKey(const ValueKey('message-a2')))
-        .dy;
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('message-a2')),
+        matching: activity,
+      ),
+      findsOneWidget,
+    );
     expect(
       tester.getTopLeft(activity).dy,
-      greaterThanOrEqualTo(lastBubbleBottom),
+      greaterThanOrEqualTo(
+        tester
+            .getBottomLeft(
+              find.textContaining('Second answer', findRichText: true).first,
+            )
+            .dy,
+      ),
     );
-    expect(find.bySemanticsLabel('Stop the reply'), findsOneWidget);
+    // A screen reader reaches Stop as its own button.
+    expect(find.bySemanticsLabel('Stop reply'), findsOneWidget);
     semantics.dispose();
   });
 
@@ -116,7 +127,7 @@ void main() {
     ]);
     expect(find.byKey(const ValueKey('typing-indicator')), findsNothing);
     expect(find.byKey(const Key('chat-stop-button')), findsNothing);
-    expect(find.bySemanticsLabel('Stop the reply'), findsNothing);
+    expect(find.bySemanticsLabel('Stop reply'), findsNothing);
     semantics.dispose();
   });
 

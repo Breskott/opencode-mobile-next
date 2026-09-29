@@ -56,21 +56,25 @@ bool _endsTurn(List<MessageWithParts> messages, int index) {
 }
 
 /// The newest turn when it got no answer, as (prompt index, index of the
-/// step that ends it, or null when no step came): it ended on an error the
-/// agent did not get past, and no step wrote any words. [refused]: the
-/// server refused the prompt before any step (a session error), which is
-/// the only way a turn with no step yet counts; a turn still starting is
-/// not unanswered. Null when the newest turn was answered, stopped, or is
-/// still running ([running]).
-(int, int?)? _unansweredTurn(
+/// step that ends it, or null when no step came, and whether it ended
+/// silently). Not silent: it ended on an error the agent did not get past
+/// and no step wrote any words, or [refused] (the server refused the prompt
+/// before any step, a session error). Silent: it ended with no words, no
+/// steps and no error at all, so the person is told "No reply came back"
+/// rather than left with a bare prompt. Null when the newest turn was
+/// answered, stopped (an abort, or [stoppedPromptID]), or is still running
+/// ([running]).
+(int, int?, bool)? _unansweredTurn(
   List<MessageWithParts> messages, {
   required bool refused,
   required bool running,
+  String? stoppedPromptID,
 }) {
   if (running) return null;
   final prompt = messages.lastIndexWhere(_isPrompt);
   if (prompt < 0) return null;
   int? last;
+  var stepped = false;
   for (var index = prompt + 1; index < messages.length; index += 1) {
     final message = messages[index];
     if (message.info.role != 'assistant') continue;
@@ -79,17 +83,27 @@ bool _endsTurn(List<MessageWithParts> messages, int index) {
       (part) => part.type == 'text' && part.text.trim().isNotEmpty,
     );
     if (said) return null;
+    stepped = stepped || message.parts.any((part) => part.type == 'tool');
   }
-  if (last == null) return refused ? (prompt, null) : null;
+  final stopped = messages[prompt].info.id == stoppedPromptID;
+  if (last == null) {
+    if (refused) return (prompt, null, false);
+    return stopped ? null : (prompt, null, true);
+  }
   final info = messages[last].info;
   final raw = info.errorText;
-  if (raw == null) return null;
+  if (raw == null) {
+    // Steps that ran and ended quietly did answer; so did a turn stopped
+    // on purpose. A step still unfinished is not over.
+    if (stepped || stopped || info.time?.isDone != true) return null;
+    return (prompt, last, true);
+  }
   final kind = MessageErrorKind.refineFromText(
     info.errorKind ?? MessageErrorKind.unknown,
     raw,
   );
   if (kind == MessageErrorKind.aborted) return null;
-  return (prompt, last);
+  return (prompt, last, false);
 }
 
 /// The words of a prompt, when that is all it is: null when it carried
@@ -1148,6 +1162,14 @@ class _MessageView extends StatelessWidget {
   /// The newest reply was cut off by a lost connection: sends the prompt
   /// again. Null hides the action.
   final VoidCallback? onSendInterruptedAgain;
+
+  /// The running turn's live line, on the row that ends what has come back
+  /// so far (the prompt itself before anything has).
+  final KitTurnLive? live;
+
+  /// On the prompt of a turn that ended with nothing at all (no words, no
+  /// steps, no error): "No reply came back" with Send again.
+  final VoidCallback? onSendAgainNoReply;
   final String? suggestedModel;
   final VoidCallback? onUseSuggestedModel;
   final bool unanswered;
@@ -1177,6 +1199,8 @@ class _MessageView extends StatelessWidget {
     this.onChooseModel,
     this.onResendPrompt,
     this.onSendInterruptedAgain,
+    this.live,
+    this.onSendAgainNoReply,
     this.suggestedModel,
     this.onUseSuggestedModel,
     this.unanswered = false,
@@ -1319,9 +1343,11 @@ class _MessageView extends StatelessWidget {
         .where((value) => value.trim().isNotEmpty)
         .join('\n');
     final created = m.info.time?.created;
+    final noReply = onSendAgainNoReply;
     return KitTurn(
       segment: KitTurnSegment.first,
       phase: KitTurnPhase.finished,
+      live: live,
       highlighted: highlighted,
       prompt: KitMessage.prompt(
         bubbleKey: ValueKey('user-prompt-${m.info.id}'),
@@ -1358,6 +1384,20 @@ class _MessageView extends StatelessWidget {
               role: KitTextRole.caption,
               tone: KitTextTone.secondary,
             ),
+          ),
+        // The turn ended and nothing came back, and the server gave no
+        // reason: said plainly, with the way forward.
+        if (noReply != null)
+          KitNotice(
+            key: ValueKey('prompt-no-reply-${m.info.id}'),
+            message: _chatL10n(context).chatNoReplyCameBack,
+            actions: [
+              KitAction(
+                key: const Key('no-reply-send-again'),
+                label: _chatL10n(context).chatUiSendPromptAgain,
+                onPressed: noReply,
+              ),
+            ],
           ),
       ],
     );
@@ -1424,7 +1464,15 @@ class _MessageView extends StatelessWidget {
         metaParts.isEmpty &&
         raw == null &&
         m.info.finish != 'length') {
-      return const SizedBox.shrink();
+      // Nothing written yet: the running turn's live line still shows.
+      return live == null
+          ? const SizedBox.shrink()
+          : KitTurn(
+              blocks: const [],
+              phase: KitTurnPhase.running,
+              segment: KitTurnSegment.last,
+              live: live,
+            );
     }
 
     final errorKind = raw == null
@@ -1446,10 +1494,13 @@ class _MessageView extends StatelessWidget {
     // The conversation is still working on this turn: it has no footer yet,
     // even when its newest step is already written.
     final latest = _inLatestTurn(messages, index);
+    // Busy by the server's word, or by this phone's until the server's
+    // arrives: a reply that runs before its busy status came is not cut off.
     final busy =
         chat != null &&
         latest &&
-        chat._conn.busySessions.contains(chat.widget.sessionID);
+        (chat._conn.busySessions.contains(chat.widget.sessionID) ||
+            chat._localTurnSince != null);
     // The connection was lost mid-reply (or the server went quiet for good):
     // the turn stops "working" and says so. A refetch on reconnect brings
     // the finished reply back and this line goes with it.
@@ -1541,6 +1592,9 @@ class _MessageView extends StatelessWidget {
           : DateTime.fromMillisecondsSinceEpoch(createdAt),
       blocks: blocks,
       footer: footer,
+      // The live line stands for the running turn's end; an interrupted or
+      // ended turn says so in its own line instead.
+      live: interrupted || stopped || raw != null ? null : live,
       reconnecting: reconnecting,
       interruptedAction:
           connectionLost && !reconnecting && onSendInterruptedAgain != null

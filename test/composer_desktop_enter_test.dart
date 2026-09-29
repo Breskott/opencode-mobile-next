@@ -144,38 +144,35 @@ void main() {
     expect(api.prompts, isEmpty);
   });
 
-  testWidgets('the Stop tooltip is dismissed when Stop is pressed', (
-    tester,
-  ) async {
+  testWidgets('a sent prompt runs at once: live line with Stop reply on the '
+      'turn, and the composer keeps its mic or Send', (tester) async {
     final api = _ComposerApi();
-    final controller = await _pump(tester, api, busy: true);
+    await _pump(tester, api);
 
-    // Stop has its own button next to a live Send while the run is active.
+    await _type(tester, 'go');
+    await tester.tap(find.byKey(const Key('chat-send-button')));
+    await tester.pumpAndSettle();
+    expect(api.prompts, ['go']);
+
+    // The server has not said it is busy yet; the turn still says it runs.
+    expect(find.text('Waiting for the server…'), findsOneWidget);
     final stop = find.byKey(const Key('chat-stop-button'));
     expect(stop, findsOneWidget);
-    expect(find.byTooltip('Stop the reply'), findsOneWidget);
-    // Long-press shows the tooltip the way a touch user would see it.
-    await tester.longPress(stop);
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('Stop the reply'), findsOneWidget);
-
-    await tester.tap(stop);
-    await tester.pump();
-    expect(api.abortCalls, 1);
-    // The run ends and Stop goes away; nothing may still say Stop.
-    controller.busySessions.remove('session-1');
-    controller.notifyListeners();
-    await tester.pumpAndSettle();
-
-    expect(find.text('Stop the reply'), findsNothing);
-    expect(stop, findsNothing);
-    expect(find.byTooltip('Stop the reply'), findsNothing);
-    // With an empty field the one trailing control is the mic (voice
-    // builds) or the disabled Send.
+    expect(find.text('Stop reply'), findsOneWidget);
+    // Stop is not in the composer: its one trailing control is still the
+    // mic (voice builds) or Send.
     expect(
       find.byKey(const Key('composer-voice-button')).evaluate().length +
           find.byKey(const Key('chat-send-button')).evaluate().length,
       1,
     );
+
+    await tester.tap(stop);
+    await tester.pumpAndSettle();
+    expect(api.abortCalls, 1);
+    // Stopped on purpose: no live line, and never "No reply came back".
+    expect(stop, findsNothing);
+    expect(find.text('Waiting for the server…'), findsNothing);
+    expect(find.text('No reply came back'), findsNothing);
   });
 }
