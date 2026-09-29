@@ -4490,7 +4490,7 @@
   "@chatUiContextAdded": {
     "description": "Chat journey: Context added"
   },
-  "chatUiContextCompacted": "Context compacted",
+  "chatUiContextCompacted": "Earlier messages were summarized to save space",
   "@chatUiContextCompacted": {
     "description": "Chat journey: Context compacted"
   },
@@ -29343,5 +29343,25 @@
   "effectsGlassCrashOn": "Turn it back on",
   "@effectsGlassCrashOn": {
     "description": "Appearance › Effects: action under the liquid glass paused line; turns liquid glass back on."
+  },
+  "chatUiCompactConfirmTitle": "Compact this conversation?",
+  "@chatUiCompactConfirmTitle": {
+    "description": "Confirm sheet title before compacting the conversation"
+  },
+  "chatUiCompactConfirmBody": "Compact replaces earlier messages with a short summary to save space. It can't be undone.",
+  "@chatUiCompactConfirmBody": {
+    "description": "Confirm sheet: one line on what Compact does"
+  },
+  "chatUiCompactConfirmAction": "Compact",
+  "@chatUiCompactConfirmAction": {
+    "description": "Confirm sheet button that starts compacting"
+  },
+  "kitTurnReconnecting": "Connection lost. Reconnecting to get the rest of this reply.",
+  "@kitTurnReconnecting": {
+    "description": "KitTurn: end line of an unfinished turn while the connection is coming back"
+  },
+  "composerFieldLabel": "Message to the agent",
+  "@composerFieldLabel": {
+    "description": "Screen-reader label of the chat message box (the hint is separate)."
   }
 }

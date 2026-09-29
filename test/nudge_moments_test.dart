@@ -16,7 +16,8 @@ import 'package:opencode_mobile/state/first_run.dart';
 import 'package:opencode_mobile/state/nudges.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/kit/kit.dart' show KitAction, KitNotice;
+import 'package:opencode_mobile/ui/kit/kit.dart'
+    show KitAction, KitButton, KitNotice;
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/review_workspace.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
@@ -520,6 +521,11 @@ void main() {
         findsOneWidget,
       );
       await tester.tap(_action(NudgeId.compact));
+      await tester.pumpAndSettle();
+      // Asked first: nothing is compacted until the person confirms.
+      expect(find.text('Compact this conversation?'), findsOneWidget);
+      expect(repository.compacted, isEmpty);
+      await tester.tap(find.widgetWithText(KitButton, 'Compact'));
       await tester.pumpAndSettle();
       expect(repository.compacted, ['session-1']);
       expect(_nudge(NudgeId.compact), findsNothing);

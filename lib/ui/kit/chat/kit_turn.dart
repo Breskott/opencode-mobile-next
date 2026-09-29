@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../app_iconography.dart';
+import '../kit_buttons.dart';
 import '../kit_copy.dart';
 import '../kit_icon_button.dart';
 import '../kit_menu.dart';
@@ -128,6 +129,8 @@ class KitTurn extends StatelessWidget {
     this.footer,
     this.latest = false,
     this.highlighted = false,
+    this.interruptedAction,
+    this.reconnecting = false,
     this.segment = KitTurnSegment.whole,
     this.turnKey,
     this.footerKey,
@@ -156,6 +159,14 @@ class KitTurn extends StatelessWidget {
 
   /// The find-in-conversation current match: a surface1 band.
   final bool highlighted;
+
+  /// "Send again" under the interrupted line; drawn only for
+  /// [KitTurnPhase.interrupted].
+  final KitAction? interruptedAction;
+
+  /// With [KitTurnPhase.interrupted]: the connection is coming back, so the
+  /// reply may still finish; the line says so and offers nothing to resend.
+  final bool reconnecting;
 
   /// Which part of the turn this widget draws ([KitTurnSegment]). Only
   /// [KitTurnSegment.whole] and [KitTurnSegment.last] draw the phase line
@@ -376,7 +387,21 @@ class _TurnFrameState extends State<_TurnFrame> {
         ),
       ),
       KitTurnPhase.stopped => line(l10n.kitTurnStopped),
-      KitTurnPhase.interrupted => line(l10n.kitTurnInterrupted),
+      KitTurnPhase.interrupted => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          line(
+            turn.reconnecting
+                ? l10n.kitTurnReconnecting
+                : l10n.kitTurnInterrupted,
+          ),
+          if (turn.interruptedAction case final action?)
+            Align(
+              alignment: AlignmentDirectional.topStart,
+              child: KitButton.fromAction(action, role: KitButtonRole.tertiary),
+            ),
+        ],
+      ),
       _ => null,
     };
   }

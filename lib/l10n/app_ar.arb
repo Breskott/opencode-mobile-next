@@ -1959,7 +1959,7 @@
   "chatUiConnectionHealthServerVersionAndLiveMode": "حالة الاتصال وإصدار الخادم والوضع المباشر",
   "chatUiConsequenceFutureMatchingActionsCanRunWithout": "النتيجة: ستتمكن الإجراءات المطابقة مستقبلًا من العمل دون طلب الإذن مجددًا طوال مدة تشغيل خادم OpenCode هذا. السماح مرة واحدة أكثر أمانًا.",
   "chatUiContextAdded": "أُضيف السياق",
-  "chatUiContextCompacted": "اختُصر السياق",
+  "chatUiContextCompacted": "لُخّصت الرسائل السابقة لتوفير المساحة",
   "chatUiContextUpdatePending": "تحديث السياق منتظر",
   "chatUiCopiedPasteItIntoTheComposer": "نُسخ النص. الصقه في محرّر الرسالة",
   "chatUiCopyMessageText": "نسخ نص الرسالة",
@@ -4833,5 +4833,6 @@
   "kitUndoWorking": "جارٍ التراجع",
   "kitTermHint": "يتوفر شرح",
   "kitTermShow": "إظهار الشرح",
-  "kitTermClose": "إغلاق الشرح"
+  "kitTermClose": "إغلاق الشرح",
+  "composerFieldLabel": "رسالة إلى الوكيل"
 }
