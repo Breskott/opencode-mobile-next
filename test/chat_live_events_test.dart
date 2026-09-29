@@ -949,9 +949,9 @@ void main() {
       conn.notifyListeners();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
-      // Stop is on the running turn's live line.
-      expect(find.text('Stop reply'), findsOneWidget);
-      await tester.tap(find.text('Stop reply'));
+      // Stop is on the composer's edge, next to the running status.
+      expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('chat-stop-button')));
       await tester.pump();
       expect(api.abortCalls, 1);
       expect(find.text('Keep my draft'), findsOneWidget);

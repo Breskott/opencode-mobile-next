@@ -7571,6 +7571,7 @@ class _ChatScreenState extends State<ChatScreen>
     return (
       live: KitTurnLive(
         activity: activity,
+        pace: _livePace(prompt, end),
         since:
             _localTurnSince ??
             (created == null
@@ -7586,6 +7587,51 @@ class _ChatScreenState extends State<ChatScreen>
       // Under the reply that runs, above any prompt waiting behind it.
       index: queuedBehind ? queuedAfterIndex : _messages.length - 1,
     );
+  }
+
+  // How fast the running reply is arriving, for the composer edge's light:
+  // characters (and a weight per step) that came in since the last change,
+  // per second, eased. Kept across builds; reset when the turn changes.
+  String? _paceTurn;
+  int _paceMark = 0;
+  DateTime? _paceAt;
+  double _paceValue = 0;
+
+  /// 0..1: about 90 characters a second and up is full pace.
+  double _livePace(int prompt, int end) {
+    var mark = 0;
+    for (var i = prompt + 1; i < end; i += 1) {
+      final message = _messages[i];
+      if (message.info.role != 'assistant') continue;
+      for (final part in message.parts) {
+        if (part.type == 'text' || part.type == 'reasoning') {
+          mark += part.text.length;
+        } else if (part.type == 'tool') {
+          mark += 60;
+        }
+      }
+    }
+    final now = DateTime.now();
+    final turn = prompt < 0 ? null : _messages[prompt].info.id;
+    if (turn != _paceTurn) {
+      _paceTurn = turn;
+      _paceMark = mark;
+      _paceAt = now;
+      _paceValue = 0;
+      return 0;
+    }
+    final at = _paceAt;
+    if (at != null && mark != _paceMark) {
+      final seconds = (now.difference(at).inMilliseconds / 1000).clamp(
+        0.05,
+        5.0,
+      );
+      final target = ((mark - _paceMark).abs() / seconds / 90).clamp(0.0, 1.0);
+      _paceValue += (target - _paceValue) * (1 - math.exp(-seconds / 0.8));
+      _paceMark = mark;
+      _paceAt = now;
+    }
+    return _paceValue;
   }
 
   /// This reply runs on the phone's own OpenCode while the AI Team on this
@@ -7629,35 +7675,19 @@ class _ChatScreenState extends State<ChatScreen>
     if (i == _renderedMessageCount) return _olderHistoryRow();
     final index = _renderedMessageCount - 1 - i;
     final m = _messages[index];
-    final live = _live?.index == index ? _live!.live : null;
-    // A row that draws nothing of its own still carries the live line: the
-    // running turn is never silent.
-    Widget liveOnly() => live == null
-        ? const SizedBox.shrink()
-        : KitTurn(
-            key: const ValueKey('chat-live-turn'),
-            blocks: const [],
-            phase: KitTurnPhase.running,
-            segment: KitTurnSegment.last,
-            live: live,
-          );
+    // The running turn's status lives on the composer's edge
+    // ([KitComposer.rail]), so no transcript row draws a live line.
     if (waitingLocalIDs.contains(m.info.id) || _isFoldedNotice(m)) {
-      return liveOnly();
+      return const SizedBox.shrink();
     }
     if (v2VariantPart(m) case final tagged?) {
-      final row = _v2Row(m, index, tagged);
-      if (live == null) return row;
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [row, liveOnly()],
-      );
+      return _v2Row(m, index, tagged);
     }
     final rawMeta = _messageMeta(_messages, index);
     final meta = rawMeta.withModelLabel(_catalogModelNames(rawMeta.modelLabel));
     final parts = displayParts[index];
     if (parts.isEmpty && meta.isEmpty && m.info.errorText == null) {
-      return liveOnly();
+      return const SizedBox.shrink();
     }
     final hit =
         _findHits.isNotEmpty && _findHits[_findCursor].messageID == m.info.id
@@ -7672,7 +7702,7 @@ class _ChatScreenState extends State<ChatScreen>
         : null;
     return _MessageView(
       key: ValueKey('message-${m.info.id}'),
-      live: live,
+      statusOnComposer: _live?.index == index,
       unanswered: !silent && unanswered?.$1 == index,
       onSendAgainNoReply: silent && !offline && unanswered?.$1 == index
           ? () => unawaited(
@@ -8028,6 +8058,8 @@ class _ChatScreenState extends State<ChatScreen>
       promptAttachmentsSupported: _supportsPromptAttachments,
       webSourcesSupported: _conn.capabilities.webSearch,
       busy: busy,
+      // The running turn's status, written on the composer's top edge.
+      live: _live?.live,
       sending: _sending,
       // OpenCode 1 runs a send made mid-turn after that turn; OpenCode 2
       // steers or queues it. Either way Send stays live.

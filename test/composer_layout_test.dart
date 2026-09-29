@@ -835,8 +835,8 @@ void main() {
     },
   );
 
-  testWidgets('a busy run shows its live line with Stop reply on the turn; '
-      'the pill keeps its mic', (tester) async {
+  testWidgets('a busy run writes its status on the composer edge with a '
+      'Stop; the pill keeps its mic', (tester) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
     (controller.api! as _FakeApi).transcript = [_sentPrompt()];
@@ -853,17 +853,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // The running turn says what it is doing and carries Stop; the pill
-    // has no ring, no glow (LOOK-20) and no Stop of its own.
+    // The composer's top edge says what the run is doing and carries Stop;
+    // the pill has no ring, no glow (LOOK-20) and no Stop circle of its own.
     expect(find.text('Thinking…'), findsOneWidget);
     expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('chat-composer-surface')),
-        matching: find.byKey(const Key('chat-stop-button')),
-      ),
-      findsNothing,
-    );
+    expect(find.byKey(const ValueKey('kit-composer-stop')), findsNothing);
     expect(find.byKey(const ValueKey('composer-activity')), findsNothing);
     expect(find.byKey(const ValueKey('typing-indicator')), findsNothing);
     expect(find.byKey(const Key('chat-composer-field')), findsOneWidget);

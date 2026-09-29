@@ -49,6 +49,7 @@ class _ChatComposer extends StatelessWidget {
     required this.promptAttachmentsSupported,
     required this.webSourcesSupported,
     required this.busy,
+    this.live,
     required this.sending,
     this.canSendWhileBusy = false,
     this.canChooseDelivery = false,
@@ -113,6 +114,9 @@ class _ChatComposer extends StatelessWidget {
   final bool promptAttachmentsSupported;
   final bool webSourcesSupported;
   final bool busy;
+
+  /// The running turn's status for the composer's top edge.
+  final KitTurnLive? live;
   final bool sending;
 
   /// Send stays live while a reply is written (OpenCode 1 runs it after the
@@ -239,10 +243,11 @@ class _ChatComposer extends StatelessWidget {
                 ? l10n.chatUiAskOpenCode
                 : l10n.chatUiAskAgent(KitBidi.auto(agentName!)),
             onSend: _send,
-            // Stop lives on the running turn's live line (KitTurnLive),
-            // so the mic and Send stay here while a reply runs: speaking or
-            // typing then waits to send after the reply.
+            // Stop lives on the composer's own top edge (the rail's tappable
+            // caption), so the mic and Send stay here while a reply runs:
+            // speaking or typing then waits to send after the reply.
             busy: busy,
+            rail: live,
             sending: sending || (shelfBusy && shelfLoading),
             canSendWhileBusy: canSendWhileBusy,
             // Without an inbox (OpenCode 1) a send made during a reply

@@ -109,9 +109,15 @@ class KitTurnLive {
     this.stopping = false,
     this.stopKey,
     this.teamAlsoWorking = false,
+    this.pace = 0,
   });
 
   final KitTurnActivity activity;
+
+  /// 0..1: how fast the reply is arriving now (a smoothed count of the
+  /// parts and words that came in lately). The composer's edge light
+  /// follows it while the reply is being written; 0 when unknown.
+  final double pace;
 
   /// When the turn began, on this phone's clock. The line shows the time
   /// since then after [showElapsedAfter], and the waits turn slow after
@@ -137,6 +143,38 @@ class KitTurnLive {
   /// A wait for the server or for the model's first word this long says so
   /// in its own words (a free model can take one to two minutes).
   static const slowAfter = Duration(seconds: 20);
+
+  /// "12 s" or "2 min 5 s" ([elapsed] rounded down).
+  static String elapsedText(AppLocalizations l10n, Duration elapsed) =>
+      elapsed.inMinutes < 1
+      ? l10n.kitTurnLiveSeconds(elapsed.inSeconds)
+      : l10n.kitTurnLiveMinutes(elapsed.inMinutes, elapsed.inSeconds % 60);
+
+  /// What the turn is doing, in words; the slow waits say so after
+  /// [slowAfter].
+  static String wordsFor(
+    AppLocalizations l10n,
+    KitTurnActivity activity,
+    Duration elapsed, {
+    bool teamAlsoWorking = false,
+  }) {
+    final slow = elapsed >= slowAfter;
+    return switch (activity) {
+      KitTurnActivity.sending => l10n.kitTurnLiveSending,
+      KitTurnActivity.waitingForServer =>
+        slow ? l10n.kitTurnLiveServerQuiet : l10n.kitTurnLiveWaitingForServer,
+      KitTurnActivity.waitingForModel =>
+        slow
+            ? (teamAlsoWorking
+                  ? l10n.kitTurnLiveFirstWordSlowTeam
+                  : l10n.kitTurnLiveFirstWordSlow)
+            : l10n.kitTurnLiveThinking,
+      KitTurnActivity.thinking => l10n.kitTurnLiveThinking,
+      KitTurnActivity.writing => l10n.kitTurnLiveWriting,
+      KitTurnActivity.working => l10n.kitTurnLiveWorking,
+      KitTurnActivity.waitingForYou => l10n.kitTurnLiveWaitingForYou,
+    };
+  }
 }
 
 /// The one footer of a finished turn (STATE-16).
@@ -204,6 +242,7 @@ class KitTurn extends StatelessWidget {
     this.interruptedAction,
     this.reconnecting = false,
     this.live,
+    this.statusOnComposer = false,
     this.segment = KitTurnSegment.whole,
     this.turnKey,
     this.footerKey,
@@ -246,6 +285,11 @@ class KitTurn extends StatelessWidget {
   /// whichever part the host gives it to, the prompt included, so a turn
   /// with nothing back yet still says it is working.
   final KitTurnLive? live;
+
+  /// The composer's edge ([KitComposer.rail]) already says what this
+  /// running turn is doing: the turn draws no starting line of its own, so
+  /// nothing is shown twice. Keep [live] for pages with no composer.
+  final bool statusOnComposer;
 
   /// Which part of the turn this widget draws ([KitTurnSegment]). Only
   /// [KitTurnSegment.whole] and [KitTurnSegment.last] draw the phase line
@@ -399,7 +443,9 @@ class _TurnFrameState extends State<_TurnFrame> {
     final phaseLine = turn.live != null
         ? _KitTurnLiveLine(live: turn.live!)
         : ends
-        ? _phaseLine(context, turn, l10n)
+        ? (turn.statusOnComposer && turn.phase == KitTurnPhase.starting
+              ? null
+              : _phaseLine(context, turn, l10n))
         : null;
     if (phaseLine != null) {
       add(phaseLine, turn.blocks.isEmpty ? tokens.space4 : tokens.space3);
@@ -426,7 +472,10 @@ class _TurnFrameState extends State<_TurnFrame> {
     );
 
     final gapAfter = switch (turn.segment) {
-      KitTurnSegment.whole || KitTurnSegment.last => tokens.sectionGap,
+      // The newest turn sits right above the composer: the kit's standard
+      // spacing, not a section gap of its own.
+      KitTurnSegment.whole ||
+      KitTurnSegment.last => turn.latest ? tokens.space2 : tokens.sectionGap,
       KitTurnSegment.first => tokens.space4,
       KitTurnSegment.middle => tokens.space3,
     };
@@ -618,35 +667,6 @@ class _KitTurnLiveLine extends StatelessWidget {
 
   final KitTurnLive live;
 
-  static String _elapsed(AppLocalizations l10n, Duration elapsed) =>
-      elapsed.inMinutes < 1
-      ? l10n.kitTurnLiveSeconds(elapsed.inSeconds)
-      : l10n.kitTurnLiveMinutes(elapsed.inMinutes, elapsed.inSeconds % 60);
-
-  static String _words(
-    AppLocalizations l10n,
-    KitTurnActivity activity,
-    Duration elapsed, {
-    bool teamAlsoWorking = false,
-  }) {
-    final slow = elapsed >= KitTurnLive.slowAfter;
-    return switch (activity) {
-      KitTurnActivity.sending => l10n.kitTurnLiveSending,
-      KitTurnActivity.waitingForServer =>
-        slow ? l10n.kitTurnLiveServerQuiet : l10n.kitTurnLiveWaitingForServer,
-      KitTurnActivity.waitingForModel =>
-        slow
-            ? (teamAlsoWorking
-                  ? l10n.kitTurnLiveFirstWordSlowTeam
-                  : l10n.kitTurnLiveFirstWordSlow)
-            : l10n.kitTurnLiveThinking,
-      KitTurnActivity.thinking => l10n.kitTurnLiveThinking,
-      KitTurnActivity.writing => l10n.kitTurnLiveWriting,
-      KitTurnActivity.working => l10n.kitTurnLiveWorking,
-      KitTurnActivity.waitingForYou => l10n.kitTurnLiveWaitingForYou,
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
@@ -656,7 +676,7 @@ class _KitTurnLiveLine extends StatelessWidget {
       since: live.since,
       ticks: KitSinceTicks.seconds,
       builder: (context, status) {
-        final words = _words(
+        final words = KitTurnLive.wordsFor(
           l10n,
           live.activity,
           status.elapsed,
@@ -664,7 +684,10 @@ class _KitTurnLiveLine extends StatelessWidget {
         );
         final line = status.elapsed < KitTurnLive.showElapsedAfter
             ? l10n.kitTurnLiveNow(words)
-            : l10n.kitTurnLiveFor(words, _elapsed(l10n, status.elapsed));
+            : l10n.kitTurnLiveFor(
+                words,
+                KitTurnLive.elapsedText(l10n, status.elapsed),
+              );
         return Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: tokens.space2,

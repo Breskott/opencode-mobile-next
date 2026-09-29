@@ -29810,5 +29810,13 @@
   "teamUiAgentLabelSessionTitle": "Session title",
   "@teamUiAgentLabelSessionTitle": {
     "description": "Technical details label: the title the agent's own conversation carries inside its harness"
+  },
+  "kitComposerPillNoAnswer": "No answer yet",
+  "@kitComposerPillNoAnswer": {
+    "description": "Composer status pill: the server has been quiet for a while"
+  },
+  "kitComposerRailRetry": "Retry",
+  "@kitComposerRailRetry": {
+    "description": "Composer top row: action that sends a failed message again"
   }
 }

@@ -1163,9 +1163,10 @@ class _MessageView extends StatelessWidget {
   /// again. Null hides the action.
   final VoidCallback? onSendInterruptedAgain;
 
-  /// The running turn's live line, on the row that ends what has come back
-  /// so far (the prompt itself before anything has).
-  final KitTurnLive? live;
+  /// The composer's edge says what the running turn is doing, on the row
+  /// that ends what has come back so far: this row draws no phase line of
+  /// its own.
+  final bool statusOnComposer;
 
   /// On the prompt of a turn that ended with nothing at all (no words, no
   /// steps, no error): "No reply came back" with Send again.
@@ -1199,7 +1200,7 @@ class _MessageView extends StatelessWidget {
     this.onChooseModel,
     this.onResendPrompt,
     this.onSendInterruptedAgain,
-    this.live,
+    this.statusOnComposer = false,
     this.onSendAgainNoReply,
     this.suggestedModel,
     this.onUseSuggestedModel,
@@ -1347,7 +1348,7 @@ class _MessageView extends StatelessWidget {
     return KitTurn(
       segment: KitTurnSegment.first,
       phase: KitTurnPhase.finished,
-      live: live,
+      statusOnComposer: statusOnComposer,
       highlighted: highlighted,
       prompt: KitMessage.prompt(
         bubbleKey: ValueKey('user-prompt-${m.info.id}'),
@@ -1464,15 +1465,8 @@ class _MessageView extends StatelessWidget {
         metaParts.isEmpty &&
         raw == null &&
         m.info.finish != 'length') {
-      // Nothing written yet: the running turn's live line still shows.
-      return live == null
-          ? const SizedBox.shrink()
-          : KitTurn(
-              blocks: const [],
-              phase: KitTurnPhase.running,
-              segment: KitTurnSegment.last,
-              live: live,
-            );
+      // Nothing written yet: the composer's edge already says so.
+      return const SizedBox.shrink();
     }
 
     final errorKind = raw == null
@@ -1592,9 +1586,10 @@ class _MessageView extends StatelessWidget {
           : DateTime.fromMillisecondsSinceEpoch(createdAt),
       blocks: blocks,
       footer: footer,
-      // The live line stands for the running turn's end; an interrupted or
-      // ended turn says so in its own line instead.
-      live: interrupted || stopped || raw != null ? null : live,
+      // The composer's edge stands for the running turn's end; an
+      // interrupted or ended turn says so in its own line instead.
+      statusOnComposer:
+          statusOnComposer && !(interrupted || stopped || raw != null),
       reconnecting: reconnecting,
       interruptedAction:
           connectionLost && !reconnecting && onSendInterruptedAgain != null

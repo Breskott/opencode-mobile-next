@@ -388,10 +388,10 @@ void main() {
     });
 
     // chat-3 (e28442b0, LOOK-20) removed the composer's animated working
-    // mark; the running turn's live line, with its Stop reply, is the
+    // mark; the composer edge's status, with its Stop, is the
     // working signal (still words, no loop). It shows while a reply is
     // written and goes when the run ends, and nothing is left moving.
-    testWidgets('while a reply is written the live line with Stop is the '
+    testWidgets('while a reply is written the edge status with Stop is the '
         'working signal; it goes when the run ends', (tester) async {
       KitMotion.loops = true;
       final api = _ChatApi()..messagesHandler = (_) async => sampleTranscript();
@@ -408,6 +408,10 @@ void main() {
       controller.busySessions.remove(checkoutSessionID);
       controller.notifyListeners();
       await _frames(tester, 4);
+      // The edge light fades into the border and the dip straightens
+      // (about 1.2 s), then nothing is left moving.
+      await tester.pump(const Duration(milliseconds: 1500));
+      await tester.pump(const Duration(milliseconds: 500));
       expect(stop, findsNothing);
       expect(tester.hasRunningAnimations, isFalse);
       await _unmount(tester);

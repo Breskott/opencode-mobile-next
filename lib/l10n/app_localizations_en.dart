@@ -24641,4 +24641,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiAgentLabelSessionTitle => 'Session title';
+
+  @override
+  String get kitComposerPillNoAnswer => 'No answer yet';
+
+  @override
+  String get kitComposerRailRetry => 'Retry';
 }

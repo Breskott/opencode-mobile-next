@@ -277,13 +277,7 @@ void main() {
         conn.notifyListeners();
         await _pumpFrames(tester);
         expect(tester.takeException(), isNull);
-        expect(
-          find.descendant(
-            of: find.byKey(const Key('chat-composer-surface')),
-            matching: _stop,
-          ),
-          findsNothing,
-        );
+        expect(find.byKey(const ValueKey('kit-composer-stop')), findsNothing);
         expect(find.text('Sends after this reply'), findsOneWidget);
         expect(tester.getRect(_send).bottom, lessThanOrEqualTo(visibleBottom));
         expect(tester.getRect(_field).bottom, lessThanOrEqualTo(visibleBottom));
