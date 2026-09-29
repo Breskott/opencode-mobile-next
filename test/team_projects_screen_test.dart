@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/state/team_project_controller.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team/projects/team_projects_screen.dart';
@@ -55,6 +56,7 @@ class _Gateway implements OrchestrationProjectGateway {
 }
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
   testWidgets('urgent projects lead and phone opens selected project', (
     tester,
   ) async {
@@ -70,8 +72,44 @@ void main() {
     );
     await tester.tap(find.text('Launch site'));
     await tester.pumpAndSettle();
-    expect(find.text('Make our site accessible'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(TeamProjectOverview),
+        matching: find.text('Make our site accessible'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Accessible pages'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    c.dispose();
+  });
+
+  testWidgets('spec review opens editor instead of a generic answer dialog', (
+    tester,
+  ) async {
+    final gateway = _Gateway();
+    gateway.value = gateway.value.copyWith(
+      projects: [
+        gateway.value.projects.first.copyWith(
+          requests: const [
+            TeamRequest(
+              id: 'spec-review',
+              kind: 'spec',
+              title: 'Review the living spec',
+            ),
+          ],
+        ),
+      ],
+    );
+    final c = TeamProjectController(gateway);
+    await c.load();
+    final context = await pumpKitHost(tester);
+    pushKitPage<void>(context, (_) => TeamProjectsScreen(controller: c));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Review the living spec'));
+    await tester.pumpAndSettle();
+    expect(find.text('Approve spec'), findsWidgets);
+    expect(find.text('Your answer'), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
     c.dispose();
   });
@@ -86,7 +124,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Launch site'));
     await tester.pumpAndSettle();
-    expect(find.text('Make our site accessible'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(TeamProjectOverview),
+        matching: find.text('Make our site accessible'),
+      ),
+      findsOneWidget,
+    );
     expect(find.byType(KitComposer), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());

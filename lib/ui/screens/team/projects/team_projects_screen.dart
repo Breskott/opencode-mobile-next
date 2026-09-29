@@ -82,7 +82,7 @@ class _TeamProjectsScreenState extends State<TeamProjectsScreen> {
       return KitScreen.threePane(
         topBar: KitTopBar(
           title: l.teamProjectHome,
-          subtitle: l.teamProjectDemo,
+          subtitle: c.snapshot?.simulated == true ? l.teamProjectDemo : null,
           actions: [
             KitAction(
               label: l.teamProjectEditorDefaults,
@@ -253,7 +253,7 @@ class TeamProjectOverview extends StatelessWidget {
             if (showDigest)
               KitDigest(
                 title: l.teamProjectDigest,
-                status: l.teamProjectDemo,
+                status: p.simulated ? l.teamProjectDemo : '',
                 items: [
                   for (final e in events.take(6))
                     KitTeamItem(title: e.text, meta: _age(context, e.at)),
@@ -273,7 +273,7 @@ class TeamProjectOverview extends StatelessWidget {
                 state: KitTeamState.needsYou,
                 actions: [
                   KitAction(
-                    label: l.teamProjectAnswer,
+                    label: _requestLabel(l, r),
                     onPressed: () => _answer(context, c, p, r),
                   ),
                 ],
@@ -375,7 +375,8 @@ class TeamProjectOverview extends StatelessWidget {
                       ),
                   ],
                 ),
-            KitText(l.teamProjectCostDemo, role: KitTextRole.caption),
+            if (p.simulated)
+              KitText(l.teamProjectCostDemo, role: KitTextRole.caption),
             for (final repo in p.repos)
               if (p.mergeQueue.any((i) => i.repoId == repo.id))
                 KitMergeQueue(
@@ -579,6 +580,47 @@ Future<void> _answer(
   TeamRequest r,
 ) async {
   final l = lookupAppLocalizations(Localizations.localeOf(context));
+  switch (r.kind) {
+    case 'spec':
+      await openTeamSpecEditor(context, c, p.id);
+      return;
+    case 'planFormat':
+    case 'plan':
+      await openTeamPlanEditor(context, c, p.id);
+      return;
+    case 'budget':
+      await openTeamProjectSettings(context, c, p.id);
+      return;
+    case 'milestone':
+      final milestone = p.specDraft.milestones
+          .where((m) => m.id == r.phaseId)
+          .firstOrNull;
+      if (milestone != null &&
+          await showKitConfirm(
+            context,
+            title: milestone.title,
+            body: milestone.criteria.join('\n'),
+            confirmLabel: l.teamProjectAccept,
+          )) {
+        await _command(
+          c,
+          p,
+          TeamProjectAction.acceptMilestone,
+          targetId: milestone.id,
+        );
+      }
+      return;
+    case 'phase':
+      final task = p.tasks.where((t) => t.phaseId == r.phaseId).firstOrNull;
+      if (task != null) _openTask(context, c, p.id, task.id);
+      return;
+    case 'question':
+    case 'permission':
+      break;
+    default:
+      if (r.taskId.isNotEmpty) _openTask(context, c, p.id, r.taskId);
+      return;
+  }
   await showKitInputDialog(
     context,
     title: r.title,
@@ -599,6 +641,14 @@ Future<void> _answer(
   );
 }
 
+String _requestLabel(AppLocalizations l, TeamRequest r) => switch (r.kind) {
+  'spec' => l.teamProjectSpec,
+  'plan' || 'planFormat' => l.teamProjectPlan,
+  'budget' => l.teamProjectSettings,
+  'milestone' => l.teamProjectAccept,
+  'question' || 'permission' => l.teamProjectAnswer,
+  _ => l.teamProjectReview,
+};
 Widget _failure(BuildContext context, TeamProjectController c) {
   final l = lookupAppLocalizations(Localizations.localeOf(context));
   return KitNotice(
@@ -880,7 +930,7 @@ class _TeamProjectTimelineState extends State<TeamProjectTimeline> {
             for (final day in days.entries)
               KitTimelineDay(
                 title: day.key,
-                status: l.teamProjectDemo,
+                status: p?.simulated == true ? l.teamProjectDemo : '',
                 items: [
                   for (final e in day.value)
                     KitTeamItem(
@@ -933,7 +983,8 @@ class TeamProjectServers extends StatelessWidget {
           padding: KitScreen.padding(context),
           children: [
             if (controller.errorCode != null) _failure(context, controller),
-            KitText(l.teamProjectCostDemo, role: KitTextRole.secondary),
+            if (p.simulated)
+              KitText(l.teamProjectCostDemo, role: KitTextRole.secondary),
             for (final s in controller.snapshot!.servers) ...[
               KitServerLane(
                 title: s.name,
@@ -964,6 +1015,35 @@ class TeamProjectServers extends StatelessWidget {
                           _openTask(context, controller, p.id, t.id),
                     ),
                 ],
+              ),
+              KitButton(
+                role: KitButtonRole.tertiary,
+                label: l.teamProjectEditorMaxLanes,
+                onPressed: () async {
+                  final revision = controller.snapshot!.revision;
+                  await showKitInputDialog(
+                    context,
+                    title: s.name,
+                    label: l.teamProjectEditorMaxLanes,
+                    initial: s.laneCap.toString(),
+                    kind: KitFieldKind.number,
+                    confirmLabel: l.teamProjectEditorSave,
+                    validate: (value) => (int.tryParse(value) ?? 0) > 0
+                        ? null
+                        : l.teamProjectEditorPositiveLanes,
+                    onSubmit: (value) async {
+                      final result = await controller.execute(
+                        TeamProjectCommand(
+                          requestId: controller.newRequestId(),
+                          action: TeamProjectAction.updateServer,
+                          expectedRevision: revision,
+                          server: s.copyWith(laneCap: int.parse(value)),
+                        ),
+                      );
+                      return result.accepted ? null : l.teamProjectError;
+                    },
+                  );
+                },
               ),
               for (final t in p.tasks.where(
                 (t) =>
