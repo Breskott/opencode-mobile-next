@@ -106,3 +106,14 @@ All commands used the pinned toolchain and `OC_TEST_SLOTS=1`,
 pass added `--name '^error '`. See the test and gallery file lists in the
 component docs. No localization generator ran in this worktree; all new kit
 labels are supplied by callers (timeline's Show all reuses existing l10n).
+
+
+### Token gate follow-up (2026-09-30)
+
+The coordinator's integration scan caught G17 literal ink endpoints and a G21
+implicit border width. Commit `abc745ef` uses `roles.text1` as the readable-ink
+endpoint and `KitTokens.hairlineWidth(context)` for the card border. The affected
+attention captures were regenerated (24/24 passed), all findings captures plus
+existing chip behavior passed (90/90), and the final scoped analyzer was clean.
+Every changed capture was inspected again and the gallery hashes refreshed.
+These are token-rule fixes; no baseline was expanded.
