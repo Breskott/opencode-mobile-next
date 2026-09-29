@@ -11,7 +11,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart';
 import 'package:opencode_mobile/builtin/setup/components.dart';
+import 'package:opencode_mobile/builtin/setup/aiteam_scripts.dart'
+    show AiTeamPins;
 import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_selection.dart'
+    show setupSizeText;
 import 'package:opencode_mobile/builtin/setup/setup_contract.dart';
 import 'package:opencode_mobile/builtin/team/builtin_team.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
@@ -549,6 +553,32 @@ void main() {
       await tester.tap(_key('phone-setup-customize-done'));
       await _settle(tester);
       expect(hosts, [SetupHostKind.builtin]);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('AI Team installed but not on: no download offer, Turn on '
+        'is the action (Add tools left it installed)', (tester) async {
+      debugPlatformCapabilities = const PlatformCapabilities.android();
+      debugBuiltinTeam = _BuiltinTeam();
+      final engine = FakeSetupEngine(registry: _teamRegistry)
+        ..optionalInstalled = {'aiteam'};
+      PhoneSetup.engine = engine;
+      _mockChannels();
+      final controller = await _boot(_inApp());
+      await pumpIntro(tester, controller);
+      await reveal(tester, find.text(_en.teamDiscoverBatteryTitle));
+      expect(find.byKey(const ValueKey('team-intro-cost')), findsNothing);
+      expect(
+        find.text(
+          _en.teamDiscoverDownloadTitle(
+            setupSizeText(_en, AiTeamPins.deviceDownloadBytes),
+          ),
+        ),
+        findsNothing,
+      );
+      expect(find.text(_en.teamIntroInstalledTitle), findsOneWidget);
+      expect(find.text(_en.teamIntroTurnOnPhone), findsOneWidget);
+      expect(find.text(_en.teamIntroSetUpPhone), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 

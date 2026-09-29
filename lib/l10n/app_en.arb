@@ -20084,6 +20084,18 @@
       }
     }
   },
+  "teamIntroTurnOnPhone": "Turn on AI Team on this phone",
+  "@teamIntroTurnOnPhone": {
+    "description": "AI Team intro: primary on a phone server when AI Team is installed already but not turned on."
+  },
+  "teamIntroInstalledTitle": "Installed on this phone",
+  "@teamIntroInstalledTitle": {
+    "description": "AI Team intro, phone server: replaces the download line once the team's programs are installed."
+  },
+  "teamIntroInstalledBody": "It is not turned on yet. Turning it on starts the team for your project; nothing more to download.",
+  "@teamIntroInstalledBody": {
+    "description": "AI Team intro, phone server: what the primary action does when AI Team is installed already."
+  },
   "teamIntroSetUpPhone": "Set up AI Team on this phone",
   "@teamIntroSetUpPhone": {
     "description": "AI Team intro: primary on a phone server."

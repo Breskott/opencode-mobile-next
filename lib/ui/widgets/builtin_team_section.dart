@@ -24,6 +24,7 @@ import 'package:flutter/material.dart';
 import '../../builtin/builtin_linux.dart' show BuiltinLinuxException;
 import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../builtin/setup/aiteam_scripts.dart';
+import '../../builtin/setup/setup_contract.dart' show setupToolsChanged;
 import '../../builtin/team/builtin_team.dart';
 import '../../builtin/team/builtin_team_job.dart';
 import '../../diagnostics/failed_job_report.dart';
@@ -272,12 +273,16 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
     super.initState();
     _jobWasRunning = _job.running;
     _job.addListener(_onJob);
+    // A setup job ending changed the tools on the phone: read them again
+    // rather than keep what was read when this page opened.
+    setupToolsChanged.addListener(_onSetup);
     _syncTicker();
     unawaited(_load());
   }
 
   @override
   void dispose() {
+    setupToolsChanged.removeListener(_onSetup);
     _job.removeListener(_onJob);
     _ticker?.cancel();
     super.dispose();
@@ -292,6 +297,10 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
       _ticker?.cancel();
       _ticker = null;
     }
+  }
+
+  void _onSetup() {
+    if (mounted) unawaited(_load());
   }
 
   void _onJob() {

@@ -86,4 +86,65 @@ void main() {
     expect(progress.adding, ['aiteam']);
     expect(progress.components.map((c) => c.id), contains('aiteam'));
   });
+
+  test('Continue after the start step broke starts it again and ends done, '
+      'with the job\'s adding list kept', () async {
+    final linux = FakeLinux();
+    var calls = 0;
+    final engine = ChannelSetupEngine(
+      linux: linux,
+      strings: () => en,
+      pollInterval: const Duration(milliseconds: 5),
+      finisher: (request) async {
+        calls++;
+        if (calls == 1) throw StateError('Using ref when a widget is gone');
+        return null;
+      },
+    );
+    addTearDown(engine.dispose);
+    void listener() {}
+    engine.progress.addListener(listener);
+    addTearDown(() => engine.progress.removeListener(listener));
+
+    await engine.run({'aiteam'}, params: SetupJobParams.adding({'aiteam'}));
+    linux.advance('start', {});
+    Future<void> until(bool Function() done) async {
+      for (var i = 0; i < 200 && !done(); i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+    }
+
+    await until(() => engine.progress.value.state == SetupState.failed);
+    expect(engine.progress.value.state, SetupState.failed);
+    expect(engine.progress.value.canContinue, isTrue);
+
+    // "Continue setup": the same components again.
+    final ids = engine.progress.value.components.map((c) => c.id).toSet();
+    await engine.run(ids);
+    linux.advance('start', {});
+    await until(() => engine.progress.value.state == SetupState.done);
+    expect(calls, 2);
+    expect(engine.progress.value.state, SetupState.done);
+    expect(engine.progress.value.adding, ['aiteam']);
+  });
+
+  test('a job ending tells the pages that list tools, once, without a '
+      'watcher', () async {
+    final linux = FakeLinux();
+    final engine = ChannelSetupEngine(
+      linux: linux,
+      strings: () => en,
+      pollInterval: const Duration(milliseconds: 5),
+      finisher: (request) async => null,
+    );
+    addTearDown(engine.dispose);
+    final before = setupToolsChanged.value;
+    await engine.run({'aiteam'}, params: SetupJobParams.adding({'aiteam'}));
+    expect(setupToolsChanged.value, before, reason: 'still running');
+    linux.job!['state'] = 'failed';
+    await engine.restore();
+    expect(setupToolsChanged.value, before + 1);
+    await engine.restore();
+    expect(setupToolsChanged.value, before + 1, reason: 'the same end');
+  });
 }
