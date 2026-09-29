@@ -114,7 +114,7 @@ class _TeamProjectsScreenState extends State<TeamProjectsScreen> {
               for (final request in p.requests.where((r) => !r.answered))
                 KitRow(
                   title: request.title,
-                  supporting: p.name,
+                  supporting: TextSpan(text: p.name),
                   onTap: () => _answer(context, c, p, request),
                 ),
               KitProjectRow(
@@ -207,11 +207,12 @@ class TeamProjectOverview extends StatelessWidget {
       final p = controller.snapshot?.projects
           .where((p) => p.id == projectId)
           .firstOrNull;
-      if (p == null)
+      if (p == null) {
         return KitStateView(
           icon: Icons.work_outline,
           title: l.teamProjectSelect,
         );
+      }
       final c = controller;
       void task(TeamTask t) => onOpenTask != null
           ? onOpenTask!(t)
@@ -412,7 +413,10 @@ class TeamProjectOverview extends StatelessWidget {
                     .toList()
                     .reversed
                     .take(3))
-              KitRow(title: e.text, supporting: _age(context, e.at)),
+              KitRow(
+                title: e.text,
+                supporting: TextSpan(text: _age(context, e.at)),
+              ),
             KitSectionLabel.inline(l.teamProjectCost),
             KitText(
               l.teamProjectSpend(
@@ -480,8 +484,9 @@ class TeamProjectOverview extends StatelessWidget {
                   body: l.teamProjectStopBody,
                   confirmLabel: l.teamProjectStop,
                   kind: KitConfirmKind.stop,
-                ))
+                )) {
                   _command(c, p, TeamProjectAction.stopProject);
+                }
               },
             ),
           ],
@@ -682,11 +687,12 @@ class _TeamProjectBoardState extends State<TeamProjectBoard> {
       final p = c.snapshot?.projects
           .where((p) => p.id == widget.projectId)
           .firstOrNull;
-      if (p == null)
+      if (p == null) {
         return KitStateView(
           icon: Icons.work_outline,
           title: l.teamProjectSelect,
         );
+      }
       final phases = p.phases
           .where((ph) => _milestone == null || ph.milestoneId == _milestone)
           .map((ph) => ph.id)
@@ -915,11 +921,12 @@ class TeamProjectServers extends StatelessWidget {
       final p = controller.snapshot?.projects
           .where((p) => p.id == projectId)
           .firstOrNull;
-      if (p == null)
+      if (p == null) {
         return KitStateView(
           icon: Icons.work_outline,
           title: l.teamProjectSelect,
         );
+      }
       return KitScreen(
         topBar: KitTopBar(title: l.teamProjectServers, subtitle: p.name),
         body: ListView(
