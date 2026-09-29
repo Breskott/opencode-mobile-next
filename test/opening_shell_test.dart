@@ -257,7 +257,7 @@ void main() {
     for (final title in _titles) {
       expect(find.text(title), findsOneWidget, reason: title);
     }
-    expect(find.text('Updated 12m ago · Refreshing'), findsOneWidget);
+    expect(find.text('Updated 12 min ago · Refreshing'), findsOneWidget);
     // The connection state stays honest and in charge.
     expect(find.byKey(const ValueKey('saved-server-connecting')), findsOne);
     expect(find.text('Connected'), findsNothing);
@@ -317,7 +317,7 @@ void main() {
     await tester.pump();
     expect(find.byKey(const ValueKey('saved-server-failed')), findsOne);
     expect(find.text(_titles.first), findsOneWidget);
-    expect(find.text('Updated 12m ago'), findsOneWidget);
+    expect(find.text('Updated 12 min ago'), findsOneWidget);
     expect(find.textContaining('Refreshing'), findsNothing);
     // The raw failure is not copy on the page.
     expect(find.text('connection refused'), findsNothing);

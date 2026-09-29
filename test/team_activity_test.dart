@@ -556,20 +556,22 @@ void main() {
         // Row: the needs-you word, kind, what it belongs to, the server and
         // the age.
         expect(
-          find.text('Needs you · Decision · Agent Wolf · Workstation · 2m ago'),
+          find.text(
+            'Needs you · Decision · Agent Wolf · Workstation · 2 min ago',
+          ),
           findsOneWidget,
         );
         expect(
           find.text(
             'Needs you · Run failed · Task Add subtract() to calc.py · '
-            'Workstation · 1d ago',
+            'Workstation · Yesterday',
           ),
           findsOneWidget,
         );
         expect(
           find.text(
             'Needs you · Agent blocked · Work Write tests for calc.py · '
-            'Workstation · 9m ago',
+            'Workstation · 9 min ago',
           ),
           findsOneWidget,
         );

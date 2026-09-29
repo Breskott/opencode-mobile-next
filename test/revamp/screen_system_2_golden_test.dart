@@ -62,7 +62,7 @@ Widget _page() => KitScreen(
     children: [
       for (final (title, detail) in const [
         ('Fix the login redirect', 'Laptop · 4 min ago'),
-        ('Tidy the settings page', 'Laptop · 1 h ago'),
+        ('Tidy the settings page', 'Laptop · 1h ago'),
         ('Release notes for 1.0.45', 'This phone · yesterday'),
       ])
         KitRow(

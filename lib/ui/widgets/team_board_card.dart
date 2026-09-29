@@ -5,6 +5,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../domain/relative_age.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/team_board.dart';
 import '../app_theme.dart';
@@ -26,14 +27,10 @@ String teamBoardColumnWord(AppLocalizations l10n, TeamBoardColumn column) =>
       TeamBoardColumn.done => l10n.teamBoardColumnDone,
     };
 
-/// How long since a card last changed, coarsely: "just now", "12 min ago",
-/// "3 h ago", "2 d ago".
-String teamBoardAgeLabel(AppLocalizations l10n, Duration elapsed) {
-  if (elapsed.inMinutes < 1) return l10n.teamBoardAgeJustNow;
-  if (elapsed.inHours < 1) return l10n.teamBoardAgeMinutes(elapsed.inMinutes);
-  if (elapsed.inDays < 1) return l10n.teamBoardAgeHours(elapsed.inHours);
-  return l10n.teamBoardAgeDays(elapsed.inDays);
-}
+/// How long since a card last changed, coarsely: "Just now", "12 min ago",
+/// "3h ago", "Yesterday".
+String teamBoardAgeLabel(AppLocalizations l10n, Duration elapsed) =>
+    relativeAgeLabel(elapsed, l10n: l10n);
 
 /// The priority's one word.
 String teamBoardPriorityWord(AppLocalizations l10n, WorkPriority priority) =>

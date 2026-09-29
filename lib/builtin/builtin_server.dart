@@ -9,6 +9,7 @@ import '../api/server_probe.dart';
 import '../l10n/app_localizations.dart';
 import '../state/profiles.dart';
 import 'builtin_linux.dart';
+import 'deliberate_stop.dart';
 import 'setup/setup_engine.dart' show ChannelSetupEngine;
 import 'team/builtin_team.dart';
 
@@ -427,6 +428,7 @@ class BuiltinServerStarter extends ChangeNotifier {
     }
     _starting = false;
     if (failure == null) {
+      DeliberateServerStop.clearLater(profile.id);
       _installed = true;
       _running = true;
       _readyCount++;

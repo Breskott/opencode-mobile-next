@@ -375,7 +375,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                     ),
                   ),
                 ),
-              if (!managedLocally)
+              // The app's own server has no Linux service to set up.
+              if (!managedLocally && !looksLikeInAppServer(profile))
                 KitRow(
                   key: const Key('host-management-entry'),
                   leading: KitRow.icon(context, AppIconography.terminal),

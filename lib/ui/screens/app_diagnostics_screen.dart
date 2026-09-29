@@ -35,7 +35,7 @@ enum _Send { github, share }
 /// One list under the form, newest first: the errors kept on this phone
 /// (persisted across restarts by [ReportProblem] when it opened, else this
 /// run's), with Clear on its header (app-diagnostics-clear-sheet), then the
-/// Performance timings ([PerfTraceSection]).
+/// Performance timings ([PerfTraceSection]) folded under Details.
 ///
 /// Built from kit parts only. [controller] is optional: a page opened from
 /// any error ([openReportProblem]) uses the app-wide diagnostics.
@@ -447,7 +447,9 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                 ),
               ],
               SizedBox(height: tokens.sectionGap),
-              const PerfTraceSection(),
+              // Timings are for whoever reads the report, not the person
+              // filling it in: folded, last, still part of the report.
+              const KitDetailsFold(child: PerfTraceSection()),
             ],
           );
         },

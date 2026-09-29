@@ -58,3 +58,37 @@ const _markers = [
 final _truncatedMarker = RegExp(r'(<[A-Za-z_|/]*)\s*(?:…|\.\.\.)\s*$');
 
 final _trailingEllipsis = RegExp(r'[\s…]*(?:\.\.\.)?[\s…]*$');
+
+/// The plain title a forked conversation gets: "Copy of" plus the original.
+/// Null when the original has no readable title (the server's dated
+/// placeholder), so the caller leaves the fork alone and the display layer
+/// shows "New conversation".
+String? forkedSessionTitle(String? originalTitle) {
+  final title = displaySessionTitleText(originalTitle);
+  if (title.isEmpty || isPlaceholderSessionTitle(title)) return null;
+  return 'Copy of $title';
+}
+
+/// True for the server's own placeholder title, `New session - 2026-09-28T10:00:00Z`
+/// (or any title that is only such a dated stamp).
+bool isPlaceholderSessionTitle(String title) =>
+    _placeholderTitle.hasMatch(title.trim());
+
+final RegExp _placeholderTitle = RegExp(
+  r'^(?:(?:New|Child)\s+session|Fork(?:ed)?(?:\s+session)?)?\s*[-:\u2013]?\s*'
+  r'\d{4}-\d{2}-\d{2}T[\d:.]+(?:Z|[+-]\d{2}:?\d{2})?$',
+  caseSensitive: false,
+);
+
+/// [title] with any ISO timestamp cut out, for titles that only contain
+/// one in passing ("Fix login 2026-09-28T10:00:00.000Z"). Empty when nothing
+/// else is left.
+String stripIsoStamp(String title) => title
+    .replaceAll(_isoStamp, '')
+    .replaceAll(RegExp(r'\s*[-:\u2013]\s*$'), '')
+    .replaceAll(RegExp(r'\s{2,}'), ' ')
+    .trim();
+
+final RegExp _isoStamp = RegExp(
+  r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?',
+);

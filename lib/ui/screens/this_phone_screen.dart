@@ -910,6 +910,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
           secondary = KitAction(
             key: const ValueKey('this-phone-stop'),
             label: l10n.thisPhoneStop,
+            destructive: true,
             onPressed: () => unawaited(_stop()),
           );
         case PhoneHostState.checking ||

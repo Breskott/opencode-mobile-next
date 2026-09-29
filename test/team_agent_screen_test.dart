@@ -485,7 +485,7 @@ void main() {
       expect(
         find.descendant(
           of: row,
-          matching: find.text('Working · Sync engine · 12m ago'),
+          matching: find.text('Working · Sync engine · 12 min ago'),
         ),
         findsOneWidget,
       );

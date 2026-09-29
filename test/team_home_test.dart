@@ -1027,7 +1027,7 @@ void main() {
       expect(find.textContaining('Waiting for you'), findsOneWidget);
       expect(find.textContaining('Crashed'), findsOneWidget);
       // Fox works the fixture's bead, last seen 12 minutes ago.
-      expect(find.textContaining('12m ago'), findsOneWidget);
+      expect(find.textContaining('12 min ago'), findsOneWidget);
       // The one list ends with asleep agents; there is no state section.
       expect(
         find.byKey(const ValueKey('team-home-suspended-group')),

@@ -7,6 +7,7 @@ import 'package:opencode_sdk/opencode_sdk.dart' as sdk;
 import '../domain/server_gateway.dart';
 import '../ui/kit/kit_redact.dart';
 import '../domain/session_command_handoff.dart';
+import '../domain/session_title_text.dart';
 import '../domain/parallel_requests.dart';
 import 'mcp_oauth.dart';
 import 'models.dart';
@@ -2429,6 +2430,22 @@ class SdkProductRepository extends ProductRepository
         final fork = response.data;
         if (fork == null) {
           throw const ProductException('Server returned no forked session');
+        }
+        // The server dates a fork like a brand-new session; give it a plain
+        // name (best effort: a failed rename never fails the fork).
+        try {
+          final original = await getSessionDetails(id);
+          final title = forkedSessionTitle(original.title);
+          if (title != null) {
+            await _client.getSessionApi().sessionUpdate(
+              sessionID: fork.id,
+              directory: _directory,
+              workspace: _workspace,
+              sessionUpdateRequest: sdk.SessionUpdateRequest(title: title),
+            );
+          }
+        } on Object {
+          // Leave the server's title; the display layer hides its stamp.
         }
         return fork.id;
       });

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../builtin/builtin_linux.dart';
 import '../builtin/builtin_server.dart';
+import '../builtin/deliberate_stop.dart';
 import '../builtin/setup/setup_contract.dart';
 import '../l10n/app_localizations.dart';
 import '../termux/bridge.dart';
@@ -283,6 +284,10 @@ class InAppPhoneHost extends PhoneHost {
     notifyListeners();
     try {
       await linux.stopServer();
+      final stopped = profile;
+      if (stopped != null) {
+        await DeliberateServerStop.mark(connection.store.prefs, stopped.id);
+      }
     } on BuiltinLinuxException catch (error) {
       _failure = error.message;
       _problem = PhoneHostProblem.stop;

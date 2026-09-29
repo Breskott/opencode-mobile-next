@@ -343,9 +343,7 @@ class _ProviderRow extends StatelessWidget {
     final word = busy
         ? l10n.e7LibraryUpdating
         : presented.connected && notLoaded
-        ? (notUsable
-              ? l10n.integrationsSignedInUnusable
-              : l10n.integrationsSignedInNotLoaded)
+        ? l10n.integrationsSignedInUnusable
         : presented.connected
         ? l10n.e7LibraryConnected
         : l10n.e7LibraryNotConnected;

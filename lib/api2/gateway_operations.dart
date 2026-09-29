@@ -20,6 +20,7 @@ import '../api/product_repository.dart' show ProductRepository;
 import '../domain/server_gateway.dart';
 import '../ui/kit/kit_redact.dart';
 import '../domain/parallel_requests.dart';
+import '../domain/session_title_text.dart';
 import '../domain/plugin_inventory.dart';
 import 'plugin_mapper.dart';
 import 'client.dart';
@@ -571,6 +572,14 @@ class Api2OperationsGateway extends ProductRepository
         final forked = Api2Session.fromJson(_dataMap(json));
         if (forked == null) {
           throw const ProductException('OpenCode returned no forked session');
+        }
+        // Give the copy a plain name (best effort; see the v1 client).
+        try {
+          final original = await client.session(id);
+          final title = forkedSessionTitle(original.title);
+          if (title != null) await client.renameSession(forked.id, title);
+        } on Object {
+          // Leave the server's title; the display layer hides its stamp.
         }
         return forked.id;
       });

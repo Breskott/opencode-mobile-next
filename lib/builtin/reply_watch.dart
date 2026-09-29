@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/models.dart' show EventEnvelope;
 import '../diagnostics/perf_trace.dart';
@@ -44,7 +46,39 @@ class ReplyTiming {
   final bool failed;
 
   final DateTime finishedAt;
+
+  Map<String, Object?> toJson() => {
+    'inApp': inApp,
+    'totalMs': total.inMilliseconds,
+    'firstMs': firstToken?.inMilliseconds,
+    'serverFirstMs': serverFirstToken?.inMilliseconds,
+    'model': model,
+    'failed': failed,
+    'finishedAt': finishedAt.millisecondsSinceEpoch,
+  };
+
+  static ReplyTiming? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final total = json['totalMs'];
+    final finished = json['finishedAt'];
+    if (total is! num || finished is! num) return null;
+    Duration? ms(Object? v) =>
+        v is num ? Duration(milliseconds: v.toInt()) : null;
+    return ReplyTiming(
+      inApp: json['inApp'] == true,
+      total: Duration(milliseconds: total.toInt()),
+      firstToken: ms(json['firstMs']),
+      serverFirstToken: ms(json['serverFirstMs']),
+      model: json['model']?.toString(),
+      failed: json['failed'] == true,
+      finishedAt: DateTime.fromMillisecondsSinceEpoch(finished.toInt()),
+    );
+  }
 }
+
+/// Where the last in-app reply timing is kept between launches (device-wide,
+/// not per server: only the in-app server is ever timed for this row).
+const replySpeedPreferenceKey = 'oc.replySpeed.inApp';
 
 /// What [ReplyWatch] reads from the connection. The app passes
 /// [ConnectionReplySource]; tests pass their own.
@@ -101,14 +135,43 @@ class ReplyWatch extends ChangeNotifier {
     this.hold = const Duration(minutes: 10),
     this.renewEvery = const Duration(minutes: 5),
     this.ceiling = const Duration(hours: 6),
+    Future<String?> Function()? loadLast,
+    Future<void> Function(String json)? saveLast,
   }) : _holdAwake = holdAwake,
+       _saveLast = saveLast,
        _nowMicros = nowMicros ?? (() => PerfTrace.nowMicros),
-       _now = now ?? DateTime.now;
+       _now = now ?? DateTime.now {
+    if (loadLast != null) unawaited(_restore(loadLast));
+  }
 
-  /// The watch that holds the in-app server's wake lock through [linux].
+  /// The watch that holds the in-app server's wake lock through [linux];
+  /// its last in-app reply timing survives a relaunch.
   factory ReplyWatch.forLinux(BuiltinLinux linux) => ReplyWatch(
     holdAwake: (on, hold) => linux.holdAwakeForWork(on, hold: hold),
+    loadLast: () async {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(replySpeedPreferenceKey);
+    },
+    saveLast: (json) async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(replySpeedPreferenceKey, json);
+    },
   );
+
+  final Future<void> Function(String json)? _saveLast;
+
+  Future<void> _restore(Future<String?> Function() load) async {
+    try {
+      final raw = await load();
+      if (raw == null || _disposed || _lastInApp != null) return;
+      final timing = ReplyTiming.fromJson(jsonDecode(raw));
+      if (timing == null) return;
+      _lastInApp = timing;
+      notifyListeners();
+    } catch (_) {
+      // Nothing kept, or unreadable: the row simply waits for the next reply.
+    }
+  }
 
   final Future<bool> Function(bool on, Duration hold) _holdAwake;
   final int Function() _nowMicros;
@@ -126,6 +189,7 @@ class ReplyWatch extends ChangeNotifier {
   bool _wantAwake = false;
   bool _holding = false;
   bool _capped = false;
+
   /// Renewals in this stretch: the stretch's length in [renewEvery] steps,
   /// counted on the timer so a changed wall clock cannot stretch it.
   int _renewals = 0;
@@ -325,7 +389,17 @@ class ReplyWatch extends ChangeNotifier {
       error: failed ? 'reply failed' : null,
     );
     _last = timing;
-    if (run.inApp) _lastInApp = timing;
+    if (run.inApp) {
+      _lastInApp = timing;
+      final save = _saveLast;
+      if (save != null) {
+        unawaited(
+          Future<void>.sync(
+            () => save(jsonEncode(timing.toJson())),
+          ).catchError((Object _) {}),
+        );
+      }
+    }
     if (!_disposed) notifyListeners();
   }
 

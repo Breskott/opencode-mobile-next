@@ -296,7 +296,7 @@ class ServerProfile {
 
   static ServerProfile fromJson(Map<String, dynamic> j) => ServerProfile(
     id: j['id'] as String,
-    name: (j['name'] ?? '').toString(),
+    name: plainServerName((j['name'] ?? '').toString()),
     baseUrl: (j['baseUrl'] ?? '').toString(),
     backend: switch (j['backend']) {
       'codex' => ServerBackend.codex,
@@ -311,6 +311,20 @@ class ServerProfile {
     serverVersion: j['serverVersion']?.toString(),
     orchestration: OrchestrationConfig.fromJson(j['orchestration']),
   );
+}
+
+/// A server's name as people should read it: a bare IP address (what the
+/// name defaulted to before) becomes "Computer at 192.168.1.5"; a host name
+/// or a name the person typed is kept as is.
+String plainServerName(String name) {
+  final value = name.trim();
+  final ipv4 = RegExp(r'^\d{1,3}(?:\.\d{1,3}){3}$').hasMatch(value);
+  final ipv6 =
+      value.contains(':') && RegExp(r'^[0-9a-fA-F:.\[\]]+$').hasMatch(value);
+  if (ipv4 || ipv6) {
+    return 'Computer at ${value.replaceAll(RegExp(r'[\[\]]'), '')}';
+  }
+  return name;
 }
 
 // `isLoopbackHost` lives in `lib/domain/loopback_host.dart` (Flutter-free)
