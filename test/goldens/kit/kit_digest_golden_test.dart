@@ -157,7 +157,7 @@ void main() {
       testWidgets('text2 $size $mode', (tester) async {
         await kitGalleryPart(
           tester,
-          name: kitGalleryName('kit_digest_text2', size, light: light),
+          name: kitGalleryName('kit_digest_summary_text2', size, light: light),
           size: size,
           light: light,
           textScale: 2,
