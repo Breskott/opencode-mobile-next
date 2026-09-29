@@ -24640,4 +24640,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiStartOnPhone => 'Start AI Team on this phone';
+
+  @override
+  String get chatCollapseAllSteps => 'طي كل الخطوات';
 }

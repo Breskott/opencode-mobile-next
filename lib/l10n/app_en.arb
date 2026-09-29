@@ -14774,7 +14774,7 @@
       }
     }
   },
-  "teamWatchBannerRole": "Watching the {role} · {state}",
+  "teamWatchBannerRole": "Watching {role} · {state}",
   "@teamWatchBannerRole": {
     "description": "Chat status line while watching an AI Team agent that has no name of its own: its role in plain words and its state as its session reports it",
     "placeholders": {

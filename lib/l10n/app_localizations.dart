@@ -21963,7 +21963,7 @@ abstract class AppLocalizations {
   /// Chat status line while watching an AI Team agent that has no name of its own: its role in plain words and its state as its session reports it
   ///
   /// In en, this message translates to:
-  /// **'Watching the {role} · {state}'**
+  /// **'Watching {role} · {state}'**
   String teamWatchBannerRole(String role, String state);
 
   /// Live output opened instead of the agent's conversation: the connected server cannot list conversations, or the agent names no folder
@@ -38575,6 +38575,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start AI Team on this phone'**
   String get teamUiStartOnPhone;
+
+  /// Top bar action on the watching chat page: folds every open step and fold in the transcript; also its tooltip and spoken name
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse all steps'**
+  String get chatCollapseAllSteps;
 }
 
 class _AppLocalizationsDelegate

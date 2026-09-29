@@ -118,7 +118,7 @@ void main() {
         'ses_furiosa',
       );
       // Who, and its state as its session tells it.
-      expect(find.text('Watching the Worker · Working'), findsOneWidget);
+      expect(find.text('Watching Worker · Working'), findsOneWidget);
       // Opened from its own page: no way back there but Back.
       expect(_key('chat-watching-details'), findsNothing);
       expect(

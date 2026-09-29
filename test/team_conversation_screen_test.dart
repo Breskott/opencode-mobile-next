@@ -234,7 +234,7 @@ void main() {
 
     expect(find.byType(ChatScreen), findsOneWidget);
     // Who, and its state from its session (P3.6).
-    expect(find.text('Watching the Worker · Working'), findsOneWidget);
+    expect(find.text('Watching Worker · Working'), findsOneWidget);
     expect(find.text('Claimed ma-1.'), findsOneWidget);
     // Messaging it is this conversation's composer.
     expect(_key('chat-watching-message-field'), findsOneWidget);

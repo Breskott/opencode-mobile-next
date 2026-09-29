@@ -13384,7 +13384,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String teamWatchBannerRole(String role, String state) {
-    return 'Watching the $role · $state';
+    return 'Watching $role · $state';
   }
 
   @override
@@ -24519,4 +24519,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiStartOnPhone => 'Start AI Team on this phone';
+
+  @override
+  String get chatCollapseAllSteps => 'Collapse all steps';
 }

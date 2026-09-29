@@ -136,7 +136,7 @@ void main() {
         find.text('Claimed ma-1. Adding the toggle to Settings.'),
         findsOneWidget,
       );
-      expect(find.text('Watching the Worker · Working'), findsOneWidget);
+      expect(find.text('Watching Worker · Working'), findsOneWidget);
       // Messaging it is the conversation's composer.
       expect(_key('chat-watching-message-field'), findsOneWidget);
 
