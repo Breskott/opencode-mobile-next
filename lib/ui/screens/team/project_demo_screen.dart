@@ -60,7 +60,10 @@ class _TeamProjectDemoScreenState extends State<TeamProjectDemoScreen> {
       loading: !_failed,
       loadingLabel: copy.teamProjectLoad,
       body: _failed
-          ? KitNotice.error(message: copy.teamProjectLoadFailure, retry: _load)
+          ? KitNotice.error(
+              message: copy.teamProjectLoadFailure,
+              retry: KitAction(label: copy.teamProjectRetry, onPressed: _load),
+            )
           : const SizedBox.shrink(),
     );
   }
