@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 
 import '../../api/models.dart';
 import '../../api/product_repository.dart';
@@ -12,7 +13,6 @@ import '../../builtin/setup/setup_contract.dart' show SetupProgress;
 import '../../diagnostics/report_problem_startup.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
-import '../../state/automation_policy.dart';
 import '../../state/interaction_defaults.dart' show DefaultReason;
 import '../../state/connection.dart';
 import '../../state/offline_queue.dart';
@@ -31,11 +31,11 @@ import '../widgets/product_states.dart';
 import '../widgets/safety_confirms.dart';
 import 'app_diagnostics_screen.dart' show reportProblemErrorCount;
 import 'settings/ai_setup_screen.dart';
-import 'automation_settings_screen.dart' show AutomationSettingsSections;
+import 'automation_settings_screen.dart' show AutomationSettingsScreen;
+import 'keep_running_screen.dart' show KeepRunningScreen;
 import 'host_management_screen.dart';
 import 'server_capabilities_screen.dart';
 import 'this_phone_screen.dart' show openThisPhone;
-import 'team/start_run_sheet.dart' show teamSupervisionCopy;
 import '../widgets/team_discover.dart';
 import '../search/search_index.dart';
 import 'usage_hub_screen.dart';
@@ -61,11 +61,10 @@ enum SettingsGroup {
   /// The model, providers and accounts, tools, and the AI Team.
   agent('agent'),
 
-  /// What runs by itself, the two transcript switches, the default
-  /// shell and voice.
+  /// The two transcript switches, the default shell and voice.
   conversations('conversations'),
 
-  /// Notifications, keep running, appearance, privacy and usage of this app.
+  /// Notifications and background, appearance, privacy and usage of this app.
   thisApp('this-app'),
 
   /// Setup guide, Report a problem, Available on this server and About; no
@@ -78,15 +77,16 @@ enum SettingsGroup {
   final String slug;
 }
 
-/// The one Settings hub: a search field, then five groups of rows. It is the
+/// The one Settings hub: five groups of rows. Search is the header's
+/// command launcher, which reads the same index. It is the
 /// fourth tab of the shell ([embedded]) and the screen every other entry
 /// point pushes, so a setting has exactly one home. Rows the connected server
 /// cannot serve are absent, and the group says how many under its panel in
 /// one muted line with a Why (target-ia §1.3); a group with no rows is
 /// absent.
 ///
-/// Kit only (screen-settings-1): a [KitScreen] with a pinned
-/// [KitSearchField] and one [KitRowGroup] panel per group. From expanded it
+/// Kit only (screen-settings-1): a [KitScreen] with one [KitRowGroup] panel
+/// per group. From expanded it
 /// is [KitScreen.twoPane]: the groups are the list pane and the chosen
 /// group's rows fill the detail pane; a row still opens its page.
 class SettingsScreen extends StatefulWidget {
@@ -110,12 +110,10 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _search = TextEditingController();
   final _groupKeys = {
     for (final group in SettingsGroup.values)
       group: GlobalKey(debugLabel: 'settings-group-${group.slug}'),
   };
-  String _query = '';
   Health? _health;
   String? _healthError;
   bool _checking = false;
@@ -351,24 +349,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ],
       SettingsGroup.conversations: [
-        // What runs by itself (P6.1): the team's level when there is a
-        // team; Always allowed actions sits inside it.
-        row(
-          'settings-automation',
-          value:
-              AutomationSettingsSections.of(
-                controller,
-                team: scope.hasTeam,
-              ).team
-              ? teamSupervisionCopy(
-                  l10n,
-                  AutomationPolicyController.forProfile(
-                    controller.store.prefs,
-                    profile!.id,
-                  ).value.supervision.team,
-                ).$1
-              : null,
-        ),
         // Two switches in place of the old Transcript display sheet: the
         // same stored values the conversation menu flips, for every
         // conversation on this device.
@@ -403,15 +383,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         row('settings-voice'),
       ],
       SettingsGroup.thisApp: [
-        // One screen for everything that notifies. The key predates the
-        // merge and is kept for tests and deep links.
+        // One screen for everything that notifies or keeps the app running:
+        // notifications, keep running and what runs by itself. The key
+        // predates the merge and is kept for tests and deep links.
         row(
           'settings-category-background',
           value: platformCapabilities.supportsBackgroundService
               ? copy.notifyHubBackgroundSummary(_backgroundSummary(controller))
               : null,
         ),
-        row('settings-keep-running'),
         row(
           'settings-category-appearance',
           value: appearanceLabel(controller.appearance.value, context),
@@ -518,30 +498,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         : column;
   }
 
-  /// A search result section ("Inside settings", "Go to").
-  Widget _resultSection(
-    ({String slug, String title, List<SearchEntry> entries}) section,
-    SearchScope scope,
-  ) {
-    final copy = _settingsCopy(context);
-    return KitRowGroup(
-      key: ValueKey('search-results-${section.slug}'),
-      label: section.title,
-      children: [
-        for (final entry in section.entries)
-          _CategoryRow(
-            rowKey: 'search-result-${entry.id}',
-            icon: entry.icon,
-            title: entry.title,
-            subtitle: entry.parent == null
-                ? null
-                : copy.discoverSearchIn(entry.parent!),
-            onTap: () => _openEntry(entry, scope),
-          ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final controller = widget.controller;
@@ -552,67 +508,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final entries = {
       for (final entry in searchIndex(copy, scope)) entry.id: entry,
     };
-    // One index answers the hub's search: the rows it draws itself, what
-    // sits inside their screens, and the places outside Settings.
-    final searching = _query.isNotEmpty;
-    final matches = searching
-        ? searchEntries(copy, scope, _query)
-        : const <SearchEntry>[];
-    final matchedIds = {for (final entry in matches) entry.id};
     final allGroups = [
       for (final group in _groups(controller, entries, scope))
         (group: group, rows: group.rows),
     ].where((entry) => entry.rows.isNotEmpty).toList();
-    final groups = [
-      for (final entry in allGroups)
-        (
-          group: entry.group,
-          rows: searching
-              ? entry.rows
-                    .where((row) => matchedIds.contains(row.entry.id))
-                    .toList()
-              : entry.rows,
-        ),
-    ].where((entry) => entry.rows.isNotEmpty).toList();
-    // This hub is the Settings tab, so that result would lead nowhere new.
-    final others = [
-      for (final entry in matches)
-        if (entry.kind != SearchEntryKind.hubRow && entry.id != 'tab-settings')
-          entry,
-    ];
-    final resultSections = [
-      (
-        slug: 'inside',
-        title: copy.discoverSearchInsideSettings,
-        entries: [
-          for (final entry in others)
-            if (entry.kind == SearchEntryKind.insideSettings) entry,
-        ],
-      ),
-      (
-        slug: 'places',
-        title: copy.discoverSearchGoTo,
-        entries: [
-          for (final entry in others)
-            if (entry.kind == SearchEntryKind.destination) entry,
-        ],
-      ),
-    ].where((section) => section.entries.isNotEmpty).toList();
-    final matchCount =
-        groups.fold<int>(0, (total, entry) => total + entry.rows.length) +
-        others.length;
-
-    void clear() {
-      _search.clear();
-      setState(() => _query = '');
-    }
-
-    final search = KitSearchField(
-      fieldKey: const Key('library-search'),
-      controller: _search,
-      label: l10n.librarySearchHint,
-      onChanged: (value) => setState(() => _query = value.trim().toLowerCase()),
-    );
+    final groups = allGroups;
     final wide = KitScreen.showsDetail(context);
 
     // Not a lazy list: every group must exist for an entry point to scroll
@@ -630,40 +530,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (searching && matchCount == 0)
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
-                  child: KitSearchNoMatch(
-                    key: const Key('library-search-summary-none'),
-                    query: _search.text.trim(),
-                    onClear: clear,
-                  ),
-                ),
-              if (searching && matchCount > 0)
-                Padding(
-                  padding: EdgeInsetsDirectional.only(
-                    start: tokens.gutter,
-                    end: tokens.gutter,
-                    bottom: tokens.space4,
-                  ),
-                  child: KitText(
-                    l10n.librarySearchResults(matchCount, _search.text.trim()),
-                    key: const Key('library-search-summary'),
-                    role: KitTextRole.secondary,
-                  ),
-                ),
               for (final (index, entry) in groups.indexed) ...[
                 if (index > 0) SizedBox(height: tokens.sectionGap),
-                _groupView(
-                  entry,
-                  scrollTarget: scrollTargets,
-                  // A search lists what it found, not what is missing.
-                  note: !searching,
-                ),
-              ],
-              for (final section in resultSections) ...[
-                SizedBox(height: tokens.sectionGap),
-                _resultSection(section, scope),
+                _groupView(entry, scrollTarget: scrollTargets),
               ],
             ],
           ),
@@ -678,7 +547,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!wide) {
       return KitScreen(
         topBar: topBar,
-        search: search,
         // The health check of "This server" is the one thing that loads here.
         loading: _checking,
         loadingLabel: copy.e7SettingsUi11,
@@ -688,7 +556,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     // Expanded and wider: the groups are the list, the chosen group fills
-    // the detail pane. A search shows its results in the list pane.
+    // the detail pane.
     final selected =
         allGroups
             .where((entry) => entry.group.group == _selected)
@@ -719,13 +587,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     return KitScreen.twoPane(
       topBar: topBar,
-      search: search,
       loading: _checking,
       loadingLabel: copy.e7SettingsUi11,
       listPaneKey: const ValueKey('settings-list-pane'),
       detailPaneKey: const ValueKey('settings-detail-pane'),
-      list: searching ? hubList(scrollTargets: false) : index,
-      detail: selected == null || searching
+      list: index,
+      detail: selected == null
           ? null
           : ListView(
               key: ValueKey('settings-detail-${selected.group.group.slug}'),
@@ -738,9 +605,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       emptyDetail: KitStateView(
         key: const ValueKey('settings-detail-empty'),
         icon: AppIconography.search,
-        title: searching
-            ? l10n.settingsHubDetailSearching
-            : l10n.settingsHubDetailEmpty,
+        title: l10n.settingsHubDetailEmpty,
       ),
     );
   }
@@ -748,7 +613,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     widget.controller.removeListener(_connectionChanged);
-    _search.dispose();
     super.dispose();
   }
 }

@@ -1,9 +1,11 @@
 part of '../settings_screen.dart';
 
-/// The one Notifications screen (`notifications-settings`): what notifies,
-/// quiet hours, the background connection and saved-server monitoring. Quiet
-/// hours and Wi-Fi only exist once, here, and both the saved-server monitor
-/// and the quota monitor read them.
+/// The one "Notifications and background" screen (`notifications-settings`):
+/// what notifies, quiet hours, saved-server monitoring, the background
+/// connection, Keep running (what to allow on this phone) and What runs by
+/// itself (the AI Team's level, Always allowed actions), in that order, one
+/// list. Quiet hours and Wi-Fi only exist once, here, and both the
+/// saved-server monitor and the quota monitor read them.
 ///
 /// A row is absent when this device cannot do it, and a section with no rows
 /// is absent. Kit only (screen-settings-1): each section is a [KitRowGroup]
@@ -12,8 +14,9 @@ part of '../settings_screen.dart';
 class NotificationsSettingsScreen extends StatefulWidget {
   final ConnectionController controller;
 
-  /// A section slug (`what`, `quiet`, `background`, `servers`) a search
-  /// result means: the screen opens scrolled to it.
+  /// A section slug (`what`, `quiet`, `servers`, `background`,
+  /// `keep-running`, `automation`) a search result means: the screen opens
+  /// scrolled to it.
   final String? initialSection;
 
   const NotificationsSettingsScreen({
@@ -154,6 +157,34 @@ class _NotificationsSettingsScreenState
     if (state == AppLifecycleState.resumed &&
         platformCapabilities.supportsBackgroundService) {
       widget.controller.backgroundLive.refreshStatus();
+    }
+  }
+
+  /// Scrolls to a section of this page (an answer in What runs by itself is
+  /// changed in the section above it).
+  void _showSection(String slug) {
+    final target = _sectionKeys[slug]?.currentContext;
+    if (target != null) {
+      Scrollable.ensureVisible(
+        target,
+        duration: const Duration(milliseconds: 250),
+      );
+    }
+  }
+
+  GlobalKey _sectionKey(String slug) => _sectionKeys.putIfAbsent(
+    slug,
+    () => GlobalKey(debugLabel: 'notifications-$slug'),
+  );
+
+  /// Keep running reads the app's providers; without any (a bare test of
+  /// this page) its section is left out.
+  bool get _hasProviders {
+    try {
+      ProviderScope.containerOf(context, listen: false);
+      return true;
+    } on StateError {
+      return false;
     }
   }
 
@@ -444,8 +475,8 @@ class _NotificationsSettingsScreenState
     final sections = <(String, String?, List<Widget>)>[
       ('what', copy.notifySectionWhat, _whatNotifies(rules)),
       ('quiet', null, _quietHours(rules)),
-      ('background', copy.notifySectionBackground, _background()),
       ('servers', copy.notifySectionServers, _savedServers(rules)),
+      ('background', copy.notifySectionBackground, _background()),
     ].where((section) => section.$3.isNotEmpty).toList();
     final hasServers =
         !controller.isIsolated &&
@@ -520,10 +551,7 @@ class _NotificationsSettingsScreenState
               for (final (index, (slug, title, rows)) in sections.indexed) ...[
                 if (index > 0) SizedBox(height: tokens.sectionGap),
                 KeyedSubtree(
-                  key: _sectionKeys.putIfAbsent(
-                    slug,
-                    () => GlobalKey(debugLabel: 'notifications-$slug'),
-                  ),
+                  key: _sectionKey(slug),
                   child: KitRowGroup(
                     key: ValueKey('notifications-section-$slug'),
                     label: title,
@@ -531,6 +559,25 @@ class _NotificationsSettingsScreenState
                   ),
                 ),
               ],
+              // What to allow on this phone so Android keeps the app running.
+              if (platformCapabilities.supportsBackgroundService &&
+                  _hasProviders) ...[
+                SizedBox(height: tokens.sectionGap),
+                KeyedSubtree(
+                  key: _sectionKey('keep-running'),
+                  child: const KeepRunningScreen(embedded: true),
+                ),
+              ],
+              // What the app and the agent do without asking first.
+              SizedBox(height: tokens.sectionGap),
+              KeyedSubtree(
+                key: _sectionKey('automation'),
+                child: AutomationSettingsScreen(
+                  controller: controller,
+                  embedded: true,
+                  onShowSection: _showSection,
+                ),
+              ),
               // How monitoring works: read once, never first (KIT-33).
               if (hasServers) ...[
                 SizedBox(height: tokens.sectionGap),

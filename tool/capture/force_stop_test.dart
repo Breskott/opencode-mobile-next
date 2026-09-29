@@ -115,7 +115,9 @@ void main() {
         );
         await _settle(tester);
         if (tab == 3) {
-          final row = find.byKey(const ValueKey('settings-keep-running'));
+          final row = find.byKey(
+            const ValueKey('settings-category-background'),
+          );
           await tester.scrollUntilVisible(
             row,
             300,
@@ -127,7 +129,7 @@ void main() {
         await writePng(
           tab == 0
               ? '$_out/1-work-tab-notice.png'
-              : '$_out/2-settings-keep-running-row.png',
+              : '$_out/2-settings-notifications-and-background-row.png',
           await capturePng(tester, boundary, pixelRatio: 1),
         );
       } finally {

@@ -1179,11 +1179,9 @@ graph LR
   settings --> integrations
   settings --> tools_hub
   settings --> team_intro
-  settings --> automation_settings
   settings --> coding_settings_shell_sheet
   settings --> voice_model_setup_sheet
   settings --> notifications_settings
-  settings --> keep_running
   settings --> appearance_settings
   settings --> privacy_settings
   settings --> usage_hub
@@ -1226,6 +1224,9 @@ graph LR
   mcp_catalog_node_sheet --> mcp_setup
   settings --> team_home
   plugins_settings --> team_intro
+  settings --> plugins_settings
+  notifications_settings --> automation_settings
+  notifications_settings --> keep_running
   integrations --> command_auth_sheet
   integrations_connect_method_sheet --> command_auth_sheet
   mcp_catalog --> mcp_catalog_node_sheet
@@ -1243,7 +1244,6 @@ graph LR
   skills -.-> embedded_file_preview_body
   plugins_settings --> embedded_team_discovery_card
   settings --> settings_disconnect_sheet
-  settings --> plugins_settings
   about --> about_open_source_tab
   settings --> app_diagnostics
   chat --> app_diagnostics
@@ -1640,8 +1640,8 @@ graph LR
 | `about-open-source-tab` | tab | 2 / 2 | `about` | _none_ |
 | `app-diagnostics` | screen | 1 / 3 | `settings`<br>`chat`<br>`command-palette-dialog` / command-palette-dialog-cmd-diagnostics<br>`system` / system-named-route-debug-via-desktop-command-diagnostics-lib-main-d-to-app-diagnostics<br>`command-launcher-sheet` / chat-command-debug<br>`team-conversation` / team-conversation-no-progress-report | app-diagnostics-clear -> `app-diagnostics-clear-sheet` |
 | `app-diagnostics-clear-sheet` | sheet | 2 / 4 | `app-diagnostics` / app-diagnostics-clear | _none_ |
-| `automation-settings` | screen | 1 / 3 | `settings` / settings-automation | automation-saved-permissions -> `saved-permissions`<br>automation-watch -> `notifications-settings` |
-| `keep-running` | screen | 1 / 2 | `settings` / settings-keep-running<br>`home-shell` / home-shell-app-exit-keep-running<br>`termux-setup-installed` / termux-setup-installed-keep-running | _none_ |
+| `automation-settings` | screen | 2 / 4 | `notifications-settings` / notifications-settings-automation | automation-saved-permissions -> `saved-permissions`<br>automation-watch -> `notifications-settings` |
+| `keep-running` | screen | 1 / 2 | `notifications-settings` / notifications-settings-keep-running<br>`home-shell` / home-shell-app-exit-keep-running<br>`termux-setup-installed` / termux-setup-installed-keep-running | _none_ |
 | `command-auth-sheet` | sheet | 2 / 4 | `integrations` / integrations-provider-connect<br>`integrations` / integrations-provider-server-signin<br>`integrations-connect-method-sheet` / integrations-connect-method-sheet-method | _none_ |
 | `commands` | screen | 2 / 4 | `capabilities` / capabilities-tab-commands | commands-row -> `run-command-dialog`<br>commands-row-open-chat -> `chat`<br>(embedded) -> `embedded-product-states` |
 | `credential-management-sheet` | sheet | 2 / 4 | `integrations` / integrations-provider-manage-accounts | credential-management-sheet-rename -> `credential-management-sheet-rename-dialog`<br>credential-management-sheet-remove -> `credential-management-sheet-remove-sheet` |
@@ -1665,18 +1665,18 @@ graph LR
 | `mcp-catalog-node-sheet` | sheet | 4 / 6 | `mcp-catalog` / mcp-catalog-switch | mcp-catalog-node-sheet-add-node -> `termux-setup-installed`<br>mcp-catalog-node-sheet-continue -> `mcp-setup` |
 | `mcp-catalog-remove-sheet` | sheet | 4 / 6 | `mcp-catalog` / mcp-catalog-switch | _none_ |
 | `mcp-setup` | screen | 2 / 4 | `integrations` / integrations-resources-empty-add<br>`mcp-add-sheet` / mcp-add-sheet-manual<br>`mcp-catalog` / mcp-catalog-switch<br>`mcp-catalog` / mcp-catalog-manual<br>`mcp-catalog-node-sheet` / mcp-catalog-node-sheet-continue | _none_ |
-| `saved-permissions` | screen | 2 / 4 | `automation-settings` / automation-saved-permissions | saved-permissions-revoke -> `saved-permissions-revoke-dialog`<br>(embedded) -> `embedded-product-states` |
-| `saved-permissions-revoke-dialog` | dialog | 3 / 5 | `saved-permissions` / saved-permissions-revoke | _none_ |
+| `saved-permissions` | screen | 3 / 5 | `automation-settings` / automation-saved-permissions | saved-permissions-revoke -> `saved-permissions-revoke-dialog`<br>(embedded) -> `embedded-product-states` |
+| `saved-permissions-revoke-dialog` | dialog | 4 / 6 | `saved-permissions` / saved-permissions-revoke | _none_ |
 | `server-capabilities` | screen | 1 / 3 | `settings` / settings-server-capabilities<br>`settings` / settings-unavailable-why<br>`tools-hub` / tools-hub-unavailable-why | _none_ |
 | `coding-settings-shell-sheet` | sheet | 1 / 3 | `settings` / settings-default-shell | _none_ |
-| `notifications-settings` | screen | 1 / 3 | `settings` / settings-category-background<br>`activity` / activity-background-hint<br>`workspace` / workspace-section-menu-background<br>`provider-quota` / provider-quota-monitor-notification-settings<br>`automation-settings` / automation-watch | notifications-settings-quiet-start -> `notifications-settings-quiet-time-dialog`<br>notifications-settings-quiet-end -> `notifications-settings-quiet-time-dialog` |
+| `notifications-settings` | screen | 1 / 3 | `settings` / settings-category-background<br>`activity` / activity-background-hint<br>`workspace` / workspace-section-menu-background<br>`provider-quota` / provider-quota-monitor-notification-settings<br>`automation-settings` / automation-watch | notifications-settings-quiet-start -> `notifications-settings-quiet-time-dialog`<br>notifications-settings-quiet-end -> `notifications-settings-quiet-time-dialog`<br>notifications-settings-automation -> `automation-settings`<br>notifications-settings-keep-running -> `keep-running` |
 | `notifications-settings-quiet-time-dialog` | dialog | 2 / 4 | `notifications-settings` / notifications-settings-quiet-start<br>`notifications-settings` / notifications-settings-quiet-end | _none_ |
 | `appearance-settings` | screen | 1 / 3 | `settings` / settings-category-appearance<br>`command-launcher-sheet` / chat-command-themes | appearance-settings-language -> `language-sheet`<br>appearance-settings-theme-pack -> `theme-pack-preview-sheet`<br>-> `voice-notices` |
 | `privacy-settings` | screen | 1 / 3 | `settings` / settings-category-privacy | privacy-settings-clear-queued -> `privacy-settings-clear-queued-sheet`<br>privacy-settings-clear-drafts -> `privacy-settings-clear-drafts-sheet` |
 | `privacy-settings-clear-drafts-sheet` | sheet | 2 / 4 | `privacy-settings` / privacy-settings-clear-drafts | _none_ |
 | `privacy-settings-clear-queued-sheet` | sheet | 2 / 4 | `privacy-settings` / privacy-settings-clear-queued | _none_ |
-| `plugins-settings` | screen | 1 / 3 | `settings`<br>`team-intro` / team-intro-set-up<br>`tools-hub` / tools-hub-plugins | plugins-team-other -> `team-home`<br>plugins-settings-ai-team-row -> `team-home`<br>plugins-settings-ai-team-row -> `team-intro`<br>-> `embedded-team-discovery-card`<br>(embedded) -> `embedded-team-discovery-card` |
-| `settings` | tab | 0 / 2 | `home-shell` / home-shell-tab-more<br>`global-shortcuts` / global-shortcuts-settings<br>`command-palette-dialog` / command-palette-dialog-cmd-settings<br>`system` / system-desktop-command-settings-shortcut-mod-4-go-3-lib-main-dart-1-to-settings<br>`system` / system-desktop-shortcut-mod-opensettings-pushes-settingsscreen-lib--to-settings | settings-category-server -> `server-settings`<br>settings-saved-servers -> `servers`<br>settings-on-this-phone -> `termux-setup-installed`<br>settings-model-and-mode -> `model-picker-sheet`<br>settings-providers -> `integrations`<br>settings-tools -> `tools-hub`<br>settings-ai-team -> `team-intro`<br>settings-automation -> `automation-settings`<br>settings-default-shell -> `coding-settings-shell-sheet`<br>settings-voice -> `voice-model-setup-sheet`<br>settings-category-background -> `notifications-settings`<br>settings-keep-running -> `keep-running`<br>settings-category-appearance -> `appearance-settings`<br>settings-category-privacy -> `privacy-settings`<br>settings-category-usage -> `usage-hub`<br>settings-setup-guide -> `guide`<br>settings-server-capabilities -> `server-capabilities`<br>settings-about-notices -> `about`<br>settings-unavailable-why -> `server-capabilities`<br>settings-ai-team -> `team-home`<br>-> `shortcuts-help-dialog`<br>(embedded) -> `embedded-product-states`<br>-> `capabilities`<br>-> `settings-disconnect-sheet`<br>-> `plugins-settings`<br>-> `app-diagnostics`<br>-> `session-import` |
+| `plugins-settings` | screen | 1 / 3 | `settings` / settings-ai-team<br>`team-intro` / team-intro-set-up<br>`tools-hub` / tools-hub-plugins | plugins-team-other -> `team-home`<br>plugins-settings-ai-team-row -> `team-home`<br>plugins-settings-ai-team-row -> `team-intro`<br>-> `embedded-team-discovery-card`<br>(embedded) -> `embedded-team-discovery-card` |
+| `settings` | tab | 0 / 2 | `home-shell` / home-shell-tab-more<br>`global-shortcuts` / global-shortcuts-settings<br>`command-palette-dialog` / command-palette-dialog-cmd-settings<br>`system` / system-desktop-command-settings-shortcut-mod-4-go-3-lib-main-dart-1-to-settings<br>`system` / system-desktop-shortcut-mod-opensettings-pushes-settingsscreen-lib--to-settings | settings-category-server -> `server-settings`<br>settings-saved-servers -> `servers`<br>settings-on-this-phone -> `termux-setup-installed`<br>settings-model-and-mode -> `model-picker-sheet`<br>settings-providers -> `integrations`<br>settings-tools -> `tools-hub`<br>settings-ai-team -> `team-intro`<br>settings-default-shell -> `coding-settings-shell-sheet`<br>settings-voice -> `voice-model-setup-sheet`<br>settings-category-background -> `notifications-settings`<br>settings-category-appearance -> `appearance-settings`<br>settings-category-privacy -> `privacy-settings`<br>settings-category-usage -> `usage-hub`<br>settings-setup-guide -> `guide`<br>settings-server-capabilities -> `server-capabilities`<br>settings-about-notices -> `about`<br>settings-unavailable-why -> `server-capabilities`<br>settings-ai-team -> `team-home`<br>settings-ai-team -> `plugins-settings`<br>-> `shortcuts-help-dialog`<br>(embedded) -> `embedded-product-states`<br>-> `capabilities`<br>-> `settings-disconnect-sheet`<br>-> `app-diagnostics`<br>-> `session-import` |
 | `settings-disconnect-sheet` | sheet | 1 / 1 | `settings`<br>`server-switcher-sheet` / server-switcher-sheet-disconnect<br>`server-switcher-sheet` / server-switcher-sheet-phone-disconnect<br>`embedded-termux-running-server-entry` / embedded-termux-running-server-entry-menu-disconnect | settings-disconnect-sheet-confirm -> `servers` |
 | `tools-hub` | screen | 1 / 3 | `settings` / settings-tools | tools-hub-mcp -> `integrations`<br>tools-hub-commands-tools -> `capabilities`<br>tools-hub-plugins -> `plugins-settings`<br>tools-hub-external-agents -> `external-agents`<br>tools-hub-unavailable-why -> `server-capabilities` |
 | `tools` | screen | 2 / 3 | `chat`<br>`capabilities` / capabilities-tab-tools | tools-choose-model-empty -> `model-picker-sheet`<br>tools-model-summary -> `model-picker-sheet`<br>tools-header-change -> `model-picker-sheet`<br>tools-callable-row -> `tools-detail-sheet`<br>(embedded) -> `embedded-product-states` |

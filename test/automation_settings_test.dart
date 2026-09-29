@@ -232,25 +232,26 @@ void main() {
     expect(_key('monitor-enabled-profile-1'), findsOneWidget);
   });
 
-  testWidgets('the hub row opens the page; Always allowed actions is inside', (
-    tester,
-  ) async {
-    final controller = await _controller();
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(_app(SettingsScreen(controller: controller)));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'Always allowed actions is a section of Notifications and background',
+    (tester) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _app(NotificationsSettingsScreen(controller: controller)),
+      );
+      await tester.pumpAndSettle();
 
-    expect(_key('saved-permissions-entry'), findsNothing);
-    await tester.ensureVisible(_key('settings-automation'));
-    await tester.pumpAndSettle();
-    await tester.tap(_key('settings-automation'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(AutomationSettingsScreen), findsOneWidget);
-    await tester.tap(_key('automation-saved-permissions'));
-    await tester.pumpAndSettle();
-    expect(find.text(_en.e7LibraryAlwaysAllowedActions), findsWidgets);
-  });
+      // No hub row of its own: What runs by itself is the page's last section.
+      expect(_key('settings-automation'), findsNothing);
+      expect(_key('saved-permissions-entry'), findsNothing);
+      await tester.ensureVisible(_key('automation-saved-permissions'));
+      await tester.pumpAndSettle();
+      await tester.tap(_key('automation-saved-permissions'));
+      await tester.pumpAndSettle();
+      expect(find.text(_en.e7LibraryAlwaysAllowedActions), findsWidgets);
+    },
+  );
 
   test('deleting a server closes its policy and sweeps the record', () async {
     final controller = await _controller(

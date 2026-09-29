@@ -13,6 +13,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/guide_screen.dart';
+import 'package:opencode_mobile/ui/search/search_index.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/tailscale_setup_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -125,11 +126,18 @@ void main() {
     // Saved servers › Add server, External agents inside Tools; the guide
     // is a hub row.
     Future<void> searchAndOpen(String query, String id) async {
-      await tester.enterText(find.byKey(const Key('library-search')), query);
-      // The field settles its query after a short pause.
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pumpAndSettle();
-      await open('search-result-$id');
+      // The header's command launcher reads the same index.
+      final context = tester.element(find.byType(SettingsScreen));
+      final scope = SearchScope.of(context, controller);
+      await searchEntries(
+        _en,
+        scope,
+        query,
+      ).firstWhere((entry) => entry.id == id).open(context, scope);
+      // Bounded: a destination may keep a progress indicator spinning.
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
     }
 
     await searchAndOpen(_en.tailscaleTitle, 'settings-tailscale');
@@ -140,26 +148,17 @@ void main() {
     }
 
     // The guide is a hub row of its own now (target-ia §1.3 row 19).
-    await tester.enterText(
-      find.byKey(const Key('library-search')),
-      _en.onboardingSetupGuide,
-    );
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pumpAndSettle();
     await open('settings-setup-guide');
     expect(find.byType(GuideScreen), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.byKey(const Key('library-search')),
-      _en.a2aTitle,
+    final scope = SearchScope.of(
+      tester.element(find.byType(SettingsScreen)),
+      controller,
     );
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey('search-result-settings-external-agents')),
-      findsOneWidget,
-    );
+    expect([
+      for (final entry in searchEntries(_en, scope, _en.a2aTitle)) entry.id,
+    ], contains('settings-external-agents'));
   });
 }

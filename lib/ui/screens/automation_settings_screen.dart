@@ -95,9 +95,20 @@ class AutomationSettingsScreen extends StatefulWidget {
     super.key,
     required this.controller,
     this.teamAvailable,
+    this.embedded = false,
+    this.onShowSection,
   });
 
   final ConnectionController controller;
+
+  /// Draw only the content, as the last section of the merged "Notifications
+  /// and background" page (no intro, no door to watching: its switch is on
+  /// that same page).
+  final bool embedded;
+
+  /// Embedded: scrolls the host page to the section an allowed answer is
+  /// changed in (`what`, `keep-running`).
+  final ValueChanged<String>? onShowSection;
 
   /// Whether the AI Team is set up for this server; null reads the
   /// connection. Tests pass it to describe a team without a host.
@@ -232,6 +243,15 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
   /// An allowed answer is changed where the system keeps it: the phone's
   /// own settings (Keep running) or Notifications.
   Future<void> _openConsentHome(InFlowConsentKind kind) async {
+    final show = widget.onShowSection;
+    if (widget.embedded && show != null) {
+      show(
+        kind == InFlowConsentKind.needsYouNotifications
+            ? 'what'
+            : 'keep-running',
+      );
+      return;
+    }
     if (kind == InFlowConsentKind.needsYouNotifications) {
       await _open(NotificationsSettingsScreen(controller: widget.controller));
     } else {
@@ -310,11 +330,13 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
       team: widget.teamAvailable,
     );
 
+    final embedded = widget.embedded;
     final answers = _answerRows(l10n);
     final Widget body;
     if (profile == null ||
         policy == null ||
         (!sections.any && answers.isEmpty && !_consentUnreadable)) {
+      if (embedded) return const SizedBox.shrink();
       body = KitStateView(
         key: const ValueKey('automation-empty'),
         icon: AppIconography.sync,
@@ -327,75 +349,88 @@ class _AutomationSettingsScreenState extends State<AutomationSettingsScreen> {
         l10n,
         among: controller.store.profiles,
       );
-      body = ListView(
-        key: const ValueKey('automation-settings-list'),
-        padding: EdgeInsetsDirectional.only(
-          start: tokens.gutter,
-          end: tokens.gutter,
-          top: tokens.space2,
-          bottom: KitScreen.endPadding(context),
-        ),
-        children: [
+      final children = <Widget>[
+        if (!embedded) ...[
           KitText(
             l10n.automationIntro(name),
             key: const ValueKey('automation-intro'),
             role: KitTextRole.secondary,
           ),
           SizedBox(height: tokens.sectionGap),
-          if (_saveFailed) ...[
-            KitNotice(
-              key: const ValueKey('automation-save-failed'),
-              tone: AppStatusTone.failure,
-              message: l10n.automationSaveFailed,
-            ),
-            SizedBox(height: tokens.sectionGap),
-          ],
-          if (_consentUnreadable || _consentSaveFailed) ...[
-            KitNotice(
-              key: const ValueKey('automation-consent-failed'),
-              tone: AppStatusTone.failure,
-              message: _consentUnreadable
-                  ? l10n.consentStorageFailed
-                  : l10n.consentSaveFailed,
-            ),
-            SizedBox(height: tokens.sectionGap),
-          ],
-          if (answers.isNotEmpty) ...[
-            KitRowGroup(
-              key: const ValueKey('automation-answers'),
-              label: l10n.consentGroupLabel,
-              margin: EdgeInsetsDirectional.zero,
-              children: answers,
-            ),
-            SizedBox(height: tokens.sectionGap),
-          ],
-          if (sections.team) ...[
-            _supervision(l10n, tokens, policy.value.supervision),
-            SizedBox(height: tokens.sectionGap),
-          ],
-          if (sections.savedRules || sections.watch)
-            KitRowGroup(
-              key: const ValueKey('automation-elsewhere'),
-              label: l10n.automationWithoutAskingLabel,
-              margin: EdgeInsetsDirectional.zero,
-              children: [
-                if (sections.savedRules)
-                  KitRow(
-                    key: const ValueKey('automation-saved-permissions'),
-                    leading: KitRow.icon(context, AppIconography.privacy),
-                    title: l10n.e7LibraryAlwaysAllowedActions,
-                    supporting: TextSpan(text: l10n.automationSavedRulesDetail),
-                    supportingMaxLines: 2,
-                    trailing: const KitChevron(),
-                    onTap: () =>
-                        _open(SavedPermissionsScreen(controller: controller)),
-                  ),
-                if (sections.watch) _watchRow(l10n, profile),
-              ],
-            ),
         ],
-      );
+        if (_saveFailed) ...[
+          KitNotice(
+            key: const ValueKey('automation-save-failed'),
+            tone: AppStatusTone.failure,
+            message: l10n.automationSaveFailed,
+          ),
+          SizedBox(height: tokens.sectionGap),
+        ],
+        if (_consentUnreadable || _consentSaveFailed) ...[
+          KitNotice(
+            key: const ValueKey('automation-consent-failed'),
+            tone: AppStatusTone.failure,
+            message: _consentUnreadable
+                ? l10n.consentStorageFailed
+                : l10n.consentSaveFailed,
+          ),
+          SizedBox(height: tokens.sectionGap),
+        ],
+        if (answers.isNotEmpty) ...[
+          KitRowGroup(
+            key: const ValueKey('automation-answers'),
+            label: l10n.consentGroupLabel,
+            margin: EdgeInsetsDirectional.zero,
+            children: answers,
+          ),
+          SizedBox(height: tokens.sectionGap),
+        ],
+        if (sections.team) ...[
+          _supervision(l10n, tokens, policy.value.supervision),
+          SizedBox(height: tokens.sectionGap),
+        ],
+        if (sections.savedRules || (sections.watch && !embedded))
+          KitRowGroup(
+            key: const ValueKey('automation-elsewhere'),
+            label: l10n.automationWithoutAskingLabel,
+            margin: EdgeInsetsDirectional.zero,
+            children: [
+              if (sections.savedRules)
+                KitRow(
+                  key: const ValueKey('automation-saved-permissions'),
+                  leading: KitRow.icon(context, AppIconography.privacy),
+                  title: l10n.e7LibraryAlwaysAllowedActions,
+                  supporting: TextSpan(text: l10n.automationSavedRulesDetail),
+                  supportingMaxLines: 2,
+                  trailing: const KitChevron(),
+                  onTap: () =>
+                      _open(SavedPermissionsScreen(controller: controller)),
+                ),
+              if (sections.watch && !embedded) _watchRow(l10n, profile),
+            ],
+          ),
+      ];
+      body = embedded
+          ? Padding(
+              padding: EdgeInsets.symmetric(horizontal: tokens.gutter),
+              child: Column(
+                key: const ValueKey('automation-settings-list'),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: children,
+              ),
+            )
+          : ListView(
+              key: const ValueKey('automation-settings-list'),
+              padding: EdgeInsetsDirectional.only(
+                start: tokens.gutter,
+                end: tokens.gutter,
+                top: tokens.space2,
+                bottom: KitScreen.endPadding(context),
+              ),
+              children: children,
+            );
     }
+    if (embedded) return body;
     return KitScreen(
       topBar: KitTopBar(title: l10n.automationTitle),
       width: KitScreenWidth.reading,

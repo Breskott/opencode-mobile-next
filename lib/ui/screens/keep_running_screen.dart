@@ -9,11 +9,26 @@ import '../../builtin/thermal_guard_teams.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/app_exit.dart';
 import '../../platform/keep_alive_advice.dart';
+import '../../state/connection.dart' show connProvider;
 import '../app_theme.dart';
 import '../kit/kit.dart';
+import 'settings_screen.dart' show NotificationsSettingsScreen;
 
-Future<void> openKeepRunningScreen(BuildContext context) =>
-    pushKitPage<void>(context, (_) => const KeepRunningScreen());
+/// Opens the keep-running controls, which live on the one "Notifications and
+/// background" page, scrolled to them.
+Future<void> openKeepRunningScreen(BuildContext context) {
+  final controller = ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(connProvider);
+  return pushKitPage<void>(
+    context,
+    (_) => NotificationsSettingsScreen(
+      controller: controller,
+      initialSection: 'keep-running',
+    ),
+  );
+}
 
 /// The step's words for [maker]'s phones.
 ({String title, String detail}) keepAliveStepText(
@@ -59,6 +74,10 @@ Future<void> openKeepRunningScreen(BuildContext context) =>
 /// running. Reached from the Settings row and from the notice after Android
 /// closed the app; it never opens by itself.
 ///
+/// It is no longer a page of its own: [embedded] draws its content as one
+/// section of the merged "Notifications and background" page. The standalone
+/// form remains for the widget's own tests.
+///
 /// Built from kit parts only (screen-system-1): one list of steps ordered
 /// by what is left to do (a step already allowed moves to the end with its
 /// word), "You're set" once nothing checkable is left, the heat pause, and
@@ -66,7 +85,10 @@ Future<void> openKeepRunningScreen(BuildContext context) =>
 /// Android 15 and newer). A settings screen the phone lacks is said in
 /// place, not in a snackbar.
 class KeepRunningScreen extends ConsumerStatefulWidget {
-  const KeepRunningScreen({super.key});
+  const KeepRunningScreen({super.key, this.embedded = false});
+
+  /// Draw only the content, as a section of another page's scroll view.
+  final bool embedded;
 
   @override
   ConsumerState<KeepRunningScreen> createState() => _KeepRunningScreenState();
@@ -113,6 +135,7 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final tokens = KitTokens.of(context);
     final info = _info;
+    if (widget.embedded && info == null) return const SizedBox.shrink();
     final maker = info == null
         ? PhoneMaker.other
         : PhoneMaker.of(info.manufacturer, info.brand);
@@ -143,6 +166,76 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
       padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
       child: child,
     );
+    final embedded = widget.embedded;
+    final intro = rails(
+      KitText(
+        l10n.keepRunningIntro(KitBidi.auto(makerName)),
+        key: const ValueKey('keep-running-intro'),
+      ),
+    );
+    // Not a lazy list: a search result that means one row (the battery step,
+    // the heat pause) must find it laid out.
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!embedded) intro,
+        if (allSet) ...[
+          SizedBox(height: tokens.space3),
+          rails(
+            KitNotice(
+              key: const ValueKey('keep-running-done'),
+              tone: AppStatusTone.ok,
+              icon: AppIconography.checkCircle,
+              title: l10n.keepRunningAllSetTitle,
+              message: l10n.keepRunningAllSetBody,
+              liveRegion: false,
+            ),
+          ),
+        ],
+        if (maker.closesOnSwipe) ...[
+          SizedBox(height: tokens.space3),
+          rails(
+            KitNotice(
+              key: const ValueKey('keep-running-swipe'),
+              icon: AppIconography.warning,
+              message: l10n.keepRunningSwipeWarning,
+              liveRegion: false,
+            ),
+          ),
+        ],
+        if (!embedded) SizedBox(height: tokens.space4),
+        KitRowGroup(
+          label: embedded ? l10n.keepRunningTitle : null,
+          children: [
+            for (final step in ordered)
+              _stepRow(context, l10n, step, maker, done(step)),
+          ],
+        ),
+        if (embedded) ...[SizedBox(height: tokens.space3), intro],
+        if (_openFailed) ...[
+          SizedBox(height: tokens.space3),
+          rails(
+            KitNotice(
+              key: const ValueKey('keep-running-open-failed'),
+              icon: AppIconography.info,
+              message: l10n.keepRunningOpenFailed,
+            ),
+          ),
+        ],
+        _ThermalGuardGroup(l10n: l10n),
+        SizedBox(height: tokens.sectionGap),
+        rails(
+          KitText(
+            l10n.keepRunningDailyLimit,
+            key: const ValueKey('keep-running-daily-limit'),
+            role: KitTextRole.secondary,
+          ),
+        ),
+        SizedBox(height: tokens.space2),
+        rails(KitText(l10n.keepRunningFootnote, role: KitTextRole.secondary)),
+      ],
+    );
+    if (embedded) return content;
     return KitScreen(
       topBar: KitTopBar(title: l10n.keepRunningTitle),
       width: KitScreenWidth.reading,
@@ -156,78 +249,7 @@ class _KeepRunningScreenState extends ConsumerState<KeepRunningScreen>
                 top: tokens.space4,
                 bottom: KitScreen.endPadding(context),
               ),
-              children: [
-                // Not a lazy list: a search result that means one row (the
-                // battery step, the heat pause) must find it laid out.
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    rails(
-                      KitText(
-                        l10n.keepRunningIntro(KitBidi.auto(makerName)),
-                        key: const ValueKey('keep-running-intro'),
-                      ),
-                    ),
-                    if (allSet) ...[
-                      SizedBox(height: tokens.space3),
-                      rails(
-                        KitNotice(
-                          key: const ValueKey('keep-running-done'),
-                          tone: AppStatusTone.ok,
-                          icon: AppIconography.checkCircle,
-                          title: l10n.keepRunningAllSetTitle,
-                          message: l10n.keepRunningAllSetBody,
-                          liveRegion: false,
-                        ),
-                      ),
-                    ],
-                    if (maker.closesOnSwipe) ...[
-                      SizedBox(height: tokens.space3),
-                      rails(
-                        KitNotice(
-                          key: const ValueKey('keep-running-swipe'),
-                          icon: AppIconography.warning,
-                          message: l10n.keepRunningSwipeWarning,
-                          liveRegion: false,
-                        ),
-                      ),
-                    ],
-                    SizedBox(height: tokens.space4),
-                    KitRowGroup(
-                      children: [
-                        for (final step in ordered)
-                          _stepRow(context, l10n, step, maker, done(step)),
-                      ],
-                    ),
-                    if (_openFailed) ...[
-                      SizedBox(height: tokens.space3),
-                      rails(
-                        KitNotice(
-                          key: const ValueKey('keep-running-open-failed'),
-                          icon: AppIconography.info,
-                          message: l10n.keepRunningOpenFailed,
-                        ),
-                      ),
-                    ],
-                    _ThermalGuardGroup(l10n: l10n),
-                    SizedBox(height: tokens.sectionGap),
-                    rails(
-                      KitText(
-                        l10n.keepRunningDailyLimit,
-                        key: const ValueKey('keep-running-daily-limit'),
-                        role: KitTextRole.secondary,
-                      ),
-                    ),
-                    SizedBox(height: tokens.space2),
-                    rails(
-                      KitText(
-                        l10n.keepRunningFootnote,
-                        role: KitTextRole.secondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              children: [content],
             ),
     );
   }

@@ -529,7 +529,7 @@ void main() {
       expect(find.text('Keyboard shortcuts'), findsNothing);
       await tester.tap(find.byIcon(AppIconography.settings));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('library-search')), findsOneWidget);
+      expect(find.byKey(const ValueKey('settings-hub-list')), findsOneWidget);
       expect(
         find.byKey(const ValueKey('library-keyboard-shortcuts')),
         findsNothing,

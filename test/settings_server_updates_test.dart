@@ -421,23 +421,16 @@ void main() {
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: SettingsScreen(controller: controller),
+        home: NotificationsSettingsScreen(controller: controller),
       ),
     );
     await tester.pumpAndSettle();
-    // Durable grants sit inside What runs by itself (P6.1), the first row
-    // of Conversations: they are about how the agent works.
-    final entry = find.byKey(const ValueKey('settings-automation'));
-    expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('settings-group-conversations')),
-        matching: entry,
-      ),
-      findsOneWidget,
+    // Durable grants sit inside What runs by itself (P6.1), the last section
+    // of Notifications and background: they are about how the agent works.
+    expect(find.byKey(const ValueKey('settings-automation')), findsNothing);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('automation-saved-permissions')),
     );
-    await tester.ensureVisible(entry);
-    await tester.pumpAndSettle();
-    await _tapVisible(tester, entry);
     await tester.pumpAndSettle();
     final inside = find.byKey(const ValueKey('automation-saved-permissions'));
     expect(find.text('Always allowed actions'), findsOneWidget);

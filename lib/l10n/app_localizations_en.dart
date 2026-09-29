@@ -365,22 +365,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Subagents are continuing in the background.';
 
   @override
-  String get librarySearchHint => 'Find settings, tools, and help';
-
-  @override
   String get libraryNoModel => 'No model selected';
-
-  @override
-  String librarySearchResults(int count, String query) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count results for “$query”.',
-      one: '1 result for “$query”.',
-      zero: 'No matching tools for “$query”.',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get chatAttachmentUnsupported =>
@@ -10651,7 +10636,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Nothing is waiting on it, but whatever it was still doing is lost. It gets a polite stop, then a forced one after 5 seconds.';
 
   @override
-  String get settingsHubGroupNotifications => 'Notifications';
+  String get settingsHubGroupNotifications => 'Notifications and background';
 
   @override
   String get settingsHubGroupUsage => 'Usage';
@@ -10722,7 +10707,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsHubSearchNotificationsAliases =>
-      'notifications alerts quiet hours background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds';
+      'notifications and background keep running what runs by itself automation always allowed actions alerts quiet hours background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds';
 
   @override
   String get settingsHubSearchAppearanceAliases =>
@@ -10855,9 +10840,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discoverSearchGoTo => 'Go to';
-
-  @override
-  String get discoverSearchInsideSettings => 'Inside settings';
 
   @override
   String discoverSearchIn(String parent) {
@@ -16409,9 +16391,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsHubDetailEmpty => 'Choose a group of settings';
 
   @override
-  String get settingsHubDetailSearching => 'Search results are in the list';
-
-  @override
   String get notifyQuietStartPicker => 'Set when quiet hours start';
 
   @override
@@ -20891,9 +20870,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get toolsHubCatalogSubtitle =>
       'Slash commands, skills, the model\'s tools and references';
-
-  @override
-  String get toolsHubPluginsSubtitle => 'Add-ons on the server and in this app';
 
   @override
   String get toolsHubExternalAgentsSubtitle =>

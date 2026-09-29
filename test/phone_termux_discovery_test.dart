@@ -9,6 +9,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
+import 'package:opencode_mobile/ui/search/search_index.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_job_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -94,19 +95,15 @@ void main() {
           find.byKey(const ValueKey('settings-on-this-phone')),
           findsNothing,
         );
-        await tester.enterText(
-          find.byKey(const Key('library-search')),
+        // The header's command launcher finds it, from the same index.
+        final context = tester.element(find.byType(SettingsScreen));
+        final result = searchEntries(
+          lookupAppLocalizations(const Locale('en')),
+          SearchScope.of(context, controller),
           'local termux',
-        );
-        await tester.pumpAndSettle();
-        final result = find.byKey(
-          const ValueKey('search-result-settings-on-this-phone'),
-        );
-        expect(result, findsOneWidget);
-        expect(
-          find.descendant(of: result, matching: find.text('On this phone')),
-          findsOneWidget,
-        );
+        ).where((entry) => entry.id == 'settings-on-this-phone');
+        expect(result, hasLength(1));
+        expect(result.single.title, 'On this phone');
         expect(find.text('Models & agents'), findsNothing);
         expect(tester.takeException(), isNull);
       },
@@ -137,14 +134,15 @@ void main() {
         addTearDown(controller.dispose);
         await tester.pumpWidget(_app(controller));
         await tester.pumpAndSettle();
-        await tester.enterText(
-          find.byKey(const Key('library-search')),
-          'termux',
-        );
-        await tester.pumpAndSettle();
-        await tester.tap(
-          find.byKey(const ValueKey('search-result-settings-on-this-phone')),
-        );
+        final context = tester.element(find.byType(SettingsScreen));
+        final scope = SearchScope.of(context, controller);
+        await searchEntries(
+              lookupAppLocalizations(const Locale('en')),
+              scope,
+              'termux',
+            )
+            .firstWhere((entry) => entry.id == 'settings-on-this-phone')
+            .open(context, scope);
         await tester.pumpAndSettle();
         // The phone setup screen; Termux is one of its other ways.
         expect(find.byType(PhoneSetupStartScreen), findsOneWidget);

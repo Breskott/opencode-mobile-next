@@ -22,6 +22,7 @@ import 'package:opencode_mobile/ui/screens/guide_screen.dart';
 import 'package:opencode_mobile/ui/screens/server_capabilities_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/tools_hub_screen.dart';
+import 'package:opencode_mobile/ui/search/search_index.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _Api extends OpenCodeApi {
@@ -104,12 +105,17 @@ final _en = lookupAppLocalizations(const Locale('en'));
 
 Finder _row(String key) => find.byKey(ValueKey(key));
 
-/// The kit search field reports a query once typing settles
-/// (KitMotion.typingSettle), not on each keystroke.
-Future<void> _settleSearch(WidgetTester tester) async {
-  await tester.pump(KitMotion.typingSettle);
-  await tester.pumpAndSettle();
-}
+/// The ids the app-wide search (the header's command launcher, which reads
+/// the same index the hub is drawn from) finds for [query]. Settings has no
+/// search field of its own any more.
+List<String> _found(ConnectionController controller, String query) => [
+  for (final entry in searchEntries(
+    _en,
+    SearchScope(controller: controller),
+    query,
+  ))
+    entry.id,
+];
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -204,38 +210,32 @@ void main() {
     },
   );
 
-  testWidgets('searching disconnect lands on the server page row', (
-    tester,
-  ) async {
-    final controller = await _controller();
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(_app(controller));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'the launcher finds disconnect and lands on the server page row',
+    (tester) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.byKey(const Key('library-search')),
-      'disconnect',
-    );
-    await _settleSearch(tester);
-    final result = _row('search-result-inside-server-disconnect');
-    expect(result, findsOneWidget);
-    expect(
-      find.descendant(
-        of: result,
-        matching: find.text(_en.discoverSearchIn(_en.settingsHubThisServer)),
-      ),
-      findsOneWidget,
-    );
+      final scope = SearchScope(controller: controller);
+      final result = searchEntries(
+        _en,
+        scope,
+        'disconnect',
+      ).firstWhere((entry) => entry.id == 'inside-server-disconnect');
+      expect(result.parent, _en.settingsHubThisServer);
 
-    await tester.tap(result);
-    await tester.pumpAndSettle();
-    expect(find.byType(ServerSettingsScreen), findsOneWidget);
-    final row = _row('server-disconnect');
-    expect(row, findsOneWidget);
-    // Opened at the row: it is on screen without scrolling.
-    final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
-    expect(tester.getBottomLeft(row).dy, lessThanOrEqualTo(screen.height));
-  });
+      await result.open(tester.element(find.byType(SettingsScreen)), scope);
+      await tester.pumpAndSettle();
+      expect(find.byType(ServerSettingsScreen), findsOneWidget);
+      final row = _row('server-disconnect');
+      expect(row, findsOneWidget);
+      // Opened at the row: it is on screen without scrolling.
+      final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+      expect(tester.getBottomLeft(row).dy, lessThanOrEqualTo(screen.height));
+    },
+  );
 
   testWidgets('search finds every hub row by its title and spec keywords', (
     tester,
@@ -271,6 +271,7 @@ void main() {
       _en.settingsHubShowTimestamps: ['settings-show-timestamps'],
       _en.settingsHubVoice: ['settings-voice'],
       _en.settingsHubGroupNotifications: ['settings-category-background'],
+      _en.keepRunningTitle: ['settings-keep-running'],
       _en.e7AppearanceTitle: ['settings-category-appearance'],
       _en.libraryModelsAgentsTitle: ['search-result-settings-models'],
       _en.libraryProvidersTitle: ['settings-providers'],
@@ -280,10 +281,8 @@ void main() {
         'search-result-settings-commands-tools',
         'settings-tools',
       ],
-      _en.teamUiPluginsTitle: [
-        'search-result-settings-category-plugins',
-        'settings-tools',
-      ],
+      // Plugins is gone as a page; its words lead to the AI Team.
+      _en.teamUiPluginsTitle: ['settings-tools', 'settings-ai-team'],
       _en.importTitle: ['search-result-library-import-session'],
       _en.settingsHubGroupUsage: ['settings-category-usage'],
       _en.usageSectionSpent: ['settings-category-usage'],
@@ -333,7 +332,7 @@ void main() {
       'mcp': ['search-result-settings-mcp', 'settings-tools'],
       'tools': ['settings-tools'],
       'skills': ['settings-tools', 'search-result-settings-commands-tools'],
-      'plugins': ['settings-tools'],
+      'plugins': ['settings-tools', 'settings-ai-team'],
       'a2a': ['settings-tools', 'search-result-settings-external-agents'],
       'thinking': ['settings-show-reasoning'],
       'timestamps': ['settings-show-timestamps'],
@@ -357,27 +356,15 @@ void main() {
       ],
     };
 
-    final search = find.byKey(const Key('library-search'));
     for (final entry in cases.entries) {
-      await tester.enterText(search, entry.key);
-      await _settleSearch(tester);
+      final ids = _found(controller, entry.key);
       for (final key in entry.value) {
-        expect(_row(key), findsOneWidget, reason: '"${entry.key}" -> $key');
+        final id = key.startsWith('search-result-')
+            ? key.substring('search-result-'.length)
+            : key;
+        expect(ids, contains(id), reason: '"${entry.key}" -> $key');
       }
-      // A search narrows: it never just shows the whole hub.
-      expect(
-        find.byKey(const Key('library-search-summary')),
-        findsOneWidget,
-        reason: entry.key,
-      );
     }
-
-    // A title search is specific: unrelated groups drop out entirely.
-    await tester.enterText(search, _en.settingsHubModelAndMode);
-    await _settleSearch(tester);
-    expect(_row('settings-group-agent'), findsOneWidget);
-    expect(_row('settings-group-this-app'), findsNothing);
-    expect(_row('settings-group-help'), findsNothing);
   });
 
   testWidgets('search still answers to the retired nouns', (tester) async {
@@ -385,18 +372,19 @@ void main() {
     // person who learned the old words must still find the rows.
     final controller = await _controller();
     addTearDown(controller.dispose);
-    await tester.pumpWidget(_app(controller));
-    await tester.pumpAndSettle();
-    final search = find.byKey(const Key('library-search'));
     for (final word in ['session', 'chat', 'conversation']) {
-      await tester.enterText(search, word);
-      await _settleSearch(tester);
-      expect(_row('settings-model-and-mode'), findsOneWidget, reason: word);
+      expect(
+        _found(controller, word),
+        contains('settings-model-and-mode'),
+        reason: word,
+      );
     }
     for (final word in ['profile', 'connection']) {
-      await tester.enterText(search, word);
-      await _settleSearch(tester);
-      expect(find.text('Saved servers'), findsOneWidget, reason: word);
+      expect(
+        _found(controller, word),
+        contains('settings-saved-servers'),
+        reason: word,
+      );
     }
   });
 
@@ -417,22 +405,19 @@ void main() {
     await tester.pumpAndSettle();
     // It lives on About now (target-ia §1.3 row 22); search finds it there.
     expect(_row('settings-show-tips-again'), findsNothing);
-    final search = find.byKey(const Key('library-search'));
+    final scope = SearchScope(controller: controller);
     for (final query in [_en.discoverShowTipsAgain, 'tips', 'hints']) {
-      await tester.enterText(search, query);
-      await _settleSearch(tester);
-      final result = _row('search-result-settings-show-tips-again');
-      expect(result, findsOneWidget, reason: query);
-      expect(
-        find.descendant(
-          of: result,
-          matching: find.text(_en.discoverSearchIn(_en.aboutTitle)),
-        ),
-        findsOneWidget,
+      final hits = searchEntries(_en, scope, query);
+      final result = hits.firstWhere(
+        (entry) => entry.id == 'settings-show-tips-again',
+        orElse: () => throw TestFailure('"$query" finds no tips row'),
       );
+      expect(result.parent, _en.aboutTitle, reason: query);
     }
     // The result opens About arrived at the row.
-    await tester.tap(_row('search-result-settings-show-tips-again'));
+    await searchEntries(_en, scope, 'tips')
+        .firstWhere((entry) => entry.id == 'settings-show-tips-again')
+        .open(tester.element(find.byType(SettingsScreen)), scope);
     await tester.pumpAndSettle();
     expect(find.byType(AboutScreen), findsOneWidget);
     final row = _row('settings-show-tips-again');
@@ -521,38 +506,9 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
-    final search = find.byKey(const Key('library-search'));
-    await tester.enterText(search, _en.e7LibraryKeyboardShortcuts);
-    await _settleSearch(tester);
-    expect(_row('search-result-library-keyboard-shortcuts'), findsOneWidget);
-    await tester.enterText(search, 'hotkeys');
-    await _settleSearch(tester);
-    expect(_row('search-result-library-keyboard-shortcuts'), findsOneWidget);
-  });
-
-  testWidgets('search recovers from no results and clears', (tester) async {
-    final controller = await _controller();
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(_app(controller));
-    await tester.pumpAndSettle();
-    final search = find.byKey(const Key('library-search'));
-    await tester.enterText(search, 'shell');
-    await _settleSearch(tester);
-    // Terminal moved to the Project tab; "shell" still finds the setting.
-    expect(_row('library-terminal'), findsNothing);
-    expect(_row('default-shell-settings-entry'), findsOneWidget);
-    expect(_row('settings-providers'), findsNothing);
-    await tester.enterText(search, 'not-a-real-tool');
-    await _settleSearch(tester);
-    expect(find.textContaining('not-a-real-tool'), findsWidgets);
-    expect(find.byType(KitRow), findsNothing);
-    for (final group in SettingsGroup.values) {
-      expect(_row('settings-group-${group.slug}'), findsNothing);
+    for (final query in [_en.e7LibraryKeyboardShortcuts, 'hotkeys']) {
+      expect(_found(controller, query), contains('library-keyboard-shortcuts'));
     }
-    await tester.tap(find.byTooltip('Clear search'));
-    await tester.pumpAndSettle();
-    expect(_row('settings-providers'), findsOneWidget);
-    expect(_row('settings-group-help'), findsOneWidget);
   });
 
   group('rows the server cannot serve are absent', () {
@@ -605,12 +561,8 @@ void main() {
         // Tools stays: plugins and external agents are not the server's.
         expect(_row('settings-tools'), findsOneWidget);
         // Absent rows are absent from search too, not dead results.
-        await tester.enterText(find.byKey(const Key('library-search')), 'mcp');
-        await _settleSearch(tester);
-        expect(_row('search-result-settings-mcp'), findsNothing);
+        expect(_found(controller, 'mcp'), isNot(contains('settings-mcp')));
         // What is about the app, not the server, survives.
-        await tester.tap(find.byTooltip('Clear search'));
-        await tester.pump();
         expect(_row('settings-category-appearance'), findsOneWidget);
         expect(_row('settings-category-server'), findsOneWidget);
       });
@@ -728,9 +680,7 @@ void main() {
     expect(controller.capabilities.terminal, isTrue);
     expect(_row('library-terminal'), findsNothing);
     expect(find.text('Terminal'), findsNothing);
-    await tester.enterText(find.byKey(const Key('library-search')), 'terminal');
-    await _settleSearch(tester);
-    expect(_row('library-terminal'), findsNothing);
+    expect(_found(controller, 'terminal'), isNot(contains('library-terminal')));
   });
 
   testWidgets('an entry point can open the hub scrolled to a group', (
@@ -817,24 +767,6 @@ void main() {
       );
     });
 
-    testWidgets('a search shows its results in the list pane', (tester) async {
-      await wide(tester, const Size(1280, 800));
-      final controller = await _controller();
-      addTearDown(controller.dispose);
-      await tester.pumpWidget(_app(controller));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byKey(const Key('library-search')), 'tips');
-      await _settleSearch(tester);
-      expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('settings-list-pane')),
-          matching: _row('search-result-settings-show-tips-again'),
-        ),
-        findsOneWidget,
-      );
-      expect(find.text(_en.settingsHubDetailSearching), findsOneWidget);
-    });
-
     testWidgets('a phone keeps one pane', (tester) async {
       await wide(tester, const Size(412, 915));
       final controller = await _controller();
@@ -908,7 +840,7 @@ void main() {
       // row but the setup assistant (P2.2, not built yet) and This phone,
       // which joins the hub once the phone is set up (before that, setting
       // it up is one of Add server's ways, R3).
-      expect(total, 20);
+      expect(total, 18);
       expect(titles.toSet().length, titles.length);
       // The pairs that used to sit side by side are one row each now.
       for (final gone in [
@@ -932,13 +864,14 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller));
       await tester.pumpAndSettle();
-      final search = find.byKey(const Key('library-search'));
-      await tester.enterText(search, 'font size');
-      await _settleSearch(tester);
-      expect(_row('settings-category-appearance'), findsNothing);
-      await tester.enterText(search, 'older drafts');
-      await _settleSearch(tester);
-      expect(_row('settings-category-privacy'), findsNothing);
+      expect(
+        _found(controller, 'font size'),
+        isNot(contains('settings-category-appearance')),
+      );
+      expect(
+        _found(controller, 'older drafts'),
+        isNot(contains('settings-category-privacy')),
+      );
     });
 
     testWidgets('This phone joins the hub once the phone is set up', (
@@ -958,9 +891,10 @@ void main() {
         findsOneWidget,
       );
       // No second way to set it up again from search.
-      await tester.enterText(find.byKey(const Key('library-search')), 'termux');
-      await _settleSearch(tester);
-      expect(_row('search-result-settings-on-this-phone'), findsNothing);
+      expect(
+        _found(controller, 'termux'),
+        isNot(contains('settings-on-this-phone')),
+      );
       expect(_row('settings-this-phone'), findsOneWidget);
     });
 
@@ -1020,13 +954,6 @@ void main() {
       );
       expect(_row('settings-unavailable-conversations'), findsOneWidget);
 
-      // A search lists what it found, not what is missing.
-      await tester.enterText(find.byKey(const Key('library-search')), 'model');
-      await _settleSearch(tester);
-      expect(_row('settings-unavailable-agent'), findsNothing);
-      await tester.tap(find.byTooltip('Clear search'));
-      await tester.pumpAndSettle();
-
       await tester.tap(_row('settings-unavailable-why-agent'));
       await tester.pumpAndSettle();
       expect(find.byType(ServerCapabilitiesScreen), findsOneWidget);
@@ -1042,7 +969,7 @@ void main() {
       expect(find.byType(KitGroupNote), findsNothing);
     });
 
-    testWidgets('Tools holds MCP, the catalog, plugins and external agents', (
+    testWidgets('Tools holds MCP, the catalog and external agents', (
       tester,
     ) async {
       final controller = await _controller();
@@ -1060,9 +987,7 @@ void main() {
       expect(_row('tools-hub-unavailable'), findsNothing);
     });
 
-    testWidgets('Codex Tools keeps plugins and external agents, says why', (
-      tester,
-    ) async {
+    testWidgets('Codex Tools keeps external agents, says why', (tester) async {
       final controller = await _controller(
         capabilities: codexServerCapabilities,
       );
@@ -1077,7 +1002,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(_row('settings-mcp'), findsNothing);
       expect(_row('settings-commands-tools'), findsNothing);
-      expect(_row('settings-category-plugins'), findsOneWidget);
+      expect(_row('settings-category-plugins'), findsNothing);
       expect(_row('settings-external-agents'), findsOneWidget);
       expect(find.text(_en.settingsHubUnavailableCount(2)), findsOneWidget);
       await tester.tap(_row('tools-hub-unavailable-why'));
@@ -1199,11 +1124,6 @@ void main() {
           final box = tester.renderObject<RenderBox>(find.byWidget(tile));
           expect(box.size.width, lessThanOrEqualTo(phone.width));
         }
-
-        // Searching reflows the same rows; it must not overflow either.
-        await tester.enterText(find.byKey(const Key('library-search')), 'a');
-        await _settleSearch(tester);
-        expect(tester.takeException(), isNull);
       });
     }
   });

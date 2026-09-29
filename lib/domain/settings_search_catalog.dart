@@ -34,7 +34,7 @@ List<SettingsSearchDocument> settingsSearchRows(
       SettingsSearchDocument(
         id: 'inside-keep-running-battery',
         title: l10n.keepRunningBatteryTitle,
-        parent: l10n.keepRunningTitle,
+        parent: l10n.settingsHubGroupNotifications,
         aliases:
             'battery optimization optimisation unrestricted keep alive '
             'keep running background بطارية البطارية توفير طاقة خلفية استمرار تشغيل',
@@ -47,7 +47,7 @@ List<SettingsSearchDocument> settingsSearchRows(
         SettingsSearchDocument(
           id: 'inside-keep-running-thermal',
           title: l10n.thermalGuardSetting,
-          parent: l10n.keepRunningTitle,
+          parent: l10n.settingsHubGroupNotifications,
           aliases:
               'heat hot thermal temperature overheat cool pause '
               'حرارة سخونة ساخن تبريد حماية',
