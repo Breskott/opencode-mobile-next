@@ -29176,6 +29176,95 @@
   "@kitTurnReconnecting": {
     "description": "KitTurn: end line of an unfinished turn while the connection is coming back"
   },
+  "kitTurnLiveSending": "Sending",
+  "@kitTurnLiveSending": {
+    "description": "KitTurn live line: the prompt is on its way to the server"
+  },
+  "kitTurnLiveWaitingForServer": "Waiting for the server",
+  "@kitTurnLiveWaitingForServer": {
+    "description": "KitTurn live line: sent; the server has not said it started on the prompt yet"
+  },
+  "kitTurnLiveServerQuiet": "The server has not answered yet",
+  "@kitTurnLiveServerQuiet": {
+    "description": "KitTurn live line: sent 20 s or more ago and the server still has not said it started"
+  },
+  "kitTurnLiveThinking": "Thinking",
+  "@kitTurnLiveThinking": {
+    "description": "KitTurn live line: the model is working and nothing has been written yet"
+  },
+  "kitTurnLiveFirstWordSlow": "Waiting for the model's first word",
+  "@kitTurnLiveFirstWordSlow": {
+    "description": "KitTurn live line: the server has the prompt, 20 s or more have passed and the model has not written anything yet"
+  },
+  "kitTurnLiveWriting": "Writing",
+  "@kitTurnLiveWriting": {
+    "description": "KitTurn live line: the reply's words are coming in"
+  },
+  "kitTurnLiveWorking": "Working",
+  "@kitTurnLiveWorking": {
+    "description": "KitTurn live line: a step (a tool) is running; the step rows above say which"
+  },
+  "kitTurnLiveWaitingForYou": "Waiting for you",
+  "@kitTurnLiveWaitingForYou": {
+    "description": "KitTurn live line: a request in this reply waits for the person's answer"
+  },
+  "kitTurnLiveStop": "Stop reply",
+  "@kitTurnLiveStop": {
+    "description": "KitTurn live line: red action that stops the running reply"
+  },
+  "kitTurnLiveStopping": "Stopping…",
+  "@kitTurnLiveStopping": {
+    "description": "KitTurn live line: the Stop reply tap is on its way"
+  },
+  "kitTurnLiveNow": "{status}…",
+  "@kitTurnLiveNow": {
+    "description": "KitTurn live line in its first seconds: what the reply is doing, e.g. 'Thinking…'",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "Thinking"
+      }
+    }
+  },
+  "kitTurnLiveFor": "{status} · {elapsed}",
+  "@kitTurnLiveFor": {
+    "description": "KitTurn live line after a few seconds: what the reply is doing and for how long, e.g. 'Thinking · 12 s'",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "Thinking"
+      },
+      "elapsed": {
+        "type": "String",
+        "example": "12 s"
+      }
+    }
+  },
+  "kitTurnLiveSeconds": "{seconds} s",
+  "@kitTurnLiveSeconds": {
+    "description": "KitTurn live line: time since the prompt was sent, under a minute",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "kitTurnLiveMinutes": "{minutes} min {seconds} s",
+  "@kitTurnLiveMinutes": {
+    "description": "KitTurn live line: time since the prompt was sent, a minute or more",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "chatNoReplyCameBack": "No reply came back",
+  "@chatNoReplyCameBack": {
+    "description": "Chat: notice on a prompt whose turn ended without any answer and without an error from the server"
+  },
   "composerFieldLabel": "Message to the agent",
   "@composerFieldLabel": {
     "description": "Screen-reader label of the chat message box (the hint is separate)."

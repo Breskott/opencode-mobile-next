@@ -388,10 +388,11 @@ void main() {
     });
 
     // chat-3 (e28442b0, LOOK-20) removed the composer's animated working
-    // mark: Stop is the working signal. It shows while a reply is written
-    // and goes when the run ends, and nothing is left moving.
-    testWidgets('while a reply is written Stop is the working signal; it '
-        'goes when the run ends', (tester) async {
+    // mark; the running turn's live line, with its Stop reply, is the
+    // working signal (still words, no loop). It shows while a reply is
+    // written and goes when the run ends, and nothing is left moving.
+    testWidgets('while a reply is written the live line with Stop is the '
+        'working signal; it goes when the run ends', (tester) async {
       KitMotion.loops = true;
       final api = _ChatApi()..messagesHandler = (_) async => sampleTranscript();
       final controller = await _connected(api: api);

@@ -612,9 +612,22 @@ class _ChatScreenState extends State<ChatScreen>
   String? _promptError;
 
   /// The newest turn when it got no answer, as (its prompt's index, the
-  /// index of the step that ended it on an error, or null when the server
-  /// refused the prompt before any step). Worked out once per build.
-  (int, int?)? _unanswered;
+  /// index of the step that ended it, or null when no step came, and
+  /// whether it ended silently: no words, no steps and no error). Worked out
+  /// once per build.
+  (int, int?, bool)? _unanswered;
+
+  /// When the newest turn started running as far as this phone knows: set
+  /// the moment a send is accepted here, before the server says the
+  /// conversation is busy (that can take a while on a slow server), and
+  /// cleared when the server says it is idle again, the send fails, or
+  /// the person stops it. The server's own busy state takes over as soon as
+  /// it arrives; this only covers the time before it.
+  DateTime? _localTurnSince;
+
+  /// The prompt whose reply the person stopped: its turn ended on purpose,
+  /// so it never reads as "No reply came back".
+  String? _stoppedPromptID;
 
   /// The last send failed before the server took it; its text is back in
   /// the composer. Shown on the status line until dismissed or sent again.
@@ -1682,11 +1695,29 @@ class _ChatScreenState extends State<ChatScreen>
           });
         }
         break;
+      case 'session.idle':
+      case 'session.status':
+        if (env.properties['sessionID']?.toString() != widget.sessionID) {
+          break;
+        }
+        final raw = env.properties['status'];
+        final status = env.type == 'session.idle'
+            ? 'idle'
+            : raw is Map
+            ? raw['type']?.toString()
+            : raw?.toString();
+        // Idle without a busy first (a missed event, or a turn that ended
+        // at once): the turn this phone started is over all the same.
+        if (status == 'idle' && !_sending && _localTurnSince != null) {
+          setState(() => _localTurnSince = null);
+        }
+        break;
       case 'session.error':
         if (env.properties['sessionID']?.toString() != widget.sessionID) {
           break;
         }
         setState(() {
+          if (!_sending) _localTurnSince = null;
           _promptError = _eventErrorMessage(env.properties['error']);
         });
         _recoverFromPromptError(_promptError);
@@ -1748,7 +1779,15 @@ class _ChatScreenState extends State<ChatScreen>
     final assistant = messages.lastIndexWhere(
       (m) => m.info.role == 'assistant',
     );
-    if (assistant >= 0) return assistant;
+    if (assistant >= 0) {
+      // The newest reply already ended: the prompt after it is the one now
+      // starting (its reply is not written yet), not one waiting its turn.
+      final info = messages[assistant].info;
+      final ended =
+          info.errorText != null ||
+          (info.time?.isDone == true && info.finish != 'tool-calls');
+      return ended ? -1 : assistant;
+    }
     return messages.indexWhere((m) => m.info.role == 'user');
   }
 
@@ -2927,8 +2966,11 @@ class _ChatScreenState extends State<ChatScreen>
       _focus.unfocus();
     }
 
-    // Optimistic user bubble.
+    // Optimistic user bubble; the turn runs from here (its live line shows
+    // at once, before the server says it is busy).
     setState(() {
+      _localTurnSince = DateTime.fromMillisecondsSinceEpoch(createdAt);
+      _stoppedPromptID = null;
       _promptError = null;
       _sendError = null;
       _pendingSends.add(pending);
@@ -3008,6 +3050,7 @@ class _ChatScreenState extends State<ChatScreen>
       if (!mounted) return;
       setState(() {
         _sending = false;
+        _localTurnSince = null;
         if (identical(_voiceReplyWatch?.pending, pending)) {
           _voiceReplyWatch = null;
           _voiceReplyState = _VoiceReplyState.reviewNeeded;
@@ -3825,6 +3868,13 @@ class _ChatScreenState extends State<ChatScreen>
     }
     try {
       await actionApi.abort(widget.sessionID);
+      if (mounted) {
+        final prompt = _messages.lastIndexWhere(_isPrompt);
+        setState(() {
+          _localTurnSince = null;
+          if (prompt >= 0) _stoppedPromptID = _messages[prompt].info.id;
+        });
+      }
     } catch (error) {
       if (mounted) _showActionError(error);
     } finally {
@@ -5099,6 +5149,8 @@ class _ChatScreenState extends State<ChatScreen>
     final finished = _wasBusy && !busy;
     _wasBusy = busy;
     if (!finished) return;
+    // The server's own idle ends the turn this phone started.
+    _localTurnSince = null;
     KitHaptics.done(context);
   }
 
@@ -7424,8 +7476,133 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  /// The running turn's live line and the row that carries it, worked out
+  /// once per build ([_liveTurn]).
+  ({KitTurnLive live, int index})? _live;
+
+  /// The newest turn's live line while it runs, and the message row it
+  /// sits under: from the moment a send is accepted here (before the server
+  /// says the conversation is busy) until the turn ends, so a reply is
+  /// never waited for in silence. Null when nothing runs.
+  ({KitTurnLive live, int index})? _liveTurn({
+    required bool busy,
+    required int queuedAfterIndex,
+  }) {
+    if (_conn.isIsolated || _watching || _messages.isEmpty) return null;
+    bool ended(MessageInfo info) =>
+        info.errorText != null || info.time?.isDone == true;
+    // OpenCode 1 runs a prompt sent mid-turn after the turn: the running
+    // reply is then not the newest row, and its turn is the one that runs.
+    final queuedBehind =
+        queuedAfterIndex >= 0 &&
+        queuedAfterIndex < _messages.length &&
+        _messages[queuedAfterIndex].info.role == 'assistant' &&
+        !ended(_messages[queuedAfterIndex].info) &&
+        _messages.skip(queuedAfterIndex + 1).any(_isPrompt);
+    final end = queuedBehind ? queuedAfterIndex + 1 : _messages.length;
+    // A turn with no prompt of its own (an automated first turn) still
+    // runs, and still needs its Stop.
+    final prompt = _messages.take(end).toList().lastIndexWhere(_isPrompt);
+    if (prompt < 0 && !busy) return null;
+    MessageWithParts? step;
+    var output = false;
+    for (var index = prompt + 1; index < end; index += 1) {
+      final message = _messages[index];
+      if (message.info.role != 'assistant') continue;
+      step = message;
+      output =
+          output ||
+          message.parts.any(
+            (part) =>
+                (part.type == 'text' && part.text.trim().isNotEmpty) ||
+                part.type == 'tool' ||
+                part.type == 'reasoning',
+          );
+    }
+    final stepEnded = step != null && ended(step.info);
+    // The server's words win over this phone's guess: a finished step that
+    // does not go on to run tools, with the conversation idle, is a
+    // finished turn.
+    if (!busy &&
+        !_sending &&
+        step != null &&
+        stepEnded &&
+        (step.info.errorText != null || step.info.finish != 'tool-calls')) {
+      _localTurnSince = null;
+    }
+    final running = busy || _sending || _localTurnSince != null;
+    if (!running) return null;
+    final session = widget.sessionID;
+    final KitTurnActivity activity;
+    if (_sending) {
+      activity = KitTurnActivity.sending;
+    } else if (_conn.permissionsForSession(session).isNotEmpty ||
+        _conn.questionForSession(session) != null) {
+      activity = KitTurnActivity.waitingForYou;
+    } else if (!output) {
+      activity = busy || step != null
+          ? KitTurnActivity.waitingForModel
+          : KitTurnActivity.waitingForServer;
+    } else {
+      Part? newest;
+      for (final part in step?.parts.reversed ?? const <Part>[]) {
+        if ((part.type == 'text' && part.text.trim().isNotEmpty) ||
+            part.type == 'tool' ||
+            part.type == 'reasoning') {
+          newest = part;
+          break;
+        }
+      }
+      activity = switch (newest) {
+        final part? when part.type == 'tool' =>
+          part.toolState.status == 'completed' ||
+                  part.toolState.status == 'error'
+              ? KitTurnActivity.thinking
+              : KitTurnActivity.working,
+        final part? when part.type == 'text' && !stepEnded =>
+          KitTurnActivity.writing,
+        _ => KitTurnActivity.thinking,
+      };
+    }
+    final created = prompt < 0 ? null : _messages[prompt].info.time?.created;
+    return (
+      live: KitTurnLive(
+        activity: activity,
+        since:
+            _localTurnSince ??
+            (created == null
+                ? null
+                : DateTime.fromMillisecondsSinceEpoch(created)),
+        // Not while the prompt is still on its way: there is nothing to
+        // stop yet.
+        onStop: _sending ? null : () => unawaited(_abort()),
+        stopping: _aborting,
+        stopKey: const Key('chat-stop-button'),
+      ),
+      // Under the reply that runs, above any prompt waiting behind it.
+      index: queuedBehind ? queuedAfterIndex : _messages.length - 1,
+    );
+  }
+
+  /// A server notice row (compaction, a sub-agent, a shell step).
+  Widget _v2Row(MessageWithParts m, int index, Part tagged) => V2TranscriptRow(
+    key: ValueKey('message-${m.info.id}'),
+    part: tagged,
+    messageId: m.info.id,
+    parentSessionID: widget.sessionID,
+    knownSessions: _conn.sessionsById,
+    onCompactAgain: !_watching && _canCompactAgain(index)
+        ? () => unawaited(_compact())
+        : null,
+    onOpenChild: _watching
+        ? _openWatchedChild
+        : _conn.capabilities.projectManagement
+        ? (id) => _openSubagentSession(id, requireChild: true)
+        : null,
+  );
+
   /// Row [i] of the reversed transcript: item 0 is the newest turn. The
-  /// composer, not a transcript row, says when a run is active.
+  /// running turn's live line ([_liveTurn]) rides on the row it names.
   Widget _transcriptRow(
     BuildContext context,
     int i, {
@@ -7437,31 +7614,35 @@ class _ChatScreenState extends State<ChatScreen>
     if (i == _renderedMessageCount) return _olderHistoryRow();
     final index = _renderedMessageCount - 1 - i;
     final m = _messages[index];
+    final live = _live?.index == index ? _live!.live : null;
+    // A row that draws nothing of its own still carries the live line: the
+    // running turn is never silent.
+    Widget liveOnly() => live == null
+        ? const SizedBox.shrink()
+        : KitTurn(
+            key: const ValueKey('chat-live-turn'),
+            blocks: const [],
+            phase: KitTurnPhase.running,
+            segment: KitTurnSegment.last,
+            live: live,
+          );
     if (waitingLocalIDs.contains(m.info.id) || _isFoldedNotice(m)) {
-      return const SizedBox.shrink();
+      return liveOnly();
     }
     if (v2VariantPart(m) case final tagged?) {
-      return V2TranscriptRow(
-        key: ValueKey('message-${m.info.id}'),
-        part: tagged,
-        messageId: m.info.id,
-        parentSessionID: widget.sessionID,
-        knownSessions: _conn.sessionsById,
-        onCompactAgain: !_watching && _canCompactAgain(index)
-            ? () => unawaited(_compact())
-            : null,
-        onOpenChild: _watching
-            ? _openWatchedChild
-            : _conn.capabilities.projectManagement
-            ? (id) => _openSubagentSession(id, requireChild: true)
-            : null,
+      final row = _v2Row(m, index, tagged);
+      if (live == null) return row;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [row, liveOnly()],
       );
     }
     final rawMeta = _messageMeta(_messages, index);
     final meta = rawMeta.withModelLabel(_catalogModelNames(rawMeta.modelLabel));
     final parts = displayParts[index];
     if (parts.isEmpty && meta.isEmpty && m.info.errorText == null) {
-      return const SizedBox.shrink();
+      return liveOnly();
     }
     final hit =
         _findHits.isNotEmpty && _findHits[_findCursor].messageID == m.info.id
@@ -7470,12 +7651,19 @@ class _ChatScreenState extends State<ChatScreen>
     final offline = _conn.isIsolated || _watching;
     final unanswered = _unanswered;
     final endsUnanswered = !offline && unanswered?.$2 == index;
+    final silent = unanswered?.$3 ?? false;
     final suggestion = endsUnanswered
         ? _suggestedModelFor(m.info.errorText)
         : null;
     return _MessageView(
       key: ValueKey('message-${m.info.id}'),
-      unanswered: unanswered?.$1 == index,
+      live: live,
+      unanswered: !silent && unanswered?.$1 == index,
+      onSendAgainNoReply: silent && !offline && unanswered?.$1 == index
+          ? () => unawaited(
+              _unansweredWords != null ? _resendUnanswered() : _retryLast(),
+            )
+          : null,
       onResendPrompt: endsUnanswered && _unansweredWords != null
           ? () => unawaited(_resendUnanswered())
           : null,
@@ -7856,8 +8044,6 @@ class _ChatScreenState extends State<ChatScreen>
       conversationMode: _voiceConversation,
       voice: _composerVoice(),
       onSend: _send,
-      onStop: _abort,
-      stopping: _aborting,
       onChooseModel: () {
         if (!_conn.isIsolated) {
           showModelPicker(
@@ -7892,12 +8078,14 @@ class _ChatScreenState extends State<ChatScreen>
         ? _queuedAfterIndex(_messages)
         : -1;
     final displayParts = _timelineDisplayParts(_messages, liveTail: busy);
+    _live = _liveTurn(busy: busy, queuedAfterIndex: queuedAfterIndex);
     _unanswered = _conn.isIsolated || _watching
         ? null
         : _unansweredTurn(
             _messages,
             refused: _promptError != null,
-            running: busy || _sending,
+            running: busy || _sending || _live != null,
+            stoppedPromptID: _stoppedPromptID,
           );
     // A prompt waiting in the server's inbox (steering, or queued behind the
     // run) is shown once, as its waiting bubble above the composer, where

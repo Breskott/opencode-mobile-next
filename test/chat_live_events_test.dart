@@ -512,6 +512,14 @@ MessageWithParts _message(
   parts: parts,
 );
 
+/// History of one prompt: a running turn's live line (and its Stop) sits
+/// under it.
+Future<List<MessageWithParts>> _onePrompt(String _) async => [
+  _message('u1', 'user', [
+    Part(id: 'u1-text', messageID: 'u1', type: 'text', text: 'Hi'),
+  ]),
+];
+
 /// The transcript toggles may apply in place and leave the session sheet
 /// open; a reader would then swipe it away before reaching the app bar.
 Future<void> _dismissSheetIfOpen(WidgetTester tester) async {
@@ -931,7 +939,7 @@ void main() {
   testWidgets(
     'UXCHAT single foreground Stop preserves draft and targets this session',
     (tester) async {
-      final api = _FakeOpenCodeApi();
+      final api = _FakeOpenCodeApi()..messagesHandler = _onePrompt;
       final conn = await _pumpChat(tester, api, reduceMotion: true);
       await tester.enterText(
         find.byKey(const Key('chat-composer-field')),
@@ -941,8 +949,9 @@ void main() {
       conn.notifyListeners();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
-      expect(find.byTooltip('Stop the reply'), findsOneWidget);
-      await tester.tap(find.byTooltip('Stop the reply'));
+      // Stop is on the running turn's live line.
+      expect(find.text('Stop reply'), findsOneWidget);
+      await tester.tap(find.text('Stop reply'));
       await tester.pump();
       expect(api.abortCalls, 1);
       expect(find.text('Keep my draft'), findsOneWidget);
@@ -2071,7 +2080,7 @@ void main() {
   ) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
-    final retainedApi = _FakeOpenCodeApi();
+    final retainedApi = _FakeOpenCodeApi()..messagesHandler = _onePrompt;
     final replacementApi = _FakeOpenCodeApi();
     final readyApi = Completer<OpenCodeApi?>();
     final controller = _DelayedActionController(
@@ -2116,6 +2125,7 @@ void main() {
     tester,
   ) async {
     final api = _FakeOpenCodeApi()
+      ..messagesHandler = _onePrompt
       ..abortError = ApiException('server refused to stop');
     final controller = await _pumpChat(tester, api);
     controller.busySessions.add('session-1');

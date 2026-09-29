@@ -24201,6 +24201,59 @@ class AppLocalizationsEn extends AppLocalizations {
       'Connection lost. Reconnecting to get the rest of this reply.';
 
   @override
+  String get kitTurnLiveSending => 'Sending';
+
+  @override
+  String get kitTurnLiveWaitingForServer => 'Waiting for the server';
+
+  @override
+  String get kitTurnLiveServerQuiet => 'The server has not answered yet';
+
+  @override
+  String get kitTurnLiveThinking => 'Thinking';
+
+  @override
+  String get kitTurnLiveFirstWordSlow => 'Waiting for the model\'s first word';
+
+  @override
+  String get kitTurnLiveWriting => 'Writing';
+
+  @override
+  String get kitTurnLiveWorking => 'Working';
+
+  @override
+  String get kitTurnLiveWaitingForYou => 'Waiting for you';
+
+  @override
+  String get kitTurnLiveStop => 'Stop reply';
+
+  @override
+  String get kitTurnLiveStopping => 'Stopping…';
+
+  @override
+  String kitTurnLiveNow(String status) {
+    return '$status…';
+  }
+
+  @override
+  String kitTurnLiveFor(String status, String elapsed) {
+    return '$status · $elapsed';
+  }
+
+  @override
+  String kitTurnLiveSeconds(int seconds) {
+    return '$seconds s';
+  }
+
+  @override
+  String kitTurnLiveMinutes(int minutes, int seconds) {
+    return '$minutes min $seconds s';
+  }
+
+  @override
+  String get chatNoReplyCameBack => 'No reply came back';
+
+  @override
   String get composerFieldLabel => 'Message to the agent';
 
   @override

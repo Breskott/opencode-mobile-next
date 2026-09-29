@@ -240,8 +240,8 @@ void main() {
 
   for (final scale in [1.0, 2.0, 2.5]) {
     testWidgets(
-      'at 320dp and ${scale}x the keyboard leaves the field, Send and Stop '
-      'on screen while a run is active, and the draft survives',
+      'at 320dp and ${scale}x the keyboard leaves the field and Send on '
+      'screen while a run is active, and the draft survives',
       (tester) async {
         final conn = await _controller(_Api(title: _longTitle));
         addTearDown(conn.dispose);
@@ -270,19 +270,21 @@ void main() {
           isSemantics(isEnabled: true, hasTapAction: true),
         );
 
-        // A run starts: Stop joins Send, both stay above the keyboard, and
-        // the delivery strip does not push them off screen.
+        // A run starts: Send stays above the keyboard, and the delivery
+        // words do not push it off screen. Stop is on the running turn, never
+        // in the composer.
         conn.busySessions.add(_sessionID);
         conn.notifyListeners();
         await _pumpFrames(tester);
         expect(tester.takeException(), isNull);
-        expect(_stop, findsOneWidget);
-        expect(find.text('Sends after this reply'), findsOneWidget);
         expect(
-          tester.getSemantics(_stop),
-          isSemantics(isEnabled: true, hasTapAction: true),
+          find.descendant(
+            of: find.byKey(const Key('chat-composer-surface')),
+            matching: _stop,
+          ),
+          findsNothing,
         );
-        expect(tester.getRect(_stop).bottom, lessThanOrEqualTo(visibleBottom));
+        expect(find.text('Sends after this reply'), findsOneWidget);
         expect(tester.getRect(_send).bottom, lessThanOrEqualTo(visibleBottom));
         expect(tester.getRect(_field).bottom, lessThanOrEqualTo(visibleBottom));
         expect(tester.getRect(_field).top, greaterThanOrEqualTo(appBarBottom));

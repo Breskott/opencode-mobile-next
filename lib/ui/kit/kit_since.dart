@@ -41,6 +41,10 @@ enum KitSinceTicks {
   /// Rebuilds once at the escalation, then once per whole minute of
   /// elapsed time: "Waiting 4 min".
   minutes,
+
+  /// Rebuilds on every whole second of elapsed time, from the start: a
+  /// running reply's "Thinking · 12 s".
+  seconds,
 }
 
 /// The kit's one wait timer (KitSince.md, C12). Told when a wait [since]
@@ -212,6 +216,13 @@ class _KitSinceState extends State<KitSince> with WidgetsBindingObserver {
     _timer?.cancel();
     _timer = null;
     if (widget.since == null) return;
+    if (widget.ticks == KitSinceTicks.seconds &&
+        _status.phase != KitSincePhase.idle) {
+      final intoSecond =
+          _status.elapsed - Duration(seconds: _status.elapsed.inSeconds);
+      _timer = Timer(const Duration(seconds: 1) - intoSecond, _fire);
+      return;
+    }
     final Duration? wait = switch (_status.phase) {
       KitSincePhase.idle => null,
       KitSincePhase.waiting => KitMotion.escalateAfter - _status.elapsed,

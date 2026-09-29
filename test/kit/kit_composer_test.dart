@@ -209,6 +209,18 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets('busy with Stop on the running turn (no onStop), no text: '
+        'the mic stays, so a message can be spoken while the reply runs', (
+      tester,
+    ) async {
+      final h = _host('');
+      await _pump(tester, _composer(h, busy: true, stop: false));
+      expect(find.byKey(_stop), findsNothing);
+      expect(find.byKey(_voice), findsOneWidget);
+      await tester.tap(find.byKey(_voice));
+      expect(h.voices, 1);
+    });
+
     testWidgets('busy, text, can send: Stop and Send', (tester) async {
       final semantics = tester.ensureSemantics();
       final h = _host('more');

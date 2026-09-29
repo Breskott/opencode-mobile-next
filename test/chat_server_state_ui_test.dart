@@ -255,7 +255,8 @@ void main() {
     testWidgets('appears with a live countdown and Stop, then clears', (
       tester,
     ) async {
-      final api = _Api();
+      // Stop sits on the running turn's live line, so the turn has a prompt.
+      final api = _Api()..messagesResult = [_user('u1')];
       final controller = await _pumpChat(tester, api);
       expect(find.byKey(const ValueKey('retry-banner')), findsNothing);
 
@@ -414,6 +415,19 @@ void main() {
         expect(api.prompts, ['Hi']);
       },
     );
+
+    testWidgets('a turn that ended with nothing and no error says so and '
+        'offers Send again', (tester) async {
+      final api = _Api()..messagesResult = [_user('u1'), _assistant('a1')];
+      await _pumpChat(tester, api);
+      await tester.pumpAndSettle();
+      expect(find.text('No reply came back'), findsOneWidget);
+      // One way to say it: not also "Not answered".
+      expect(find.text('Not answered'), findsNothing);
+      await tester.tap(find.byKey(const Key('no-reply-send-again')));
+      await tester.pumpAndSettle();
+      expect(api.prompts, ['Hi']);
+    });
 
     testWidgets('an answered turn, and an older failure, offer no resend', (
       tester,

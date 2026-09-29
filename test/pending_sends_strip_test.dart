@@ -612,8 +612,8 @@ void main() {
     });
   });
 
-  testWidgets('while busy on v2 Stop leads and Send trails; the toggle '
-      'queues', (tester) async {
+  testWidgets('while busy on v2 the composer keeps its mic and Send; the '
+      'toggle queues', (tester) async {
     final api = _V2ChatApi();
     final controller = await _controller(api);
     addTearDown(controller.dispose);
@@ -623,8 +623,20 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
-    expect(find.byKey(const Key('chat-send-button')), findsNothing);
+    // Stop lives on the running turn, never in the composer: with nothing
+    // typed its one trailing control stays the mic (or a disabled Send).
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('chat-composer-surface')),
+        matching: find.byKey(const Key('chat-stop-button')),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('composer-voice-button')).evaluate().length +
+          find.byKey(const Key('chat-send-button')).evaluate().length,
+      1,
+    );
     // Watching a run with nothing typed shows no delivery strip.
     expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
 
@@ -714,11 +726,17 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    // OpenCode 1 accepts a prompt mid-turn and runs it afterwards, so Stop
-    // leads the row, Send trails it, and the composer says what Send will
-    // do.
+    // OpenCode 1 accepts a prompt mid-turn and runs it afterwards: Stop is
+    // on the running turn, the composer keeps its mic (or Send), and it
+    // says what Send will do once something is typed.
     expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
-    expect(find.byKey(const Key('chat-send-button')), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('chat-composer-surface')),
+        matching: find.byKey(const Key('chat-stop-button')),
+      ),
+      findsNothing,
+    );
     // Nothing typed yet: no hint competes with the running reply.
     expect(find.text('Sends after this reply'), findsNothing);
 

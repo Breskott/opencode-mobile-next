@@ -74,8 +74,6 @@ class _ChatComposer extends StatelessWidget {
     this.conversationMode = false,
     this.voice,
     required this.onSend,
-    required this.onStop,
-    this.stopping = false,
     required this.onChooseModel,
     required this.onRemoveAttachment,
     this.references = const [],
@@ -166,8 +164,6 @@ class _ChatComposer extends StatelessWidget {
   /// conversation.
   final KitComposerVoice? voice;
   final VoidCallback onSend;
-  final VoidCallback onStop;
-  final bool stopping;
   final VoidCallback onChooseModel;
   final ValueChanged<PromptAttachment> onRemoveAttachment;
 
@@ -195,12 +191,6 @@ class _ChatComposer extends StatelessWidget {
     if (_hasPrompt && !sending && !shelfBusy && (!busy || canSendWhileBusy)) {
       onSend();
     }
-  }
-
-  /// The Stop tooltip goes before Stop is swapped for Send.
-  void _stop() {
-    Tooltip.dismissAllToolTips();
-    onStop();
   }
 
   @override
@@ -249,9 +239,10 @@ class _ChatComposer extends StatelessWidget {
                 ? l10n.chatUiAskOpenCode
                 : l10n.chatUiAskAgent(KitBidi.auto(agentName!)),
             onSend: _send,
+            // Stop lives on the running turn's live line (KitTurnLive),
+            // so the mic and Send stay here while a reply runs: speaking or
+            // typing then waits to send after the reply.
             busy: busy,
-            onStop: _stop,
-            stopping: stopping,
             sending: sending || (shelfBusy && shelfLoading),
             canSendWhileBusy: canSendWhileBusy,
             // Without an inbox (OpenCode 1) a send made during a reply
@@ -295,7 +286,6 @@ class _ChatComposer extends StatelessWidget {
             composerKey: const Key('chat-composer-surface'),
             fieldKey: const Key('chat-composer-field'),
             sendKey: const Key('chat-send-button'),
-            stopKey: const Key('chat-stop-button'),
             toolsKey: const Key('composer-tools-button'),
             voiceButtonKey: const Key('composer-voice-button'),
             editorKey: const Key('prompt-editor-button'),
@@ -555,7 +545,10 @@ class _ChatComposer extends StatelessWidget {
     if (isolated || shelfBusy || conversationMode) return;
     final l10n = _chatL10n(context);
     final attachBlocked = _attachBlocked;
-    final voiceBlocked = busy || sending;
+    // Dictation only fills the draft, so it works while a reply runs; a
+    // voice conversation waits for the reply it would talk over.
+    final voiceBlocked = sending;
+    final conversationBlocked = busy || sending;
     final canClearText = controller.text.isNotEmpty && onClearText != null;
     final canStash = _hasPrompt && onStashPrompt != null;
     final tool = await showKitSheet<_PromptTool>(
@@ -567,6 +560,7 @@ class _ChatComposer extends StatelessWidget {
         attachmentsSupported: promptAttachmentsSupported,
         webSourcesSupported: webSourcesSupported,
         voiceBlocked: voiceBlocked,
+        conversationBlocked: conversationBlocked,
         attachmentCount: attachments.length,
         canReusePrompt: onReusePrompt != null,
         canClearText: canClearText,
@@ -634,6 +628,7 @@ class _PromptToolsList extends StatelessWidget {
     required this.attachmentsSupported,
     required this.webSourcesSupported,
     required this.voiceBlocked,
+    required this.conversationBlocked,
     required this.attachmentCount,
     required this.canReusePrompt,
     required this.canClearText,
@@ -646,6 +641,7 @@ class _PromptToolsList extends StatelessWidget {
   final bool attachmentsSupported;
   final bool webSourcesSupported;
   final bool voiceBlocked;
+  final bool conversationBlocked;
   final int attachmentCount;
   final bool canReusePrompt;
   final bool canClearText;
@@ -799,7 +795,7 @@ class _PromptToolsList extends StatelessWidget {
                 icon: AppIconography.speakUser,
                 title: l10n.voiceConversationTitle,
                 supporting: l10n.voiceConversationDescription,
-                blockedBy: voiceBlocked ? running : null,
+                blockedBy: conversationBlocked ? running : null,
               ),
           ],
         ),

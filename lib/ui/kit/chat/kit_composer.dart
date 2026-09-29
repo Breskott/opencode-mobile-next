@@ -207,7 +207,9 @@ class KitComposer extends StatefulWidget {
   /// Send queues: "Send when back online".
   final bool offline;
 
-  /// Null: no Stop (a host that cannot stop).
+  /// Null: no Stop in the composer (a host that cannot stop, or one whose
+  /// Stop is on the running turn's live line); while busy and empty the
+  /// trailing control is then the mic.
   final VoidCallback? onStop;
   final KitComposerDelivery delivery;
 
@@ -393,7 +395,16 @@ class _KitComposerState extends State<KitComposer> {
     // Stop moves to the start of the row ([_stopLeads]), never beside Send.
     if (widget.sending) return _Trailing.sending;
     if (widget.busy) {
-      if (!_hasContent) return stop ? _Trailing.stop : _Trailing.sendDisabled;
+      // A host whose Stop lives on the running turn ([KitTurnLive]) passes
+      // no [onStop]: the mic stays, so a message can be spoken while the
+      // reply runs and sent after it.
+      if (!_hasContent) {
+        return stop
+            ? _Trailing.stop
+            : widget.onVoice != null
+            ? _Trailing.mic
+            : _Trailing.sendDisabled;
+      }
       if (widget.canSendWhileBusy) return _Trailing.send;
       return stop ? _Trailing.stop : _Trailing.none;
     }

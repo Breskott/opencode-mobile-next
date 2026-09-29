@@ -67,6 +67,72 @@ enum KitTurnSegment {
   last,
 }
 
+/// What a running turn is doing right now, for its live line
+/// ([KitTurnLive]). The host derives it from what the server has said; the
+/// kit words it.
+enum KitTurnActivity {
+  /// The prompt is on its way to the server.
+  sending,
+
+  /// Sent, and the server has not said it started on it yet. Slow: "The
+  /// server has not answered yet".
+  waitingForServer,
+
+  /// The server has the prompt and nothing has come back yet. Slow:
+  /// "Waiting for the model's first word".
+  waitingForModel,
+
+  /// The model is thinking (between steps, or its reasoning streams).
+  thinking,
+
+  /// Reply words are streaming in.
+  writing,
+
+  /// A step (a tool) is running; the step rows above say which.
+  working,
+
+  /// A request in this turn waits for the person.
+  waitingForYou,
+}
+
+/// The live line of a running turn: what it is doing, for how long, and
+/// Stop (owner decision 2026-09-29: Stop lives on the running turn, so the
+/// composer keeps Send and the mic while a reply runs). Drawn under the
+/// turn's last block from the moment the prompt is sent until the turn
+/// ends; never a silent turn.
+@immutable
+class KitTurnLive {
+  const KitTurnLive({
+    required this.activity,
+    this.since,
+    this.onStop,
+    this.stopping = false,
+    this.stopKey,
+  });
+
+  final KitTurnActivity activity;
+
+  /// When the turn began, on this phone's clock. The line shows the time
+  /// since then after [showElapsedAfter], and the waits turn slow after
+  /// [slowAfter].
+  final DateTime? since;
+
+  /// Null: no Stop on the line (the prompt is still on its way).
+  final VoidCallback? onStop;
+
+  /// Stop's own tap is in flight.
+  final bool stopping;
+
+  final Key? stopKey;
+
+  /// Under this the line says only what the turn is doing.
+  static const showElapsedAfter = Duration(seconds: 5);
+
+  /// A wait for the server or for the model's first word this long says so
+  /// in its own words (a free model can take one to two minutes).
+  static const slowAfter = Duration(seconds: 20);
+}
+
 /// The one footer of a finished turn (STATE-16).
 @immutable
 class KitTurnFooter {
@@ -131,6 +197,7 @@ class KitTurn extends StatelessWidget {
     this.highlighted = false,
     this.interruptedAction,
     this.reconnecting = false,
+    this.live,
     this.segment = KitTurnSegment.whole,
     this.turnKey,
     this.footerKey,
@@ -167,6 +234,12 @@ class KitTurn extends StatelessWidget {
   /// With [KitTurnPhase.interrupted]: the connection is coming back, so the
   /// reply may still finish; the line says so and offers nothing to resend.
   final bool reconnecting;
+
+  /// Non-null: the turn is running and this is its live line (what it is
+  /// doing, the time, Stop). It is drawn in place of the phase line on
+  /// whichever part the host gives it to, the prompt included, so a turn
+  /// with nothing back yet still says it is working.
+  final KitTurnLive? live;
 
   /// Which part of the turn this widget draws ([KitTurnSegment]). Only
   /// [KitTurnSegment.whole] and [KitTurnSegment.last] draw the phase line
@@ -317,7 +390,11 @@ class _TurnFrameState extends State<_TurnFrame> {
     final ends =
         turn.segment == KitTurnSegment.whole ||
         turn.segment == KitTurnSegment.last;
-    final phaseLine = ends ? _phaseLine(context, turn, l10n) : null;
+    final phaseLine = turn.live != null
+        ? _KitTurnLiveLine(live: turn.live!)
+        : ends
+        ? _phaseLine(context, turn, l10n)
+        : null;
     if (phaseLine != null) {
       add(phaseLine, turn.blocks.isEmpty ? tokens.space4 : tokens.space3);
     }
@@ -526,4 +603,83 @@ class _BandPainter extends CustomPainter {
   @override
   bool shouldRepaint(_BandPainter old) =>
       old.color != color || old.outset != outset || old.radius != radius;
+}
+
+/// The running turn's one live line: "Thinking · 12 s" and Stop reply, a
+/// red tertiary action that a screen reader reaches as its own button.
+class _KitTurnLiveLine extends StatelessWidget {
+  const _KitTurnLiveLine({required this.live});
+
+  final KitTurnLive live;
+
+  static String _elapsed(AppLocalizations l10n, Duration elapsed) =>
+      elapsed.inMinutes < 1
+      ? l10n.kitTurnLiveSeconds(elapsed.inSeconds)
+      : l10n.kitTurnLiveMinutes(elapsed.inMinutes, elapsed.inSeconds % 60);
+
+  static String _words(
+    AppLocalizations l10n,
+    KitTurnActivity activity,
+    Duration elapsed,
+  ) {
+    final slow = elapsed >= KitTurnLive.slowAfter;
+    return switch (activity) {
+      KitTurnActivity.sending => l10n.kitTurnLiveSending,
+      KitTurnActivity.waitingForServer =>
+        slow ? l10n.kitTurnLiveServerQuiet : l10n.kitTurnLiveWaitingForServer,
+      KitTurnActivity.waitingForModel =>
+        slow ? l10n.kitTurnLiveFirstWordSlow : l10n.kitTurnLiveThinking,
+      KitTurnActivity.thinking => l10n.kitTurnLiveThinking,
+      KitTurnActivity.writing => l10n.kitTurnLiveWriting,
+      KitTurnActivity.working => l10n.kitTurnLiveWorking,
+      KitTurnActivity.waitingForYou => l10n.kitTurnLiveWaitingForYou,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
+    final stop = live.onStop;
+    return KitSince(
+      since: live.since,
+      ticks: KitSinceTicks.seconds,
+      builder: (context, status) {
+        final words = _words(l10n, live.activity, status.elapsed);
+        final line = status.elapsed < KitTurnLive.showElapsedAfter
+            ? l10n.kitTurnLiveNow(words)
+            : l10n.kitTurnLiveFor(words, _elapsed(l10n, status.elapsed));
+        return Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: tokens.space2,
+          children: [
+            // Read once as the turn's state; the seconds are not announced
+            // every time they change.
+            Semantics(
+              label: words,
+              child: ExcludeSemantics(
+                child: KitText(
+                  line,
+                  role: KitTextRole.secondary,
+                  tone: KitTextTone.secondary,
+                ),
+              ),
+            ),
+            if (stop != null)
+              KitButton.fromAction(
+                KitAction(
+                  key: live.stopKey,
+                  label: live.stopping
+                      ? l10n.kitTurnLiveStopping
+                      : l10n.kitTurnLiveStop,
+                  destructive: true,
+                  onPressed: live.stopping ? null : stop,
+                ),
+                role: KitButtonRole.tertiary,
+              ),
+          ],
+        );
+      },
+    );
+  }
 }
