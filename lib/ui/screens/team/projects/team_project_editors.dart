@@ -83,8 +83,9 @@ class _ControllerDraft extends KitDraft {
       if (isAlive() &&
           value != null &&
           value.isNotEmpty &&
-          controller.text.isEmpty)
+          controller.text.isEmpty) {
         controller.text = value;
+      }
     } catch (_) {
       if (isAlive()) onFailure();
     }
@@ -154,8 +155,9 @@ class _EditorState extends State<_Editor> {
     _milestones = [...?p?.specDraft.milestones];
     _tasks = [...?p?.tasks];
     _phases = [...?p?.phases];
-    if (_settings.budget.chosen)
+    if (_settings.budget.chosen) {
       _budgetChoice = _settings.budget.unlimited ? 'unlimited' : 'limited';
+    }
     _text('name', p?.name ?? '');
     _text('goal', p?.specDraft.goal ?? '');
     _text('constraints', p?.specDraft.constraints ?? '');
@@ -207,8 +209,9 @@ class _EditorState extends State<_Editor> {
     // the writer before deleting a profile. No UI write can recreate it.
     unawaited(
       _controller.saveEditorDraft(_draftTarget, payload).catchError((Object _) {
-        if (mounted && !_complete)
+        if (mounted && !_complete) {
           setState(() => _error = _l.teamProjectEditorDraftFailed);
+        }
       }),
     );
   }
@@ -247,10 +250,11 @@ class _EditorState extends State<_Editor> {
           _budgetChoice = data['budget'] as String?;
           _planFirst = data['planFirst'] as bool? ?? true;
           _chargingTouched = data['chargingTouched'] as bool? ?? false;
-          if (data['role'] != null)
+          if (data['role'] != null) {
             _role = TeamProjectRole.fromJson(
               Map<String, dynamic>.from(data['role'] as Map),
             );
+          }
           _reviewedRevision =
               data['reviewedRevision'] as int? ?? _reviewedRevision;
         });
@@ -280,8 +284,9 @@ class _EditorState extends State<_Editor> {
         controller: _text(key, initial),
         isAlive: () => mounted && !_complete,
         onFailure: () {
-          if (mounted && !_complete)
+          if (mounted && !_complete) {
             setState(() => _error = _l.teamProjectEditorDraftFailed);
+          }
         },
       ),
     ),
@@ -343,16 +348,20 @@ class _EditorState extends State<_Editor> {
   String? _settingsError() {
     final s = _editedSettings();
     if (s.mode.isEmpty) return _l.teamProjectEditorChooseMode;
-    if (s.maxLanes < 1 || s.maxLanes > 32)
+    if (s.maxLanes < 1 || s.maxLanes > 32) {
       return _l.teamProjectEditorPositiveLanes;
+    }
     if (!s.budget.chosen) return _l.teamProjectEditorChooseBudget;
     if (!s.budget.unlimited &&
-        ((s.budget.daily ?? 0) <= 0 || (s.budget.total ?? 0) <= 0))
+        ((s.budget.daily ?? 0) <= 0 || (s.budget.total ?? 0) <= 0)) {
       return _l.teamProjectEditorPositiveBudget;
-    if (s.maxFixRounds < 0 || s.maxFixRounds > 3)
+    }
+    if (s.maxFixRounds < 0 || s.maxFixRounds > 3) {
       return _l.teamProjectEditorFixRoundsRange;
-    if (_value('tokens').isNotEmpty && (s.budget.taskTokens ?? 0) <= 0)
+    }
+    if (_value('tokens').isNotEmpty && (s.budget.taskTokens ?? 0) <= 0) {
       return _l.teamProjectEditorPositiveTokens;
+    }
     return null;
   }
 
@@ -415,11 +424,12 @@ class _EditorState extends State<_Editor> {
           await draft.clear();
         }
       } catch (_) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _working = false;
             _error = _l.teamProjectEditorDraftClearFailed;
           });
+        }
         return true;
       }
     }
@@ -451,11 +461,12 @@ class _EditorState extends State<_Editor> {
         await draft.clear();
       }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _complete = false;
           _error = _l.teamProjectEditorDraftFailed;
         });
+      }
       return;
     }
     if (!mounted) return;
@@ -576,8 +587,9 @@ class _EditorState extends State<_Editor> {
           close: !approve,
         ) &&
         approve &&
-        mounted)
+        mounted) {
       await _send(TeamProjectAction.approveSpec, spec: spec);
+    }
   }
 
   Future<void> _requestChange() async {
@@ -591,15 +603,17 @@ class _EditorState extends State<_Editor> {
           spec: _currentSpec(),
           close: false,
         ) ||
-        !mounted)
+        !mounted) {
       return;
+    }
     if (!await _send(
           TeamProjectAction.requestSpecChange,
           text: text,
           close: false,
         ) ||
-        !mounted)
+        !mounted) {
       return;
+    }
     final spec = _project!.specDraft;
     _change(() {
       _text('goal').text = spec.goal;
@@ -692,10 +706,12 @@ class _EditorState extends State<_Editor> {
     for (final r in _repos)
       KitRow(
         title: r.name,
-        supporting: _controller.snapshot?.servers
-            .where((s) => s.id == r.serverId)
-            .firstOrNull
-            ?.name,
+        supporting: TextSpan(
+          text: _controller.snapshot?.servers
+              .where((s) => s.id == r.serverId)
+              .firstOrNull
+              ?.name,
+        ),
         action: KitAction(
           label: _l.teamProjectEditorRemove,
           onPressed: () => _change(() => _repos.remove(r)),
@@ -896,7 +912,7 @@ class _EditorState extends State<_Editor> {
         for (final m in s.milestones)
           KitRow(
             title: m.title,
-            supporting: m.criteria.join('\n'),
+            supporting: TextSpan(text: m.criteria.join('\n')),
             supportingMaxLines: 10,
           ),
       ],
@@ -980,9 +996,9 @@ class _EditorState extends State<_Editor> {
       for (final role in _controller.snapshot?.roles ?? <TeamProjectRole>[])
         KitRow(
           title: role.name,
-          supporting: role.readOnly
-              ? _l.teamProjectEditorRemoteModel
-              : role.model,
+          supporting: TextSpan(
+            text: role.readOnly ? _l.teamProjectEditorRemoteModel : role.model,
+          ),
           onTap: () => _editRole(role),
         ),
       _button(
@@ -1003,7 +1019,10 @@ class _EditorState extends State<_Editor> {
         KitNotice(message: _l.teamProjectEditorRemoteModel),
       for (final p in _controller.snapshot?.projects ?? <TeamProject>[])
         for (final t in p.tasks.where((t) => t.roleId == _role!.id))
-          KitRow(title: t.title, supporting: p.name),
+          KitRow(
+            title: t.title,
+            supporting: TextSpan(text: p.name),
+          ),
       _button(_l.teamProjectEditorAllRoles, () => _change(() => _role = null)),
     ],
   ];

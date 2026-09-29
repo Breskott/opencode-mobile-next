@@ -86,7 +86,7 @@ void main() {
       );
       await tester.ensureVisible(field);
       await tester.enterText(field, entry.value);
-      await tester.testTextInput.hide();
+      tester.testTextInput.hide();
       await tester.pumpAndSettle();
     }
     await _tap(tester, 'Home PC');
@@ -149,7 +149,7 @@ void main() {
       field,
       'Articles survive restart\nAn empty library explains how to add one',
     );
-    await tester.testTextInput.hide();
+    tester.testTextInput.hide();
     await tester.pumpAndSettle();
     await _tap(tester, 'Pause for review after this phase');
     await _tap(tester, 'Approve and start');
@@ -187,7 +187,7 @@ void main() {
     );
     await tester.ensureVisible(goal());
     await tester.enterText(goal(), 'Build a reader test-only-draft-secret');
-    await tester.testTextInput.hide();
+    tester.testTextInput.hide();
     await tester.pumpAndSettle();
     Navigator.of(context).pop();
     await tester.pumpAndSettle();
