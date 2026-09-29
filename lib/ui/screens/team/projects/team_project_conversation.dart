@@ -37,8 +37,9 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
     final switchedController = oldWidget.controller != widget.controller;
     if (!switchedController &&
         oldWidget.projectId == widget.projectId &&
-        oldWidget.taskId == widget.taskId)
+        oldWidget.taskId == widget.taskId) {
       return;
+    }
     if (switchedController) {
       _drafts.clear();
     } else {
@@ -217,8 +218,9 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
       confirmLabel: l.teamProjectTaskStop,
       kind: KitConfirmKind.stop,
     );
-    if (yes && mounted)
+    if (yes && mounted) {
       await _run(p, TeamProjectAction.stopTask, confirmed: true);
+    }
   }
 
   Future<void> _send(TeamProject p) async {
