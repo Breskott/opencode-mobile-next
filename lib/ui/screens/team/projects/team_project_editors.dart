@@ -52,6 +52,48 @@ Future<void> _open(
   );
 }
 
+/// Keeps the KitField draft contract while delegating every persistent
+/// operation to the deletion-aware, redacting controller writer.
+class _ControllerDraft extends KitDraft {
+  _ControllerDraft({
+    required super.target,
+    required this.owner,
+    required super.controller,
+    required this.isAlive,
+    required this.onFailure,
+  }) : super(profileId: owner.profileId);
+  final TeamProjectController owner;
+  final bool Function() isAlive;
+  final VoidCallback onFailure;
+
+  @override
+  Future<void> save() async {
+    final value = controller.text;
+    try {
+      await owner.saveEditorDraft(target, value);
+    } catch (_) {
+      if (isAlive()) onFailure();
+    }
+  }
+
+  @override
+  Future<void> restore() async {
+    try {
+      final value = await owner.readEditorDraft(target);
+      if (isAlive() &&
+          value != null &&
+          value.isNotEmpty &&
+          controller.text.isEmpty)
+        controller.text = value;
+    } catch (_) {
+      if (isAlive()) onFailure();
+    }
+  }
+
+  @override
+  Future<void> clear() => owner.clearEditorDraft(target);
+}
+
 class _Editor extends StatefulWidget {
   const _Editor({
     required this.controller,
@@ -68,9 +110,7 @@ class _Editor extends StatefulWidget {
 class _EditorState extends State<_Editor> {
   final Map<String, TextEditingController> _fields = {};
   final Map<String, KitDraft> _fieldDrafts = {};
-  late final TextEditingController _draftText;
-  late final KitDraft _draft;
-  Future<void> _draftTail = Future.value();
+  late final String _draftTarget;
   bool _restoring = true;
   bool _complete = false;
   int? _reviewedRevision;
@@ -127,12 +167,7 @@ class _EditorState extends State<_Editor> {
     _text('total', _settings.budget.total?.toString() ?? '');
     _text('tokens', _settings.budget.taskTokens?.toString() ?? '');
     _text('rounds', '${_settings.maxFixRounds}');
-    _draftText = TextEditingController();
-    _draft = KitDraft(
-      target: 'team-editor.${widget.kind.name}.${widget.projectId}',
-      profileId: _controller.profileId,
-      controller: _draftText,
-    );
+    _draftTarget = 'team-editor.${widget.kind.name}.${widget.projectId}';
     unawaited(_restore());
   }
 
@@ -144,7 +179,6 @@ class _EditorState extends State<_Editor> {
     for (final c in _fields.values) {
       c.dispose();
     }
-    _draftText.dispose();
     super.dispose();
   }
 
@@ -169,33 +203,22 @@ class _EditorState extends State<_Editor> {
       'role': _role?.toJson(),
       'reviewedRevision': _reviewedRevision,
     });
-    // Capture each edit before queuing it, so dismissal cannot dispose a
-    // controller before its final durable write reads the value.
-    _draftTail = _draftTail
-        .then((_) async {
-          final text = TextEditingController(text: payload);
-          try {
-            await KitDraft(
-              target: _draft.target,
-              profileId: _draft.profileId,
-              controller: text,
-            ).save();
-          } finally {
-            text.dispose();
-          }
-        })
-        .catchError((Object _) {
-          if (mounted && !_complete)
-            setState(() => _error = _l.teamProjectEditorDraftFailed);
-        });
+    // The controller serializes these writes, redacts content, and closes
+    // the writer before deleting a profile. No UI write can recreate it.
+    unawaited(
+      _controller.saveEditorDraft(_draftTarget, payload).catchError((Object _) {
+        if (mounted && !_complete)
+          setState(() => _error = _l.teamProjectEditorDraftFailed);
+      }),
+    );
   }
 
   Future<void> _restore() async {
     try {
-      await _draft.restore();
+      final saved = await _controller.readEditorDraft(_draftTarget);
       if (!mounted) return;
-      if (_draftText.text.isNotEmpty) {
-        final data = jsonDecode(_draftText.text) as Map<String, dynamic>;
+      if (saved != null && saved.isNotEmpty) {
+        final data = jsonDecode(saved) as Map<String, dynamic>;
         setState(() {
           for (final e in (data['fields'] as Map<String, dynamic>).entries) {
             _text(e.key).text = e.value as String;
@@ -251,10 +274,15 @@ class _EditorState extends State<_Editor> {
     controller: _text(key, initial),
     draft: _fieldDrafts.putIfAbsent(
       key,
-      () => KitDraft(
-        target: '${_draft.target}.$key',
-        profileId: _controller.profileId,
+      () => _ControllerDraft(
+        target: '$_draftTarget.$key',
+        owner: _controller,
         controller: _text(key, initial),
+        isAlive: () => mounted && !_complete,
+        onFailure: () {
+          if (mounted && !_complete)
+            setState(() => _error = _l.teamProjectEditorDraftFailed);
+        },
       ),
     ),
     kind: multiline
@@ -352,7 +380,7 @@ class _EditorState extends State<_Editor> {
     String? text,
     bool close = true,
   }) async {
-    if (_working) return false;
+    if (_working || _complete) return false;
     _change(() {
       _working = true;
       _error = null;
@@ -381,10 +409,18 @@ class _EditorState extends State<_Editor> {
     // the sheet while the write was in flight.
     if (result.accepted && close) {
       _complete = true;
-      await _draftTail;
-      await _draft.clear();
-      for (final draft in _fieldDrafts.values) {
-        await draft.clear();
+      try {
+        await _controller.clearEditorDraft(_draftTarget);
+        for (final draft in _fieldDrafts.values) {
+          await draft.clear();
+        }
+      } catch (_) {
+        if (mounted)
+          setState(() {
+            _working = false;
+            _error = _l.teamProjectEditorDraftClearFailed;
+          });
+        return true;
       }
     }
     if (!mounted) return result.accepted;
@@ -409,10 +445,18 @@ class _EditorState extends State<_Editor> {
     );
     if (!approved || !mounted) return;
     _complete = true;
-    await _draftTail;
-    await _draft.clear();
-    for (final draft in _fieldDrafts.values) {
-      await draft.clear();
+    try {
+      await _controller.clearEditorDraft(_draftTarget);
+      for (final draft in _fieldDrafts.values) {
+        await draft.clear();
+      }
+    } catch (_) {
+      if (mounted)
+        setState(() {
+          _complete = false;
+          _error = _l.teamProjectEditorDraftFailed;
+        });
+      return;
     }
     if (!mounted) return;
     final navigator = Navigator.of(context);
@@ -424,6 +468,7 @@ class _EditorState extends State<_Editor> {
   }
 
   Future<void> _save() async {
+    if (_complete) return;
     if (_creating ||
         widget.kind == _Kind.settings ||
         widget.kind == _Kind.defaults) {
@@ -604,7 +649,7 @@ class _EditorState extends State<_Editor> {
                       : _l.teamProjectEditorApplyPlan,
                 _ => _l.teamProjectEditorSave,
               },
-              onPressed: _working || _restoring ? null : _save,
+              onPressed: _working || _restoring || _complete ? null : _save,
               working: _working,
             ),
       secondary: widget.kind == _Kind.spec

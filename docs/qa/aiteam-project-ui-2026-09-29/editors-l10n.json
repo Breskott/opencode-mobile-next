@@ -87,5 +87,6 @@
   "teamProjectEditorDraftApproval": "Draft changes need your approval before they become the project spec.",
   "teamProjectEditorChangeRequest": "What should the planner change?",
   "teamProjectEditorAskChange": "Ask to change",
-  "teamProjectEditorChangeRequired": "Add a goal and describe the change you want."
+  "teamProjectEditorChangeRequired": "Add a goal and describe the change you want.",
+  "teamProjectEditorDraftClearFailed": "Changes were saved, but the local draft could not be cleared. Close this sheet and review the project before trying again."
 }

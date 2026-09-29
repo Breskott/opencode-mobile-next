@@ -166,4 +166,38 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
   });
+  testWidgets('dismissed form restores its redacted controller draft', (
+    tester,
+  ) async {
+    final gateway = _Gateway(const TeamWorkspace());
+    final controller = TeamProjectController(gateway);
+    await controller.load();
+    addTearDown(controller.dispose);
+    KitRedact.registerKnownSecret('test-only-draft-secret');
+    addTearDown(KitRedact.clearKnownSecrets);
+    final context = await pumpKitHost(
+      tester,
+      effects: const KitEffects(motion: KitMotionLevel.off),
+    );
+    unawaited(openTeamNewProject(context, controller));
+    await tester.pumpAndSettle();
+    Finder goal() => find.descendant(
+      of: find.byKey(const ValueKey('goal')),
+      matching: find.byType(EditableText),
+    );
+    await tester.ensureVisible(goal());
+    await tester.enterText(goal(), 'Build a reader test-only-draft-secret');
+    await tester.testTextInput.hide();
+    await tester.pumpAndSettle();
+    Navigator.of(context).pop();
+    await tester.pumpAndSettle();
+    unawaited(openTeamNewProject(context, controller));
+    await tester.pumpAndSettle();
+    final restored = tester.widget<EditableText>(goal()).controller.text;
+    expect(restored, contains('Build a reader'));
+    expect(restored, isNot(contains('test-only-draft-secret')));
+    expect(gateway.commands, isEmpty);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
 }
