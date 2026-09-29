@@ -720,8 +720,8 @@ class _Counts extends StatelessWidget {
   }
 }
 
-/// The opened note and body: one indent level ([KitTokens.space3]) after a
-/// hairline start stroke, whatever the row's depth ("one indent level").
+/// The opened note and body: on the transcript's gutter, no stroke and no
+/// indent, whatever the row's depth.
 class _Body extends StatelessWidget {
   const _Body({required this.children});
 
@@ -735,28 +735,15 @@ class _Body extends StatelessWidget {
         top: tokens.space1,
         bottom: tokens.space2,
       ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: BorderDirectional(
-            start: BorderSide(
-              color: tokens.roles.hairline,
-              width: KitTokens.hairlineWidth(context),
-            ),
-          ),
-        ),
-        child: Padding(
-          padding: EdgeInsetsDirectional.only(start: tokens.space3),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var i = 0; i < children.length; i++) ...[
-                if (i > 0) SizedBox(height: tokens.space2),
-                children[i],
-              ],
-            ],
-          ),
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) SizedBox(height: tokens.space2),
+            children[i],
+          ],
+        ],
       ),
     );
   }

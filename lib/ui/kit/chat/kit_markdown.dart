@@ -903,7 +903,7 @@ class _KitMdQuote extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: EdgeInsetsDirectional.only(start: tokens.space3),
+        padding: EdgeInsetsDirectional.only(start: tokens.space2),
         child: _KitMdText(
           source: text,
           role: scope.role,

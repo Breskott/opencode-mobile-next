@@ -160,7 +160,7 @@ void main() {
     final bubble = tester.getRect(find.byKey(_bubbleKey));
     // Pane is 412 - 2*16 = 380 wide, starting at 16.
     expect(bubble.right, 396);
-    expect(bubble.width, lessThanOrEqualTo(380 * KitLayout.bubbleMaxShare));
+    expect(bubble.width, lessThanOrEqualTo(380 - KitLayout.bubbleStartInset));
 
     final roles = KitTokens.of(tester.element(find.byKey(_bubbleKey))).roles;
     final box = tester.widget<DecoratedBox>(find.byKey(_bubbleKey));

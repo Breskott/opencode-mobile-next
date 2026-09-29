@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 // Everything waiting to reach the agent, as one bubble at the end of the
 // conversation (docs/ux-system/kit-api/KitQueuedMessage.md; STATE-17,
 // STATE-10, STATE-5, DATA-7, DATA-11, KIT-28, A11Y-5, LOOK-26, LOOK-5).
@@ -246,7 +247,7 @@ class _Bubble extends StatelessWidget {
           alignment: AlignmentDirectional.centerEnd,
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: (width * KitLayout.bubbleMaxShare).floorToDouble(),
+              maxWidth: math.max(0.0, width - KitLayout.bubbleStartInset),
             ),
             child: Semantics(
               container: true,

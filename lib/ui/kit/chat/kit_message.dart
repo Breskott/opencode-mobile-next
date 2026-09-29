@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 // One piece of a transcript that is words (docs/ux-system/kit-api/
 // KitMessage.md; STATE-16, KIT-41, LOOK-26, LOOK-5, KIT-28, A11Y-5, COPY-2,
 // KIT-32): the person's prompt as an end-aligned bubble, the agent's reply
@@ -37,7 +38,8 @@ const double _kWrapTextScale = 1.3;
 /// is one rule for every prompt: the bubble hugs its words and may grow to
 /// the whole width, so a short prompt stays small and a long one wraps at
 /// the page width, with no jump between two styles. [compact] caps it at
-/// [KitLayout.bubbleMaxShare]; [full] always fills the width.
+/// [KitLayout.bubbleMaxShare]; the default [auto] hugs up to the full width
+/// minus [KitLayout.bubbleStartInset]; [full] always fills the width.
 enum KitBubbleWidth { auto, compact, full }
 
 /// A transcript piece that is words (STANDARDS STATE-16, KIT-41): a prompt
@@ -289,7 +291,7 @@ class _Prompt extends StatelessWidget {
         final stretch = message.bubbleWidth == KitBubbleWidth.full;
         final maxWidth = message.bubbleWidth == KitBubbleWidth.compact
             ? (width * KitLayout.bubbleMaxShare).floorToDouble()
-            : width;
+            : math.max(0.0, width - KitLayout.bubbleStartInset);
         return Align(
           alignment: AlignmentDirectional.centerEnd,
           child: ConstrainedBox(
@@ -428,8 +430,8 @@ class _BubbleState extends State<_Bubble> {
 
     final content = Padding(
       padding: EdgeInsetsDirectional.symmetric(
-        horizontal: tokens.space4,
-        vertical: tokens.space3,
+        horizontal: tokens.space3,
+        vertical: KitLayout.bubblePaddingVertical,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -455,10 +457,10 @@ class _BubbleState extends State<_Bubble> {
         ? content
         : LayoutBuilder(
             builder: (context, constraints) {
-              final inner = constraints.maxWidth - 2 * tokens.space4;
+              final inner = constraints.maxWidth - 2 * tokens.space3;
               final hug = _hugWidth(context, body, inner);
               if (hug == null) return content;
-              return SizedBox(width: hug + 2 * tokens.space4, child: content);
+              return SizedBox(width: hug + 2 * tokens.space3, child: content);
             },
           );
 
@@ -759,8 +761,7 @@ class _FoldState extends State<_Fold> with SingleTickerProviderStateMixin {
   }
 }
 
-/// The opened body: one indent ([KitTokens.space3]) after a hairline start
-/// stroke (the work line's indent).
+/// The opened body: on the transcript's gutter, no stroke and no indent.
 class _Body extends StatelessWidget {
   const _Body({required this.child});
 
@@ -774,20 +775,7 @@ class _Body extends StatelessWidget {
         top: tokens.space1,
         bottom: tokens.space2,
       ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: BorderDirectional(
-            start: BorderSide(
-              color: tokens.roles.hairline,
-              width: KitTokens.hairlineWidth(context),
-            ),
-          ),
-        ),
-        child: Padding(
-          padding: EdgeInsetsDirectional.only(start: tokens.space3),
-          child: child,
-        ),
-      ),
+      child: child,
     );
   }
 }

@@ -88,8 +88,18 @@ abstract final class KitLayout {
   static const double popoverMinWidth = 200;
   static const double popoverMaxWidth = 320;
 
-  /// A prompt bubble's maximum share of the available width (KitMessage.md).
+  /// A prompt bubble's maximum share of the available width, used by the
+  /// `compact` option only (KitMessage.md).
   static const double bubbleMaxShare = .85;
+
+  /// The default (auto) prompt bubble hugs its words up to the full
+  /// transcript width minus this fixed start inset: the bubble's end edge
+  /// sits on the page gutter, and prose always keeps a visible start margin.
+  static const double bubbleStartInset = 48;
+
+  /// A prompt bubble's inner padding: symmetric and small so the words get
+  /// the width (the horizontal is `KitTokens.space3`, 12).
+  static const double bubblePaddingVertical = 10;
 
   /// The composer field's height cap as a share of the window height
   /// (KitComposer.md).
