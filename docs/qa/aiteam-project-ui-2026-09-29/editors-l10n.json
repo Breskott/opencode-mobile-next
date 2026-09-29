@@ -88,5 +88,12 @@
   "teamProjectEditorChangeRequest": "What should the planner change?",
   "teamProjectEditorAskChange": "Ask to change",
   "teamProjectEditorChangeRequired": "Add a goal and describe the change you want.",
-  "teamProjectEditorDraftClearFailed": "Changes were saved, but the local draft could not be cleared. Close this sheet and review the project before trying again."
+  "teamProjectEditorDraftClearFailed": "Changes were saved, but the local draft could not be cleared. Close this sheet and review the project before trying again.",
+  "teamProjectEditorNoOptions": "No options are available yet. Return to AI Team to add a server or role.",
+  "teamProjectEditorUnknownDate": "Date unavailable",
+  "teamProjectEditorYou": "You",
+  "teamProjectEditorApprovedBy": "Approved by",
+  "teamProjectEditorPlanFailed": "The planner did not return a usable plan. Keep the goal as one task, or ask for a new plan.",
+  "teamProjectEditorUseAsTask": "Use as one task",
+  "teamProjectEditorAskAgain": "Ask again"
 }

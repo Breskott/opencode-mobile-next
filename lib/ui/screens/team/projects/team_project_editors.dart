@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../../domain/relative_age.dart';
 import '../../../../state/team_project_controller.dart';
 import '../../../kit/kit.dart';
 
@@ -307,15 +308,18 @@ class _EditorState extends State<_Editor> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       KitSectionLabel.inline(label),
-      KitChoiceList<String>.single(
-        semanticsLabel: label,
-        choices: [
-          for (final e in options.entries)
-            KitChoice(value: e.key, title: e.value),
-        ],
-        selected: selected,
-        onSelected: onChanged,
-      ),
+      if (options.isEmpty)
+        KitNotice(message: _l.teamProjectEditorNoOptions)
+      else
+        KitChoiceList<String>.single(
+          semanticsLabel: label,
+          choices: [
+            for (final e in options.entries)
+              KitChoice(value: e.key, title: e.value),
+          ],
+          selected: selected,
+          onSelected: onChanged,
+        ),
     ],
   );
   Widget _button(
@@ -647,7 +651,9 @@ class _EditorState extends State<_Editor> {
       fill: true,
       loading: _working || _restoring,
       onClose: () => Navigator.of(context).pop(),
-      primary: widget.kind == _Kind.roles && _role == null
+      primary:
+          (widget.kind == _Kind.roles && _role == null) ||
+              (widget.kind == _Kind.plan && _project?.status == 'planFailed')
           ? null
           : KitAction(
               label: switch (widget.kind) {
@@ -903,84 +909,173 @@ class _EditorState extends State<_Editor> {
       () => _change(() => _history = !_history),
     ),
     if (_history)
-      for (final s in _project?.specVersions.reversed ?? <TeamSpec>[]) ...[
-        KitSectionLabel.inline('${_l.teamProjectEditorVersion} ${s.version}'),
-        KitText(s.goal),
-        KitText(s.constraints),
-        KitText(s.decisions),
-        KitText(s.outOfScope),
-        for (final m in s.milestones)
-          KitRow(
-            title: m.title,
-            supporting: TextSpan(text: m.criteria.join('\n')),
-            supportingMaxLines: 10,
+      for (final spec in _project?.specVersions.reversed ?? <TeamSpec>[])
+        _historyVersion(spec),
+  ];
+  String _specText(TeamSpec spec) => [
+    _l.teamProjectEditorGoal,
+    spec.goal,
+    _l.teamProjectEditorConstraints,
+    spec.constraints,
+    _l.teamProjectEditorDecisions,
+    spec.decisions,
+    _l.teamProjectEditorOutOfScope,
+    spec.outOfScope,
+    _l.teamProjectEditorContextFiles,
+    ...spec.contextFiles,
+    _l.teamProjectEditorMilestones,
+    for (final m in spec.milestones) ...[m.title, ...m.criteria],
+  ].join('\n');
+  Widget _historyVersion(TeamSpec spec) {
+    final previous = _project?.specVersions
+        .where((s) => s.version < spec.version)
+        .lastOrNull;
+    final at = DateTime.tryParse(spec.approvedAt);
+    final age = at == null
+        ? _l.teamProjectEditorUnknownDate
+        : relativeAgeLabel(DateTime.now().difference(at), at: at, l10n: _l);
+    final actor = spec.approvedBy == 'person'
+        ? _l.teamProjectEditorYou
+        : KitRedact.text(spec.approvedBy);
+    final title = '${_l.teamProjectEditorVersion} ${spec.version}';
+    final diff = previous == null
+        ? <KitDiffFile>[]
+        : [
+            KitDiffFile.fromTexts(
+              '${_l.teamProjectEditorVersion} ${previous.version} → $title',
+              before: _specText(previous),
+              after: _specText(spec),
+            ),
+          ];
+    return KitExpandRow(
+      title: title,
+      supporting: TextSpan(
+        text: '${_l.teamProjectEditorApprovedBy} $actor · $age',
+      ),
+      children: [
+        KitText(_specText(spec)),
+        if (diff.isNotEmpty)
+          KitDiffView(
+            files: diff,
+            maxLines: 12,
+            onOpenAll: () => showKitDiff(context, title: title, files: diff),
           ),
       ],
-  ];
+    );
+  }
+
+  Future<void> _recoverPlan(TeamProjectAction action) async {
+    if (await _send(action, close: false) && mounted) {
+      _change(() {
+        _tasks = [...?_project?.tasks];
+        _phases = [...?_project?.phases];
+        for (final task in _tasks) {
+          _text('task-${task.id}').text = task.title;
+          _text('criteria-${task.id}').text = task.criteria.join('\n');
+        }
+      });
+    }
+  }
+
   List<Widget> _planFields() => [
-    KitNotice(message: _l.teamProjectEditorPlanHelp),
-    for (final phase in _phases) ...[
-      KitSectionLabel.inline(phase.title),
-      KitSwitchRow(
-        title: _l.teamProjectEditorRisky,
-        value: phase.risky,
-        onChanged: (v) => _change(() {
-          _phases[_phases.indexOf(phase)] = phase.copyWith(risky: v);
-        }),
+    if (_project?.status == 'planFailed') ...[
+      KitNotice(message: _l.teamProjectEditorPlanFailed),
+      _button(
+        _l.teamProjectEditorUseAsTask,
+        () => _recoverPlan(TeamProjectAction.usePlanAsTask),
       ),
-      for (final t in _tasks.where((t) => t.phaseId == phase.id)) ...[
-        _field('task-${t.id}', _l.teamProjectEditorTaskTitle, initial: t.title),
-        _field(
-          'criteria-${t.id}',
-          _l.teamProjectEditorCriteria,
-          initial: t.criteria.join('\n'),
-          multiline: true,
-        ),
-        _choice(
-          _l.teamProjectEditorRole,
-          {
-            for (final r in _controller.snapshot?.roles ?? <TeamProjectRole>[])
-              r.id: r.name,
-          },
-          t.roleId,
-          (v) =>
-              _change(() => _tasks[_tasks.indexOf(t)] = t.copyWith(roleId: v)),
-        ),
-        _choice(
-          _l.teamProjectEditorRepo,
-          {for (final r in _repos) r.id: r.name},
-          t.repoId,
-          (v) => _change(() {
-            final r = _repos.firstWhere((r) => r.id == v);
-            _tasks[_tasks.indexOf(t)] = t.copyWith(
-              repoId: r.id,
-              serverId: r.serverId,
-            );
+      _button(
+        _l.teamProjectEditorAskAgain,
+        () => _recoverPlan(TeamProjectAction.retryPlan),
+      ),
+    ] else ...[
+      KitNotice(message: _l.teamProjectEditorPlanHelp),
+      for (final phase in _phases) ...[
+        KitSectionLabel.inline(phase.title),
+        KitSwitchRow(
+          title: _l.teamProjectEditorRisky,
+          value: phase.risky,
+          onChanged: (v) => _change(() {
+            _phases[_phases.indexOf(phase)] = phase.copyWith(risky: v);
           }),
         ),
-        KitChoiceList<String>.multi(
-          semanticsLabel: _l.teamProjectEditorDependencies,
-          choices: [
-            for (final other in _tasks.where((o) => o.id != t.id))
-              KitChoice(value: other.id, title: other.title),
-          ],
-          selected: t.dependsOn.toSet(),
-          onChanged: (v) => _change(
-            () => _tasks[_tasks.indexOf(t)] = t.copyWith(dependsOn: v.toList()),
+        for (final t in _tasks.where((t) => t.phaseId == phase.id)) ...[
+          _field(
+            'task-${t.id}',
+            _l.teamProjectEditorTaskTitle,
+            initial: t.title,
           ),
-        ),
-        _button(
-          _l.teamProjectEditorRemoveTask,
-          () => _change(() {
-            _tasks.removeWhere((other) => other.id == t.id);
-            _tasks = [
-              for (final other in _tasks)
-                other.copyWith(
-                  dependsOn: other.dependsOn.where((id) => id != t.id).toList(),
+          _field(
+            'criteria-${t.id}',
+            _l.teamProjectEditorCriteria,
+            initial: t.criteria.join('\n'),
+            multiline: true,
+          ),
+          _choice(
+            _l.teamProjectEditorRole,
+            {
+              for (final r
+                  in _controller.snapshot?.roles ?? <TeamProjectRole>[])
+                r.id: r.name,
+            },
+            t.roleId,
+            (v) => _change(
+              () => _tasks[_tasks.indexOf(t)] = t.copyWith(roleId: v),
+            ),
+          ),
+          _choice(
+            _l.teamProjectEditorRepo,
+            {for (final r in _repos) r.id: r.name},
+            t.repoId,
+            (v) => _change(() {
+              final r = _repos.firstWhere((r) => r.id == v);
+              _tasks[_tasks.indexOf(t)] = t.copyWith(
+                repoId: r.id,
+                serverId: r.serverId,
+              );
+            }),
+          ),
+          _choice(
+            _l.teamProjectEditorServer,
+            {
+              for (final server
+                  in _controller.snapshot?.servers ?? <TeamServer>[])
+                server.id: server.name,
+            },
+            t.serverId,
+            (v) => _change(
+              () => _tasks[_tasks.indexOf(t)] = t.copyWith(serverId: v),
+            ),
+          ),
+          if (_tasks.length > 1)
+            KitChoiceList<String>.multi(
+              semanticsLabel: _l.teamProjectEditorDependencies,
+              choices: [
+                for (final other in _tasks.where((o) => o.id != t.id))
+                  KitChoice(value: other.id, title: other.title),
+              ],
+              selected: t.dependsOn.toSet(),
+              onChanged: (v) => _change(
+                () => _tasks[_tasks.indexOf(t)] = t.copyWith(
+                  dependsOn: v.toList(),
                 ),
-            ];
-          }),
-        ),
+              ),
+            ),
+          _button(
+            _l.teamProjectEditorRemoveTask,
+            () => _change(() {
+              _tasks.removeWhere((other) => other.id == t.id);
+              _tasks = [
+                for (final other in _tasks)
+                  other.copyWith(
+                    dependsOn: other.dependsOn
+                        .where((id) => id != t.id)
+                        .toList(),
+                  ),
+              ];
+            }),
+          ),
+        ],
       ],
     ],
   ];
@@ -996,9 +1091,7 @@ class _EditorState extends State<_Editor> {
       for (final role in _controller.snapshot?.roles ?? <TeamProjectRole>[])
         KitRow(
           title: role.name,
-          supporting: TextSpan(
-            text: role.readOnly ? _l.teamProjectEditorRemoteModel : role.model,
-          ),
+          supporting: TextSpan(text: role.model),
           onTap: () => _editRole(role),
         ),
       _button(
@@ -1012,11 +1105,8 @@ class _EditorState extends State<_Editor> {
         _l.teamProjectEditorInstructions,
         multiline: true,
       ),
-      if (!_role!.readOnly) ...[
-        _field('roleModel', _l.teamProjectEditorModel),
-        _field('roleFallback', _l.teamProjectEditorFallback),
-      ] else
-        KitNotice(message: _l.teamProjectEditorRemoteModel),
+      _field('roleModel', _l.teamProjectEditorModel),
+      _field('roleFallback', _l.teamProjectEditorFallback),
       for (final p in _controller.snapshot?.projects ?? <TeamProject>[])
         for (final t in p.tasks.where((t) => t.roleId == _role!.id))
           KitRow(

@@ -105,7 +105,10 @@ void main() {
   ) async {
     final gateway = _Gateway(
       const TeamWorkspace(
-        servers: [TeamServer(id: 'pc', name: 'Home PC')],
+        servers: [
+          TeamServer(id: 'pc', name: 'Home PC'),
+          TeamServer(id: 'remote', name: 'Build server'),
+        ],
         roles: [TeamProjectRole(id: 'builder', name: 'Builder')],
         projects: [
           TeamProject(
@@ -152,6 +155,7 @@ void main() {
     tester.testTextInput.hide();
     await tester.pumpAndSettle();
     await _tap(tester, 'Pause for review after this phase');
+    await _tap(tester, 'Build server');
     await _tap(tester, 'Approve and start');
 
     expect(gateway.commands, hasLength(1));
@@ -163,6 +167,7 @@ void main() {
       'An empty library explains how to add one',
     ]);
     expect(command.phases!.single.risky, isTrue);
+    expect(command.tasks!.single.serverId, 'remote');
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
   });
@@ -200,4 +205,81 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
   });
+  testWidgets(
+    'checker model and fallback remain editable without write access',
+    (tester) async {
+      final gateway = _Gateway(
+        const TeamWorkspace(
+          roles: [
+            TeamProjectRole(id: 'checker', name: 'Checker', readOnly: true),
+          ],
+        ),
+      );
+      final controller = TeamProjectController(gateway);
+      await controller.load();
+      addTearDown(controller.dispose);
+      final context = await pumpKitHost(
+        tester,
+        effects: const KitEffects(motion: KitMotionLevel.off),
+      );
+      unawaited(openTeamRoles(context, controller));
+      await tester.pumpAndSettle();
+      await _tap(tester, 'Checker');
+      for (final entry in {
+        'roleModel': 'vendor/checker',
+        'roleFallback': 'vendor/backup',
+      }.entries) {
+        final field = find.descendant(
+          of: find.byKey(ValueKey(entry.key)),
+          matching: find.byType(EditableText),
+        );
+        await tester.ensureVisible(field);
+        await tester.enterText(field, entry.value);
+        tester.testTextInput.hide();
+        await tester.pumpAndSettle();
+      }
+      await _tap(tester, 'Save changes');
+      expect(gateway.commands.single.role!.model, 'vendor/checker');
+      expect(gateway.commands.single.role!.fallbackModel, 'vendor/backup');
+      expect(gateway.commands.single.role!.readOnly, isTrue);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    },
+  );
+  for (final recovery in {
+    'Use as one task': TeamProjectAction.usePlanAsTask,
+    'Ask again': TeamProjectAction.retryPlan,
+  }.entries) {
+    testWidgets('malformed plan offers ${recovery.key} without starting work', (
+      tester,
+    ) async {
+      final gateway = _Gateway(
+        const TeamWorkspace(
+          projects: [
+            TeamProject(
+              id: 'project',
+              name: 'Reader',
+              status: 'planFailed',
+              revision: 7,
+            ),
+          ],
+        ),
+      );
+      final controller = TeamProjectController(gateway);
+      await controller.load();
+      addTearDown(controller.dispose);
+      final context = await pumpKitHost(
+        tester,
+        effects: const KitEffects(motion: KitMotionLevel.off),
+      );
+      unawaited(openTeamPlanEditor(context, controller, 'project'));
+      await tester.pumpAndSettle();
+      expect(find.text('Approve and start'), findsNothing);
+      await _tap(tester, recovery.key);
+      expect(gateway.commands.single.action, recovery.value);
+      expect(gateway.commands.single.expectedRevision, 7);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
+  }
 }
