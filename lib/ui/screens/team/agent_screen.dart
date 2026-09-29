@@ -69,7 +69,12 @@ class AgentScreen extends StatefulWidget {
     required this.controller,
     required this.agentId,
     this.now,
+    this.sessionTitle,
   });
+
+  /// The agent's own conversation title, when opened from that page; shown
+  /// under Technical details.
+  final String? sessionTitle;
 
   final OrchestrationController controller;
   final String agentId;
@@ -666,6 +671,7 @@ class _AgentScreenState extends State<AgentScreen> {
                 agent,
                 work,
                 lastCommand: _stepCommand(_lastStep()),
+                sessionTitle: widget.sessionTitle,
               ),
             ),
           ),
@@ -827,9 +833,12 @@ class _AgentScreenState extends State<AgentScreen> {
     OrchestrationAgent agent,
     WorkItem? work, {
     String? lastCommand,
+    String? sessionTitle,
   }) {
     bool has(String? value) => value != null && value.trim().isNotEmpty;
     final values = <KitTechnicalValue>[
+      if (has(sessionTitle))
+        KitTechnicalValue(l10n.teamUiAgentLabelSessionTitle, sessionTitle!),
       KitTechnicalValue(l10n.teamAgentScreenLabelId, agent.id),
       if (has(agent.sessionId))
         KitTechnicalValue(l10n.teamUiAgentLabelSessionId, agent.sessionId!),

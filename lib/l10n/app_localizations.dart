@@ -21111,7 +21111,7 @@ abstract class AppLocalizations {
   /// An AI Team agent that reviews finished work and merges it
   ///
   /// In en, this message translates to:
-  /// **'Reviewer (merges)'**
+  /// **'Reviewer'**
   String get teamUiAgentRoleReviewer;
 
   /// The AI Team agent that turns a task into steps
@@ -38581,6 +38581,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Collapse all steps'**
   String get chatCollapseAllSteps;
+
+  /// A folded line in a watched team agent's conversation for a message the team sent it (its start-up instructions, mail): how many words it has and when it arrived.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Instructions from the team · 1 word · {time}} other{Instructions from the team · {count} words · {time}}}'**
+  String chatWatchTeamInstructions(int count, String time);
+
+  /// Empty watching page while the agent works but has said nothing yet
+  ///
+  /// In en, this message translates to:
+  /// **'Starting'**
+  String get chatWatchEmptyStartingTitle;
+
+  /// Empty watching page body while the agent has said nothing yet
+  ///
+  /// In en, this message translates to:
+  /// **'Its steps appear here as it works.'**
+  String get chatWatchEmptyStartingBody;
+
+  /// Empty watching page body naming the task the agent works on
+  ///
+  /// In en, this message translates to:
+  /// **'Working on “{task}”. Its steps appear here as it works.'**
+  String chatWatchEmptyWorkingOn(String task);
+
+  /// Empty watching page body for the reviewer, naming the task whose changes it reviews
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewing the changes of “{task}”. Its steps appear here as it works.'**
+  String chatWatchEmptyReviewing(String task);
+
+  /// Empty watching page title while the agent is idle
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get chatWatchEmptyIdleTitle;
+
+  /// Empty watching page body while the agent is idle
+  ///
+  /// In en, this message translates to:
+  /// **'It is waiting for its next task. Message it below to ask for something.'**
+  String get chatWatchEmptyIdleBody;
+
+  /// Technical details label: the title the agent's own conversation carries inside its harness
+  ///
+  /// In en, this message translates to:
+  /// **'Session title'**
+  String get teamUiAgentLabelSessionTitle;
 }
 
 class _AppLocalizationsDelegate

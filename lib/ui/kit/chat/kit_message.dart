@@ -33,6 +33,11 @@ enum KitMessageKind { prompt, reply, thought, notice, marker }
 /// action drops under the words"). The same threshold as KitToolRow.
 const double _kWrapTextScale = 1.3;
 
+/// How wide a [KitMessage.prompt] bubble may grow. [auto] keeps short words
+/// in the compact end-aligned bubble and lets long ones (more than about six
+/// lines, code or a list) use the whole width.
+enum KitBubbleWidth { auto, compact, full }
+
 /// A transcript piece that is words (STANDARDS STATE-16, KIT-41): a prompt
 /// has no control row and opens its menu on long-press; a reply has no
 /// frame; step boundaries are never drawn.
@@ -51,6 +56,7 @@ class KitMessage extends StatelessWidget {
     this.time,
     this.menu = const <KitMenuItem>[],
     this.bubbleKey,
+    this.bubbleWidth = KitBubbleWidth.auto,
   }) : kind = KitMessageKind.prompt,
        text = null,
        heading = null,
@@ -74,6 +80,7 @@ class KitMessage extends StatelessWidget {
     required KitMarkdown this.body,
     this.bodyKey,
   }) : kind = KitMessageKind.reply,
+       bubbleWidth = KitBubbleWidth.auto,
        attachments = const <KitAttachment>[],
        time = null,
        menu = const <KitMenuItem>[],
@@ -105,6 +112,7 @@ class KitMessage extends StatelessWidget {
     this.onExpansionChanged,
     this.thoughtKey,
   }) : kind = KitMessageKind.thought,
+       bubbleWidth = KitBubbleWidth.auto,
        attachments = const <KitAttachment>[],
        time = null,
        menu = const <KitMenuItem>[],
@@ -134,6 +142,7 @@ class KitMessage extends StatelessWidget {
     this.onExpansionChanged,
     this.noticeKey,
   }) : kind = KitMessageKind.notice,
+       bubbleWidth = KitBubbleWidth.auto,
        body = null,
        attachments = const <KitAttachment>[],
        time = null,
@@ -155,6 +164,7 @@ class KitMessage extends StatelessWidget {
     this.working = false,
     this.markerKey,
   }) : kind = KitMessageKind.marker,
+       bubbleWidth = KitBubbleWidth.auto,
        body = null,
        attachments = const <KitAttachment>[],
        time = null,
@@ -176,6 +186,9 @@ class KitMessage extends StatelessWidget {
 
   /// prompt, reply, thought: the words, as the host's KitMarkdown.
   final KitMarkdown? body;
+
+  /// [KitMessage.prompt]: how wide the bubble may grow ([KitBubbleWidth]).
+  final KitBubbleWidth bubbleWidth;
 
   /// prompt: read-only chips under the text (KitComposerChips).
   final List<KitAttachment> attachments;
@@ -267,14 +280,26 @@ class _Prompt extends StatelessWidget {
         final width = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : KitLayout.paneDetailMaxWidth;
+        // Long words (or code and lists) use the whole width: a narrow wrap
+        // wastes the page. The bubble keeps its surface and the time stays
+        // at the end edge.
+        final wide = switch (message.bubbleWidth) {
+          KitBubbleWidth.compact => false,
+          KitBubbleWidth.full => true,
+          KitBubbleWidth.auto => _isLong(message.body?.data ?? ''),
+        };
         return Align(
           alignment: AlignmentDirectional.centerEnd,
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: (width * KitLayout.bubbleMaxShare).floorToDouble(),
+              maxWidth: wide
+                  ? width
+                  : (width * KitLayout.bubbleMaxShare).floorToDouble(),
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: wide
+                  ? CrossAxisAlignment.stretch
+                  : CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
               children: [
                 _Bubble(message: message),
@@ -284,10 +309,13 @@ class _Prompt extends StatelessWidget {
                       top: tokens.space1,
                       end: tokens.space2,
                     ),
-                    child: KitText(
-                      timeWords,
-                      role: KitTextRole.caption,
-                      tone: KitTextTone.tertiary,
+                    child: Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: KitText(
+                        timeWords,
+                        role: KitTextRole.caption,
+                        tone: KitTextTone.tertiary,
+                      ),
                     ),
                   ),
               ],
@@ -297,6 +325,12 @@ class _Prompt extends StatelessWidget {
       },
     );
   }
+
+  /// More than about six lines, or code or a list: read full width.
+  static bool _isLong(String text) =>
+      text.length > 360 ||
+      '\n'.allMatches(text).length >= 5 ||
+      text.contains('```');
 }
 
 class _Bubble extends StatefulWidget {

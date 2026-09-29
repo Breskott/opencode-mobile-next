@@ -30,6 +30,8 @@ class ChatWatch {
     required this.hint,
     this.hintOf,
     this.title,
+    this.empty,
+    this.sessionTitle,
     this.readOnlyReason,
     this.onSend,
     this.draftId,
@@ -53,6 +55,14 @@ class ChatWatch {
   /// The top bar's title: the task the worker is on, not the worker's
   /// internal session title; null (or a null result) keeps the session's.
   final String? Function()? title;
+
+  /// What the agent is doing while its conversation has no messages yet
+  /// (title, body), from the team's state; null keeps the plain words.
+  final (String, String) Function()? empty;
+
+  /// The chat writes the watched session's own (internal) title here, for
+  /// the worker's own page to show under its technical details.
+  final ValueNotifier<String?>? sessionTitle;
 
   /// Why nothing can be typed, shown in the composer when [onSend] is null:
   /// "This team can't be messaged from here."
@@ -155,7 +165,10 @@ extension _ChatWatching on _ChatScreenState {
 /// A watched conversation with nothing in it yet: the worker has not said
 /// anything, or its first turn is still being written.
 class _WatchingEmpty extends StatelessWidget {
-  const _WatchingEmpty();
+  const _WatchingEmpty({this.words});
+
+  /// The agent's own state in words (title, body); null: the plain words.
+  final (String, String)? words;
 
   @override
   Widget build(BuildContext context) {
@@ -163,8 +176,9 @@ class _WatchingEmpty extends StatelessWidget {
     return KitStateView(
       key: const ValueKey('chat-watching-empty'),
       icon: AppIconography.agent,
-      title: l10n.chatWatchEmptyTitle,
-      body: l10n.chatWatchEmptyBody,
+      title: words?.$1 ?? l10n.chatWatchEmptyTitle,
+      body: words?.$2 ?? l10n.chatWatchEmptyBody,
+      size: KitStateSize.inline,
       liveRegion: false,
     );
   }

@@ -14069,7 +14069,7 @@
   "@teamUiAgentRoleWorker": {
     "description": "An AI Team agent that does the steps of tasks"
   },
-  "teamUiAgentRoleReviewer": "Reviewer (merges)",
+  "teamUiAgentRoleReviewer": "Reviewer",
   "@teamUiAgentRoleReviewer": {
     "description": "An AI Team agent that reviews finished work and merges it"
   },
@@ -29635,5 +29635,59 @@
   "chatCollapseAllSteps": "Collapse all steps",
   "@chatCollapseAllSteps": {
     "description": "Top bar action on the watching chat page: folds every open step and fold in the transcript; also its tooltip and spoken name"
+  },
+  "chatWatchTeamInstructions": "{count, plural, =1{Instructions from the team · 1 word · {time}} other{Instructions from the team · {count} words · {time}}}",
+  "@chatWatchTeamInstructions": {
+    "description": "A folded line in a watched team agent's conversation for a message the team sent it (its start-up instructions, mail): how many words it has and when it arrived.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "time": {
+        "type": "String",
+        "example": "1:08 PM"
+      }
+    }
+  },
+  "chatWatchEmptyStartingTitle": "Starting",
+  "@chatWatchEmptyStartingTitle": {
+    "description": "Empty watching page while the agent works but has said nothing yet"
+  },
+  "chatWatchEmptyStartingBody": "Its steps appear here as it works.",
+  "@chatWatchEmptyStartingBody": {
+    "description": "Empty watching page body while the agent has said nothing yet"
+  },
+  "chatWatchEmptyWorkingOn": "Working on “{task}”. Its steps appear here as it works.",
+  "@chatWatchEmptyWorkingOn": {
+    "description": "Empty watching page body naming the task the agent works on",
+    "placeholders": {
+      "task": {
+        "type": "String",
+        "example": "Create a sample web page"
+      }
+    }
+  },
+  "chatWatchEmptyReviewing": "Reviewing the changes of “{task}”. Its steps appear here as it works.",
+  "@chatWatchEmptyReviewing": {
+    "description": "Empty watching page body for the reviewer, naming the task whose changes it reviews",
+    "placeholders": {
+      "task": {
+        "type": "String",
+        "example": "Create a sample web page"
+      }
+    }
+  },
+  "chatWatchEmptyIdleTitle": "Waiting",
+  "@chatWatchEmptyIdleTitle": {
+    "description": "Empty watching page title while the agent is idle"
+  },
+  "chatWatchEmptyIdleBody": "It is waiting for its next task. Message it below to ask for something.",
+  "@chatWatchEmptyIdleBody": {
+    "description": "Empty watching page body while the agent is idle"
+  },
+  "teamUiAgentLabelSessionTitle": "Session title",
+  "@teamUiAgentLabelSessionTitle": {
+    "description": "Technical details label: the title the agent's own conversation carries inside its harness"
   }
 }

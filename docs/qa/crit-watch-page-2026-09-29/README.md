@@ -17,3 +17,12 @@ kit_work_line.dart, message_view.dart, watching.dart, team_conversation_view.dar
 
 ## Device check
 Watch a worker with a long turn: open the work line, only the last 3 steps show plus "Show N earlier steps"; open a few steps, the collapse icon appears and one tap folds all; top bar shows the task title; strip says "Watching the Worker/Frontend · Working"; composer "Message Worker…".
+
+## Follow-up (reviewer page, instructions, wide bubbles)
+- Title: the reviewer's task is its project's work item waiting in review (newest); with none, the title is "Reviewer", never "New conversation".
+- "Reviewer (merges)" is now "Reviewer" (teamUiAgentRoleReviewer, en and ar).
+- Empty watching page says what the agent does from team state: Starting / Reviewing the changes of "task" / Working on "task" / Waiting (idle). Elapsed time not added (no reliable start time on the agent).
+- Kit: `KitStateView` inline size used for the in-transcript empty state (top, compact); `KitMessage.prompt` gained `bubbleWidth: KitBubbleWidth {auto, compact, full}` (auto: full width past about 6 lines, 360 chars, or code); time line stays at the end edge.
+- Team-sent messages: in a watched session, a user-role message that starts with a "[..]" stamp or is long shows as one folded `TranscriptNotice` "Instructions from the team · N words · time" (stamp line dropped). A short message typed by the person stays a bubble.
+- Session title: `AgentScreen.sessionTitle` shows the session's own title under Technical details ("Session title").
+- Device check: reviewer page shows task title, plain Reviewer, compact top-aligned empty state; instructions row expands to full-width markdown; long own prompts span the width.

@@ -1218,6 +1218,8 @@ class _MessageView extends StatelessWidget {
         .where((p) => p.isRenderable || _isFoldedIntoWork(p))
         .toList();
     if (m.info.role == 'user') {
+      final instructions = _teamInstructions(context, visibleParts);
+      if (instructions != null) return _frame(context, instructions);
       return _frame(context, _promptTurn(context, visibleParts));
     }
     return _frame(context, _replyTurn(context, visibleParts));
@@ -1275,6 +1277,38 @@ class _MessageView extends StatelessWidget {
           turn,
         ],
       ),
+    );
+  }
+
+  /// Watching a team agent's session: a long user-role message was not
+  /// typed by the person (the team's start-up instructions, mail, nudges),
+  /// so it is one folded line that opens to its text, never a bubble.
+  Widget? _teamInstructions(BuildContext context, List<Part> visibleParts) {
+    if (_chat(context)?._watching != true) return null;
+    var text = visibleParts
+        .where((part) => part.type == 'text')
+        .map((part) => part.text)
+        .where((value) => value.trim().isNotEmpty)
+        .join('\n')
+        .trim();
+    final stamped = text.startsWith('[');
+    if (!stamped && text.length < 240) return null;
+    // Drop the "[phone] Test/gastown.refinery • 2026-09-29T09:08:07" line:
+    // the time is shown in the app's own format.
+    final newline = text.indexOf('\n');
+    if (stamped && newline > 0 && text.substring(0, newline).contains('•')) {
+      text = text.substring(newline + 1).trim();
+    }
+    final created = m.info.time?.created;
+    final words = text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    return TranscriptNotice(
+      key: ValueKey('team-instructions-${m.info.id}'),
+      header: _chatL10n(context).chatWatchTeamInstructions(
+        words,
+        created == null ? '' : _fmtSessionTime(created, context),
+      ),
+      icon: AppIconography.agent,
+      text: text,
     );
   }
 
