@@ -256,7 +256,7 @@ void main() {
               expect(find.byKey(const ValueKey('team-home')), findsOneWidget);
               await tapVisible(
                 tester,
-                find.byKey(const ValueKey('team-home-more')),
+                find.byKey(const ValueKey('team-home-settings')),
               );
               final off = find.byKey(const ValueKey('team-home-turn-off'));
               await tester.ensureVisible(off);

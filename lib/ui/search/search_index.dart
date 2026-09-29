@@ -558,7 +558,8 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
           '${l10n.discoverTeamAliases} ${l10n.settingsHubSearchPluginsAliases}',
       pages: const ['team-intro'],
       gate: (scope) => scope.controller.profile != null,
-      open: (context, scope) => openTeamPage(context, scope.controller),
+      // Setup only: Team settings while on, the turn-on flow while off.
+      open: (context, scope) => openTeamSetup(context, scope.controller),
     ),
     // Conversations: what runs by itself, how a transcript shows,
     // the shell it runs commands in, and voice.

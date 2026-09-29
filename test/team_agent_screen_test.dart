@@ -430,6 +430,8 @@ void main() {
         app(TeamHomeScreen(controller: controller, now: () => clock)),
       );
       await tester.pumpAndSettle();
+      await tester.tap(key('team-home-settings'));
+      await tester.pumpAndSettle();
       await tester.tap(key('team-home-agents-row'));
       await tester.pumpAndSettle();
       // One list, no state sections: the stopped one is a row like the
@@ -472,6 +474,8 @@ void main() {
       await tester.pumpWidget(
         app(TeamHomeScreen(controller: controller, now: () => clock)),
       );
+      await tester.pumpAndSettle();
+      await tester.tap(key('team-home-settings'));
       await tester.pumpAndSettle();
       await tester.tap(key('team-home-agents-row'));
       await tester.pumpAndSettle();

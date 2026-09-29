@@ -14820,12 +14820,6 @@ abstract class AppLocalizations {
   /// **'Terms'**
   String get teamUiTermsHeading;
 
-  /// Sheet action and confirm label turning the plugin off for this server
-  ///
-  /// In en, this message translates to:
-  /// **'Turn off'**
-  String get teamUiTurnOff;
-
   /// Body of the turn-off confirmation sheet
   ///
   /// In en, this message translates to:
@@ -38179,6 +38173,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yesterday'**
   String get e7WorkspaceYesterday;
+
+  /// AI Team settings page title
+  ///
+  /// In en, this message translates to:
+  /// **'Team settings'**
+  String get teamSettingsTitle;
+
+  /// AI Team page: opens Team settings
+  ///
+  /// In en, this message translates to:
+  /// **'Team settings'**
+  String get teamSettingsOpenTooltip;
+
+  /// Team settings: turn the AI Team off
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off the AI Team'**
+  String get teamSettingsTurnOff;
 }
 
 class _AppLocalizationsDelegate

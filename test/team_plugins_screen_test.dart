@@ -242,7 +242,7 @@ void main() {
 
   /// Picks [item] from the team page's top bar menu.
   Future<void> menu(WidgetTester tester, String item) async {
-    await tester.tap(find.byKey(const ValueKey('team-home-more')));
+    await tester.tap(find.byKey(const ValueKey('team-home-settings')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(ValueKey(item)));
     await tester.pumpAndSettle();
@@ -590,16 +590,8 @@ void main() {
         // The fixture reports the config's own mode, so the chosen kind
         // stands (a phone config is a phone gateway).
         expect(controller.orchestration?.phase, OrchestrationPhase.ready);
-        await tester.scrollUntilVisible(
-          find.byKey(const ValueKey('team-home-host-row')),
-          200,
-          scrollable: find
-              .descendant(
-                of: find.byKey(const ValueKey('team-home-runs')),
-                matching: find.byType(Scrollable),
-              )
-              .first,
-        );
+        await tester.tap(find.byKey(const ValueKey('team-home-settings')));
+        await tester.pumpAndSettle();
         expect(speed(tester), teamHostDisclaimer(l10n, kind));
         for (final other in OrchestrationHostKind.values) {
           if (other == kind) continue;

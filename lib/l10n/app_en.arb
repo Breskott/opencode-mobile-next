@@ -9085,10 +9085,6 @@
   "@teamUiTermsHeading": {
     "description": "Technical details heading above the side-by-side terms"
   },
-  "teamUiTurnOff": "Turn off",
-  "@teamUiTurnOff": {
-    "description": "Sheet action and confirm label turning the plugin off for this server"
-  },
   "teamUiTurnOffBody": "Removes its card, attention items and cached team data from this phone. Nothing changes on the host.",
   "@teamUiTurnOffBody": {
     "description": "Body of the turn-off confirmation sheet"
@@ -29270,5 +29266,17 @@
   "e7WorkspaceYesterday": "Yesterday",
   "@e7WorkspaceYesterday": {
     "description": "Relative time: between 24 and 48 hours ago"
+  },
+  "teamSettingsTitle": "Team settings",
+  "@teamSettingsTitle": {
+    "description": "AI Team settings page title"
+  },
+  "teamSettingsOpenTooltip": "Team settings",
+  "@teamSettingsOpenTooltip": {
+    "description": "AI Team page: opens Team settings"
+  },
+  "teamSettingsTurnOff": "Turn off the AI Team",
+  "@teamSettingsTurnOff": {
+    "description": "Team settings: turn the AI Team off"
   }
 }

@@ -31,6 +31,7 @@ import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/new_conversation_sheet.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/team_settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_page.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
@@ -718,7 +719,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('tapping it while on opens the team page (P0.5)', (
+    testWidgets('tapping it while on opens Team settings (setup only)', (
       tester,
     ) async {
       _mockChannels();
@@ -736,7 +737,8 @@ void main() {
       await _settle(tester);
       await tester.tap(_key('settings-ai-team'));
       await _settle(tester);
-      expect(find.byType(TeamHomeScreen), findsOneWidget);
+      expect(find.byType(TeamSettingsScreen), findsOneWidget);
+      expect(find.byType(TeamHomeScreen), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });

@@ -170,14 +170,7 @@ void main() {
     onScreen(tester, run, 320);
     // Technical details open from the page's "how it runs" row (P3.4).
     const host = ValueKey('team-home-host-row');
-    await tester.scrollUntilVisible(
-      find.byKey(host),
-      200,
-      scrollable: find.descendant(
-        of: find.byKey(const ValueKey('team-home-runs')),
-        matching: find.byType(Scrollable),
-      ),
-    );
+    await tester.tap(find.byKey(const ValueKey('team-home-settings')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(host));
     await tester.pumpAndSettle();

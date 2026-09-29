@@ -456,8 +456,10 @@ void main() {
         expect(tester.takeException(), isNull);
 
         // P3.4 moved Technical details into the team's own panel.
+        await tester.tap(find.byKey(const ValueKey('team-home-settings')));
+        await tester.pumpAndSettle();
         final details = find.byKey(const ValueKey('team-home-host-row'));
-        await revealIn(tester, 'team-home-runs', details);
+        await tester.ensureVisible(details);
         await tester.tap(details);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
@@ -474,7 +476,7 @@ void main() {
         // Agents: one list ordered by urgency, including the asleep dog
         // at its end (screen-team-3).
         final agentsRow = find.byKey(const ValueKey('team-home-agents-row'));
-        await revealIn(tester, 'team-home-runs', agentsRow);
+        await tester.ensureVisible(agentsRow);
         await tester.tap(agentsRow);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
@@ -543,14 +545,8 @@ void main() {
         expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
         // The empty board's drawing has room now (team-discover-2026-09-25):
         // at 2.5x text the agents row is further down the list.
-        await tester.scrollUntilVisible(
-          find.byKey(const ValueKey('team-home-agents-row')),
-          200,
-          scrollable: find.descendant(
-            of: find.byKey(const ValueKey('team-home-runs')),
-            matching: find.byType(Scrollable),
-          ),
-        );
+        await tester.tap(find.byKey(const ValueKey('team-home-settings')));
+        await tester.pumpAndSettle();
         await tester.ensureVisible(
           find.byKey(const ValueKey('team-home-agents-row')),
         );

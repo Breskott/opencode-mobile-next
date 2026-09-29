@@ -8968,9 +8968,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiTermsHeading => 'Terms';
 
   @override
-  String get teamUiTurnOff => 'Turn off';
-
-  @override
   String get teamUiTurnOffBody =>
       'Removes its card, attention items and cached team data from this phone. Nothing changes on the host.';
 
@@ -24269,4 +24266,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7WorkspaceYesterday => 'Yesterday';
+
+  @override
+  String get teamSettingsTitle => 'Team settings';
+
+  @override
+  String get teamSettingsOpenTooltip => 'Team settings';
+
+  @override
+  String get teamSettingsTurnOff => 'Turn off the AI Team';
 }

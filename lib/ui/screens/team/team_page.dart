@@ -4,8 +4,9 @@
 /// it shows the team in whatever state it is in:
 ///
 /// - **On** ([OrchestrationController] for the connected server): the
-///   team itself ([TeamHomeScreen]): Now, what needs the person, the
-///   tasks, where it runs and how fast, what it spent today, and Turn off.
+///   work itself ([TeamHomeScreen]): one status line and one list of
+///   tasks, most urgent first. Setup (agents, how it runs, spend, Turn
+///   off) is Team settings, from the top bar or Settings › AI Team.
 /// - **Off**: the same page says what the team does and sets it up for
 ///   this kind of server ([TeamIntroScreen]); the moment it is on, the
 ///   page turns into the team, with no hop back and no second page.
@@ -25,6 +26,7 @@ import '../../kit/kit.dart';
 import '../../widgets/team_host_form.dart' show TeamHostProbe;
 import 'team_home_screen.dart';
 import 'team_intro_screen.dart';
+import 'team_settings_screen.dart';
 
 /// Opens the AI Team page for the connected server. [onOpenRun] replaces
 /// what a task row opens (a task's conversation that opened this page
@@ -48,6 +50,39 @@ Future<void> openTeamPage(
     onOpenRun: onOpenRun,
   ),
 );
+
+/// Settings › AI Team's door (setup only): Team settings while the team is
+/// on, the intro and turn-on flow while it is off. The work page stays
+/// behind the Work strip and search.
+Future<void> openTeamSetup(
+  BuildContext context,
+  ConnectionController connection, {
+  TeamHostProbe? probe,
+  TermuxTeamRuntime? runtime,
+  Future<VoiceDeviceInfo> Function()? deviceProbe,
+}) {
+  final profile = connection.profile;
+  final team = connection.orchestration;
+  if (profile != null &&
+      profile.orchestration != null &&
+      team != null &&
+      team.profileId == profile.id) {
+    return openTeamSettings(
+      context,
+      controller: team,
+      connection: connection,
+      probe: probe,
+      teamRuntime: runtime,
+    );
+  }
+  return openTeamPage(
+    context,
+    connection,
+    probe: probe,
+    runtime: runtime,
+    deviceProbe: deviceProbe,
+  );
+}
 
 class TeamPage extends StatelessWidget {
   const TeamPage({
