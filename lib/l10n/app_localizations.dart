@@ -38767,6 +38767,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Session title'**
   String get teamUiAgentLabelSessionTitle;
+
+  /// Composer status pill: the server has been quiet for a while
+  ///
+  /// In en, this message translates to:
+  /// **'No answer yet'**
+  String get kitComposerPillNoAnswer;
+
+  /// Composer top row: action that sends a failed message again
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get kitComposerRailRetry;
 }
 
 class _AppLocalizationsDelegate

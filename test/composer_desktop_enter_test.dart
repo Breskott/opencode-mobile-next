@@ -144,8 +144,10 @@ void main() {
     expect(api.prompts, isEmpty);
   });
 
-  testWidgets('a sent prompt runs at once: live line with Stop reply on the '
-      'turn, and the composer keeps its mic or Send', (tester) async {
+  testWidgets('a sent prompt runs at once: status and Stop on the composer '
+      'edge, and the composer keeps its mic or Send', (tester) async {
+    final semantics = tester.ensureSemantics();
+    addTearDown(semantics.dispose);
     final api = _ComposerApi();
     await _pump(tester, api);
 
@@ -154,13 +156,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.prompts, ['go']);
 
-    // The server has not said it is busy yet; the turn still says it runs.
-    expect(find.text('Waiting for the server…'), findsOneWidget);
+    // The server has not said it is busy yet; the edge still says it runs
+    // (a send that has not been answered reads as thinking).
+    expect(find.text('Thinking…'), findsOneWidget);
     final stop = find.byKey(const Key('chat-stop-button'));
     expect(stop, findsOneWidget);
-    expect(find.text('Stop reply'), findsOneWidget);
-    // Stop is not in the composer: its one trailing control is still the
-    // mic (voice builds) or Send.
+    expect(find.bySemanticsLabel(RegExp('Stop reply')), findsOneWidget);
+    // The composer has no Stop circle: its one trailing control is still
+    // the mic (voice builds) or Send.
     expect(
       find.byKey(const Key('composer-voice-button')).evaluate().length +
           find.byKey(const Key('chat-send-button')).evaluate().length,
@@ -170,9 +173,9 @@ void main() {
     await tester.tap(stop);
     await tester.pumpAndSettle();
     expect(api.abortCalls, 1);
-    // Stopped on purpose: no live line, and never "No reply came back".
+    // Stopped on purpose: no status, and never "No reply came back".
     expect(stop, findsNothing);
-    expect(find.text('Waiting for the server…'), findsNothing);
+    expect(find.text('Thinking…'), findsNothing);
     expect(find.text('No reply came back'), findsNothing);
   });
 }

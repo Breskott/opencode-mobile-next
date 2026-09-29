@@ -120,6 +120,19 @@ abstract final class KitMotion {
     damping: 26,
   );
 
+  /// The composer's edge light (the running reply's status): calm by rule.
+  /// It never travels faster than [edgeLightMaxLapsPerSecond] (one lap in
+  /// 6 s, reached only by a burst of words), rests at
+  /// [edgeLightThinkingLapsPerSecond] while the model thinks, and every
+  /// change of speed eases over [edgeLightSpeedEase] and of hue over
+  /// [edgeLightHueFade]. Where a status touches the border it fades out and
+  /// back in over [edgeLightFadeSpan] dp instead of stopping.
+  static const double edgeLightMaxLapsPerSecond = 1 / 6;
+  static const double edgeLightThinkingLapsPerSecond = 1 / 10;
+  static const Duration edgeLightSpeedEase = Duration(milliseconds: 800);
+  static const Duration edgeLightHueFade = Duration(milliseconds: 450);
+  static const double edgeLightFadeSpan = 20;
+
   static const Curve enter = Curves.easeOutCubic;
   static const Curve exit = Curves.easeInCubic;
   static const Curve emphasized = Curves.easeInOutCubicEmphasized;

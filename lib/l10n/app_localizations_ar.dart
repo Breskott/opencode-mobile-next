@@ -24762,4 +24762,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiAgentLabelSessionTitle => 'عنوان الجلسة';
+
+  @override
+  String get kitComposerPillNoAnswer => 'No answer yet';
+
+  @override
+  String get kitComposerRailRetry => 'Retry';
 }

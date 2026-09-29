@@ -625,13 +625,7 @@ void main() {
 
     // Stop lives on the running turn, never in the composer: with nothing
     // typed its one trailing control stays the mic (or a disabled Send).
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('chat-composer-surface')),
-        matching: find.byKey(const Key('chat-stop-button')),
-      ),
-      findsNothing,
-    );
+    expect(find.byKey(const ValueKey('kit-composer-stop')), findsNothing);
     expect(
       find.byKey(const Key('composer-voice-button')).evaluate().length +
           find.byKey(const Key('chat-send-button')).evaluate().length,
@@ -730,13 +724,7 @@ void main() {
     // on the running turn, the composer keeps its mic (or Send), and it
     // says what Send will do once something is typed.
     expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('chat-composer-surface')),
-        matching: find.byKey(const Key('chat-stop-button')),
-      ),
-      findsNothing,
-    );
+    expect(find.byKey(const ValueKey('kit-composer-stop')), findsNothing);
     // Nothing typed yet: no hint competes with the running reply.
     expect(find.text('Sends after this reply'), findsNothing);
 
