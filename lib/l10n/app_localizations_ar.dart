@@ -24630,4 +24630,14 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamRolesSearchAliases =>
       'roles personas agents team frontend backend tester product designer instructions';
+
+  @override
+  String get teamUiStatePhoneStoppedTitle => 'AI Team stopped';
+
+  @override
+  String get teamUiStatePhoneStoppedBody =>
+      'AI Team on this phone isn’t running. Start it to continue your tasks.';
+
+  @override
+  String get teamUiStartOnPhone => 'Start AI Team on this phone';
 }

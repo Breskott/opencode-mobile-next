@@ -38557,6 +38557,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'roles personas agents team frontend backend tester product designer instructions'**
   String get teamRolesSearchAliases;
+
+  /// AI Team screens, whole-screen state title: the AI Team inside this app does not answer (it stopped, for example after an app update)
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team stopped'**
+  String get teamUiStatePhoneStoppedTitle;
+
+  /// AI Team screens, body under teamUiStatePhoneStoppedTitle: what is wrong and the way forward
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team on this phone isn’t running. Start it to continue your tasks.'**
+  String get teamUiStatePhoneStoppedBody;
+
+  /// AI Team screens, primary action when the AI Team inside this app stopped: starts it and shows its progress
+  ///
+  /// In en, this message translates to:
+  /// **'Start AI Team on this phone'**
+  String get teamUiStartOnPhone;
 }
 
 class _AppLocalizationsDelegate
