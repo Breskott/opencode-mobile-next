@@ -163,9 +163,7 @@ class KitChip extends StatelessWidget {
             semanticColor,
             [roles.surface2, roles.surface3],
             4.7,
-            toward: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white
-                : Colors.black,
+            toward: roles.text1,
           );
     final emphasized = KitText.styleOf(
       context,

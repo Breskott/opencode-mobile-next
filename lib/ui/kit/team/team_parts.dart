@@ -178,7 +178,10 @@ Widget teamCard(
           : t.roles.surface1,
       shape: (t.shapeOf(KitShape.card) as RoundedRectangleBorder).copyWith(
         side: attention
-            ? BorderSide(color: t.roles.attention.withValues(alpha: .30))
+            ? BorderSide(
+                color: t.roles.attention.withValues(alpha: .30),
+                width: KitTokens.hairlineWidth(context),
+              )
             : BorderSide.none,
       ),
     ),
